@@ -1,0 +1,33 @@
+/*
+ * zrender默认配置项
+ * Copyright 2012 Baidu Inc. All rights reserved.
+ * 
+ * desc:    zrender是一个Canvas绘图类库，mvc封装实现数据驱动绘图，图形事件封装
+ * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * 
+ */
+// config:配置项
+define(
+    {              
+        EVENT : {                       // 支持事件列表
+            RESIZE : 'resize',          // 窗口大小变化
+            CLICK : 'click',            // 鼠标按钮被按下，事件对象是：目标图形元素或空
+            
+            MOUSEWHEEL : 'mousewheel',  // 鼠标滚轮变化，事件对象是：目标图形元素或空
+            MOUSEMOVE : 'mousemove',    // 鼠标被移动，事件对象是：目标图形元素或空
+            MOUSEOVER : 'mouseover',    // 鼠标移到某图形元素之上，事件对象是：目标图形元素
+            MOUSEOUT : 'mouseout',      // 鼠标从某图形元素移开，事件对象是：目标图形元素
+            MOUSEDOWN : 'mousedown',    // 鼠标按钮被按下，事件对象是：目标图形元素或空
+            MOUSEUP : 'mouseup',        // 鼠标按键被松开，事件对象是：目标图形元素或空
+            
+            // 一次成功元素拖拽的行为事件过程是：
+            // dragstart –> dragenter –> dragover [-> dragleave] –> drop –> dragend
+            DRAGSTART : 'dragstart',    // 开始拖拽时触发，事件对象是：被拖拽图形元素
+            DRAGEND : 'dragend',        // 拖拽完毕时触发（在drop之后触发），事件对象是：被拖拽图形元素
+            DRAGENTER : 'dragenter',    // 拖拽图形元素进入目标图形元素时触发，事件对象是：目标图形元素
+            DRAGOVER : 'dragover',      // 拖拽图形元素在目标图形元素上移动时触发，事件对象是：目标图形元素
+            DRAGLEAVE : 'dragleave',    // 拖拽图形元素离开目标图形元素时触发，事件对象是：目标图形元素
+            DROP : 'drop'               // 拖拽图形元素放在目标图形元素内时触发，事件对象是：目标图形元素
+        }
+    }
+)
