@@ -14,6 +14,11 @@
        zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
        invisible : {boolean},   // 默认为false，是否可见
        
+       // 变换
+       translate : {array},  // 默认为[0, 0], shape的坐标
+       rotate : {array},  // 默认为0，shape绕自身旋转的角度，不被position 影响
+       scale : {array},     // 默认为[1, 1], shape纵横缩放比例，不被position影响
+       
        // 样式属性，详见各shape，默认状态样式样式属性
        style  : {Object},
        
@@ -107,7 +112,10 @@
  */
 define(
     function(require) {
-        var self;
+
+        var self,
+            matrix = require('../tool/matrix'),
+            vector = require('../tool/vector');
         /**
          * 派生实现通用功能 
          * @param {Object} clazz 图形类
@@ -119,7 +127,8 @@ define(
                     'getHighlightStyle',
                     'getHighlightZoom',
                     'drift',
-                    'isCover'
+                    'isCover',
+                    'updateTransform'
                 ],   
                 len = methods.length,
                 proto = clazz.prototype,
@@ -157,6 +166,10 @@ define(
             ctx.save();
             this.setContext(ctx, style);
             
+            //设置transform
+            var m = this.updateTransform( e );
+            ctx.transform( m[0], m[1], m[2], m[3], m[4], m[5] );
+
             ctx.beginPath();
             this.buildPath(ctx, style);
             ctx.closePath();
@@ -331,7 +344,32 @@ define(
          */
         function isCover(e, x, y) {
             var area = require('../tool/area');
-            return area.isInside(e.shape, e.style, x, y);
+            //对鼠标的坐标也做相同的变换
+            var m = e._transform;
+            if( m ){
+                var newPos = matrix.mulVector( matrix.inverse( matrix.expand(m) ), [x, y, 1]); 
+            }else{
+                newPos = [x, y];
+            }
+            console.log(newPos, x, y);
+            return area.isInside(e.shape, e.style, newPos[0], newPos[1]);
+        }
+        
+        function updateTransform( e ){
+            var _transform = matrix.identity();
+            if( e.scale){
+                _transform = matrix.scale( _transform, e.scale );
+            }
+            if( e.rotate ){
+                _transform = matrix.rotate( _transform, e.rotate );
+            }
+            if( e.translate){
+                _transform = matrix.translate(_transform, e.translate);
+            }
+            // 保存这个变换矩阵
+            e._transform = _transform;
+
+            return _transform;   
         }
         
         self = {
@@ -341,7 +379,9 @@ define(
             getHighlightStyle : getHighlightStyle,
             getHighlightZoom : getHighlightZoom,  
             drift : drift,
-            isCover : isCover
+            isCover : isCover,
+
+            updateTransform : updateTransform
         }
         
         return self;
