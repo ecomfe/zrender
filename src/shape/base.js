@@ -351,7 +351,6 @@ define(
             }else{
                 newPos = [x, y];
             }
-            console.log(newPos, x, y);
             return area.isInside(e.shape, e.style, newPos[0], newPos[1]);
         }
         

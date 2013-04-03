@@ -61,6 +61,9 @@ define(
         var Text = require('./shape/text');
         self.define('text', new Text());
         
+        var Path = require('./shape/path');
+        self.define('path', new Path());
+
         return self;
     }
 ); 
