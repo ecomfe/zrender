@@ -29,7 +29,20 @@
         background-color:#181818;
         margin-bottom: 30px;
     }
-
+    #forkme_banner {
+        display: block;
+        position: absolute;
+        top: 0;
+        right: 10px;
+        z-index: 10;
+        padding: 10px 50px 10px 10px;
+        color: #fff;
+        background: url('doc/asset/img/blacktocat.png') #0090ff no-repeat 95% 50%;
+        font-weight: 700;
+        box-shadow: 0 0 10px rgba(0,0,0,.5);
+        border-bottom-left-radius: 2px;
+        border-bottom-right-radius: 2px;
+    }
     /* Featurettes
     ------------------------- */
     .featurette-divider {
@@ -74,9 +87,7 @@
           </button>
           <a class="brand" href="index.html"><img src="doc/asset/ico/favicon.png" /> ZRender</a>
           <div class="nav-collapse collapse">
-              <p class="navbar-text pull-right">
-                <a href="mailto:linzhifeng@baidu.com">feedback | contact</a>
-              </p>
+              <a id="forkme_banner" href="https://github.com/ecomfe/zrender">View on GitHub</a>
               <ul class="nav">
                 <li class="active"><a href="index.html"><i class="icon-home icon-white"></i> Home</a></li>
                 <li class="dropdown">
@@ -90,6 +101,13 @@
                   </ul>
                 </li>
                 <li><a href="#">API &amp; Doc</a></li>
+                <li class="dropdown">
+                  <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="icon-download-alt icon-white"></i>Download <b class="caret"></b></a>
+                  <ul class="dropdown-menu">
+                    <li><a href="https://github.com/ecomfe/zrender/zipball/master">ZIP</a></li>
+                    <li><a href="https://github.com/ecomfe/zrender/tarball/master">TAR</a></li>
+                  </ul>
+                </li>
                 <li class="dropdown">
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown">Link <b class="caret"></b></a>
                   <ul class="dropdown-menu">
@@ -215,7 +233,7 @@ var myShape = {
 };</pre>
         </div>
         <h2 class="featurette-heading">丰富的图形选项</h2>
-        <p>当前内置7种图形元素（圆形、扇形、圆环、矩形、多边形、直线、文字），统一且丰富的图形属性充分满足你的个性化需求！</p>
+        <p>当前内置多种图形元素（圆形、扇形、圆环、矩形、多边形、直线、文字），统一且丰富的图形属性充分满足你的个性化需求！</p>
       </div>
       <hr class="featurette-divider">
       <div class="featurette">

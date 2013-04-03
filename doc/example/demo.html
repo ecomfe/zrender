@@ -22,6 +22,20 @@
 			color: #5a5a5a;
       		font-family: "微软雅黑";
         }
+        #forkme_banner {
+            display: block;
+            position: absolute;
+            top: 0;
+            right: 10px;
+            z-index: 10;
+            padding: 10px 50px 10px 10px;
+            color: #fff;
+            background: url('../asset/img/blacktocat.png') #0090ff no-repeat 95% 50%;
+            font-weight: 700;
+            box-shadow: 0 0 10px rgba(0,0,0,.5);
+            border-bottom-left-radius: 2px;
+            border-bottom-right-radius: 2px;
+        }
 		.brand img {
 	        vertical-align: top;
         }
@@ -71,9 +85,7 @@
           </button>
           <a class="brand" href="../../index.html"><img src="../asset/ico/favicon.png" /> ZRender</a>
           <div class="nav-collapse collapse">
-              <p class="navbar-text pull-right">
-                <a href="mailto:linzhifeng@baidu.com">feedback | contact</a>
-              </p>
+              <a id="forkme_banner" href="https://github.com/ecomfe/zrender">View on GitHub</a>
               <ul class="nav">
                 <li><a href="../../index.html"><i class="icon-home icon-white"></i> Home</a></li>
                 <li class="active dropdown">
@@ -87,6 +99,13 @@
                   </ul>
                 </li>
                 <li><a href="#">API &amp; Doc</a></li>
+                <li class="dropdown">
+                  <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="icon-download-alt icon-white"></i>Download <b class="caret"></b></a>
+                  <ul class="dropdown-menu">
+                    <li><a href="https://github.com/ecomfe/zrender/zipball/master">ZIP</a></li>
+                    <li><a href="https://github.com/ecomfe/zrender/tarball/master">TAR</a></li>
+                  </ul>
+                </li>
                 <li class="dropdown">
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown">Link <b class="caret"></b></a>
                   <ul class="dropdown-menu">
