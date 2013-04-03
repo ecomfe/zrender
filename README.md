@@ -1,6 +1,6 @@
 ZRender
 =======
-https://ecomfe.github.com/zrender
+http://ecomfe.github.com/zrender
 
 一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型，让canvas绘图大不同！
 
