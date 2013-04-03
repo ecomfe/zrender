@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>ZRender</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ZRender">
+    <meta name="author" content="linzhifeng@baidu.com">
+    
+    <script src="../asset/js/esl/esl.js"></script>
+    <script src="../asset/js/codemirror.js"></script>
+    <script src="../asset/js/javascript.js"></script>
+    
+    <link href="../asset/css/bootstrap.css" rel="stylesheet">
+    <link href="../asset/css/bootstrap-responsive.css" rel="stylesheet">
+    <link href="../asset/css/codemirror.css" rel="stylesheet">
+    <link href="../asset/css/monokai.css" rel="stylesheet">
+    <style type="text/css">
+        body {
+            padding-top: 60px;
+            padding-bottom: 40px;
+			color: #5a5a5a;
+      		font-family: "微软雅黑";
+        }
+		.brand img {
+	        vertical-align: top;
+	    }
+        .sidebar-nav {
+            padding: 9px 0;
+            margin-bottom: 0;
+        }
+        .span4 {
+            transition: width 1.5s;
+            -moz-transition: width 1.5s; /* Firefox 4 */
+            -webkit-transition: width 1.5s; /* Safari and Chrome */
+            -o-transition: width 1.5s; /* Opera */
+        }
+        .span8 {
+            transition: width 1.5s;
+            -moz-transition: width 1.5s; /* Firefox 4 */
+            -webkit-transition: width 1.5s; /* Safari and Chrome */
+            -o-transition: width 1.5s; /* Opera */
+        }
+        .main {
+            height: 400px;
+            overflow: hidden;
+            padding : 10px;
+            margin-bottom: 10px;
+            border: 1px solid #e3e3e3;
+            -webkit-border-radius: 4px;
+               -moz-border-radius: 4px;
+                    border-radius: 4px;
+            -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
+               -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
+                    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+    <link rel="shortcut icon" href="../asset/ico/favicon.png">
+</head>
+
+<body>
+    <!-- NAVBAR
+    ================================================== -->
+    <div class="navbar navbar-inverse navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="brand" href="../../index.html"><img src="../asset/ico/favicon.png" /> ZRender</a>
+          <div class="nav-collapse collapse">
+              <p class="navbar-text pull-right">
+                <a href="mailto:linzhifeng@baidu.com">feedback | contact</a>
+              </p>
+              <ul class="nav">
+                <li><a href="../../index.html"><i class="icon-home icon-white"></i> Home</a></li>
+                <li class="active dropdown">
+                  <a href="#" class="dropdown-toggle" data-toggle="dropdown">Example <b class="caret"></b></a>
+                  <ul class="dropdown-menu">
+                    <li><a href="demo.html">Demo</a></li>
+                    <li class="active"><a href="animation.html">Animation</a></li>
+                    <li class="divider"></li>
+                    <!--li class="nav-header">Library</li-->
+                    <li><a href="artist.html">Artist</a></li>
+                  </ul>
+                </li>
+                <li><a href="#">API &amp; Doc</a></li>
+                <li class="dropdown">
+                  <a href="#" class="dropdown-toggle" data-toggle="dropdown">Link <b class="caret"></b></a>
+                  <ul class="dropdown-menu">
+                    <li><a href="https://github.com/ecomfe" target="_blank">Ecom-FE</a></li>
+                    <li><a href="http://fe.baidu.com/doc/ecom/tech/topic/dv/index.html" target="_blank">Data Visualization</a></li>
+                    <li class="divider"></li>
+                    <!--li class="nav-header">Library</li-->
+                    <li><a href="http://tangram.baidu.com/" target="_blank">Tangram</a></li>
+                  </ul>
+                </li>
+              </ul>
+           </div><!--/.nav-collapse -->
+        </div><!-- /.container -->
+      </div><!-- /.navbar-inner -->
+    </div><!-- /.navbar-wrapper -->
+    
+    <div class="container-fluid">
+        <div class="row-fluid">
+            <div id="sidebar-code" class="span4">
+                <div class="well sidebar-nav">
+                    <div class="nav-header">code</div>
+                    <textarea id="code" name="code">
+/* 
+ *  zr has been init like this, just use it!
+ *  
+ *  var zrender = require('zrender/zrender');
+ *  var zr = zrender.init(document.getElementById('main'));
+ */
+clearInterval(animationTicket); // 请跳过这句，动画索引
+zr.clear();
+var color = require('zrender/tool/color');
+var colorIdx = 0;
+var width = Math.ceil(zr.getWidth());
+var height = Math.ceil(zr.getHeight());
+
+var i;
+var n = 50;
+var shapeList = [];
+// 动画元素
+for(i = 0; i < n; i++) {
+    shapeList[i] = {
+        shape : 'circle',
+        id : zr.newShapeId(),
+        style : {
+            x : Math.ceil(Math.random() * width),
+            y : Math.ceil(Math.random() * height),
+            r : Math.ceil(Math.random() * 40),
+            brushType : Math.ceil(Math.random() * 100) % 3 >= 1 ? 'both' : 'stroke',
+            color : 'rgba(' 
+                    + Math.round(Math.random() * 256) + ',' 
+                    + Math.round(Math.random() * 256) + ',' 
+                    + Math.round(Math.random() * 256) + ', 0.5)',
+            strokeColor : 'rgba(' 
+                    + Math.round(Math.random() * 256) + ',' 
+                    + Math.round(Math.random() * 256) + ',' 
+                    + Math.round(Math.random() * 256) + ', 0.3)',
+            lineWidth : 3
+        },
+        _animationX : Math.ceil(Math.random() * 20),
+        _animationY : Math.ceil(Math.random() * 20),
+        hoverable : false
+    };
+    if (shapeList[i].style.x < 100 || shapeList[i].style.x > (width - 100)) {
+        shapeList[i].style.x = width / 2;    
+    }
+    if (shapeList[i].style.y < 100 || shapeList[i].style.y > (height - 100)) {
+        shapeList[i].style.y = height / 2;    
+    }
+    zr.addShape(shapeList[i]);
+}
+
+// 绘画，利用render的callback可以在绘画完成后马上开始动画
+zr.render(function(){
+    animationTicket = setInterval(
+        function(){
+            var style;
+            for( i = 0; i < n; i++) {
+                // 可以跳过
+                style = shapeList[i].style;
+                if (style.brushType == 'both') {
+                    if (style.x + style.r + shapeList[i]._animationX >= width 
+                        || style.x - style.r + shapeList[i]._animationX <= 0
+                    ){
+                        shapeList[i]._animationX = -shapeList[i]._animationX;
+                    }
+                    shapeList[i].style.x += shapeList[i]._animationX;
+                }
+                
+                if (style.brushType == 'both') {
+                    if (style.y + style.r + shapeList[i]._animationY >= height || 
+                        style.y - style.r + shapeList[i]._animationY <= 0){
+                        shapeList[i]._animationY = -shapeList[i]._animationY;
+                    }
+                    shapeList[i].style.y += shapeList[i]._animationY;
+                }
+                else {
+                    if (style.y - shapeList[i]._animationY + style.r <= 0){
+                        shapeList[i].style.y = height + style.r;
+                        shapeList[i].style.x = Math.ceil(Math.random() * width);
+                    }
+                    shapeList[i].style.y -= shapeList[i]._animationY;
+                }
+                
+                
+                // 就看这句就行
+                zr.modShape(shapeList[i].id, shapeList[i]);
+            }
+            zr.refresh();
+        },
+        50
+    )
+});
+                    </textarea>
+              </div><!--/.well -->
+            </div><!--/span-->
+            <div id="graphic" class="span8">
+                <div id="main" class="main"></div>
+                <div>
+                    <button onclick="refresh(true)">Refresh ~</button>
+                    <span id='wrong-message' style="color:red"></span>
+                </div>
+            </div><!--/span-->
+        </div><!--/row-->
+        <hr>
+        <!-- FOOTER -->
+        <footer>
+          <p class="pull-right"><a href="#">Back to top</a></p>
+          <p>&copy; 2013 Ecom-FE. &middot; <a href="#">Privacy</a> &middot; <a href="#">Terms</a></p>
+        </footer>
+    </div><!--/.fluid-container-->
+
+    <script src="../asset/js/jquery.js"></script>
+    <script src="../asset/js/bootstrap-transition.js"></script>
+    <script src="../asset/js/bootstrap-alert.js"></script>
+    <script src="../asset/js/bootstrap-modal.js"></script>
+    <script src="../asset/js/bootstrap-dropdown.js"></script>
+    <script src="../asset/js/bootstrap-scrollspy.js"></script>
+    <script src="../asset/js/bootstrap-tab.js"></script>
+    <script src="../asset/js/bootstrap-tooltip.js"></script>
+    <script src="../asset/js/bootstrap-popover.js"></script>
+    <script src="../asset/js/bootstrap-button.js"></script>
+    <script src="../asset/js/bootstrap-collapse.js"></script>
+    <script src="../asset/js/bootstrap-carousel.js"></script>
+    <script src="../asset/js/bootstrap-typeahead.js"></script>
+    <script type="text/javascript">
+        var zr; // 全局可用zrender对象
+        var animationTicket;    // 全局动画索引
+        var domCode = document.getElementById('sidebar-code');
+        var domGraphic = document.getElementById('graphic');
+        var domMain = document.getElementById('main');
+        var domMessage = document.getElementById('wrong-message');
+        var needRefresh = false;
+        var refreshing = false;
+        
+        function focusCode() {
+            domCode.className = 'span8';
+            domGraphic.className = 'span4';
+        }
+        
+        function focusGraphic() {
+            domCode.className = 'span4';
+            domGraphic.className = 'span8';
+            if (needRefresh) {
+                refreshing = true;
+                setTimeout(refresh, 1500);
+            }
+        }
+        
+        var editor = CodeMirror.fromTextArea(
+            document.getElementById("code"), 
+            { lineNumbers: true }
+        );
+        editor.setOption("theme", 'monokai');
+        editor.on('focus', focusCode);
+        editor.on('blur', focusGraphic);
+        editor.on('change', function(){needRefresh = true;});
+        
+        function refresh(isBtnRefresh){
+            if (isBtnRefresh && refreshing) {
+                // focus在code上点refresh时二次触发
+                return;
+            }
+            refreshing = false;
+            try {
+                (new Function(editor.doc.getValue()))();
+                domMessage.innerHTML = '';
+            }catch (e) {
+                domMessage.innerHTML = e;
+            }   
+        }
+        
+        require.config({
+            paths: {
+                'js': '../asset/js/esl/js'
+            },
+            packages: [
+                {
+                    name: 'zrender',
+                    location: '../../src',
+                    main: 'zrender'
+                }
+            ]
+        });           
+        
+        require(
+            ['zrender/zrender'],
+            function(zrender) {
+                zr = zrender.init(document.getElementById('main'));
+                refresh();
+            }
+        );
+    </script>
+</body>
+</html>
