@@ -21,6 +21,7 @@ define(
          * in their existing web pages.
          * 
          * https://code.google.com/p/explorercanvas/
+         * http://explorercanvas.googlecode.com/svn/trunk/excanvas.js
          */
         require( "js!./lib/excanvas.js" );
         if (document.createElement('canvas').getContext) {
