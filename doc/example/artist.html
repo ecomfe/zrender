@@ -106,6 +106,7 @@
         <div class="row-fluid">
             <div id="main" class="main"></div>
             <button id="refresh">Refresh ~</button>
+            <span id='wrong-message' style="color:red"></span>
         </div><!--/row-->
         <hr>
         <!-- FOOTER -->
@@ -151,10 +152,13 @@
                 var width = Math.ceil(zr.getWidth());
                 var height = Math.ceil(zr.getHeight());
                 var brush;
+                var curPalette;
+                var isMobile = navigator.userAgent.match(/mobile/i);
                 document.getElementById('refresh').onclick = init;
                 
                 init();
                 function init(){
+                    document.getElementById('wrong-message').innerHTML = '';
                     zr.clear();
                     
                     buildBrush();
@@ -165,7 +169,6 @@
                     
                     zr.render();
                 }
-                
                 
                 function buildBrush() {
                     brush = {
@@ -184,41 +187,47 @@
                             textPosition :'inside'
                         },
                         _colorIdx : 0,
-                        hoverable : false,   // default true
+                        hoverable : false   // default true
                     } 
-                    zr.addShape(brush);
-                    zr.on(
-                        'mousemove',  
-                        function(params) {
-                            brush.style.x = eventTool.getX(params.event);
-                            brush.style.y = eventTool.getY(params.event);
-                            zr.modShape(brush.id, brush);
-                            zr.refresh();   
-                        }
-                    );
-                    zr.on(
-                        'mousewheel',  
-                        function(params) {
-                            brush._colorIdx = (brush._colorIdx + 1) % myPalette.length;
-                            brush.style.color = myPalette[brush._colorIdx];
-                            zr.modShape(brush.id, brush);
-                            zr.refresh();   
-                        }
-                    );
+                    
+                    if (!isMobile) {
+                        zr.addShape(brush);
+                        zr.on(
+                            'mousemove',  
+                            function(params) {
+                                brush.style.x = eventTool.getX(params.event);
+                                brush.style.y = eventTool.getY(params.event);
+                                zr.modShape(brush.id, brush);
+                                zr.refresh();   
+                            }
+                        );
+                        
+                        zr.on(
+                            'mousewheel',  
+                            function(params) {
+                                eventTool.stop(params.event);
+                                brush._colorIdx = (brush._colorIdx + 1) % myPalette.length;
+                                brush.style.color = myPalette[brush._colorIdx];
+                                zr.modShape(brush.id, brush);
+                                zr.refresh();   
+                            }
+                        );
+                    }
                 }
                 
                 function buildPalette() {
                     var length = myPalette.length;
                     var pWidth = 60;
                     var pHeight = 40;
-                    var startY = 0;
-                    var space = Math.round((height - pHeight * length) / (length - 1));
+                    var startY = 5;
+                    var space = Math.round((height - 10 - pHeight * length) 
+                                / (length - 1));
                     for (var i = 0; i < length; i++) {
                         zr.addShape({
                             shape : 'rectangle',
                             id : zr.newShapeId('rectangle'),
                             style : {
-                                x : 0,
+                                x : 5,
                                 y : startY,
                                 width : pWidth,
                                 height: pHeight,
@@ -230,12 +239,37 @@
                         });
                         startY += pHeight + space;
                     }
+                    curPalette = {
+                        shape : 'rectangle',
+                        id : zr.newShapeId('rectangle'),
+                        style : {
+                            x : 5,
+                            y : 5,
+                            width : pWidth,
+                            height: pHeight,
+                            strokeColor : 'yellow',
+                            lineWidth : 4,
+                            brushType : 'stroke'
+                        },
+                        hoverable: false
+                    }
+                    zr.addShape(curPalette);
                 }
                 
                 function paletteHandler(params) {
-                    brush.style.color = params.target.style.color;
-                    brush._colorIdx = params.target._colorIdx;
-                    zr.modShape(brush.id, brush);
+                    var target = params.target;
+                    brush.style.color = target.style.color;
+                    brush._colorIdx = target._colorIdx;
+                    
+                    if (!isMobile) {
+                        zr.modShape(brush.id, brush);
+                    }
+                   
+                    
+                    curPalette.style.x = target.style.x;
+                    curPalette.style.y = target.style.y;
+                    zr.modShape(curPalette.id, curPalette);
+                    
                     zr.refresh(); 
                 }
                 
@@ -277,7 +311,7 @@
                             style : {
                                 x : Math.ceil(Math.random() * 500 + 100),
                                 y : Math.ceil(Math.random() * 130 + 20),
-                                r : Math.ceil(Math.random() * 20),
+                                r : Math.ceil(Math.random() * 20 + 5)
                             }
                         });
                     }
@@ -285,6 +319,7 @@
                         shapeList[i].style.brushType = 'both';
                         shapeList[i].style.strokeColor = 'black';
                         shapeList[i].style.color = 'white';
+                        shapeList[i].style.lineWidth = 2;
                         shapeList[i].hoverable = false;
                         shapeList[i].onclick = contentHandler;
                         zr.addShape(shapeList[i]);
@@ -295,7 +330,7 @@
                 function contentHandler(params) {
                     var target = params.target;
                     target.style.color = brush.style.color;
-                    target.style.brushType = 'both';
+                    target.style.strokeColor = 'white';
                     zr.modShape(target.id, target);
                     zr.refresh(); 
                 }           

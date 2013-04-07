@@ -203,7 +203,7 @@ define(
                 
             /**
              * 渲染，构建各层Canvas
-             * @param  {Function} callback  渲染结束后回调函数
+             * @param {Function} callback  渲染结束后回调函数
              * todo:增加缓动函数
              */
             self.render = function(callback) {
@@ -213,9 +213,24 @@ define(
             
             /**
              * 视图更新
-             * @param  {Function} callback  视图更新后回调函数
+             * @param {Function} callback  视图更新后回调函数
              */
             self.refresh = function(callback) {
+                painter.refresh(callback);
+                return self;
+            }
+            
+            /**
+             * 视图更新
+             * @param {Array} shapeList 需要更新的图形元素列表
+             * @param {Function} callback  视图更新后回调函数
+             */
+            self.update = function(shapeList, callback) {
+                var shape;
+                for (var i = 0, l = shapeList.length; i < l; i++) {
+                    shape = shapeList[i];
+                    storage.mod(shape.id, shape);
+                }
                 painter.refresh(callback);
                 return self;
             }
@@ -366,7 +381,7 @@ define(
                     'id': params.id || self.newShapeId(),   // 唯一标识
                     'zlevel': 0,                            // z轴位置
                     'draggable': false,                     // draggable可拖拽
-                    'clickable': false,                     // clickable可点击
+                    'clickable': false,                     // clickable可点击鼠标样式
                     'hoverable': true                       // hoverable可悬浮响应
                 };
                 util.merge(
@@ -628,9 +643,9 @@ define(
             _domRoot.onselectstart = function(){return false};
             
             //宽，缓存记录
-            var _width = _getWidth();  
+            var _width;  
             //高，缓存记录
-            var _height = _getHeight();
+            var _height;
             
             function _getWidth() {
                 var stl = root.currentStyle 
@@ -986,7 +1001,7 @@ define(
                 
                 width = _getWidth();
                 height = _getHeight();
-        
+                
                 _domRoot.style.display = '';
                 
                 //优化没有实际改变的resize
@@ -1076,6 +1091,7 @@ define(
             var _draggingTarget = null;         //当前被拖拽的图形元素
             var _isMouseDown = false;
             var _isDragging = false;
+            var _lastTouchMoment;
             
             var _lastX = 0;
             var _lastY = 0;
@@ -1094,6 +1110,11 @@ define(
                     root.addEventListener('mousemove', _mouseMoveHandler);
                     root.addEventListener('mousedown', _mouseDownHandler);
                     root.addEventListener('mouseup', _mouseUpHandler);
+                    
+                    // mobile支持
+                    root.addEventListener('touchstart', _touchStartHandler);
+                    root.addEventListener('touchmove', _touchMoveHandler);
+                    root.addEventListener('touchend', _touchEndHandler);
                 } 
                 else {
                     window.attachEvent('onresize', _resizeHandler);
@@ -1105,7 +1126,7 @@ define(
                     root.attachEvent('onmouseup', _mouseUpHandler);
                 }
             }
-            
+
             /**
              * 窗口大小改变响应函数
              * @param {event} event dom事件对象 
@@ -1123,7 +1144,7 @@ define(
              * @param {event} event dom事件对象 
              */
             function _clickHandler(event) {
-                _event = _zrenderEventFixed(event);;
+                _event = _zrenderEventFixed(event);
                 //分发config.EVENT.CLICK事件
                 _dispatchAgency(_lastHover, config.EVENT.CLICK);
             };
@@ -1144,7 +1165,7 @@ define(
             }
             
             /**
-             * 鼠标移动响应函数
+             * 鼠标（手指）移动响应函数
              * @param {event} event dom事件对象 
              */
             function _mouseMoveHandler(event) {
@@ -1156,7 +1177,7 @@ define(
                 _lastY = _mouseY;
                 _mouseX = getX(_event);
                 _mouseY = getY(_event);
-                
+                 
                 // 可能出现config.EVENT.DRAGSTART事件
                 // 避免手抖点击误认为拖拽
                 //if (_mouseX - _lastX > 1 || _mouseY - _lastY > 1) {
@@ -1164,7 +1185,7 @@ define(
                 //}
                 
                 _hasfound = false;
-                storage.iterShape(_findHover, { normal: 'down'})
+                storage.iterShape(_findHover, { normal: 'down'});
                 
                 //找到的在迭代函数里做了处理，没找到得在迭代完后处理
                 if (!_hasfound) {    
@@ -1183,7 +1204,6 @@ define(
                     storage.delHover();
                     painter.clearHover();
                 }
-                
                 //如果存在拖拽中元素，被拖拽的图形元素最后addHover
                 if (_draggingTarget) {
                     storage.drift(
@@ -1229,7 +1249,7 @@ define(
             }
             
             /**
-             * 鼠标按下响应函数
+             * 鼠标（手指）按下响应函数
              * @param {event} event dom事件对象 
              */
             function _mouseDownHandler(event) {
@@ -1240,7 +1260,7 @@ define(
             }
             
             /**
-             * 鼠标抬起响应函数
+             * 鼠标（手指）抬起响应函数
              * @param {event} event dom事件对象 
              */
             function _mouseUpHandler(event) {
@@ -1252,6 +1272,70 @@ define(
                 _dispatchAgency(_lastHover, config.EVENT.MOUSEUP);
                 _dropHandler();
                 _dragEndHandler();
+            }
+            
+            /**
+             * Touch开始响应函数
+             * @param {event} event dom事件对象 
+             */
+            function _touchStartHandler(event) {
+                eventTool.stop(event);// 阻止浏览器默认事件，重要
+                _event = _zrenderEventFixed(event, true);
+                _lastTouchMoment = new Date();
+                _mouseDownHandler(_event);    
+            }
+            
+            /**
+             * Touch移动响应函数
+             * @param {event} event dom事件对象 
+             */
+            function _touchMoveHandler(event) {
+                eventTool.stop(event);// 阻止浏览器默认事件，重要
+                _event = _zrenderEventFixed(event, true);
+                _mouseMoveHandler(_event);
+            }
+            
+            /**
+             * Touch结束响应函数
+             * @param {event} event dom事件对象 
+             */
+            function _touchEndHandler(event) {
+                eventTool.stop(event);// 阻止浏览器默认事件，重要
+                _event = _zrenderEventFixed(event, true); 
+                _mouseUpHandler(_event);
+                painter.clearHover();
+
+                if (new Date() - _lastTouchMoment 
+                    < config.EVENT.touchClickDelay
+                ) {
+                    _lastHover = null;
+                    _mouseX = _event.zrenderX;
+                    _mouseY = _event.zrenderY;
+                    // touch有指尖错觉，四向尝试，让touch上的点击更好触发事件
+                    storage.iterShape(_findHover, { normal: 'down'});
+                    if (!_lastHover) {
+                        _mouseX += 10;
+                        storage.iterShape(_findHover, { normal: 'down'});
+                    }
+                    if (!_lastHover) {
+                        _mouseX -= 20;
+                        storage.iterShape(_findHover, { normal: 'down'});
+                    }
+                    if (!_lastHover) {
+                        _mouseX += 10;
+                        _mouseY += 10;
+                        storage.iterShape(_findHover, { normal: 'down'});
+                    }
+                    if (!_lastHover) {
+                        _mouseY -= 20;
+                        storage.iterShape(_findHover, { normal: 'down'});
+                    }
+                    if (_lastHover) {
+                        _event.zrenderX = _mouseX;
+                        _event.zrenderY = _mouseY;
+                    }
+                    _clickHandler(_event);
+                }
             }
             
             /**
@@ -1442,14 +1526,30 @@ define(
             }
             
             // 如果存在第三方嵌入的一些dom触发的事件，需要转换一下事件坐标
-            function _zrenderEventFixed(event) {
-                _event = event || window.event;
-                // Todo： 这个硬编码找时间改
-                var target = _event.target || _event.toElement;
-                if (target && target.id != '_zrender_hover_') {
-                    _event.zrenderX = _event.x - root.offsetLeft;
-                    _event.zrenderY = _event.y - root.offsetTop;
+            function _zrenderEventFixed(event, isTouch) {
+                if (!isTouch) {
+                    _event = event || window.event;
+                    // Todo： 这个硬编码找时间改
+                    var target = _event.target || _event.toElement;
+                    if (target && target.id != '_zrender_hover_') {
+                        _event.zrenderX = _event.x - root.offsetLeft;
+                        _event.zrenderY = _event.y - root.offsetTop;
+                    }    
                 }
+                else {
+                    _event = event;
+                    var touch = _event.type != 'touchend'
+                                ? _event.targetTouches[0]
+                                : _event.changedTouches[0];
+                    if (touch) {
+                        // 会有bug
+                        _event.zrenderX = touch.clientX - root.offsetLeft 
+                                          + document.body.scrollLeft;
+                        _event.zrenderY = touch.clientY - root.offsetTop 
+                                          + document.body.scrollTop;
+                    }
+                }
+                
                 return _event
             }
             /**

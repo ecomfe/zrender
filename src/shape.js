@@ -6,9 +6,9 @@
  * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
  * 
  * shape级特性：
- * hoverable : 可悬浮响应，默认为true
- * clickable : 可点击响应，默认为false
- * draggable  : 可拖拽响应，默认为false
+ * hoverable : 可悬浮响应，默认为true，默认悬浮响应为高亮显示，可在onbrush中捕获改变
+ * clickable : 可点击鼠标样式，默认为false，仅影响鼠标hover时图标是否为可点击样式，不阻断点击行为，可在onclick中捕获改变
+ * draggable : 可拖拽响应，默认为false，默认拖拽响应改变图形位置，可在ondrift中捕获改变
  * 
  */
 define(
