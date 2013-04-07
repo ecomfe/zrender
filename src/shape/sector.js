@@ -154,11 +154,7 @@ define(
                     case "outside":
                     default:
                         // 文本与图形间空白间隙
-                        var dd = 10 + (style.lineWidth || 1) / 2;  
-                        if (isHighlight) {
-                            // 高亮文字不跳动，清除高亮放大效果对位置的影响
-                            dd -= this.getHighlightZoom();
-                        }
+                        var dd = 15;  
                         r = style.r + dd;
                         tx = style.x + math.cos(mAngelRadian) * r;
                         ty = style.y - math.sin(mAngelRadian) * r;
@@ -192,16 +188,6 @@ define(
                 ctx.textBaseline = style.textBaseLine || bl;
                 
                 ctx.fillText(style.text, tx, ty);
-            },
-            
-            /**
-             * 根据默认样式扩展高亮样式，重载基类方法
-             * @param {Object} style 样式
-             * @param {Object} highlightStyle 高亮样式
-             */
-            getHighlightStyle : function(style, highlightStyle) {
-                var shape = require('../shape');
-                return shape.get('circle').getHighlightStyle(style, highlightStyle);
             }
         }
         
