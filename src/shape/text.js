@@ -88,7 +88,9 @@ define(
                 }
                 if (isHighlight) {
                     // 根据style扩展默认高亮样式
-                    style = this.getHighlightStyle(style, e.highlightStyle || {});           
+                    style = this.getHighlightStyle(
+                        style, e.highlightStyle || {}
+                    );           
                 }
                 
                 ctx.save();
@@ -103,15 +105,27 @@ define(
                 if (style.maxWidth) {
                     switch (style.brushType) {
                         case 'fill':
-                            ctx.fillText(style.text, style.x, style.y, style.maxWidth);
+                            ctx.fillText(
+                                style.text, 
+                                style.x, style.y, style.maxWidth
+                            );
                             break;
                         case 'stroke':
-                            ctx.strokeText(style.text, style.x, style.y, style.maxWidth);
+                            ctx.strokeText(
+                                style.text, 
+                                style.x, style.y, style.maxWidth
+                            );
                             break;
                         case 'both':
-                            ctx.strokeText(style.text, style.x, style.y, style.maxWidth);
+                            ctx.strokeText(
+                                style.text, 
+                                style.x, style.y, style.maxWidth
+                            );
                         default:
-                            ctx.fillText(style.text, style.x, style.y, style.maxWidth);
+                            ctx.fillText(
+                                style.text, 
+                                style.x, style.y, style.maxWidth
+                            );
                     }
                 }
                 else{
