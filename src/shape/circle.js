@@ -103,11 +103,7 @@ define(
                 var ty;         // 文本纵坐标
                 
                 // 文本与图形间空白间隙
-                var dd = 10 + (style.lineWidth || 1) / 2 + (style.r - 0);  
-                if (isHighlight) {
-                    // 高亮文字不跳动，清除高亮放大效果对位置的影响
-                    dd -= this.getHighlightZoom();
-                }  
+                var dd = 10 + (style.r - 0);  
                 
                 switch (style.textPosition) {
                     case "inside":
@@ -153,44 +149,6 @@ define(
                 ctx.textBaseline = style.textBaseLine || bl;
                 
                 ctx.fillText(style.text, tx, ty);
-            },
-            
-            /**
-             * 根据默认样式扩展高亮样式，重载基类方法
-             * @param {Object} style 样式
-             * @param {Object} highlightStyle 高亮样式
-             */
-            getHighlightStyle : function(style, highlightStyle) {
-                var color = require('../tool/color');
-                
-                if (style.brushType != 'stroke') {
-                    // 带填充则放大效果，并且用高亮渐变色加粗边线
-                    // 高亮放大效果值
-                    var highlightZoom = this.getHighlightZoom();
-                    // 放大效果
-                    style.r += highlightZoom / 2;
-                    style.lineWidth = (style.lineWidth || 1) + highlightZoom;
-                    style.strokeColor = color.getRadialGradient(
-                        style.x, style.y, style.r,
-                        style.x, style.y, style.r + style.lineWidth,
-                        [
-                            [0, (style.strokeColor || color.getHighlightColor())], 
-                            [1, color.getHighlightColor()]
-                        ]
-                    );
-                    style.brushType = 'both';
-                }
-                else {
-                    // 描边型的则用原色加工高亮
-                    style.strokeColor = color.mix(style.strokeColor, '#000');
-                }
-                
-                // 可自定义覆盖默认值
-                for (var k in highlightStyle) {
-                    style[k] = highlightStyle[k];
-                } 
-                
-                return style
             }
         }
         

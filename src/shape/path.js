@@ -386,27 +386,15 @@ define(
                 ctx.fillText(style.text, tx, ty);
             },
             
-       
-            
-            /**
-             * 偏移，重载基类方法
-             * @param e 实体
-             * @param dx 横坐标变化
-             * @param dy 纵坐标变化
-             */
-            drift : function(e, dx, dy){
-                 e.style.x += dx;
-                 e.style.y += dy;
-            },
-
             /**
              * 获得路径的矩形区域
              * @param {Object} style 样式
              */
             getRect : function(style){
-               var rect = new Object();
-               rect.x = style.x;
-               rect.y = style.y;
+               var rect = {
+                   x : style.x,
+                   y : style.y
+               };
 
                var minX =  Number.MAX_VALUE;
                var maxX =  Number.MIN_VALUE;

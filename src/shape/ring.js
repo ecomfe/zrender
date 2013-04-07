@@ -110,7 +110,9 @@ define(
                 }
                 if (isHighlight) {
                     // 根据style扩展默认高亮样式
-                    style = this.getHighlightStyle(style, e.highlightStyle || {});
+                    style = this.getHighlightStyle(
+                        style, e.highlightStyle || {}
+                    );
                 }
                 ctx.save();
                 this.setContext(ctx, style);
@@ -155,17 +157,6 @@ define(
                 style.brushType = 'stroke';
                 var shape = require('../shape');
                 shape.get('circle').drawText(ctx, style, isHighlight);
-            },
-            
-            
-            /**
-             * 根据默认样式扩展高亮样式，重载基类方法
-             * @param {Object} style 样式
-             * @param {Object} highlightStyle 高亮样式
-             */
-            getHighlightStyle : function(style, highlightStyle) {
-                var shape = require('../shape');
-                return shape.get('circle').getHighlightStyle(style, highlightStyle);
             }
         }
         
