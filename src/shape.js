@@ -36,9 +36,11 @@ define(
         }    
         
         // 内置图形实例化后注册
-        
         var Circle = require('./shape/circle');
         self.define('circle', new Circle());
+        
+        var Ellipse = require('./shape/ellipse');
+        self.define('ellipse', new Ellipse());
         
         var Line = require('./shape/line');
         self.define('line', new Line());

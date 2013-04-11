@@ -8,7 +8,7 @@
  * desc:    zrender是一个Canvas绘图类库，mvc封装实现数据驱动绘图，图形事件封装
  * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
  * 
- * shape类：多边形
+ * shape类：矩形
  * 可配图形属性：
    {   
        // 基础属性
@@ -29,10 +29,11 @@
            strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
            lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
            
+           alpha         : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
            shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
            shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
            shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
-           shadowOffsetY : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
+           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
            
            text          : {string},  // 默认为null，附加文本
            textFont      : {string},  // 默认为null，附加文本文字样式，eg:'bold 18px verdana'
@@ -113,7 +114,9 @@ define(
                         ty = style.y + style.height / 2;
                         al = 'center';
                         bl = 'middle';
-                        if (style.brushType != 'stroke') {
+                        if (style.brushType != 'stroke'
+                            && style.textColor == style.color
+                        ) {
                             ctx.fillStyle = '#fff';
                         }
                         break;

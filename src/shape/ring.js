@@ -22,10 +22,11 @@
            strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
            lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
            
+           alpha         : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
            shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
            shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
            shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
-           shadowOffsetY : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
+           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
            
            text          : {string},  // 默认为null，附加文本
            textFont      : {string},  // 默认为null，附加文本文字样式，eg:'bold 18px verdana'
@@ -108,18 +109,26 @@ define(
                 for (var k in e.style) {
                     style[k] = e.style[k];
                 }
+                
                 if (isHighlight) {
                     // 根据style扩展默认高亮样式
                     style = this.getHighlightStyle(
                         style, e.highlightStyle || {}
                     );
                 }
+                
                 ctx.save();
                 this.setContext(ctx, style);
                 
+                //设置transform
+                var m = this.updateTransform( e );
+                ctx.transform( m[0], m[1], m[2], m[3], m[4], m[5] );
+            
                 ctx.beginPath();
                 this.buildPath(ctx, style);
                 ctx.closePath();
+                
+                style.brushType = style.brushType || 'fill';    // default
                 
                 if (style.brushType == 'fill' || style.brushType == 'both') {
                     ctx.fill();
@@ -154,7 +163,7 @@ define(
              * @param {Object} style 样式
              */
             drawText : function(ctx, style, isHighlight) {
-                style.brushType = 'stroke';
+                style.brushType = 'stroke'; // 让圆不把字体颜色改为'#fff'
                 var shape = require('../shape');
                 shape.get('circle').drawText(ctx, style, isHighlight);
             }
