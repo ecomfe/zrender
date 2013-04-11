@@ -1747,7 +1747,7 @@ zr.render();
                 des : '图形空间辅助类，位于tool/area',
                 value : [
                     ['isInside', '{Function}','包含判断'],
-                    ['isOutside', '{Function}','!isInside'],
+                    ['isOutside', '{Function}','!isInside']
                 ],
                 content : [
                     {
@@ -1818,7 +1818,7 @@ zr.render();
                             ['one', '{Function}','单次触发绑定，dispatch后销毁'],
                             ['bind', '{Function}','事件绑定'],
                             ['unbind', '{Function}','事件解绑定'],
-                            ['dispatch', '{Function}','事件分发'],
+                            ['dispatch', '{Function}','事件分发']
                         ],
                         pre : (function(){
 var myMessageCenter = {};   // 添加消息中心的事件分发器特性
