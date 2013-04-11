@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -9,38 +9,7 @@
     
     <link href="asset/css/bootstrap.css" rel="stylesheet">
     <link href="asset/css/bootstrap-responsive.css" rel="stylesheet">
-    <link href="asset/css/codemirror.css" rel="stylesheet">
-    <link href="asset/css/monokai.css" rel="stylesheet">
-    <style type="text/css">
-        body {
-            padding-top: 60px;
-            padding-bottom: 40px;
-			color: #5a5a5a;
-      		font-family: "微软雅黑";
-        }
-        #forkme_banner {
-            display: block;
-            position: absolute;
-            top: 0;
-            right: 10px;
-            z-index: 10;
-            padding: 10px 50px 10px 10px;
-            color: #fff;
-            background: url('asset/img/blacktocat.png') #0090ff no-repeat 95% 50%;
-            font-weight: 700;
-            box-shadow: 0 0 10px rgba(0,0,0,.5);
-            border-bottom-left-radius: 2px;
-            border-bottom-right-radius: 2px;
-        }
-		.brand img {
-	        vertical-align: top;
-        }
-        .sidebar-nav {
-            padding: 9px 0;
-            margin-bottom: 0;
-        }
-        
-    </style>
+    <link href="asset/css/zrenderHome.css" rel="stylesheet">
     <link rel="shortcut icon" href="asset/ico/favicon.png">
 </head>
 
@@ -55,12 +24,12 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="brand" href="../index.html"><img src="asset/ico/favicon.png" /> ZRender</a>
+          <a class="brand" href="../index.html">ZRender</a>
           <div class="nav-collapse collapse">
               <a id="forkme_banner" href="https://github.com/ecomfe/zrender">View on GitHub</a>
               <ul class="nav">
                 <li><a href="../index.html"><i class="icon-home icon-white"></i> Home</a></li>
-                <li class="active dropdown">
+                <li class="dropdown">
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown">Example <b class="caret"></b></a>
                   <ul class="dropdown-menu">
                     <li class="active"><a href="example/demo.html">Demo</a></li>
@@ -70,7 +39,7 @@
                     <li><a href="example/artist.html">Artist</a></li>
                   </ul>
                 </li>
-                <li><a href="doc.html">API &amp; Doc</a></li>
+                <li class="active"><a href="doc.html">API &amp; Doc</a></li>
                 <li class="dropdown">
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="icon-download-alt icon-white"></i>Download <b class="caret"></b></a>
                   <ul class="dropdown-menu">
@@ -96,46 +65,62 @@
     
     <div class="container">
         <div class="row">
-            <div class="span3 bs-docs-sidebar">
-                <div class="nav nav-list bs-docs-sidenav affix">
-                    <div class="accordion" id="accordion2">
-                      <div class="accordion-group">
-                        <div class="accordion-heading">
-                          <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion2" href="#collapseOne">
-                            zrender
-                          </a>
-                        </div>
-                        <div id="collapseOne" class="accordion-body collapse in">
-                          <div class="accordion-inner">
-                            <ul>
-                                <li>under going...</li>
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="accordion-group">
-                        <div class="accordion-heading">
-                          <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion2" href="#collapseTwo">
-                            shape
-                          </a>
-                        </div>
-                        <div id="collapseTwo" class="accordion-body collapse">
-                          <div class="accordion-inner">
-                            Anim pariatur cliche...
-                          </div>
-                        </div>
+            <div class="span3">
+              <div class="affix accordion" id="accordion">
+                  <div class="accordion-group">
+                    <div class="accordion-heading">
+                      <div class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapse-zrender">
+                        <a id="nav-head-zrender" href="#zrender">zrender</a>
                       </div>
                     </div>
+                    <div id="collapse-zrender" class="accordion-body collapse in">
+                      <div class="accordion-inner">
+                        <ul class="nav nav-list" id="nav-zrender"></ul>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="accordion-group">
+                    <div class="accordion-heading">
+                      <div class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapse-zrender-instance">
+                        <a id="nav-head-zrender-instance" href="#zrender-instance">ZRender</a>
+                      </div>
+                    </div>
+                    <div id="collapse-zrender-instance" class="accordion-body collapse">
+                      <div class="accordion-inner">
+                        <ul class="nav nav-list" id="nav-zrender-instance"></ul>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="accordion-group">
+                    <div class="accordion-heading">
+                      <div class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapse-shape">
+                        
+                        <a id="nav-head-shape" href="#shape">shape</a>
+                      </div>
+                    </div>
+                    <div id="collapse-shape" class="accordion-body collapse">
+                      <div class="accordion-inner">
+                        <ul class="nav nav-list" id="nav-shape"></ul>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="accordion-group">
+                    <div class="accordion-heading">
+                      <div class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapse-tool">
+                        
+                        <a id="nav-head-tool" href="#tool">tool</a>
+                      </div>
+                    </div>
+                    <div id="collapse-tool" class="accordion-body collapse">
+                      <div class="accordion-inner">
+                        <ul class="nav nav-list" id="nav-tool"></ul>
+                      </div>
+                    </div>
+                  </div>
               </div><!--/.well -->
             </div><!--/span-->
-            <div id="graphic" class="span9">
-                <div id="main" class="main">
-                    <p>under going...</p><p>under going...</p><p>under going...</p><p>under going...</p><p>under going...</p><p>under going...</p>
-                    <p>under going...</p><p>under going...</p><p>under going...</p><p>under going...</p><p>under going...</p><p>under going...</p>
-                    <p>under going...</p><p>under going...</p><p>under going...</p><p>under going...</p><p>under going...</p><p>under going...</p>
-                    <p>under going...</p><p>under going...</p><p>under going...</p><p>under going...</p><p>under going...</p><p>under going...</p>
-                    <p>under going...</p><p>under going...</p><p>under going...</p><p>under going...</p><p>under going...</p><p>under going...</p>
-                </div>
+            <div class="span9">
+                <div id="main"></div>
             </div><!--/span-->
         </div><!--/row-->
         <hr>
@@ -159,5 +144,78 @@
     <script src="asset/js/bootstrap-collapse.js"></script>
     <script src="asset/js/bootstrap-carousel.js"></script>
     <script src="asset/js/bootstrap-typeahead.js"></script>
+    <script src="asset/js/zrenderDoc.js"></script>
+    <script type="text/javascript">
+        var conZrIns = document.getElementById('nav-zrender-instance');
+        var conShape = document.getElementById('nav-shape');
+        function _resize() {
+            var viewHeight = document.documentElement.clientHeight;
+            var scrollHeight = document.documentElement.scrollTop || document.body.scrollTop;
+            var offsetHeight = document.body.offsetHeight;
+            var maxHeight;
+            var footHole = offsetHeight - scrollHeight - viewHeight;
+            if (footHole > 60) {
+                // 未见footer，60 top、bottom， 40 per one
+                maxHeight = viewHeight - 60 - 40 * 4 - 40;
+            }
+            else {
+                // 见footer
+                maxHeight = viewHeight - 60 - 40 * 4 - (80 - footHole) - 60;
+            }
+            if (conZrIns.scrollHeight > maxHeight) {
+                conZrIns.style.height = maxHeight + 'px';
+            } else {
+                conZrIns.style.height = 'auto';
+            }
+            if (conShape.scrollHeight > maxHeight) {
+                conShape.style.height = maxHeight + 'px';
+            } else {
+                conShape.style.height = 'auto';
+            }
+        }
+        $('#accordion').on('shown', _resize);
+        $(window).on('scroll', _resize);
+        $(window).on('resize', _resize);
+        var shapeList = $('#nav-shape').children('li');
+        for (var i = 0 , l = shapeList.length; i < l; i++) {
+            $(shapeList[i]).on('click', _toggle);
+        }
+        var toolList = $('#nav-tool').children('li');
+        for (var i = 0 , l = shapeList.length; i < l; i++) {
+            $(toolList[i]).on('click', _toggle);
+        }
+        function _toggle(event){
+            if (event.target.className == 'icon-plus') {
+                event.target.className = 'icon-minus';
+                this.nextSibling.style.height = 'auto';
+            } else if (event.target.className == 'icon-minus') {
+                event.target.className = 'icon-plus';
+                this.nextSibling.style.height = '0px';                    
+            }
+        }
+        
+        var navZr = document.getElementById('nav-head-zrender');
+        var navZrIns = document.getElementById('nav-head-zrender-instance');
+        var navShape = document.getElementById('nav-head-shape');
+        var navTool = document.getElementById('nav-head-tool');
+        
+        navZr.onclick = 
+        navZrIns.onclick = 
+        navShape.onclick = 
+        navTool.onclick = function(e){
+            window.location= this.href;
+            e = e || window.event;
+            if (e.preventDefault) {
+                e.preventDefault();
+                e.stopPropagation();
+            } 
+            else {
+                e.returnValue = false;
+            }
+        }
+        _resize();
+        
+    </script>
+    
 </body>
 </html>

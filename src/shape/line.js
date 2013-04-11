@@ -24,13 +24,12 @@
            lineType      : {string},  // 默认为solid，线条类型，solid | dashed | dotted
            lineWidth     : {number},  // 默认为1，线条宽度
            lineCap       : {string},  // 默认为butt，线帽样式。butt | round | square
-           lineJoin      : {string},  // 默认为miter，线段连接样式。miter | round | bevel
-           miterLimit    : {number},  // 默认为10，最大斜接长度，仅当lineJoin为miter时生效
            
+           alpha         : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
            shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
            shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
            shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
-           shadowOffsetY : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
+           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
            
            text          : {string},  // 默认为null，附加文本
            textFont      : {string},  // 默认为null，附加文本文字样式，eg:'bold 18px verdana'
@@ -131,11 +130,6 @@ define(
                         }
                         draw = !draw;
                     }
-                }
-                else {
-                    //配置写错了，或暂不支持的类型，擦屁股的
-                    ctx.moveTo(style.xStart,style.yStart);
-                    ctx.lineTo(style.xEnd,style.yEnd);
                 }
             },
             

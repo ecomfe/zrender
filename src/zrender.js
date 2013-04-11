@@ -37,7 +37,6 @@ define(
         /**
          * zrender初始化
          * 不让外部直接new ZRender实例，为啥？不为啥，提供全局可控同时减少全局污染和降低命名冲突的风险！
-         * 你想打开？看GOTO-1&GOTO-2
          * 
          * @param {HTMLElement} dom dom对象，偶懒，不帮你做document.getElementById了
          * @param {Object=} params 个性化参数，如自定义shape集合，带进来就好
@@ -99,7 +98,7 @@ define(
         /**
          * debug日志选项：catchBrushException为true下有效
          * 0 : 不生成debug数据，发布用
-         * 1 : 异常抛出，发布用
+         * 1 : 异常抛出，调试用
          * 2 : 控制台输出，调试用
          */
         self.debugMode = 1;
@@ -165,7 +164,7 @@ define(
             }
             
             /**
-             * 添加形状 
+             * 添加图形形状 
              * @param {Object} shape 形状对象，可用属性全集，包含id用于索引，更新，删除等，详见各shape
              */
             self.addShape = function(shape) {
@@ -174,7 +173,7 @@ define(
             }
             
             /**
-             * 删除形状
+             * 删除图形形状
              * @param {string} shapeId 形状对象唯一标识
              */
             self.delShape = function(shapeId) {
@@ -183,7 +182,7 @@ define(
             }
             
             /**
-             * 修改形状 
+             * 修改图形形状 
              * @param {string} shapeId 形状对象唯一标识
              * @param {Object} shape 形状对象
              */
@@ -193,7 +192,7 @@ define(
             }
             
             /**
-             * 添加额外高亮层显示数据，不稳定层数据，仅对外提供添加方法，无清空修改方法 
+             * 添加额外高亮层显示图形，仅提供添加方法，每次刷新后高亮层图形均被清空 
              * @param {Object} shape 形状对象
              */
             self.addHoverShape = function(shape) {
@@ -203,7 +202,7 @@ define(
             
                 
             /**
-             * 渲染，构建各层Canvas
+             * 渲染
              * @param {Function} callback  渲染结束后回调函数
              * todo:增加缓动函数
              */
@@ -237,21 +236,20 @@ define(
             }
             
             /**
-             * 默认loading显示
+             * loading显示
              * @param  {Object} loadingOption 参数
              * {
-             *      text:'',                                        //loading话术
-             *      //水平安放位置，默认为 'center'，可指定x坐标
-             *      x:'center' || 'left' || 'right' || {number},   
-             *      //垂直安放位置，默认为'top'，可指定y坐标 
-             *      y:'top' || 'bottom' || {number},       
-             *          
-             *      textStyle:{
-             *          fontFamily:'Arial' || {font family},        //文本字体
-             *          fontSize:10 || {number},                    //大小
-             *          //颜色，默认为'#789'(待定)
-             *          color:'#789' || {color}                     
-             *      }
+             *     effect,
+             *     text:'',                                        //loading话术
+             *     // 水平安放位置，默认为 'center'，可指定x坐标
+             *     x:'center' || 'left' || 'right' || {number},   
+             *     // 垂直安放位置，默认为'top'，可指定y坐标 
+             *     y:'top' || 'bottom' || {number},       
+             *         
+             *     textStyle:{
+             *         textFont: 'normal 20px Arial' || {textFont},        //文本字体
+             *         color: {color}                     
+             *     }
              * }
              */
             self.showLoading = function(loadingOption) {
@@ -268,7 +266,7 @@ define(
             }
             
             /**
-             * 获取形状唯一ID
+             * 生成形状唯一ID
              * @param {string} [idPrefix] id前缀
              * @return {string} 不重复ID
              */
@@ -292,7 +290,7 @@ define(
             
             /**
              * 事件绑定
-             * @param {string} event 事件名称
+             * @param {string} eventName 事件名称
              * @param {Function} eventHandler 响应函数
              */
             self.on = function(eventName, eventHandler) {
@@ -310,7 +308,7 @@ define(
                 return self;
             }
             /**
-             * 清除当前ZR实例下所有类图的数据和显示绑定，clear后MVC还在，ZR可用 
+             * 清除当前ZRender下所有类图的数据和显示，clear后MVC和已绑定事件均还存在在，ZRender可用 
              */
             self.clear = function() {
                 storage.del();
@@ -319,7 +317,7 @@ define(
             }
             
             /**
-             * 释放当前ZR实例和实例下所有类图的数据、显示和事件绑定，dispose后ZR不可用
+             * 释放当前ZR实例（删除包括dom，数据、显示和事件绑定），dispose后ZR不可用
              */
             self.dispose = function() {
                 self.clear();
@@ -1141,13 +1139,18 @@ define(
             };
             
             /**
-             * 点击数据
+             * 点击事件
              * @param {event} event dom事件对象 
              */
             function _clickHandler(event) {
                 _event = _zrenderEventFixed(event);
                 //分发config.EVENT.CLICK事件
-                _dispatchAgency(_lastHover, config.EVENT.CLICK);
+                if (!_lastHover) {
+                    _dispatchAgency(_lastHover, config.EVENT.CLICK);
+                }
+                else if (_lastHover && _lastHover.clickable) {
+                    _dispatchAgency(_lastHover, config.EVENT.CLICK);
+                }
             };
             
             /**
