@@ -12,62 +12,7 @@
     <!-- Le styles -->
     <link href="doc/asset/css/bootstrap.css" rel="stylesheet">
     <link href="doc/asset/css/bootstrap-responsive.css" rel="stylesheet">
-    <style>
-    /* GLOBAL STYLES
-    -------------------------------------------------- */
-    /* Padding below the footer and lighter body text */
-    body {
-      padding-bottom: 40px;
-      color: #5a5a5a;
-      font-family: "微软雅黑";
-    }
-    .brand img {
-        vertical-align: top;
-    }
-    .face {
-        height: 300px;
-        background-color:#181818;
-        margin-bottom: 30px;
-    }
-    #forkme_banner {
-        display: block;
-        position: absolute;
-        top: 0;
-        right: 10px;
-        z-index: 10;
-        padding: 10px 50px 10px 10px;
-        color: #fff;
-        background: url('doc/asset/img/blacktocat.png') #0090ff no-repeat 95% 50%;
-        font-weight: 700;
-        box-shadow: 0 0 10px rgba(0,0,0,.5);
-        border-bottom-left-radius: 2px;
-        border-bottom-right-radius: 2px;
-    }
-    /* Featurettes
-    ------------------------- */
-    .featurette-divider {
-      margin: 30px 0; /* Space out the Bootstrap <hr> more */
-    }
-    .featurette {
-      overflow: hidden; /* Vertically center images part 2: clear their floats. */
-    }
-
-    /* Give some space on the sides of the floated elements so text doesn't run right into it. */
-    .featurette .pull-left {
-      margin:10px 40px 0 0;
-    }
-    .featurette .pull-right {
-      margin:10px 0 0 40px;
-    }
-
-    /* Thin out the marketing headings */
-    .featurette-heading {
-      font-size: 50px;
-      font-weight: 300;
-      line-height: 1;
-    }
-
-    </style>
+    <link href="doc/asset/css/zrenderHome.css" rel="stylesheet">
 
     <!-- Fav and touch icons -->
     <link rel="shortcut icon" href="doc/asset/ico/favicon.png">
@@ -85,7 +30,7 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="brand" href="index.html"><img src="doc/asset/ico/favicon.png" /> ZRender</a>
+          <a class="brand" href="index.html">ZRender</a>
           <div class="nav-collapse collapse">
               <a id="forkme_banner" href="https://github.com/ecomfe/zrender">View on GitHub</a>
               <ul class="nav">
@@ -100,7 +45,7 @@
                     <li><a href="doc/example/artist.html">Artist</a></li>
                   </ul>
                 </li>
-                <li><a href="#">API &amp; Doc</a></li>
+                <li><a href="doc/doc.html">API &amp; Doc</a></li>
                 <li class="dropdown">
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="icon-download-alt icon-white"></i>Download <b class="caret"></b></a>
                   <ul class="dropdown-menu">
@@ -408,7 +353,7 @@ zr.addShape({                               // and use it!
                         textAlign : 'center'
                     },
                     onclick : function(){
-                        window.location = './example/demo.html';
+                        window.location = 'doc/example/demo.html';
                     }
                 }); 
                 

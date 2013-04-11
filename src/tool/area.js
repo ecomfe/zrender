@@ -22,10 +22,8 @@ define(
          * 包含判断
          * @param {string} zoneType : 图形类别
          * @param {Object} area ： 目标区域
-         * @param {number} x ： 逆变换后的横坐标
-         * @param {number} y ： 逆变换后的纵坐标
-         * @param {number} origX : 原始横坐标
-         * @prarm {number} origY : 原始纵坐标
+         * @param {number} x ： 横坐标
+         * @param {number} y ： 纵坐标
          */
         function isInside(zoneType, area, x, y) {
             var shape = require('../shape');
