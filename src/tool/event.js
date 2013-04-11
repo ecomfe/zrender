@@ -9,9 +9,9 @@
 define(
     function(require) {
         /**
-        * 提取鼠标x坐标
-        * @param  {event} e 鼠标事件.
-        * @return {number} 鼠标x坐标.
+        * 提取鼠标（手指）x坐标
+        * @param  {event} e 事件.
+        * @return {number} 鼠标（手指）x坐标.
         */
         function getX(e) {
             return e.zrenderX != undefined && e.zrenderX
@@ -22,8 +22,8 @@ define(
     
         /**
         * 提取鼠标y坐标
-        * @param  {event} e 鼠标事件.
-        * @return {number} 鼠标y坐标.
+        * @param  {event} e 事件.
+        * @return {number} 鼠标（手指）y坐标.
         */
         function getY(e) {
             return e.zrenderY != undefined && e.zrenderY
@@ -34,7 +34,7 @@ define(
     
         /**
         * 提取鼠标滚轮变化
-        * @param  {event} e 鼠标事件.
+        * @param  {event} e 事件.
         * @return {number} 滚轮变化，正值说明滚轮是向上滚动，如果是负值说明滚轮是向下滚动
         */
         function getDelta(e) {
@@ -43,7 +43,7 @@ define(
         };
         
         /**
-         * 停止传播 
+         * 停止冒泡和阻止默认行为 
          * @param {Object} e : event对象
          */
         function stop(e) {
@@ -64,7 +64,7 @@ define(
             var _h = {};
             
             /**
-             * 单次触发，dispatch后销毁 
+             * 单次触发绑定，dispatch后销毁 
              * @param {string} event 事件字符串
              * @param {function} handler 响应函数
              */

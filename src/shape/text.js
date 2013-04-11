@@ -25,10 +25,11 @@
            strokeColor   : {color},   // 默认为'#000'，线条颜色（轮廓），支持rgba
            lineWidth     : {number},  // 默认为1，线条宽度
            
+           alpha         : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
            shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
            shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
            shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
-           shadowOffsetY : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
+           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
            
            text          : {string},  // 必须，文本内容
            textFont      : {string},  // 默认为null，文本文字样式，eg:'bold 18px verdana'
@@ -96,6 +97,10 @@ define(
                 ctx.save();
                 this.setContext(ctx, style);
                 
+                //设置transform
+                var m = this.updateTransform( e );
+                ctx.transform( m[0], m[1], m[2], m[3], m[4], m[5] );
+            
                 if (style.textFont) {
                     ctx.font = style.textFont;
                 }

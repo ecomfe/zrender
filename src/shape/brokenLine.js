@@ -24,10 +24,11 @@
            lineJoin      : {string},  // 默认为miter，线段连接样式。miter | round | bevel
            miterLimit    : {number},  // 默认为10，最大斜接长度，仅当lineJoin为miter时生效
            
+           alpha         : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
            shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
            shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
            shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
-           shadowOffsetY : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
+           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
            
            text          : {string},  // 默认为null，附加文本
            textFont      : {string},  // 默认为null，附加文本文字样式，eg:'bold 18px verdana'
@@ -57,10 +58,7 @@
        id     : '123456',
        zlevel : 1,
        style  : {
-           xStart : 100,
-           yStart : 100,
-           xEnd : 200,
-           yEnd : 200,
+           pointList : [[10, 10], [300, 20], [298, 400], [50, 450]],
            strokeColor : '#eee',
            lineWidth : 20,
            text : 'Baidu'
@@ -87,21 +85,56 @@ define(
              * @param {Object} style 样式
              */
             buildPath : function(ctx, style) {
-                var util = require('../tool/util');
-                var shape = require('../shape');
-                var lineInstance = shape.get('line');
                 var pointList = style.pointList;
                 if (pointList.length < 2) {
                     // 少于2个点就不画了~
                     return;
                 }
-                var lineStyle = util.clone(style);
-                for (var i = 0, l = pointList.length - 1; i < l; i++) {
-                    lineStyle.xStart = pointList[i][0];
-                    lineStyle.yStart = pointList[i][1];
-                    lineStyle.xEnd = pointList[i + 1][0];
-                    lineStyle.yEnd = pointList[i + 1][1];
-                    lineInstance.buildPath(ctx, lineStyle);
+                if (!style.lineType || style.lineType == 'solid') {
+                    //默认为实线
+                    ctx.moveTo(pointList[0][0],pointList[0][1]);
+                    for (var i = 1, l = pointList.length; i < l; i++) {
+                        ctx.lineTo(pointList[i][0],pointList[i][1]);
+                    }
+                }
+                else if (style.lineType == 'dashed' || style.lineType == 'dotted') {
+                    //画虚线的方法  by loutongbing@baidu.com
+                    var dashPattern = [
+                        style.lineWidth * (style.lineType == 'dashed' ? 6 : 1), 
+                        style.lineWidth * 4
+                    ];
+                    ctx.moveTo(pointList[0][0],pointList[0][1]);
+                    for (var i = 1, l = pointList.length; i < l; i++) {
+                        var fromX = pointList[i - 1][0];
+                        var toX = pointList[i][0];
+                        var fromY = pointList[i - 1][1];
+                        var toY = pointList[i][1];
+                        var dx = toX - fromX;
+                        var dy = toY - fromY;
+                        var angle = Math.atan2(dy, dx);
+                        var x = fromX;
+                        var y = fromY;
+                        var idx = 0;
+                        var draw = true;
+                        var dashLength;
+                        var nx;
+                        var ny;
+                        
+                        while (!((dx < 0 ? x <= toX : x >= toX) && (dy < 0 ? y <= toY : y >= toY))) {
+                            dashLength = dashPattern[idx++ % dashPattern.length];
+                            nx = x + (Math.cos(angle) * dashLength);
+                            x = dx < 0 ? Math.max(toX, nx) : Math.min(toX, nx);
+                            ny = y + (Math.sin(angle) * dashLength);
+                            y = dy < 0 ? Math.max(toY, ny) : Math.min(toY, ny);
+                            if (draw) {
+                                ctx.lineTo(x, y);
+                            }
+                            else {
+                                ctx.moveTo(x, y);
+                            }
+                            draw = !draw;
+                        }
+                    }
                 }
                 
                 return;

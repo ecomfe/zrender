@@ -16,20 +16,20 @@
        
        // 变换
        translate : {array},  // 默认为[0, 0], shape的坐标
-       rotate : {array},  // 默认为0，shape绕自身旋转的角度，不被position 影响
-       scale : {array},     // 默认为[1, 1], shape纵横缩放比例，不被position影响
+       rotate : {number},  // 默认为0，shape绕自身旋转的角度，不被translate 影响
+       scale : {array},     // 默认为[1, 1], shape纵横缩放比例，不被translate影响
        
-       // 样式属性，详见各shape，默认状态样式样式属性
+       // 样式属性，详见各shape，默认状态样式属性
        style  : {Object},
        
        // 样式属性，详见各shape，高亮样式属性，当不存在highlightStyle时使用默认样式扩展显示
        highlightStyle : {Object},
        
        // 交互属性，zrender支持，非图形类实现
-       hoverable : {boolean},   // 默认为true，hoverable，鼠标悬浮响应
-       clickable : {boolean},   // 默认为false，clickable，可点击
-       draggable : {boolean},   // 默认为false，draggable，可拖拽
-       
+       hoverable : {boolean},   // 默认为true，可悬浮响应，默认悬浮响应为高亮显示，可在onbrush中捕获并阻塞高亮绘画
+       clickable : {boolean},   // 默认为false，可点击响应，可在onclick中捕获并阻塞全局click响应
+       draggable : {boolean},   // 默认为false，可拖拽响应，默认拖拽响应改变图形位置，可在ondrift中捕获并阻塞默认拖拽行为
+
        // 事件属性
        onbrush : {Function}, // 默认为null，当前图形被刷画时回调，可用于实现自定义绘画
                  // 回传参数为：
@@ -37,7 +37,7 @@
                  // @param {Object} shape 当前shape
                  // @param {boolean} isHighlight 是否高亮
                  // @return {boolean} 回调返回true则不执行默认绘画 
-       ondrift : {Function}, // 默认为null，当前图形被拖拽改变位置时，可用于限制拖拽范围
+       ondrift : {Function}, // 默认为null，当前图形被拖拽改变位置时回调，可用于限制拖拽范围
                  // 回传参数为：
                  // @param {Object} shape 当前shape
                  // @param {number} dx x方向变化
@@ -49,27 +49,27 @@
                  // @param {Object} eventPacket.target 当前图形shape对象      
                  // @return {boolean} 回调返回true则阻止抛出全局事件
                                
-       onmousewheel : {Function}, // 默认为null，当前图形上鼠标滚轮响应，回传参数格式同onclick，其中：
+       onmousewheel : {Function}, // 默认为null，当前图形上鼠标滚轮触发，回传参数格式同onclick，其中：
                       // 事件类型为confit.EVENT.MOUSEWHEEL
                       // @return {boolean} 回调返回true则阻止抛出全局事件
        
-       onmousemove : {Function}, // 默认为null，当前图上形鼠标移动响应，回传参数格式同onclick，其中：
+       onmousemove : {Function}, // 默认为null，当前图上形鼠标（或手指）移动触发，回传参数格式同onclick，其中：
                      // 事件类型为confit.EVENT.MOUSEMOVE
                      // @return {boolean} 回调返回true则阻止抛出全局事件
        
-       onmouseover : {Function}, // 默认为null，鼠标移动到当前图形上，回传参数格式同onclick，其中：
+       onmouseover : {Function}, // 默认为null，鼠标（或手指）移动到当前图形上触发，回传参数格式同onclick，其中：
                      // 事件类型为confit.EVENT.MOUSEOVER
                      // @return {boolean} 回调返回true则阻止抛出全局事件
        
-       onmouseout : {Function}, // 默认为null，鼠标从当前图形移开，回传参数格式同onclick，其中：
+       onmouseout : {Function}, // 默认为null，鼠标（或手指）从当前图形移开，回传参数格式同onclick，其中：
                     // 事件类型为confit.EVENT.MOUSEOUT
                     // @return {boolean} 回调返回true则阻止抛出全局事件              
        
-       onmousedown : {Function}, // 默认为null，鼠标按钮被按下，回传参数格式同onclick，其中：
+       onmousedown : {Function}, // 默认为null，鼠标按钮（或手指）按下，回传参数格式同onclick，其中：
                      // 事件类型为confit.EVENT.MOUSEDOWN
                      // @return {boolean} 回调返回true则阻止抛出全局事件   
        
-       onmouseup : {Function}, // 默认为null，鼠标按钮被松开，回传参数格式同onclick，其中：
+       onmouseup : {Function}, // 默认为null，鼠标按钮（或手指）松开，回传参数格式同onclick，其中：
                    // 事件类型为confit.EVENT.MOUSEUP
                    // @return {boolean} 回调返回true则阻止抛出全局事件   
        
@@ -163,6 +163,11 @@ define(
                 // 根据style扩展默认高亮样式
                 style = this.getHighlightStyle(style, e.highlightStyle || {});
             }
+            
+            if (this.brushTypeOnly == 'stroke') {
+                style.strokeColor = style.strokeColor || style.color;                 
+            }
+   
             ctx.save();
             this.setContext(ctx, style);
             
@@ -170,9 +175,12 @@ define(
             var m = this.updateTransform( e );
             ctx.transform( m[0], m[1], m[2], m[3], m[4], m[5] );
 
+
             ctx.beginPath();
             this.buildPath(ctx, style);
-            ctx.closePath();
+            if (this.brushTypeOnly != 'stroke') {
+                ctx.closePath();
+            }
             
             switch (style.brushType) {
                 case 'fill':
@@ -192,6 +200,10 @@ define(
                 style.textColor = style.textColor 
                                   || e.style.color 
                                   || e.style.strokeColor;
+                                  
+                if (style.textPosition == 'inside') {
+                    ctx.shadowColor = 'rgba(0,0,0,0)';   // 内部文字不带shadowColor
+                }
                 this.drawText(ctx, style, isHighlight);
             }
             
@@ -206,7 +218,6 @@ define(
          */
         function setContext(ctx, style) {
             // 简单判断不做严格类型检测
-            
             if (typeof style.color != 'undefined') {
                 ctx.fillStyle = style.color;
             } 
@@ -215,8 +226,25 @@ define(
                 ctx.strokeStyle = style.strokeColor;
             }
             
+            if (typeof style.alpha != 'undefined') {
+                ctx.globalAlpha = style.alpha;
+            }
+            
+            if (typeof style.lineCap != 'undefined') {
+                console.log(style.lineCap)
+                ctx.lineCap = style.lineCap;
+            }
+            
+            if (typeof style.lineJoin != 'undefined') {
+                ctx.lineJoin = style.lineJoin;
+            }
+            
+            if (typeof style.miterLimit != 'undefined') {
+                ctx.miterLimit = style.miterLimit;
+            }
+            
             if (typeof style.lineWidth != 'undefined') {
-                ctx.lineWidth = style.lineWidth
+                ctx.lineWidth = style.lineWidth;
             } 
             
             if (typeof style.shadowBlur != 'undefined') {
@@ -228,11 +256,11 @@ define(
             }
             
             if (typeof style.shadowOffsetX != 'undefined') {
-                ctx.shadowOffsetX = style.shadowOffsetX                
+                ctx.shadowOffsetX = style.shadowOffsetX;             
             }
              
             if (typeof style.shadowOffsetY != 'undefined') {
-                ctx.shadowOffsetY = style.shadowOffsetY
+                ctx.shadowOffsetY = style.shadowOffsetY;
             }
             
             // 变换后各种事件坐标，拖拽变换，hover，大小判断都需要升级，考虑做成shape级上支持
