@@ -4,7 +4,7 @@
  * @author lang( shenyi01@baidu.com )
  * 
  * @class : Animation
- * @config : stage(optional) 绘制类, 需要提供render接口 
+ * @config : stage(optional) 绘制类, 需要提供update接口 
  * @config : fps(optional) 帧率, 是自动更新动画的时候需要提供
  * @config : onframe(optional)
  * @method : add
@@ -52,8 +52,8 @@ define(
                 for(var i = 0; i < cp.length; i++){
                     cp[i].step( time );
                 }
-                if( this.stage && this.stage.render && this._controllerPool.length >0 ){
-                    this.stage.render();
+                if( this.stage && this.stage.update && this._controllerPool.length >0 ){
+                    this.stage.update();
                 }
 
                 this.onframe();
