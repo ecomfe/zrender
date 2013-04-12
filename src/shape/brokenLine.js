@@ -184,18 +184,6 @@ define(
                 ctx.textBaseline = style.textBaseLine || 'middle';
                 
                 ctx.fillText(style.text, tx, ty);
-            },
-            
-            /**
-             * 漂移，重载基类方法
-             * @param e 实体
-             * @param dx 横坐标变化
-             * @param dy 纵坐标变化
-             */
-            drift : function(e, dx, dy){
-                var shape = require('../shape');
-                var PolygonInstance = shape.get('polygon');
-                PolygonInstance.drift(e, dx, dy);
             }
         }
         

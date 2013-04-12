@@ -19,7 +19,8 @@
 			var circle = {
 							shape : 'circle',
 						    id : zr.newShapeId(),
-						    translate : [20, 20],
+						    position : [20, 20],
+						    scale : [2, 2],
 						    style : {
 						    	x : 0,
 						    	y : 0,
@@ -39,10 +40,10 @@
 			var anim = new Animation(),
 				renderer = {
 					// 这里做一个简单的适配
-					// render函数在animation设置了start之后每一次刷新都会触发
+					// update函数在animation设置了start之后每一次刷新都会触发
 					// 也可以不使用animation的start函数
 					// 手动每一帧去调用update函数更新状态
-					render : function(){
+					update : function(){
 						zr.update([circle]);
 						//zr.refresh();
 					}
@@ -52,16 +53,16 @@
 
 			anim.animate( circle )
 				.when(1000, {
-					translate : [200, 0]
+					position : [200, 0]
 				})
 				.when(2000, {
-					translate : [200, 200]
+					position : [200, 200]
 				}, "BounceIn")
 				.when(3000, {
-					translate : [0, 200]
+					position : [0, 200]
 				})
 				.when(4000, {
-					translate : [100, 100]
+					position : [100, 100]
 				})
 				.done(function(){
 					// alert("animation finished")

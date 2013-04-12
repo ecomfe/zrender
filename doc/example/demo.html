@@ -104,6 +104,7 @@ zr.addShape({
     },
     hoverable : true,   // default true
     draggable : true,   // default false
+    clickable : true,
     ondrift : function(e, dx, dy) {
         e.style.y += dy;
         return true; // return true can disable the default drift~

@@ -575,8 +575,8 @@ function _eventHandler(params) {
                     ['invisible', '{boolean}', '基础属性，默认为false，是否可见，详见<a href="#shape.base.invisible">invisible</a>'],
                     ['style', '{Object}', '样式属性，必须，默认状态样式属性，详见<a href="#shape.base.style">style</a>'],
                     ['highlightStyle', '{Object}', '样式属性，默认同style，高亮状态样式属性，详见<a href="#shape.base.highlightStyle">highlightStyle</a>'],
-                    ['translate', '{array}', '样式属性，默认为[0, 0]，绘图坐标原点平移，详见<a href="#shape.base.translate">translate</a>'],
-                    ['rotate', '{number}', '样式属性，默认为0，shape绕自身旋转的角度，详见<a href="#shape.base.rotate">rotate</a>'],
+                    ['position', '{array}', '样式属性，默认为[0, 0]，绘图坐标原点平移，详见<a href="#shape.base.position">position</a>'],
+                    ['rotation', '{number}', '样式属性，默认为0，shape绕自身旋转的角度，详见<a href="#shape.base.rotation">rotation</a>'],
                     ['scale', '{array}', '样式属性，默认为[1, 1], shape纵横缩放比例，详见<a href="#shape.base.scale">scale</a>'],
                     ['hoverable', '{boolean}', '交互属性，默认为true，可悬浮响应，详见<a href="#shape.base.hoverable">hoverable</a>'],
                     ['clickable', '{boolean}', '交互属性，默认为false，可点击鼠标样式，详见<a href="#shape.base.clickable">clickable</a>'],
@@ -706,10 +706,10 @@ zr.render();
                         cantry : true
                     },
                     {
-                        name : 'translate',
+                        name : 'position',
                         des : '默认为[0, 0]，绘图坐标原点平移',
                         value : [
-                            ['{各异}', '{Array}','默认绘图坐标原点在左上角，[0, 0]，可通过translate定义本图形特殊坐标原点']
+                            ['{各异}', '{Array}','默认绘图坐标原点在左上角，[0, 0]，可通过position定义本图形特殊坐标原点']
                         ],
                         pre : (function(){
 var origin = 0;
@@ -721,14 +721,14 @@ zr.addShape({
         width : 150,
         height : 30, 
         color : 'red' ,
-        text : 'Click to translate!',
+        text : 'Click to position!',
         textPosition : 'inside'
     },
     draggable : true,
     clickable : true,
     onclick : function(params) {
         origin += 10;
-        zr.modShape(params.target.id, {translate : [origin, origin]});
+        zr.modShape(params.target.id, {position : [origin, origin]});
         zr.refresh();
     }
 });
@@ -737,30 +737,32 @@ zr.render();
                         cantry : true
                     },
                     {
-                        name : 'rotate',
-                        des : '默认为0，shape绕自身旋转的角度，不被translate 影响',
+                        name : 'rotation',
+                        des : '默认为0，shape绕自身旋转的角度，不被position 影响',
                         value : [
                             ['{各异}', '{number}','旋转角度']
                         ],
                         pre : (function(){
-var origin = 0;
+
+var tenDeg = Math.PI / 18;
+var origin = tenDeg;
 zr.addShape({
     shape : 'rectangle',
-    rotate: 0.1,      // 角度还是弧度？draggable有问题啊
+    rotation: tenDeg,      // 弧度
     style : { 
         x : 10, 
         y : 10, 
         width : 150,
         height : 30, 
         color : 'red' ,
-        text : 'Click to rotate!',
+        text : 'Click to rotation!',
         textPosition : 'inside'
     },
     draggable : true,
     clickable : true,
     onclick : function(params) {
-        origin += 0.1;
-        zr.modShape(params.target.id, {rotate : origin});
+        origin += tenDeg;
+        zr.modShape(params.target.id, {rotation : origin});
         zr.refresh();
     }
 });
@@ -770,12 +772,12 @@ zr.render();
                     },
                     {
                         name : 'scale',
-                        des : '默认为[1, 1], shape纵横缩放比例，不被translate影响',
+                        des : '默认为[1, 1], shape纵横缩放比例，不被position影响',
                         value : [
                             ['{各异}', '{array}','缩放']
                         ],
                         pre : (function(){
-var origin = 0;
+var origin = 1;
 zr.addShape({
     shape : 'rectangle',
     style : { 
@@ -784,10 +786,10 @@ zr.addShape({
         width : 150,
         height : 30, 
         color : 'red' ,
-        text : 'Click to rotate!',
+        text : 'Click to scale!',
         textPosition : 'inside'
     },
-    draggable : true,       // 缩放后拖拽变化也放大了，不好吧~~
+    draggable : true,
     clickable : true,
     onclick : function(params) {
         origin += 0.1;
