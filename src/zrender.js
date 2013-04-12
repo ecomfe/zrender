@@ -381,7 +381,10 @@ define(
                     'zlevel': 0,                            // z轴位置
                     'draggable': false,                     // draggable可拖拽
                     'clickable': false,                     // clickable可点击鼠标样式
-                    'hoverable': true                       // hoverable可悬浮响应
+                    'hoverable': true,                      // hoverable可悬浮响应
+                    'position': [0, 0],
+                    'rotation' : 0,
+                    'scale' : [1, 1]
                 };
                 util.merge(
                     e,

@@ -200,6 +200,7 @@
                             },
                             _colorIdx : i,
                             hoverable: false,
+                            clickable : true,
                             onclick : paletteHandler
                         });
                         startY += pHeight + space;
@@ -288,6 +289,7 @@
                         shapeList[i].style.color = 'white';
                         shapeList[i].style.lineWidth = 2;
                         shapeList[i].hoverable = false;
+                        shapeList[i].clickable = true;
                         shapeList[i].onclick = contentHandler;
                         zr.addShape(shapeList[i]);
                     }
