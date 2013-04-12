@@ -174,33 +174,6 @@ define(
                 ctx.textBaseline = style.textBaseLine || 'middle';
                 
                 ctx.fillText(style.text, tx, ty);
-            },
-            
-            /**
-             * 漂移，重载基类方法
-             * @param e 实体
-             * @param dx 横坐标变化
-             * @param dy 纵坐标变化
-             */
-            drift : function(e, dx, dy){
-                e.style.xStart += dx;
-                e.style.yStart += dy;
-                e.style.xEnd += dx;
-                e.style.yEnd += dy;
-                if (e.highlightStyle) {
-                    if (typeof e.highlightStyle.xStart != 'undefined') {
-                        e.highlightStyle.xStart += dx;    
-                    }
-                    if (typeof e.highlightStyle.yStart != 'undefined') {
-                        e.highlightStyle.yStart += dy;
-                    }
-                    if (typeof e.highlightStyle.xEnd != 'undefined') {
-                        e.highlightStyle.xEnd += dx;    
-                    }
-                    if (typeof e.highlightStyle.yEnd != 'undefined') {
-                        e.highlightStyle.yEnd += dy;
-                    }
-                }
             }
         }
         

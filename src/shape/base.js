@@ -352,16 +352,8 @@ define(
          * @param dy 纵坐标变化
          */
         function drift(e, dx, dy){
-            e.style.x += dx;
-            e.style.y += dy;
-            if (e.highlightStyle) {
-                if (typeof e.highlightStyle.x != 'undefined') {
-                    e.highlightStyle.x += dx;    
-                }
-                if (typeof e.highlightStyle.y != 'undefined') {
-                    e.highlightStyle.y += dy;
-                }
-            }
+            e.position[0] += dx;
+            e.position[1] += dy;
         };
             
         /**
@@ -387,11 +379,11 @@ define(
             if( e.scale){
                 _transform = matrix.scale( _transform, e.scale );
             }
-            if( e.rotate ){
-                _transform = matrix.rotate( _transform, e.rotate );
+            if( e.rotation ){
+                _transform = matrix.rotate( _transform, e.rotation );
             }
-            if( e.translate){
-                _transform = matrix.translate(_transform, e.translate);
+            if( e.position ){
+                _transform = matrix.translate(_transform, e.position );
             }
             // 保存这个变换矩阵
             e._transform = _transform;
