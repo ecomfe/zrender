@@ -1,8 +1,8 @@
-/*
+/**
  * zrender
- * Copyright 2012 Baidu Inc. All rights reserved.
+ * Copyright 2013 Baidu Inc. All rights reserved.
  * 
- * desc:    zrender是一个Canvas绘图类库，mvc封装实现数据驱动绘图，图形事件封装
+ * desc:    zrender是一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型。
  * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
  * 
  * shape类：折线
@@ -24,7 +24,7 @@
            lineJoin      : {string},  // 默认为miter，线段连接样式。miter | round | bevel
            miterLimit    : {number},  // 默认为10，最大斜接长度，仅当lineJoin为miter时生效
            
-           alpha         : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
+           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
            shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
            shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
            shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
@@ -76,6 +76,7 @@ define(
         function BrokenLine() {
             this.type = 'brokenLine';
             this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
+            this.textPosition = 'end';
         }
         
         BrokenLine.prototype =  {
@@ -141,49 +142,12 @@ define(
             },
             
             /**
-             * 附加文本
-             * @param {Context2D} ctx Canvas 2D上下文
-             * @param {Object} style 样式
-             * 
-             * Todo:细节，需要考虑lineWidth影响
+             * 返回矩形区域，用于局部刷新和文字定位 
+             * @param {Object} style
              */
-            drawText : function(ctx, style) {
-                var pointList = style.pointList;
-                if (pointList.length < 2) {
-                    // 少于2个点就不画了~
-                    return;
-                }
-                var length = pointList.length;
-                ctx.fillStyle = style.textColor;
-                var al;         // 文本水平对齐
-                var tx;         // 文本横坐标
-                var ty;         // 文本纵坐标
-                var dd = 10;    // 文本与图形间空白间隙
-                switch (style.textPosition) {
-                    case "start":
-                        al = pointList[0][0] < pointList[1][0]  
-                             ? 'end' : 'start';
-                        tx = pointList[0][0] - (al == 'end' ? dd : -dd);
-                        ty = pointList[0][1];
-                        break;
-                    case "end":
-                    default :
-                        al = pointList[length - 2][0] 
-                             < pointList[length - 1][0]   
-                             ? 'start' : 'end';
-                        tx = pointList[length - 1][0] 
-                             - (al == 'start' ? -dd : dd);
-                        ty = pointList[length - 1][1];
-                        break;
-                }
-                
-                if (style.textFont) {
-                    ctx.font = style.textFont;
-                }
-                ctx.textAlign = style.textAlign || al;
-                ctx.textBaseline = style.textBaseLine || 'middle';
-                
-                ctx.fillText(style.text, tx, ty);
+            getRect : function(style) {
+                var shape = require('../shape');
+                return shape.get('polygon').getRect(style);
             }
         }
         

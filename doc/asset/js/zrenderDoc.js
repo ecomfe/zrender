@@ -1,4 +1,4 @@
-(function(navZrender, navZrenderInstance, navShape, navTool, main){
+(function(navZrender, navZrenderInstance, navShape, navTool, navAnimation, main){
     var description = {
         zrender : [
             {
@@ -68,9 +68,7 @@
             {
                 name : 'getId',
                 des : '获取实例唯一标识',
-                params : [
-                    ['空', '无', '无']
-                ],
+                params : [],
                 res : ['id', '{string}','ZRender索引，实例唯一标识']
             },
             {
@@ -233,6 +231,55 @@ setTimeout(function(){
                 cantry : true
             },
             {
+                name : 'animate',
+                des : '创建一个animate对象, animate对象有三个方法，使用when方法设置帧，start方法开始动画，如果动画循环，可以使用stop停止动画，如果动画不循环，done方法则是动画完成的回调，查看<a href="example/slice.html" target="_blank">slice</a>源码',
+                params : [
+                    ['shapeId', '{string}', '形状对象唯一标识'],
+                    ['path', '{string=}', '需要添加动画的属性获取路径，可以通过a.b.c来获取深层的属形'],
+                    ['loop', "{boolean=}", '动画是否循环']
+                ],
+                res : ['deffer', '{Object}', '动画的Deferred对象，支持链式调用，详见<a href="#animation.animation">animation</a>'],
+                pre : (function(){
+var circle = {
+    shape : 'circle',
+    id : zr.newShapeId(),
+    position : [100, 100],
+    rotation : [0, 0, 0],
+    scale : [1, 1],
+    style : {
+        x : 0,
+        y : 0,
+        r : 50,
+        brushType : 'both',
+        color : 'rgba(220, 20, 60, 0.8)',
+        strokeColor : "rgba(220, 20, 60, 0.8)",   
+        lineWidth : 5,
+        text :'circle',
+        textPosition :'inside'
+    },
+    draggable : true
+}
+zr.addShape( circle );
+zr.render();
+
+zr.animate( circle.id, "", true )
+    .when(1000, {
+        position : [200, 0]
+    })
+    .when(2000, {
+        position : [200, 200]
+    }, "BounceIn")
+    .when(3000, {
+        position : [0, 200]
+    })
+    .when(4000, {
+        position : [100, 100]
+    })
+    .start();
+                }).toString().slice(12, -10),
+                cantry : true
+            },
+            {
                 name : 'showLoading',
                 des : 'loading显示',
                 params : [
@@ -265,9 +312,7 @@ zr.showLoading({
             {
                 name : 'hideLoading',
                 des : 'loading显示',
-                params : [
-                    ['空', '无', '无']
-                ],
+                params : [],
                 res : ['self', '{ZRender}', '返回自身支持链式调用'],
                 pre : (function(){
 zr.showLoading({
@@ -307,9 +352,7 @@ alert(idList.join('\n'));
             {
                 name : 'getWidth',
                 des : '获取视图宽度',
-                params : [
-                    ['空', '无', '无']
-                ],
+                params : [],
                 res : ['width', '{number}', '视图宽度'],
                 pre : (function(){
 alert(zr.getWidth());
@@ -319,9 +362,7 @@ alert(zr.getWidth());
             {
                 name : 'getHeight',
                 des : '获取视图高度',
-                params : [
-                    ['空', '无', '无']
-                ],
+                params : [],
                 res : ['height', '{number}', '视图高度'],
                 pre : (function(){
 alert(zr.getHeight());
@@ -386,9 +427,7 @@ zr.on(config.EVENT.CLICK, function(params) {
             {
                 name : 'clear',
                 des : '清除当前ZRender下所有类图的数据和显示，clear后MVC和已绑定事件均还在在，ZRender可用',
-                params : [
-                    ['空', '无', '无']
-                ],
+                params : [],
                 res : ['self', '{ZRender}', '返回自身支持链式调用'],
                 pre : (function(){
 zr.addShape({
@@ -428,9 +467,7 @@ zr.on(config.EVENT.CLICK, function(params) {
             {
                 name : 'dispose',
                 des : '释放当前ZR实例（删除包括dom，数据、显示和事件绑定），dispose后ZR不可用',
-                params : [
-                    ['空', '无', '无']
-                ],
+                params : [],
                 res : ['self', '{ZRender}', '返回自身支持链式调用'],
                 pre : (function(){
 var shapeId = zr.newShapeId(); 
@@ -579,7 +616,7 @@ function _eventHandler(params) {
                     ['rotation', '{number}', '样式属性，默认为0，shape绕自身旋转的角度，详见<a href="#shape.base.rotation">rotation</a>'],
                     ['scale', '{array}', '样式属性，默认为[1, 1], shape纵横缩放比例，详见<a href="#shape.base.scale">scale</a>'],
                     ['hoverable', '{boolean}', '交互属性，默认为true，可悬浮响应，详见<a href="#shape.base.hoverable">hoverable</a>'],
-                    ['clickable', '{boolean}', '交互属性，默认为false，可点击鼠标样式，详见<a href="#shape.base.clickable">clickable</a>'],
+                    ['clickable', '{boolean}', '交互属性，默认为false，可点击响应，详见<a href="#shape.base.clickable">clickable</a>'],
                     ['draggable', '{boolean}', '交互属性，默认为false，可拖拽响应，详见<a href="#shape.base.draggable">draggable</a>'],
                     ['onbrush', '{Function}', '事件属性，默认为null，当前图形被刷画时回调，可用于实现自定义绘画，详见<a href="#shape.base.onbrush">onbrush</a>'],
                     ['ondrift', '{Function}', '事件属性，默认为null，，详见<a href="#shape.base.ondrift">ondrift</a>'],
@@ -646,14 +683,14 @@ zr.render();
                             ['color', '{color}', '默认为"#000"，填充颜色，支持rgba'],
                             ['strokeColor', '{color}', '默认为"#000"，描边颜色（轮廓），支持rgba'],
                             ['lineWidth', '{number}', '默认为1，线条宽度，描边下有效'],
-                            ['alpha', '{number}', '默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加'],
+                            ['opacity', '{number}', '默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加'],
                             ['shadowBlur', '{number}', '默认为0，阴影模糊度，大于0有效'],
                             ['shadowColor', '{color}', '默认为"#000"，阴影色彩，支持rgba'],
                             ['shadowOffsetX', '{number}', '默认为0，阴影横向偏移，正值往右，负值往左'],
                             ['shadowOffsetY', '{number}', '默认为0，阴影纵向偏移，正值往下，负值往上'],
                             ['text', '{string}', '默认为null，附加文本'],
                             ['textFont', '{string}', '默认为null，附加文本文字样式，eg:"bold 18px verdana"'],
-                            ['textPosition', '{string}', '默认为top，附加文本位置。inside | left | right | top | bottom | start | end，图形差异不完全可用，如扇形仅有inside和outside'],
+                            ['textPosition', '{string}', '默认为top，线型默认为end，附加文本位置。inside | left | right | top | bottom | start | end，其中start end为线型（如line，brokenline）特有'],
                             ['textAlign', '{string}', '默认根据textPosition自动设置，附加文本水平对齐。start | end | left | right | center'],
                             ['textBaseline', '{string}', '默认根据textPosition自动设置，附加文本垂直对齐。top | bottom | middle | alphabetic | hanging | ideographic '],
                             ['textColor', '{color}', '默认根据textPosition自动设置，图形<a href="#shape.text">text</a>无此项，默认策略如下，附加文本颜色，textPosition == "inside" ? "#fff" : color']
@@ -707,12 +744,13 @@ zr.render();
                     },
                     {
                         name : 'position',
-                        des : '默认为[0, 0]，绘图坐标原点平移',
+                        des : '默认为[0, 0]，默认绘图坐标原点在左上角，绘图坐标原点平移,可传数组长度为2的数组，数组各值定义如下',
                         value : [
-                            ['{各异}', '{Array}','默认绘图坐标原点在左上角，[0, 0]，可通过position定义本图形特殊坐标原点']
+                            ['{各异}', '{number}','横坐标'],
+                            ['{各异}', '{number}','纵坐标']
                         ],
                         pre : (function(){
-var origin = 0;
+var origin = 10;
 zr.addShape({
     shape : 'rectangle',
     style : { 
@@ -724,6 +762,7 @@ zr.addShape({
         text : 'Click to position!',
         textPosition : 'inside'
     },
+    position : [origin, origin],
     draggable : true,
     clickable : true,
     onclick : function(params) {
@@ -738,31 +777,32 @@ zr.render();
                     },
                     {
                         name : 'rotation',
-                        des : '默认为0，shape绕自身旋转的角度，不被position 影响',
+                        des : '默认为0，shape旋转的角度，不被position影响，可传数组长度为3的数组，数组各值定义如下',
                         value : [
-                            ['{各异}', '{number}','旋转角度']
+                            ['{各异}', '{number}','旋转角度，单位弧度'],
+                            ['{各异}', '{number=}','默认为0，旋转中心横坐标，单位px'],
+                            ['{各异}', '{number=}','默认为0，旋转中心纵坐标，单位px']
                         ],
                         pre : (function(){
-
 var tenDeg = Math.PI / 18;
 var origin = tenDeg;
 zr.addShape({
     shape : 'rectangle',
-    rotation: tenDeg,      // 弧度
     style : { 
-        x : 10, 
-        y : 10, 
-        width : 150,
-        height : 30, 
+        x : 100, 
+        y : 100, 
+        width : 160,
+        height : 40, 
         color : 'red' ,
         text : 'Click to rotation!',
         textPosition : 'inside'
     },
+    rotation : [tenDeg, 180, 120],
     draggable : true,
     clickable : true,
     onclick : function(params) {
         origin += tenDeg;
-        zr.modShape(params.target.id, {rotation : origin});
+        zr.modShape(params.target.id, {rotation : [origin, 180, 120]});
         zr.refresh();
     }
 });
@@ -772,28 +812,32 @@ zr.render();
                     },
                     {
                         name : 'scale',
-                        des : '默认为[1, 1], shape纵横缩放比例，不被position影响',
+                        des : '默认为[1, 1], shape纵横缩放比例，不被position影响，可传数组长度为4的数组，数组各值定义如下',
                         value : [
-                            ['{各异}', '{array}','缩放']
+                            ['{各异}', '{number}','横向缩放比例，>1放大，<1缩小'],
+                            ['{各异}', '{number}','纵向缩放比例，>1放大，<1缩小'],
+                            ['{各异}', '{number=}','默认为0，缩放中心横坐标，单位px'],
+                            ['{各异}', '{number=}','默认为0，缩放中心纵坐标，单位px']
                         ],
                         pre : (function(){
-var origin = 1;
+var origin = 1.1;
 zr.addShape({
     shape : 'rectangle',
     style : { 
-        x : 10, 
-        y : 10, 
-        width : 150,
-        height : 30, 
+        x : 100, 
+        y : 100, 
+        width : 160,
+        height : 40, 
         color : 'red' ,
         text : 'Click to scale!',
         textPosition : 'inside'
     },
+    scale : [origin, origin, 180, 120],
     draggable : true,
     clickable : true,
     onclick : function(params) {
         origin += 0.1;
-        zr.modShape(params.target.id, {scale : [origin, origin]});
+        zr.modShape(params.target.id, {scale : [origin, origin, 180, 120]});
         zr.refresh();
     }
 });
@@ -1388,8 +1432,7 @@ function _update(shape, text) {
                         value : [
                             ['x', '{number}','必须，圆心横坐标，单位px'],
                             ['y', '{number}','必须，圆心纵坐标，单位px'],
-                            ['r', '{number}','必须，圆半径，单位px'],
-                            ['textPosition','{string}','默认为end，附加文本位置。支持 inside | left | right | top | bottom']
+                            ['r', '{number}','必须，圆半径，单位px']
                         ],
                         pre : (function(){
 // 圆形
@@ -1423,8 +1466,7 @@ zr.render();
                             ['x', '{number}','必须，圆心横坐标，单位px'],
                             ['y', '{number}','必须，圆心纵坐标，单位px'],
                             ['a', '{number', '必须，椭圆横轴半径'],
-                            ['b', '{number', '必须，椭圆纵轴半径'],
-                            ['textPosition','{string}','默认为end，附加文本位置。支持 inside | left | right | top | bottom']
+                            ['b', '{number', '必须，椭圆纵轴半径']
                         ],
                         pre : (function(){
 // 椭圆
@@ -1461,8 +1503,7 @@ zr.render();
                             ['r0', '{number=}','默认为0，内圆半径，单位px'],
                             ['r', '{number}','必须，外圆半径，单位px'],
                             ['startAngle', '{number}','必须，起始角度[0, 360)，单位度'],
-                            ['endAngle', '{number}','必须，起始角度(0, 360]，单位度'],
-                            ['textPosition','{string}','默认为end，附加文本位置。支持 inside | outside']
+                            ['endAngle', '{number}','必须，起始角度(0, 360]，单位度']
                         ],
                         pre : (function(){
 // 扇形
@@ -1499,8 +1540,7 @@ zr.render();
                             ['x', '{number}','必须，圆心横坐标，单位px'],
                             ['y', '{number}','必须，圆心纵坐标，单位px'],
                             ['r0', '{number}','必须，内圆半径，单位px'],
-                            ['r', '{number}','必须，外圆半径，单位px'],
-                            ['textPosition','{string}','默认为end，附加文本位置。支持 inside | outside']
+                            ['r', '{number}','必须，外圆半径，单位px']
                         ],
                         pre : (function(){
 // 圆环
@@ -1535,8 +1575,7 @@ zr.render();
                             ['x', '{number}','必须，左上角横坐标，单位px'],
                             ['y', '{number}','必须，左上角纵坐标，单位px'],
                             ['width', '{number}','必须，宽度，单位px'],
-                            ['height', '{number}','必须，高度，单位px'],
-                            ['textPosition','{string}','默认为end，附加文本位置。支持 inside | left | right | top | bottom']
+                            ['height', '{number}','必须，高度，单位px']
                         ],
                         pre : (function(){
 // 矩形
@@ -1636,8 +1675,7 @@ zr.render();
                             ['xEnd', '{number=}','必须，终点横坐标，单位px'],
                             ['yEnd', '{number}','必须，终点纵坐标，单位px'],
                             ['lineType', '{string}','默认为solid，线条类型，solid | dashed | dotted'],
-                            ['lineCap', '{string}','默认为butt，线帽样式。butt | round | square'],
-                            ['textPosition','{string}','默认为end，附加文本位置。支持 inside | start | end']
+                            ['lineCap', '{string}','默认为butt，线帽样式。butt | round | square']
                         ],
                         pre : (function(){
 // 直线
@@ -1676,8 +1714,7 @@ zr.render();
                             ['lineType', '{string}','默认为solid，线条类型，solid | dashed | dotted'],
                             ['lineCap', '{string}','默认为butt，线帽样式。butt | round | square'],
                             ['lineJoin', '{string}','默认为miter，线段连接样式。miter | round | bevel'],
-                            ['miterLimit' , '{number}','默认为10，最大斜接长度，仅当lineJoin为miter时生效'],
-                            ['textPosition','{string}','默认为end，附加文本位置。支持 start | end']
+                            ['miterLimit' , '{number}','默认为10，最大斜接长度，仅当lineJoin为miter时生效']
                         ],
                         pre : (function(){
 // 折线
@@ -1842,6 +1879,473 @@ myMessageCenter.dispatch(
                     }
                 ]
             }
+        ],
+        
+        // 动画相关
+        animation : [
+            {
+                name : 'animation',
+                plus : true,
+                des : '动画，animation/animation，查看<a href="example/slice.html" target="_blank">slice</a>源码',
+                value : [
+                    ['start', '{Function}','开始动画调度器，查看<a href="#animation.animation.start">start</a>'],
+                    ['stop', '{Function}','停止动画调度器，查看<a href="#animation.animation.stop">stop</a>'],
+                    ['animate', '{Function}','创建一个animate对象,，查看<a href="#animation.animation.animate">animatie</a>']
+                ],
+                content : [
+                    {
+                        name : 'start',
+                        des : '开始动画调度器',
+                        params : [],
+                        res : ['deffer', '{Object}', '动画的Deferred对象，支持链式调用'],
+                        pre : (function(){       
+var Animation = require('zrender/animation/animation');
+var animation = new Animation;
+animation.start();
+
+                        }).toString().slice(12, -10)
+                    },
+                    {
+                        name : 'stop',
+                        des : '停止动画调度器',
+                        params : [],
+                        res : ['deffer', '{Object}', '动画的Deferred对象，支持链式调用'],
+                        pre : (function(){
+var Animation = require('zrender/animation/animation');
+var animation = new Animation;
+animation.start();
+animation.stop();
+                        }).toString().slice(12, -10)
+                    },
+                    {
+                        name : 'animate',
+                        des : '创建一个animate对象, animate对象有三个方法，使用when方法设置帧，start方法开始动画, \
+                                如果动画循环，可以使用stop停止动画，如果动画不循环，done方法则是动画完成的回调，',
+                        params : [
+                            ['target', '{Object}','必须，赋予动画的对象'],
+                            ['loop', '{boolean=}', "可选，动画是否循环，默认为false"],
+                            ['getter', '{Function=}', '可选，获取target属性值的getter, 接受target, propName两个属性'],
+                            ['setter', '{Function=}', '可选，设置target属性值的setter, 接受target, propName, value三个属性']
+                        ],
+                        res : ['deffer', '{Object}', '动画的Deferred对象，支持链式调用'],
+                        pre : (function(){
+var Animation = require('zrender/animation/animation');
+var animation = new Animation,
+    target = (function(){
+        var properties = {
+            x : 0,
+            y : 0
+        }
+        return {
+            get : function(key){
+                return properties[key];
+            },
+            set : function(key, value){
+                properties[key] = value;   
+            }
+        }
+    })()
+var getter = function(target, key){
+    return target.get(key);
+}
+var setter = function(target, key, value){
+    target.set(key, value);
+}
+animation.animate( target, getter, setter )
+        .when(1000, {
+            x : 10
+        })
+        .when(2000, {
+            y : 20
+        })
+        .done(function(){
+            target.set("x", 0)
+            target.set("y", 0)
+        })
+        .start()
+                        }).toString().slice(12, -10)
+                    }
+                ]
+            },
+            {
+                name : 'easing',
+                plus : true,
+                des : '动画，animation/easing，见下，或参考<a href="http://easings.net/zh-cn" target="_blank">easings.net</a>',
+                content : [
+                    {
+                        name : 'Linear',
+                        des : '线性变化',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比'],
+                        pre : (function(){
+var width = zr.getWidth();
+var height = zr.getHeight() - 30;
+var shapList = [];
+var n = 13;
+for (var i = 0; i < n; i++) {
+    shapList.push({
+        shape : 'circle',
+        id : zr.newShapeId(),
+        style : {
+            x : 10, y : height/n * i + 30, r : 10,
+            color : _getRandomColor()
+        }
+    })
+}
+function _getRandomColor() {
+    return 'rgba(' 
+            + Math.round(Math.random() * 256) + ',' 
+            + Math.round(Math.random() * 256) + ',' 
+            + Math.round(Math.random() * 256) + ', 0.8)'
+}
+var easingEffect = [
+    'Linear',
+    'QuadraticIn', 'QuadraticOut', 'QuadraticInOut',
+    'CubicIn', 'CubicOut', 'CubicInOut',
+    'QuarticIn', 'QuarticOut', 'QuarticInOut', 
+    'QuinticIn', 'QuinticOut', 'QuinticInOut'
+]
+for (var i = 0; i < n; i++) {
+    zr.addShape(shapList[i]);
+    zr.animate(shapList[i].id, "style", true)
+        .when(2000, {
+            x : width - 50
+        }, easingEffect[i])
+        .when(4000, {
+            x : 50
+        }, easingEffect[i])
+        .start();
+}
+zr.render();
+                        }).toString().slice(12, -10),
+                        cantry : true
+                    },
+                    {
+                        name : 'QuadraticIn',
+                        des : '二次方的缓动（t^2），例子见<a href="#animation.easing.Linear">Linear</a>.',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比']
+                    },
+                    {
+                        name : 'QuadraticOut',
+                        des : '二次方的缓动（t^2），例子见<a href="#animation.easing.Linear">Linear</a>.',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比']
+                    },
+                    {
+                        name : 'QuadraticInOut',
+                        des : '二次方的缓动（t^2），例子见<a href="#animation.easing.Linear">Linear</a>.',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比']
+                    },
+                    {
+                        name : 'CubicIn',
+                        des : '三次方的缓动（t^3），例子见<a href="#animation.easing.Linear">Linear</a>.',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比']
+                    },
+                    {
+                        name : 'CubicOut',
+                        des : '三次方的缓动（t^3），例子见<a href="#animation.easing.Linear">Linear</a>.',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比']
+                    },
+                    {
+                        name : 'CubicInOut',
+                        des : '三次方的缓动（t^3），例子见<a href="#animation.easing.Linear">Linear</a>.',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比']
+                    },
+                    {
+                        name : 'QuarticIn',
+                        des : '四次方的缓动（t^4），例子见<a href="#animation.easing.Linear">Linear</a>.',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比']
+                    },
+                    {
+                        name : 'QuarticOut',
+                        des : '四次方的缓动（t^4），例子见<a href="#animation.easing.Linear">Linear</a>.',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比']
+                    },
+                    {
+                        name : 'QuarticInOut',
+                        des : '四次方的缓动（t^4），例子见<a href="#animation.easing.Linear">Linear</a>.',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比']
+                    },
+                    {
+                        name : 'QuinticIn',
+                        des : '五次方的缓动（t^5），例子见<a href="#animation.easing.Linear">Linear</a>.',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比']
+                    },
+                    {
+                        name : 'QuinticOut',
+                        des : '五次方的缓动（t^5），例子见<a href="#animation.easing.Linear">Linear</a>.',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比']
+                    },
+                    {
+                        name : 'QuinticInOut',
+                        des : '五次方的缓动（t^5），例子见<a href="#animation.easing.Linear">Linear</a>.',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比']
+                    },
+                    {
+                        name : 'SinusoidalIn',
+                        des : '正弦曲线的缓动（sin(t)）',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比'],
+                        pre : (function(){
+var width = zr.getWidth();
+var height = zr.getHeight() - 30;
+var shapList = [];
+var n = 10;
+for (var i = 0; i < n; i++) {
+    shapList.push({
+        shape : 'circle',
+        id : zr.newShapeId(),
+        style : {
+            x : 10, y : height / n * i + 30, r : 10, color : _getRandomColor()
+        }
+    })
+}
+function _getRandomColor() {
+    return 'rgba(' 
+            + Math.round(Math.random() * 256) + ',' 
+            + Math.round(Math.random() * 256) + ',' 
+            + Math.round(Math.random() * 256) + ', 0.8)'
+}
+var easingEffect = [
+    'Linear', 'SinusoidalIn', 'SinusoidalOut', 'SinusoidalInOut', 
+    'ExponentialIn', 'ExponentialOut', 'ExponentialInOut', 
+    'CircularIn', 'CircularOut', 'CircularInOut'
+]
+for (var i = 0; i < n; i++) {
+    zr.addShape(shapList[i]);
+    zr.animate(shapList[i].id, "style", true)
+        .when(2000, {
+            x : width - 50
+        }, easingEffect[i])
+        .when(4000, {
+            x : 50
+        }, easingEffect[i])
+        .start();
+}
+zr.render();
+                        }).toString().slice(12, -10),
+                        cantry : true
+                    },
+                    {
+                        name : 'SinusoidalOut',
+                        des : '正弦曲线的缓动（sin(t)），例子见<a href="#animation.easing.SinusoidalIn">SinusoidalIn</a>.',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比']
+                    },
+                    {
+                        name : 'SinusoidalInOut',
+                        des : '正弦曲线的缓动（sin(t)），例子见<a href="#animation.easing.SinusoidalIn">SinusoidalIn</a>.',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比']
+                    },
+                    {
+                        name : 'ExponentialIn',
+                        des : '指数曲线的缓动（2^t），例子见<a href="#animation.easing.SinusoidalIn">SinusoidalIn</a>.',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比']
+                    },
+                    {
+                        name : 'ExponentialOut',
+                        des : '指数曲线的缓动（2^t），例子见<a href="#animation.easing.SinusoidalIn">SinusoidalIn</a>.',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比']
+                    },
+                    {
+                        name : 'ExponentialInOut',
+                        des : '指数曲线的缓动（2^t），例子见<a href="#animation.easing.SinusoidalIn">SinusoidalIn</a>.',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比']
+                    },
+                    {
+                        name : 'CircularIn',
+                        des : '圆形曲线的缓动（sqrt(1-t^2)），例子见<a href="#animation.easing.SinusoidalIn">SinusoidalIn</a>.',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比']
+                    },
+                    {
+                        name : 'CircularOut',
+                        des : '圆形曲线的缓动（sqrt(1-t^2)），例子见<a href="#animation.easing.SinusoidalIn">SinusoidalIn</a>.',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比']
+                    },
+                    {
+                        name : 'CircularInOut',
+                        des : '圆形曲线的缓动（sqrt(1-t^2)），例子见<a href="#animation.easing.SinusoidalIn">SinusoidalIn</a>.',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比']
+                    },
+                    {
+                        name : 'ElasticIn',
+                        des : '创建类似于弹簧在停止前来回振荡的动画',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比'],
+                        pre : (function(){
+var width = zr.getWidth();
+var height = zr.getHeight() - 30;
+var shapList = [];
+var n = 10;
+for (var i = 0; i < n; i++) {
+    shapList.push({
+        shape : 'circle',
+        id : zr.newShapeId(),
+        style : {
+            x : 10,
+            y : height/n * i + 30,
+            r : 10,
+            color : _getRandomColor()
+        }
+    })
+}
+function _getRandomColor() {
+    return 'rgba(' 
+            + Math.round(Math.random() * 256) + ',' 
+            + Math.round(Math.random() * 256) + ',' 
+            + Math.round(Math.random() * 256) + ', 0.8)'
+}
+var easingEffect = [
+    'Linear',
+    'ElasticIn', 'ElasticOut', 'ElasticInOut', 
+    'BackIn', 'BackOut', 'BackInOut', 
+    'BounceIn', 'BounceOut', 'BounceInOut'
+]
+for (var i = 0; i < n; i++) {
+    zr.addShape(shapList[i]);
+    zr.animate(shapList[i].id, "style", true)
+        .when(2000, {
+            x : width - 50
+        }, easingEffect[i])
+        .when(4000, {
+            x : 50
+        }, easingEffect[i])
+        .start();
+}
+zr.render();
+                        }).toString().slice(12, -10),
+                        cantry : true
+                    },
+                    {
+                        name : 'ElasticOut',
+                        des : '创建类似于弹簧在停止前来回振荡的动画，例子见<a href="#animation.easing.ElasticIn">ElasticIn</a>.',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比']
+                    },
+                    {
+                        name : 'ElasticInOut',
+                        des : '创建类似于弹簧在停止前来回振荡的动画，例子见<a href="#animation.easing.ElasticIn">ElasticIn</a>.',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比']
+                    },
+                    {
+                        name : 'BackIn',
+                        des : '在某一动画开始沿指示的路径进行动画处理前稍稍收回该动画的移动，例子见<a href="#animation.easing.ElasticIn">ElasticIn</a>.',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比']
+                    },
+                    {
+                        name : 'BackOut',
+                        des : '在某一动画开始沿指示的路径进行动画处理前稍稍收回该动画的移动，例子见<a href="#animation.easing.ElasticIn">ElasticIn</a>.',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比']
+                    },
+                    {
+                        name : 'BackInOut',
+                        des : '在某一动画开始沿指示的路径进行动画处理前稍稍收回该动画的移动，例子见<a href="#animation.easing.ElasticIn">ElasticIn</a>.',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比']
+                    },
+                    {
+                        name : 'BounceIn',
+                        des : '创建弹跳效果，例子见<a href="#animation.easing.ElasticIn">ElasticIn</a>.',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比']
+                    },
+                    {
+                        name : 'BounceOut',
+                        des : '创建弹跳效果，例子见<a href="#animation.easing.ElasticIn">ElasticIn</a>.',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比']
+                    },
+                    {
+                        name : 'BounceInOut',
+                        des : '创建弹跳效果，例子见<a href="#animation.easing.ElasticIn">ElasticIn</a>.',
+                        params : [
+                            ['k', '{number}','时间百分比']
+                        ],
+                        res : ['percent', '{number}', '进度百分比']
+                    }
+                ]
+            }
         ]
     };
     
@@ -1857,8 +2361,8 @@ myMessageCenter.dispatch(
                 navHtml.push('<ul class="nav nav-list">');
                 for (var j = 0, k = item.content.length; j < k; j++) {
                     item2 = item.content[j];
-                    navHtml.push(buildNav('shape.' + item.name, item2, false));
-                    mainHtml.push(buildContent('shape.' + item.name,item2));
+                    navHtml.push(buildNav(name + '.' + item.name, item2, false));
+                    mainHtml.push(buildContent(name + '.' + item.name,item2));
                 }
                 navHtml.push('</ul>');
             }
@@ -1896,13 +2400,23 @@ myMessageCenter.dispatch(
             paramsContent.push(
                 mainTableTemplate.replace(/{th}/, (isFunction ? '参数' : '属性'))
             );
-            for (var i = 0, l = params.length; i < l; i++) {
+            if (params.length > 0) {
+                for (var i = 0, l = params.length; i < l; i++) {
+                    paramsContent.push(
+                        mainParamsTemplate.replace(/{a}/, params[i][0])
+                                          .replace(/{b}/, params[i][1])
+                                          .replace(/{c}/, params[i][2])
+                    )
+                }
+            }
+            else {
                 paramsContent.push(
-                    mainParamsTemplate.replace(/{a}/, params[i][0])
-                                      .replace(/{b}/, params[i][1])
-                                      .replace(/{c}/, params[i][2])
+                    mainParamsTemplate.replace(/{a}/, '空')
+                                      .replace(/{b}/, '无')
+                                      .replace(/{c}/, '无')
                 )
             }
+            
             if (item.res) {
                 params = item.res;
                 paramsContent.push(
@@ -1976,6 +2490,14 @@ myMessageCenter.dispatch(
     );
     build(description.tool, 'tool', navTool);
   
+    //-- animation
+    mainHtml.push(
+        contentHeadTemplate.replace(/{name}/g, 'animation')
+                           .replace(/{anchor}/g, 'animation')
+                           .replace(/{des}/g, '动画相关，动画及缓动函数')
+    );
+    build(description.animation, 'animation', navAnimation);
+    
     //-- 内容
     main.innerHTML = mainHtml.join('');
 })(
@@ -1983,5 +2505,6 @@ myMessageCenter.dispatch(
     document.getElementById('nav-zrender-instance'),
     document.getElementById('nav-shape'),
     document.getElementById('nav-tool'),
+    document.getElementById('nav-animation'),
     document.getElementById('main')
 )

@@ -1,15 +1,22 @@
 /**
- * 向量操作类
- * author: lang(shenyi01@baidu.com)
+ * zrender : 向量操作类
+ * Copyright 2013 Baidu Inc. All rights reserved.
+ * 
+ * author : lang(shenyi01@baidu.com)
+ *  
  */
 define(
     function(){
-       var Vector = {
-            add : function(v1, v2){
-                return [v1[0]+v2[0], v1[1]+v2[1]];
+       var vector = {
+            add : function(out, v1, v2){
+                out[0] = v1[0]+v2[0];
+                out[1] = v1[1]+v2[1];
+                return out;
             },
-            sub : function(v1, v2){
-                return [v1[0]-v2[0], v1[1]-v2[1]];
+            sub : function(out, v1, v2){
+                out[0] = v1[0]-v2[0];
+                out[1] = v1[1]-v2[1];
+                return out;
             },
             length : function(v){
                 return Math.sqrt( this.magSquare(v) );
@@ -17,31 +24,39 @@ define(
             lengthSquare : function(v){
                 return v[0]*v[0]+v[1]*v[1];
             },
-            mul : function(v1, v2){
-                return [v1[0]*v2[0], v1[1]*v2[1]];
+            mul : function(out, v1, v2){
+                out[0] = v1[0]*v2[0];
+                out[1] = v1[1]*v2[1];
+                return out;
             },
             dot : function(v1, v2){
                 return v1[0]*v2[0]+v1[1]*v2[1];
             },
-            scale : function(v, s){
-                return [v[0]*s, v[1]*s];
+            scale : function(out, v, s){
+                out[0] = v[0]*s;
+                out[1] = v[1]*s;
+                return out;
             },
-            normalize : function(v){
-                var d = Vector.length(v);
-                return [ v[0]/d, v[1]/d ];
+            normalize : function(out, v){
+                var d = vector.length(v);
+                out[0] = v[0]/d;
+                out[1] = v[1]/d;
+                return out;
             },
             distance : function( v1, v2 ){
-                return Vector.length( Vector.sub(v1, v2) );
+                var out = [];
+                return vector.length( vector.sub(out, v1, v2) );
             },
-            middle : function(v1, v2){
-                return [(v1[0]+v2[0])/2,
-                        (v1[1]+v2[1])/2];
+            middle : function(out, v1, v2){
+                out[0] = (v1[0]+v2[0])/2;
+                out[1] = (v1[1]+v2[1])/2;
+                return out;
             },
             expand : function(v){
                 return [v[0], v[1], 1];
             }
         }
 
-        return Vector;
+        return vector;
     }
 )

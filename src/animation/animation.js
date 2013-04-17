@@ -39,7 +39,7 @@ define(
                 this._controllerPool.push(controller);
             },
             remove : function(controller){
-                var idx = this._controllerPool.indexOf(controller);
+                var idx = indexOf( this._controllerPool, controller);
                 if( idx >= 0){
                     controller._host = null;
                     this._controllerPool.splice( idx, 1);
@@ -70,13 +70,14 @@ define(
                     self.update();
                 }, 1000/this.fps)
             },
-            animate : function( target, getter, setter ){
-                var deferred = new Deferred( target, getter, setter),
-                    self = this;
-
-                deferred.controllerCreated = function(controller){
-                    self.add( controller );
+            stop : function(){
+                if( this._timer ){
+                    clearInterval( this._timer );
                 }
+            },
+            animate : function( target, loop, getter, setter ){
+                var deferred = new Deferred( target, loop, getter, setter);
+                deferred.animation = this;
                 return deferred;
             }
         }
@@ -89,39 +90,59 @@ define(
             target[key] = value;
         }
         // 递归做插值
+        // TODO 对象的插值
         function _interpolate(prevValue, nextValue, percent, target, propName, getter, setter){
              // 遍历数组做插值
             if( prevValue.constructor === Array &&
-                nextValue.constructor === Array &&
-                prevValue.length === nextValue.length)
+                nextValue.constructor === Array)
             {
-                var len = prevValue.length;
-                for(var i = 0; i < len; i++){
+                var minLen = Math.min(prevValue.length, nextValue.length),
+                    largerArray,
+                    result = [];
+                if( minLen === prevValue.length ){
+                    var maxLen = nextValue.length,
+                        largerArray = nextValue;
+                }else{
+                    var maxLen = prevValue.length,
+                        largerArray = prevValue.length;
+                }
+                for(var i = 0; i < minLen; i++){
                     // target[propName] 作为新的target,
                     // i 作为新的propName递归进行插值
-                    _interpolate( prevValue[i], nextValue[i], percent, getter(target, propName), i, getter, setter);
+                    result.push( _interpolate( prevValue[i], nextValue[i], percent, getter(target, propName), i, getter, setter) );
                 }
+                // 赋值剩下不需要插值的数组项
+                for(var i = minLen; i < maxLen; i++){
+                    result.push( largerArray[i] );
+                }
+
+                setter( target, propName, result);
             }
             else{
-                var prevValue = parseInt( prevValue ),
-                    nextValue = parseInt( nextValue );
+                var prevValue = parseFloat( prevValue ),
+                    nextValue = parseFloat( nextValue );
                 if( !isNaN(prevValue) && ! isNaN(nextValue) ){
                     var value = (nextValue-prevValue)*percent+prevValue;
                     setter(target, propName, value);
+                    return value;
                 }
             }
         }
-        function Deferred( target, getter, setter ){
-
-            this.controllerCreated = new Function;
+        function Deferred( target, loop, getter, setter ){
 
             this._tracks = {};
             this._target = target;
+
+            this._loop = loop || false;
 
             this._getter = getter || _defaultGetter;
             this._setter = setter || _defaultSetter;
 
             this._controllerCount = 0;
+
+            this._doneList = [];
+
+            this._controllerList = [];
         }
 
         Deferred.prototype = {
@@ -148,6 +169,9 @@ define(
                 for(var propName in this._tracks){
                         delay = 0,
                         track = this._tracks[ propName ];
+                    if( track.length ){
+                        var trackMaxTime = track[ track.length-1].time;
+                    }
                     for(var i = 0; i < track.length-1; i++){
                         var now = track[i],
                             next = track[i+1];
@@ -156,34 +180,67 @@ define(
                             target : self._target,
                             life : next.time - now.time,
                             delay : delay,
-                            loop : false,
-                            gap : 0,
+                            loop : self._loop,
+                            gap : trackMaxTime - (next.time - now.time),
                             easing : next.easing,
                             onframe : (function(now, next, propName){
+                                // 复制出新的数组，不然动画的时候改变数组的值也会影响到插值
+                                var prevValue = clone(now.value),
+                                    nextValue = clone(next.value);
                                 return function(target, schedule){
-                                    _interpolate( now.value, next.value, schedule, target, propName, self._getter, self._setter );
+                                    _interpolate( prevValue, nextValue, schedule, target, propName, self._getter, self._setter );
                                 }
                             }) (now, next, propName),
                             ondestroy : function(){
                                 self._controllerCount--;
                                 if( self._controllerCount === 0){
                                     // 所有动画完成
-                                    self._done && self._done();
+                                    for( var i = 0; i < self._doneList.length; i++){
+                                        self._doneList[i]();
+                                    }
                                 }
                             }
                         })
+                        this._controllerList.push( controller );
+
                         this._controllerCount++;
                         delay = next.time;
 
-                        self.controllerCreated( controller );
+                        self.animation.add( controller );
                     }
                 }
                 return this;
             },
+            stop : function(){
+                for( var i = 0; i < this._controllerList.length; i++){
+                    var controller = this._controllerList[i];
+                    this.animation.remove( controller );
+                }
+            },
             done : function(func){
-                this._done = func;
-                this.start();
+                this._doneList.push( func );
+                return this;
             }
+        }
+
+        function clone( value ){
+            if( value && value.constructor === Array ){
+                return Array.prototype.slice.call( value );
+            }else{
+                return value;
+            }
+        }
+
+        function indexOf(array, value){
+            if( array.indexOf ){
+                return array.indexOf( value );
+            }
+            for( var i = 0, len=array.length; i<len; i++){
+                if( array[i] === value){
+                    return i;
+                }
+            }
+            return -1;
         }
 
         return Animation;
