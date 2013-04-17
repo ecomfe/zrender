@@ -43,6 +43,7 @@
                     <li class="divider"></li>
                     <!--li class="nav-header">Library</li-->
                     <li><a href="doc/example/artist.html">Artist</a></li>
+                    <li><a href="doc/example/slice.html">slice</a></li>
                   </ul>
                 </li>
                 <li><a href="doc/doc.html">API &amp; Doc</a></li>
@@ -90,6 +91,7 @@
         <ul>
             <li>shape : 图形实体，分而治之的图形策略，可定义扩展</li>
             <li>tool : 绘画扩展相关实用方法，工具及脚手架</li>
+            <li>animation : 动画扩展，提供promise式的动画接口和常用缓动函数</li>
         </ul>
       </div>
       <h2 class="featurette-heading">特色</h2>
@@ -183,6 +185,20 @@ var myShape = {
       <hr class="featurette-divider">
       <div class="featurette">
         <div class="span5 pull-right">
+            <pre>
+zr.addShape(newShape);
+zr.render();
+zr.animate(newShape.id)
+  .when(1000, { position : [300, 200] }, 'BounceOut')
+  .when(2000, { position : [30, 400] }, 'CubicIn')
+  .start();</pre>
+        </div>
+        <h2 class="featurette-heading">强大的动画支持</h2>
+        <p>提供promise式的动画接口和常用缓动函数，轻松实现各种动画需求~</p>
+      </div>
+      <hr class="featurette-divider">
+      <div class="featurette">
+        <div class="span5 pull-left">
             <pre>
 function MyShape() { ... }
 

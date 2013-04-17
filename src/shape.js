@@ -1,18 +1,13 @@
-/*
- * zrender
- * Copyright 2012 Baidu Inc. All rights reserved.
+/**
+ * zrender : shape仓库
+ * Copyright 2013 Baidu Inc. All rights reserved.
  * 
- * desc:    zrender是一个Canvas绘图类库，mvc封装实现数据驱动绘图，图形事件封装
+ * desc:    zrender是一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型。
  * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
- * 
- * shape级特性：
- * hoverable : 可悬浮响应，默认为true，默认悬浮响应为高亮显示，可在onbrush中捕获改变
- * clickable : 可点击鼠标样式，默认为false，仅影响鼠标hover时图标是否为可点击样式，不阻断点击行为，可在onclick中捕获改变
- * draggable : 可拖拽响应，默认为false，默认拖拽响应改变图形位置，可在ondrift中捕获改变
- * 
+ *  
  */
 define(
-    function(require) {    //shape:形状，元件
+    function(require) {
         var self = {};
         
         var _shapeLibrary = {};     //shape库
@@ -65,7 +60,7 @@ define(
         
         var Path = require('./shape/path');
         self.define('path', new Path());
-
+        
         return self;
     }
 ); 

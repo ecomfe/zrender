@@ -1,5 +1,9 @@
 /**
- * 事件辅助类 
+ * zrender : 事件辅助类
+ * Copyright 2013 Baidu Inc. All rights reserved.
+ * 
+ * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *  
  * getX：获取事件横坐标
  * getY：或者事件纵坐标
  * getDelta：或者鼠标滚轮变化

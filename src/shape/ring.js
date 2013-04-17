@@ -1,4 +1,8 @@
-/* desc:    zrender是一个Canvas绘图类库，mvc封装实现数据驱动绘图，图形事件封装
+/**
+ * zrender
+ * Copyright 2013 Baidu Inc. All rights reserved.
+ * 
+ * desc:    zrender是一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型。
  * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
  * 
  * shape类：圆环
@@ -22,7 +26,7 @@
            strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
            lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
            
-           alpha         : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
+           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
            shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
            shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
            shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
@@ -150,7 +154,7 @@ define(
                     style.textColor = style.textColor 
                                       || e.style.color 
                                       || e.style.strokeColor;
-                    this.drawText(ctx, style, isHighlight);
+                    this.drawText(ctx, style);
                 }
                 
                 ctx.restore();
@@ -158,14 +162,16 @@ define(
             },
             
             /**
-             * 附加文本
-             * @param {Context2D} ctx Canvas 2D上下文
-             * @param {Object} style 样式
+             * 返回矩形区域，用于局部刷新和文字定位 
+             * @param {Object} style
              */
-            drawText : function(ctx, style, isHighlight) {
-                style.brushType = 'stroke'; // 让圆不把字体颜色改为'#fff'
-                var shape = require('../shape');
-                shape.get('circle').drawText(ctx, style, isHighlight);
+            getRect : function(style) {
+                return {
+                    x : style.x - style.r,
+                    y : style.y - style.r,
+                    width : style.r * 2,
+                    height : style.r * 2
+                }
             }
         }
         

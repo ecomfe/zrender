@@ -1,8 +1,8 @@
-/*
+/**
  * zrender
- * Copyright 2012 Baidu Inc. All rights reserved.
+ * Copyright 2013 Baidu Inc. All rights reserved.
  * 
- * desc:    zrender是一个Canvas绘图类库，mvc封装实现数据驱动绘图，图形事件封装
+ * desc:    zrender是一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型。
  * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
  * 
  * shape类：直线
@@ -25,7 +25,7 @@
            lineWidth     : {number},  // 默认为1，线条宽度
            lineCap       : {string},  // 默认为butt，线帽样式。butt | round | square
            
-           alpha         : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
+           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
            shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
            shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
            shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
@@ -80,6 +80,7 @@ define(
         function Line() {
             this.type = 'line';
             this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
+            this.textPosition = 'end';
         }
         
         Line.prototype =  {
@@ -134,46 +135,16 @@ define(
             },
             
             /**
-             * 附加文本
-             * @param {Context2D} ctx Canvas 2D上下文
-             * @param {Object} style 样式
-             * 
-             * Todo:细节，需要考虑lineWidth影响
+             * 返回矩形区域，用于局部刷新和文字定位 
+             * @param {Object} style
              */
-            drawText : function(ctx, style) {
-                ctx.fillStyle = style.textColor;
-                
-                var al;         // 文本水平对齐
-                var tx;         // 文本横坐标
-                var ty;         // 文本纵坐标
-                var dd = 10;    // 文本与图形间空白间隙
-                switch (style.textPosition) {
-                    case "inside":
-                        tx = Math.round((style.xStart + style.xEnd) / 2);
-                        ty = Math.round((style.yStart + style.yEnd) / 2);
-                        al = 'center';
-                        ctx.fillStyle = '#000';
-                        break;
-                    case "start":
-                        tx = style.xStart - (style.xStart < style.xEnd ? dd : -dd);
-                        ty = style.yStart;
-                        al = style.xStart < style.xEnd ? 'end' : 'start';
-                        break;
-                    case "end":
-                    default:
-                        tx = style.xEnd - (style.xStart < style.xEnd ? -dd : dd);
-                        ty = style.yEnd;
-                        al = style.xStart < style.xEnd ? 'start' : 'end';
-                        break;
+            getRect : function(style) {
+                return {
+                    x : Math.min(style.xStart, style.xEnd),
+                    y : Math.min(style.yStart, style.yEnd),
+                    width : Math.abs(style.xStart - style.xEnd),
+                    height : Math.abs(style.yStart - style.yEnd)
                 }
-                
-                if (style.textFont) {
-                    ctx.font = style.textFont;
-                }
-                ctx.textAlign = style.textAlign || al;
-                ctx.textBaseline = style.textBaseLine || 'middle';
-                
-                ctx.fillText(style.text, tx, ty);
             }
         }
         

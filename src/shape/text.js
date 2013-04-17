@@ -1,8 +1,8 @@
-/*
+/**
  * zrender
- * Copyright 2012 Baidu Inc. All rights reserved.
+ * Copyright 2013 Baidu Inc. All rights reserved.
  * 
- * desc:    zrender是一个Canvas绘图类库，mvc封装实现数据驱动绘图，图形事件封装
+ * desc:    zrender是一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型。
  * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
  * 
  * shape类：文字
@@ -25,7 +25,7 @@
            strokeColor   : {color},   // 默认为'#000'，线条颜色（轮廓），支持rgba
            lineWidth     : {number},  // 默认为1，线条宽度
            
-           alpha         : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
+           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
            shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
            shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
            shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左

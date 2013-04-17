@@ -1,5 +1,9 @@
 /**
- * 数学辅助类 
+ * zrender : 数学辅助类
+ * Copyright 2013 Baidu Inc. All rights reserved.
+ * 
+ * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * 
  * sin：正弦函数，自动缓存
  * cos：余弦函数，自动缓存
  * degreeToRadian：角度转弧度

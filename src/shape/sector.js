@@ -1,4 +1,8 @@
-/* desc:    zrender是一个Canvas绘图类库，mvc封装实现数据驱动绘图，图形事件封装
+/** 
+ * zrender
+ * Copyright 2013 Baidu Inc. All rights reserved. 
+ * 
+ * desc:    zrender是一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型。
  * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
  * 
  * shape类：扇形
@@ -24,7 +28,7 @@
            strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
            lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
            
-           alpha         : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
+           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
            shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
            shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
            shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
@@ -87,110 +91,99 @@ define(
              * @param {Object} style 样式
              */
             buildPath : function(ctx, style) {
-                 var x = style.x;   // 圆心x
-                 var y = style.y;   // 圆心y
-                 var r0 = typeof style.r0 == 'undefined' ? 0 : style.r0;    // 扇形内半径[0,r)
-                 var r = style.r;   // 扇形外半径(0,r]
-                 var startAngle = style.startAngle; //起始角度[0,360)
-                 var endAngle = style.endAngle;     //结束角度(0,360]
-                 var PI2 = Math.PI * 2;
+                var x = style.x;   // 圆心x
+                var y = style.y;   // 圆心y
+                var r0 = typeof style.r0 == 'undefined' ? 0 : style.r0;    // 扇形内半径[0,r)
+                var r = style.r;   // 扇形外半径(0,r]
+                var startAngle = style.startAngle; //起始角度[0,360)
+                var endAngle = style.endAngle;     //结束角度(0,360]
+                var PI2 = Math.PI * 2;
                  
-                 startAngle = math.degreeToRadian(startAngle);
-                 endAngle = math.degreeToRadian(endAngle);
+                startAngle = math.degreeToRadian(startAngle);
+                endAngle = math.degreeToRadian(endAngle);
                  
-                 //sin&cos已经在tool.math中缓存了，放心大胆的重复调用
-                 ctx.moveTo(
-                     math.cos(startAngle) * r0 + x,
-                     y - math.sin(startAngle) * r0
-                 );
-                 
-                 ctx.lineTo(
-                     math.cos(startAngle) * r + x,
-                     y - math.sin(startAngle) * r
-                 );
-                 
-                 ctx.arc(x, y, r, PI2 - startAngle, PI2 - endAngle, true);
-                 
-                 ctx.lineTo(
-                     math.cos(endAngle) * r0 + x,
-                     y - math.sin(endAngle) * r0
-                 );
-                 
-                 if (r0 != 0) {
-                     ctx.arc(x, y, r0, PI2 - endAngle, PI2 - startAngle, false);
-                 }
-                 
-                 return;
+                //sin&cos已经在tool.math中缓存了，放心大胆的重复调用
+                ctx.moveTo(
+                    math.cos(startAngle) * r0 + x,
+                    y - math.sin(startAngle) * r0
+                );
+                
+                ctx.lineTo(
+                    math.cos(startAngle) * r + x,
+                    y - math.sin(startAngle) * r
+                );
+                
+                ctx.arc(x, y, r, PI2 - startAngle, PI2 - endAngle, true);
+                
+                ctx.lineTo(
+                    math.cos(endAngle) * r0 + x,
+                    y - math.sin(endAngle) * r0
+                );
+                
+                if (r0 != 0) {
+                    ctx.arc(x, y, r0, PI2 - endAngle, PI2 - startAngle, false);
+                }
+                
+                return;
             },
             
             /**
-             * 附加文本
-             * @param {Context2D} ctx Canvas 2D上下文
-             * @param {Object} style 样式
+             * 返回矩形区域，用于局部刷新和文字定位 
+             * @param {Object} style
              */
-            drawText : function(ctx, style, isHighlight) {
-                ctx.fillStyle = style.textColor;
+            getRect : function(style) {
+                var x = style.x;   // 圆心x
+                var y = style.y;   // 圆心y
+                var r0 = typeof style.r0 == 'undefined' ? 0 : style.r0;    // 扇形内半径[0,r)
+                var r = style.r;   // 扇形外半径(0,r]
+                var startAngle = style.startAngle; //起始角度[0,360)
+                var endAngle = style.endAngle;     //结束角度(0,360]
                 
-                var mAngelDegree = ((style.endAngle - style.startAngle) / 2 
-                                   + style.startAngle) 
-                                   % 360;
-                var mAngelRadian = math.degreeToRadian(mAngelDegree);
-                var al;         // 文本水平对齐
-                var bl;         // 文本垂直对齐
-                var tx;         // 文本横坐标
-                var ty;         // 文本纵坐标
-                var r;
-                
-                switch (style.textPosition) {
-                    case "inside":
-                        r = (style.r + (style.r0 || 0)) / 2;
-                        tx = style.x + math.cos(mAngelRadian) * r;
-                        ty = style.y - math.sin(mAngelRadian) * r;
-                        al = 'center';
-                        bl = 'middle';
-                        if (style.brushType != 'stroke'
-                            && style.textColor == style.color
-                        ) {
-                            ctx.fillStyle = '#fff';
-                        }
-                        break;
-                    case "outside":
-                    default:
-                        // 文本与图形间空白间隙
-                        var dd = 15;  
-                        r = style.r + dd;
-                        tx = style.x + math.cos(mAngelRadian) * r;
-                        ty = style.y - math.sin(mAngelRadian) * r;
-                        if (mAngelDegree >= 60 && mAngelDegree < 120) {
-                            // top
-                            al = 'center';
-                            bl = 'bottom';
-                        }
-                        else if (mAngelDegree >= 120 && mAngelDegree < 240) {
-                            // left
-                            al = 'end';
-                            bl = 'middle';
-                        }
-                        else if (mAngelDegree >= 240 && mAngelDegree < 300) {
-                            // bottom
-                            al = 'center';
-                            bl = 'top';
-                        }
-                        else {
-                            // left
-                            al = 'start';
-                            bl = 'middle';
-                        }
-                        break;
+                var pointList = [];
+                if (startAngle < 90 && endAngle > 90) {
+                    pointList.push([
+                        x, y - r
+                    ]);
                 }
-                
-                if (style.textFont) {
-                    ctx.font = style.textFont;
+                if (startAngle < 180 && endAngle > 180) {
+                    pointList.push([
+                        x - r, y
+                    ]);
                 }
-                ctx.textAlign = style.textAlign || al;
-                ctx.textBaseline = style.textBaseLine || bl;
+                if (startAngle < 270 && endAngle > 270) {
+                    pointList.push([
+                        x, y + r
+                    ]);
+                } 
                 
-                ctx.fillText(style.text, tx, ty);
+                startAngle = math.degreeToRadian(startAngle);
+                endAngle = math.degreeToRadian(endAngle);
+                
+                
+                pointList.push([
+                    math.cos(startAngle) * r0 + x,
+                    y - math.sin(startAngle) * r0
+                ]);
+                
+                pointList.push([
+                    math.cos(startAngle) * r + x,
+                    y - math.sin(startAngle) * r
+                ]);
+                
+                pointList.push([
+                    math.cos(endAngle) * r + x,
+                    y - math.sin(endAngle) * r
+                ]);
+                
+                pointList.push([
+                    math.cos(endAngle) * r0 + x,
+                    y - math.sin(endAngle) * r0
+                ]);
+                
+                var shape = require('../shape');
+                return shape.get('polygon').getRect({
+                    pointList : pointList
+                });
             }
         }
         

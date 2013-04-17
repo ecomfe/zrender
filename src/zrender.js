@@ -1,13 +1,9 @@
-/*
- * zrender
- * Copyright 2012 Baidu Inc. All rights reserved.
+/**
+ * zrender : core核心类
+ * Copyright 2013 Baidu Inc. All rights reserved.
  * 
- * desc:    zrender是一个Canvas绘图类库，mvc封装实现数据驱动绘图，图形事件封装
+ * desc:    zrender是一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型。
  * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
- * 
- * shape级特性：
- * hoverable ： 悬浮响应，默认为true
- * draggable ： 可拖拽，默认为false
  * 
  */
 define(
@@ -27,6 +23,8 @@ define(
         if (document.createElement('canvas').getContext) {
             G_vmlCanvasManager = false;
         }
+
+        var Animation = require('./animation/animation');
         
         var self = {};
         var zrender = self;     // 提供MVC内部反向使用静态方法；
@@ -133,7 +131,6 @@ define(
          */
         function ZRender(id, dom, params) {
             var self = this;
-            
             var shape = require('./shape');
             var shapeLibrary;
             
@@ -155,7 +152,17 @@ define(
             var storage = new Storage(shapeLibrary);
             var painter = new Painter(dom, storage, shapeLibrary);
             var handler = new Handler(dom, storage, painter, shapeLibrary);
-            
+                
+            // 动画控制
+            var animatingShapes = [];
+            var animation = new Animation({
+                stage : {
+                    update : function(){
+                        self.update(animatingShapes);
+                    }
+                }
+            });
+            animation.start();
             /**
              * 获取实例唯一标识 
              */
@@ -200,7 +207,6 @@ define(
                 return self;
             }
             
-                
             /**
              * 渲染
              * @param {Function} callback  渲染结束后回调函数
@@ -235,6 +241,53 @@ define(
                 return self;
             }
             
+            /**
+             * 动画
+             * @param {string} shapeId 形状对象唯一标识
+             * @param {string} path 需要添加动画的属性获取路径，可以通过a.b.c来获取深层的属性
+             * @param {boolean} loop 动画是否循环
+             * @return {Object} 动画的Deferred对象
+             * Example:
+             * zr.animate( circleId, "style", false)
+             *   .when(1000, { x: 10} )
+             *   .done( function(){ console.log("Animation done")})
+             *   .start()
+             */
+            self.animate = function(shapeId, path, loop){
+                var shape = storage.get( shapeId );
+                if( shape ){
+                    var target;
+                    if( path ){
+                        var pathSplitted = path.split(".");
+                        var prop = shape;
+                        for(var i = 0; i < pathSplitted.length; i++){
+                            if( ! prop){
+                                continue;
+                            }
+                            prop = prop[ pathSplitted[i] ];
+                        }
+                        if( prop ){
+                            target = prop;
+                        }
+                    }else{
+                        target = shape;
+                    }
+                    if( ! target ){
+                        zrender.log( 'Property "'+ path + '" is not existed in shape ' + shapeId);
+                        return;
+                    }
+                    var idx = animatingShapes.length;
+                    animatingShapes.push( shape );
+                    return animation.animate( target, loop )
+                        .done( function(){
+                            // 从animatingShapes里移除
+                            animatingShapes.splice( idx, 1 );
+                        } );
+                }else {
+                    zrender.log( 'Shape "'+ shapeId + '" not existed');
+                }
+            }
+                
             /**
              * loading显示
              * @param  {Object} loadingOption 参数
@@ -383,8 +436,8 @@ define(
                     'clickable': false,                     // clickable可点击鼠标样式
                     'hoverable': true,                      // hoverable可悬浮响应
                     'position': [0, 0],
-                    'rotation' : 0,
-                    'scale' : [1, 1]
+                    'rotation' : [0, 0, 0],
+                    'scale' : [1, 1, 0, 0]
                 };
                 util.merge(
                     e,
@@ -404,7 +457,14 @@ define(
                 
                 return self
             }
-            
+
+            /**
+             * 根据指定的shapeId获取相应的shape属性 
+             * @param {string=} idx 唯一标识
+             */
+            function get( shapeId ){
+                return _elements[ shapeId ];
+            }
             /**
              * 删除，shapeId不指定则全清空 
              * @param {string=} idx 唯一标识
@@ -613,6 +673,7 @@ define(
             
             self.newShapeId = newShapeId;
             self.add = add;
+            self.get = get;
             self.del = del;
             self.addHover = addHover;
             self.delHover = delHover;
