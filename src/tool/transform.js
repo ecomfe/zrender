@@ -1,9 +1,12 @@
-/** 
- * 为shaper提供平移，旋转等变换
+/**
+ * zrender : 为shaper提供平移，旋转等变换
+ * Copyright 2013 Baidu Inc. All rights reserved.
+ * 
+ * author : lang(shenyi01@baidu.com)
+ * 
  * 暂时没用到
  * 下面的代码因为都是函数形式，无法用到modShape里，有待斟酌
  * 这样就需要每次refresh的时候updateTransform了
- * author : lang(shenyi01@baidu.com)
  */
 define(
 	function(require){

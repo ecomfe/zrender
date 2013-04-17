@@ -36,6 +36,7 @@ define(
             //是否循环
             this.loop = typeof(options.loop) == 'undefined' ? false : options.loop;
             
+            this.gap = options.gap || 0;
             
             this.easing = options.easing || "Linear";
 
@@ -49,6 +50,7 @@ define(
         Controller.prototype = {
             step : function(time){
                 var percent = (time-this._startTime)/this._life;
+
                 //还没开始
                 if(percent < 0){
                     return;
@@ -83,7 +85,7 @@ define(
                 }
             },
             restart : function(){
-                this._startTime = new Date().getTime() + this.loopDelay;
+                this._startTime = new Date().getTime() + this.gap;
             },
             fire : function(eventType, arg){
                 for(var i = 0; i < this._targetPool.length; i++){

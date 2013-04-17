@@ -1,11 +1,10 @@
-/*
- * zrender
- * Copyright 2012 Baidu Inc. All rights reserved.
+/**
+ * zrender : shape基类
+ * Copyright 2013 Baidu Inc. All rights reserved.
  * 
- * desc:    zrender是一个Canvas绘图类库，mvc封装实现数据驱动绘图，图形事件封装
+ * desc:    zrender是一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型。
  * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
  * 
- * shape基类
  * 可配图形属性：
    {   
        // 基础属性，详见各shape
@@ -15,9 +14,9 @@
        invisible : {boolean},   // 默认为false，是否可见
        
        // 变换
-       translate : {array},  // 默认为[0, 0], shape的坐标
-       rotate : {number},  // 默认为0，shape绕自身旋转的角度，不被translate 影响
-       scale : {array},     // 默认为[1, 1], shape纵横缩放比例，不被translate影响
+       position : {array},  // 默认为[0, 0], shape的坐标
+       rotation : {number|array},  // 默认为[0, 0, 0]，shape绕自身旋转的角度，不被translate 影响, 后两个值为旋转的origin
+       scale : {array},         // 默认为[1, 1, 0, 0], shape纵横缩放比例，不被translate影响, 后两个值为缩放的origin
        
        // 样式属性，详见各shape，默认状态样式属性
        style  : {Object},
@@ -27,7 +26,7 @@
        
        // 交互属性，zrender支持，非图形类实现
        hoverable : {boolean},   // 默认为true，可悬浮响应，默认悬浮响应为高亮显示，可在onbrush中捕获并阻塞高亮绘画
-       clickable : {boolean},   // 默认为false，可点击响应，可在onclick中捕获并阻塞全局click响应
+       clickable : {boolean},   // 默认为false，可点击响应，影响鼠标hover时图标是否为可点击样式，为false则阻断点击事件抛出，为true可在onclick中捕获
        draggable : {boolean},   // 默认为false，可拖拽响应，默认拖拽响应改变图形位置，可在ondrift中捕获并阻塞默认拖拽行为
 
        // 事件属性
@@ -124,6 +123,7 @@ define(
             var methods = [             // 派生实现的基类方法
                     'brush',
                     'setContext',
+                    'drawText',
                     'getHighlightStyle',
                     'getHighlightZoom',
                     'drift',
@@ -204,7 +204,7 @@ define(
                 if (style.textPosition == 'inside') {
                     ctx.shadowColor = 'rgba(0,0,0,0)';   // 内部文字不带shadowColor
                 }
-                this.drawText(ctx, style, isHighlight);
+                this.drawText(ctx, style);
             }
             
             ctx.restore();
@@ -226,8 +226,8 @@ define(
                 ctx.strokeStyle = style.strokeColor;
             }
             
-            if (typeof style.alpha != 'undefined') {
-                ctx.globalAlpha = style.alpha;
+            if (typeof style.opacity != 'undefined') {
+                ctx.globalAlpha = style.opacity;
             }
             
             if (typeof style.lineCap != 'undefined') {
@@ -306,6 +306,117 @@ define(
         }
         
         /**
+         * 附加文本
+         * @param {Context2D} ctx Canvas 2D上下文
+         * @param {Object} style 样式
+         */
+        function drawText(ctx, style) {
+            ctx.fillStyle = style.textColor;
+            // 文本与图形间空白间隙
+            var dd = 10;
+            var al;         // 文本水平对齐
+            var bl;         // 文本垂直对齐
+            var tx;         // 文本横坐标
+            var ty;         // 文本纵坐标
+            
+            var textPosition = style.textPosition       // 用户定义
+                               || this.textPosition     // shape默认
+                               || 'top';                // 全局默认
+           
+            if ((textPosition == 'inside'
+                || textPosition == 'top'
+                || textPosition == 'bottom'
+                || textPosition == 'left'
+                || textPosition == 'right')
+                && this.getRect // 矩形定位文字的图形必须提供getRect方法
+            ) { 
+                var rect = this.getRect(style);
+                
+                switch (textPosition) {
+                    case "inside":
+                        tx = rect.x + rect.width / 2;
+                        ty = rect.y + rect.height / 2;
+                        al = 'center';
+                        bl = 'middle';
+                        if (style.brushType != 'stroke'
+                            && style.textColor == style.color
+                        ) {
+                            ctx.fillStyle = '#fff';
+                        }
+                        break;
+                    case "left":
+                        tx = rect.x - dd;
+                        ty = rect.y + rect.height / 2;
+                        al = 'end';
+                        bl = 'middle';
+                        break;
+                    case "right":
+                        tx = rect.x + rect.width + dd;
+                        ty = rect.y + rect.height / 2;
+                        al = 'start';
+                        bl = 'middle';
+                        break;
+                    case "top":
+                        tx = rect.x + rect.width / 2;
+                        ty = rect.y - dd;
+                        al = 'center';
+                        bl = 'bottom';
+                        break;
+                    case "bottom":
+                        tx = rect.x + rect.width / 2;
+                        ty = rect.y + rect.height + dd;
+                        al = 'center';
+                        bl = 'top';
+                        break;
+                }
+            }
+            else if ((textPosition == 'start' 
+                     || textPosition == 'end')
+                     && typeof style.pointList != 'undefined'
+            ) {
+                var pointList = style.pointList;
+                if (pointList.length < 2) {
+                    // 少于2个点就不画了~
+                    return;
+                }
+                var length = pointList.length;
+                switch (textPosition) {
+                    case "start":
+                        al = pointList[0][0] < pointList[1][0]  
+                             ? 'end' : 'start';
+                        bl = pointList[0][1] < pointList[1][1]  
+                             ? 'bottom' : 'top';
+                        tx = pointList[0][0];
+                        ty = pointList[0][1];
+                        break;
+                    case "end":
+                        al = pointList[length - 2][0] 
+                             < pointList[length - 1][0]   
+                             ? 'start' : 'end';
+                        bl = pointList[length - 2][1] 
+                             < pointList[length - 1][1]   
+                             ? 'top' : 'bottom';
+                        tx = pointList[length - 1][0];
+                        ty = pointList[length - 1][1];
+                        break;
+                }
+                dd -= 4;
+                tx -= (al == 'end' ? dd : -dd);
+                ty -= (bl == 'bottom' ? dd : -dd);
+            }
+           
+            if (typeof tx != 'undefined' && typeof ty != 'undefined') {
+                if (style.textFont) {
+                    ctx.font = style.textFont;
+                }
+                ctx.textAlign = style.textAlign || al;
+                ctx.textBaseline = style.textBaseLine || bl;
+                
+                ctx.fillText(style.text, tx, ty);
+            }
+        }
+        
+        /**
          * 根据默认样式扩展高亮样式
          * @param ctx Canvas 2D上下文
          * @param {Object} style 默认样式
@@ -367,7 +478,7 @@ define(
             //对鼠标的坐标也做相同的变换
             var m = e._transform;
             if( m ){
-                var newPos = matrix.mulVector( matrix.inverse( matrix.expand(m) ), [x, y, 1]); 
+                var newPos = matrix.mulVector([], matrix.inverse( [], matrix.expand(m) ), [x, y, 1]); 
             }else{
                 newPos = [x, y];
             }
@@ -375,15 +486,36 @@ define(
         }
         
         function updateTransform( e ){
-            var _transform = matrix.identity();
+            var _transform = e._transform || matrix.create();
+            matrix.identity( _transform );
             if( e.scale){
-                _transform = matrix.scale( _transform, e.scale );
+                var originX = e.scale[2] || 0,
+                    originY = e.scale[3] || 0;
+                if( originX || originY ){
+                    matrix.translate(_transform, _transform, [-originX, -originY] );
+                }
+                matrix.scale( _transform, _transform, e.scale );
+                if( originX || originY ){
+                    matrix.translate(_transform, _transform, [originX, originY] );
+                }
             }
             if( e.rotation ){
-                _transform = matrix.rotate( _transform, e.rotation );
+                if( e.rotation.constructor === Array ){
+                    var originX = e.rotation[1] || 0,
+                        originY = e.rotation[2] || 0;
+                    if( originX || originY ){
+                        matrix.translate(_transform, _transform, [-originX, -originY] );
+                    }
+                    matrix.rotate( _transform, _transform, e.rotation[0] );
+                    if( originX || originY ){
+                        matrix.translate(_transform, _transform, [originX, originY] );
+                    }   
+                }else{
+                    matrix.rotate( _transform, _transform, e.rotation );
+                }
             }
             if( e.position ){
-                _transform = matrix.translate(_transform, e.position );
+                matrix.translate(_transform, _transform, e.position );
             }
             // 保存这个变换矩阵
             e._transform = _transform;
@@ -395,6 +527,7 @@ define(
             derive : derive,
             brush : brush,
             setContext : setContext,
+            drawText : drawText,
             getHighlightStyle : getHighlightStyle,
             getHighlightZoom : getHighlightZoom,  
             drift : drift,

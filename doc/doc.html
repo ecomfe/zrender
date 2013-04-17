@@ -37,6 +37,7 @@
                     <li class="divider"></li>
                     <!--li class="nav-header">Library</li-->
                     <li><a href="example/artist.html">Artist</a></li>
+                    <li><a href="example/slice.html">slice</a></li>
                   </ul>
                 </li>
                 <li class="active"><a href="doc.html">API &amp; Doc</a></li>
@@ -107,13 +108,24 @@
                   <div class="accordion-group">
                     <div class="accordion-heading">
                       <div class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapse-tool">
-                        
                         <a id="nav-head-tool" href="#tool">tool</a>
                       </div>
                     </div>
                     <div id="collapse-tool" class="accordion-body collapse">
                       <div class="accordion-inner">
                         <ul class="nav nav-list" id="nav-tool"></ul>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="accordion-group">
+                    <div class="accordion-heading">
+                      <div class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapse-animation">
+                        <a id="nav-head-animation" href="#tool">animation</a>
+                      </div>
+                    </div>
+                    <div id="collapse-animation" class="accordion-body collapse">
+                      <div class="accordion-inner">
+                        <ul class="nav nav-list" id="nav-animation"></ul>
                       </div>
                     </div>
                   </div>
@@ -148,6 +160,8 @@
     <script type="text/javascript">
         var conZrIns = document.getElementById('nav-zrender-instance');
         var conShape = document.getElementById('nav-shape');
+        var conAnimation = document.getElementById('nav-animation');
+        
         function _resize() {
             var viewHeight = document.documentElement.clientHeight;
             var scrollHeight = document.documentElement.scrollTop || document.body.scrollTop;
@@ -156,11 +170,11 @@
             var footHole = offsetHeight - scrollHeight - viewHeight;
             if (footHole > 60) {
                 // 未见footer，60 top、bottom， 40 per one
-                maxHeight = viewHeight - 60 - 40 * 4 - 40;
+                maxHeight = viewHeight - 60 - 40 * 5 - 40;
             }
             else {
                 // 见footer
-                maxHeight = viewHeight - 60 - 40 * 4 - (80 - footHole) - 60;
+                maxHeight = viewHeight - 60 - 40 * 5 - (80 - footHole) - 60;
             }
             if (conZrIns.scrollHeight > maxHeight) {
                 conZrIns.style.height = maxHeight + 'px';
@@ -171,6 +185,11 @@
                 conShape.style.height = maxHeight + 'px';
             } else {
                 conShape.style.height = 'auto';
+            }
+            if (conAnimation.scrollHeight > maxHeight) {
+                conAnimation.style.height = maxHeight + 'px';
+            } else {
+                conAnimation.style.height = 'auto';
             }
         }
         $('#accordion').on('shown', _resize);
@@ -183,6 +202,10 @@
         var toolList = $('#nav-tool').children('li');
         for (var i = 0 , l = shapeList.length; i < l; i++) {
             $(toolList[i]).on('click', _toggle);
+        }
+        var animationList = $('#nav-animation').children('li');
+        for (var i = 0 , l = shapeList.length; i < l; i++) {
+            $(animationList[i]).on('click', _toggle);
         }
         function _toggle(event){
             if (event.target.className == 'icon-plus') {
@@ -198,11 +221,13 @@
         var navZrIns = document.getElementById('nav-head-zrender-instance');
         var navShape = document.getElementById('nav-head-shape');
         var navTool = document.getElementById('nav-head-tool');
+        var navAnimation = document.getElementById('nav-head-animation');
         
         navZr.onclick = 
         navZrIns.onclick = 
         navShape.onclick = 
-        navTool.onclick = function(e){
+        navTool.onclick =
+        navAnimation.onclick = function(e){
             window.location= this.href;
             e = e || window.event;
             if (e.preventDefault) {

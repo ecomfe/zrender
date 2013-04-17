@@ -1,18 +1,15 @@
 /**
- * 矩形：正方形&长方形
- */
-/*
  * zrender
- * Copyright 2012 Baidu Inc. All rights reserved.
+ * Copyright 2013 Baidu Inc. All rights reserved.
  * 
- * desc:    zrender是一个Canvas绘图类库，mvc封装实现数据驱动绘图，图形事件封装
+ * desc:    zrender是一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型。
  * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
  * 
  * shape类：矩形
  * 可配图形属性：
    {   
        // 基础属性
-       shape  : 'circle',       // 必须，shape类标识，需要显式指定
+       shape  : 'rectangle',       // 必须，shape类标识，需要显式指定
        id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
        zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
        invisible : {boolean},   // 默认为false，是否可见
@@ -29,7 +26,7 @@
            strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
            lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
            
-           alpha         : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
+           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
            shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
            shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
            shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
@@ -96,64 +93,16 @@ define(
             },
             
             /**
-             * 附加文本
-             * @param {Context2D} ctx Canvas 2D上下文
-             * @param {Object} style 样式
+             * 返回矩形区域，用于局部刷新和文字定位 
+             * @param {Object} style
              */
-            drawText : function(ctx, style) {
-                ctx.fillStyle = style.textColor;
-                
-                var al;         // 文本水平对齐
-                var bl;         // 文本垂直对齐
-                var tx;         // 文本横坐标
-                var ty;         // 文本纵坐标
-                var dd = 10;    // 文本与图形间空白间隙
-                switch (style.textPosition) {
-                    case "inside":
-                        tx = style.x + style.width / 2;
-                        ty = style.y + style.height / 2;
-                        al = 'center';
-                        bl = 'middle';
-                        if (style.brushType != 'stroke'
-                            && style.textColor == style.color
-                        ) {
-                            ctx.fillStyle = '#fff';
-                        }
-                        break;
-                    case "left":
-                        tx = style.x - dd;
-                        ty = style.y + style.height / 2;
-                        al = 'end';
-                        bl = 'middle';
-                        break;
-                    case "right":
-                        tx = style.x + dd;
-                        ty = style.y + style.height / 2;
-                        al = 'start';
-                        bl = 'middle';
-                        break;
-                    case "bottom":
-                        tx = style.x + style.width / 2;
-                        ty = style.y + style.height + dd;
-                        al = 'center';
-                        bl = 'top';
-                        break;
-                    case "top":
-                    default:
-                        tx = style.x + style.width / 2;
-                        ty = style.y - dd;
-                        al = 'center';
-                        bl = 'bottom';
-                        break;
+            getRect : function(style) {
+                return {
+                    x : style.x,
+                    y : style.y,
+                    width : style.width,
+                    height : style.height
                 }
-                
-                if (style.textFont) {
-                    ctx.font = style.textFont;
-                }
-                ctx.textAlign = style.textAlign || al;
-                ctx.textBaseline = style.textBaseLine || bl;
-                
-                ctx.fillText(style.text, tx, ty);
             }
         }
 
