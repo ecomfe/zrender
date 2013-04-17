@@ -19,8 +19,8 @@
 			var circle = {
 							shape : 'circle',
 						    id : zr.newShapeId(),
-						    position : [20, 20],
-						    scale : [2, 2],
+						    position : [100, 100],
+						    scale : [1, 1],
 						    style : {
 						    	x : 0,
 						    	y : 0,
@@ -32,26 +32,21 @@
 						        text :'circle',
 						        textPosition :'inside'
 						    },
-						    draggable : true
-						}
+						    draggable : true,
+						    onmouseover  : function(){
+                                zr.animate( circle.id,"style")
+                                    .when( 1000, {
+                                        r : 100
+                                    }).when( 2000, {
+                                        r : 50
+                                    })
+                                    .start();
+                            }
+                        }
 			zr.addShape( circle );
 			zr.render();
 
-			var anim = new Animation(),
-				renderer = {
-					// 这里做一个简单的适配
-					// update函数在animation设置了start之后每一次刷新都会触发
-					// 也可以不使用animation的start函数
-					// 手动每一帧去调用update函数更新状态
-					update : function(){
-						zr.update([circle]);
-						//zr.refresh();
-					}
-				}
-			anim.stage = renderer;
-			anim.start();
-
-			anim.animate( circle )
+			var tm1 = zr.animate( circle.id, "" )
 				.when(1000, {
 					position : [200, 0]
 				})
@@ -65,11 +60,20 @@
 					position : [100, 100]
 				})
 				.done(function(){
-					// alert("animation finished")
-					console.log(circle.translate);
+					zr.animate( circle.id )
+						.when( 2000, {
+							rotation : [Math.PI*2, 0, 0]
+						})
+						.start();
 				})
+				.start();
 
-			anim.animate( circle.style )
+			zr.animate( circle.id )
+				.when( 1000, {
+					scale : [2, 2]
+				})
+				.start();
+			zr.animate( circle.id, "style" )
 				.when( 1000, {
 					r : 100
 				})
@@ -77,9 +81,13 @@
 					r : 50
 				})
 				.when( 3000, {
-					r : 30
+					r : 10
 				})
-				.start()
+				.when( 4000, {
+					r : 50
+				})
+				.start();
+
 		})
 	</script>
 	<div id="Main" style="width:600px;height:400px;"></div>

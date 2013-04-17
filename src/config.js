@@ -1,12 +1,11 @@
-/*
- * zrender默认配置项
- * Copyright 2012 Baidu Inc. All rights reserved.
+/**
+ * zrender : config默认配置项
+ * Copyright 2013 Baidu Inc. All rights reserved.
  * 
- * desc:    zrender是一个Canvas绘图类库，mvc封装实现数据驱动绘图，图形事件封装
+ * desc:    zrender是一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型。
  * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
  * 
  */
-// config:配置项
 define(
     {              
         EVENT : {                       // 支持事件列表

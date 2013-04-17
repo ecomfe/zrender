@@ -1,8 +1,8 @@
-/*
+/**
  * zrender
- * Copyright 2012 Baidu Inc. All rights reserved.
+ * Copyright 2013 Baidu Inc. All rights reserved.
  * 
- * desc:    zrender是一个Canvas绘图类库，mvc封装实现数据驱动绘图，图形事件封装
+ * desc:    zrender是一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型。
  * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
  * 
  * shape类：多边形
@@ -23,7 +23,7 @@
            strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
            lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
            
-           alpha         : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
+           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
            shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
            shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
            shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
@@ -92,124 +92,37 @@ define(
             },
             
             /**
-             * 附加文本
-             * @param {Context2D} ctx Canvas 2D上下文
-             * @param {Object} style 样式
-             * @depend this.findPoint
+             * 返回矩形区域，用于局部刷新和文字定位 
+             * @param {Object} style
              */
-            drawText : function(ctx, style) {
-                ctx.fillStyle = style.textColor;
-                
-                var al;         // 文本水平对齐
-                var bl;         // 文本垂直对齐
-                var tx;         // 文本横坐标
-                var ty;         // 文本纵坐标
-                var dd = 10;    // 文本与图形间空白间隙
-                
-                var specified = this.findPoint(style.textPosition, style.pointList);
-                
-                switch (style.textPosition) {
-                    case "inside":
-                        tx = specified[0];
-                        ty = specified[1];
-                        al = 'center';
-                        bl = 'middle';
-                        if (style.brushType != 'stroke'
-                            && style.textColor == style.color
-                        ) {
-                            ctx.fillStyle = '#fff';
-                        }
-                        break;
-                    case "left":
-                        tx = specified[0] - dd;
-                        ty = specified[1];
-                        al = 'end';
-                        bl = 'middle';
-                        break;
-                    case "right":
-                        tx = specified[0] + dd;
-                        ty = specified[1];
-                        al = 'start';
-                        bl = 'middle';
-                        break;
-                    case "bottom":
-                        tx = specified[0];
-                        ty = specified[1] + dd;
-                        al = 'center';
-                        bl = 'top';
-                        break;
-                    case "top":
-                    default:
-                        tx = specified[0];
-                        ty = specified[1] - dd;
-                        al = 'center';
-                        bl = 'bottom';
-                        break;
+            getRect : function(style) {
+                var minX =  Number.MAX_VALUE;
+                var maxX =  Number.MIN_VALUE;
+                var minY = Number.MAX_VALUE;
+                var maxY = Number.MIN_VALUE;
+
+                var pointList = style.pointList;
+                for(var i = 0, l = pointList.length; i < l; i++) {
+                    if (pointList[i][0] < minX) {
+                        minX = pointList[i][0]
+                    }
+                    if (pointList[i][0] > maxX) {
+                        maxX = pointList[i][0]
+                    }
+                    if (pointList[i][1] < minY) {
+                        minY = pointList[i][1]
+                    }
+                    if (pointList[i][1] > maxY) {
+                        maxY = pointList[i][1]
+                    }
                 }
                 
-                if (style.textFont) {
-                    ctx.font = style.textFont;
-                }
-                ctx.textAlign = style.textAlign || al;
-                ctx.textBaseline = style.textBaseLine || bl;
-                
-                ctx.fillText(style.text, tx, ty);
-            },
-            
-            /**
-             * 根据指定位置查找特定的点，drawText用 
-             * @param {string} specifiedPosition 指定位置
-             * @param {Array} pointList 顶点列表
-             */
-            findPoint : function(specifiedPosition, pointList) {
-                var result;
-                var i;
-                var len = pointList.length;
-                switch (specifiedPosition) {
-                    case 'inside' : 
-                        result = [0, 0];
-                        for (i = 0; i < len; i++) {
-                             result[0] += pointList[i][0];
-                             result[1] += pointList[i][1];
-                        }
-                        result = [result[0] / len, result[1] / len];
-                        break;
-                    case 'bottom':
-                        result = [0, Number.MIN_VALUE];
-                        for (i = 0; i < len; i++) {
-                             if (pointList[i][1] > result[1]) {
-                                 result = pointList[i];
-                             }
-                        }
-                        break;
-                    case 'left':
-                        result = [Number.MAX_VALUE, 0];
-                        for (i = 0; i < len; i++) {
-                             if (pointList[i][0] < result[0]) {
-                                 result = pointList[i];
-                             }
-                        }
-                        break;
-                    case 'right':
-                        result = [Number.MIN_VALUE, 0];
-                        for (i = 0; i < len; i++) {
-                             if (pointList[i][0] > result[0]) {
-                                 result = pointList[i];
-                             }
-                        }
-                        break;
-                    case 'top':
-                    default:
-                        result = [0, Number.MAX_VALUE];
-                        for (i = 0; i < len; i++) {
-                             if (pointList[i][1] < result[1]) {
-                                 result = pointList[i];
-                             }
-                        }
-                        break;
-                }
-                
-                return result;
+                return {
+                    x : minX,
+                    y : minY,
+                    width : maxX - minX,
+                    height : maxY - minY
+                };
             }
         }
         

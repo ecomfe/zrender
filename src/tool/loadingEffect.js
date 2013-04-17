@@ -1,5 +1,18 @@
 /**
- * loading 特效
+ * zrender : loading特效
+ * Copyright 2013 Baidu Inc. All rights reserved.
+ * 
+ * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * 
+ * 扩展loading effect： 
+ * getBackgroundShape：获取背景图形
+ * getTextShape：获取文字
+ * define : 定义效果
+ * 
+ * 内置效果
+ * progressBar：进度条
+ * dynamicLine：动态线条
+ * bubble：气泡
  */
 define(
     function(require) {

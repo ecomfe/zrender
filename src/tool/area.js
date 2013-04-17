@@ -1,5 +1,9 @@
 /**
- * 图形空间辅助类:
+ * zrender : 图形空间辅助类
+ * Copyright 2013 Baidu Inc. All rights reserved.
+ * 
+ * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *  
  * isInside：是否在区域内部
  * isOutside：是否在区域外部
  */

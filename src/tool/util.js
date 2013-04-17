@@ -1,6 +1,12 @@
 /**
- * 公共辅助函数 
+ * zrender : 公共辅助函数 
+ * Copyright 2013 Baidu Inc. All rights reserved.
+ * 
+ * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *  
  * clone：深度克隆
+ * merge：合并源对象的属性到目标对象
+ * isArray：数据类型判断，是否为数组
  */
 define(
     function(require) {
