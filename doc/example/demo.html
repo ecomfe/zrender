@@ -192,6 +192,63 @@ zr.addShape({
     draggable : true
 });
 
+// 椭圆
+zr.addShape({
+    shape : 'ellipse',
+    id : zr.newShapeId('ellipse'),
+    style : {
+        x : 350,
+        y : 100,
+        a : 70,
+        b : 30,
+        brushType : 'both',
+        color : color.getColor(colorIdx++),
+        strokeColor : color.getColor(colorIdx++),
+        lineWidth : 8,
+        text:'ellipse',
+        textPosition:'inside'
+    },
+    draggable : true
+});
+
+// 心形
+zr.addShape({
+    shape : 'heart',
+    id : zr.newShapeId('heart'),
+    style : {
+        x : width - 350,
+        y : 100,
+        a : 50,
+        b : 70,
+        brushType : 'both',
+        color : color.getColor(colorIdx++),
+        strokeColor : color.getColor(colorIdx++),
+        lineWidth : 8,
+        text:'heart',
+        textPosition:'inside'
+    },
+    draggable : true
+});
+
+// 水滴
+zr.addShape({
+    shape : 'droplet',
+    id : zr.newShapeId('droplet'),
+    style : {
+        x : 380,
+        y : 300,
+        a : 50,
+        b : 70,
+        brushType : 'both',
+        color : color.getColor(colorIdx++),
+        strokeColor : color.getColor(colorIdx++),
+        lineWidth : 8,
+        text:'droplet',
+        textPosition:'inside'
+    },
+    draggable : true
+});
+
 // 多边形
 zr.addShape({
     shape : 'polygon',
@@ -272,6 +329,39 @@ zr.addShape({
     },
     draggable : true
 });
+
+// 图片
+zr.addShape({
+    shape : 'image',
+    id : zr.newShapeId('image'),
+    style : {
+        x : 0,
+        y : 0,
+        image : "../asset/ico/favicon.png",
+        width : 20,
+        height : 20
+    },
+    draggable : true
+}); 
+
+// 路径
+zr.addShape({
+    shape : 'path',
+    id : zr.newShapeId('path'),
+    style : {
+        //path : 'M 0 0 L 0 100 L 100 100 Z',
+        path : 'M66,10, L23,127, L122,50, L10,49, L109,127 z',
+        x : 20,
+        y : 20,
+        brushType : 'both',
+        color : color.getColor(colorIdx++),
+        strokeColor : color.getColor(colorIdx++),
+        lineWidth : 10,
+        text : 'path',
+        textPosition : 'bottom' 
+    },
+    draggable : true
+});  
 
 // 绘画
 zr.render();

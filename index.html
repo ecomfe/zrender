@@ -18,7 +18,7 @@
     <link rel="shortcut icon" href="doc/asset/ico/favicon.png">
   </head>
 
-  <body>
+  <body id="home-body">
 
     <!-- NAVBAR
     ================================================== -->
@@ -256,7 +256,6 @@ zr.addShape({                               // and use it!
                 }
             ]
         });           
-        
         require(
             ['zrender/zrender'],
             function(zrender) {
@@ -368,6 +367,7 @@ zr.addShape({                               // and use it!
                         textFont : 'normal 18px 微软雅黑',
                         textAlign : 'center'
                     },
+                    clickable : true,
                     onclick : function(){
                         window.location = 'doc/example/demo.html';
                     }

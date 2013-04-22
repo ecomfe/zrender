@@ -156,10 +156,20 @@
     <script src="asset/js/bootstrap-collapse.js"></script>
     <script src="asset/js/bootstrap-carousel.js"></script>
     <script src="asset/js/bootstrap-typeahead.js"></script>
+    <script type="text/javascript">
+        var description = {};
+    </script>
+    <script src="asset/js/zDocAnimation.js"></script>
+    <script src="asset/js/zDocShape.js"></script>
+    <script src="asset/js/zDocTool.js"></script>
+    <script src="asset/js/zDocZrender.js"></script>
+    <script src="asset/js/zDocZrenderInstance.js"></script>
     <script src="asset/js/zrenderDoc.js"></script>
+
     <script type="text/javascript">
         var conZrIns = document.getElementById('nav-zrender-instance');
         var conShape = document.getElementById('nav-shape');
+        var conTool = document.getElementById('nav-tool');
         var conAnimation = document.getElementById('nav-animation');
         
         function _resize() {
@@ -186,6 +196,11 @@
             } else {
                 conShape.style.height = 'auto';
             }
+            if (conTool.scrollHeight > maxHeight) {
+                conTool.style.height = maxHeight + 'px';
+            } else {
+                conTool.style.height = 'auto';
+            }
             if (conAnimation.scrollHeight > maxHeight) {
                 conAnimation.style.height = maxHeight + 'px';
             } else {
@@ -207,6 +222,7 @@
         for (var i = 0 , l = shapeList.length; i < l; i++) {
             $(animationList[i]).on('click', _toggle);
         }
+        
         function _toggle(event){
             if (event.target.className == 'icon-plus') {
                 event.target.className = 'icon-minus';
