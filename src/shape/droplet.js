@@ -4,34 +4,36 @@
  * 
  * author: Kener (@Kener-林峰, linzhifeng@baidu.com)
  * 
- * shape类：多边形
+ * shape类：水滴
  * 可配图形属性：
    {   
        // 基础属性
-       shape  : 'polygon',      // 必须，shape类标识，需要显式指定
+       shape  : 'heart',       // 必须，shape类标识，需要显式指定
        id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
        zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
        invisible : {boolean},   // 默认为false，是否可见
        
        // 样式属性，默认状态样式样式属性
        style  : {
-           pointList     : {Array},   // 必须，多边形各个顶角坐标
+           x             : {number},  // 必须，水滴中心横坐标
+           y             : {number},  // 必须，水滴中心纵坐标
+           a             : {number},  // 必须，水滴横宽（中心到水平边缘最宽处距离）
+           b             : {number},  // 必须，水滴纵高（中心到尖端距离）
            brushType     : {string},  // 默认为fill，绘画方式
                                       // fill(填充) | stroke(描边) | both(填充+描边)
            color         : {color},   // 默认为'#000'，填充颜色，支持rgba
            strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
            lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
            
-           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
            shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
            shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
            shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
-           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
+           shadowOffsetY : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
            
            text          : {string},  // 默认为null，附加文本
            textFont      : {string},  // 默认为null，附加文本文字样式，eg:'bold 18px verdana'
-           textPosition  : {string},  // 默认为top，附加文本位置。
-                                      // inside | left | right | top | bottom
+           textPosition  : {string},  // 默认为outside，附加文本位置。
+                                      // outside | inside
            textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
                                       // start | end | left | right | center
            textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
@@ -52,11 +54,14 @@
    }
          例子：
    {
-       shape  : 'polygon',
+       shape  : 'droplet',
        id     : '123456',
        zlevel : 1,
        style  : {
-           pointList : [[10, 10], [300, 20], [298, 400], [50, 450]]
+           x : 200,
+           y : 100,
+           a : 50,
+           b : 80,
            color : '#eee',
            text : 'Baidu'
        },
@@ -70,23 +75,34 @@
  */
 define(
     function(require) {
-        function Polygon() {
-            this.type = 'polygon';
+        function Droplet() {
+            this.type = 'droplet';
         }
         
-        Polygon.prototype = {
+        Droplet.prototype = {
             /**
-             * 创建多边形路径
+             * 创建扇形路径
              * @param {Context2D} ctx Canvas 2D上下文
              * @param {Object} style 样式
              */
             buildPath : function(ctx, style) {
-                var pointList = style.pointList;
-                ctx.moveTo(pointList[0][0],pointList[0][1]);
-                for (var i = 1, l = pointList.length; i < l; i++) {
-                    ctx.lineTo(pointList[i][0],pointList[i][1]);
-                }
-                ctx.lineTo(pointList[0][0],pointList[0][1]);
+                ctx.moveTo(style.x, style.y + style.a);
+                ctx.bezierCurveTo(
+                    style.x + style.a,
+                    style.y + style.a,
+                    style.x + style.a * 3 / 2,
+                    style.y - style.a / 3,
+                    style.x,
+                    style.y - style.b
+                );
+                ctx.bezierCurveTo(
+                    style.x - style.a * 3 / 2,
+                    style.y - style.a / 3,
+                    style.x - style.a,
+                    style.y + style.a, 
+                    style.x,
+                    style.y + style.a
+                );
                 return;
             },
             
@@ -95,39 +111,18 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
-                var minX =  Number.MAX_VALUE;
-                var maxX =  Number.MIN_VALUE;
-                var minY = Number.MAX_VALUE;
-                var maxY = Number.MIN_VALUE;
-
-                var pointList = style.pointList;
-                for(var i = 0, l = pointList.length; i < l; i++) {
-                    if (pointList[i][0] < minX) {
-                        minX = pointList[i][0]
-                    }
-                    if (pointList[i][0] > maxX) {
-                        maxX = pointList[i][0]
-                    }
-                    if (pointList[i][1] < minY) {
-                        minY = pointList[i][1]
-                    }
-                    if (pointList[i][1] > maxY) {
-                        maxY = pointList[i][1]
-                    }
-                }
-                
                 return {
-                    x : minX,
-                    y : minY,
-                    width : maxX - minX,
-                    height : maxY - minY
-                };
+                    x : style.x - style.a,
+                    y : style.y - style.b,
+                    width : style.a * 2,
+                    height : style.a + style.b
+                }
             }
-        }
+        };
         
         var base = require('./base');
-            base.derive(Polygon);
+        base.derive(Droplet);
             
-        return Polygon;
+        return Droplet;
     }
 );

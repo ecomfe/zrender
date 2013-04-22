@@ -232,12 +232,7 @@ define(
              * @param {Function} callback  视图更新后回调函数
              */
             self.update = function(shapeList, callback) {
-                var shape;
-                for (var i = 0, l = shapeList.length; i < l; i++) {
-                    shape = shapeList[i];
-                    storage.mod(shape.id, shape);
-                }
-                painter.refresh(callback);
+                painter.update(shapeList, callback);
                 return self;
             }
             
@@ -694,6 +689,7 @@ define(
          * @param {Object} shape 图形库
          */
         function Painter(root, storage, shape) {
+            var util = require('./tool/util');
             var self = this;
             
             var _domList = {};              //canvas dom元素
@@ -828,7 +824,7 @@ define(
                                 
                                 if (zrender.catchBrushException) {
                                     try {
-                                        shape.get(e.shape).brush(ctx, e, false); 
+                                        shape.get(e.shape).brush(ctx, e, false, update); 
                                     }
                                     catch(error) {
                                         zrender.log(
@@ -839,7 +835,7 @@ define(
                                     }
                                 }
                                 else {
-                                    shape.get(e.shape).brush(ctx, e, false); 
+                                    shape.get(e.shape).brush(ctx, e, false, update); 
                                 }   
                                 
                             }
@@ -865,7 +861,7 @@ define(
                     
                     if (zrender.catchBrushException) {
                         try {
-                            shape.get(e.shape).brush(ctx, e, true); 
+                            shape.get(e.shape).brush(ctx, e, true, update); 
                         }
                         catch(error) {
                             zrender.log(
@@ -874,7 +870,7 @@ define(
                         }
                     }
                     else {
-                        shape.get(e.shape).brush(ctx, e, true); 
+                        shape.get(e.shape).brush(ctx, e, true, update); 
                     }  
                     
                 }
@@ -941,6 +937,25 @@ define(
                     callback();
                 }
                 
+                return self;
+            }
+            
+            
+            /**
+             * 视图更新
+             * @param {Array | shape} shapeList 需要更新的图形元素列表
+             * @param {Function} callback  视图更新后回调函数
+             */
+            function update(shapeList, callback) {
+                if (!util.isArray(shapeList)) {
+                    shapeList = [shapeList];
+                }
+                var shape;
+                for (var i = 0, l = shapeList.length; i < l; i++) {
+                    shape = shapeList[i];
+                    storage.mod(shape.id, shape);
+                }
+                refresh(callback);
                 return self;
             }
             
@@ -1112,12 +1127,13 @@ define(
             
             self.render = render;
             self.refresh = refresh;
-            self.showLoading = showLoading;
-            self.hideLoading = hideLoading;
-            self.isLoading = isLoading;
+            self.update = update;
             self.clear = clear;
             self.refreshHover = refreshHover;
             self.clearHover = clearHover;
+            self.showLoading = showLoading;
+            self.hideLoading = hideLoading;
+            self.isLoading = isLoading;
             self.getWidth = getWidth;
             self.getHeight = getHeight;
             self.resize = resize;

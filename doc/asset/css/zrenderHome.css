@@ -4,6 +4,9 @@ body {
     color: #5a5a5a;
     font-family: "微软雅黑";
 }
+#home-body {
+    *padding-top: 40px;
+}
 .face {
     height: 300px;
     background-color:#181818;
