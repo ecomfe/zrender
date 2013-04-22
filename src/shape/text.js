@@ -2,11 +2,9 @@
  * zrender
  * Copyright 2013 Baidu Inc. All rights reserved.
  * 
- * desc:    zrender是一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型。
- * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * author: Kener (@Kener-林峰, linzhifeng@baidu.com)
  * 
  * shape类：文字
- * Todo:textRotate, transfrom
  * 可配图形属性：
    {   
        // 基础属性
@@ -150,6 +148,37 @@ define(
                 
                 ctx.restore();
                 return;
+            },
+            
+            /**
+             * 返回矩形区域，用于局部刷新和文字定位 
+             * @param {Object} style
+             */
+            getRect : function(style) {
+                var area = require('../tool/area');
+                
+                var width =  area.getTextWidth(style.text, style.textFont);
+                var height = area.getTextWidth('国', style.textFont); //比较粗暴
+                
+                var textX = style.x;                 //默认start == left
+                if (style.textAlign == 'end' || style.textAlign == 'right') {
+                    textX -= width;
+                } else if (style.textAlign == 'center') {
+                    textX -= (width / 2);
+                }
+                
+                var textY = style.y - height / 2;    //默认middle
+                if (style.textBaseline == 'top') {
+                    textY += height / 2;
+                } else if (style.textBaseline == 'bottom') {
+                    textX -= height / 2;
+                }
+                return {
+                    x : textX,
+                    y : textY,
+                    width : width,
+                    height : height
+                }
             }
         }
 

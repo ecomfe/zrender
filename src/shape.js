@@ -57,9 +57,18 @@ define(
         
         var Text = require('./shape/text');
         self.define('text', new Text());
+
+        var Heart = require('./shape/heart');
+        self.define('heart', new Heart());
+        
+        var Droplet = require('./shape/droplet');
+        self.define('droplet', new Droplet());
         
         var Path = require('./shape/path');
         self.define('path', new Path());
+
+        var ZImage = require('./shape/image');
+        self.define('image', new ZImage() );
         
         return self;
     }
