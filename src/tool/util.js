@@ -7,6 +7,7 @@
  * clone：深度克隆
  * merge：合并源对象的属性到目标对象
  * isArray：数据类型判断，是否为数组
+ * getContext：获取一个自由使用的canvas 2D context，使用原生方法，如isPointInPath，measureText等
  */
 define(
     function(require) {
@@ -118,10 +119,32 @@ define(
                    && typeof obj.length === 'number';
         }
         
+        var _ctx;
+        function getContext() {
+            require( "js!../lib/excanvas.js" );
+            if (!_ctx) {
+                if (!document.createElement('canvas').getContext 
+                    && G_vmlCanvasManager
+                ){
+                    var _div = document.createElement('div');
+                    _div.style.position = 'absolute'; 
+                    _div.style.top = '-1000px';
+                    document.body.appendChild(_div);
+                    
+                    _ctx = G_vmlCanvasManager.initElement(_div).getContext('2d');
+                }
+                else {
+                    _ctx = document.createElement('canvas').getContext('2d');            
+                }
+            }
+            return _ctx;
+        }
+        
         return {
             clone : clone,
             merge : merge,
-            isArray : isArray
+            isArray : isArray,
+            getContext : getContext
         }
     }
 );

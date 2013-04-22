@@ -2,8 +2,7 @@
  * zrender
  * Copyright 2013 Baidu Inc. All rights reserved.
  * 
- * desc:    zrender是一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型。
- * author:  CrossDo (@CrossDo-chenhuaimu@baidu.com)
+ * author: CrossDo (@CrossDo-chenhuaimu@baidu.com)
  * 
  * shape类：路径
  * 可配图形属性：
@@ -78,7 +77,6 @@ define(
         Path.prototype = {
 
             _parsePathData : function(data) {
-        
               if(!data) {
                   return [];
               }
@@ -88,9 +86,9 @@ define(
 
               // command chars
               var cc = ['m', 'M', 'l', 'L', 'v', 'V', 'h', 'H', 'z', 'Z', 'c', 'C', 'q', 'Q', 't', 'T', 's', 'S', 'a', 'A'];
-              // convert white spaces to commas
-              cs = cs.replace(new RegExp('  ', 'g'), ' ');
-              cs = cs.replace(new RegExp(' ', 'g'), ',');
+              cs = cs.replace(/  /g, ' ');
+              cs = cs.replace(/ /g, ',');
+              cs = cs.replace(/,,/g, ',');
               // create pipes so that we can split the data
               for(var n = 0; n < cc.length; n++) {
                   cs = cs.replace(new RegExp(cc[n], 'g'), '|' + cc[n]);
@@ -105,31 +103,26 @@ define(
                   var str = arr[n];
                   var c = str.charAt(0);
                   str = str.slice(1);
-                  // remove ,- for consistency
-                  str = str.replace(new RegExp(',-', 'g'), '-');
-                  // add commas so that it's easy to split
-                  str = str.replace(new RegExp('-', 'g'), ',-');
                   str = str.replace(new RegExp('e,-', 'g'), 'e-');
+
                   var p = str.split(',');
                   if(p.length > 0 && p[0] === '') {
                       p.shift();
                   }
-                  // convert strings to floats
+
                   for(var i = 0; i < p.length; i++) {
                       p[i] = parseFloat(p[i]);
                   }
                   while(p.length > 0) {
-                      if(isNaN(p[0]))// case for a trailing comma before next command
-                          break;
-
+                      if(isNaN(p[0])) {
+                        break;
+                      }
                       var cmd = null;
                       var points = [];
                       var startX = cpx, startY = cpy;
 
                       // convert l, H, h, V, and v to L
                       switch (c) {
-
-                          // Note: Keep the lineTo's above the moveTo's in this switch
                           case 'l':
                               cpx += p.shift();
                               cpy += p.shift();
@@ -141,15 +134,12 @@ define(
                               cpy = p.shift();
                               points.push(cpx, cpy);
                               break;
-
-                          // Note: lineTo handlers need to be above this point
                           case 'm':
                               cpx += p.shift();
                               cpy += p.shift();
                               cmd = 'M';
                               points.push(cpx, cpy);
                               c = 'l';
-                              // subsequent points are treated as relative lineTo
                               break;
                           case 'M':
                               cpx = p.shift();
@@ -157,7 +147,6 @@ define(
                               cmd = 'M';
                               points.push(cpx, cpy);
                               c = 'L';
-                              // subsequent points are treated as absolute lineTo
                               break;
 
                           case 'h':
@@ -256,6 +245,18 @@ define(
                               cmd = 'Q';
                               points.push(ctlPtx, ctlPty, cpx, cpy);
                               break;
+                          case 'A':
+                              var rx = p.shift(), ry = p.shift(), psi = p.shift(), fa = p.shift(), fs = p.shift();
+                              var x1 = cpx, y1 = cpy; cpx = p.shift(), cpy = p.shift();
+                              cmd = 'A';
+                              points = _convertPoint(x1, y1, cpx, cpy, fa, fs, rx, ry, psi);
+                              break;
+                          case 'a':
+                              var rx = p.shift(), ry = p.shift(), psi = p.shift(), fa = p.shift(), fs = p.shift();
+                              var x1 = cpx, y1 = cpy; cpx += p.shift(), cpy += p.shift();
+                              cmd = 'A';
+                              points = _convertPoint(x1, y1, cpx, cpy, fa, fs, rx, ry, psi);
+                              break;
                         
                       }
 
@@ -275,6 +276,62 @@ define(
 
               return ca;
 
+            },
+
+            _convertPoint : function (x1, y1, x2, y2, fa, fs, rx, ry, psiDeg) {
+                var psi = psiDeg * (Math.PI / 180.0);
+                var xp = Math.cos(psi) * (x1 - x2) / 2.0 + Math.sin(psi) * (y1 - y2) / 2.0;
+                var yp = -1 * Math.sin(psi) * (x1 - x2) / 2.0 + Math.cos(psi) * (y1 - y2) / 2.0;
+
+                var lambda = (xp * xp) / (rx * rx) + (yp * yp) / (ry * ry);
+
+                if(lambda > 1) {
+                    rx *= Math.sqrt(lambda);
+                    ry *= Math.sqrt(lambda);
+                }
+
+                var f = Math.sqrt((((rx * rx) * (ry * ry)) - ((rx * rx) * (yp * yp)) - ((ry * ry) * (xp * xp))) / ((rx * rx) * (yp * yp) + (ry * ry) * (xp * xp)));
+
+                if(fa == fs) {
+                    f *= -1;
+                }
+                if(isNaN(f)) {
+                    f = 0;
+                }
+
+                var cxp = f * rx * yp / ry;
+                var cyp = f * -ry * xp / rx;
+
+                var cx = (x1 + x2) / 2.0 + Math.cos(psi) * cxp - Math.sin(psi) * cyp;
+                var cy = (y1 + y2) / 2.0 + Math.sin(psi) * cxp + Math.cos(psi) * cyp;
+
+                var vMag = function(v) {
+                    return Math.sqrt(v[0] * v[0] + v[1] * v[1]);
+                };
+                var vRatio = function(u, v) {
+                    return (u[0] * v[0] + u[1] * v[1]) / (vMag(u) * vMag(v));
+                };
+                var vAngle = function(u, v) {
+                    return (u[0] * v[1] < u[1] * v[0] ? -1 : 1) * Math.acos(vRatio(u, v));
+                };
+                var theta = vAngle([1, 0], [(xp - cxp) / rx, (yp - cyp) / ry]);
+                var u = [(xp - cxp) / rx, (yp - cyp) / ry];
+                var v = [(-1 * xp - cxp) / rx, (-1 * yp - cyp) / ry];
+                var dTheta = vAngle(u, v);
+
+                if(vRatio(u, v) <= -1) {
+                    dTheta = Math.PI;
+                }
+                if(vRatio(u, v) >= 1) {
+                    dTheta = 0;
+                }
+                if(fs === 0 && dTheta > 0) {
+                    dTheta = dTheta - 2 * Math.PI;
+                }
+                if(fs == 1 && dTheta < 0) {
+                    dTheta = dTheta + 2 * Math.PI;
+                }
+                return [cx, cy, rx, ry, theta, dTheta, psi, fs];
             },
 
             /**
@@ -311,7 +368,6 @@ define(
                         case 'Q':
                             ctx.quadraticCurveTo(p[0], p[1], p[2], p[3]);
                             break;
-                    
                         case 'z':
                             ctx.closePath();
                             break;
@@ -349,7 +405,7 @@ define(
                           if(p[j] > maxX){
                             maxX = p[j];
                           }
-                        }else{
+                        } else {
                           if(p[j] < minY){
                             minY = p[j];
                           }

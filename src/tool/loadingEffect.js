@@ -59,6 +59,13 @@ define(
             }
         }
         
+        /** 
+         * 进度条
+         * @param {Object} textStyle
+         * @param {Object} canvasSize
+         * @param {Object} addShapeHandle
+         * @param {Object} refreshHandle
+         */
         function progressBar(textStyle, canvasSize, addShapeHandle, refreshHandle) {
             var width = canvasSize.width;
             var height = canvasSize.height;
@@ -104,7 +111,86 @@ define(
                 100
             )
         }
-         
+        
+        /** 
+         * 进度条
+         * @param {Object} textStyle
+         * @param {Object} canvasSize
+         * @param {Object} addShapeHandle
+         * @param {Object} refreshHandle
+         */
+        function whirling(textStyle, canvasSize, addShapeHandle, refreshHandle) {
+            var width = canvasSize.width;
+            var height = canvasSize.height;
+            
+            var textShape = getTextShape(
+                width, height, '#888' , textStyle || {}
+            );
+            
+            var background = getBackgroundShape(
+                width, height, 'rgba(250, 250, 250, 0.8)'
+            );
+            
+            // 初始化动画元素
+            var droplet = {
+                shape : 'droplet',
+                highlightStyle : {
+                    a : 10,
+                    b : 15,
+                    brushType : 'fill',
+                    color :  '#6cf'
+                }
+            };
+            var circleIn = {
+                shape : 'circle',
+                highlightStyle : {
+                    r : 3,
+                    brushType : 'fill',
+                    color :  '#fff'
+                }
+            }
+            var circleOut = {
+                shape : 'ring',
+                highlightStyle : {
+                    r0 : 12,
+                    r : 18,
+                    brushType : 'fill',
+                    color :  '#555'
+                }
+            }
+            
+            var pos = [0, width / 3, height / 2];
+            droplet.highlightStyle.x
+            = circleIn.highlightStyle.x
+            = circleOut.highlightStyle.x
+            = pos[1];
+            droplet.highlightStyle.y
+            = circleIn.highlightStyle.y
+            = circleOut.highlightStyle.y
+            = pos[2];
+            
+            return setInterval(
+                function() {
+                    addShapeHandle(background);
+                    addShapeHandle(circleOut);
+                    pos[0] -= 0.3;
+                    droplet.rotation = pos;
+                    addShapeHandle(droplet);
+                    addShapeHandle(circleIn);
+                    addShapeHandle(textShape)
+                    refreshHandle();
+                }, 
+                50
+            )
+        }
+        
+        /**
+         * 动态线 
+         * @param {Object} textStyle
+         * @param {Object} canvasSize
+         * @param {Object} addShapeHandle
+         * @param {Object} refreshHandle
+         */ 
         function dynamicLine(textStyle, canvasSize, addShapeHandle, refreshHandle) {
             var width = canvasSize.width;
             var height = canvasSize.height;
@@ -179,6 +265,13 @@ define(
             )
         }
         
+        /**
+         * 泡泡
+         * @param {Object} textStyle
+         * @param {Object} canvasSize
+         * @param {Object} addShapeHandle
+         * @param {Object} refreshHandle
+         */
         function bubble(textStyle, canvasSize, addShapeHandle, refreshHandle) {
             var util = require('./util');
             var width = canvasSize.width;
@@ -263,6 +356,7 @@ define(
             define : define,
             
             progressBar : progressBar,
+            whirling : whirling,
             dynamicLine : dynamicLine,
             bubble : bubble
         };

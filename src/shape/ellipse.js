@@ -2,10 +2,10 @@
  * zrender
  * Copyright 2013 Baidu Inc. All rights reserved.
  * 
- * desc:    zrender是一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型。
- * author:  loutongbing@baidu.com
+ * author: loutongbing@baidu.com
  * 
  * shape类：椭圆
+ * Todo：excanvas bug ~ 连续scale保持?? IE8下不建议使用
  * 可配图形属性：
    {   
        // 基础属性
@@ -88,12 +88,13 @@ define(
              * @param {Object} style 样式
              */
             buildPath : function(ctx, style) {
-                 var r = (style.a > style.b) ? style.a : style.b; 
-                 var ratioX = style.a / r; //横轴缩放比率
-                 var ratioY = style.b / r;
+                var r = (style.a > style.b) ? style.a : style.b; 
+                var ratioX = style.a / r; //横轴缩放比率
+                var ratioY = style.b / r;
                 ctx.scale(ratioX, ratioY); 
                 ctx.arc(style.x/ratioX, style.y/ratioY, r, 0, Math.PI * 2, true);
                 ctx.scale(1/ratioX, 1/ratioY);
+                // excanvas bug~~
                 return;
             },
             

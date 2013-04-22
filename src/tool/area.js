@@ -9,18 +9,10 @@
  */
 define(
     function(require) {
-        require( "js!../lib/excanvas.js" );
-        if (document.createElement('canvas').getContext) {
-            G_vmlCanvasManager = false;
-        }
+        var shape = require('../shape');
+        var util = require('../tool/util');
         
         var _ctx;
-        if (G_vmlCanvasManager){
-            _ctx = G_vmlCanvasManager.initElement(document.createElement('div')).getContext('2d');
-        }
-        else {
-            _ctx = document.createElement('canvas').getContext('2d');            
-        }
         
         /**
          * 包含判断
@@ -30,15 +22,22 @@ define(
          * @param {number} y ： 纵坐标
          */
         function isInside(zoneType, area, x, y) {
-            var shape = require('../shape');
             if (!area) {
                 return false;
             }
             
+            if (!_ctx) {
+                _ctx = util.getContext();
+            }
+            
             var sectorClazz = shape.get(zoneType);
+            if (!sectorClazz) {
+                // 不支持类型
+                return false;
+            }
+
             if (zoneType != 'line' 
                 && zoneType != 'brokenLine'
-                && sectorClazz 
                 && sectorClazz.buildPath 
                 && _ctx.isPointInPath
             ) {
@@ -49,36 +48,56 @@ define(
                 return _ctx.isPointInPath(x, y);
             } 
             else {
-                // 未实现或不可用时则数学运算，主要是line，brokenLine，text，ring
-                 switch (zoneType) {
-                    //线-----------------------
+                // 未实现或不可用时(excanvas不支持)则数学运算，主要是line，brokenLine，ring
+                if (!_isInsideRectangle(sectorClazz.getRect(area), x, y)) {
+                    // 不在矩形区域内直接返回
+                    return false;
+                }
+                
+                // 在矩形内则部分图形需要进一步判断
+                switch (zoneType) {
+                    //线-----------------------1
                     case 'line':
                         return _isInsideLine(area, x, y);
-                    //折线----------------------
+                    //折线----------------------2
                     case 'brokenLine':
                         return _isInsideBrokenLine(area, x, y);
-                    //文本----------------------
+                    //文本----------------------3
                     case 'text':
-                        return _isInsideText(area, x, y);
-                    //圆环----------------------
+                        return true;
+                    //圆环----------------------4
                     case 'ring':
                         return _isInsideRing(area, x, y);
-                    //矩形----------------------
+                    //矩形----------------------5
                     case 'rectangle':
-                        return _isInsideRectangle(area, x, y);
-                    //圆型----------------------
+                        return true;
+                    //圆形----------------------6
                     case 'circle':
                         return _isInsideCircle(area, x, y);
-                    //扇形----------------------
+                    //扇形----------------------7
                     case 'sector':
                         return _isInsideSector(area, x, y);
-                    //多边形---------------------
+                    //多边形---------------------8
                     case 'polygon':
                         return _isInsidePolygon(area, x, y);
+                    //图片----------------------9
+                    case 'image':
+                        return true;
+                    //心形----------------------10
+                    case 'heart':
+                        return true;    // Todo，不精确
+                    //水滴----------------------11
+                    case 'droplet':
+                        return true;    // Todo，不精确
+                    //椭圆----------------------12
+                    case 'ellipse':
+                        return false;    // Todo，不精确
+                    //路径----------------------13
+                    case 'path':
+                        return false;   // Todo，暂不支持
                 }
             }
-           
-            // 不支持类型
+            
             return false;
         }
         
@@ -106,104 +125,38 @@ define(
                        && area.xEnd >= x 
                        && Math.abs(area.yStart - y) < (area.lineWidth || 1);
             }
+            
             //斜线判断
-            if (_isInsideRectangle(
-                    {
-                        x : Math.min(area.xStart, area.xEnd) - area.lineWidth,
-                        y : Math.min(area.yStart, area.yEnd) - area.lineWidth,
-                        width : Math.abs(area.xStart - area.xEnd) 
-                                + area.lineWidth,
-                        height : Math.abs(area.yStart - area.yEnd) 
-                                + area.lineWidth
-                    },
-                    x,
-                    y
-                )
-            ) {
-                //在矩形内再说，点线距离少于线宽
-                return Math.abs(
-                           Math.abs(
-                               (area.xStart - x) 
-                               * (area.yStart - area.yEnd)
-                               / (area.xStart - area.xEnd) 
-                               - area.yStart
-                           ) - y
+            return Math.abs(
+                       Math.abs(
+                           (area.xStart - x) 
+                           * (area.yStart - area.yEnd)
+                           / (area.xStart - area.xEnd) 
+                           - area.yStart
                        ) 
-                       < (area.lineWidth || 1);
-            }
-            else {
-                return false;
-            }
+                       - y
+                  ) 
+                  < (area.lineWidth || 1);
         }
         
         function _isInsideBrokenLine(area, x, y) {
             var pointList = area.pointList;
-            // 线段hover需要余弦正弦，先弄个长方区域判断不在区域内直接返回false加速判断
-            var minX = Number.MAX_VALUE;
-            var minY = Number.MAX_VALUE;
-            var maxX = Number.MIN_VALUE;
-            var maxY = Number.MIN_VALUE;
-            for (var i = 0, l = pointList.length; i < l; i++) {
-                minX = Math.min(minX, pointList[i][0]);
-                minY = Math.min(minY, pointList[i][1]);
-                maxX = Math.max(maxX, pointList[i][0]);
-                maxY = Math.max(maxY, pointList[i][1]);
-            }
-            var rectangleArea = {
-                x : minX,
-                y : minY,
-                width : maxX - minX,
-                height : maxY - minY
-            }
-            if (!isInside('rectangle', rectangleArea, x, y)) {
-                return false;
-            }
-            
-            // 在方形区域内再判断
-            var util = require('../tool/util');
-            var lineArea = util.clone(area);
+            var lineArea;
             var insideCatch = false;
             for (var i = 0, l = pointList.length - 1; i < l; i++) {
-                lineArea.xStart = pointList[i][0];
-                lineArea.yStart = pointList[i][1];
-                lineArea.xEnd = pointList[i + 1][0];
-                lineArea.yEnd = pointList[i + 1][1];
-                insideCatch = _isInsideLine(lineArea, x, y);
+                lineArea = {
+                    xStart : pointList[i][0],
+                    yStart : pointList[i][1],
+                    xEnd : pointList[i + 1][0],
+                    yEnd : pointList[i + 1][1],
+                    lineWidth : area.lineWidth
+                };
+                insideCatch = isInside('line', lineArea, x, y);
                 if (insideCatch) {
                     break;
                 }
             }
             return insideCatch;
-        }
-        /**
-         * 文字包含判断 
-         */
-        function _isInsideText(area, x, y) {
-            var width =  getTextWidth(area.text, area.textFont);
-            var height = typeof area.textFont != 'undefined' 
-                         ? (area.textFont.match(/\d+/) - 0) : 10; //比较粗暴
-            
-            var textX = area.x;                 //默认start == left
-            if (area.textAlign == 'end' || area.textAlign == 'right') {
-                textX -= width;
-            } else if (area.textAlign == 'center') {
-                textX -= (width / 2);
-            }
-            var textY = area.y - height / 2;    //默认middle
-            if (area.textBaseline == 'top') {
-                textY += height / 2;
-            } else if (area.textBaseline == 'bottom') {
-                textX -= height / 2;
-            }
-            return _isInsideRectangle(
-                        {
-                            x : textX,
-                            y : textY,
-                            width : width,
-                            height : height
-                        },
-                        x,y
-                    )
         }
         
         function _isInsideRing(area, x, y) {
@@ -213,7 +166,7 @@ define(
                     {
                         x : area.x,
                         y : area.y,
-                        r : area.r0
+                        r : area.r0 || 0
                     }, 
                     x, y
                 )
@@ -242,11 +195,8 @@ define(
          * 圆形包含判断 
          */
         function _isInsideCircle(area, x, y) {
-            if (Math.abs(x - area.x) > area.r || Math.abs(y - area.y) > area.r) {
-                return false   ;
-            }
-            var l2 = Math.pow(x - area.x, 2) + Math.pow(y - area.y, 2);
-            return l2 < Math.pow((area.r || 0), 2);
+            return (x - area.x) * (x - area.x) + (y - area.y) * (y - area.y)
+                   < area.r * area.r;
         }
         
         /**
@@ -352,13 +302,17 @@ define(
         }
         
         function getTextWidth(text, textFont) {
-            var width;
+            if (!_ctx) {
+                _ctx = util.getContext();
+            }
+            
             _ctx.save();
             if (textFont) {
                 _ctx.font = textFont;
             }
-            width = _ctx.measureText(text).width;
-            _ctx.restore();
+            var width = _ctx.measureText(text).width;
+            _ctx.restore();   
+            
             return width;
         }
         

@@ -148,8 +148,10 @@ define(
          * @param ctx       画布句柄
          * @param e         形状实体
          * @param isHighlight   是否为高亮状态
+         * @param updateCallback 需要异步加载资源的shape可以通过这个callback(e)
+         *                       让painter更新视图，base.brush没用，需要的话重载brush
          */
-        function brush(ctx, e, isHighlight) {
+        function brush(ctx, e, isHighlight, updateCallback) {
             var style = {};
             for (var k in e.style) {
                 style[k] = e.style[k];
@@ -262,47 +264,6 @@ define(
             if (typeof style.shadowOffsetY != 'undefined') {
                 ctx.shadowOffsetY = style.shadowOffsetY;
             }
-            
-            // 变换后各种事件坐标，拖拽变换，hover，大小判断都需要升级，考虑做成shape级上支持
-            /* 
-            if (typeof style.translate != 'undefined'
-                && style.translate.length == 2
-            ) {
-                ctx.translate(style.translate[0], style.translate[1]);
-            }
-            
-            if (typeof style.scale != 'undefined'
-                && style.scale.length == 2
-            ) {
-                ctx.scale(style.scale[0], style.scale[1]);
-            }
-            
-            // 相对于坐标原点的变换，需要原地旋转得配合translate
-            if (typeof style.rotate != 'undefined') {
-                ctx.rotate(style.rotate);
-            }
-            */
-            /*
-             * 变换，支持不好
-             * @param {number} xZoom  变换矩阵m11
-             * @param {number} rotate 变换矩阵m12
-             * @param {number} slant  变换矩阵m21
-             * @param {number} yZoom  变换矩阵m22
-             * @param {number} x      变换原点x坐标
-             * @param {number} y      变换原点y坐标
-            if (typeof style.transform != 'undefined'
-                && style.transform.length == 6
-            ) {
-                ctx.transform(
-                    style.transform[0],
-                    style.transform[1],
-                    style.transform[2],
-                    style.transform[3],
-                    style.transform[4],
-                    style.transform[5]
-                );
-            }
-            */
         }
         
         /**
