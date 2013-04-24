@@ -88,11 +88,7 @@ define(
         }
         
         ZImage.prototype =  {
-            /**
-             * 创建矩形路径
-             * @param {Context2D} ctx Canvas 2D上下文
-             * @param {Object} style 样式
-             */
+            
             brush : function(ctx, e, isHighlight, refresh) {
                 var style = {};
                 for (var k in e.style) {
@@ -145,7 +141,9 @@ define(
                     
                     //设置transform
                     var m = this.updateTransform( e );
-                    ctx.transform( m[0], m[1], m[2], m[3], m[4], m[5] );
+                    if( ! (m[0] == 1 && m[1] == 0 && m[2] == 0 && m[3] == 1 && m[4] == 0 && m[5] == 0 ) ){
+                        ctx.transform( m[0], m[1], m[2], m[3], m[4], m[5] );
+                    }
 
                     var width = style.width || image.width,
                         height = style.height || image.height,
