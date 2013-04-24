@@ -39,8 +39,8 @@
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown">Example <b class="caret"></b></a>
                   <ul class="dropdown-menu">
                     <li><a href="demo.html">Demo</a></li>
-                    <li class="active"><a href="animation.html">Animation</a></li>
-                    <li><a href="chart.html">Chart</a></li>
+                    <li><a href="animation.html">Animation</a></li>
+                    <li class="active"><a href="chart.html">Chart</a></li>
                     <li><a href="colorSeries.html">Color Series</a></li>
                     <li class="divider"></li>
                     <!--li class="nav-header">Library</li-->
@@ -84,90 +84,52 @@
  *  var zrender = require('zrender/zrender');
  *  var zr = zrender.init(document.getElementById('main'));
  */
-clearInterval(animationTicket); // 请跳过这句，动画索引
 zr.clear();
-var color = require('zrender/tool/color');
-var colorIdx = 0;
-var width = Math.ceil(zr.getWidth());
-var height = Math.ceil(zr.getHeight());
-
-var i;
-var n = 50;
-var shapeList = [];
-// 动画元素
-for(i = 0; i < n; i++) {
-    shapeList[i] = {
-        shape : 'circle',
-        id : zr.newShapeId(),
-        style : {
-            x : Math.ceil(Math.random() * width),
-            y : Math.ceil(Math.random() * height),
-            r : Math.ceil(Math.random() * 40),
-            brushType : Math.ceil(Math.random() * 100) % 3 >= 1 ? 'both' : 'stroke',
-            color : 'rgba(' 
-                    + Math.round(Math.random() * 256) + ',' 
-                    + Math.round(Math.random() * 256) + ',' 
-                    + Math.round(Math.random() * 256) + ', 0.5)',
-            strokeColor : 'rgba(' 
-                    + Math.round(Math.random() * 256) + ',' 
-                    + Math.round(Math.random() * 256) + ',' 
-                    + Math.round(Math.random() * 256) + ', 0.3)',
-            lineWidth : 3
-        },
-        _animationX : Math.ceil(Math.random() * 20),
-        _animationY : Math.ceil(Math.random() * 20),
-        hoverable : false
-    };
-    if (shapeList[i].style.x < 100 || shapeList[i].style.x > (width - 100)) {
-        shapeList[i].style.x = width / 2;    
-    }
-    if (shapeList[i].style.y < 100 || shapeList[i].style.y > (height - 100)) {
-        shapeList[i].style.y = height / 2;    
-    }
-    zr.addShape(shapeList[i]);
+var zrColor = require('zrender/tool/color');
+var data = [10,13,23,8,35,18];
+var total = 0;
+for (var i = 0, l = data.length; i < l; i++) {
+    total += data[i];
 }
+var percent;
+var startAngle = 0;
+var endAngle;
+var x = Math.round(zr.getWidth() / 2);
+var y = Math.round(zr.getHeight() / 2);
+var r0 = 30;
+var r = 100;
 
-// 绘画，利用render的callback可以在绘画完成后马上开始动画
-zr.render(function(){
-    animationTicket = setInterval(
-        function(){
-            var style;
-            for( i = 0; i < n; i++) {
-                // 可以跳过
-                style = shapeList[i].style;
-                if (style.brushType == 'both') {
-                    if (style.x + style.r + shapeList[i]._animationX >= width 
-                        || style.x - style.r + shapeList[i]._animationX <= 0
-                    ){
-                        shapeList[i]._animationX = -shapeList[i]._animationX;
-                    }
-                    shapeList[i].style.x += shapeList[i]._animationX;
-                }
-                
-                if (style.brushType == 'both') {
-                    if (style.y + style.r + shapeList[i]._animationY >= height || 
-                        style.y - style.r + shapeList[i]._animationY <= 0){
-                        shapeList[i]._animationY = -shapeList[i]._animationY;
-                    }
-                    shapeList[i].style.y += shapeList[i]._animationY;
-                }
-                else {
-                    if (style.y - shapeList[i]._animationY + style.r <= 0){
-                        shapeList[i].style.y = height + style.r;
-                        shapeList[i].style.x = Math.ceil(Math.random() * width);
-                    }
-                    shapeList[i].style.y -= shapeList[i]._animationY;
-                }
-                
-                
-                // 就看这句就行
-                zr.modShape(shapeList[i].id, shapeList[i]);
-            }
-            zr.refresh();
+for (var i = 0, l = data.length; i < l; i++){
+    
+    percent = data[i] / total;
+    endAngle = (percent * 360 + startAngle).toFixed(2) - 0;
+    percent = (percent * 100).toFixed(2) + '%';
+    zr.addShape({
+        shape : 'sector',             // 扇形
+        style : {
+            x : x,          // 圆心横坐标
+            y : y,          // 圆心纵坐标
+            r0 : r0,        // 圆环内半径
+            r : r,          // 圆环外半径
+            startAngle : startAngle,
+            endAngle : endAngle,
+            brushType : 'both',
+            color : zrColor.getColor(i),
+            strokeColor : '#fff'
         },
-        50
-    )
-});
+        highlightStyle : {
+            text : percent,
+            textPosition : 'inside',
+            textColor : 'yellow'
+        },
+        clickable : true,
+        onclick : function(params) {
+            alert(params.target.highlightStyle.text);
+        }
+    })
+    startAngle = endAngle;
+}
+zr.render();
                     </textarea>
               </div><!--/.well -->
             </div><!--/span-->

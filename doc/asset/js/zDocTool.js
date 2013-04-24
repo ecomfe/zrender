@@ -154,11 +154,12 @@ myMessageCenter.dispatch(
             ['resetHighlight', '{Function}', '重置默认高亮颜色'],
             ['getRadialGradient', '{Function}', '径向渐变'],
             ['getLinearGradient', '{Function}', '线性渐变'],
-            ['getStepColors', '{Function}', '按步长获得颜色梯度数组'],
-            ['getGradientColors', '{Function}', '获得颜色梯度数组'],
+            ['getStepColors', '{Function}', '获取两种颜色之间渐变颜色数组'],
+            ['getGradientColors', '{Function}', '获取颜色之间渐变颜色数组'],
             ['reverse', '{Function}', '颜色翻转'],
             ['mix', '{Function}', '颜色混合'],
             ['lift', '{Function}', '颜色升降'],
+            ['alpha', '{Function}', '设置颜色的透明度'],
             ['trim', '{Function}', '清除空格'],
             ['random', '{Function}', '随机颜色'],
             ['toRGB ', '{Function}', '转为RGB格式'],
@@ -172,8 +173,7 @@ myMessageCenter.dispatch(
             ['toHSVA', '{Function}', '转为HSVA格式'],
             ['toName', '{Function}', '转为颜色名字'],
             ['toColor', '{Function}', '颜色值数组转为指定格式颜色'],
-            ['toArray', '{Function}', '返回颜色值数组'],
-            ['alpha', '{Function}', '设置颜色的透明度']
+            ['toArray', '{Function}', '返回颜色值数组']
         ],
         content: [
             {
@@ -330,18 +330,18 @@ zr.render();
             },
             {
                 name: 'getStepColors',
-                des: '获取颜色带步长的梯度数据',
+                des: '获取两种颜色之间渐变颜色数组',
                 params: [
                     ['start', '{color}', '起始颜色'],
                     ['end', '{color}', '结束颜色'],
-                    ['step', '{number}', '步长']
+                    ['step', '{number}', '渐变级数']
                 ],
                 res: ['colorArray', '{Array}', '颜色数组'],
                 pre: (function() {
 var zrColor = require('zrender/tool/color');
 var width = zr.getWidth();
 var height = zr.getHeight();
-var colorList = zrColor.getStepColors('red', 'green', 10);
+var colorList = zrColor.getStepColors('red', 'lightgreen', 10);
 var w = Math.round(width / colorList.length);
 for (var i = 0, l = colorList.length; i < l; i++) {
     zr.addShape({
@@ -358,10 +358,10 @@ zr.render();
             },
             {
                 name: 'getGradientColors',
-                des: '获取颜色梯度数据',
+                des: '获取颜色之间渐变颜色数组',
                 params: [
                     ['colors', '{Array}', '颜色组'],
-                    ['step', '{number=}', '步长，默认20']
+                    ['step', '{number=}', '渐变级数，默认20']
                 ],
                 res: ['colorArray', '{Array}', '颜色数组'],
                 pre: (function() {
@@ -384,6 +384,323 @@ for (var i = 0, l = colorList.length; i < l; i++) {
 zr.render();
                 }).toString().slice(13, -10),
                 cantry: true
+            },
+            {
+                name: 'reverse',
+                des: '颜色翻转，[255-r,255-g,255-b]',
+                params: [
+                    ['color', '{color}', '颜色']
+                ],
+                res: ['color', '{color}', '翻转颜色'],
+                pre: (function() {
+var zrColor = require('zrender/tool/color');
+var width = zr.getWidth();
+var height = zr.getHeight();
+var colorList = zrColor.getStepColors('red', 'lightgreen', 10);
+var w = Math.round(width / colorList.length);
+for (var i = 0, l = colorList.length; i < l; i++) {
+    zr.addShape({
+        shape: 'rectangle',
+        style: {
+            x: w * i, y: 0, width : w, height : height,
+            color : colorList[i]
+        },
+        clickable : true,
+        onclick : function(params) {
+            var target  = params.target;
+            zr.modShape(
+                target.id, 
+                {style: {color: zrColor.reverse(target.style.color)}}
+            );
+            zr.refresh();
+        }
+    });   
+}
+zr.render();
+                }).toString().slice(13, -10),
+                cantry: true
+            },
+            {
+                name: 'mix',
+                des: '简单两种颜色混合',
+                params: [
+                    ['color1', '{color}', '第一种颜色'],
+                    ['color2', '{color}', '第二种颜色'],
+                    ['weight', '{color}', '混合权重[0-1]']
+                ],
+                res: ['color', '{color}', '结果色,rgb(r,g,b)或rgba(r,g,b,a)'],
+                pre: (function() {
+var zrColor = require('zrender/tool/color');
+zr.addShape({
+    shape: 'circle',
+    style: { x: 100, y: 200, r: 30, color: zrColor.random(), text: 'drag me' },
+    _x: 100,
+    draggable: true
+});
+zr.addShape({
+    shape: 'circle',
+    style: { x: 300, y: 200, r: 30, color: zrColor.random(), text: 'drag me' },
+    _x: 300,
+    draggable: true
+});
+zr.addShape({
+    shape: 'circle',
+    style: { x: 200, y: 200, r: 50, brushType: 'both', color: '#ccc', strokeColor: '#ccc', text: 'here'},
+    ondrop: function(params) {
+        var target = params.target;
+        var dragged = params.dragged;
+        zr.modShape(
+            target.id, 
+            {style: {color: zrColor.mix(target.style.color, dragged.style.color)}}
+        );
+        zr.modShape(
+            dragged.id, 
+            {
+                position: [0, 0],
+                style: { x: dragged._x, y: 200, color: zrColor.random()}
+            }
+        );
+        zr.refresh();
+    }
+});
+zr.render();
+                }).toString().slice(13, -10),
+                cantry: true
+            },
+            {
+                name: 'lift',
+                des: '颜色加深或减淡，当level>0加深，当level<0减淡',
+                params: [
+                    ['color', '{color}', '颜色'],
+                    ['level', '{number}', '升降程度,取值区间[-1,1]']
+                ],
+                res: ['color', '{color}', '加深或减淡后颜色值'],
+                pre: (function() {
+var zrColor = require('zrender/tool/color');
+zr.addShape({
+    shape : 'circle',
+    style : { 
+        x : 400, y : 200,  r : 100, 
+        color : zrColor.random(),
+        text : 'mousewheel',
+        textPosition : 'inside'
+    },
+    onmousewheel : function(params) {
+        var zrEvent = require('zrender/tool/event');
+        var shape = params.target;
+            
+        var event = params.event;
+        var delta = zrEvent.getDelta(event);
+        delta = delta > 0 ? 0.1 : (-0.1);
+        shape.style.color = zrColor.lift(shape.style.color, delta)
+        
+        zr.modShape(shape.id, shape);
+        zr.refresh();
+        zrEvent.stop(event);
+    }
+});
+zr.render();
+                }).toString().slice(13, -10),
+                cantry: true
+            },
+            {
+                name: 'alpha',
+                des: '设置颜色透明度',
+                params: [
+                    ['color', '{color}', '颜色'],
+                    ['alpha', '{number}', '透明度,区间[0,1]']
+                ],
+                res: ['color', '{color}', '颜色'],
+                pre: (function() {
+var zrColor = require('zrender/tool/color');
+var alpha = 0.5;
+zr.addShape({
+    shape : 'circle',
+    style : { 
+        x : 400, y : 200,  r : 100, 
+        color : zrColor.random(),
+        text : 'mousewheel',
+        textPosition : 'inside'
+    },
+    onmousewheel : function(params) {
+        var zrEvent = require('zrender/tool/event');
+        var shape = params.target;
+            
+        var event = params.event;
+        var delta = zrEvent.getDelta(event);
+        alpha += delta > 0 ? 0.1 : (-0.1);
+        alpha = alpha < 0 ? 0 : alpha;
+        alpha = alpha > 1 ? 1 : alpha;
+        shape.style.color = zrColor.alpha(shape.style.color, alpha)
+        
+        zr.modShape(shape.id, shape);
+        zr.refresh();
+        zrEvent.stop(event);
+    }
+});
+zr.render();
+                }).toString().slice(13, -10),
+                cantry: true
+            },
+            {
+                name: 'trim',
+                des: '移除颜色中多余空格',
+                params: [
+                    ['color', '{color}', '颜色']
+                ],
+                res: ['color', '{color}', '无空格颜色'],
+                cantry: false
+            },
+            {
+                name: 'random',
+                des: '随机颜色，例子见<a href="#tool.color.mix">mix</a>',
+                params: [],
+                res: ['color', '{color}', '颜色值，#rrggbb格式'],
+                cantry: false
+            },
+            {
+                name: 'toRGBA',
+                des: '转换为rgba格式的颜色',
+                params: [
+                    ['color', '{color}', '颜色']
+                ],
+                res: ['color', '{color}', 'rgba颜色，rgba(r,g,b,a)'],
+                cantry: false
+            },
+            {
+                name: 'toRGB',
+                des: '转换为rgb格式的颜色',
+                params: [
+                    ['color', '{color}', '颜色']
+                ],
+                res: ['color', '{color}', 'rgb颜色，rgb(r,g,b)'],
+                cantry: false
+            },
+            {
+                name: 'toHex',
+                des: '转换为16进制颜色',
+                params: [
+                    ['color', '{color}', '颜色']
+                ],
+                res: ['color', '{color}', '16进制颜色，#rrggbb格式'],
+                cantry: false
+            },
+            {
+                name: 'toHSVA',
+                des: '转换为HSVA颜色',
+                params: [
+                    ['color', '{color}', '颜色']
+                ],
+                res: ['color', '{color}', 'HSVA颜色，hsva(h,s,v,a)'],
+                cantry: false
+            },
+            {
+                name: 'toHSV',
+                des: '转换为HSV颜色',
+                params: [
+                    ['color', '{color}', '颜色']
+                ],
+                res: ['color', '{color}', 'HSV颜色，hsv(h,s,v)'],
+                cantry: false
+            },
+            {
+                name: 'toHSBA',
+                des: '转换为HSBA颜色',
+                params: [
+                    ['color', '{color}', '颜色']
+                ],
+                res: ['color', '{color}', 'HSBA颜色，hsba(h,s,b,a)'],
+                cantry: false
+            },
+            {
+                name: 'toHSB',
+                des: '转换为HSB颜色',
+                params: [
+                    ['color', '{color}', '颜色']
+                ],
+                res: ['color', '{color}', 'HSB颜色，hsb(h,s,b)'],
+                cantry: false
+            },
+            {
+                name: 'toHSLA',
+                des: '转换为HSLA颜色',
+                params: [
+                    ['color', '{color}', '颜色']
+                ],
+                res: ['color', '{color}', 'HSLA颜色，hsla(h,s,l,a)'],
+                cantry: false
+            },
+            {
+                name: 'toHSL',
+                des: '转换为HSL颜色',
+                params: [
+                    ['color', '{color}', '颜色']
+                ],
+                res: ['color', '{color}', 'HSL颜色，hsl(h,s,l)'],
+                cantry: false
+            },
+            {
+                name: 'toName',
+                des: '转换颜色名，非命名颜色则返回null',
+                params: [
+                    ['color', '{color}', '颜色']
+                ],
+                res: ['color', '{string}', '颜色名'],
+                cantry: false
+            },
+            {
+                name: 'toColor',
+                des: '颜色值数组转为指定格式颜色',
+                params: [
+                    ['data', '{Array}', '颜色值数组'],
+                    ['format', '{string}', '格式,默认rgb']
+                ],
+                res: ['color', '{color}', '颜色'],
+                pre: (function() {
+var zrColor = require('zrender/tool/color');
+var width = zr.getWidth();
+var height = zr.getHeight();
+var w = Math.round(width / 10);
+var h = Math.round(height / 3);
+for (var i = 0; i < 10; i++) {
+    zr.addShape({
+        shape: 'rectangle',
+        style: {
+            x: w * i, y: 0, width : w, height : h,
+            color : zrColor.toColor([i * 25, 10, 10])
+        }
+    });   
+}
+for (var i = 0; i < 10; i++) {
+    zr.addShape({
+        shape: 'rectangle',
+        style: {
+            x: w * i, y: h, width : w, height : h,
+            color : zrColor.toColor([10, i * 25, 10, 1], 'rgba')
+        }
+    });   
+}
+for (var i = 0; i < 10; i++) {
+    zr.addShape({
+        shape: 'rectangle',
+        style: {
+            x: w * i, y: h * 2, width : w, height : h,
+            color : zrColor.toColor([10, 10, i * 25], 'hex')
+        }
+    });   
+}
+zr.render();
+                }).toString().slice(13, -10),
+                cantry: true
+            },
+            {
+                name: 'toArray',
+                des: '返回颜色值数组，toColor的逆运算',
+                params: [
+                    ['color', '{color}', '颜色']
+                ],
+                res: ['data', '{Array}', '颜色值数组'],
+                cantry: false
             }
         ]
     }

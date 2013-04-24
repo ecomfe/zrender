@@ -163,6 +163,7 @@ define(
                 }
             });
             animation.start();
+            
             /**
              * 获取实例唯一标识 
              */
