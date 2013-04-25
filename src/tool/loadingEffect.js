@@ -1,14 +1,14 @@
 /**
- * zrender : loading特效
+ * zrender: loading特效
  * Copyright 2013 Baidu Inc. All rights reserved.
- * 
- * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
- * 
- * 扩展loading effect： 
+ *
+ * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *
+ * 扩展loading effect：
  * getBackgroundShape：获取背景图形
  * getTextShape：获取文字
  * define : 定义效果
- * 
+ *
  * 内置效果
  * progressBar：进度条
  * dynamicLine：动态线条
@@ -17,13 +17,13 @@
 define(
     function(require) {
         var self;
-        var _defaultText = 'Loading...'
+        var _defaultText = 'Loading...';
         var _defaultTextFont = 'normal 20px Arial';
-        
+
         function define(name, fun) {
             self[name] = fun;
         }
-        
+
         function getTextShape(width, height, color, textStyle) {
             var util = require('./util');
             return {
@@ -44,7 +44,7 @@ define(
                 )
             };
         }
-        
+
         function getBackgroundShape (width, height, color) {
             return {
                 shape : 'rectangle',
@@ -56,32 +56,31 @@ define(
                     brushType : 'fill',
                     color : color
                 }
-            }
+            };
         }
-        
-        /** 
+
+        /**
          * 进度条
          * @param {Object} textStyle
          * @param {Object} canvasSize
          * @param {Object} addShapeHandle
          * @param {Object} refreshHandle
          */
-        function progressBar(textStyle, canvasSize, addShapeHandle, refreshHandle) {
+        function progressBar(
+            textStyle, canvasSize, addShapeHandle, refreshHandle
+        ) {
             var width = canvasSize.width;
             var height = canvasSize.height;
-            
+
             var textShape = getTextShape(
                 width, height, '#888' , textStyle || {}
             );
-            
+
             var background = getBackgroundShape(
                 width, height, 'rgba(250, 250, 250, 0.8)'
             );
-            
+
             var barShape;
-            var pos;
-            var len;
-            var xStart;
             // 初始化动画元素
             barShape = {
                 shape : 'rectangle',
@@ -94,7 +93,7 @@ define(
                     color :  'rgba(135, 206, 250, 1)'
                 }
             };
-            
+
             return setInterval(
                 function() {
                     addShapeHandle(background);
@@ -105,32 +104,34 @@ define(
                         barShape.highlightStyle.width = 0;
                     }
                     addShapeHandle(barShape);
-                    addShapeHandle(textShape)
+                    addShapeHandle(textShape);
                     refreshHandle();
-                }, 
+                },
                 100
-            )
+            );
         }
-        
-        /** 
+
+        /**
          * 进度条
          * @param {Object} textStyle
          * @param {Object} canvasSize
          * @param {Object} addShapeHandle
          * @param {Object} refreshHandle
          */
-        function whirling(textStyle, canvasSize, addShapeHandle, refreshHandle) {
+        function whirling(
+            textStyle, canvasSize, addShapeHandle, refreshHandle
+        ) {
             var width = canvasSize.width;
             var height = canvasSize.height;
-            
+
             var textShape = getTextShape(
                 width, height, '#888' , textStyle || {}
             );
-            
+
             var background = getBackgroundShape(
                 width, height, 'rgba(250, 250, 250, 0.8)'
             );
-            
+
             // 初始化动画元素
             var droplet = {
                 shape : 'droplet',
@@ -148,7 +149,7 @@ define(
                     brushType : 'fill',
                     color :  '#fff'
                 }
-            }
+            };
             var circleOut = {
                 shape : 'ring',
                 highlightStyle : {
@@ -157,8 +158,8 @@ define(
                     brushType : 'fill',
                     color :  '#555'
                 }
-            }
-            
+            };
+
             var pos = [0, width / 3, height / 2];
             droplet.highlightStyle.x
             = circleIn.highlightStyle.x
@@ -168,7 +169,7 @@ define(
             = circleIn.highlightStyle.y
             = circleOut.highlightStyle.y
             = pos[2];
-            
+
             return setInterval(
                 function() {
                     addShapeHandle(background);
@@ -177,33 +178,35 @@ define(
                     droplet.rotation = pos;
                     addShapeHandle(droplet);
                     addShapeHandle(circleIn);
-                    addShapeHandle(textShape)
+                    addShapeHandle(textShape);
                     refreshHandle();
-                }, 
+                },
                 50
-            )
+            );
         }
-        
+
         /**
-         * 动态线 
+         * 动态线
          * @param {Object} textStyle
          * @param {Object} canvasSize
          * @param {Object} addShapeHandle
          * @param {Object} refreshHandle
-         */ 
-        function dynamicLine(textStyle, canvasSize, addShapeHandle, refreshHandle) {
+         */
+        function dynamicLine(
+            textStyle, canvasSize, addShapeHandle, refreshHandle
+        ) {
             var width = canvasSize.width;
             var height = canvasSize.height;
-            
+
             var hasColor = typeof (textStyle || {}).color != 'undefined';
             var textShape = getTextShape(
                 width, height, '#fff' , textStyle || {}
             );
-            
+
             var background = getBackgroundShape(
                 width, height, 'rgba(50, 50, 50, 0.8)'
             );
-            
+
             var n = 20;
             var shapeList = [];
             var pos;
@@ -221,50 +224,51 @@ define(
                         yStart : pos,
                         xEnd : xStart + len,
                         yEnd : pos,
-                        strokeColor : 'rgba(' 
-                                + Math.round(Math.random() * 156 + 100) + ',' 
-                                + Math.round(Math.random() * 156 + 100) + ',' 
-                                + Math.round(Math.random() * 156 + 100) + ', 1)',
+                        strokeColor : 'rgba('
+                            + Math.round(Math.random() * 156 + 100) + ','
+                            + Math.round(Math.random() * 156 + 100) + ','
+                            + Math.round(Math.random() * 156 + 100) + ', 1)',
                         lineWidth : 1
                     },
                     animationX : Math.ceil(Math.random() * 50),
                     len : len
                 };
             }
-            
+
             return setInterval(
                 function() {
                     addShapeHandle(background);
                     var style;
                     for(var i = 0; i < n; i++) {
                         style = shapeList[i].style;
-                        
+
                         if (style.xStart >= width){
                             shapeList[i].len = Math.ceil(Math.random() * 400);
                             shapeList[i].style.xStart = -400;
                             shapeList[i].style.xEnd = -400 + shapeList[i].len;
-                            shapeList[i].style.yStart = Math.ceil(Math.random() * 20) 
-                                                         + height / 2 - 50;;
-                            shapeList[i].style.yEnd = shapeList[i].style.yStart;
+                            shapeList[i].style.yStart =
+                                Math.ceil(Math.random() * 20) + height / 2 - 50;
+                            shapeList[i].style.yEnd =
+                                shapeList[i].style.yStart;
                         }
                         shapeList[i].style.xStart += shapeList[i].animationX;
                         shapeList[i].style.xEnd += shapeList[i].animationX;
-                        
+
                         addShapeHandle(shapeList[i]);
                     }
                     if (!hasColor) {
-                        textShape.highlightStyle.color = 'rgba(' 
-                                + Math.round(Math.random() * 156 + 100) + ',' 
-                                + Math.round(Math.random() * 156 + 100) + ',' 
-                                + Math.round(Math.random() * 156 + 100) + ', 1)';
+                        textShape.highlightStyle.color = 'rgb('
+                                + Math.round(Math.random() * 156 + 100) + ','
+                                + Math.round(Math.random() * 156 + 100) + ','
+                                + Math.round(Math.random() * 156 + 100) + ')';
                     }
-                    addShapeHandle(textShape)
+                    addShapeHandle(textShape);
                     refreshHandle();
-                }, 
+                },
                 100
-            )
+            );
         }
-        
+
         /**
          * 泡泡
          * @param {Object} textStyle
@@ -273,22 +277,21 @@ define(
          * @param {Object} refreshHandle
          */
         function bubble(textStyle, canvasSize, addShapeHandle, refreshHandle) {
-            var util = require('./util');
             var width = canvasSize.width;
             var height = canvasSize.height;
-            
+
             var hasColor = typeof (textStyle || {}).color != 'undefined';
             var textShape = getTextShape(
                 width, height, '#888' , textStyle || {}
             );
-            
+
             var background = getBackgroundShape(
                 width, height, 'rgba(250,250,250, 0.8)'
             );
-            
+
             var n = 50;
             var shapeList = [];
-            
+
             // 初始化动画元素
             for(var i = 0; i < n; i++) {
                 shapeList[i] = {
@@ -298,9 +301,9 @@ define(
                         y : Math.ceil(Math.random() * height),
                         r : Math.ceil(Math.random() * 40),
                         brushType : 'stroke',
-                        strokeColor : 'rgba(' 
-                                + Math.round(Math.random() * 256) + ',' 
-                                + Math.round(Math.random() * 256) + ',' 
+                        strokeColor : 'rgba('
+                                + Math.round(Math.random() * 256) + ','
+                                + Math.round(Math.random() * 256) + ','
                                 + Math.round(Math.random() * 256) + ', 0.3)',
                         lineWidth : 3
                     },
@@ -308,18 +311,18 @@ define(
                     animationY : Math.ceil(Math.random() * 20),
                     hoverable : false
                 };
-                if (shapeList[i].style.x < 100 
+                if (shapeList[i].style.x < 100
                     || shapeList[i].style.x > (width - 100)
                 ) {
-                    shapeList[i].style.x = width / 2;    
+                    shapeList[i].style.x = width / 2;
                 }
-                if (shapeList[i].style.y < 100 
+                if (shapeList[i].style.y < 100
                     || shapeList[i].style.y > (height - 100)
                 ) {
-                    shapeList[i].style.y = height / 2;    
+                    shapeList[i].style.y = height / 2;
                 }
             }
-            
+
             return setInterval(
                 function () {
                     addShapeHandle(background);
@@ -327,34 +330,36 @@ define(
                     for(var i = 0; i < n; i++) {
                         // 可以跳过
                         style = shapeList[i].style;
-                        
+
                         if (style.y - shapeList[i].animationY + style.r <= 0){
                             shapeList[i].style.y = height + style.r;
-                            shapeList[i].style.x = Math.ceil(Math.random() * width);
+                            shapeList[i].style.x = Math.ceil(
+                                Math.random() * width
+                            );
                         }
                         shapeList[i].style.y -= shapeList[i].animationY;
-                        
+
                         addShapeHandle(shapeList[i]);
                     }
                     if (!hasColor) {
-                        textShape.highlightStyle.color = 'rgba(' 
-                                + Math.round(Math.random() * 256) + ',' 
-                                + Math.round(Math.random() * 256) + ',' 
+                        textShape.highlightStyle.color = 'rgba('
+                                + Math.round(Math.random() * 256) + ','
+                                + Math.round(Math.random() * 256) + ','
                                 + Math.round(Math.random() * 256) + ', 0.8)';
                     }
-                    addShapeHandle(textShape)
+                    addShapeHandle(textShape);
                     refreshHandle();
-                }, 
+                },
                 100
-            )
+            );
         }
-        
+
         self = {
             // 这三个方法用于扩展loading effect
             getBackgroundShape : getBackgroundShape,
             getTextShape : getTextShape,
             define : define,
-            
+
             progressBar : progressBar,
             whirling : whirling,
             dynamicLine : dynamicLine,

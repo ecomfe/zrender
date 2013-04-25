@@ -15,7 +15,7 @@
  */
 define(
     function(require){
-        var Controller = require("./controller");
+        var Controller = require('./controller');
 
         var Animation = function(options){
 
@@ -25,13 +25,13 @@ define(
 
             this.fps = options.fps || 50;
 
-            this.onframe = options.onframe || new Function;
+            this.onframe = options.onframe || function(){};
 
             // private properties
             this._controllerPool = [];
 
             this._timer = null;
-        }
+        };
 
         Animation.prototype = {
             add : function(controller){
@@ -52,7 +52,10 @@ define(
                 for(var i = 0; i < cp.length; i++){
                     cp[i].step( time );
                 }
-                if( this.stage && this.stage.update && this._controllerPool.length >0 ){
+                if( this.stage
+                    && this.stage.update
+                    && this._controllerPool.length >0 ){
+
                     this.stage.update();
                 }
 
@@ -68,19 +71,19 @@ define(
                 var self = this;
                 this._timer = setInterval( function(){
                     self.update();
-                }, 1000/this.fps)
+                }, 1000/this.fps);
             },
             stop : function(){
                 if( this._timer ){
                     clearInterval( this._timer );
                 }
             },
-            animate : function( target, loop, getter, setter ){
+            animate : function(target, loop, getter, setter){
                 var deferred = new Deferred( target, loop, getter, setter);
                 deferred.animation = this;
                 return deferred;
             }
-        }
+        };
         Animation.prototype.constructor = Animation;
 
         function _defaultGetter(target, key){
@@ -91,25 +94,38 @@ define(
         }
         // 递归做插值
         // TODO 对象的插值
-        function _interpolate(prevValue, nextValue, percent, target, propName, getter, setter){
+        function _interpolate(prevValue, 
+                                nextValue, 
+                                percent, 
+                                target, 
+                                propName, 
+                                getter, 
+                                setter){
              // 遍历数组做插值
-            if( prevValue.constructor === Array &&
-                nextValue.constructor === Array)
+            if( prevValue instanceof Array
+                && nextValue instanceof Array)
             {
                 var minLen = Math.min(prevValue.length, nextValue.length),
                     largerArray,
+                    maxLen,
                     result = [];
                 if( minLen === prevValue.length ){
-                    var maxLen = nextValue.length,
-                        largerArray = nextValue;
+                    maxLen = nextValue.length;
+                    largerArray = nextValue;
                 }else{
-                    var maxLen = prevValue.length,
-                        largerArray = prevValue.length;
+                    maxLen = prevValue.length;
+                    largerArray = prevValue.length;
                 }
                 for(var i = 0; i < minLen; i++){
                     // target[propName] 作为新的target,
                     // i 作为新的propName递归进行插值
-                    result.push( _interpolate( prevValue[i], nextValue[i], percent, getter(target, propName), i, getter, setter) );
+                    result.push( _interpolate( prevValue[i], 
+                                                nextValue[i], 
+                                                percent, 
+                                                getter(target, propName), 
+                                                i, 
+                                                getter, 
+                                                setter) );
                 }
                 // 赋值剩下不需要插值的数组项
                 for(var i = minLen; i < maxLen; i++){
@@ -119,8 +135,8 @@ define(
                 setter( target, propName, result);
             }
             else{
-                var prevValue = parseFloat( prevValue ),
-                    nextValue = parseFloat( nextValue );
+                prevValue = parseFloat( prevValue );
+                nextValue = parseFloat( nextValue );
                 if( !isNaN(prevValue) && ! isNaN(nextValue) ){
                     var value = (nextValue-prevValue)*percent+prevValue;
                     setter(target, propName, value);
@@ -128,7 +144,7 @@ define(
                 }
             }
         }
-        function Deferred( target, loop, getter, setter ){
+        function Deferred(target, loop, getter, setter){
 
             this._tracks = {};
             this._target = target;
@@ -154,23 +170,26 @@ define(
                         this._tracks[ propName ].push({
                             time : 0,
                             value : this._getter( this._target, propName )
-                        })
+                        });
                     }
                     this._tracks[ propName ].push({
                         time : time,
                         value : props[ propName ],
                         easing : easing
-                    })
+                    });
                 }
                 return this;
             },
             start : function(){
-                var self = this;
+                var self = this,
+                    delay, track, trackMaxTime;
                 for(var propName in this._tracks){
-                        delay = 0,
-                        track = this._tracks[ propName ];
+                    delay = 0;
+                    track = this._tracks[ propName ];
                     if( track.length ){
-                        var trackMaxTime = track[ track.length-1].time;
+                        trackMaxTime = track[ track.length-1].time;
+                    }else{
+                        continue;
                     }
                     for(var i = 0; i < track.length-1; i++){
                         var now = track[i],
@@ -188,19 +207,26 @@ define(
                                 var prevValue = clone(now.value),
                                     nextValue = clone(next.value);
                                 return function(target, schedule){
-                                    _interpolate( prevValue, nextValue, schedule, target, propName, self._getter, self._setter );
-                                }
+                                    _interpolate( prevValue, 
+                                                    nextValue, 
+                                                    schedule, 
+                                                    target, 
+                                                    propName, 
+                                                    self._getter, 
+                                                    self._setter );
+                                };
                             }) (now, next, propName),
                             ondestroy : function(){
                                 self._controllerCount--;
                                 if( self._controllerCount === 0){
+                                    var len = self._doneList.length;
                                     // 所有动画完成
-                                    for( var i = 0; i < self._doneList.length; i++){
+                                    for(var i = 0; i < len; i++){
                                         self._doneList[i]();
                                     }
                                 }
                             }
-                        })
+                        });
                         this._controllerList.push( controller );
 
                         this._controllerCount++;
@@ -221,10 +247,10 @@ define(
                 this._doneList.push( func );
                 return this;
             }
-        }
+        };
 
         function clone( value ){
-            if( value && value.constructor === Array ){
+            if( value && value instanceof Array ){
                 return Array.prototype.slice.call( value );
             }else{
                 return value;
@@ -245,4 +271,4 @@ define(
 
         return Animation;
     }
-)
+);

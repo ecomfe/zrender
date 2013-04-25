@@ -1,9 +1,9 @@
 /**
- * zrender : config默认配置项
+ * zrender: config默认配置项
  * Copyright 2013 Baidu Inc. All rights reserved.
  * 
- * desc:    zrender是一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型。
- * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @desc zrender是一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型。
+ * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
  * 
  */
 define(
@@ -20,7 +20,7 @@ define(
             MOUSEUP : 'mouseup',        // 鼠标按键（手指）被松开，事件对象是：目标图形元素或空
             
             // 一次成功元素拖拽的行为事件过程是：
-            // dragstart –> dragenter –> dragover [-> dragleave] –> drop –> dragend
+            // dragstart > dragenter > dragover [> dragleave] > drop > dragend
             DRAGSTART : 'dragstart',    // 开始拖拽时触发，事件对象是：被拖拽图形元素
             DRAGEND : 'dragend',        // 拖拽完毕时触发（在drop之后触发），事件对象是：被拖拽图形元素
             DRAGENTER : 'dragenter',    // 拖拽图形元素进入目标图形元素时触发，事件对象是：目标图形元素
@@ -28,7 +28,7 @@ define(
             DRAGLEAVE : 'dragleave',    // 拖拽图形元素离开目标图形元素时触发，事件对象是：目标图形元素
             DROP : 'drop',              // 拖拽图形元素放在目标图形元素内时触发，事件对象是：目标图形元素
             
-            touchClickDelay : 300       // touchend - touchstart < delay is click
+            touchClickDelay : 300       // touch end - start < delay is click
         }
     }
-)
+);
