@@ -1,22 +1,22 @@
 /**
- * zrender : 数学辅助类
+ * zrender: 数学辅助类
  * Copyright 2013 Baidu Inc. All rights reserved.
- * 
- * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
- * 
+ *
+ * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *
  * sin：正弦函数，自动缓存
  * cos：余弦函数，自动缓存
  * degreeToRadian：角度转弧度
  * radianToDegree：弧度转角度
  */
 define(
-    function(require) {
+    function() {
         var _cache = {
             sin : {},     //sin缓存
             cos : {}      //cos缓存
         };
         var _radians = Math.PI / 180;
-        
+
         /**
          * @param angle 弧度（角度）参数
          * @param isDegrees angle参数是否为角度计算，默认为false，angle为以弧度计量的角度
@@ -28,9 +28,9 @@ define(
             }
             return _cache.sin[angle];
         }
-        
+
         /**
-         * @param radians 弧度参数 
+         * @param radians 弧度参数
          */
         function cos(angle, isDegrees) {
             angle = isDegrees ? angle * _radians : angle;
@@ -39,23 +39,23 @@ define(
             }
             return _cache.cos[angle];
         }
-        
+
         /**
-         * 角度转弧度  
+         * 角度转弧度
          * @param {Object} angle
          */
         function degreeToRadian(angle) {
             return angle * _radians;
         }
-        
+
         /**
-         * 弧度转角度  
+         * 弧度转角度
          * @param {Object} angle
          */
         function radianToDegree(angle) {
             return angle / _radians;
         }
-        
+
         return {
             sin : sin,
             cos : cos,

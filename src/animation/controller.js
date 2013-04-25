@@ -13,11 +13,11 @@
 define(
     function(require){
 
-        var Easing = require("./easing");
+        var Easing = require('./easing');
         
         var Controller = function(options){
 
-            this._targetPool = options.target || new Object();
+            this._targetPool = options.target || {};
             if(this._targetPool.constructor != Array){
                 this._targetPool = [this._targetPool];
             }
@@ -34,18 +34,19 @@ define(
             this._endTime = this._startTime + this._life*1000;
             
             //是否循环
-            this.loop = typeof(options.loop) == 'undefined' ? false : options.loop;
+            this.loop = typeof(options.loop) == 'undefined'
+                             ? false : options.loop;
             
             this.gap = options.gap || 0;
             
-            this.easing = options.easing || "Linear";
+            this.easing = options.easing || 'Linear';
 
             this.onframe = options.onframe || null;
             
             this.ondestroy = options.ondestroy || null;
             
             this.onrestart = options.onrestart || null;
-        }
+        };
 
         Controller.prototype = {
             step : function(time){
@@ -58,13 +59,14 @@ define(
                 
                 percent = Math.min(percent, 1);
 
-                var easingFunc = typeof(this.easing) == "string" ?
-                                    Easing[this.easing] :
-                                    this.easing;
-                if( typeof easingFunc === "function" ){
-                    var schedule = easingFunc(percent);
+                var easingFunc = typeof(this.easing) == 'string'
+                                    ? Easing[this.easing]
+                                    : this.easing;
+                var schedule;
+                if( typeof easingFunc === 'function' ){
+                    schedule = easingFunc(percent);
                 }else{
-                    var schedule = percent;
+                    schedule = percent;
                 }
                 this.fire('frame', schedule);
                 
@@ -72,9 +74,8 @@ define(
                 if( percent == 1 ){
                     if(this.loop){
                         this.restart();
-                        
                         //重新开始周期
-                        this.fire('restart')
+                        this.fire('restart');
                         
                     }else{
                         //动画完成删除这个控制器
@@ -89,12 +90,14 @@ define(
             },
             fire : function(eventType, arg){
                 for(var i = 0; i < this._targetPool.length; i++){
-                    this['on'+eventType] && this['on'+eventType](this._targetPool[i], arg);
+                    if( this['on'+eventType] ){
+                        this['on'+eventType](this._targetPool[i], arg);
+                    }
                 }
             }
-        }
+        };
         Controller.prototype.constructor = Controller;
 
         return Controller;
     }
-)
+);

@@ -191,8 +191,6 @@ zr.render();
             { lineNumbers: true }
         );
         editor.setOption("theme", 'monokai');
-        editor.on('focus', focusCode);
-        editor.on('blur', focusGraphic);
         editor.on('change', function(){needRefresh = true;});
         
         function refresh(isBtnRefresh){
@@ -227,6 +225,8 @@ zr.render();
             function(zrender) {
                 zr = zrender.init(document.getElementById('main'));
                 refresh();
+                editor.on('focus', focusCode);
+                editor.on('blur', focusGraphic);
             }
         );
     </script>
