@@ -1,18 +1,18 @@
 /**
  * zrender
  * Copyright 2013 Baidu Inc. All rights reserved.
- * 
- * author: Kener (@Kener-林峰, linzhifeng@baidu.com)
- * 
+ *
+ * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *
  * shape类：折线
  * 可配图形属性：
-   {   
+   {
        // 基础属性
        shape  : 'brokenLine',         // 必须，shape类标识，需要显式指定
        id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
        zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
        invisible : {boolean},   // 默认为false，是否可见
-       
+
        // 样式属性，默认状态样式样式属性
        style  : {
            pointList     : {Array},   // 必须，各个顶角坐标
@@ -22,33 +22,33 @@
            lineCap       : {string},  // 默认为butt，线帽样式。butt | round | square
            lineJoin      : {string},  // 默认为miter，线段连接样式。miter | round | bevel
            miterLimit    : {number},  // 默认为10，最大斜接长度，仅当lineJoin为miter时生效
-           
+
            opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
            shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
            shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
            shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
            shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
-           
+
            text          : {string},  // 默认为null，附加文本
-           textFont      : {string},  // 默认为null，附加文本文字样式，eg:'bold 18px verdana'
+           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
            textPosition  : {string},  // 默认为end，附加文本位置。
                                       // start | end
            textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
                                       // start | end | left | right | center
            textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
-                                      // top | bottom | middle | 
-                                      // alphabetic | hanging | ideographic 
+                                      // top | bottom | middle |
+                                      // alphabetic | hanging | ideographic
            textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
-                                      // textPosition == 'inside' ? '#000' : color
+                                      // 'inside' ? '#000' : color
        },
-       
+
        // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
        highlightStyle : {
            // 同style
        }
-       
+
        // 交互属性，详见shape.Base
-       
+
        // 事件属性，详见shape.Base
    }
          例子：
@@ -63,7 +63,7 @@
            text : 'Baidu'
        },
        myName : 'kener',  //可自带任何有效自定义属性
-        
+
        clickable : true,
        onClick : function(eventPacket) {
            alert(eventPacket.target.myName);
@@ -77,7 +77,7 @@ define(
             this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
             this.textPosition = 'end';
         }
-        
+
         BrokenLine.prototype =  {
             /**
              * 创建多边形路径
@@ -97,10 +97,12 @@ define(
                         ctx.lineTo(pointList[i][0],pointList[i][1]);
                     }
                 }
-                else if (style.lineType == 'dashed' || style.lineType == 'dotted') {
+                else if (style.lineType == 'dashed'
+                        || style.lineType == 'dotted'
+                ) {
                     //画虚线的方法  by loutongbing@baidu.com
                     var dashPattern = [
-                        style.lineWidth * (style.lineType == 'dashed' ? 6 : 1), 
+                        style.lineWidth * (style.lineType == 'dashed' ? 6 : 1),
                         style.lineWidth * 4
                     ];
                     ctx.moveTo(pointList[0][0],pointList[0][1]);
@@ -119,9 +121,13 @@ define(
                         var dashLength;
                         var nx;
                         var ny;
-                        
-                        while (!((dx < 0 ? x <= toX : x >= toX) && (dy < 0 ? y <= toY : y >= toY))) {
-                            dashLength = dashPattern[idx++ % dashPattern.length];
+
+                        while (!((dx < 0 ? x <= toX : x >= toX)
+                                && (dy < 0 ? y <= toY : y >= toY))
+                        ) {
+                            dashLength = dashPattern[
+                                idx++ % dashPattern.length
+                            ];
                             nx = x + (Math.cos(angle) * dashLength);
                             x = dx < 0 ? Math.max(toX, nx) : Math.min(toX, nx);
                             ny = y + (Math.sin(angle) * dashLength);
@@ -136,23 +142,23 @@ define(
                         }
                     }
                 }
-                
+
                 return;
             },
-            
+
             /**
-             * 返回矩形区域，用于局部刷新和文字定位 
+             * 返回矩形区域，用于局部刷新和文字定位
              * @param {Object} style
              */
             getRect : function(style) {
                 var shape = require('../shape');
                 return shape.get('polygon').getRect(style);
             }
-        }
-        
+        };
+
         var base = require('./base');
         base.derive(BrokenLine);
-        
+
         return BrokenLine;
     }
 );

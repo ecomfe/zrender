@@ -529,10 +529,8 @@ zr.addShape({
         var event = params.event;
         var delta = zrEvent.getDelta(event);
         alpha += delta > 0 ? 0.1 : (-0.1);
-        alpha = alpha < 0 ? 0 : alpha;
-        alpha = alpha > 1 ? 1 : alpha;
         shape.style.color = zrColor.alpha(shape.style.color, alpha)
-        
+        console.log(shape.style.color)
         zr.modShape(shape.id, shape);
         zr.refresh();
         zrEvent.stop(event);
