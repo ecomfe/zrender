@@ -1,5 +1,5 @@
 /**
- * zrender : 向量操作类
+ * zrender: 向量操作类
  * Copyright 2013 Baidu Inc. All rights reserved.
  * 
  * author : lang(shenyi01@baidu.com)
@@ -55,8 +55,8 @@ define(
             expand : function(v){
                 return [v[0], v[1], 1];
             }
-        }
+        };
 
         return vector;
     }
-)
+);

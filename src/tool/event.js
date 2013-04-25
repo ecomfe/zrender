@@ -1,9 +1,9 @@
 /**
- * zrender : 事件辅助类
+ * zrender: 事件辅助类
  * Copyright 2013 Baidu Inc. All rights reserved.
- * 
- * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
- *  
+ *
+ * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *
  * getX：获取事件横坐标
  * getY：或者事件纵坐标
  * getDelta：或者鼠标滚轮变化
@@ -11,64 +11,64 @@
  * Dispatcher：事件分发器
  */
 define(
-    function(require) {
+    function() {
         /**
         * 提取鼠标（手指）x坐标
         * @param  {event} e 事件.
         * @return {number} 鼠标（手指）x坐标.
         */
         function getX(e) {
-            return e.zrenderX != undefined && e.zrenderX
-                   || e.offsetX != undefined && e.offsetX 
-                   || e.layerX != undefined && e.layerX 
-                   || e.clientX != undefined && e.clientX;
-        };
-    
+            return typeof e.zrenderX != 'undefined' && e.zrenderX
+                   || typeof e.offsetX != 'undefined' && e.offsetX
+                   || typeof e.layerX != 'undefined' && e.layerX
+                   || typeof e.clientX != 'undefined' && e.clientX;
+        }
+
         /**
         * 提取鼠标y坐标
         * @param  {event} e 事件.
         * @return {number} 鼠标（手指）y坐标.
         */
         function getY(e) {
-            return e.zrenderY != undefined && e.zrenderY
-                   ||e.offsetY != undefined && e.offsetY 
-                   || e.layerY != undefined && e.layerY 
-                   || e.clientY != undefined && e.clientY;
-        };
-    
+            return typeof e.zrenderY != 'undefined' && e.zrenderY
+                   || typeof e.offsetY != 'undefined' && e.offsetY
+                   || typeof e.layerY != 'undefined' && e.layerY
+                   || typeof e.clientY != 'undefined' && e.clientY;
+        }
+
         /**
         * 提取鼠标滚轮变化
         * @param  {event} e 事件.
         * @return {number} 滚轮变化，正值说明滚轮是向上滚动，如果是负值说明滚轮是向下滚动
         */
         function getDelta(e) {
-            return e.wheelDelta != undefined && e.wheelDelta 
-                   || e.detail != undefined && -e.detail;
-        };
-        
+            return typeof e.wheelDelta != 'undefined' && e.wheelDelta
+                   || typeof e.detail != 'undefined' && -e.detail;
+        }
+
         /**
-         * 停止冒泡和阻止默认行为 
+         * 停止冒泡和阻止默认行为
          * @param {Object} e : event对象
          */
         function stop(e) {
             if (e.preventDefault) {
                 e.preventDefault();
                 e.stopPropagation();
-            } 
+            }
             else {
                 e.returnValue = false;
             }
         }
-        
+
         /**
-         * 事件分发器 
+         * 事件分发器
          */
         function Dispatcher() {
             var _self = this;
             var _h = {};
-            
+
             /**
-             * 单次触发绑定，dispatch后销毁 
+             * 单次触发绑定，dispatch后销毁
              * @param {string} event 事件字符串
              * @param {function} handler 响应函数
              */
@@ -76,19 +76,19 @@ define(
                 if(!handler || !event) {
                     return _self;
                 }
-        
+
                 if(!_h[event]) {
                     _h[event] = [];
                 }
-    
+
                 _h[event].push({
                     h : handler,
                     one : true
                 });
-        
+
                 return _self;
             }
-            
+
             /**
              * 事件绑定
              * @param {string} event 事件字符串
@@ -98,19 +98,19 @@ define(
                 if(!handler || !event) {
                     return _self;
                 }
-        
+
                 if(!_h[event]) {
                     _h[event] = [];
                 }
-    
+
                 _h[event].push({
                     h : handler,
                     one : false
                 });
-        
+
                 return _self;
             }
-            
+
             /**
              * 事件解绑定
              * @param {string} event 事件字符串
@@ -121,7 +121,7 @@ define(
                     _h = {};
                     return _self;
                 }
-        
+
                 if(handler) {
                     if(_h[event]) {
                         var newList = [];
@@ -132,18 +132,18 @@ define(
                         }
                         _h[event] = newList;
                     }
-    
-                    if(_h[event] && _h[event].length == 0) {
+
+                    if(_h[event] && _h[event].length === 0) {
                         delete _h[event];
                     }
-                } 
+                }
                 else {
                     delete _h[event];
                 }
-        
+
                 return _self;
             }
-            
+
             /**
              * 事件分发
              * @param {string} type : 事件类型
@@ -163,27 +163,27 @@ define(
                             newList.push(_h[type][i]);
                         }
                     }
-                    
+
                     if (newList.length != _h[type].length) {
-                        _h[type] = newList;    
+                        _h[type] = newList;
                     }
                 }
-        
+
                 return _self;
             }
-            
+
             _self.one = one;
             _self.bind = bind;
             _self.unbind = unbind;
             _self.dispatch = dispatch;
-        };
-        
+        }
+
         return {
             getX : getX,
             getY : getY,
             getDelta : getDelta,
             stop : stop,
             Dispatcher : Dispatcher
-        }
+        };
     }
 );

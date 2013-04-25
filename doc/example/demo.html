@@ -6,11 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="ZRender">
     <meta name="author" content="linzhifeng@baidu.com">
-    
+
     <script src="../asset/js/esl/esl.js"></script>
     <script src="../asset/js/codemirror.js"></script>
     <script src="../asset/js/javascript.js"></script>
-    
+
     <link href="../asset/css/bootstrap.css" rel="stylesheet">
     <link href="../asset/css/bootstrap-responsive.css" rel="stylesheet">
     <link href="../asset/css/codemirror.css" rel="stylesheet">
@@ -71,16 +71,16 @@
         </div><!-- /.container -->
       </div><!-- /.navbar-inner -->
     </div><!-- /.navbar-wrapper -->
-    
+
     <div class="container-fluid">
         <div class="row-fluid">
             <div id="sidebar-code" class="span4">
                 <div class="well sidebar-nav">
                     <div class="nav-header">code</div>
                     <textarea id="code" name="code">
-/* 
+/*
  *  zr has been init like this, just use it!
- *  
+ *
  *  var zrender = require('zrender/zrender');
  *  var zr = zrender.init(document.getElementById('main'));
  */
@@ -100,7 +100,7 @@ zr.addShape({
         r : 50,
         brushType : 'both',
         color : 'rgba(220, 20, 60, 0.8)',          // rgba supported
-        strokeColor : color.getColor(colorIdx++),   // getColor from default palette  
+        strokeColor : color.getColor(colorIdx++),   // getColor from default palette
         lineWidth : 5,
         text :'circle',
         textPosition :'inside'
@@ -108,25 +108,13 @@ zr.addShape({
     hoverable : true,   // default true
     draggable : true,   // default false
     clickable : true,
-    ondrift : function(e, dx, dy) {
-        e.style.y += dy;
-        return true; // return true can disable the default drift~
-    },
+
     // 可自带任何有效自定义属性
     _name : 'Hello~',
-    
-    /* 
-     * 事件参数是这样的
-     * params = {
-     *     event : {Event} 原始dom事件对象
-     *     target : {shape} 当前图形对象
-     *     type : {string} 封装后的事件名称，见config.EVENT   
-     * }
-     */
     onclick: function(params){
         alert(params.target._name);
-    },          
-    
+    },
+
     // 响应事件并动态修改图形元素
     onmousewheel: function(params){
         var eventTool = require('zrender/tool/event');
@@ -139,19 +127,19 @@ zr.addShape({
         zr.modShape(params.target.id,{style:{r : r}})
         zr.refresh();
         eventTool.stop(params.event);
-    } 
-    /* 封装支持事件，见shape/base, config.EVENT 
+    }
+    /* 封装支持事件，见shape/base, config.EVENT
     onmousemove : function(e){console.log('onmousemove',e)},
-    onmouseover : function(e){console.log('onmouseover',e)},   
-    onmouseout  : function(e){console.log('onmouseout',e)},     
-    onmousedown : function(e){console.log('onmousedown',e)},    
-    onmouseup   : function(e){console.log('onmouseup',e)},      
-    ondragstart : function(e){console.log('ondragstart',e)},    
-    ondragend   : function(e){console.log('ondragend',e)},      
-    ondragenter : function(e){console.log('ondragenter',e)},    
-    ondragover  : function(e){console.log('ondragover',e)},     
-    ondragleave : function(e){console.log('ondragleave',e)},    
-    ondrop      : function(e){console.log('ondrop',e)} 
+    onmouseover : function(e){console.log('onmouseover',e)},
+    onmouseout  : function(e){console.log('onmouseout',e)},
+    onmousedown : function(e){console.log('onmousedown',e)},
+    onmouseup   : function(e){console.log('onmouseup',e)},
+    ondragstart : function(e){console.log('ondragstart',e)},
+    ondragend   : function(e){console.log('ondragend',e)},
+    ondragenter : function(e){console.log('ondragenter',e)},
+    ondragover  : function(e){console.log('ondragover',e)},
+    ondragleave : function(e){console.log('ondragleave',e)},
+    ondrop      : function(e){console.log('ondrop',e)}
     */
 });
 
@@ -310,7 +298,7 @@ zr.addShape({
         strokeColor : color.getColor(colorIdx++),
         lineWidth : 2,
         lineType : 'dashed',    // default solid
-        text : 'line'  
+        text : 'line'
     },
     draggable:true
 });
@@ -344,7 +332,7 @@ zr.addShape({
         height : 20
     },
     draggable : true
-}); 
+});
 
 // 路径
 zr.addShape({
@@ -354,16 +342,16 @@ zr.addShape({
         //path : 'M 0 0 L 0 100 L 100 100 Z',
         path : 'M66,10, L23,127, L122,50, L10,49, L109,127 z',
         x : 20,
-        y : 20,
+        y : 200,
         brushType : 'both',
         color : color.getColor(colorIdx++),
         strokeColor : color.getColor(colorIdx++),
         lineWidth : 10,
         text : 'path',
-        textPosition : 'bottom' 
+        textPosition : 'bottom'
     },
     draggable : true
-});  
+});
 
 // 绘画
 zr.render();
@@ -371,16 +359,16 @@ zr.render();
 /* 除了在shape上绑定事件，可以挂接全局事件
 zr.on('click',      function(e){console.log('onclick',e,'global')});
 zr.on('mousewheel', function(e){console.log('onmousewheel',e,'global')});
-zr.on('mousemove',  function(e){console.log('onmousemove',e,'global')});    
-zr.on('mouseover',  function(e){console.log('onmouseover',e,'global')});   
-zr.on('mouseout',   function(e){console.log('onmouseout',e,'global')});     
-zr.on('mousedown',  function(e){console.log('onmousedown',e,'global')});    
-zr.on('mouseup',    function(e){console.log('onmouseup',e,'global')});      
-zr.on('dragstart',  function(e){console.log('ondragstart',e,'global')});    
-zr.on('dragend',    function(e){console.log('ondragend',e,'global')});      
-zr.on('dragenter',  function(e){console.log('ondragenter',e,'global')});    
-zr.on('dragover',   function(e){console.log('ondragover',e,'global')});     
-zr.on('dragleave',  function(e){console.log('ondragleave',e,'global')});    
+zr.on('mousemove',  function(e){console.log('onmousemove',e,'global')});
+zr.on('mouseover',  function(e){console.log('onmouseover',e,'global')});
+zr.on('mouseout',   function(e){console.log('onmouseout',e,'global')});
+zr.on('mousedown',  function(e){console.log('onmousedown',e,'global')});
+zr.on('mouseup',    function(e){console.log('onmouseup',e,'global')});
+zr.on('dragstart',  function(e){console.log('ondragstart',e,'global')});
+zr.on('dragend',    function(e){console.log('ondragend',e,'global')});
+zr.on('dragenter',  function(e){console.log('ondragenter',e,'global')});
+zr.on('dragover',   function(e){console.log('ondragover',e,'global')});
+zr.on('dragleave',  function(e){console.log('ondragleave',e,'global')});
 zr.on('drop',       function(e){console.log('ondrop',e,'global')});
 */
 
@@ -390,7 +378,7 @@ zr.on('drop',       function(e){console.log('ondrop',e,'global')});
             <div id="graphic" class="span8">
                 <div id="main" class="main"></div>
                 <div>
-                    <button onclick="refresh(true)">Refresh ~</button>
+                    <button onclick="refresh(true)" tabindex="11110">Refresh ~</button>
                     <span id='wrong-message' style="color:red"></span>
                 </div>
             </div><!--/span-->
@@ -424,12 +412,12 @@ zr.on('drop',       function(e){console.log('ondrop',e,'global')});
         var domMessage = document.getElementById('wrong-message');
         var needRefresh = false;
         var refreshing = false;
-        
+
         function focusCode() {
             domCode.className = 'span8';
             domGraphic.className = 'span4';
         }
-        
+
         function focusGraphic() {
             domCode.className = 'span4';
             domGraphic.className = 'span8';
@@ -438,16 +426,14 @@ zr.on('drop',       function(e){console.log('ondrop',e,'global')});
                 setTimeout(refresh, 1500);
             }
         }
-        
+
         var editor = CodeMirror.fromTextArea(
-            document.getElementById("code"), 
+            document.getElementById("code"),
             { lineNumbers: true }
         );
         editor.setOption("theme", 'monokai');
-        editor.on('focus', focusCode);
-        editor.on('blur', focusGraphic);
         editor.on('change', function(){needRefresh = true;});
-        
+
         function refresh(isBtnRefresh){
             if (isBtnRefresh && refreshing) {
                 // focus在code上点refresh时二次触发
@@ -459,9 +445,9 @@ zr.on('drop',       function(e){console.log('ondrop',e,'global')});
                 domMessage.innerHTML = '';
             }catch (e) {
                 domMessage.innerHTML = e;
-            }   
+            }
         }
-        
+
         function QueryString() {
             var name,value,i;
             var str = location.href;
@@ -477,7 +463,7 @@ zr.on('drop',       function(e){console.log('ondrop',e,'global')});
                 }
             }
         }
-        
+
         require.config({
             paths: {
                 'js': '../asset/js/esl/js'
@@ -489,8 +475,8 @@ zr.on('drop',       function(e){console.log('ondrop',e,'global')});
                     main: 'zrender'
                 }
             ]
-        });           
-        
+        });
+
         require(
             ['zrender/zrender'],
             function(zrender) {
@@ -503,6 +489,8 @@ zr.on('drop',       function(e){console.log('ondrop',e,'global')});
                     );
                 }
                 refresh();
+                editor.on('focus', focusCode);
+                editor.on('blur', focusGraphic);
             }
         )
     </script>

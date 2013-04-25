@@ -1,19 +1,18 @@
 /**
- * zrender : 公共辅助函数 
+ * zrender: 公共辅助函数
  * Copyright 2013 Baidu Inc. All rights reserved.
- * 
- * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
- *  
+ *
+ * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *
  * clone：深度克隆
  * merge：合并源对象的属性到目标对象
- * isArray：数据类型判断，是否为数组
  * getContext：获取一个自由使用的canvas 2D context，使用原生方法，如isPointInPath，measureText等
  */
 define(
     function(require) {
         /**
          * 对一个object进行深度拷贝
-         * 
+         *
          * @param {Any} source 需要进行拷贝的对象
          * @return {Any} 拷贝后的新对象
          */
@@ -23,8 +22,8 @@ define(
                 '[object Function]': 1,
                 '[object RegExp]'  : 1,
                 '[object Date]'    : 1,
-                '[object Error]'   : 1 
-            }
+                '[object Error]'   : 1
+            };
             var result = source;
             var i;
             var len;
@@ -34,14 +33,14 @@ define(
                 || source instanceof Boolean
             ) {
                 return result;
-            } 
+            }
             else if (source instanceof Array) {
                 result = [];
                 var resultLen = 0;
                 for (i = 0, len = source.length; i < len; i++) {
                     result[resultLen++] = this.clone(source[i]);
                 }
-            } 
+            }
             else if ('object' == typeof source) {
                 if(buildInObject[Object.prototype.toString.call(source)]) {
                     return result;
@@ -55,21 +54,21 @@ define(
             }
             return result;
         }
-        
+
         /**
          * 合并源对象的属性到目标对象
          * modify from Tangram
          * @param {*} target 目标对象
          * @param {*} source 源对象
-         * @param {Object} opt_options 选项
-         * @param {boolean} opt_options.overwrite 是否覆盖
-         * @param {boolean} opt_options.recursive 是否递归
-         * @param {boolean} opt_options.whiteList 白名单，如果定义，则仅处理白名单属性
+         * @param {Object} optOptions 选项
+         * @param {boolean} optOptions.overwrite 是否覆盖
+         * @param {boolean} optOptions.recursive 是否递归
+         * @param {boolean} optOptions.whiteList 白名单，如果定义，则仅处理白名单属性
          */
         var merge = function() {
             function mergeItem(target, source, index, overwrite, recursive) {
                 if (source.hasOwnProperty(index)) {
-                    if (recursive 
+                    if (recursive
                         && typeof target[index] == 'object'
                         && typeof target[index] != 'function'
                     ) {
@@ -87,21 +86,23 @@ define(
                         target[index] = source[index];
                     }
                 }
-            };
-             
-            return function(target, source, opt_options){
+            }
+
+            return function(target, source, optOptions){
                 var i = 0,
-                    options = opt_options || {},
+                    options = optOptions || {},
                     overwrite = options['overwrite'],
                     whiteList = options['whiteList'],
                     recursive = options['recursive'],
                     len;
-             
+
                 // 只处理在白名单中的属性
                 if (whiteList && whiteList.length) {
                     len = whiteList.length;
                     for (; i < len; ++i) {
-                        mergeItem(target, source, whiteList[i], overwrite, recursive);
+                        mergeItem(
+                            target, source, whiteList[i], overwrite, recursive
+                        );
                     }
                 } else {
                     for (i in source) {
@@ -111,40 +112,33 @@ define(
                 return target;
             };
         }();
-        
-        function isArray(obj) {
-            return obj 
-                   && !(obj.propertyIsEnumerable('length')) 
-                   && typeof obj === 'object' 
-                   && typeof obj.length === 'number';
-        }
-        
+
         var _ctx;
         function getContext() {
-            require( "js!../lib/excanvas.js" );
+            require('js!../lib/excanvas.js');
             if (!_ctx) {
-                if (!document.createElement('canvas').getContext 
+                if (!document.createElement('canvas').getContext
                     && G_vmlCanvasManager
-                ){
+                ) {
                     var _div = document.createElement('div');
-                    _div.style.position = 'absolute'; 
+                    _div.style.position = 'absolute';
                     _div.style.top = '-1000px';
                     document.body.appendChild(_div);
-                    
-                    _ctx = G_vmlCanvasManager.initElement(_div).getContext('2d');
+
+                    _ctx = G_vmlCanvasManager.initElement(_div)
+                               .getContext('2d');
                 }
                 else {
-                    _ctx = document.createElement('canvas').getContext('2d');            
+                    _ctx = document.createElement('canvas').getContext('2d');
                 }
             }
             return _ctx;
         }
-        
+
         return {
             clone : clone,
             merge : merge,
-            isArray : isArray,
             getContext : getContext
-        }
+        };
     }
 );
