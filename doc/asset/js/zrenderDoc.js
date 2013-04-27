@@ -4,7 +4,7 @@ var navShape = document.getElementById('nav-shape');
 var navTool = document.getElementById('nav-tool');
 var navAnimation = document.getElementById('nav-animation');
 var main = document.getElementById('main');
-    
+
 function build(part, name, navDom) {
     var navHtml = [];
     var item;
@@ -86,7 +86,7 @@ function buildContent(arHead, item) {
         paramsContent.push('</pre>');
         if (item.cantry) {
             var le = encodeURIComponent(item.pre).length;
-            if (le > 2000) {
+            if (le > 2008) {
               console.log(item.name,le);
             }
             paramsContent.push('<a href="example/demo.html?code=' + encodeURIComponent(item.pre) + '" target="_blank">try this &raquo;</a>');

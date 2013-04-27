@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="ZRender">
     <meta name="author" content="linzhifeng@baidu.com">
-    
+
     <script src="../asset/js/esl/esl.js"></script>
     <link href="../asset/css/bootstrap.css" rel="stylesheet">
     <link href="../asset/css/bootstrap-responsive.css" rel="stylesheet">
@@ -66,11 +66,11 @@
         </div><!-- /.container -->
       </div><!-- /.navbar-inner -->
     </div><!-- /.navbar-wrapper -->
-    
+
     <div class="container">
         <div class="row">
             <div class="span12">
-                <div id="main" class="main"></div>
+                <div id="main" class="main" style="cursor: none !important"></div>
                 <button id="refresh">Refresh ~</button>
                 <span id='wrong-message' style="color:red"></span>
             </div>
@@ -82,7 +82,7 @@
           <p>&copy; 2013 Ecom-FE. &middot; <a href="#">Privacy</a> &middot; <a href="#">Terms</a></p>
         </footer>
     </div><!--/.fluid-container-->
-    
+
     <script src="../asset/js/jquery.js"></script>
     <script src="../asset/js/bootstrap-transition.js"></script>
     <script src="../asset/js/bootstrap-alert.js"></script>
@@ -108,8 +108,8 @@
                     main: 'zrender'
                 }
             ]
-        });           
-        
+        });
+
         require(
             ['zrender/zrender'],
             function(zrender) {
@@ -122,21 +122,21 @@
                 var curPalette;
                 var isMobile = navigator.userAgent.match(/mobile/i);
                 document.getElementById('refresh').onclick = init;
-                
+
                 init();
                 function init(){
                     document.getElementById('wrong-message').innerHTML = '';
                     zr.clear();
-                    
+
                     buildBrush();
-                    
+
                     buildPalette();
-                    
+
                     Draft();
-                    
+
                     zr.render();
                 }
-                
+
                 function buildBrush() {
                     brush = {
                         shape : 'circle',
@@ -149,45 +149,43 @@
                             brushType : 'both',
                             color : myPalette[0],
                             strokeColor : 'yellow',
-                            lineWidth : 3,
-                            text :'+',
-                            textPosition :'inside'
+                            lineWidth : 5
                         },
                         _colorIdx : 0,
                         hoverable : false   // default true
-                    } 
-                    
+                    }
+
                     if (!isMobile) {
                         zr.addShape(brush);
                         zr.on(
-                            'mousemove',  
+                            'mousemove',
                             function(params) {
                                 brush.style.x = eventTool.getX(params.event);
                                 brush.style.y = eventTool.getY(params.event);
                                 zr.modShape(brush.id, brush);
-                                zr.refresh();   
+                                zr.refresh();
                             }
                         );
-                        
+
                         zr.on(
-                            'mousewheel',  
+                            'mousewheel',
                             function(params) {
                                 eventTool.stop(params.event);
                                 brush._colorIdx = (brush._colorIdx + 1) % myPalette.length;
                                 brush.style.color = myPalette[brush._colorIdx];
                                 zr.modShape(brush.id, brush);
-                                zr.refresh();   
+                                zr.refresh();
                             }
                         );
                     }
                 }
-                
+
                 function buildPalette() {
                     var length = myPalette.length;
                     var pWidth = 60;
                     var pHeight = 40;
                     var startY = 5;
-                    var space = Math.round((height - 10 - pHeight * length) 
+                    var space = Math.round((height - 10 - pHeight * length)
                                 / (length - 1));
                     for (var i = 0; i < length; i++) {
                         zr.addShape({
@@ -225,24 +223,24 @@
                     }
                     zr.addShape(curPalette);
                 }
-                
+
                 function paletteHandler(params) {
                     var target = params.target;
                     brush.style.color = target.style.color;
                     brush._colorIdx = target._colorIdx;
-                    
+
                     if (!isMobile) {
                         zr.modShape(brush.id, brush);
                     }
-                   
-                    
+
+
                     curPalette.style.x = target.style.x;
                     curPalette.style.y = target.style.y;
                     zr.modShape(curPalette.id, curPalette);
-                    
-                    zr.refresh(); 
+
+                    zr.refresh();
                 }
-                
+
                 function Draft() {
                     var shapeList = [];
                     shapeList.push({
@@ -296,16 +294,16 @@
                         shapeList[i].onclick = contentHandler;
                         zr.addShape(shapeList[i]);
                     }
-                    
+
                 }
-                
+
                 function contentHandler(params) {
                     var target = params.target;
                     target.style.color = brush.style.color;
                     target.style.strokeColor = 'white';
                     zr.modShape(target.id, target);
-                    zr.refresh(); 
-                }           
+                    zr.refresh();
+                }
             }
         )
     </script>

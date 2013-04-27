@@ -6,6 +6,7 @@
  *
  * isInside：是否在区域内部
  * isOutside：是否在区域外部
+ * getTextWidth：测算单行文本宽度
  */
 define(
     function(require) {
@@ -36,65 +37,157 @@ define(
                 return false;
             }
 
-            if (zoneType != 'line'
-                && zoneType != 'brokenLine'
+             // 未实现或不可用时(excanvas不支持)则数学运算，主要是line，brokenLine，ring
+            if (!_isInsideRectangle(sectorClazz.getRect(area), x, y)) {
+                // 不在矩形区域内直接返回
+                return false;
+            }
+
+            var _mathReturn = _mathMethod(zoneType, area, x, y);
+
+            if (typeof _mathReturn != 'undefined') {
+                return _mathReturn;
+            }
+
+            if (zoneType != 'beziercurve'
                 && sectorClazz.buildPath
                 && _ctx.isPointInPath
             ) {
-                // 图形类实现路径创建了则用类的path
-                _ctx.beginPath();
-                sectorClazz.buildPath(_ctx, area);
-                _ctx.closePath();
-                return _ctx.isPointInPath(x, y);
+                return _buildPathMethod(sectorClazz, _ctx, area, x, y);
+            }
+            else if (_ctx.getImageData) {
+                return _pixelMethod(sectorClazz, area, x, y);
+            }
+
+            // 上面的方法都行不通时
+            switch (zoneType) {
+                //心形----------------------10
+                case 'heart':
+                    return true;    // Todo，不精确
+                //水滴----------------------11
+                case 'droplet':
+                    return true;    // Todo，不精确
+                case 'ellipse':
+                   return true;     // Todo，不精确
+                //路径，椭圆，曲线等-----------------13
+                default:
+                    return false;   // Todo，暂不支持
+            }
+        }
+
+        /**
+         * 用数学方法判断，三个方法中最快，但是支持的shape少
+         *
+         * @param {Object} shape ： shape类
+         * @param {Object} area ：目标区域
+         * @param {number} x ： 横坐标
+         * @param {number} y ： 纵坐标
+         * @return {boolean=} true表示坐标处在图形中
+         */
+        function _mathMethod(shape, area, x, y) {
+            // 在矩形内则部分图形需要进一步判断
+            switch (shape) {
+                //线-----------------------1
+                case 'line':
+                    return _isInsideLine(area, x, y);
+                //折线----------------------2
+                case 'brokenLine':
+                    return _isInsideBrokenLine(area, x, y);
+                //文本----------------------3
+                case 'text':
+                    return true;
+                //圆环----------------------4
+                case 'ring':
+                    return _isInsideRing(area, x, y);
+                //矩形----------------------5
+                case 'rectangle':
+                    return true;
+                //圆形----------------------6
+                case 'circle':
+                    return _isInsideCircle(area, x, y);
+                //扇形----------------------7
+                case 'sector':
+                    return _isInsideSector(area, x, y);
+                //多边形---------------------8
+                case 'polygon':
+                    return _isInsidePolygon(area, x, y);
+                //图片----------------------9
+                case 'image':
+                    return true;
+            }
+        }
+
+        /**
+         * 通过buildPath方法来判断，三个方法中较快，但是不支持线条类型的shape，
+         * 而且excanvas不支持isPointInPath方法
+         *
+         * @param {Object} shape ： shape类
+         * @param {Object} context : 上下文
+         * @param {Object} area ：目标区域
+         * @param {number} x ： 横坐标
+         * @param {number} y ： 纵坐标
+         * @return {boolean} true表示坐标处在图形中
+         */
+        function _buildPathMethod(shape, context, area, x, y) {
+            // 图形类实现路径创建了则用类的path
+            context.beginPath();
+            shape.buildPath(context, area);
+            context.closePath();
+            return context.isPointInPath(x, y);
+        }
+
+        /**
+         * 通过像素值来判断，三个方法中最慢，但是支持广,不足之处是excanvas不支持像素处理
+         *
+         * @param {Object} shape ： shape类
+         * @param {Object} area ：目标区域
+         * @param {number} x ： 横坐标
+         * @param {number} y ： 纵坐标
+         * @return {boolean} true表示坐标处在图形中
+         */
+        function _pixelMethod(shape, area, x, y) {
+            var _rect = shape.getRect(area);
+            var _context = util.getPixelContext();
+            var _offset = util.getPixelOffset();
+
+            util.adjustCanvasSize(x, y);
+            _context.clearRect(_rect.x, _rect.y, _rect.width, _rect.height);
+            _context.beginPath();
+            shape.brush(_context, {style : area});
+            _context.closePath();
+
+            return _isPainted(_context, x + _offset.x, y + _offset.y);
+        }
+
+        /**
+         * 坐标像素值，判断坐标是否被作色
+         *
+         * @param {Object} context : 上下文
+         * @param {number} x : 横坐标
+         * @param {number} y : 纵坐标
+         * @param {number=} unit : 触发的精度，越大越容易触发，可选，缺省是为1
+         * @return {boolean} 已经被画过返回true
+         */
+        function _isPainted(context, x, y, unit) {
+            var pixelsData;
+
+            if (typeof unit != 'undefined') {
+                unit = Math.floor((unit || 1 )/ 2);
+                pixelsData = context.getImageData(
+                    x - unit,
+                    y - unit,
+                    unit + unit,
+                    unit + unit
+                ).data;
             }
             else {
-                // 未实现或不可用时(excanvas不支持)则数学运算，主要是line，brokenLine，ring
-                if (!_isInsideRectangle(sectorClazz.getRect(area), x, y)) {
-                    // 不在矩形区域内直接返回
-                    return false;
-                }
+                pixelsData = context.getImageData(x, y, 1, 1).data;
+            }
 
-                // 在矩形内则部分图形需要进一步判断
-                switch (zoneType) {
-                    //线-----------------------1
-                    case 'line':
-                        return _isInsideLine(area, x, y);
-                    //折线----------------------2
-                    case 'brokenLine':
-                        return _isInsideBrokenLine(area, x, y);
-                    //文本----------------------3
-                    case 'text':
-                        return true;
-                    //圆环----------------------4
-                    case 'ring':
-                        return _isInsideRing(area, x, y);
-                    //矩形----------------------5
-                    case 'rectangle':
-                        return true;
-                    //圆形----------------------6
-                    case 'circle':
-                        return _isInsideCircle(area, x, y);
-                    //扇形----------------------7
-                    case 'sector':
-                        return _isInsideSector(area, x, y);
-                    //多边形---------------------8
-                    case 'polygon':
-                        return _isInsidePolygon(area, x, y);
-                    //图片----------------------9
-                    case 'image':
-                        return true;
-                    //心形----------------------10
-                    case 'heart':
-                        return true;    // Todo，不精确
-                    //水滴----------------------11
-                    case 'droplet':
-                        return true;    // Todo，不精确
-                    //椭圆----------------------12
-                    case 'ellipse':
-                        return false;    // Todo，不精确
-                    //路径----------------------13
-                    case 'path':
-                        return false;   // Todo，暂不支持
+            var len = pixelsData.length;
+            while (len--) {
+                if (pixelsData[len] !== 0) {
+                    return true;
                 }
             }
 
@@ -112,31 +205,24 @@ define(
          * 线段包含判断
          */
         function _isInsideLine(area, x, y) {
-            //水平、垂直快捷判断
-            if (area.xStart == area.xEnd) {
-                //垂直线判断
-                return area.yStart <= y
-                       && area.yEnd >= y
-                       && Math.abs(area.xStart - x) < (area.lineWidth || 1);
+            var _x1 = area.xStart;
+            var _y1 = area.yStart;
+            var _x2 = area.xEnd;
+            var _y2 = area.yEnd;
+            var _l = area.lineWidth;
+            var _a = 0;
+            var _b = _x1;
+
+            if (_x1 !== _x2) {
+                _a = (_y1 - _y2) / (_x1 - _x2);
+                _b = (_x1 * _y2 - _x2 * _y1) / (_x1 - _x2) ;
             }
-            if (area.yStart == area.yEnd){
-                //水平线判断
-                return area.xStart <= x
-                       && area.xEnd >= x
-                       && Math.abs(area.yStart - y) < (area.lineWidth || 1);
+            else {
+                return Math.abs(x - _x1) <= _l / 2;
             }
 
-            //斜线判断
-            return Math.abs(
-                       Math.abs(
-                           (area.xStart - x)
-                           * (area.yStart - area.yEnd)
-                           / (area.xStart - area.xEnd)
-                           - area.yStart
-                       )
-                       - y
-                  )
-                  < (area.lineWidth || 1);
+            var _s = (_a * x - y + _b) * (_a * x - y + _b) / (_a * _a + 1);
+            return  _s <= _l / 2 * _l / 2;
         }
 
         function _isInsideBrokenLine(area, x, y) {
@@ -299,6 +385,11 @@ define(
             return inside;
         }
 
+        /**
+         * 测算单行文本欢度
+         * @param {Object} text
+         * @param {Object} textFont
+         */
         function getTextWidth(text, textFont) {
             if (!_ctx) {
                 _ctx = util.getContext();

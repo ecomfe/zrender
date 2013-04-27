@@ -7,31 +7,31 @@ description.shape = [
         value : [
             ['shape', '{string}', '基础属性，必须，shape类标识，详见<a href="#shape.base.shape">shape</a>'],
             ['id', '{string}', '基础属性，必须，图形唯一标识，详见<a href="#shape.base.id">id</a>'],
-            ['zlevel', '{number}', '基础属性，默认为0，z层level，决定绘画在哪层canvas中，详见<a href="#shape.base.zlevel">zlevel</a>'],
-            ['invisible', '{boolean}', '基础属性，默认为false，是否可见，详见<a href="#shape.base.invisible">invisible</a>'],
+            ['zlevel', '{number=}', '基础属性，默认为0，z层level，决定绘画在哪层canvas中，详见<a href="#shape.base.zlevel">zlevel</a>'],
+            ['invisible', '{boolean=}', '基础属性，默认为false，是否可见，详见<a href="#shape.base.invisible">invisible</a>'],
             ['style', '{Object}', '样式属性，必须，默认状态样式属性，详见<a href="#shape.base.style">style</a>'],
-            ['highlightStyle', '{Object}', '样式属性，默认同style，高亮状态样式属性，详见<a href="#shape.base.highlightStyle">highlightStyle</a>'],
-            ['position', '{array}', '样式属性，默认为[0, 0]，绘图坐标原点平移，详见<a href="#shape.base.position">position</a>'],
-            ['rotation', '{number}', '样式属性，默认为0，shape绕自身旋转的角度，详见<a href="#shape.base.rotation">rotation</a>'],
-            ['scale', '{array}', '样式属性，默认为[1, 1], shape纵横缩放比例，详见<a href="#shape.base.scale">scale</a>'],
-            ['hoverable', '{boolean}', '交互属性，默认为true，可悬浮响应，详见<a href="#shape.base.hoverable">hoverable</a>'],
-            ['clickable', '{boolean}', '交互属性，默认为false，可点击响应，详见<a href="#shape.base.clickable">clickable</a>'],
-            ['draggable', '{boolean}', '交互属性，默认为false，可拖拽响应，详见<a href="#shape.base.draggable">draggable</a>'],
-            ['onbrush', '{Function}', '事件属性，默认为null，当前图形被刷画时回调，可用于实现自定义绘画，详见<a href="#shape.base.onbrush">onbrush</a>'],
-            ['ondrift', '{Function}', '事件属性，默认为null，，详见<a href="#shape.base.ondrift">ondrift</a>'],
-            ['onclick', '{Function}', '事件属性，默认为null，，详见<a href="#shape.base.onclick">onclick</a>'],
-            ['onmousewheel', '{Function}', '事件属性，默认为null，当前图形上鼠标滚轮触发，详见<a href="#shape.base.onmousewheel">onmousewheel</a>'],
-            ['onmousemove', '{Function}', '事件属性，默认为null，当前图上形鼠标（或手指）移动触发，详见<a href="#shape.base.onmousemove">onmousemove</a>'],
-            ['onmouseover', '{Function}', '事件属性，默认为null，鼠标（或手指）移动到当前图形上触发，详见<a href="#shape.base.onmouseover">onmouseover</a>'],
-            ['onmouseout', '{Function}', '事件属性，默认为null，鼠标（或手指）从当前图形移开，详见<a href="#shape.base.onmouseout">onmouseout</a>'],
-            ['onmousedown', '{Function}', '事件属性，默认为null，鼠标按钮（或手指）按下，详见<a href="#shape.base.onmousedown">onmousedown</a>'],
-            ['onmouseup', '{Function}', '事件属性，默认为null，鼠标按钮（或手指）松开，详见<a href="#shape.base.onmouseup">onmouseup</a>'],
-            ['ondragstart', '{Function}', '事件属性，默认为null，开始拖拽时触发，详见<a href="#shape.base.ondragstart">ondragstart</a>'],
-            ['ondragend', '{Function}', '事件属性，默认为null，拖拽完毕时触发，详见<a href="#shape.base.ondragend">ondragend</a>'],
-            ['ondragenter', '{Function}', '事件属性，默认为null，拖拽图形元素进入目标图形元素时触发，详见<a href="#shape.base.ondragenter">ondragenter</a>'],
-            ['ondragover', '{Function}', '事件属性，默认为null，拽图形元素在目标图形元素上移动时触发，详见<a href="#shape.base.ondragover">ondragover</a>'],
-            ['ondragleave', '{Function}', '事件属性，默认为null，拖拽图形元素离开目标图形元素时触发，详见<a href="#shape.base.ondragleave">ondragleave</a>'],
-            ['ondrop', '{Function}', '事件属性，默认为null，拖拽图形元素放在目标图形元素内时触发，详见<a href="#shape.base.ondrop">ondrop</a>']
+            ['highlightStyle', '{Object=}', '样式属性，默认同style，高亮状态样式属性，详见<a href="#shape.base.highlightStyle">highlightStyle</a>'],
+            ['position', '{array=}', '样式属性，默认为[0, 0]，绘图坐标原点平移，详见<a href="#shape.base.position">position</a>'],
+            ['rotation', '{number=}', '样式属性，默认为0，shape绕自身旋转的角度，详见<a href="#shape.base.rotation">rotation</a>'],
+            ['scale', '{array=}', '样式属性，默认为[1, 1], shape纵横缩放比例，详见<a href="#shape.base.scale">scale</a>'],
+            ['hoverable', '{boolean=}', '交互属性，默认为true，可悬浮响应，详见<a href="#shape.base.hoverable">hoverable</a>'],
+            ['clickable', '{boolean=}', '交互属性，默认为false，可点击响应，详见<a href="#shape.base.clickable">clickable</a>'],
+            ['draggable', '{boolean=}', '交互属性，默认为false，可拖拽响应，详见<a href="#shape.base.draggable">draggable</a>'],
+            ['onbrush', '{Function=}', '事件属性，默认为null，当前图形被刷画时回调，可用于实现自定义绘画，详见<a href="#shape.base.onbrush">onbrush</a>'],
+            ['ondrift', '{Function=}', '事件属性，默认为null，，详见<a href="#shape.base.ondrift">ondrift</a>'],
+            ['onclick', '{Function=}', '事件属性，默认为null，，详见<a href="#shape.base.onclick">onclick</a>'],
+            ['onmousewheel', '{Function=}', '事件属性，默认为null，当前图形上鼠标滚轮触发，详见<a href="#shape.base.onmousewheel">onmousewheel</a>'],
+            ['onmousemove', '{Function=}', '事件属性，默认为null，当前图上形鼠标（或手指）移动触发，详见<a href="#shape.base.onmousemove">onmousemove</a>'],
+            ['onmouseover', '{Function=}', '事件属性，默认为null，鼠标（或手指）移动到当前图形上触发，详见<a href="#shape.base.onmouseover">onmouseover</a>'],
+            ['onmouseout', '{Function=}', '事件属性，默认为null，鼠标（或手指）从当前图形移开，详见<a href="#shape.base.onmouseout">onmouseout</a>'],
+            ['onmousedown', '{Function=}', '事件属性，默认为null，鼠标按钮（或手指）按下，详见<a href="#shape.base.onmousedown">onmousedown</a>'],
+            ['onmouseup', '{Function=}', '事件属性，默认为null，鼠标按钮（或手指）松开，详见<a href="#shape.base.onmouseup">onmouseup</a>'],
+            ['ondragstart', '{Function=}', '事件属性，默认为null，开始拖拽时触发，详见<a href="#shape.base.ondragstart">ondragstart</a>'],
+            ['ondragend', '{Function=}', '事件属性，默认为null，拖拽完毕时触发，详见<a href="#shape.base.ondragend">ondragend</a>'],
+            ['ondragenter', '{Function=}', '事件属性，默认为null，拖拽图形元素进入目标图形元素时触发，详见<a href="#shape.base.ondragenter">ondragenter</a>'],
+            ['ondragover', '{Function=}', '事件属性，默认为null，拽图形元素在目标图形元素上移动时触发，详见<a href="#shape.base.ondragover">ondragover</a>'],
+            ['ondragleave', '{Function=}', '事件属性，默认为null，拖拽图形元素离开目标图形元素时触发，详见<a href="#shape.base.ondragleave">ondragleave</a>'],
+            ['ondrop', '{Function=}', '事件属性，默认为null，拖拽图形元素放在目标图形元素内时触发，详见<a href="#shape.base.ondrop">ondrop</a>']
         ],
         content : [
             {
@@ -52,9 +52,9 @@ description.shape = [
                 pre : (function(){
 zr.addShape({
     shape : 'text',
-    style : { 
-        x : 20, 
-        y : 20, 
+    style : {
+        x : 20,
+        y : 20,
         color : 'red' ,
         text : 'Find the circle! '
     }
@@ -62,10 +62,10 @@ zr.addShape({
 zr.addShape({
     shape : 'circle',
     invisible : true,
-    style : { 
-        x : 400, 
-        y : 200, 
-        r : 100, 
+    style : {
+        x : 400,
+        y : 200,
+        r : 100,
         color : 'red' ,
         text : 'Wonderful! '
     }
@@ -78,21 +78,23 @@ zr.render();
                 name : 'style',
                 des : '默认状态样式属性，提供丰富统一的样式控制，各个图形差异见shape下各类型。',
                 value : [
-                    ['brushType', '{string}', '默认为"fill"，绘画方式，fill(填充) | stroke(描边) | both(填充+描边)'],
-                    ['color', '{color}', '默认为"#000"，填充颜色，支持rgba'],
-                    ['strokeColor', '{color}', '默认为"#000"，描边颜色（轮廓），支持rgba'],
-                    ['lineWidth', '{number}', '默认为1，线条宽度，描边下有效'],
-                    ['opacity', '{number}', '默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加'],
-                    ['shadowBlur', '{number}', '默认为0，阴影模糊度，大于0有效'],
-                    ['shadowColor', '{color}', '默认为"#000"，阴影色彩，支持rgba'],
-                    ['shadowOffsetX', '{number}', '默认为0，阴影横向偏移，正值往右，负值往左'],
-                    ['shadowOffsetY', '{number}', '默认为0，阴影纵向偏移，正值往下，负值往上'],
-                    ['text', '{string}', '默认为null，附加文本'],
-                    ['textFont', '{string}', '默认为null，附加文本文字样式，eg:"bold 18px verdana"'],
-                    ['textPosition', '{string}', '默认为top，线型默认为end，附加文本位置。inside | left | right | top | bottom | start | end，其中start end为线型（如line，brokenline）特有'],
-                    ['textAlign', '{string}', '默认根据textPosition自动设置，附加文本水平对齐。start | end | left | right | center'],
-                    ['textBaseline', '{string}', '默认根据textPosition自动设置，附加文本垂直对齐。top | bottom | middle | alphabetic | hanging | ideographic '],
-                    ['textColor', '{color}', '默认根据textPosition自动设置，图形<a href="#shape.text">text</a>无此项，默认策略如下，附加文本颜色，textPosition == "inside" ? "#fff" : color']
+                    ['brushType', '{string=}', '默认为"fill"，绘画方式，fill(填充) | stroke(描边) | both(填充+描边)'],
+                    ['color', '{color=}', '默认为"#000"，填充颜色，支持rgba'],
+                    ['strokeColor', '{color=}', '默认为"#000"，描边颜色（轮廓），支持rgba'],
+                    ['lineWidth', '{number=}', '默认为1，线条宽度，描边下有效'],
+                    ['opacity', '{number=}', '默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加'],
+                    ['shadowBlur', '{number=}', '默认为0，阴影模糊度，大于0有效'],
+                    ['shadowColor', '{color=}', '默认为"#000"，阴影色彩，支持rgba'],
+                    ['shadowOffsetX', '{number=}', '默认为0，阴影横向偏移，正值往右，负值往左'],
+                    ['shadowOffsetY', '{number=}', '默认为0，阴影纵向偏移，正值往下，负值往上'],
+                    ['text', '{string=}', '默认为null，附加文本'],
+                    ['textFont', '{string=}', '默认为null，附加文本文字样式，eg:"bold 18px verdana"'],
+                    ['textPosition', '{string=}', '默认为top，线型默认为end，附加文本位置。inside | left | right | top | bottom | start | end | specific，其中start end为线型（如line，brokenline）特有'],
+                    ['textAlign', '{string=}', '默认根据textPosition自动设置，附加文本水平对齐。start | end | left | right | center'],
+                    ['textBaseline', '{string=}', '默认根据textPosition自动设置，附加文本垂直对齐。top | bottom | middle | alphabetic | hanging | ideographic '],
+                    ['textX', '{number=}', '当textPosition为specific时有效，指定附件文本横坐标'],
+                    ['textY', '{number=}', '当textPosition为specific时有效，指定附件文本纵坐标'],
+                    ['textColor', '{color=}', '默认根据textPosition自动设置，图形<a href="#shape.text">text</a>无此项，默认策略如下，附加文本颜色，textPosition == "inside" ? "#fff" : color']
                 ],
                 pre : (function(){
 zr.addShape({
@@ -125,10 +127,10 @@ zr.render();
                 pre : (function(){
 zr.addShape({
     shape : 'circle',
-    style : { 
-        x : 400, 
-        y : 200, 
-        r : 30, 
+    style : {
+        x : 400,
+        y : 200,
+        r : 30,
         color : 'red' ,
         text : 'Come on! Bigger! '
     },
@@ -152,11 +154,11 @@ zr.render();
 var origin = 10;
 zr.addShape({
     shape : 'rectangle',
-    style : { 
-        x : 10, 
-        y : 10, 
+    style : {
+        x : 10,
+        y : 10,
         width : 150,
-        height : 30, 
+        height : 30,
         color : 'red' ,
         text : 'Click to position!',
         textPosition : 'inside'
@@ -187,11 +189,11 @@ var tenDeg = Math.PI / 18;
 var origin = tenDeg;
 zr.addShape({
     shape : 'rectangle',
-    style : { 
-        x : 100, 
-        y : 100, 
+    style : {
+        x : 100,
+        y : 100,
         width : 160,
-        height : 40, 
+        height : 40,
         color : 'red' ,
         text : 'Click to rotation!',
         textPosition : 'inside'
@@ -222,11 +224,11 @@ zr.render();
 var origin = 1.1;
 zr.addShape({
     shape : 'rectangle',
-    style : { 
-        x : 100, 
-        y : 100, 
+    style : {
+        x : 100,
+        y : 100,
         width : 160,
-        height : 40, 
+        height : 40,
         color : 'red' ,
         text : 'Click to scale!',
         textPosition : 'inside'
@@ -251,10 +253,10 @@ zr.render();
 zr.addShape({
     shape : 'circle',
     hoverable : false,
-    style : { 
-        x : 200, 
-        y : 200, 
-        r : 100, 
+    style : {
+        x : 200,
+        y : 200,
+        r : 100,
         color : 'red',
         text : 'Hover silent! Click to change!',
         textPosition : 'inside'
@@ -267,7 +269,7 @@ zr.addShape({
         var target = params.target;
         var curHoverableState = !target.hoverable;
         zr.modShape(
-            target.id, 
+            target.id,
             {
                 hoverable : curHoverableState,
                 style : {
@@ -288,10 +290,10 @@ zr.render();
                 pre : (function(){
 zr.addShape({
     shape : 'circle',
-    style : { 
-        x : 200, 
-        y : 200, 
-        r : 80, 
+    style : {
+        x : 200,
+        y : 200,
+        r : 80,
         color : 'red',
         text : 'Click silent!',
         textPosition : 'inside'
@@ -300,10 +302,10 @@ zr.addShape({
 zr.addShape({
     shape : 'circle',
     clickable : true,
-    style : { 
-        x : 400, 
-        y : 200, 
-        r : 80, 
+    style : {
+        x : 400,
+        y : 200,
+        r : 80,
         color : 'red',
         text : 'Clickable!',
         textPosition : 'inside'
@@ -313,7 +315,7 @@ zr.render();
 var config = require('zrender/config');
 zr.on(config.EVENT.CLICK, function(params) {
     if (params.target) {
-        alert('Click on shape!');    
+        alert('Click on shape!');
     }
     else {
         alert('None shape, but i catch you!');
@@ -328,10 +330,10 @@ zr.on(config.EVENT.CLICK, function(params) {
                 pre : (function(){
 zr.addShape({
     shape : 'circle',
-    style : { 
-        x : 200, 
-        y : 200, 
-        r : 80, 
+    style : {
+        x : 200,
+        y : 200,
+        r : 80,
         color : 'red',
         text : 'Stillness !',
         textPosition : 'inside'
@@ -340,10 +342,10 @@ zr.addShape({
 zr.addShape({
     shape : 'circle',
     draggable : true,
-    style : { 
-        x : 400, 
-        y : 200, 
-        r : 80, 
+    style : {
+        x : 400,
+        y : 200,
+        r : 80,
         color : 'red',
         text : 'Draggable!',
         textPosition : 'inside'
@@ -368,7 +370,7 @@ zr.render();
 var block = true;
 zr.addShape({
     shape : 'circle',
-    style : { 
+    style : {
         x : 400, y : 200, r : 80, color : 'red',
         text : 'Hover & click!',
         textPosition : 'inside'
@@ -407,10 +409,10 @@ zr.render();
                 pre : (function(){
 zr.addShape({
     shape : 'circle',
-    style : { 
-        x : 400, 
-        y : 200, 
-        r : 80, 
+    style : {
+        x : 400,
+        y : 200,
+        r : 80,
         color : 'red',
         text : 'Drag horizontal only!',
         textPosition : 'inside'
@@ -442,10 +444,10 @@ zr.render();
                 pre : (function(){
 zr.addShape({
     shape : 'circle',
-    style : { 
-        x : 200, 
-        y : 200, 
-        r : 80, 
+    style : {
+        x : 200,
+        y : 200,
+        r : 80,
         color : 'red',
         text : 'click and block!',
         textPosition : 'inside'
@@ -458,10 +460,10 @@ zr.addShape({
 });
 zr.addShape({
     shape : 'circle',
-    style : { 
-        x : 400, 
-        y : 200, 
-        r : 80, 
+    style : {
+        x : 400,
+        y : 200,
+        r : 80,
         color : 'green',
         text : 'click!',
         textPosition : 'inside'
@@ -476,7 +478,7 @@ zr.render();
 var config = require('zrender/config');
 zr.on(config.EVENT.CLICK, function(params) {
     if (params.target) {
-        alert('Global catch! Click on shape!');    
+        alert('Global catch! Click on shape!');
     }
     else {
         alert('Global catch! None shape, but i catch you!');
@@ -497,10 +499,10 @@ zr.on(config.EVENT.CLICK, function(params) {
                 pre : (function(){
 zr.addShape({
     shape : 'circle',
-    style : { 
-        x : 400, 
-        y : 200, 
-        r : 100, 
+    style : {
+        x : 400,
+        y : 200,
+        r : 100,
         color : 'red',
         text : 'mousewheel',
         textPosition : 'inside'
@@ -508,13 +510,13 @@ zr.addShape({
     onmousewheel : function(params) {
         var zrEvent = require('zrender/tool/event');
         var shape = params.target;
-            
+
         var event = params.event;
         var delta = zrEvent.getDelta(event);
         delta = delta > 0 ? 3 : (-3);
         shape.style.r += delta;
         shape.style.r = shape.style.r < 5 ? 5 : shape.style.r;
-        
+
         zr.modShape(shape.id, shape);
         zr.refresh();
         zrEvent.stop(event);
@@ -542,7 +544,7 @@ zr.addShape({
 });
 zr.addShape({
     shape : 'circle',
-    style : { 
+    style : {
         x : 400, y : 200, r : 100,  color : 'red',
         text : 'mousemove',
         textPosition : 'inside'
@@ -562,7 +564,7 @@ zr.on(config.EVENT.MOUSEMOVE, function(params) {
     var zrEvent = require('zrender/tool/event');
     var event = params.event;
     zr.modShape(
-        shapeId, 
+        shapeId,
         {
             style : {
                 text : 'Global catch! mousemove on ('  + zrEvent.getX(event)  + ', ' + zrEvent.getY(event) + ')'
@@ -586,7 +588,7 @@ zr.on(config.EVENT.MOUSEMOVE, function(params) {
                 pre : (function(){
 zr.addShape({
     shape : 'circle',
-    style : { 
+    style : {
         x : 200, y : 200, r : 100, color : 'red',
         text : 'Mouse over & out!',
         textFont : 'bold 18px Arial',
@@ -603,7 +605,7 @@ zr.addShape({
 zr.addShape({
     shape : 'circle',
     hoverable : false,
-    style : { 
+    style : {
         x : 400, y : 200, r : 100, color : 'green',
         text : 'Mouse down & up!',
         textFont : 'bold 18px Arial',
@@ -635,7 +637,7 @@ function _update(shape, text) {
                 ],
                 res : [
                     'true | false ', '{boolean}','回调返回，true（阻塞全局zrender事件）| false（阻塞全局zrender事件）<br/> 无返回值，等同返回false'
-                ]                        
+                ]
             },
             {
                 name : 'onmousedown',
@@ -681,7 +683,7 @@ zr.addShape({
 });
 
 zr.addShape({
-    shape : 'circle',    
+    shape : 'circle',
     style : { x : 400, y : 200, r : 60, color : 'green'},
     _name : 'green',
     draggable : true,
@@ -703,7 +705,7 @@ function _update(params) {
     zr.refresh();
 }
                 }).toString().slice(13, -10),
-                cantry : true 
+                cantry : true
             },
             {
                 name : 'ondragend',
@@ -1100,7 +1102,7 @@ zr.render();
                 value : [
                     ['xStart', '{number}','必须，起点横坐标，单位px'],
                     ['yStart', '{number}','必须，起点纵坐标，单位px'],
-                    ['xEnd', '{number=}','必须，终点横坐标，单位px'],
+                    ['xEnd', '{number}','必须，终点横坐标，单位px'],
                     ['yEnd', '{number}','必须，终点纵坐标，单位px'],
                     ['lineType', '{string}','默认为solid，线条类型，solid | dashed | dotted'],
                     ['lineCap', '{string}','默认为butt，线帽样式。butt | round | square']
@@ -1157,6 +1159,52 @@ zr.addShape({
         lineJoin : 'miter',
         miterLimit : 50,
         text:'brokenLine',
+        textPosition:'end'
+    },
+    draggable : true
+});
+zr.render();
+                }).toString().slice(13, -10),
+                cantry : true
+            }
+        ]
+    },
+    {
+        name : 'beziercurve',
+        plus : true,
+        des : 'shape类：贝塞尔曲线，属性继承<a href="#shape.base">base</a>，特有样式属性见下',
+        content : [
+            {
+                name : 'style',
+                des : '贝塞尔曲线特有样式属性，对highlightStyle同样有效。通用样式见<a href="#shape.base.style">base.style</a>。',
+                value : [
+                    ['xStart', '{number}','必须，起点横坐标，单位px'],
+                    ['yStart', '{number}','必须，起点纵坐标，单位px'],
+                    ['cpX1', '{number}','必须，第一个关联点横坐标，单位px'],
+                    ['cpY1', '{number}','必须，第一个关联点纵坐标，单位px'],
+                    ['cpX2', '{number=}','可选，第二个关联点横坐标  缺省即为二次贝塞尔曲线，单位px'],
+                    ['cpY2', '{number=}','可选，第二个关联点纵坐标，单位px'],
+                    ['xEnd', '{number}','必须，终点横坐标，单位px'],
+                    ['yEnd', '{number}','必须，终点纵坐标，单位px'],
+                    ['lineCap', '{string}','默认为butt，线帽样式。butt | round | square']
+                ],
+                pre : (function(){
+// 贝塞尔曲线
+zr.addShape({
+    shape : 'beziercurve',
+    style : {
+        xStart : 100,
+        yStart : 100,
+        cpX1 : 300,
+        cpY1 : 100,
+        cpX2 : 100,
+        cpY2 : 300,
+        xEnd : 300,
+        yEnd : 300,
+        strokeColor : 'rgba(135, 206, 250, 0.8)',   // == color
+        lineWidth : 5,
+        lineCap : 'round',
+        text:'beziercurve',
         textPosition:'end'
     },
     draggable : true

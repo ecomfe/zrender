@@ -45,8 +45,8 @@ var zrArea = require('zrender/tool/area');
 var textShape = {
     shape : 'text',
     style : {
-        x : 100, y : 100, 
-        text: 'zrender', 
+        x : 100, y : 100,
+        text: 'zrender',
         textFont: 'bold 18px verdana'
     }
 };
@@ -55,9 +55,9 @@ zr.addShape({
     shape: 'text',
     id: zr.newShapeId(),
     style: {
-        x: 20, y: 20, 
-        text : textShape.style.text 
-               + ' width = ' 
+        x: 20, y: 20,
+        text : textShape.style.text
+               + ' width = '
                + zrArea.getTextWidth(
                    textShape.style.text,
                    textShape.style.textFont
@@ -124,9 +124,9 @@ myMessageCenter.bind(
     'MY_MESSAGE',
 
 function(eventPacket) {
-    alert('get it! ' 
-        + eventPacket.type + ' ' 
-        + eventPacket.event + ' ' 
+    alert('get it! '
+        + eventPacket.type + ' '
+        + eventPacket.event + ' '
         + eventPacket.message
     );
 });
@@ -190,7 +190,7 @@ var colorIdx = 0;
 zr.addShape({
     shape: 'circle',
     style: {
-        x: 200, y: 200, r : 50, 
+        x: 200, y: 200, r : 50,
         color : zrColor.getColor(colorIdx++)
     },
     clickable : true,
@@ -218,7 +218,7 @@ var colorIdx = 0;
 zr.addShape({
     shape: 'circle',
     style: {
-        x: 200, y: 200, r : 50, 
+        x: 200, y: 200, r : 50,
         color : zrColor.getColor(colorIdx++)
     },
     clickable : true,
@@ -256,7 +256,7 @@ zrColor.customHighlight('red')
 zr.addShape({
     shape: 'circle',
     style: {
-        x: 200, y: 200, r : 50, 
+        x: 200, y: 200, r : 50,
         color : 'green'
     }
 });
@@ -287,9 +287,9 @@ var zrColor = require('zrender/tool/color');
 zr.addShape({
     shape: 'circle',
     style: {
-        x: 200, y: 200, r : 50, 
+        x: 200, y: 200, r : 50,
         color : zrColor.getRadialGradient(
-            200, 200, 0, 200, 200, 50, 
+            200, 200, 0, 200, 200, 50,
             [[0, 'yellow'], [0.8, 'red'], [1,'lightgreen']]
         )
     },
@@ -307,7 +307,7 @@ zr.render();
                     ['y0', '{number}', '渐变起点'],
                     ['x1', '{number}', '渐变终点'],
                     ['y1', '{number}', '渐变终点'],
-                    ['colorList', '{Array}', '偏移颜色列表'],
+                    ['colorList', '{Array}', '偏移颜色列表']
                 ],
                 res: ['color', '{color}', '颜色'],
                 pre: (function() {
@@ -350,7 +350,7 @@ for (var i = 0, l = colorList.length; i < l; i++) {
             x: w * i, y: 0, width : w, height : height,
             color : colorList[i]
         }
-    });   
+    });
 }
 zr.render();
                 }).toString().slice(13, -10),
@@ -379,7 +379,7 @@ for (var i = 0, l = colorList.length; i < l; i++) {
             x: w * i, y: 0, width : w, height : height,
             color : colorList[i]
         }
-    });   
+    });
 }
 zr.render();
                 }).toString().slice(13, -10),
@@ -409,12 +409,12 @@ for (var i = 0, l = colorList.length; i < l; i++) {
         onclick : function(params) {
             var target  = params.target;
             zr.modShape(
-                target.id, 
+                target.id,
                 {style: {color: zrColor.reverse(target.style.color)}}
             );
             zr.refresh();
         }
-    });   
+    });
 }
 zr.render();
                 }).toString().slice(13, -10),
@@ -450,11 +450,11 @@ zr.addShape({
         var target = params.target;
         var dragged = params.dragged;
         zr.modShape(
-            target.id, 
+            target.id,
             {style: {color: zrColor.mix(target.style.color, dragged.style.color)}}
         );
         zr.modShape(
-            dragged.id, 
+            dragged.id,
             {
                 position: [0, 0],
                 style: { x: dragged._x, y: 200, color: zrColor.random()}
@@ -479,8 +479,8 @@ zr.render();
 var zrColor = require('zrender/tool/color');
 zr.addShape({
     shape : 'circle',
-    style : { 
-        x : 400, y : 200,  r : 100, 
+    style : {
+        x : 400, y : 200,  r : 100,
         color : zrColor.random(),
         text : 'mousewheel',
         textPosition : 'inside'
@@ -488,12 +488,12 @@ zr.addShape({
     onmousewheel : function(params) {
         var zrEvent = require('zrender/tool/event');
         var shape = params.target;
-            
+
         var event = params.event;
         var delta = zrEvent.getDelta(event);
         delta = delta > 0 ? 0.1 : (-0.1);
         shape.style.color = zrColor.lift(shape.style.color, delta)
-        
+
         zr.modShape(shape.id, shape);
         zr.refresh();
         zrEvent.stop(event);
@@ -516,8 +516,8 @@ var zrColor = require('zrender/tool/color');
 var alpha = 0.5;
 zr.addShape({
     shape : 'circle',
-    style : { 
-        x : 400, y : 200,  r : 100, 
+    style : {
+        x : 400, y : 200,  r : 100,
         color : zrColor.random(),
         text : 'mousewheel',
         textPosition : 'inside'
@@ -525,7 +525,7 @@ zr.addShape({
     onmousewheel : function(params) {
         var zrEvent = require('zrender/tool/event');
         var shape = params.target;
-            
+
         var event = params.event;
         var delta = zrEvent.getDelta(event);
         alpha += delta > 0 ? 0.1 : (-0.1);
@@ -667,7 +667,7 @@ for (var i = 0; i < 10; i++) {
             x: w * i, y: 0, width : w, height : h,
             color : zrColor.toColor([i * 25, 10, 10])
         }
-    });   
+    });
 }
 for (var i = 0; i < 10; i++) {
     zr.addShape({
@@ -676,7 +676,7 @@ for (var i = 0; i < 10; i++) {
             x: w * i, y: h, width : w, height : h,
             color : zrColor.toColor([10, i * 25, 10, 1], 'rgba')
         }
-    });   
+    });
 }
 for (var i = 0; i < 10; i++) {
     zr.addShape({
@@ -685,7 +685,7 @@ for (var i = 0; i < 10; i++) {
             x: w * i, y: h * 2, width : w, height : h,
             color : zrColor.toColor([10, 10, i * 25], 'hex')
         }
-    });   
+    });
 }
 zr.render();
                 }).toString().slice(13, -10),
