@@ -90,7 +90,7 @@ var colorIdx = 0;
 var width = Math.ceil(zr.getWidth());
 var height = Math.ceil(zr.getHeight());
 
-// circle
+// 圆形
 zr.addShape({
     shape : 'circle',
     id : zr.newShapeId('circle'),
@@ -100,14 +100,14 @@ zr.addShape({
         r : 50,
         brushType : 'both',
         color : 'rgba(220, 20, 60, 0.8)',          // rgba supported
-        strokeColor : color.getColor(colorIdx++),   // getColor from default palette
+        strokeColor : color.getColor(colorIdx++),  // getColor from default palette
         lineWidth : 5,
         text :'circle',
         textPosition :'inside'
     },
     hoverable : true,   // default true
     draggable : true,   // default false
-    clickable : true,
+    clickable : true,   // default false
 
     // 可自带任何有效自定义属性
     _name : 'Hello~',
@@ -124,7 +124,7 @@ zr.addShape({
         if (r < 10) {
             r = 10;
         };
-        zr.modShape(params.target.id,{style:{r : r}})
+        zr.modShape(params.target.id, {style: {r: r}})
         zr.refresh();
         eventTool.stop(params.event);
     }
@@ -158,8 +158,7 @@ zr.addShape({
         color : color.getColor(colorIdx++),
         strokeColor : color.getColor(colorIdx++),
         lineWidth : 8,
-        text:'sector',
-        textPosition:'inside'
+        text:'sector'
     },
     draggable : true
 });
@@ -303,6 +302,26 @@ zr.addShape({
     draggable:true
 });
 
+// 贝塞尔曲线
+zr.addShape({
+    shape : 'beziercurve',
+    id : zr.newShapeId('beziercurve'),
+    style : {
+        xStart : width,
+        yStart : 0,
+        cpX1 : width / 2,
+        cpY1 : 0,
+        cpX2 : width / 2,
+        cpY2 : height,
+        xEnd : 0,
+        yEnd : height,
+        strokeColor : color.getColor(colorIdx++),
+        lineWidth : 2,
+        text : 'beziercurve'
+    },
+    draggable:true
+});
+
 // 文本
 zr.addShape({
     shape : 'text',
@@ -310,10 +329,13 @@ zr.addShape({
     style : {
         x : width / 2,
         y : 10,
-        brushType : 'stroke',               // default fill
-        strokeColor : color.getColor(colorIdx++),
+        brushType : 'fill',
+        color : color.getColor(colorIdx++),
+        shadowColor : 'yellow',
+        shadowBlur : 10,
+        lineWidth : 3,
         text : 'zrender',
-        textFont : 'normal 50px Tahoma',
+        textFont : 'normal 50px verdana',
         textAlign : 'center',
         textBaseline : 'top'
     },
@@ -371,7 +393,6 @@ zr.on('dragover',   function(e){console.log('ondragover',e,'global')});
 zr.on('dragleave',  function(e){console.log('ondragleave',e,'global')});
 zr.on('drop',       function(e){console.log('ondrop',e,'global')});
 */
-
                     </textarea>
               </div><!--/.well -->
             </div><!--/span-->
@@ -440,12 +461,7 @@ zr.on('drop',       function(e){console.log('ondrop',e,'global')});
                 return;
             }
             refreshing = false;
-            try {
-                (new Function(editor.doc.getValue()))();
-                domMessage.innerHTML = '';
-            }catch (e) {
-                domMessage.innerHTML = e;
-            }
+            (new Function(editor.doc.getValue()))();
         }
 
         function QueryString() {

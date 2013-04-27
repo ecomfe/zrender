@@ -159,8 +159,9 @@ define(
                 if (style.text) {
                     // 字体颜色策略
                     style.textColor = style.textColor
-                                      || e.style.color
-                                      || e.style.strokeColor;
+                        || (e.style || e.highlightStyle).color
+                        || (e.style || e.highlightStyle).strokeColor;
+
                     this.drawText(ctx, style);
                 }
 

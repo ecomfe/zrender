@@ -255,7 +255,7 @@ define(
              *   .start()
              */
             self.animate = function(shapeId, path, loop) {
-                var shape = storage.get( shapeId );
+                var shape = storage.get(shapeId);
                 if (shape) {
                     var target;
                     if (path) {
@@ -424,6 +424,19 @@ define(
             var _maxZlevel = 0;         //最大zlevel
             var _changedZlevel = {};    //有数据改变的zlevel
 
+            function _markSilent(e) {
+                if (e.hoverable || e.onclick || e.draggable
+                    || e.onmousemove || e.onmouseover || e.onmouseout
+                    || e.onmousedown || e.onmouseup
+                    || e.ondragenter || e.ondragover || e.ondragleave
+                    || e.ondrop
+                ) {
+                    e._silent = false;
+                }
+                else {
+                    e._silent = true;
+                }
+            }
             /**
              * 唯一标识id生成
              * @param {string=} idHead 标识前缀
@@ -457,7 +470,7 @@ define(
                         'recursive': true
                     }
                 );
-
+                _markSilent(e);
                 _elements[e.id] = e;
                 _zElements[e.zlevel] = _zElements[e.zlevel] || [];
                 _zElements[e.zlevel].push(e);
@@ -525,6 +538,7 @@ define(
                             'recursive': true
                         }
                     );
+                    _markSilent(e);
                     _changedZlevel[e.zlevel] = true;
                     _maxZlevel = Math.max(_maxZlevel,e.zlevel);
                 }
@@ -703,12 +717,14 @@ define(
          * @param {Object} shape 图形库
          */
         function Painter(root, storage, shape) {
+            var config = require('./config');
             var self = this;
 
             var _domList = {};              //canvas dom元素
             var _ctxList = {};              //canvas 2D context对象，与domList对应
 
             var _maxZlevel = 0;             //最大zlevel，缓存记录
+            var _loadingTimer;
 
             var _domRoot = document.createElement('div');
             // 避免页面选中的尴尬
@@ -836,7 +852,6 @@ define(
                                 //有onbrush并且调用执行返回false或undefined则继续粉刷
                                 || (e.onbrush && !e.onbrush(ctx, e, false))
                             ) {
-
                                 if (zrender.catchBrushException) {
                                     try {
                                         shape.get(e.shape).brush(
@@ -877,7 +892,6 @@ define(
                     //有onbrush并且调用执行返回false或undefined则继续粉刷
                     || (e.onbrush && !e.onbrush(ctx, e, true))
                 ) {
-
                     if (zrender.catchBrushException) {
                         try {
                             shape.get(e.shape).brush(ctx, e, true, update);
@@ -1016,41 +1030,34 @@ define(
             }
 
             /**
-             * 显示loading，目前仅支持文字显示
-             * @param {Object} loadingOption 选项
-             * @param {string | function} loadingOption.effect 特效
-             *        支持特效依赖tool/loadingEffect，可传入自定义特效function
-             * @param {Object} loadingOption.textStyle 文字样式，同shape/text.style
-             *
-             * 乱来的，待重写
+             * 显示loading
+             * @param {Object} loadingOption 选项，内容见下
+             * @param {color} -.backgroundColor 背景颜色
+             * @param {Object} -.textStyle 文字样式，同shape/text.style
+             * @param {number=} -.progress 进度参数，部分特效有用
+             * @param {Object=} -.effectOption 特效参数，部分特效有用
+             * @param {string | function} -.effect 特效依赖tool/loadingEffect，
+             *                                     可传入自定义特效function
              */
             function showLoading(loadingOption) {
                 var effect = require('./tool/loadingEffect');
+                effect.stop(_loadingTimer);
 
-                clearInterval(self.loadingTimer);
                 loadingOption = loadingOption || {};
+                loadingOption.effect = loadingOption.effect
+                                       || config.loadingEffect;
+                loadingOption.canvasSize = {
+                    width : _width,
+                    height : _height
+                };
 
-                var loadingEffect;
-                if (typeof loadingOption.effect == 'function') {
-                    loadingEffect = loadingOption.effect;
-                }
-                else if (typeof effect[loadingOption.effect] == 'function'){
-                    loadingEffect = effect[loadingOption.effect];
-                } else {
-                    loadingEffect = effect['progressBar'];
-                }
-
-                self.loadingTimer = loadingEffect(
-                    loadingOption.textStyle,
-                    {
-                        width : _width,
-                        height : _height
-                    },
+                _loadingTimer = effect.start(
+                    loadingOption,
                     storage.addHover,
                     refreshHover
                 );
-
                 self.loading = true;
+
                 return self;
             }
 
@@ -1059,9 +1066,10 @@ define(
              * 乱来的，待重写
              */
             function hideLoading() {
-                clearInterval(self.loadingTimer);
-                self.loading = false;
+                var effect = require('./tool/loadingEffect');
+                effect.stop(_loadingTimer);
                 clearHover();
+                self.loading = false;
                 return self;
             }
 
@@ -1128,7 +1136,9 @@ define(
              * 释放
              */
             function dispose() {
-                clearInterval(self.loadingTimer);
+                if (isLoading()) {
+                    hideLoading();
+                }
                 root.innerHTML = '';
 
                 root = null;
@@ -1206,6 +1216,7 @@ define(
                     root.addEventListener('click', _clickHandler);
                     root.addEventListener('mousewheel', _mouseWheelHandler);
                     root.addEventListener('mousemove', _mouseMoveHandler);
+                    root.addEventListener('mouseout', _mouseOutHandler);
                     root.addEventListener('mousedown', _mouseDownHandler);
                     root.addEventListener('mouseup', _mouseUpHandler);
 
@@ -1220,6 +1231,7 @@ define(
                     root.attachEvent('onclick', _clickHandler);
                     root.attachEvent('onmousewheel', _mouseWheelHandler);
                     root.attachEvent('onmousemove', _mouseMoveHandler);
+                    root.attachEvent('onmouseout', _mouseOutHandler);
                     root.attachEvent('onmousedown', _mouseDownHandler);
                     root.attachEvent('onmouseup', _mouseUpHandler);
                 }
@@ -1297,7 +1309,7 @@ define(
                         || (_lastHover && _lastHover.id != _draggingTarget.id)
                     ) {
                         //可能出现config.EVENT.MOUSEOUT事件
-                        _mouseOutHandler();
+                        _outShapeHandler();
 
                         //可能出现config.EVENT.DRAGLEAVE事件
                         _dragLeaveHandler();
@@ -1335,10 +1347,21 @@ define(
                 }
             }
 
+            function _mouseOutHandler(event) {
+                _event = _zrenderEventFixed(event);
+                root.style.cursor = 'default';
+                _isMouseDown = false;
+
+                //分发config.EVENT.MOUSEOUT事件
+                _dispatchAgency(_lastHover, config.EVENT.MOUSEOUT);
+                _dropHandler();
+                _dragEndHandler();
+            }
+
             /**
              * 鼠标在某个图形元素上移动
              */
-            function _mouseOverHandler() {
+            function _overShapeHandler() {
                 //分发config.EVENT.MOUSEOVER事件
                 _dispatchAgency(_lastHover, config.EVENT.MOUSEOVER);
             }
@@ -1346,7 +1369,7 @@ define(
             /**
              * 鼠标离开某个图形元素
              */
-            function _mouseOutHandler() {
+            function _outShapeHandler() {
                 //分发config.EVENT.MOUSEOUT事件
                 _dispatchAgency(_lastHover, config.EVENT.MOUSEOUT);
             }
@@ -1586,13 +1609,7 @@ define(
                 }
 
                 //打酱油的路过，啥都不响应的shape~
-                if (!e.hoverable && !e.onclick
-                    && !e.onmousemove && !e.onmouseover && !e.onmouseout
-                    && !e.onmousedown && !e.onmouseup
-                    && !e.draggable
-                    && !e.ondragenter && !e.ondragover && !e.ondragleave
-                    && !e.ondrop
-                ) {
+                if (e._silent) {
                     return false;
                 }
 
@@ -1605,7 +1622,7 @@ define(
                     }
 
                     if (_lastHover != e) {
-                        _mouseOutHandler();
+                        _outShapeHandler();
 
                         //可能出现config.EVENT.DRAGLEAVE事件
                         _dragLeaveHandler();
@@ -1615,7 +1632,7 @@ define(
                         //可能出现config.EVENT.DRAGENTER事件
                         _dragEnterHandler();
                     }
-                    _mouseOverHandler();
+                    _overShapeHandler();
 
                     //可能出现config.EVENT.DRAGOVER
                     _dragOverHandler();
@@ -1655,6 +1672,7 @@ define(
 
                 return _event;
             }
+
             /**
              * 自定义事件绑定
              * @param {string} eventName 事件名称，resize，hover，drag，etc~
@@ -1715,6 +1733,7 @@ define(
                     root.removeEventListener('click', _clickHandler);
                     root.removeEventListener('mousewheel', _mouseWheelHandler);
                     root.removeEventListener('mousemove', _mouseMoveHandler);
+                    root.removeEventListener('mouseout', _mouseOutHandler);
                     root.removeEventListener('mousedown', _mouseDownHandler);
                     root.removeEventListener('mouseup', _mouseUpHandler);
                 }
@@ -1724,6 +1743,7 @@ define(
                     root.detachEvent('click', _clickHandler);
                     root.detachEvent('onmousewheel', _mouseWheelHandler);
                     root.detachEvent('onmousemove', _mouseMoveHandler);
+                    root.detachEvent('onmouseout', _mouseOutHandler);
                     root.detachEvent('onmousedown', _mouseDownHandler);
                     root.detachEvent('onmouseup', _mouseUpHandler);
                 }

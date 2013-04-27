@@ -261,7 +261,7 @@ zr.animate(circle.id, "", true)
         des: 'loading显示',
         params: [
             ['loadingOption', '{Object}', 'loading参数，见下'],
-            ['loadingOption.effect', '{string | Function}', 'loading效果，当前内置效果有"progressBar"（默认） | "whirling" | "dynamicLine" | "bubble"，详见<a href="#tool.loadingEffect">tool.loadingEffect</a>可自定义效果函数，如有动态效果，需返回setInterval ID'],
+            ['loadingOption.effect', '{string | Function}', 'loading效果，当前内置效果有"bar"（默认） | "whirling" | "dynamicLine" | "bubble"，详见<a href="#tool.loadingEffect">tool.loadingEffect</a>可自定义效果函数，如有动态效果，需返回setInterval ID'],
             ['loadingOption.textStyle', '{Object}', '文本样式，见下'],
             ['-.textStyle.text', '{string}', 'loading话术'],
             ['-.textStyle.x', '{string | number}', '水平安放位置，可指定x坐标'],
@@ -273,43 +273,42 @@ zr.animate(circle.id, "", true)
         pre: (function() {
 zr.addShape({
     shape: 'circle',
-    style: {
-        x: 100,
-        y: 100,
-        r: 50,
-        color: 'red'
-    }
+    style: {x: 100, y: 100, r: 50, color: 'red'}
 });
 zr.render();
 
-function _getRandomColor() {
-    return 'rgba(' 
-           + Math.round(Math.random() * 256) + ',' 
-           + Math.round(Math.random() * 256) + ',' 
-           + Math.round(Math.random() * 256) + ', 1)'
-}
-
-var effectList = ["progressBar", "whirling", "dynamicLine", "bubble"];
-var curEffect;
-var curIdx = 0;
-zr.showLoading({
-    effect: 'progressBar',
-    textStyle: {
-        text: '装载中... progressBar',
-        color: _getRandomColor()
-    }
-})
-setInterval(function() {
-    zr.hideLoading();
-    curEffect = effectList[++curIdx % effectList.length];
-    zr.showLoading({
-        effect: curEffect,
-        textStyle: {
-            text: '装载中... ' + curEffect,
-            color: _getRandomColor()
+var effectList = [
+    {
+        //progress : [0~1],
+        effect : 'bar',
+        effectOption : {
+            // x,y,width,timeInterval
+            height : 15
         }
-    });
-}, 5000);
+    },
+
+    { effect : 'ring' },
+    //progress : [0~1],
+    //effectOption : { // x,y,r0,r,color,textFont,textColor,timeInterval,n}
+
+    { effect : 'whirling' },
+    //effectOption : { // x,y,r,colorIn,colorOut,colorWhirl,timeInterval}
+
+    { effect : 'dynamicLine' },
+    //effectOption : { // lineWidth,color,timeInterval,n : 50}
+
+    { effect : 'bubble' },
+    //effectOption : { // lineWidth,color,brushType,timeInterval,n}
+
+    {effect : 'spin' }
+    //effectOption : { // x,y,r0,r,color,timeInterval,n}
+]
+var curIdx = 0;
+zr.on('click', switchEffect);
+function switchEffect() {
+    zr.showLoading(effectList[curIdx++ % effectList.length]);
+}
+switchEffect();
         }).toString().slice(13, -10),
         cantry: true
     },
@@ -320,7 +319,7 @@ setInterval(function() {
         res: ['self', '{ZRender}', '返回自身支持链式调用'],
         pre: (function() {
 zr.showLoading({
-    effect: 'progressBar', // 'dynamicLine' | 'bubble'
+    effect: 'bar', // 'dynamicLine' | 'bubble'
     textStyle: {
         text: '装载中...',
         color: 'green'
@@ -400,7 +399,7 @@ zr.render();
 
 var config = require('zrender/config');
 zr.on(
-    config.EVENT.CLICK, 
+    config.EVENT.CLICK,
     function(params) {
         if (params.target) {
             alert('Click on shape!');
@@ -528,12 +527,12 @@ var ticket = setInterval(
         }
         else {
             zr.modShape(
-                shapeId, 
+                shapeId,
                 { style: { text: 'Dispose in' + t + ' s' }}
             );
             zr.refresh();
         }
-    }, 
+    },
     1000
 );
         }).toString().slice(13, -10),

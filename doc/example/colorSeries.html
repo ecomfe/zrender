@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="ZRender">
     <meta name="author" content="linzhifeng@baidu.com">
-    
+
     <script src="../asset/js/esl/esl.js"></script>
     <link href="../asset/css/bootstrap.css" rel="stylesheet">
     <link href="../asset/css/bootstrap-responsive.css" rel="stylesheet">
@@ -66,7 +66,7 @@
         </div><!-- /.container -->
       </div><!-- /.navbar-inner -->
     </div><!-- /.navbar-wrapper -->
-    
+
     <div class="container">
         <div class="row">
             <div class="span12">
@@ -82,7 +82,7 @@
           <p>&copy; 2013 Ecom-FE. &middot; <a href="#">Privacy</a> &middot; <a href="#">Terms</a></p>
         </footer>
     </div><!--/.fluid-container-->
-    
+
     <script src="../asset/js/jquery.js"></script>
     <script src="../asset/js/bootstrap-transition.js"></script>
     <script src="../asset/js/bootstrap-alert.js"></script>
@@ -108,8 +108,8 @@
                     main: 'zrender'
                 }
             ]
-        });           
-        
+        });
+
         require(
             ['zrender/zrender'],
             function(zrender) {
@@ -136,11 +136,11 @@
                     buildDefault();
                     buildCustomer();
                     buildColorSeries();
-                    
+
                     zr.render();
                 }
-                
-                
+
+
                 function buildDefault() {
                     for (var i = 0; i < max; i++) {
                         zr.addShape({
@@ -157,7 +157,7 @@
                         });
                     }
                 }
-                
+
                 function buildCustomer() {
                     lastY += h + 20;
                     for (var i = 0; i < max; i++) {
@@ -180,18 +180,18 @@
                         zr.addShape(customerShape[i]);
                     }
                 }
-                
+
                 function refreshCustomer() {
                     for (var i = 0; i < max; i++) {
                         zr.modShape(
                             customerShape[i].id,
-                            {style : {color : customerSeries[i] || '#ccc'}} 
+                            {style : {color : customerSeries[i] || '#ccc'}}
                         );
                     }
-                    document.getElementById('color-series').innerHTML = 
-                        'Selected color series : <br/>"' + customerSeries.join('", "') + '"';
+                    document.getElementById('color-series').innerHTML =
+                        "Selected color series : <br/>'" + customerSeries.join("', '") + "'";
                 }
-                
+
                 function buildColorSeries() {
                     h = 34;
                     lastY += h + 20;
@@ -220,12 +220,12 @@
                                 },
                                 clickable : true,
                                 onclick : selectColor
-                            }); 
+                            });
                         }
                         lastY += h + 1;
                     }
                 }
-                
+
                 function deleteColor(params) {
                     var target = params.target;
                     var idx = target._idx;
@@ -233,7 +233,7 @@
                         return;
                     }
                     zr.modShape(
-                        selectedShape[idx].id, 
+                        selectedShape[idx].id,
                         {style : {brushType : 'both'}}
                     );
                     var newColorList = [];
@@ -248,7 +248,7 @@
                     refreshCustomer();
                     zr.refresh();
                 }
-                
+
                 function selectColor(params) {
                     var target = params.target;
                     if (target.style.brushType == 'stroke') {
@@ -263,7 +263,7 @@
                     customerSeries.push(target.style.color);
                     selectedShape[customerSeries.length - 1] = target;
                     zr.modShape(
-                        target.id, 
+                        target.id,
                         {
                             style : {brushType : 'stroke'},
                             _idx : customerSeries.length - 1
@@ -272,7 +272,7 @@
                     refreshCustomer();
                     zr.refresh();
                 }
-                
+
                 init();
             }
         )

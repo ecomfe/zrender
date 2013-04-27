@@ -70,6 +70,9 @@ define(
         var ZImage = require('./shape/image');
         self.define('image', new ZImage() );
 
+        var Beziercurve = require('./shape/beziercurve');
+        self.define('beziercurve', new Beziercurve());
+
         return self;
     }
 );

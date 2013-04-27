@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
@@ -6,9 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="ZRender">
     <meta name="author" content="linzhifeng@baidu.com">
-    
+
     <script src="doc/asset/js/esl/esl.js"></script>
-    
+
     <!-- Le styles -->
     <link href="doc/asset/css/bootstrap.css" rel="stylesheet">
     <link href="doc/asset/css/bootstrap-responsive.css" rel="stylesheet">
@@ -73,7 +73,7 @@
     </div><!-- /.navbar-wrapper -->
 
     <div class="face" id='face'></div>
-    
+
     <!-- Marketing messaging and featurettes
     ================================================== -->
     <!-- Wrap the rest of the page in another container to center all the content. -->
@@ -126,9 +126,9 @@ require(
 zr.addShape({
     shape : 'circle',
     style : {
-        x : 100, 
-        y : 100, 
-        r : 50, 
+        x : 100,
+        y : 100,
+        r : 50,
         color : 'rgba(220, 20, 60, 0.8)'
     }
 });
@@ -160,14 +160,14 @@ zr.on('click', function(params) {alert('Hello, zrender!')});</pre>
       <div class="featurette">
         <div class="span5 pull-right">
             <pre>
-zr.addShape(shapeA);    // shapeA.zlevel = 0; (default) 
+zr.addShape(shapeA);    // shapeA.zlevel = 0; (default)
 zr.addShape(shapeB);    // shapeB.zlevel = 1;
 zr.render();
 
-zr.modShape(shapeB.id, {color:'red'}); 
+zr.modShape(shapeB.id, {color:'red'});
 // Don't worry! Is merge!
 
-zr.refresh();  
+zr.refresh();
 // Just the level 1 canvas has been refresh~</pre>
         </div>
         <h2 class="featurette-heading">高效的分层刷新</h2>
@@ -181,13 +181,13 @@ var myShape = {
     shape : 'circle',   // sector | ring | rectangle | ...
     zlevel : 1,
     style : {
-        ... // color | strokeColor | text | textFont | ... 
+        ... // color | strokeColor | text | textFont | ...
     },
     draggable : true
 };</pre>
         </div>
         <h2 class="featurette-heading">丰富的图形选项</h2>
-        <p>当前内置多种图形元素（圆形、扇形、圆环、矩形、多边形、直线、文字），统一且丰富的图形属性充分满足你的个性化需求！</p>
+        <p>当前内置多种图形元素（圆形、椭圆、圆环、扇形、矩形、多边形、直线、曲线、心形、水滴、路径、文字、图片），统一且丰富的图形属性充分满足你的个性化需求！</p>
       </div>
       <hr class="featurette-divider">
       <div class="featurette">
@@ -250,7 +250,7 @@ zr.addShape({                               // and use it!
     <script>
         var zr; // 全局可用zrender对象
         var animationTicket;    // 全局动画索引
-        
+
         require.config({
             paths: {
                 'js': 'doc/asset/js/esl/js'
@@ -262,16 +262,16 @@ zr.addShape({                               // and use it!
                     main: 'zrender'
                 }
             ]
-        });           
+        });
         require(
             ['zrender/zrender'],
             function(zrender) {
                 var zr = zrender.init(document.getElementById('face'));
-                var color = require('zrender/tool/color');
+                var zrColor = require('zrender/tool/color');
                 var colorIdx = 0;
                 var width = Math.ceil(zr.getWidth());
                 var height = Math.ceil(zr.getHeight());
-                
+
                 var i;
                 var n = 50;
                 var shapeList = [];
@@ -291,11 +291,8 @@ zr.addShape({                               // and use it!
                             yStart : pos,
                             xEnd : xStart + len,
                             yEnd : pos,
-                            strokeColor : 'rgba(' 
-                                    + Math.round(Math.random() * 256) + ',' 
-                                    + Math.round(Math.random() * 256) + ',' 
-                                    + Math.round(Math.random() * 256) + ', 1)',
-                            lineWidth : 1//Math.round(Math.random() * 5)
+                            strokeColor : zrColor.random(),
+                            lineWidth : 1
                         },
                         _animationX : Math.ceil(Math.random() * 100),
                         _len : len,
@@ -319,49 +316,52 @@ zr.addShape({                               // and use it!
                     _animationSize : 60,
                     hoverable:false
                 };
-                
+
                 zr.addShape(aniText);
-                
+
                 zr.addShape({
                     shape : 'text',
                     zlevel : 1,
                     style : {
                         x : width / 2,
-                        y : 90,
+                        y : 80,
                         brushType : 'both',
-                        color : 'rgba(30, 144, 255, 1)',
-                        strokeColor : 'rgba(127, 255, 0, 0.8)',
-                        lineWidth : 5,
-                        shadowBlur: 25,
+                        color : zrColor.getLinearGradient(
+                                    0, 70, 0, 110,
+                                    [[0, '#c7ffbb'],[1,'#00afdd']]
+                                ),
+                        strokeColor : '#ffff77',
+                        lineWidth : 4,
+                        shadowBlur: 15,
                         shadowColor : 'rgba(255,215,0,0.8)',
                         text : 'ZRender',
-                        textFont : 'bold 65px "Times New Roman"',
+                        textFont : 'bold 80px "Times New Roman"',
                         textAlign : 'center'
-                    }
+                    },
+                    draggable : true
                 });
-                
+
                 zr.addShape({
                     shape : 'text',
                     zlevel : 1,
                     style : {
                         x : width / 2,
-                        y : 160,
+                        y : 150,
                         color : 'rgba(210, 105, 30, 1)',
                         shadowBlur: 10,
                         shadowColor : 'rgba(255,215,0,0.8)',
                         text : '一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型，让canvas绘图大不同！',
                         textFont : 'normal 18px 微软雅黑',
                         textAlign : 'center'
-                    },
-                    hoverable:false
-                });               
-                
+                    }
+                });
+
                 zr.addShape({
                     shape : 'circle',
                     zlevel : 1,
                     style : {
                         x : width / 2,
-                        y : 240,
+                        y : 220,
                         r : 20,
                         brushType : 'both',
                         color : 'rgba(255, 69, 0, 1)',
@@ -378,9 +378,9 @@ zr.addShape({                               // and use it!
                     onclick : function(){
                         window.location = 'doc/example/demo.html';
                     }
-                }); 
-                
-                
+                });
+
+
                 // 绘画，利用render的callback可以在绘画完成后马上开始动画
                 zr.render(function(){
                     animationTicket = setInterval(
@@ -389,7 +389,7 @@ zr.addShape({                               // and use it!
                             for( i = 0; i < n; i++) {
                                 // 可以跳过
                                 style = shapeList[i].style;
-                                
+
                                 if (style.xStart >= width){
                                     shapeList[i]._len = Math.ceil(Math.random() * 400);
                                     shapeList[i].style.xStart = -400;
@@ -399,7 +399,7 @@ zr.addShape({                               // and use it!
                                 }
                                 shapeList[i].style.xStart += shapeList[i]._animationX;
                                 shapeList[i].style.xEnd += shapeList[i]._animationX;
-                                
+
                                 // 就看这句就行了
                                 zr.modShape(shapeList[i].id, shapeList[i]);
                             }
@@ -409,7 +409,7 @@ zr.addShape({                               // and use it!
                             }
                             aniText.style.textFont = 'bold ' + aniText._animationSize + 'px verdana';
                             zr.modShape(aniText.id, aniText);
-                            
+
                             zr.refresh();
                         },
                         50
