@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="ZRender">
     <meta name="author" content="linzhifeng@baidu.com">
-    
+
     <link href="asset/css/bootstrap.css" rel="stylesheet">
     <link href="asset/css/bootstrap-responsive.css" rel="stylesheet">
     <link href="asset/css/zrenderHome.css" rel="stylesheet">
@@ -65,7 +65,7 @@
         </div><!-- /.container -->
       </div><!-- /.navbar-inner -->
     </div><!-- /.navbar-wrapper -->
-    
+
     <div class="container">
         <div class="row">
             <div class="span3">
@@ -97,7 +97,7 @@
                   <div class="accordion-group">
                     <div class="accordion-heading">
                       <div class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapse-shape">
-                        
+
                         <a id="nav-head-shape" href="#shape">shape</a>
                       </div>
                     </div>
@@ -173,7 +173,7 @@
         var conShape = document.getElementById('nav-shape');
         var conTool = document.getElementById('nav-tool');
         var conAnimation = document.getElementById('nav-animation');
-        
+
         function _resize() {
             var viewHeight = document.documentElement.clientHeight;
             var scrollHeight = document.documentElement.scrollTop || document.body.scrollTop;
@@ -224,26 +224,26 @@
         for (var i = 0 , l = shapeList.length; i < l; i++) {
             $(animationList[i]).on('click', _toggle);
         }
-        
+
         function _toggle(event){
             if (event.target.className == 'icon-plus') {
                 event.target.className = 'icon-minus';
                 this.nextSibling.style.height = 'auto';
             } else if (event.target.className == 'icon-minus') {
                 event.target.className = 'icon-plus';
-                this.nextSibling.style.height = '0px';                    
+                this.nextSibling.style.height = '0px';
             }
         }
-        
+
         var navZr = document.getElementById('nav-head-zrender');
         var navZrIns = document.getElementById('nav-head-zrender-instance');
         var navShape = document.getElementById('nav-head-shape');
         var navTool = document.getElementById('nav-head-tool');
         var navAnimation = document.getElementById('nav-head-animation');
-        
-        navZr.onclick = 
-        navZrIns.onclick = 
-        navShape.onclick = 
+
+        navZr.onclick =
+        navZrIns.onclick =
+        navShape.onclick =
         navTool.onclick =
         navAnimation.onclick = function(e){
             window.location= this.href;
@@ -251,14 +251,14 @@
             if (e.preventDefault) {
                 e.preventDefault();
                 e.stopPropagation();
-            } 
+            }
             else {
                 e.returnValue = false;
             }
         }
         _resize();
-        
+
     </script>
-    
+
 </body>
 </html>

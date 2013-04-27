@@ -215,8 +215,8 @@ define(
             if (style.text) {
                 // 字体颜色策略
                 style.textColor = style.textColor
-                                  || e.style.color
-                                  || e.style.strokeColor;
+                        || (e.style || e.highlightStyle).color
+                        || (e.style || e.highlightStyle).strokeColor;
 
                 if (style.textPosition == 'inside') {
                     ctx.shadowColor = 'rgba(0,0,0,0)';   // 内部文字不带shadowColor
@@ -379,6 +379,12 @@ define(
                 tx -= (al == 'end' ? dd : -dd);
                 ty -= (bl == 'bottom' ? dd : -dd);
             }
+            else if (textPosition == 'specific') {
+                tx = style.textX || 0;
+                ty = style.textY || 0;
+                al = 'start';
+                bl = 'middle';
+            }
 
             if (typeof tx != 'undefined' && typeof ty != 'undefined') {
                 if (style.textFont) {
@@ -452,15 +458,14 @@ define(
             var area = require('../tool/area');
             //对鼠标的坐标也做相同的变换
             var m = e._transform;
-            var newPos;
-            if (m ) {
-                newPos = matrix.mulVector(
-                    [], matrix.inverse( [], matrix.expand(m) ), [x, y, 1]
-                );
-            }else{
-                newPos = [x, y];
+            var originPos = [x, y];
+            if (m) {
+                var inverseMatrix = [];
+                matrix.invert(inverseMatrix, m);
+                matrix.mulVector(originPos, inverseMatrix, [x, y, 1]);
             }
-            return area.isInside(e.shape, e.style, newPos[0], newPos[1]);
+
+            return area.isInside(e.shape, e.style, originPos[0], originPos[1]);
         }
 
         function updateTransform(e) {
