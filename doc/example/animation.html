@@ -6,11 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="ZRender">
     <meta name="author" content="linzhifeng@baidu.com">
-    
+
     <script src="../asset/js/esl/esl.js"></script>
     <script src="../asset/js/codemirror.js"></script>
     <script src="../asset/js/javascript.js"></script>
-    
+
     <link href="../asset/css/bootstrap.css" rel="stylesheet">
     <link href="../asset/css/bootstrap-responsive.css" rel="stylesheet">
     <link href="../asset/css/codemirror.css" rel="stylesheet">
@@ -71,16 +71,16 @@
         </div><!-- /.container -->
       </div><!-- /.navbar-inner -->
     </div><!-- /.navbar-wrapper -->
-    
+
     <div class="container-fluid">
         <div class="row-fluid">
             <div id="sidebar-code" class="span4">
                 <div class="well sidebar-nav">
                     <div class="nav-header">code</div>
                     <textarea id="code" name="code">
-/* 
+/*
  *  zr has been init like this, just use it!
- *  
+ *
  *  var zrender = require('zrender/zrender');
  *  var zr = zrender.init(document.getElementById('main'));
  */
@@ -104,13 +104,13 @@ for(i = 0; i < n; i++) {
             y : Math.ceil(Math.random() * height),
             r : Math.ceil(Math.random() * 40),
             brushType : Math.ceil(Math.random() * 100) % 3 >= 1 ? 'both' : 'stroke',
-            color : 'rgba(' 
-                    + Math.round(Math.random() * 256) + ',' 
-                    + Math.round(Math.random() * 256) + ',' 
+            color : 'rgba('
+                    + Math.round(Math.random() * 256) + ','
+                    + Math.round(Math.random() * 256) + ','
                     + Math.round(Math.random() * 256) + ', 0.5)',
-            strokeColor : 'rgba(' 
-                    + Math.round(Math.random() * 256) + ',' 
-                    + Math.round(Math.random() * 256) + ',' 
+            strokeColor : 'rgba('
+                    + Math.round(Math.random() * 256) + ','
+                    + Math.round(Math.random() * 256) + ','
                     + Math.round(Math.random() * 256) + ', 0.3)',
             lineWidth : 3
         },
@@ -119,10 +119,10 @@ for(i = 0; i < n; i++) {
         hoverable : false
     };
     if (shapeList[i].style.x < 100 || shapeList[i].style.x > (width - 100)) {
-        shapeList[i].style.x = width / 2;    
+        shapeList[i].style.x = width / 2;
     }
     if (shapeList[i].style.y < 100 || shapeList[i].style.y > (height - 100)) {
-        shapeList[i].style.y = height / 2;    
+        shapeList[i].style.y = height / 2;
     }
     zr.addShape(shapeList[i]);
 }
@@ -136,16 +136,16 @@ zr.render(function(){
                 // 可以跳过
                 style = shapeList[i].style;
                 if (style.brushType == 'both') {
-                    if (style.x + style.r + shapeList[i]._animationX >= width 
+                    if (style.x + style.r + shapeList[i]._animationX >= width
                         || style.x - style.r + shapeList[i]._animationX <= 0
                     ){
                         shapeList[i]._animationX = -shapeList[i]._animationX;
                     }
                     shapeList[i].style.x += shapeList[i]._animationX;
                 }
-                
+
                 if (style.brushType == 'both') {
-                    if (style.y + style.r + shapeList[i]._animationY >= height || 
+                    if (style.y + style.r + shapeList[i]._animationY >= height ||
                         style.y - style.r + shapeList[i]._animationY <= 0){
                         shapeList[i]._animationY = -shapeList[i]._animationY;
                     }
@@ -158,8 +158,8 @@ zr.render(function(){
                     }
                     shapeList[i].style.y -= shapeList[i]._animationY;
                 }
-                
-                
+
+
                 // 就看这句就行
                 zr.modShape(shapeList[i].id, shapeList[i]);
             }
@@ -209,12 +209,12 @@ zr.render(function(){
         var domMessage = document.getElementById('wrong-message');
         var needRefresh = false;
         var refreshing = false;
-        
+
         function focusCode() {
             domCode.className = 'span8';
             domGraphic.className = 'span4';
         }
-        
+
         function focusGraphic() {
             domCode.className = 'span4';
             domGraphic.className = 'span8';
@@ -223,28 +223,23 @@ zr.render(function(){
                 setTimeout(refresh, 1500);
             }
         }
-        
+
         var editor = CodeMirror.fromTextArea(
-            document.getElementById("code"), 
+            document.getElementById("code"),
             { lineNumbers: true }
         );
         editor.setOption("theme", 'monokai');
         editor.on('change', function(){needRefresh = true;});
-        
+
         function refresh(isBtnRefresh){
             if (isBtnRefresh && refreshing) {
                 // focus在code上点refresh时二次触发
                 return;
             }
             refreshing = false;
-            try {
-                (new Function(editor.doc.getValue()))();
-                domMessage.innerHTML = '';
-            }catch (e) {
-                domMessage.innerHTML = e;
-            }   
+            (new Function(editor.doc.getValue()))();
         }
-        
+
         require.config({
             paths: {
                 'js': '../asset/js/esl/js'
@@ -256,8 +251,8 @@ zr.render(function(){
                     main: 'zrender'
                 }
             ]
-        });           
-        
+        });
+
         require(
             ['zrender/zrender'],
             function(zrender) {

@@ -191,6 +191,9 @@ define(
                         style.textColor = style.textColor
                                           || e.style.color
                                           || e.style.strokeColor;
+                        style.textColor = style.textColor
+                            || (e.style || e.highlightStyle).color
+                            || (e.style || e.highlightStyle).strokeColor;
 
                         if (style.textPosition == 'inside') {
                             // 内部文字不带shadowColor

@@ -46,16 +46,16 @@ body {
 }
 
 .span4 {
-    transition: width 1.5s;
-    -moz-transition: width 1.5s; /* Firefox 4 */
-    -webkit-transition: width 1.5s; /* Safari and Chrome */
-    -o-transition: width 1.5s; /* Opera */
+    transition: width 1s;
+    -moz-transition: width 1s; /* Firefox 4 */
+    -webkit-transition: width 1s; /* Safari and Chrome */
+    -o-transition: width 1s; /* Opera */
 }
 .span8 {
-    transition: width 1.5s;
-    -moz-transition: width 1.5s; /* Firefox 4 */
-    -webkit-transition: width 1.5s; /* Safari and Chrome */
-    -o-transition: width 1.5s; /* Opera */
+    transition: width 1s;
+    -moz-transition: width 1s; /* Firefox 4 */
+    -webkit-transition: width 1s; /* Safari and Chrome */
+    -o-transition: width 1s; /* Opera */
 }
 .main {
     height: 400px;

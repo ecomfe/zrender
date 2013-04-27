@@ -20,9 +20,10 @@ define(
             // buildInObject, 用于处理无法遍历Date等对象的问题
             var buildInObject = {
                 '[object Function]': 1,
-                '[object RegExp]'  : 1,
-                '[object Date]'    : 1,
-                '[object Error]'   : 1
+                '[object RegExp]': 1,
+                '[object Date]': 1,
+                '[object Error]': 1,
+                '[object CanvasGradient]': 1
             };
             var result = source;
             var i;
@@ -65,7 +66,7 @@ define(
          * @param {boolean} optOptions.recursive 是否递归
          * @param {boolean} optOptions.whiteList 白名单，如果定义，则仅处理白名单属性
          */
-        var merge = function() {
+        var merge = (function() {
             function mergeItem(target, source, index, overwrite, recursive) {
                 if (source.hasOwnProperty(index)) {
                     if (recursive
@@ -111,9 +112,10 @@ define(
                 }
                 return target;
             };
-        }();
+        })();
 
         var _ctx;
+
         function getContext() {
             require('js!../lib/excanvas.js');
             if (!_ctx) {
@@ -135,10 +137,88 @@ define(
             return _ctx;
         }
 
+        var _canvas;
+        var _pixelCtx;
+        var _width;
+        var _height;
+        var _offsetX = 0;
+        var _offsetY = 0;
+
+        /**
+         * 获取像素拾取专用的上下文
+         * @return {Object} 上下文
+         */
+        function getPixelContext() {
+            if (!_pixelCtx) {
+                _canvas = document.createElement('canvas');
+                _width = _canvas.width;
+                _height = _canvas.height;
+                _pixelCtx = _canvas.getContext('2d');
+            }
+            return _pixelCtx;
+        }
+
+        /**
+         * 如果坐标处在_canvas外部，改变_canvas的大小
+         * @param {number} x : 横坐标
+         * @param {number} y : 纵坐标
+         * 注意 修改canvas的大小 需要重新设置translate
+         */
+        function adjustCanvasSize(x, y) {
+            // 每次加的长度
+            var _v = 100;
+            var _flag = false;
+
+            if (x + _offsetX > _width) {
+                _width = x + _offsetX + _v;
+                _canvas.width = _width;
+                _flag = true;
+            }
+
+            if (y + _offsetY > _height) {
+                _height = y + _offsetY + _v;
+                _canvas.height = _height;
+                _flag = true;
+            }
+
+            if (x < -_offsetX) {
+                _offsetX = Math.ceil(-x / _v) * _v;
+                _width += _offsetX;
+                _canvas.width = _width;
+                _flag = true;
+            }
+
+            if (y < -_offsetY) {
+                _offsetY = Math.ceil(-y / _v) * _v;
+                _height += _offsetY;
+                _canvas.height = _height;
+                _flag = true;
+            }
+
+            if (_flag) {
+                _pixelCtx.translate(_offsetX, _offsetY);
+            }
+        }
+
+        /**
+         * 获取像素canvas的偏移量
+         * @return {Object} 偏移量
+         */
+        function getPixelOffset() {
+            return {
+                x : _offsetX,
+                y : _offsetY
+            };
+        }
+
         return {
             clone : clone,
             merge : merge,
-            getContext : getContext
+            getContext : getContext,
+
+            getPixelContext : getPixelContext,
+            getPixelOffset : getPixelOffset,
+            adjustCanvasSize : adjustCanvasSize
         };
     }
 );
