@@ -10,39 +10,34 @@
  */
 define(
     function(require) {
-        var shape = require('../shape');
         var util = require('../tool/util');
 
         var _ctx;
 
         /**
          * 包含判断
-         * @param {string} zoneType : 图形类别
+         * @param {string} shapeClazz : 图形类
          * @param {Object} area ： 目标区域
          * @param {number} x ： 横坐标
          * @param {number} y ： 纵坐标
          */
-        function isInside(zoneType, area, x, y) {
-            if (!area) {
+        function isInside(shapeClazz, area, x, y) {
+            if (!area || !shapeClazz) {
+                // 无参数或不支持类型
                 return false;
             }
+            var zoneType = shapeClazz.type;
 
             if (!_ctx) {
                 _ctx = util.getContext();
             }
 
-            var sectorClazz = shape.get(zoneType);
-            if (!sectorClazz) {
-                // 不支持类型
+            if (!_isInsideRectangle(shapeClazz.getRect(area), x, y)) {
+                // 不在矩形区域内直接返回false
                 return false;
             }
 
-             // 未实现或不可用时(excanvas不支持)则数学运算，主要是line，brokenLine，ring
-            if (!_isInsideRectangle(sectorClazz.getRect(area), x, y)) {
-                // 不在矩形区域内直接返回
-                return false;
-            }
-
+            // 未实现或不可用时(excanvas不支持)则数学运算，主要是line，brokenLine，ring
             var _mathReturn = _mathMethod(zoneType, area, x, y);
 
             if (typeof _mathReturn != 'undefined') {
@@ -50,13 +45,13 @@ define(
             }
 
             if (zoneType != 'beziercurve'
-                && sectorClazz.buildPath
+                && shapeClazz.buildPath
                 && _ctx.isPointInPath
             ) {
-                return _buildPathMethod(sectorClazz, _ctx, area, x, y);
+                return _buildPathMethod(shapeClazz, _ctx, area, x, y);
             }
             else if (_ctx.getImageData) {
-                return _pixelMethod(sectorClazz, area, x, y);
+                return _pixelMethod(shapeClazz, area, x, y);
             }
 
             // 上面的方法都行不通时
@@ -68,7 +63,16 @@ define(
                 case 'droplet':
                     return true;    // Todo，不精确
                 case 'ellipse':
-                   return true;     // Todo，不精确
+                    return true;     // Todo，不精确
+                // 旋轮曲线  不准确 
+                case 'trochoid':
+                    var _r = area.location == 'out' 
+                            ? area.r1 + area.r2 + area.d
+                            : area.r1 - area.r2 + area.d;
+                    return _isInsideCircle(area, x, y, _r);
+                // 玫瑰线 不准确
+                case 'rose' :
+                    return _isInsideCircle(area, x, y, area.maxr);
                 //路径，椭圆，曲线等-----------------13
                 default:
                     return false;   // Todo，暂不支持
@@ -78,15 +82,15 @@ define(
         /**
          * 用数学方法判断，三个方法中最快，但是支持的shape少
          *
-         * @param {Object} shape ： shape类
+         * @param {string} zoneType ： 图形类型
          * @param {Object} area ：目标区域
          * @param {number} x ： 横坐标
          * @param {number} y ： 纵坐标
          * @return {boolean=} true表示坐标处在图形中
          */
-        function _mathMethod(shape, area, x, y) {
+        function _mathMethod(zoneType, area, x, y) {
             // 在矩形内则部分图形需要进一步判断
-            switch (shape) {
+            switch (zoneType) {
                 //线-----------------------1
                 case 'line':
                     return _isInsideLine(area, x, y);
@@ -104,12 +108,14 @@ define(
                     return true;
                 //圆形----------------------6
                 case 'circle':
-                    return _isInsideCircle(area, x, y);
+                    return _isInsideCircle(area, x, y, area.r);
                 //扇形----------------------7
                 case 'sector':
                     return _isInsideSector(area, x, y);
                 //多边形---------------------8
                 case 'polygon':
+                case 'star':
+                case 'isogon':
                     return _isInsidePolygon(area, x, y);
                 //图片----------------------9
                 case 'image':
@@ -121,17 +127,17 @@ define(
          * 通过buildPath方法来判断，三个方法中较快，但是不支持线条类型的shape，
          * 而且excanvas不支持isPointInPath方法
          *
-         * @param {Object} shape ： shape类
+         * @param {Object} shapeClazz ： shape类
          * @param {Object} context : 上下文
          * @param {Object} area ：目标区域
          * @param {number} x ： 横坐标
          * @param {number} y ： 纵坐标
          * @return {boolean} true表示坐标处在图形中
          */
-        function _buildPathMethod(shape, context, area, x, y) {
+        function _buildPathMethod(shapeClazz, context, area, x, y) {
             // 图形类实现路径创建了则用类的path
             context.beginPath();
-            shape.buildPath(context, area);
+            shapeClazz.buildPath(context, area);
             context.closePath();
             return context.isPointInPath(x, y);
         }
@@ -139,21 +145,21 @@ define(
         /**
          * 通过像素值来判断，三个方法中最慢，但是支持广,不足之处是excanvas不支持像素处理
          *
-         * @param {Object} shape ： shape类
+         * @param {Object} shapeClazz ： shape类
          * @param {Object} area ：目标区域
          * @param {number} x ： 横坐标
          * @param {number} y ： 纵坐标
          * @return {boolean} true表示坐标处在图形中
          */
-        function _pixelMethod(shape, area, x, y) {
-            var _rect = shape.getRect(area);
+        function _pixelMethod(shapeClazz, area, x, y) {
+            var _rect = shapeClazz.getRect(area);
             var _context = util.getPixelContext();
             var _offset = util.getPixelOffset();
 
             util.adjustCanvasSize(x, y);
             _context.clearRect(_rect.x, _rect.y, _rect.width, _rect.height);
             _context.beginPath();
-            shape.brush(_context, {style : area});
+            shapeClazz.brush(_context, {style : area});
             _context.closePath();
 
             return _isPainted(_context, x + _offset.x, y + _offset.y);
@@ -197,8 +203,8 @@ define(
         /**
          * !isInside
          */
-        function isOutside(zoneType, area, x, y) {
-            return !isInside(zoneType, area, x, y);
+        function isOutside(shapeClazz, area, x, y) {
+            return !isInside(shapeClazz, area, x, y);
         }
 
         /**
@@ -237,7 +243,24 @@ define(
                     yEnd : pointList[i + 1][1],
                     lineWidth : area.lineWidth
                 };
-                insideCatch = isInside('line', lineArea, x, y);
+                if (!_isInsideRectangle(
+                        {
+                            x : Math.min(lineArea.xStart, lineArea.xEnd)
+                                - lineArea.lineWidth,
+                            y : Math.min(lineArea.yStart, lineArea.yEnd)
+                                - lineArea.lineWidth,
+                            width : Math.abs(lineArea.xStart - lineArea.xEnd)
+                                    + lineArea.lineWidth,
+                            height : Math.abs(lineArea.yStart - lineArea.yEnd)
+                                     + lineArea.lineWidth
+                        },
+                        x,y
+                    )
+                ) {
+                    // 不在矩形区内跳过
+                    continue;
+                }
+                insideCatch = _isInsideLine(lineArea, x, y);
                 if (insideCatch) {
                     break;
                 }
@@ -246,15 +269,14 @@ define(
         }
 
         function _isInsideRing(area, x, y) {
-            if (isInside('circle', area, x, y)
-                && isOutside(
-                    'circle',
+            if (_isInsideCircle(area, x, y, area.r)
+                && !_isInsideCircle(
                     {
                         x : area.x,
-                        y : area.y,
-                        r : area.r0 || 0
+                        y : area.y
                     },
-                    x, y
+                    x, y,
+                    area.r0 || 0
                 )
             ){
                 // 大圆内，小圆外
@@ -280,25 +302,24 @@ define(
         /**
          * 圆形包含判断
          */
-        function _isInsideCircle(area, x, y) {
+        function _isInsideCircle(area, x, y, r) {
             return (x - area.x) * (x - area.x) + (y - area.y) * (y - area.y)
-                   < area.r * area.r;
+                   < r * r;
         }
 
         /**
          * 扇形包含判断
          */
         function _isInsideSector(area, x, y) {
-            if (isOutside('circle', area, x, y)
+            if (!_isInsideCircle(area, x, y, area.r)
                 || (area.r0 > 0
-                    && isInside(
-                            'circle',
+                    && _isInsideCircle(
                             {
                                 x : area.x,
-                                y : area.y,
-                                r : area.r0
+                                y : area.y
                             },
-                            x, y
+                            x, y,
+                            area.r0
                         )
                     )
             ){

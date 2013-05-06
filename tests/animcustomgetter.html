@@ -1,6 +1,7 @@
+<!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf8" />
+    <meta charset="utf-8" />
     <title>Animation</title>
     <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
 </head>
@@ -12,7 +13,7 @@
             }
         });
         require(["../src/animation/animation"], function(Animation){
-            
+
             var animation = new Animation,
                 target = (function(){
                     var properties = {
@@ -24,13 +25,13 @@
                             return properties[key];
                         },
                         set : function(key, value){
-                            properties[key] = value;   
+                            properties[key] = value;
                         }
                     }
                 })()
 
             animation.start();
-            
+
             var getter = function(target, key){
                 return target.get(key);
             }
