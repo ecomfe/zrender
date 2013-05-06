@@ -118,6 +118,7 @@ define(
     function(require) {
 
         var self;
+        var area = require('../tool/area');
         var matrix = require('../tool/matrix');
 
         /**
@@ -157,10 +158,7 @@ define(
          *                       让painter更新视图，base.brush没用，需要的话重载brush
          */
         function brush(ctx, e, isHighlight) {
-            var style = {};
-            for (var k in e.style) {
-                style[k] = e.style[k];
-            }
+            var style = e.style || {};
 
             if (this.brushTypeOnly) {
                 style.brushType = this.brushTypeOnly;
@@ -179,17 +177,9 @@ define(
             this.setContext(ctx, style);
 
             // 设置transform
-            var m = this.updateTransform( e );
-            if (!(m[0] == 1
-                && m[1] === 0
-                && m[2] === 0
-                && m[3] == 1
-                && m[4] === 0
-                && m[5] === 0)
-            ) {
-                ctx.transform( m[0], m[1], m[2], m[3], m[4], m[5] );
+            if (e.__needTransform) {
+                ctx.transform.apply(ctx,this.updateTransform(e));
             }
-
 
             ctx.beginPath();
             this.buildPath(ctx, style);
@@ -213,18 +203,11 @@ define(
             }
 
             if (style.text) {
-                // 字体颜色策略
-                style.textColor = style.textColor
-                        || (e.style || e.highlightStyle).color
-                        || (e.style || e.highlightStyle).strokeColor;
-
-                if (style.textPosition == 'inside') {
-                    ctx.shadowColor = 'rgba(0,0,0,0)';   // 内部文字不带shadowColor
-                }
-                this.drawText(ctx, style);
+                this.drawText(ctx, style, e.style);
             }
 
             ctx.restore();
+
             return;
         }
 
@@ -235,11 +218,11 @@ define(
          */
         function setContext(ctx, style) {
             // 简单判断不做严格类型检测
-            if (typeof style.color != 'undefined') {
+            if (style.color) {
                 ctx.fillStyle = style.color;
             }
 
-            if (typeof style.strokeColor != 'undefined') {
+            if (style.strokeColor) {
                 ctx.strokeStyle = style.strokeColor;
             }
 
@@ -247,15 +230,15 @@ define(
                 ctx.globalAlpha = style.opacity;
             }
 
-            if (typeof style.lineCap != 'undefined') {
+            if (style.lineCap) {
                 ctx.lineCap = style.lineCap;
             }
 
-            if (typeof style.lineJoin != 'undefined') {
+            if (style.lineJoin) {
                 ctx.lineJoin = style.lineJoin;
             }
 
-            if (typeof style.miterLimit != 'undefined') {
+            if (style.miterLimit) {
                 ctx.miterLimit = style.miterLimit;
             }
 
@@ -267,7 +250,7 @@ define(
                 ctx.shadowBlur = style.shadowBlur;
             }
 
-            if (typeof style.shadowColor != 'undefined') {
+            if (style.shadowColor) {
                 ctx.shadowColor = style.shadowColor;
             }
 
@@ -284,9 +267,19 @@ define(
          * 附加文本
          * @param {Context2D} ctx Canvas 2D上下文
          * @param {Object} style 样式
+         * @param {Object} normalStyle 默认样式，用于定位文字显示
          */
-        function drawText(ctx, style) {
+        function drawText(ctx, style, normalStyle) {
+            // 字体颜色策略
+            style.textColor= style.textColor
+                            || style.color
+                            || style.strokeColor;
             ctx.fillStyle = style.textColor;
+
+            if (style.textPosition == 'inside') {
+                ctx.shadowColor = 'rgba(0,0,0,0)';   // 内部文字不带shadowColor
+            }
+
             // 文本与图形间空白间隙
             var dd = 10;
             var al;         // 文本水平对齐
@@ -305,7 +298,7 @@ define(
                 || textPosition == 'right')
                 && this.getRect // 矩形定位文字的图形必须提供getRect方法
             ) {
-                var rect = this.getRect(style);
+                var rect = this.getRect(normalStyle || style);
 
                 switch (textPosition) {
                     case 'inside':
@@ -404,29 +397,36 @@ define(
          * @param {Object} highlightStyle 高亮样式
          */
         function getHighlightStyle(style, highlightStyle) {
+            var newStyle = {};
+            for (var k in style) {
+                newStyle[k] = style[k];
+            }
+
             var color = require('../tool/color');
             var highlightColor = color.getHighlightColor();
+            // 根据highlightStyle扩展
             if (style.brushType != 'stroke') {
                 // 带填充则用高亮色加粗边线
-                style.strokeColor = highlightColor;
-                style.lineWidth = (style.lineWidth || 1)
-                                  + this.getHighlightZoom();
-                style.brushType = 'both';
+                newStyle.strokeColor = highlightColor;
+                newStyle.lineWidth = (style.lineWidth || 1)
+                                      + this.getHighlightZoom();
+                newStyle.brushType = 'both';
             }
             else {
                 // 描边型的则用原色加工高亮
-                style.strokeColor = highlightStyle.strokeColor
-                                    || color.mix(
-                                           style.strokeColor, highlightColor
-                                       );
+                newStyle.strokeColor = highlightStyle.strokeColor
+                                       || color.mix(
+                                             style.strokeColor,
+                                             color.toRGB(highlightColor)
+                                          );
             }
 
             // 可自定义覆盖默认值
             for (var k in highlightStyle) {
-                style[k] = highlightStyle[k];
+                newStyle[k] = highlightStyle[k];
             }
 
-            return style;
+            return newStyle;
         }
 
         /**
@@ -455,23 +455,47 @@ define(
          * @param y 纵坐标
          */
         function isCover(e, x, y) {
-            var area = require('../tool/area');
             //对鼠标的坐标也做相同的变换
-            var m = e._transform;
-            var originPos = [x, y];
-            if (m) {
+            if(e.__needTransform && e._transform){
                 var inverseMatrix = [];
-                matrix.invert(inverseMatrix, m);
+                matrix.invert(inverseMatrix, e._transform);
+
+                var originPos = [x, y];
                 matrix.mulVector(originPos, inverseMatrix, [x, y, 1]);
+
+                x = originPos[0];
+                y = originPos[1];
             }
 
-            return area.isInside(e.shape, e.style, originPos[0], originPos[1]);
+            // 快速预判并保留判断矩形
+            var rect;
+            if (e.style.__rect) {
+                rect = e.style.__rect;
+            }
+            else {
+                rect = this.getRect(e.style);
+                rect = [
+                    rect.x,
+                    rect.x + rect.width,
+                    rect.y,
+                    rect.y + rect.height
+                ];
+                e.style.__rect = rect;
+            }
+            if (x >= rect[0] && x <= rect[1] && y >= rect[2] && y <= rect[3]) {
+                // 矩形内
+                return area.isInside(this, e.style, x, y);
+            }
+            else {
+                return false;
+            }
+
         }
 
         function updateTransform(e) {
             var _transform = e._transform || matrix.create();
             matrix.identity(_transform);
-            if (e.scale) {
+            if (e.scale && (e.scale[0] !== 1 || e.scale[1] !== 1)) {
                 var originX = e.scale[2] || 0;
                 var originY = e.scale[3] || 0;
                 if (originX || originY ) {
@@ -488,24 +512,28 @@ define(
             }
             if (e.rotation) {
                 if (e.rotation instanceof Array) {
-                    var originX = e.rotation[1] || 0,
-                        originY = e.rotation[2] || 0;
-                    if (originX || originY ) {
-                        matrix.translate(
-                            _transform, _transform, [-originX, -originY]
-                        );
-                    }
-                    matrix.rotate(_transform, _transform, e.rotation[0]);
-                    if (originX || originY ) {
-                        matrix.translate(
-                            _transform, _transform, [originX, originY]
-                        );
+                    if (e.rotation[0] !== 0) {
+                        var originX = e.rotation[1] || 0,
+                            originY = e.rotation[2] || 0;
+                        if (originX || originY ) {
+                            matrix.translate(
+                                _transform, _transform, [-originX, -originY]
+                            );
+                        }
+                        matrix.rotate(_transform, _transform, e.rotation[0]);
+                        if (originX || originY ) {
+                            matrix.translate(
+                                _transform, _transform, [originX, originY]
+                            );
+                        }
                     }
                 }else{
-                    matrix.rotate(_transform, _transform, e.rotation);
+                    if (e.rotation !== 0) {
+                        matrix.rotate(_transform, _transform, e.rotation);
+                    }
                 }
             }
-            if (e.position) {
+            if (e.position && (e.position[0] !==0 || e.position[1] !== 0)) {
                 matrix.translate(_transform, _transform, e.position);
             }
             // 保存这个变换矩阵

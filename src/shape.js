@@ -73,6 +73,18 @@ define(
         var Beziercurve = require('./shape/beziercurve');
         self.define('beziercurve', new Beziercurve());
 
+        var Trochoid = require('./shape/trochoid');
+        self.define('trochoid', new Trochoid());
+
+        var Rose = require('./shape/rose');
+        self.define('rose', new Rose());
+
+        var Star = require('./shape/star');
+        self.define('star', new Star());
+
+        var Isogon = require('./shape/isogon');
+        self.define('isogon', new Isogon());
+
         return self;
     }
 );

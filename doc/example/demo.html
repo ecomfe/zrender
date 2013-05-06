@@ -375,6 +375,103 @@ zr.addShape({
     draggable : true
 });
 
+// 内旋轮线
+zr.addShape({
+    shape : 'trochoid',
+    id : zr.newShapeId('circle'),
+    style : {
+        r1:50,
+        r2:35,
+        d:50,
+        x : 200,
+        y : 100,
+        strokeColor : color.getColor(colorIdx++),   // getColor from default palette
+        lineWidth : 2,
+        text :'内旋轮曲线',
+        textPosition :'inside'
+    },
+    hoverable : true,   // default true
+    draggable : true
+});
+
+// 外旋轮曲线
+zr.addShape({
+    shape : 'trochoid',
+    id : zr.newShapeId('circle'),
+    style : {
+        r1:50,
+        r2:35,
+        d:30,
+        x : 450,
+        y : 200,
+        location : 'out',
+        strokeColor : color.getColor(colorIdx++),   // getColor from default palette
+        lineWidth : 2,
+        text :'外旋轮曲线',
+        textPosition :'inside'
+    },
+    hoverable : true,   // default true
+    draggable : true
+});
+
+// 玫瑰线
+zr.addShape({
+    shape : 'rose',
+    id : zr.newShapeId('circle'),
+    style : {
+        r : [10,20,30],
+        k : 4,
+        x : 300,
+        y : 100,
+        strokeColor : color.getColor(colorIdx++),   // getColor from default palette
+        lineWidth : 2,
+        textPosition :'inside'
+    },
+    hoverable : true,   // default true
+    draggable : true
+});
+
+// n角星
+zr.addShape({
+    shape : 'star',
+    id : zr.newShapeId('star'),
+    style : {
+        x : 100,
+        y : 320,
+        r : 70,
+        // r0: 27,
+        n : 7,
+        brushType : 'both',
+        color : color.getColor(colorIdx++),
+        strokeColor : color.getColor(colorIdx++),   // getColor from default palette
+        lineWidth : 10,
+        text :'n角星',
+        textPosition :'inside'
+    },
+    hoverable : true,   // default true
+    draggable : true
+});
+
+// 正n边形
+zr.addShape({
+    shape : 'isogon',
+    id : zr.newShapeId('star'),
+    style : {
+        x : 300,
+        y : 320,
+        r : 70,
+        n : 9,
+        brushType : 'both',
+        color : color.getColor(colorIdx++),          // rgba supported
+        strokeColor : color.getColor(colorIdx++),   // getColor from default palette
+        lineWidth : 9,
+        text :'正n边形',
+        textPosition :'inside'
+    },
+    hoverable : true,   // default true
+    draggable : true
+});
+
 // 绘画
 zr.render();
 

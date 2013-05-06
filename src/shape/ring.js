@@ -86,7 +86,10 @@ define(
              * @param {Object} style 样式
              */
             buildPath : function(ctx, style) {
+//var temp = new Date();
                 var shape = require('../shape');
+//t1 += new Date() - temp;
+//temp = new Date();
                 shape.get('sector').buildPath(
                     ctx,
                     {
@@ -98,6 +101,7 @@ define(
                         endAngle : 360
                     }
                 );
+//t2 += new Date() - temp;
                 return;
             },
 
@@ -108,10 +112,7 @@ define(
              * @param isHighlight   是否为高亮状态
              */
             brush : function(ctx, e, isHighlight) {
-                var style = {};
-                for (var k in e.style) {
-                    style[k] = e.style[k];
-                }
+                var style = e.style || {};
 
                 if (isHighlight) {
                     // 根据style扩展默认高亮样式
@@ -124,19 +125,14 @@ define(
                 this.setContext(ctx, style);
 
                 // 设置transform
-                var m = this.updateTransform(e);
-                if (!(m[0] == 1
-                    && m[1] === 0
-                    && m[2] === 0
-                    && m[3] == 1
-                    && m[4] === 0
-                    && m[5] === 0)
-                ) {
-                    ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
+                if (e.__needTransform) {
+                    ctx.transform.apply(ctx,this.updateTransform(e));
                 }
 
                 ctx.beginPath();
+
                 this.buildPath(ctx, style);
+
                 ctx.closePath();
 
                 style.brushType = style.brushType || 'fill';    // default
@@ -157,15 +153,12 @@ define(
                 }
 
                 if (style.text) {
-                    // 字体颜色策略
-                    style.textColor = style.textColor
-                        || (e.style || e.highlightStyle).color
-                        || (e.style || e.highlightStyle).strokeColor;
-
-                    this.drawText(ctx, style);
+                    this.drawText(ctx, style, e.style);
                 }
 
+
                 ctx.restore();
+
                 return;
             },
 
@@ -174,11 +167,12 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
+                var lineWidth = style.lineWidth || 1;
                 return {
-                    x : style.x - style.r,
-                    y : style.y - style.r,
-                    width : style.r * 2,
-                    height : style.r * 2
+                    x : Math.round(style.x - style.r - lineWidth / 2),
+                    y : Math.round(style.y - style.r - lineWidth / 2),
+                    width : style.r * 2 + lineWidth,
+                    height : style.r * 2 + lineWidth
                 };
             }
         };

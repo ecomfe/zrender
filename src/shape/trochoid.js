@@ -2,25 +2,28 @@
  * zrender
  * Copyright 2013 Baidu Inc. All rights reserved.
  *
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Neil (杨骥, yangji01@baidu.com)
  *
- * shape类：直线
+ * shape类：内外旋轮曲线
  * 可配图形属性：
    {
        // 基础属性
-       shape  : 'line',         // 必须，shape类标识，需要显式指定
+       shape  : 'trochoid', // 必须，shape类标识，需要显式指定
        id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
        zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
        invisible : {boolean},   // 默认为false，是否可见
 
        // 样式属性，默认状态样式样式属性
        style  : {
-           xStart        : {number},  // 必须，起点横坐标
-           yStart        : {number},  // 必须，起点纵坐标
-           xEnd          : {number},  // 必须，终点横坐标
-           yEnd          : {number},  // 必须，终点纵坐标
+           r1            : {number},  // 必须，固定圆半径 内旋曲线时必须大于小圆半径
+           r2            : {number},  // 必须，转动圆半径
+           d             : {number},  // 必须，点到内部滚动圆的距离 等于r是曲线为摆线
+           location      : {string},  // 默认为‘in’ 内旋 out 外旋
            strokeColor   : {color},   // 默认为'#000'，线条颜色（轮廓），支持rgba
-           lineType      : {string},  // 默认为solid，线条类型，solid | dashed | dotted
+
+           x             : {number},  // 默认为0， 圆心的横坐标
+           y             : {number},  // 默认为0， 圆心的纵坐标
+
            lineWidth     : {number},  // 默认为1，线条宽度
            lineCap       : {string},  // 默认为butt，线帽样式。butt | round | square
 
@@ -54,14 +57,15 @@
    }
          例子：
    {
-       shape  : 'line',
+       shape  : 'hypotrochoid',
        id     : '123456',
        zlevel : 1,
        style  : {
-           xStart : 100,
-           yStart : 100,
-           xEnd : 200,
-           yEnd : 200,
+           x : 100,
+           y : 100,
+           r1 : 50,
+           r2 : 30,
+           d  : 50,
            strokeColor : '#eee',
            lineWidth : 20,
            text : 'Baidu'
@@ -76,65 +80,67 @@
  */
 define(
     function(require) {
-        function Line() {
-            this.type = 'line';
+        function Trochoid() {
+            this.type = 'trochoid';
             this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
-            this.textPosition = 'end';
         }
 
-        Line.prototype =  {
+        Trochoid.prototype =  {
             /**
              * 创建线条路径
              * @param {Context2D} ctx Canvas 2D上下文
              * @param {Object} style 样式
              */
             buildPath : function(ctx, style) {
-                if (!style.lineType || style.lineType == 'solid') {
-                    //默认为实线
-                    ctx.moveTo(style.xStart, style.yStart);
-                    ctx.lineTo(style.xEnd, style.yEnd);
-                }
-                else if (style.lineType == 'dashed'
-                        || style.lineType == 'dotted'
-                ) {
-                    //画虚线的方法  by loutongbing@baidu.com
-                    var dashPattern = [
-                        style.lineWidth * (style.lineType == 'dashed' ? 6 : 1),
-                        style.lineWidth * 4
-                    ];
-                    var fromX = style.xStart;
-                    var toX = style.xEnd;
-                    var fromY = style.yStart;
-                    var toY = style.yEnd;
-                    var dx = toX - fromX;
-                    var dy = toY - fromY;
-                    var angle = Math.atan2(dy, dx);
-                    var x = fromX;
-                    var y = fromY;
-                    var idx = 0;
-                    var draw = true;
-                    var dashLength;
-                    var nx;
-                    var ny;
+                var _x1;
+                var _y1;
+                var _x2;
+                var _y2;
+                var _R = style.r1;
+                var _r = style.r2;
+                var _d = style.d;
+                var _offsetX = style.x;
+                var _offsetY = style.y;
+                var _delta = style.location == 'out' ? 1 : -1;
 
-                    ctx.moveTo(fromX, fromY);
-                    while (!((dx < 0 ? x <= toX : x >= toX)
-                              && (dy < 0 ? y <= toY : y >= toY))
-                    ) {
-                        dashLength = dashPattern[idx++ % dashPattern.length];
-                        nx = x + (Math.cos(angle) * dashLength);
-                        x = dx < 0 ? Math.max(toX, nx) : Math.min(toX, nx);
-                        ny = y + (Math.sin(angle) * dashLength);
-                        y = dy < 0 ? Math.max(toY, ny) : Math.min(toY, ny);
-                        if (draw) {
-                            ctx.lineTo(x, y);
-                        }
-                        else {
-                            ctx.moveTo(x, y);
-                        }
-                        draw = !draw;
-                    }
+                var _math = require('../tool/math');
+
+                if (style.location && _R <= _r) {
+                    alert('参数错误');
+                    return;
                 }
+
+                var _num = 0;
+                var i = 1;
+                var _theta;
+
+                _x1 = (_R + _delta * _r) * _math.cos(0)
+                    - _delta * _d * _math.cos(0) + _offsetX;
+                _y1 = (_R + _delta * _r) * _math.sin(0)
+                    - _d * _math.sin(0) + _offsetY;
+
+                ctx.moveTo(_x1, _y1);
+
+                //计算结束时的i
+                do {
+                  _num ++;
+                }
+                while ( ( _r * _num ) % ( _R + _delta * _r ) !== 0);
+
+                do {
+                    _theta = Math.PI / 180 * i;
+                    _x2 = (_R + _delta * _r) * _math.cos(_theta)
+                         - _delta * _d * _math.cos((_R / _r +  _delta) * _theta)
+                         + _offsetX;
+                    _y2 = (_R + _delta * _r) * _math.sin(_theta)
+                         - _d * _math.sin((_R / _r + _delta) * _theta)
+                         + _offsetY;
+                    ctx.lineTo( _x2, _y2 );
+                    i ++;
+                }
+                while (i <= ( _r * _num) / (_R + _delta * _r) * 360);
+
+
             },
 
             /**
@@ -142,21 +148,26 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
+                var _R = style.r1;
+                var _r = style.r2;
+                var _d = style.d;
+                var _delta = style.location == 'out' ? 1 : -1;
+                var _s = _R + _d + _delta * _r;
+                var _offsetX = style.x;
+                var _offsetY = style.y;
                 var lineWidth = style.lineWidth || 1;
                 return {
-                    x : Math.min(style.xStart, style.xEnd) - lineWidth,
-                    y : Math.min(style.yStart, style.yEnd) - lineWidth,
-                    width : Math.abs(style.xStart - style.xEnd)
-                            + lineWidth,
-                    height : Math.abs(style.yStart - style.yEnd)
-                             + lineWidth
+                    x : - _s - lineWidth + _offsetX,
+                    y : - _s - lineWidth + _offsetY,
+                    width : 2 * _s + 2 * lineWidth,
+                    height : 2 * _s + 2 * lineWidth
                 };
             }
         };
 
         var base = require('./base');
-        base.derive(Line);
+        base.derive(Trochoid);
 
-        return Line;
+        return Trochoid;
     }
 );

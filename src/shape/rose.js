@@ -1,26 +1,28 @@
+
 /**
  * zrender
  * Copyright 2013 Baidu Inc. All rights reserved.
  *
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Neil (杨骥, yangji01@baidu.com)
  *
- * shape类：直线
+ * shape类：玫瑰线
  * 可配图形属性：
    {
        // 基础属性
-       shape  : 'line',         // 必须，shape类标识，需要显式指定
+       shape  : 'rose', // 必须，shape类标识，需要显式指定
        id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
        zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
        invisible : {boolean},   // 默认为false，是否可见
 
        // 样式属性，默认状态样式样式属性
        style  : {
-           xStart        : {number},  // 必须，起点横坐标
-           yStart        : {number},  // 必须，起点纵坐标
-           xEnd          : {number},  // 必须，终点横坐标
-           yEnd          : {number},  // 必须，终点纵坐标
+           r             : {Array<number>},  // 必须，每个线条的最大长度
+           k             : {number},  // 必须，决定花瓣数量，奇数即为花瓣数，偶数时花瓣数量翻倍
            strokeColor   : {color},   // 默认为'#000'，线条颜色（轮廓），支持rgba
-           lineType      : {string},  // 默认为solid，线条类型，solid | dashed | dotted
+
+           x             : {number},  // 默认为0， 圆心的横坐标
+           y             : {number},  // 默认为0， 圆心的纵坐标
+
            lineWidth     : {number},  // 默认为1，线条宽度
            lineCap       : {string},  // 默认为butt，线帽样式。butt | round | square
 
@@ -54,14 +56,15 @@
    }
          例子：
    {
-       shape  : 'line',
+       shape  : 'rose',
        id     : '123456',
        zlevel : 1,
        style  : {
-           xStart : 100,
-           yStart : 100,
-           xEnd : 200,
-           yEnd : 200,
+           x : 100,
+           y : 100,
+           r1 : 50,
+           r2 : 30,
+           d  : 50,
            strokeColor : '#eee',
            lineWidth : 20,
            text : 'Baidu'
@@ -76,63 +79,43 @@
  */
 define(
     function(require) {
-        function Line() {
-            this.type = 'line';
+        function Rose() {
+            this.type = 'rose';
             this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
-            this.textPosition = 'end';
         }
 
-        Line.prototype =  {
+        Rose.prototype =  {
             /**
              * 创建线条路径
              * @param {Context2D} ctx Canvas 2D上下文
              * @param {Object} style 样式
              */
             buildPath : function(ctx, style) {
-                if (!style.lineType || style.lineType == 'solid') {
-                    //默认为实线
-                    ctx.moveTo(style.xStart, style.yStart);
-                    ctx.lineTo(style.xEnd, style.yEnd);
-                }
-                else if (style.lineType == 'dashed'
-                        || style.lineType == 'dotted'
-                ) {
-                    //画虚线的方法  by loutongbing@baidu.com
-                    var dashPattern = [
-                        style.lineWidth * (style.lineType == 'dashed' ? 6 : 1),
-                        style.lineWidth * 4
-                    ];
-                    var fromX = style.xStart;
-                    var toX = style.xEnd;
-                    var fromY = style.yStart;
-                    var toY = style.yEnd;
-                    var dx = toX - fromX;
-                    var dy = toY - fromY;
-                    var angle = Math.atan2(dy, dx);
-                    var x = fromX;
-                    var y = fromY;
-                    var idx = 0;
-                    var draw = true;
-                    var dashLength;
-                    var nx;
-                    var ny;
+                var _x;
+                var _y;
+                var _R = style.r;
+                var _r;
+                var _k = style.k;
 
-                    ctx.moveTo(fromX, fromY);
-                    while (!((dx < 0 ? x <= toX : x >= toX)
-                              && (dy < 0 ? y <= toY : y >= toY))
-                    ) {
-                        dashLength = dashPattern[idx++ % dashPattern.length];
-                        nx = x + (Math.cos(angle) * dashLength);
-                        x = dx < 0 ? Math.max(toX, nx) : Math.min(toX, nx);
-                        ny = y + (Math.sin(angle) * dashLength);
-                        y = dy < 0 ? Math.max(toY, ny) : Math.min(toY, ny);
-                        if (draw) {
-                            ctx.lineTo(x, y);
-                        }
-                        else {
-                            ctx.moveTo(x, y);
-                        }
-                        draw = !draw;
+                var _offsetX = style.x;
+                var _offsetY = style.y;
+
+                var _math = require('../tool/math');
+                ctx.moveTo(_offsetX, _offsetY);
+
+                for (var i = 0, _len = _R.length; i < _len ; i ++) {
+                    _r = _R[i];
+
+                    for (var j = 0; j <= 360; j ++) {
+                        _x = _r
+                             * _math.sin(_k * j % 360, true)
+                             * _math.cos( j, true)
+                             + _offsetX;
+                        _y = _r
+                             * _math.sin(_k * j % 360, true)
+                             * _math.sin( j, true)
+                             + _offsetY;
+                        ctx.lineTo( _x, _y );
                     }
                 }
             },
@@ -142,21 +125,31 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
+                var _R = style.r;
+                var _offsetX = style.x;
+                var _offsetY = style.y;
+                var _max = 0;
+
+                for (var i = 0, _len = _R.length; i < _len ; i ++) {
+                    if (_R[i] > _max) {
+                        _max = _R[i];
+                    }
+                }
+                style.maxr = _max;
+
                 var lineWidth = style.lineWidth || 1;
                 return {
-                    x : Math.min(style.xStart, style.xEnd) - lineWidth,
-                    y : Math.min(style.yStart, style.yEnd) - lineWidth,
-                    width : Math.abs(style.xStart - style.xEnd)
-                            + lineWidth,
-                    height : Math.abs(style.yStart - style.yEnd)
-                             + lineWidth
+                    x : - _max - lineWidth + _offsetX,
+                    y : - _max - lineWidth + _offsetY,
+                    width : 2 * _max + 3 * lineWidth,
+                    height : 2 * _max + 3 * lineWidth
                 };
             }
         };
 
         var base = require('./base');
-        base.derive(Line);
+        base.derive(Rose);
 
-        return Line;
+        return Rose;
     }
 );
