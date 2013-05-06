@@ -452,9 +452,10 @@ define(function(require) {
          * @param {Object} style 样式
          */
         getRect : function(style) {
+            var lineWidth = style.lineWidth || 1;
             var rect = {
-                x : style.x,
-                y : style.y
+                x : Math.round(style.x - lineWidth / 2),
+                y : Math.round(style.y - lineWidth / 2)
             };
 
             var minX = Number.MAX_VALUE;
@@ -494,8 +495,8 @@ define(function(require) {
                 rect.height = 0;
             }
             else {
-                rect.width = maxX - minX;
-                rect.height = maxY - minY;
+                rect.width = maxX - minX + lineWidth;
+                rect.height = maxY - minY + lineWidth;
             }
 
             return rect;

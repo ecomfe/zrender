@@ -111,11 +111,12 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
+                var lineWidth = style.lineWidth || 1;
                 return {
-                    x : style.x - style.a,
-                    y : style.y - style.b,
-                    width : style.a * 2,
-                    height : style.a + style.b
+                    x : Math.round(style.x - style.a - lineWidth / 2),
+                    y : Math.round(style.y - style.b - lineWidth / 2),
+                    width : style.a * 2 + lineWidth,
+                    height : style.a + style.b + lineWidth
                 };
             }
         };

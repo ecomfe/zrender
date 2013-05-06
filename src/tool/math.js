@@ -22,7 +22,7 @@ define(
          * @param isDegrees angle参数是否为角度计算，默认为false，angle为以弧度计量的角度
          */
         function sin(angle, isDegrees) {
-            angle = isDegrees ? angle * _radians : angle;
+            angle = (isDegrees ? angle * _radians : angle).toFixed(4);
             if(typeof _cache.sin[angle] == 'undefined') {
                 _cache.sin[angle] = Math.sin(angle);
             }
@@ -33,7 +33,7 @@ define(
          * @param radians 弧度参数
          */
         function cos(angle, isDegrees) {
-            angle = isDegrees ? angle * _radians : angle;
+            angle = (isDegrees ? angle * _radians : angle).toFixed(4);
             if(typeof _cache.cos[angle] == 'undefined') {
                 _cache.cos[angle] = Math.cos(angle);
             }

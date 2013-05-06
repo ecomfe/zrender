@@ -94,11 +94,12 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
+                var lineWidth = style.lineWidth || 1;
                 return {
-                    x : style.x - style.r,
-                    y : style.y - style.r,
-                    width : style.r * 2,
-                    height : style.r * 2
+                    x : Math.round(style.x - style.r - lineWidth / 2),
+                    y : Math.round(style.y - style.r - lineWidth / 2),
+                    width : style.r * 2 + lineWidth,
+                    height : style.r * 2 + lineWidth
                 };
             }
         };

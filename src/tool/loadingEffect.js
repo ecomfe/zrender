@@ -541,7 +541,7 @@ define(
          */
         function ring(loadingOption, addShapeHandle, refreshHandle) {
             var zrColor = require('./color');
-            var zrMath = require('zrender/tool/math');
+            var zrMath = require('./math');
             // 特效默认配置
             loadingOption = util.merge(
                 loadingOption,

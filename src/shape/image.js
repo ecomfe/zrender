@@ -88,10 +88,7 @@ define(
 
         ZImage.prototype = {
             brush : function(ctx, e, isHighlight, refresh) {
-                var style = {};
-                for (var k in e.style) {
-                    style[k] = e.style[k];
-                }
+                var style = e.style || {};
 
                 if (isHighlight) {
                     // 根据style扩展默认高亮样式
@@ -138,20 +135,15 @@ define(
                             return;
                         }
                     }
+
                     ctx.save();
                     this.setContext(ctx, style);
 
                     // 设置transform
-                    var m = this.updateTransform(e);
-                    if (!(m[0] == 1
-                        && m[1] === 0
-                        && m[2] === 0
-                        && m[3] == 1
-                        && m[4] === 0
-                        && m[5] === 0)
-                    ) {
-                        ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
+                    if (e.__needTransform) {
+                        ctx.transform.apply(ctx,this.updateTransform(e));
                     }
+
                     var width = style.width || image.width;
                     var height = style.height || image.height;
                     var x = style.x;
@@ -187,19 +179,7 @@ define(
 
 
                     if (style.text) {
-                        // 字体颜色策略
-                        style.textColor = style.textColor
-                                          || e.style.color
-                                          || e.style.strokeColor;
-                        style.textColor = style.textColor
-                            || (e.style || e.highlightStyle).color
-                            || (e.style || e.highlightStyle).strokeColor;
-
-                        if (style.textPosition == 'inside') {
-                            // 内部文字不带shadowColor
-                            ctx.shadowColor = 'rgba(0,0,0,0)';
-                        }
-                        this.drawText(ctx, style);
+                        this.drawText(ctx, style, e.style);
                     }
 
                     ctx.restore();

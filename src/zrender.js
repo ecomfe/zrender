@@ -242,6 +242,11 @@ define(
                 return self;
             };
 
+            self.resize = function() {
+                painter.resize();
+                return self;
+            };
+
             /**
              * 动画
              * @param {string} shapeId 形状对象唯一标识
@@ -424,18 +429,39 @@ define(
             var _maxZlevel = 0;         //最大zlevel
             var _changedZlevel = {};    //有数据改变的zlevel
 
-            function _markSilent(e) {
+            /**
+             * 快速判断标志~
+             * e.__silent 是否需要hover判断
+             * e.__needTransform 是否需要进行transform
+             * e.style.__rect 区域矩阵缓存，修改后清空，重新计算一次
+             */
+            function _mark(e) {
                 if (e.hoverable || e.onclick || e.draggable
                     || e.onmousemove || e.onmouseover || e.onmouseout
                     || e.onmousedown || e.onmouseup
                     || e.ondragenter || e.ondragover || e.ondragleave
                     || e.ondrop
                 ) {
-                    e._silent = false;
+                    e.__silent = false;
                 }
                 else {
-                    e._silent = true;
+                    e.__silent = true;
                 }
+
+                if (e.rotation[0] !== 0
+                    || e.position[0] !== 0
+                    || e.position[1] !== 0
+                    || e.scale[0] !== 1
+                    || e.scale[1] !== 1
+                ) {
+                    e.__needTransform = true;
+                }
+                else {
+                    e.__needTransform = false;
+                }
+
+                e.style = e.style || {};
+                e.style.__rect = null;
             }
             /**
              * 唯一标识id生成
@@ -470,7 +496,7 @@ define(
                         'recursive': true
                     }
                 );
-                _markSilent(e);
+                _mark(e);
                 _elements[e.id] = e;
                 _zElements[e.zlevel] = _zElements[e.zlevel] || [];
                 _zElements[e.zlevel].push(e);
@@ -538,7 +564,7 @@ define(
                             'recursive': true
                         }
                     );
-                    _markSilent(e);
+                    _mark(e);
                     _changedZlevel[e.zlevel] = true;
                     _maxZlevel = Math.max(_maxZlevel,e.zlevel);
                 }
@@ -553,7 +579,7 @@ define(
              */
             function drift(shapeId, dx, dy) {
                 var e = _elements[shapeId];
-
+                e.__needTransform = true;
                 if (!e.ondrift //ondrift
                     //有onbrush并且调用执行返回false或undefined则继续
                     || (e.ondrift && !e.ondrift(e, dx, dy))
@@ -581,6 +607,20 @@ define(
              * @param {Object} params 参数
              */
             function addHover(params) {
+                if ((params.rotation && params.rotation[0] !== 0)
+                    || (params.position
+                        && (params.position[0] !== 0
+                            || params.position[1] !== 0))
+                    || (params.scale
+                        && (params.scale[0] !== 1
+                        || params.scale[1] !== 1))
+                ) {
+                    params.__needTransform = true;
+                }
+                else {
+                    params.__needTransform = false;
+                }
+
                 _hoverElements.push(params);
                 return self;
             }
@@ -976,13 +1016,10 @@ define(
 
             /**
              * 视图更新
-             * @param {Array | shape} shapeList 需要更新的图形元素列表
+             * @param {Array} shapeList 需要更新的图形元素列表
              * @param {Function} callback  视图更新后回调函数
              */
             function update(shapeList, callback) {
-                if (!shapeList instanceof Array) {
-                    shapeList = [shapeList];
-                }
                 var shape;
                 for (var i = 0, l = shapeList.length; i < l; i++) {
                     shape = shapeList[i];
@@ -1154,6 +1191,9 @@ define(
                 return;
             }
 
+            function getDomHover() {
+                return _domList['hover'];
+            }
             self.render = render;
             self.refresh = refresh;
             self.update = update;
@@ -1167,7 +1207,7 @@ define(
             self.getHeight = getHeight;
             self.resize = resize;
             self.dispose = dispose;
-
+            self.getDomHover = getDomHover;
             _init();
         }
 
@@ -1206,6 +1246,9 @@ define(
             var _mouseX = 0;
             var _mouseY = 0;
 
+
+            var _domHover = painter.getDomHover();
+
             /**
              * 初始化，事件绑定，支持的所有事件都由如下原生事件计算得来
              */
@@ -1215,6 +1258,7 @@ define(
 
                     root.addEventListener('click', _clickHandler);
                     root.addEventListener('mousewheel', _mouseWheelHandler);
+                    root.addEventListener('DOMMouseScroll', _mouseWheelHandler);
                     root.addEventListener('mousemove', _mouseMoveHandler);
                     root.addEventListener('mouseout', _mouseOutHandler);
                     root.addEventListener('mousedown', _mouseDownHandler);
@@ -1262,6 +1306,7 @@ define(
                 else if (_lastHover && _lastHover.clickable) {
                     _dispatchAgency(_lastHover, config.EVENT.CLICK);
                 }
+                _mouseMoveHandler(_event);
             }
 
             /**
@@ -1272,11 +1317,7 @@ define(
                 _event = _zrenderEventFixed(event);
                 //分发config.EVENT.MOUSEWHEEL事件
                 _dispatchAgency(_lastHover, config.EVENT.MOUSEWHEEL);
-                if (_lastHover && _lastHover.hoverable) {
-                    //滚轮事件可能改变了图形数据，在某图形上滚动滚轮后需要需要更新图形
-                    storage.addHover(_lastHover);
-                    painter.refreshHover();
-                }
+                _mouseMoveHandler(_event);
             }
 
             /**
@@ -1347,15 +1388,35 @@ define(
                 }
             }
 
+            /**
+             * 鼠标（手指）离开响应函数
+             * @param {event} event dom事件对象
+             */
             function _mouseOutHandler(event) {
                 _event = _zrenderEventFixed(event);
+
+                var element = _event.toElement || _event.relatedTarget;
+                if (element != root) {
+                    while (element && element.nodeType != 9) {
+                        if (element == root) {
+                            // 忽略包含在root中的dom引起的mouseOut
+                            _mouseMoveHandler(event);
+                            return;
+                        }
+                        element = element.parentNode;
+                    }
+                }
+                _event.zrenderX = _lastX;
+                _event.zrenderY = _lastY;
                 root.style.cursor = 'default';
                 _isMouseDown = false;
 
-                //分发config.EVENT.MOUSEOUT事件
-                _dispatchAgency(_lastHover, config.EVENT.MOUSEOUT);
+                _outShapeHandler();
                 _dropHandler();
                 _dragEndHandler();
+                if (!painter.isLoading()) {
+                    painter.refreshHover();
+                }
             }
 
             /**
@@ -1557,6 +1618,7 @@ define(
                         _draggingTarget,
                         config.EVENT.DRAGEND
                     );
+                    _lastHover = null;
                 }
                 _isDragging = false;
                 _draggingTarget = null;
@@ -1609,14 +1671,12 @@ define(
                 }
 
                 //打酱油的路过，啥都不响应的shape~
-                if (e._silent) {
+                if (e.__silent) {
                     return false;
                 }
 
                 var shapeInstance = shape.get(e.shape);
-                if (shapeInstance.isCover
-                    && shapeInstance.isCover(e, _mouseX, _mouseY)
-                ) {
+                if (shapeInstance.isCover(e, _mouseX, _mouseY)) {
                     if (e.hoverable) {
                         storage.addHover(e);
                     }
@@ -1645,15 +1705,24 @@ define(
                 return false;
             }
 
-            // 如果存在第三方嵌入的一些dom触发的事件，需要转换一下事件坐标
+            // 如果存在第三方嵌入的一些dom触发的事件，或touch事件，需要转换一下事件坐标
             function _zrenderEventFixed(event, isTouch) {
                 if (!isTouch) {
                     _event = event || window.event;
-                    // Todo： 这个硬编码找时间改
-                    var target = _event.target || _event.toElement;
-                    if (target && target.id != '_zrender_hover_') {
-                        _event.zrenderX = _event.x - root.offsetLeft;
-                        _event.zrenderY = _event.y - root.offsetTop;
+                    // 进入对象优先~
+                    var target = _event.toElement
+                              || _event.relatedTarget
+                              || _event.srcElement
+                              || _event.target;
+                    if (target && target != _domHover) {
+                        _event.zrenderX = (typeof _event.offsetX != 'undefined'
+                                          ? _event.offsetX
+                                          : _event.layerX)
+                                          + target.offsetLeft;
+                        _event.zrenderY = (typeof _event.offsetY != 'undefined'
+                                          ? _event.offsetY
+                                          : _event.layerY)
+                                          + target.offsetTop;
                     }
                 }
                 else {
@@ -1662,7 +1731,7 @@ define(
                                 ? _event.targetTouches[0]
                                 : _event.changedTouches[0];
                     if (touch) {
-                        // 会有bug
+                        // touch事件坐标是全屏的~
                         _event.zrenderX = touch.clientX - root.offsetLeft
                                           + document.body.scrollLeft;
                         _event.zrenderY = touch.clientY - root.offsetTop
@@ -1732,10 +1801,18 @@ define(
 
                     root.removeEventListener('click', _clickHandler);
                     root.removeEventListener('mousewheel', _mouseWheelHandler);
+                    root.removeEventListener(
+                        'DOMMouseScroll', _mouseWheelHandler
+                    );
                     root.removeEventListener('mousemove', _mouseMoveHandler);
                     root.removeEventListener('mouseout', _mouseOutHandler);
                     root.removeEventListener('mousedown', _mouseDownHandler);
                     root.removeEventListener('mouseup', _mouseUpHandler);
+
+                    // mobile支持
+                    root.removeEventListener('touchstart', _touchStartHandler);
+                    root.removeEventListener('touchmove', _touchMoveHandler);
+                    root.removeEventListener('touchend', _touchEndHandler);
                 }
                 else {
                     window.detachEvent('onresize', _resizeHandler);
@@ -1749,6 +1826,7 @@ define(
                 }
 
                 root = null;
+                _domHover = null;
                 storage = null;
                 painter  = null;
                 shape = null;
