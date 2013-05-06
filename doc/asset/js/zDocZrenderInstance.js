@@ -209,6 +209,12 @@ setTimeout(function() {
         cantry: true
     },
     {
+        name: 'resize',
+        des: '重新计算绘图区域大小，画布大小在初始化时默认为init方法所传的dom节点大小（填满），后续dom节点大小的改变并不影响画布大小，当需要更新画布大小时可以使用这个方法。',
+        params: [],
+        res: ['self', '{ZRender}', '返回自身支持链式调用']
+    },
+    {
         name: 'animate',
         des: '创建一个animate对象, animate对象有三个方法，使用when方法设置帧，start方法开始动画，如果动画循环，可以使用stop停止动画，如果动画不循环，done方法则是动画完成的回调，查看<a href="example/slice.html" target="_blank">slice</a>源码',
         params: [

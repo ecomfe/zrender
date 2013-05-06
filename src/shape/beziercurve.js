@@ -133,11 +133,12 @@ define(
                     _maxY = Math.max(_maxY, _y2);
                 }
 
+                var lineWidth = style.lineWidth || 1;
                 return {
-                    x : _minX - style.lineWidth,
-                    y : _minY - style.lineWidth,
-                    width : _maxX - _minX + style.lineWidth,
-                    height : _maxY - _minY + style.lineWidth
+                    x : _minX - lineWidth,
+                    y : _minY - lineWidth,
+                    width : _maxX - _minX + lineWidth,
+                    height : _maxY - _minY + lineWidth
                 };
             }
         };

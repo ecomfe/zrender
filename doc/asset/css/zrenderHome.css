@@ -45,6 +45,23 @@ body {
     margin-bottom: 0;
 }
 
+/* Give some space on the sides of the floated elements so text doesn't run right into it. */
+.featurette .pull-left {
+  margin:10px 40px 0 0;
+}
+.featurette .pull-right {
+  margin:10px 0 0 40px;
+}
+
+/* Thin out the marketing headings */
+.featurette-heading {
+  font-size: 50px;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.CodeMirror pre{color: #f8f8f2;}
+
 .span4 {
     transition: width 1s;
     -moz-transition: width 1s; /* Firefox 4 */
@@ -69,20 +86,6 @@ body {
     -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
        -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
             box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
-}
-/* Give some space on the sides of the floated elements so text doesn't run right into it. */
-.featurette .pull-left {
-  margin:10px 40px 0 0;
-}
-.featurette .pull-right {
-  margin:10px 0 0 40px;
-}
-
-/* Thin out the marketing headings */
-.featurette-heading {
-  font-size: 50px;
-  font-weight: 300;
-  line-height: 1;
 }
 
 .accordion {
