@@ -16,13 +16,11 @@
 
        // 样式属性，默认状态样式样式属性
        style  : {
+           x             : {number},  // 默认为0， 圆心的横坐标
+           y             : {number},  // 默认为0， 圆心的纵坐标
            r             : {Array<number>},  // 必须，每个线条的最大长度
            k             : {number},  // 必须，决定花瓣数量，奇数即为花瓣数，偶数时花瓣数量翻倍
            strokeColor   : {color},   // 默认为'#000'，线条颜色（轮廓），支持rgba
-
-           x             : {number},  // 默认为0， 圆心的横坐标
-           y             : {number},  // 默认为0， 圆心的纵坐标
-
            lineWidth     : {number},  // 默认为1，线条宽度
            lineCap       : {string},  // 默认为butt，线帽样式。butt | round | square
 
@@ -137,7 +135,13 @@ define(
                 }
                 style.maxr = _max;
 
-                var lineWidth = style.lineWidth || 1;
+                var lineWidth;
+                if (style.brushType == 'stroke' || style.brushType == 'fill') {
+                    lineWidth = style.lineWidth || 1;
+                }
+                else {
+                    lineWidth = 0;
+                }
                 return {
                     x : - _max - lineWidth + _offsetX,
                     y : - _max - lineWidth + _offsetY,

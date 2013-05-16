@@ -268,6 +268,8 @@ zr.animate(circle.id, "", true)
         params: [
             ['loadingOption', '{Object}', 'loading参数，见下'],
             ['loadingOption.effect', '{string | Function}', 'loading效果，当前内置效果有"bar"（默认） | "whirling" | "dynamicLine" | "bubble"，详见<a href="#tool.loadingEffect">tool.loadingEffect</a>可自定义效果函数，如有动态效果，需返回setInterval ID'],
+            ['loadingOption.effectOption', '{Object=}', 'loading效果选项，效果各异。'],
+            ['loadingOption.progress ', '{number=}', '指定当前进度。[0~1],部分效果有。'],
             ['loadingOption.textStyle', '{Object}', '文本样式，见下'],
             ['-.textStyle.text', '{string}', 'loading话术'],
             ['-.textStyle.x', '{string | number}', '水平安放位置，可指定x坐标'],
@@ -290,7 +292,8 @@ var effectList = [
         effectOption : {
             // x,y,width,timeInterval
             height : 15
-        }
+        },
+        textStyle : {text:'装载中'}
     },
 
     { effect : 'ring' },

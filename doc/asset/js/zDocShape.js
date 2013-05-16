@@ -986,6 +986,77 @@ zr.render();
         ]
     },
     {
+        name : 'isogon',
+        plus : true,
+        des : 'shape类：正n(n>=3)边形，属性继承<a href="#shape.base">base</a>，特有样式属性见下',
+        content : [
+            {
+                name : 'style',
+                des : '正n边形特有样式属性，对highlightStyle同样有效。通用样式见<a href="#shape.base.style">base.style</a>。',
+                value : [
+                    ['x', '{number}', '必须，正n边形外接圆心横坐标，单位px'],
+                    ['y', '{number}', '必须，正n边形外接圆心纵坐标，单位px'],
+                    ['r', '{number}', '必须，正n边形外接圆半径，单位px'],
+                    ['n', '{number}', '必须，n>=3指明边数']
+                ],
+                pre : (function(){
+// 正n边形
+zr.addShape({
+    shape : 'isogon',
+    style : {
+        x : 200,
+        y : 200,
+        r : 70,
+        n : 5,
+        color : 'rgba(135, 206, 250, 0.8)',
+        text:'isogon',
+        textPosition:'inside'
+    },
+    draggable : true
+});
+zr.render();
+                }).toString().slice(13, -10),
+                cantry : true
+            }
+        ]
+    },
+    {
+        name : 'star',
+        plus : true,
+        des : 'shape类：n角星，属性继承<a href="#shape.base">base</a>，特有样式属性见下',
+        content : [
+            {
+                name : 'style',
+                des : 'n角星特有样式属性，对highlightStyle同样有效。通用样式见<a href="#shape.base.style">base.style</a>。',
+                value : [
+                    ['x', '{number}', '必须，n角星外接圆心横坐标，单位px'],
+                    ['y', '{number}', '必须，n角星外接圆心纵坐标，单位px'],
+                    ['r', '{number}', '必须，n角星外接圆半径，单位px'],
+                    ['r0', '{number=}', '可选，n角星内部顶点（凹点）的外接圆半径，单位px，如果不指定此参数，则自动计算：取相隔外部顶点连线的交点作内部顶点'],
+                    ['n', '{number}', '必须，指明几角星']
+                ],
+                pre : (function(){
+// n角星
+zr.addShape({
+    shape : 'star',
+    style : {
+        x : 200,
+        y : 200,
+        r : 70,
+        n : 4,
+        color : 'rgba(135, 206, 250, 0.8)',
+        text:'star',
+        textPosition:'inside'
+    },
+    draggable : true
+});
+zr.render();
+                }).toString().slice(13, -10),
+                cantry : true
+            }
+        ]
+    },
+    {
         name : 'path',
         plus : true,
         des : 'shape类：路径，属性继承<a href="#shape.base">base</a>，特有样式属性见下',
@@ -1206,6 +1277,80 @@ zr.addShape({
         lineCap : 'round',
         text:'beziercurve',
         textPosition:'end'
+    },
+    draggable : true
+});
+zr.render();
+                }).toString().slice(13, -10),
+                cantry : true
+            }
+        ]
+    },
+    {
+        name : 'rose',
+        plus : true,
+        des : 'shape类：玫瑰线，积分线，谨慎大量使用，属性继承<a href="#shape.base">base</a>，特有样式属性见下',
+        content : [
+            {
+                name : 'style',
+                des : '玫瑰线特有样式属性，对highlightStyle同样有效。通用样式见<a href="#shape.base.style">base.style</a>。',
+                value : [
+                    ['x', '{number}', '必须，圆心的横坐标，单位px'],
+                    ['y', '{number}', '必须，圆心的纵坐标，单位px'],
+                    ['r', '{Array<number>}', '必须，每个线条的最大长度，单位px'],
+                    ['k', '{number}', '必须，决定花瓣数量，奇数即为花瓣数，偶数时花瓣数量翻倍']
+                ],
+                pre : (function(){
+// 玫瑰线
+zr.addShape({
+    shape : 'rose',
+    style : {
+        x : 200,
+        y : 200,
+        r : [15,25,35],
+        k : 4,
+        strokeColor : 'rgba(135, 206, 250, 0.8)',   // == color
+        lineWidth : 2,
+        text:'rose'
+    },
+    draggable : true
+});
+zr.render();
+                }).toString().slice(13, -10),
+                cantry : true
+            }
+        ]
+    },
+    {
+        name : 'trochoid',
+        plus : true,
+        des : 'shape类：旋轮曲线，积分线，谨慎大量使用，属性继承<a href="#shape.base">base</a>，特有样式属性见下',
+        content : [
+            {
+                name : 'style',
+                des : '旋轮曲线特有样式属性，对highlightStyle同样有效。通用样式见<a href="#shape.base.style">base.style</a>。',
+                value : [
+                    ['x', '{number}', '必须，圆心的横坐标，单位px'],
+                    ['y', '{number}', '必须，圆心的纵坐标，单位px'],
+                    ['r', '{number}', '必须，必须，固定圆半径 内旋曲线时必须大于转动圆半径，单位px'],
+                    ['r0', '{number}', '必须，转动圆半径'],
+                    ['d', '{number}', '必须，点到内部转动圆的距离，等于r时曲线为摆线'],
+                    ['location', '{string}', '可选，默认为 in（内旋），可设为out（外旋）']
+                ],
+                pre : (function(){
+// 旋轮曲线
+zr.addShape({
+    shape : 'trochoid',
+    style : {
+        x : 200,
+        y : 200,
+        r : 50,
+        r0 : 30,
+        d : 30,
+        location : 'in', // 'out
+        strokeColor : 'rgba(135, 206, 250, 0.8)',   // == color
+        lineWidth : 2,
+        text:'trochoid'
     },
     draggable : true
 });
