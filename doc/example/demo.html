@@ -380,11 +380,11 @@ zr.addShape({
     shape : 'trochoid',
     id : zr.newShapeId('circle'),
     style : {
-        r1:50,
-        r2:35,
-        d:50,
         x : 200,
         y : 100,
+        r:50,
+        r0:35,
+        d:50,
         strokeColor : color.getColor(colorIdx++),   // getColor from default palette
         lineWidth : 2,
         text :'内旋轮曲线',
@@ -399,11 +399,11 @@ zr.addShape({
     shape : 'trochoid',
     id : zr.newShapeId('circle'),
     style : {
-        r1:50,
-        r2:35,
+        x: 450,
+        y: 200,
+        r:50,
+        r0:35,
         d:30,
-        x : 450,
-        y : 200,
         location : 'out',
         strokeColor : color.getColor(colorIdx++),   // getColor from default palette
         lineWidth : 2,
@@ -419,10 +419,10 @@ zr.addShape({
     shape : 'rose',
     id : zr.newShapeId('circle'),
     style : {
-        r : [10,20,30],
-        k : 4,
         x : 300,
         y : 100,
+        r : [15,25,35],
+        k : 4,
         strokeColor : color.getColor(colorIdx++),   // getColor from default palette
         lineWidth : 2,
         textPosition :'inside'

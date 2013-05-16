@@ -4,7 +4,7 @@
  *
  * @author sushuang (宿爽, sushuang@baidu.com)
  *
- * shape类：正n边形（n>3）
+ * shape类：正n边形（n>=3）
  * 可配图形属性：
    {
        // 基础属性
@@ -87,7 +87,7 @@ define(
 
         Isogon.prototype = {
             /**
-             * 创建n角星（n>3）路径
+             * 创建n角星（n>=3）路径
              * @param {Context2D} ctx Canvas 2D上下文
              * @param {Object} style 样式
              */
@@ -128,7 +128,13 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
-                var lineWidth = style.lineWidth || 1;
+                var lineWidth;
+                if (style.brushType == 'stroke' || style.brushType == 'fill') {
+                    lineWidth = style.lineWidth || 1;
+                }
+                else {
+                    lineWidth = 0;
+                }
                 return {
                     x : Math.round(style.x - style.r - lineWidth / 2),
                     y : Math.round(style.y - style.r - lineWidth / 2),

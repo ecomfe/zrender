@@ -15,15 +15,13 @@
 
        // 样式属性，默认状态样式样式属性
        style  : {
-           r1            : {number},  // 必须，固定圆半径 内旋曲线时必须大于小圆半径
-           r2            : {number},  // 必须，转动圆半径
-           d             : {number},  // 必须，点到内部滚动圆的距离 等于r是曲线为摆线
-           location      : {string},  // 默认为‘in’ 内旋 out 外旋
-           strokeColor   : {color},   // 默认为'#000'，线条颜色（轮廓），支持rgba
-
            x             : {number},  // 默认为0， 圆心的横坐标
            y             : {number},  // 默认为0， 圆心的纵坐标
-
+           r            : {number},   // 必须，固定圆半径 内旋曲线时必须大于转动圆半径
+           r0            : {number},  // 必须，转动圆半径
+           d             : {number},  // 必须，点到内部转动圆的距离，等于r时曲线为摆线
+           location      : {string},  // 默认为‘in’ 内旋 out 外旋
+           strokeColor   : {color},   // 默认为'#000'，线条颜色（轮廓），支持rgba
            lineWidth     : {number},  // 默认为1，线条宽度
            lineCap       : {string},  // 默认为butt，线帽样式。butt | round | square
 
@@ -63,8 +61,8 @@
        style  : {
            x : 100,
            y : 100,
-           r1 : 50,
-           r2 : 30,
+           r : 50,
+           r0 : 30,
            d  : 50,
            strokeColor : '#eee',
            lineWidth : 20,
@@ -96,8 +94,8 @@ define(
                 var _y1;
                 var _x2;
                 var _y2;
-                var _R = style.r1;
-                var _r = style.r2;
+                var _R = style.r;
+                var _r = style.r0;
                 var _d = style.d;
                 var _offsetX = style.x;
                 var _offsetY = style.y;
@@ -148,14 +146,21 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
-                var _R = style.r1;
-                var _r = style.r2;
+                var _R = style.r;
+                var _r = style.r0;
                 var _d = style.d;
                 var _delta = style.location == 'out' ? 1 : -1;
                 var _s = _R + _d + _delta * _r;
                 var _offsetX = style.x;
                 var _offsetY = style.y;
-                var lineWidth = style.lineWidth || 1;
+
+                var lineWidth;
+                if (style.brushType == 'stroke' || style.brushType == 'fill') {
+                    lineWidth = style.lineWidth || 1;
+                }
+                else {
+                    lineWidth = 0;
+                }
                 return {
                     x : - _s - lineWidth + _offsetX,
                     y : - _s - lineWidth + _offsetY,

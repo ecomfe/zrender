@@ -167,7 +167,13 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
-                var lineWidth = style.lineWidth || 1;
+                var lineWidth;
+                if (style.brushType == 'stroke' || style.brushType == 'fill') {
+                    lineWidth = style.lineWidth || 1;
+                }
+                else {
+                    lineWidth = 0;
+                }
                 return {
                     x : Math.round(style.x - style.r - lineWidth / 2),
                     y : Math.round(style.y - style.r - lineWidth / 2),
