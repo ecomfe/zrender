@@ -155,6 +155,11 @@ define(
                         x, y + r
                     ]);
                 }
+                if (startAngle < 360 && endAngle > 360) {
+                    pointList.push([
+                        x + r, y
+                    ]);
+                }
 
                 startAngle = math.degreeToRadian(startAngle);
                 endAngle = math.degreeToRadian(endAngle);
@@ -182,6 +187,8 @@ define(
 
                 var shape = require('../shape');
                 return shape.get('polygon').getRect({
+                    brushType : style.brushType,
+                    lineWidth : style.lineWidth,
                     pointList : pointList
                 });
             }
