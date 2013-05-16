@@ -116,11 +116,18 @@ define(
                     }
                 }
 
+                var lineWidth;
+                if (style.brushType == 'stroke' || style.brushType == 'fill') {
+                    lineWidth = style.lineWidth || 1;
+                }
+                else {
+                    lineWidth = 0;
+                }
                 return {
-                    x : minX,
-                    y : minY,
-                    width : maxX - minX,
-                    height : maxY - minY
+                    x : Math.round(minX - lineWidth / 2),
+                    y : Math.round(minY - lineWidth / 2),
+                    width : maxX - minX + lineWidth,
+                    height : maxY - minY + lineWidth
                 };
             }
         };

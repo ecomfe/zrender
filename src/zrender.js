@@ -1817,7 +1817,7 @@ define(
                 else {
                     window.detachEvent('onresize', _resizeHandler);
 
-                    root.detachEvent('click', _clickHandler);
+                    root.detachEvent('onclick', _clickHandler);
                     root.detachEvent('onmousewheel', _mouseWheelHandler);
                     root.detachEvent('onmousemove', _mouseMoveHandler);
                     root.detachEvent('onmouseout', _mouseOutHandler);

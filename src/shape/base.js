@@ -166,7 +166,11 @@ define(
 
             if (isHighlight) {
                 // 根据style扩展默认高亮样式
-                style = this.getHighlightStyle(style, e.highlightStyle || {});
+                style = this.getHighlightStyle(
+                    style,
+                    e.highlightStyle || {},
+                    this.brushTypeOnly
+                );
             }
 
             if (this.brushTypeOnly == 'stroke') {
@@ -299,7 +303,6 @@ define(
                 && this.getRect // 矩形定位文字的图形必须提供getRect方法
             ) {
                 var rect = this.getRect(normalStyle || style);
-
                 switch (textPosition) {
                     case 'inside':
                         tx = rect.x + rect.width / 2;
@@ -396,7 +399,7 @@ define(
          * @param {Object} style 默认样式
          * @param {Object} highlightStyle 高亮样式
          */
-        function getHighlightStyle(style, highlightStyle) {
+        function getHighlightStyle(style, highlightStyle, brushTypeOnly) {
             var newStyle = {};
             for (var k in style) {
                 newStyle[k] = style[k];
@@ -413,12 +416,19 @@ define(
                 newStyle.brushType = 'both';
             }
             else {
-                // 描边型的则用原色加工高亮
-                newStyle.strokeColor = highlightStyle.strokeColor
-                                       || color.mix(
-                                             style.strokeColor,
-                                             color.toRGB(highlightColor)
-                                          );
+                if (brushTypeOnly != 'stroke') {
+                    // 描边型的则用原色加工高亮
+                    newStyle.strokeColor = highlightColor;
+                    newStyle.lineWidth = (style.lineWidth || 1)
+                                          + this.getHighlightZoom();
+                } else {
+                    // 线型的则用原色加工高亮
+                    newStyle.strokeColor = highlightStyle.strokeColor
+                                           || color.mix(
+                                                 style.strokeColor,
+                                                 color.toRGB(highlightColor)
+                                              );
+                }
             }
 
             // 可自定义覆盖默认值

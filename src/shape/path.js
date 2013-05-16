@@ -452,7 +452,13 @@ define(function(require) {
          * @param {Object} style 样式
          */
         getRect : function(style) {
-            var lineWidth = style.lineWidth || 1;
+            var lineWidth;
+            if (style.brushType == 'stroke' || style.brushType == 'fill') {
+                lineWidth = style.lineWidth || 1;
+            }
+            else {
+                lineWidth = 0;
+            }
             var rect = {
                 x : Math.round(style.x - lineWidth / 2),
                 y : Math.round(style.y - lineWidth / 2)

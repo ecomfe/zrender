@@ -64,9 +64,9 @@ define(
                     return true;    // Todo，不精确
                 case 'ellipse':
                     return true;     // Todo，不精确
-                // 旋轮曲线  不准确 
+                // 旋轮曲线  不准确
                 case 'trochoid':
-                    var _r = area.location == 'out' 
+                    var _r = area.location == 'out'
                             ? area.r1 + area.r2 + area.d
                             : area.r1 - area.r2 + area.d;
                     return _isInsideCircle(area, x, y, _r);
@@ -333,7 +333,14 @@ define(
                              / Math.PI
                              * 180)
                              % 360;
-                return (angle >= area.startAngle && angle <= area.endAngle);
+                var endA = (360 + area.endAngle) % 360;
+                var startA = (360 + area.startAngle) % 360;
+                if (endA > startA) {
+                    return (angle >= startA && angle <= endA);
+                } else {
+                    return !(angle >= endA && angle <= startA);
+                }
+
             }
         }
 
