@@ -43,7 +43,9 @@ define(
                 }
             }
             else if ('object' == typeof source) {
-                if(buildInObject[Object.prototype.toString.call(source)]) {
+                if(buildInObject[Object.prototype.toString.call(source)]
+                   || source.__nonRecursion
+                ) {
                     return result;
                 }
                 result = {};
@@ -67,11 +69,21 @@ define(
          * @param {boolean} optOptions.whiteList 白名单，如果定义，则仅处理白名单属性
          */
         var merge = (function() {
+            // buildInObject, 用于处理无法遍历Date等对象的问题
+            var buildInObject = {
+                '[object Function]': 1,
+                '[object RegExp]': 1,
+                '[object Date]': 1,
+                '[object Error]': 1,
+                '[object CanvasGradient]': 1
+            };
             function mergeItem(target, source, index, overwrite, recursive) {
                 if (source.hasOwnProperty(index)) {
                     if (recursive
                         && typeof target[index] == 'object'
-                        && typeof target[index] != 'function'
+                        && buildInObject[
+                            Object.prototype.toString.call(target[index])
+                        ] != 1
                     ) {
                         // 如果需要递归覆盖，就递归调用merge
                         merge(
@@ -211,6 +223,21 @@ define(
             };
         }
 
+        /**
+         * 查询数组中元素的index
+         */
+        function indexOf(array, value){
+            if (array.indexOf) {
+                return array.indexOf(value);
+            }
+            for(var i = 0, len=array.length; i<len; i++) {
+                if (array[i] === value) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
         return {
             clone : clone,
             merge : merge,
@@ -218,7 +245,9 @@ define(
 
             getPixelContext : getPixelContext,
             getPixelOffset : getPixelOffset,
-            adjustCanvasSize : adjustCanvasSize
+            adjustCanvasSize : adjustCanvasSize,
+
+            indexOf : indexOf
         };
     }
 );

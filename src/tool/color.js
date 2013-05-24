@@ -278,6 +278,7 @@ define( function(require) {
         for ( var i = 0, l = colorList.length; i < l; i++) {
             gradient.addColorStop(colorList[i][0], colorList[i][1]);
         }
+        gradient.__nonRecursion = true;
         return gradient;
     }
 
@@ -297,6 +298,7 @@ define( function(require) {
         for ( var i = 0, l = colorList.length; i < l; i++) {
             gradient.addColorStop(colorList[i][0], colorList[i][1]);
         }
+        gradient.__nonRecursion = true;
         return gradient;
     }
 

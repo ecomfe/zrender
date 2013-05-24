@@ -473,6 +473,20 @@ define(
                 var originPos = [x, y];
                 matrix.mulVector(originPos, inverseMatrix, [x, y, 1]);
 
+                if (x == originPos[0] && y == originPos[1]) {
+                    // 避免外部修改导致的__needTransform不准确
+                    if (Math.abs(e.rotation[0]) > 0.0001
+                        || Math.abs(e.position[0]) > 0.0001
+                        || Math.abs(e.position[1]) > 0.0001
+                        || Math.abs(e.scale[0] - 1) > 0.0001
+                        || Math.abs(e.scale[1] - 1) > 0.0001
+                    ) {
+                        e.__needTransform = true;
+                    } else {
+                        e.__needTransform = false;
+                    }
+                }
+
                 x = originPos[0];
                 y = originPos[1];
             }

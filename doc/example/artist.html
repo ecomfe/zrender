@@ -283,6 +283,17 @@
                             }
                         });
                     }
+                    for (var i = 0; i < 15; i++) {
+                        shapeList.push({
+                            shape : 'ring',
+                            style : {
+                                x : 900,
+                                y : 200,
+                                r0: i * 12,
+                                r : (i + 1) * 12
+                            }
+                        });
+                    }
                     for (var i = 0, l = shapeList.length; i < l; i++) {
                         shapeList[i].zlevel = 1;             // 偶尔需要改变的图形元素单独一层
                         shapeList[i].style.brushType = 'both';

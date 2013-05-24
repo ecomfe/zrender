@@ -87,7 +87,12 @@ define(
              * @param {Object} style 样式
              */
             buildPath : function(ctx, style) {
-                ctx.rect(style.x, style.y, style.width, style.height);
+                ctx.moveTo(style.x, style.y);
+                ctx.lineTo(style.x + style.width, style.y);
+                ctx.lineTo(style.x + style.width, style.y + style.height);
+                ctx.lineTo(style.x, style.y + style.height);
+                ctx.lineTo(style.x, style.y);
+                //ctx.rect(style.x, style.y, style.width, style.height);
                 return;
             },
 
