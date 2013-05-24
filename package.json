@@ -1,11 +1,13 @@
 {
     "name": "zrender",
-    "version": "2.0",
+    "version": "1.0",
     "maintainers": [
         { "name": "Kener", "email": "linzhifeng@baidu.com" },
         { "name": "Pissang", "email": "shenyi01@baidu.com" },
         { "name": "CrossDo", "email": "chenhuaimu@baidu.com)" },
-        { "name": "Loutongbing", "email": "loutongbing@baidu.com" }
+        { "name": "Loutongbing", "email": "loutongbing@baidu.com" },
+        { "name": "Yangji", "email": "yangji01@baidu.com" },
+        { "name": "Sushuang", "email": "sushuang@baidu.com" }
     ],
     "main": "zrender",
     "description": "一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型，让canvas绘图大不同！",

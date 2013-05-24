@@ -1,0 +1,68 @@
+src\animation\animation.js: line 218, col 30, Don't make functions within a loop.
+src\animation\animation.js: line 229, col 25, Don't make functions within a loop.
+
+src\lib\excanvas.js: line 59, col 0, Identifier 'context_' is not in camel case.
+src\lib\excanvas.js: line 60, col 0, Identifier 'context_' is not in camel case.
+src\lib\excanvas.js: line 60, col 0, Identifier 'CanvasRenderingContext2D_' is not in camel case.
+src\lib\excanvas.js: line 81, col 0, Identifier 'var_args' is not in camel case.
+src\lib\excanvas.js: line 115, col 0, Identifier 'G_vmlCanvasManager_' is not in camel case.
+src\lib\excanvas.js: line 116, col 0, Identifier 'opt_doc' is not in camel case.
+src\lib\excanvas.js: line 117, col 0, Identifier 'opt_doc' is not in camel case.
+src\lib\excanvas.js: line 121, col 0, Identifier 'init_' is not in camel case.
+src\lib\excanvas.js: line 124, col 0, Identifier 'init_' is not in camel case.
+src\lib\excanvas.js: line 203, col 0, Identifier 'G_vmlCanvasManager_' is not in camel case.
+src\lib\excanvas.js: line 253, col 0, Identifier 'arcScaleX_' is not in camel case.
+src\lib\excanvas.js: line 253, col 0, Identifier 'arcScaleX_' is not in camel case.
+src\lib\excanvas.js: line 254, col 0, Identifier 'arcScaleY_' is not in camel case.
+src\lib\excanvas.js: line 254, col 0, Identifier 'arcScaleY_' is not in camel case.
+src\lib\excanvas.js: line 255, col 0, Identifier 'lineScale_' is not in camel case.
+src\lib\excanvas.js: line 255, col 0, Identifier 'lineScale_' is not in camel case.
+src\lib\excanvas.js: line 416, col 7, Expected '{' and instead saw 'h'.
+src\lib\excanvas.js: line 419, col 11, Use '===' to compare with '0'.
+src\lib\excanvas.js: line 436, col 7, Expected '{' and instead saw 'h'.
+src\lib\excanvas.js: line 438, col 7, Expected '{' and instead saw 'h'.
+src\lib\excanvas.js: line 441, col 7, Expected '{' and instead saw 'return'.
+src\lib\excanvas.js: line 443, col 7, Expected '{' and instead saw 'return'.
+src\lib\excanvas.js: line 445, col 7, Expected '{' and instead saw 'return'.
+src\lib\excanvas.js: line 447, col 7, Expected '{' and instead saw 'return'.
+src\lib\excanvas.js: line 481, col 44, Did you mean to return a conditional instead of an assignment?
+src\lib\excanvas.js: line 508, col 41, Did you mean to return a conditional instead of an assignment?
+src\lib\excanvas.js: line 537, col 42, A leading decimal point can be confused with a dot: '.75'.
+src\lib\excanvas.js: line 569, col 0, Identifier 'CanvasRenderingContext2D_' is not in camel case.
+src\lib\excanvas.js: line 570, col 0, Identifier 'm_' is not in camel case.
+src\lib\excanvas.js: line 572, col 0, Identifier 'mStack_' is not in camel case.
+src\lib\excanvas.js: line 573, col 0, Identifier 'aStack_' is not in camel case.
+src\lib\excanvas.js: line 574, col 0, Identifier 'currentPath_' is not in camel case.
+src\lib\excanvas.js: line 602, col 0, Identifier 'element_' is not in camel case.
+src\lib\excanvas.js: line 603, col 0, Identifier 'arcScaleX_' is not in camel case.
+src\lib\excanvas.js: line 604, col 0, Identifier 'arcScaleY_' is not in camel case.
+src\lib\excanvas.js: line 605, col 0, Identifier 'lineScale_' is not in camel case.
+src\lib\excanvas.js: line 608, col 0, Identifier 'CanvasRenderingContext2D_' is not in camel case.
+src\lib\excanvas.js: line 610, col 0, Identifier 'textMeasureEl_' is not in camel case.
+src\lib\excanvas.js: line 611, col 0, Identifier 'textMeasureEl_' is not in camel case.
+src\lib\excanvas.js: line 612, col 0, Identifier 'textMeasureEl_' is not in camel case.
+src\lib\excanvas.js: line 614, col 0, Identifier 'element_' is not in camel case.
+src\lib\excanvas.js: line 620, col 0, Identifier 'currentPath_' is not in camel case.
+src\lib\excanvas.js: line 625, col 0, Identifier 'currentPath_' is not in camel case.
+src\lib\excanvas.js: line 626, col 0, Identifier 'currentX_' is not in camel case.
+src\lib\excanvas.js: line 627, col 0, Identifier 'currentY_' is not in camel case.
+src\lib\excanvas.js: line 632, col 0, Identifier 'currentPath_' is not in camel case.
+src\lib\excanvas.js: line 634, col 0, Identifier 'currentX_' is not in camel case.
+src\lib\excanvas.js: line 635, col 0, Identifier 'currentY_' is not in camel case.
+src\lib\excanvas.js: line 649, col 0, Identifier 'currentPath_' is not in camel case.
+src\lib\excanvas.js: line 658, col 0, Identifier 'currentX_' is not in camel case.
+src\lib\excanvas.js: line 658, col 9, Too many errors. (46% scanned).
+
+src\tool\util.js: line 114, col 11, Wrap an immediate function invocation in parens to assist the reader in understanding that the expression is the result of a function, and not the function itself.
+src\tool\util.js: line 121, col 0, Identifier 'G_vmlCanvasManager' is not in camel case.
+src\tool\util.js: line 128, col 0, Identifier 'G_vmlCanvasManager' is not in camel case.
+
+src\zrender.js: line 24, col 0, Identifier 'G_vmlCanvasManager' is not in camel case.
+src\zrender.js: line 771, col 0, Identifier 'G_vmlCanvasManager' is not in camel case.
+src\zrender.js: line 772, col 0, Identifier 'G_vmlCanvasManager' is not in camel case.
+src\zrender.js: line 781, col 0, Identifier 'G_vmlCanvasManager' is not in camel case.
+src\zrender.js: line 782, col 0, Identifier 'G_vmlCanvasManager' is not in camel case.
+src\zrender.js: line 797, col 0, Identifier 'G_vmlCanvasManager' is not in camel case.
+src\zrender.js: line 798, col 0, Identifier 'G_vmlCanvasManager' is not in camel case.
+
+63 errors

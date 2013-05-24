@@ -76,7 +76,9 @@
         <div class="row-fluid">
             <div id="sidebar-code" class="span4">
                 <div class="well sidebar-nav">
-                    <div class="nav-header">code</div>
+                    <div class="nav-header">code
+                    <a href="#" onclick="autoResize()" class="icon-resize-full" id ="icon-resize" ></a>
+                    </div>
                     <textarea id="code" name="code">
 /*
  *  zr has been init like this, just use it!
@@ -119,8 +121,14 @@ for (var i = 0, l = data.length; i < l; i++){
         },
         highlightStyle : {
             text : percent,
-            textPosition : 'inside',
-            textColor : 'yellow'
+            textPosition : 'specific',
+            textX : x,
+            textY : y,
+            textAlign : 'center',
+            textBaseline: 'middle',
+            textColor : 'blue',
+            textFont : 'bold 10px verdana',
+
         },
         clickable : true,
         onclick : function(params) {
@@ -162,68 +170,6 @@ zr.render();
     <script src="../asset/js/bootstrap-collapse.js"></script>
     <script src="../asset/js/bootstrap-carousel.js"></script>
     <script src="../asset/js/bootstrap-typeahead.js"></script>
-    <script type="text/javascript">
-        var zr; // 全局可用zrender对象
-        var animationTicket;    // 全局动画索引
-        var domCode = document.getElementById('sidebar-code');
-        var domGraphic = document.getElementById('graphic');
-        var domMain = document.getElementById('main');
-        var domMessage = document.getElementById('wrong-message');
-        var needRefresh = false;
-        var refreshing = false;
-
-        function focusCode() {
-            domCode.className = 'span8';
-            domGraphic.className = 'span4';
-        }
-
-        function focusGraphic() {
-            domCode.className = 'span4';
-            domGraphic.className = 'span8';
-            if (needRefresh) {
-                refreshing = true;
-                setTimeout(refresh, 1500);
-            }
-        }
-
-        var editor = CodeMirror.fromTextArea(
-            document.getElementById("code"),
-            { lineNumbers: true }
-        );
-        editor.setOption("theme", 'monokai');
-        editor.on('change', function(){needRefresh = true;});
-
-        function refresh(isBtnRefresh){
-            if (isBtnRefresh && refreshing) {
-                // focus在code上点refresh时二次触发
-                return;
-            }
-            refreshing = false;
-            (new Function(editor.doc.getValue()))();
-        }
-
-        require.config({
-            paths: {
-                'js': '../asset/js/esl/js'
-            },
-            packages: [
-                {
-                    name: 'zrender',
-                    location: '../../src',
-                    main: 'zrender'
-                }
-            ]
-        });
-
-        require(
-            ['zrender/zrender'],
-            function(zrender) {
-                zr = zrender.init(document.getElementById('main'));
-                refresh();
-                editor.on('focus', focusCode);
-                editor.on('blur', focusGraphic);
-            }
-        );
-    </script>
+    <script src="../asset/js/zrenderDemo.js"></script>
 </body>
 </html>

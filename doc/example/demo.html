@@ -76,7 +76,9 @@
         <div class="row-fluid">
             <div id="sidebar-code" class="span4">
                 <div class="well sidebar-nav">
-                    <div class="nav-header">code</div>
+                    <div class="nav-header">code
+                    <a href="#" onclick="autoResize()" class="icon-resize-full" id ="icon-resize" ></a>
+                    </div>
                     <textarea id="code" name="code">
 /*
  *  zr has been init like this, just use it!
@@ -158,6 +160,7 @@ zr.addShape({
         color : color.getColor(colorIdx++),
         strokeColor : color.getColor(colorIdx++),
         lineWidth : 8,
+        lineJoin : 'round',
         text:'sector'
     },
     draggable : true
@@ -267,6 +270,7 @@ zr.addShape({
         color : color.getColor(colorIdx++),
         strokeColor : color.getColor(colorIdx++),
         lineWidth : 15,
+        lineJoin : 'round',
         text : 'rectangle'
     },
     draggable : true
@@ -421,8 +425,9 @@ zr.addShape({
     style : {
         x : 300,
         y : 100,
-        r : [15,25,35],
-        k : 4,
+        r : [35],
+        k : 7,
+        n : 4,
         strokeColor : color.getColor(colorIdx++),   // getColor from default palette
         lineWidth : 2,
         textPosition :'inside'
@@ -436,11 +441,12 @@ zr.addShape({
     shape : 'star',
     id : zr.newShapeId('star'),
     style : {
-        x : 100,
+        x : width / 2 + 100,
         y : 320,
         r : 70,
         // r0: 27,
         n : 7,
+        lineJoin : 'round',
         brushType : 'both',
         color : color.getColor(colorIdx++),
         strokeColor : color.getColor(colorIdx++),   // getColor from default palette
@@ -522,90 +528,6 @@ zr.on('drop',       function(e){console.log('ondrop',e,'global')});
     <script src="../asset/js/bootstrap-collapse.js"></script>
     <script src="../asset/js/bootstrap-carousel.js"></script>
     <script src="../asset/js/bootstrap-typeahead.js"></script>
-    <script type="text/javascript">
-        var zr; // 全局可用zrender对象
-        var domCode = document.getElementById('sidebar-code');
-        var domGraphic = document.getElementById('graphic');
-        var domMain = document.getElementById('main');
-        var domMessage = document.getElementById('wrong-message');
-        var needRefresh = false;
-        var refreshing = false;
-
-        function focusCode() {
-            domCode.className = 'span8';
-            domGraphic.className = 'span4';
-        }
-
-        function focusGraphic() {
-            domCode.className = 'span4';
-            domGraphic.className = 'span8';
-            if (needRefresh) {
-                refreshing = true;
-                setTimeout(refresh, 1500);
-            }
-        }
-
-        var editor = CodeMirror.fromTextArea(
-            document.getElementById("code"),
-            { lineNumbers: true }
-        );
-        editor.setOption("theme", 'monokai');
-        editor.on('change', function(){needRefresh = true;});
-
-        function refresh(isBtnRefresh){
-            if (isBtnRefresh && refreshing) {
-                // focus在code上点refresh时二次触发
-                return;
-            }
-            refreshing = false;
-            (new Function(editor.doc.getValue()))();
-        }
-
-        function QueryString() {
-            var name,value,i;
-            var str = location.href;
-            var num = str.indexOf("?")
-            str = str.substr(num+1);
-            var arrtmp = str.split("&");
-            for(i = 0;i < arrtmp.length;i++){
-                num = arrtmp[i].indexOf("=");
-                if(num > 0){
-                    name = arrtmp[i].substring(0, num);
-                    value = arrtmp[i].substr(num + 1);
-                    this[name] = value;
-                }
-            }
-        }
-
-        require.config({
-            paths: {
-                'js': '../asset/js/esl/js'
-            },
-            packages: [
-                {
-                    name: 'zrender',
-                    location: '../../src',
-                    main: 'zrender'
-                }
-            ]
-        });
-
-        require(
-            ['zrender/zrender'],
-            function(zrender) {
-                zr = zrender.init(document.getElementById('main'));
-                var request=new QueryString();
-                if (request.code) {
-                    editor.doc.setValue(
-                        "zr.clear()\n" +
-                        decodeURIComponent(request.code)
-                    );
-                }
-                refresh();
-                editor.on('focus', focusCode);
-                editor.on('blur', focusGraphic);
-            }
-        )
-    </script>
+    <script src="../asset/js/zrenderDemo.js"></script>
 </body>
 </html>
