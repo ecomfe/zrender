@@ -82,6 +82,9 @@ zr.render();
                     ['color', '{color=}', '默认为"#000"，填充颜色，支持rgba'],
                     ['strokeColor', '{color=}', '默认为"#000"，描边颜色（轮廓），支持rgba'],
                     ['lineWidth', '{number=}', '默认为1，线条宽度，描边下有效'],
+                    ['lineCap', '{string=}','默认为butt，线帽样式。butt | round | square'],
+                    ['lineJoin', '{string=}','默认为miter，线段连接样式。miter | round | bevel'],
+                    ['miterLimit' , '{number=}','默认为10，最大斜接长度，仅当lineJoin为miter时生效'],
                     ['opacity', '{number=}', '默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加'],
                     ['shadowBlur', '{number=}', '默认为0，阴影模糊度，大于0有效'],
                     ['shadowColor', '{color=}', '默认为"#000"，阴影色彩，支持rgba'],
@@ -1174,9 +1177,7 @@ zr.render();
                     ['xStart', '{number}','必须，起点横坐标，单位px'],
                     ['yStart', '{number}','必须，起点纵坐标，单位px'],
                     ['xEnd', '{number}','必须，终点横坐标，单位px'],
-                    ['yEnd', '{number}','必须，终点纵坐标，单位px'],
-                    ['lineType', '{string}','默认为solid，线条类型，solid | dashed | dotted'],
-                    ['lineCap', '{string}','默认为butt，线帽样式。butt | round | square']
+                    ['yEnd', '{number}','必须，终点纵坐标，单位px']
                 ],
                 pre : (function(){
 // 直线
@@ -1212,10 +1213,7 @@ zr.render();
                 des : '折线特有样式属性，对highlightStyle同样有效。通用样式见<a href="#shape.base.style">base.style</a>。',
                 value : [
                     ['pointList', '{Array}','必须，多边形各个顶角坐标，单位px'],
-                    ['lineType', '{string}','默认为solid，线条类型，solid | dashed | dotted'],
-                    ['lineCap', '{string}','默认为butt，线帽样式。butt | round | square'],
-                    ['lineJoin', '{string}','默认为miter，线段连接样式。miter | round | bevel'],
-                    ['miterLimit' , '{number}','默认为10，最大斜接长度，仅当lineJoin为miter时生效']
+                    ['lineType', '{string}','默认为solid，线条类型，solid | dashed | dotted']
                 ],
                 pre : (function(){
 // 折线
@@ -1256,8 +1254,7 @@ zr.render();
                     ['cpX2', '{number=}','可选，第二个关联点横坐标  缺省即为二次贝塞尔曲线，单位px'],
                     ['cpY2', '{number=}','可选，第二个关联点纵坐标，单位px'],
                     ['xEnd', '{number}','必须，终点横坐标，单位px'],
-                    ['yEnd', '{number}','必须，终点纵坐标，单位px'],
-                    ['lineCap', '{string}','默认为butt，线帽样式。butt | round | square']
+                    ['yEnd', '{number}','必须，终点纵坐标，单位px']
                 ],
                 pre : (function(){
 // 贝塞尔曲线
@@ -1298,7 +1295,8 @@ zr.render();
                     ['x', '{number}', '必须，圆心的横坐标，单位px'],
                     ['y', '{number}', '必须，圆心的纵坐标，单位px'],
                     ['r', '{Array<number>}', '必须，每个线条的最大长度，单位px'],
-                    ['k', '{number}', '必须，决定花瓣数量，奇数即为花瓣数，偶数时花瓣数量翻倍']
+                    ['k', '{number}', '必须，决定花瓣数量，当n为1时，奇数即为花瓣数，偶数时花瓣数量翻倍'],
+                    ['n', '{number=}', '默认为1，必须为整数，与k共同决定花瓣的数量']
                 ],
                 pre : (function(){
 // 玫瑰线

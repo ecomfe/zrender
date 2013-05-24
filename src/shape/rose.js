@@ -19,7 +19,8 @@
            x             : {number},  // 默认为0， 圆心的横坐标
            y             : {number},  // 默认为0， 圆心的纵坐标
            r             : {Array<number>},  // 必须，每个线条的最大长度
-           k             : {number},  // 必须，决定花瓣数量，奇数即为花瓣数，偶数时花瓣数量翻倍
+           k             : {number},  // 必须，决定花瓣数量，当n为1时，奇数即为花瓣数，偶数时花瓣数量翻倍
+           n             : {number=},  // 默认为1，必须为整数，与k共同决定花瓣的数量
            strokeColor   : {color},   // 默认为'#000'，线条颜色（轮廓），支持rgba
            lineWidth     : {number},  // 默认为1，线条宽度
            lineCap       : {string},  // 默认为butt，线帽样式。butt | round | square
@@ -94,6 +95,7 @@ define(
                 var _R = style.r;
                 var _r;
                 var _k = style.k;
+                var _n = style.n || 1;
 
                 var _offsetX = style.x;
                 var _offsetY = style.y;
@@ -104,13 +106,13 @@ define(
                 for (var i = 0, _len = _R.length; i < _len ; i ++) {
                     _r = _R[i];
 
-                    for (var j = 0; j <= 360; j ++) {
+                    for (var j = 0; j <= 360 * _n; j ++) {
                         _x = _r
-                             * _math.sin(_k * j % 360, true)
+                             * _math.sin(_k / _n * j % 360, true)
                              * _math.cos( j, true)
                              + _offsetX;
                         _y = _r
-                             * _math.sin(_k * j % 360, true)
+                             * _math.sin(_k / _n * j % 360, true)
                              * _math.sin( j, true)
                              + _offsetY;
                         ctx.lineTo( _x, _y );

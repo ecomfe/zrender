@@ -72,7 +72,7 @@
             <div class="span12">
                 <div id="main" class="main"></div>
                 <button id="refresh">Refresh ~</button>
-                <p id='color-series'></span>
+                <p id='color-series'></p>
             </div>
         </div><!--/row-->
         <hr>
@@ -145,6 +145,7 @@
                     for (var i = 0; i < max; i++) {
                         zr.addShape({
                             shape : 'rectangle',
+                            zlevel:0,
                             style : {
                                 x : i * w + 1,
                                 y : 0,
@@ -163,6 +164,7 @@
                     for (var i = 0; i < max; i++) {
                         customerShape.push({
                             shape : 'rectangle',
+                            zlevel:1,
                             id : zr.newShapeId(),
                             style : {
                                 x : i * w + 1,
@@ -212,6 +214,7 @@
                         for (var j = 0, k = colorList.length; j < k; j++) {
                             zr.addShape({
                                 shape: 'rectangle',
+                                zlevel:2,
                                 style: {
                                     x: w * j, y: lastY, width : w, height : h,
                                     color : zrColor.toHex(colorList[j]),

@@ -22,7 +22,6 @@ define(
                 this._targetPool = [this._targetPool];
             }
 
-            this._host = null;
             //生命周期
             this._life = options.life || 1000;
             //延时
@@ -74,22 +73,26 @@ define(
                 if (percent == 1) {
                     if (this.loop) {
                         this.restart();
-                        //重新开始周期
-                        this.fire('restart');
+                        // 重新开始周期
+                        // 抛出而不是直接调用事件直到 stage.update 后再统一调用这些事件
+                        return 'restart';
 
                     }else{
-                        //动画完成删除这个控制器
-                        this._host.remove(this);
+                        // 动画完成将这个控制器标识为待删除
+                        // 在Animation.update中进行批量删除
+                        this._needsRemove = true;
 
-                        this.fire('destroy');
+                        return 'destroy';
                     }
+                }else{
+                    return null;
                 }
             },
             restart : function() {
                 this._startTime = new Date().getTime() + this.gap;
             },
             fire : function(eventType, arg) {
-                for(var i = 0; i < this._targetPool.length; i++) {
+                for(var i = 0, len = this._targetPool.length; i < len; i++) {
                     if (this['on' + eventType]) {
                         this['on' + eventType](this._targetPool[i], arg);
                     }

@@ -24,8 +24,6 @@ define(
             G_vmlCanvasManager = false;
         }
 
-        var Animation = require('./animation/animation');
-
         var self = {};
         var zrender = self;     // 提供MVC内部反向使用静态方法；
 
@@ -104,7 +102,7 @@ define(
          * 1 : 异常抛出，调试用
          * 2 : 控制台输出，调试用
          */
-        self.debugMode = 1;
+        self.debugMode = 0;
         self.log = function() {
             if (self.debugMode === 0) {
                 return;
@@ -159,6 +157,7 @@ define(
             var handler = new Handler(dom, storage, painter, shapeLibrary);
 
             // 动画控制
+            var Animation = require('./animation/animation');
             var animatingShapes = [];
             var animation = new Animation({
                 stage : {
@@ -260,6 +259,7 @@ define(
              *   .start()
              */
             self.animate = function(shapeId, path, loop) {
+                var util = require('./tool/util');
                 var shape = storage.get(shapeId);
                 if (shape) {
                     var target;
@@ -288,12 +288,24 @@ define(
                         );
                         return;
                     }
-                    var idx = animatingShapes.length;
-                    animatingShapes.push(shape);
+
+                    if( typeof(shape.__aniCount) === 'undefined'){
+                        // 正在进行的动画记数
+                        shape.__aniCount = 0;
+                    }
+                    if( shape.__aniCount === 0 ){
+                        animatingShapes.push(shape);
+                    }
+                    shape.__aniCount ++;
+
                     return animation.animate(target, loop)
                         .done(function() {
-                            // 从animatingShapes里移除
-                            animatingShapes.splice(idx, 1);
+                            shape.__aniCount --;
+                            if( shape.__aniCount === 0){
+                                // 从animatingShapes里移除
+                                var idx = util.indexOf(animatingShapes, shape);
+                                animatingShapes.splice(idx, 1);
+                            }
                         });
                 }
                 else {
@@ -388,6 +400,10 @@ define(
              * 释放当前ZR实例（删除包括dom，数据、显示和事件绑定），dispose后ZR不可用
              */
             self.dispose = function() {
+                animation.stop();
+                animation = null;
+                animatingShapes = null;
+
                 self.clear();
                 self = null;
 
@@ -448,11 +464,11 @@ define(
                     e.__silent = true;
                 }
 
-                if (e.rotation[0] !== 0
-                    || e.position[0] !== 0
-                    || e.position[1] !== 0
-                    || e.scale[0] !== 1
-                    || e.scale[1] !== 1
+                if (Math.abs(e.rotation[0]) > 0.0001
+                    || Math.abs(e.position[0]) > 0.0001
+                    || Math.abs(e.position[1]) > 0.0001
+                    || Math.abs(e.scale[0] - 1) > 0.0001
+                    || Math.abs(e.scale[1] - 1) > 0.0001
                 ) {
                     e.__needTransform = true;
                 }
@@ -607,13 +623,13 @@ define(
              * @param {Object} params 参数
              */
             function addHover(params) {
-                if ((params.rotation && params.rotation[0] !== 0)
+                if ((params.rotation && Math.abs(params.rotation[0]) > 0.0001)
                     || (params.position
-                        && (params.position[0] !== 0
-                            || params.position[1] !== 0))
+                        && (Math.abs(params.position[0]) > 0.0001
+                            || Math.abs(params.position[1]) > 0.0001))
                     || (params.scale
-                        && (params.scale[0] !== 1
-                        || params.scale[1] !== 1))
+                        && (Math.abs(params.scale[0] - 1) > 0.0001
+                        || Math.abs(params.scale[1] - 1) > 0.0001))
                 ) {
                     params.__needTransform = true;
                 }
