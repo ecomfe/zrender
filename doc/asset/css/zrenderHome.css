@@ -62,13 +62,13 @@ body {
 
 .CodeMirror pre{color: #f8f8f2;}
 
-.span4 {
+.span4.ani {
     transition: width 1s;
     -moz-transition: width 1s; /* Firefox 4 */
     -webkit-transition: width 1s; /* Safari and Chrome */
     -o-transition: width 1s; /* Opera */
 }
-.span8 {
+.span8.ani {
     transition: width 1s;
     -moz-transition: width 1s; /* Firefox 4 */
     -webkit-transition: width 1s; /* Safari and Chrome */
@@ -130,4 +130,12 @@ div.section {
 }
 tr.head {
     background-color:#f5f5f5
+}
+
+#icon-resize {
+    float:right;
+    opacity:.3;
+}
+a#icon-resize:hover {
+    opacity:.6;
 }

@@ -301,7 +301,7 @@ zr.render();
             },
             {
                 name: 'getLinearGradient',
-                des: '线性渐变',
+                des: '线性渐变。（注意：excanvas的渐变坐标并不是全局的，所以多shape共享渐变的设置在IE8-下会有差异。同时，excanvas并不支持strokeColor为渐变类型，请谨慎使用。）',
                 params: [
                     ['x0', '{number}', '渐变起点'],
                     ['y0', '{number}', '渐变起点'],

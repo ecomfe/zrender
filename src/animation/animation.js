@@ -16,6 +16,7 @@
 define(
     function(require) {
         var Controller = require('./controller');
+        var util = require('../tool/util');
 
         var Animation = function(options) {
 
@@ -35,32 +36,54 @@ define(
 
         Animation.prototype = {
             add : function(controller) {
-                controller._host = this;
                 this._controllerPool.push(controller);
             },
             remove : function(controller) {
-                var idx = indexOf(this._controllerPool, controller);
+                var idx = util.indexOf(this._controllerPool, controller);
                 if (idx >= 0) {
-                    controller._host = null;
                     this._controllerPool.splice(idx, 1);
                 }
             },
             update : function() {
                 var time = new Date().getTime();
                 var cp = this._controllerPool;
+                var len = cp.length;
 
-                for(var i = 0; i < cp.length; i++) {
-                    cp[i].step(time);
+                var deferredEvents = [];
+                var deferredCtls = [];
+                for (var i = 0; i < len; i++) {
+                    var controller = cp[i];
+                    var e = controller.step(time);
+                    // 需要在stage.update之后调用的事件，例如destroy
+                    if( e ){
+                        deferredEvents.push(e);
+                        deferredCtls.push(controller);
+                    }
                 }
                 if (this.stage
                     && this.stage.update
-                    && this._controllerPool.length >0
+                    && this._controllerPool.length
                 ) {
-
                     this.stage.update();
                 }
 
+                // 删除动画完成的控制器
+                var newArray = [];
+                for(var i = 0; i < len; i++) {
+                    if(!cp[i]._needsRemove) {
+                        newArray.push(cp[i]);
+                        cp[i]._needsRemove = false;
+                    }
+                }
+                this._controllerPool = newArray;
+
+                len = deferredEvents.length;
+                for (var i = 0; i < len; i++) {
+                    deferredCtls[i].fire( deferredEvents[i] );
+                }
+
                 this.onframe();
+
             },
             // 启用start函数之后每个1000/fps事件就会刷新
             // 也可以不使用animation的start函数
@@ -78,6 +101,9 @@ define(
                 if (this._timer) {
                     clearInterval(this._timer);
                 }
+            },
+            clear : function() {
+                this._controllerPool = [];
             },
             animate : function(target, loop, getter, setter) {
                 var deferred = new Deferred(target, loop, getter, setter);
@@ -162,6 +188,8 @@ define(
 
             this._doneList = [];
 
+            this._onframeList = [];
+
             this._controllerList = [];
         }
 
@@ -184,6 +212,10 @@ define(
                 }
                 return this;
             },
+            during : function(callback){
+                this._onframeList.push(callback);
+                return this;
+            },
             start : function() {
                 var self = this;
                 var delay;
@@ -204,6 +236,9 @@ define(
                             self._getter,
                             self._setter
                         );
+                        for(var i = 0; i < self._onframeList.length; i++){
+                            self._onframeList[i](target, schedule);
+                        }
                     };
                 }
 
@@ -269,18 +304,6 @@ define(
             else {
                 return value;
             }
-        }
-
-        function indexOf(array, value) {
-            if (array.indexOf) {
-                return array.indexOf(value);
-            }
-            for(var i = 0, len=array.length; i<len; i++) {
-                if (array[i] === value) {
-                    return i;
-                }
-            }
-            return -1;
         }
 
         return Animation;
