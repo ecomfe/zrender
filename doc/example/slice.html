@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="ZRender">
     <meta name="author" content="linzhifeng@baidu.com">
-    
+
     <script src="../asset/js/esl/esl.js"></script>
     <link href="../asset/css/bootstrap.css" rel="stylesheet">
     <link href="../asset/css/bootstrap-responsive.css" rel="stylesheet">
@@ -47,8 +47,8 @@
                 <li class="dropdown">
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="icon-download-alt icon-white"></i>Download <b class="caret"></b></a>
                   <ul class="dropdown-menu">
-                    <li><a href="https://github.com/ecomfe/zrender/zipball/master">ZIP</a></li>
-                    <li><a href="https://github.com/ecomfe/zrender/tarball/master">TAR</a></li>
+                    <li><a href="https://github.com/ecomfe/zrender/archive/1.0.0.zip">ZIP (1.0.0)</a></li>
+                    <li><a href="https://github.com/ecomfe/zrender/archive/master.zip">ZIP (Latest)</a></li>
                   </ul>
                 </li>
                 <li class="dropdown">
@@ -66,7 +66,7 @@
         </div><!-- /.container -->
       </div><!-- /.navbar-inner -->
     </div><!-- /.navbar-wrapper -->
-    
+
     <div class="container">
         <div class="row">
             <div class="span12">
@@ -82,7 +82,7 @@
           <p>&copy; 2013 Ecom-FE. &middot; <a href="#">Privacy</a> &middot; <a href="#">Terms</a></p>
         </footer>
     </div><!--/.fluid-container-->
-    
+
     <script src="../asset/js/jquery.js"></script>
     <script src="../asset/js/bootstrap-transition.js"></script>
     <script src="../asset/js/bootstrap-alert.js"></script>
@@ -108,8 +108,8 @@
                     main: 'zrender'
                 }
             ]
-        });           
-        
+        });
+
         require(
             ['zrender/zrender'],
             function(zrender) {
@@ -126,9 +126,9 @@
                 var gamTicket;
                 var timeTicket;
                 var gameTime = 10;
-                
+
                 document.getElementById('start').onclick = init;
-                
+
                 function init(){
                     document.getElementById('wrong-message').innerHTML = '';
                     zr.clear();
@@ -136,14 +136,14 @@
                     _bulidTime();
                     _startGame();
                 }
-                
+
                 function _getRandomColor(opacity) {
-                    return 'rgba(' 
-                            + Math.round(Math.random() * 256) + ',' 
-                            + Math.round(Math.random() * 256) + ',' 
+                    return 'rgba('
+                            + Math.round(Math.random() * 256) + ','
+                            + Math.round(Math.random() * 256) + ','
                             + Math.round(Math.random() * 256) + ', ' + opacity + ')'
                 }
-                
+
                 function _bulidTime() {
                     shapeList = [];
                     shapeList.push({
@@ -192,11 +192,11 @@
                         hoverable : false,
                         _round : 4
                     });
-                    
+
                     for(var i = 0, l = shapeList.length; i < l; i++) {
                         zr.addShape(shapeList[i]);
                     }
-                    
+
                     pointText = {
                         shape : 'text',
                         id : zr.newShapeId(),
@@ -230,12 +230,12 @@
                             lineWidth : Math.round(Math.random() * 5)
                         },
                         hoverable : false   // default true
-                    } 
-                        
+                    }
+
                     zr.addShape(knife);
                     zr.render();
                     zr.on(
-                        'mousemove',  
+                        'mousemove',
                         function(params) {
                             if (gameRunning) {
                                 knife.style.pointList.push([
@@ -246,12 +246,12 @@
                                 knife.style.lineWidth = Math.round(Math.random() * 5);
                                 knife.style.pointList.shift();
                                 zr.modShape(knife.id, knife);
-                                zr.refresh(); 
+                                zr.refresh();
                             }
                         }
                     );
                 }
-               
+
                 function _startGame() {
                     zr.modShape(pointText.id, {
                         style : {
@@ -284,7 +284,7 @@
                                 }
                                 hasCatched[params.target._ticket] = true;
                                 zr.modShape(
-                                    params.target.id, 
+                                    params.target.id,
                                     {style : { brushType : 'stroke'}}
                                 );
                                 zr.animate(params.target.id, 'style')
@@ -293,8 +293,8 @@
                                     })
                                     .start();
                                 zr.modShape(
-                                    pointText.id, 
-                                    { 
+                                    pointText.id,
+                                    {
                                         style : {
                                             text : pointText.style.text - 0 + params.target._point
                                         }
@@ -322,14 +322,14 @@
                         zr.addShape(bubble);
                         zr.animate(bubble.id, 'style')
                             .when(3000, {
-                                y : -120   
+                                y : -120
                             },'QuadraticInOut')
                             .done(function(){
                                 zr.delShape(bubble.id);
                             })
                             .start();
                     }, 200);
-                    
+
                     clearInterval(timeTicket);
                     timeTicket = setInterval(function(){
                         zr.modShape(
@@ -362,16 +362,16 @@
                         }
                         zr.refresh();
                     },1000)
-                    
+
                     for(var i = 0, l = shapeList.length; i < l; i++) {
                         zr.animate( shapeList[i].id )
                             .when(gameTime * 1000 + 100, {
                                 rotation : [
-                                    (i%2 == 0 ? 1 : -1) * Math.PI * shapeList[i]._round, 
-                                    shapeList[i].rotation[1], 
+                                    (i%2 == 0 ? 1 : -1) * Math.PI * shapeList[i]._round,
+                                    shapeList[i].rotation[1],
                                     shapeList[i].rotation[2]]
                             })
-                            .start();    
+                            .start();
                     }
                 }
                 _bulidTime();
