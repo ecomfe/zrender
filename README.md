@@ -77,7 +77,7 @@ MVC核心封装实现图形仓库、视图渲染和交互控制：
     // Just the level 1 canvas has been refresh~
     
 ### 丰富的图形选项
-当前内置多种图形元素（圆形、扇形、圆环、矩形、多边形、直线、文字等），统一且丰富的图形属性充分满足你的个性化需求！
+当前内置多种图形元素（圆形、椭圆、圆环、扇形、矩形、多边形、直线、曲线、心形、水滴、路径、文字、图片。Will be more..），统一且丰富的图形属性充分满足你的个性化需求！
 
     var myShape = {
         shape : 'circle',   // sector | ring | rectangle | ...
@@ -87,6 +87,19 @@ MVC核心封装实现图形仓库、视图渲染和交互控制：
         },
         draggable : true
     };
+
+### 强大的动画支持
+提供promise式的动画接口和常用缓动函数，轻松实现各种动画需求~
+
+    function MyShape() { ... }
+
+    var shape = require('zrender/shape');
+    shape.define('myShape', new MyShape());     // define your shape
+
+    zr.addShape({                               // and use it!
+        shape : 'myShape',
+        ...
+    });
     
 ### 易于扩展
 分而治之的图形定义策略允许你扩展自己独有的图形元素，你既可以完整实现三个接口方法（brush、drift、isCover），
