@@ -397,6 +397,7 @@ alert(zr.getHeight());
         pre: (function() {
 zr.addShape({
     shape: 'circle',
+    clickable : true,
     style: {
         x: 100,
         y: 100,
@@ -432,6 +433,7 @@ zr.on(
         pre: (function() {
 zr.addShape({
     shape: 'circle',
+    clickable : true,
     style: {
         x: 100,
         y: 100,
@@ -462,6 +464,7 @@ zr.on(config.EVENT.CLICK, function(params) {
         pre: (function() {
 zr.addShape({
     shape: 'circle',
+    clickable : true,
     style: {
         x: 400,
         y: 200,
@@ -480,6 +483,7 @@ zr.on(config.EVENT.CLICK, function(params) {
     else {
         zr.addShape({
             shape: 'circle',
+            clickable : true,
             style: {
                 x: Math.round(Math.random() * 500),
                 y: Math.round(Math.random() * 300),

@@ -101,9 +101,10 @@ define(
                         || style.lineType == 'dotted'
                 ) {
                     //画虚线的方法  by loutongbing@baidu.com
+                    var lineWidth = style.lineWidth || 1;
                     var dashPattern = [
-                        style.lineWidth * (style.lineType == 'dashed' ? 6 : 1),
-                        style.lineWidth * 4
+                        lineWidth * (style.lineType == 'dashed' ? 6 : 1),
+                        lineWidth * 4
                     ];
                     ctx.moveTo(pointList[0][0],pointList[0][1]);
                     for (var i = 1, l = pointList.length; i < l; i++) {
