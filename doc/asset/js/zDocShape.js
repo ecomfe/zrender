@@ -1177,7 +1177,8 @@ zr.render();
                     ['xStart', '{number}','必须，起点横坐标，单位px'],
                     ['yStart', '{number}','必须，起点纵坐标，单位px'],
                     ['xEnd', '{number}','必须，终点横坐标，单位px'],
-                    ['yEnd', '{number}','必须，终点纵坐标，单位px']
+                    ['yEnd', '{number}','必须，终点纵坐标，单位px'],
+                    ['lineType', '{string}','默认为solid，线条类型，solid | dashed | dotted']
                 ],
                 pre : (function(){
 // 直线

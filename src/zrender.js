@@ -649,6 +649,10 @@ define(
                 return self;
             }
 
+            function hasHoverShape() {
+                return _hoverElements.length > 0;
+            }
+
             /**
              * 遍历迭代器
              * @param {Function} fun 迭代回调函数，return true终止迭代
@@ -756,6 +760,7 @@ define(
             self.del = del;
             self.addHover = addHover;
             self.delHover = delHover;
+            self.hasHoverShape = hasHoverShape;
             self.mod = mod;
             self.drift = drift;
             self.iterShape = iterShape;
@@ -1389,7 +1394,7 @@ define(
                 //分发config.EVENT.MOUSEMOVE事件
                 _dispatchAgency(_lastHover, config.EVENT.MOUSEMOVE);
 
-                if (_draggingTarget || _hasfound) {
+                if (_draggingTarget || _hasfound || storage.hasHoverShape()) {
                     painter.refreshHover();
                 }
 
