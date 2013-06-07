@@ -118,7 +118,7 @@ define(
                 var yStart = y + r * sin(deg);
                 deg += dStep;
 
-                // 记录边界点，用于判断insight
+                // 记录边界点，用于判断inside
                 var pointList = style.pointList = [];
                 pointList.push([xStart, yStart]);
                 for (var i = 0, end = n * 2 - 1, ri; i < end; i ++) {

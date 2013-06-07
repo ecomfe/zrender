@@ -393,15 +393,29 @@ define(function(require) {
 
             var pathArray = this._parsePathData(path);
 
-            for (var i = 0; i < pathArray.length; i++) {
-                var c = pathArray[i].command;
-                var p = pathArray[i].points;
+            // 平移坐标
+            var x = style.x || 0;
+            var y = style.y || 0;
+
+            var p;
+            // 记录边界点，用于判断inside
+            var pointList = style.pointList = [];
+            for (var i = 0, l = pathArray.length; i < l; i++) {
+                p = pathArray[i].points;
+                for (var j = 0, k = p.length; j < k; j += 2) {
+                    pointList.push([p[j] + x, p[j+1] + y])
+                }
+            }
+            var c;
+            for (var i = 0, l = pathArray.length; i < l; i++) {
+                c = pathArray[i].command;
+                p = pathArray[i].points;
                 // 平移变换
-                for (var j = 0; j < p.length; j++) {
+                for (var j = 0, k = p.length; j < k; j++) {
                     if (j % 2 === 0) {
-                        p[j] += style.x;
+                        p[j] += x;
                     } else {
-                        p[j] += style.y;
+                        p[j] += y;
                     }
                 }
                 switch (c) {
@@ -459,10 +473,6 @@ define(function(require) {
             else {
                 lineWidth = 0;
             }
-            var rect = {
-                x : Math.round(style.x - lineWidth / 2),
-                y : Math.round(style.y - lineWidth / 2)
-            };
 
             var minX = Number.MAX_VALUE;
             var maxX = Number.MIN_VALUE;
@@ -470,41 +480,54 @@ define(function(require) {
             var minY = Number.MAX_VALUE;
             var maxY = Number.MIN_VALUE;
 
+            // 平移坐标
+            var x = style.x || 0;
+            var y = style.y || 0;
+
             var pathArray = this._parsePathData(style.path);
             for (var i = 0; i < pathArray.length; i++) {
                 var p = pathArray[i].points;
 
                 for (var j = 0; j < p.length; j++) {
                     if (j % 2 === 0) {
-                        if (p[j] < minX) {
-                            minX = p[j];
+                        if (p[j] + x < minX) {
+                            minX = p[j] + x;
                         }
-                        if (p[j] > maxX) {
-                            maxX = p[j];
+                        if (p[j] + x > maxX) {
+                            maxX = p[j] + x;
                         }
                     } else {
-                        if (p[j] < minY) {
-                            minY = p[j];
+                        if (p[j] + y < minY) {
+                            minY = p[j] + y;
                         }
-                        if (p[j] > maxY) {
-                            maxY = p[j];
+                        if (p[j] + y > maxY) {
+                            maxY = p[j] + y;
                         }
                     }
                 }
             }
+
+            var rect;
             if (minX === Number.MAX_VALUE
                 || maxX === Number.MIN_VALUE
                 || minY === Number.MAX_VALUE
                 || maxY === Number.MIN_VALUE
             ) {
-                rect.width = 0;
-                rect.height = 0;
+                rect = {
+                    x : 0,
+                    y : 0,
+                    width : 0,
+                    height : 0
+                }
             }
             else {
-                rect.width = maxX - minX + lineWidth;
-                rect.height = maxY - minY + lineWidth;
+                rect = {
+                    x : Math.round(minX - lineWidth / 2),
+                    y : Math.round(minY - lineWidth / 2),
+                    width : maxX - minX + lineWidth,
+                    height : maxY - minY + lineWidth
+                };
             }
-
             return rect;
         }
     };
