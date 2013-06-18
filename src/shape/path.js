@@ -534,6 +534,9 @@ define(function(require) {
 
     var base = require('./base');
     base.derive(Path);
+    
+    var shape = require('../shape');
+    shape.define('path', new Path());
 
     return Path;
 });

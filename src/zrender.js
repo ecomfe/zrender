@@ -135,6 +135,24 @@ define(
         function ZRender(id, dom, params) {
             var self = this;
             var shape = require('./shape');
+            // 内置图形注册
+            require('./shape/circle');
+            require('./shape/ellipse');
+            require('./shape/line');
+            require('./shape/polygon');
+            require('./shape/brokenLine');
+            require('./shape/rectangle');
+            require('./shape/ring');
+            require('./shape/sector');
+            require('./shape/text');
+            require('./shape/heart');
+            require('./shape/droplet');
+            require('./shape/path');
+            require('./shape/image');
+            require('./shape/beziercurve');
+            require('./shape/star');
+            require('./shape/isogon');
+            
             var shapeLibrary;
 
             if (typeof params.shape == 'undefined') {

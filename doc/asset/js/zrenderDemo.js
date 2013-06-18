@@ -75,7 +75,7 @@ require.config({
 });
 
 require(
-    ['zrender/zrender'],
+    ['zrender/zrender','zrender/shape/rose','zrender/shape/trochoid'],
     function(zrender) {
         zr = zrender.init(document.getElementById('main'));
         var request=new QueryString();

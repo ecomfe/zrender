@@ -158,7 +158,11 @@ define(
             }
         };
 
-        require('./base').derive(Star);
+        var base = require('./base');
+        base.derive(Star);
+        
+        var shape = require('../shape');
+        shape.define('star', new Star());
 
         return Star;
     }

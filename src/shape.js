@@ -30,61 +30,6 @@ define(
             return _shapeLibrary[name];
         };
 
-        // 内置图形实例化后注册
-        var Circle = require('./shape/circle');
-        self.define('circle', new Circle());
-
-        var Ellipse = require('./shape/ellipse');
-        self.define('ellipse', new Ellipse());
-
-        var Line = require('./shape/line');
-        self.define('line', new Line());
-
-        var Polygon = require('./shape/polygon');
-        self.define('polygon', new Polygon());
-
-        var BrokenLine = require('./shape/brokenLine');
-        self.define('brokenLine', new BrokenLine());
-
-        var Rectangle = require('./shape/rectangle');
-        self.define('rectangle', new Rectangle());
-
-        var Ring = require('./shape/ring');
-        self.define('ring', new Ring());
-
-        var Sector = require('./shape/sector');
-        self.define('sector', new Sector());
-
-        var Text = require('./shape/text');
-        self.define('text', new Text());
-
-        var Heart = require('./shape/heart');
-        self.define('heart', new Heart());
-
-        var Droplet = require('./shape/droplet');
-        self.define('droplet', new Droplet());
-
-        var Path = require('./shape/path');
-        self.define('path', new Path());
-
-        var ZImage = require('./shape/image');
-        self.define('image', new ZImage() );
-
-        var Beziercurve = require('./shape/beziercurve');
-        self.define('beziercurve', new Beziercurve());
-
-        var Trochoid = require('./shape/trochoid');
-        self.define('trochoid', new Trochoid());
-
-        var Rose = require('./shape/rose');
-        self.define('rose', new Rose());
-
-        var Star = require('./shape/star');
-        self.define('star', new Star());
-
-        var Isogon = require('./shape/isogon');
-        self.define('isogon', new Isogon());
-
         return self;
     }
 );

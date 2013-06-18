@@ -195,7 +195,10 @@ define(
         };
 
         var base = require('./base');
-            base.derive(Sector);
+        base.derive(Sector);
+        
+        var shape = require('../shape');
+        shape.define('sector', new Sector());
 
         return Sector;
     }

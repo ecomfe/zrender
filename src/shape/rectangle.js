@@ -118,7 +118,10 @@ define(
         };
 
         var base = require('./base');
-            base.derive(Rectangle);
+        base.derive(Rectangle);
+        
+        var shape = require('../shape');
+        shape.define('rectangle', new Rectangle());
 
         return Rectangle;
     }
