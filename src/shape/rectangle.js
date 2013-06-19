@@ -93,17 +93,20 @@ define(
                 //r缩写为[1]       相当于 [1, 1, 1, 1]
                 //r缩写为[1, 2]    相当于 [1, 2, 1, 2]
                 //r缩写为[1, 2, 3] 相当于 [1, 2, 3, 2]
-                var x = style.x
-                   ,y = style.y
-                   ,width = style.width
-                   ,height = style.height
-                   ,r = style.radius
-                   ,r1, r2, r3, r4;
+                var x = style.x;
+                var y = style.y;
+                var width = style.width;
+                var height = style.height;
+                var r = style.radius;
+                var r1; 
+                var r2; 
+                var r3; 
+                var r4;
                   
-                if(typeof r === "number" ) {
+                if(typeof r === "number") {
                     r1 = r2 = r3 = r4 = r;
                 }
-                else if(Object.prototype.toString.call(r).slice(-6,-1) === "Array") {
+                else if(r instanceof Array) {
                     if (r.length === 1) {
                         r1 = r2 = r3 = r4 = r[0];
                     }
@@ -126,13 +129,13 @@ define(
                 }
                 ctx.moveTo(x + r1, y);
                 ctx.lineTo(x + width - r2, y);
-                ctx.quadraticCurveTo(x + width, y, x + width, y + r2);
+                r2 !==0 && ctx.quadraticCurveTo(x + width, y, x + width, y + r2);
                 ctx.lineTo(x + width, y + height - r3);
-                ctx.quadraticCurveTo(x + width, y + height, x + width - r3, y + height);
+                r3 !==0 && ctx.quadraticCurveTo(x + width, y + height, x + width - r3, y + height);
                 ctx.lineTo(x + r4, y + height);
-                ctx.quadraticCurveTo(x, y + height, x, y + height - r4);
+                r4 !==0 && ctx.quadraticCurveTo(x, y + height, x, y + height - r4);
                 ctx.lineTo(x, y + r1);
-                ctx.quadraticCurveTo(x, y, x + r1, y);
+                r1 !==0 && ctx.quadraticCurveTo(x, y, x + r1, y);
             },
             
             /**
