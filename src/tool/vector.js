@@ -19,7 +19,7 @@ define(
                 return out;
             },
             length : function(v) {
-                return Math.sqrt( this.magSquare(v) );
+                return Math.sqrt( this.lengthSquare(v) );
             },
             lengthSquare : function(v) {
                 return v[0]*v[0]+v[1]*v[1];
