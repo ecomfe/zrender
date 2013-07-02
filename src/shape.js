@@ -7,7 +7,7 @@
  *
  */
 define(
-    function(require) {
+    function(/*require*/) {
         var self = {};
 
         var _shapeLibrary = {};     //shape库

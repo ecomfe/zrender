@@ -403,7 +403,7 @@ define(function(require) {
             for (var i = 0, l = pathArray.length; i < l; i++) {
                 p = pathArray[i].points;
                 for (var j = 0, k = p.length; j < k; j += 2) {
-                    pointList.push([p[j] + x, p[j+1] + y])
+                    pointList.push([p[j] + x, p[j+1] + y]);
                 }
             }
             var c;
@@ -518,7 +518,7 @@ define(function(require) {
                     y : 0,
                     width : 0,
                     height : 0
-                }
+                };
             }
             else {
                 rect = {

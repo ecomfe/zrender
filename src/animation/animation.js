@@ -19,10 +19,12 @@ define(
         var util = require('../tool/util');
 
         var requrestAnimationFrame = window.requrestAnimationFrame
-                                    || window.mozRequestAnimationFrame
-                                    || window.webkitRequestAnimationFrame
-                                    || function( callback ){
-                                            window.setTimeout(callback, 1000 / 60);
+                                     || window.mozRequestAnimationFrame
+                                     || window.webkitRequestAnimationFrame
+                                     || function( callback ){
+                                            window.setTimeout(
+                                                callback, 1000 / 60
+                                            );
                                         };
 
         var Animation = function(options) {

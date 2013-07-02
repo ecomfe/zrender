@@ -2,7 +2,8 @@
  * zrender
  * Copyright 2013 Baidu Inc. All rights reserved.
  *
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com) , strwind (@劲风FEI, yaofeifei@baidu.com)
+ * @author Kener (@Kener-林峰, linzhifeng@baidu.com) , 
+ *         strwind (@劲风FEI, yaofeifei@baidu.com)
  *
  * shape类：矩形
  * 可配图形属性：
@@ -103,7 +104,7 @@ define(
                 var r3; 
                 var r4;
                   
-                if(typeof r === "number") {
+                if(typeof r === 'number') {
                     r1 = r2 = r3 = r4 = r;
                 }
                 else if(r instanceof Array) {
@@ -119,9 +120,9 @@ define(
                         r2 = r4 = r[1];
                         r3 = r[2];
                     } else {
-                        r1 = r[0]
-                        r2 = r[1]
-                        r3 = r[2]
+                        r1 = r[0];
+                        r2 = r[1];
+                        r3 = r[2];
                         r4 = r[3];
                     }
                 } else {
@@ -129,11 +130,17 @@ define(
                 }
                 ctx.moveTo(x + r1, y);
                 ctx.lineTo(x + width - r2, y);
-                r2 !== 0 && ctx.quadraticCurveTo(x + width, y, x + width, y + r2);
+                r2 !== 0 && ctx.quadraticCurveTo(
+                    x + width, y, x + width, y + r2
+                );
                 ctx.lineTo(x + width, y + height - r3);
-                r3 !== 0 && ctx.quadraticCurveTo(x + width, y + height, x + width - r3, y + height);
+                r3 !== 0 && ctx.quadraticCurveTo(
+                    x + width, y + height, x + width - r3, y + height
+                );
                 ctx.lineTo(x + r4, y + height);
-                r4 !== 0 && ctx.quadraticCurveTo(x, y + height, x, y + height - r4);
+                r4 !== 0 && ctx.quadraticCurveTo(
+                    x, y + height, x, y + height - r4
+                );
                 ctx.lineTo(x, y + r1);
                 r1 !== 0 && ctx.quadraticCurveTo(x, y, x + r1, y);
             },
