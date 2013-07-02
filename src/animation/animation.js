@@ -94,9 +94,6 @@ define(
             // 也可以不使用animation的start函数
             // 手动每一帧去调用update函数更新状态
             start : function() {
-                if (this._timer) {
-                    clearInterval(this._timer);
-                }
                 var self = this;
 
                 this._running = true;
