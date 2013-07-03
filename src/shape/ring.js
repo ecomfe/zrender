@@ -184,7 +184,10 @@ define(
         };
 
         var base = require('./base');
-            base.derive(Ring);
+        base.derive(Ring);
+        
+        var shape = require('../shape');
+        shape.define('ring', new Ring());
 
         return Ring;
     }

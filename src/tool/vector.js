@@ -19,7 +19,7 @@ define(
                 return out;
             },
             length : function(v) {
-                return Math.sqrt( this.magSquare(v) );
+                return Math.sqrt( this.lengthSquare(v) );
             },
             lengthSquare : function(v) {
                 return v[0]*v[0]+v[1]*v[1];
@@ -39,8 +39,13 @@ define(
             },
             normalize : function(out, v) {
                 var d = vector.length(v);
-                out[0] = v[0]/d;
-                out[1] = v[1]/d;
+                if(d === 0){
+                    out[0] = 0;
+                    out[1] = 0;
+                }else{
+                    out[0] = v[0]/d;
+                    out[1] = v[1]/d;
+                }
                 return out;
             },
             distance : function( v1, v2 ) {

@@ -191,7 +191,10 @@ define(
         };
 
         var base = require('./base');
-            base.derive(Text);
+        base.derive(Text);
+        
+        var shape = require('../shape');
+        shape.define('text', new Text());
 
         return Text;
     }

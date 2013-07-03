@@ -123,6 +123,9 @@ define(
 
         var base = require('./base');
         base.derive(Ellipse);
+        
+        var shape = require('../shape');
+        shape.define('ellipse', new Ellipse());
 
         return Ellipse;
     }

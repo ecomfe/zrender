@@ -155,6 +155,9 @@ define(
 
         var base = require('./base');
         base.derive(Rose);
+        
+        var shape = require('../shape');
+        shape.define('rose', new Rose());
 
         return Rose;
     }
