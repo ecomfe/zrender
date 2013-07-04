@@ -144,7 +144,11 @@ define(
             }
         };
 
-        require('./base').derive(Isogon);
+        var base = require('./base');
+        base.derive(Isogon);
+        
+        var shape = require('../shape');
+        shape.define('isogon', new Isogon());
 
         return Isogon;
     }

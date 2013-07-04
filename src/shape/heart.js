@@ -129,6 +129,9 @@ define(
 
         var base = require('./base');
         base.derive(Heart);
+        
+        var shape = require('../shape');
+        shape.define('heart', new Heart());
 
         return Heart;
     }

@@ -172,6 +172,9 @@ define(
 
         var base = require('./base');
         base.derive(Trochoid);
+        
+        var shape = require('../shape');
+        shape.define('trochoid', new Trochoid());
 
         return Trochoid;
     }

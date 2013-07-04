@@ -159,6 +159,9 @@ define(
 
         var base = require('./base');
         base.derive(BrokenLine);
+        
+        var shape = require('../shape');
+        shape.define('brokenLine', new BrokenLine());
 
         return BrokenLine;
     }

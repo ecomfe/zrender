@@ -135,6 +135,24 @@ define(
         function ZRender(id, dom, params) {
             var self = this;
             var shape = require('./shape');
+            // 内置图形注册
+            require('./shape/circle');
+            require('./shape/ellipse');
+            require('./shape/line');
+            require('./shape/polygon');
+            require('./shape/brokenLine');
+            require('./shape/rectangle');
+            require('./shape/ring');
+            require('./shape/sector');
+            require('./shape/text');
+            require('./shape/heart');
+            require('./shape/droplet');
+            require('./shape/path');
+            require('./shape/image');
+            require('./shape/beziercurve');
+            require('./shape/star');
+            require('./shape/isogon');
+            
             var shapeLibrary;
 
             if (typeof params.shape == 'undefined') {
@@ -1257,6 +1275,7 @@ define(
             var _event;                         //原生dom事件
             var _hasfound = false;              //是否找到hover图形元素
             var _lastHover = null;              //最后一个hover图形元素
+            var _mouseDownTarget = null;
             var _draggingTarget = null;         //当前被拖拽的图形元素
             var _isMouseDown = false;
             var _isDragging = false;
@@ -1464,6 +1483,7 @@ define(
                 _event = _zrenderEventFixed(event);
                 _isMouseDown = true;
                 //分发config.EVENT.MOUSEDOWN事件
+                _mouseDownTarget = _lastHover;
                 _dispatchAgency(_lastHover, config.EVENT.MOUSEDOWN);
             }
 
@@ -1475,6 +1495,7 @@ define(
                 _event = _zrenderEventFixed(event);
                 root.style.cursor = 'default';
                 _isMouseDown = false;
+                _mouseDownTarget = null;
 
                 //分发config.EVENT.MOUSEUP事件
                 _dispatchAgency(_lastHover, config.EVENT.MOUSEUP);
@@ -1554,6 +1575,7 @@ define(
                     && _lastHover
                     && _lastHover.draggable
                     && !_draggingTarget
+                    && _mouseDownTarget == _lastHover
                 ) {
                     _draggingTarget = _lastHover;
                     _isDragging = true;

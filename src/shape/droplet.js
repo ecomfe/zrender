@@ -129,6 +129,9 @@ define(
 
         var base = require('./base');
         base.derive(Droplet);
+        
+        var shape = require('../shape');
+        shape.define('droplet', new Droplet());
 
         return Droplet;
     }

@@ -157,6 +157,9 @@ define(
 
         var base = require('./base');
         base.derive(Line);
+        
+        var shape = require('../shape');
+        shape.define('line', new Line());
 
         return Line;
     }

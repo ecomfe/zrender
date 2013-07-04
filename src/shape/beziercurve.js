@@ -145,6 +145,9 @@ define(
 
         var base = require('./base');
         base.derive(Beziercurve);
+        
+        var shape = require('../shape');
+        shape.define('beziercurve', new Beziercurve());
 
         return Beziercurve;
     }

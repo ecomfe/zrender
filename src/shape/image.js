@@ -214,6 +214,9 @@ define(
 
         var base = require('./base');
         base.derive(ZImage);
+        
+        var shape = require('../shape');
+        shape.define('image', new ZImage());
 
         return ZImage;
     }

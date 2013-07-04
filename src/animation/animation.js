@@ -18,20 +18,27 @@ define(
         var Controller = require('./controller');
         var util = require('../tool/util');
 
+        var requrestAnimationFrame = window.requrestAnimationFrame
+                                     || window.mozRequestAnimationFrame
+                                     || window.webkitRequestAnimationFrame
+                                     || function( callback ){
+                                            window.setTimeout(
+                                                callback, 1000 / 60
+                                            );
+                                        };
+
         var Animation = function(options) {
 
             options = options || {};
 
             this.stage = options.stage || {};
 
-            this.fps = options.fps || 50;
-
             this.onframe = options.onframe || function() {};
 
             // private properties
             this._controllerPool = [];
 
-            this._timer = null;
+            this._running = false;
         };
 
         Animation.prototype = {
@@ -89,18 +96,21 @@ define(
             // 也可以不使用animation的start函数
             // 手动每一帧去调用update函数更新状态
             start : function() {
-                if (this._timer) {
-                    clearInterval(this._timer);
-                }
                 var self = this;
-                this._timer = setInterval(function() {
-                    self.update();
-                }, 1000/this.fps);
+
+                this._running = true;
+
+                function step() {
+                    if (self._running) {
+                        self.update();
+                        requrestAnimationFrame(step);
+                    }
+                }
+
+                requrestAnimationFrame(step);
             },
             stop : function() {
-                if (this._timer) {
-                    clearInterval(this._timer);
-                }
+                this._running = false;
             },
             clear : function() {
                 this._controllerPool = [];
