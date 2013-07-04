@@ -113,6 +113,7 @@ define(
                 case 'sector':
                     return _isInsideSector(area, x, y);
                 //多边形---------------------8
+                case 'path':
                 case 'polygon':
                 case 'star':
                 case 'isogon':

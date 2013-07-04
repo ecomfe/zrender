@@ -320,15 +320,17 @@ define( function(require) {
         var stepG = (end[1] - start[1]) / step;
         var stepB = (end[2] - start[2]) / step;
         // 生成颜色集合
+        // fix by linfeng 颜色堆积
         for (var i = 0, r = start[0], g = start[1], b = start[2]; i < step; i++
         ) {
-            colors[i] = toColor( [ r, g, b ]);
+            colors[i] = toColor([
+                adjust(Math.floor(r), [ 0, 255 ]),
+                adjust(Math.floor(g), [ 0, 255 ]), 
+                adjust(Math.floor(b), [ 0, 255 ])
+            ]);
             r += stepR;
             g += stepG;
             b += stepB;
-            r = adjust(Math.floor(r), [ 0, 255 ]);
-            g = adjust(Math.floor(g), [ 0, 255 ]);
-            b = adjust(Math.floor(b), [ 0, 255 ]);
         }
         r = end[0];
         g = end[1];

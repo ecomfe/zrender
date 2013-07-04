@@ -133,7 +133,10 @@ define(
         };
 
         var base = require('./base');
-            base.derive(Polygon);
+        base.derive(Polygon);
+        
+        var shape = require('../shape');
+        shape.define('polygon', new Polygon());
 
         return Polygon;
     }

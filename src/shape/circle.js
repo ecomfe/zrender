@@ -112,6 +112,9 @@ define(
 
         var base = require('./base');
         base.derive(Circle);
+        
+        var shape = require('../shape');
+        shape.define('circle', new Circle());
 
         return Circle;
     }
