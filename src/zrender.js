@@ -817,10 +817,7 @@ define(
             var _height;
 
             //retina 屏幕优化
-            var _devicePixelRatio;
-            if (window.devicePixelRatio) {
-                _devicePixelRatio = window.devicePixelRatio;
-            }
+            var _devicePixelRatio = window.devicePixelRatio || 1;
 
             function _getWidth() {
                 var stl = root.currentStyle
