@@ -870,6 +870,7 @@ define(
                         G_vmlCanvasManager.initElement(_domList[i]);
                     }
                     _ctxList[i] = _domList[i].getContext('2d');
+                    _ctxList[i].scale(_devicePixelRatio, _devicePixelRatio);
                 }
 
                 //高亮
@@ -880,6 +881,7 @@ define(
                     G_vmlCanvasManager.initElement(_domList['hover']);
                 }
                 _ctxList['hover'] = _domList['hover'].getContext('2d');
+                _ctxList['hover'].scale(_devicePixelRatio, _devicePixelRatio);
             }
 
             /**
@@ -896,6 +898,7 @@ define(
                             G_vmlCanvasManager.initElement(_domList[i]);
                         }
                         _ctxList[i] = _domList[i].getContext('2d');
+                        _ctxList[i].scale(_devicePixelRatio, _devicePixelRatio);
                     }
                     _maxZlevel = curMaxZlevel;
                 }
@@ -935,10 +938,6 @@ define(
                                 //有onbrush并且调用执行返回false或undefined则继续粉刷
                                 || (e.onbrush && !e.onbrush(ctx, e, false))
                             ) {
-                                // Retina 优化
-                                ctx.save();
-                                ctx.scale(_devicePixelRatio, _devicePixelRatio);
-
                                 if (zrender.catchBrushException) {
                                     try {
                                         shape.get(e.shape).brush(
@@ -958,7 +957,6 @@ define(
                                         ctx, e, false, update
                                     );
                                 }
-                                ctx.restore();
                             }
                         }
                         else {
@@ -980,9 +978,6 @@ define(
                     || (e.onbrush && !e.onbrush(ctx, e, true))
                 ) {
                     // Retina 优化
-                    ctx.save();
-                    ctx.scale(_devicePixelRatio, _devicePixelRatio);
-
                     if (zrender.catchBrushException) {
                         try {
                             shape.get(e.shape).brush(ctx, e, true, update);
@@ -996,8 +991,6 @@ define(
                     else {
                         shape.get(e.shape).brush(ctx, e, true, update);
                     }
-
-                    ctx.restore();
                 }
             }
 
