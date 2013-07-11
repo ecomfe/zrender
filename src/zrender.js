@@ -816,6 +816,9 @@ define(
             //高，缓存记录
             var _height;
 
+            //retina 屏幕优化
+            var _devicePixelRatio = window.devicePixelRatio || 1;
+
             function _getWidth() {
                 var stl = root.currentStyle
                           || document.defaultView.getComputedStyle(root);
@@ -867,6 +870,8 @@ define(
                         G_vmlCanvasManager.initElement(_domList[i]);
                     }
                     _ctxList[i] = _domList[i].getContext('2d');
+                    _devicePixelRatio != 1 
+                    && _ctxList[i].scale(_devicePixelRatio, _devicePixelRatio);
                 }
 
                 //高亮
@@ -877,6 +882,10 @@ define(
                     G_vmlCanvasManager.initElement(_domList['hover']);
                 }
                 _ctxList['hover'] = _domList['hover'].getContext('2d');
+                _devicePixelRatio != 1 
+                && _ctxList['hover'].scale(
+                       _devicePixelRatio, _devicePixelRatio
+                   );
             }
 
             /**
@@ -893,6 +902,10 @@ define(
                             G_vmlCanvasManager.initElement(_domList[i]);
                         }
                         _ctxList[i] = _domList[i].getContext('2d');
+                        _devicePixelRatio != 1 
+                        && _ctxList[i].scale(
+                               _devicePixelRatio, _devicePixelRatio
+                           );
                     }
                     _maxZlevel = curMaxZlevel;
                 }
@@ -905,12 +918,13 @@ define(
              */
             function _createDom(id, type) {
                 var newDom = document.createElement(type);
+
                 //没append呢，请原谅我这样写，清晰~
                 newDom.style.position = 'absolute';
                 newDom.style.width = _width + 'px';
                 newDom.style.height = _height + 'px';
-                newDom.setAttribute('width', _width);
-                newDom.setAttribute('height', _height);
+                newDom.setAttribute('width', _width * _devicePixelRatio);
+                newDom.setAttribute('height', _height * _devicePixelRatio);
                 //id不作为索引用，避免可能造成的重名，定义为私有属性
                 newDom.setAttribute('data-id', id);
                 return newDom;
@@ -950,7 +964,6 @@ define(
                                         ctx, e, false, update
                                     );
                                 }
-
                             }
                         }
                         else {
@@ -971,6 +984,7 @@ define(
                     //有onbrush并且调用执行返回false或undefined则继续粉刷
                     || (e.onbrush && !e.onbrush(ctx, e, true))
                 ) {
+                    // Retina 优化
                     if (zrender.catchBrushException) {
                         try {
                             shape.get(e.shape).brush(ctx, e, true, update);
@@ -984,7 +998,6 @@ define(
                     else {
                         shape.get(e.shape).brush(ctx, e, true, update);
                     }
-
                 }
             }
 
@@ -1032,7 +1045,11 @@ define(
                 else {
                     for (var k in changedZlevel) {
                         if (_ctxList[k]) {
-                            _ctxList[k].clearRect(0, 0, _width, _height);
+                            _ctxList[k].clearRect(
+                                0, 0, 
+                                _width * _devicePixelRatio, 
+                                _height * _devicePixelRatio
+                            );
                         }
                     }
                 }
@@ -1076,7 +1093,11 @@ define(
                     if (k == 'hover') {
                         continue;
                     }
-                    _ctxList[k].clearRect(0, 0, _width, _height);
+                    _ctxList[k].clearRect(
+                        0, 0, 
+                        _width * _devicePixelRatio, 
+                        _height * _devicePixelRatio
+                    );
                 }
                 return self;
             }
@@ -1100,7 +1121,11 @@ define(
             function clearHover() {
                 _ctxList
                 && _ctxList['hover']
-                && _ctxList['hover'].clearRect(0, 0, _width, _height);
+                && _ctxList['hover'].clearRect(
+                    0, 0, 
+                    _width * _devicePixelRatio, 
+                    _height * _devicePixelRatio
+                );
 
                 return self;
             }
