@@ -870,7 +870,8 @@ define(
                         G_vmlCanvasManager.initElement(_domList[i]);
                     }
                     _ctxList[i] = _domList[i].getContext('2d');
-                    _ctxList[i].scale(_devicePixelRatio, _devicePixelRatio);
+                    _devicePixelRatio != 1 
+                    && _ctxList[i].scale(_devicePixelRatio, _devicePixelRatio);
                 }
 
                 //高亮
@@ -881,7 +882,10 @@ define(
                     G_vmlCanvasManager.initElement(_domList['hover']);
                 }
                 _ctxList['hover'] = _domList['hover'].getContext('2d');
-                _ctxList['hover'].scale(_devicePixelRatio, _devicePixelRatio);
+                _devicePixelRatio != 1 
+                && _ctxList['hover'].scale(
+                       _devicePixelRatio, _devicePixelRatio
+                   );
             }
 
             /**
@@ -898,7 +902,10 @@ define(
                             G_vmlCanvasManager.initElement(_domList[i]);
                         }
                         _ctxList[i] = _domList[i].getContext('2d');
-                        _ctxList[i].scale(_devicePixelRatio, _devicePixelRatio);
+                        _devicePixelRatio != 1 
+                        && _ctxList[i].scale(
+                               _devicePixelRatio, _devicePixelRatio
+                           );
                     }
                     _maxZlevel = curMaxZlevel;
                 }
