@@ -11,11 +11,11 @@ tmp/
 *.bak
 *.swp
 *~.nib
+.svn
 local.properties
 .classpath
 .settings/
 .loadpath
-.svn
 
 # External tool builders
 .externalToolBuilders/
