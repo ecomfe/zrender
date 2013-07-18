@@ -400,12 +400,20 @@ define(function(require) {
             var p;
             // 记录边界点，用于判断inside
             var pointList = style.pointList = [];
+            var singlePointList = [];
             for (var i = 0, l = pathArray.length; i < l; i++) {
+                if (pathArray[i].command.toUpperCase() == 'M') {
+                    singlePointList.length > 0 
+                    && pointList.push(singlePointList);
+                    singlePointList = [];
+                }
                 p = pathArray[i].points;
                 for (var j = 0, k = p.length; j < k; j += 2) {
-                    pointList.push([p[j] + x, p[j+1] + y]);
+                    singlePointList.push([p[j] + x, p[j+1] + y]);
                 }
             }
+            singlePointList.length > 0 && pointList.push(singlePointList);
+            
             var c;
             for (var i = 0, l = pathArray.length; i < l; i++) {
                 c = pathArray[i].command;
