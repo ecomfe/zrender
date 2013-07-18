@@ -16,12 +16,6 @@
         var _shape;
         var index = 0;
 
-        require.config({
-            paths: {
-                'js': '../doc/asset/js/esl/js'
-            }
-        });
-
         require(["../src/zrender",
             "../src/tool/area",
             '../src/tool/util',
@@ -49,8 +43,8 @@
 
         // 测试耗时
         function test() {
-            var n = 600;
-            var m = 400;
+            var n = 60;
+            var m = 40;
             if (!_ctx) {
                 _ctx = _util.getContext();
             }
@@ -265,7 +259,7 @@
                     yEnd : pointList[i + 1][1],
                     lineWidth : area.lineWidth
                 };
-                insideCatch = isInside('line', lineArea, x, y);
+                insideCatch = isInside(_shape.get('line'), lineArea, x, y);
                 if (insideCatch) {
                     break;
                 }
@@ -274,9 +268,9 @@
         }
 
         function _isInsideRing(area, x, y) {
-            if (isInside('circle', area, x, y)
+            if (isInside(_shape.get('circle'), area, x, y)
                 && isOutside(
-                    'circle',
+                    _shape.get('circle'),
                     {
                         x : area.x,
                         y : area.y,
@@ -320,7 +314,7 @@
             if (isOutside('circle', area, x, y)
                 || (area.r0 > 0
                     && isInside(
-                            'circle',
+                            _shape.get('circle'),
                             {
                                 x : area.x,
                                 y : area.y,

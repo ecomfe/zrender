@@ -62,9 +62,6 @@ function QueryString() {
 }
 
 require.config({
-    paths: {
-        'js': '../asset/js/esl/js'
-    },
     packages: [
         {
             name: 'zrender',
