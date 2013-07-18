@@ -19,10 +19,7 @@ define(
          * https://code.google.com/p/explorercanvas/
          * http://explorercanvas.googlecode.com/svn/trunk/excanvas.js
          */
-        require('js!./lib/excanvas.js');
-        if (document.createElement('canvas').getContext) {
-            G_vmlCanvasManager = false;
-        }
+        require('./lib/excanvas');
 
         var self = {};
         var zrender = self;     // 提供MVC内部反向使用静态方法；

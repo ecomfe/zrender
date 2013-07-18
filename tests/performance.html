@@ -29,9 +29,6 @@
     <div id="res">loading</div>
     <script type="text/javascript">
         require.config({
-            paths: {
-                'js': '../doc/asset/js/esl/js'
-            },
             packages: [
                 {
                     name: 'zrender',
@@ -116,7 +113,7 @@
                     console.log(t1, t2, t3); t1 = 0; t2 = 0; t3 = 0;
             }
         }
-        require(["zrender/zrender"], function(zrender){
+        require(["zrender"], function(zrender){
             // 初始化zrender
             zr = zrender.init(document.getElementById("main"));
             zrColor = require('zrender/tool/color');

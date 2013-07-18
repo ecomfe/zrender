@@ -3,7 +3,7 @@
  * Copyright 2013 Baidu Inc. All rights reserved.
  *
  * author: lang(shenyi01@baidu.com)
- *
+ * code from mat2d in http://glmatrix.net/
  */
 
 define(
