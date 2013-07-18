@@ -105,10 +105,9 @@ define(
                         image = _cache[src];
                     }
                     else {
-                        image = new Image();
+                        image = document.createElement('image');//new Image();
                         image.onload = function(){
                             image.onload = null;
-
                             clearTimeout( _refreshTimeout );
                             _needsRefresh.push( e );
                             // 防止因为缓存短时间内触发多次onload事件

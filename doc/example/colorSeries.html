@@ -98,9 +98,6 @@
     <script src="../asset/js/bootstrap-typeahead.js"></script>
     <script type="text/javascript">
         require.config({
-            paths: {
-                'js': '../asset/js/esl/js'
-            },
             packages: [
                 {
                     name: 'zrender',
@@ -111,7 +108,7 @@
         });
 
         require(
-            ['zrender/zrender'],
+            ['zrender'],
             function(zrender) {
                 zr = zrender.init(document.getElementById('main'));
                 var zrColor = require('zrender/tool/color');

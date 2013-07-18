@@ -31,8 +31,10 @@ define(
             if (!_ctx) {
                 _ctx = util.getContext();
             }
-
-            if (!_isInsideRectangle(shapeClazz.getRect(area), x, y)) {
+            if (!_isInsideRectangle(
+                    area.__rect || shapeClazz.getRect(area), x, y
+                 )
+             ) {
                 // 不在矩形区域内直接返回false
                 return false;
             }
@@ -114,6 +116,7 @@ define(
                     return _isInsideSector(area, x, y);
                 //多边形---------------------8
                 case 'path':
+                    return _isInsidePath(area, x, y);
                 case 'polygon':
                 case 'star':
                 case 'isogon':
@@ -153,7 +156,7 @@ define(
          * @return {boolean} true表示坐标处在图形中
          */
         function _pixelMethod(shapeClazz, area, x, y) {
-            var _rect = shapeClazz.getRect(area);
+            var _rect = area.__rect || shapeClazz.getRect(area);
             var _context = util.getPixelContext();
             var _offset = util.getPixelOffset();
 
@@ -412,6 +415,24 @@ define(
                 }
             }
             return inside;
+        }
+        
+        /**
+         * 路径包含判断，依赖多边形判断
+         */
+        function _isInsidePath(area, x, y) {
+            var pointList = area.pointList;
+            var singlePointList;
+            var insideCatch = false;
+            for (var i = 0, l = pointList.length; i < l; i++) {
+                insideCatch = _isInsidePolygon(
+                    { pointList : pointList[i] }, x, y
+                );
+                if (insideCatch) {
+                    break;
+                }
+            }
+            return insideCatch;
         }
 
         /**

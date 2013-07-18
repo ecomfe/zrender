@@ -302,7 +302,8 @@ define(
                 || textPosition == 'right')
                 && this.getRect // 矩形定位文字的图形必须提供getRect方法
             ) {
-                var rect = this.getRect(normalStyle || style);
+                var rect = (normalStyle || style).__rect
+                           || this.getRect(normalStyle || style);
                 switch (textPosition) {
                     case 'inside':
                         tx = rect.x + rect.width / 2;
@@ -498,15 +499,13 @@ define(
             }
             else {
                 rect = this.getRect(e.style);
-                rect = [
-                    rect.x,
-                    rect.x + rect.width,
-                    rect.y,
-                    rect.y + rect.height
-                ];
                 e.style.__rect = rect;
             }
-            if (x >= rect[0] && x <= rect[1] && y >= rect[2] && y <= rect[3]) {
+            if (x >= rect.x
+                && x <= (rect.x + rect.width)
+                && y >= rect.y
+                && y <= (rect.y + rect.height)
+            ) {
                 // 矩形内
                 return area.isInside(this, e.style, x, y);
             }

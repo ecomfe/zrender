@@ -3,7 +3,7 @@
  * Copyright 2013 Baidu Inc. All rights reserved.
  *
  * author : lang(shenyi01@baidu.com)
- *
+ * code from vec2 in http://glmatrix.net/
  */
 define(
     function() {
@@ -56,9 +56,6 @@ define(
                 out[0] = (v1[0]+v2[0])/2;
                 out[1] = (v1[1]+v2[1])/2;
                 return out;
-            },
-            expand : function(v) {
-                return [v[0], v[1], 1];
             }
         };
 
