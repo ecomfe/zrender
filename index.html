@@ -108,7 +108,7 @@
         <div class="span5 pull-left">
             <pre>
 require(
-    ['zrender/zrender'],
+    ['zrender'],
     function(zrender) {
         // just init to get a zrender Instance
         var zr = zrender.init(document.getElementById('main'));
@@ -259,9 +259,6 @@ zr.addShape({                               // and use it!
         var animationTicket;    // 全局动画索引
 
         require.config({
-            paths: {
-                'js': 'doc/asset/js/esl/js'
-            },
             packages: [
                 {
                     name: 'zrender',
@@ -271,7 +268,7 @@ zr.addShape({                               // and use it!
             ]
         });
         require(
-            ['zrender/zrender'],
+            ['zrender'],
             function(zrender) {
                 var zr = zrender.init(document.getElementById('face'));
                 var zrColor = require('zrender/tool/color');

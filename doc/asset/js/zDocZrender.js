@@ -9,7 +9,7 @@ description.zrender = [
         ],
         res: ['ZRender', '{ZRender}', 'zrender实例，见<a href="#zrenderInstance">ZRender</a>'],
         pre: (function() {
-var zrender = require('zrender/zrender');
+var zrender = require('zrender');
 var zr = zrender.init(document.getElementById('main'));
 zr.addShape({});
 zr.render();
@@ -24,7 +24,7 @@ zr.render();
         ],
         res: ['self', '{zrender}', '返回自身支持链式调用'],
         pre: (function() {
-var zrender = require('zrender/zrender');
+var zrender = require('zrender');
 var zr = zrender.init(document.getElementById('main'));
 zr.dispose(); // == zrender.dispose(zr);
         }).toString().slice(13, -10),

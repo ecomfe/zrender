@@ -31,6 +31,9 @@
 // * Non uniform scaling does not correctly scale strokes.
 // * Optimize. There is always room for speed improvements.
 
+// AMD by kener.linfeng@gmail.com
+define(function(require) {
+    
 // Only add this code if we do not already have a canvas implementation
 if (!document.createElement('canvas').getContext) {
 
@@ -1414,3 +1417,8 @@ if (!document.createElement('canvas').getContext) {
 })();
 
 } // if
+else { // make the canvas test simple by kener.linfeng@gmail.com
+    G_vmlCanvasManager = false;
+}
+return G_vmlCanvasManager;
+}); // define

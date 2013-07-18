@@ -11,7 +11,7 @@
 define(
     function(require) {
 
-        var vec2 = require("./vector");
+        var vec2 = require('./vector');
 
         /**
          * 对一个object进行深度拷贝
@@ -132,8 +132,8 @@ define(
         var _ctx;
 
         function getContext() {
-            require('js!../lib/excanvas.js');
             if (!_ctx) {
+                require('../lib/excanvas');
                 if (!document.createElement('canvas').getContext
                     && G_vmlCanvasManager
                 ) {
@@ -269,7 +269,7 @@ define(
                 }
             }
 
-            min[0] = left
+            min[0] = left;
             min[1] = top;
             max[0] = right;
             max[1] = bottom;
@@ -280,8 +280,12 @@ define(
          * http://pissang.net/blog/?p=91
          */
         function computeCubeBezierBoundingBox(p0, p1, p2, p3, min, max) {
-            var xDim = _computeCubeBezierExtremitiesDim(p0[0], p1[0], p2[0], p3[0]);
-            var yDim = _computeCubeBezierExtremitiesDim(p0[1], p1[1], p2[1], p3[1]);
+            var xDim = _computeCubeBezierExtremitiesDim(
+                p0[0], p1[0], p2[0], p3[0]
+            );
+            var yDim = _computeCubeBezierExtremitiesDim(
+                p0[1], p1[1], p2[1], p3[1]
+            );
 
             xDim.push(p0[0], p3[0]);
             yDim.push(p0[1], p3[1]);
@@ -291,7 +295,7 @@ define(
             var top = Math.min.apply(null, yDim);
             var bottom = Math.max.apply(null, yDim);
 
-            min[0] = left
+            min[0] = left;
             min[1] = top;
             max[0] = right;
             max[1] = bottom;
@@ -310,7 +314,7 @@ define(
                 var t1 = (-b + tmpSqrt) / (2 * a);
                 var t2 = (-b - tmpSqrt) / (2 * a);
                 extremities.push(t1, t2);
-            } else if(tmp == 0) {
+            } else if (tmp === 0) {
                 extremities.push(-b / (2 * a));
             }
             var result = [];
@@ -338,18 +342,20 @@ define(
             // Find extremities, where derivative in x dim or y dim is zero
             var tmp = (p0[0] + p2[0] - 2 * p1[0]);
             // p1 is center of p0 and p2 in x dim
+            var t1;
             if (tmp === 0) {
-                var t1 = 0.5;
+                t1 = 0.5;
             } else {
-                var t1 = (p0[0] - p1[0]) / tmp;
+                t1 = (p0[0] - p1[0]) / tmp;
             }
 
             tmp = (p0[1] + p2[1] - 2 * p1[1]);
             // p1 is center of p0 and p2 in y dim
+            var t2;
             if (tmp === 0) {
-                var t2 = 0.5;
+                t2 = 0.5;
             } else {
-                var t2 = (p0[1] - p1[1]) / tmp;
+                t2 = (p0[1] - p1[1]) / tmp;
             }
 
             t1 = Math.max(Math.min(t1, 1), 0);
@@ -358,11 +364,19 @@ define(
             var ct1 = 1-t1;
             var ct2 = 1-t2;
 
-            var x1 = ct1 * ct1 * p0[0] + 2 * ct1 * t1 * p1[0] + t1 * t1 * p2[0];
-            var y1 = ct1 * ct1 * p0[1] + 2 * ct1 * t1 * p1[1] + t1 * t1 * p2[1];
+            var x1 = ct1 * ct1 * p0[0] 
+                     + 2 * ct1 * t1 * p1[0] 
+                     + t1 * t1 * p2[0];
+            var y1 = ct1 * ct1 * p0[1] 
+                     + 2 * ct1 * t1 * p1[1] 
+                     + t1 * t1 * p2[1];
 
-            var x2 = ct2 * ct2 * p0[0] + 2 * ct2 * t2 * p1[0] + t2 * t2 * p2[0];
-            var y2 = ct2 * ct2 * p0[1] + 2 * ct2 * t2 * p1[1] + t2 * t2 * p2[1];
+            var x2 = ct2 * ct2 * p0[0] 
+                     + 2 * ct2 * t2 * p1[0] 
+                     + t2 * t2 * p2[0];
+            var y2 = ct2 * ct2 * p0[1] 
+                     + 2 * ct2 * t2 * p1[1] 
+                     + t2 * t2 * p2[1];
 
             return computeBoundingBox(
                         [p0.slice(), p2.slice(), [x1, y1], [x2, y2]],
@@ -380,9 +394,11 @@ define(
             var end = [];
             // At most 4 extremities
             var extremities = [[], [], [], []];
-            return function(center, radius, startAngle, endAngle, clockwise, min, max) {
+            return function(
+                center, radius, startAngle, endAngle, clockwise, min, max
+            ) {
                 clockwise = clockwise ? 1 : -1;
-                start[0] = Math.cos(startAngle)
+                start[0] = Math.cos(startAngle);
                 start[1] = Math.sin(startAngle) * clockwise;
                 vec2.scale(start, start, radius);
                 vec2.add(start, start, center);
@@ -409,16 +425,16 @@ define(
                     if (angle > startAngle) {
                         var extremity = extremities[number++];
                         extremity[0] = Math.cos(angle);
-                        extremity[1] = Math.sin(angle) * clockwise
+                        extremity[1] = Math.sin(angle) * clockwise;
                         vec2.scale(extremity, extremity, radius);
                         vec2.add(extremity, extremity, center);
                     }
                 }
-                var points = extremities.slice(0, number)
+                var points = extremities.slice(0, number);
                 points.push(start, end);
                 computeBoundingBox(points, min, max);
-            }
-        })()
+            };
+        })();
 
         return {
             clone : clone,
@@ -429,8 +445,10 @@ define(
             getPixelOffset : getPixelOffset,
             adjustCanvasSize : adjustCanvasSize,
 
+            computeBoundingBox : computeBoundingBox,
             computeCubeBezierBoundingBox : computeCubeBezierBoundingBox,
-            computeQuadraticBezierBoundingBox : computeQuadraticBezierBoundingBox,
+            computeQuadraticBezierBoundingBox : 
+                computeQuadraticBezierBoundingBox,
             computeArcBoundingBox : computeArcBoundingBox,
 
             indexOf : indexOf

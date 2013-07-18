@@ -5,19 +5,18 @@
     <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
 </head>
 <body>
-    <canvas id="Main"></canvas>
+    <div id="Main"></div>
 </body>
     <script type="text/javascript">
-        require.config({
-            paths: {
-                'js': '../doc/asset/js/esl/js'
-            }
-        });
         require(['../src/zrender',
                 '../src/tool/util'], function(zrender, util){
-             var canvas = document.getElementById("Main");
+             var canvas = document.createElement('canvas')
+             document.getElementById("Main").appendChild(canvas);
              canvas.width = 1024;
              canvas.height = 600;
+             if (G_vmlCanvasManager) {
+                 G_vmlCanvasManager.initElement(canvas);
+             }
              var ctx = canvas.getContext("2d");
              modifyCtx(ctx, util);
 
