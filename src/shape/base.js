@@ -342,39 +342,64 @@ define(
                         break;
                 }
             }
-            else if ((textPosition == 'start'
-                     || textPosition == 'end')
-                     && typeof style.pointList != 'undefined'
-            ) {
-                var pointList = style.pointList;
-                if (pointList.length < 2) {
-                    // 少于2个点就不画了~
-                    return;
+            else if (textPosition == 'start' || textPosition == 'end') {
+                var xStart;
+                var xEnd;
+                var yStart;
+                var yEnd;
+                if (typeof style.pointList != 'undefined') {
+                    var pointList = style.pointList;
+                    if (pointList.length < 2) {
+                        // 少于2个点就不画了~
+                        return;
+                    }
+                    var length = pointList.length;
+                    switch (textPosition) {
+                        case 'start':
+                            xStart = pointList[0][0];
+                            xEnd = pointList[1][0];
+                            yStart = pointList[0][1];
+                            yEnd = pointList[1][1];
+                            break;
+                        case 'end':
+                            xStart = pointList[length - 2][0];
+                            xEnd = pointList[length - 1][0];
+                            yStart = pointList[length - 2][1];
+                            yEnd = pointList[length - 1][1];
+                            break;
+                    }
                 }
-                var length = pointList.length;
+                else {
+                    xStart = style.xStart || 0;
+                    xEnd = style.xEnd || 0;
+                    yStart = style.yStart || 0;
+                    yEnd = style.yEnd || 0;
+                }
                 switch (textPosition) {
                     case 'start':
-                        al = pointList[0][0] < pointList[1][0]
-                             ? 'end' : 'start';
-                        bl = pointList[0][1] < pointList[1][1]
-                             ? 'bottom' : 'top';
-                        tx = pointList[0][0];
-                        ty = pointList[0][1];
+                        al = xStart < xEnd ? 'end' : 'start';
+                        bl = yStart < yEnd ? 'bottom' : 'top';
+                        tx = xStart;
+                        ty = yStart;
                         break;
                     case 'end':
-                        al = pointList[length - 2][0]
-                             < pointList[length - 1][0]
-                             ? 'start' : 'end';
-                        bl = pointList[length - 2][1]
-                             < pointList[length - 1][1]
-                             ? 'top' : 'bottom';
-                        tx = pointList[length - 1][0];
-                        ty = pointList[length - 1][1];
+                        al = xStart < xEnd ? 'start' : 'end';
+                        bl = yStart < yEnd ? 'top' : 'bottom';
+                        tx = xEnd;
+                        ty = yEnd;
                         break;
                 }
                 dd -= 4;
-                tx -= (al == 'end' ? dd : -dd);
-                ty -= (bl == 'bottom' ? dd : -dd);
+                if (xStart != xEnd) {
+                    tx -= (al == 'end' ? dd : -dd);
+                } else {
+                    al = 'center';
+                };
+                if (yStart != yEnd) {
+                    ty -= (bl == 'bottom' ? dd : -dd);
+                } else {
+                    bl = 'middle';
+                }
             }
             else if (textPosition == 'specific') {
                 tx = style.textX || 0;
