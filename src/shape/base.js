@@ -394,7 +394,7 @@ define(
                     tx -= (al == 'end' ? dd : -dd);
                 } else {
                     al = 'center';
-                };
+                }
                 if (yStart != yEnd) {
                     ty -= (bl == 'bottom' ? dd : -dd);
                 } else {
