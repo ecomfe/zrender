@@ -134,9 +134,7 @@ define(
         function getContext() {
             if (!_ctx) {
                 require('../lib/excanvas');
-                if (!document.createElement('canvas').getContext
-                    && G_vmlCanvasManager
-                ) {
+                if (G_vmlCanvasManager) {
                     var _div = document.createElement('div');
                     _div.style.position = 'absolute';
                     _div.style.top = '-1000px';
