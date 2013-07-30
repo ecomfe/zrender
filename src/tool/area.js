@@ -422,7 +422,6 @@ define(
          */
         function _isInsidePath(area, x, y) {
             var pointList = area.pointList;
-            var singlePointList;
             var insideCatch = false;
             for (var i = 0, l = pointList.length; i < l; i++) {
                 insideCatch = _isInsidePolygon(

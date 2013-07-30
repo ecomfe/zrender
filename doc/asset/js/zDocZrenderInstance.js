@@ -387,6 +387,16 @@ alert(zr.getHeight());
         cantry: true
     },
     {
+        name: 'toDataURL',
+        des: 'base64图片导出',
+        params: [
+            ['type', '{string}', '图片类型image/png，image/jpeg'],
+            ['args', '{any}', '附加参数']
+        ],
+        res: ['res', '{string}', 'base64图片编码'],
+        cantry: false
+    },
+    {
         name: 'on',
         des: '全局事件绑定',
         params: [
