@@ -42,7 +42,7 @@
 			zr.addShape( circle );
 			zr.render();
 
-			var tm1 = zr.animate( circle.id, "" )
+			var tm1 = zr.animate( circle.id, "", true )
 				.when(1000, {
 					position : [200, 0]
 				})
@@ -55,6 +55,7 @@
 				.when(4000, {
 					position : [100, 100]
 				})
+				.delay(1000)
 				.done(function(){
 					zr.animate( circle.id )
 						.when( 2000, {
@@ -64,10 +65,11 @@
 				})
 				.start();
 
-			zr.animate( circle.id )
+			zr.animate( circle.id, '' )
 				.when( 1000, {
 					scale : [2, 2]
 				})
+				.delay(1000)
 				.start();
 			zr.animate( circle.id, "style" )
 				.when( 1000, {
@@ -85,6 +87,7 @@
 				.during(function(target){
 					console.log(target)
 				})
+				.delay(1000)
 				.start();
 
 		})
