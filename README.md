@@ -90,16 +90,25 @@ MVC核心封装实现图形仓库、视图渲染和交互控制：
 
 ### 强大的动画支持
 提供promise式的动画接口和常用缓动函数，轻松实现各种动画需求~
-
-    function MyShape() { ... }
-
-    var shape = require('zrender/shape');
-    shape.define('myShape', new MyShape());     // define your shape
-
-    zr.addShape({                               // and use it!
-        shape : 'myShape',
-        ...
-    });
+    
+    var circle = {
+        shape : 'circle',
+        id : zr.newShapeId(),
+        style : {
+            x : 0,
+            y : 0,
+            r : 50
+        }
+    };
+    zr.addShape(circle);
+    zr.animate(circle.id)
+        .when(1000, {
+            position : [100, 100]
+        })
+        .when(2000, {
+            rotation : [Math.PI*2, 0, 0]
+        })
+        .start();
     
 ### 易于扩展
 分而治之的图形定义策略允许你扩展自己独有的图形元素，你既可以完整实现三个接口方法（brush、drift、isCover），
