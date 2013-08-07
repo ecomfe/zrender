@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -17,6 +17,11 @@
     <link href="../asset/css/monokai.css" rel="stylesheet">
     <link href="../asset/css/zrenderHome.css" rel="stylesheet">
     <link rel="shortcut icon" href="../asset/ico/favicon.png">
+    <style type="text/css">
+        .CodeMirror {
+          height: 820px;
+        }
+    </style>
 </head>
 
 <body>
@@ -75,7 +80,7 @@
     <div class="container-fluid">
         <div class="row-fluid">
             <div id="sidebar-code" class="span4">
-                <div class="well sidebar-nav">
+                <div class="well sidebar-nav"  style="height:800px">
                     <div class="nav-header">code
                     <a href="#" onclick="autoResize()" class="icon-resize-full" id ="icon-resize" ></a>
                     </div>
@@ -86,6 +91,7 @@
  *  var zrender = require('zrender');
  *  var zr = zrender.init(document.getElementById('main'));
  */
+zr.clear();
 zr.clear();
 // 圆形
 zr.addShape({
@@ -102,8 +108,8 @@ zr.addShape({
     shape : 'circle',
     id : zr.newShapeId('circle'),
     style : { 
-        x : 1700 * Math.cos(10 * Math.PI / 180),
-        y : 1700 * Math.sin(10 * Math.PI / 180),
+        x : 1700 * Math.cos(45 * Math.PI / 180),
+        y : 1700 * Math.sin(45 * Math.PI / 180),
         r : 850,
         color : 'rgba(220, 20, 60, 0.3)'
     }
@@ -115,7 +121,7 @@ zr.render();
               </div><!--/.well -->
             </div><!--/span-->
             <div id="graphic" class="span8">
-                <div id="main" class="main"></div>
+                <div id="main" class="main" style="height:800px"></div>
                 <div>
                     <button onclick="refresh(true)" tabindex="11110">Refresh ~</button>
                     <span id='wrong-message' style="color:red"></span>
