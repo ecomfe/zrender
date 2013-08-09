@@ -1,6 +1,5 @@
 /**
  * zrender: 事件辅助类
- * Copyright 2013 Baidu Inc. All rights reserved.
  *
  * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
  *

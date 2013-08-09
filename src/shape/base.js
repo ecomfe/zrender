@@ -1,6 +1,5 @@
 /**
  * zrender : shape基类
- * Copyright 2013 Baidu Inc. All rights reserved.
  *
  * desc:    zrender是一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型。
  * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)

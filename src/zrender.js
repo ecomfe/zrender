@@ -1,6 +1,40 @@
+/*!
+ * ZRender, a lightweight canvas library with a MVC architecture, data-driven 
+ * and provides an event model like DOM.
+ *  
+ * Copyright (c) 2013, Baidu Inc.
+ * All rights reserved.
+ * 
+ * Redistribution and use of this software in source and binary forms, with or 
+ * without modification, are permitted provided that the following conditions 
+ * are met:
+ * 
+ * Redistributions of source code must retain the above copyright notice, this 
+ * list of conditions and the following disclaimer.
+ * 
+ * Redistributions in binary form must reproduce the above copyright notice, 
+ * this list of conditions and the following disclaimer in the documentation 
+ * and/or other materials provided with the distribution.
+ * 
+ * Neither the name of Baidu Inc. nor the names of its contributors may be used
+ * to endorse or promote products derived from this software without specific 
+ * prior written permission of Baidu Inc.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE 
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
 /**
  * zrender: core核心类
- * Copyright 2013 Baidu Inc. All rights reserved.
  *
  * @desc zrender是一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型。
  * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
@@ -19,6 +53,7 @@ define(
          * https://code.google.com/p/explorercanvas/
          * http://explorercanvas.googlecode.com/svn/trunk/excanvas.js
          */
+        // 核心代码会生成一个全局变量 G_vmlCanvasManager，模块改造后借用于快速判断canvas支持
         require('./lib/excanvas');
 
         var self = {};
@@ -497,6 +532,7 @@ define(
                 e.style = e.style || {};
                 e.style.__rect = null;
             }
+
             /**
              * 唯一标识id生成
              * @param {string=} idHead 标识前缀
@@ -548,6 +584,7 @@ define(
             function get( shapeId ){
                 return _elements[ shapeId ];
             }
+
             /**
              * 删除，shapeId不指定则全清空
              * @param {string=} idx 唯一标识
