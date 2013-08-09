@@ -1,6 +1,5 @@
 /**
  * zrender: 向量操作类
- * Copyright 2013 Baidu Inc. All rights reserved.
  *
  * author : lang(shenyi01@baidu.com)
  * code from vec2 in http://glmatrix.net/

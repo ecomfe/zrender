@@ -1,7 +1,5 @@
-
 /**
  * zrender
- * Copyright 2013 Baidu Inc. All rights reserved.
  *
  * @author Neil (杨骥, yangji01@baidu.com)
  *
