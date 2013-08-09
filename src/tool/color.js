@@ -1,6 +1,5 @@
 /**
  * zrender : 颜色辅助类
- * Copyright 2013 Baidu Inc. All rights reserved.
  *
  * author: CrossDo (chenhuaimu@baidu.com)
  *

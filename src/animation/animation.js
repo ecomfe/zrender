@@ -18,13 +18,14 @@ define(
         var Controller = require('./controller');
         var util = require('../tool/util');
 
+        // Polyfill of requestAnimationFrame
         var requrestAnimationFrame = window.requrestAnimationFrame
                                      || window.mozRequestAnimationFrame
                                      || window.webkitRequestAnimationFrame
-                                     || function( callback ){
+                                     || function(callback) {
                                             window.setTimeout(
                                                 callback, 1000 / 60
-                                            );
+                                           );
                                         };
 
         var Animation = function(options) {
@@ -62,7 +63,7 @@ define(
                     var controller = cp[i];
                     var e = controller.step(time);
                     // 需要在stage.update之后调用的事件，例如destroy
-                    if( e ){
+                    if (e) {
                         deferredEvents.push(e);
                         deferredCtls.push(controller);
                     }
@@ -70,14 +71,14 @@ define(
                 if (this.stage
                     && this.stage.update
                     && this._controllerPool.length
-                ) {
+               ) {
                     this.stage.update();
                 }
 
                 // 删除动画完成的控制器
                 var newArray = [];
-                for(var i = 0; i < len; i++) {
-                    if(!cp[i]._needsRemove) {
+                for (var i = 0; i < len; i++) {
+                    if (!cp[i]._needsRemove) {
                         newArray.push(cp[i]);
                         cp[i]._needsRemove = false;
                     }
@@ -86,7 +87,7 @@ define(
 
                 len = deferredEvents.length;
                 for (var i = 0; i < len; i++) {
-                    deferredCtls[i].fire( deferredEvents[i] );
+                    deferredCtls[i].fire(deferredEvents[i]);
                 }
 
                 this.onframe();
@@ -139,11 +140,11 @@ define(
             propName,
             getter,
             setter
-        ) {
+       ) {
              // 遍历数组做插值
             if (prevValue instanceof Array
                 && nextValue instanceof Array
-            ) {
+           ) {
                 var minLen = Math.min(prevValue.length, nextValue.length);
                 var largerArray;
                 var maxLen;
@@ -155,7 +156,7 @@ define(
                     maxLen = prevValue.length;
                     largerArray = prevValue.length;
                 }
-                for(var i = 0; i < minLen; i++) {
+                for (var i = 0; i < minLen; i++) {
                     // target[propName] 作为新的target,
                     // i 作为新的propName递归进行插值
                     result.push(_interpolate(
@@ -166,10 +167,10 @@ define(
                             i,
                             getter,
                             setter
-                    ));
+                   ));
                 }
                 // 赋值剩下不需要插值的数组项
-                for(var i = minLen; i < maxLen; i++) {
+                for (var i = minLen; i < maxLen; i++) {
                     result.push(largerArray[i]);
                 }
 
@@ -196,6 +197,8 @@ define(
 
             this._controllerCount = 0;
 
+            this._delay = 0;
+
             this._doneList = [];
 
             this._onframeList = [];
@@ -205,24 +208,24 @@ define(
 
         Deferred.prototype = {
             when : function(time /* ms */, props, easing) {
-                for(var propName in props) {
-                    if (! this._tracks[ propName ]) {
-                        this._tracks[ propName ] = [];
+                for (var propName in props) {
+                    if (! this._tracks[propName]) {
+                        this._tracks[propName] = [];
                         // 初始状态
-                        this._tracks[ propName ].push({
+                        this._tracks[propName].push({
                             time : 0,
                             value : this._getter(this._target, propName)
                         });
                     }
-                    this._tracks[ propName ].push({
+                    this._tracks[propName].push({
                         time : time,
-                        value : props[ propName ],
+                        value : props[propName],
                         easing : easing
                     });
                 }
                 return this;
             },
-            during : function(callback){
+            during : function(callback) {
                 this._onframeList.push(callback);
                 return this;
             },
@@ -245,8 +248,8 @@ define(
                             propName,
                             self._getter,
                             self._setter
-                        );
-                        for(var i = 0; i < self._onframeList.length; i++){
+                       );
+                        for (var i = 0; i < self._onframeList.length; i++) {
                             self._onframeList[i](target, schedule);
                         }
                     };
@@ -257,21 +260,21 @@ define(
                     if (self._controllerCount === 0) {
                         var len = self._doneList.length;
                         // 所有动画完成
-                        for(var i = 0; i < len; i++) {
-                            self._doneList[i]();
+                        for (var i = 0; i < len; i++) {
+                            self._doneList[i].call(self);
                         }
                     }
                 }
 
-                for(var propName in this._tracks) {
-                    delay = 0;
-                    track = this._tracks[ propName ];
+                for (var propName in this._tracks) {
+                    delay = this._delay;
+                    track = this._tracks[propName];
                     if (track.length) {
-                        trackMaxTime = track[ track.length-1].time;
+                        trackMaxTime = track[track.length-1].time;
                     }else{
                         continue;
                     }
-                    for(var i = 0; i < track.length-1; i++) {
+                    for (var i = 0; i < track.length-1; i++) {
                         var now = track[i],
                             next = track[i+1];
 
@@ -288,7 +291,7 @@ define(
                         this._controllerList.push(controller);
 
                         this._controllerCount++;
-                        delay = next.time;
+                        delay = next.time + this._delay;
 
                         self.animation.add(controller);
                     }
@@ -296,10 +299,14 @@ define(
                 return this;
             },
             stop : function() {
-                for(var i = 0; i < this._controllerList.length; i++) {
+                for (var i = 0; i < this._controllerList.length; i++) {
                     var controller = this._controllerList[i];
                     this.animation.remove(controller);
                 }
+            },
+            delay : function(time) {
+                this._delay = time;
+                return this;
             },
             done : function(func) {
                 this._doneList.push(func);

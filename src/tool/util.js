@@ -1,6 +1,5 @@
 /**
  * zrender: 公共辅助函数
- * Copyright 2013 Baidu Inc. All rights reserved.
  *
  * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
  *
