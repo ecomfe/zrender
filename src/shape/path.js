@@ -1,6 +1,5 @@
 /**
  * zrender
- * Copyright 2013 Baidu Inc. All rights reserved.
  *
  * author: CrossDo (chenhuaimu@baidu.com)
  *
