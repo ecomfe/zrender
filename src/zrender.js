@@ -417,6 +417,9 @@ define(
                 return painter.getHeight();
             };
 
+            /**
+             * 图像导出 
+             */
             self.toDataURL = function(type, args) {
                 return painter.toDataURL(type, args);
             };
@@ -486,17 +489,17 @@ define(
 
             var _idBase = 0;            //图形数据id自增基础
 
-            //所有常规形状，id索引的map
+            // 所有常规形状，id索引的map
             var _elements = {};
 
-            //所有形状的z轴方向排列，提高遍历性能，zElements[0]的形状在zElements[1]形状下方
+            // 所有形状的z轴方向排列，提高遍历性能，zElements[0]的形状在zElements[1]形状下方
             var _zElements = [];
 
-            //高亮层形状，不稳定，动态增删，数组位置也是z轴方向，靠前显示在下方
+            // 高亮层形状，不稳定，动态增删，数组位置也是z轴方向，靠前显示在下方
             var _hoverElements = [];
 
-            var _maxZlevel = 0;         //最大zlevel
-            var _changedZlevel = {};    //有数据改变的zlevel
+            var _maxZlevel = 0;         // 最大zlevel
+            var _changedZlevel = {};    // 有数据改变的zlevel
 
             /**
              * 快速判断标志~
@@ -546,7 +549,7 @@ define(
              * @param {Object} params 参数
              */
             function add(params) {
-                //默认&必须的参数
+                // 默认&必须的参数
                 var e = {
                     'shape': 'circle',                      // 形状
                     'id': params.id || self.newShapeId(),   // 唯一标识
