@@ -104,12 +104,12 @@ define(
             }
 
             return function(target, source, optOptions){
-                var i = 0,
-                    options = optOptions || {},
-                    overwrite = options['overwrite'],
-                    whiteList = options['whiteList'],
-                    recursive = options['recursive'],
-                    len;
+                var i = 0;
+                var options = optOptions || {};
+                var overwrite = options['overwrite'];
+                var whiteList = options['whiteList'];
+                var recursive = options['recursive'];
+                var len;
 
                 // 只处理在白名单中的属性
                 if (whiteList && whiteList.length) {

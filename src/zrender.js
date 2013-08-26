@@ -584,27 +584,48 @@ define(
              * 根据指定的shapeId获取相应的shape属性
              * @param {string=} idx 唯一标识
              */
-            function get( shapeId ){
-                return _elements[ shapeId ];
+            function get(shapeId) {
+                return _elements[shapeId];
             }
 
             /**
              * 删除，shapeId不指定则全清空
-             * @param {string=} idx 唯一标识
+             * @param {string= | Array} idx 唯一标识
              */
             function del(shapeId) {
                 if (typeof shapeId != 'undefined') {
-                    if (_elements[shapeId]) {
-                        _changedZlevel[_elements[shapeId].zlevel] = true;
-                        var oldList = _zElements[_elements[shapeId].zlevel];
-                        var newList = [];
-                        for (var i = 0, l = oldList.length; i < l; i++){
-                            if (oldList[i].id != shapeId) {
-                                newList.push(oldList[i]);
-                            }
+                    var delMap = {};
+                    if (!(shapeId instanceof Array)) {
+                        // 单个
+                        delMap[shapeId] = true;
+                    }
+                    else {
+                        // 批量删除
+                        for (var i = 0, l = shapeId.length; i < l; i++) {
+                            delMap[shapeId[i].id] = true;
                         }
-                        _zElements[_elements[shapeId].zlevel] = newList;
-                        delete _elements[shapeId];
+                    }
+                    var newList;
+                    var oldList;
+                    var zlevel;
+                    var zChanged = {};
+                    for (var sId in delMap) {
+                        if (_elements[sId]) {
+                            zlevel = _elements[sId].zlevel;
+                            _changedZlevel[zlevel] = true;
+                            if (!zChanged[zlevel]) {
+                                oldList = _zElements[zlevel];
+                                newList = [];
+                                for (var i = 0, l = oldList.length; i < l; i++){
+                                    if (!delMap[oldList[i].id]) {
+                                        newList.push(oldList[i]);
+                                    }
+                                }
+                                _zElements[zlevel] = newList;
+                                zChanged[zlevel] = true;
+                            }
+                            delete _elements[sId];
+                        }
                     }
                 }
                 else{
@@ -629,7 +650,7 @@ define(
             function mod(shapeId, params) {
                 var e = _elements[shapeId];
                 if (e) {
-                    _changedZlevel[e.zlevel] = true;
+                    _changedZlevel[e.zlevel] = true;    // 可能修改前后不在一层
                     util.merge(
                         e,
                         params,
@@ -639,7 +660,7 @@ define(
                         }
                     );
                     _mark(e);
-                    _changedZlevel[e.zlevel] = true;
+                    _changedZlevel[e.zlevel] = true;    // 可能修改前后不在一层
                     _maxZlevel = Math.max(_maxZlevel,e.zlevel);
                 }
 
@@ -1532,13 +1553,6 @@ define(
                     storage.addHover(_draggingTarget);
                 }
 
-                //分发config.EVENT.MOUSEMOVE事件
-                _dispatchAgency(_lastHover, config.EVENT.MOUSEMOVE);
-
-                if (_draggingTarget || _hasfound || storage.hasHoverShape()) {
-                    painter.refreshHover();
-                }
-
                 if (_draggingTarget || (_hasfound && _lastHover.draggable)) {
                     root.style.cursor = 'move';
                 }
@@ -1547,6 +1561,13 @@ define(
                 }
                 else {
                     root.style.cursor = 'default';
+                }
+
+                //分发config.EVENT.MOUSEMOVE事件
+                _dispatchAgency(_lastHover, config.EVENT.MOUSEMOVE);
+
+                if (_draggingTarget || _hasfound || storage.hasHoverShape()) {
+                    painter.refreshHover();
                 }
             }
 
@@ -1579,6 +1600,8 @@ define(
                 if (!painter.isLoading()) {
                     painter.refreshHover();
                 }
+                
+                self.dispatch(config.EVENT.GLOBALOUT, _event);
             }
 
             /**
