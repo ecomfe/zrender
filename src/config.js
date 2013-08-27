@@ -19,6 +19,9 @@ define(
             MOUSEDOWN : 'mousedown',    // 鼠标按钮（手指）被按下，事件对象是：目标图形元素或空
             MOUSEUP : 'mouseup',        // 鼠标按键（手指）被松开，事件对象是：目标图形元素或空
 
+            //
+            GLOBALOUT : 'globalout',    // 全局离开，MOUSEOUT触发比较频繁，一次离开优化绑定
+
             // 一次成功元素拖拽的行为事件过程是：
             // dragstart > dragenter > dragover [> dragleave] > drop > dragend
             DRAGSTART : 'dragstart',    // 开始拖拽时触发，事件对象是：被拖拽图形元素
