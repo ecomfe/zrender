@@ -85,79 +85,10 @@ define(
              * @param {Object} style 样式
              */
             buildPath : function(ctx, style) {
-//var temp = new Date();
-                var shape = require('../shape');
-//t1 += new Date() - temp;
-//temp = new Date();
-                shape.get('sector').buildPath(
-                    ctx,
-                    {
-                        x : style.x,
-                        y : style.y,
-                        r0 : style.r0,
-                        r : style.r,
-                        startAngle : 0,
-                        endAngle : 360
-                    }
-                );
-//t2 += new Date() - temp;
-                return;
-            },
-
-            /**
-             * 画刷
-             * @param ctx       画布句柄
-             * @param e         形状实体
-             * @param isHighlight   是否为高亮状态
-             */
-            brush : function(ctx, e, isHighlight) {
-                var style = e.style || {};
-
-                if (isHighlight) {
-                    // 根据style扩展默认高亮样式
-                    style = this.getHighlightStyle(
-                        style, e.highlightStyle || {}
-                    );
-                }
-
-                ctx.save();
-                this.setContext(ctx, style);
-
-                // 设置transform
-                if (e.__needTransform) {
-                    ctx.transform.apply(ctx,this.updateTransform(e));
-                }
-
-                ctx.beginPath();
-
-                this.buildPath(ctx, style);
-
-                ctx.closePath();
-
-                style.brushType = style.brushType || 'fill';    // default
-
-                if (style.brushType == 'fill' || style.brushType == 'both') {
-                    ctx.fill();
-                }
-
-                if (style.brushType == 'stroke' || style.brushType == 'both') {
-                    ctx.beginPath();
-                    ctx.moveTo(style.r0 + style.x, style.y);
-                    ctx.arc(style.x, style.y, style.r0, 0, Math.PI * 2, true);
-
-                    ctx.moveTo(style.r + style.x, style.y);
-                    ctx.arc(style.x, style.y, style.r, 0, Math.PI * 2, true);
-                    ctx.closePath();
-                    ctx.stroke();
-                }
-
-                if (style.text) {
-                    this.drawText(ctx, style, e.style);
-                }
-
-
-                ctx.restore();
-
+                // 非零环绕填充优化
+                ctx.arc(style.x, style.y, style.r, 0, Math.PI * 2, false);
+                ctx.moveTo(style.x + style.r0, style.y);
+                ctx.arc(style.x, style.y, style.r0, 0, Math.PI * 2, true);
                 return;
             },
 
