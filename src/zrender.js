@@ -417,6 +417,9 @@ define(
                 return painter.getHeight();
             };
 
+            /**
+             * 图像导出 
+             */
             self.toDataURL = function(type, args) {
                 return painter.toDataURL(type, args);
             };
@@ -486,17 +489,17 @@ define(
 
             var _idBase = 0;            //图形数据id自增基础
 
-            //所有常规形状，id索引的map
+            // 所有常规形状，id索引的map
             var _elements = {};
 
-            //所有形状的z轴方向排列，提高遍历性能，zElements[0]的形状在zElements[1]形状下方
+            // 所有形状的z轴方向排列，提高遍历性能，zElements[0]的形状在zElements[1]形状下方
             var _zElements = [];
 
-            //高亮层形状，不稳定，动态增删，数组位置也是z轴方向，靠前显示在下方
+            // 高亮层形状，不稳定，动态增删，数组位置也是z轴方向，靠前显示在下方
             var _hoverElements = [];
 
-            var _maxZlevel = 0;         //最大zlevel
-            var _changedZlevel = {};    //有数据改变的zlevel
+            var _maxZlevel = 0;         // 最大zlevel
+            var _changedZlevel = {};    // 有数据改变的zlevel
 
             /**
              * 快速判断标志~
@@ -546,7 +549,7 @@ define(
              * @param {Object} params 参数
              */
             function add(params) {
-                //默认&必须的参数
+                // 默认&必须的参数
                 var e = {
                     'shape': 'circle',                      // 形状
                     'id': params.id || self.newShapeId(),   // 唯一标识
@@ -581,27 +584,48 @@ define(
              * 根据指定的shapeId获取相应的shape属性
              * @param {string=} idx 唯一标识
              */
-            function get( shapeId ){
-                return _elements[ shapeId ];
+            function get(shapeId) {
+                return _elements[shapeId];
             }
 
             /**
              * 删除，shapeId不指定则全清空
-             * @param {string=} idx 唯一标识
+             * @param {string= | Array} idx 唯一标识
              */
             function del(shapeId) {
                 if (typeof shapeId != 'undefined') {
-                    if (_elements[shapeId]) {
-                        _changedZlevel[_elements[shapeId].zlevel] = true;
-                        var oldList = _zElements[_elements[shapeId].zlevel];
-                        var newList = [];
-                        for (var i = 0, l = oldList.length; i < l; i++){
-                            if (oldList[i].id != shapeId) {
-                                newList.push(oldList[i]);
-                            }
+                    var delMap = {};
+                    if (!(shapeId instanceof Array)) {
+                        // 单个
+                        delMap[shapeId] = true;
+                    }
+                    else {
+                        // 批量删除
+                        for (var i = 0, l = shapeId.length; i < l; i++) {
+                            delMap[shapeId[i].id] = true;
                         }
-                        _zElements[_elements[shapeId].zlevel] = newList;
-                        delete _elements[shapeId];
+                    }
+                    var newList;
+                    var oldList;
+                    var zlevel;
+                    var zChanged = {};
+                    for (var sId in delMap) {
+                        if (_elements[sId]) {
+                            zlevel = _elements[sId].zlevel;
+                            _changedZlevel[zlevel] = true;
+                            if (!zChanged[zlevel]) {
+                                oldList = _zElements[zlevel];
+                                newList = [];
+                                for (var i = 0, l = oldList.length; i < l; i++){
+                                    if (!delMap[oldList[i].id]) {
+                                        newList.push(oldList[i]);
+                                    }
+                                }
+                                _zElements[zlevel] = newList;
+                                zChanged[zlevel] = true;
+                            }
+                            delete _elements[sId];
+                        }
                     }
                 }
                 else{
@@ -626,7 +650,7 @@ define(
             function mod(shapeId, params) {
                 var e = _elements[shapeId];
                 if (e) {
-                    _changedZlevel[e.zlevel] = true;
+                    _changedZlevel[e.zlevel] = true;    // 可能修改前后不在一层
                     util.merge(
                         e,
                         params,
@@ -636,7 +660,7 @@ define(
                         }
                     );
                     _mark(e);
-                    _changedZlevel[e.zlevel] = true;
+                    _changedZlevel[e.zlevel] = true;    // 可能修改前后不在一层
                     _maxZlevel = Math.max(_maxZlevel,e.zlevel);
                 }
 
@@ -1529,13 +1553,6 @@ define(
                     storage.addHover(_draggingTarget);
                 }
 
-                //分发config.EVENT.MOUSEMOVE事件
-                _dispatchAgency(_lastHover, config.EVENT.MOUSEMOVE);
-
-                if (_draggingTarget || _hasfound || storage.hasHoverShape()) {
-                    painter.refreshHover();
-                }
-
                 if (_draggingTarget || (_hasfound && _lastHover.draggable)) {
                     root.style.cursor = 'move';
                 }
@@ -1544,6 +1561,13 @@ define(
                 }
                 else {
                     root.style.cursor = 'default';
+                }
+
+                //分发config.EVENT.MOUSEMOVE事件
+                _dispatchAgency(_lastHover, config.EVENT.MOUSEMOVE);
+
+                if (_draggingTarget || _hasfound || storage.hasHoverShape()) {
+                    painter.refreshHover();
                 }
             }
 
@@ -1576,6 +1600,8 @@ define(
                 if (!painter.isLoading()) {
                     painter.refreshHover();
                 }
+                
+                self.dispatch(config.EVENT.GLOBALOUT, _event);
             }
 
             /**
@@ -1627,7 +1653,7 @@ define(
              * @param {event} event dom事件对象
              */
             function _touchStartHandler(event) {
-                eventTool.stop(event);// 阻止浏览器默认事件，重要
+                //eventTool.stop(event);// 阻止浏览器默认事件，重要
                 _event = _zrenderEventFixed(event, true);
                 _lastTouchMoment = new Date();
                 _mouseDownHandler(_event);
@@ -1638,9 +1664,11 @@ define(
              * @param {event} event dom事件对象
              */
             function _touchMoveHandler(event) {
-                eventTool.stop(event);// 阻止浏览器默认事件，重要
                 _event = _zrenderEventFixed(event, true);
                 _mouseMoveHandler(_event);
+                if (_isDragging) {
+                    eventTool.stop(event);// 阻止浏览器默认事件，重要
+                }
             }
 
             /**
@@ -1648,7 +1676,7 @@ define(
              * @param {event} event dom事件对象
              */
             function _touchEndHandler(event) {
-                eventTool.stop(event);// 阻止浏览器默认事件，重要
+                //eventTool.stop(event);// 阻止浏览器默认事件，重要
                 _event = _zrenderEventFixed(event, true);
                 _mouseUpHandler(_event);
                 painter.clearHover();
