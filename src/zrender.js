@@ -1653,7 +1653,7 @@ define(
              * @param {event} event dom事件对象
              */
             function _touchStartHandler(event) {
-                eventTool.stop(event);// 阻止浏览器默认事件，重要
+                //eventTool.stop(event);// 阻止浏览器默认事件，重要
                 _event = _zrenderEventFixed(event, true);
                 _lastTouchMoment = new Date();
                 _mouseDownHandler(_event);
@@ -1664,9 +1664,11 @@ define(
              * @param {event} event dom事件对象
              */
             function _touchMoveHandler(event) {
-                eventTool.stop(event);// 阻止浏览器默认事件，重要
                 _event = _zrenderEventFixed(event, true);
                 _mouseMoveHandler(_event);
+                if (_isDragging) {
+                    eventTool.stop(event);// 阻止浏览器默认事件，重要
+                }
             }
 
             /**
@@ -1674,7 +1676,7 @@ define(
              * @param {event} event dom事件对象
              */
             function _touchEndHandler(event) {
-                eventTool.stop(event);// 阻止浏览器默认事件，重要
+                //eventTool.stop(event);// 阻止浏览器默认事件，重要
                 _event = _zrenderEventFixed(event, true);
                 _mouseUpHandler(_event);
                 painter.clearHover();
