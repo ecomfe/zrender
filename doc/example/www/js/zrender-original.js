@@ -9812,6 +9812,8 @@ define(
 
                 //没append呢，请原谅我这样写，清晰~
                 newDom.style.position = 'absolute';
+                newDom.style.left = 0;
+                newDom.style.top = 0;
                 newDom.style.width = _width + 'px';
                 newDom.style.height = _height + 'px';
                 newDom.setAttribute('width', _width * _devicePixelRatio);
