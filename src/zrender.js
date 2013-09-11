@@ -674,6 +674,9 @@ define(
              */
             function drift(shapeId, dx, dy) {
                 var e = _elements[shapeId];
+                if (!e) {
+                    return;
+                }
                 e.__needTransform = true;
                 if (!e.ondrift //ondrift
                     //有onbrush并且调用执行返回false或undefined则继续
