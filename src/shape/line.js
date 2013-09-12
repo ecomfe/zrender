@@ -96,44 +96,14 @@ define(
                 else if (style.lineType == 'dashed'
                         || style.lineType == 'dotted'
                 ) {
-                    //画虚线的方法  by loutongbing@baidu.com
-                    var lineWidth = style.lineWidth || 1;
-                    var dashPattern = [
-                        lineWidth * (style.lineType == 'dashed' ? 6 : 1),
-                        lineWidth * 4
-                    ];
-                    var fromX = style.xStart;
-                    var toX = style.xEnd;
-                    var fromY = style.yStart;
-                    var toY = style.yEnd;
-                    var dx = toX - fromX;
-                    var dy = toY - fromY;
-                    var angle = Math.atan2(dy, dx);
-                    var x = fromX;
-                    var y = fromY;
-                    var idx = 0;
-                    var draw = true;
-                    var dashLength;
-                    var nx;
-                    var ny;
-
-                    ctx.moveTo(fromX, fromY);
-                    while (!((dx < 0 ? x <= toX : x >= toX)
-                              && (dy < 0 ? y <= toY : y >= toY))
-                    ) {
-                        dashLength = dashPattern[idx++ % dashPattern.length];
-                        nx = x + (Math.cos(angle) * dashLength);
-                        x = dx < 0 ? Math.max(toX, nx) : Math.min(toX, nx);
-                        ny = y + (Math.sin(angle) * dashLength);
-                        y = dy < 0 ? Math.max(toY, ny) : Math.min(toY, ny);
-                        if (draw) {
-                            ctx.lineTo(x, y);
-                        }
-                        else {
-                            ctx.moveTo(x, y);
-                        }
-                        draw = !draw;
-                    }
+                    var dashLength =(style.lineWidth || 1)  
+                                     * (style.lineType == 'dashed' ? 5 : 1);
+                    this.dashedLineTo(
+                        ctx,
+                        style.xStart, style.yStart,
+                        style.xEnd, style.yEnd,
+                        dashLength
+                    );
                 }
             },
 
