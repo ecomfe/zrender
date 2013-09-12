@@ -108,7 +108,7 @@ define(
                             pointList[i - 1][0], pointList[i - 1][1],
                             pointList[i][0], pointList[i][1],
                             dashLength
-                        )
+                        );
                     }
                 }
 

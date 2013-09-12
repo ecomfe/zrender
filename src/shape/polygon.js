@@ -172,7 +172,7 @@ define(
                             pointList[i - 1][0], pointList[i - 1][1],
                             pointList[i][0], pointList[i][1],
                             dashLength
-                        )
+                        );
                     }
                     this.dashedLineTo(
                         ctx,
@@ -181,7 +181,7 @@ define(
                         pointList[0][0],
                         pointList[0][1],
                         dashLength
-                    )
+                    );
                 }
 
                 return;
