@@ -3702,6 +3702,7 @@ define(
             var methods = [             // 派生实现的基类方法
                     'brush',
                     'setContext',
+                    'dashedLineTo',
                     'drawText',
                     'getHighlightStyle',
                     'getHighlightZoom',
@@ -3839,7 +3840,26 @@ define(
                 ctx.shadowOffsetY = style.shadowOffsetY;
             }
         }
-
+        
+        /**
+         * 虚线lineTo 
+         */
+        function dashedLineTo(ctx, x1, y1, x2, y2, dashLength) {
+            dashLength = typeof dashLength == 'undefined'
+                         ? 5 : dashLength;
+            var deltaX = x2 - x1;
+            var deltaY = y2 - y1;
+            var numDashes = Math.floor(
+                Math.sqrt(deltaX * deltaX + deltaY * deltaY) / dashLength
+            );
+            for (var i = 0; i < numDashes; ++i) {
+                ctx[i % 2 === 0 ? 'moveTo' : 'lineTo'](
+                    x1 + (deltaX / numDashes) * i,
+                    y1 + (deltaY / numDashes) * i
+                );
+            }
+        }
+        
         /**
          * 附加文本
          * @param {Context2D} ctx Canvas 2D上下文
@@ -4167,6 +4187,7 @@ define(
             derive : derive,
             brush : brush,
             setContext : setContext,
+            dashedLineTo : dashedLineTo,
             drawText : drawText,
             getHighlightStyle : getHighlightStyle,
             getHighlightZoom : getHighlightZoom,
@@ -4528,44 +4549,14 @@ define(
                 else if (style.lineType == 'dashed'
                         || style.lineType == 'dotted'
                 ) {
-                    //画虚线的方法  by loutongbing@baidu.com
-                    var lineWidth = style.lineWidth || 1;
-                    var dashPattern = [
-                        lineWidth * (style.lineType == 'dashed' ? 6 : 1),
-                        lineWidth * 4
-                    ];
-                    var fromX = style.xStart;
-                    var toX = style.xEnd;
-                    var fromY = style.yStart;
-                    var toY = style.yEnd;
-                    var dx = toX - fromX;
-                    var dy = toY - fromY;
-                    var angle = Math.atan2(dy, dx);
-                    var x = fromX;
-                    var y = fromY;
-                    var idx = 0;
-                    var draw = true;
-                    var dashLength;
-                    var nx;
-                    var ny;
-
-                    ctx.moveTo(fromX, fromY);
-                    while (!((dx < 0 ? x <= toX : x >= toX)
-                              && (dy < 0 ? y <= toY : y >= toY))
-                    ) {
-                        dashLength = dashPattern[idx++ % dashPattern.length];
-                        nx = x + (Math.cos(angle) * dashLength);
-                        x = dx < 0 ? Math.max(toX, nx) : Math.min(toX, nx);
-                        ny = y + (Math.sin(angle) * dashLength);
-                        y = dy < 0 ? Math.max(toY, ny) : Math.min(toY, ny);
-                        if (draw) {
-                            ctx.lineTo(x, y);
-                        }
-                        else {
-                            ctx.moveTo(x, y);
-                        }
-                        draw = !draw;
-                    }
+                    var dashLength =(style.lineWidth || 1)  
+                                     * (style.lineType == 'dashed' ? 5 : 1);
+                    this.dashedLineTo(
+                        ctx,
+                        style.xStart, style.yStart,
+                        style.xEnd, style.yEnd,
+                        dashLength
+                    );
                 }
             },
 
@@ -4672,17 +4663,115 @@ define(
 
         Polygon.prototype = {
             /**
+             * 画刷
+             * @param ctx       画布句柄
+             * @param e         形状实体
+             * @param isHighlight   是否为高亮状态
+             * @param updateCallback 需要异步加载资源的shape可以通过这个callback(e)
+             *                       让painter更新视图，base.brush没用，需要的话重载brush
+             */
+            brush : function (ctx, e, isHighlight) {
+                var style = e.style || {};
+                if (isHighlight) {
+                    // 根据style扩展默认高亮样式
+                    style = this.getHighlightStyle(
+                        style,
+                        e.highlightStyle || {}
+                    );
+                }
+
+                ctx.save();
+                this.setContext(ctx, style);
+    
+                // 设置transform
+                if (e.__needTransform) {
+                    ctx.transform.apply(ctx,this.updateTransform(e));
+                }
+                ctx.beginPath();
+                this.buildPath(ctx, style);
+                ctx.closePath();
+
+                if (style.brushType == 'stroke' || style.brushType == 'both') {
+                    ctx.stroke();
+                }
+                
+                if (style.brushType == 'fill' 
+                    || style.brushType == 'both'
+                    || typeof style.brushType == 'undefined' // 默认为fill
+                ) {
+                    if (style.lineType == 'dashed' 
+                        || style.lineType == 'dotted'
+                    ) {
+                        // 特殊处理，虚线围不成path，实线再build一次
+                        ctx.beginPath();
+                        this.buildPath(
+                            ctx, 
+                            {
+                                lineType: 'solid',
+                                lineWidth: style.lineWidth,
+                                pointList: style.pointList
+                            }
+                        );
+                        ctx.closePath();
+                    }
+                    ctx.fill();
+                }
+    
+                if (style.text) {
+                    this.drawText(ctx, style, e.style);
+                }
+    
+                ctx.restore();
+    
+                return;
+            },
+        
+            /**
              * 创建多边形路径
              * @param {Context2D} ctx Canvas 2D上下文
              * @param {Object} style 样式
              */
             buildPath : function(ctx, style) {
+                // 虽然能重用brokenLine，但底层图形基于性能考虑，重复代码减少调用吧
                 var pointList = style.pointList;
-                ctx.moveTo(pointList[0][0],pointList[0][1]);
-                for (var i = 1, l = pointList.length; i < l; i++) {
-                    ctx.lineTo(pointList[i][0],pointList[i][1]);
+                if (pointList.length < 2) {
+                    // 少于2个点就不画了~
+                    return;
                 }
-                ctx.lineTo(pointList[0][0],pointList[0][1]);
+                if (!style.lineType || style.lineType == 'solid') {
+                    //默认为实线
+                    ctx.moveTo(pointList[0][0],pointList[0][1]);
+                    for (var i = 1, l = pointList.length; i < l; i++) {
+                        ctx.lineTo(pointList[i][0],pointList[i][1]);
+                    }
+                    ctx.lineTo(pointList[0][0], pointList[0][1]);
+                }
+                else if (style.lineType == 'dashed'
+                        || style.lineType == 'dotted'
+                ) {
+                    var dashLength = style._dashLength
+                                     || (style.lineWidth || 1) 
+                                        * (style.lineType == 'dashed' ? 5 : 1);
+                    style._dashLength = dashLength;
+                    ctx.moveTo(pointList[0][0],pointList[0][1]);
+                    for (var i = 1, l = pointList.length; i < l; i++) {
+                        this.dashedLineTo(
+                            ctx,
+                            pointList[i - 1][0], pointList[i - 1][1],
+                            pointList[i][0], pointList[i][1],
+                            dashLength
+                        );
+                    }
+                    this.dashedLineTo(
+                        ctx,
+                        pointList[pointList.length - 1][0], 
+                        pointList[pointList.length - 1][1],
+                        pointList[0][0],
+                        pointList[0][1],
+                        dashLength
+                    );
+                }
+
                 return;
             },
 
@@ -4838,47 +4927,16 @@ define(
                 else if (style.lineType == 'dashed'
                         || style.lineType == 'dotted'
                 ) {
-                    //画虚线的方法  by loutongbing@baidu.com
-                    var lineWidth = style.lineWidth || 1;
-                    var dashPattern = [
-                        lineWidth * (style.lineType == 'dashed' ? 6 : 1),
-                        lineWidth * 4
-                    ];
+                    var dashLength = (style.lineWidth || 1) 
+                                     * (style.lineType == 'dashed' ? 5 : 1);
                     ctx.moveTo(pointList[0][0],pointList[0][1]);
                     for (var i = 1, l = pointList.length; i < l; i++) {
-                        var fromX = pointList[i - 1][0];
-                        var toX = pointList[i][0];
-                        var fromY = pointList[i - 1][1];
-                        var toY = pointList[i][1];
-                        var dx = toX - fromX;
-                        var dy = toY - fromY;
-                        var angle = Math.atan2(dy, dx);
-                        var x = fromX;
-                        var y = fromY;
-                        var idx = 0;
-                        var draw = true;
-                        var dashLength;
-                        var nx;
-                        var ny;
-
-                        while (!((dx < 0 ? x <= toX : x >= toX)
-                                && (dy < 0 ? y <= toY : y >= toY))
-                        ) {
-                            dashLength = dashPattern[
-                                idx++ % dashPattern.length
-                            ];
-                            nx = x + (Math.cos(angle) * dashLength);
-                            x = dx < 0 ? Math.max(toX, nx) : Math.min(toX, nx);
-                            ny = y + (Math.sin(angle) * dashLength);
-                            y = dy < 0 ? Math.max(toY, ny) : Math.min(toY, ny);
-                            if (draw) {
-                                ctx.lineTo(x, y);
-                            }
-                            else {
-                                ctx.moveTo(x, y);
-                            }
-                            draw = !draw;
-                        }
+                        this.dashedLineTo(
+                            ctx,
+                            pointList[i - 1][0], pointList[i - 1][1],
+                            pointList[i][0], pointList[i][1],
+                            dashLength
+                        );
                     }
                 }
 
@@ -9504,6 +9562,9 @@ define(
              */
             function drift(shapeId, dx, dy) {
                 var e = _elements[shapeId];
+                if (!e) {
+                    return;
+                }
                 e.__needTransform = true;
                 if (!e.ondrift //ondrift
                     //有onbrush并且调用执行返回false或undefined则继续
