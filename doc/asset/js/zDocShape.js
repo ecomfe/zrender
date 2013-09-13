@@ -968,7 +968,8 @@ zr.render();
                 name : 'style',
                 des : '多边形特有样式属性，对highlightStyle同样有效。通用样式见<a href="#shape.base.style">base.style</a>。',
                 value : [
-                    ['pointList', '{Array}','必须，多边形各个顶角坐标，单位px']
+                    ['pointList', '{Array}','必须，多边形各个顶角坐标，单位px'],
+                    ['lineType', '{string}','默认为solid，线条类型，solid | dashed | dotted']
                 ],
                 pre : (function(){
 // 多边形
