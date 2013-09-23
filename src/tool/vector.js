@@ -47,9 +47,15 @@ define(
                 }
                 return out;
             },
-            distance : function( v1, v2 ) {
-                var out = [];
-                return vector.length( vector.sub(out, v1, v2) );
+            distance : function(v1, v2) {
+                return Math.sqrt(
+                    (v1[0] - v2[0]) * (v1[0] - v2[0]) +
+                    (v1[1] - v2[1]) * (v1[1] - v2[1])
+                );
+            },
+            negate : function(out, v) {
+                out[0] = -v[0];
+                out[1] = -v[1];
             },
             middle : function(out, v1, v2) {
                 out[0] = (v1[0]+v2[0])/2;

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Smoothline</title>
+    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+</head>
+<body>
+    <script type="text/javascript">
+        require(["../src/zrender",
+                "../src/animation/animation"], function(zrender, Animation){
+
+            // 初始化zrender
+            var zr = zrender.init( document.getElementById("Main") );
+
+            var pointList = [];
+            for (var i = 0; i < 10; i++) {
+                pointList.push([Math.random() * 300 + 100, Math.random() * 300 + 100]);
+            }
+
+            var smoothLine = {
+                shape : 'brokenLine',
+                id : zr.newShapeId(),
+                style : {
+                    pointList : pointList,
+                    smooth : 0.5,
+                    brushType : 'stroke',
+                    color : 'rgba(220, 20, 60, 0.8)',
+                    strokeColor : "rgba(220, 20, 60, 0.8)",
+                    lineWidth : 2
+                }
+            }
+            zr.addShape(smoothLine);
+            zr.render();
+
+        })
+    </script>
+    <div id="Main" style="width:1000px;height:900px;"></div>
+</body>
+</html>
