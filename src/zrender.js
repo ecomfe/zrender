@@ -364,6 +364,13 @@ define(
             };
 
             /**
+             * 停止所有动画
+             */
+            self.clearAnimation = function() {
+                animation.clear();
+            };
+
+            /**
              * loading显示
              * @param  {Object} loadingOption 参数
              * {
