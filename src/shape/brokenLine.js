@@ -16,6 +16,8 @@
        style  : {
            pointList     : {Array},   // 必须，各个顶角坐标
            smooth        : {Number},  // 默认为0
+           smoothX       : {Number},  // x方向smooth的权重, 如果不设定则使用smooth的值
+           smoothY       : {Number},  // y方向smooth的权重， 如果不设定则使用smooth的值
            strokeColor   : {color},   // 默认为'#000'，线条颜色（轮廓），支持rgba
            lineType      : {string},  // 默认为solid，线条类型，solid | dashed | dotted
            lineWidth     : {number},  // 默认为1，线条宽度
@@ -75,31 +77,35 @@ define(
         
         var vec2 = require('../tool/vector');
 
-        function smooth(points, degree) {
+        function smooth(points, smooth) {
             var len = points.length;
-            var middlePoints = [];
             var cps = [];
 
-            var tmp = [];
-            for(var i = 0; i < len-1; i++){
-                middlePoints.push(
-                    vec2.scale([], vec2.add(tmp, points[i], points[i+1]), 0.5)
-                );
-            }
             var v = [];
+            var v1 = [];
+            var v2 = [];
             cps.push(points[0]);
             for(var i = 1; i < len-1; i++){
                 var point = points[i];
-                var nextMiddlePoint = middlePoints[i];
-                var prevMiddlePoint = middlePoints[i-1];
-                var degree = degree || 1;
+                var prevPoint = points[i-1];
+                var nextPoint = points[i+1];
 
-                vec2.sub(v, nextMiddlePoint, prevMiddlePoint);
+                vec2.sub(v, nextPoint, prevPoint);
 
                 //use degree to scale the handle length
-                vec2.scale(v, v, degree * 0.5);
-                cps.push(vec2.sub([], point, v));
-                cps.push(vec2.add([], point, v));
+                vec2.mul(v, v, smooth);
+
+                var d0 = vec2.distance(point, points[i-1]);
+                var d1 = vec2.distance(point, points[i+1]);
+                var sum = d0 + d1;
+                d0 /= sum;
+                d1 /= sum;
+
+                vec2.scale(v1, v, -d0);
+                vec2.scale(v2, v, d1);
+
+                cps.push(vec2.add([], point, v1));
+                cps.push(vec2.add([], point, v2));
             }
             cps.push(points[points.length-1]);
             return cps;
@@ -125,7 +131,15 @@ define(
                     return;
                 }
                 if (style.smooth) {
-                    var controlPoints = smooth(pointList, style.smooth);
+                    var smoothX = style.smoothX;
+                    var smoothY = style.smoothY;
+                    if (typeof smoothX == 'undefined') {
+                        smoothX = style.smooth;
+                    }
+                    if (typeof smoothY == 'undefined') {
+                        smoothY = style.smooth;
+                    }
+                    var controlPoints = smooth(pointList, [smoothX, smoothY]);
 
                     ctx.moveTo(pointList[0][0], pointList[0][1]);
 
