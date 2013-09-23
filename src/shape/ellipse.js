@@ -87,15 +87,19 @@ define(
              * @param {Object} style 样式
              */
             buildPath : function(ctx, style) {
-                var r = (style.a > style.b) ? style.a : style.b;
-                var ratioX = style.a / r; //横轴缩放比率
-                var ratioY = style.b / r;
-                ctx.scale(ratioX, ratioY);
-                ctx.arc(
-                    style.x / ratioX, style.y / ratioY, r, 0, Math.PI * 2, true
-                );
-                ctx.scale(1/ratioX, 1/ratioY);
-                // excanvas bug~~
+                var k = 0.5522848;
+                var x = style.x;
+                var y = style.y;
+                var a =style.a;
+                var b = style.b;
+                var ox = a * k; // 水平控制点偏移量
+                var oy = b * k; // 垂直控制点偏移量
+                //从椭圆的左端点开始顺时针绘制四条三次贝塞尔曲线
+                ctx.moveTo(x - a, y);
+                ctx.bezierCurveTo(x - a, y - oy, x - ox, y - b, x, y - b);
+                ctx.bezierCurveTo(x + ox, y - b, x + a, y - oy, x + a, y);
+                ctx.bezierCurveTo(x + a, y + oy, x + ox, y + b, x, y + b);
+                ctx.bezierCurveTo(x - ox, y + b, x - a, y + oy, x - a, y);
                 return;
             },
 
@@ -125,7 +129,6 @@ define(
         
         var shape = require('../shape');
         shape.define('ellipse', new Ellipse());
-
         return Ellipse;
     }
 );
