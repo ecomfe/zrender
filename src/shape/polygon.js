@@ -161,7 +161,9 @@ define(
                     return;
                 }
                 if (style.smooth && style.smooth !== 'spline') {
-                    var controlPoints = this.smoothBezier(pointList, style.smooth, true);
+                    var controlPoints = this.smoothBezier(
+                        pointList, style.smooth, true
+                    );
 
                     ctx.moveTo(pointList[0][0], pointList[0][1]);
                     var cp1;
@@ -192,9 +194,10 @@ define(
                     else if (style.lineType == 'dashed'
                             || style.lineType == 'dotted'
                     ) {
-                        var dashLength = style._dashLength
-                                         || (style.lineWidth || 1) 
-                                            * (style.lineType == 'dashed' ? 5 : 1);
+                        var dashLength = 
+                            style._dashLength
+                            || (style.lineWidth || 1) 
+                               * (style.lineType == 'dashed' ? 5 : 1);
                         style._dashLength = dashLength;
                         ctx.moveTo(pointList[0][0],pointList[0][1]);
                         for (var i = 1, l = pointList.length; i < l; i++) {

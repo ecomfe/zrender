@@ -91,7 +91,9 @@ define(
                     return;
                 }
                 if (style.smooth && style.smooth !== 'spline') {
-                    var controlPoints = this.smoothBezier(pointList, style.smooth, false);
+                    var controlPoints = this.smoothBezier(
+                        pointList, style.smooth, false
+                    );
 
                     ctx.moveTo(pointList[0][0], pointList[0][1]);
                     var cp1;
