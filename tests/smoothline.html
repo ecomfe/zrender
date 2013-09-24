@@ -27,10 +27,26 @@
                     brushType : 'stroke',
                     color : 'rgba(220, 20, 60, 0.8)',
                     strokeColor : "rgba(220, 20, 60, 0.8)",
-                    lineWidth : 2
+                    lineWidth : 2,
+                    // lineType : 'dotted'
+                }
+            }
+
+            var smoothPolygon = {
+                shape : 'polygon',
+                id : zr.newShapeId(),
+                style : {
+                    pointList : [[50, 50], [200, 10], [100, 200], [50, 150], [50, 50]],
+                    smooth : 0.5,
+                    brushType : 'both',
+                    color : 'rgba(220, 20, 60, 0.8)',
+                    strokeColor : "rgba(220, 20, 60, 0.8)",
+                    lineWidth : 2,
+                    // lineType : 'dotted'
                 }
             }
             zr.addShape(smoothLine);
+            zr.addShape(smoothPolygon);
             zr.render();
 
         })

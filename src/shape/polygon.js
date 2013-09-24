@@ -146,30 +146,40 @@ define(
             buildPath : function(ctx, style) {
                 // 虽然能重用brokenLine，但底层图形基于性能考虑，重复代码减少调用吧
                 var pointList = style.pointList;
+                // 开始点和结束点重复
+                var start = pointList[0];
+                var end = pointList[pointList.length-1];
+                if (start && end) {
+                    if (start[0] == end[0] &&
+                        start[1] == end[1]) {
+                        // 移除最后一个点
+                        pointList.pop();
+                    }
+                }
                 if (pointList.length < 2) {
                     // 少于2个点就不画了~
                     return;
                 }
                 if (style.smooth && style.smooth !== 'spline') {
-                    var controlPoints = this.smoothBezier(pointList, style.smooth);
+                    var controlPoints = this.smoothBezier(pointList, style.smooth, true);
 
                     ctx.moveTo(pointList[0][0], pointList[0][1]);
                     var cp1;
                     var cp2;
                     var p;
-                    for (var i = 0, l = pointList.length; i < l - 1; i++) {
+                    var len = pointList.length;
+                    for (var i = 0; i < len; i++) {
                         cp1 = controlPoints[i * 2];
                         cp2 = controlPoints[i * 2 + 1];
-                        p = pointList[i + 1];
+                        p = pointList[(i + 1) % len];
                         ctx.bezierCurveTo(
                             cp1[0], cp1[1], cp2[0], cp2[1], p[0], p[1]
                         );
                     }
-                    ctx.lineTo(pointList[0][0], pointList[0][1]);
                 } 
                 else {
                     if (style.smooth === 'spline') {
-                        pointList = this.smoothSpline(pointList);
+                        pointList = this.smoothSpline(pointList, true);
                     }
                     if (!style.lineType || style.lineType == 'solid') {
                         //默认为实线

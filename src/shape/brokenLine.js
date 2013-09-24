@@ -91,7 +91,7 @@ define(
                     return;
                 }
                 if (style.smooth && style.smooth !== 'spline') {
-                    var controlPoints = this.smoothBezier(pointList, style.smooth);
+                    var controlPoints = this.smoothBezier(pointList, style.smooth, false);
 
                     ctx.moveTo(pointList[0][0], pointList[0][1]);
                     var cp1;
@@ -108,7 +108,7 @@ define(
                 } 
                 else {
                     if (style.smooth === 'spline') {
-                        pointList = this.smoothSpline(pointList);
+                        pointList = this.smoothSpline(pointList, false);
                     }
                     if (!style.lineType || style.lineType == 'solid') {
                         //默认为实线

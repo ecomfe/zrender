@@ -292,26 +292,35 @@ define(
         /**
          * 贝塞尔平滑曲线 
          */
-        function smoothBezier(points, smooth) {
+        function smoothBezier(points, smooth, loop) {
             var len = points.length;
             var cps = [];
 
             var v = [];
             var v1 = [];
             var v2 = [];
-            cps.push(points[0]);
-            for(var i = 1; i < len-1; i++){
+            for(var i = 0; i < len; i++){
                 var point = points[i];
-                var prevPoint = points[i-1];
-                var nextPoint = points[i+1];
+                if (loop) {
+                    var prevPoint = points[i == 0 ? len-1 : i-1];
+                    var nextPoint = points[(i + 1) % len];
+                } else {
+                    if (i == 0 || i == len-1) {
+                        cps.push(points[i]);
+                        continue;
+                    } else {
+                        var prevPoint = points[i-1];
+                        var nextPoint = points[i+1];
+                    }
+                }
 
                 vec2.sub(v, nextPoint, prevPoint);
 
                 //use degree to scale the handle length
                 vec2.scale(v, v, smooth);
 
-                var d0 = vec2.distance(point, points[i-1]);
-                var d1 = vec2.distance(point, points[i+1]);
+                var d0 = vec2.distance(point, prevPoint);
+                var d1 = vec2.distance(point, nextPoint);
                 var sum = d0 + d1;
                 d0 /= sum;
                 d1 /= sum;
@@ -322,14 +331,16 @@ define(
                 cps.push(vec2.add([], point, v1));
                 cps.push(vec2.add([], point, v2));
             }
-            cps.push(points[points.length-1]);
+            if (loop) {
+                cps.push(cps.shift());
+            }
             return cps;
         }
 
         /**
          * 多线段平滑曲线 Catmull-Rom spline
          */
-        function smoothSpline(points) {
+        function smoothSpline(points, loop) {
             var len = points.length;
             var ret = [];
 
@@ -340,15 +351,25 @@ define(
             var segs = distance / 5;
 
             for (var i = 0; i < segs; i++) {
-                var pos = i / (segs-1) * (len - 1);
+                if (loop) {
+                    var pos = i / (segs-1) * len;
+                } else {
+                    var pos = i / (segs-1) * (len - 1);
+                }
                 var idx = Math.floor(pos);
 
                 var w = pos - idx;
 
-                var p0 = points[idx == 0 ? idx : idx-1];
-                var p1 = points[idx];
-                var p2 = points[idx > len - 2 ? len - 1 : idx + 1];
-                var p3 = points[idx > len - 3 ? len - 1 : idx + 2];
+                var p1 = points[idx % len];
+                if (!loop) {
+                    var p0 = points[idx == 0 ? idx : idx - 1];
+                    var p2 = points[idx > len - 2 ? len - 1 : idx + 1];
+                    var p3 = points[idx > len - 3 ? len - 1 : idx + 2];
+                } else {
+                    var p0 = points[(idx -1 + len) % len];
+                    var p2 = points[(idx + 1) % len];
+                    var p3 = points[(idx + 2) % len];
+                }
 
                 var w2 = w * w;
                 var w3 = w * w2;
