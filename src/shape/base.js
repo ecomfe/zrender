@@ -119,6 +119,7 @@ define(
         var self;
         var area = require('../tool/area');
         var matrix = require('../tool/matrix');
+        var vec2 = require('../tool/vector');
 
         /**
          * 派生实现通用功能
@@ -129,6 +130,8 @@ define(
                     'brush',
                     'setContext',
                     'dashedLineTo',
+                    'smoothBezier',
+                    'smoothSpline',
                     'drawText',
                     'getHighlightStyle',
                     'getHighlightZoom',
@@ -285,6 +288,86 @@ define(
                 );
             }
         }
+        
+        /**
+         * 贝塞尔平滑曲线 
+         */
+        function smoothBezier(points, smooth) {
+            var len = points.length;
+            var cps = [];
+
+            var v = [];
+            var v1 = [];
+            var v2 = [];
+            cps.push(points[0]);
+            for(var i = 1; i < len-1; i++){
+                var point = points[i];
+                var prevPoint = points[i-1];
+                var nextPoint = points[i+1];
+
+                vec2.sub(v, nextPoint, prevPoint);
+
+                //use degree to scale the handle length
+                vec2.scale(v, v, smooth);
+
+                var d0 = vec2.distance(point, points[i-1]);
+                var d1 = vec2.distance(point, points[i+1]);
+                var sum = d0 + d1;
+                d0 /= sum;
+                d1 /= sum;
+
+                vec2.scale(v1, v, -d0);
+                vec2.scale(v2, v, d1);
+
+                cps.push(vec2.add([], point, v1));
+                cps.push(vec2.add([], point, v2));
+            }
+            cps.push(points[points.length-1]);
+            return cps;
+        }
+
+        /**
+         * 多线段平滑曲线 Catmull-Rom spline
+         */
+        function smoothSpline(points) {
+            var len = points.length;
+            var ret = [];
+
+            var distance = 0;
+            for (var i = 1; i < len; i++) {
+                distance += vec2.distance(points[i-1], points[i]);
+            }
+            var segs = distance / 5;
+
+            for (var i = 0; i < segs; i++) {
+                var pos = i / (segs-1) * (len - 1);
+                var idx = Math.floor(pos);
+
+                var w = pos - idx;
+
+                var p0 = points[idx == 0 ? idx : idx-1];
+                var p1 = points[idx];
+                var p2 = points[idx > len - 2 ? len - 1 : idx + 1];
+                var p3 = points[idx > len - 3 ? len - 1 : idx + 2];
+
+                var w2 = w * w;
+                var w3 = w * w2;
+
+                ret.push([
+                    _interpolate(p0[0], p1[0], p2[0], p3[0], w, w2, w3),
+                    _interpolate(p0[1], p1[1], p2[1], p3[1], w, w2, w3)
+                ])
+            }
+            return ret;
+        }
+
+        function _interpolate(p0, p1, p2, p3, t, t2, t3) {
+            var v0 = (p2 - p0) * 0.5;
+            var v1 = (p3 - p1) * 0.5;
+            return (2 * (p1 - p2) + v0 + v1) * t3 
+                    + (- 3 * (p1 - p2) - 2 * v0 - v1) * t2
+                    + v0 * t + p1;
+        };
         
         /**
          * 附加文本
@@ -614,6 +697,8 @@ define(
             brush : brush,
             setContext : setContext,
             dashedLineTo : dashedLineTo,
+            smoothBezier : smoothBezier,
+            smoothSpline : smoothSpline,
             drawText : drawText,
             getHighlightStyle : getHighlightStyle,
             getHighlightZoom : getHighlightZoom,

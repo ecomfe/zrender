@@ -150,40 +150,61 @@ define(
                     // 少于2个点就不画了~
                     return;
                 }
-                if (!style.lineType || style.lineType == 'solid') {
-                    //默认为实线
-                    ctx.moveTo(pointList[0][0],pointList[0][1]);
-                    for (var i = 1, l = pointList.length; i < l; i++) {
-                        ctx.lineTo(pointList[i][0],pointList[i][1]);
+                if (style.smooth && style.smooth !== 'spline') {
+                    var controlPoints = this.smoothBezier(pointList, style.smooth);
+
+                    ctx.moveTo(pointList[0][0], pointList[0][1]);
+                    var cp1;
+                    var cp2;
+                    var p;
+                    for (var i = 0, l = pointList.length; i < l - 1; i++) {
+                        cp1 = controlPoints[i * 2];
+                        cp2 = controlPoints[i * 2 + 1];
+                        p = pointList[i + 1];
+                        ctx.bezierCurveTo(
+                            cp1[0], cp1[1], cp2[0], cp2[1], p[0], p[1]
+                        );
                     }
                     ctx.lineTo(pointList[0][0], pointList[0][1]);
-                }
-                else if (style.lineType == 'dashed'
-                        || style.lineType == 'dotted'
-                ) {
-                    var dashLength = style._dashLength
-                                     || (style.lineWidth || 1) 
-                                        * (style.lineType == 'dashed' ? 5 : 1);
-                    style._dashLength = dashLength;
-                    ctx.moveTo(pointList[0][0],pointList[0][1]);
-                    for (var i = 1, l = pointList.length; i < l; i++) {
+                } 
+                else {
+                    if (style.smooth === 'spline') {
+                        pointList = this.smoothSpline(pointList);
+                    }
+                    if (!style.lineType || style.lineType == 'solid') {
+                        //默认为实线
+                        ctx.moveTo(pointList[0][0],pointList[0][1]);
+                        for (var i = 1, l = pointList.length; i < l; i++) {
+                            ctx.lineTo(pointList[i][0],pointList[i][1]);
+                        }
+                        ctx.lineTo(pointList[0][0], pointList[0][1]);
+                    }
+                    else if (style.lineType == 'dashed'
+                            || style.lineType == 'dotted'
+                    ) {
+                        var dashLength = style._dashLength
+                                         || (style.lineWidth || 1) 
+                                            * (style.lineType == 'dashed' ? 5 : 1);
+                        style._dashLength = dashLength;
+                        ctx.moveTo(pointList[0][0],pointList[0][1]);
+                        for (var i = 1, l = pointList.length; i < l; i++) {
+                            this.dashedLineTo(
+                                ctx,
+                                pointList[i - 1][0], pointList[i - 1][1],
+                                pointList[i][0], pointList[i][1],
+                                dashLength
+                            );
+                        }
                         this.dashedLineTo(
                             ctx,
-                            pointList[i - 1][0], pointList[i - 1][1],
-                            pointList[i][0], pointList[i][1],
+                            pointList[pointList.length - 1][0], 
+                            pointList[pointList.length - 1][1],
+                            pointList[0][0],
+                            pointList[0][1],
                             dashLength
                         );
                     }
-                    this.dashedLineTo(
-                        ctx,
-                        pointList[pointList.length - 1][0], 
-                        pointList[pointList.length - 1][1],
-                        pointList[0][0],
-                        pointList[0][1],
-                        dashLength
-                    );
                 }
-
                 return;
             },
 

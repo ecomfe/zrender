@@ -72,84 +72,6 @@
  */
 define(
     function(require) {
-        
-        var vec2 = require('../tool/vector');
-
-        function smoothBezier(points, smooth) {
-            var len = points.length;
-            var cps = [];
-
-            var v = [];
-            var v1 = [];
-            var v2 = [];
-            cps.push(points[0]);
-            for(var i = 1; i < len-1; i++){
-                var point = points[i];
-                var prevPoint = points[i-1];
-                var nextPoint = points[i+1];
-
-                vec2.sub(v, nextPoint, prevPoint);
-
-                //use degree to scale the handle length
-                vec2.scale(v, v, smooth);
-
-                var d0 = vec2.distance(point, points[i-1]);
-                var d1 = vec2.distance(point, points[i+1]);
-                var sum = d0 + d1;
-                d0 /= sum;
-                d1 /= sum;
-
-                vec2.scale(v1, v, -d0);
-                vec2.scale(v2, v, d1);
-
-                cps.push(vec2.add([], point, v1));
-                cps.push(vec2.add([], point, v2));
-            }
-            cps.push(points[points.length-1]);
-            return cps;
-        }
-
-        // Catmull-Rom spline
-        function smoothSpline(points) {
-            var len = points.length;
-            var ret = [];
-
-            var distance = 0;
-            for (var i = 1; i < len; i++) {
-                distance += vec2.distance(points[i-1], points[i]);
-            }
-            var segs = distance / 5;
-
-            for (var i = 0; i < segs; i++) {
-                var pos = i / (segs-1) * (len - 1);
-                var idx = Math.floor(pos);
-
-                var w = pos - idx;
-
-                var p0 = points[idx == 0 ? idx : idx-1];
-                var p1 = points[idx];
-                var p2 = points[idx > len - 2 ? len - 1 : idx + 1];
-                var p3 = points[idx > len - 3 ? len - 1 : idx + 2];
-
-                var w2 = w * w;
-                var w3 = w * w2;
-
-                ret.push([
-                    interpolate(p0[0], p1[0], p2[0], p3[0], w, w2, w3),
-                    interpolate(p0[1], p1[1], p2[1], p3[1], w, w2, w3)
-                ])
-            }
-            return ret;
-        }
-
-        function interpolate(p0, p1, p2, p3, t, t2, t3) {
-            var v0 = (p2 - p0) * 0.5;
-            var v1 = (p3 - p1) * 0.5;
-            return (2 * (p1 - p2) + v0 + v1) * t3 
-                    + (- 3 * (p1 - p2) - 2 * v0 - v1) * t2
-                    + v0 * t + p1;
-        };
-
         function BrokenLine() {
             this.type = 'brokenLine';
             this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
@@ -169,19 +91,24 @@ define(
                     return;
                 }
                 if (style.smooth && style.smooth !== 'spline') {
-                    var controlPoints = smoothBezier(pointList, style.smooth);
+                    var controlPoints = this.smoothBezier(pointList, style.smooth);
 
                     ctx.moveTo(pointList[0][0], pointList[0][1]);
-
+                    var cp1;
+                    var cp2;
+                    var p;
                     for (var i = 0, l = pointList.length; i < l - 1; i++) {
-                        var cp1 = controlPoints[i * 2];
-                        var cp2 = controlPoints[i * 2 + 1];
-                        var p = pointList[i+1];
-                        ctx.bezierCurveTo(cp1[0], cp1[1], cp2[0], cp2[1], p[0], p[1]);
+                        cp1 = controlPoints[i * 2];
+                        cp2 = controlPoints[i * 2 + 1];
+                        p = pointList[i + 1];
+                        ctx.bezierCurveTo(
+                            cp1[0], cp1[1], cp2[0], cp2[1], p[0], p[1]
+                        );
                     }
-                } else {
+                } 
+                else {
                     if (style.smooth === 'spline') {
-                        pointList = smoothSpline(pointList);
+                        pointList = this.smoothSpline(pointList);
                     }
                     if (!style.lineType || style.lineType == 'solid') {
                         //默认为实线
