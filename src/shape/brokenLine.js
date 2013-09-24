@@ -16,8 +16,6 @@
        style  : {
            pointList     : {Array},   // 必须，各个顶角坐标
            smooth        : {Number},  // 默认为0
-           smoothX       : {Number},  // x方向smooth的权重, 如果不设定则使用smooth的值
-           smoothY       : {Number},  // y方向smooth的权重， 如果不设定则使用smooth的值
            strokeColor   : {color},   // 默认为'#000'，线条颜色（轮廓），支持rgba
            lineType      : {string},  // 默认为solid，线条类型，solid | dashed | dotted
            lineWidth     : {number},  // 默认为1，线条宽度
@@ -77,7 +75,7 @@ define(
         
         var vec2 = require('../tool/vector');
 
-        function smooth(points, smooth) {
+        function smoothBezier(points, smooth) {
             var len = points.length;
             var cps = [];
 
@@ -93,7 +91,7 @@ define(
                 vec2.sub(v, nextPoint, prevPoint);
 
                 //use degree to scale the handle length
-                vec2.mul(v, v, smooth);
+                vec2.scale(v, v, smooth);
 
                 var d0 = vec2.distance(point, points[i-1]);
                 var d1 = vec2.distance(point, points[i+1]);
@@ -111,6 +109,46 @@ define(
             return cps;
         }
 
+        // Catmull-Rom spline
+        function smoothSpline(points) {
+            var len = points.length;
+            var ret = [];
+
+            var distance = 0;
+            for (var i = 1; i < len; i++) {
+                distance += vec2.distance(points[i-1], points[i]);
+            }
+            var segs = distance / 5;
+
+            for (var i = 0; i < segs; i++) {
+                var pos = i / (segs-1) * (len - 1);
+                var idx = Math.floor(pos);
+
+                var w = pos - idx;
+
+                var p0 = points[idx == 0 ? idx : idx-1];
+                var p1 = points[idx];
+                var p2 = points[idx > len - 2 ? len - 1 : idx + 1];
+                var p3 = points[idx > len - 3 ? len - 1 : idx + 2];
+
+                var w2 = w * w;
+                var w3 = w * w2;
+
+                ret.push([
+                    interpolate(p0[0], p1[0], p2[0], p3[0], w, w2, w3),
+                    interpolate(p0[1], p1[1], p2[1], p3[1], w, w2, w3)
+                ])
+            }
+            return ret;
+        }
+
+        function interpolate(p0, p1, p2, p3, t, t2, t3) {
+            var v0 = (p2 - p0) * 0.5;
+            var v1 = (p3 - p1) * 0.5;
+            return (2 * (p1 - p2) + v0 + v1) * t3 
+                    + (- 3 * (p1 - p2) - 2 * v0 - v1) * t2
+                    + v0 * t + p1;
+        };
 
         function BrokenLine() {
             this.type = 'brokenLine';
@@ -130,16 +168,8 @@ define(
                     // 少于2个点就不画了~
                     return;
                 }
-                if (style.smooth) {
-                    var smoothX = style.smoothX;
-                    var smoothY = style.smoothY;
-                    if (typeof smoothX == 'undefined') {
-                        smoothX = style.smooth;
-                    }
-                    if (typeof smoothY == 'undefined') {
-                        smoothY = style.smooth;
-                    }
-                    var controlPoints = smooth(pointList, [smoothX, smoothY]);
+                if (style.smooth && style.smooth !== 'spline') {
+                    var controlPoints = smoothBezier(pointList, style.smooth);
 
                     ctx.moveTo(pointList[0][0], pointList[0][1]);
 
@@ -150,6 +180,9 @@ define(
                         ctx.bezierCurveTo(cp1[0], cp1[1], cp2[0], cp2[1], p[0], p[1]);
                     }
                 } else {
+                    if (style.smooth === 'spline') {
+                        pointList = smoothSpline(pointList);
+                    }
                     if (!style.lineType || style.lineType == 'solid') {
                         //默认为实线
                         ctx.moveTo(pointList[0][0],pointList[0][1]);
