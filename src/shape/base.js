@@ -209,7 +209,7 @@ define(
                     ctx.fill();
             }
 
-            if (style.text) {
+            if (typeof style.text != 'undefined') {
                 this.drawText(ctx, style, e.style);
             }
 
