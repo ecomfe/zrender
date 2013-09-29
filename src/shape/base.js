@@ -365,8 +365,10 @@ define(
 
                 var w = pos - idx;
 
+                var p0;
                 var p1 = points[idx % len];
-                var p0, p2, p3;
+                var p2;
+                var p3;
                 if (!loop) {
                     p0 = points[idx === 0 ? idx : idx - 1];
                     p2 = points[idx > len - 2 ? len - 1 : idx + 1];
