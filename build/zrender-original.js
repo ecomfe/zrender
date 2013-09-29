@@ -1506,9 +1506,15 @@ define(
                 }
                 return out;
             },
-            distance : function( v1, v2 ) {
-                var out = [];
-                return vector.length( vector.sub(out, v1, v2) );
+            distance : function(v1, v2) {
+                return Math.sqrt(
+                    (v1[0] - v2[0]) * (v1[0] - v2[0]) +
+                    (v1[1] - v2[1]) * (v1[1] - v2[1])
+                );
+            },
+            negate : function(out, v) {
+                out[0] = -v[0];
+                out[1] = -v[1];
             },
             middle : function(out, v1, v2) {
                 out[0] = (v1[0]+v2[0])/2;
@@ -3688,11 +3694,12 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
    }
  */
 define(
-    'zrender/shape/base',['require','../tool/area','../tool/matrix','../tool/color'],function(require) {
+    'zrender/shape/base',['require','../tool/area','../tool/matrix','../tool/vector','../tool/color'],function(require) {
 
         var self;
         var area = require('../tool/area');
         var matrix = require('../tool/matrix');
+        var vec2 = require('../tool/vector');
 
         /**
          * 派生实现通用功能
@@ -3703,6 +3710,8 @@ define(
                     'brush',
                     'setContext',
                     'dashedLineTo',
+                    'smoothBezier',
+                    'smoothSpline',
                     'drawText',
                     'getHighlightStyle',
                     'getHighlightZoom',
@@ -3780,7 +3789,7 @@ define(
                     ctx.fill();
             }
 
-            if (style.text) {
+            if (typeof style.text != 'undefined') {
                 this.drawText(ctx, style, e.style);
             }
 
@@ -3858,6 +3867,115 @@ define(
                     y1 + (deltaY / numDashes) * i
                 );
             }
+        }
+        
+        /**
+         * 贝塞尔平滑曲线 
+         */
+        function smoothBezier(points, smooth, loop) {
+            var len = points.length;
+            var cps = [];
+
+            var v = [];
+            var v1 = [];
+            var v2 = [];
+            var prevPoint;
+            var nextPoint;
+            for(var i = 0; i < len; i++){
+                var point = points[i];
+                var prevPoint;
+                var nextPoint;
+                if (loop) {
+                    prevPoint = points[i === 0 ? len-1 : i-1];
+                    nextPoint = points[(i + 1) % len];
+                } else {
+                    if (i === 0 || i === len-1) {
+                        cps.push(points[i]);
+                        continue;
+                    } else {
+                        prevPoint = points[i-1];
+                        nextPoint = points[i+1];
+                    }
+                }
+
+                vec2.sub(v, nextPoint, prevPoint);
+
+                //use degree to scale the handle length
+                vec2.scale(v, v, smooth);
+
+                var d0 = vec2.distance(point, prevPoint);
+                var d1 = vec2.distance(point, nextPoint);
+                var sum = d0 + d1;
+                d0 /= sum;
+                d1 /= sum;
+
+                vec2.scale(v1, v, -d0);
+                vec2.scale(v2, v, d1);
+
+                cps.push(vec2.add([], point, v1));
+                cps.push(vec2.add([], point, v2));
+            }
+            if (loop) {
+                cps.push(cps.shift());
+            }
+            return cps;
+        }
+
+        /**
+         * 多线段平滑曲线 Catmull-Rom spline
+         */
+        function smoothSpline(points, loop) {
+            var len = points.length;
+            var ret = [];
+
+            var distance = 0;
+            for (var i = 1; i < len; i++) {
+                distance += vec2.distance(points[i-1], points[i]);
+            }
+            var segs = distance / 5;
+
+            for (var i = 0; i < segs; i++) {
+                var pos;
+                if (loop) {
+                    pos = i / (segs-1) * len;
+                } else {
+                    pos = i / (segs-1) * (len - 1);
+                }
+                var idx = Math.floor(pos);
+
+                var w = pos - idx;
+
+                var p0;
+                var p1 = points[idx % len];
+                var p2;
+                var p3;
+                if (!loop) {
+                    p0 = points[idx === 0 ? idx : idx - 1];
+                    p2 = points[idx > len - 2 ? len - 1 : idx + 1];
+                    p3 = points[idx > len - 3 ? len - 1 : idx + 2];
+                } else {
+                    p0 = points[(idx -1 + len) % len];
+                    p2 = points[(idx + 1) % len];
+                    p3 = points[(idx + 2) % len];
+                }
+
+                var w2 = w * w;
+                var w3 = w * w2;
+
+                ret.push([
+                    _interpolate(p0[0], p1[0], p2[0], p3[0], w, w2, w3),
+                    _interpolate(p0[1], p1[1], p2[1], p3[1], w, w2, w3)
+                ]);
+            }
+            return ret;
+        }
+
+        function _interpolate(p0, p1, p2, p3, t, t2, t3) {
+            var v0 = (p2 - p0) * 0.5;
+            var v1 = (p3 - p1) * 0.5;
+            return (2 * (p1 - p2) + v0 + v1) * t3 
+                    + (- 3 * (p1 - p2) - 2 * v0 - v1) * t2
+                    + v0 * t + p1;
         }
         
         /**
@@ -4188,6 +4306,8 @@ define(
             brush : brush,
             setContext : setContext,
             dashedLineTo : dashedLineTo,
+            smoothBezier : smoothBezier,
+            smoothSpline : smoothSpline,
             drawText : drawText,
             getHighlightStyle : getHighlightStyle,
             getHighlightZoom : getHighlightZoom,
@@ -4409,15 +4529,19 @@ define(
              * @param {Object} style 样式
              */
             buildPath : function(ctx, style) {
-                var r = (style.a > style.b) ? style.a : style.b;
-                var ratioX = style.a / r; //横轴缩放比率
-                var ratioY = style.b / r;
-                ctx.scale(ratioX, ratioY);
-                ctx.arc(
-                    style.x / ratioX, style.y / ratioY, r, 0, Math.PI * 2, true
-                );
-                ctx.scale(1/ratioX, 1/ratioY);
-                // excanvas bug~~
+                var k = 0.5522848;
+                var x = style.x;
+                var y = style.y;
+                var a =style.a;
+                var b = style.b;
+                var ox = a * k; // 水平控制点偏移量
+                var oy = b * k; // 垂直控制点偏移量
+                //从椭圆的左端点开始顺时针绘制四条三次贝塞尔曲线
+                ctx.moveTo(x - a, y);
+                ctx.bezierCurveTo(x - a, y - oy, x - ox, y - b, x, y - b);
+                ctx.bezierCurveTo(x + ox, y - b, x + a, y - oy, x + a, y);
+                ctx.bezierCurveTo(x + a, y + oy, x + ox, y + b, x, y + b);
+                ctx.bezierCurveTo(x - ox, y + b, x - a, y + oy, x - a, y);
                 return;
             },
 
@@ -4447,7 +4571,6 @@ define(
         
         var shape = require('../shape');
         shape.define('ellipse', new Ellipse());
-
         return Ellipse;
     }
 );
@@ -4734,44 +4857,78 @@ define(
             buildPath : function(ctx, style) {
                 // 虽然能重用brokenLine，但底层图形基于性能考虑，重复代码减少调用吧
                 var pointList = style.pointList;
+                // 开始点和结束点重复
+                var start = pointList[0];
+                var end = pointList[pointList.length-1];
+                if (start && end) {
+                    if (start[0] == end[0] &&
+                        start[1] == end[1]) {
+                        // 移除最后一个点
+                        pointList.pop();
+                    }
+                }
                 if (pointList.length < 2) {
                     // 少于2个点就不画了~
                     return;
                 }
-                if (!style.lineType || style.lineType == 'solid') {
-                    //默认为实线
-                    ctx.moveTo(pointList[0][0],pointList[0][1]);
-                    for (var i = 1, l = pointList.length; i < l; i++) {
-                        ctx.lineTo(pointList[i][0],pointList[i][1]);
+                if (style.smooth && style.smooth !== 'spline') {
+                    var controlPoints = this.smoothBezier(
+                        pointList, style.smooth, true
+                    );
+
+                    ctx.moveTo(pointList[0][0], pointList[0][1]);
+                    var cp1;
+                    var cp2;
+                    var p;
+                    var len = pointList.length;
+                    for (var i = 0; i < len; i++) {
+                        cp1 = controlPoints[i * 2];
+                        cp2 = controlPoints[i * 2 + 1];
+                        p = pointList[(i + 1) % len];
+                        ctx.bezierCurveTo(
+                            cp1[0], cp1[1], cp2[0], cp2[1], p[0], p[1]
+                        );
                     }
-                    ctx.lineTo(pointList[0][0], pointList[0][1]);
-                }
-                else if (style.lineType == 'dashed'
-                        || style.lineType == 'dotted'
-                ) {
-                    var dashLength = style._dashLength
-                                     || (style.lineWidth || 1) 
-                                        * (style.lineType == 'dashed' ? 5 : 1);
-                    style._dashLength = dashLength;
-                    ctx.moveTo(pointList[0][0],pointList[0][1]);
-                    for (var i = 1, l = pointList.length; i < l; i++) {
+                } 
+                else {
+                    if (style.smooth === 'spline') {
+                        pointList = this.smoothSpline(pointList, true);
+                    }
+                    if (!style.lineType || style.lineType == 'solid') {
+                        //默认为实线
+                        ctx.moveTo(pointList[0][0],pointList[0][1]);
+                        for (var i = 1, l = pointList.length; i < l; i++) {
+                            ctx.lineTo(pointList[i][0],pointList[i][1]);
+                        }
+                        ctx.lineTo(pointList[0][0], pointList[0][1]);
+                    }
+                    else if (style.lineType == 'dashed'
+                            || style.lineType == 'dotted'
+                    ) {
+                        var dashLength = 
+                            style._dashLength
+                            || (style.lineWidth || 1) 
+                               * (style.lineType == 'dashed' ? 5 : 1);
+                        style._dashLength = dashLength;
+                        ctx.moveTo(pointList[0][0],pointList[0][1]);
+                        for (var i = 1, l = pointList.length; i < l; i++) {
+                            this.dashedLineTo(
+                                ctx,
+                                pointList[i - 1][0], pointList[i - 1][1],
+                                pointList[i][0], pointList[i][1],
+                                dashLength
+                            );
+                        }
                         this.dashedLineTo(
                             ctx,
-                            pointList[i - 1][0], pointList[i - 1][1],
-                            pointList[i][0], pointList[i][1],
+                            pointList[pointList.length - 1][0], 
+                            pointList[pointList.length - 1][1],
+                            pointList[0][0],
+                            pointList[0][1],
                             dashLength
                         );
                     }
-                    this.dashedLineTo(
-                        ctx,
-                        pointList[pointList.length - 1][0], 
-                        pointList[pointList.length - 1][1],
-                        pointList[0][0],
-                        pointList[0][1],
-                        dashLength
-                    );
                 }
-
                 return;
             },
 
@@ -4843,6 +5000,7 @@ define(
        // 样式属性，默认状态样式样式属性
        style  : {
            pointList     : {Array},   // 必须，各个顶角坐标
+           smooth        : {Number},  // 默认为0
            strokeColor   : {color},   // 默认为'#000'，线条颜色（轮廓），支持rgba
            lineType      : {string},  // 默认为solid，线条类型，solid | dashed | dotted
            lineWidth     : {number},  // 默认为1，线条宽度
@@ -4917,29 +5075,51 @@ define(
                     // 少于2个点就不画了~
                     return;
                 }
-                if (!style.lineType || style.lineType == 'solid') {
-                    //默认为实线
-                    ctx.moveTo(pointList[0][0],pointList[0][1]);
-                    for (var i = 1, l = pointList.length; i < l; i++) {
-                        ctx.lineTo(pointList[i][0],pointList[i][1]);
-                    }
-                }
-                else if (style.lineType == 'dashed'
-                        || style.lineType == 'dotted'
-                ) {
-                    var dashLength = (style.lineWidth || 1) 
-                                     * (style.lineType == 'dashed' ? 5 : 1);
-                    ctx.moveTo(pointList[0][0],pointList[0][1]);
-                    for (var i = 1, l = pointList.length; i < l; i++) {
-                        this.dashedLineTo(
-                            ctx,
-                            pointList[i - 1][0], pointList[i - 1][1],
-                            pointList[i][0], pointList[i][1],
-                            dashLength
+                if (style.smooth && style.smooth !== 'spline') {
+                    var controlPoints = this.smoothBezier(
+                        pointList, style.smooth, false
+                    );
+
+                    ctx.moveTo(pointList[0][0], pointList[0][1]);
+                    var cp1;
+                    var cp2;
+                    var p;
+                    for (var i = 0, l = pointList.length; i < l - 1; i++) {
+                        cp1 = controlPoints[i * 2];
+                        cp2 = controlPoints[i * 2 + 1];
+                        p = pointList[i + 1];
+                        ctx.bezierCurveTo(
+                            cp1[0], cp1[1], cp2[0], cp2[1], p[0], p[1]
                         );
                     }
+                } 
+                else {
+                    if (style.smooth === 'spline') {
+                        pointList = this.smoothSpline(pointList, false);
+                    }
+                    if (!style.lineType || style.lineType == 'solid') {
+                        //默认为实线
+                        ctx.moveTo(pointList[0][0],pointList[0][1]);
+                        for (var i = 1, l = pointList.length; i < l; i++) {
+                            ctx.lineTo(pointList[i][0],pointList[i][1]);
+                        }
+                    }
+                    else if (style.lineType == 'dashed'
+                            || style.lineType == 'dotted'
+                    ) {
+                        var dashLength = (style.lineWidth || 1) 
+                                         * (style.lineType == 'dashed' ? 5 : 1);
+                        ctx.moveTo(pointList[0][0],pointList[0][1]);
+                        for (var i = 1, l = pointList.length; i < l; i++) {
+                            this.dashedLineTo(
+                                ctx,
+                                pointList[i - 1][0], pointList[i - 1][1],
+                                pointList[i][0], pointList[i][1],
+                                dashLength
+                            );
+                        }
+                    }
                 }
-
                 return;
             },
 
@@ -7596,11 +7776,10 @@ define(
 /**
  * 动画主类, 调度和管理所有动画控制器
  *
- * @author lang(shenyi01@baidu.com)
+ * @author pissang(https://github.com/pissang)
  *
  * @class : Animation
  * @config : stage(optional) 绘制类, 需要提供update接口
- * @config : fps(optional) 帧率, 是自动更新动画的时候需要提供
  * @config : onframe(optional)
  * @method : add
  * @method : remove
@@ -8950,6 +9129,8 @@ define(
         var _idx = 0;           //ZRender instance's id
         var _instances = {};    //ZRender实例map索引
 
+        self.version = '1.0.4';
+
         /**
          * zrender初始化
          * 不让外部直接new ZRender实例，为啥？
@@ -9249,6 +9430,13 @@ define(
                 else {
                     zrender.log('Shape "'+ shapeId + '" not existed');
                 }
+            };
+
+            /**
+             * 停止所有动画
+             */
+            self.clearAnimation = function() {
+                animation.clear();
             };
 
             /**
