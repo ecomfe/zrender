@@ -209,7 +209,7 @@ define(
                     ctx.fill();
             }
 
-            if (style.text) {
+            if (typeof style.text != 'undefined') {
                 this.drawText(ctx, style, e.style);
             }
 
@@ -299,18 +299,22 @@ define(
             var v = [];
             var v1 = [];
             var v2 = [];
+            var prevPoint;
+            var nextPoint;
             for(var i = 0; i < len; i++){
                 var point = points[i];
+                var prevPoint;
+                var nextPoint;
                 if (loop) {
-                    var prevPoint = points[i == 0 ? len-1 : i-1];
-                    var nextPoint = points[(i + 1) % len];
+                    prevPoint = points[i === 0 ? len-1 : i-1];
+                    nextPoint = points[(i + 1) % len];
                 } else {
-                    if (i == 0 || i == len-1) {
+                    if (i === 0 || i === len-1) {
                         cps.push(points[i]);
                         continue;
                     } else {
-                        var prevPoint = points[i-1];
-                        var nextPoint = points[i+1];
+                        prevPoint = points[i-1];
+                        nextPoint = points[i+1];
                     }
                 }
 
@@ -351,24 +355,26 @@ define(
             var segs = distance / 5;
 
             for (var i = 0; i < segs; i++) {
+                var pos;
                 if (loop) {
-                    var pos = i / (segs-1) * len;
+                    pos = i / (segs-1) * len;
                 } else {
-                    var pos = i / (segs-1) * (len - 1);
+                    pos = i / (segs-1) * (len - 1);
                 }
                 var idx = Math.floor(pos);
 
                 var w = pos - idx;
 
                 var p1 = points[idx % len];
+                var p0, p2, p3;
                 if (!loop) {
-                    var p0 = points[idx == 0 ? idx : idx - 1];
-                    var p2 = points[idx > len - 2 ? len - 1 : idx + 1];
-                    var p3 = points[idx > len - 3 ? len - 1 : idx + 2];
+                    p0 = points[idx === 0 ? idx : idx - 1];
+                    p2 = points[idx > len - 2 ? len - 1 : idx + 1];
+                    p3 = points[idx > len - 3 ? len - 1 : idx + 2];
                 } else {
-                    var p0 = points[(idx -1 + len) % len];
-                    var p2 = points[(idx + 1) % len];
-                    var p3 = points[(idx + 2) % len];
+                    p0 = points[(idx -1 + len) % len];
+                    p2 = points[(idx + 1) % len];
+                    p3 = points[(idx + 2) % len];
                 }
 
                 var w2 = w * w;
@@ -377,7 +383,7 @@ define(
                 ret.push([
                     _interpolate(p0[0], p1[0], p2[0], p3[0], w, w2, w3),
                     _interpolate(p0[1], p1[1], p2[1], p3[1], w, w2, w3)
-                ])
+                ]);
             }
             return ret;
         }
@@ -388,7 +394,7 @@ define(
             return (2 * (p1 - p2) + v0 + v1) * t3 
                     + (- 3 * (p1 - p2) - 2 * v0 - v1) * t2
                     + v0 * t + p1;
-        };
+        }
         
         /**
          * 附加文本
