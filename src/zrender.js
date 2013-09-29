@@ -62,6 +62,8 @@ define(
         var _idx = 0;           //ZRender instance's id
         var _instances = {};    //ZRender实例map索引
 
+        self.version = '1.0.4';
+
         /**
          * zrender初始化
          * 不让外部直接new ZRender实例，为啥？
@@ -361,6 +363,13 @@ define(
                 else {
                     zrender.log('Shape "'+ shapeId + '" not existed');
                 }
+            };
+
+            /**
+             * 停止所有动画
+             */
+            self.clearAnimation = function() {
+                animation.clear();
             };
 
             /**

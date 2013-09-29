@@ -1,11 +1,10 @@
 /**
  * 动画主类, 调度和管理所有动画控制器
  *
- * @author lang(shenyi01@baidu.com)
+ * @author pissang(https://github.com/pissang)
  *
  * @class : Animation
  * @config : stage(optional) 绘制类, 需要提供update接口
- * @config : fps(optional) 帧率, 是自动更新动画的时候需要提供
  * @config : onframe(optional)
  * @method : add
  * @method : remove
