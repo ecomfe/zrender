@@ -62,7 +62,7 @@ define(
         var _idx = 0;           //ZRender instance's id
         var _instances = {};    //ZRender实例map索引
 
-        self.version = '1.0.3';
+        self.version = '1.0.4';
 
         /**
          * zrender初始化
