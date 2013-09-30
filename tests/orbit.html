@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Animation</title>
+    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+</head>
+<body>
+    <script type="text/javascript">
+        require(["../src/zrender",
+                "../src/animation/animation"], function(zrender, Animation){
+
+            // 初始化zrender
+            var zr = zrender.init( document.getElementById("Main") );
+
+            var NUMBER = 10;
+
+            for (var i = 0; i < NUMBER; i++) {
+                var circle = {
+                                shape : 'circle',
+                                id : zr.newShapeId(),
+                                scale : [1, 1],
+                                zlevel : 1,
+                                style : {
+                                    x : 0,
+                                    y : 0,
+                                    r : 10,
+                                    brushType : 'fill',
+                                    color : 'grey'
+                                },
+                                draggable : false,
+                                hoverable : false,
+                            }
+                zr.addShape(circle);
+                var deferred = zr.animate(circle.id, "", circle, true);
+
+                var points = [];
+                var point = [
+                    Math.random() * zr.getWidth(),
+                    Math.random() * zr.getHeight()
+                ];
+                circle.position = point;
+                points.push(point);
+                for (var j = 1; j < 10; j++) {
+                    var point = [
+                        Math.random() * zr.getWidth(),
+                        Math.random() * zr.getHeight()
+                    ];
+                    deferred.when(j * 500, {
+                        position : point
+                    });
+                    points.push(point);
+                }
+                var brokenLine = {
+                    shape : 'brokenLine',
+                    id : zr.newShapeId(),
+                    zlevel : 0,
+                    style : {
+                        pointList : points,
+                        smooth : 'spline',
+                        brushType : 'stroke',
+                        strokeColor : 'grey',
+                        opacity : 0.4
+                    }
+                }
+                zr.addShape(brokenLine);
+                deferred.start('spline');
+            }
+            zr.render();
+
+        })
+    </script>
+    <div id="Main" style="width:1000px;height:600px;"></div>
+</body>
+</html>

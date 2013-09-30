@@ -350,7 +350,7 @@ define(
                     }
                     shape.__aniCount ++;
 
-                    return animation.animate(target, loop)
+                    return animation.animate(target, {loop : loop})
                         .done(function() {
                             shape.__aniCount --;
                             if( shape.__aniCount === 0){

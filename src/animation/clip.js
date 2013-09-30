@@ -15,7 +15,7 @@ define(
 
         var Easing = require('./easing');
 
-        var Controller = function(options) {
+        var Clip = function(options) {
 
             this._targetPool = options.target || {};
             if (this._targetPool.constructor != Array) {
@@ -47,7 +47,7 @@ define(
             this.onrestart = options.onrestart || null;
         };
 
-        Controller.prototype = {
+        Clip.prototype = {
             step : function(time) {
                 var percent = (time - this._startTime) / this._life;
 
@@ -99,8 +99,8 @@ define(
                 }
             }
         };
-        Controller.prototype.constructor = Controller;
+        Clip.prototype.constructor = Clip;
 
-        return Controller;
+        return Clip;
     }
 );
