@@ -282,6 +282,15 @@ define(
                 painter.refresh(callback);
                 return self;
             };
+            
+            /**
+             * 高亮层更新
+             * @param {Function} callback  视图更新后回调函数
+             */
+            self.refreshHover = function(callback) {
+                painter.refreshHover(callback);
+                return self;
+            };
 
             /**
              * 视图更新
