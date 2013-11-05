@@ -56,6 +56,7 @@ define(
             }
             else {
                 e.returnValue = false;
+                e.cancelBubble = true;
             }
         }
 

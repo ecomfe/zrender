@@ -62,7 +62,7 @@ define(
         var _idx = 0;           //ZRender instance's id
         var _instances = {};    //ZRender实例map索引
 
-        self.version = '1.0.4';
+        self.version = '1.0.5';
 
         /**
          * zrender初始化
@@ -282,6 +282,15 @@ define(
                 painter.refresh(callback);
                 return self;
             };
+            
+            /**
+             * 高亮层更新
+             * @param {Function} callback  视图更新后回调函数
+             */
+            self.refreshHover = function(callback) {
+                painter.refreshHover(callback);
+                return self;
+            };
 
             /**
              * 视图更新
@@ -350,7 +359,7 @@ define(
                     }
                     shape.__aniCount ++;
 
-                    return animation.animate(target, loop)
+                    return animation.animate(target, {loop : loop})
                         .done(function() {
                             shape.__aniCount --;
                             if( shape.__aniCount === 0){
