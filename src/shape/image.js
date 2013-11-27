@@ -104,7 +104,7 @@ define(
                         image = _cache[src];
                     }
                     else {
-                        image = document.createElement('image');//new Image();
+                        image = new Image();//document.createElement('image');
                         image.onload = function(){
                             image.onload = null;
                             clearTimeout( _refreshTimeout );
