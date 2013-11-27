@@ -78,39 +78,39 @@
                     case 0 :
                         move.when(time, {
                             scale : [random(3, 1), random(3, 1)]
-                        }, easing);
+                        });
                         break;
                     case 1 :
                         move.when(time, {
                             position : [random(w), random(h)]
-                        }, easing);
+                        });
                         break;
                     case 2 :
                         move.when(time, {
                             rotation : [pi * 2 * random(10, 1), 0, 0]
-                        }, easing);
+                        });
                         break;
                     case 3 : 
                         move = zr.animate(id, 'style').when(time, {
                             r : [random(100, 30)]
-                        }, easing);
+                        });
                         break;
                     case 4 : 
                         move = zr.animate(id, 'style').when(time, {
                             k : random(10)
-                        }, easing);
+                        });
                         break;
                     case 5 : 
                         move = zr.animate(id, 'style').when(time, {
                             n : random(5)
-                        }, easing);
+                        });
                         break;
                 }
 
                 move.done(function() {
                         animate(id, shape);
                     })
-                    .start();
+                    .start(easing);
             }
         })
 
