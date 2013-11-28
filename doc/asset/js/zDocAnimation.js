@@ -126,11 +126,11 @@ for (var i = 0; i < n; i++) {
     zr.animate(shapList[i].id, "style", true)
         .when(2000, {
             x : width - 50
-        }, easingEffect[i])
+        })
         .when(4000, {
             x : 50
-        }, easingEffect[i])
-        .start();
+        })
+        .start(easingEffect[i]);
 }
 zr.render();
                 }).toString().slice(13, -10),
@@ -269,11 +269,11 @@ for (var i = 0; i < n; i++) {
     zr.animate(shapList[i].id, "style", true)
         .when(2000, {
             x : width - 50
-        }, easingEffect[i])
+        })
         .when(4000, {
             x : 50
-        }, easingEffect[i])
-        .start();
+        })
+        .start(easingEffect[i]);
 }
 zr.render();
                 }).toString().slice(13, -10),
@@ -381,11 +381,11 @@ for (var i = 0; i < n; i++) {
     zr.animate(shapList[i].id, "style", true)
         .when(2000, {
             x : width - 50
-        }, easingEffect[i])
+        })
         .when(4000, {
             x : 50
-        }, easingEffect[i])
-        .start();
+        })
+        .start(easingEffect[i]);
 }
 zr.render();
                 }).toString().slice(13, -10),

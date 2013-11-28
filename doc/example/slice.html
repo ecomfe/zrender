@@ -47,7 +47,7 @@
                 <li class="dropdown">
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="icon-download-alt icon-white"></i>Download <b class="caret"></b></a>
                   <ul class="dropdown-menu">
-                    <li><a href="https://github.com/ecomfe/zrender/archive/1.0.5.zip">ZIP (1.0.5)</a></li>
+                    <li><a href="https://github.com/ecomfe/zrender/archive/1.0.6.zip">ZIP (1.0.6)</a></li>
                     <li><a href="https://github.com/ecomfe/zrender/archive/master.zip">ZIP (Latest)</a></li>
                   </ul>
                 </li>
@@ -312,19 +312,19 @@
                                 zr.animate(newShape.id, 'style')
                                     .when(1000, {
                                         y : height - newShape.style.r
-                                    },'BounceOut')
-                                    .start();
+                                    })
+                                    .start('BounceOut');
                             }
                         };
                         zr.addShape(bubble);
                         zr.animate(bubble.id, 'style')
                             .when(3000, {
                                 y : -120
-                            },'QuadraticInOut')
+                            })
                             .done(function(){
                                 zr.delShape(bubble.id);
                             })
-                            .start();
+                            .start('QuadraticInOut');
                     }, 200);
 
                     clearInterval(timeTicket);

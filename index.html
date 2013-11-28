@@ -52,7 +52,7 @@
                 <li class="dropdown">
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="icon-download-alt icon-white"></i>Download <b class="caret"></b></a>
                   <ul class="dropdown-menu">
-                    <li><a href="https://github.com/ecomfe/zrender/archive/1.0.5.zip">ZIP (1.0.5)</a></li>
+                    <li><a href="https://github.com/ecomfe/zrender/archive/1.0.6.zip">ZIP (1.0.6)</a></li>
                     <li><a href="https://github.com/ecomfe/zrender/archive/master.zip">ZIP (Latest)</a></li>
 
                   </ul>
@@ -201,13 +201,13 @@ var myShape = {
 zr.addShape(newShape);
 zr.render();
 zr.animate(newShape.id)
-  .when(1000, { position : [300, 200] }, 'BounceOut')
-  .when(2000, { position : [30, 400] }, 'CubicIn')
-  .start();</pre>
+  .when(1000, { position : [300, 200] })
+  .when(2000, { position : [30, 400] })
+  .start('BounceOut');</pre>
         </div>
         <h2 class="featurette-heading">强大的动画支持</h2>
         <p>提供promise式的动画接口和常用缓动函数，轻松实现各种动画需求~</p>
-        <p><a href="doc/example/demo.html?code=%0D%0Avar%20circle%20%3D%20%7B%0D%0A%20%20%20%20shape%3A%20'circle'%2C%0D%0A%20%20%20%20id%3A%20zr.newShapeId()%2C%0D%0A%20%20%20%20position%3A%20%5B100%2C%20100%5D%2C%0D%0A%20%20%20%20rotation%3A%20%5B0%2C%200%2C%200%5D%2C%0D%0A%20%20%20%20scale%3A%20%5B1%2C%201%5D%2C%0D%0A%20%20%20%20style%3A%20%7B%0D%0A%20%20%20%20%20%20%20%20x%3A%200%2C%0D%0A%20%20%20%20%20%20%20%20y%3A%200%2C%0D%0A%20%20%20%20%20%20%20%20r%3A%2050%2C%0D%0A%20%20%20%20%20%20%20%20brushType%3A%20'both'%2C%0D%0A%20%20%20%20%20%20%20%20color%3A%20'rgba(220%2C%2020%2C%2060%2C%200.8)'%2C%0D%0A%20%20%20%20%20%20%20%20strokeColor%3A%20%22rgba(220%2C%2020%2C%2060%2C%200.8)%22%2C%0D%0A%20%20%20%20%20%20%20%20lineWidth%3A%205%2C%0D%0A%20%20%20%20%20%20%20%20text%3A%20'circle'%2C%0D%0A%20%20%20%20%20%20%20%20textPosition%3A%20'inside'%0D%0A%20%20%20%20%7D%2C%0D%0A%20%20%20%20draggable%3A%20true%0D%0A%7D%0D%0Azr.addShape(circle)%3B%0D%0Azr.render()%3B%0D%0A%0D%0Azr.animate(circle.id%2C%20%22%22%2C%20true)%0D%0A%20%20%20%20.when(1000%2C%20%7B%0D%0A%20%20%20%20%20%20%20%20position%3A%20%5B200%2C%200%5D%0D%0A%20%20%20%20%7D)%0D%0A%20%20%20%20.when(2000%2C%20%7B%0D%0A%20%20%20%20%20%20%20%20position%3A%20%5B200%2C%20200%5D%0D%0A%20%20%20%20%7D%2C%20%22BounceIn%22)%0D%0A%20%20%20%20.when(3000%2C%20%7B%0D%0A%20%20%20%20%20%20%20%20position%3A%20%5B0%2C%20200%5D%0D%0A%20%20%20%20%7D)%0D%0A%20%20%20%20.when(4000%2C%20%7B%0D%0A%20%20%20%20%20%20%20%20position%3A%20%5B100%2C%20100%5D%0D%0A%20%20%20%20%7D).start()%3B%0D" target="_blank">try this »</a></p>
+        <p><a href="doc/example/demo.html?code=%0D%0Avar%20circle%20%3D%20%7B%0D%0A%20%20%20%20shape%3A%20'circle'%2C%0D%0A%20%20%20%20id%3A%20zr.newShapeId()%2C%0D%0A%20%20%20%20position%3A%20%5B100%2C%20100%5D%2C%0D%0A%20%20%20%20rotation%3A%20%5B0%2C%200%2C%200%5D%2C%0D%0A%20%20%20%20scale%3A%20%5B1%2C%201%5D%2C%0D%0A%20%20%20%20style%3A%20%7B%0D%0A%20%20%20%20%20%20%20%20x%3A%200%2C%0D%0A%20%20%20%20%20%20%20%20y%3A%200%2C%0D%0A%20%20%20%20%20%20%20%20r%3A%2050%2C%0D%0A%20%20%20%20%20%20%20%20brushType%3A%20'both'%2C%0D%0A%20%20%20%20%20%20%20%20color%3A%20'rgba(220%2C%2020%2C%2060%2C%200.8)'%2C%0D%0A%20%20%20%20%20%20%20%20strokeColor%3A%20%22rgba(220%2C%2020%2C%2060%2C%200.8)%22%2C%0D%0A%20%20%20%20%20%20%20%20lineWidth%3A%205%2C%0D%0A%20%20%20%20%20%20%20%20text%3A%20'circle'%2C%0D%0A%20%20%20%20%20%20%20%20textPosition%3A%20'inside'%0D%0A%20%20%20%20%7D%2C%0D%0A%20%20%20%20draggable%3A%20true%0D%0A%7D%0D%0Azr.addShape(circle)%3B%0D%0Azr.render()%3B%0D%0A%0D%0Azr.animate(circle.id%2C%20%22%22%2C%20true)%0D%0A%20%20%20%20.when(1000%2C%20%7B%0D%0A%20%20%20%20%20%20%20%20position%3A%20%5B200%2C%200%5D%0D%0A%20%20%20%20%7D)%0D%0A%20%20%20%20.when(2000%2C%20%7B%0D%0A%20%20%20%20%20%20%20%20position%3A%20%5B200%2C%20200%5D%0D%0A%20%20%20%20%7D)%0D%0A%20%20%20%20.when(3000%2C%20%7B%0D%0A%20%20%20%20%20%20%20%20position%3A%20%5B0%2C%20200%5D%0D%0A%20%20%20%20%7D)%0D%0A%20%20%20%20.when(4000%2C%20%7B%0D%0A%20%20%20%20%20%20%20%20position%3A%20%5B100%2C%20100%5D%0D%0A%20%20%20%20%7D).start()%3B%0D" target="_blank">try this »</a></p>
       </div>
       <hr class="featurette-divider">
       <div class="featurette">

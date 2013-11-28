@@ -62,7 +62,7 @@ define(
         var _idx = 0;           //ZRender instance's id
         var _instances = {};    //ZRender实例map索引
 
-        self.version = '1.0.5';
+        self.version = '1.0.6';
 
         /**
          * zrender初始化
@@ -154,7 +154,14 @@ define(
 
             return self;
         };
-
+        /* for debug
+        self.log = function(mes) {
+            document.getElementById('wrong-message').innerHTML =
+                mes + ' ' + (new Date() - 0)
+                + '<br/>' 
+                + document.getElementById('wrong-message').innerHTML;
+        };
+        */
         /**
          * ZRender接口类，对外可用的所有接口都在这里！！
          * storage（M）、painter（V）、handler（C）为内部私有类，外部接口不可见
@@ -168,6 +175,8 @@ define(
          */
         function ZRender(id, dom, params) {
             var self = this;
+            self.env = require('./tool/env');
+            
             var shape = require('./shape');
             // 内置图形注册
             require('./shape/circle');
@@ -1427,6 +1436,7 @@ define(
          */
         function Handler(root, storage, painter, shape) {
             var config = require('./config');
+            var env = require('./tool/env');
             //添加事件分发器特性
             var eventTool = require('./tool/event');
             eventTool.Dispatcher.call(this);
@@ -1461,19 +1471,23 @@ define(
             function _init() {
                 if (window.addEventListener) {
                     window.addEventListener('resize', _resizeHandler);
-
-                    root.addEventListener('click', _clickHandler);
-                    root.addEventListener('mousewheel', _mouseWheelHandler);
+                    
+                    if (!env.os.tablet && !env.os.phone) {
+                        // mobile的click/move/up/down自己模拟
+                        root.addEventListener('click', _clickHandler);
+                        root.addEventListener('mousewheel', _mouseWheelHandler);
+                        root.addEventListener('mousemove', _mouseMoveHandler);
+                        root.addEventListener('mousedown', _mouseDownHandler);
+                        root.addEventListener('mouseup', _mouseUpHandler);
+                    }
+                    else {
+                        // mobile支持
+                        root.addEventListener('touchstart', _touchStartHandler);
+                        root.addEventListener('touchmove', _touchMoveHandler);
+                        root.addEventListener('touchend', _touchEndHandler);
+                    } 
                     root.addEventListener('DOMMouseScroll', _mouseWheelHandler);
-                    root.addEventListener('mousemove', _mouseMoveHandler);
                     root.addEventListener('mouseout', _mouseOutHandler);
-                    root.addEventListener('mousedown', _mouseDownHandler);
-                    root.addEventListener('mouseup', _mouseUpHandler);
-
-                    // mobile支持
-                    root.addEventListener('touchstart', _touchStartHandler);
-                    root.addEventListener('touchmove', _touchMoveHandler);
-                    root.addEventListener('touchend', _touchEndHandler);
                 }
                 else {
                     window.attachEvent('onresize', _resizeHandler);
@@ -1679,6 +1693,8 @@ define(
                 //eventTool.stop(event);// 阻止浏览器默认事件，重要
                 _event = _zrenderEventFixed(event, true);
                 _lastTouchMoment = new Date();
+                //平板补充一次findHover
+                _mobildFindFixed();
                 _mouseDownHandler(_event);
             }
 
@@ -1702,39 +1718,14 @@ define(
                 //eventTool.stop(event);// 阻止浏览器默认事件，重要
                 _event = _zrenderEventFixed(event, true);
                 _mouseUpHandler(_event);
-                painter.clearHover();
 
                 if (new Date() - _lastTouchMoment
                     < config.EVENT.touchClickDelay
                 ) {
-                    _lastHover = null;
-                    _mouseX = _event.zrenderX;
-                    _mouseY = _event.zrenderY;
-                    // touch有指尖错觉，四向尝试，让touch上的点击更好触发事件
-                    storage.iterShape(_findHover, { normal: 'down'});
-                    if (!_lastHover) {
-                        _mouseX += 10;
-                        storage.iterShape(_findHover, { normal: 'down'});
-                    }
-                    if (!_lastHover) {
-                        _mouseX -= 20;
-                        storage.iterShape(_findHover, { normal: 'down'});
-                    }
-                    if (!_lastHover) {
-                        _mouseX += 10;
-                        _mouseY += 10;
-                        storage.iterShape(_findHover, { normal: 'down'});
-                    }
-                    if (!_lastHover) {
-                        _mouseY -= 20;
-                        storage.iterShape(_findHover, { normal: 'down'});
-                    }
-                    if (_lastHover) {
-                        _event.zrenderX = _mouseX;
-                        _event.zrenderY = _mouseY;
-                    }
+                     _mobildFindFixed()
                     _clickHandler(_event);
                 }
+                painter.clearHover();
             }
 
             /**
@@ -1870,6 +1861,35 @@ define(
                 else if (!draggedShape) {
                     //无hover目标，无拖拽对象，原生事件分发
                     self.dispatch(eventName, _event);
+                }
+            }
+            
+            // touch有指尖错觉，四向尝试，让touch上的点击更好触发事件
+            function _mobildFindFixed() {
+                _lastHover = null;
+                _mouseX = _event.zrenderX;
+                _mouseY = _event.zrenderY;
+                storage.iterShape(_findHover, { normal: 'down'});
+                if (!_lastHover) {
+                    _mouseX += 10;
+                    storage.iterShape(_findHover, { normal: 'down'});
+                }
+                if (!_lastHover) {
+                    _mouseX -= 20;
+                    storage.iterShape(_findHover, { normal: 'down'});
+                }
+                if (!_lastHover) {
+                    _mouseX += 10;
+                    _mouseY += 10;
+                    storage.iterShape(_findHover, { normal: 'down'});
+                }
+                if (!_lastHover) {
+                    _mouseY -= 20;
+                    storage.iterShape(_findHover, { normal: 'down'});
+                }
+                if (_lastHover) {
+                    _event.zrenderX = _mouseX;
+                    _event.zrenderY = _mouseY;
                 }
             }
 
@@ -2012,20 +2032,42 @@ define(
                 if (window.removeEventListener) {
                     window.removeEventListener('resize', _resizeHandler);
 
-                    root.removeEventListener('click', _clickHandler);
-                    root.removeEventListener('mousewheel', _mouseWheelHandler);
+                    if (!env.os.tablet && !env.os.phone) {
+                        // mobile的click自己模拟
+                        root.removeEventListener(
+                            'click', _clickHandler
+                        );
+                        root.removeEventListener(
+                            'mousewheel', _mouseWheelHandler
+                        );
+                        root.removeEventListener(
+                            'mousemove', _mouseMoveHandler
+                        );
+                        root.removeEventListener(
+                            'mousedown', _mouseDownHandler
+                        );
+                        root.removeEventListener(
+                            'mouseup', _mouseUpHandler
+                        );
+                    }
+                    else {
+                        // mobile支持
+                        root.removeEventListener(
+                            'touchstart', _touchStartHandler
+                        );
+                        root.removeEventListener(
+                            'touchmove', _touchMoveHandler
+                        );
+                        root.removeEventListener(
+                            'touchend', _touchEndHandler
+                        );
+                    }
                     root.removeEventListener(
                         'DOMMouseScroll', _mouseWheelHandler
                     );
-                    root.removeEventListener('mousemove', _mouseMoveHandler);
-                    root.removeEventListener('mouseout', _mouseOutHandler);
-                    root.removeEventListener('mousedown', _mouseDownHandler);
-                    root.removeEventListener('mouseup', _mouseUpHandler);
-
-                    // mobile支持
-                    root.removeEventListener('touchstart', _touchStartHandler);
-                    root.removeEventListener('touchmove', _touchMoveHandler);
-                    root.removeEventListener('touchend', _touchEndHandler);
+                    root.removeEventListener(
+                        'mouseout', _mouseOutHandler
+                    );
                 }
                 else {
                     window.detachEvent('onresize', _resizeHandler);
