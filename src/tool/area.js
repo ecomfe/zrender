@@ -218,7 +218,7 @@ define(
             var _y1 = area.yStart;
             var _x2 = area.xEnd;
             var _y2 = area.yEnd;
-            var _l = area.lineWidth;
+            var _l = Math.max(area.lineWidth, 3);
             var _a = 0;
             var _b = _x1;
 
