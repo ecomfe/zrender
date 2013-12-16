@@ -145,6 +145,7 @@ define(
                         if (
                             source[name] instanceof Object 
                             && recursive
+                            && target[name]
                         ) {
                             mergeFast(
                                 target[name],
