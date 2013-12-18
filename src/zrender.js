@@ -62,7 +62,7 @@ define(
         var _idx = 0;           //ZRender instance's id
         var _instances = {};    //ZRender实例map索引
 
-        self.version = '1.0.6';
+        self.version = '1.0.7';
 
         /**
          * zrender初始化
@@ -258,9 +258,10 @@ define(
              * 修改图形形状
              * @param {string} shapeId 形状对象唯一标识
              * @param {Object} shape 形状对象
+             * @param {fast} boolean 默认为false, 如果为true的话会在merge中省略部分判断
              */
-            self.modShape = function(shapeId, shape) {
-                storage.mod(shapeId, shape);
+            self.modShape = function(shapeId, shape, fast) {
+                storage.mod(shapeId, shape, fast);
                 return self;
             };
 
@@ -673,19 +674,29 @@ define(
              * 修改
              * @param {string} idx 唯一标识
              * @param {Object} params]参数
+             * @param {boolean} fast
              */
-            function mod(shapeId, params) {
+            function mod(shapeId, params, fast) {
                 var e = _elements[shapeId];
                 if (e) {
                     _changedZlevel[e.zlevel] = true;    // 可能修改前后不在一层
-                    util.merge(
-                        e,
-                        params,
-                        {
-                            'overwrite': true,
-                            'recursive': true
-                        }
-                    );
+                    if (fast) {
+                        util.mergeFast(
+                            e,
+                            params,
+                            true,
+                            true
+                        );
+                    } else {
+                        util.merge(
+                            e,
+                            params,
+                            {
+                                'overwrite': true,
+                                'recursive': true
+                            }
+                        );
+                    }
                     _mark(e);
                     _changedZlevel[e.zlevel] = true;    // 可能修改前后不在一层
                     _maxZlevel = Math.max(_maxZlevel,e.zlevel);

@@ -128,6 +128,44 @@ define(
             };
         })();
 
+        /**
+         * 简化版的merge操作，舍去很多判断
+         * @param  {*} target   
+         * @param  {*} source   
+         * @param  {boolean} overwrite
+         * @param  {boolean} recursive     
+         */
+        function mergeFast(target, source, overwrite, recursive) {
+            if (!target || !source) {
+                return;
+            }
+            if (source instanceof Object) {
+                for (var name in source) {
+                    if (source.hasOwnProperty(name)) {
+                        if (
+                            source[name] instanceof Object 
+                            && recursive
+                            && target[name]
+                        ) {
+                            mergeFast(
+                                target[name],
+                                source[name],
+                                overwrite,
+                                recursive
+                            );
+                        } else {
+                            if (
+                                overwrite
+                                || !target.hasOwnProperty(name)
+                            ) {
+                                target[name] = source[name];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         var _ctx;
 
         function getContext() {
@@ -436,6 +474,7 @@ define(
         return {
             clone : clone,
             merge : merge,
+            mergeFast : mergeFast,
             getContext : getContext,
 
             getPixelContext : getPixelContext,

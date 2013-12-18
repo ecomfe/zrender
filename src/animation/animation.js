@@ -39,6 +39,8 @@ var Animation = function(options) {
     this._clips = [];
 
     this._running = false;
+
+    this._time = 0;
 };
 
 Animation.prototype = {
@@ -52,7 +54,9 @@ Animation.prototype = {
         }
     },
     update : function() {
+
         var time = new Date().getTime();
+        var delta = time - this._time;
         var clips = this._clips;
         var len = clips.length;
 
@@ -76,19 +80,22 @@ Animation.prototype = {
         }
 
         // Remove the finished clip
-        var newArray = [];
-        for (var i = 0; i < len; i++) {
-            if (!clips[i]._needsRemove) {
-                newArray.push(clips[i]);
-                clips[i]._needsRemove = false;
+        for (var i = 0; i < len;) {
+            if (clips[i]._needsRemove) {
+                clips[i] = clips[len-1];
+                clips.pop();
+                len--;
+            } else {
+                i++;
             }
         }
-        this._clips = newArray;
 
         len = deferredEvents.length;
         for (var i = 0; i < len; i++) {
             deferredClips[i].fire(deferredEvents[i]);
         }
+
+        this._time = time;
 
         this.onframe();
 

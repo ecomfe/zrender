@@ -1541,38 +1541,60 @@ define(
  * zrender: 向量操作类
  *
  * author : lang(shenyi01@baidu.com)
- * code from vec2 in http://glmatrix.net/
  */
 define(
     'zrender/tool/vector',[],function() {
-       var vector = {
+        var ArrayCtor
+            = typeof Float32Array === 'undefined'
+            ? Array
+            : Float32Array;
+        var vector = {
+            create : function(x, y) {
+                var out = new ArrayCtor(2);
+                out[0] = x || 0;
+                out[1] = y || 0;
+                return out;
+            },
+            copy : function(out, v) {
+                out[0] = v[0];
+                out[1] = v[1];
+            },
+            set : function(out, a, b) {
+                out[0] = a;
+                out[1] = b;
+            },
             add : function(out, v1, v2) {
-                out[0] = v1[0]+v2[0];
-                out[1] = v1[1]+v2[1];
+                out[0] = v1[0] + v2[0];
+                out[1] = v1[1] + v2[1];
+                return out;
+            },
+            scaleAndAdd : function(out, v1, v2, a) {
+                out[0] = v1[0] + v2[0] * a;
+                out[1] = v1[1] + v2[1] * a;
                 return out;
             },
             sub : function(out, v1, v2) {
-                out[0] = v1[0]-v2[0];
-                out[1] = v1[1]-v2[1];
+                out[0] = v1[0] - v2[0];
+                out[1] = v1[1] - v2[1];
                 return out;
             },
             length : function(v) {
-                return Math.sqrt( this.lengthSquare(v) );
+                return Math.sqrt(this.lengthSquare(v));
             },
             lengthSquare : function(v) {
-                return v[0]*v[0]+v[1]*v[1];
+                return v[0] * v[0] + v[1] * v[1];
             },
             mul : function(out, v1, v2) {
-                out[0] = v1[0]*v2[0];
-                out[1] = v1[1]*v2[1];
+                out[0] = v1[0] * v2[0];
+                out[1] = v1[1] * v2[1];
                 return out;
             },
             dot : function(v1, v2) {
-                return v1[0]*v2[0]+v1[1]*v2[1];
+                return v1[0] * v2[0] + v1[1] * v2[1];
             },
             scale : function(out, v, s) {
-                out[0] = v[0]*s;
-                out[1] = v[1]*s;
+                out[0] = v[0] * s;
+                out[1] = v[1] * s;
                 return out;
             },
             normalize : function(out, v) {
@@ -1597,8 +1619,8 @@ define(
                 out[1] = -v[1];
             },
             middle : function(out, v1, v2) {
-                out[0] = (v1[0]+v2[0])/2;
-                out[1] = (v1[1]+v2[1])/2;
+                out[0] = (v1[0] + v2[0])/2;
+                out[1] = (v1[1] + v2[1])/2;
                 return out;
             }
         };
@@ -1735,6 +1757,44 @@ define(
                 return target;
             };
         })();
+
+        /**
+         * 简化版的merge操作，舍去很多判断
+         * @param  {*} target   
+         * @param  {*} source   
+         * @param  {boolean} overwrite
+         * @param  {boolean} recursive     
+         */
+        function mergeFast(target, source, overwrite, recursive) {
+            if (!target || !source) {
+                return;
+            }
+            if (source instanceof Object) {
+                for (var name in source) {
+                    if (source.hasOwnProperty(name)) {
+                        if (
+                            source[name] instanceof Object 
+                            && recursive
+                            && target[name]
+                        ) {
+                            mergeFast(
+                                target[name],
+                                source[name],
+                                overwrite,
+                                recursive
+                            );
+                        } else {
+                            if (
+                                overwrite
+                                || !target.hasOwnProperty(name)
+                            ) {
+                                target[name] = source[name];
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         var _ctx;
 
@@ -2044,6 +2104,7 @@ define(
         return {
             clone : clone,
             merge : merge,
+            mergeFast : mergeFast,
             getContext : getContext,
 
             getPixelContext : getPixelContext,
@@ -2280,7 +2341,7 @@ define(
             var _y1 = area.yStart;
             var _x2 = area.xEnd;
             var _y2 = area.yEnd;
-            var _l = area.lineWidth;
+            var _l = Math.max(area.lineWidth, 3);
             var _a = 0;
             var _b = _x1;
 
@@ -7902,6 +7963,8 @@ var Animation = function(options) {
     this._clips = [];
 
     this._running = false;
+
+    this._time = 0;
 };
 
 Animation.prototype = {
@@ -7915,7 +7978,9 @@ Animation.prototype = {
         }
     },
     update : function() {
+
         var time = new Date().getTime();
+        var delta = time - this._time;
         var clips = this._clips;
         var len = clips.length;
 
@@ -7939,19 +8004,22 @@ Animation.prototype = {
         }
 
         // Remove the finished clip
-        var newArray = [];
-        for (var i = 0; i < len; i++) {
-            if (!clips[i]._needsRemove) {
-                newArray.push(clips[i]);
-                clips[i]._needsRemove = false;
+        for (var i = 0; i < len;) {
+            if (clips[i]._needsRemove) {
+                clips[i] = clips[len-1];
+                clips.pop();
+                len--;
+            } else {
+                i++;
             }
         }
-        this._clips = newArray;
 
         len = deferredEvents.length;
         for (var i = 0; i < len; i++) {
             deferredClips[i].fire(deferredEvents[i]);
         }
+
+        this._time = time;
 
         this.onframe();
 
@@ -9325,7 +9393,7 @@ define(
         var _idx = 0;           //ZRender instance's id
         var _instances = {};    //ZRender实例map索引
 
-        self.version = '1.0.6';
+        self.version = '1.0.7';
 
         /**
          * zrender初始化
@@ -9521,9 +9589,10 @@ define(
              * 修改图形形状
              * @param {string} shapeId 形状对象唯一标识
              * @param {Object} shape 形状对象
+             * @param {fast} boolean 默认为false, 如果为true的话会在merge中省略部分判断
              */
-            self.modShape = function(shapeId, shape) {
-                storage.mod(shapeId, shape);
+            self.modShape = function(shapeId, shape, fast) {
+                storage.mod(shapeId, shape, fast);
                 return self;
             };
 
@@ -9936,19 +10005,29 @@ define(
              * 修改
              * @param {string} idx 唯一标识
              * @param {Object} params]参数
+             * @param {boolean} fast
              */
-            function mod(shapeId, params) {
+            function mod(shapeId, params, fast) {
                 var e = _elements[shapeId];
                 if (e) {
                     _changedZlevel[e.zlevel] = true;    // 可能修改前后不在一层
-                    util.merge(
-                        e,
-                        params,
-                        {
-                            'overwrite': true,
-                            'recursive': true
-                        }
-                    );
+                    if (fast) {
+                        util.mergeFast(
+                            e,
+                            params,
+                            true,
+                            true
+                        );
+                    } else {
+                        util.merge(
+                            e,
+                            params,
+                            {
+                                'overwrite': true,
+                                'recursive': true
+                            }
+                        );
+                    }
                     _mark(e);
                     _changedZlevel[e.zlevel] = true;    // 可能修改前后不在一层
                     _maxZlevel = Math.max(_maxZlevel,e.zlevel);
