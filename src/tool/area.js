@@ -420,6 +420,9 @@ define(
          * 路径包含判断，依赖多边形判断
          */
         function _isInsidePath(area, x, y) {
+            if (!area.pointList) {
+                require('../shape').get('path').buildPath(_ctx, area);
+            }
             var pointList = area.pointList;
             var insideCatch = false;
             for (var i = 0, l = pointList.length; i < l; i++) {
