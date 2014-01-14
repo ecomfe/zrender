@@ -437,7 +437,7 @@ define(
         }
 
         /**
-         * 测算单行文本欢度
+         * 测算多行文本宽度
          * @param {Object} text
          * @param {Object} textFont
          */
@@ -450,16 +450,49 @@ define(
             if (textFont) {
                 _ctx.font = textFont;
             }
-            var width = _ctx.measureText(text).width;
+            
+            text = (text + '').split('\n');
+            var width = 0;
+            for (var i = 0, l = text.length; i < l; i++) {
+                width =  Math.max(
+                    _ctx.measureText(text[i]).width,
+                    width
+                );
+            }
             _ctx.restore();
 
             return width;
+        }
+        
+        /**
+         * 测算多行文本高度
+         * @param {Object} text
+         * @param {Object} textFont
+         */
+        function getTextHeight(text, textFont) {
+            if (!_ctx) {
+                _ctx = util.getContext();
+            }
+
+            _ctx.save();
+            if (textFont) {
+                _ctx.font = textFont;
+            }
+            
+            text = (text + '').split('\n');
+            //比较粗暴
+            var height = (_ctx.measureText('国').width + 2) * text.length;
+
+            _ctx.restore();
+
+            return height;
         }
 
         return {
             isInside : isInside,
             isOutside : isOutside,
-            getTextWidth : getTextWidth
+            getTextWidth : getTextWidth,
+            getTextHeight : getTextHeight
         };
     }
 );
