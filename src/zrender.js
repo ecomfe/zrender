@@ -605,6 +605,9 @@ define(
                     }
                     else {
                         // 批量删除
+                        if (shapeId.lenth < 1) { // 空数组
+                            return;
+                        }
                         for (var i = 0, l = shapeId.length; i < l; i++) {
                             delMap[shapeId[i].id] = true;
                         }
