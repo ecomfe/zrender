@@ -1719,7 +1719,7 @@ define(
                 if (new Date() - _lastTouchMoment
                     < config.EVENT.touchClickDelay
                 ) {
-                     _mobildFindFixed()
+                     _mobildFindFixed();
                     _clickHandler(_event);
                 }
                 painter.clearHover();

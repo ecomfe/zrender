@@ -572,7 +572,7 @@ define(
                 y = rect.y + lineHeight;
             }
             else {
-                y = rect.y + lineHeight / 2
+                y = rect.y + lineHeight / 2;
             }
             
             for (var i = 0, l = text.length; i < l; i++) {
@@ -607,7 +607,7 @@ define(
             }
             else {
                 // middle
-                textY = y - lineHeight * text.length / 2
+                textY = y - lineHeight * text.length / 2;
             }
 
             return {

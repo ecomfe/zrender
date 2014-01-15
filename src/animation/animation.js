@@ -56,7 +56,7 @@ Animation.prototype = {
     update : function() {
 
         var time = new Date().getTime();
-        var delta = time - this._time;
+        //var delta = time - this._time;
         var clips = this._clips;
         var len = clips.length;
 
