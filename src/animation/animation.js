@@ -19,7 +19,7 @@ function(require) {
 
 var Clip = require('./clip');
 
-var requrestAnimationFrame = window.requrestAnimationFrame
+var requestAnimationFrame = window.requestAnimationFrame
                             || window.msRequestAnimationFrame
                             || window.mozRequestAnimationFrame
                             || window.webkitRequestAnimationFrame
@@ -56,7 +56,7 @@ Animation.prototype = {
     update : function() {
 
         var time = new Date().getTime();
-        var delta = time - this._time;
+        //var delta = time - this._time;
         var clips = this._clips;
         var len = clips.length;
 
@@ -108,11 +108,11 @@ Animation.prototype = {
         function step() {
             if (self._running) {
                 self.update();
-                requrestAnimationFrame(step);
+                requestAnimationFrame(step);
             }
         }
 
-        requrestAnimationFrame(step);
+        requestAnimationFrame(step);
     },
     stop : function() {
         this._running = false;

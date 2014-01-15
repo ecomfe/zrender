@@ -5,32 +5,8 @@
  * Copyright (c) 2013, Baidu Inc.
  * All rights reserved.
  * 
- * Redistribution and use of this software in source and binary forms, with or 
- * without modification, are permitted provided that the following conditions 
- * are met:
- * 
- * Redistributions of source code must retain the above copyright notice, this 
- * list of conditions and the following disclaimer.
- * 
- * Redistributions in binary form must reproduce the above copyright notice, 
- * this list of conditions and the following disclaimer in the documentation 
- * and/or other materials provided with the distribution.
- * 
- * Neither the name of Baidu Inc. nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific 
- * prior written permission of Baidu Inc.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE 
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
- * POSSIBILITY OF SUCH DAMAGE.
+ * LICENSE
+ * https://github.com/ecomfe/zrender/blob/master/LICENSE.txt
  */
 
 /**
@@ -62,7 +38,7 @@ define(
         var _idx = 0;           //ZRender instance's id
         var _instances = {};    //ZRender实例map索引
 
-        self.version = '1.0.7';
+        self.version = '1.0.8';
 
         /**
          * zrender初始化
@@ -629,6 +605,9 @@ define(
                     }
                     else {
                         // 批量删除
+                        if (shapeId.lenth < 1) { // 空数组
+                            return;
+                        }
                         for (var i = 0, l = shapeId.length; i < l; i++) {
                             delMap[shapeId[i].id] = true;
                         }
@@ -1467,6 +1446,7 @@ define(
             var _isMouseDown = false;
             var _isDragging = false;
             var _lastTouchMoment;
+            var _lastDownButton;
 
             var _lastX = 0;
             var _lastY = 0;
@@ -1570,7 +1550,6 @@ define(
                 //if (_mouseX - _lastX > 1 || _mouseY - _lastY > 1) {
                     _dragStartHandler();
                 //}
-
                 _hasfound = false;
                 storage.iterShape(_findHover, { normal: 'down'});
 
@@ -1673,11 +1652,18 @@ define(
              * @param {event} event dom事件对象
              */
             function _mouseDownHandler(event) {
+                if (_lastDownButton == 2) {
+                    _lastDownButton = event.button;
+                    _mouseDownTarget = null;
+                    // 仅作为关闭右键菜单使用
+                    return;
+                }
                 _event = _zrenderEventFixed(event);
                 _isMouseDown = true;
                 //分发config.EVENT.MOUSEDOWN事件
                 _mouseDownTarget = _lastHover;
                 _dispatchAgency(_lastHover, config.EVENT.MOUSEDOWN);
+                _lastDownButton = event.button;
             }
 
             /**
@@ -1733,7 +1719,7 @@ define(
                 if (new Date() - _lastTouchMoment
                     < config.EVENT.touchClickDelay
                 ) {
-                     _mobildFindFixed()
+                     _mobildFindFixed();
                     _clickHandler(_event);
                 }
                 painter.clearHover();

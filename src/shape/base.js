@@ -540,16 +540,84 @@ define(
             }
 
             if (typeof tx != 'undefined' && typeof ty != 'undefined') {
-                if (style.textFont) {
-                    ctx.font = style.textFont;
-                }
-                ctx.textAlign = style.textAlign || al;
-                ctx.textBaseline = style.textBaseLine || bl;
-
-                ctx.fillText(style.text, tx, ty);
+                _fillText(
+                    ctx,
+                    style.text, 
+                    tx, ty, 
+                    style.textFont,
+                    style.textAlign || al,
+                    style.textBaseline || bl
+                );
             }
         }
+        
+        function _fillText(ctx, text, x, y, textFont, textAlign, textBaseline) {
+            if (textFont) {
+                ctx.font = textFont;
+            }
+            ctx.textAlign = textAlign;
+            ctx.textBaseline = textBaseline;
+            var rect = _getTextRect(
+                text, x, y, textFont, textAlign, textBaseline
+            );
+            
+            text = (text + '').split('\n');
+            var lineHeight = area.getTextHeight('国', textFont);
+            var x = x;
+            var y;
+            if (textBaseline == 'top') {
+                y = rect.y;
+            }
+            else if (textBaseline == 'bottom') {
+                y = rect.y + lineHeight;
+            }
+            else {
+                y = rect.y + lineHeight / 2;
+            }
+            
+            for (var i = 0, l = text.length; i < l; i++) {
+                ctx.fillText(text[i], x, y);
+                y += lineHeight;
+            }
+        }
+        /**
+         * 返回矩形区域，用于局部刷新和文字定位
+         * @param {Object} style
+         */
+        function _getTextRect(text, x, y, textFont, textAlign, textBaseline) {
+            var width = area.getTextWidth(text, textFont);
+            var lineHeight = area.getTextHeight('国', textFont);
+            
+            text = (text + '').split('\n');
+            
+            var textX = x;                 //默认start == left
+            if (textAlign == 'end' || textAlign == 'right') {
+                textX -= width;
+            }
+            else if (textAlign == 'center') {
+                textX -= (width / 2);
+            }
 
+            var textY;
+            if (textBaseline == 'top') {
+                textY = y;
+            }
+            else if (textBaseline == 'bottom') {
+                textY = y - lineHeight * text.length;
+            }
+            else {
+                // middle
+                textY = y - lineHeight * text.length / 2;
+            }
+
+            return {
+                x : textX,
+                y : textY,
+                width : width,
+                height : lineHeight * text.length
+            };
+        }
+    
         /**
          * 根据默认样式扩展高亮样式
          * @param ctx Canvas 2D上下文
@@ -590,7 +658,9 @@ define(
 
             // 可自定义覆盖默认值
             for (var k in highlightStyle) {
-                newStyle[k] = highlightStyle[k];
+                if (typeof highlightStyle[k] != 'undefined') {
+                    newStyle[k] = highlightStyle[k];
+                }
             }
 
             return newStyle;

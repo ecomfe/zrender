@@ -2131,7 +2131,7 @@ define(
  * getTextWidth：测算单行文本宽度
  */
 define(
-    'zrender/tool/area',['require','../tool/util'],function(require) {
+    'zrender/tool/area',['require','../tool/util','../shape'],function(require) {
         var util = require('../tool/util');
 
         var _ctx;
@@ -2543,6 +2543,9 @@ define(
          * 路径包含判断，依赖多边形判断
          */
         function _isInsidePath(area, x, y) {
+            if (!area.pointList) {
+                require('../shape').get('path').buildPath(_ctx, area);
+            }
             var pointList = area.pointList;
             var insideCatch = false;
             for (var i = 0, l = pointList.length; i < l; i++) {
@@ -2557,7 +2560,7 @@ define(
         }
 
         /**
-         * 测算单行文本欢度
+         * 测算多行文本宽度
          * @param {Object} text
          * @param {Object} textFont
          */
@@ -2570,16 +2573,49 @@ define(
             if (textFont) {
                 _ctx.font = textFont;
             }
-            var width = _ctx.measureText(text).width;
+            
+            text = (text + '').split('\n');
+            var width = 0;
+            for (var i = 0, l = text.length; i < l; i++) {
+                width =  Math.max(
+                    _ctx.measureText(text[i]).width,
+                    width
+                );
+            }
             _ctx.restore();
 
             return width;
+        }
+        
+        /**
+         * 测算多行文本高度
+         * @param {Object} text
+         * @param {Object} textFont
+         */
+        function getTextHeight(text, textFont) {
+            if (!_ctx) {
+                _ctx = util.getContext();
+            }
+
+            _ctx.save();
+            if (textFont) {
+                _ctx.font = textFont;
+            }
+            
+            text = (text + '').split('\n');
+            //比较粗暴
+            var height = (_ctx.measureText('国').width + 2) * text.length;
+
+            _ctx.restore();
+
+            return height;
         }
 
         return {
             isInside : isInside,
             isOutside : isOutside,
-            getTextWidth : getTextWidth
+            getTextWidth : getTextWidth,
+            getTextHeight : getTextHeight
         };
     }
 );
@@ -4261,16 +4297,84 @@ define(
             }
 
             if (typeof tx != 'undefined' && typeof ty != 'undefined') {
-                if (style.textFont) {
-                    ctx.font = style.textFont;
-                }
-                ctx.textAlign = style.textAlign || al;
-                ctx.textBaseline = style.textBaseLine || bl;
-
-                ctx.fillText(style.text, tx, ty);
+                _fillText(
+                    ctx,
+                    style.text, 
+                    tx, ty, 
+                    style.textFont,
+                    style.textAlign || al,
+                    style.textBaseline || bl
+                );
             }
         }
+        
+        function _fillText(ctx, text, x, y, textFont, textAlign, textBaseline) {
+            if (textFont) {
+                ctx.font = textFont;
+            }
+            ctx.textAlign = textAlign;
+            ctx.textBaseline = textBaseline;
+            var rect = _getTextRect(
+                text, x, y, textFont, textAlign, textBaseline
+            );
+            
+            text = (text + '').split('\n');
+            var lineHeight = area.getTextHeight('国', textFont);
+            var x = x;
+            var y;
+            if (textBaseline == 'top') {
+                y = rect.y;
+            }
+            else if (textBaseline == 'bottom') {
+                y = rect.y + lineHeight;
+            }
+            else {
+                y = rect.y + lineHeight / 2;
+            }
+            
+            for (var i = 0, l = text.length; i < l; i++) {
+                ctx.fillText(text[i], x, y);
+                y += lineHeight;
+            }
+        }
+        /**
+         * 返回矩形区域，用于局部刷新和文字定位
+         * @param {Object} style
+         */
+        function _getTextRect(text, x, y, textFont, textAlign, textBaseline) {
+            var width = area.getTextWidth(text, textFont);
+            var lineHeight = area.getTextHeight('国', textFont);
+            
+            text = (text + '').split('\n');
+            
+            var textX = x;                 //默认start == left
+            if (textAlign == 'end' || textAlign == 'right') {
+                textX -= width;
+            }
+            else if (textAlign == 'center') {
+                textX -= (width / 2);
+            }
 
+            var textY;
+            if (textBaseline == 'top') {
+                textY = y;
+            }
+            else if (textBaseline == 'bottom') {
+                textY = y - lineHeight * text.length;
+            }
+            else {
+                // middle
+                textY = y - lineHeight * text.length / 2;
+            }
+
+            return {
+                x : textX,
+                y : textY,
+                width : width,
+                height : lineHeight * text.length
+            };
+        }
+    
         /**
          * 根据默认样式扩展高亮样式
          * @param ctx Canvas 2D上下文
@@ -4311,7 +4415,9 @@ define(
 
             // 可自定义覆盖默认值
             for (var k in highlightStyle) {
-                newStyle[k] = highlightStyle[k];
+                if (typeof highlightStyle[k] != 'undefined') {
+                    newStyle[k] = highlightStyle[k];
+                }
             }
 
             return newStyle;
@@ -5949,6 +6055,8 @@ define(
  */
 define(
     'zrender/shape/text',['require','../tool/area','./base','../shape'],function(require) {
+        var area = require('../tool/area');
+        
         function Text() {
             this.type = 'text';
         }
@@ -5968,6 +6076,10 @@ define(
                         style, e.highlightStyle || {}
                     );
                 }
+                
+                if (typeof style.text == 'undefined') {
+                    return;
+                }
 
                 ctx.save();
                 this.setContext(ctx, style);
@@ -5983,52 +6095,70 @@ define(
                 ctx.textAlign = style.textAlign || 'start';
                 ctx.textBaseline = style.textBaseline || 'middle';
 
-                if (style.maxWidth) {
-                    switch (style.brushType) {
-                        case 'fill':
-                            ctx.fillText(
-                                style.text,
-                                style.x, style.y, style.maxWidth
-                            );
-                            break;
-                        case 'stroke':
-                            ctx.strokeText(
-                                style.text,
-                                style.x, style.y, style.maxWidth
-                            );
-                            break;
-                        case 'both':
-                            ctx.strokeText(
-                                style.text,
-                                style.x, style.y, style.maxWidth
-                            );
-                            ctx.fillText(
-                                style.text,
-                                style.x, style.y, style.maxWidth
-                            );
-                            break;
-                        default:
-                            ctx.fillText(
-                                style.text,
-                                style.x, style.y, style.maxWidth
-                            );
-                    }
+                var text = (style.text + '').split('\n');
+                var lineHeight = area.getTextHeight('国', style.textFont);
+                var rect = this.getRect(style);
+                var x = style.x;
+                var y;
+                if (style.textBaseline == 'top') {
+                    y = rect.y;
                 }
-                else{
-                    switch (style.brushType) {
-                        case 'fill':
-                            ctx.fillText(style.text, style.x, style.y);
-                            break;
-                        case 'stroke':
-                            ctx.strokeText(style.text, style.x, style.y);
-                            break;
-                        case 'both':
-                            ctx.strokeText(style.text, style.x, style.y);
-                            ctx.fillText(style.text, style.x, style.y);
-                            break;
-                        default:
-                            ctx.fillText(style.text, style.x, style.y);
+                else if (style.textBaseline == 'bottom') {
+                    y = rect.y + lineHeight;
+                }
+                else {
+                    y = rect.y + lineHeight / 2;
+                }
+                
+                for (var i = 0, l = text.length; i < l; i++) {
+                    if (style.maxWidth) {
+                        switch (style.brushType) {
+                            case 'fill':
+                                ctx.fillText(
+                                    text[i],
+                                    x, y, style.maxWidth
+                                );
+                                break;
+                            case 'stroke':
+                                ctx.strokeText(
+                                    text[i],
+                                    x, y, style.maxWidth
+                                );
+                                break;
+                            case 'both':
+                                ctx.strokeText(
+                                    text[i],
+                                    x, y, style.maxWidth
+                                );
+                                ctx.fillText(
+                                    text[i],
+                                    x, y, style.maxWidth
+                                );
+                                break;
+                            default:
+                                ctx.fillText(
+                                    text[i],
+                                    x, y, style.maxWidth
+                                );
+                        }
                     }
+                    else{
+                        switch (style.brushType) {
+                            case 'fill':
+                                ctx.fillText(text[i], x, y);
+                                break;
+                            case 'stroke':
+                                ctx.strokeText(text[i], x, y);
+                                break;
+                            case 'both':
+                                ctx.strokeText(text[i], x, y);
+                                ctx.fillText(text[i], x, y);
+                                break;
+                            default:
+                                ctx.fillText(text[i], x, y);
+                        }
+                    }
+                    y += lineHeight;
                 }
 
                 ctx.restore();
@@ -6040,10 +6170,10 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
-                var area = require('../tool/area');
-
-                var width =  area.getTextWidth(style.text, style.textFont);
-                var height = area.getTextWidth('国', style.textFont); //比较粗暴
+                var width = area.getTextWidth(style.text, style.textFont);
+                var lineHeight = area.getTextHeight('国', style.textFont);
+                
+                var text = (style.text + '').split('\n');
 
                 var textX = style.x;                 //默认start == left
                 if (style.textAlign == 'end' || style.textAlign == 'right') {
@@ -6053,19 +6183,23 @@ define(
                     textX -= (width / 2);
                 }
 
-                var textY = style.y - height / 2;    //默认middle
+                var textY;
                 if (style.textBaseline == 'top') {
-                    textY += height / 2;
+                    textY = style.y;
                 }
                 else if (style.textBaseline == 'bottom') {
-                    textX -= height / 2;
+                    textY = style.y - lineHeight * text.length;
+                }
+                else {
+                    // middle
+                    textY = style.y - lineHeight * text.length / 2;
                 }
 
                 return {
                     x : textX,
                     y : textY,
                     width : width,
-                    height : height
+                    height : lineHeight * text.length
                 };
             }
         };
@@ -6442,14 +6576,19 @@ define('zrender/shape/path',['require','./base','../shape'],function(require) {
                 'm', 'M', 'l', 'L', 'v', 'V', 'h', 'H', 'z', 'Z',
                 'c', 'C', 'q', 'Q', 't', 'T', 's', 'S', 'a', 'A'
             ];
+            
+            cs = cs.replace(/-/g, ' -');
             cs = cs.replace(/  /g, ' ');
             cs = cs.replace(/ /g, ',');
             cs = cs.replace(/,,/g, ',');
+            
+
             var n;
             // create pipes so that we can split the data
             for (n = 0; n < cc.length; n++) {
                 cs = cs.replace(new RegExp(cc[n], 'g'), '|' + cc[n]);
             }
+
             // create array
             var arr = cs.split('|');
             var ca = [];
@@ -7943,7 +8082,7 @@ define(
 
 var Clip = require('./clip');
 
-var requrestAnimationFrame = window.requrestAnimationFrame
+var requestAnimationFrame = window.requestAnimationFrame
                             || window.msRequestAnimationFrame
                             || window.mozRequestAnimationFrame
                             || window.webkitRequestAnimationFrame
@@ -7980,7 +8119,7 @@ Animation.prototype = {
     update : function() {
 
         var time = new Date().getTime();
-        var delta = time - this._time;
+        //var delta = time - this._time;
         var clips = this._clips;
         var len = clips.length;
 
@@ -8032,11 +8171,11 @@ Animation.prototype = {
         function step() {
             if (self._running) {
                 self.update();
-                requrestAnimationFrame(step);
+                requestAnimationFrame(step);
             }
         }
 
-        requrestAnimationFrame(step);
+        requestAnimationFrame(step);
     },
     stop : function() {
         this._running = false;
@@ -9336,32 +9475,8 @@ define(
  * Copyright (c) 2013, Baidu Inc.
  * All rights reserved.
  * 
- * Redistribution and use of this software in source and binary forms, with or 
- * without modification, are permitted provided that the following conditions 
- * are met:
- * 
- * Redistributions of source code must retain the above copyright notice, this 
- * list of conditions and the following disclaimer.
- * 
- * Redistributions in binary form must reproduce the above copyright notice, 
- * this list of conditions and the following disclaimer in the documentation 
- * and/or other materials provided with the distribution.
- * 
- * Neither the name of Baidu Inc. nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific 
- * prior written permission of Baidu Inc.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE 
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
- * POSSIBILITY OF SUCH DAMAGE.
+ * LICENSE
+ * https://github.com/ecomfe/zrender/blob/master/LICENSE.txt
  */
 
 /**
@@ -9393,7 +9508,7 @@ define(
         var _idx = 0;           //ZRender instance's id
         var _instances = {};    //ZRender实例map索引
 
-        self.version = '1.0.7';
+        self.version = '1.0.8';
 
         /**
          * zrender初始化
@@ -9960,6 +10075,9 @@ define(
                     }
                     else {
                         // 批量删除
+                        if (shapeId.lenth < 1) { // 空数组
+                            return;
+                        }
                         for (var i = 0, l = shapeId.length; i < l; i++) {
                             delMap[shapeId[i].id] = true;
                         }
@@ -10798,6 +10916,7 @@ define(
             var _isMouseDown = false;
             var _isDragging = false;
             var _lastTouchMoment;
+            var _lastDownButton;
 
             var _lastX = 0;
             var _lastY = 0;
@@ -10901,7 +11020,6 @@ define(
                 //if (_mouseX - _lastX > 1 || _mouseY - _lastY > 1) {
                     _dragStartHandler();
                 //}
-
                 _hasfound = false;
                 storage.iterShape(_findHover, { normal: 'down'});
 
@@ -11004,11 +11122,18 @@ define(
              * @param {event} event dom事件对象
              */
             function _mouseDownHandler(event) {
+                if (_lastDownButton == 2) {
+                    _lastDownButton = event.button;
+                    _mouseDownTarget = null;
+                    // 仅作为关闭右键菜单使用
+                    return;
+                }
                 _event = _zrenderEventFixed(event);
                 _isMouseDown = true;
                 //分发config.EVENT.MOUSEDOWN事件
                 _mouseDownTarget = _lastHover;
                 _dispatchAgency(_lastHover, config.EVENT.MOUSEDOWN);
+                _lastDownButton = event.button;
             }
 
             /**
@@ -11064,7 +11189,7 @@ define(
                 if (new Date() - _lastTouchMoment
                     < config.EVENT.touchClickDelay
                 ) {
-                     _mobildFindFixed()
+                     _mobildFindFixed();
                     _clickHandler(_event);
                 }
                 painter.clearHover();

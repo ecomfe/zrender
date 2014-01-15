@@ -68,6 +68,8 @@
  */
 define(
     function(require) {
+        var area = require('../tool/area');
+        
         function Text() {
             this.type = 'text';
         }
@@ -87,6 +89,10 @@ define(
                         style, e.highlightStyle || {}
                     );
                 }
+                
+                if (typeof style.text == 'undefined') {
+                    return;
+                }
 
                 ctx.save();
                 this.setContext(ctx, style);
@@ -102,52 +108,70 @@ define(
                 ctx.textAlign = style.textAlign || 'start';
                 ctx.textBaseline = style.textBaseline || 'middle';
 
-                if (style.maxWidth) {
-                    switch (style.brushType) {
-                        case 'fill':
-                            ctx.fillText(
-                                style.text,
-                                style.x, style.y, style.maxWidth
-                            );
-                            break;
-                        case 'stroke':
-                            ctx.strokeText(
-                                style.text,
-                                style.x, style.y, style.maxWidth
-                            );
-                            break;
-                        case 'both':
-                            ctx.strokeText(
-                                style.text,
-                                style.x, style.y, style.maxWidth
-                            );
-                            ctx.fillText(
-                                style.text,
-                                style.x, style.y, style.maxWidth
-                            );
-                            break;
-                        default:
-                            ctx.fillText(
-                                style.text,
-                                style.x, style.y, style.maxWidth
-                            );
-                    }
+                var text = (style.text + '').split('\n');
+                var lineHeight = area.getTextHeight('国', style.textFont);
+                var rect = this.getRect(style);
+                var x = style.x;
+                var y;
+                if (style.textBaseline == 'top') {
+                    y = rect.y;
                 }
-                else{
-                    switch (style.brushType) {
-                        case 'fill':
-                            ctx.fillText(style.text, style.x, style.y);
-                            break;
-                        case 'stroke':
-                            ctx.strokeText(style.text, style.x, style.y);
-                            break;
-                        case 'both':
-                            ctx.strokeText(style.text, style.x, style.y);
-                            ctx.fillText(style.text, style.x, style.y);
-                            break;
-                        default:
-                            ctx.fillText(style.text, style.x, style.y);
+                else if (style.textBaseline == 'bottom') {
+                    y = rect.y + lineHeight;
+                }
+                else {
+                    y = rect.y + lineHeight / 2;
+                }
+                
+                for (var i = 0, l = text.length; i < l; i++) {
+                    if (style.maxWidth) {
+                        switch (style.brushType) {
+                            case 'fill':
+                                ctx.fillText(
+                                    text[i],
+                                    x, y, style.maxWidth
+                                );
+                                break;
+                            case 'stroke':
+                                ctx.strokeText(
+                                    text[i],
+                                    x, y, style.maxWidth
+                                );
+                                break;
+                            case 'both':
+                                ctx.strokeText(
+                                    text[i],
+                                    x, y, style.maxWidth
+                                );
+                                ctx.fillText(
+                                    text[i],
+                                    x, y, style.maxWidth
+                                );
+                                break;
+                            default:
+                                ctx.fillText(
+                                    text[i],
+                                    x, y, style.maxWidth
+                                );
+                        }
                     }
+                    else{
+                        switch (style.brushType) {
+                            case 'fill':
+                                ctx.fillText(text[i], x, y);
+                                break;
+                            case 'stroke':
+                                ctx.strokeText(text[i], x, y);
+                                break;
+                            case 'both':
+                                ctx.strokeText(text[i], x, y);
+                                ctx.fillText(text[i], x, y);
+                                break;
+                            default:
+                                ctx.fillText(text[i], x, y);
+                        }
+                    }
+                    y += lineHeight;
                 }
 
                 ctx.restore();
@@ -159,10 +183,10 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
-                var area = require('../tool/area');
-
-                var width =  area.getTextWidth(style.text, style.textFont);
-                var height = area.getTextWidth('国', style.textFont); //比较粗暴
+                var width = area.getTextWidth(style.text, style.textFont);
+                var lineHeight = area.getTextHeight('国', style.textFont);
+                
+                var text = (style.text + '').split('\n');
 
                 var textX = style.x;                 //默认start == left
                 if (style.textAlign == 'end' || style.textAlign == 'right') {
@@ -172,19 +196,23 @@ define(
                     textX -= (width / 2);
                 }
 
-                var textY = style.y - height / 2;    //默认middle
+                var textY;
                 if (style.textBaseline == 'top') {
-                    textY += height / 2;
+                    textY = style.y;
                 }
                 else if (style.textBaseline == 'bottom') {
-                    textX -= height / 2;
+                    textY = style.y - lineHeight * text.length;
+                }
+                else {
+                    // middle
+                    textY = style.y - lineHeight * text.length / 2;
                 }
 
                 return {
                     x : textX,
                     y : textY,
                     width : width,
-                    height : height
+                    height : lineHeight * text.length
                 };
             }
         };

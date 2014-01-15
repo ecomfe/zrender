@@ -86,14 +86,19 @@ define(function(require) {
                 'm', 'M', 'l', 'L', 'v', 'V', 'h', 'H', 'z', 'Z',
                 'c', 'C', 'q', 'Q', 't', 'T', 's', 'S', 'a', 'A'
             ];
+            
+            cs = cs.replace(/-/g, ' -');
             cs = cs.replace(/  /g, ' ');
             cs = cs.replace(/ /g, ',');
             cs = cs.replace(/,,/g, ',');
+            
+
             var n;
             // create pipes so that we can split the data
             for (n = 0; n < cc.length; n++) {
                 cs = cs.replace(new RegExp(cc[n], 'g'), '|' + cc[n]);
             }
+
             // create array
             var arr = cs.split('|');
             var ca = [];
