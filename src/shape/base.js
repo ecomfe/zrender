@@ -199,10 +199,10 @@ define(
                     ctx.fill();
                     break;
                 case 'stroke':
-                    ctx.stroke();
+                    style.lineWidth > 0 && ctx.stroke();
                     break;
                 case 'both':
-                    ctx.stroke();
+                    style.lineWidth > 0 && ctx.stroke();
                     ctx.fill();
                     break;
                 default:
