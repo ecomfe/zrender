@@ -138,6 +138,11 @@ define(
                 var r = style.r;                            // 扇形外半径(0,r]
                 var startAngle = style.startAngle;          // 起始角度[0,360)
                 var endAngle = style.endAngle;              // 结束角度(0,360]
+                startAngle = (720 + startAngle) % 360;
+                endAngle = (720 + endAngle) % 360;
+                if (endAngle < startAngle) {
+                    endAngle += 360;
+                }
                 var pointList = [];
                 if (startAngle < 90 && endAngle > 90) {
                     pointList.push([
