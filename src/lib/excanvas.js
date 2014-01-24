@@ -488,8 +488,8 @@ if (!document.createElement('canvas').getContext) {
     style: 'normal',
     variant: 'normal',
     weight: 'normal',
-    size: 10,
-    family: 'sans-serif'
+    size: 12,           //10
+    family: '微软雅黑'     //'sans-serif'
   };
 
   // Internal text style cache
@@ -502,8 +502,10 @@ if (!document.createElement('canvas').getContext) {
 
     var el = document.createElement('div');
     var style = el.style;
+    var fontFamily;
     try {
       style.font = styleString;
+      fontFamily = style.fontFamily.split(',')[0];
     } catch (ex) {
       // Ignore failures to set to invalid font.
     }
@@ -513,7 +515,7 @@ if (!document.createElement('canvas').getContext) {
       variant: style.fontVariant || DEFAULT_STYLE.variant,
       weight: style.fontWeight || DEFAULT_STYLE.weight,
       size: style.fontSize || DEFAULT_STYLE.size,
-      family: style.fontFamily || DEFAULT_STYLE.family
+      family: fontFamily || DEFAULT_STYLE.family
     };
   }
 
@@ -544,14 +546,14 @@ if (!document.createElement('canvas').getContext) {
 
     // Different scaling between normal text and VML text. This was found using
     // trial and error to get the same size as non VML text.
-    computedStyle.size *= 0.981;
+    //computedStyle.size *= 0.981;
 
     return computedStyle;
   }
 
   function buildStyle(style) {
     return style.style + ' ' + style.variant + ' ' + style.weight + ' ' +
-        style.size + 'px ' + style.family;
+        style.size + "px '" + style.family + "'";
   }
 
   var lineCapMap = {
@@ -585,7 +587,8 @@ if (!document.createElement('canvas').getContext) {
     this.lineCap = 'butt';
     this.miterLimit = Z * 1;
     this.globalAlpha = 1;
-    this.font = '10px sans-serif';
+    // this.font = '10px sans-serif';
+    this.font = '12px 微软雅黑';        // 决定还是改这吧，影响代价最小
     this.textAlign = 'left';
     this.textBaseline = 'alphabetic';
     this.canvas = canvasElement;
@@ -598,7 +601,7 @@ if (!document.createElement('canvas').getContext) {
 
     var overlayEl = el.cloneNode(false);
     // Use a non transparent background.
-    overlayEl.style.backgroundColor = 'red';
+    // overlayEl.style.backgroundColor = 'red'; // I don't know why, it work!
     overlayEl.style.filter = 'alpha(opacity=0)';
     canvasElement.appendChild(overlayEl);
 
