@@ -488,8 +488,8 @@ if (!document.createElement('canvas').getContext) {
     style: 'normal',
     variant: 'normal',
     weight: 'normal',
-    size: 10,
-    family: 'sans-serif'
+    size: 12,           //10
+    family: '微软雅黑'     //'sans-serif'
   };
 
   // Internal text style cache
@@ -502,8 +502,10 @@ if (!document.createElement('canvas').getContext) {
 
     var el = document.createElement('div');
     var style = el.style;
+    var fontFamily;
     try {
       style.font = styleString;
+      fontFamily = style.fontFamily.split(',')[0];
     } catch (ex) {
       // Ignore failures to set to invalid font.
     }
@@ -513,7 +515,7 @@ if (!document.createElement('canvas').getContext) {
       variant: style.fontVariant || DEFAULT_STYLE.variant,
       weight: style.fontWeight || DEFAULT_STYLE.weight,
       size: style.fontSize || DEFAULT_STYLE.size,
-      family: style.fontFamily || DEFAULT_STYLE.family
+      family: fontFamily || DEFAULT_STYLE.family
     };
   }
 
@@ -544,14 +546,14 @@ if (!document.createElement('canvas').getContext) {
 
     // Different scaling between normal text and VML text. This was found using
     // trial and error to get the same size as non VML text.
-    computedStyle.size *= 0.981;
+    //computedStyle.size *= 0.981;
 
     return computedStyle;
   }
 
   function buildStyle(style) {
     return style.style + ' ' + style.variant + ' ' + style.weight + ' ' +
-        style.size + 'px ' + style.family;
+        style.size + "px '" + style.family + "'";
   }
 
   var lineCapMap = {
@@ -585,7 +587,8 @@ if (!document.createElement('canvas').getContext) {
     this.lineCap = 'butt';
     this.miterLimit = Z * 1;
     this.globalAlpha = 1;
-    this.font = '10px sans-serif';
+    // this.font = '10px sans-serif';
+    this.font = '12px 微软雅黑';        // 决定还是改这吧，影响代价最小
     this.textAlign = 'left';
     this.textBaseline = 'alphabetic';
     this.canvas = canvasElement;
@@ -598,7 +601,7 @@ if (!document.createElement('canvas').getContext) {
 
     var overlayEl = el.cloneNode(false);
     // Use a non transparent background.
-    overlayEl.style.backgroundColor = 'red';
+    // overlayEl.style.backgroundColor = 'red'; // I don't know why, it work!
     overlayEl.style.filter = 'alpha(opacity=0)';
     canvasElement.appendChild(overlayEl);
 
@@ -824,6 +827,8 @@ if (!document.createElement('canvas').getContext) {
     var W = 10;
     var H = 10;
 
+    var scaleX = scaleY = 1;
+    
     // For some reason that I've now forgotten, using divs didn't work
     vmlStr.push(' <g_vml_:group',
                 ' coordsize="', Z * W, ',', Z * H, '"',
@@ -839,11 +844,14 @@ if (!document.createElement('canvas').getContext) {
         this.m_[1][1] != 1 || this.m_[1][0]) {
       var filter = [];
 
+      scaleX = Math.sqrt(this.m_[0][0] * this.m_[0][0] + this.m_[0][1] * this.m_[0][1]);
+      scaleY = Math.sqrt(this.m_[1][0] * this.m_[1][0] + this.m_[1][1] * this.m_[1][1]);
+
       // Note the 12/21 reversal
-      filter.push('M11=', this.m_[0][0], ',',
-                  'M12=', this.m_[1][0], ',',
-                  'M21=', this.m_[0][1], ',',
-                  'M22=', this.m_[1][1], ',',
+      filter.push('M11=', this.m_[0][0] / scaleX, ',',
+                  'M12=', this.m_[1][0] / scaleY, ',',
+                  'M21=', this.m_[0][1] / scaleX, ',',
+                  'M22=', this.m_[1][1] / scaleY, ',',
                   'Dx=', mr(d.x / Z), ',',
                   'Dy=', mr(d.y / Z), '');
 
@@ -865,17 +873,35 @@ if (!document.createElement('canvas').getContext) {
       vmlStr.push('top:', mr(d.y / Z), 'px;left:', mr(d.x / Z), 'px;');
     }
 
-    vmlStr.push(' ">' ,
-                '<g_vml_:image src="', image.src, '"',
-                ' style="width:', Z * dw, 'px;',
-                ' height:', Z * dh, 'px"',
-                ' cropleft="', sx / w, '"',
-                ' croptop="', sy / h, '"',
-                ' cropright="', (w - sx - sw) / w, '"',
-                ' cropbottom="', (h - sy - sh) / h, '"',
-                ' />',
-                '</g_vml_:group>');
+    vmlStr.push(' ">');
 
+    // Draw a special cropping div if needed
+    if (sx || sy) {
+      // Apply scales to width and height
+      vmlStr.push('<div style="overflow: hidden; width:', Math.ceil((dw + sx * dw / sw) * scaleX), 'px;',
+                  ' height:', Math.ceil((dh + sy * dh / sh) * scaleY), 'px;',
+                  ' filter:progid:DxImageTransform.Microsoft.Matrix(Dx=',
+                  -sx * dw / sw * scaleX, ',Dy=', -sy * dh / sh * scaleY, ');">');
+    }
+    
+      
+    // Apply scales to width and height
+    vmlStr.push('<div style="width:', Math.round(scaleX * w * dw / sw), 'px;',
+                ' height:', Math.round(scaleY * h * dh / sh), 'px;',
+                ' filter:');
+   
+    // If there is a globalAlpha, apply it to image
+    if(this.globalAlpha < 1) {
+      vmlStr.push(' progid:DXImageTransform.Microsoft.Alpha(opacity=' + (this.globalAlpha * 100) + ')');
+    }
+    
+    vmlStr.push(' progid:DXImageTransform.Microsoft.AlphaImageLoader(src=', image.src, ',sizingMethod=scale)">');
+    
+    // Close the crop div if necessary            
+    if (sx || sy) vmlStr.push('</div>');
+    
+    vmlStr.push('</div></div>');
+    
     this.element_.insertAdjacentHTML('BeforeEnd', vmlStr.join(''));
   };
 

@@ -104,7 +104,7 @@ define(
                 ctx.closePath();
 
                 if (style.brushType == 'stroke' || style.brushType == 'both') {
-                    ctx.stroke();
+                    style.lineWidth > 0 && ctx.stroke();
                 }
                 
                 if (style.brushType == 'fill' 
