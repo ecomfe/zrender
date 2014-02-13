@@ -601,7 +601,7 @@ if (!document.createElement('canvas').getContext) {
 
     var overlayEl = el.cloneNode(false);
     // Use a non transparent background.
-    // overlayEl.style.backgroundColor = 'red'; // I don't know why, it work!
+    overlayEl.style.backgroundColor = '#fff'; //red, I don't know why, it work! 
     overlayEl.style.filter = 'alpha(opacity=0)';
     canvasElement.appendChild(overlayEl);
 
