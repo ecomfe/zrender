@@ -32,6 +32,8 @@ define(
         // 核心代码会生成一个全局变量 G_vmlCanvasManager，模块改造后借用于快速判断canvas支持
         require('./lib/excanvas');
 
+        var util = require('./tool/util');
+
         var self = {};
         var zrender = self;     // 提供MVC内部反向使用静态方法；
 
@@ -242,6 +244,15 @@ define(
             };
 
             /**
+             * 修改指定zlevel的绘制配置项，例如clearColor
+             * @param {string} zLevel
+             * @param {Object} config 配置对象, 目前支持clearColor 
+             */
+            self.modLayer = function(zLevel, config) {
+                painter.modLayer(zLevel, config);
+            }
+
+            /**
              * 添加额外高亮层显示，仅提供添加方法，每次刷新后高亮层图形均被清空
              * @param {Object} shape 形状对象
              */
@@ -306,7 +317,6 @@ define(
              *   .start()
              */
             self.animate = function(shapeId, path, loop) {
-                var util = require('./tool/util');
                 var shape = storage.get(shapeId);
                 if (shape) {
                     var target;
@@ -488,7 +498,6 @@ define(
          * @param {Object} shape 图形库
          */
         function Storage(shape) {
-            var util = require('./tool/util');
             var self = this;
 
             var _idBase = 0;            //图形数据id自增基础
@@ -883,6 +892,10 @@ define(
             var _domList = {};              //canvas dom元素
             var _ctxList = {};              //canvas 2D context对象，与domList对应
 
+            // 每个zLevel 的配置
+            // @config clearColor
+            var _zLevelConfig = {};
+
             var _maxZlevel = 0;             //最大zlevel，缓存记录
             var _loadingTimer;
 
@@ -1128,11 +1141,7 @@ define(
                 else {
                     for (var k in changedZlevel) {
                         if (_ctxList[k]) {
-                            _ctxList[k].clearRect(
-                                0, 0, 
-                                _width * _devicePixelRatio, 
-                                _height * _devicePixelRatio
-                            );
+                            clearLayer(k);
                         }
                     }
                 }
@@ -1176,13 +1185,45 @@ define(
                     if (k == 'hover') {
                         continue;
                     }
+
+                    clearLayer(k);
+                }
+                return self;
+            }
+
+            /**
+             * 清楚单独的一个层
+             */
+            function clearLayer(k) {
+                if (_zLevelConfig[k] && _zLevelConfig[k].clearColor !== undefined) {
+                    _ctxList[k].fillStyle = _zLevelConfig[k].clearColor;
+                    _ctxList[k].fillRect(
+                        0, 0,
+                        _width * _devicePixelRatio, 
+                        _height * _devicePixelRatio
+                    );
+                } else {
                     _ctxList[k].clearRect(
                         0, 0, 
                         _width * _devicePixelRatio, 
                         _height * _devicePixelRatio
                     );
                 }
-                return self;
+            }
+
+            /**
+             * 修改指定zlevel的绘制参数
+             * @return {[type]} [description]
+             */
+            function modLayer(zLevel, config) {
+                if (config) {
+                    if (_zLevelConfig[zLevel] === undefined) {
+                        _zLevelConfig[zLevel] = {};
+                    }
+                    util.merge(_zLevelConfig[zLevel], config, {
+                        recursive : true
+                    });
+                }
             }
 
             /**
@@ -1401,6 +1442,7 @@ define(
             self.refresh = refresh;
             self.update = update;
             self.clear = clear;
+            self.modLayer = modLayer;
             self.refreshHover = refreshHover;
             self.clearHover = clearHover;
             self.showLoading = showLoading;

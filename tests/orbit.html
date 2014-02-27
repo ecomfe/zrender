@@ -5,32 +5,62 @@
     <title>Animation</title>
     <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
 </head>
-<body>
+<body style="background-color:black; margin:0px;">
     <script type="text/javascript">
+
         require(["../src/zrender",
                 "../src/animation/animation"], function(zrender, Animation){
+
+            function generateSprite(){
+                var size = 16;
+
+                var canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+
+                var ctx = canvas.getContext('2d');
+                ctx.beginPath();
+                ctx.arc(size/2, size/2, 60, 0, Math.PI * 2, false) ;
+                ctx.closePath();
+
+                ctx.restore();
+                var gradient = ctx.createRadialGradient(
+                    size/2, size/2, 0, size/2, size/2, size/2
+                );
+                gradient.addColorStop(0, 'rgba(255,255,255,1)');
+                // gradient.addColorStop(0.34, 'rgba(255,0,0,1)');
+                gradient.addColorStop(0.5, 'rgba(52,179,242,0.51)');
+                gradient.addColorStop(1, 'rgba(52,179,242,0)');
+                ctx.fillStyle = gradient;
+                ctx.fill();
+
+                return canvas;
+            }
 
             // 初始化zrender
             var zr = zrender.init( document.getElementById("Main") );
 
             var NUMBER = 10;
 
+            // TODO
+            // image 不能是图片
+            var sprite = generateSprite().toDataURL();
+
             for (var i = 0; i < NUMBER; i++) {
                 var circle = {
-                                shape : 'circle',
+                                shape : 'image',
                                 id : zr.newShapeId(),
                                 scale : [1, 1],
                                 zlevel : 1,
                                 style : {
                                     x : 0,
                                     y : 0,
-                                    r : 10,
-                                    brushType : 'fill',
-                                    color : 'grey'
+                                    image : sprite
                                 },
                                 draggable : false,
                                 hoverable : false,
                             }
+
                 zr.addShape(circle);
                 var deferred = zr.animate(circle.id, "", circle, true);
 
@@ -46,26 +76,29 @@
                         Math.random() * zr.getWidth(),
                         Math.random() * zr.getHeight()
                     ];
-                    deferred.when(j * 500, {
+                    deferred.when(j * 1000, {
                         position : point
                     });
                     points.push(point);
                 }
-                var brokenLine = {
-                    shape : 'brokenLine',
-                    id : zr.newShapeId(),
-                    zlevel : 0,
-                    style : {
-                        pointList : points,
-                        smooth : 'spline',
-                        brushType : 'stroke',
-                        strokeColor : 'grey',
-                        opacity : 0.4
-                    }
-                }
-                zr.addShape(brokenLine);
+                // var brokenLine = {
+                //     shape : 'brokenLine',
+                //     id : zr.newShapeId(),
+                //     zlevel : 0,
+                //     style : {
+                //         pointList : points,
+                //         smooth : 'spline',
+                //         brushType : 'stroke',
+                //         strokeColor : 'grey',
+                //         opacity : 0.4
+                //     }
+                // }
+                // zr.addShape(brokenLine);
                 deferred.start('spline');
             }
+            zr.modLayer(1, {
+                clearColor : 'rgba(1, 1, 1, 0.3)'
+            })
             zr.render();
 
         })
