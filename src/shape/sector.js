@@ -96,20 +96,31 @@ define(
                 var r = style.r;                            // 扇形外半径(0,r]
                 var startAngle = style.startAngle;          // 起始角度[0,360)
                 var endAngle = style.endAngle;              // 结束角度(0,360]
-                var PI2 = Math.PI * 2;
 
+                if (Math.abs(endAngle - startAngle) >= 360) {
+                    // 大于360度的扇形简化为圆环画法
+                    ctx.arc(x, y, r, 0, Math.PI * 2, false);
+                    if (r0 !== 0) {
+                        ctx.moveTo(x + r0, y);
+                        ctx.arc(x, y, r0, 0, Math.PI * 2, true);
+                    }
+                    return;
+                }
+                
                 startAngle = math.degreeToRadian(startAngle);
                 endAngle = math.degreeToRadian(endAngle);
 
-                //sin&cos已经在tool.math中缓存了，放心大胆的重复调用
+                var PI2 = Math.PI * 2;
+                var cosStartAngle = math.cos(startAngle);
+                var sinStartAngle = math.sin(startAngle);
                 ctx.moveTo(
-                    math.cos(startAngle) * r0 + x,
-                    y - math.sin(startAngle) * r0
+                    cosStartAngle * r0 + x,
+                    y - sinStartAngle * r0
                 );
 
                 ctx.lineTo(
-                    math.cos(startAngle) * r + x,
-                    y - math.sin(startAngle) * r
+                    cosStartAngle * r + x,
+                    y - sinStartAngle * r
                 );
 
                 ctx.arc(x, y, r, PI2 - startAngle, PI2 - endAngle, true);
@@ -131,6 +142,7 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
+                var shape = require('../shape');
                 var x = style.x;   // 圆心x
                 var y = style.y;   // 圆心y
                 var r0 = typeof style.r0 == 'undefined'     // 形内半径[0,r)
@@ -138,28 +150,34 @@ define(
                 var r = style.r;                            // 扇形外半径(0,r]
                 var startAngle = style.startAngle;          // 起始角度[0,360)
                 var endAngle = style.endAngle;              // 结束角度(0,360]
+                
+                if (Math.abs(endAngle - startAngle) >= 360) {
+                    // 大于360度的扇形简化为圆环bbox
+                    return shape.get('ring').getRect(style);;
+                }
+                
                 startAngle = (720 + startAngle) % 360;
                 endAngle = (720 + endAngle) % 360;
-                if (endAngle < startAngle) {
+                if (endAngle <= startAngle) {
                     endAngle += 360;
                 }
                 var pointList = [];
-                if (startAngle < 90 && endAngle > 90) {
+                if (startAngle <= 90 && endAngle >= 90) {
                     pointList.push([
                         x, y - r
                     ]);
                 }
-                if (startAngle < 180 && endAngle > 180) {
+                if (startAngle <= 180 && endAngle >= 180) {
                     pointList.push([
                         x - r, y
                     ]);
                 }
-                if (startAngle < 270 && endAngle > 270) {
+                if (startAngle <= 270 && endAngle >= 270) {
                     pointList.push([
                         x, y + r
                     ]);
                 }
-                if (startAngle < 360 && endAngle > 360) {
+                if (startAngle <= 360 && endAngle >= 360) {
                     pointList.push([
                         x + r, y
                     ]);
@@ -189,7 +207,6 @@ define(
                     y - math.sin(endAngle) * r0
                 ]);
 
-                var shape = require('../shape');
                 return shape.get('polygon').getRect({
                     brushType : style.brushType,
                     lineWidth : style.lineWidth,

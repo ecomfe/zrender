@@ -331,6 +331,11 @@ define(
             }
             else {
                 // 判断夹角
+                if (Math.abs(area.endAngle - area.startAngle) >= 360) {
+                    // 大于360度的扇形，在环内就为true
+                    return true;
+                }
+                
                 var angle = (360
                              - Math.atan2(y - area.y, x - area.x)
                              / Math.PI
