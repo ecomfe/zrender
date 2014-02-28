@@ -1195,7 +1195,7 @@ define(
              * 清楚单独的一个层
              */
             function clearLayer(k) {
-                if (_zLevelConfig[k] && _zLevelConfig[k].clearColor !== undefined) {
+                if (_zLevelConfig[k] && typeof(_zLevelConfig[k].clearColor) !== 'undefined') {
                     _ctxList[k].fillStyle = _zLevelConfig[k].clearColor;
                     _ctxList[k].fillRect(
                         0, 0,
@@ -1217,7 +1217,7 @@ define(
              */
             function modLayer(zLevel, config) {
                 if (config) {
-                    if (_zLevelConfig[zLevel] === undefined) {
+                    if (typeof(_zLevelConfig[zLevel]) === 'undefined' ) {
                         _zLevelConfig[zLevel] = {};
                     }
                     util.merge(_zLevelConfig[zLevel], config, {
