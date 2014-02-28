@@ -1459,6 +1459,8 @@ define(
                     canvas.setAttribute('width', width * devicePixelRatio);
                     canvas.setAttribute('height', height * devicePixelRatio);
 
+                    ctx.clearRect(0, 0, width * devicePixelRatio, height * devicePixelRatio);
+
                     var brush = shape.get(e.shape);
                     var shapeTransform = {
                         position : e.position,
@@ -1471,7 +1473,7 @@ define(
                     if (brush) {
                         brush.brush(ctx, e, false);
                     }
-                    
+
                     var imgShape = {
                         shape : 'image',
                         id : id,
