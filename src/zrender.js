@@ -437,6 +437,15 @@ define(
             self.toDataURL = function(type, args) {
                 return painter.toDataURL(type, args);
             };
+
+            /**
+             * 将常规shape转成image shape
+             */
+            self.shapeToImage = function(e, width, height) {
+                var id = self.newShapeId('image');
+                return painter.shapeToImage(id, e, width, height);
+            };
+
             /**
              * 事件绑定
              * @param {string} eventName 事件名称
@@ -1438,6 +1447,56 @@ define(
                 return image;
             }
             
+            var shapeToImage = (function() {
+                
+                var canvas = document.createElement('canvas');
+                var ctx = canvas.getContext('2d');
+                var devicePixelRatio = window.devicePixelRatio || 1;
+                
+                return function(id, e, width, height) {
+                    canvas.style.width = width + 'px';
+                    canvas.style.height = height + 'px';
+                    canvas.setAttribute('width', width * devicePixelRatio);
+                    canvas.setAttribute('height', height * devicePixelRatio);
+
+                    var brush = shape.get(e.shape);
+                    var shapeTransform = {
+                        position : e.position,
+                        rotation : e.rotation,
+                        scale : e.scale
+                    };
+                    e.position = [0, 0, 0];
+                    e.rotation = 0;
+                    e.scale = [1, 1];
+                    if (brush) {
+                        brush.brush(ctx, e, false);
+                    }
+                    
+                    var imgShape = {
+                        shape : 'image',
+                        id : id,
+                        style : {
+                            x : 0,
+                            y : 0,
+                            // TODO 直接使用canvas而不是通过base64
+                            image : canvas.toDataURL()
+                        }
+                    }
+
+                    if (typeof(shapeTransform.position) !== 'undefined') {
+                        imgShape.position = e.position = shapeTransform.position;
+                    }
+                    if (typeof(shapeTransform.rotation) !== 'undefined') {
+                        imgShape.rotation = e.rotation = shapeTransform.rotation;
+                    }
+                    if (typeof(shapeTransform.scale) !== 'undefined') {
+                        imgShape.scale = e.scale = shapeTransform.scale;
+                    }
+
+                    return imgShape;
+                }
+            })();
+
             self.render = render;
             self.refresh = refresh;
             self.update = update;
@@ -1454,6 +1513,8 @@ define(
             self.dispose = dispose;
             self.getDomHover = getDomHover;
             self.toDataURL = toDataURL;
+            self.shapeToImage = shapeToImage;
+
             _init();
         }
 

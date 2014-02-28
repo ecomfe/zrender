@@ -10,41 +10,27 @@
 
         require(["../src/zrender",
                 "../src/animation/animation"], function(zrender, Animation){
-
-            function generateSprite(){
-                var size = 16;
-
-                var canvas = document.createElement('canvas');
-                canvas.width = size;
-                canvas.height = size;
-
-                var ctx = canvas.getContext('2d');
-                ctx.beginPath();
-                ctx.arc(size/2, size/2, 60, 0, Math.PI * 2, false) ;
-                ctx.closePath();
-
-                ctx.restore();
-                var gradient = ctx.createRadialGradient(
-                    size/2, size/2, 0, size/2, size/2, size/2
-                );
-                gradient.addColorStop(0, 'rgba(255,255,255,1)');
-                // gradient.addColorStop(0.34, 'rgba(255,0,0,1)');
-                gradient.addColorStop(0.5, 'rgba(52,179,242,0.51)');
-                gradient.addColorStop(1, 'rgba(52,179,242,0)');
-                ctx.fillStyle = gradient;
-                ctx.fill();
-
-                return canvas;
-            }
-
             // 初始化zrender
-            var zr = zrender.init( document.getElementById("Main") );
+            var zr = zrender.init(document.getElementById("Main"));
 
-            var NUMBER = 10;
+            var circleShape = {
+                shape : 'star',
+                id : zr.newShapeId(),
+                style : {
+                    x : 10,
+                    y : 10,
+                    r : 8,
+                    n : 5,
+                    shadowColor : 'rgb(52,179,242)',
+                    color : '#fff',
+                    shadowBlur : 10,
+                    shadowOffsetX : 0,
+                    shadowOffsetY : 0
+                }
+            };
+            var imageShape = zr.shapeToImage(circleShape, 28, 28);
 
-            // TODO
-            // image 不能是图片
-            var sprite = generateSprite().toDataURL();
+            var NUMBER = 100;
 
             for (var i = 0; i < NUMBER; i++) {
                 var circle = {
@@ -55,7 +41,7 @@
                                 style : {
                                     x : 0,
                                     y : 0,
-                                    image : sprite
+                                    image : imageShape.style.image
                                 },
                                 draggable : false,
                                 hoverable : false,
@@ -76,7 +62,7 @@
                         Math.random() * zr.getWidth(),
                         Math.random() * zr.getHeight()
                     ];
-                    deferred.when(j * 1000, {
+                    deferred.when(j * 2000, {
                         position : point
                     });
                     points.push(point);
@@ -97,7 +83,7 @@
                 deferred.start('spline');
             }
             zr.modLayer(1, {
-                clearColor : 'rgba(1, 1, 1, 0.3)'
+                clearColor : 'rgba(1, 1, 1, 0.2)'
             })
             zr.render();
 
