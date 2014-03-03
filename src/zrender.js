@@ -958,6 +958,9 @@ define(
                 _domList = {};
                 _ctxList = {};
 
+                _domListBack = {};
+                _ctxListBack = {};
+
                 _maxZlevel = storage.getMaxZlevel();
 
                 //创建各层canvas
@@ -1204,13 +1207,62 @@ define(
              * 清楚单独的一个层
              */
             function clearLayer(k) {
-                if (_zLevelConfig[k] && typeof(_zLevelConfig[k].clearColor) !== 'undefined') {
-                    _ctxList[k].fillStyle = _zLevelConfig[k].clearColor;
-                    _ctxList[k].fillRect(
-                        0, 0,
-                        _width * _devicePixelRatio, 
-                        _height * _devicePixelRatio
-                    );
+                if (_zLevelConfig[k]) {
+                    var haveClearColor = typeof(_zLevelConfig[k].clearColor) !== 'undefined';
+                    var haveMotionBLur = _zLevelConfig[k].motionBlur;
+                    var lastFrameAlpha = _zLevelConfig[k].lastFrameAlpha;
+                    if (typeof(lastFrameAlpha) == 'undefined') {
+                        lastFrameAlpha = 0.7;
+                    }
+                    if (haveMotionBLur) {
+                        if (typeof(_domListBack[k]) === 'undefined') {
+                            var backDom = _createDom('back-' + k, 'canvas');
+                            backDom.width = _domList[k].width;
+                            backDom.height = _domList[k].height;
+                            backDom.style.width = _domList[k].style.width;
+                            backDom.style.height = _domList[k].style.height;
+                            _domListBack[k] = backDom;
+                            _ctxListBack[k] = backDom.getContext('2d');
+                            _devicePixelRatio != 1
+                                && _ctxListBack[k].scale(
+                                       _devicePixelRatio, _devicePixelRatio
+                                   );
+                        }
+                        _ctxListBack[k].globalCompositeOperation = 'copy';
+                        _ctxListBack[k].drawImage(
+                            _domList[k], 0, 0,
+                            _domList[k].width / _devicePixelRatio,
+                            _domList[k].height / _devicePixelRatio
+                        );
+                    }
+                    if (haveClearColor) {
+                        _ctxList[k].save();
+                        _ctxList[k].fillStyle = _zLevelConfig[k].clearColor;
+                        _ctxList[k].fillRect(
+                            0, 0,
+                            _width * _devicePixelRatio, 
+                            _height * _devicePixelRatio
+                        );
+                        _ctxList[k].restore();
+                    } else {
+                        _ctxList[k].clearRect(
+                            0, 0, 
+                            _width * _devicePixelRatio, 
+                            _height * _devicePixelRatio
+                        );
+                    }
+                    if (haveMotionBLur) {
+                        var backDom = _domListBack[k];
+                        var ctx = _ctxList[k];
+                        ctx.save();
+                        ctx.globalAlpha = lastFrameAlpha;
+                        ctx.drawImage(
+                            backDom, 0, 0,
+                            backDom.width / _devicePixelRatio,
+                            backDom.height / _devicePixelRatio
+                        );
+                        ctx.restore();
+                    }
                 } else {
                     _ctxList[k].clearRect(
                         0, 0, 
@@ -1382,6 +1434,9 @@ define(
                 _domRoot = null;
                 _domList = null;
                 _ctxList = null;
+
+                _ctxListBack = null;
+                _domListBack = null;
 
                 self = null;
 

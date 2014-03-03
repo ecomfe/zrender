@@ -30,7 +30,7 @@
             };
             var imageShape = zr.shapeToImage(circleShape, 28, 28);
 
-            var NUMBER = 100;
+            var NUMBER = 20;
 
             for (var i = 0; i < NUMBER; i++) {
                 var circle = {
@@ -83,8 +83,10 @@
                 deferred.start('spline');
             }
             zr.modLayer(1, {
-                clearColor : 'rgba(1, 1, 1, 0.2)'
-            })
+                // clearColor : 'rgba(255, 255, 255, 0.1)'
+                motionBlur : true,
+                lastFrameAlpha : 0.8
+            });
             zr.render();
 
         })
