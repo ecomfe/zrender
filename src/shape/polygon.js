@@ -99,23 +99,18 @@ define(
                 if (e.__needTransform) {
                     ctx.transform.apply(ctx,this.updateTransform(e));
                 }
-                ctx.beginPath();
-                this.buildPath(ctx, style);
-                ctx.closePath();
-
-                if (style.brushType == 'stroke' || style.brushType == 'both') {
-                    style.lineWidth > 0 && ctx.stroke();
-                }
                 
+                // 先fill再stroke
+                var hasPath = false;
                 if (style.brushType == 'fill' 
                     || style.brushType == 'both'
                     || typeof style.brushType == 'undefined' // 默认为fill
                 ) {
+                    ctx.beginPath();
                     if (style.lineType == 'dashed' 
                         || style.lineType == 'dotted'
                     ) {
                         // 特殊处理，虚线围不成path，实线再build一次
-                        ctx.beginPath();
                         this.buildPath(
                             ctx, 
                             {
@@ -124,9 +119,25 @@ define(
                                 pointList: style.pointList
                             }
                         );
+                        hasPath = false; // 这个path不能用
+                    }
+                    else {
+                        this.buildPath(ctx, style);
+                        hasPath = true; // 这个path能用
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                }
+
+                if (style.lineWidth > 0 
+                    && (style.brushType == 'stroke' || style.brushType == 'both')
+                ) {
+                    if (!hasPath) {
+                        ctx.beginPath();
+                        this.buildPath(ctx, style);
                         ctx.closePath();
                     }
-                    ctx.fill();
+                    ctx.stroke();
                 }
     
                 if (style.text) {

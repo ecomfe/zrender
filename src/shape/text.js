@@ -139,11 +139,11 @@ define(
                                 );
                                 break;
                             case 'both':
-                                ctx.strokeText(
+                                ctx.fillText(
                                     text[i],
                                     x, y, style.maxWidth
                                 );
-                                ctx.fillText(
+                                ctx.strokeText(
                                     text[i],
                                     x, y, style.maxWidth
                                 );
@@ -164,8 +164,8 @@ define(
                                 ctx.strokeText(text[i], x, y);
                                 break;
                             case 'both':
-                                ctx.strokeText(text[i], x, y);
                                 ctx.fillText(text[i], x, y);
+                                ctx.strokeText(text[i], x, y);
                                 break;
                             default:
                                 ctx.fillText(text[i], x, y);
