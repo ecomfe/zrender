@@ -1204,7 +1204,7 @@ define(
             }
 
             /**
-             * 清楚单独的一个层
+             * 清除单独的一个层
              */
             function clearLayer(k) {
                 if (_zLevelConfig[k]) {
@@ -1607,6 +1607,7 @@ define(
             var _draggingTarget = null;         //当前被拖拽的图形元素
             var _isMouseDown = false;
             var _isDragging = false;
+            var _lastMouseDownMoment;
             var _lastTouchMoment;
             var _lastDownButton;
 
@@ -1820,6 +1821,7 @@ define(
                     // 仅作为关闭右键菜单使用
                     return;
                 }
+                _lastMouseDownMoment = new Date();
                 _event = _zrenderEventFixed(event);
                 _isMouseDown = true;
                 //分发config.EVENT.MOUSEDOWN事件
@@ -1897,6 +1899,12 @@ define(
                     && !_draggingTarget
                     && _mouseDownTarget == _lastHover
                 ) {
+                    // 拖拽点击生效时长阀门，某些场景需要降低拖拽敏感度
+                    if (_lastHover.dragEnableTime && 
+                        new Date() - _lastMouseDownMoment < _lastHover.dragEnableTime
+                    ) {
+                        return;
+                    }
                     _draggingTarget = _lastHover;
                     _isDragging = true;
 
