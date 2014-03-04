@@ -602,7 +602,7 @@ if (!document.createElement('canvas').getContext) {
 
     var overlayEl = el.cloneNode(false);
     // Use a non transparent background.
-    // overlayEl.style.backgroundColor = 'red'; // I don't know why, it work!
+    overlayEl.style.backgroundColor = '#fff'; //red, I don't know why, it work! 
     overlayEl.style.filter = 'alpha(opacity=0)';
     canvasElement.appendChild(overlayEl);
 
@@ -1450,120 +1450,6 @@ else { // make the canvas test simple by kener.linfeng@gmail.com
 return G_vmlCanvasManager;
 }); // define;
 /**
- * echarts设备环境识别
- *
- * @desc echarts基于Canvas，纯Javascript图表库，提供直观，生动，可交互，可个性化定制的数据统计图表。
- * @author firede[firede@firede.us]
- * @desc thanks zepto.
- */
-define('zrender/tool/env',[],function() {
-    // Zepto.js
-    // (c) 2010-2013 Thomas Fuchs
-    // Zepto.js may be freely distributed under the MIT license.
-
-    function detect( ua ) {
-        var os = this.os = {};
-        var browser = this.browser = {};
-        var webkit = ua.match(/Web[kK]it[\/]{0,1}([\d.]+)/);
-        var android = ua.match(/(Android);?[\s\/]+([\d.]+)?/);
-        var ipad = ua.match(/(iPad).*OS\s([\d_]+)/);
-        var ipod = ua.match(/(iPod)(.*OS\s([\d_]+))?/);
-        var iphone = !ipad && ua.match(/(iPhone\sOS)\s([\d_]+)/);
-        var webos = ua.match(/(webOS|hpwOS)[\s\/]([\d.]+)/);
-        var touchpad = webos && ua.match(/TouchPad/);
-        var kindle = ua.match(/Kindle\/([\d.]+)/);
-        var silk = ua.match(/Silk\/([\d._]+)/);
-        var blackberry = ua.match(/(BlackBerry).*Version\/([\d.]+)/);
-        var bb10 = ua.match(/(BB10).*Version\/([\d.]+)/);
-        var rimtabletos = ua.match(/(RIM\sTablet\sOS)\s([\d.]+)/);
-        var playbook = ua.match(/PlayBook/);
-        var chrome = ua.match(/Chrome\/([\d.]+)/) || ua.match(/CriOS\/([\d.]+)/);
-        var firefox = ua.match(/Firefox\/([\d.]+)/);
-        var ie = ua.match(/MSIE ([\d.]+)/);
-        var safari = webkit && ua.match(/Mobile\//) && !chrome;
-        var webview = ua.match(/(iPhone|iPod|iPad).*AppleWebKit(?!.*Safari)/) && !chrome;
-        var ie = ua.match(/MSIE\s([\d.]+)/);
-
-        // Todo: clean this up with a better OS/browser seperation:
-        // - discern (more) between multiple browsers on android
-        // - decide if kindle fire in silk mode is android or not
-        // - Firefox on Android doesn't specify the Android version
-        // - possibly devide in os, device and browser hashes
-
-        if (browser.webkit = !!webkit) browser.version = webkit[1];
-
-        if (android) os.android = true, os.version = android[2];
-        if (iphone && !ipod) os.ios = os.iphone = true, os.version = iphone[2].replace(/_/g, '.');
-        if (ipad) os.ios = os.ipad = true, os.version = ipad[2].replace(/_/g, '.');
-        if (ipod) os.ios = os.ipod = true, os.version = ipod[3] ? ipod[3].replace(/_/g, '.') : null;
-        if (webos) os.webos = true, os.version = webos[2];
-        if (touchpad) os.touchpad = true;
-        if (blackberry) os.blackberry = true, os.version = blackberry[2];
-        if (bb10) os.bb10 = true, os.version = bb10[2];
-        if (rimtabletos) os.rimtabletos = true, os.version = rimtabletos[2];
-        if (playbook) browser.playbook = true;
-        if (kindle) os.kindle = true, os.version = kindle[1];
-        if (silk) browser.silk = true, browser.version = silk[1];
-        if (!silk && os.android && ua.match(/Kindle Fire/)) browser.silk = true;
-        if (chrome) browser.chrome = true, browser.version = chrome[1];
-        if (firefox) browser.firefox = true, browser.version = firefox[1];
-        if (ie) browser.ie = true, browser.version = ie[1];
-        if (safari && (ua.match(/Safari/) || !!os.ios)) browser.safari = true;
-        if (webview) browser.webview = true;
-        if (ie) browser.ie = true, browser.version = ie[1];
-
-        os.tablet = !!(ipad || playbook || (android && !ua.match(/Mobile/)) ||
-            (firefox && ua.match(/Tablet/)) || (ie && !ua.match(/Phone/) && ua.match(/Touch/)));
-        os.phone  = !!(!os.tablet && !os.ipod && (android || iphone || webos || blackberry || bb10 ||
-            (chrome && ua.match(/Android/)) || (chrome && ua.match(/CriOS\/([\d.]+)/)) ||
-            (firefox && ua.match(/Mobile/)) || (ie && ua.match(/Touch/))));
-
-        return {
-            browser: browser,
-            os: os,
-            // 原生canvas支持
-            canvasSupported : document.createElement('canvas').getContext 
-                              ? true : false 
-        }
-    }
-
-    return detect( navigator.userAgent );
-});
-/**
- * zrender: shape仓库
- *
- * @desc zrender是一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型。
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
- *
- */
-define(
-    'zrender/shape',[],function(/*require*/) {
-        var self = {};
-
-        var _shapeLibrary = {};     //shape库
-
-        /**
-         * 定义图形实现
-         * @param {Object} name
-         * @param {Object} clazz 图形实现
-         */
-        self.define = function(name, clazz) {
-            _shapeLibrary[name] = clazz;
-            return self;
-        };
-
-        /**
-         * 获取图形实现
-         * @param {Object} name
-         */
-        self.get = function(name) {
-            return _shapeLibrary[name];
-        };
-
-        return self;
-    }
-);
-/**
  * zrender: 向量操作类
  *
  * author : lang(shenyi01@baidu.com)
@@ -2148,6 +2034,120 @@ define(
     }
 );
 /**
+ * echarts设备环境识别
+ *
+ * @desc echarts基于Canvas，纯Javascript图表库，提供直观，生动，可交互，可个性化定制的数据统计图表。
+ * @author firede[firede@firede.us]
+ * @desc thanks zepto.
+ */
+define('zrender/tool/env',[],function() {
+    // Zepto.js
+    // (c) 2010-2013 Thomas Fuchs
+    // Zepto.js may be freely distributed under the MIT license.
+
+    function detect( ua ) {
+        var os = this.os = {};
+        var browser = this.browser = {};
+        var webkit = ua.match(/Web[kK]it[\/]{0,1}([\d.]+)/);
+        var android = ua.match(/(Android);?[\s\/]+([\d.]+)?/);
+        var ipad = ua.match(/(iPad).*OS\s([\d_]+)/);
+        var ipod = ua.match(/(iPod)(.*OS\s([\d_]+))?/);
+        var iphone = !ipad && ua.match(/(iPhone\sOS)\s([\d_]+)/);
+        var webos = ua.match(/(webOS|hpwOS)[\s\/]([\d.]+)/);
+        var touchpad = webos && ua.match(/TouchPad/);
+        var kindle = ua.match(/Kindle\/([\d.]+)/);
+        var silk = ua.match(/Silk\/([\d._]+)/);
+        var blackberry = ua.match(/(BlackBerry).*Version\/([\d.]+)/);
+        var bb10 = ua.match(/(BB10).*Version\/([\d.]+)/);
+        var rimtabletos = ua.match(/(RIM\sTablet\sOS)\s([\d.]+)/);
+        var playbook = ua.match(/PlayBook/);
+        var chrome = ua.match(/Chrome\/([\d.]+)/) || ua.match(/CriOS\/([\d.]+)/);
+        var firefox = ua.match(/Firefox\/([\d.]+)/);
+        var ie = ua.match(/MSIE ([\d.]+)/);
+        var safari = webkit && ua.match(/Mobile\//) && !chrome;
+        var webview = ua.match(/(iPhone|iPod|iPad).*AppleWebKit(?!.*Safari)/) && !chrome;
+        var ie = ua.match(/MSIE\s([\d.]+)/);
+
+        // Todo: clean this up with a better OS/browser seperation:
+        // - discern (more) between multiple browsers on android
+        // - decide if kindle fire in silk mode is android or not
+        // - Firefox on Android doesn't specify the Android version
+        // - possibly devide in os, device and browser hashes
+
+        if (browser.webkit = !!webkit) browser.version = webkit[1];
+
+        if (android) os.android = true, os.version = android[2];
+        if (iphone && !ipod) os.ios = os.iphone = true, os.version = iphone[2].replace(/_/g, '.');
+        if (ipad) os.ios = os.ipad = true, os.version = ipad[2].replace(/_/g, '.');
+        if (ipod) os.ios = os.ipod = true, os.version = ipod[3] ? ipod[3].replace(/_/g, '.') : null;
+        if (webos) os.webos = true, os.version = webos[2];
+        if (touchpad) os.touchpad = true;
+        if (blackberry) os.blackberry = true, os.version = blackberry[2];
+        if (bb10) os.bb10 = true, os.version = bb10[2];
+        if (rimtabletos) os.rimtabletos = true, os.version = rimtabletos[2];
+        if (playbook) browser.playbook = true;
+        if (kindle) os.kindle = true, os.version = kindle[1];
+        if (silk) browser.silk = true, browser.version = silk[1];
+        if (!silk && os.android && ua.match(/Kindle Fire/)) browser.silk = true;
+        if (chrome) browser.chrome = true, browser.version = chrome[1];
+        if (firefox) browser.firefox = true, browser.version = firefox[1];
+        if (ie) browser.ie = true, browser.version = ie[1];
+        if (safari && (ua.match(/Safari/) || !!os.ios)) browser.safari = true;
+        if (webview) browser.webview = true;
+        if (ie) browser.ie = true, browser.version = ie[1];
+
+        os.tablet = !!(ipad || playbook || (android && !ua.match(/Mobile/)) ||
+            (firefox && ua.match(/Tablet/)) || (ie && !ua.match(/Phone/) && ua.match(/Touch/)));
+        os.phone  = !!(!os.tablet && !os.ipod && (android || iphone || webos || blackberry || bb10 ||
+            (chrome && ua.match(/Android/)) || (chrome && ua.match(/CriOS\/([\d.]+)/)) ||
+            (firefox && ua.match(/Mobile/)) || (ie && ua.match(/Touch/))));
+
+        return {
+            browser: browser,
+            os: os,
+            // 原生canvas支持
+            canvasSupported : document.createElement('canvas').getContext 
+                              ? true : false 
+        }
+    }
+
+    return detect( navigator.userAgent );
+});
+/**
+ * zrender: shape仓库
+ *
+ * @desc zrender是一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型。
+ * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *
+ */
+define(
+    'zrender/shape',[],function(/*require*/) {
+        var self = {};
+
+        var _shapeLibrary = {};     //shape库
+
+        /**
+         * 定义图形实现
+         * @param {Object} name
+         * @param {Object} clazz 图形实现
+         */
+        self.define = function(name, clazz) {
+            _shapeLibrary[name] = clazz;
+            return self;
+        };
+
+        /**
+         * 获取图形实现
+         * @param {Object} name
+         */
+        self.get = function(name) {
+            return _shapeLibrary[name];
+        };
+
+        return self;
+    }
+);
+/**
  * zrender: 图形空间辅助类
  *
  * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
@@ -2480,6 +2480,11 @@ define(
             }
             else {
                 // 判断夹角
+                if (Math.abs(area.endAngle - area.startAngle) >= 360) {
+                    // 大于360度的扇形，在环内就为true
+                    return true;
+                }
+                
                 var angle = (360
                              - Math.atan2(y - area.y, x - area.x)
                              / Math.PI
@@ -3985,8 +3990,8 @@ define(
                     style.lineWidth > 0 && ctx.stroke();
                     break;
                 case 'both':
-                    style.lineWidth > 0 && ctx.stroke();
                     ctx.fill();
+                    style.lineWidth > 0 && ctx.stroke();
                     break;
                 default:
                     ctx.fill();
@@ -5083,23 +5088,18 @@ define(
                 if (e.__needTransform) {
                     ctx.transform.apply(ctx,this.updateTransform(e));
                 }
-                ctx.beginPath();
-                this.buildPath(ctx, style);
-                ctx.closePath();
-
-                if (style.brushType == 'stroke' || style.brushType == 'both') {
-                    style.lineWidth > 0 && ctx.stroke();
-                }
                 
+                // 先fill再stroke
+                var hasPath = false;
                 if (style.brushType == 'fill' 
                     || style.brushType == 'both'
                     || typeof style.brushType == 'undefined' // 默认为fill
                 ) {
+                    ctx.beginPath();
                     if (style.lineType == 'dashed' 
                         || style.lineType == 'dotted'
                     ) {
                         // 特殊处理，虚线围不成path，实线再build一次
-                        ctx.beginPath();
                         this.buildPath(
                             ctx, 
                             {
@@ -5108,9 +5108,25 @@ define(
                                 pointList: style.pointList
                             }
                         );
+                        hasPath = false; // 这个path不能用
+                    }
+                    else {
+                        this.buildPath(ctx, style);
+                        hasPath = true; // 这个path能用
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                }
+
+                if (style.lineWidth > 0 
+                    && (style.brushType == 'stroke' || style.brushType == 'both')
+                ) {
+                    if (!hasPath) {
+                        ctx.beginPath();
+                        this.buildPath(ctx, style);
                         ctx.closePath();
                     }
-                    ctx.fill();
+                    ctx.stroke();
                 }
     
                 if (style.text) {
@@ -5905,20 +5921,31 @@ define(
                 var r = style.r;                            // 扇形外半径(0,r]
                 var startAngle = style.startAngle;          // 起始角度[0,360)
                 var endAngle = style.endAngle;              // 结束角度(0,360]
-                var PI2 = Math.PI * 2;
 
+                if (Math.abs(endAngle - startAngle) >= 360) {
+                    // 大于360度的扇形简化为圆环画法
+                    ctx.arc(x, y, r, 0, Math.PI * 2, false);
+                    if (r0 !== 0) {
+                        ctx.moveTo(x + r0, y);
+                        ctx.arc(x, y, r0, 0, Math.PI * 2, true);
+                    }
+                    return;
+                }
+                
                 startAngle = math.degreeToRadian(startAngle);
                 endAngle = math.degreeToRadian(endAngle);
 
-                //sin&cos已经在tool.math中缓存了，放心大胆的重复调用
+                var PI2 = Math.PI * 2;
+                var cosStartAngle = math.cos(startAngle);
+                var sinStartAngle = math.sin(startAngle);
                 ctx.moveTo(
-                    math.cos(startAngle) * r0 + x,
-                    y - math.sin(startAngle) * r0
+                    cosStartAngle * r0 + x,
+                    y - sinStartAngle * r0
                 );
 
                 ctx.lineTo(
-                    math.cos(startAngle) * r + x,
-                    y - math.sin(startAngle) * r
+                    cosStartAngle * r + x,
+                    y - sinStartAngle * r
                 );
 
                 ctx.arc(x, y, r, PI2 - startAngle, PI2 - endAngle, true);
@@ -5940,6 +5967,7 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
+                var shape = require('../shape');
                 var x = style.x;   // 圆心x
                 var y = style.y;   // 圆心y
                 var r0 = typeof style.r0 == 'undefined'     // 形内半径[0,r)
@@ -5947,28 +5975,34 @@ define(
                 var r = style.r;                            // 扇形外半径(0,r]
                 var startAngle = style.startAngle;          // 起始角度[0,360)
                 var endAngle = style.endAngle;              // 结束角度(0,360]
+                
+                if (Math.abs(endAngle - startAngle) >= 360) {
+                    // 大于360度的扇形简化为圆环bbox
+                    return shape.get('ring').getRect(style);;
+                }
+                
                 startAngle = (720 + startAngle) % 360;
                 endAngle = (720 + endAngle) % 360;
-                if (endAngle < startAngle) {
+                if (endAngle <= startAngle) {
                     endAngle += 360;
                 }
                 var pointList = [];
-                if (startAngle < 90 && endAngle > 90) {
+                if (startAngle <= 90 && endAngle >= 90) {
                     pointList.push([
                         x, y - r
                     ]);
                 }
-                if (startAngle < 180 && endAngle > 180) {
+                if (startAngle <= 180 && endAngle >= 180) {
                     pointList.push([
                         x - r, y
                     ]);
                 }
-                if (startAngle < 270 && endAngle > 270) {
+                if (startAngle <= 270 && endAngle >= 270) {
                     pointList.push([
                         x, y + r
                     ]);
                 }
-                if (startAngle < 360 && endAngle > 360) {
+                if (startAngle <= 360 && endAngle >= 360) {
                     pointList.push([
                         x + r, y
                     ]);
@@ -5998,7 +6032,6 @@ define(
                     y - math.sin(endAngle) * r0
                 ]);
 
-                var shape = require('../shape');
                 return shape.get('polygon').getRect({
                     brushType : style.brushType,
                     lineWidth : style.lineWidth,
@@ -6157,11 +6190,11 @@ define(
                                 );
                                 break;
                             case 'both':
-                                ctx.strokeText(
+                                ctx.fillText(
                                     text[i],
                                     x, y, style.maxWidth
                                 );
-                                ctx.fillText(
+                                ctx.strokeText(
                                     text[i],
                                     x, y, style.maxWidth
                                 );
@@ -6182,8 +6215,8 @@ define(
                                 ctx.strokeText(text[i], x, y);
                                 break;
                             case 'both':
-                                ctx.strokeText(text[i], x, y);
                                 ctx.fillText(text[i], x, y);
+                                ctx.strokeText(text[i], x, y);
                                 break;
                             default:
                                 ctx.fillText(text[i], x, y);
@@ -6202,10 +6235,8 @@ define(
              */
             getRect : function(style) {
                 var width = area.getTextWidth(style.text, style.textFont);
-                var lineHeight = area.getTextHeight('国', style.textFont);
+                var height = area.getTextHeight(style.text, style.textFont);
                 
-                var text = (style.text + '').split('\n');
-
                 var textX = style.x;                 //默认start == left
                 if (style.textAlign == 'end' || style.textAlign == 'right') {
                     textX -= width;
@@ -6219,18 +6250,18 @@ define(
                     textY = style.y;
                 }
                 else if (style.textBaseline == 'bottom') {
-                    textY = style.y - lineHeight * text.length;
+                    textY = style.y - height;
                 }
                 else {
                     // middle
-                    textY = style.y - lineHeight * text.length / 2;
+                    textY = style.y - height / 2;
                 }
 
                 return {
                     x : textX,
                     y : textY,
                     width : width,
-                    height : lineHeight * text.length
+                    height : height
                 };
             }
         };
@@ -8258,12 +8289,12 @@ function _interpolateArray(p0, p1, percent, out, arrDim) {
 }
 
 function _isArrayLike(data) {
-    if (data === undefined) {
+    if (typeof(data) === 'undefined') {
         return false;
     } else if (typeof(data) == 'string') {
         return false;
     } else {
-        return data.length !== undefined;
+        return typeof(data.length) !== 'undefined';
     }
 }
 
@@ -9518,7 +9549,7 @@ define(
  *
  */
 define(
-    'zrender/zrender',['require','./lib/excanvas','./tool/env','./shape','./shape/circle','./shape/ellipse','./shape/line','./shape/polygon','./shape/brokenLine','./shape/rectangle','./shape/ring','./shape/sector','./shape/text','./shape/heart','./shape/droplet','./shape/path','./shape/image','./shape/beziercurve','./shape/star','./shape/isogon','./animation/animation','./tool/util','./tool/util','./config','./tool/loadingEffect','./tool/loadingEffect','./config','./tool/env','./tool/event'],function(require) {
+    'zrender/zrender',['require','./lib/excanvas','./tool/util','./tool/env','./shape','./shape/circle','./shape/ellipse','./shape/line','./shape/polygon','./shape/brokenLine','./shape/rectangle','./shape/ring','./shape/sector','./shape/text','./shape/heart','./shape/droplet','./shape/path','./shape/image','./shape/beziercurve','./shape/star','./shape/isogon','./animation/animation','./config','./tool/loadingEffect','./tool/loadingEffect','./config','./tool/env','./tool/event'],function(require) {
         /*
          * HTML5 Canvas for Internet Explorer!
          * Modern browsers like Firefox, Safari, Chrome and Opera support
@@ -9533,13 +9564,15 @@ define(
         // 核心代码会生成一个全局变量 G_vmlCanvasManager，模块改造后借用于快速判断canvas支持
         require('./lib/excanvas');
 
+        var util = require('./tool/util');
+
         var self = {};
         var zrender = self;     // 提供MVC内部反向使用静态方法；
 
         var _idx = 0;           //ZRender instance's id
         var _instances = {};    //ZRender实例map索引
 
-        self.version = '1.0.9';
+        self.version = '1.1.0';
 
         /**
          * zrender初始化
@@ -9743,6 +9776,15 @@ define(
             };
 
             /**
+             * 修改指定zlevel的绘制配置项，例如clearColor
+             * @param {string} zLevel
+             * @param {Object} config 配置对象, 目前支持clearColor 
+             */
+            self.modLayer = function(zLevel, config) {
+                painter.modLayer(zLevel, config);
+            }
+
+            /**
              * 添加额外高亮层显示，仅提供添加方法，每次刷新后高亮层图形均被清空
              * @param {Object} shape 形状对象
              */
@@ -9807,7 +9849,6 @@ define(
              *   .start()
              */
             self.animate = function(shapeId, path, loop) {
-                var util = require('./tool/util');
                 var shape = storage.get(shapeId);
                 if (shape) {
                     var target;
@@ -9928,6 +9969,15 @@ define(
             self.toDataURL = function(type, args) {
                 return painter.toDataURL(type, args);
             };
+
+            /**
+             * 将常规shape转成image shape
+             */
+            self.shapeToImage = function(e, width, height) {
+                var id = self.newShapeId('image');
+                return painter.shapeToImage(id, e, width, height);
+            };
+
             /**
              * 事件绑定
              * @param {string} eventName 事件名称
@@ -9989,7 +10039,6 @@ define(
          * @param {Object} shape 图形库
          */
         function Storage(shape) {
-            var util = require('./tool/util');
             var self = this;
 
             var _idBase = 0;            //图形数据id自增基础
@@ -10384,6 +10433,10 @@ define(
             var _domList = {};              //canvas dom元素
             var _ctxList = {};              //canvas 2D context对象，与domList对应
 
+            // 每个zLevel 的配置
+            // @config clearColor
+            var _zLevelConfig = {};
+
             var _maxZlevel = 0;             //最大zlevel，缓存记录
             var _loadingTimer;
 
@@ -10436,6 +10489,9 @@ define(
 
                 _domList = {};
                 _ctxList = {};
+
+                _domListBack = {};
+                _ctxListBack = {};
 
                 _maxZlevel = storage.getMaxZlevel();
 
@@ -10629,11 +10685,7 @@ define(
                 else {
                     for (var k in changedZlevel) {
                         if (_ctxList[k]) {
-                            _ctxList[k].clearRect(
-                                0, 0, 
-                                _width * _devicePixelRatio, 
-                                _height * _devicePixelRatio
-                            );
+                            clearLayer(k);
                         }
                     }
                 }
@@ -10677,13 +10729,94 @@ define(
                     if (k == 'hover') {
                         continue;
                     }
+
+                    clearLayer(k);
+                }
+                return self;
+            }
+
+            /**
+             * 清除单独的一个层
+             */
+            function clearLayer(k) {
+                if (_zLevelConfig[k]) {
+                    var haveClearColor = typeof(_zLevelConfig[k].clearColor) !== 'undefined';
+                    var haveMotionBLur = _zLevelConfig[k].motionBlur;
+                    var lastFrameAlpha = _zLevelConfig[k].lastFrameAlpha;
+                    if (typeof(lastFrameAlpha) == 'undefined') {
+                        lastFrameAlpha = 0.7;
+                    }
+                    if (haveMotionBLur) {
+                        if (typeof(_domListBack[k]) === 'undefined') {
+                            var backDom = _createDom('back-' + k, 'canvas');
+                            backDom.width = _domList[k].width;
+                            backDom.height = _domList[k].height;
+                            backDom.style.width = _domList[k].style.width;
+                            backDom.style.height = _domList[k].style.height;
+                            _domListBack[k] = backDom;
+                            _ctxListBack[k] = backDom.getContext('2d');
+                            _devicePixelRatio != 1
+                                && _ctxListBack[k].scale(
+                                       _devicePixelRatio, _devicePixelRatio
+                                   );
+                        }
+                        _ctxListBack[k].globalCompositeOperation = 'copy';
+                        _ctxListBack[k].drawImage(
+                            _domList[k], 0, 0,
+                            _domList[k].width / _devicePixelRatio,
+                            _domList[k].height / _devicePixelRatio
+                        );
+                    }
+                    if (haveClearColor) {
+                        _ctxList[k].save();
+                        _ctxList[k].fillStyle = _zLevelConfig[k].clearColor;
+                        _ctxList[k].fillRect(
+                            0, 0,
+                            _width * _devicePixelRatio, 
+                            _height * _devicePixelRatio
+                        );
+                        _ctxList[k].restore();
+                    } else {
+                        _ctxList[k].clearRect(
+                            0, 0, 
+                            _width * _devicePixelRatio, 
+                            _height * _devicePixelRatio
+                        );
+                    }
+                    if (haveMotionBLur) {
+                        var backDom = _domListBack[k];
+                        var ctx = _ctxList[k];
+                        ctx.save();
+                        ctx.globalAlpha = lastFrameAlpha;
+                        ctx.drawImage(
+                            backDom, 0, 0,
+                            backDom.width / _devicePixelRatio,
+                            backDom.height / _devicePixelRatio
+                        );
+                        ctx.restore();
+                    }
+                } else {
                     _ctxList[k].clearRect(
                         0, 0, 
                         _width * _devicePixelRatio, 
                         _height * _devicePixelRatio
                     );
                 }
-                return self;
+            }
+
+            /**
+             * 修改指定zlevel的绘制参数
+             * @return {[type]} [description]
+             */
+            function modLayer(zLevel, config) {
+                if (config) {
+                    if (typeof(_zLevelConfig[zLevel]) === 'undefined' ) {
+                        _zLevelConfig[zLevel] = {};
+                    }
+                    util.merge(_zLevelConfig[zLevel], config, {
+                        recursive : true
+                    });
+                }
             }
 
             /**
@@ -10834,6 +10967,9 @@ define(
                 _domList = null;
                 _ctxList = null;
 
+                _ctxListBack = null;
+                _domListBack = null;
+
                 self = null;
 
                 return;
@@ -10898,10 +11034,65 @@ define(
                 return image;
             }
             
+            var shapeToImage = (function() {
+                if (G_vmlCanvasManager) {
+                    return function(){};
+                }
+                var canvas = document.createElement('canvas');
+                var ctx = canvas.getContext('2d');
+                var devicePixelRatio = window.devicePixelRatio || 1;
+                
+                return function(id, e, width, height) {
+                    canvas.style.width = width + 'px';
+                    canvas.style.height = height + 'px';
+                    canvas.setAttribute('width', width * devicePixelRatio);
+                    canvas.setAttribute('height', height * devicePixelRatio);
+
+                    ctx.clearRect(0, 0, width * devicePixelRatio, height * devicePixelRatio);
+
+                    var brush = shape.get(e.shape);
+                    var shapeTransform = {
+                        position : e.position,
+                        rotation : e.rotation,
+                        scale : e.scale
+                    };
+                    e.position = [0, 0, 0];
+                    e.rotation = 0;
+                    e.scale = [1, 1];
+                    if (brush) {
+                        brush.brush(ctx, e, false);
+                    }
+
+                    var imgShape = {
+                        shape : 'image',
+                        id : id,
+                        style : {
+                            x : 0,
+                            y : 0,
+                            // TODO 直接使用canvas而不是通过base64
+                            image : canvas.toDataURL()
+                        }
+                    }
+
+                    if (typeof(shapeTransform.position) !== 'undefined') {
+                        imgShape.position = e.position = shapeTransform.position;
+                    }
+                    if (typeof(shapeTransform.rotation) !== 'undefined') {
+                        imgShape.rotation = e.rotation = shapeTransform.rotation;
+                    }
+                    if (typeof(shapeTransform.scale) !== 'undefined') {
+                        imgShape.scale = e.scale = shapeTransform.scale;
+                    }
+
+                    return imgShape;
+                }
+            })();
+
             self.render = render;
             self.refresh = refresh;
             self.update = update;
             self.clear = clear;
+            self.modLayer = modLayer;
             self.refreshHover = refreshHover;
             self.clearHover = clearHover;
             self.showLoading = showLoading;
@@ -10913,6 +11104,8 @@ define(
             self.dispose = dispose;
             self.getDomHover = getDomHover;
             self.toDataURL = toDataURL;
+            self.shapeToImage = shapeToImage;
+
             _init();
         }
 
@@ -10946,6 +11139,7 @@ define(
             var _draggingTarget = null;         //当前被拖拽的图形元素
             var _isMouseDown = false;
             var _isDragging = false;
+            var _lastMouseDownMoment;
             var _lastTouchMoment;
             var _lastDownButton;
 
@@ -11159,6 +11353,7 @@ define(
                     // 仅作为关闭右键菜单使用
                     return;
                 }
+                _lastMouseDownMoment = new Date();
                 _event = _zrenderEventFixed(event);
                 _isMouseDown = true;
                 //分发config.EVENT.MOUSEDOWN事件
@@ -11236,6 +11431,12 @@ define(
                     && !_draggingTarget
                     && _mouseDownTarget == _lastHover
                 ) {
+                    // 拖拽点击生效时长阀门，某些场景需要降低拖拽敏感度
+                    if (_lastHover.dragEnableTime && 
+                        new Date() - _lastMouseDownMoment < _lastHover.dragEnableTime
+                    ) {
+                        return;
+                    }
                     _draggingTarget = _lastHover;
                     _isDragging = true;
 
