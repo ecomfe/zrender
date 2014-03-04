@@ -32,13 +32,15 @@ define(
         // 核心代码会生成一个全局变量 G_vmlCanvasManager，模块改造后借用于快速判断canvas支持
         require('./lib/excanvas');
 
+        var util = require('./tool/util');
+
         var self = {};
         var zrender = self;     // 提供MVC内部反向使用静态方法；
 
         var _idx = 0;           //ZRender instance's id
         var _instances = {};    //ZRender实例map索引
 
-        self.version = '1.0.9';
+        self.version = '1.1.0';
 
         /**
          * zrender初始化
@@ -242,6 +244,15 @@ define(
             };
 
             /**
+             * 修改指定zlevel的绘制配置项，例如clearColor
+             * @param {string} zLevel
+             * @param {Object} config 配置对象, 目前支持clearColor 
+             */
+            self.modLayer = function(zLevel, config) {
+                painter.modLayer(zLevel, config);
+            }
+
+            /**
              * 添加额外高亮层显示，仅提供添加方法，每次刷新后高亮层图形均被清空
              * @param {Object} shape 形状对象
              */
@@ -306,7 +317,6 @@ define(
              *   .start()
              */
             self.animate = function(shapeId, path, loop) {
-                var util = require('./tool/util');
                 var shape = storage.get(shapeId);
                 if (shape) {
                     var target;
@@ -427,6 +437,15 @@ define(
             self.toDataURL = function(type, args) {
                 return painter.toDataURL(type, args);
             };
+
+            /**
+             * 将常规shape转成image shape
+             */
+            self.shapeToImage = function(e, width, height) {
+                var id = self.newShapeId('image');
+                return painter.shapeToImage(id, e, width, height);
+            };
+
             /**
              * 事件绑定
              * @param {string} eventName 事件名称
@@ -488,7 +507,6 @@ define(
          * @param {Object} shape 图形库
          */
         function Storage(shape) {
-            var util = require('./tool/util');
             var self = this;
 
             var _idBase = 0;            //图形数据id自增基础
@@ -883,6 +901,10 @@ define(
             var _domList = {};              //canvas dom元素
             var _ctxList = {};              //canvas 2D context对象，与domList对应
 
+            // 每个zLevel 的配置
+            // @config clearColor
+            var _zLevelConfig = {};
+
             var _maxZlevel = 0;             //最大zlevel，缓存记录
             var _loadingTimer;
 
@@ -935,6 +957,9 @@ define(
 
                 _domList = {};
                 _ctxList = {};
+
+                _domListBack = {};
+                _ctxListBack = {};
 
                 _maxZlevel = storage.getMaxZlevel();
 
@@ -1128,11 +1153,7 @@ define(
                 else {
                     for (var k in changedZlevel) {
                         if (_ctxList[k]) {
-                            _ctxList[k].clearRect(
-                                0, 0, 
-                                _width * _devicePixelRatio, 
-                                _height * _devicePixelRatio
-                            );
+                            clearLayer(k);
                         }
                     }
                 }
@@ -1176,13 +1197,94 @@ define(
                     if (k == 'hover') {
                         continue;
                     }
+
+                    clearLayer(k);
+                }
+                return self;
+            }
+
+            /**
+             * 清除单独的一个层
+             */
+            function clearLayer(k) {
+                if (_zLevelConfig[k]) {
+                    var haveClearColor = typeof(_zLevelConfig[k].clearColor) !== 'undefined';
+                    var haveMotionBLur = _zLevelConfig[k].motionBlur;
+                    var lastFrameAlpha = _zLevelConfig[k].lastFrameAlpha;
+                    if (typeof(lastFrameAlpha) == 'undefined') {
+                        lastFrameAlpha = 0.7;
+                    }
+                    if (haveMotionBLur) {
+                        if (typeof(_domListBack[k]) === 'undefined') {
+                            var backDom = _createDom('back-' + k, 'canvas');
+                            backDom.width = _domList[k].width;
+                            backDom.height = _domList[k].height;
+                            backDom.style.width = _domList[k].style.width;
+                            backDom.style.height = _domList[k].style.height;
+                            _domListBack[k] = backDom;
+                            _ctxListBack[k] = backDom.getContext('2d');
+                            _devicePixelRatio != 1
+                                && _ctxListBack[k].scale(
+                                       _devicePixelRatio, _devicePixelRatio
+                                   );
+                        }
+                        _ctxListBack[k].globalCompositeOperation = 'copy';
+                        _ctxListBack[k].drawImage(
+                            _domList[k], 0, 0,
+                            _domList[k].width / _devicePixelRatio,
+                            _domList[k].height / _devicePixelRatio
+                        );
+                    }
+                    if (haveClearColor) {
+                        _ctxList[k].save();
+                        _ctxList[k].fillStyle = _zLevelConfig[k].clearColor;
+                        _ctxList[k].fillRect(
+                            0, 0,
+                            _width * _devicePixelRatio, 
+                            _height * _devicePixelRatio
+                        );
+                        _ctxList[k].restore();
+                    } else {
+                        _ctxList[k].clearRect(
+                            0, 0, 
+                            _width * _devicePixelRatio, 
+                            _height * _devicePixelRatio
+                        );
+                    }
+                    if (haveMotionBLur) {
+                        var backDom = _domListBack[k];
+                        var ctx = _ctxList[k];
+                        ctx.save();
+                        ctx.globalAlpha = lastFrameAlpha;
+                        ctx.drawImage(
+                            backDom, 0, 0,
+                            backDom.width / _devicePixelRatio,
+                            backDom.height / _devicePixelRatio
+                        );
+                        ctx.restore();
+                    }
+                } else {
                     _ctxList[k].clearRect(
                         0, 0, 
                         _width * _devicePixelRatio, 
                         _height * _devicePixelRatio
                     );
                 }
-                return self;
+            }
+
+            /**
+             * 修改指定zlevel的绘制参数
+             * @return {[type]} [description]
+             */
+            function modLayer(zLevel, config) {
+                if (config) {
+                    if (typeof(_zLevelConfig[zLevel]) === 'undefined' ) {
+                        _zLevelConfig[zLevel] = {};
+                    }
+                    util.merge(_zLevelConfig[zLevel], config, {
+                        recursive : true
+                    });
+                }
             }
 
             /**
@@ -1333,6 +1435,9 @@ define(
                 _domList = null;
                 _ctxList = null;
 
+                _ctxListBack = null;
+                _domListBack = null;
+
                 self = null;
 
                 return;
@@ -1397,10 +1502,65 @@ define(
                 return image;
             }
             
+            var shapeToImage = (function() {
+                if (G_vmlCanvasManager) {
+                    return function(){};
+                }
+                var canvas = document.createElement('canvas');
+                var ctx = canvas.getContext('2d');
+                var devicePixelRatio = window.devicePixelRatio || 1;
+                
+                return function(id, e, width, height) {
+                    canvas.style.width = width + 'px';
+                    canvas.style.height = height + 'px';
+                    canvas.setAttribute('width', width * devicePixelRatio);
+                    canvas.setAttribute('height', height * devicePixelRatio);
+
+                    ctx.clearRect(0, 0, width * devicePixelRatio, height * devicePixelRatio);
+
+                    var brush = shape.get(e.shape);
+                    var shapeTransform = {
+                        position : e.position,
+                        rotation : e.rotation,
+                        scale : e.scale
+                    };
+                    e.position = [0, 0, 0];
+                    e.rotation = 0;
+                    e.scale = [1, 1];
+                    if (brush) {
+                        brush.brush(ctx, e, false);
+                    }
+
+                    var imgShape = {
+                        shape : 'image',
+                        id : id,
+                        style : {
+                            x : 0,
+                            y : 0,
+                            // TODO 直接使用canvas而不是通过base64
+                            image : canvas.toDataURL()
+                        }
+                    }
+
+                    if (typeof(shapeTransform.position) !== 'undefined') {
+                        imgShape.position = e.position = shapeTransform.position;
+                    }
+                    if (typeof(shapeTransform.rotation) !== 'undefined') {
+                        imgShape.rotation = e.rotation = shapeTransform.rotation;
+                    }
+                    if (typeof(shapeTransform.scale) !== 'undefined') {
+                        imgShape.scale = e.scale = shapeTransform.scale;
+                    }
+
+                    return imgShape;
+                }
+            })();
+
             self.render = render;
             self.refresh = refresh;
             self.update = update;
             self.clear = clear;
+            self.modLayer = modLayer;
             self.refreshHover = refreshHover;
             self.clearHover = clearHover;
             self.showLoading = showLoading;
@@ -1412,6 +1572,8 @@ define(
             self.dispose = dispose;
             self.getDomHover = getDomHover;
             self.toDataURL = toDataURL;
+            self.shapeToImage = shapeToImage;
+
             _init();
         }
 
@@ -1445,6 +1607,7 @@ define(
             var _draggingTarget = null;         //当前被拖拽的图形元素
             var _isMouseDown = false;
             var _isDragging = false;
+            var _lastMouseDownMoment;
             var _lastTouchMoment;
             var _lastDownButton;
 
@@ -1658,6 +1821,7 @@ define(
                     // 仅作为关闭右键菜单使用
                     return;
                 }
+                _lastMouseDownMoment = new Date();
                 _event = _zrenderEventFixed(event);
                 _isMouseDown = true;
                 //分发config.EVENT.MOUSEDOWN事件
@@ -1735,6 +1899,12 @@ define(
                     && !_draggingTarget
                     && _mouseDownTarget == _lastHover
                 ) {
+                    // 拖拽点击生效时长阀门，某些场景需要降低拖拽敏感度
+                    if (_lastHover.dragEnableTime && 
+                        new Date() - _lastMouseDownMoment < _lastHover.dragEnableTime
+                    ) {
+                        return;
+                    }
                     _draggingTarget = _lastHover;
                     _isDragging = true;
 

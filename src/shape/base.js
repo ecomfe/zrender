@@ -202,8 +202,8 @@ define(
                     style.lineWidth > 0 && ctx.stroke();
                     break;
                 case 'both':
-                    style.lineWidth > 0 && ctx.stroke();
                     ctx.fill();
+                    style.lineWidth > 0 && ctx.stroke();
                     break;
                 default:
                     ctx.fill();

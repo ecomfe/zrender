@@ -139,11 +139,11 @@ define(
                                 );
                                 break;
                             case 'both':
-                                ctx.strokeText(
+                                ctx.fillText(
                                     text[i],
                                     x, y, style.maxWidth
                                 );
-                                ctx.fillText(
+                                ctx.strokeText(
                                     text[i],
                                     x, y, style.maxWidth
                                 );
@@ -164,8 +164,8 @@ define(
                                 ctx.strokeText(text[i], x, y);
                                 break;
                             case 'both':
-                                ctx.strokeText(text[i], x, y);
                                 ctx.fillText(text[i], x, y);
+                                ctx.strokeText(text[i], x, y);
                                 break;
                             default:
                                 ctx.fillText(text[i], x, y);
@@ -184,10 +184,8 @@ define(
              */
             getRect : function(style) {
                 var width = area.getTextWidth(style.text, style.textFont);
-                var lineHeight = area.getTextHeight('国', style.textFont);
+                var height = area.getTextHeight(style.text, style.textFont);
                 
-                var text = (style.text + '').split('\n');
-
                 var textX = style.x;                 //默认start == left
                 if (style.textAlign == 'end' || style.textAlign == 'right') {
                     textX -= width;
@@ -201,18 +199,18 @@ define(
                     textY = style.y;
                 }
                 else if (style.textBaseline == 'bottom') {
-                    textY = style.y - lineHeight * text.length;
+                    textY = style.y - height;
                 }
                 else {
                     // middle
-                    textY = style.y - lineHeight * text.length / 2;
+                    textY = style.y - height / 2;
                 }
 
                 return {
                     x : textX,
                     y : textY,
                     width : width,
-                    height : lineHeight * text.length
+                    height : height
                 };
             }
         };
