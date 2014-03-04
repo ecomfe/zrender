@@ -434,8 +434,8 @@ define(
             /**
              * 图像导出 
              */
-            self.toDataURL = function(type, args) {
-                return painter.toDataURL(type, args);
+            self.toDataURL = function(type, backgroundColor, args) {
+                return painter.toDataURL(type, backgroundColor, args);
             };
 
             /**
@@ -1447,7 +1447,7 @@ define(
                 return _domList['hover'];
             }
 
-            function toDataURL(type, args) {
+            function toDataURL(type, backgroundColor, args) {
                 if (G_vmlCanvasManager) {
                     return null;
                 }
@@ -1457,13 +1457,14 @@ define(
                 _devicePixelRatio != 1 
                 && ctx.scale(_devicePixelRatio, _devicePixelRatio);
                 
-                ctx.fillStyle = '#fff';
+                ctx.fillStyle = backgroundColor || '#fff';
                 ctx.rect(
                     0, 0, 
                     _width * _devicePixelRatio,
                     _height * _devicePixelRatio
                 );
                 ctx.fill();
+                
                 //升序遍历，shape上的zlevel指定绘画图层的z轴层叠
                 storage.iterShape(
                     function (e) {
