@@ -201,7 +201,14 @@ define(
             var animation = new Animation({
                 stage : {
                     update : function(){
-                        self.update(animatingShapes);
+                        var shapes = animatingShapes;
+                        for (var i = 0, l = shapes.length; i < l; i++) {
+                            var shape = shapes[i];
+                            storage.mod(shape.id);
+                        }
+                        if (shapes.length > 0) {
+                            painter.refresh();
+                        }
                     }
                 }
             });
@@ -346,14 +353,14 @@ define(
                         return;
                     }
 
-                    if( typeof(shape.__aniCount) === 'undefined'){
+                    if (typeof(shape.__aniCount) === 'undefined') {
                         // 正在进行的动画记数
                         shape.__aniCount = 0;
                     }
-                    if( shape.__aniCount === 0 ){
+                    if (shape.__aniCount === 0) {
                         animatingShapes.push(shape);
                     }
-                    shape.__aniCount ++;
+                    shape.__aniCount++;
 
                     return animation.animate(target, {loop : loop})
                         .done(function() {
@@ -677,22 +684,24 @@ define(
                 var e = _elements[shapeId];
                 if (e) {
                     _changedZlevel[e.zlevel] = true;    // 可能修改前后不在一层
-                    if (fast) {
-                        util.mergeFast(
-                            e,
-                            params,
-                            true,
-                            true
-                        );
-                    } else {
-                        util.merge(
-                            e,
-                            params,
-                            {
-                                'overwrite': true,
-                                'recursive': true
-                            }
-                        );
+                    if (params) {
+                        if (fast) {
+                            util.mergeFast(
+                                e,
+                                params,
+                                true,
+                                true
+                            );
+                        } else {
+                            util.merge(
+                                e,
+                                params,
+                                {
+                                    'overwrite': true,
+                                    'recursive': true
+                                }
+                            );
+                        }   
                     }
                     _mark(e);
                     _changedZlevel[e.zlevel] = true;    // 可能修改前后不在一层
