@@ -203,8 +203,7 @@ define(
                     update : function(){
                         var shapes = animatingShapes;
                         for (var i = 0, l = shapes.length; i < l; i++) {
-                            var shape = shapes[i];
-                            storage.mod(shape.id);
+                            storage.mod(shapes[i].id);
                         }
                         if (shapes.length > 0) {
                             painter.refresh();
