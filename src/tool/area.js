@@ -218,7 +218,7 @@ define(
             var _y1 = area.yStart;
             var _x2 = area.xEnd;
             var _y2 = area.yEnd;
-            var _l = Math.max(area.lineWidth, 3);
+            var _l = Math.max(area.lineWidth, 5);
             var _a = 0;
             var _b = _x1;
 
@@ -244,7 +244,7 @@ define(
                     yStart : pointList[i][1],
                     xEnd : pointList[i + 1][0],
                     yEnd : pointList[i + 1][1],
-                    lineWidth : area.lineWidth
+                    lineWidth : Math.max(area.lineWidth, 10)
                 };
                 if (!_isInsideRectangle(
                         {
