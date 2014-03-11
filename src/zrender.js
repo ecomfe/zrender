@@ -1290,7 +1290,8 @@ define(
                         _zLevelConfig[zLevel] = {};
                     }
                     util.merge(_zLevelConfig[zLevel], config, {
-                        recursive : true
+                        recursive : true,
+                        overwrite : true
                     });
                 }
             }
