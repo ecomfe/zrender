@@ -471,6 +471,17 @@ define(
                 handler.un(eventName, eventHandler);
                 return self;
             };
+            
+            /**
+             * 事件触发
+             * @param {string} event 事件名称，resize，hover，drag，etc~
+             * @param {event=} event event dom事件对象
+             */
+            self.trigger = function(eventName, event) {
+                handler.trigger(eventName, event);
+                return self;
+            };
+            
 
             /**
              * 清除当前ZRender下所有类图的数据和显示，clear后MVC和已绑定事件均还存在在，ZRender可用
@@ -2174,10 +2185,10 @@ define(
             }
 
             /**
-             * 比较不可控，先不开放了~
-             * 触发原生dom事件，用于自定义元素在顶层截获事件后触发zrender行为
+             * 事件触发
              * @param {string} event 事件名称，resize，hover，drag，etc~
              * @param {event=} event event dom事件对象
+             */
             function trigger(eventName, event) {
                 switch (eventName) {
                     case config.EVENT.RESIZE :
@@ -2198,9 +2209,11 @@ define(
                     case config.EVENT.MOUSEUP :
                         _mouseUpHandleru(event);
                         break;
+                    case config.EVENT.MOUSEOUT :
+                        _mouseOutHandler(event);
+                        break;
                 }
             }
-             */
 
             /**
              * 释放
@@ -2272,7 +2285,7 @@ define(
 
             self.on = on;
             self.un = un;
-            // self.trigger = trigger;
+            self.trigger = trigger;
             self.dispose = dispose;
 
             _init();
