@@ -920,7 +920,9 @@ define(
 
             var _domList = {};              //canvas dom元素
             var _ctxList = {};              //canvas 2D context对象，与domList对应
-
+            var _domListBack = {};
+            var _ctxListBack = {};
+            
             // 每个zLevel 的配置
             // @config clearColor
             var _zLevelConfig = {};
@@ -1139,6 +1141,9 @@ define(
                 }
                 //检查_maxZlevel是否变大，如是则同步创建需要的Canvas
                 _syncMaxZlevelCanvase();
+                
+                //清空已有内容，render默认为首次渲染
+                clear();
 
                 //升序遍历，shape上的zlevel指定绘画图层的z轴层叠
                 storage.iterShape(
