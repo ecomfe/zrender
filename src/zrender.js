@@ -919,7 +919,9 @@ define(
 
             var _domList = {};              //canvas dom元素
             var _ctxList = {};              //canvas 2D context对象，与domList对应
-
+            var _domListBack = {};
+            var _ctxListBack = {};
+            
             // 每个zLevel 的配置
             // @config clearColor
             var _zLevelConfig = {};
