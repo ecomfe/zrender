@@ -1140,6 +1140,9 @@ define(
                 }
                 //检查_maxZlevel是否变大，如是则同步创建需要的Canvas
                 _syncMaxZlevelCanvase();
+                
+                //清空已有内容，render默认为首次渲染
+                clear();
 
                 //升序遍历，shape上的zlevel指定绘画图层的z轴层叠
                 storage.iterShape(
