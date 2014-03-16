@@ -64,6 +64,8 @@ define(
          * @param {Object} shape 图形库
          */
         function Storage(shape) {
+            this.shape = shape;
+
             // 所有常规形状，id索引的map
             this._elements = {};
 
@@ -209,14 +211,14 @@ define(
                 var zrender = require('./zrender');
                 if (zrender.catchBrushException) {
                     try {
-                        shape.get(e.shape).drift(e, dx, dy);
+                        this.shape.get(e.shape).drift(e, dx, dy);
                     }
                     catch(error) {
                         zrender.log(error, 'drift error of ' + e.shape, e);
                     }
                 }
                 else {
-                    shape.get(e.shape).drift(e, dx, dy);
+                    this.shape.get(e.shape).drift(e, dx, dy);
                 }
             }
 
@@ -269,22 +271,22 @@ define(
         Storage.prototype.add = function (params) {
             // 默认&必须的参数
             var e = {
-                'shape': 'circle',                      // 形状
-                'id': params.id || newShapeId(),   // 唯一标识
-                'zlevel': 0,                            // z轴位置
-                'draggable': false,                     // draggable可拖拽
-                'clickable': false,                     // clickable可点击响应
-                'hoverable': true,                      // hoverable可悬浮响应
-                'position': [0, 0],
-                'rotation' : [0, 0, 0],
-                'scale' : [1, 1, 0, 0]
+                shape: 'circle',                      // 形状
+                id: params.id || newShapeId(),   // 唯一标识
+                zlevel: 0,                            // z轴位置
+                draggable: false,                     // draggable可拖拽
+                clickable: false,                     // clickable可点击响应
+                hoverable: true,                      // hoverable可悬浮响应
+                position: [0, 0],
+                rotation: [0, 0, 0],
+                scale: [1, 1, 0, 0]
             };
             util.merge(
                 e,
                 params,
                 {
-                    'overwrite': true,
-                    'recursive': true
+                    overwrite: true,
+                    recursive: true
                 }
             );
             mark(e);
