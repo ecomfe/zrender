@@ -99,7 +99,7 @@ define(
                 //高亮层数据遍历
                 for (var i = 0, l = this._hoverElements.length; i < l; i++) {
                     if (fun(this._hoverElements[i])) {
-                        return self;
+                        return this;
                     }
                 }
             }
