@@ -1,3 +1,10 @@
+/**
+ * Handler控制模块
+ *
+ * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *         errorrik (errorrik@gmail.com)
+ */
+
 define(
     function (require) {
         var config = require('./config');
@@ -737,7 +744,6 @@ define(
                 }
             }
             else {
-                event = event;
                 var touch = event.type != 'touchend'
                                 ? event.targetTouches[0]
                                 : event.changedTouches[0];
