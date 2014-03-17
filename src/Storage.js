@@ -156,13 +156,13 @@ define(
          * 修改
          * 
          * @param {string} idx 唯一标识
-         * @param {Object} params]参数
+         * @param {Object} params 参数
          * @param {boolean} fast
          */
         Storage.prototype.mod = function (shapeId, params, fast) {
             var shape = this._elements[shapeId];
             if (shape) {
-                this._changedZlevel[e.zlevel] = true;    // 可能修改前后不在一层
+                this._changedZlevel[shape.zlevel] = true;    // 可能修改前后不在一层
                 if (params) {
                     if (fast) {
                         util.mergeFast(

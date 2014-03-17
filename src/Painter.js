@@ -10,6 +10,7 @@
 define(
     function (require) {
         var config = require('./config');
+        var util = require('./tool/util');
 
         // retina 屏幕优化
         var devicePixelRatio = window.devicePixelRatio || 1;
