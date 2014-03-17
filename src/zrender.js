@@ -185,31 +185,13 @@ define(
          * @return {ZRender} ZRender实例
          */
         function ZRender(id, dom, params) {
-            // 内置图形注册
-            require('./shape/circle');
-            require('./shape/ellipse');
-            require('./shape/line');
-            require('./shape/polygon');
-            require('./shape/brokenLine');
-            require('./shape/rectangle');
-            require('./shape/ring');
-            require('./shape/sector');
-            require('./shape/text');
-            require('./shape/heart');
-            require('./shape/droplet');
-            require('./shape/path');
-            require('./shape/image');
-            require('./shape/beziercurve');
-            require('./shape/star');
-            require('./shape/isogon');
-
             this.id = id;
             this.env = require('./tool/env');
 
             var shapeLibrary = getShapeLibrary(params.shape);
-            this.storage = new Storage(shapeLibrary);
-            this.painter = new Painter(dom, this.storage, shapeLibrary);
-            this.handler = new Handler(dom, this.storage, this.painter, shapeLibrary);
+            this.storage = new Storage();
+            this.painter = new Painter(dom, this.storage);
+            this.handler = new Handler(dom, this.storage, this.painter);
 
             // 动画控制
             this.animatingShapes = [];

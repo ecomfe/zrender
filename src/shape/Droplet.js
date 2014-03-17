@@ -73,12 +73,16 @@
    }
  */
 define(
-    function(require) {
-        function Droplet() {
-            this.type = 'droplet';
+    function (require) {
+        var Base = require('./Base');
+        
+        function Droplet(options) {
+            Base.call(this, options);
         }
 
         Droplet.prototype = {
+            type: 'droplet',
+
             /**
              * 创建扇形路径
              * @param {Context2D} ctx Canvas 2D上下文
@@ -126,12 +130,7 @@ define(
             }
         };
 
-        var base = require('./base');
-        base.derive(Droplet);
-        
-        var shape = require('../shape');
-        shape.define('droplet', new Droplet());
-
+        Base.derive(Droplet);
         return Droplet;
     }
 );

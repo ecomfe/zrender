@@ -287,21 +287,20 @@ define(
 
         /**
          * 控制类 (C)
+         * 
          * @param {HTMLElement} root 绘图区域
          * @param {storage} storage Storage实例
          * @param {painter} painter Painter实例
-         * @param {Object} shape 图形库
          *
          * 分发事件支持详见config.EVENT
          */
-        function Handler(root, storage, painter, shape) {
+        function Handler(root, storage, painter) {
             // 添加事件分发器特性
             eventTool.Dispatcher.call(this);
 
             this.root = root;
             this.storage = storage;
             this.painter = painter;
-            this.shape = shape;
 
             // 各种事件标识的私有变量
             // this._hasfound = false;              //是否找到hover图形元素
@@ -435,8 +434,7 @@ define(
             this.root =
             this._domHover =
             this.storage =
-            this.painter =
-            this.shape = null;
+            this.painter = null;
 
             this.un();
         };
@@ -674,28 +672,27 @@ define(
          * @private
          * @param {Object} e 图形元素
          */
-        function findHover(e) {
+        function findHover(shape) {
             if (
-                ( this._draggingTarget && this._draggingTarget.id == e.id ) //迭代到当前拖拽的图形上
-                || e.__silent // 打酱油的路过，啥都不响应的shape~
+                ( this._draggingTarget && this._draggingTarget.id == shape.id ) //迭代到当前拖拽的图形上
+                || shape.__silent // 打酱油的路过，啥都不响应的shape~
             ) {
                 return false;
             }
 
-            var shapeInstance = this.shape.get(e.shape);
             var event = this._event;
-            if (shapeInstance.isCover(e, this._mouseX, this._mouseY)) {
-                if (e.hoverable) {
-                    this.storage.addHover(e);
+            if (shape.isCover(shape, this._mouseX, this._mouseY)) {
+                if (shape.hoverable) {
+                    this.storage.addHover(shape);
                 }
 
-                if (this._lastHover != e) {
+                if (this._lastHover != shape) {
                     this._processOutShape(event);
 
                     //可能出现config.EVENT.DRAGLEAVE事件
                     this._processDragLeave(event);
 
-                    this._lastHover = e;
+                    this._lastHover = shape;
 
                     //可能出现config.EVENT.DRAGENTER事件
                     this._processDragEnter(event);

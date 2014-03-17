@@ -73,12 +73,16 @@
    }
  */
 define(
-    function(require) {
-        function Ring() {
-            this.type = 'ring';
+    function (require) {
+        var Base = require('./Base');
+        
+        function Ring(options) {
+            Base.call(this, options);
         }
 
         Ring.prototype = {
+            type: 'ring',
+
             /**
              * 创建圆环路径，依赖扇形路径
              * @param {Context2D} ctx Canvas 2D上下文
@@ -113,12 +117,7 @@ define(
             }
         };
 
-        var base = require('./base');
-        base.derive(Ring);
-        
-        var shape = require('../shape');
-        shape.define('ring', new Ring());
-
+        Base.derive(Ring);
         return Ring;
     }
 );

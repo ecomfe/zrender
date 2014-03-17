@@ -73,12 +73,16 @@
    }
  */
 define(
-    function(require) {
-        function Heart() {
-            this.type = 'heart';
+    function (require) {
+        var Base = require('./Base');
+        
+        function Heart(options) {
+            Base.call(this, options);
         }
 
         Heart.prototype = {
+            type: 'heart',
+
             /**
              * 创建扇形路径
              * @param {Context2D} ctx Canvas 2D上下文
@@ -126,12 +130,7 @@ define(
             }
         };
 
-        var base = require('./base');
-        base.derive(Heart);
-        
-        var shape = require('../shape');
-        shape.define('heart', new Heart());
-
+        Base.derive(Heart);
         return Heart;
     }
 );

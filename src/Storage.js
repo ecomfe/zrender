@@ -61,11 +61,8 @@ define(
         /**
          * 内容仓库 (M)
          * 
-         * @param {Object} shape 图形库
          */
         function Storage(shape) {
-            this.shape = shape;
-
             // 所有常规形状，id索引的map
             this._elements = {};
 
@@ -199,30 +196,30 @@ define(
          * @param {string} idx 形状唯一标识
          */
         Storage.prototype.drift = function (shapeId, dx, dy) {
-            var e = this._elements[shapeId];
-            if (!e) {
-                return;
-            }
-            e.__needTransform = true;
-            if (!e.ondrift //ondrift
-                //有onbrush并且调用执行返回false或undefined则继续
-                || (e.ondrift && !e.ondrift(e, dx, dy))
-            ) {
-                var zrender = require('./zrender');
-                if (zrender.catchBrushException) {
-                    try {
-                        this.shape.get(e.shape).drift(e, dx, dy);
-                    }
-                    catch(error) {
-                        zrender.log(error, 'drift error of ' + e.shape, e);
-                    }
-                }
-                else {
-                    this.shape.get(e.shape).drift(e, dx, dy);
-                }
-            }
+            var shape = this._elements[shapeId];
 
-            this._changedZlevel[e.zlevel] = true;
+            if (shape) {
+                shape.__needTransform = true;
+                if (!shape.ondrift //ondrift
+                    //有onbrush并且调用执行返回false或undefined则继续
+                    || (shape.ondrift && !shape.ondrift(shape, dx, dy))
+                ) {
+                    var zrender = require('./zrender');
+                    if (zrender.catchBrushException) {
+                        try {
+                            shape.drift(e, dx, dy);
+                        }
+                        catch(error) {
+                            zrender.log(error, 'drift error of ' + shape.type, shape);
+                        }
+                    }
+                    else {
+                        shape.drift(shape, dx, dy);
+                    }
+                }
+
+                this._changedZlevel[shape.zlevel] = true;
+            }
 
             return this;
         };
@@ -266,36 +263,16 @@ define(
         /**
          * 添加
          * 
-         * @param {Object} params 参数
+         * @param {Shape} shape 参数
          */
-        Storage.prototype.add = function (params) {
-            // 默认&必须的参数
-            var e = {
-                shape: 'circle',                      // 形状
-                id: params.id || newShapeId(),   // 唯一标识
-                zlevel: 0,                            // z轴位置
-                draggable: false,                     // draggable可拖拽
-                clickable: false,                     // clickable可点击响应
-                hoverable: true,                      // hoverable可悬浮响应
-                position: [0, 0],
-                rotation: [0, 0, 0],
-                scale: [1, 1, 0, 0]
-            };
-            util.merge(
-                e,
-                params,
-                {
-                    overwrite: true,
-                    recursive: true
-                }
-            );
-            mark(e);
-            this._elements[e.id] = e;
-            this._zElements[e.zlevel] = this._zElements[e.zlevel] || [];
-            this._zElements[e.zlevel].push(e);
+        Storage.prototype.add = function (shape) {
+            mark(shape);
+            this._elements[shape.id] = shape;
+            this._zElements[shape.zlevel] = this._zElements[shape.zlevel] || [];
+            this._zElements[shape.zlevel].push(shape);
 
-            this._maxZlevel = Math.max(this._maxZlevel, e.zlevel);
-            this._changedZlevel[e.zlevel] = true;
+            this._maxZlevel = Math.max(this._maxZlevel, shape.zlevel);
+            this._changedZlevel[shape.zlevel] = true;
 
             return this;
         };
@@ -390,8 +367,8 @@ define(
          * 释放
          */
         Storage.prototype.dispose = function () {
-            this._elements = null;
-            this._zElements = null;
+            this._elements = 
+            this._zElements = 
             this._hoverElements = null;
         };
 

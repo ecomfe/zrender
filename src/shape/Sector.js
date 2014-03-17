@@ -75,14 +75,17 @@
    }
  */
 define(
-    function(require) {
+    function (require) {
         var math = require('../tool/math');
+        var Base = require('./Base');
 
-        function Sector() {
-            this.type = 'sector';
+        function Sector(options) {
+            Base.call(this, options);
         }
 
         Sector.prototype = {
+            type: 'sector',
+
             /**
              * 创建扇形路径
              * @param {Context2D} ctx Canvas 2D上下文
@@ -215,12 +218,7 @@ define(
             }
         };
 
-        var base = require('./base');
-        base.derive(Sector);
-        
-        var shape = require('../shape');
-        shape.define('sector', new Sector());
-
+        Base.derive(Sector);
         return Sector;
     }
 );

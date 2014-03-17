@@ -71,14 +71,18 @@
    }
  */
 define(
-    function(require) {
-        function BrokenLine() {
-            this.type = 'brokenLine';
+    function (require) {
+        var Base = require('./Base');
+        
+        function BrokenLine( options ) {
             this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
             this.textPosition = 'end';
+            Base.call(this, options);
         }
 
         BrokenLine.prototype =  {
+            type: 'broken-line',
+
             /**
              * 创建多边形路径
              * @param {Context2D} ctx Canvas 2D上下文
@@ -148,12 +152,7 @@ define(
             }
         };
 
-        var base = require('./base');
-        base.derive(BrokenLine);
-        
-        var shape = require('../shape');
-        shape.define('brokenLine', new BrokenLine());
-
+        Base.derive(BrokenLine);
         return BrokenLine;
     }
 );

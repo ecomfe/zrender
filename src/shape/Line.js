@@ -74,14 +74,18 @@
    }
  */
 define(
-    function(require) {
-        function Line() {
-            this.type = 'line';
+    function (require) {
+        var Base = require('./Base');
+        
+        function Line(options) {
             this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
             this.textPosition = 'end';
+            Base.call(this, options);
         }
 
         Line.prototype =  {
+            type: 'line',
+
             /**
              * 创建线条路径
              * @param {Context2D} ctx Canvas 2D上下文
@@ -124,12 +128,7 @@ define(
             }
         };
 
-        var base = require('./base');
-        base.derive(Line);
-        
-        var shape = require('../shape');
-        shape.define('line', new Line());
-
+        Base.derive(Line);
         return Line;
     }
 );

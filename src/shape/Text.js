@@ -67,14 +67,17 @@
    }
  */
 define(
-    function(require) {
+    function (require) {
         var area = require('../tool/area');
+        var Base = require('./Base');
         
-        function Text() {
-            this.type = 'text';
+        function Text(options) {
+            Base.call(this, options);
         }
 
         Text.prototype =  {
+            type: 'text',
+
             /**
              * 画刷，重载基类方法
              * @param {Context2D} ctx Canvas 2D上下文
@@ -215,12 +218,7 @@ define(
             }
         };
 
-        var base = require('./base');
-        base.derive(Text);
-        
-        var shape = require('../shape');
-        shape.define('text', new Text());
-
+        Base.derive(Text);
         return Text;
     }
 );

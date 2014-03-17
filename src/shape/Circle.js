@@ -72,12 +72,15 @@
    }
  */
 define(
-    function(require) {
-        function Circle() {
-            this.type = 'circle';
+    function (require) {
+        var Base = require('./Base');
+
+        function Circle(options) {
+            Base.call(this, options);
         }
 
         Circle.prototype =  {
+            type: 'circle',
             /**
              * 创建圆形路径
              * @param {Context2D} ctx Canvas 2D上下文
@@ -109,12 +112,7 @@ define(
             }
         };
 
-        var base = require('./base');
-        base.derive(Circle);
-        
-        var shape = require('../shape');
-        shape.define('circle', new Circle());
-
+        Base.derive(Circle);
         return Circle;
     }
 );

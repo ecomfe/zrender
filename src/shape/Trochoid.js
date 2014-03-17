@@ -76,13 +76,17 @@
    }
  */
 define(
-    function(require) {
-        function Trochoid() {
-            this.type = 'trochoid';
+    function (require) {
+        var Base = require('./Base');
+        
+        function Trochoid(options) {
             this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
+            Base.call(this, options);
         }
 
         Trochoid.prototype =  {
+            type: 'trochoid',
+
             /**
              * 创建线条路径
              * @param {Context2D} ctx Canvas 2D上下文
@@ -169,12 +173,7 @@ define(
             }
         };
 
-        var base = require('./base');
-        base.derive(Trochoid);
-        
-        var shape = require('../shape');
-        shape.define('trochoid', new Trochoid());
-
+        Base.derive(Trochoid);
         return Trochoid;
     }
 );

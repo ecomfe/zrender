@@ -76,12 +76,16 @@
    }
  */
 define(
-    function(require) {
-        function Rectangle() {
-            this.type = 'rectangle';
+    function (require) {
+        var Base = require('./Base');
+        
+        function Rectangle(options) {
+            Base.call(this, options);
         }
 
         Rectangle.prototype =  {
+            type: 'rectangle',
+
             /**
              * 绘制圆角矩形
              * @param {Context2D} ctx Canvas 2D上下文
@@ -184,12 +188,7 @@ define(
             }
         };
 
-        var base = require('./base');
-        base.derive(Rectangle);
-        
-        var shape = require('../shape');
-        shape.define('rectangle', new Rectangle());
-
+        Base.derive(Rectangle);
         return Rectangle;
     }
 );

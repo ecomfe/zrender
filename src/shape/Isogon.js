@@ -73,18 +73,21 @@
    }
  */
 define(
-    function(require) {
-
+    function (require) {
         var math = require('../tool/math');
         var sin = math.sin;
         var cos = math.cos;
         var PI = Math.PI;
 
-        function Isogon() {
-            this.type = 'isogon';
+        var Base = require('./Base');
+
+        function Isogon(options) {
+            Base.call(this, options);
         }
 
         Isogon.prototype = {
+            type: 'isogon',
+
             /**
              * 创建n角星（n>=3）路径
              * @param {Context2D} ctx Canvas 2D上下文
@@ -143,12 +146,7 @@ define(
             }
         };
 
-        var base = require('./base');
-        base.derive(Isogon);
-        
-        var shape = require('../shape');
-        shape.define('isogon', new Isogon());
-
+        Base.derive(Isogon);
         return Isogon;
     }
 );

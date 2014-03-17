@@ -78,14 +78,18 @@
    }
  */
 define(
-    function(require) {
-        function Beziercurve() {
-            this.type = 'beziercurve';
+    function (require) {
+        var Base = require('./Base');
+        
+        function BezierCurve( options ) {
             this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
             this.textPosition = 'end';
+            Base.call(this, options);
         }
 
-        Beziercurve.prototype =  {
+        BezierCurve.prototype = {
+            type: 'bezier-curve',
+
             /**
              * 创建线条路径
              * @param {Context2D} ctx Canvas 2D上下文
@@ -142,12 +146,7 @@ define(
             }
         };
 
-        var base = require('./base');
-        base.derive(Beziercurve);
-        
-        var shape = require('../shape');
-        shape.define('beziercurve', new Beziercurve());
-
-        return Beziercurve;
+        Base.derive(BezierCurve);
+        return BezierCurve;
     }
 );

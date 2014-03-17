@@ -75,13 +75,17 @@
    }
  */
 define(
-    function(require) {
-        function Rose() {
-            this.type = 'rose';
+    function (require) {
+        var Base = require('./Base');
+        
+        function Rose(options) {
             this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
+            Base.call(this, options);
         }
 
         Rose.prototype =  {
+            type: 'rose',
+
             /**
              * 创建线条路径
              * @param {Context2D} ctx Canvas 2D上下文
@@ -151,12 +155,7 @@ define(
             }
         };
 
-        var base = require('./base');
-        base.derive(Rose);
-        
-        var shape = require('../shape');
-        shape.define('rose', new Rose());
-
+        Base.derive(Rose);
         return Rose;
     }
 );

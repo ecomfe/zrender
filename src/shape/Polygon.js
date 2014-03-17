@@ -68,12 +68,16 @@
    }
  */
 define(
-    function(require) {
-        function Polygon() {
-            this.type = 'polygon';
+    function (require) {
+        var Base = require('./Base');
+        
+        function Polygon(options) {
+            Base.call(this, options);
         }
 
         Polygon.prototype = {
+            type: 'polygon',
+
             /**
              * 画刷
              * @param ctx       画布句柄
@@ -274,12 +278,7 @@ define(
             }
         };
 
-        var base = require('./base');
-        base.derive(Polygon);
-        
-        var shape = require('../shape');
-        shape.define('polygon', new Polygon());
-
+        Base.derive(Polygon);
         return Polygon;
     }
 );

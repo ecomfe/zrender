@@ -75,12 +75,16 @@
    }
  */
 define(
-    function(require) {
-        function Ellipse() {
-            this.type = 'ellipse';
+    function (require) {
+        var Base = require('./Base');
+        
+        function Ellipse(options) {
+            Base.call(this, options);
         }
 
-        Ellipse.prototype =  {
+        Ellipse.prototype = {
+            type: 'ellipse',
+
             /**
              * 创建圆形路径
              * @param {Context2D} ctx Canvas 2D上下文
@@ -124,11 +128,7 @@ define(
             }
         };
 
-        var base = require('./base');
-        base.derive(Ellipse);
-        
-        var shape = require('../shape');
-        shape.define('ellipse', new Ellipse());
+        Base.derive(Ellipse);
         return Ellipse;
     }
 );

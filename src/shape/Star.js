@@ -75,18 +75,22 @@
    }
  */
 define(
-    function(require) {
+    function (require) {
 
         var math = require('../tool/math');
         var sin = math.sin;
         var cos = math.cos;
         var PI = Math.PI;
 
-        function Star() {
-            this.type = 'heart';
+        var Base = require('./Base');
+
+        function Star(options) {
+            Base.call(this, options);
         }
 
         Star.prototype = {
+            type: 'star',
+
             /**
              * 创建n角星（n>3）路径
              * @param {Context2D} ctx Canvas 2D上下文
@@ -157,12 +161,7 @@ define(
             }
         };
 
-        var base = require('./base');
-        base.derive(Star);
-        
-        var shape = require('../shape');
-        shape.define('star', new Star());
-
+        Base.derive(Star);
         return Star;
     }
 );

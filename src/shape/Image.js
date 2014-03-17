@@ -75,17 +75,19 @@
    }
  */
 define(
-    function(require) {
-
+    function (require) {
         var _cache = {};
         var _needsRefresh = [];
         var _refreshTimeout;
 
-        function ZImage() {
-            this.type = 'image';
+        var Base = require('./Base');
+
+        function ZImage(options) {
+            Base.call(this, options);
         }
 
         ZImage.prototype = {
+            type: 'image',
             brush : function(ctx, e, isHighlight, refresh) {
                 var style = e.style || {};
 
@@ -210,12 +212,7 @@ define(
             }
         };
 
-        var base = require('./base');
-        base.derive(ZImage);
-        
-        var shape = require('../shape');
-        shape.define('image', new ZImage());
-
+        Base.derive(ZImage);
         return ZImage;
     }
 );

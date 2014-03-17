@@ -67,12 +67,16 @@
 
  **/
 
-define(function(require) {
-    function Path() {
-        this.type = 'path';
+define(function (require) {
+    var Base = require('./Base');
+    
+    function Path(options) {
+        Base.call(this, options);
     }
 
     Path.prototype = {
+        type: 'path',
+
         _parsePathData : function(data) {
             if (!data) {
                 return [];
@@ -544,11 +548,6 @@ define(function(require) {
         }
     };
 
-    var base = require('./base');
-    base.derive(Path);
-    
-    var shape = require('../shape');
-    shape.define('path', new Path());
-
+    Base.derive(Path);
     return Path;
 });

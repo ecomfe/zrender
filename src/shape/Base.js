@@ -119,8 +119,26 @@ define(
         var area = require('../tool/area');
         var matrix = require('../tool/matrix');
         var vec2 = require('../tool/vector');
+
+        var idStart = 0x114;
+        function guid() {
+            return 'zrendershape' + idStart++;
+        }
         
-        function Base() {}
+        function Base( options ) {
+            this.id = options.id || guid();
+            this.zlevel = 0;
+            this.draggable = false;
+            this.clickable = false;
+            this.hoverable = true;
+            this.position = [0, 0];
+            this.rotation = [0, 0, 0];
+            this.scale = [1, 1, 0, 0];
+
+            for ( var key in options ) {
+                this[ key ] = options[ key ];
+            }
+        }
 
         /**
          * 画刷
@@ -754,12 +772,15 @@ define(
          * @param {Object} clazz 图形子类
          */
         Base.derive = function (clazz) {
-            Base.prototype;
-            for (var prop in Base.prototype) {
-                if (prop != 'constructor' && !clazz.prototype[prop]) {
-                    clazz.prototype[prop] = Base.prototype[prop];
-                }
+            var clazzPrototype = clazz.prototype;
+            function F() {}
+            F.prototype = Base.prototype;
+            clazz.prototype = new F();
+
+            for (var prop in clazzPrototype) {
+                clazz.prototype[prop] = clazzPrototype[prop];
             }
+            clazz.constructor = clazz;
         };
 
         return Base;

@@ -42,14 +42,13 @@ define(
 
         /**
          * 绘图类 (V)
+         * 
          * @param {HTMLElement} root 绘图区域
          * @param {storage} storage Storage实例
-         * @param {Object} shape 图形库
          */
-        function Painter(root, storage, shape) {
+        function Painter(root, storage) {
             this.root = root;
             this.storage = storage;
-            this.shape = shape;
 
             root.innerHTML = '';
             this._width = this._getWidth(); // 宽，缓存记录
@@ -438,7 +437,6 @@ define(
 
             this.root =
             this.storage =
-            this.shape = 
 
             this._domRoot = 
             this._domList = 
@@ -472,35 +470,34 @@ define(
             ctx.fill();
             
             //升序遍历，shape上的zlevel指定绘画图层的z轴层叠
-            var shape = this.shape;
             var me = this;
             function updatePainter(shapeList, callback) {
                 me.update(shapeList, callback);
             }
             this.storage.iterShape(
-                function (e) {
-                    if (!e.invisible) {
-                        if (!e.onbrush //没有onbrush
+                function (shape) {
+                    if (!shape.invisible) {
+                        if (!shape.onbrush //没有onbrush
                             //有onbrush并且调用执行返回false或undefined则继续粉刷
-                            || (e.onbrush && !e.onbrush(ctx, e, false))
+                            || (shape.onbrush && !shape.onbrush(ctx, shape, false))
                         ) {
                             if (isCatchBrushException()) {
                                 try {
-                                    shape.get(e.shape).brush(
-                                        ctx, e, false, updatePainter
+                                    shape.brush(
+                                        ctx, shape, false, updatePainter
                                     );
                                 }
                                 catch(error) {
                                     log(
                                         error,
-                                        'brush error of ' + e.shape,
-                                        e
+                                        'brush error of ' + shape.type,
+                                        shape
                                     );
                                 }
                             }
                             else {
-                                shape.get(e.shape).brush(
-                                    ctx, e, false, updatePainter
+                                shape.brush(
+                                    ctx, shape, false, updatePainter
                                 );
                             }
                         }
@@ -583,39 +580,39 @@ define(
          * @param {Object} changedZlevel 需要更新的zlevel索引
          */
         Painter.prototype._brush = function (changedZlevel) {
-            var shape = this.shape;
             var ctxList = this._ctxList;
             var me = this;
             function updatePainter(shapeList, callback) {
                 me.update(shapeList, callback);
             }
-            return function(e) {
-                if ((changedZlevel.all || changedZlevel[e.zlevel])
-                    && !e.invisible
+
+            return function(shape) {
+                if ((changedZlevel.all || changedZlevel[shape.zlevel])
+                    && !shape.invisible
                 ) {
-                    var ctx = ctxList[e.zlevel];
+                    var ctx = ctxList[shape.zlevel];
                     if (ctx) {
-                        if (!e.onbrush //没有onbrush
+                        if (!shape.onbrush //没有onbrush
                             //有onbrush并且调用执行返回false或undefined则继续粉刷
-                            || (e.onbrush && !e.onbrush(ctx, e, false))
+                            || (shape.onbrush && !shape.onbrush(ctx, shape, false))
                         ) {
                             if (isCatchBrushException()) {
                                 try {
-                                    shape.get(e.shape).brush(
-                                        ctx, e, false, updatePainter
+                                    shape.brush(
+                                        ctx, shape, false, updatePainter
                                     );
                                 }
                                 catch(error) {
                                     log(
                                         error,
-                                        'brush error of ' + e.shape,
-                                        e
+                                        'brush error of ' + shape.type,
+                                        shape
                                     );
                                 }
                             }
                             else {
-                                shape.get(e.shape).brush(
-                                    ctx, e, false, updatePainter
+                                shape.brush(
+                                    ctx, shape, false, updatePainter
                                 );
                             }
                         }
@@ -632,36 +629,36 @@ define(
         /**
          * 鼠标悬浮刷画
          */
-        Painter.prototype._brushHover = function (e) {
+        Painter.prototype._brushHover = function (shape) {
             var ctx = this._ctxList.hover;
             var me = this;
             function updatePainter(shapeList, callback) {
                 me.update(shapeList, callback);
             }
 
-            if (!e.onbrush //没有onbrush
+            if (!shape.onbrush //没有onbrush
                 //有onbrush并且调用执行返回false或undefined则继续粉刷
-                || (e.onbrush && !e.onbrush(ctx, e, true))
+                || (shape.onbrush && !shape.onbrush(ctx, shape, true))
             ) {
                 // Retina 优化
                 if (isCatchBrushException()) {
                     try {
-                        this.shape.get(e.shape).brush(ctx, e, true, updatePainter);
+                        shape.brush(ctx, shape, true, updatePainter);
                     }
                     catch(error) {
                         log(
-                            error, 'hoverBrush error of ' + e.shape, e
+                            error, 'hoverBrush error of ' + shape.type, shape
                         );
                     }
                 }
                 else {
-                    this.shape.get(e.shape).brush(ctx, e, true, updatePainter);
+                    shape.brush(ctx, shape, true, updatePainter);
                 }
             }
         };
 
-        Painter.prototype._ShapeToImage = function (
-            id, e, width, height,
+        Painter.prototype._shapeToImage = function (
+            id, shape, width, height,
             canvas, ctx, devicePixelRatio
         ) {
             canvas.style.width = width + 'px';
@@ -671,21 +668,20 @@ define(
 
             ctx.clearRect(0, 0, width * devicePixelRatio, height * devicePixelRatio);
 
-            var brush = this.shape.get(e.shape);
             var shapeTransform = {
-                position : e.position,
-                rotation : e.rotation,
-                scale : e.scale
+                position : shape.position,
+                rotation : shape.rotation,
+                scale : shape.scale
             };
-            e.position = [0, 0, 0];
-            e.rotation = 0;
-            e.scale = [1, 1];
-            if (brush) {
-                brush.brush(ctx, e, false);
+            shape.position = [0, 0, 0];
+            shape.rotation = 0;
+            shape.scale = [1, 1];
+            if (shape) {
+                shape.brush(ctx, shape, false);
             }
 
-            var imgShape = {
-                shape : 'image',
+            var ImageShape = require( './shape/Image' );
+            var imgShape = new ImageShape({
                 id : id,
                 style : {
                     x : 0,
@@ -693,18 +689,18 @@ define(
                     // TODO 直接使用canvas而不是通过base64
                     image : canvas.toDataURL()
                 }
-            }
+            });
 
             if (typeof shapeTransform.position !== 'undefined') {
-                imgShape.position = e.position = shapeTransform.position;
+                imgShape.position = shape.position = shapeTransform.position;
             }
 
             if (typeof shapeTransform.rotation !== 'undefined') {
-                imgShape.rotation = e.rotation = shapeTransform.rotation;
+                imgShape.rotation = shape.rotation = shapeTransform.rotation;
             }
 
             if (typeof shapeTransform.scale !== 'undefined') {
-                imgShape.scale = e.scale = shapeTransform.scale;
+                imgShape.scale = shape.scale = shapeTransform.scale;
             }
 
             return imgShape;
@@ -721,7 +717,7 @@ define(
             var devicePixelRatio = window.devicePixelRatio || 1;
             
             return function (id, e, width, height) {
-                painter._ShapeToImage(
+                return painter._shapeToImage(
                     id, e, width, height,
                     canvas, ctx, devicePixelRatio
                 );
