@@ -7,8 +7,24 @@
 </head>
 <body>
     <script type="text/javascript">
-        require(["../src/zrender",
-                "../src/animation/animation"], function(zrender, Animation){
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+
+    require(
+        [
+            "zrender",
+            "zrender/animation/animation",
+            "zrender/shape/BrokenLine",
+            "zrender/shape/Polygon"
+        ], 
+        function(zrender, Animation, BrokenLineShape, PolygonShape){
 
             // 初始化zrender
             var zr = zrender.init( document.getElementById("Main") );
@@ -18,8 +34,7 @@
                 pointList.push([Math.random() * 300 + 100, Math.random() * 300 + 100]);
             }
 
-            var smoothLine = {
-                shape : 'brokenLine',
+            var smoothLine = new BrokenLineShape({
                 id : zr.newShapeId(),
                 style : {
                     pointList : pointList,
@@ -30,10 +45,9 @@
                     lineWidth : 2,
                     // lineType : 'dotted'
                 }
-            }
+            });
 
-            var smoothPolygon = {
-                shape : 'polygon',
+            var smoothPolygon = new PolygonShape({
                 id : zr.newShapeId(),
                 style : {
                     pointList : [[50, 50], [200, 10], [100, 200], [50, 150], [50, 50]],
@@ -44,12 +58,13 @@
                     lineWidth : 2,
                     // lineType : 'dotted'
                 }
-            }
+            });
             zr.addShape(smoothLine);
             zr.addShape(smoothPolygon);
             zr.render();
 
-        })
+        }
+    )
     </script>
     <div id="Main" style="width:1000px;height:900px;"></div>
 </body>

@@ -86,57 +86,66 @@
  *  var zrender = require('zrender');
  *  var zr = zrender.init(document.getElementById('main'));
  */
-zr.clear();
-var zrColor = require('zrender/tool/color');
-var data = [10,13,23,8,35,18];
-var total = 0;
-for (var i = 0, l = data.length; i < l; i++) {
-    total += data[i];
-}
-var percent;
-var startAngle = 0;
-var endAngle;
-var x = Math.round(zr.getWidth() / 2);
-var y = Math.round(zr.getHeight() / 2);
-var r0 = 30;
-var r = 100;
-
-for (var i = 0, l = data.length; i < l; i++){
-
-    percent = data[i] / total;
-    endAngle = (percent * 360 + startAngle).toFixed(2) - 0;
-    percent = (percent * 100).toFixed(2) + '%';
-    zr.addShape({
-        shape : 'sector',             // 扇形
-        style : {
-            x : x,          // 圆心横坐标
-            y : y,          // 圆心纵坐标
-            r0 : r0,        // 圆环内半径
-            r : r,          // 圆环外半径
-            startAngle : startAngle,
-            endAngle : endAngle,
-            brushType : 'both',
-            color : zrColor.getColor(i),
-            strokeColor : '#fff'
-        },
-        highlightStyle : {
-            text : percent,
-            textPosition : 'specific',
-            textX : x,
-            textY : y,
-            textAlign : 'center',
-            textBaseline: 'middle',
-            textColor : 'blue',
-            textFont : 'bold 10px verdana'
-        },
-        clickable : true,
-        onclick : function(params) {
-            alert(params.target.highlightStyle.text);
+require(
+    [
+        'zrender',
+        'zrender/tool/color',
+        'zrender/shape/Sector'
+    ],
+    function ( zrender, zrColor, SectorShape) {
+        var zr = zrender.init(document.getElementById('main'));
+        zr.clear();
+        
+        var data = [10,13,23,8,35,18];
+        var total = 0;
+        for (var i = 0, l = data.length; i < l; i++) {
+            total += data[i];
         }
-    })
-    startAngle = endAngle;
-}
-zr.render();
+        var percent;
+        var startAngle = 0;
+        var endAngle;
+        var x = Math.round(zr.getWidth() / 2);
+        var y = Math.round(zr.getHeight() / 2);
+        var r0 = 30;
+        var r = 100;
+
+        for (var i = 0, l = data.length; i < l; i++){
+
+            percent = data[i] / total;
+            endAngle = (percent * 360 + startAngle).toFixed(2) - 0;
+            percent = (percent * 100).toFixed(2) + '%';
+            zr.addShape(new SectorShape({
+                style : {
+                    x : x,          // 圆心横坐标
+                    y : y,          // 圆心纵坐标
+                    r0 : r0,        // 圆环内半径
+                    r : r,          // 圆环外半径
+                    startAngle : startAngle,
+                    endAngle : endAngle,
+                    brushType : 'both',
+                    color : zrColor.getColor(i),
+                    strokeColor : '#fff'
+                },
+                highlightStyle : {
+                    text : percent,
+                    textPosition : 'specific',
+                    textX : x,
+                    textY : y,
+                    textAlign : 'center',
+                    textBaseline: 'middle',
+                    textColor : 'blue',
+                    textFont : 'bold 10px verdana'
+                },
+                clickable : true,
+                onclick : function(params) {
+                    alert(params.target.highlightStyle.text);
+                }
+            }))
+            startAngle = endAngle;
+        }
+        zr.render();
+    }
+);
                     </textarea>
               </div><!--/.well -->
             </div><!--/span-->

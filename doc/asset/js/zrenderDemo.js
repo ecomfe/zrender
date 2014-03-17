@@ -72,13 +72,12 @@ require.config({
 });
 
 require(
-    ['zrender','zrender/shape/rose','zrender/shape/trochoid'],
+    ['zrender','zrender/shape/rose','zrender/shape/Trochoid'],
     function(zrender) {
         zr = zrender.init(document.getElementById('main'));
-        var request=new QueryString();
+        var request = new QueryString();
         if (request.code) {
             editor.doc.setValue(
-                "zr.clear()\n" +
                 decodeURIComponent(request.code)
             );
         }

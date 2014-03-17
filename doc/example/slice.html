@@ -108,8 +108,8 @@
         });
 
         require(
-            ['zrender'],
-            function(zrender) {
+            ['zrender', 'zrender/shape/Circle', 'zrender/shape/Text', 'zrender/shape/BrokenLine'],
+            function(zrender, CircleShape, TextShape, BrokenLineShape) {
                 zr = zrender.init(document.getElementById('main'));
                 var width = Math.ceil(zr.getWidth());
                 var height = Math.ceil(zr.getHeight());
@@ -143,8 +143,7 @@
 
                 function _bulidTime() {
                     shapeList = [];
-                    shapeList.push({
-                        shape : 'circle',
+                    shapeList.push(new CircleShape({
                         id : zr.newShapeId(),
                         rotation : [0, 100, 100],
                         style : {
@@ -158,9 +157,8 @@
                         },
                         hoverable : false,
                         _round : 2
-                    });
-                    shapeList.push({
-                        shape : 'circle',
+                    }));
+                    shapeList.push(new CircleShape({
                         id : zr.newShapeId(),
                         rotation : [0, 170, 200],
                         style : {
@@ -173,9 +171,8 @@
                         },
                         _round : 10,
                         hoverable : false
-                    });
-                    shapeList.push({
-                        shape : 'circle',
+                    }));
+                    shapeList.push(new CircleShape({
                         id : zr.newShapeId(),
                         rotation : [0, 130, 260],
                         style : {
@@ -188,14 +185,13 @@
                         },
                         hoverable : false,
                         _round : 4
-                    });
+                    }));
 
                     for(var i = 0, l = shapeList.length; i < l; i++) {
                         zr.addShape(shapeList[i]);
                     }
 
-                    pointText = {
-                        shape : 'text',
+                    pointText = new TextShape({
                         id : zr.newShapeId(),
                         scale : [1, 1, 100, height-40],
                         style : {
@@ -206,9 +202,9 @@
                             textFont : 'bold 30px "Times New Roman"',
                             textAlign : 'center'
                         }
-                    };
+                    });
                     zr.addShape(pointText);
-                    knife = {
+                    knife = new BrokenLineShape({
                         shape : 'brokenLine',
                         id : zr.newShapeId(),
                         zlevel : 1, // 频繁变动的画笔单独在一层中
@@ -227,7 +223,7 @@
                             lineWidth : Math.round(Math.random() * 5)
                         },
                         hoverable : false   // default true
-                    }
+                    });
 
                     zr.addShape(knife);
                     zr.render();
@@ -258,7 +254,7 @@
                     clearInterval(gamTicket);
                     gamTicket = setInterval(function(){
                         var sizePoint = Math.ceil(Math.random() * 40);
-                        var bubble = {
+                        var bubble = new CircleShape({
                             shape : 'circle',
                             id : zr.newShapeId(),
                             style : {
@@ -315,7 +311,7 @@
                                     })
                                     .start('BounceOut');
                             }
-                        };
+                        });
                         zr.addShape(bubble);
                         zr.animate(bubble.id, 'style')
                             .when(3000, {

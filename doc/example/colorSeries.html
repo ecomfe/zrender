@@ -108,8 +108,8 @@
         });
 
         require(
-            ['zrender'],
-            function(zrender) {
+            ['zrender', 'zrender/shape/Rectangle'],
+            function(zrender, RectangleShape) {
                 zr = zrender.init(document.getElementById('main'));
                 var zrColor = require('zrender/tool/color');
                 var max = 30;
@@ -140,8 +140,7 @@
 
                 function buildDefault() {
                     for (var i = 0; i < max; i++) {
-                        zr.addShape({
-                            shape : 'rectangle',
+                        zr.addShape(new RectangleShape({
                             zlevel:0,
                             style : {
                                 x : i * w + 1,
@@ -152,15 +151,14 @@
                                 color : zrColor.getColor(i),
                                 strokeColor : '#fff'
                             }
-                        });
+                        }));
                     }
                 }
 
                 function buildCustomer() {
                     lastY += h + 20;
                     for (var i = 0; i < max; i++) {
-                        customerShape.push({
-                            shape : 'rectangle',
+                        customerShape.push(new RectangleShape({
                             zlevel:1,
                             id : zr.newShapeId(),
                             style : {
@@ -175,7 +173,7 @@
                             clickable : true,
                             onclick : deleteColor,
                             _idx : i
-                        });
+                        }));
                         zr.addShape(customerShape[i]);
                     }
                 }
@@ -209,8 +207,7 @@
                         colorList = zrColor.getGradientColors(colorSpace[i], 10);
                         w = Math.floor(width / colorList.length) + 0.6;
                         for (var j = 0, k = colorList.length; j < k; j++) {
-                            zr.addShape({
-                                shape: 'rectangle',
+                            zr.addShape(new RectangleShape({
                                 zlevel:2,
                                 style: {
                                     x: w * j, y: lastY, width : w, height : h,
@@ -220,7 +217,7 @@
                                 },
                                 clickable : true,
                                 onclick : selectColor
-                            });
+                            }));
                         }
                         lastY += h + 1;
                     }

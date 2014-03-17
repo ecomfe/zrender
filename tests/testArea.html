@@ -7,6 +7,15 @@
 </head>
 <body>
     <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
         var zr;
         var shape;
         var isInside;
@@ -16,10 +25,41 @@
         var _shape;
         var index = 0;
 
-        require(["../src/zrender",
-            "../src/tool/area",
-            '../src/tool/util',
-            '../src/shape'], function(zrender, area, util, shape){
+    require(
+        [
+            "zrender",
+            "zrender/tool/area",
+            'zrender/tool/util',
+            'zrender/shape',
+            'zrender/shape/Line',
+            'zrender/shape/BezierCurve',
+            'zrender/shape/BrokenLine',
+            'zrender/shape/Ring',
+            'zrender/shape/Rectangle',
+            'zrender/shape/Sector',
+            'zrender/shape/Polygon',
+            'zrender/shape/Circle'
+        ], 
+        function(zrender, area, util, shape,
+            LineShape, 
+            BezierCurveShape, 
+            BrokenLineShape, 
+            RingShape, 
+            RectangleShape, 
+            SectorShape,
+            PolygonShape, 
+            CircleShape
+        ){
+
+            function render () {
+                zr.clear();
+                shape = randomShape();
+                zr.addShape( shape );
+                zr.render();
+            }
+
+            document.getElementById('btn-create').onclick = render;
+            document.getElementById('btn-test').onclick = test;
 
             // 初始化zrender
             zr = zrender.init( document.getElementById("Main") );
@@ -30,92 +70,100 @@
 
             _util = util;
             _shape = shape;
+
+            // 生成shape
+            function randomShape() {
+                index ++;
+                var Clazz = [
+                    LineShape, 
+                    BezierCurveShape, 
+                    BrokenLineShape, 
+                    RingShape, 
+                    RectangleShape, 
+                    SectorShape,
+                    PolygonShape, 
+                    CircleShape
+                ][index % 8];
+
+                return new Clazz({
+                    position : [random(600), random(400)],
+                    scale : [1, 1],
+                    style : {
+                        x : 50,
+                        y : 50,
+                        a : 50,
+                        b: 50,
+                        r : random(200),
+                        xStart : random(600),
+                        yStart : random(400),
+                        cpX1 : 100,
+                        cpY1 : 100,
+                        startAngle : 0,
+                        endAngle: random(360),
+                        xEnd : random(600),
+                        yEnd : random(400),
+                        width : random(600),
+                        height : random(400),
+                        pointList : [[10, 10], [300, 20], [298, 400], [50, 450]],
+                        color : 'rgba(220, 20, 60, 0.8)',
+                        strokeColor : "rgba(220, 20, 60, 0.8)",
+                        lineWidth : 5,
+                        brushType : 'stroke',
+                        text :'test',
+                        textPosition :'inside'
+                    },
+                    draggable: true
+                });
+            }
+
+            // 测试耗时
+            function test() {
+                var n = 60;
+                var m = 40;
+                if (!_ctx) {
+                    _ctx = _util.getContext();
+                }
+                // 计算纯数学方法耗时
+                var time = new Date().getTime();
+                for (var i = 0; i < n ; i ++ ) {
+                    for (var j = 0; j < m ; j ++ ) {
+                        testSwitch(shape.shape, shape.style, i , j)
+                    }
+                }
+                $('switch').innerHTML = new Date().getTime() - time;
+
+                // 计算buildPath方法耗时
+                time = new Date().getTime();
+
+                for (var i = 0; i < n ; i ++ ) {
+                    for (var j = 0; j < m ; j ++ ) {
+                        testBuildPath(shape.shape, shape.style, i , j)
+                    }
+                }
+                $('build').innerHTML = new Date().getTime() - time;
+
+                // 计算获取像素方法耗时
+                time = new Date().getTime();
+
+                for (var i = 0; i < n ; i ++ ) {
+                    for (var j = 0; j < m ; j ++ ) {
+                        testPixel(shape.shape, shape.style, i , j)
+                    }
+                }
+                $('pixel').innerHTML = new Date().getTime() - time;
+            }
         })
 
         // 渲染canvas
-        function render() {
-            zr.clear();
-            shape = randomShape();
-            zr.addShape( shape );
-            console.log()
-            zr.render();
-        }
+        
 
-        // 测试耗时
-        function test() {
-            var n = 60;
-            var m = 40;
-            if (!_ctx) {
-                _ctx = _util.getContext();
-            }
-            // 计算纯数学方法耗时
-            var time = new Date().getTime();
-            for (var i = 0; i < n ; i ++ ) {
-                for (var j = 0; j < m ; j ++ ) {
-                    testSwitch(shape.shape, shape.style, i , j)
-                }
-            }
-            $('switch').innerHTML = new Date().getTime() - time;
-
-            // 计算buildPath方法耗时
-            time = new Date().getTime();
-
-            for (var i = 0; i < n ; i ++ ) {
-                for (var j = 0; j < m ; j ++ ) {
-                    testBuildPath(shape.shape, shape.style, i , j)
-                }
-            }
-            $('build').innerHTML = new Date().getTime() - time;
-
-            // 计算获取像素方法耗时
-            time = new Date().getTime();
-
-            for (var i = 0; i < n ; i ++ ) {
-                for (var j = 0; j < m ; j ++ ) {
-                    testPixel(shape.shape, shape.style, i , j)
-                }
-            }
-            $('pixel').innerHTML = new Date().getTime() - time;
-        }
+        
 
         function $(id) {
             return document.getElementById(id);
         }
 
-        // 生成shape
-        function randomShape() {
-            index ++;
-            return {
-                shape : ['line', 'beziercurve', 'brokenLine', 'ring', 'rectangle', 'sector', 'polygon', 'circle'][index % 8],
-                position : [random(600), random(400)],
-                scale : [1, 1],
-                style : {
-                    x : 50,
-                    y : 50,
-                    a : 50,
-                    b: 50,
-                    r : random(200),
-                    xStart : random(600),
-                    yStart : random(400),
-                    cpX1 : 100,
-                    cpY1 : 100,
-                    startAngle : 0,
-                    endAngle: random(360),
-                    xEnd : random(600),
-                    yEnd : random(400),
-                    width : random(600),
-                    height : random(400),
-                    pointList : [[10, 10], [300, 20], [298, 400], [50, 450]],
-                    color : 'rgba(220, 20, 60, 0.8)',
-                    strokeColor : "rgba(220, 20, 60, 0.8)",
-                    lineWidth : 5,
-                    brushType : 'stroke',
-                    text :'test',
-                    textPosition :'inside'
-                },
-                draggable: true
-            }
-        }
+        
 
         // 随机一个整数
         function random(max) {
@@ -238,8 +286,7 @@
             return Math.abs(
                        Math.abs(
                            (area.xStart - x)
-                           * (area.yStart - area.yEnd)
-                           / (area.xStart - area.xEnd)
+                           * (area.yStart - area.yEnd) / (area.xStart - area.xEnd)
                            - area.yStart
                        )
                        - y
@@ -330,8 +377,7 @@
             else {
                 // 判断夹角
                 var angle = (360
-                             - Math.atan2(y - area.y, x - area.x)
-                             / Math.PI
+                             - Math.atan2(y - area.y, x - area.x) / Math.PI
                              * 180)
                              % 360;
                 return (angle >= area.startAngle && angle <= area.endAngle);
@@ -410,8 +456,8 @@
         }
     </script>
     <div id="Main" style="width:600px;height:400px;"></div>
-    <input type="button" value="生成图形" onclick="render()"/>
-    <input type="button" value="test" onclick="test()"/>
+    <input type="button" value="生成图形" id="btn-create"/>
+    <input type="button" value="test" id="btn-test"/>
     <h3>从(1,1)到(600,400)执行下面的方法</h3>
     <p >switch的那一坨耗时 <span id="switch"></span> ms</p>
     <p >buildPath耗时 <span id="build"></span> ms</p>
