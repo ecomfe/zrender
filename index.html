@@ -268,8 +268,13 @@ zr.addShape({                               // and use it!
             ]
         });
         require(
-            ['zrender'],
-            function(zrender) {
+            [
+                'zrender', 
+                'zrender/shape/Line', 
+                'zrender/shape/Text', 
+                'zrender/shape/Circle'
+            ],
+            function (zrender, LineShape, TextShape, CircleShape) {
                 var zr = zrender.init(document.getElementById('face'));
                 var zrColor = require('zrender/tool/color');
                 var colorIdx = 0;
@@ -287,8 +292,7 @@ zr.addShape({                               // and use it!
                     xStart = -Math.ceil(Math.random() * 1000);
                     len = Math.ceil(Math.random() * 400);
                     pos = Math.ceil(Math.random() * height);
-                    shapeList[i] = {
-                        shape : 'line',
+                    shapeList[i] = new LineShape({
                         id : zr.newShapeId(),
                         style : {
                             xStart : xStart,
@@ -301,11 +305,10 @@ zr.addShape({                               // and use it!
                         _animationX : Math.ceil(Math.random() * 100),
                         _len : len,
                         hoverable : false
-                    };
+                    });
                     zr.addShape(shapeList[i]);
                 }
-                var aniText = {
-                    shape : 'text',
+                var aniText = new TextShape({
                     id : zr.newShapeId(),
                     style : {
                         x : width / 2,
@@ -319,12 +322,11 @@ zr.addShape({                               // and use it!
                     },
                     _animationSize : 60,
                     hoverable:false
-                };
+                });
 
                 zr.addShape(aniText);
 
-                zr.addShape({
-                    shape : 'text',
+                zr.addShape(new TextShape({
                     zlevel : 1,
                     style : {
                         x : width / 2,
@@ -343,9 +345,9 @@ zr.addShape({                               // and use it!
                         textAlign : 'center'
                     },
                     draggable : true
-                });
+                }));
 
-                zr.addShape({
+                zr.addShape(new TextShape({
                     shape : 'text',
                     zlevel : 1,
                     style : {
@@ -358,10 +360,9 @@ zr.addShape({                               // and use it!
                         textFont : 'normal 18px 微软雅黑',
                         textAlign : 'center'
                     }
-                });
+                }));
 
-                zr.addShape({
-                    shape : 'circle',
+                zr.addShape(new CircleShape({
                     zlevel : 1,
                     style : {
                         x : width / 2,
@@ -382,7 +383,7 @@ zr.addShape({                               // and use it!
                     onclick : function(){
                         window.location = 'doc/example/demo.html';
                     }
-                });
+                }));
 
 
                 // 绘画，利用render的callback可以在绘画完成后马上开始动画
