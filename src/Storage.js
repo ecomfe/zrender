@@ -160,20 +160,20 @@ define(
          * @param {boolean} fast
          */
         Storage.prototype.mod = function (shapeId, params, fast) {
-            var e = this._elements[shapeId];
-            if (e) {
+            var shape = this._elements[shapeId];
+            if (shape) {
                 this._changedZlevel[e.zlevel] = true;    // 可能修改前后不在一层
                 if (params) {
                     if (fast) {
                         util.mergeFast(
-                            e,
+                            shape,
                             params,
                             true,
                             true
                         );
                     } else {
                         util.merge(
-                            e,
+                            shape,
                             params,
                             {
                                 'overwrite': true,
@@ -182,9 +182,9 @@ define(
                         );
                     }   
                 }
-                mark(e);
-                this._changedZlevel[e.zlevel] = true;    // 可能修改前后不在一层
-                this._maxZlevel = Math.max(this._maxZlevel, e.zlevel);
+                mark(shape);
+                this._changedZlevel[shape.zlevel] = true;    // 可能修改前后不在一层
+                this._maxZlevel = Math.max(this._maxZlevel, shape.zlevel);
             }
 
             return this;
@@ -313,7 +313,7 @@ define(
                 var zChanged = {};
                 for (var sId in delMap) {
                     if (this._elements[sId]) {
-                        zlevel = _elements[sId].zlevel;
+                        zlevel = this._elements[sId].zlevel;
                         this._changedZlevel[zlevel] = true;
                         if (!zChanged[zlevel]) {
                             oldList = this._zElements[zlevel];
