@@ -172,7 +172,7 @@ define(
 
             // 设置transform
             if (this.__needTransform) {
-                ctx.transform.apply(ctx,this.updateTransform(this));
+                ctx.transform.apply(ctx, this.updateTransform());
             }
 
             ctx.beginPath();
@@ -571,18 +571,18 @@ define(
             return false;
         };
 
-        Base.prototype.updateTransform = function (e) {
-            var _transform = e._transform || matrix.create();
+        Base.prototype.updateTransform = function () {
+            var _transform = this._transform || matrix.create();
             matrix.identity(_transform);
-            if (e.scale && (e.scale[0] !== 1 || e.scale[1] !== 1)) {
-                var originX = e.scale[2] || 0;
-                var originY = e.scale[3] || 0;
-                if (originX || originY ) {
+            if (this.scale && (this.scale[0] !== 1 || this.scale[1] !== 1)) {
+                var originX = this.scale[2] || 0;
+                var originY = this.scale[3] || 0;
+                if (originX || originY) {
                     matrix.translate(
                         _transform, _transform, [-originX, -originY]
                     );
                 }
-                matrix.scale(_transform, _transform, e.scale);
+                matrix.scale(_transform, _transform, this.scale);
                 if ( originX || originY ) {
                     matrix.translate(
                         _transform, _transform, [originX, originY]
@@ -590,17 +590,17 @@ define(
                 }
             }
 
-            if (e.rotation) {
-                if (e.rotation instanceof Array) {
-                    if (e.rotation[0] !== 0) {
-                        var originX = e.rotation[1] || 0;
-                        var originY = e.rotation[2] || 0;
+            if (this.rotation) {
+                if (this.rotation instanceof Array) {
+                    if (this.rotation[0] !== 0) {
+                        var originX = this.rotation[1] || 0;
+                        var originY = this.rotation[2] || 0;
                         if (originX || originY) {
                             matrix.translate(
                                 _transform, _transform, [-originX, -originY]
                             );
                         }
-                        matrix.rotate(_transform, _transform, e.rotation[0]);
+                        matrix.rotate(_transform, _transform, this.rotation[0]);
                         if (originX || originY) {
                             matrix.translate(
                                 _transform, _transform, [originX, originY]
@@ -609,18 +609,18 @@ define(
                     }
                 }
                 else {
-                    if (e.rotation !== 0) {
-                        matrix.rotate(_transform, _transform, e.rotation);
+                    if (this.rotation !== 0) {
+                        matrix.rotate(_transform, _transform, this.rotation);
                     }
                 }
             }
 
-            if (e.position && (e.position[0] !==0 || e.position[1] !== 0)) {
-                matrix.translate(_transform, _transform, e.position);
+            if (this.position && (this.position[0] !==0 || this.position[1] !== 0)) {
+                matrix.translate(_transform, _transform, this.position);
             }
 
             // 保存这个变换矩阵
-            e._transform = _transform;
+            this._transform = _transform;
             return _transform;
         };
 

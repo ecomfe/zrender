@@ -103,7 +103,7 @@ define(
     
                 // 设置transform
                 if (this.__needTransform) {
-                    ctx.transform.apply(ctx,this.updateTransform(this));
+                    ctx.transform.apply(ctx, this.updateTransform());
                 }
                 
                 // 先fill再stroke
