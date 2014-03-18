@@ -73,6 +73,7 @@ define(
         var smoothSpline = require('./util/smoothSpline');
         var smoothBezier = require('./util/smoothBezier');
         var dashedLineTo = require('./util/dashedLineTo');
+        var drawText = require('./util/drawText');
         
         function Polygon(options) {
             Base.call(this, options);
@@ -147,7 +148,7 @@ define(
                 }
     
                 if (style.text) {
-                    this.drawText(ctx, style, this.style);
+                    drawText(ctx, style, this.style);
                 }
     
                 ctx.restore();
