@@ -81,15 +81,14 @@ define(
             /**
              * 画刷，重载基类方法
              * @param {Context2D} ctx Canvas 2D上下文
-             * @param e 图形形状实体
              * @param isHighlight 是否为高亮状态
              */
-            brush : function(ctx, e, isHighlight) {
-                var style = e.style || {};
+            brush : function(ctx, isHighlight) {
+                var style = this.style || {};
                 if (isHighlight) {
                     // 根据style扩展默认高亮样式
                     style = this.getHighlightStyle(
-                        style, e.highlightStyle || {}
+                        style, this.highlightStyle || {}
                     );
                 }
                 
@@ -101,8 +100,8 @@ define(
                 this.setContext(ctx, style);
 
                 // 设置transform
-                if (e.__needTransform) {
-                    ctx.transform.apply(ctx,this.updateTransform(e));
+                if (this.__needTransform) {
+                    ctx.transform.apply(ctx,this.updateTransform(this));
                 }
 
                 if (style.textFont) {

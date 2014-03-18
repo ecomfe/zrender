@@ -15,23 +15,23 @@ define(
 
         /**
          * 包含判断
-         * @param {string} shapeClazz : 图形类
+         * @param {Object} shape : 图形
          * @param {Object} area ： 目标区域
          * @param {number} x ： 横坐标
          * @param {number} y ： 纵坐标
          */
-        function isInside(shapeClazz, area, x, y) {
-            if (!area || !shapeClazz) {
+        function isInside(shape, area, x, y) {
+            if (!area || !shape) {
                 // 无参数或不支持类型
                 return false;
             }
-            var zoneType = shapeClazz.type;
+            var zoneType = shape.type;
 
             if (!_ctx) {
                 _ctx = util.getContext();
             }
             if (!_isInsideRectangle(
-                    area.__rect || shapeClazz.getRect(area), x, y
+                    area.__rect || shape.getRect(area), x, y
                  )
              ) {
                 // 不在矩形区域内直接返回false
@@ -46,13 +46,13 @@ define(
             }
 
             if (zoneType != 'beziercurve'
-                && shapeClazz.buildPath
+                && shape.buildPath
                 && _ctx.isPointInPath
             ) {
-                return _buildPathMethod(shapeClazz, _ctx, area, x, y);
+                return _buildPathMethod(shape, _ctx, area, x, y);
             }
             else if (_ctx.getImageData) {
-                return _pixelMethod(shapeClazz, area, x, y);
+                return _pixelMethod(shape, area, x, y);
             }
 
             // 上面的方法都行不通时
@@ -130,17 +130,17 @@ define(
          * 通过buildPath方法来判断，三个方法中较快，但是不支持线条类型的shape，
          * 而且excanvas不支持isPointInPath方法
          *
-         * @param {Object} shapeClazz ： shape类
+         * @param {Object} shape ： shape
          * @param {Object} context : 上下文
          * @param {Object} area ：目标区域
          * @param {number} x ： 横坐标
          * @param {number} y ： 纵坐标
          * @return {boolean} true表示坐标处在图形中
          */
-        function _buildPathMethod(shapeClazz, context, area, x, y) {
+        function _buildPathMethod(shape, context, area, x, y) {
             // 图形类实现路径创建了则用类的path
             context.beginPath();
-            shapeClazz.buildPath(context, area);
+            shape.buildPath(context, area);
             context.closePath();
             return context.isPointInPath(x, y);
         }
@@ -148,21 +148,21 @@ define(
         /**
          * 通过像素值来判断，三个方法中最慢，但是支持广,不足之处是excanvas不支持像素处理
          *
-         * @param {Object} shapeClazz ： shape类
-         * @param {Object} area ：目标区域
-         * @param {number} x ： 横坐标
-         * @param {number} y ： 纵坐标
+         * @param {Object} shape  shape类
+         * @param {Object} area 目标区域
+         * @param {number} x  横坐标
+         * @param {number} y  纵坐标
          * @return {boolean} true表示坐标处在图形中
          */
-        function _pixelMethod(shapeClazz, area, x, y) {
-            var _rect = area.__rect || shapeClazz.getRect(area);
+        function _pixelMethod(shape, area, x, y) {
+            var _rect = area.__rect || shape.getRect(area);
             var _context = util.getPixelContext();
             var _offset = util.getPixelOffset();
 
             util.adjustCanvasSize(x, y);
             _context.clearRect(_rect.x, _rect.y, _rect.width, _rect.height);
             _context.beginPath();
-            shapeClazz.brush(_context, {style : area});
+            shape.brush(_context, {style : area});
             _context.closePath();
 
             return _isPainted(_context, x + _offset.x, y + _offset.y);
@@ -206,8 +206,8 @@ define(
         /**
          * !isInside
          */
-        function isOutside(shapeClazz, area, x, y) {
-            return !isInside(shapeClazz, area, x, y);
+        function isOutside(shape, area, x, y) {
+            return !isInside(shape, area, x, y);
         }
 
         /**
@@ -337,8 +337,7 @@ define(
                 }
                 
                 var angle = (360
-                             - Math.atan2(y - area.y, x - area.x)
-                             / Math.PI
+                             - Math.atan2(y - area.y, x - area.x) / Math.PI
                              * 180)
                              % 360;
                 var endA = (360 + area.endAngle) % 360;

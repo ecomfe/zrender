@@ -88,17 +88,18 @@ define(
 
         ZImage.prototype = {
             type: 'image',
-            brush : function(ctx, e, isHighlight, refresh) {
-                var style = e.style || {};
+            brush : function(ctx, isHighlight, refresh) {
+                var style = this.style || {};
 
                 if (isHighlight) {
                     // 根据style扩展默认高亮样式
                     style = this.getHighlightStyle(
-                        style, e.highlightStyle || {}
+                        style, this.highlightStyle || {}
                     );
                 }
 
                 var image = style.image;
+                var me = this;
 
                 if (typeof(image) === 'string') {
                     var src = image;
@@ -110,7 +111,7 @@ define(
                         image.onload = function(){
                             image.onload = null;
                             clearTimeout( _refreshTimeout );
-                            _needsRefresh.push( e );
+                            _needsRefresh.push( me );
                             // 防止因为缓存短时间内触发多次onload事件
                             _refreshTimeout = setTimeout(function(){
                                 refresh( _needsRefresh );
@@ -140,8 +141,8 @@ define(
                     this.setContext(ctx, style);
 
                     // 设置transform
-                    if (e.__needTransform) {
-                        ctx.transform.apply(ctx,this.updateTransform(e));
+                    if (this.__needTransform) {
+                        ctx.transform.apply(ctx,this.updateTransform(this));
                     }
 
                     var width = style.width || image.width;
@@ -174,18 +175,16 @@ define(
                     // 如果没设置宽和高的话自动根据图片宽高设置
                     style.width = width;
                     style.height = height;
-                    e.style.width = width;
-                    e.style.height = height;
+                    this.style.width = width;
+                    this.style.height = height;
 
 
                     if (style.text) {
-                        this.drawText(ctx, style, e.style);
+                        this.drawText(ctx, style, this.style);
                     }
 
                     ctx.restore();
                 }
-
-                return;
             },
 
             /**

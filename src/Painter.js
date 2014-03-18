@@ -476,9 +476,7 @@ define(
                         ) {
                             if (config.catchBrushException) {
                                 try {
-                                    shape.brush(
-                                        ctx, shape, false, updatePainter
-                                    );
+                                    shape.brush(ctx, false, updatePainter);
                                 }
                                 catch(error) {
                                     log(
@@ -489,9 +487,7 @@ define(
                                 }
                             }
                             else {
-                                shape.brush(
-                                    ctx, shape, false, updatePainter
-                                );
+                                shape.brush(ctx, false, updatePainter);
                             }
                         }
                     }
@@ -591,9 +587,7 @@ define(
                         ) {
                             if (config.catchBrushException) {
                                 try {
-                                    shape.brush(
-                                        ctx, shape, false, updatePainter
-                                    );
+                                    shape.brush(ctx, false, updatePainter);
                                 }
                                 catch(error) {
                                     log(
@@ -604,9 +598,7 @@ define(
                                 }
                             }
                             else {
-                                shape.brush(
-                                    ctx, shape, false, updatePainter
-                                );
+                                shape.brush(ctx, false, updatePainter);
                             }
                         }
                     }
@@ -636,7 +628,7 @@ define(
                 // Retina 优化
                 if (config.catchBrushException) {
                     try {
-                        shape.brush(ctx, shape, true, updatePainter);
+                        shape.brush(ctx, true, updatePainter);
                     }
                     catch(error) {
                         log(
@@ -645,7 +637,7 @@ define(
                     }
                 }
                 else {
-                    shape.brush(ctx, shape, true, updatePainter);
+                    shape.brush(ctx, true, updatePainter);
                 }
             }
         };
@@ -670,7 +662,7 @@ define(
             shape.rotation = 0;
             shape.scale = [1, 1];
             if (shape) {
-                shape.brush(ctx, shape, false);
+                shape.brush(ctx, false);
             }
 
             var ImageShape = require( './shape/Image' );
@@ -739,8 +731,8 @@ define(
             newDom.setAttribute('width', width * devicePixelRatio);
             newDom.setAttribute('height', height * devicePixelRatio);
 
-            //id不作为索引用，避免可能造成的重名，定义为私有属性
-            newDom.setAttribute('data-id', id);
+            // id不作为索引用，避免可能造成的重名，定义为私有属性
+            newDom.setAttribute('data-zr-dom-id', id);
             return newDom;
         }
 

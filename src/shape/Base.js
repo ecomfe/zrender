@@ -118,7 +118,6 @@ define(
     function(require) {
         var area = require('../tool/area');
         var matrix = require('../tool/matrix');
-        var vec2 = require('../tool/vector');
 
         var idStart = 0x114;
         function guid() {
@@ -144,13 +143,12 @@ define(
          * 画刷
          * 
          * @param ctx       画布句柄
-         * @param e         形状实体
          * @param isHighlight   是否为高亮状态
          * @param updateCallback 需要异步加载资源的shape可以通过这个callback(e)
          *                       让painter更新视图，base.brush没用，需要的话重载brush
          */
-        Base.prototype.brush = function (ctx, e, isHighlight) {
-            var style = e.style || {};
+        Base.prototype.brush = function (ctx, isHighlight) {
+            var style = this.style || {};
 
             if (this.brushTypeOnly) {
                 style.brushType = this.brushTypeOnly;
@@ -160,7 +158,7 @@ define(
                 // 根据style扩展默认高亮样式
                 style = this.getHighlightStyle(
                     style,
-                    e.highlightStyle || {},
+                    this.highlightStyle || {},
                     this.brushTypeOnly
                 );
             }
@@ -173,8 +171,8 @@ define(
             this.setContext(ctx, style);
 
             // 设置transform
-            if (e.__needTransform) {
-                ctx.transform.apply(ctx,this.updateTransform(e));
+            if (this.__needTransform) {
+                ctx.transform.apply(ctx,this.updateTransform(this));
             }
 
             ctx.beginPath();
@@ -184,9 +182,6 @@ define(
             }
 
             switch (style.brushType) {
-                case 'fill':
-                    ctx.fill();
-                    break;
                 case 'both':
                     ctx.fill();
                 case 'stroke':
@@ -196,8 +191,8 @@ define(
                     ctx.fill();
             }
 
-            if (typeof style.text != 'undefined') {
-                this.drawText(ctx, style, e.style);
+            if (style.text) {
+                this.drawText(ctx, style, this.style);
             }
 
             ctx.restore();
@@ -379,7 +374,7 @@ define(
                 bl = 'middle';
             }
 
-            if (typeof tx != 'undefined' && typeof ty != 'undefined') {
+            if (tx != null && ty != null) {
                 _fillText(
                     ctx,
                     style.text, 
