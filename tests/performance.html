@@ -24,104 +24,156 @@
             <option value='star'>star</option>
             <option value='isogon'>isogon</option>
         </select>
-        <button id='run' onclick="start()">start</button>
+        <button id='run'>start</button>
     </div>
     <div id="res">loading</div>
     <script type="text/javascript">
-        require.config({
-            packages: [
-                {
-                    name: 'zrender',
-                    location: '../src',
-                    main: 'zrender'
-                }
-            ]
-        });
-        var t1 = 0;
-        var t2 = 0;
-        var t3 = 0;
-        var zr;
-        var isRunning = true;
-        var zrColor;
-        var width;
-        var height;
-        var round;
-        var n;
-        var result;
-        var total;
-        var shapeType;
-        function start() {
-            if (isRunning) {
-                return;
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
             }
-            isRunning = true;
-            document.getElementById('res').innerHTML += 'running ';
+        ]
+    });
 
-            round = document.getElementById('round').value;
-            n = document.getElementById('count').value;
-            result = [];
-            total = 0;
-            shapeType = document.getElementById('shape').value;
-            setTimeout(run,50);
-        }
-        function run(){
-            if (round--) {
-                zr.clear();
-                for (var i = 0; i < n; i++) {
-                    zr.addShape({
-                        shape: shapeType,
-                        style: {
-                            x: Math.round(Math.random() * width),
-                            y: Math.round(Math.random() * height),
-                            r0: Math.round(Math.random() * 10),
-                            r: shapeType != 'rose'
-                                ? Math.round(Math.random() * 30)
-                                : [5 + Math.round(Math.random() * 5),
-                                   10 + Math.round(Math.random() * 5),
-                                   15 + Math.round(Math.random() * 5)],
-                            n: Math.round(Math.random() * 10 + 2),
-                            a: Math.round(Math.random() * 10),
-                            b: Math.round(Math.random() * 30),
-                            k: Math.round(Math.random() * 10),
-                            width: Math.round(Math.random() * 100),
-                            height: Math.round(Math.random() * 50),
-                            xStart: Math.round(Math.random() * width),
-                            yStart: Math.round(Math.random() * height),
-                            xEnd: Math.round(Math.random() * width),
-                            yEnd: Math.round(Math.random() * height),
-                            startAngle : Math.round(Math.random() * 30),
-                            endAngle: Math.round(Math.random() * 180) + 30,
-                            image : 'test.jpeg',
-                            text : shapeType == 'text' ? 'zrender' : '',
-                            color: zrColor.random()
-                        },
-                        hoverable : false
-                    });
-                }
-                var ticket = new Date();
-                zr.render();
-                ticket = new Date() - ticket;
-                total += ticket
-                result.push(ticket);
-                setTimeout(run,50);
-            }else {
-                isRunning = false;
-                document.getElementById('res').innerHTML +=
-                    n + '个' + shapeType +
-                    '平均render时间:' + Math.round(total/result.length)
-                    + 'ms : [' + result.join(',') + ']<br/>';
-                    console.log(t1, t2, t3); t1 = 0; t2 = 0; t3 = 0;
-            }
-        }
-        require(["zrender"], function(zrender){
+    
+    require(
+        [
+            "zrender",
+            'zrender/shape/Circle',
+            'zrender/shape/Sector',
+            'zrender/shape/Ring',
+            'zrender/shape/Ellipse',
+            'zrender/shape/Rectangle',
+            'zrender/shape/Text',
+            'zrender/shape/Heart',
+            'zrender/shape/Droplet',
+            'zrender/shape/Line',
+            'zrender/shape/Image',
+            'zrender/shape/Star',
+            'zrender/shape/Isogon'
+        ], 
+        function(
+            zrender,
+            CircleShape,
+            SectorShape,
+            RingShape,
+            EllipseShape,
+            RectangleShape,
+            TextShape,
+            HeartShape,
+            DropletShape,
+            LineShape,
+            ImageShape,
+            StarShape,
+            IsogonShape
+        ) {
             // 初始化zrender
             zr = zrender.init(document.getElementById("main"));
             zrColor = require('zrender/tool/color');
             width = zr.getWidth();
             height = zr.getHeight();
             isRunning = false;
-            document.getElementById('res').innerHTML = 'ready!<br/>'
-        })
+            document.getElementById('res').innerHTML = 'ready!<br/>';
+            document.getElementById('run').onclick = start;
+
+            var ShapeClasses = {
+                circle    :CircleShape,
+                sector    :SectorShape,
+                ring      :RingShape,
+                ellipse   :EllipseShape,
+                rectangle :RectangleShape,
+                text      :TextShape,
+                heart     :HeartShape,
+                droplet   :DropletShape,
+                line      :LineShape,
+                image     :ImageShape,
+                star      :StarShape,
+                isogon    :IsogonShape
+            };
+
+            var t1 = 0;
+            var t2 = 0;
+            var t3 = 0;
+            var zr;
+            var isRunning;
+            var zrColor;
+            var width;
+            var height;
+            var round;
+            var n;
+            var result;
+            var total;
+            var shapeType;
+
+            function start() {
+                if (isRunning) {
+                    return;
+                }
+                isRunning = true;
+                document.getElementById('res').innerHTML += 'running ';
+
+                round = document.getElementById('round').value;
+                n = document.getElementById('count').value;
+                result = [];
+                total = 0;
+                shapeType = document.getElementById('shape').value;
+                setTimeout(run,50);
+            }
+
+            function run(){
+                if (round--) {
+                    zr.clear();
+                    for (var i = 0; i < n; i++) {
+                        var ShapeClass = ShapeClasses[shapeType];
+                        zr.addShape(new ShapeClass({
+                            style: {
+                                x: Math.round(Math.random() * width),
+                                y: Math.round(Math.random() * height),
+                                r0: Math.round(Math.random() * 10),
+                                r: shapeType != 'rose'
+                                    ? Math.round(Math.random() * 30)
+                                    : [5 + Math.round(Math.random() * 5),
+                                       10 + Math.round(Math.random() * 5),
+                                       15 + Math.round(Math.random() * 5)],
+                                n: Math.round(Math.random() * 10 + 2),
+                                a: Math.round(Math.random() * 10),
+                                b: Math.round(Math.random() * 30),
+                                k: Math.round(Math.random() * 10),
+                                width: Math.round(Math.random() * 100),
+                                height: Math.round(Math.random() * 50),
+                                xStart: Math.round(Math.random() * width),
+                                yStart: Math.round(Math.random() * height),
+                                xEnd: Math.round(Math.random() * width),
+                                yEnd: Math.round(Math.random() * height),
+                                startAngle : Math.round(Math.random() * 30),
+                                endAngle: Math.round(Math.random() * 180) + 30,
+                                image : 'test.jpeg',
+                                text : shapeType == 'text' ? 'zrender' : '',
+                                color: zrColor.random()
+                            },
+                            hoverable : false
+                        }));
+                    }
+                    var ticket = new Date();
+                    zr.render();
+                    ticket = new Date() - ticket;
+                    total += ticket
+                    result.push(ticket);
+                    setTimeout(run,50);
+                }else {
+                    isRunning = false;
+                    document.getElementById('res').innerHTML +=
+                        n + '个' + shapeType +
+                        '平均render时间:' + Math.round(total/result.length)
+                        + 'ms : [' + result.join(',') + ']<br/>';
+                        console.log(t1, t2, t3); t1 = 0; t2 = 0; t3 = 0;
+                }
+            }
+        }
+    );
     </script>
 
 </body>
