@@ -7,8 +7,8 @@
 
 define(
     function ( require ) {
-        var area = require('../tool/area');
-        
+        var area = require('../../tool/area');
+
         function _fillText(ctx, text, x, y, textFont, textAlign, textBaseline) {
             if (textFont) {
                 ctx.font = textFont;
