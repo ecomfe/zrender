@@ -75,6 +75,7 @@ define(
         var Base = require('./Base');
         var smoothSpline = require('./util/smoothSpline');
         var smoothBezier = require('./util/smoothBezier');
+        var dashedLineTo = require('./util/dashedLineTo');
 
         function BrokenLine( options ) {
             this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
@@ -132,7 +133,7 @@ define(
                                          * (style.lineType == 'dashed' ? 5 : 1);
                         ctx.moveTo(pointList[0][0],pointList[0][1]);
                         for (var i = 1, l = pointList.length; i < l; i++) {
-                            this.dashedLineTo(
+                            dashedLineTo(
                                 ctx,
                                 pointList[i - 1][0], pointList[i - 1][1],
                                 pointList[i][0], pointList[i][1],

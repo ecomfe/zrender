@@ -76,6 +76,7 @@
 define(
     function (require) {
         var Base = require('./Base');
+        var dashedLineTo = require('./util/dashedLineTo');
         
         function Line(options) {
             this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
@@ -102,7 +103,7 @@ define(
                 ) {
                     var dashLength =(style.lineWidth || 1)  
                                      * (style.lineType == 'dashed' ? 5 : 1);
-                    this.dashedLineTo(
+                    dashedLineTo(
                         ctx,
                         style.xStart, style.yStart,
                         style.xEnd, style.yEnd,

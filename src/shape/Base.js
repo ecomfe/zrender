@@ -234,28 +234,6 @@ define(
                 }
             }
         };
-        
-        /**
-         * 虚线lineTo 
-         */
-        Base.prototype.dashedLineTo = function (ctx, x1, y1, x2, y2, dashLength) {
-            dashLength = typeof dashLength == 'undefined'
-                            ? 5 
-                            : dashLength;
-
-            var deltaX = x2 - x1;
-            var deltaY = y2 - y1;
-            var numDashes = Math.floor(
-                Math.sqrt(deltaX * deltaX + deltaY * deltaY) / dashLength
-            );
-
-            for (var i = 0; i < numDashes; ++i) {
-                ctx[i % 2 ? 'lineTo' : 'moveTo'](
-                    x1 + (deltaX / numDashes) * i,
-                    y1 + (deltaY / numDashes) * i
-                );
-            }
-        };
 
         /**
          * 附加文本

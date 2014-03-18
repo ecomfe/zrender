@@ -72,6 +72,7 @@ define(
         var Base = require('./Base');
         var smoothSpline = require('./util/smoothSpline');
         var smoothBezier = require('./util/smoothBezier');
+        var dashedLineTo = require('./util/dashedLineTo');
         
         function Polygon(options) {
             Base.call(this, options);
@@ -222,14 +223,14 @@ define(
                         style._dashLength = dashLength;
                         ctx.moveTo(pointList[0][0],pointList[0][1]);
                         for (var i = 1, l = pointList.length; i < l; i++) {
-                            this.dashedLineTo(
+                            dashedLineTo(
                                 ctx,
                                 pointList[i - 1][0], pointList[i - 1][1],
                                 pointList[i][0], pointList[i][1],
                                 dashLength
                             );
                         }
-                        this.dashedLineTo(
+                        dashedLineTo(
                             ctx,
                             pointList[pointList.length - 1][0], 
                             pointList[pointList.length - 1][1],
