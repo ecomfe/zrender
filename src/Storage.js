@@ -27,37 +27,25 @@ define(
          * 快速判断标志~
          * 
          * @inner
-         * @param e.__silent 是否需要hover判断
-         * @param e.__needTransform 是否需要进行transform
-         * @param e.style.__rect 区域矩阵缓存，修改后清空，重新计算一次
+         * @param shape.__silent 是否需要hover判断
+         * @param shape.__needTransform 是否需要进行transform
+         * @param shape.style.__rect 区域矩阵缓存，修改后清空，重新计算一次
          */
-        function mark(e) {
-            if (e.hoverable || e.onclick || e.draggable
-                || e.onmousemove || e.onmouseover || e.onmouseout
-                || e.onmousedown || e.onmouseup
-                || e.ondragenter || e.ondragover || e.ondragleave
-                || e.ondrop
-            ) {
-                e.__silent = false;
-            }
-            else {
-                e.__silent = true;
-            }
+        function mark(shape) {
+            shape.__silent = !(shape.hoverable || shape.draggable
+                || shape.onmousemove || shape.onmouseover || shape.onmouseout
+                || shape.onmousedown || shape.onmouseup || shape.onclick
+                || shape.ondragenter || shape.ondragover || shape.ondragleave
+                || shape.ondrop);
 
-            if (Math.abs(e.rotation[0]) > 0.0001
-                || Math.abs(e.position[0]) > 0.0001
-                || Math.abs(e.position[1]) > 0.0001
-                || Math.abs(e.scale[0] - 1) > 0.0001
-                || Math.abs(e.scale[1] - 1) > 0.0001
-            ) {
-                e.__needTransform = true;
-            }
-            else {
-                e.__needTransform = false;
-            }
+            shape.__needTransform = Math.abs(shape.rotation[0]) > 0.0001
+                || Math.abs(shape.position[0]) > 0.0001
+                || Math.abs(shape.position[1]) > 0.0001
+                || Math.abs(shape.scale[0] - 1) > 0.0001
+                || Math.abs(shape.scale[1] - 1) > 0.0001;
 
-            e.style = e.style || {};
-            e.style.__rect = null;
+            shape.style = shape.style || {};
+            shape.style.__rect = null;
         }
 
         /**
