@@ -208,14 +208,14 @@ define(
                 ) {
                     if (config.catchBrushException) {
                         try {
-                            shape.drift(e, dx, dy);
+                            shape.drift(dx, dy);
                         }
                         catch(error) {
                             log(error, 'drift error of ' + shape.type, shape);
                         }
                     }
                     else {
-                        shape.drift(shape, dx, dy);
+                        shape.drift(dx, dy);
                     }
                 }
 

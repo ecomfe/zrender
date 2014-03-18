@@ -516,13 +516,12 @@ define(
         /**
          * 默认漂移
          * 
-         * @param e 图形实体
          * @param dx 横坐标变化
          * @param dy 纵坐标变化
          */
-        Base.prototype.drift = function (e, dx, dy) {
-            e.position[0] += dx;
-            e.position[1] += dy;
+        Base.prototype.drift = function (dx, dy) {
+            this.position[0] += dx;
+            this.position[1] += dy;
         };
 
         /**
