@@ -72,7 +72,27 @@ require.config({
 });
 
 require(
-    ['zrender','zrender/shape/rose','zrender/shape/Trochoid'],
+    [
+        'zrender',
+        'zrender/shape/Rose',
+        'zrender/shape/Trochoid',
+        'zrender/shape/Circle',
+        'zrender/shape/Sector',
+        'zrender/shape/Ring',
+        'zrender/shape/Ellipse',
+        'zrender/shape/Rectangle',
+        'zrender/shape/Text',
+        'zrender/shape/Heart',
+        'zrender/shape/Droplet',
+        'zrender/shape/Line',
+        'zrender/shape/Image',
+        'zrender/shape/Star',
+        'zrender/shape/Isogon',
+        'zrender/shape/BezierCurve',
+        'zrender/shape/BrokenLine',
+        'zrender/shape/Path',
+        'zrender/shape/Polygon'
+    ],
     function(zrender) {
         zr = zrender.init(document.getElementById('main'));
         var request = new QueryString();
