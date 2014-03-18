@@ -9,6 +9,8 @@
 define(
     function (require) {
         var util = require('./tool/util');
+        var log = require('./tool/log');
+        var config = require('./config');
         var _idBase = 0x2311; // 图形数据id自增基础
 
         /**
@@ -204,13 +206,12 @@ define(
                     //有onbrush并且调用执行返回false或undefined则继续
                     || (shape.ondrift && !shape.ondrift(shape, dx, dy))
                 ) {
-                    var zrender = require('./zrender');
-                    if (zrender.catchBrushException) {
+                    if (config.catchBrushException) {
                         try {
                             shape.drift(e, dx, dy);
                         }
                         catch(error) {
-                            zrender.log(error, 'drift error of ' + shape.type, shape);
+                            log(error, 'drift error of ' + shape.type, shape);
                         }
                     }
                     else {

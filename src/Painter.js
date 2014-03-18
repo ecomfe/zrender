@@ -11,19 +11,11 @@ define(
     function (require) {
         var config = require('./config');
         var util = require('./tool/util');
+        var log = require('./tool/log');
 
         // retina 屏幕优化
         var devicePixelRatio = window.devicePixelRatio || 1;
         var vmlCanvasManager = window.G_vmlCanvasManager;
-        
-        function log() {
-            var zrender = require('./zrender');
-            zrender.log.apply(zrender, arguments);
-        }
-
-        function isCatchBrushException() {
-            return require('./zrender').catchBrushException;
-        }
 
         /**
          * 返回false的方法，用于避免页面被选中
@@ -165,7 +157,7 @@ define(
                     }
                 }
             }
-            //重绘内容，升序遍历，shape上的zlevel指定绘画图层的z轴层叠
+            // 重绘内容，升序遍历，shape上的zlevel指定绘画图层的z轴层叠
             this.storage.iterShape(
                 this._brush(changedZlevel),
                 { normal: 'up'}
@@ -482,7 +474,7 @@ define(
                             //有onbrush并且调用执行返回false或undefined则继续粉刷
                             || (shape.onbrush && !shape.onbrush(ctx, shape, false))
                         ) {
-                            if (isCatchBrushException()) {
+                            if (config.catchBrushException) {
                                 try {
                                     shape.brush(
                                         ctx, shape, false, updatePainter
@@ -597,7 +589,7 @@ define(
                             //有onbrush并且调用执行返回false或undefined则继续粉刷
                             || (shape.onbrush && !shape.onbrush(ctx, shape, false))
                         ) {
-                            if (isCatchBrushException()) {
+                            if (config.catchBrushException) {
                                 try {
                                     shape.brush(
                                         ctx, shape, false, updatePainter
@@ -642,7 +634,7 @@ define(
                 || (shape.onbrush && !shape.onbrush(ctx, shape, true))
             ) {
                 // Retina 优化
-                if (isCatchBrushException()) {
+                if (config.catchBrushException) {
                     try {
                         shape.brush(ctx, shape, true, updatePainter);
                     }

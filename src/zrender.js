@@ -33,6 +33,8 @@ define(
         require('./lib/excanvas');
 
         var util = require('./tool/util');
+        var log = require('./tool/log');
+
         var Handler = require( './Handler' );
         var Painter = require( './Painter' );
         var Storage = require( './Storage' );
@@ -105,43 +107,6 @@ define(
             return zrender;
         };
 
-        // 是否异常捕获
-        zrender.catchBrushException = false;
-
-        /**
-         * debug日志选项：catchBrushException为true下有效
-         * 0 : 不生成debug数据，发布用
-         * 1 : 异常抛出，调试用
-         * 2 : 控制台输出，调试用
-         */
-        zrender.debugMode = 0;
-        zrender.log = function() {
-            if (zrender.debugMode === 0) {
-                return;
-            }
-            else if (zrender.debugMode == 1) {
-                for (var k in arguments) {
-                    throw new Error(arguments[k]);
-                }
-            }
-            else if (zrender.debugMode > 1) {
-                for (var k in arguments) {
-                    console.log(arguments[k]);
-                }
-            }
-
-            return zrender;
-        };
-
-        /* for debug
-        zrender.log = function(mes) {
-            document.getElementById('wrong-message').innerHTML =
-                mes + ' ' + (new Date() - 0)
-                + '<br/>' 
-                + document.getElementById('wrong-message').innerHTML;
-        };
-        */
-       
         function getShapeLibrary(shapesOption) {
             if (shapesOption) {
                 // 自定义图形库，私有化，实例独占
@@ -345,7 +310,7 @@ define(
                 }
 
                 if (!target) {
-                    zrender.log(
+                    log(
                         'Property "'
                         + path
                         + '" is not existed in shape '
@@ -375,7 +340,7 @@ define(
                     });
             }
             else {
-                zrender.log('Shape "'+ shapeId + '" not existed');
+                log('Shape "'+ shapeId + '" not existed');
             }
         };
 
