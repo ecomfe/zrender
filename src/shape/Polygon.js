@@ -70,6 +70,7 @@
 define(
     function (require) {
         var Base = require('./Base');
+        var smoothSpline = require('./util/smoothSpline');
         
         function Polygon(options) {
             Base.call(this, options);
@@ -164,6 +165,7 @@ define(
                 // 开始点和结束点重复
                 var start = pointList[0];
                 var end = pointList[pointList.length-1];
+                
                 if (start && end) {
                     if (start[0] == end[0] &&
                         start[1] == end[1]) {
@@ -171,10 +173,12 @@ define(
                         pointList.pop();
                     }
                 }
+
                 if (pointList.length < 2) {
                     // 少于2个点就不画了~
                     return;
                 }
+
                 if (style.smooth && style.smooth !== 'spline') {
                     var controlPoints = this.smoothBezier(
                         pointList, style.smooth, true
@@ -196,8 +200,9 @@ define(
                 } 
                 else {
                     if (style.smooth === 'spline') {
-                        pointList = this.smoothSpline(pointList, true);
+                        pointList = smoothSpline(pointList, true);
                     }
+
                     if (!style.lineType || style.lineType == 'solid') {
                         //默认为实线
                         ctx.moveTo(pointList[0][0],pointList[0][1]);

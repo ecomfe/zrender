@@ -73,6 +73,7 @@
 define(
     function (require) {
         var Base = require('./Base');
+        var smoothSpline = require('./util/smoothSpline');
 
         function BrokenLine( options ) {
             this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
@@ -114,7 +115,7 @@ define(
                 } 
                 else {
                     if (style.smooth === 'spline') {
-                        pointList = this.smoothSpline(pointList, false);
+                        pointList = smoothSpline(pointList);
                     }
                     if (!style.lineType || style.lineType == 'solid') {
                         //默认为实线
