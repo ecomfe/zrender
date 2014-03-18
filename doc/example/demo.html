@@ -92,9 +92,27 @@ var colorIdx = 0;
 var width = Math.ceil(zr.getWidth());
 var height = Math.ceil(zr.getHeight());
 
+var CircleShape = require('zrender/shape/Circle');
+var SectorShape = require('zrender/shape/Sector');
+var RingShape = require('zrender/shape/Ring');
+var EllipseShape = require('zrender/shape/Ellipse');
+var HeartShape = require('zrender/shape/Heart');
+var DropletShape = require('zrender/shape/Droplet');
+var PolygonShape = require('zrender/shape/Polygon');
+var RectangleShape = require('zrender/shape/Rectangle');
+var BrokenLineShape = require('zrender/shape/BrokenLine');
+var LineShape = require('zrender/shape/Line');
+var BezierCurveShape = require('zrender/shape/BezierCurve');
+var TextShape = require('zrender/shape/Text');
+var ImageShape = require('zrender/shape/Image');
+var PathShape = require('zrender/shape/Path');
+var TrochoidShape = require('zrender/shape/Trochoid');
+var RoseShape = require('zrender/shape/Rose');
+var StarShape = require('zrender/shape/Star');
+var IsogonShape = require('zrender/shape/Isogon');
+
 // 圆形
-zr.addShape({
-    shape : 'circle',
+zr.addShape(new CircleShape({
     id : zr.newShapeId('circle'),
     style : {
         x : 100,
@@ -143,11 +161,10 @@ zr.addShape({
     ondragleave : function(e){console.log('ondragleave',e)},
     ondrop      : function(e){console.log('ondrop',e)}
     */
-});
+}));
 
 // 扇形
-zr.addShape({
-    shape : 'sector',
+zr.addShape(new SectorShape({
     id : zr.newShapeId('sector'),
     style : {
         x : width - 250,
@@ -164,11 +181,10 @@ zr.addShape({
         text:'sector'
     },
     draggable : true
-});
+}));
 
 // 圆环
-zr.addShape({
-    shape : 'ring',
+zr.addShape(new RingShape({
     id : zr.newShapeId('ring'),
     style : {
         x : width / 2,
@@ -182,11 +198,11 @@ zr.addShape({
         text : 'ring'
     },
     draggable : true
-});
+}));
+
 
 // 椭圆
-zr.addShape({
-    shape : 'ellipse',
+zr.addShape(new EllipseShape({
     id : zr.newShapeId('ellipse'),
     style : {
         x : 350,
@@ -201,11 +217,10 @@ zr.addShape({
         textPosition:'inside'
     },
     draggable : true
-});
+}));
 
 // 心形
-zr.addShape({
-    shape : 'heart',
+zr.addShape(new HeartShape({
     id : zr.newShapeId('heart'),
     style : {
         x : width - 350,
@@ -220,11 +235,10 @@ zr.addShape({
         textPosition:'inside'
     },
     draggable : true
-});
+}));
 
 // 水滴
-zr.addShape({
-    shape : 'droplet',
+zr.addShape(new DropletShape({
     id : zr.newShapeId('droplet'),
     style : {
         x : 380,
@@ -239,11 +253,10 @@ zr.addShape({
         textPosition:'inside'
     },
     draggable : true
-});
+}));
 
 // 多边形
-zr.addShape({
-    shape : 'polygon',
+zr.addShape(new PolygonShape({
     id : zr.newShapeId('polygon'),
     style : {
         pointList : [[310, 120], [360, 120], [348, 230], [250, 340], [146, 200]],
@@ -255,11 +268,10 @@ zr.addShape({
         textPosition : 'inside'     // default top
     },
     draggable:true
-});
+}));
 
 // 矩形
-zr.addShape({
-    shape : 'rectangle',
+zr.addShape(new RectangleShape({
     id : zr.newShapeId('rectangle'),
     style : {
         x : width - 350,
@@ -275,11 +287,10 @@ zr.addShape({
         text : 'rectangle'
     },
     draggable : true
-});
+}));
 
 // 折线
-zr.addShape({
-    shape : 'brokenLine',
+zr.addShape(new BrokenLineShape({
     id : zr.newShapeId('brokenLine'),
     style : {
         pointList : [[10, 10], [60, 100], [148, 130], [250, 40], [446, 100]],
@@ -288,11 +299,10 @@ zr.addShape({
         text : 'brokenLine'
     },
     draggable:true
-});
+}));
 
 // 直线
-zr.addShape({
-    shape : 'line',
+zr.addShape(new LineShape({
     id : zr.newShapeId('line'),
     style : {
         xStart : 0,
@@ -305,11 +315,10 @@ zr.addShape({
         text : 'line'
     },
     draggable:true
-});
+}));
 
 // 贝塞尔曲线
-zr.addShape({
-    shape : 'beziercurve',
+zr.addShape(new BezierCurveShape({
     id : zr.newShapeId('beziercurve'),
     style : {
         xStart : width,
@@ -325,11 +334,10 @@ zr.addShape({
         text : 'beziercurve'
     },
     draggable:true
-});
+}));
 
 // 文本
-zr.addShape({
-    shape : 'text',
+zr.addShape(new TextShape({
     id : zr.newShapeId('text'),
     style : {
         x : width / 2,
@@ -345,11 +353,10 @@ zr.addShape({
         textBaseline : 'top'
     },
     draggable : true
-});
+}));
 
 // 图片
-zr.addShape({
-    shape : 'image',
+zr.addShape(new ImageShape({
     id : zr.newShapeId('image'),
     style : {
         x : 0,
@@ -359,11 +366,10 @@ zr.addShape({
         height : 20
     },
     draggable : true
-});
+}));
 
 // 路径
-zr.addShape({
-    shape : 'path',
+zr.addShape(new PathShape({
     id : zr.newShapeId('path'),
     style : {
         //path : 'M 0 0 L 0 100 L 100 100 Z',
@@ -378,11 +384,10 @@ zr.addShape({
         textPosition : 'bottom'
     },
     draggable : true
-});
+}));
 
 // 内旋轮线
-zr.addShape({
-    shape : 'trochoid',
+zr.addShape(new TrochoidShape({
     id : zr.newShapeId('circle'),
     style : {
         x : 200,
@@ -397,11 +402,10 @@ zr.addShape({
     },
     hoverable : true,   // default true
     draggable : true
-});
+}));
 
 // 外旋轮曲线
-zr.addShape({
-    shape : 'trochoid',
+zr.addShape(new TrochoidShape({
     id : zr.newShapeId('circle'),
     style : {
         x: 450,
@@ -417,11 +421,10 @@ zr.addShape({
     },
     hoverable : true,   // default true
     draggable : true
-});
+}));
 
 // 玫瑰线
-zr.addShape({
-    shape : 'rose',
+zr.addShape(new RoseShape({
     id : zr.newShapeId('circle'),
     style : {
         x : 300,
@@ -435,11 +438,10 @@ zr.addShape({
     },
     hoverable : true,   // default true
     draggable : true
-});
+}));
 
 // n角星
-zr.addShape({
-    shape : 'star',
+zr.addShape(new StarShape({
     id : zr.newShapeId('star'),
     style : {
         x : width / 2 + 100,
@@ -457,11 +459,10 @@ zr.addShape({
     },
     hoverable : true,   // default true
     draggable : true
-});
+}));
 
 // 正n边形
-zr.addShape({
-    shape : 'isogon',
+zr.addShape(new IsogonShape({
     id : zr.newShapeId('star'),
     style : {
         x : 300,
@@ -477,7 +478,7 @@ zr.addShape({
     },
     hoverable : true,   // default true
     draggable : true
-});
+}));
 
 // 绘画
 zr.render();
