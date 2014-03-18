@@ -39,7 +39,6 @@ define(
         var Painter = require( './Painter' );
         var Storage = require( './Storage' );
         var Animation = require('./animation/animation');
-        var shape = require('./shape');
 
         var _idx = 0;           //ZRender instance's id
         var _instances = {};    //ZRender实例map索引
@@ -107,24 +106,6 @@ define(
             return zrender;
         };
 
-        function getShapeLibrary(shapesOption) {
-            if (shapesOption) {
-                // 自定义图形库，私有化，实例独占
-                var shapeLibrary = {};
-                for (var key in shapesOption) {
-                    shapeLibrary[key] = shapesOption[key];
-                }
-
-                shapeLibrary.get = function (name) {
-                    return shapeLibrary[name] || shape.get(name);
-                };
-
-                return shapeLibrary;
-            }
-
-            return shape;
-        }
-
         function getAnimationUpdater(zrenderInstance) {
             return function(){
                 var animatingShapes = zrenderInstance.animatingShapes;
@@ -153,7 +134,6 @@ define(
             this.id = id;
             this.env = require('./tool/env');
 
-            var shapeLibrary = getShapeLibrary(params.shape);
             this.storage = new Storage();
             this.painter = new Painter(dom, this.storage);
             this.handler = new Handler(dom, this.storage, this.painter);

@@ -145,7 +145,6 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
-                var shape = require('../shape');
                 var x = style.x;   // 圆心x
                 var y = style.y;   // 圆心y
                 var r0 = typeof style.r0 == 'undefined'     // 形内半径[0,r)

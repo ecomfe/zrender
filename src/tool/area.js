@@ -425,7 +425,7 @@ define(
          */
         function _isInsidePath(area, x, y) {
             if (!area.pointList) {
-                require('../shape').get('path').buildPath(_ctx, area);
+                require('../shape/Path').prototype.buildPath(_ctx, area);
             }
             var pointList = area.pointList;
             var insideCatch = false;
