@@ -75,7 +75,7 @@
 define(
     function (require) {
         var Base = require('./Base');
-        
+
         function Droplet(options) {
             Base.call(this, options);
         }
@@ -106,7 +106,6 @@ define(
                     style.x,
                     style.y + style.a
                 );
-                return;
             },
 
             /**

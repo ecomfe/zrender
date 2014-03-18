@@ -73,7 +73,7 @@
 define(
     function (require) {
         var Base = require('./Base');
-        
+
         function BrokenLine( options ) {
             this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
             this.textPosition = 'end';
@@ -147,8 +147,7 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
-                var shape = require('../shape');
-                return shape.get('polygon').getRect(style);
+                return require('./Polygon').prototype.getRect(style);
             }
         };
 

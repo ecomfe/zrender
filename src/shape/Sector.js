@@ -156,7 +156,7 @@ define(
                 
                 if (Math.abs(endAngle - startAngle) >= 360) {
                     // 大于360度的扇形简化为圆环bbox
-                    return shape.get('ring').getRect(style);;
+                    return require('./Ring').prototype.getRect(style);;
                 }
                 
                 startAngle = (720 + startAngle) % 360;
@@ -210,7 +210,7 @@ define(
                     y - math.sin(endAngle) * r0
                 ]);
 
-                return shape.get('polygon').getRect({
+                return require('./Polygon').prototype.getRect({
                     brushType : style.brushType,
                     lineWidth : style.lineWidth,
                     pointList : pointList
