@@ -256,58 +256,6 @@ define(
                 );
             }
         };
-        
-        /**
-         * 贝塞尔平滑曲线 
-         */
-        Base.prototype.smoothBezier = function (points, smooth, loop) {
-            var len = points.length;
-            var cps = [];
-
-            var v = [];
-            var v1 = [];
-            var v2 = [];
-            var prevPoint;
-            var nextPoint;
-            for (var i = 0; i < len; i++) {
-                var point = points[i];
-                var prevPoint;
-                var nextPoint;
-                if (loop) {
-                    prevPoint = points[i === 0 ? len-1 : i-1];
-                    nextPoint = points[(i + 1) % len];
-                } else {
-                    if (i === 0 || i === len-1) {
-                        cps.push(points[i]);
-                        continue;
-                    } else {
-                        prevPoint = points[i-1];
-                        nextPoint = points[i+1];
-                    }
-                }
-
-                vec2.sub(v, nextPoint, prevPoint);
-
-                //use degree to scale the handle length
-                vec2.scale(v, v, smooth);
-
-                var d0 = vec2.distance(point, prevPoint);
-                var d1 = vec2.distance(point, nextPoint);
-                var sum = d0 + d1;
-                d0 /= sum;
-                d1 /= sum;
-
-                vec2.scale(v1, v, -d0);
-                vec2.scale(v2, v, d1);
-
-                cps.push(vec2.add([], point, v1));
-                cps.push(vec2.add([], point, v2));
-            }
-            if (loop) {
-                cps.push(cps.shift());
-            }
-            return cps;
-        };
 
         /**
          * 附加文本

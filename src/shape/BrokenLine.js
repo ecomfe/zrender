@@ -74,6 +74,7 @@ define(
     function (require) {
         var Base = require('./Base');
         var smoothSpline = require('./util/smoothSpline');
+        var smoothBezier = require('./util/smoothBezier');
 
         function BrokenLine( options ) {
             this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
@@ -96,8 +97,8 @@ define(
                     return;
                 }
                 if (style.smooth && style.smooth !== 'spline') {
-                    var controlPoints = this.smoothBezier(
-                        pointList, style.smooth, false
+                    var controlPoints = smoothBezier(
+                        pointList, style.smooth
                     );
 
                     ctx.moveTo(pointList[0][0], pointList[0][1]);

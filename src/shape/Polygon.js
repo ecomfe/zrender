@@ -71,6 +71,7 @@ define(
     function (require) {
         var Base = require('./Base');
         var smoothSpline = require('./util/smoothSpline');
+        var smoothBezier = require('./util/smoothBezier');
         
         function Polygon(options) {
             Base.call(this, options);
@@ -165,7 +166,7 @@ define(
                 // 开始点和结束点重复
                 var start = pointList[0];
                 var end = pointList[pointList.length-1];
-                
+
                 if (start && end) {
                     if (start[0] == end[0] &&
                         start[1] == end[1]) {
@@ -180,7 +181,7 @@ define(
                 }
 
                 if (style.smooth && style.smooth !== 'spline') {
-                    var controlPoints = this.smoothBezier(
+                    var controlPoints = smoothBezier(
                         pointList, style.smooth, true
                     );
 
