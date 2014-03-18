@@ -527,27 +527,26 @@ define(
         /**
          * 默认区域包含判断
          * 
-         * @param e 图形实体
          * @param x 横坐标
          * @param y 纵坐标
          */
-        Base.prototype.isCover = function (e, x, y) {
+        Base.prototype.isCover = function (x, y) {
             // 对鼠标的坐标也做相同的变换
-            if (e.__needTransform && e._transform) {
+            if (this.__needTransform && this._transform) {
                 var inverseMatrix = [];
-                matrix.invert(inverseMatrix, e._transform);
+                matrix.invert(inverseMatrix, this._transform);
 
                 var originPos = [x, y];
                 matrix.mulVector(originPos, inverseMatrix, [x, y, 1]);
 
                 if (x == originPos[0] && y == originPos[1]) {
                     // 避免外部修改导致的__needTransform不准确
-                    e.__needTransform = 
-                        Math.abs(e.rotation[0]) > 0.0001
-                        || Math.abs(e.position[0]) > 0.0001
-                        || Math.abs(e.position[1]) > 0.0001
-                        || Math.abs(e.scale[0] - 1) > 0.0001
-                        || Math.abs(e.scale[1] - 1) > 0.0001;
+                    this.__needTransform = 
+                        Math.abs(this.rotation[0]) > 0.0001
+                        || Math.abs(this.position[0]) > 0.0001
+                        || Math.abs(this.position[1]) > 0.0001
+                        || Math.abs(this.scale[0] - 1) > 0.0001
+                        || Math.abs(this.scale[1] - 1) > 0.0001;
                 }
 
                 x = originPos[0];
@@ -555,9 +554,9 @@ define(
             }
 
             // 快速预判并保留判断矩形
-            var rect = e.style.__rect;
+            var rect = this.style.__rect;
             if (!rect) {
-                rect = e.style.__rect = this.getRect(e.style);
+                rect = this.style.__rect = this.getRect(this.style);
             }
 
             if (x >= rect.x
@@ -566,7 +565,7 @@ define(
                 && y <= (rect.y + rect.height)
             ) {
                 // 矩形内
-                return area.isInside(this, e.style, x, y);
+                return area.isInside(this, this.style, x, y);
             }
             
             return false;

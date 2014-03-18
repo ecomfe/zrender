@@ -681,7 +681,7 @@ define(
             }
 
             var event = this._event;
-            if (shape.isCover(shape, this._mouseX, this._mouseY)) {
+            if (shape.isCover(this._mouseX, this._mouseY)) {
                 if (shape.hoverable) {
                     this.storage.addHover(shape);
                 }
