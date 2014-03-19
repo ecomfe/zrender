@@ -14,7 +14,7 @@
                 location: '../src',
                 main: 'zrender'
             }
-        ]
+        ],waitSeconds:3
     });
 
     require(
@@ -35,7 +35,6 @@
             }
 
             var smoothLine = new BrokenLineShape({
-                id : zr.newShapeId(),
                 style : {
                     pointList : pointList,
                     smooth : 'spline',
@@ -48,7 +47,6 @@
             });
 
             var smoothPolygon = new PolygonShape({
-                id : zr.newShapeId(),
                 style : {
                     pointList : [[50, 50], [200, 10], [100, 200], [50, 150], [50, 50]],
                     smooth : 0.5,

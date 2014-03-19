@@ -41,7 +41,7 @@
             zr.render();
 
             function createShape(i) {
-                var id = zr.newShapeId();
+                var id = require('zrender/tool/guid')();
                 var ShapeClass = ( i % 5 == 0 ) ? TrocholdShape : RoseShape;
                 var r = ( i % 5 == 0 ) ? random(50, 20) : [random(100, 30)];
                 
