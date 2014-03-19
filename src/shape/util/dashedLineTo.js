@@ -11,7 +11,7 @@ define(
          * 虚线lineTo 
          */
         return function (ctx, x1, y1, x2, y2, dashLength) {
-            dashLength = typeof dashLength == 'undefined'
+            dashLength = typeof dashLength != 'number'
                             ? 5 
                             : dashLength;
 

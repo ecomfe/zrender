@@ -512,7 +512,8 @@ define(function (require) {
                         if (p[j] + x > maxX) {
                             maxX = p[j] + x;
                         }
-                    } else {
+                    } 
+                    else {
                         if (p[j] + y < minY) {
                             minY = p[j] + y;
                         }

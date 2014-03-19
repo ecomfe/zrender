@@ -27,20 +27,15 @@ define(
             }
             var zoneType = shape.type;
 
-            if (!_ctx) {
-                _ctx = util.getContext();
-            }
-            if (!_isInsideRectangle(
-                    area.__rect || shape.getRect(area), x, y
-                 )
-             ) {
+            _ctx = _ctx || util.getContext();
+
+            if (!_isInsideRectangle(area.__rect || shape.getRect(area), x, y)) {
                 // 不在矩形区域内直接返回false
                 return false;
             }
 
             // 未实现或不可用时(excanvas不支持)则数学运算，主要是line，brokenLine，ring
             var _mathReturn = _mathMethod(zoneType, area, x, y);
-
             if (typeof _mathReturn != 'undefined') {
                 return _mathReturn;
             }
@@ -57,14 +52,10 @@ define(
 
             // 上面的方法都行不通时
             switch (zoneType) {
-                //心形----------------------10
-                case 'heart':
-                    return true;    // Todo，不精确
-                //水滴----------------------11
-                case 'droplet':
-                    return true;    // Todo，不精确
-                case 'ellipse':
-                    return true;     // Todo，不精确
+                case 'heart': //心形---------10 // Todo，不精确
+                case 'droplet':// 水滴----------11 // Todo，不精确
+                case 'ellipse': // Todo，不精确
+                    return true;
                 // 旋轮曲线  不准确
                 case 'trochoid':
                     var _r = area.location == 'out'
@@ -246,6 +237,7 @@ define(
                     yEnd : pointList[i + 1][1],
                     lineWidth : Math.max(area.lineWidth, 10)
                 };
+
                 if (!_isInsideRectangle(
                         {
                             x : Math.min(lineArea.xStart, lineArea.xEnd)
@@ -263,43 +255,29 @@ define(
                     // 不在矩形区内跳过
                     continue;
                 }
+
                 insideCatch = _isInsideLine(lineArea, x, y);
                 if (insideCatch) {
                     break;
                 }
             }
+
             return insideCatch;
         }
 
         function _isInsideRing(area, x, y) {
-            if (_isInsideCircle(area, x, y, area.r)
-                && !_isInsideCircle(
-                    {
-                        x : area.x,
-                        y : area.y
-                    },
-                    x, y,
-                    area.r0 || 0
-                )
-            ){
-                // 大圆内，小圆外
-                return true;
-            }
-            return false;
+            return _isInsideCircle(area, x, y, area.r)
+                && !_isInsideCircle({x: area.x, y: area.y}, x, y, area.r0 || 0);
         }
 
         /**
          * 矩形包含判断
          */
         function _isInsideRectangle(area, x, y) {
-            if (x >= area.x
+            return x >= area.x
                 && x <= (area.x + area.width)
                 && y >= area.y
-                && y <= (area.y + area.height)
-            ) {
-                return true;
-            }
-            return false;
+                && y <= (area.y + area.height);
         }
 
         /**
@@ -329,26 +307,24 @@ define(
                 // 大圆外或者小圆内直接false
                 return false;
             }
-            else {
-                // 判断夹角
-                if (Math.abs(area.endAngle - area.startAngle) >= 360) {
-                    // 大于360度的扇形，在环内就为true
-                    return true;
-                }
-                
-                var angle = (360
-                             - Math.atan2(y - area.y, x - area.x) / Math.PI
-                             * 180)
-                             % 360;
-                var endA = (360 + area.endAngle) % 360;
-                var startA = (360 + area.startAngle) % 360;
-                if (endA > startA) {
-                    return (angle >= startA && angle <= endA);
-                } else {
-                    return !(angle >= endA && angle <= startA);
-                }
 
+            // 判断夹角
+            if (Math.abs(area.endAngle - area.startAngle) >= 360) {
+                // 大于360度的扇形，在环内就为true
+                return true;
             }
+            
+            var angle = (360
+                         - Math.atan2(y - area.y, x - area.x) / Math.PI
+                         * 180)
+                         % 360;
+            var endA = (360 + area.endAngle) % 360;
+            var startA = (360 + area.startAngle) % 360;
+            if (endA > startA) {
+                return (angle >= startA && angle <= endA);
+            }
+
+            return !(angle >= endA && angle <= startA);
         }
 
         /**
@@ -433,10 +409,12 @@ define(
                 insideCatch = _isInsidePolygon(
                     { pointList : pointList[i] }, x, y
                 );
+
                 if (insideCatch) {
                     break;
                 }
             }
+
             return insideCatch;
         }
 
@@ -446,11 +424,9 @@ define(
          * @param {Object} textFont
          */
         function getTextWidth(text, textFont) {
-            if (!_ctx) {
-                _ctx = util.getContext();
-            }
-
+            _ctx = _ctx || util.getContext();
             _ctx.save();
+
             if (textFont) {
                 _ctx.font = textFont;
             }
@@ -474,9 +450,7 @@ define(
          * @param {Object} textFont
          */
         function getTextHeight(text, textFont) {
-            if (!_ctx) {
-                _ctx = util.getContext();
-            }
+            _ctx = _ctx || util.getContext();
 
             _ctx.save();
             if (textFont) {

@@ -27,7 +27,7 @@ var requestAnimationFrame = window.requestAnimationFrame
 
 var arraySlice = Array.prototype.slice;
 
-var Animation = function(options) {
+function Animation(options) {
 
     options = options || {};
 
@@ -41,7 +41,7 @@ var Animation = function(options) {
     this._running = false;
 
     this._time = 0;
-};
+}
 
 Animation.prototype = {
     add : function(clip) {
@@ -72,10 +72,7 @@ Animation.prototype = {
                 deferredClips.push(clip);
             }
         }
-        if (this.stage
-            && this.stage.update
-            && this._clips.length
-        ) {
+        if (this.stage.update && this._clips.length) {
             this.stage.update();
         }
 
@@ -130,13 +127,14 @@ Animation.prototype = {
         );
         deferred.animation = this;
         return deferred;
-    }
+    },
+    constructor: Animation
 };
-Animation.prototype.constructor = Animation;
 
 function _defaultGetter(target, key) {
     return target[key];
 }
+
 function _defaultSetter(target, key, value) {
     target[key] = value;
 }
@@ -164,13 +162,13 @@ function _interpolateArray(p0, p1, percent, out, arrDim) {
 }
 
 function _isArrayLike(data) {
-    if (typeof(data) === 'undefined') {
-        return false;
-    } else if (typeof(data) == 'string') {
-        return false;
-    } else {
-        return typeof(data.length) !== 'undefined';
+    switch (typeof data) {
+        'undefined':
+        'string':
+            return false;
     }
+    
+    return typeof data.length !== 'undefined';
 }
 
 function _catmullRomInterpolateArray(

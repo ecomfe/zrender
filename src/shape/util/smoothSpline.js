@@ -35,12 +35,7 @@ define(
             var segs = distance / 5;
 
             for (var i = 0; i < segs; i++) {
-                var pos;
-                if (isLoop) {
-                    pos = i / (segs-1) * len;
-                } else {
-                    pos = i / (segs-1) * (len - 1);
-                }
+                var pos = i / (segs-1) * (isLoop ? len : len - 1);
                 var idx = Math.floor(pos);
 
                 var w = pos - idx;

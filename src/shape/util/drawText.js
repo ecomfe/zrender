@@ -88,9 +88,7 @@ define(
          */
         return function (ctx, style, normalStyle) {
             // 字体颜色策略
-            style.textColor = style.textColor
-                                || style.color
-                                || style.strokeColor;
+            style.textColor = style.textColor || style.color || style.strokeColor;
             ctx.fillStyle = style.textColor;
 
             if (style.textPosition == 'inside') {
@@ -108,119 +106,125 @@ define(
                                || this.textPosition     // shape默认
                                || 'top';                // 全局默认
 
-            if ((textPosition == 'inside'
-                || textPosition == 'top'
-                || textPosition == 'bottom'
-                || textPosition == 'left'
-                || textPosition == 'right')
-                && this.getRect // 矩形定位文字的图形必须提供getRect方法
-            ) {
-                var rect = (normalStyle || style).__rect
-                           || this.getRect(normalStyle || style);
+            switch (textPosition) {
+                case 'inside': 
+                case 'top': 
+                case 'bottom': 
+                case 'left': 
+                case 'right': 
+                    if (this.getRect) {
+                        var rect = (normalStyle || style).__rect
+                                   || this.getRect(normalStyle || style);
 
-                switch (textPosition) {
-                    case 'inside':
-                        tx = rect.x + rect.width / 2;
-                        ty = rect.y + rect.height / 2;
-                        al = 'center';
-                        bl = 'middle';
-                        if (style.brushType != 'stroke'
-                            && style.textColor == style.color
-                        ) {
-                            ctx.fillStyle = '#fff';
+                        switch (textPosition) {
+                            case 'inside':
+                                tx = rect.x + rect.width / 2;
+                                ty = rect.y + rect.height / 2;
+                                al = 'center';
+                                bl = 'middle';
+                                if (style.brushType != 'stroke'
+                                    && style.textColor == style.color
+                                ) {
+                                    ctx.fillStyle = '#fff';
+                                }
+                                break;
+                            case 'left':
+                                tx = rect.x - dd;
+                                ty = rect.y + rect.height / 2;
+                                al = 'end';
+                                bl = 'middle';
+                                break;
+                            case 'right':
+                                tx = rect.x + rect.width + dd;
+                                ty = rect.y + rect.height / 2;
+                                al = 'start';
+                                bl = 'middle';
+                                break;
+                            case 'top':
+                                tx = rect.x + rect.width / 2;
+                                ty = rect.y - dd;
+                                al = 'center';
+                                bl = 'bottom';
+                                break;
+                            case 'bottom':
+                                tx = rect.x + rect.width / 2;
+                                ty = rect.y + rect.height + dd;
+                                al = 'center';
+                                bl = 'top';
+                                break;
                         }
-                        break;
-                    case 'left':
-                        tx = rect.x - dd;
-                        ty = rect.y + rect.height / 2;
-                        al = 'end';
-                        bl = 'middle';
-                        break;
-                    case 'right':
-                        tx = rect.x + rect.width + dd;
-                        ty = rect.y + rect.height / 2;
-                        al = 'start';
-                        bl = 'middle';
-                        break;
-                    case 'top':
-                        tx = rect.x + rect.width / 2;
-                        ty = rect.y - dd;
-                        al = 'center';
-                        bl = 'bottom';
-                        break;
-                    case 'bottom':
-                        tx = rect.x + rect.width / 2;
-                        ty = rect.y + rect.height + dd;
-                        al = 'center';
-                        bl = 'top';
-                        break;
-                }
-            }
-            else if (textPosition == 'start' || textPosition == 'end') {
-                var xStart;
-                var xEnd;
-                var yStart;
-                var yEnd;
-                if (typeof style.pointList != 'undefined') {
-                    var pointList = style.pointList;
-                    if (pointList.length < 2) {
-                        // 少于2个点就不画了~
-                        return;
                     }
-                    var length = pointList.length;
+                    break;
+                case 'start':
+                case 'end':
+                    var xStart;
+                    var xEnd;
+                    var yStart;
+                    var yEnd;
+                    if (typeof style.pointList != 'undefined') {
+                        var pointList = style.pointList;
+                        if (pointList.length < 2) {
+                            // 少于2个点就不画了~
+                            return;
+                        }
+                        var length = pointList.length;
+                        switch (textPosition) {
+                            case 'start':
+                                xStart = pointList[0][0];
+                                xEnd = pointList[1][0];
+                                yStart = pointList[0][1];
+                                yEnd = pointList[1][1];
+                                break;
+                            case 'end':
+                                xStart = pointList[length - 2][0];
+                                xEnd = pointList[length - 1][0];
+                                yStart = pointList[length - 2][1];
+                                yEnd = pointList[length - 1][1];
+                                break;
+                        }
+                    }
+                    else {
+                        xStart = style.xStart || 0;
+                        xEnd = style.xEnd || 0;
+                        yStart = style.yStart || 0;
+                        yEnd = style.yEnd || 0;
+                    }
+
                     switch (textPosition) {
                         case 'start':
-                            xStart = pointList[0][0];
-                            xEnd = pointList[1][0];
-                            yStart = pointList[0][1];
-                            yEnd = pointList[1][1];
+                            al = xStart < xEnd ? 'end' : 'start';
+                            bl = yStart < yEnd ? 'bottom' : 'top';
+                            tx = xStart;
+                            ty = yStart;
                             break;
                         case 'end':
-                            xStart = pointList[length - 2][0];
-                            xEnd = pointList[length - 1][0];
-                            yStart = pointList[length - 2][1];
-                            yEnd = pointList[length - 1][1];
+                            al = xStart < xEnd ? 'start' : 'end';
+                            bl = yStart < yEnd ? 'top' : 'bottom';
+                            tx = xEnd;
+                            ty = yEnd;
                             break;
                     }
-                }
-                else {
-                    xStart = style.xStart || 0;
-                    xEnd = style.xEnd || 0;
-                    yStart = style.yStart || 0;
-                    yEnd = style.yEnd || 0;
-                }
+                    dd -= 4;
+                    if (xStart != xEnd) {
+                        tx -= (al == 'end' ? dd : -dd);
+                    } 
+                    else {
+                        al = 'center';
+                    }
 
-                switch (textPosition) {
-                    case 'start':
-                        al = xStart < xEnd ? 'end' : 'start';
-                        bl = yStart < yEnd ? 'bottom' : 'top';
-                        tx = xStart;
-                        ty = yStart;
-                        break;
-                    case 'end':
-                        al = xStart < xEnd ? 'start' : 'end';
-                        bl = yStart < yEnd ? 'top' : 'bottom';
-                        tx = xEnd;
-                        ty = yEnd;
-                        break;
-                }
-                dd -= 4;
-                if (xStart != xEnd) {
-                    tx -= (al == 'end' ? dd : -dd);
-                } else {
-                    al = 'center';
-                }
-                if (yStart != yEnd) {
-                    ty -= (bl == 'bottom' ? dd : -dd);
-                } else {
+                    if (yStart != yEnd) {
+                        ty -= (bl == 'bottom' ? dd : -dd);
+                    } 
+                    else {
+                        bl = 'middle';
+                    }
+                    break;
+                case 'specific':
+                    tx = style.textX || 0;
+                    ty = style.textY || 0;
+                    al = 'start';
                     bl = 'middle';
-                }
-            }
-            else if (textPosition == 'specific') {
-                tx = style.textX || 0;
-                ty = style.textY || 0;
-                al = 'start';
-                bl = 'middle';
+                    break;
             }
 
             if (tx != null && ty != null) {
