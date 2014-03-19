@@ -25,26 +25,24 @@ define(
          * @return {Any} 拷贝后的新对象
          */
         function clone(source) {
-            switch (typeof source) {
-                case 'object':
-                    var result = source;
-                    if (source instanceof Array) {
-                        result = [];
-                        for (i = 0, len = source.length; i < len; i++) {
-                            result[i] = clone(source[i]);
-                        }
+            if (typeof source == 'object') {
+                var result = source;
+                if (source instanceof Array) {
+                    result = [];
+                    for (i = 0, len = source.length; i < len; i++) {
+                        result[i] = clone(source[i]);
                     }
-                    else if (!BUILTIN_OBJECT[Object.prototype.toString.call(source)] {
-                        result = {};
-                        for (var key in source) {
-                            if (source.hasOwnProperty(key)) {
-                                result[i] = clone(source[key]);
-                            }
-                        }
-                    }
-
-                    return result;
                 }
+                else if (!BUILTIN_OBJECT[Object.prototype.toString.call(source)] {
+                    result = {};
+                    for (var key in source) {
+                        if (source.hasOwnProperty(key)) {
+                            result[i] = clone(source[key]);
+                        }
+                    }
+                }
+
+                return result;
             }
 
             return source;
