@@ -9,6 +9,14 @@
  */
 define(
     function(require) {
+        // 用于处理merge时无法遍历Date等对象的问题
+        var BUILTIN_OBJECT = {
+            '[object Function]': 1,
+            '[object RegExp]': 1,
+            '[object Date]': 1,
+            '[object Error]': 1,
+            '[object CanvasGradient]': 1
+        };
 
         /**
          * 对一个object进行深度拷贝
@@ -17,62 +25,35 @@ define(
          * @return {Any} 拷贝后的新对象
          */
         function clone(source) {
-            // buildInObject, 用于处理无法遍历Date等对象的问题
-            var buildInObject = {
-                '[object Function]': 1,
-                '[object RegExp]': 1,
-                '[object Date]': 1,
-                '[object Error]': 1,
-                '[object CanvasGradient]': 1
-            };
-            var result = source;
-            var i;
-            var len;
-            if (!source
-                || source instanceof Number
-                || source instanceof String
-                || source instanceof Boolean
-            ) {
-                return result;
-            }
-            else if (source instanceof Array) {
-                result = [];
-                var resultLen = 0;
-                for (i = 0, len = source.length; i < len; i++) {
-                    result[resultLen++] = clone(source[i]);
-                }
-            }
-            else if ('object' == typeof source) {
-                if(buildInObject[Object.prototype.toString.call(source)]
-                   || source.__nonRecursion
-                ) {
+            switch (typeof source) {
+                case 'object':
+                    var result = source;
+                    if (source instanceof Array) {
+                        result = [];
+                        for (i = 0, len = source.length; i < len; i++) {
+                            result[i] = clone(source[i]);
+                        }
+                    }
+                    else if (!BUILTIN_OBJECT[Object.prototype.toString.call(source)] {
+                        result = {};
+                        for (var key in source) {
+                            if (source.hasOwnProperty(key)) {
+                                result[i] = clone(source[key]);
+                            }
+                        }
+                    }
+
                     return result;
                 }
-                result = {};
-                for (i in source) {
-                    if (source.hasOwnProperty(i)) {
-                        result[i] = clone(source[i]);
-                    }
-                }
             }
-            return result;
-        }
 
-        // 用于处理merge时无法遍历Date等对象的问题
-        var MERGE_NO_RECURSIVE_OBJECT = {
-            '[object Function]': 1,
-            '[object RegExp]': 1,
-            '[object Date]': 1,
-            '[object Error]': 1,
-            '[object CanvasGradient]': 1
-        };
+            return source;
+        }
 
         function mergeItem(target, source, key, overwrite) {
             if (source.hasOwnProperty(key)) {
                 if (typeof target[key] == 'object'
-                    && !MERGE_NO_RECURSIVE_OBJECT[
-                        Object.prototype.toString.call(target[key])
-                    ]
+                    && !BUILTIN_OBJECT[ Object.prototype.toString.call(target[key]) ]
                 ) {
                     // 如果需要递归覆盖，就递归调用merge
                     merge(
@@ -153,7 +134,7 @@ define(
         function adjustCanvasSize(x, y) {
             // 每次加的长度
             var _v = 100;
-            var _flag = false;
+            var _flag;
 
             if (x + _offsetX > _width) {
                 _width = x + _offsetX + _v;
