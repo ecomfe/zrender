@@ -136,7 +136,6 @@
 
                 function buildBrush() {
                     brush = new CircleShape({
-                        id : zr.newShapeId('circle'),
                         zlevel : 3, // 频繁变动的画笔单独在一层中
                         style : {
                             x : width / 2,
@@ -186,7 +185,6 @@
                         zr.addShape(new RectangleShape({
                             shape : 'rectangle',
                             zlevel : 0,             // 默认为0，不变的图形元素可以单独一层
-                            id : zr.newShapeId('rectangle'),
                             style : {
                                 x : 5,
                                 y : startY,
@@ -204,7 +202,6 @@
                     curPalette = new RectangleShape({
                         shape : 'rectangle',
                         zlevel : 1,             // 偶尔需要改变的图形元素单独一层
-                        id : zr.newShapeId('rectangle'),
                         style : {
                             x : 5,
                             y : 5,

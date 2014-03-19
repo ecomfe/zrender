@@ -144,7 +144,6 @@
                 function _bulidTime() {
                     shapeList = [];
                     shapeList.push(new CircleShape({
-                        id : zr.newShapeId(),
                         rotation : [0, 100, 100],
                         style : {
                             x : 100,
@@ -159,7 +158,6 @@
                         _round : 2
                     }));
                     shapeList.push(new CircleShape({
-                        id : zr.newShapeId(),
                         rotation : [0, 170, 200],
                         style : {
                             x : 170,
@@ -173,7 +171,6 @@
                         hoverable : false
                     }));
                     shapeList.push(new CircleShape({
-                        id : zr.newShapeId(),
                         rotation : [0, 130, 260],
                         style : {
                             x : 130,
@@ -192,7 +189,6 @@
                     }
 
                     pointText = new TextShape({
-                        id : zr.newShapeId(),
                         scale : [1, 1, 100, height-40],
                         style : {
                             x : 100,
@@ -206,7 +202,6 @@
                     zr.addShape(pointText);
                     knife = new BrokenLineShape({
                         shape : 'brokenLine',
-                        id : zr.newShapeId(),
                         zlevel : 1, // 频繁变动的画笔单独在一层中
                         style : {
                             pointList : [
@@ -256,7 +251,6 @@
                         var sizePoint = Math.ceil(Math.random() * 40);
                         var bubble = new CircleShape({
                             shape : 'circle',
-                            id : zr.newShapeId(),
                             style : {
                                 x : Math.ceil(Math.random() * (width - 320) + 300),
                                 y : height -40,
@@ -267,7 +261,7 @@
                                 text : 50 - sizePoint,
                                 textPosition : 'inside'
                             },
-                            _ticket :zr.newShapeId(),
+                            _ticket :require('zrender/tool/guid')(),
                             _point : 50 - sizePoint,
                             hoverable : false,
                             clickable : true,
@@ -302,7 +296,7 @@
                                     })
                                     .start();
                                 var newShape = util.clone(params.target);
-                                newShape.id = zr.newShapeId();
+                                newShape.id = require('zrender/tool/guid')();
                                 newShape.style.brushType = 'fill';
                                 zr.addShape(new CircleShape(newShape));
                                 zr.animate(newShape.id, 'style')
