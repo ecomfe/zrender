@@ -32,9 +32,6 @@ define(
             DROP : 'drop',              // 拖拽图形元素放在目标图形元素内时触发，事件对象是：目标图形元素
 
             touchClickDelay : 300       // touch end - start < delay is click
-            
-
-        
         },
 
         // 是否异常捕获
