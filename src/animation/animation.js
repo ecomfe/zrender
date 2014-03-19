@@ -163,8 +163,8 @@ function _interpolateArray(p0, p1, percent, out, arrDim) {
 
 function _isArrayLike(data) {
     switch (typeof data) {
-        'undefined':
-        'string':
+        case 'undefined':
+        case 'string':
             return false;
     }
     
