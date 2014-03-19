@@ -215,10 +215,7 @@ define(
                     zLevelConfig[zLevel] = {};
                 }
 
-                util.merge(zLevelConfig[zLevel], config, {
-                    recursive : true,
-                    overwrite : true
-                });
+                util.merge(zLevelConfig[zLevel], config, true);
             }
         };
 

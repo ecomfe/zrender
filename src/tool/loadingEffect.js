@@ -47,7 +47,7 @@ define(
                         brushType : 'fill'
                     },
                     textStyle,
-                    {'overwrite': true, 'recursive': true}
+                    true
                 )
             };
         }
@@ -105,8 +105,7 @@ define(
                         brushType : 'fill',
                         timeInterval : 100
                     }
-                },
-                {'overwrite': false, 'recursive': true}
+                }
             );
 
             var textShape = getTextShape(loadingOption.textStyle);
@@ -200,8 +199,7 @@ define(
                         textAlign : 'start'
                     },
                     backgroundColor : 'rgba(250, 250, 250, 0.8)'
-                },
-                {'overwrite': false, 'recursive': true}
+                }
             );
 
             var textShape = getTextShape(loadingOption.textStyle);
@@ -284,8 +282,7 @@ define(
                         color : 'random',
                         timeInterval : 100
                     }
-                },
-                {'overwrite': false, 'recursive': true}
+                }
             );
 
             var textShape = getTextShape(loadingOption.textStyle);
@@ -383,8 +380,7 @@ define(
                         color : 'random',
                         timeInterval : 100
                     }
-                },
-                {'overwrite': false, 'recursive': true}
+                }
             );
 
             var textShape = getTextShape(loadingOption.textStyle);
@@ -480,8 +476,7 @@ define(
                         textAlign : 'start'
                     },
                     backgroundColor : 'rgba(0, 0, 0, 0.8)'
-                },
-                {'overwrite': false, 'recursive': true}
+                }
             );
 
             var textShape = getTextShape(loadingOption.textStyle);
@@ -561,8 +556,7 @@ define(
                         textColor : 'rgba(30, 144, 255, 0.6)',
                         timeInterval : 100
                     }
-                },
-                {'overwrite': false, 'recursive': true}
+                }
             );
 
             var effectOption = loadingOption.effectOption;

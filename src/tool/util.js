@@ -39,7 +39,7 @@ define(
                 result = [];
                 var resultLen = 0;
                 for (i = 0, len = source.length; i < len; i++) {
-                    result[resultLen++] = this.clone(source[i]);
+                    result[resultLen++] = clone(source[i]);
                 }
             }
             else if ('object' == typeof source) {
@@ -51,11 +51,40 @@ define(
                 result = {};
                 for (i in source) {
                     if (source.hasOwnProperty(i)) {
-                        result[i] = this.clone(source[i]);
+                        result[i] = clone(source[i]);
                     }
                 }
             }
             return result;
+        }
+
+        // 用于处理merge时无法遍历Date等对象的问题
+        var MERGE_NO_RECURSIVE_OBJECT = {
+            '[object Function]': 1,
+            '[object RegExp]': 1,
+            '[object Date]': 1,
+            '[object Error]': 1,
+            '[object CanvasGradient]': 1
+        };
+
+        function mergeItem(target, source, key, overwrite) {
+            if (source.hasOwnProperty(key)) {
+                if (typeof target[key] == 'object'
+                    && !MERGE_NO_RECURSIVE_OBJECT[
+                        Object.prototype.toString.call(target[key])
+                    ]
+                ) {
+                    // 如果需要递归覆盖，就递归调用merge
+                    merge(
+                        target[key],
+                        source[key],
+                        overwrite
+                    );
+                } else if (overwrite || !(key in target)) {
+                    // 否则只处理overwrite为true，或者在目标对象中没有此属性的情况
+                    target[key] = source[key];
+                }
+            }
         }
 
         /**
@@ -63,105 +92,14 @@ define(
          * modify from Tangram
          * @param {*} target 目标对象
          * @param {*} source 源对象
-         * @param {Object} optOptions 选项
-         * @param {boolean} optOptions.overwrite 是否覆盖
-         * @param {boolean} optOptions.recursive 是否递归
-         * @param {boolean} optOptions.whiteList 白名单，如果定义，则仅处理白名单属性
+         * @param {boolean} overwrite 是否覆盖
          */
-        var merge = (function() {
-            // buildInObject, 用于处理无法遍历Date等对象的问题
-            var buildInObject = {
-                '[object Function]': 1,
-                '[object RegExp]': 1,
-                '[object Date]': 1,
-                '[object Error]': 1,
-                '[object CanvasGradient]': 1
-            };
-            function mergeItem(target, source, index, overwrite, recursive) {
-                if (source.hasOwnProperty(index)) {
-                    if (recursive
-                        && typeof target[index] == 'object'
-                        && buildInObject[
-                            Object.prototype.toString.call(target[index])
-                        ] != 1
-                    ) {
-                        // 如果需要递归覆盖，就递归调用merge
-                        merge(
-                            target[index],
-                            source[index],
-                            {
-                                'overwrite': overwrite,
-                                'recursive': recursive
-                            }
-                        );
-                    } else if (overwrite || !(index in target)) {
-                        // 否则只处理overwrite为true，或者在目标对象中没有此属性的情况
-                        target[index] = source[index];
-                    }
-                }
+        function merge(target, source, overwrite) {
+            for (var i in source) {
+                mergeItem(target, source, i, overwrite);
             }
-
-            return function(target, source, optOptions){
-                var i = 0;
-                var options = optOptions || {};
-                var overwrite = options['overwrite'];
-                var whiteList = options['whiteList'];
-                var recursive = options['recursive'];
-                var len;
-
-                // 只处理在白名单中的属性
-                if (whiteList && whiteList.length) {
-                    len = whiteList.length;
-                    for (; i < len; ++i) {
-                        mergeItem(
-                            target, source, whiteList[i], overwrite, recursive
-                        );
-                    }
-                } else {
-                    for (i in source) {
-                        mergeItem(target, source, i, overwrite, recursive);
-                    }
-                }
-                return target;
-            };
-        })();
-
-        /**
-         * 简化版的merge操作，舍去很多判断
-         * @param  {*} target   
-         * @param  {*} source   
-         * @param  {boolean} overwrite
-         * @param  {boolean} recursive     
-         */
-        function mergeFast(target, source, overwrite, recursive) {
-            if (!target || !source) {
-                return;
-            }
-            if (source instanceof Object) {
-                for (var name in source) {
-                    if (source.hasOwnProperty(name)) {
-                        if (
-                            source[name] instanceof Object 
-                            && recursive
-                            && target[name]
-                        ) {
-                            mergeFast(
-                                target[name],
-                                source[name],
-                                overwrite,
-                                recursive
-                            );
-                        } else {
-                            if (
-                                overwrite
-                                || !target.hasOwnProperty(name)
-                            ) {
-                                target[name] = source[name];
-                            }
-                        }
-                    }
-                }
-            }
+            
+            return target;
         }
 
         var _ctx;
@@ -277,13 +215,10 @@ define(
         return {
             clone : clone,
             merge : merge,
-            mergeFast : mergeFast,
             getContext : getContext,
-
             getPixelContext : getPixelContext,
             getPixelOffset : getPixelOffset,
             adjustCanvasSize : adjustCanvasSize,
-
             indexOf : indexOf
         };
     }
