@@ -472,7 +472,7 @@ define(
                     if (!shape.invisible) {
                         if (!shape.onbrush //没有onbrush
                             //有onbrush并且调用执行返回false或undefined则继续粉刷
-                            || (shape.onbrush && !shape.onbrush(ctx, shape, false))
+                            || (shape.onbrush && !shape.onbrush(ctx, false))
                         ) {
                             if (config.catchBrushException) {
                                 try {
@@ -583,7 +583,7 @@ define(
                     if (ctx) {
                         if (!shape.onbrush //没有onbrush
                             //有onbrush并且调用执行返回false或undefined则继续粉刷
-                            || (shape.onbrush && !shape.onbrush(ctx, shape, false))
+                            || (shape.onbrush && !shape.onbrush(ctx, false))
                         ) {
                             if (config.catchBrushException) {
                                 try {
@@ -623,7 +623,7 @@ define(
 
             if (!shape.onbrush //没有onbrush
                 //有onbrush并且调用执行返回false或undefined则继续粉刷
-                || (shape.onbrush && !shape.onbrush(ctx, shape, true))
+                || (shape.onbrush && !shape.onbrush(ctx, true))
             ) {
                 // Retina 优化
                 if (config.catchBrushException) {

@@ -158,7 +158,7 @@ define(
                 shape.__needTransform = true;
                 if (!shape.ondrift //ondrift
                     //有onbrush并且调用执行返回false或undefined则继续
-                    || (shape.ondrift && !shape.ondrift(shape, dx, dy))
+                    || (shape.ondrift && !shape.ondrift(dx, dy))
                 ) {
                     if (config.catchBrushException) {
                         try {
