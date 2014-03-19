@@ -155,7 +155,7 @@ define(
             var shape = this._elements[shapeId];
 
             if (shape) {
-                shape.__needTransform = true;
+                shape.needTransform = true;
                 if (!shape.ondrift //ondrift
                     //有onbrush并且调用执行返回false或undefined则继续
                     || (shape.ondrift && !shape.ondrift(dx, dy))
@@ -193,10 +193,10 @@ define(
                     && (Math.abs(params.scale[0] - 1) > 0.0001
                     || Math.abs(params.scale[1] - 1) > 0.0001))
             ) {
-                params.__needTransform = true;
+                params.needTransform = true;
             }
             else {
-                params.__needTransform = false;
+                params.needTransform = false;
             }
 
             this._hoverElements.push(params);
