@@ -119,11 +119,7 @@ define(
         var area = require('../tool/area');
         var matrix = require('../tool/matrix');
         var drawText = require('./util/drawText');
-
-        var idStart = 0x114;
-        function guid() {
-            return 'zrendershape' + idStart++;
-        }
+        var guid = require('../tool/guid');
         
         function Base( options ) {
             this.id = options.id || guid();

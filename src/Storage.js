@@ -11,17 +11,7 @@ define(
         var util = require('./tool/util');
         var log = require('./tool/log');
         var config = require('./config');
-        var _idBase = 0x2311; // 图形数据id自增基础
 
-        /**
-         * 唯一标识id生成
-         * 
-         * @inner
-         * @param {string=} idHead 标识前缀
-         */
-        function newShapeId(idHead) {
-            return (idHead || '') + (++_idBase);
-        }
 
         /**
          * 快速判断标志~
@@ -360,8 +350,6 @@ define(
             this._zElements = 
             this._hoverElements = null;
         };
-
-        Storage.prototype.newShapeId = newShapeId;
 
         return Storage;
     }

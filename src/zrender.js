@@ -34,13 +34,13 @@ define(
 
         var util = require('./tool/util');
         var log = require('./tool/log');
+        var guid = require('./tool/guid');
 
         var Handler = require( './Handler' );
         var Painter = require( './Painter' );
         var Storage = require( './Storage' );
         var Animation = require('./animation/animation');
 
-        var _idx = 0;           //ZRender instance's id
         var _instances = {};    //ZRender实例map索引
 
         var zrender = {};
@@ -57,8 +57,8 @@ define(
          * @return {ZRender} ZRender实例
          */
         zrender.init = function(dom, params) {
-            var zi = new ZRender(++_idx + '', dom, params || {});
-            _instances[_idx] = zi;
+            var zi = new ZRender(guid(), dom, params || {});
+            _instances[zi.id] = zi;
             return zi;
         };
 
@@ -364,16 +364,6 @@ define(
         };
 
         /**
-         * 生成形状唯一ID
-         * 
-         * @param {string} [idPrefix] id前缀
-         * @return {string} 不重复ID
-         */
-        ZRender.prototype.newShapeId = function (idPrefix) {
-            return this.storage.newShapeId(idPrefix);
-        };
-
-        /**
          * 获取视图宽度
          */
         ZRender.prototype.getWidth = function() {
@@ -398,7 +388,7 @@ define(
          * 将常规shape转成image shape
          */
         ZRender.prototype.shapeToImage = function(e, width, height) {
-            var id = this.newShapeId('image');
+            var id = guid();
             return this.painter.shapeToImage(id, e, width, height);
         };
 
