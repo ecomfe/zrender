@@ -134,6 +134,8 @@ define(
             for ( var key in options ) {
                 this[ key ] = options[ key ];
             }
+
+            this.style = this.style || {};
         }
 
         /**
@@ -145,8 +147,8 @@ define(
          *                       让painter更新视图，base.brush没用，需要的话重载brush
          */
         Base.prototype.brush = function (ctx, isHighlight) {
-            var style = this.style || {};
-
+            var style = this.style;
+            
             if (this.brushTypeOnly) {
                 style.brushType = this.brushTypeOnly;
             }
@@ -168,9 +170,7 @@ define(
             this.setContext(ctx, style);
 
             // 设置transform
-            if (this.__needTransform) {
-                ctx.transform.apply(ctx, this.updateTransform());
-            }
+            this.updateTransform(ctx);
 
             ctx.beginPath();
             this.buildPath(ctx, style);
@@ -256,7 +256,8 @@ define(
                     newStyle.strokeColor = highlightColor;
                     newStyle.lineWidth = (style.lineWidth || 1)
                                           + this.getHighlightZoom();
-                } else {
+                } 
+                else {
                     // 线型的则用原色加工高亮
                     newStyle.strokeColor = highlightStyle.strokeColor
                                            || color.mix(
@@ -274,6 +275,14 @@ define(
             }
 
             return newStyle;
+        };
+
+        Base.prototype.updateNeedTransform = function () {
+            this.needTransform = Math.abs(this.rotation[0]) > 0.0001
+                || Math.abs(this.position[0]) > 0.0001
+                || Math.abs(this.position[1]) > 0.0001
+                || Math.abs(this.scale[0] - 1) > 0.0001
+                || Math.abs(this.scale[1] - 1) > 0.0001;
         };
 
         /**
@@ -303,7 +312,7 @@ define(
          */
         Base.prototype.isCover = function (x, y) {
             // 对鼠标的坐标也做相同的变换
-            if (this.__needTransform && this._transform) {
+            if (this.needTransform && this._transform) {
                 var inverseMatrix = [];
                 matrix.invert(inverseMatrix, this._transform);
 
@@ -311,13 +320,8 @@ define(
                 matrix.mulVector(originPos, inverseMatrix, [x, y, 1]);
 
                 if (x == originPos[0] && y == originPos[1]) {
-                    // 避免外部修改导致的__needTransform不准确
-                    this.__needTransform = 
-                        Math.abs(this.rotation[0]) > 0.0001
-                        || Math.abs(this.position[0]) > 0.0001
-                        || Math.abs(this.position[1]) > 0.0001
-                        || Math.abs(this.scale[0] - 1) > 0.0001
-                        || Math.abs(this.scale[1] - 1) > 0.0001;
+                    // 避免外部修改导致的needTransform不准确
+                    this.updateNeedTransform();
                 }
 
                 x = originPos[0];
@@ -342,7 +346,21 @@ define(
             return false;
         };
 
-        Base.prototype.updateTransform = function () {
+        Base.prototype.isSilent = function () {
+            return !(
+                this.hoverable || this.draggable
+                || this.onmousemove || this.onmouseover || this.onmouseout
+                || this.onmousedown || this.onmouseup || this.onclick
+                || this.ondragenter || this.ondragover || this.ondragleave
+                || this.ondrop
+            );
+        };
+
+        Base.prototype.updateTransform = function (ctx) {
+            if (!this.needTransform) {
+                return;
+            }
+
             var _transform = this._transform || matrix.create();
             matrix.identity(_transform);
             if (this.scale && (this.scale[0] !== 1 || this.scale[1] !== 1)) {
@@ -392,7 +410,7 @@ define(
 
             // 保存这个变换矩阵
             this._transform = _transform;
-            return _transform;
+            ctx.transform.apply(ctx, _transform);
         };
 
         /**

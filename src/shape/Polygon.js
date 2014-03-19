@@ -90,7 +90,7 @@ define(
              *                       让painter更新视图，base.brush没用，需要的话重载brush
              */
             brush : function (ctx, isHighlight) {
-                var style = this.style || {};
+                var style = this.style;
                 if (isHighlight) {
                     // 根据style扩展默认高亮样式
                     style = this.getHighlightStyle(
@@ -103,9 +103,7 @@ define(
                 this.setContext(ctx, style);
     
                 // 设置transform
-                if (this.__needTransform) {
-                    ctx.transform.apply(ctx, this.updateTransform());
-                }
+                this.updateTransform(ctx);
                 
                 // 先fill再stroke
                 var hasPath = false;

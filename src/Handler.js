@@ -675,7 +675,7 @@ define(
         function findHover(shape) {
             if (
                 ( this._draggingTarget && this._draggingTarget.id == shape.id ) //迭代到当前拖拽的图形上
-                || shape.__silent // 打酱油的路过，啥都不响应的shape~
+                || shape.isSilent() // 打酱油的路过，啥都不响应的shape~
             ) {
                 return false;
             }

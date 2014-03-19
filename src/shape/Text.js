@@ -84,7 +84,7 @@ define(
              * @param isHighlight 是否为高亮状态
              */
             brush : function(ctx, isHighlight) {
-                var style = this.style || {};
+                var style = this.style;
                 if (isHighlight) {
                     // 根据style扩展默认高亮样式
                     style = this.getHighlightStyle(
@@ -100,9 +100,7 @@ define(
                 this.setContext(ctx, style);
 
                 // 设置transform
-                if (this.__needTransform) {
-                    ctx.transform.apply(ctx, this.updateTransform());
-                }
+                this.updateTransform(ctx);
 
                 if (style.textFont) {
                     ctx.font = style.textFont;

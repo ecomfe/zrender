@@ -12,32 +12,6 @@ define(
         var log = require('./tool/log');
         var config = require('./config');
 
-
-        /**
-         * 快速判断标志~
-         * 
-         * @inner
-         * @param shape.__silent 是否需要hover判断
-         * @param shape.__needTransform 是否需要进行transform
-         * @param shape.style.__rect 区域矩阵缓存，修改后清空，重新计算一次
-         */
-        function mark(shape) {
-            shape.__silent = !(shape.hoverable || shape.draggable
-                || shape.onmousemove || shape.onmouseover || shape.onmouseout
-                || shape.onmousedown || shape.onmouseup || shape.onclick
-                || shape.ondragenter || shape.ondragover || shape.ondragleave
-                || shape.ondrop);
-
-            shape.__needTransform = Math.abs(shape.rotation[0]) > 0.0001
-                || Math.abs(shape.position[0]) > 0.0001
-                || Math.abs(shape.position[1]) > 0.0001
-                || Math.abs(shape.scale[0] - 1) > 0.0001
-                || Math.abs(shape.scale[1] - 1) > 0.0001;
-
-            shape.style = shape.style || {};
-            shape.style.__rect = null;
-        }
-
         /**
          * 内容仓库 (M)
          * 
@@ -142,6 +116,8 @@ define(
         Storage.prototype.mod = function (shapeId, params, fast) {
             var shape = this._elements[shapeId];
             if (shape) {
+                shape.style.__rect = null;
+
                 this._changedZlevel[shape.zlevel] = true;    // 可能修改前后不在一层
                 if (params) {
                     if (fast) {
@@ -162,7 +138,7 @@ define(
                         );
                     }   
                 }
-                mark(shape);
+                
                 this._changedZlevel[shape.zlevel] = true;    // 可能修改前后不在一层
                 this._maxZlevel = Math.max(this._maxZlevel, shape.zlevel);
             }
@@ -245,7 +221,7 @@ define(
          * @param {Shape} shape 参数
          */
         Storage.prototype.add = function (shape) {
-            mark(shape);
+            shape.style.__rect = null;
             this._elements[shape.id] = shape;
             this._zElements[shape.zlevel] = this._zElements[shape.zlevel] || [];
             this._zElements[shape.zlevel].push(shape);
