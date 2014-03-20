@@ -7,7 +7,6 @@
  */
 define(
     {
-        loadingEffect : 'spin',         // 默认loading特效
         EVENT : {                       // 支持事件列表
             RESIZE : 'resize',          // 窗口大小变化
             CLICK : 'click',            // 鼠标按钮被（手指）按下，事件对象是：目标图形元素或空
