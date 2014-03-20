@@ -12,6 +12,7 @@ define(
         var config = require('./config');
         var util = require('./tool/util');
         var log = require('./tool/log');
+        var BaseLoadingEffect = require('./loadingEffect/Base');
 
         // retina 屏幕优化
         var devicePixelRatio = window.devicePixelRatio || 1;
@@ -67,6 +68,7 @@ define(
             this._maxZlevel = storage.getMaxZlevel(); //最大zlevel，缓存记录
             // this._loadingTimer 
 
+            this._loadingEffect = new BaseLoadingEffect({});
             this.shapeToImage = this._createShapeToImageProcessor();
 
             // 创建各层canvas
@@ -190,6 +192,17 @@ define(
         };
 
         /**
+         * 设置loading特效
+         * 
+         * @param {Object} loadingEffect loading特效
+         * @return {Painter}
+         */
+        Painter.prototype.setLoadingEffect = function (loadingEffect) {
+            this._loadingEffect = loadingEffect;
+            return this;
+        };
+
+        /**
          * 清除hover层外所有内容
          */
         Painter.prototype.clear = function () {
@@ -251,32 +264,12 @@ define(
         /**
          * 显示loading
          * 
-         * @param {Object} loadingOption 选项，内容见下
-         * @param {color} -.backgroundColor 背景颜色
-         * @param {Object} -.textStyle 文字样式，同shape/text.style
-         * @param {number=} -.progress 进度参数，部分特效有用
-         * @param {Object=} -.effectOption 特效参数，部分特效有用
-         * @param {string | function} -.effect 特效依赖tool/loadingEffect，
-         *                                     可传入自定义特效function
+         * @param {Object=} loadingEffect loading效果对象
          */
-        Painter.prototype.showLoading = function (loadingOption) {
-            var effect = require('./tool/loadingEffect');
-            effect.stop(this._loadingTimer);
-
-            loadingOption = loadingOption || {};
-            loadingOption.effect = loadingOption.effect
-                                   || config.loadingEffect;
-            loadingOption.canvasSize = {
-                width : this._width,
-                height : this._height
-            };
-
-            var me = this;
-            this._loadingTimer = effect.start(
-                loadingOption,
-                this.storage.addHover,
-                function () { me.refreshHover(); }
-            );
+        Painter.prototype.showLoading = function (loadingEffect) {
+            loadingEffect && this.setLoadingEffect(loadingEffect);
+            this.loadingEffect.stop();
+            this.loadingEffect.start(this);
             this.loading = true;
 
             return this;
@@ -284,11 +277,9 @@ define(
 
         /**
          * loading结束
-         * 乱来的，待重写
          */
         Painter.prototype.hideLoading = function () {
-            var effect = require('./tool/loadingEffect');
-            effect.stop(this._loadingTimer);
+            this._loadingEffect.stop();
 
             this.clearHover();
             this.loading = false;
@@ -673,15 +664,15 @@ define(
                 }
             });
 
-            if (typeof shapeTransform.position !== 'undefined') {
+            if (shapeTransform.position != null) {
                 imgShape.position = shape.position = shapeTransform.position;
             }
 
-            if (typeof shapeTransform.rotation !== 'undefined') {
+            if (shapeTransform.rotation != null) {
                 imgShape.rotation = shape.rotation = shapeTransform.rotation;
             }
 
-            if (typeof shapeTransform.scale !== 'undefined') {
+            if (shapeTransform.scale != null) {
                 imgShape.scale = shape.scale = shapeTransform.scale;
             }
 

@@ -115,6 +115,7 @@ define(
         Storage.prototype.mod = function (shapeId, params) {
             var shape = this._elements[shapeId];
             if (shape) {
+                shape.updateNeedTransform();
                 shape.style.__rect = null;
 
                 this._changedZlevel[shape.zlevel] = true;    // 可能修改前后不在一层
@@ -204,6 +205,7 @@ define(
          * @param {Shape} shape 参数
          */
         Storage.prototype.add = function (shape) {
+            shape.updateNeedTransform();
             shape.style.__rect = null;
             this._elements[shape.id] = shape;
             this._zElements[shape.zlevel] = this._zElements[shape.zlevel] || [];

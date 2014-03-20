@@ -334,24 +334,10 @@ define(
         /**
          * loading显示
          * 
-         * @param  {Object} loadingOption 参数
-         * {
-         *     effect,
-         *     //loading话术
-         *     text:'',
-         *     // 水平安放位置，默认为 'center'，可指定x坐标
-         *     x:'center' || 'left' || 'right' || {number},
-         *     // 垂直安放位置，默认为'top'，可指定y坐标
-         *     y:'top' || 'bottom' || {number},
-         *
-         *     textStyle:{
-         *         textFont: 'normal 20px Arial' || {textFont}, //文本字体
-         *         color: {color}
-         *     }
-         * }
+         * @param {Object=} loadingEffect loading效果对象
          */
-        ZRender.prototype.showLoading = function (loadingOption) {
-            this.painter.showLoading(loadingOption);
+        ZRender.prototype.showLoading = function (loadingEffect) {
+            this.painter.showLoading(loadingEffect);
             return this;
         };
 
