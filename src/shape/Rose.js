@@ -154,8 +154,8 @@ define(
                 };
             }
         };
-
-        Base.derive(Rose);
+        
+        require('../tool/util').inherits(Rose, Base);
         return Rose;
     }
 );

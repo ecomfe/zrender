@@ -549,6 +549,6 @@ define(function (require) {
         }
     };
 
-    Base.derive(Path);
+    require('../tool/util').inherits(Path, Base);
     return Path;
 });

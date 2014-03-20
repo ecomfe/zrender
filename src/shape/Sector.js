@@ -217,7 +217,8 @@ define(
             }
         };
 
-        Base.derive(Sector);
+
+        require('../tool/util').inherits(Sector, Base);
         return Sector;
     }
 );

@@ -130,7 +130,7 @@ define(
             }
         };
 
-        Base.derive(Heart);
+        require('../tool/util').inherits(Heart, Base);
         return Heart;
     }
 );

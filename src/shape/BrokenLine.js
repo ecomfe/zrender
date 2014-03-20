@@ -154,7 +154,7 @@ define(
             }
         };
 
-        Base.derive(BrokenLine);
+        require('../tool/util').inherits(BrokenLine, Base);
         return BrokenLine;
     }
 );

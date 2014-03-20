@@ -161,7 +161,7 @@ define(
             }
         };
 
-        Base.derive(Star);
+        require('../tool/util').inherits(Star, Base);
         return Star;
     }
 );

@@ -117,7 +117,7 @@ define(
             }
         };
 
-        Base.derive(Ring);
+        require('../tool/util').inherits(Ring, Base);
         return Ring;
     }
 );

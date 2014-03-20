@@ -146,7 +146,7 @@ define(
             }
         };
 
-        Base.derive(BezierCurve);
+        require('../tool/util').inherits(BezierCurve, Base);
         return BezierCurve;
     }
 );

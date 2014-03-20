@@ -129,7 +129,7 @@ define(
             }
         };
 
-        Base.derive(Line);
+        require('../tool/util').inherits(Line, Base);
         return Line;
     }
 );

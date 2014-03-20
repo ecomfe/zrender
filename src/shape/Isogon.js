@@ -146,7 +146,7 @@ define(
             }
         };
 
-        Base.derive(Isogon);
+        require('../tool/util').inherits(Isogon, Base);
         return Isogon;
     }
 );

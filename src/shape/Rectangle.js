@@ -188,7 +188,7 @@ define(
             }
         };
 
-        Base.derive(Rectangle);
+        require('../tool/util').inherits(Rectangle, Base);
         return Rectangle;
     }
 );

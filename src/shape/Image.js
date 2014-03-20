@@ -210,7 +210,7 @@ define(
             }
         };
 
-        Base.derive(ZImage);
+        require('../tool/util').inherits(ZImage, Base);
         return ZImage;
     }
 );

@@ -129,7 +129,7 @@ define(
             }
         };
 
-        Base.derive(Droplet);
+        require('../tool/util').inherits(Droplet, Base);
         return Droplet;
     }
 );

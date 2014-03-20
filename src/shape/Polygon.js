@@ -283,7 +283,7 @@ define(
             }
         };
 
-        Base.derive(Polygon);
+        require('../tool/util').inherits(Polygon, Base);
         return Polygon;
     }
 );

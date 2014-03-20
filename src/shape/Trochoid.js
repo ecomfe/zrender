@@ -173,7 +173,7 @@ define(
             }
         };
 
-        Base.derive(Trochoid);
+        require('../tool/util').inherits(Trochoid, Base);
         return Trochoid;
     }
 );

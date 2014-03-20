@@ -33,11 +33,11 @@ define(
                         result[i] = clone(source[i]);
                     }
                 }
-                else if (!BUILTIN_OBJECT[Object.prototype.toString.call(source)] {
+                else if (!BUILTIN_OBJECT[Object.prototype.toString.call(source)]) {
                     result = {};
                     for (var key in source) {
                         if (source.hasOwnProperty(key)) {
-                            result[i] = clone(source[key]);
+                            result[key] = clone(source[key]);
                         }
                     }
                 }
@@ -59,7 +59,8 @@ define(
                         source[key],
                         overwrite
                     );
-                } else if (overwrite || !(key in target)) {
+                }
+                else if (overwrite || !(key in target)) {
                     // 否则只处理overwrite为true，或者在目标对象中没有此属性的情况
                     target[key] = source[key];
                 }
@@ -191,7 +192,26 @@ define(
             return -1;
         }
 
+        /**
+         * 构造类继承关系
+         * 
+         * @param {Function} clazz 源类
+         * @param {Function} baseClazz 基类
+         */
+        function inherits(clazz, baseClazz) {
+            var clazzPrototype = clazz.prototype;
+            function F() {}
+            F.prototype = baseClazz.prototype;
+            clazz.prototype = new F();
+
+            for (var prop in clazzPrototype) {
+                clazz.prototype[prop] = clazzPrototype[prop];
+            }
+            clazz.constructor = clazz;
+        }
+
         return {
+            inherits: inherits,
             clone : clone,
             merge : merge,
             getContext : getContext,

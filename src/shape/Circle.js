@@ -86,7 +86,7 @@ define(
              * @param {Context2D} ctx Canvas 2D上下文
              * @param {Object} style 样式
              */
-            buildPath : function(ctx, style) {
+            buildPath : function (ctx, style) {
                 ctx.arc(style.x, style.y, style.r, 0, Math.PI * 2, true);
                 return;
             },
@@ -95,7 +95,7 @@ define(
              * 返回矩形区域，用于局部刷新和文字定位
              * @param {Object} style
              */
-            getRect : function(style) {
+            getRect : function (style) {
                 var lineWidth;
                 if (style.brushType == 'stroke' || style.brushType == 'fill') {
                     lineWidth = style.lineWidth || 1;
@@ -112,7 +112,7 @@ define(
             }
         };
 
-        Base.derive(Circle);
+        require('../tool/util').inherits(Circle, Base);
         return Circle;
     }
 );

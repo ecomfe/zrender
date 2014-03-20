@@ -215,7 +215,7 @@ define(
             }
         };
 
-        Base.derive(Text);
+        require('../tool/util').inherits(Text, Base);
         return Text;
     }
 );

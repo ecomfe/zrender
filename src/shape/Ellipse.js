@@ -127,7 +127,7 @@ define(
             }
         };
 
-        Base.derive(Ellipse);
+        require('../tool/util').inherits(Ellipse, Base);
         return Ellipse;
     }
 );

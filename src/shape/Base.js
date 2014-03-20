@@ -413,24 +413,6 @@ define(
             ctx.transform.apply(ctx, _transform);
         };
 
-        /**
-         * 派生实现通用功能
-         * 
-         * @static
-         * @param {Object} clazz 图形子类
-         */
-        Base.derive = function (clazz) {
-            var clazzPrototype = clazz.prototype;
-            function F() {}
-            F.prototype = Base.prototype;
-            clazz.prototype = new F();
-
-            for (var prop in clazzPrototype) {
-                clazz.prototype[prop] = clazzPrototype[prop];
-            }
-            clazz.constructor = clazz;
-        };
-
         return Base;
     }
 );
