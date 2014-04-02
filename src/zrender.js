@@ -40,7 +40,7 @@ define(
         var _idx = 0;           //ZRender instance's id
         var _instances = {};    //ZRender实例map索引
 
-        self.version = '1.1.0';
+        self.version = '1.1.1';
 
         /**
          * zrender初始化
@@ -947,7 +947,7 @@ define(
                 var stl = root.currentStyle
                           || document.defaultView.getComputedStyle(root);
 
-                return root.clientWidth
+                return (root.clientWidth || (stl.style.width.replace(/\D/g,'')))
                        - stl.paddingLeft.replace(/\D/g,'')   // 请原谅我这比较粗暴
                        - stl.paddingRight.replace(/\D/g,'');
             }
@@ -956,7 +956,7 @@ define(
                 var stl = root.currentStyle
                           || document.defaultView.getComputedStyle(root);
 
-                return root.clientHeight
+                return (root.clientHeight || (stl.style.height.replace(/\D/g,'')))
                        - stl.paddingTop.replace(/\D/g,'')    // 请原谅我这比较粗暴
                        - stl.paddingBottom.replace(/\D/g,'');
             }
