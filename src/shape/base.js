@@ -353,7 +353,7 @@ define(
                 distance += vec2.distance(points[i-1], points[i]);
             }
             var segs = distance / 5;
-
+            segs = segs < len ? len : segs;
             for (var i = 0; i < segs; i++) {
                 var pos;
                 if (loop) {
