@@ -2367,7 +2367,7 @@ define(
             var _y1 = area.yStart;
             var _x2 = area.xEnd;
             var _y2 = area.yEnd;
-            var _l = Math.max(area.lineWidth, 3);
+            var _l = Math.max(area.lineWidth, 5);
             var _a = 0;
             var _b = _x1;
 
@@ -2393,7 +2393,7 @@ define(
                     yStart : pointList[i][1],
                     xEnd : pointList[i + 1][0],
                     yEnd : pointList[i + 1][1],
-                    lineWidth : area.lineWidth
+                    lineWidth : Math.max(area.lineWidth, 10)
                 };
                 if (!_isInsideRectangle(
                         {
@@ -4141,7 +4141,7 @@ define(
                 distance += vec2.distance(points[i-1], points[i]);
             }
             var segs = distance / 5;
-
+            segs = segs < len ? len : segs;
             for (var i = 0; i < segs; i++) {
                 var pos;
                 if (loop) {
@@ -9572,7 +9572,7 @@ define(
         var _idx = 0;           //ZRender instance's id
         var _instances = {};    //ZRender实例map索引
 
-        self.version = '1.1.0';
+        self.version = '1.1.1';
 
         /**
          * zrender初始化
@@ -9733,7 +9733,13 @@ define(
             var animation = new Animation({
                 stage : {
                     update : function(){
-                        self.update(animatingShapes);
+                        var shapes = animatingShapes;
+                        for (var i = 0, l = shapes.length; i < l; i++) {
+                            storage.mod(shapes[i].id);
+                        }
+                        if (shapes.length > 0) {
+                            painter.refresh();
+                        }
                     }
                 }
             });
@@ -9878,14 +9884,14 @@ define(
                         return;
                     }
 
-                    if( typeof(shape.__aniCount) === 'undefined'){
+                    if (typeof(shape.__aniCount) === 'undefined') {
                         // 正在进行的动画记数
                         shape.__aniCount = 0;
                     }
-                    if( shape.__aniCount === 0 ){
+                    if (shape.__aniCount === 0) {
                         animatingShapes.push(shape);
                     }
-                    shape.__aniCount ++;
+                    shape.__aniCount++;
 
                     return animation.animate(target, {loop : loop})
                         .done(function() {
@@ -9966,8 +9972,8 @@ define(
             /**
              * 图像导出 
              */
-            self.toDataURL = function(type, args) {
-                return painter.toDataURL(type, args);
+            self.toDataURL = function(type, backgroundColor, args) {
+                return painter.toDataURL(type, backgroundColor, args);
             };
 
             /**
@@ -9997,6 +10003,17 @@ define(
                 handler.un(eventName, eventHandler);
                 return self;
             };
+            
+            /**
+             * 事件触发
+             * @param {string} event 事件名称，resize，hover，drag，etc~
+             * @param {event=} event event dom事件对象
+             */
+            self.trigger = function(eventName, event) {
+                handler.trigger(eventName, event);
+                return self;
+            };
+            
 
             /**
              * 清除当前ZRender下所有类图的数据和显示，clear后MVC和已绑定事件均还存在在，ZRender可用
@@ -10209,22 +10226,24 @@ define(
                 var e = _elements[shapeId];
                 if (e) {
                     _changedZlevel[e.zlevel] = true;    // 可能修改前后不在一层
-                    if (fast) {
-                        util.mergeFast(
-                            e,
-                            params,
-                            true,
-                            true
-                        );
-                    } else {
-                        util.merge(
-                            e,
-                            params,
-                            {
-                                'overwrite': true,
-                                'recursive': true
-                            }
-                        );
+                    if (params) {
+                        if (fast) {
+                            util.mergeFast(
+                                e,
+                                params,
+                                true,
+                                true
+                            );
+                        } else {
+                            util.merge(
+                                e,
+                                params,
+                                {
+                                    'overwrite': true,
+                                    'recursive': true
+                                }
+                            );
+                        }   
                     }
                     _mark(e);
                     _changedZlevel[e.zlevel] = true;    // 可能修改前后不在一层
@@ -10432,7 +10451,9 @@ define(
 
             var _domList = {};              //canvas dom元素
             var _ctxList = {};              //canvas 2D context对象，与domList对应
-
+            var _domListBack = {};
+            var _ctxListBack = {};
+            
             // 每个zLevel 的配置
             // @config clearColor
             var _zLevelConfig = {};
@@ -10458,7 +10479,7 @@ define(
                 var stl = root.currentStyle
                           || document.defaultView.getComputedStyle(root);
 
-                return root.clientWidth
+                return (root.clientWidth || (stl.style.width.replace(/\D/g,'')))
                        - stl.paddingLeft.replace(/\D/g,'')   // 请原谅我这比较粗暴
                        - stl.paddingRight.replace(/\D/g,'');
             }
@@ -10467,7 +10488,7 @@ define(
                 var stl = root.currentStyle
                           || document.defaultView.getComputedStyle(root);
 
-                return root.clientHeight
+                return (root.clientHeight || (stl.style.height.replace(/\D/g,'')))
                        - stl.paddingTop.replace(/\D/g,'')    // 请原谅我这比较粗暴
                        - stl.paddingBottom.replace(/\D/g,'');
             }
@@ -10651,6 +10672,9 @@ define(
                 }
                 //检查_maxZlevel是否变大，如是则同步创建需要的Canvas
                 _syncMaxZlevelCanvase();
+                
+                //清空已有内容，render默认为首次渲染
+                clear();
 
                 //升序遍历，shape上的zlevel指定绘画图层的z轴层叠
                 storage.iterShape(
@@ -10814,7 +10838,8 @@ define(
                         _zLevelConfig[zLevel] = {};
                     }
                     util.merge(_zLevelConfig[zLevel], config, {
-                        recursive : true
+                        recursive : true,
+                        overwrite : true
                     });
                 }
             }
@@ -10979,7 +11004,7 @@ define(
                 return _domList['hover'];
             }
 
-            function toDataURL(type, args) {
+            function toDataURL(type, backgroundColor, args) {
                 if (G_vmlCanvasManager) {
                     return null;
                 }
@@ -10989,13 +11014,14 @@ define(
                 _devicePixelRatio != 1 
                 && ctx.scale(_devicePixelRatio, _devicePixelRatio);
                 
-                ctx.fillStyle = '#fff';
+                ctx.fillStyle = backgroundColor || '#fff';
                 ctx.rect(
                     0, 0, 
                     _width * _devicePixelRatio,
                     _height * _devicePixelRatio
                 );
                 ctx.fill();
+                
                 //升序遍历，shape上的zlevel指定绘画图层的z轴层叠
                 storage.iterShape(
                     function (e) {
@@ -11696,10 +11722,10 @@ define(
             }
 
             /**
-             * 比较不可控，先不开放了~
-             * 触发原生dom事件，用于自定义元素在顶层截获事件后触发zrender行为
+             * 事件触发
              * @param {string} event 事件名称，resize，hover，drag，etc~
              * @param {event=} event event dom事件对象
+             */
             function trigger(eventName, event) {
                 switch (eventName) {
                     case config.EVENT.RESIZE :
@@ -11720,9 +11746,11 @@ define(
                     case config.EVENT.MOUSEUP :
                         _mouseUpHandleru(event);
                         break;
+                    case config.EVENT.MOUSEOUT :
+                        _mouseOutHandler(event);
+                        break;
                 }
             }
-             */
 
             /**
              * 释放
@@ -11794,7 +11822,7 @@ define(
 
             self.on = on;
             self.un = un;
-            // self.trigger = trigger;
+            self.trigger = trigger;
             self.dispose = dispose;
 
             _init();
