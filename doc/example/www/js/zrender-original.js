@@ -9572,7 +9572,7 @@ define(
         var _idx = 0;           //ZRender instance's id
         var _instances = {};    //ZRender实例map索引
 
-        self.version = '1.1.1';
+        self.version = '1.1.2';
 
         /**
          * zrender初始化
@@ -10479,18 +10479,18 @@ define(
                 var stl = root.currentStyle
                           || document.defaultView.getComputedStyle(root);
 
-                return (root.clientWidth || (stl.style.width.replace(/\D/g,'')))
-                       - stl.paddingLeft.replace(/\D/g,'')   // 请原谅我这比较粗暴
-                       - stl.paddingRight.replace(/\D/g,'');
+                return ((root.clientWidth || parseInt(stl.width, 10))
+                       - parseInt(stl.paddingLeft, 10)   // 请原谅我这比较粗暴
+                       - parseInt(stl.paddingRight, 10)).toFixed(0) - 0;
             }
 
             function _getHeight(){
                 var stl = root.currentStyle
                           || document.defaultView.getComputedStyle(root);
 
-                return (root.clientHeight || (stl.style.height.replace(/\D/g,'')))
-                       - stl.paddingTop.replace(/\D/g,'')    // 请原谅我这比较粗暴
-                       - stl.paddingBottom.replace(/\D/g,'');
+                return ((root.clientHeight || parseInt(stl.height, 10))
+                       - parseInt(stl.paddingTop, 10)    // 请原谅我这比较粗暴
+                       - parseInt(stl.paddingBottom, 10)).toFixed(0) - 0;
             }
 
             function _init() {
