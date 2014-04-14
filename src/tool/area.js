@@ -40,7 +40,7 @@ define(
                 return _mathReturn;
             }
 
-            if (zoneType != 'beziercurve'
+            if (zoneType != 'bezier-curve'
                 && shape.buildPath
                 && _ctx.isPointInPath
             ) {
@@ -87,7 +87,7 @@ define(
                 case 'line':
                     return _isInsideLine(area, x, y);
                 //折线----------------------2
-                case 'brokenLine':
+                case 'broken-line':
                     return _isInsideBrokenLine(area, x, y);
                 //文本----------------------3
                 case 'text':
