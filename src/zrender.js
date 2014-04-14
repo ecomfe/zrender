@@ -947,18 +947,18 @@ define(
                 var stl = root.currentStyle
                           || document.defaultView.getComputedStyle(root);
 
-                return (root.clientWidth || (stl.style.width.replace(/\D/g,'')))
-                       - stl.paddingLeft.replace(/\D/g,'')   // 请原谅我这比较粗暴
-                       - stl.paddingRight.replace(/\D/g,'');
+                return ((root.clientWidth || (stl.width.replace(/[a-zA-Z]/g,'')))
+                       - stl.paddingLeft.replace(/[a-zA-Z]/g,'')   // 请原谅我这比较粗暴
+                       - stl.paddingRight.replace(/[a-zA-Z]/g,'')).toFixed(0) - 0;
             }
 
             function _getHeight(){
                 var stl = root.currentStyle
                           || document.defaultView.getComputedStyle(root);
 
-                return (root.clientHeight || (stl.style.height.replace(/\D/g,'')))
-                       - stl.paddingTop.replace(/\D/g,'')    // 请原谅我这比较粗暴
-                       - stl.paddingBottom.replace(/\D/g,'');
+                return ((root.clientHeight || (stl.height.replace(/[a-zA-Z]/g,'')))
+                       - stl.paddingTop.replace(/[a-zA-Z]/g,'')    // 请原谅我这比较粗暴
+                       - stl.paddingBottom.replace(/[a-zA-Z]/g,'')).toFixed(0) - 0;
             }
 
             function _init() {
