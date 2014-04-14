@@ -507,10 +507,9 @@ define(
             var stl = root.currentStyle
                       || document.defaultView.getComputedStyle(root);
 
-            // TODO: 这里有bug，如果值是小数，会出错！用parseInt可以清除尾部的px
-            return root.clientWidth
-                   - stl.paddingLeft.replace(/\D/g,'')   // 请原谅我这比较粗暴
-                   - stl.paddingRight.replace(/\D/g,'');
+            return ((root.clientWidth || parseInt(stl.width, 10))
+                    - parseInt(stl.paddingLeft, 10) // 请原谅我这比较粗暴
+                    - parseInt(stl.paddingRight, 10)).toFixed(0) - 0;
         };
 
         Painter.prototype._getHeight = function () {
@@ -518,9 +517,9 @@ define(
             var stl = root.currentStyle
                       || document.defaultView.getComputedStyle(root);
 
-            return root.clientHeight
-                   - stl.paddingTop.replace(/\D/g,'')    // 请原谅我这比较粗暴
-                   - stl.paddingBottom.replace(/\D/g,'');
+            return ((root.clientHeight || parseInt(stl.height, 10))
+                    - parseInt(stl.paddingTop, 10) // 请原谅我这比较粗暴
+                    - parseInt(stl.paddingBottom, 10)).toFixed(0) - 0;
         };
 
         /**

@@ -32,8 +32,9 @@ define(
             for (var i = 1; i < len; i++) {
                 distance += vector.distance(points[i-1], points[i]);
             }
+            
             var segs = distance / 5;
-
+            segs = segs < len ? len : segs;
             for (var i = 0; i < segs; i++) {
                 var pos = i / (segs-1) * (isLoop ? len : len - 1);
                 var idx = Math.floor(pos);
