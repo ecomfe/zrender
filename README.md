@@ -35,15 +35,17 @@ MVC核心封装实现图形仓库、视图渲染和交互控制：
 
 哦，对了，差点忘记告诉你，只要在你定义图形数据时设置draggable属性为true，图形拖拽就已经可用了！
 
-    zr.addShape({
-        shape : 'circle',
-        style : {
-            x : 100, 
-            y : 100, 
-            r : 50, 
-            color : 'rgba(220, 20, 60, 0.8)'
-        }
-    });
+    var CircleShape = require('zrender/shape/Circle');
+    zr.addShape(
+        new CircleShape({
+            style : {
+                x : 100,
+                y : 100,
+                r : 50,
+                color : 'rgba(220, 20, 60, 0.8)'
+            }
+        })
+    );
     zr.render();
     
 ### 完整的事件封装
@@ -51,12 +53,16 @@ MVC核心封装实现图形仓库、视图渲染和交互控制：
 
 你不仅可以响应zrender全局事件，你甚至可以为在特定shape上添加特定事件，后续发生的一切都会按你想的那样去运行~
 
-    zr.addShape({
-    shape : 'circle',
-    style : {...},
-        // 图形元素上绑定事件
-        onmouseover : function(params) {concole.log('catch you!')}
-    });
+    var CircleShape = require('zrender/shape/Circle');
+    zr.addShape(
+        new CircleShape({
+            style : {...},
+            // 图形元素上绑定事件
+            onmouseover : function(params) {
+                concole.log('catch you!');
+            }
+        })
+    );
     
     // 全局事件
     zr.on('click', function(params) {alert('Hello, zrender!')});
@@ -79,48 +85,35 @@ MVC核心封装实现图形仓库、视图渲染和交互控制：
 ### 丰富的图形选项
 当前内置多种图形元素（圆形、椭圆、圆环、扇形、矩形、多边形、直线、曲线、心形、水滴、路径、文字、图片。Will be more..），统一且丰富的图形属性充分满足你的个性化需求！
 
-    var myShape = {
-        shape : 'circle',   // sector | ring | rectangle | ...
+    var CircleShape = require('zrender/shape/Circle');
+    var myShape = new CircleShape({
         zlevel : 1,
         style : {
-            ... // color | strokeColor | text | textFont | ... 
+            ... // color | strokeColor | text | textFont | ...
         },
         draggable : true
-    };
+    });
 
 ### 强大的动画支持
 提供promise式的动画接口和常用缓动函数，轻松实现各种动画需求~
     
-    var circle = {
-        shape : 'circle',
-        id : zr.newShapeId(),
-        style : {
-            x : 0,
-            y : 0,
-            r : 50
-        }
-    };
-    zr.addShape(circle);
-    zr.animate(circle.id)
-        .when(1000, {
-            position : [100, 100]
-        })
-        .when(2000, {
-            rotation : [Math.PI*2, 0, 0]
-        })
-        .start();
+    zr.addShape(newShape);
+    zr.render();
+    zr.animate(newShape.id)
+      .when(1000, { position : [300, 200] })
+      .when(2000, { position : [30, 400] })
+      .start('BounceOut');
     
 ### 易于扩展
 分而治之的图形定义策略允许你扩展自己独有的图形元素，你既可以完整实现三个接口方法（brush、drift、isCover），
 也可以通过base派生后仅实现你所关心的图形细节。
 
     function MyShape() { ... }
-
-    var shape = require('zrender/shape');
-    shape.define('myShape', new MyShape());     // define your shape
     
-    zr.addShape({                               // and use it!
-        shape : 'myShape',
-        ...
-    });
+    zr.addShape(
+        new MyShape({           // and use it!
+            style : {...},
+            ...
+        })
+    );
     
