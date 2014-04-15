@@ -267,9 +267,9 @@ define(
          * @param {Object=} loadingEffect loading效果对象
          */
         Painter.prototype.showLoading = function (loadingEffect) {
+            this._loadingEffect && this._loadingEffect.stop();
             loadingEffect && this.setLoadingEffect(loadingEffect);
-            this.loadingEffect.stop();
-            this.loadingEffect.start(this);
+            this._loadingEffect.start(this);
             this.loading = true;
 
             return this;
