@@ -401,41 +401,41 @@ define(
             var root = this.root;
 
             if (window.removeEventListener) {
-                window.removeEventListener('resize', _resizeHandler);
+                window.removeEventListener('resize', this._resizeHandler);
 
                 if (env.os.tablet || env.os.phone) {
                     // mobile支持
-                    root.removeEventListener('touchstart', _touchstartHandler);
-                    root.removeEventListener('touchmove', _touchmoveHandler);
-                    root.removeEventListener('touchend', _touchendHandler);
+                    root.removeEventListener('touchstart', this._touchstartHandler);
+                    root.removeEventListener('touchmove', this._touchmoveHandler);
+                    root.removeEventListener('touchend', this._touchendHandler);
                 }
                 else {
                     // mobile的click自己模拟
-                    root.removeEventListener('click', _clickHandler);
-                    root.removeEventListener('mousewheel', _mousewheelHandler);
-                    root.removeEventListener('mousemove', _mousemoveHandler);
-                    root.removeEventListener('mousedown', _mousedownHandler);
-                    root.removeEventListener('mouseup', _mouseupHandler);
+                    root.removeEventListener('click', this._clickHandler);
+                    root.removeEventListener('mousewheel', this._mousewheelHandler);
+                    root.removeEventListener('mousemove', this._mousemoveHandler);
+                    root.removeEventListener('mousedown', this._mousedownHandler);
+                    root.removeEventListener('mouseup', this._mouseupHandler);
                 }
-                root.removeEventListener('DOMMouseScroll', _mousewheelHandler);
-                root.removeEventListener('mouseout', _mouseoutHandler);
+                root.removeEventListener('DOMMouseScroll', this._mousewheelHandler);
+                root.removeEventListener('mouseout', this._mouseoutHandler);
             }
             else {
-                window.detachEvent('onresize', _resizeHandler);
+                window.detachEvent('onresize', this._resizeHandler);
 
-                root.detachEvent('onclick', _clickHandler);
-                root.detachEvent('onmousewheel', _mousewheelHandler);
-                root.detachEvent('onmousemove', _mousemoveHandler);
-                root.detachEvent('onmouseout', _mouseoutHandler);
-                root.detachEvent('onmousedown', _mousedownHandler);
-                root.detachEvent('onmouseup', _mouseupHandler);
+                root.detachEvent('onclick', this._clickHandler);
+                root.detachEvent('onmousewheel', this._mousewheelHandler);
+                root.detachEvent('onmousemove', this._mousemoveHandler);
+                root.detachEvent('onmouseout', this._mouseoutHandler);
+                root.detachEvent('onmousedown', this._mousedownHandler);
+                root.detachEvent('onmouseup', this._mouseupHandler);
             }
 
             this.root =
             this._domHover =
             this.storage =
             this.painter = null;
-
+            
             this.un();
         };
 
