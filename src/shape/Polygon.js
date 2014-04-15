@@ -246,6 +246,10 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
                 var minX =  Number.MAX_VALUE;
                 var maxX =  Number.MIN_VALUE;
                 var minY = Number.MAX_VALUE;
@@ -274,12 +278,14 @@ define(
                 else {
                     lineWidth = 0;
                 }
-                return {
+                
+                style.__rect = {
                     x : Math.round(minX - lineWidth / 2),
                     y : Math.round(minY - lineWidth / 2),
                     width : maxX - minX + lineWidth,
                     height : maxY - minY + lineWidth
                 };
+                return style.__rect;
             }
         };
 

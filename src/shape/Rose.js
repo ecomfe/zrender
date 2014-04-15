@@ -127,6 +127,10 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
                 var _R = style.r;
                 var _offsetX = style.x;
                 var _offsetY = style.y;
@@ -146,12 +150,13 @@ define(
                 else {
                     lineWidth = 0;
                 }
-                return {
+                style.__rect = {
                     x : - _max - lineWidth + _offsetX,
                     y : - _max - lineWidth + _offsetY,
                     width : 2 * _max + 3 * lineWidth,
                     height : 2 * _max + 3 * lineWidth
                 };
+                return style.__rect;
             }
         };
         

@@ -482,6 +482,10 @@ define(function (require) {
          * @param {Object} style 样式
          */
         getRect : function(style) {
+            if (style.__rect) {
+                return style.__rect;
+            }
+            
             var lineWidth;
             if (style.brushType == 'stroke' || style.brushType == 'fill') {
                 lineWidth = style.lineWidth || 1;
@@ -545,6 +549,7 @@ define(function (require) {
                     height : maxY - minY + lineWidth
                 };
             }
+            style.__rect = rect;
             return rect;
         }
     };

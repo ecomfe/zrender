@@ -120,6 +120,10 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
                 var _minX = Math.min(style.xStart, style.xEnd, style.cpX1);
                 var _minY = Math.min(style.yStart, style.yEnd, style.cpY1);
                 var _maxX = Math.max(style.xStart, style.xEnd, style.cpX1);
@@ -137,12 +141,14 @@ define(
                 }
 
                 var lineWidth = style.lineWidth || 1;
-                return {
+                style.__rect = {
                     x : _minX - lineWidth,
                     y : _minY - lineWidth,
                     width : _maxX - _minX + lineWidth,
                     height : _maxY - _minY + lineWidth
                 };
+                
+                return style.__rect;
             }
         };
 

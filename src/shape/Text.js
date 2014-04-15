@@ -183,6 +183,10 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
                 var width = area.getTextWidth(style.text, style.textFont);
                 var height = area.getTextHeight(style.text, style.textFont);
                 
@@ -206,12 +210,14 @@ define(
                     textY = style.y - height / 2;
                 }
 
-                return {
+                style.__rect = {
                     x : textX,
                     y : textY,
                     width : width,
                     height : height
                 };
+                
+                return style.__rect;
             }
         };
 

@@ -117,8 +117,12 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
                 var lineWidth = style.lineWidth || 1;
-                return {
+                style.__rect = {
                     x : Math.min(style.xStart, style.xEnd) - lineWidth,
                     y : Math.min(style.yStart, style.yEnd) - lineWidth,
                     width : Math.abs(style.xStart - style.xEnd)
@@ -126,6 +130,8 @@ define(
                     height : Math.abs(style.yStart - style.yEnd)
                              + lineWidth
                 };
+                
+                return style.__rect;
             }
         };
 

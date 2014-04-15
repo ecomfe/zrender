@@ -145,6 +145,10 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
                 var x = style.x;   // 圆心x
                 var y = style.y;   // 圆心y
                 var r0 = typeof style.r0 == 'undefined'     // 形内半径[0,r)
@@ -155,7 +159,8 @@ define(
                 
                 if (Math.abs(endAngle - startAngle) >= 360) {
                     // 大于360度的扇形简化为圆环bbox
-                    return require('./Ring').prototype.getRect(style);;
+                    style.__rect = require('./Ring').prototype.getRect(style);
+                    return style.__rect;
                 }
                 
                 startAngle = (720 + startAngle) % 360;
@@ -209,11 +214,13 @@ define(
                     y - math.sin(endAngle) * r0
                 ]);
 
-                return require('./Polygon').prototype.getRect({
+                style.__rect = require('./Polygon').prototype.getRect({
                     brushType : style.brushType,
                     lineWidth : style.lineWidth,
                     pointList : pointList
                 });
+                
+                return style.__rect;
             }
         };
 

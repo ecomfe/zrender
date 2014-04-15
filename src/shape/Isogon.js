@@ -130,6 +130,10 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
                 var lineWidth;
                 if (style.brushType == 'stroke' || style.brushType == 'fill') {
                     lineWidth = style.lineWidth || 1;
@@ -137,12 +141,14 @@ define(
                 else {
                     lineWidth = 0;
                 }
-                return {
+                style.__rect = {
                     x : Math.round(style.x - style.r - lineWidth / 2),
                     y : Math.round(style.y - style.r - lineWidth / 2),
                     width : style.r * 2 + lineWidth,
                     height : style.r * 2 + lineWidth
                 };
+                
+                return style.__rect;
             }
         };
 
