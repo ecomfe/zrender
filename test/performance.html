@@ -25,6 +25,7 @@
             <option value='isogon'>isogon</option>
         </select>
         <button id='run'>start</button>
+        <button id='auto-run'>auto start</button>
     </div>
     <div id="res">loading</div>
     <script type="text/javascript">
@@ -78,6 +79,7 @@
             isRunning = false;
             document.getElementById('res').innerHTML = 'ready!<br/>';
             document.getElementById('run').onclick = start;
+            document.getElementById('auto-run').onclick = autoStart;
 
             var ShapeClasses = {
                 circle    :CircleShape,
@@ -121,6 +123,31 @@
                 total = 0;
                 shapeType = document.getElementById('shape').value;
                 setTimeout(run,50);
+            }
+            
+            var sList = [
+                'circle','sector','ring','ellipse','rectangle',
+                'text','heart','droplet','line','image','star','isogon'
+            ];
+            var autoIdx = 0;
+            var autoRun = false;
+            function autoStart() {
+                if (isRunning) {
+                    return;
+                }
+                autoIdx = 0;
+                autoRun = true;
+                autoCheck();
+            }
+            function autoCheck() {
+                if (autoRun && autoIdx < sList.length) {
+                    document.getElementById('shape').value = sList[autoIdx++];
+                    start();
+                }
+                else {
+                    autoRun = false;
+                    autoIdx = 0;
+                }
             }
 
             function run(){
@@ -171,6 +198,7 @@
                         '平均render时间:' + Math.round(total/result.length)
                         + 'ms : [' + result.join(',') + ']<br/>';
                         console.log(t1, t2, t3); t1 = 0; t2 = 0; t3 = 0;
+                    autoCheck();
                 }
             }
         }
