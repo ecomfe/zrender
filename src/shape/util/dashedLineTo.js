@@ -6,7 +6,7 @@
  */
 
 define(
-    function ( require ) {
+    function (/* require */) {
         /**
          * 虚线lineTo 
          */

@@ -126,11 +126,10 @@ define(
          *
          * @param {string} id 唯一标识
          * @param {HTMLElement} dom dom对象，不帮你做document.getElementById
-         * @param {Object=} params 个性化参数，如自定义shape集合，带进来就好
          *
          * @return {ZRender} ZRender实例
          */
-        function ZRender(id, dom, params) {
+        function ZRender(id, dom) {
             this.id = id;
             this.env = require('./tool/env');
 
@@ -196,7 +195,7 @@ define(
         ZRender.prototype.modLayer = function (zLevel, config) {
             this.painter.modLayer(zLevel, config);
             return this;
-        }
+        };
 
         /**
          * 添加额外高亮层显示，仅提供添加方法，每次刷新后高亮层图形均被清空
@@ -439,7 +438,7 @@ define(
             this.handler = null;
 
             //释放后告诉全局删除对自己的索引，没想到啥好方法
-            zrender.delInstance(id);
+            zrender.delInstance(this.id);
         };
 
         return zrender;

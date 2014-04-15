@@ -90,7 +90,7 @@ define(
             this.canvasHeight = painter._height;
 
             function addShapeHandle(param) {
-                painter.storage.addHover(param)
+                painter.storage.addHover(param);
             }
             function refreshHandle() {
                 painter.refreshHover();
@@ -98,7 +98,7 @@ define(
             this.loadingTimer = this._start(addShapeHandle, refreshHandle);
         };
 
-        Base.prototype._start = function (addShapeHandle, refreshHandle) {
+        Base.prototype._start = function (/*addShapeHandle, refreshHandle*/) {
             return setInterval(function(){}, 10000);
         };
 

@@ -540,7 +540,7 @@ define(
                     }
 
                     var canvasCtx = canvasElem.getContext('2d');
-                    this._ctxList[i] = canvasCtx
+                    this._ctxList[i] = canvasCtx;
                     if (devicePixelRatio != 1) { 
                         canvasCtx.scale(devicePixelRatio, devicePixelRatio);
                     }

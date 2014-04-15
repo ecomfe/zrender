@@ -16,7 +16,7 @@ define(
          * 内容仓库 (M)
          * 
          */
-        function Storage(shape) {
+        function Storage() {
             // 所有常规形状，id索引的map
             this._elements = {};
 
