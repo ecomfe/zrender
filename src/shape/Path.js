@@ -8,7 +8,7 @@
    {
        // 基础属性
        shape  : 'path',         // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
        zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
        invisible : {boolean},   // 默认为false，是否可见
 
