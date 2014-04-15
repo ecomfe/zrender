@@ -101,15 +101,15 @@ var width = zr.getWidth();
 var height = zr.getHeight() - 30;
 var shapList = [];
 var n = 13;
+var CircleShape = require('zrender/shape/Circle');
 for (var i = 0; i < n; i++) {
-    shapList.push({
-        shape : 'circle',
-        id : zr.newShapeId(),
+    shapList.push(new CircleShape({
+        id : require('zrender/tool/guid')(),
         style : {
             x : 10, y : height/n * i + 30, r : 10,
             color : _getRandomColor()
         }
-    })
+    }));
 }
 function _getRandomColor() {
     return 'rgba(' + Math.round(Math.random() * 256) + ',' + Math.round(Math.random() * 256) + ','  + Math.round(Math.random() * 256) + ', 0.8)'
@@ -244,14 +244,15 @@ var width = zr.getWidth();
 var height = zr.getHeight() - 30;
 var shapList = [];
 var n = 10;
+var CircleShape = require('zrender/shape/Circle');
 for (var i = 0; i < n; i++) {
-    shapList.push({
-        shape : 'circle',
-        id : zr.newShapeId(),
+    shapList.push(new CircleShape({
+        id : require('zrender/tool/guid')(),
         style : {
-            x : 10, y : height / n * i + 30, r : 10, color : _getRandomColor()
+            x : 10, y : height/n * i + 30, r : 10,
+            color : _getRandomColor()
         }
-    })
+    }));
 }
 function _getRandomColor() {
     return 'rgba(' 
@@ -355,17 +356,15 @@ var width = zr.getWidth();
 var height = zr.getHeight() - 30;
 var shapList = [];
 var n = 10;
+var CircleShape = require('zrender/shape/Circle');
 for (var i = 0; i < n; i++) {
-    shapList.push({
-        shape : 'circle',
-        id : zr.newShapeId(),
+    shapList.push(new CircleShape({
+        id : require('zrender/tool/guid')(),
         style : {
-            x : 10,
-            y : height/n * i + 30,
-            r : 10,
+            x : 10, y : height/n * i + 30, r : 10,
             color : _getRandomColor()
         }
-    })
+    }));
 }
 function _getRandomColor() {
     return 'rgba(' + Math.round(Math.random() * 256) + ','  + Math.round(Math.random() * 256) + ','  + Math.round(Math.random() * 256) + ', 0.8)'

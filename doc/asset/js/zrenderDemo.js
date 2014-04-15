@@ -98,6 +98,7 @@ require(
         var request = new QueryString();
         if (request.code) {
             editor.doc.setValue(
+                "zr.clear()\n" +
                 decodeURIComponent(request.code)
             );
         }

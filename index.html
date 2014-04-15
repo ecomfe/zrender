@@ -124,15 +124,17 @@ require(
       <div class="featurette">
         <div class="span5 pull-right">
             <pre>
-zr.addShape({
-    shape : 'circle',
-    style : {
-        x : 100,
-        y : 100,
-        r : 50,
-        color : 'rgba(220, 20, 60, 0.8)'
-    }
-});
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(
+    new CircleShape({
+        style : {
+            x : 100,
+            y : 100,
+            r : 50,
+            color : 'rgba(220, 20, 60, 0.8)'
+        }
+    })
+);
 zr.render();</pre>
         </div>
         <h2 class="featurette-heading">数据驱动</h2>
@@ -144,12 +146,16 @@ zr.render();</pre>
       <div class="featurette">
         <div class="span5 pull-left">
             <pre>
-zr.addShape({
-    shape : 'circle',
-    style : {...},
-    // 图形元素上绑定事件
-    onmouseover : function(params) {concole.log('catch you!')}
-});
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(
+    new CircleShape({
+        style : {...},
+        // 图形元素上绑定事件
+        onmouseover : function(params) {
+            concole.log('catch you!');
+        }
+    })
+);
 
 // 全局事件
 zr.on('click', function(params) {alert('Hello, zrender!')});</pre>
@@ -181,14 +187,14 @@ zr.refresh();
       <div class="featurette">
         <div class="span5 pull-left">
             <pre>
-var myShape = {
-    shape : 'circle',   // sector | ring | rectangle | ...
+var CircleShape = require('zrender/shape/Circle');
+var myShape = new CircleShape({
     zlevel : 1,
     style : {
         ... // color | strokeColor | text | textFont | ...
     },
     draggable : true
-};</pre>
+});</pre>
         </div>
         <h2 class="featurette-heading">丰富的图形选项</h2>
         <p>当前内置多种图形元素（圆形、椭圆、圆环、扇形、矩形、多边形、直线、曲线、心形、水滴、路径、文字、图片。Will be more..），统一且丰富的图形属性充分满足你的个性化需求！</p>
@@ -207,7 +213,7 @@ zr.animate(newShape.id)
         </div>
         <h2 class="featurette-heading">强大的动画支持</h2>
         <p>提供promise式的动画接口和常用缓动函数，轻松实现各种动画需求~</p>
-        <p><a href="doc/example/demo.html?code=%0D%0Avar%20circle%20%3D%20%7B%0D%0A%20%20%20%20shape%3A%20'circle'%2C%0D%0A%20%20%20%20id%3A%20zr.newShapeId()%2C%0D%0A%20%20%20%20position%3A%20%5B100%2C%20100%5D%2C%0D%0A%20%20%20%20rotation%3A%20%5B0%2C%200%2C%200%5D%2C%0D%0A%20%20%20%20scale%3A%20%5B1%2C%201%5D%2C%0D%0A%20%20%20%20style%3A%20%7B%0D%0A%20%20%20%20%20%20%20%20x%3A%200%2C%0D%0A%20%20%20%20%20%20%20%20y%3A%200%2C%0D%0A%20%20%20%20%20%20%20%20r%3A%2050%2C%0D%0A%20%20%20%20%20%20%20%20brushType%3A%20'both'%2C%0D%0A%20%20%20%20%20%20%20%20color%3A%20'rgba(220%2C%2020%2C%2060%2C%200.8)'%2C%0D%0A%20%20%20%20%20%20%20%20strokeColor%3A%20%22rgba(220%2C%2020%2C%2060%2C%200.8)%22%2C%0D%0A%20%20%20%20%20%20%20%20lineWidth%3A%205%2C%0D%0A%20%20%20%20%20%20%20%20text%3A%20'circle'%2C%0D%0A%20%20%20%20%20%20%20%20textPosition%3A%20'inside'%0D%0A%20%20%20%20%7D%2C%0D%0A%20%20%20%20draggable%3A%20true%0D%0A%7D%0D%0Azr.addShape(circle)%3B%0D%0Azr.render()%3B%0D%0A%0D%0Azr.animate(circle.id%2C%20%22%22%2C%20true)%0D%0A%20%20%20%20.when(1000%2C%20%7B%0D%0A%20%20%20%20%20%20%20%20position%3A%20%5B200%2C%200%5D%0D%0A%20%20%20%20%7D)%0D%0A%20%20%20%20.when(2000%2C%20%7B%0D%0A%20%20%20%20%20%20%20%20position%3A%20%5B200%2C%20200%5D%0D%0A%20%20%20%20%7D)%0D%0A%20%20%20%20.when(3000%2C%20%7B%0D%0A%20%20%20%20%20%20%20%20position%3A%20%5B0%2C%20200%5D%0D%0A%20%20%20%20%7D)%0D%0A%20%20%20%20.when(4000%2C%20%7B%0D%0A%20%20%20%20%20%20%20%20position%3A%20%5B100%2C%20100%5D%0D%0A%20%20%20%20%7D).start()%3B%0D" target="_blank">try this »</a></p>
+        <p><a href="doc/example/demo.html?code=%0D%0Avar%20circle%20%3D%20%7B%0D%0A%20%20%20%20shape%3A%20'circle'%2C%0D%0A%20%20%20%20id%3A%20guid()%2C%0D%0A%20%20%20%20position%3A%20%5B100%2C%20100%5D%2C%0D%0A%20%20%20%20rotation%3A%20%5B0%2C%200%2C%200%5D%2C%0D%0A%20%20%20%20scale%3A%20%5B1%2C%201%5D%2C%0D%0A%20%20%20%20style%3A%20%7B%0D%0A%20%20%20%20%20%20%20%20x%3A%200%2C%0D%0A%20%20%20%20%20%20%20%20y%3A%200%2C%0D%0A%20%20%20%20%20%20%20%20r%3A%2050%2C%0D%0A%20%20%20%20%20%20%20%20brushType%3A%20'both'%2C%0D%0A%20%20%20%20%20%20%20%20color%3A%20'rgba(220%2C%2020%2C%2060%2C%200.8)'%2C%0D%0A%20%20%20%20%20%20%20%20strokeColor%3A%20%22rgba(220%2C%2020%2C%2060%2C%200.8)%22%2C%0D%0A%20%20%20%20%20%20%20%20lineWidth%3A%205%2C%0D%0A%20%20%20%20%20%20%20%20text%3A%20'circle'%2C%0D%0A%20%20%20%20%20%20%20%20textPosition%3A%20'inside'%0D%0A%20%20%20%20%7D%2C%0D%0A%20%20%20%20draggable%3A%20true%0D%0A%7D%0D%0Azr.addShape(circle)%3B%0D%0Azr.render()%3B%0D%0A%0D%0Azr.animate(circle.id%2C%20%22%22%2C%20true)%0D%0A%20%20%20%20.when(1000%2C%20%7B%0D%0A%20%20%20%20%20%20%20%20position%3A%20%5B200%2C%200%5D%0D%0A%20%20%20%20%7D)%0D%0A%20%20%20%20.when(2000%2C%20%7B%0D%0A%20%20%20%20%20%20%20%20position%3A%20%5B200%2C%20200%5D%0D%0A%20%20%20%20%7D)%0D%0A%20%20%20%20.when(3000%2C%20%7B%0D%0A%20%20%20%20%20%20%20%20position%3A%20%5B0%2C%20200%5D%0D%0A%20%20%20%20%7D)%0D%0A%20%20%20%20.when(4000%2C%20%7B%0D%0A%20%20%20%20%20%20%20%20position%3A%20%5B100%2C%20100%5D%0D%0A%20%20%20%20%7D).start()%3B%0D" target="_blank">try this »</a></p>
       </div>
       <hr class="featurette-divider">
       <div class="featurette">
@@ -215,13 +221,12 @@ zr.animate(newShape.id)
             <pre>
 function MyShape() { ... }
 
-var shape = require('zrender/shape');
-shape.define('myShape', new MyShape());     // define your shape
-
-zr.addShape({                               // and use it!
-    shape : 'myShape',
-    ...
-});</pre>
+zr.addShape(
+    new MyShape({           // and use it!
+        style : {...},
+        ...
+    })
+);</pre>
         </div>
         <h2 class="featurette-heading">易于扩展</h2>
         <p>分而治之的图形定义策略允许你扩展自己独有的图形元素，你既可以完整实现三个接口方法（brush、drift、isCover），也可以通过base派生后仅实现你所关心的图形细节。</p>
@@ -272,9 +277,10 @@ zr.addShape({                               // and use it!
                 'zrender', 
                 'zrender/shape/Line', 
                 'zrender/shape/Text', 
-                'zrender/shape/Circle'
+                'zrender/shape/Circle',
+                'zrender/tool/guid'
             ],
-            function (zrender, LineShape, TextShape, CircleShape) {
+            function (zrender, LineShape, TextShape, CircleShape, guid) {
                 var zr = zrender.init(document.getElementById('face'));
                 var zrColor = require('zrender/tool/color');
                 var colorIdx = 0;
@@ -293,7 +299,7 @@ zr.addShape({                               // and use it!
                     len = Math.ceil(Math.random() * 400);
                     pos = Math.ceil(Math.random() * height);
                     shapeList[i] = new LineShape({
-                        id : zr.newShapeId(),
+                        id : guid(),
                         style : {
                             xStart : xStart,
                             yStart : pos,
@@ -309,7 +315,7 @@ zr.addShape({                               // and use it!
                     zr.addShape(shapeList[i]);
                 }
                 var aniText = new TextShape({
-                    id : zr.newShapeId(),
+                    id : guid(),
                     style : {
                         x : width / 2,
                         y : 90,
