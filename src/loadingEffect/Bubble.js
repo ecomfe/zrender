@@ -1,9 +1,9 @@
 
 define(
     function (require) {
-        var Base = require('./Effect');
+        var Base = require('./Base');
         var util = require('../tool/util');
-        var color = require('../util/color');
+        var zrColor = require('../tool/color');
         var CircleShape = require('../shape/Circle');
 
         function Bubble(options) {
@@ -18,7 +18,7 @@ define(
          * @param {Object} refreshHandle
          */
         Bubble.prototype._start = function (addShapeHandle, refreshHandle) {
-            var zrColor = require('./color');
+            
             // 特效默认配置
             var options = util.merge(
                 this.options,

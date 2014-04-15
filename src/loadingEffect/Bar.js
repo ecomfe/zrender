@@ -1,9 +1,9 @@
 
 define(
     function (require) {
-        var Base = require('./Effect');
+        var Base = require('./Base');
         var util = require('../tool/util');
-        var zrColor = require('../util/color');
+        var zrColor = require('../tool/color');
         var RectangleShape = require('../shape/Rectangle');
 
         function Bar(options) {

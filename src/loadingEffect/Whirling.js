@@ -1,7 +1,7 @@
 
 define(
     function (require) {
-        var Base = require('./Effect');
+        var Base = require('./Base');
         var util = require('../tool/util');
         var RingShape = require('../shape/Ring');
         var DropletShape = require('../shape/Droplet');

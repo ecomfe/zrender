@@ -1,9 +1,10 @@
 
 define(
     function (require) {
-        var Base = require('./Effect');
+        var Base = require('./Base');
         var util = require('../tool/util');
-        var zrColor = require('../util/color');
+        var zrColor = require('../tool/color');
+        var LineShape = require('../shape/Line');
 
         function DynamicLine(options) {
             Base.call(this, options);
@@ -54,8 +55,7 @@ define(
                     ? zrColor.random()
                     : effectOption.color;
                 
-                shapeList[i] = {
-                    shape : 'line',
+                shapeList[i] = new LineShape({
                     highlightStyle : {
                         xStart : xStart,
                         yStart : pos,
@@ -66,7 +66,7 @@ define(
                     },
                     animationX : Math.ceil(Math.random() * 100),
                     len : len
-                };
+                });
             }
 
             return setInterval(

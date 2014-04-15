@@ -89,7 +89,9 @@ define(
             this.canvasWidth = painter._width;
             this.canvasHeight = painter._height;
 
-            var addShapeHandle = this.storage.addHover;
+            function addShapeHandle(param) {
+                painter.storage.addHover(param)
+            }
             function refreshHandle() {
                 painter.refreshHover();
             }
@@ -105,7 +107,7 @@ define(
         };
 
         Base.prototype.setOptions = function (options) {
-            this.options = options;
+            this.options = options || {};
         };
 
         return Base;

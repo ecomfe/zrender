@@ -1,10 +1,9 @@
 
 define(
     function (require) {
-        var Base = require('./Effect');
+        var Base = require('./Base');
         var util = require('../tool/util');
-        var math = require('./math');
-        var color = require('../util/color');
+        var zrColor = require('../tool/color');
         var RingShape = require('../shape/Ring');
         var SectorShape = require('../shape/Sector');
 
@@ -63,7 +62,7 @@ define(
             var r0 = effectOption.r0 + 6;
             var r = effectOption.r - 6;
             var color = effectOption.color;
-            var darkColor = color.lift(color, 0.1);
+            var darkColor = zrColor.lift(color, 0.1);
 
             var shapeRing = new RingShape({
                 highlightStyle : util.clone(effectOption)
@@ -71,7 +70,7 @@ define(
 
             // 初始化动画元素
             var shapeList = [];
-            var clolrList = color.getGradientColors(
+            var clolrList = zrColor.getGradientColors(
                 ['#ff6400', '#ffe100', '#97ff00'], 25
             );
             var preAngle = 15;
@@ -89,11 +88,11 @@ define(
                         brushType: 'fill',
                         color : darkColor
                     },
-                    _color : color.getLinearGradient(
-                        x + r0 * math.cos(endAngle, true),
-                        y - r0 * math.sin(endAngle, true),
-                        x + r0 * math.cos(endAngle - preAngle, true),
-                        y - r0 * math.sin(endAngle - preAngle, true),
+                    _color : zrColor.getLinearGradient(
+                        x + r0 * Math.cos(endAngle, true),
+                        y - r0 * Math.sin(endAngle, true),
+                        x + r0 * Math.cos(endAngle - preAngle, true),
+                        y - r0 * Math.sin(endAngle - preAngle, true),
                         [
                             [0, clolrList[i * 2]],
                             [1, clolrList[i * 2 + 1]]
@@ -115,11 +114,11 @@ define(
                         brushType: 'fill',
                         color : darkColor
                     },
-                    _color : color.getLinearGradient(
-                        x + r0 * math.cos(endAngle, true),
-                        y - r0 * math.sin(endAngle, true),
-                        x + r0 * math.cos(endAngle - preAngle, true),
-                        y - r0 * math.sin(endAngle - preAngle, true),
+                    _color : zrColor.getLinearGradient(
+                        x + r0 * Math.cos(endAngle, true),
+                        y - r0 * Math.sin(endAngle, true),
+                        x + r0 * Math.cos(endAngle - preAngle, true),
+                        y - r0 * Math.sin(endAngle - preAngle, true),
                         [
                             [0, clolrList[i * 2 + 32]],
                             [1, clolrList[i * 2 + 33]]

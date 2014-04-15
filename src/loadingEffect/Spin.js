@@ -1,9 +1,9 @@
 
 define(
     function (require) {
-        var Base = require('./Effect');
+        var Base = require('./Base');
         var util = require('../tool/util');
-        var color = require('../util/color');
+        var zrColor = require('../tool/color');
         var SectorShape = require('../shape/Sector');
 
         function Spin(options) {
@@ -67,7 +67,7 @@ define(
                         r : r,
                         startAngle : preAngle * i * 2,
                         endAngle : preAngle * i * 2 + preAngle,
-                        color : color.alpha(color, (i + 1) / n),
+                        color : zrColor.alpha(color, (i + 1) / n),
                         brushType: 'fill'
                     }
                 });
