@@ -12,7 +12,13 @@ define(
         var util = require('../tool/util');
 
         var _ctx;
-
+        
+        var _textWidthCache = {};
+        var _textHeightCache = {};
+        var _textWidthCacheCounter = 0;
+        var _textHeightCacheCounter = 0;
+        var TEXT_CACHE_MAX = 20000;
+        
         /**
          * 包含判断
          * @param {Object} shape : 图形
@@ -424,6 +430,10 @@ define(
          * @param {Object} textFont
          */
         function getTextWidth(text, textFont) {
+            var key = text+':'+textFont;
+            if (_textWidthCache[key]) {
+                return _textWidthCache[key];
+            }
             _ctx = _ctx || util.getContext();
             _ctx.save();
 
@@ -441,6 +451,13 @@ define(
             }
             _ctx.restore();
 
+            _textWidthCache[key] = width;
+            if (++_textWidthCacheCounter > TEXT_CACHE_MAX) {
+                // 内存释放
+                _textWidthCacheCounter = 0;
+                _textWidthCache = {};
+            }
+            
             return width;
         }
         
@@ -450,6 +467,11 @@ define(
          * @param {Object} textFont
          */
         function getTextHeight(text, textFont) {
+            var key = text+':'+textFont;
+            if (_textHeightCache[key]) {
+                return _textHeightCache[key];
+            }
+            
             _ctx = _ctx || util.getContext();
 
             _ctx.save();
@@ -463,6 +485,12 @@ define(
 
             _ctx.restore();
 
+            _textHeightCache[key] = height;
+            if (++_textHeightCacheCounter > TEXT_CACHE_MAX) {
+                // 内存释放
+                _textHeightCacheCounter = 0;
+                _textHeightCache = {};
+            }
             return height;
         }
 
