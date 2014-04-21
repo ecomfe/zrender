@@ -267,7 +267,7 @@ define(
          */
         function bind1Arg( handler, context ) {
             return function ( e ) {
-                handler.call( context, e );
+                return handler.call( context, e );
             };
         }
 
