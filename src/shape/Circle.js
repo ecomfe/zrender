@@ -79,7 +79,7 @@ define(
             Base.call(this, options);
         }
 
-        Circle.prototype =  {
+        Circle.prototype = {
             type: 'circle',
             /**
              * 创建圆形路径

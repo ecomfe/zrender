@@ -25,7 +25,7 @@ define(
          * @return {Any} 拷贝后的新对象
          */
         function clone(source) {
-            if (typeof source == 'object') {
+            if (typeof source == 'object' && source !== null) {
                 var result = source;
                 if (source instanceof Array) {
                     result = [];
@@ -33,9 +33,7 @@ define(
                         result[i] = clone(source[i]);
                     }
                 }
-                else if (!BUILTIN_OBJECT[Object.prototype.toString.call(source)]
-                         && source !== null
-                ) {
+                else if (!BUILTIN_OBJECT[Object.prototype.toString.call(source)]) {
                     result = {};
                     for (var key in source) {
                         if (source.hasOwnProperty(key)) {
