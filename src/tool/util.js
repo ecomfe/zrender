@@ -29,11 +29,13 @@ define(
                 var result = source;
                 if (source instanceof Array) {
                     result = [];
-                    for (i = 0, len = source.length; i < len; i++) {
+                    for (var i = 0, len = source.length; i < len; i++) {
                         result[i] = clone(source[i]);
                     }
                 }
-                else if (!BUILTIN_OBJECT[Object.prototype.toString.call(source)]) {
+                else if (!BUILTIN_OBJECT[Object.prototype.toString.call(source)]
+                         && source !== null
+                ) {
                     result = {};
                     for (var key in source) {
                         if (source.hasOwnProperty(key)) {
