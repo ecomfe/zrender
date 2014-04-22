@@ -219,6 +219,24 @@ define(
             var _a = 0;
             var _b = _x1;
 
+            var minX, maxX;
+            if (_x1 < _x2) {
+                minX = _x1 - _l; maxX = _x2 + _l;
+            } else {
+                minX = _x2 - _l; maxX = _x1 + _l;
+            }
+
+            var minY, maxY;
+            if (_y1 < _y2) {
+                minY = _y1 - _l; maxY = _y2 + _l;
+            } else {
+                minY = _y2 - _l; maxY = _y1 + _l;
+            }
+
+            if (x < minX || x > maxX || y < minY || y > maxY) {
+                return false;
+            }
+
             if (_x1 !== _x2) {
                 _a = (_y1 - _y2) / (_x1 - _x2);
                 _b = (_x1 * _y2 - _x2 * _y1) / (_x1 - _x2) ;
@@ -233,42 +251,26 @@ define(
 
         function _isInsideBrokenLine(area, x, y) {
             var pointList = area.pointList;
-            var lineArea;
-            var insideCatch = false;
+            var lineArea = {
+                xStart : 0,
+                yStart : 0,
+                xEnd : 0,
+                yEnd : 0,
+                lineWidth : 0
+            }
             for (var i = 0, l = pointList.length - 1; i < l; i++) {
-                lineArea = {
-                    xStart : pointList[i][0],
-                    yStart : pointList[i][1],
-                    xEnd : pointList[i + 1][0],
-                    yEnd : pointList[i + 1][1],
-                    lineWidth : Math.max(area.lineWidth, 10)
-                };
+                lineArea.xStart = pointList[i][0];
+                lineArea.yStart = pointList[i][1];
+                lineArea.xEnd = pointList[i + 1][0];
+                lineArea.yEnd = pointList[i + 1][1];
+                lineArea.lineWidth = Math.max(area.lineWidth, 10);
 
-                if (!_isInsideRectangle(
-                        {
-                            x : Math.min(lineArea.xStart, lineArea.xEnd)
-                                - lineArea.lineWidth,
-                            y : Math.min(lineArea.yStart, lineArea.yEnd)
-                                - lineArea.lineWidth,
-                            width : Math.abs(lineArea.xStart - lineArea.xEnd)
-                                    + lineArea.lineWidth,
-                            height : Math.abs(lineArea.yStart - lineArea.yEnd)
-                                     + lineArea.lineWidth
-                        },
-                        x,y
-                    )
-                ) {
-                    // 不在矩形区内跳过
-                    continue;
-                }
-
-                insideCatch = _isInsideLine(lineArea, x, y);
-                if (insideCatch) {
-                    break;
+                if (_isInsideLine(lineArea, x, y)) {
+                    return true;
                 }
             }
 
-            return insideCatch;
+            return false;
         }
 
         function _isInsideRing(area, x, y) {
