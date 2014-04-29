@@ -399,7 +399,7 @@ define(function (require) {
         buildPath : function(ctx, style) {
             var path = style.path;
 
-            var pathArray = this._parsePathData(path);
+            var pathArray = this.pathArray || this._parsePathData(path);
 
             // 平移坐标
             var x = style.x || 0;
@@ -504,7 +504,7 @@ define(function (require) {
             var x = style.x || 0;
             var y = style.y || 0;
 
-            var pathArray = this._parsePathData(style.path);
+            var pathArray = this.pathArray || this._parsePathData(style.path);
             for (var i = 0; i < pathArray.length; i++) {
                 var p = pathArray[i].points;
 
