@@ -27,6 +27,7 @@ define(
                     y1 + (deltaY / numDashes) * i
                 );
             }
+            ctx.lineTo(x2, y2);
         };
     }
 );
