@@ -424,8 +424,8 @@ define(
          */
         Base.prototype.drawText = function (ctx, style, normalStyle) {
             // 字体颜色策略
-            style.textColor = style.textColor || style.color || style.strokeColor;
-            ctx.fillStyle = style.textColor;
+            var textColor = style.textColor || style.color || style.strokeColor;
+            ctx.fillStyle = textColor;
 
             if (style.textPosition == 'inside') {
                 ctx.shadowColor = 'rgba(0,0,0,0)';   // 内部文字不带shadowColor
@@ -459,7 +459,7 @@ define(
                                 al = 'center';
                                 bl = 'middle';
                                 if (style.brushType != 'stroke'
-                                    && style.textColor == style.color
+                                    && textColor == style.color
                                 ) {
                                     ctx.fillStyle = '#fff';
                                 }
