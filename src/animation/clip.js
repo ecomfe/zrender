@@ -84,7 +84,9 @@ define(
                 return null;
             },
             restart : function() {
-                this._startTime = new Date().getTime() + this.gap;
+                var time = new Date().getTime();
+                var remainder = (time - this._startTime) % this._life;
+                this._startTime = new Date().getTime() - remainder + this.gap;
             },
             fire : function(eventType, arg) {
                 for (var i = 0, len = this._targetPool.length; i < len; i++) {
