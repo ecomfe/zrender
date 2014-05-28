@@ -51,7 +51,7 @@ define(
             var domRoot = document.createElement('div');
             this._domRoot = domRoot;
 
-            domRoot.onselectstart = returnFalse; // 避免页面选中的尴尬
+            //domRoot.onselectstart = returnFalse; // 避免页面选中的尴尬
             domRoot.style.position = 'relative';
             domRoot.style.overflow = 'hidden';
             domRoot.style.width = this._width + 'px';
