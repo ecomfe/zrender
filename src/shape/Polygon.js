@@ -163,6 +163,7 @@ define(
                 // 虽然能重用brokenLine，但底层图形基于性能考虑，重复代码减少调用吧
                 var pointList = style.pointList;
                 // 开始点和结束点重复
+                /*
                 var start = pointList[0];
                 var end = pointList[pointList.length-1];
 
@@ -173,6 +174,7 @@ define(
                         pointList.pop();
                     }
                 }
+                */
 
                 if (pointList.length < 2) {
                     // 少于2个点就不画了~
