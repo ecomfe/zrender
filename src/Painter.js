@@ -98,7 +98,7 @@ define(
             domRoot.appendChild(canvasElem);
             this._domList.hover = canvasElem;
             vmlCanvasManager && vmlCanvasManager.initElement(canvasElem);
-
+            this._domList.hover.onselectstart = returnFalse;
             this._ctxList.hover = canvasCtx = canvasElem.getContext('2d');
             if (devicePixelRatio != 1) {
                 canvasCtx.scale(devicePixelRatio, devicePixelRatio);
