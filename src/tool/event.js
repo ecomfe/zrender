@@ -13,7 +13,8 @@ define(
     function() {
         /**
         * 提取鼠标（手指）x坐标
-        * @param  {event} e 事件.
+        * 
+        * @param  {Event} e 事件.
         * @return {number} 鼠标（手指）x坐标.
         */
         function getX(e) {
@@ -25,7 +26,8 @@ define(
 
         /**
         * 提取鼠标y坐标
-        * @param  {event} e 事件.
+        * 
+        * @param  {Event} e 事件.
         * @return {number} 鼠标（手指）y坐标.
         */
         function getY(e) {
@@ -37,7 +39,8 @@ define(
 
         /**
         * 提取鼠标滚轮变化
-        * @param  {event} e 事件.
+        * 
+        * @param  {Event} e 事件.
         * @return {number} 滚轮变化，正值说明滚轮是向上滚动，如果是负值说明滚轮是向下滚动
         */
         function getDelta(e) {
@@ -47,18 +50,19 @@ define(
 
         /**
          * 停止冒泡和阻止默认行为
-         * @param {Object} e : event对象
+         * 
+         * @type {Function}
+         * @param {Event} e : event对象
          */
-        function stop(e) {
-            if (e.preventDefault) {
+        var stop = window.Event && Event.prototype.preventDefault
+            ? function (e) {
                 e.preventDefault();
                 e.stopPropagation();
             }
-            else {
+            : function (e) {
                 e.returnValue = false;
                 e.cancelBubble = true;
-            }
-        }
+            };
 
         /**
          * 事件分发器
@@ -69,8 +73,9 @@ define(
 
             /**
              * 单次触发绑定，dispatch后销毁
+             * 
              * @param {string} event 事件字符串
-             * @param {function} handler 响应函数
+             * @param {Function} handler 响应函数
              */
             function one(event, handler) {
                 if(!handler || !event) {
@@ -91,8 +96,9 @@ define(
 
             /**
              * 事件绑定
+             * 
              * @param {string} event 事件字符串
-             * @param {function} handler : 响应函数
+             * @param {Function} handler : 响应函数
              */
             function bind(event, handler) {
                 if(!handler || !event) {
@@ -113,8 +119,9 @@ define(
 
             /**
              * 事件解绑定
+             * 
              * @param {string} event 事件字符串
-             * @param {function} handler : 响应函数
+             * @param {Function} handler : 响应函数
              */
             function unbind(event, handler) {
                 if(!event) {
@@ -146,6 +153,7 @@ define(
 
             /**
              * 事件分发
+             * 
              * @param {string} type : 事件类型
              * @param {Object} event : event对象
              * @param {Object} [attachment] : 附加信息

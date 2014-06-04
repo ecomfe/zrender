@@ -21,6 +21,7 @@ define(
         
         /**
          * 包含判断
+         *
          * @param {Object} shape : 图形
          * @param {Object} area ： 目标区域
          * @param {number} x ： 横坐标
@@ -178,7 +179,7 @@ define(
             var pixelsData;
 
             if (typeof unit != 'undefined') {
-                unit = Math.floor((unit || 1 )/ 2);
+                unit = (unit || 1 ) >> 1;
                 pixelsData = context.getImageData(
                     x - unit,
                     y - unit,
@@ -366,7 +367,7 @@ define(
             if (redo) {
                 redo = false;
                 inside = false;
-                for (i = 0,j = N - 1;i < N;j = i++) {
+                for (i = 0,j = N - 1; i < N; j = i++) {
                     if ((polygon[i][1] < y && y < polygon[j][1])
                         || (polygon[j][1] < y && y < polygon[i][1])
                     ) {
