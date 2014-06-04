@@ -227,13 +227,14 @@ define( function(require) {
 
     /**
      * 获取色板颜色
+     *
      * @param {number} idx : 色板位置
      * @param {array} [userPalete] : 自定义色板
      *
      * @return {color} 颜色#000000~#ffffff
      */
     function getColor(idx, userPalete) {
-        idx = +idx || 0;
+        idx = idx | 0;
         userPalete = userPalete || palette;
         return userPalete[idx % userPalete.length];
     }
@@ -261,6 +262,7 @@ define( function(require) {
 
     /**
      * 径向渐变
+     *
      * @param {number} x0 渐变起点
      * @param {number} y0
      * @param {number} r0
@@ -323,9 +325,9 @@ define( function(require) {
         for (var i = 0, r = start[0], g = start[1], b = start[2]; i < step; i++
         ) {
             colors[i] = toColor([
-                adjust(Math.floor(r), [ 0, 255 ]),
-                adjust(Math.floor(g), [ 0, 255 ]), 
-                adjust(Math.floor(b), [ 0, 255 ])
+                adjust(Math.floor(r), [0, 255]),
+                adjust(Math.floor(g), [0, 255]), 
+                adjust(Math.floor(b), [0, 255])
             ]);
             r += stepR;
             g += stepG;
@@ -334,7 +336,7 @@ define( function(require) {
         r = end[0];
         g = end[1];
         b = end[2];
-        colors[i] = toColor( [ r, g, b ]);
+        colors[i] = toColor([r, g, b]);
         return colors;
     }
 
@@ -381,12 +383,7 @@ define( function(require) {
             });
 
             if (format.indexOf('hex') > -1) {
-                data = map(data.slice(0, 3),
-                    function(c) {
-                        c = Number(c).toString(16);
-                        return (c.length === 1) ? '0' + c : c;
-                });
-                return '#' + data.join('');
+                return '#' + ((1 << 24) + (data[0] << 16) + (data[1] << 8) + (+data[2])).toString(16).slice(1);
             } else if (format.indexOf('hs') > -1) {
                 var sx = map(data.slice(1, 3),
                     function(c) {
@@ -400,7 +397,7 @@ define( function(require) {
                 if (data.length === 3) {
                     data.push(1);
                 }
-                data[3] = adjust(data[3], [ 0, 1 ]);
+                data[3] = adjust(data[3], [0, 1]);
                 return format + '(' + data.slice(0, 4).join(',') + ')';
             }
 
@@ -410,7 +407,8 @@ define( function(require) {
 
     /**
      * 返回颜色值数组
-     * @param {string} color 颜色
+     *
+     * @param {color} color 颜色
      * @return {Array} 颜色值数组
      */
     function toArray(color) {
@@ -418,16 +416,19 @@ define( function(require) {
         if (color.indexOf('#') > -1) {
             color = toRGB(color);
         }
-        var data = color.replace(/[rgbahsvl%\(\)]/ig, '').split(',');
-        data = map(data,
-            function(c) {
-                return Number(c);
+
+        var data = [];
+        var i = 0;
+        color.replace(/\d+/g, function (n) {
+            data[i++] = n | 0;
         });
+
         return data;
     }
 
     /**
      * 颜色格式转化
+     *
      * @param {Array} data 颜色值数组
      * @param {string} format 格式,默认rgb
      * @return {string} 颜色
@@ -458,6 +459,7 @@ define( function(require) {
 
     /**
      * 转换为rgba格式的颜色
+     * 
      * @param {string} color 颜色
      * @return {string} rgba颜色，rgba(r,g,b,a)
      */
@@ -467,6 +469,7 @@ define( function(require) {
 
     /**
      * 转换为rgb数字格式的颜色
+     * 
      * @param {string} color 颜色
      * @return {string} rgb颜色，rgb(0,0,0)格式
      */
@@ -476,6 +479,7 @@ define( function(require) {
 
     /**
      * 转换为16进制颜色
+     * 
      * @param {string} color 颜色
      * @return {string} 16进制颜色，#rrggbb格式
      */
@@ -485,6 +489,7 @@ define( function(require) {
 
     /**
      * 转换为HSV颜色
+     * 
      * @param {string} color 颜色
      * @return {string} HSVA颜色，hsva(h,s,v,a)
      */
@@ -494,6 +499,7 @@ define( function(require) {
 
     /**
      * 转换为HSV颜色
+     * 
      * @param {string} color 颜色
      * @return {string} HSV颜色，hsv(h,s,v)
      */
@@ -503,6 +509,7 @@ define( function(require) {
 
     /**
      * 转换为HSBA颜色
+     * 
      * @param {string} color 颜色
      * @return {string} HSBA颜色，hsba(h,s,b,a)
      */
@@ -512,6 +519,7 @@ define( function(require) {
 
     /**
      * 转换为HSB颜色
+     * 
      * @param {string} color 颜色
      * @return {string} HSB颜色，hsb(h,s,b)
      */
@@ -521,6 +529,7 @@ define( function(require) {
 
     /**
      * 转换为HSLA颜色
+     * 
      * @param {string} color 颜色
      * @return {string} HSLA颜色，hsla(h,s,l,a)
      */
@@ -530,6 +539,7 @@ define( function(require) {
 
     /**
      * 转换为HSL颜色
+     * 
      * @param {string} color 颜色
      * @return {string} HSL颜色，hsl(h,s,l)
      */
@@ -539,8 +549,9 @@ define( function(require) {
 
     /**
      * 转换颜色名
+     * 
      * @param {string} color 颜色
-     * @return {String} 颜色名
+     * @return {string} 颜色名
      */
     function toName(color) {
         for ( var key in _nameColors) {
@@ -553,19 +564,20 @@ define( function(require) {
 
     /**
      * 移除颜色中多余空格
-     * @param {String} color 颜色
-     * @return {String} 无空格颜色
+     * 
+     * @param {string} color 颜色
+     * @return {string} 无空格颜色
      */
     function trim(color) {
-        color = String(color);
-        color = color.replace(/(^\s*)|(\s*$)/g, '');
-        if (/^[^#]*?$/i.test(color)) {
-            color = color.replace(/\s/g, '');
-        }
-        return color;
+        return String(color).replace(/\s+/g, '');
     }
 
-    // 规范化
+    /**
+     * 颜色规范化
+     * 
+     * @param {string} color 颜色
+     * @return {string} 规范化后的颜色
+     */
     function normalize(color) {
         // 颜色名
         if (_nameColors[color]) {
@@ -576,15 +588,22 @@ define( function(require) {
         // hsv与hsb等价
         color = color.replace(/hsv/i, 'hsb');
         // rgb转为rrggbb
-        if (/^#[0-9a-f]{3}$/i.test(color)) {
-            var d = color.replace('#', '').split('');
-            color = '#' + d[0] + d[0] + d[1] + d[1] + d[2] + d[2];
+        if (/^#[\da-f]{3}$/i.test(color)) {
+            color = parseInt(color.slice(1), 16);
+            var r = (color & 0xf00) << 8;
+            var g = (color & 0xf0) << 4;
+            var b = color & 0xf;
+
+            color = '#'+ ((1 << 24) + (r << 4) + r + (g << 4) + g + (b << 4) + b).toString(16).slice(1);
         }
+        // 或者使用以下正则替换，不过 chrome 下性能相对差点
+        // color = color.replace(/^#([\da-f])([\da-f])([\da-f])$/i, '#$1$1$2$2$3$3');
         return color;
     }
 
     /**
      * 颜色加深或减淡，当level>0加深，当level<0减淡
+     * 
      * @param {string} color 颜色
      * @param {number} level 升降程度,取值区间[-1,1]
      * @return {string} 加深或减淡后颜色值
@@ -599,9 +618,9 @@ define( function(require) {
         var data = getData(color);
         for ( var i = 0; i < 3; i++) {
             if (direct === 1) {
-                data[i] = Math.floor(data[i] * (1 - level));
+                data[i] = data[i] * (1 - level) | 0;
             } else {
-                data[i] = Math.floor((255 - data[i]) * level + data[i]);
+                data[i] = ((255 - data[i]) * level + data[i]) | 0;
             }
         }
         return 'rgb(' + data.join(',') + ')';
@@ -609,6 +628,7 @@ define( function(require) {
 
     /**
      * 颜色翻转,[255-r,255-g,255-b,1-a]
+     * 
      * @param {string} color 颜色
      * @return {string} 翻转颜色
      */
@@ -623,10 +643,11 @@ define( function(require) {
 
     /**
      * 简单两种颜色混合
-     * @param {String} color1 第一种颜色
-     * @param {String} color2 第二种颜色
-     * @param {String} weight 混合权重[0-1]
-     * @return {String} 结果色,rgb(r,g,b)或rgba(r,g,b,a)
+     * 
+     * @param {string} color1 第一种颜色
+     * @param {string} color2 第二种颜色
+     * @param {string} weight 混合权重[0-1]
+     * @return {string} 结果色,rgb(r,g,b)或rgba(r,g,b,a)
      */
     function mix(color1, color2, weight) {
         if(typeof weight === 'undefined') {
@@ -661,14 +682,11 @@ define( function(require) {
 
     /**
      * 随机颜色
+     * 
      * @return {string} 颜色值，#rrggbb格式
      */
     function random() {
-        return toHex(
-            'rgb(' + Math.round(Math.random() * 256) + ','
-                   + Math.round(Math.random() * 256) + ','
-                   + Math.round(Math.random() * 256) + ')'
-        );
+        return '#' + Math.random().toString(16).slice(2, 8);
     }
 
     /**
@@ -688,6 +706,7 @@ define( function(require) {
      * hsl(h,s,l)
      * hsl(h%,s%,l%)
      * hsla(h,s,l,a)
+     *
      * @param {string} color 颜色
      * @return {Array} 颜色值数组或null
      */
@@ -705,10 +724,10 @@ define( function(require) {
         if (r[2]) {
             // #rrggbb
             d = r[2].replace('#', '').split('');
-            rgb = [ d[0] + d[1], d[2] + d[3], d[4] + d[5] ];
+            rgb = [d[0] + d[1], d[2] + d[3], d[4] + d[5]];
             data = map(rgb,
                 function(c) {
-                    return adjust(parseInt(c, 16), [ 0, 255 ]);
+                    return adjust(parseInt(c, 16), [0, 255]);
             });
 
         }
@@ -723,12 +742,12 @@ define( function(require) {
                     c = Math.floor(
                         c.indexOf('%') > 0 ? parseInt(c, 0) * 2.55 : c
                     );
-                    return adjust(c, [ 0, 255 ]);
+                    return adjust(c, [0, 255]);
                 }
             );
 
-            if( typeof a !== 'undefined') {
-                data.push(adjust(parseFloat(a), [ 0, 1 ]));
+            if(typeof a !== 'undefined') {
+                data.push(adjust(parseFloat(a), [0, 1]));
             }
         }
         else if (r[5] || r[6]) {
@@ -738,13 +757,13 @@ define( function(require) {
             var s = hsxa[1];
             var x = hsxa[2];
             a = hsxa[3];
-            data = map( [ s, x ],
+            data = map([s, x],
                 function(c) {
-                    return adjust(parseFloat(c) / 100, [ 0, 1 ]);
+                    return adjust(parseFloat(c) / 100, [0, 1]);
             });
             data.unshift(h);
             if( typeof a !== 'undefined') {
-                data.push(adjust(parseFloat(a), [ 0, 1 ]));
+                data.push(adjust(parseFloat(a), [0, 1]));
             }
         }
         return data;
@@ -761,7 +780,7 @@ define( function(require) {
             a = 1;
         }
         var data = getData(toRGBA(color));
-        data[3] = adjust(Number(a).toFixed(4), [ 0, 1 ]);
+        data[3] = adjust(Number(a).toFixed(4), [0, 1]);
 
         return toColor(data, 'rgba');
     }
@@ -807,7 +826,7 @@ define( function(require) {
             if (h === 6) {
                 h = 0;
             }
-            var i = Math.floor(h);
+            var i = h | 0;
             var v1 = V * (1 - S);
             var v2 = V * (1 - S * (h - i));
             var v3 = V * (1 - S * (1 - (h - i)));
