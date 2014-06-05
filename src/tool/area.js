@@ -258,7 +258,7 @@ define(
                 xEnd : 0,
                 yEnd : 0,
                 lineWidth : 0
-            }
+            };
             for (var i = 0, l = pointList.length - 1; i < l; i++) {
                 lineArea.xStart = pointList[i][0];
                 lineArea.yStart = pointList[i][1];

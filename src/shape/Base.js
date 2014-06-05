@@ -391,7 +391,8 @@ define(
                 }
             }
             return originPos;
-        }
+        };
+        
         /**
          * 默认区域包含判断
          * 
