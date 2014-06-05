@@ -333,6 +333,9 @@ define(
          * 清除单独的一个层
          */
         Painter.prototype.clearLayer = function (k) {
+            if (!this._ctxList[k]) {
+                return;
+            }
             var zLevelConfigK = this._zLevelConfig[k];
 
             if (zLevelConfigK) {
