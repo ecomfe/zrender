@@ -374,28 +374,34 @@ define(
         };
 
         /**
-         * 默认区域包含判断
-         * 
-         * @param x 横坐标
-         * @param y 纵坐标
+         * 获取鼠标坐标变换 
          */
-        Base.prototype.isCover = function (x, y) {
+        Base.prototype.getTansform = function (x, y) {
+            var originPos = [x, y];
             // 对鼠标的坐标也做相同的变换
             if (this.needTransform && this._transform) {
                 var inverseMatrix = [];
                 matrix.invert(inverseMatrix, this._transform);
 
-                var originPos = [x, y];
                 matrix.mulVector(originPos, inverseMatrix, [x, y, 1]);
 
                 if (x == originPos[0] && y == originPos[1]) {
                     // 避免外部修改导致的needTransform不准确
                     this.updateNeedTransform();
                 }
-
-                x = originPos[0];
-                y = originPos[1];
             }
+            return originPos;
+        }
+        /**
+         * 默认区域包含判断
+         * 
+         * @param x 横坐标
+         * @param y 纵坐标
+         */
+        Base.prototype.isCover = function (x, y) {
+            var originPos = this.getTansform(x, y);
+            x = originPos[0];
+            y = originPos[1];
 
             // 快速预判并保留判断矩形
             var rect = this.style.__rect;
