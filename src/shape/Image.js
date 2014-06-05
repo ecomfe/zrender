@@ -114,7 +114,7 @@ define(
                             _needsRefresh.push( me );
                             // 防止因为缓存短时间内触发多次onload事件
                             _refreshTimeout = setTimeout(function(){
-                                refresh( _needsRefresh );
+                                refresh && refresh( _needsRefresh );
                                 // 清空needsRefresh
                                 _needsRefresh = [];
                             }, 10);
