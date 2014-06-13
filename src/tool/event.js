@@ -158,15 +158,17 @@ define(
              * @param {Object} event : event对象
              * @param {Object} [attachment] : 附加信息
              */
-            function dispatch(type, event, attachment) {
+            function dispatch(type, event, attachment, that) {
                 if(_h[type]) {
                     var newList = [];
                     var eventPacket = attachment || {};
                     eventPacket.type = type;
                     eventPacket.event = event;
                     //eventPacket._target = self;
+                    var thisObject;
                     for (var i = 0, l = _h[type].length; i < l; i++) {
-                        _h[type][i]['h'](eventPacket);
+                        thisObject = that || _h[type][i]['h'];
+                        _h[type][i]['h'].call(thisObject, eventPacket);
                         if (!_h[type][i]['one']) {
                             newList.push(_h[type][i]);
                         }
