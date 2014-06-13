@@ -434,9 +434,11 @@ define(
             var textColor = style.textColor || style.color || style.strokeColor;
             ctx.fillStyle = textColor;
 
+            /*
             if (style.textPosition == 'inside') {
                 ctx.shadowColor = 'rgba(0,0,0,0)';   // 内部文字不带shadowColor
             }
+            */
 
             // 文本与图形间空白间隙
             var dd = 10;
