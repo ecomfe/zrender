@@ -413,16 +413,22 @@ define( function(require) {
      */
     function toArray(color) {
         color = trim(color);
-        if (color.indexOf('#') > -1) {
-            color = toRGB(color);
+        if (color.indexOf('rgba') < 0) {
+            color = toRGBA(color);
         }
 
         var data = [];
         var i = 0;
-        color.replace(/\d+/g, function (n) {
-            data[i++] = n | 0;
+        color.replace(/[\d.]+/g, function (n) {
+            if (i < 3) {
+                n = n | 0;
+            } else {
+                // Alpha
+                n = +n;
+            }
+            data[i++] = n;
         });
-
+        console.log(data);
         return data;
     }
 

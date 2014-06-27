@@ -18,6 +18,7 @@ function(require) {
 'use strict';
 
 var Clip = require('./clip');
+var color = require('../tool/color');
 
 var requestAnimationFrame = window.requestAnimationFrame
                             || window.msRequestAnimationFrame
@@ -202,6 +203,31 @@ function _catmullRomInterpolate(p0, p1, p2, p3, t, t2, t3) {
             + v0 * t + p1;
 }
 
+function _cloneValue(value) {
+    if (_isArrayLike(value)) {
+        var len = value.length;
+        if (_isArrayLike(value[0])) {
+            var ret = [];
+            for (var i = 0; i < len; i++) {
+                ret.push(arraySlice.call(value[i]));
+            }
+            return ret;
+        } else {
+            return arraySlice.call(value)
+        }
+    } else {
+        return value;
+    }
+}
+
+function rgba2String(rgba) {
+    rgba[0] = Math.floor(rgba[0]);
+    rgba[1] = Math.floor(rgba[1]);
+    rgba[2] = Math.floor(rgba[2]);
+
+    return 'rgba(' + rgba.join(',') + ')';
+}
+
 function Deferred(target, loop, getter, setter) {
     this._tracks = {};
     this._target = target;
@@ -227,11 +253,18 @@ Deferred.prototype = {
         for (var propName in props) {
             if (! this._tracks[propName]) {
                 this._tracks[propName] = [];
-                // Initialize value
-                this._tracks[propName].push({
-                    time : 0,
-                    value : this._getter(this._target, propName)
-                });
+                // If time is 0 
+                //  Then props is given initialize value
+                // Else
+                //  Initialize value from current prop value
+                if (time !== 0) {
+                    this._tracks[propName].push({
+                        time : 0,
+                        value : _cloneValue(
+                            this._getter(this._target, propName)
+                        )
+                    });
+                }
             }
             this._tracks[propName].push({
                 time : parseInt(time, 10),
@@ -273,6 +306,7 @@ Deferred.prototype = {
             // Guess data type
             var firstVal = keyframes[0].value;
             var isValueArray = _isArrayLike(firstVal);
+            var isValueColor = false;
 
             // For vertices morphing
             var arrDim = (
@@ -296,20 +330,17 @@ Deferred.prototype = {
             var kfValues = [];
             for (var i = 0; i < trackLen; i++) {
                 kfPercents.push(keyframes[i].time / trackMaxTime);
-                if (isValueArray) {
-                    if (arrDim == 2) {
-                        kfValues[i] = [];
-                        for (var j = 0; j < firstVal.length; j++) {
-                            kfValues[i].push(
-                                arraySlice.call(keyframes[i].value[j])
-                            );
-                        }
-                    } else {
-                        kfValues.push(arraySlice.call(keyframes[i].value));
+                // Assume value is a color when it is a string
+                var value = keyframes[i].value;
+                if (typeof(value) == 'string') {
+                    value = color.toArray(value);
+                    if (value.length == 0) {    // Invalid color
+                        value[0] = value[1] = value[2] = 0;
+                        value[3] = 1;
                     }
-                } else {
-                    kfValues.push(keyframes[i].value);
+                    isValueColor = true;
                 }
+                kfValues.push(value);
             }
 
             // Cache the key of last frame to speed up when 
@@ -319,6 +350,11 @@ Deferred.prototype = {
             var start;
             var i, w;
             var p0, p1, p2, p3;
+
+
+            if (isValueColor) {
+                var rgba = [0, 0, 0, 0];
+            }
 
             var onframe = function(target, percent) {
                 // Find the range keyframes
@@ -350,9 +386,6 @@ Deferred.prototype = {
                 } else {
                     w = (percent - kfPercents[i]) / range;
                 }
-                if (w < 0) {
-                    console.log(w);
-                }
                 if (useSpline) {
                     p1 = kfValues[i];
                     p0 = kfValues[i === 0 ? i : i - 1];
@@ -365,12 +398,22 @@ Deferred.prototype = {
                             arrDim
                         );
                     } else {
+                        var value;
+                        if (isValueColor) {
+                            value = _catmullRomInterpolateArray(
+                                p0, p1, p2, p3, w, w*w, w*w*w,
+                                rgba, 1
+                            );
+                            value = rgba2String(rgba);
+                        } else {
+                            value = _catmullRomInterpolate(
+                                p0, p1, p2, p3, w, w*w, w*w*w
+                            )
+                        }
                         setter(
                             target,
                             propName,
-                            _catmullRomInterpolate(
-                                p0, p1, p2, p3, w, w*w, w*w*w
-                            )
+                            value
                         );
                     }
                 } else {
@@ -381,10 +424,20 @@ Deferred.prototype = {
                             arrDim
                         );
                     } else {
+                        var value;
+                        if (isValueColor) {
+                            _interpolateArray(
+                                kfValues[i], kfValues[i+1], w,
+                                rgba, 1
+                            );
+                            value = rgba2String(rgba);
+                        } else {
+                            value = _interpolateNumber(kfValues[i], kfValues[i+1], w);
+                        }
                         setter(
                             target,
                             propName,
-                            _interpolateNumber(kfValues[i], kfValues[i+1], w)
+                            value
                         );
                     }
                 }
@@ -410,7 +463,6 @@ Deferred.prototype = {
             self._clipCount++;
             self.animation.add(clip);
         };
-
 
         for (var propName in this._tracks) {
             createTrackClip(this._tracks[propName], propName);

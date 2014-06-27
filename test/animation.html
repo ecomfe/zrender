@@ -33,9 +33,8 @@
                     x : 0,
                     y : 0,
                     r : 50,
-                    brushType : 'both',
-                    color : 'rgba(220, 20, 60, 0.8)',
-                    strokeColor : "rgba(220, 20, 60, 0.8)",
+                    brushType : 'fill',
+                    color : 'rgba(33, 222, 10, 0.1)',
                     lineWidth : 5,
                     text :'circle',
                     textPosition :'inside'
@@ -54,7 +53,7 @@
             zr.addShape( circle );
             zr.render();
 
-            var tm1 = zr.animate( circle.id, "", true )
+            var tm1 = zr.animate( circle.id, "", true)
                 .when(1000, {
                     position : [200, 0]
                 })
@@ -69,6 +68,11 @@
                 })
                 .start();
 
+            zr.animate(circle.id, 'style', true)
+                .when(4000, {
+                    color: 'rgba(222, 222, 10, 1)'
+                })
+                .start();
         })
     </script>
     <div id="Main" style="width:600px;height:400px;"></div>
