@@ -22,9 +22,11 @@
             "zrender",
             "zrender/animation/animation",
             "zrender/shape/Star",
-            "zrender/shape/Image"
+            "zrender/shape/Image",
+            "zrender/shape/BrokenLine",
+            "zrender/tool/color"
         ], 
-        function (zrender, Animation, StarShape, ImageShape) {
+        function (zrender, Animation, StarShape, ImageShape, BrokenLineShape, colorTool) {
             // 初始化zrender
             var zr = zrender.init(document.getElementById("Main"));
 
@@ -43,20 +45,20 @@
             });
             var imageShape = zr.shapeToImage(circleShape, 28, 28);
 
-            var NUMBER = 2000;
+            var NUMBER = 20;
 
             for (var i = 0; i < NUMBER; i++) {
                 var circle = new ImageShape({
-                                scale : [1, 1],
-                                zlevel : 1,
-                                style : {
-                                    x : 0,
-                                    y : 0,
-                                    image : imageShape.style.image
-                                },
-                                draggable : false,
-                                hoverable : false,
-                            });
+                    scale : [1, 1],
+                    zlevel : 1,
+                    style : {
+                        x : 0,
+                        y : 0,
+                        image : imageShape.style.image
+                    },
+                    draggable : false,
+                    hoverable : false,
+                });
 
                 zr.addShape(circle);
                 var deferred = zr.animate(circle.id, "", circle, true);
@@ -78,18 +80,22 @@
                     });
                     points.push(point);
                 }
-                // var brokenLine = {
-                //     shape : 'brokenLine',
-                //     zlevel : 0,
-                //     style : {
-                //         pointList : points,
-                //         smooth : 'spline',
-                //         brushType : 'stroke',
-                //         strokeColor : 'grey',
-                //         opacity : 0.4
-                //     }
-                // }
-                // zr.addShape(brokenLine);
+                var brokenLine = {
+                    zlevel : 0,
+                    style : {
+                        pointList : points,
+                        smooth : 'spline',
+                        brushType : 'stroke',
+                        strokeColor : colorTool.random(),
+                        opacity : 0.2,
+                        lineWidth: Math.random() * 5
+                    },
+                    highlightStyle: {
+                        opacity: 1
+                    }
+                }
+                zr.addShape(new BrokenLineShape(brokenLine));
+
                 deferred.start('spline');
             }
             zr.modLayer(1, {

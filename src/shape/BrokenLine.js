@@ -124,6 +124,7 @@ define(
                 else {
                     if (style.smooth === 'spline') {
                         pointList = smoothSpline(pointList);
+                        len = pointList.length;
                     }
                     if (!style.lineType || style.lineType == 'solid') {
                         //默认为实线
