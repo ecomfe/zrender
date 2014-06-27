@@ -428,7 +428,6 @@ define( function(require) {
             }
             data[i++] = n;
         });
-        console.log(data);
         return data;
     }
 
