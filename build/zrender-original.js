@@ -1476,11 +1476,11 @@ define(
          * @return {Any} 拷贝后的新对象
          */
         function clone(source) {
-            if (typeof source == 'object') {
+            if (typeof source == 'object' && source !== null) {
                 var result = source;
                 if (source instanceof Array) {
                     result = [];
-                    for (i = 0, len = source.length; i < len; i++) {
+                    for (var i = 0, len = source.length; i < len; i++) {
                         result[i] = clone(source[i]);
                     }
                 }
@@ -1869,7 +1869,8 @@ define(
     'zrender/tool/event',[],function() {
         /**
         * 提取鼠标（手指）x坐标
-        * @param  {event} e 事件.
+        * 
+        * @param  {Event} e 事件.
         * @return {number} 鼠标（手指）x坐标.
         */
         function getX(e) {
@@ -1881,7 +1882,8 @@ define(
 
         /**
         * 提取鼠标y坐标
-        * @param  {event} e 事件.
+        * 
+        * @param  {Event} e 事件.
         * @return {number} 鼠标（手指）y坐标.
         */
         function getY(e) {
@@ -1893,7 +1895,8 @@ define(
 
         /**
         * 提取鼠标滚轮变化
-        * @param  {event} e 事件.
+        * 
+        * @param  {Event} e 事件.
         * @return {number} 滚轮变化，正值说明滚轮是向上滚动，如果是负值说明滚轮是向下滚动
         */
         function getDelta(e) {
@@ -1903,18 +1906,19 @@ define(
 
         /**
          * 停止冒泡和阻止默认行为
-         * @param {Object} e : event对象
+         * 
+         * @type {Function}
+         * @param {Event} e : event对象
          */
-        function stop(e) {
-            if (e.preventDefault) {
+        var stop = window.Event && Event.prototype.preventDefault
+            ? function (e) {
                 e.preventDefault();
                 e.stopPropagation();
             }
-            else {
+            : function (e) {
                 e.returnValue = false;
                 e.cancelBubble = true;
-            }
-        }
+            };
 
         /**
          * 事件分发器
@@ -1925,8 +1929,9 @@ define(
 
             /**
              * 单次触发绑定，dispatch后销毁
+             * 
              * @param {string} event 事件字符串
-             * @param {function} handler 响应函数
+             * @param {Function} handler 响应函数
              */
             function one(event, handler) {
                 if(!handler || !event) {
@@ -1947,8 +1952,9 @@ define(
 
             /**
              * 事件绑定
+             * 
              * @param {string} event 事件字符串
-             * @param {function} handler : 响应函数
+             * @param {Function} handler : 响应函数
              */
             function bind(event, handler) {
                 if(!handler || !event) {
@@ -1969,8 +1975,9 @@ define(
 
             /**
              * 事件解绑定
+             * 
              * @param {string} event 事件字符串
-             * @param {function} handler : 响应函数
+             * @param {Function} handler : 响应函数
              */
             function unbind(event, handler) {
                 if(!event) {
@@ -2002,19 +2009,22 @@ define(
 
             /**
              * 事件分发
+             * 
              * @param {string} type : 事件类型
              * @param {Object} event : event对象
              * @param {Object} [attachment] : 附加信息
              */
-            function dispatch(type, event, attachment) {
+            function dispatch(type, event, attachment, that) {
                 if(_h[type]) {
                     var newList = [];
                     var eventPacket = attachment || {};
                     eventPacket.type = type;
                     eventPacket.event = event;
                     //eventPacket._target = self;
+                    var thisObject;
                     for (var i = 0, l = _h[type].length; i < l; i++) {
-                        _h[type][i]['h'](eventPacket);
+                        thisObject = that || _h[type][i]['h'];
+                        _h[type][i]['h'].call(thisObject, eventPacket);
                         if (!_h[type][i]['one']) {
                             newList.push(_h[type][i]);
                         }
@@ -2312,7 +2322,7 @@ define(
          */
         function bind1Arg( handler, context ) {
             return function ( e ) {
-                handler.call( context, e );
+                return handler.call( context, e );
             };
         }
 
@@ -3142,13 +3152,14 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 获取色板颜色
+     *
      * @param {number} idx : 色板位置
      * @param {array} [userPalete] : 自定义色板
      *
      * @return {color} 颜色#000000~#ffffff
      */
     function getColor(idx, userPalete) {
-        idx = +idx || 0;
+        idx = idx | 0;
         userPalete = userPalete || palette;
         return userPalete[idx % userPalete.length];
     }
@@ -3176,6 +3187,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 径向渐变
+     *
      * @param {number} x0 渐变起点
      * @param {number} y0
      * @param {number} r0
@@ -3238,9 +3250,9 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
         for (var i = 0, r = start[0], g = start[1], b = start[2]; i < step; i++
         ) {
             colors[i] = toColor([
-                adjust(Math.floor(r), [ 0, 255 ]),
-                adjust(Math.floor(g), [ 0, 255 ]), 
-                adjust(Math.floor(b), [ 0, 255 ])
+                adjust(Math.floor(r), [0, 255]),
+                adjust(Math.floor(g), [0, 255]), 
+                adjust(Math.floor(b), [0, 255])
             ]);
             r += stepR;
             g += stepG;
@@ -3249,7 +3261,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
         r = end[0];
         g = end[1];
         b = end[2];
-        colors[i] = toColor( [ r, g, b ]);
+        colors[i] = toColor([r, g, b]);
         return colors;
     }
 
@@ -3296,12 +3308,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
             });
 
             if (format.indexOf('hex') > -1) {
-                data = map(data.slice(0, 3),
-                    function(c) {
-                        c = Number(c).toString(16);
-                        return (c.length === 1) ? '0' + c : c;
-                });
-                return '#' + data.join('');
+                return '#' + ((1 << 24) + (data[0] << 16) + (data[1] << 8) + (+data[2])).toString(16).slice(1);
             } else if (format.indexOf('hs') > -1) {
                 var sx = map(data.slice(1, 3),
                     function(c) {
@@ -3315,7 +3322,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
                 if (data.length === 3) {
                     data.push(1);
                 }
-                data[3] = adjust(data[3], [ 0, 1 ]);
+                data[3] = adjust(data[3], [0, 1]);
                 return format + '(' + data.slice(0, 4).join(',') + ')';
             }
 
@@ -3325,24 +3332,33 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 返回颜色值数组
-     * @param {string} color 颜色
+     *
+     * @param {color} color 颜色
      * @return {Array} 颜色值数组
      */
     function toArray(color) {
         color = trim(color);
-        if (color.indexOf('#') > -1) {
-            color = toRGB(color);
+        if (color.indexOf('rgba') < 0) {
+            color = toRGBA(color);
         }
-        var data = color.replace(/[rgbahsvl%\(\)]/ig, '').split(',');
-        data = map(data,
-            function(c) {
-                return Number(c);
+
+        var data = [];
+        var i = 0;
+        color.replace(/[\d.]+/g, function (n) {
+            if (i < 3) {
+                n = n | 0;
+            } else {
+                // Alpha
+                n = +n;
+            }
+            data[i++] = n;
         });
         return data;
     }
 
     /**
      * 颜色格式转化
+     *
      * @param {Array} data 颜色值数组
      * @param {string} format 格式,默认rgb
      * @return {string} 颜色
@@ -3373,6 +3389,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 转换为rgba格式的颜色
+     * 
      * @param {string} color 颜色
      * @return {string} rgba颜色，rgba(r,g,b,a)
      */
@@ -3382,6 +3399,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 转换为rgb数字格式的颜色
+     * 
      * @param {string} color 颜色
      * @return {string} rgb颜色，rgb(0,0,0)格式
      */
@@ -3391,6 +3409,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 转换为16进制颜色
+     * 
      * @param {string} color 颜色
      * @return {string} 16进制颜色，#rrggbb格式
      */
@@ -3400,6 +3419,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 转换为HSV颜色
+     * 
      * @param {string} color 颜色
      * @return {string} HSVA颜色，hsva(h,s,v,a)
      */
@@ -3409,6 +3429,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 转换为HSV颜色
+     * 
      * @param {string} color 颜色
      * @return {string} HSV颜色，hsv(h,s,v)
      */
@@ -3418,6 +3439,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 转换为HSBA颜色
+     * 
      * @param {string} color 颜色
      * @return {string} HSBA颜色，hsba(h,s,b,a)
      */
@@ -3427,6 +3449,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 转换为HSB颜色
+     * 
      * @param {string} color 颜色
      * @return {string} HSB颜色，hsb(h,s,b)
      */
@@ -3436,6 +3459,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 转换为HSLA颜色
+     * 
      * @param {string} color 颜色
      * @return {string} HSLA颜色，hsla(h,s,l,a)
      */
@@ -3445,6 +3469,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 转换为HSL颜色
+     * 
      * @param {string} color 颜色
      * @return {string} HSL颜色，hsl(h,s,l)
      */
@@ -3454,8 +3479,9 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 转换颜色名
+     * 
      * @param {string} color 颜色
-     * @return {String} 颜色名
+     * @return {string} 颜色名
      */
     function toName(color) {
         for ( var key in _nameColors) {
@@ -3468,19 +3494,20 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 移除颜色中多余空格
-     * @param {String} color 颜色
-     * @return {String} 无空格颜色
+     * 
+     * @param {string} color 颜色
+     * @return {string} 无空格颜色
      */
     function trim(color) {
-        color = String(color);
-        color = color.replace(/(^\s*)|(\s*$)/g, '');
-        if (/^[^#]*?$/i.test(color)) {
-            color = color.replace(/\s/g, '');
-        }
-        return color;
+        return String(color).replace(/\s+/g, '');
     }
 
-    // 规范化
+    /**
+     * 颜色规范化
+     * 
+     * @param {string} color 颜色
+     * @return {string} 规范化后的颜色
+     */
     function normalize(color) {
         // 颜色名
         if (_nameColors[color]) {
@@ -3491,15 +3518,22 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
         // hsv与hsb等价
         color = color.replace(/hsv/i, 'hsb');
         // rgb转为rrggbb
-        if (/^#[0-9a-f]{3}$/i.test(color)) {
-            var d = color.replace('#', '').split('');
-            color = '#' + d[0] + d[0] + d[1] + d[1] + d[2] + d[2];
+        if (/^#[\da-f]{3}$/i.test(color)) {
+            color = parseInt(color.slice(1), 16);
+            var r = (color & 0xf00) << 8;
+            var g = (color & 0xf0) << 4;
+            var b = color & 0xf;
+
+            color = '#'+ ((1 << 24) + (r << 4) + r + (g << 4) + g + (b << 4) + b).toString(16).slice(1);
         }
+        // 或者使用以下正则替换，不过 chrome 下性能相对差点
+        // color = color.replace(/^#([\da-f])([\da-f])([\da-f])$/i, '#$1$1$2$2$3$3');
         return color;
     }
 
     /**
      * 颜色加深或减淡，当level>0加深，当level<0减淡
+     * 
      * @param {string} color 颜色
      * @param {number} level 升降程度,取值区间[-1,1]
      * @return {string} 加深或减淡后颜色值
@@ -3514,9 +3548,9 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
         var data = getData(color);
         for ( var i = 0; i < 3; i++) {
             if (direct === 1) {
-                data[i] = Math.floor(data[i] * (1 - level));
+                data[i] = data[i] * (1 - level) | 0;
             } else {
-                data[i] = Math.floor((255 - data[i]) * level + data[i]);
+                data[i] = ((255 - data[i]) * level + data[i]) | 0;
             }
         }
         return 'rgb(' + data.join(',') + ')';
@@ -3524,6 +3558,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 颜色翻转,[255-r,255-g,255-b,1-a]
+     * 
      * @param {string} color 颜色
      * @return {string} 翻转颜色
      */
@@ -3538,10 +3573,11 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 简单两种颜色混合
-     * @param {String} color1 第一种颜色
-     * @param {String} color2 第二种颜色
-     * @param {String} weight 混合权重[0-1]
-     * @return {String} 结果色,rgb(r,g,b)或rgba(r,g,b,a)
+     * 
+     * @param {string} color1 第一种颜色
+     * @param {string} color2 第二种颜色
+     * @param {string} weight 混合权重[0-1]
+     * @return {string} 结果色,rgb(r,g,b)或rgba(r,g,b,a)
      */
     function mix(color1, color2, weight) {
         if(typeof weight === 'undefined') {
@@ -3576,14 +3612,11 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 随机颜色
+     * 
      * @return {string} 颜色值，#rrggbb格式
      */
     function random() {
-        return toHex(
-            'rgb(' + Math.round(Math.random() * 256) + ','
-                   + Math.round(Math.random() * 256) + ','
-                   + Math.round(Math.random() * 256) + ')'
-        );
+        return '#' + Math.random().toString(16).slice(2, 8);
     }
 
     /**
@@ -3603,6 +3636,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
      * hsl(h,s,l)
      * hsl(h%,s%,l%)
      * hsla(h,s,l,a)
+     *
      * @param {string} color 颜色
      * @return {Array} 颜色值数组或null
      */
@@ -3620,10 +3654,10 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
         if (r[2]) {
             // #rrggbb
             d = r[2].replace('#', '').split('');
-            rgb = [ d[0] + d[1], d[2] + d[3], d[4] + d[5] ];
+            rgb = [d[0] + d[1], d[2] + d[3], d[4] + d[5]];
             data = map(rgb,
                 function(c) {
-                    return adjust(parseInt(c, 16), [ 0, 255 ]);
+                    return adjust(parseInt(c, 16), [0, 255]);
             });
 
         }
@@ -3638,12 +3672,12 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
                     c = Math.floor(
                         c.indexOf('%') > 0 ? parseInt(c, 0) * 2.55 : c
                     );
-                    return adjust(c, [ 0, 255 ]);
+                    return adjust(c, [0, 255]);
                 }
             );
 
-            if( typeof a !== 'undefined') {
-                data.push(adjust(parseFloat(a), [ 0, 1 ]));
+            if(typeof a !== 'undefined') {
+                data.push(adjust(parseFloat(a), [0, 1]));
             }
         }
         else if (r[5] || r[6]) {
@@ -3653,13 +3687,13 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
             var s = hsxa[1];
             var x = hsxa[2];
             a = hsxa[3];
-            data = map( [ s, x ],
+            data = map([s, x],
                 function(c) {
-                    return adjust(parseFloat(c) / 100, [ 0, 1 ]);
+                    return adjust(parseFloat(c) / 100, [0, 1]);
             });
             data.unshift(h);
             if( typeof a !== 'undefined') {
-                data.push(adjust(parseFloat(a), [ 0, 1 ]));
+                data.push(adjust(parseFloat(a), [0, 1]));
             }
         }
         return data;
@@ -3676,7 +3710,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
             a = 1;
         }
         var data = getData(toRGBA(color));
-        data[3] = adjust(Number(a).toFixed(4), [ 0, 1 ]);
+        data[3] = adjust(Number(a).toFixed(4), [0, 1]);
 
         return toColor(data, 'rgba');
     }
@@ -3722,7 +3756,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
             if (h === 6) {
                 h = 0;
             }
-            var i = Math.floor(h);
+            var i = h | 0;
             var v1 = V * (1 - S);
             var v2 = V * (1 - S * (h - i));
             var v3 = V * (1 - S * (1 - (h - i)));
@@ -4317,28 +4351,35 @@ define(
         };
 
         /**
-         * 默认区域包含判断
-         * 
-         * @param x 横坐标
-         * @param y 纵坐标
+         * 获取鼠标坐标变换 
          */
-        Base.prototype.isCover = function (x, y) {
+        Base.prototype.getTansform = function (x, y) {
+            var originPos = [x, y];
             // 对鼠标的坐标也做相同的变换
             if (this.needTransform && this._transform) {
                 var inverseMatrix = [];
                 matrix.invert(inverseMatrix, this._transform);
 
-                var originPos = [x, y];
                 matrix.mulVector(originPos, inverseMatrix, [x, y, 1]);
 
                 if (x == originPos[0] && y == originPos[1]) {
                     // 避免外部修改导致的needTransform不准确
                     this.updateNeedTransform();
                 }
-
-                x = originPos[0];
-                y = originPos[1];
             }
+            return originPos;
+        };
+        
+        /**
+         * 默认区域包含判断
+         * 
+         * @param x 横坐标
+         * @param y 纵坐标
+         */
+        Base.prototype.isCover = function (x, y) {
+            var originPos = this.getTansform(x, y);
+            x = originPos[0];
+            y = originPos[1];
 
             // 快速预判并保留判断矩形
             var rect = this.style.__rect;
@@ -4367,12 +4408,14 @@ define(
          */
         Base.prototype.drawText = function (ctx, style, normalStyle) {
             // 字体颜色策略
-            style.textColor = style.textColor || style.color || style.strokeColor;
-            ctx.fillStyle = style.textColor;
+            var textColor = style.textColor || style.color || style.strokeColor;
+            ctx.fillStyle = textColor;
 
+            /*
             if (style.textPosition == 'inside') {
                 ctx.shadowColor = 'rgba(0,0,0,0)';   // 内部文字不带shadowColor
             }
+            */
 
             // 文本与图形间空白间隙
             var dd = 10;
@@ -4402,7 +4445,7 @@ define(
                                 al = 'center';
                                 bl = 'middle';
                                 if (style.brushType != 'stroke'
-                                    && style.textColor == style.color
+                                    && textColor == style.color
                                 ) {
                                     ctx.fillStyle = '#fff';
                                 }
@@ -4990,7 +5033,7 @@ define('zrender/shape/Path',['require','./Base','../tool/util'],function (requir
         buildPath : function(ctx, style) {
             var path = style.path;
 
-            var pathArray = this._parsePathData(path);
+            var pathArray = this.pathArray || this._parsePathData(path);
 
             // 平移坐标
             var x = style.x || 0;
@@ -5095,7 +5138,7 @@ define('zrender/shape/Path',['require','./Base','../tool/util'],function (requir
             var x = style.x || 0;
             var y = style.y || 0;
 
-            var pathArray = this._parsePathData(style.path);
+            var pathArray = this.pathArray || this._parsePathData(style.path);
             for (var i = 0; i < pathArray.length; i++) {
                 var p = pathArray[i].points;
 
@@ -5171,6 +5214,7 @@ define(
         
         /**
          * 包含判断
+         *
          * @param {Object} shape : 图形
          * @param {Object} area ： 目标区域
          * @param {number} x ： 横坐标
@@ -5328,7 +5372,7 @@ define(
             var pixelsData;
 
             if (typeof unit != 'undefined') {
-                unit = Math.floor((unit || 1 )/ 2);
+                unit = (unit || 1 ) >> 1;
                 pixelsData = context.getImageData(
                     x - unit,
                     y - unit,
@@ -5369,6 +5413,24 @@ define(
             var _a = 0;
             var _b = _x1;
 
+            var minX, maxX;
+            if (_x1 < _x2) {
+                minX = _x1 - _l; maxX = _x2 + _l;
+            } else {
+                minX = _x2 - _l; maxX = _x1 + _l;
+            }
+
+            var minY, maxY;
+            if (_y1 < _y2) {
+                minY = _y1 - _l; maxY = _y2 + _l;
+            } else {
+                minY = _y2 - _l; maxY = _y1 + _l;
+            }
+
+            if (x < minX || x > maxX || y < minY || y > maxY) {
+                return false;
+            }
+
             if (_x1 !== _x2) {
                 _a = (_y1 - _y2) / (_x1 - _x2);
                 _b = (_x1 * _y2 - _x2 * _y1) / (_x1 - _x2) ;
@@ -5383,42 +5445,26 @@ define(
 
         function _isInsideBrokenLine(area, x, y) {
             var pointList = area.pointList;
-            var lineArea;
-            var insideCatch = false;
+            var lineArea = {
+                xStart : 0,
+                yStart : 0,
+                xEnd : 0,
+                yEnd : 0,
+                lineWidth : 0
+            };
             for (var i = 0, l = pointList.length - 1; i < l; i++) {
-                lineArea = {
-                    xStart : pointList[i][0],
-                    yStart : pointList[i][1],
-                    xEnd : pointList[i + 1][0],
-                    yEnd : pointList[i + 1][1],
-                    lineWidth : Math.max(area.lineWidth, 10)
-                };
+                lineArea.xStart = pointList[i][0];
+                lineArea.yStart = pointList[i][1];
+                lineArea.xEnd = pointList[i + 1][0];
+                lineArea.yEnd = pointList[i + 1][1];
+                lineArea.lineWidth = Math.max(area.lineWidth, 10);
 
-                if (!_isInsideRectangle(
-                        {
-                            x : Math.min(lineArea.xStart, lineArea.xEnd)
-                                - lineArea.lineWidth,
-                            y : Math.min(lineArea.yStart, lineArea.yEnd)
-                                - lineArea.lineWidth,
-                            width : Math.abs(lineArea.xStart - lineArea.xEnd)
-                                    + lineArea.lineWidth,
-                            height : Math.abs(lineArea.yStart - lineArea.yEnd)
-                                     + lineArea.lineWidth
-                        },
-                        x,y
-                    )
-                ) {
-                    // 不在矩形区内跳过
-                    continue;
-                }
-
-                insideCatch = _isInsideLine(lineArea, x, y);
-                if (insideCatch) {
-                    break;
+                if (_isInsideLine(lineArea, x, y)) {
+                    return true;
                 }
             }
 
-            return insideCatch;
+            return false;
         }
 
         function _isInsideRing(area, x, y) {
@@ -5514,7 +5560,7 @@ define(
             if (redo) {
                 redo = false;
                 inside = false;
-                for (i = 0,j = N - 1;i < N;j = i++) {
+                for (i = 0,j = N - 1; i < N; j = i++) {
                     if ((polygon[i][1] < y && y < polygon[j][1])
                         || (polygon[j][1] < y && y < polygon[i][1])
                     ) {
@@ -6313,7 +6359,7 @@ define(
                             _needsRefresh.push( me );
                             // 防止因为缓存短时间内触发多次onload事件
                             _refreshTimeout = setTimeout(function(){
-                                refresh( _needsRefresh );
+                                refresh && refresh( _needsRefresh );
                                 // 清空needsRefresh
                                 _needsRefresh = [];
                             }, 10);
@@ -6465,7 +6511,7 @@ define(
             var domRoot = document.createElement('div');
             this._domRoot = domRoot;
 
-            domRoot.onselectstart = returnFalse; // 避免页面选中的尴尬
+            //domRoot.onselectstart = returnFalse; // 避免页面选中的尴尬
             domRoot.style.position = 'relative';
             domRoot.style.overflow = 'hidden';
             domRoot.style.width = this._width + 'px';
@@ -6512,7 +6558,7 @@ define(
             domRoot.appendChild(canvasElem);
             this._domList.hover = canvasElem;
             vmlCanvasManager && vmlCanvasManager.initElement(canvasElem);
-
+            this._domList.hover.onselectstart = returnFalse;
             this._ctxList.hover = canvasCtx = canvasElem.getContext('2d');
             if (devicePixelRatio != 1) {
                 canvasCtx.scale(devicePixelRatio, devicePixelRatio);
@@ -6747,6 +6793,9 @@ define(
          * 清除单独的一个层
          */
         Painter.prototype.clearLayer = function (k) {
+            if (!this._ctxList[k]) {
+                return;
+            }
             var zLevelConfigK = this._zLevelConfig[k];
 
             if (zLevelConfigK) {
@@ -7762,7 +7811,9 @@ define(
                 return null;
             },
             restart : function() {
-                this._startTime = new Date().getTime() + this.gap;
+                var time = new Date().getTime();
+                var remainder = (time - this._startTime) % this._life;
+                this._startTime = new Date().getTime() - remainder + this.gap;
             },
             fire : function(eventType, arg) {
                 for (var i = 0, len = this._targetPool.length; i < len; i++) {
@@ -7793,11 +7844,12 @@ define(
  * @method : stop
  */
 define(
-'zrender/animation/animation',['require','./clip'],function(require) {
+'zrender/animation/animation',['require','./clip','../tool/color'],function(require) {
     
 
 
 var Clip = require('./clip');
+var color = require('../tool/color');
 
 var requestAnimationFrame = window.requestAnimationFrame
                             || window.msRequestAnimationFrame
@@ -7836,7 +7888,7 @@ Animation.prototype = {
     update : function() {
 
         var time = new Date().getTime();
-        //var delta = time - this._time;
+        var delta = time - this._time;
         var clips = this._clips;
         var len = clips.length;
 
@@ -7874,7 +7926,7 @@ Animation.prototype = {
 
         this._time = time;
 
-        this.onframe();
+        this.onframe(delta);
 
     },
     start : function() {
@@ -7982,6 +8034,31 @@ function _catmullRomInterpolate(p0, p1, p2, p3, t, t2, t3) {
             + v0 * t + p1;
 }
 
+function _cloneValue(value) {
+    if (_isArrayLike(value)) {
+        var len = value.length;
+        if (_isArrayLike(value[0])) {
+            var ret = [];
+            for (var i = 0; i < len; i++) {
+                ret.push(arraySlice.call(value[i]));
+            }
+            return ret;
+        } else {
+            return arraySlice.call(value)
+        }
+    } else {
+        return value;
+    }
+}
+
+function rgba2String(rgba) {
+    rgba[0] = Math.floor(rgba[0]);
+    rgba[1] = Math.floor(rgba[1]);
+    rgba[2] = Math.floor(rgba[2]);
+
+    return 'rgba(' + rgba.join(',') + ')';
+}
+
 function Deferred(target, loop, getter, setter) {
     this._tracks = {};
     this._target = target;
@@ -8007,11 +8084,18 @@ Deferred.prototype = {
         for (var propName in props) {
             if (! this._tracks[propName]) {
                 this._tracks[propName] = [];
-                // Initialize value
-                this._tracks[propName].push({
-                    time : 0,
-                    value : this._getter(this._target, propName)
-                });
+                // If time is 0 
+                //  Then props is given initialize value
+                // Else
+                //  Initialize value from current prop value
+                if (time !== 0) {
+                    this._tracks[propName].push({
+                        time : 0,
+                        value : _cloneValue(
+                            this._getter(this._target, propName)
+                        )
+                    });
+                }
             }
             this._tracks[propName].push({
                 time : parseInt(time, 10),
@@ -8053,6 +8137,7 @@ Deferred.prototype = {
             // Guess data type
             var firstVal = keyframes[0].value;
             var isValueArray = _isArrayLike(firstVal);
+            var isValueColor = false;
 
             // For vertices morphing
             var arrDim = (
@@ -8076,20 +8161,17 @@ Deferred.prototype = {
             var kfValues = [];
             for (var i = 0; i < trackLen; i++) {
                 kfPercents.push(keyframes[i].time / trackMaxTime);
-                if (isValueArray) {
-                    if (arrDim == 2) {
-                        kfValues[i] = [];
-                        for (var j = 0; j < firstVal.length; j++) {
-                            kfValues[i].push(
-                                arraySlice.call(keyframes[i].value[j])
-                            );
-                        }
-                    } else {
-                        kfValues.push(arraySlice.call(keyframes[i].value));
+                // Assume value is a color when it is a string
+                var value = keyframes[i].value;
+                if (typeof(value) == 'string') {
+                    value = color.toArray(value);
+                    if (value.length == 0) {    // Invalid color
+                        value[0] = value[1] = value[2] = 0;
+                        value[3] = 1;
                     }
-                } else {
-                    kfValues.push(keyframes[i].value);
+                    isValueColor = true;
                 }
+                kfValues.push(value);
             }
 
             // Cache the key of last frame to speed up when 
@@ -8099,6 +8181,11 @@ Deferred.prototype = {
             var start;
             var i, w;
             var p0, p1, p2, p3;
+
+
+            if (isValueColor) {
+                var rgba = [0, 0, 0, 0];
+            }
 
             var onframe = function(target, percent) {
                 // Find the range keyframes
@@ -8130,9 +8217,6 @@ Deferred.prototype = {
                 } else {
                     w = (percent - kfPercents[i]) / range;
                 }
-                if (w < 0) {
-                    console.log(w);
-                }
                 if (useSpline) {
                     p1 = kfValues[i];
                     p0 = kfValues[i === 0 ? i : i - 1];
@@ -8145,12 +8229,22 @@ Deferred.prototype = {
                             arrDim
                         );
                     } else {
+                        var value;
+                        if (isValueColor) {
+                            value = _catmullRomInterpolateArray(
+                                p0, p1, p2, p3, w, w*w, w*w*w,
+                                rgba, 1
+                            );
+                            value = rgba2String(rgba);
+                        } else {
+                            value = _catmullRomInterpolate(
+                                p0, p1, p2, p3, w, w*w, w*w*w
+                            )
+                        }
                         setter(
                             target,
                             propName,
-                            _catmullRomInterpolate(
-                                p0, p1, p2, p3, w, w*w, w*w*w
-                            )
+                            value
                         );
                     }
                 } else {
@@ -8161,10 +8255,20 @@ Deferred.prototype = {
                             arrDim
                         );
                     } else {
+                        var value;
+                        if (isValueColor) {
+                            _interpolateArray(
+                                kfValues[i], kfValues[i+1], w,
+                                rgba, 1
+                            );
+                            value = rgba2String(rgba);
+                        } else {
+                            value = _interpolateNumber(kfValues[i], kfValues[i+1], w);
+                        }
                         setter(
                             target,
                             propName,
-                            _interpolateNumber(kfValues[i], kfValues[i+1], w)
+                            value
                         );
                     }
                 }
@@ -8190,7 +8294,6 @@ Deferred.prototype = {
             self._clipCount++;
             self.animation.add(clip);
         };
-
 
         for (var propName in this._tracks) {
             createTrackClip(this._tracks[propName], propName);
@@ -9171,7 +9274,7 @@ define(
             Base.call(this, options);
         }
 
-        Circle.prototype =  {
+        Circle.prototype = {
             type: 'circle',
             /**
              * 创建圆形路径
@@ -9603,6 +9706,7 @@ define(
                     y1 + (deltaY / numDashes) * i
                 );
             }
+            ctx.lineTo(x2, y2);
         };
     }
 );
@@ -9772,6 +9876,7 @@ define(
                 // 虽然能重用brokenLine，但底层图形基于性能考虑，重复代码减少调用吧
                 var pointList = style.pointList;
                 // 开始点和结束点重复
+                /*
                 var start = pointList[0];
                 var end = pointList[pointList.length-1];
 
@@ -9782,6 +9887,7 @@ define(
                         pointList.pop();
                     }
                 }
+                */
 
                 if (pointList.length < 2) {
                     // 少于2个点就不画了~
@@ -11284,6 +11390,12 @@ define(
                     // 少于2个点就不画了~
                     return;
                 }
+                
+                var len = Math.min(
+                    style.pointList.length, 
+                    Math.round(style.pointListLength || style.pointList.length)
+                );
+                
                 if (style.smooth && style.smooth !== 'spline') {
                     var controlPoints = smoothBezier(
                         pointList, style.smooth
@@ -11293,7 +11405,7 @@ define(
                     var cp1;
                     var cp2;
                     var p;
-                    for (var i = 0, l = pointList.length; i < l - 1; i++) {
+                    for (var i = 0; i < len - 1; i++) {
                         cp1 = controlPoints[i * 2];
                         cp2 = controlPoints[i * 2 + 1];
                         p = pointList[i + 1];
@@ -11305,11 +11417,12 @@ define(
                 else {
                     if (style.smooth === 'spline') {
                         pointList = smoothSpline(pointList);
+                        len = pointList.length;
                     }
                     if (!style.lineType || style.lineType == 'solid') {
                         //默认为实线
                         ctx.moveTo(pointList[0][0],pointList[0][1]);
-                        for (var i = 1, l = pointList.length; i < l; i++) {
+                        for (var i = 1; i < len; i++) {
                             ctx.lineTo(pointList[i][0],pointList[i][1]);
                         }
                     }
@@ -11319,7 +11432,7 @@ define(
                         var dashLength = (style.lineWidth || 1) 
                                          * (style.lineType == 'dashed' ? 5 : 1);
                         ctx.moveTo(pointList[0][0],pointList[0][1]);
-                        for (var i = 1, l = pointList.length; i < l; i++) {
+                        for (var i = 1; i < len; i++) {
                             dashedLineTo(
                                 ctx,
                                 pointList[i - 1][0], pointList[i - 1][1],

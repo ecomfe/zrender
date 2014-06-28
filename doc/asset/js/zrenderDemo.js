@@ -61,15 +61,47 @@ function QueryString() {
     }
 }
 
-require.config({
-    packages: [
-        {
-            name: 'zrender',
-            location: '../../src',
-            main: 'zrender'
+var developMode = false;
+if (developMode) {
+    // for develop
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../../src',
+                main: 'zrender'
+            }
+        ]
+    });
+}
+else {
+    // for echarts online home page
+    var fileLocation = './www/js/zrender';
+    require.config({
+        paths:{ 
+            zrender: fileLocation,
+            'zrender/shape/Rose': fileLocation,
+            'zrender/shape/Trochoid': fileLocation,
+            'zrender/shape/Circle': fileLocation,
+            'zrender/shape/Sector': fileLocation,
+            'zrender/shape/Ring': fileLocation,
+            'zrender/shape/Ellipse': fileLocation,
+            'zrender/shape/Rectangle': fileLocation,
+            'zrender/shape/Text': fileLocation,
+            'zrender/shape/Heart': fileLocation,
+            'zrender/shape/Droplet': fileLocation,
+            'zrender/shape/Line': fileLocation,
+            'zrender/shape/Image': fileLocation,
+            'zrender/shape/Star': fileLocation,
+            'zrender/shape/Isogon': fileLocation,
+            'zrender/shape/BezierCurve': fileLocation,
+            'zrender/shape/BrokenLine': fileLocation,
+            'zrender/shape/Path': fileLocation,
+            'zrender/shape/Polygon': fileLocation
         }
-    ]
-});
+    });
+}
+
 
 require(
     [

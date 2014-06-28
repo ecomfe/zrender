@@ -97,15 +97,32 @@
     <script src="../asset/js/bootstrap-carousel.js"></script>
     <script src="../asset/js/bootstrap-typeahead.js"></script>
     <script type="text/javascript">
-        require.config({
-            packages: [
-                {
-                    name: 'zrender',
-                    location: '../../src',
-                    main: 'zrender'
+        var developMode = false;
+        if (developMode) {
+            // for develop
+            require.config({
+                packages: [
+                    {
+                        name: 'zrender',
+                        location: '../../src',
+                        main: 'zrender'
+                    }
+                ]
+            });
+        }
+        else {
+            // for echarts online home page
+            var fileLocation = './www/js/zrender';
+            require.config({
+                paths:{ 
+                    zrender: fileLocation,
+                    'zrender/shape/Circle': fileLocation,
+                    'zrender/shape/Rectangle': fileLocation,
+                    'zrender/shape/Ring': fileLocation,
+                    'zrender/shape/Polygon': fileLocation
                 }
-            ]
-        });
+            });
+        }
 
         require(
             ['zrender', 'zrender/shape/Circle', 'zrender/shape/Rectangle', 'zrender/shape/Ring', 'zrender/shape/Polygon'],
