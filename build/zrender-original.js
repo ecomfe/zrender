@@ -4092,8 +4092,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
    }
  */
 define(
-    'zrender/shape/Base',['require','../tool/area','../tool/matrix','../tool/guid','../tool/color'],function(require) {
-        var area = require('../tool/area');
+    'zrender/shape/Base',['require','../tool/matrix','../tool/guid','../tool/area','../tool/area','../tool/color','../tool/area'],function(require) {
         var matrix = require('../tool/matrix');
         var guid = require('../tool/guid');
         
@@ -4108,7 +4107,7 @@ define(
             );
             
             text = (text + '').split('\n');
-            var lineHeight = area.getTextHeight('国', textFont);
+            var lineHeight = require('../tool/area').getTextHeight('国', textFont);
             
             switch (textBaseline) {
                 case 'top':
@@ -4134,6 +4133,7 @@ define(
          * @param {Object} style
          */
         function _getTextRect(text, x, y, textFont, textAlign, textBaseline) {
+            var area = require('../tool/area');
             var width = area.getTextWidth(text, textFont);
             var lineHeight = area.getTextHeight('国', textFont);
             
@@ -4393,7 +4393,7 @@ define(
                 && y <= (rect.y + rect.height)
             ) {
                 // 矩形内
-                return area.isInside(this, this.style, x, y);
+                return require('../tool/area').isInside(this, this.style, x, y);
             }
             
             return false;
@@ -8367,7 +8367,7 @@ define(
         var _instances = {};    //ZRender实例map索引
 
         var zrender = {};
-        zrender.version = '1.1.2';
+        zrender.version = '2.0.0';
 
         /**
          * zrender初始化
