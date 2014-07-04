@@ -8359,9 +8359,9 @@ define(
         var log = require('./tool/log');
         var guid = require('./tool/guid');
 
-        var Handler = require( './Handler' );
-        var Painter = require( './Painter' );
-        var Storage = require( './Storage' );
+        var Handler = require('./Handler');
+        var Painter = require('./Painter');
+        var Storage = require('./Storage');
         var Animation = require('./animation/animation');
 
         var _instances = {};    //ZRender实例map索引
