@@ -8,7 +8,7 @@
    {
        // 基础属性
        shape  : 'star',       // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
        zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
        invisible : {boolean},   // 默认为false，是否可见
 
@@ -75,18 +75,22 @@
    }
  */
 define(
-    function(require) {
+    function (require) {
 
         var math = require('../tool/math');
         var sin = math.sin;
         var cos = math.cos;
         var PI = Math.PI;
 
-        function Star() {
-            this.type = 'heart';
+        var Base = require('./Base');
+
+        function Star(options) {
+            Base.call(this, options);
         }
 
         Star.prototype = {
+            type: 'star',
+
             /**
              * 创建n角星（n>3）路径
              * @param {Context2D} ctx Canvas 2D上下文
@@ -141,6 +145,10 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
                 var lineWidth;
                 if (style.brushType == 'stroke' || style.brushType == 'fill') {
                     lineWidth = style.lineWidth || 1;
@@ -148,21 +156,18 @@ define(
                 else {
                     lineWidth = 0;
                 }
-                return {
+                style.__rect = {
                     x : Math.round(style.x - style.r - lineWidth / 2),
                     y : Math.round(style.y - style.r - lineWidth / 2),
                     width : style.r * 2 + lineWidth,
                     height : style.r * 2 + lineWidth
                 };
+                
+                return style.__rect;
             }
         };
 
-        var base = require('./base');
-        base.derive(Star);
-        
-        var shape = require('../shape');
-        shape.define('star', new Star());
-
+        require('../tool/util').inherits(Star, Base);
         return Star;
     }
 );

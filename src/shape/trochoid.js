@@ -8,7 +8,7 @@
    {
        // 基础属性
        shape  : 'trochoid', // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
        zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
        invisible : {boolean},   // 默认为false，是否可见
 
@@ -76,13 +76,17 @@
    }
  */
 define(
-    function(require) {
-        function Trochoid() {
-            this.type = 'trochoid';
+    function (require) {
+        var Base = require('./Base');
+        
+        function Trochoid(options) {
             this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
+            Base.call(this, options);
         }
 
         Trochoid.prototype =  {
+            type: 'trochoid',
+
             /**
              * 创建线条路径
              * @param {Context2D} ctx Canvas 2D上下文
@@ -145,6 +149,10 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
                 var _R = style.r;
                 var _r = style.r0;
                 var _d = style.d;
@@ -160,21 +168,17 @@ define(
                 else {
                     lineWidth = 0;
                 }
-                return {
+                style.__rect = {
                     x : - _s - lineWidth + _offsetX,
                     y : - _s - lineWidth + _offsetY,
                     width : 2 * _s + 2 * lineWidth,
                     height : 2 * _s + 2 * lineWidth
                 };
+                return style.__rect;
             }
         };
 
-        var base = require('./base');
-        base.derive(Trochoid);
-        
-        var shape = require('../shape');
-        shape.define('trochoid', new Trochoid());
-
+        require('../tool/util').inherits(Trochoid, Base);
         return Trochoid;
     }
 );

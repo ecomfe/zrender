@@ -8,7 +8,7 @@
    {
        // 基础属性
        shape  : 'beziercurve',         // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
        zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
        invisible : {boolean},   // 默认为false，是否可见
 
@@ -78,14 +78,18 @@
    }
  */
 define(
-    function(require) {
-        function Beziercurve() {
-            this.type = 'beziercurve';
+    function (require) {
+        var Base = require('./Base');
+        
+        function BezierCurve( options ) {
             this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
             this.textPosition = 'end';
+            Base.call(this, options);
         }
 
-        Beziercurve.prototype =  {
+        BezierCurve.prototype = {
+            type: 'bezier-curve',
+
             /**
              * 创建线条路径
              * @param {Context2D} ctx Canvas 2D上下文
@@ -116,6 +120,10 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
                 var _minX = Math.min(style.xStart, style.xEnd, style.cpX1);
                 var _minY = Math.min(style.yStart, style.yEnd, style.cpY1);
                 var _maxX = Math.max(style.xStart, style.xEnd, style.cpX1);
@@ -133,21 +141,18 @@ define(
                 }
 
                 var lineWidth = style.lineWidth || 1;
-                return {
+                style.__rect = {
                     x : _minX - lineWidth,
                     y : _minY - lineWidth,
                     width : _maxX - _minX + lineWidth,
                     height : _maxY - _minY + lineWidth
                 };
+                
+                return style.__rect;
             }
         };
 
-        var base = require('./base');
-        base.derive(Beziercurve);
-        
-        var shape = require('../shape');
-        shape.define('beziercurve', new Beziercurve());
-
-        return Beziercurve;
+        require('../tool/util').inherits(BezierCurve, Base);
+        return BezierCurve;
     }
 );

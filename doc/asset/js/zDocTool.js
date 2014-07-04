@@ -42,18 +42,17 @@ description.tool = [
                 res: ['width', '{number}', '文本在指定样式下的宽度'],
                 pre: (function() {
 var zrArea = require('zrender/tool/area');
-var textShape = {
-    shape : 'text',
+var TextShape = require('zrender/shape/Text');
+var textShape = new TextShape({
     style : {
         x : 100, y : 100,
         text: 'zrender',
         textFont: 'bold 18px verdana'
     }
-};
+});
 zr.addShape(textShape);
-zr.addShape({
-    shape: 'text',
-    id: zr.newShapeId(),
+zr.addShape(new TextShape({
+    id: require('zrender/tool/guid')(),
     style: {
         x: 20, y: 20,
         text : textShape.style.text
@@ -63,7 +62,7 @@ zr.addShape({
                    textShape.style.textFont
                )
     }
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry: true
@@ -187,8 +186,8 @@ myMessageCenter.dispatch(
                 pre: (function() {
 var zrColor = require('zrender/tool/color');
 var colorIdx = 0;
-zr.addShape({
-    shape: 'circle',
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     style: {
         x: 200, y: 200, r : 50,
         color : zrColor.getColor(colorIdx++)
@@ -199,7 +198,7 @@ zr.addShape({
         zr.modShape(target.id, {style: {color : zrColor.getColor(colorIdx++)}});
         zr.refresh();
     }
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry: true
@@ -215,8 +214,8 @@ zr.render();
 var zrColor = require('zrender/tool/color');
 zrColor.customPalette(['red', 'green', 'blue'])
 var colorIdx = 0;
-zr.addShape({
-    shape: 'circle',
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     style: {
         x: 200, y: 200, r : 50,
         color : zrColor.getColor(colorIdx++)
@@ -227,7 +226,7 @@ zr.addShape({
         zr.modShape(target.id, {style: {color : zrColor.getColor(colorIdx++)}});
         zr.refresh();
     }
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry: true
@@ -253,13 +252,13 @@ zr.render();
                 pre: (function() {
 var zrColor = require('zrender/tool/color');
 zrColor.customHighlight('red')
-zr.addShape({
-    shape: 'circle',
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     style: {
         x: 200, y: 200, r : 50,
         color : 'green'
     }
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry: true
@@ -284,8 +283,8 @@ zr.render();
                 res: ['color', '{color}', '径向渐变颜色'],
                 pre: (function() {
 var zrColor = require('zrender/tool/color');
-zr.addShape({
-    shape: 'circle',
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     style: {
         x: 200, y: 200, r : 50,
         color : zrColor.getRadialGradient(
@@ -294,7 +293,7 @@ zr.addShape({
         )
     },
     draggable : true
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry: true
@@ -314,8 +313,8 @@ zr.render();
 var zrColor = require('zrender/tool/color');
 var width = zr.getWidth();
 var height = zr.getHeight();
-zr.addShape({
-    shape: 'rectangle',
+var RectangleShape = require('zrender/shape/Rectangle');
+zr.addShape(new RectangleShape({
     style: {
         x: 0, y: 0, width : width, height : height,
         color : zrColor.getLinearGradient(
@@ -323,7 +322,7 @@ zr.addShape({
             [[0, 'yellow'],[0.5, 'red'],[1,'lightgreen']]
         )
     }
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry: true
@@ -343,14 +342,14 @@ var width = zr.getWidth();
 var height = zr.getHeight();
 var colorList = zrColor.getStepColors('red', 'lightgreen', 10);
 var w = Math.round(width / colorList.length);
+var RectangleShape = require('zrender/shape/Rectangle');
 for (var i = 0, l = colorList.length; i < l; i++) {
-    zr.addShape({
-        shape: 'rectangle',
+    zr.addShape(new RectangleShape({
         style: {
             x: w * i, y: 0, width : w, height : height,
             color : colorList[i]
         }
-    });
+    }));
 }
 zr.render();
                 }).toString().slice(13, -10),
@@ -372,14 +371,14 @@ var colorList = zrColor.getGradientColors(
     ['red', 'yellow', 'lightblue']
 );
 var w = Math.round(width / colorList.length);
+var RectangleShape = require('zrender/shape/Rectangle');
 for (var i = 0, l = colorList.length; i < l; i++) {
-    zr.addShape({
-        shape: 'rectangle',
+    zr.addShape(new RectangleShape({
         style: {
             x: w * i, y: 0, width : w, height : height,
             color : colorList[i]
         }
-    });
+    }));
 }
 zr.render();
                 }).toString().slice(13, -10),
@@ -398,9 +397,9 @@ var width = zr.getWidth();
 var height = zr.getHeight();
 var colorList = zrColor.getStepColors('red', 'lightgreen', 10);
 var w = Math.round(width / colorList.length);
+var RectangleShape = require('zrender/shape/Rectangle');
 for (var i = 0, l = colorList.length; i < l; i++) {
-    zr.addShape({
-        shape: 'rectangle',
+    zr.addShape(new RectangleShape({
         style: {
             x: w * i, y: 0, width : w, height : height,
             color : colorList[i]
@@ -414,7 +413,7 @@ for (var i = 0, l = colorList.length; i < l; i++) {
             );
             zr.refresh();
         }
-    });
+    }));
 }
 zr.render();
                 }).toString().slice(13, -10),
@@ -431,20 +430,18 @@ zr.render();
                 res: ['color', '{color}', '结果色,rgb(r,g,b)或rgba(r,g,b,a)'],
                 pre: (function() {
 var zrColor = require('zrender/tool/color');
-zr.addShape({
-    shape: 'circle',
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     style: { x: 100, y: 200, r: 30, color: zrColor.random(), text: 'drag me' },
     _x: 100,
     draggable: true
-});
-zr.addShape({
-    shape: 'circle',
+}));
+zr.addShape(new CircleShape({
     style: { x: 300, y: 200, r: 30, color: zrColor.random(), text: 'drag me' },
     _x: 300,
     draggable: true
-});
-zr.addShape({
-    shape: 'circle',
+}));
+zr.addShape(new CircleShape({
     style: { x: 200, y: 200, r: 50, brushType: 'both', color: '#ccc', strokeColor: '#ccc', text: 'here'},
     ondrop: function(params) {
         var target = params.target;
@@ -462,7 +459,7 @@ zr.addShape({
         );
         zr.refresh();
     }
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry: true
@@ -477,8 +474,8 @@ zr.render();
                 res: ['color', '{color}', '加深或减淡后颜色值'],
                 pre: (function() {
 var zrColor = require('zrender/tool/color');
-zr.addShape({
-    shape : 'circle',
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     style : {
         x : 400, y : 200,  r : 100,
         color : zrColor.random(),
@@ -498,7 +495,7 @@ zr.addShape({
         zr.refresh();
         zrEvent.stop(event);
     }
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry: true
@@ -514,8 +511,8 @@ zr.render();
                 pre: (function() {
 var zrColor = require('zrender/tool/color');
 var alpha = 0.5;
-zr.addShape({
-    shape : 'circle',
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     style : {
         x : 400, y : 200,  r : 100,
         color : zrColor.random(),
@@ -535,7 +532,7 @@ zr.addShape({
         zr.refresh();
         zrEvent.stop(event);
     }
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry: true
@@ -660,32 +657,30 @@ var width = zr.getWidth();
 var height = zr.getHeight();
 var w = Math.round(width / 10);
 var h = Math.round(height / 3);
+var RectangleShape = require('zrender/shape/Rectangle');
 for (var i = 0; i < 10; i++) {
-    zr.addShape({
-        shape: 'rectangle',
+    zr.addShape(new RectangleShape({
         style: {
             x: w * i, y: 0, width : w, height : h,
             color : zrColor.toColor([i * 25, 10, 10])
         }
-    });
+    }));
 }
 for (var i = 0; i < 10; i++) {
-    zr.addShape({
-        shape: 'rectangle',
+    zr.addShape(new RectangleShape({
         style: {
             x: w * i, y: h, width : w, height : h,
             color : zrColor.toColor([10, i * 25, 10, 1], 'rgba')
         }
-    });
+    }));
 }
 for (var i = 0; i < 10; i++) {
-    zr.addShape({
-        shape: 'rectangle',
+    zr.addShape(new RectangleShape({
         style: {
             x: w * i, y: h * 2, width : w, height : h,
             color : zrColor.toColor([10, 10, i * 25], 'hex')
         }
-    });
+    }));
 }
 zr.render();
                 }).toString().slice(13, -10),

@@ -8,7 +8,7 @@
    {
        // 基础属性
        shape  : 'brokenLine',         // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
        zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
        invisible : {boolean},   // 默认为false，是否可见
 
@@ -71,14 +71,21 @@
    }
  */
 define(
-    function(require) {
-        function BrokenLine() {
-            this.type = 'brokenLine';
+    function (require) {
+        var Base = require('./Base');
+        var smoothSpline = require('./util/smoothSpline');
+        var smoothBezier = require('./util/smoothBezier');
+        var dashedLineTo = require('./util/dashedLineTo');
+
+        function BrokenLine( options ) {
             this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
             this.textPosition = 'end';
+            Base.call(this, options);
         }
 
         BrokenLine.prototype =  {
+            type: 'broken-line',
+
             /**
              * 创建多边形路径
              * @param {Context2D} ctx Canvas 2D上下文
@@ -90,16 +97,22 @@ define(
                     // 少于2个点就不画了~
                     return;
                 }
+                
+                var len = Math.min(
+                    style.pointList.length, 
+                    Math.round(style.pointListLength || style.pointList.length)
+                );
+                
                 if (style.smooth && style.smooth !== 'spline') {
-                    var controlPoints = this.smoothBezier(
-                        pointList, style.smooth, false
+                    var controlPoints = smoothBezier(
+                        pointList, style.smooth
                     );
 
                     ctx.moveTo(pointList[0][0], pointList[0][1]);
                     var cp1;
                     var cp2;
                     var p;
-                    for (var i = 0, l = pointList.length; i < l - 1; i++) {
+                    for (var i = 0; i < len - 1; i++) {
                         cp1 = controlPoints[i * 2];
                         cp2 = controlPoints[i * 2 + 1];
                         p = pointList[i + 1];
@@ -110,12 +123,13 @@ define(
                 } 
                 else {
                     if (style.smooth === 'spline') {
-                        pointList = this.smoothSpline(pointList, false);
+                        pointList = smoothSpline(pointList);
+                        len = pointList.length;
                     }
                     if (!style.lineType || style.lineType == 'solid') {
                         //默认为实线
                         ctx.moveTo(pointList[0][0],pointList[0][1]);
-                        for (var i = 1, l = pointList.length; i < l; i++) {
+                        for (var i = 1; i < len; i++) {
                             ctx.lineTo(pointList[i][0],pointList[i][1]);
                         }
                     }
@@ -125,8 +139,8 @@ define(
                         var dashLength = (style.lineWidth || 1) 
                                          * (style.lineType == 'dashed' ? 5 : 1);
                         ctx.moveTo(pointList[0][0],pointList[0][1]);
-                        for (var i = 1, l = pointList.length; i < l; i++) {
-                            this.dashedLineTo(
+                        for (var i = 1; i < len; i++) {
+                            dashedLineTo(
                                 ctx,
                                 pointList[i - 1][0], pointList[i - 1][1],
                                 pointList[i][0], pointList[i][1],
@@ -143,17 +157,11 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
-                var shape = require('../shape');
-                return shape.get('polygon').getRect(style);
+                return require('./Polygon').prototype.getRect(style);
             }
         };
 
-        var base = require('./base');
-        base.derive(BrokenLine);
-        
-        var shape = require('../shape');
-        shape.define('brokenLine', new BrokenLine());
-
+        require('../tool/util').inherits(BrokenLine, Base);
         return BrokenLine;
     }
 );

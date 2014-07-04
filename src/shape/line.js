@@ -8,7 +8,7 @@
    {
        // 基础属性
        shape  : 'line',         // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
        zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
        invisible : {boolean},   // 默认为false，是否可见
 
@@ -74,14 +74,19 @@
    }
  */
 define(
-    function(require) {
-        function Line() {
-            this.type = 'line';
+    function (require) {
+        var Base = require('./Base');
+        var dashedLineTo = require('./util/dashedLineTo');
+        
+        function Line(options) {
             this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
             this.textPosition = 'end';
+            Base.call(this, options);
         }
 
         Line.prototype =  {
+            type: 'line',
+
             /**
              * 创建线条路径
              * @param {Context2D} ctx Canvas 2D上下文
@@ -98,7 +103,7 @@ define(
                 ) {
                     var dashLength =(style.lineWidth || 1)  
                                      * (style.lineType == 'dashed' ? 5 : 1);
-                    this.dashedLineTo(
+                    dashedLineTo(
                         ctx,
                         style.xStart, style.yStart,
                         style.xEnd, style.yEnd,
@@ -112,8 +117,12 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
                 var lineWidth = style.lineWidth || 1;
-                return {
+                style.__rect = {
                     x : Math.min(style.xStart, style.xEnd) - lineWidth,
                     y : Math.min(style.yStart, style.yEnd) - lineWidth,
                     width : Math.abs(style.xStart - style.xEnd)
@@ -121,15 +130,12 @@ define(
                     height : Math.abs(style.yStart - style.yEnd)
                              + lineWidth
                 };
+                
+                return style.__rect;
             }
         };
 
-        var base = require('./base');
-        base.derive(Line);
-        
-        var shape = require('../shape');
-        shape.define('line', new Line());
-
+        require('../tool/util').inherits(Line, Base);
         return Line;
     }
 );

@@ -3,12 +3,13 @@
  *
  * desc:    zrender是一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型。
  * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *          errorrik (errorrik@gmail.com)
  *
  * 可配图形属性：
    {
        // 基础属性，详见各shape
        shape  : {string},       // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
        zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
        invisible : {boolean},   // 默认为false，是否可见
 
@@ -115,441 +116,8 @@
  */
 define(
     function(require) {
-
-        var self;
-        var area = require('../tool/area');
         var matrix = require('../tool/matrix');
-        var vec2 = require('../tool/vector');
-
-        /**
-         * 派生实现通用功能
-         * @param {Object} clazz 图形类
-         */
-        function derive(clazz) {
-            var methods = [             // 派生实现的基类方法
-                    'brush',
-                    'setContext',
-                    'dashedLineTo',
-                    'smoothBezier',
-                    'smoothSpline',
-                    'drawText',
-                    'getHighlightStyle',
-                    'getHighlightZoom',
-                    'drift',
-                    'isCover',
-                    'updateTransform'
-                ];
-            var len = methods.length;
-            var proto = clazz.prototype;
-            var i = 0;
-            var method;
-
-            for (; i < len; i++) {
-                method = methods[i];
-                if (!proto[method]) {
-                    proto[method] = self[method];
-                }
-            }
-        }
-
-        /**
-         * 画刷
-         * @param ctx       画布句柄
-         * @param e         形状实体
-         * @param isHighlight   是否为高亮状态
-         * @param updateCallback 需要异步加载资源的shape可以通过这个callback(e)
-         *                       让painter更新视图，base.brush没用，需要的话重载brush
-         */
-        function brush(ctx, e, isHighlight) {
-            var style = e.style || {};
-
-            if (this.brushTypeOnly) {
-                style.brushType = this.brushTypeOnly;
-            }
-
-            if (isHighlight) {
-                // 根据style扩展默认高亮样式
-                style = this.getHighlightStyle(
-                    style,
-                    e.highlightStyle || {},
-                    this.brushTypeOnly
-                );
-            }
-
-            if (this.brushTypeOnly == 'stroke') {
-                style.strokeColor = style.strokeColor || style.color;
-            }
-
-            ctx.save();
-            this.setContext(ctx, style);
-
-            // 设置transform
-            if (e.__needTransform) {
-                ctx.transform.apply(ctx,this.updateTransform(e));
-            }
-
-            ctx.beginPath();
-            this.buildPath(ctx, style);
-            if (this.brushTypeOnly != 'stroke') {
-                ctx.closePath();
-            }
-
-            switch (style.brushType) {
-                case 'fill':
-                    ctx.fill();
-                    break;
-                case 'stroke':
-                    style.lineWidth > 0 && ctx.stroke();
-                    break;
-                case 'both':
-                    ctx.fill();
-                    style.lineWidth > 0 && ctx.stroke();
-                    break;
-                default:
-                    ctx.fill();
-            }
-
-            if (typeof style.text != 'undefined') {
-                this.drawText(ctx, style, e.style);
-            }
-
-            ctx.restore();
-
-            return;
-        }
-
-        /**
-         * 画布通用设置
-         * @param ctx       画布句柄
-         * @param style     通用样式
-         */
-        function setContext(ctx, style) {
-            // 简单判断不做严格类型检测
-            if (style.color) {
-                ctx.fillStyle = style.color;
-            }
-
-            if (style.strokeColor) {
-                ctx.strokeStyle = style.strokeColor;
-            }
-
-            if (typeof style.opacity != 'undefined') {
-                ctx.globalAlpha = style.opacity;
-            }
-
-            if (style.lineCap) {
-                ctx.lineCap = style.lineCap;
-            }
-
-            if (style.lineJoin) {
-                ctx.lineJoin = style.lineJoin;
-            }
-
-            if (style.miterLimit) {
-                ctx.miterLimit = style.miterLimit;
-            }
-
-            if (typeof style.lineWidth != 'undefined') {
-                ctx.lineWidth = style.lineWidth;
-            }
-
-            if (typeof style.shadowBlur != 'undefined') {
-                ctx.shadowBlur = style.shadowBlur;
-            }
-
-            if (style.shadowColor) {
-                ctx.shadowColor = style.shadowColor;
-            }
-
-            if (typeof style.shadowOffsetX != 'undefined') {
-                ctx.shadowOffsetX = style.shadowOffsetX;
-            }
-
-            if (typeof style.shadowOffsetY != 'undefined') {
-                ctx.shadowOffsetY = style.shadowOffsetY;
-            }
-        }
-        
-        /**
-         * 虚线lineTo 
-         */
-        function dashedLineTo(ctx, x1, y1, x2, y2, dashLength) {
-            dashLength = typeof dashLength == 'undefined'
-                         ? 5 : dashLength;
-            var deltaX = x2 - x1;
-            var deltaY = y2 - y1;
-            var numDashes = Math.floor(
-                Math.sqrt(deltaX * deltaX + deltaY * deltaY) / dashLength
-            );
-            for (var i = 0; i < numDashes; ++i) {
-                ctx[i % 2 === 0 ? 'moveTo' : 'lineTo'](
-                    x1 + (deltaX / numDashes) * i,
-                    y1 + (deltaY / numDashes) * i
-                );
-            }
-        }
-        
-        /**
-         * 贝塞尔平滑曲线 
-         */
-        function smoothBezier(points, smooth, loop) {
-            var len = points.length;
-            var cps = [];
-
-            var v = [];
-            var v1 = [];
-            var v2 = [];
-            var prevPoint;
-            var nextPoint;
-            for(var i = 0; i < len; i++){
-                var point = points[i];
-                var prevPoint;
-                var nextPoint;
-                if (loop) {
-                    prevPoint = points[i === 0 ? len-1 : i-1];
-                    nextPoint = points[(i + 1) % len];
-                } else {
-                    if (i === 0 || i === len-1) {
-                        cps.push(points[i]);
-                        continue;
-                    } else {
-                        prevPoint = points[i-1];
-                        nextPoint = points[i+1];
-                    }
-                }
-
-                vec2.sub(v, nextPoint, prevPoint);
-
-                //use degree to scale the handle length
-                vec2.scale(v, v, smooth);
-
-                var d0 = vec2.distance(point, prevPoint);
-                var d1 = vec2.distance(point, nextPoint);
-                var sum = d0 + d1;
-                d0 /= sum;
-                d1 /= sum;
-
-                vec2.scale(v1, v, -d0);
-                vec2.scale(v2, v, d1);
-
-                cps.push(vec2.add([], point, v1));
-                cps.push(vec2.add([], point, v2));
-            }
-            if (loop) {
-                cps.push(cps.shift());
-            }
-            return cps;
-        }
-
-        /**
-         * 多线段平滑曲线 Catmull-Rom spline
-         */
-        function smoothSpline(points, loop) {
-            var len = points.length;
-            var ret = [];
-
-            var distance = 0;
-            for (var i = 1; i < len; i++) {
-                distance += vec2.distance(points[i-1], points[i]);
-            }
-            var segs = distance / 5;
-            segs = segs < len ? len : segs;
-            for (var i = 0; i < segs; i++) {
-                var pos;
-                if (loop) {
-                    pos = i / (segs-1) * len;
-                } else {
-                    pos = i / (segs-1) * (len - 1);
-                }
-                var idx = Math.floor(pos);
-
-                var w = pos - idx;
-
-                var p0;
-                var p1 = points[idx % len];
-                var p2;
-                var p3;
-                if (!loop) {
-                    p0 = points[idx === 0 ? idx : idx - 1];
-                    p2 = points[idx > len - 2 ? len - 1 : idx + 1];
-                    p3 = points[idx > len - 3 ? len - 1 : idx + 2];
-                } else {
-                    p0 = points[(idx -1 + len) % len];
-                    p2 = points[(idx + 1) % len];
-                    p3 = points[(idx + 2) % len];
-                }
-
-                var w2 = w * w;
-                var w3 = w * w2;
-
-                ret.push([
-                    _interpolate(p0[0], p1[0], p2[0], p3[0], w, w2, w3),
-                    _interpolate(p0[1], p1[1], p2[1], p3[1], w, w2, w3)
-                ]);
-            }
-            return ret;
-        }
-
-        function _interpolate(p0, p1, p2, p3, t, t2, t3) {
-            var v0 = (p2 - p0) * 0.5;
-            var v1 = (p3 - p1) * 0.5;
-            return (2 * (p1 - p2) + v0 + v1) * t3 
-                    + (- 3 * (p1 - p2) - 2 * v0 - v1) * t2
-                    + v0 * t + p1;
-        }
-        
-        /**
-         * 附加文本
-         * @param {Context2D} ctx Canvas 2D上下文
-         * @param {Object} style 样式
-         * @param {Object} normalStyle 默认样式，用于定位文字显示
-         */
-        function drawText(ctx, style, normalStyle) {
-            // 字体颜色策略
-            style.textColor= style.textColor
-                            || style.color
-                            || style.strokeColor;
-            ctx.fillStyle = style.textColor;
-
-            if (style.textPosition == 'inside') {
-                ctx.shadowColor = 'rgba(0,0,0,0)';   // 内部文字不带shadowColor
-            }
-
-            // 文本与图形间空白间隙
-            var dd = 10;
-            var al;         // 文本水平对齐
-            var bl;         // 文本垂直对齐
-            var tx;         // 文本横坐标
-            var ty;         // 文本纵坐标
-
-            var textPosition = style.textPosition       // 用户定义
-                               || this.textPosition     // shape默认
-                               || 'top';                // 全局默认
-
-            if ((textPosition == 'inside'
-                || textPosition == 'top'
-                || textPosition == 'bottom'
-                || textPosition == 'left'
-                || textPosition == 'right')
-                && this.getRect // 矩形定位文字的图形必须提供getRect方法
-            ) {
-                var rect = (normalStyle || style).__rect
-                           || this.getRect(normalStyle || style);
-                switch (textPosition) {
-                    case 'inside':
-                        tx = rect.x + rect.width / 2;
-                        ty = rect.y + rect.height / 2;
-                        al = 'center';
-                        bl = 'middle';
-                        if (style.brushType != 'stroke'
-                            && style.textColor == style.color
-                        ) {
-                            ctx.fillStyle = '#fff';
-                        }
-                        break;
-                    case 'left':
-                        tx = rect.x - dd;
-                        ty = rect.y + rect.height / 2;
-                        al = 'end';
-                        bl = 'middle';
-                        break;
-                    case 'right':
-                        tx = rect.x + rect.width + dd;
-                        ty = rect.y + rect.height / 2;
-                        al = 'start';
-                        bl = 'middle';
-                        break;
-                    case 'top':
-                        tx = rect.x + rect.width / 2;
-                        ty = rect.y - dd;
-                        al = 'center';
-                        bl = 'bottom';
-                        break;
-                    case 'bottom':
-                        tx = rect.x + rect.width / 2;
-                        ty = rect.y + rect.height + dd;
-                        al = 'center';
-                        bl = 'top';
-                        break;
-                }
-            }
-            else if (textPosition == 'start' || textPosition == 'end') {
-                var xStart;
-                var xEnd;
-                var yStart;
-                var yEnd;
-                if (typeof style.pointList != 'undefined') {
-                    var pointList = style.pointList;
-                    if (pointList.length < 2) {
-                        // 少于2个点就不画了~
-                        return;
-                    }
-                    var length = pointList.length;
-                    switch (textPosition) {
-                        case 'start':
-                            xStart = pointList[0][0];
-                            xEnd = pointList[1][0];
-                            yStart = pointList[0][1];
-                            yEnd = pointList[1][1];
-                            break;
-                        case 'end':
-                            xStart = pointList[length - 2][0];
-                            xEnd = pointList[length - 1][0];
-                            yStart = pointList[length - 2][1];
-                            yEnd = pointList[length - 1][1];
-                            break;
-                    }
-                }
-                else {
-                    xStart = style.xStart || 0;
-                    xEnd = style.xEnd || 0;
-                    yStart = style.yStart || 0;
-                    yEnd = style.yEnd || 0;
-                }
-                switch (textPosition) {
-                    case 'start':
-                        al = xStart < xEnd ? 'end' : 'start';
-                        bl = yStart < yEnd ? 'bottom' : 'top';
-                        tx = xStart;
-                        ty = yStart;
-                        break;
-                    case 'end':
-                        al = xStart < xEnd ? 'start' : 'end';
-                        bl = yStart < yEnd ? 'top' : 'bottom';
-                        tx = xEnd;
-                        ty = yEnd;
-                        break;
-                }
-                dd -= 4;
-                if (xStart != xEnd) {
-                    tx -= (al == 'end' ? dd : -dd);
-                } else {
-                    al = 'center';
-                }
-                if (yStart != yEnd) {
-                    ty -= (bl == 'bottom' ? dd : -dd);
-                } else {
-                    bl = 'middle';
-                }
-            }
-            else if (textPosition == 'specific') {
-                tx = style.textX || 0;
-                ty = style.textY || 0;
-                al = 'start';
-                bl = 'middle';
-            }
-
-            if (typeof tx != 'undefined' && typeof ty != 'undefined') {
-                _fillText(
-                    ctx,
-                    style.text, 
-                    tx, ty, 
-                    style.textFont,
-                    style.textAlign || al,
-                    style.textBaseline || bl
-                );
-            }
-        }
+        var guid = require('../tool/guid');
         
         function _fillText(ctx, text, x, y, textFont, textAlign, textBaseline) {
             if (textFont) {
@@ -562,17 +130,17 @@ define(
             );
             
             text = (text + '').split('\n');
-            var lineHeight = area.getTextHeight('国', textFont);
-            var x = x;
-            var y;
-            if (textBaseline == 'top') {
-                y = rect.y;
-            }
-            else if (textBaseline == 'bottom') {
-                y = rect.y + lineHeight;
-            }
-            else {
-                y = rect.y + lineHeight / 2;
+            var lineHeight = require('../tool/area').getTextHeight('国', textFont);
+            
+            switch (textBaseline) {
+                case 'top':
+                    y = rect.y;
+                    break;
+                case 'bottom':
+                    y = rect.y + lineHeight;
+                    break;
+                default:
+                    y = rect.y + lineHeight / 2;
             }
             
             for (var i = 0, l = text.length; i < l; i++) {
@@ -580,51 +148,162 @@ define(
                 y += lineHeight;
             }
         }
+
         /**
          * 返回矩形区域，用于局部刷新和文字定位
+         * 
+         * @inner
          * @param {Object} style
          */
         function _getTextRect(text, x, y, textFont, textAlign, textBaseline) {
+            var area = require('../tool/area');
             var width = area.getTextWidth(text, textFont);
             var lineHeight = area.getTextHeight('国', textFont);
             
             text = (text + '').split('\n');
             
-            var textX = x;                 //默认start == left
-            if (textAlign == 'end' || textAlign == 'right') {
-                textX -= width;
-            }
-            else if (textAlign == 'center') {
-                textX -= (width / 2);
+            switch (textAlign) {
+                case 'end':
+                case 'right':
+                    x -= width;
+                    break;
+                case 'center':
+                    x -= (width / 2);
+                    break;
             }
 
-            var textY;
-            if (textBaseline == 'top') {
-                textY = y;
-            }
-            else if (textBaseline == 'bottom') {
-                textY = y - lineHeight * text.length;
-            }
-            else {
-                // middle
-                textY = y - lineHeight * text.length / 2;
+            switch (textBaseline) {
+                case 'top':
+                    break;
+                case 'bottom':
+                    y -= lineHeight * text.length;
+                    break;
+                default:
+                    y -= lineHeight * text.length / 2;
             }
 
             return {
-                x : textX,
-                y : textY,
+                x : x,
+                y : y,
                 width : width,
                 height : lineHeight * text.length
             };
         }
+
+        function Base( options ) {
+            this.id = options.id || guid();
+            this.zlevel = 0;
+            this.draggable = false;
+            this.clickable = false;
+            this.hoverable = true;
+            this.position = [0, 0];
+            this.rotation = [0, 0, 0];
+            this.scale = [1, 1, 0, 0];
+
+            for ( var key in options ) {
+                this[ key ] = options[ key ];
+            }
+
+            this.style = this.style || {};
+        }
+
+        /**
+         * 画刷
+         * 
+         * @param ctx       画布句柄
+         * @param isHighlight   是否为高亮状态
+         * @param updateCallback 需要异步加载资源的shape可以通过这个callback(e)
+         *                       让painter更新视图，base.brush没用，需要的话重载brush
+         */
+        Base.prototype.brush = function (ctx, isHighlight) {
+            var style = this.style;
+            
+            if (this.brushTypeOnly) {
+                style.brushType = this.brushTypeOnly;
+            }
+
+            if (isHighlight) {
+                // 根据style扩展默认高亮样式
+                style = this.getHighlightStyle(
+                    style,
+                    this.highlightStyle || {},
+                    this.brushTypeOnly
+                );
+            }
+
+            if (this.brushTypeOnly == 'stroke') {
+                style.strokeColor = style.strokeColor || style.color;
+            }
+
+            ctx.save();
+            this.setContext(ctx, style);
+
+            // 设置transform
+            this.updateTransform(ctx);
+
+            ctx.beginPath();
+            this.buildPath(ctx, style);
+            if (this.brushTypeOnly != 'stroke') {
+                ctx.closePath();
+            }
+
+            switch (style.brushType) {
+                case 'both':
+                    ctx.fill();
+                case 'stroke':
+                    style.lineWidth > 0 && ctx.stroke();
+                    break;
+                default:
+                    ctx.fill();
+            }
+
+            if (style.text) {
+                this.drawText(ctx, style, this.style);
+            }
+
+            ctx.restore();
+        };
+
+        var STYLE_CTX_MAP = [
+            ['color', 'fillStyle'],
+            ['strokeColor', 'strokeStyle'],
+            ['opacity', 'globalAlpha'],
+            ['lineCap'],
+            ['lineJoin'],
+            ['miterLimit'],
+            ['lineWidth'],
+            ['shadowBlur'],
+            ['shadowColor'],
+            ['shadowOffsetX'],
+            ['shadowOffsetY']
+        ];
+
+        /**
+         * 画布通用设置
+         * 
+         * @param ctx       画布句柄
+         * @param style     通用样式
+         */
+        Base.prototype.setContext = function (ctx, style) {
+            for (var i = 0, len = STYLE_CTX_MAP.length; i < len; i++) {
+                var styleProp = STYLE_CTX_MAP[i][0];
+                var styleValue = style[styleProp];
+                var ctxProp = STYLE_CTX_MAP[i][1] || styleProp;
+
+                if (typeof styleValue != 'undefined') {
+                    ctx[ctxProp] = styleValue;
+                }
+            }
+        };
     
         /**
          * 根据默认样式扩展高亮样式
+         * 
          * @param ctx Canvas 2D上下文
          * @param {Object} style 默认样式
          * @param {Object} highlightStyle 高亮样式
          */
-        function getHighlightStyle(style, highlightStyle, brushTypeOnly) {
+        Base.prototype.getHighlightStyle = function (style, highlightStyle, brushTypeOnly) {
             var newStyle = {};
             for (var k in style) {
                 newStyle[k] = style[k];
@@ -646,7 +325,8 @@ define(
                     newStyle.strokeColor = highlightColor;
                     newStyle.lineWidth = (style.lineWidth || 1)
                                           + this.getHighlightZoom();
-                } else {
+                } 
+                else {
                     // 线型的则用原色加工高亮
                     newStyle.strokeColor = highlightStyle.strokeColor
                                            || color.mix(
@@ -664,149 +344,313 @@ define(
             }
 
             return newStyle;
-        }
+        };
+
+        Base.prototype.updateNeedTransform = function () {
+            this.needTransform = Math.abs(this.rotation[0]) > 0.0001
+                || Math.abs(this.position[0]) > 0.0001
+                || Math.abs(this.position[1]) > 0.0001
+                || Math.abs(this.scale[0] - 1) > 0.0001
+                || Math.abs(this.scale[1] - 1) > 0.0001;
+        };
 
         /**
          * 高亮放大效果参数
          * 当前统一设置为6，如有需要差异设置，通过this.type判断实例类型
          */
-        function getHighlightZoom() {
+        Base.prototype.getHighlightZoom = function () {
             return this.type != 'text' ? 6 : 2;
-        }
+        };
 
         /**
          * 默认漂移
-         * @param e 图形实体
+         * 
          * @param dx 横坐标变化
          * @param dy 纵坐标变化
          */
-        function drift(e, dx, dy) {
-            e.position[0] += dx;
-            e.position[1] += dy;
-        }
+        Base.prototype.drift = function (dx, dy) {
+            this.position[0] += dx;
+            this.position[1] += dy;
+        };
 
         /**
-         * 默认区域包含判断
-         * @param e 图形实体
-         * @param x 横坐标
-         * @param y 纵坐标
+         * 获取鼠标坐标变换 
          */
-        function isCover(e, x, y) {
-            //对鼠标的坐标也做相同的变换
-            if(e.__needTransform && e._transform){
+        Base.prototype.getTansform = function (x, y) {
+            var originPos = [x, y];
+            // 对鼠标的坐标也做相同的变换
+            if (this.needTransform && this._transform) {
                 var inverseMatrix = [];
-                matrix.invert(inverseMatrix, e._transform);
+                matrix.invert(inverseMatrix, this._transform);
 
-                var originPos = [x, y];
                 matrix.mulVector(originPos, inverseMatrix, [x, y, 1]);
 
                 if (x == originPos[0] && y == originPos[1]) {
-                    // 避免外部修改导致的__needTransform不准确
-                    if (Math.abs(e.rotation[0]) > 0.0001
-                        || Math.abs(e.position[0]) > 0.0001
-                        || Math.abs(e.position[1]) > 0.0001
-                        || Math.abs(e.scale[0] - 1) > 0.0001
-                        || Math.abs(e.scale[1] - 1) > 0.0001
-                    ) {
-                        e.__needTransform = true;
-                    } else {
-                        e.__needTransform = false;
-                    }
+                    // 避免外部修改导致的needTransform不准确
+                    this.updateNeedTransform();
                 }
-
-                x = originPos[0];
-                y = originPos[1];
             }
+            return originPos;
+        };
+        
+        /**
+         * 默认区域包含判断
+         * 
+         * @param x 横坐标
+         * @param y 纵坐标
+         */
+        Base.prototype.isCover = function (x, y) {
+            var originPos = this.getTansform(x, y);
+            x = originPos[0];
+            y = originPos[1];
 
             // 快速预判并保留判断矩形
-            var rect;
-            if (e.style.__rect) {
-                rect = e.style.__rect;
+            var rect = this.style.__rect;
+            if (!rect) {
+                rect = this.style.__rect = this.getRect(this.style);
             }
-            else {
-                rect = this.getRect(e.style);
-                e.style.__rect = rect;
-            }
+
             if (x >= rect.x
                 && x <= (rect.x + rect.width)
                 && y >= rect.y
                 && y <= (rect.y + rect.height)
             ) {
                 // 矩形内
-                return area.isInside(this, e.style, x, y);
+                return require('../tool/area').isInside(this, this.style, x, y);
             }
-            else {
-                return false;
+            
+            return false;
+        };
+
+        /**
+         * 附加文本
+         * 
+         * @param {Context2D} ctx Canvas 2D上下文
+         * @param {Object} style 样式
+         * @param {Object} normalStyle 默认样式，用于定位文字显示
+         */
+        Base.prototype.drawText = function (ctx, style, normalStyle) {
+            // 字体颜色策略
+            var textColor = style.textColor || style.color || style.strokeColor;
+            ctx.fillStyle = textColor;
+
+            /*
+            if (style.textPosition == 'inside') {
+                ctx.shadowColor = 'rgba(0,0,0,0)';   // 内部文字不带shadowColor
+            }
+            */
+
+            // 文本与图形间空白间隙
+            var dd = 10;
+            var al;         // 文本水平对齐
+            var bl;         // 文本垂直对齐
+            var tx;         // 文本横坐标
+            var ty;         // 文本纵坐标
+
+            var textPosition = style.textPosition       // 用户定义
+                               || this.textPosition     // shape默认
+                               || 'top';                // 全局默认
+
+            switch (textPosition) {
+                case 'inside': 
+                case 'top': 
+                case 'bottom': 
+                case 'left': 
+                case 'right': 
+                    if (this.getRect) {
+                        var rect = (normalStyle || style).__rect
+                                   || this.getRect(normalStyle || style);
+
+                        switch (textPosition) {
+                            case 'inside':
+                                tx = rect.x + rect.width / 2;
+                                ty = rect.y + rect.height / 2;
+                                al = 'center';
+                                bl = 'middle';
+                                if (style.brushType != 'stroke'
+                                    && textColor == style.color
+                                ) {
+                                    ctx.fillStyle = '#fff';
+                                }
+                                break;
+                            case 'left':
+                                tx = rect.x - dd;
+                                ty = rect.y + rect.height / 2;
+                                al = 'end';
+                                bl = 'middle';
+                                break;
+                            case 'right':
+                                tx = rect.x + rect.width + dd;
+                                ty = rect.y + rect.height / 2;
+                                al = 'start';
+                                bl = 'middle';
+                                break;
+                            case 'top':
+                                tx = rect.x + rect.width / 2;
+                                ty = rect.y - dd;
+                                al = 'center';
+                                bl = 'bottom';
+                                break;
+                            case 'bottom':
+                                tx = rect.x + rect.width / 2;
+                                ty = rect.y + rect.height + dd;
+                                al = 'center';
+                                bl = 'top';
+                                break;
+                        }
+                    }
+                    break;
+                case 'start':
+                case 'end':
+                    var xStart;
+                    var xEnd;
+                    var yStart;
+                    var yEnd;
+                    if (typeof style.pointList != 'undefined') {
+                        var pointList = style.pointList;
+                        if (pointList.length < 2) {
+                            // 少于2个点就不画了~
+                            return;
+                        }
+                        var length = pointList.length;
+                        switch (textPosition) {
+                            case 'start':
+                                xStart = pointList[0][0];
+                                xEnd = pointList[1][0];
+                                yStart = pointList[0][1];
+                                yEnd = pointList[1][1];
+                                break;
+                            case 'end':
+                                xStart = pointList[length - 2][0];
+                                xEnd = pointList[length - 1][0];
+                                yStart = pointList[length - 2][1];
+                                yEnd = pointList[length - 1][1];
+                                break;
+                        }
+                    }
+                    else {
+                        xStart = style.xStart || 0;
+                        xEnd = style.xEnd || 0;
+                        yStart = style.yStart || 0;
+                        yEnd = style.yEnd || 0;
+                    }
+
+                    switch (textPosition) {
+                        case 'start':
+                            al = xStart < xEnd ? 'end' : 'start';
+                            bl = yStart < yEnd ? 'bottom' : 'top';
+                            tx = xStart;
+                            ty = yStart;
+                            break;
+                        case 'end':
+                            al = xStart < xEnd ? 'start' : 'end';
+                            bl = yStart < yEnd ? 'top' : 'bottom';
+                            tx = xEnd;
+                            ty = yEnd;
+                            break;
+                    }
+                    dd -= 4;
+                    if (xStart != xEnd) {
+                        tx -= (al == 'end' ? dd : -dd);
+                    } 
+                    else {
+                        al = 'center';
+                    }
+
+                    if (yStart != yEnd) {
+                        ty -= (bl == 'bottom' ? dd : -dd);
+                    } 
+                    else {
+                        bl = 'middle';
+                    }
+                    break;
+                case 'specific':
+                    tx = style.textX || 0;
+                    ty = style.textY || 0;
+                    al = 'start';
+                    bl = 'middle';
+                    break;
             }
 
-        }
+            if (tx != null && ty != null) {
+                _fillText(
+                    ctx,
+                    style.text, 
+                    tx, ty, 
+                    style.textFont,
+                    style.textAlign || al,
+                    style.textBaseline || bl
+                );
+            }
+        };
 
-        function updateTransform(e) {
-            var _transform = e._transform || matrix.create();
+        Base.prototype.isSilent = function () {
+            return !(
+                this.hoverable || this.draggable
+                || this.onmousemove || this.onmouseover || this.onmouseout
+                || this.onmousedown || this.onmouseup || this.onclick
+                || this.ondragenter || this.ondragover || this.ondragleave
+                || this.ondrop
+            );
+        };
+
+        Base.prototype.updateTransform = function (ctx) {
+            if (!this.needTransform) {
+                return;
+            }
+
+            var _transform = this._transform || matrix.create();
             matrix.identity(_transform);
-            if (e.scale && (e.scale[0] !== 1 || e.scale[1] !== 1)) {
-                var originX = e.scale[2] || 0;
-                var originY = e.scale[3] || 0;
-                if (originX || originY ) {
+            if (this.scale && (this.scale[0] !== 1 || this.scale[1] !== 1)) {
+                var originX = this.scale[2] || 0;
+                var originY = this.scale[3] || 0;
+                if (originX || originY) {
                     matrix.translate(
                         _transform, _transform, [-originX, -originY]
                     );
                 }
-                matrix.scale(_transform, _transform, e.scale);
+                matrix.scale(_transform, _transform, this.scale);
                 if ( originX || originY ) {
                     matrix.translate(
                         _transform, _transform, [originX, originY]
                     );
                 }
             }
-            if (e.rotation) {
-                if (e.rotation instanceof Array) {
-                    if (e.rotation[0] !== 0) {
-                        var originX = e.rotation[1] || 0,
-                            originY = e.rotation[2] || 0;
-                        if (originX || originY ) {
+
+            if (this.rotation) {
+                if (this.rotation instanceof Array) {
+                    if (this.rotation[0] !== 0) {
+                        var originX = this.rotation[1] || 0;
+                        var originY = this.rotation[2] || 0;
+                        if (originX || originY) {
                             matrix.translate(
                                 _transform, _transform, [-originX, -originY]
                             );
                         }
-                        matrix.rotate(_transform, _transform, e.rotation[0]);
-                        if (originX || originY ) {
+                        matrix.rotate(_transform, _transform, this.rotation[0]);
+                        if (originX || originY) {
                             matrix.translate(
                                 _transform, _transform, [originX, originY]
                             );
                         }
                     }
-                }else{
-                    if (e.rotation !== 0) {
-                        matrix.rotate(_transform, _transform, e.rotation);
+                }
+                else {
+                    if (this.rotation !== 0) {
+                        matrix.rotate(_transform, _transform, this.rotation);
                     }
                 }
             }
-            if (e.position && (e.position[0] !==0 || e.position[1] !== 0)) {
-                matrix.translate(_transform, _transform, e.position);
+
+            if (this.position && (this.position[0] !==0 || this.position[1] !== 0)) {
+                matrix.translate(_transform, _transform, this.position);
             }
+
             // 保存这个变换矩阵
-            e._transform = _transform;
-
-            return _transform;
-        }
-
-        self = {
-            derive : derive,
-            brush : brush,
-            setContext : setContext,
-            dashedLineTo : dashedLineTo,
-            smoothBezier : smoothBezier,
-            smoothSpline : smoothSpline,
-            drawText : drawText,
-            getHighlightStyle : getHighlightStyle,
-            getHighlightZoom : getHighlightZoom,
-            drift : drift,
-            isCover : isCover,
-
-            updateTransform : updateTransform
+            this._transform = _transform;
+            ctx.transform.apply(ctx, _transform);
         };
 
-        return self;
+        return Base;
     }
 );

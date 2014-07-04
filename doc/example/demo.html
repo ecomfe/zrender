@@ -52,7 +52,7 @@
                 <li class="dropdown">
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="icon-download-alt icon-white"></i>Download <b class="caret"></b></a>
                   <ul class="dropdown-menu">
-                    <li><a href="https://github.com/ecomfe/zrender/archive/1.1.2.zip">ZIP (1.1.2)</a></li>
+                    <li><a href="https://github.com/ecomfe/zrender/archive/2.0.0.zip">ZIP (2.0.0)</a></li>
                     <li><a href="https://github.com/ecomfe/zrender/archive/master.zip">ZIP (Latest)</a></li>
                   </ul>
                 </li>
@@ -92,10 +92,27 @@ var colorIdx = 0;
 var width = Math.ceil(zr.getWidth());
 var height = Math.ceil(zr.getHeight());
 
+var CircleShape = require('zrender/shape/Circle');
+var SectorShape = require('zrender/shape/Sector');
+var RingShape = require('zrender/shape/Ring');
+var EllipseShape = require('zrender/shape/Ellipse');
+var HeartShape = require('zrender/shape/Heart');
+var DropletShape = require('zrender/shape/Droplet');
+var PolygonShape = require('zrender/shape/Polygon');
+var RectangleShape = require('zrender/shape/Rectangle');
+var BrokenLineShape = require('zrender/shape/BrokenLine');
+var LineShape = require('zrender/shape/Line');
+var BezierCurveShape = require('zrender/shape/BezierCurve');
+var TextShape = require('zrender/shape/Text');
+var ImageShape = require('zrender/shape/Image');
+var PathShape = require('zrender/shape/Path');
+var TrochoidShape = require('zrender/shape/Trochoid');
+var RoseShape = require('zrender/shape/Rose');
+var StarShape = require('zrender/shape/Star');
+var IsogonShape = require('zrender/shape/Isogon');
+
 // 圆形
-zr.addShape({
-    shape : 'circle',
-    id : zr.newShapeId('circle'),
+zr.addShape(new CircleShape({
     style : {
         x : 100,
         y : 100,
@@ -143,12 +160,10 @@ zr.addShape({
     ondragleave : function(e){console.log('ondragleave',e)},
     ondrop      : function(e){console.log('ondrop',e)}
     */
-});
+}));
 
 // 扇形
-zr.addShape({
-    shape : 'sector',
-    id : zr.newShapeId('sector'),
+zr.addShape(new SectorShape({
     style : {
         x : width - 250,
         y : 150,
@@ -164,12 +179,10 @@ zr.addShape({
         text:'sector'
     },
     draggable : true
-});
+}));
 
 // 圆环
-zr.addShape({
-    shape : 'ring',
-    id : zr.newShapeId('ring'),
+zr.addShape(new RingShape({
     style : {
         x : width / 2,
         y : height / 2,
@@ -182,12 +195,11 @@ zr.addShape({
         text : 'ring'
     },
     draggable : true
-});
+}));
+
 
 // 椭圆
-zr.addShape({
-    shape : 'ellipse',
-    id : zr.newShapeId('ellipse'),
+zr.addShape(new EllipseShape({
     style : {
         x : 350,
         y : 100,
@@ -201,12 +213,10 @@ zr.addShape({
         textPosition:'inside'
     },
     draggable : true
-});
+}));
 
 // 心形
-zr.addShape({
-    shape : 'heart',
-    id : zr.newShapeId('heart'),
+zr.addShape(new HeartShape({
     style : {
         x : width - 350,
         y : 100,
@@ -220,12 +230,10 @@ zr.addShape({
         textPosition:'inside'
     },
     draggable : true
-});
+}));
 
 // 水滴
-zr.addShape({
-    shape : 'droplet',
-    id : zr.newShapeId('droplet'),
+zr.addShape(new DropletShape({
     style : {
         x : 380,
         y : 300,
@@ -239,12 +247,10 @@ zr.addShape({
         textPosition:'inside'
     },
     draggable : true
-});
+}));
 
 // 多边形
-zr.addShape({
-    shape : 'polygon',
-    id : zr.newShapeId('polygon'),
+zr.addShape(new PolygonShape({
     style : {
         pointList : [[310, 120], [360, 120], [348, 230], [250, 340], [146, 200]],
         brushType : 'both',
@@ -255,12 +261,10 @@ zr.addShape({
         textPosition : 'inside'     // default top
     },
     draggable:true
-});
+}));
 
 // 矩形
-zr.addShape({
-    shape : 'rectangle',
-    id : zr.newShapeId('rectangle'),
+zr.addShape(new RectangleShape({
     style : {
         x : width - 350,
         y : 210,
@@ -275,12 +279,10 @@ zr.addShape({
         text : 'rectangle'
     },
     draggable : true
-});
+}));
 
 // 折线
-zr.addShape({
-    shape : 'brokenLine',
-    id : zr.newShapeId('brokenLine'),
+zr.addShape(new BrokenLineShape({
     style : {
         pointList : [[10, 10], [60, 100], [148, 130], [250, 40], [446, 100]],
         strokeColor : color.getColor(colorIdx++),
@@ -288,12 +290,10 @@ zr.addShape({
         text : 'brokenLine'
     },
     draggable:true
-});
+}));
 
 // 直线
-zr.addShape({
-    shape : 'line',
-    id : zr.newShapeId('line'),
+zr.addShape(new LineShape({
     style : {
         xStart : 0,
         yStart : 0,
@@ -305,12 +305,10 @@ zr.addShape({
         text : 'line'
     },
     draggable:true
-});
+}));
 
 // 贝塞尔曲线
-zr.addShape({
-    shape : 'beziercurve',
-    id : zr.newShapeId('beziercurve'),
+zr.addShape(new BezierCurveShape({
     style : {
         xStart : width,
         yStart : 0,
@@ -325,12 +323,10 @@ zr.addShape({
         text : 'beziercurve'
     },
     draggable:true
-});
+}));
 
 // 文本
-zr.addShape({
-    shape : 'text',
-    id : zr.newShapeId('text'),
+zr.addShape(new TextShape({
     style : {
         x : width / 2,
         y : 10,
@@ -345,12 +341,10 @@ zr.addShape({
         textBaseline : 'top'
     },
     draggable : true
-});
+}));
 
 // 图片
-zr.addShape({
-    shape : 'image',
-    id : zr.newShapeId('image'),
+zr.addShape(new ImageShape({
     style : {
         x : 0,
         y : 0,
@@ -359,12 +353,10 @@ zr.addShape({
         height : 20
     },
     draggable : true
-});
+}));
 
 // 路径
-zr.addShape({
-    shape : 'path',
-    id : zr.newShapeId('path'),
+zr.addShape(new PathShape({
     style : {
         //path : 'M 0 0 L 0 100 L 100 100 Z',
         path : 'M66,10, L23,127, L122,50, L10,49, L109,127 z',
@@ -378,12 +370,10 @@ zr.addShape({
         textPosition : 'bottom'
     },
     draggable : true
-});
+}));
 
 // 内旋轮线
-zr.addShape({
-    shape : 'trochoid',
-    id : zr.newShapeId('circle'),
+zr.addShape(new TrochoidShape({
     style : {
         x : 200,
         y : 100,
@@ -397,12 +387,10 @@ zr.addShape({
     },
     hoverable : true,   // default true
     draggable : true
-});
+}));
 
 // 外旋轮曲线
-zr.addShape({
-    shape : 'trochoid',
-    id : zr.newShapeId('circle'),
+zr.addShape(new TrochoidShape({
     style : {
         x: 450,
         y: 200,
@@ -417,12 +405,10 @@ zr.addShape({
     },
     hoverable : true,   // default true
     draggable : true
-});
+}));
 
 // 玫瑰线
-zr.addShape({
-    shape : 'rose',
-    id : zr.newShapeId('circle'),
+zr.addShape(new RoseShape({
     style : {
         x : 300,
         y : 100,
@@ -435,12 +421,10 @@ zr.addShape({
     },
     hoverable : true,   // default true
     draggable : true
-});
+}));
 
 // n角星
-zr.addShape({
-    shape : 'star',
-    id : zr.newShapeId('star'),
+zr.addShape(new StarShape({
     style : {
         x : width / 2 + 100,
         y : 320,
@@ -457,12 +441,10 @@ zr.addShape({
     },
     hoverable : true,   // default true
     draggable : true
-});
+}));
 
 // 正n边形
-zr.addShape({
-    shape : 'isogon',
-    id : zr.newShapeId('star'),
+zr.addShape(new IsogonShape({
     style : {
         x : 300,
         y : 320,
@@ -477,7 +459,7 @@ zr.addShape({
     },
     hoverable : true,   // default true
     draggable : true
-});
+}));
 
 // 绘画
 zr.render();

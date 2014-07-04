@@ -8,7 +8,7 @@
    {
        // 基础属性
        shape  : 'text',         // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
        zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
        invisible : {boolean},   // 默认为false，是否可见
 
@@ -67,26 +67,28 @@
    }
  */
 define(
-    function(require) {
+    function (require) {
         var area = require('../tool/area');
+        var Base = require('./Base');
         
-        function Text() {
-            this.type = 'text';
+        function Text(options) {
+            Base.call(this, options);
         }
 
         Text.prototype =  {
+            type: 'text',
+
             /**
              * 画刷，重载基类方法
              * @param {Context2D} ctx Canvas 2D上下文
-             * @param e 图形形状实体
              * @param isHighlight 是否为高亮状态
              */
-            brush : function(ctx, e, isHighlight) {
-                var style = e.style || {};
+            brush : function(ctx, isHighlight) {
+                var style = this.style;
                 if (isHighlight) {
                     // 根据style扩展默认高亮样式
                     style = this.getHighlightStyle(
-                        style, e.highlightStyle || {}
+                        style, this.highlightStyle || {}
                     );
                 }
                 
@@ -98,9 +100,7 @@ define(
                 this.setContext(ctx, style);
 
                 // 设置transform
-                if (e.__needTransform) {
-                    ctx.transform.apply(ctx,this.updateTransform(e));
-                }
+                this.updateTransform(ctx);
 
                 if (style.textFont) {
                     ctx.font = style.textFont;
@@ -183,6 +183,10 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
                 var width = area.getTextWidth(style.text, style.textFont);
                 var height = area.getTextHeight(style.text, style.textFont);
                 
@@ -206,21 +210,18 @@ define(
                     textY = style.y - height / 2;
                 }
 
-                return {
+                style.__rect = {
                     x : textX,
                     y : textY,
                     width : width,
                     height : height
                 };
+                
+                return style.__rect;
             }
         };
 
-        var base = require('./base');
-        base.derive(Text);
-        
-        var shape = require('../shape');
-        shape.define('text', new Text());
-
+        require('../tool/util').inherits(Text, Base);
         return Text;
     }
 );

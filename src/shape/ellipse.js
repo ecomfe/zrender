@@ -9,7 +9,7 @@
    {
        // 基础属性
        shape  : 'ellipse',       // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
        zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
        invisible : {boolean},   // 默认为false，是否可见
 
@@ -75,12 +75,16 @@
    }
  */
 define(
-    function(require) {
-        function Ellipse() {
-            this.type = 'ellipse';
+    function (require) {
+        var Base = require('./Base');
+
+        function Ellipse(options) {
+            Base.call(this, options);
         }
 
-        Ellipse.prototype =  {
+        Ellipse.prototype = {
+            type: 'ellipse',
+
             /**
              * 创建圆形路径
              * @param {Context2D} ctx Canvas 2D上下文
@@ -100,7 +104,6 @@ define(
                 ctx.bezierCurveTo(x + ox, y - b, x + a, y - oy, x + a, y);
                 ctx.bezierCurveTo(x + a, y + oy, x + ox, y + b, x, y + b);
                 ctx.bezierCurveTo(x - ox, y + b, x - a, y + oy, x - a, y);
-                return;
             },
 
             /**
@@ -108,6 +111,10 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
                 var lineWidth;
                 if (style.brushType == 'stroke' || style.brushType == 'fill') {
                     lineWidth = style.lineWidth || 1;
@@ -115,20 +122,18 @@ define(
                 else {
                     lineWidth = 0;
                 }
-                return {
+                style.__rect = {
                     x : Math.round(style.x - style.a - lineWidth / 2),
                     y : Math.round(style.y - style.b - lineWidth / 2),
                     width : style.a * 2 + lineWidth,
                     height : style.b * 2 + lineWidth
                 };
+                
+                return style.__rect;
             }
         };
 
-        var base = require('./base');
-        base.derive(Ellipse);
-        
-        var shape = require('../shape');
-        shape.define('ellipse', new Ellipse());
+        require('../tool/util').inherits(Ellipse, Base);
         return Ellipse;
     }
 );

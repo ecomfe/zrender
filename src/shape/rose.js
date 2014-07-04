@@ -8,7 +8,7 @@
    {
        // 基础属性
        shape  : 'rose', // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
        zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
        invisible : {boolean},   // 默认为false，是否可见
 
@@ -75,13 +75,17 @@
    }
  */
 define(
-    function(require) {
-        function Rose() {
-            this.type = 'rose';
+    function (require) {
+        var Base = require('./Base');
+        
+        function Rose(options) {
             this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
+            Base.call(this, options);
         }
 
         Rose.prototype =  {
+            type: 'rose',
+
             /**
              * 创建线条路径
              * @param {Context2D} ctx Canvas 2D上下文
@@ -123,6 +127,10 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
                 var _R = style.r;
                 var _offsetX = style.x;
                 var _offsetY = style.y;
@@ -142,21 +150,17 @@ define(
                 else {
                     lineWidth = 0;
                 }
-                return {
+                style.__rect = {
                     x : - _max - lineWidth + _offsetX,
                     y : - _max - lineWidth + _offsetY,
                     width : 2 * _max + 3 * lineWidth,
                     height : 2 * _max + 3 * lineWidth
                 };
+                return style.__rect;
             }
         };
-
-        var base = require('./base');
-        base.derive(Rose);
         
-        var shape = require('../shape');
-        shape.define('rose', new Rose());
-
+        require('../tool/util').inherits(Rose, Base);
         return Rose;
     }
 );

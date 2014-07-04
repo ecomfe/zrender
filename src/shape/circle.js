@@ -8,7 +8,7 @@
    {
        // 基础属性
        shape  : 'circle',       // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
        zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
        invisible : {boolean},   // 默认为false，是否可见
 
@@ -72,18 +72,21 @@
    }
  */
 define(
-    function(require) {
-        function Circle() {
-            this.type = 'circle';
+    function (require) {
+        var Base = require('./Base');
+
+        function Circle(options) {
+            Base.call(this, options);
         }
 
-        Circle.prototype =  {
+        Circle.prototype = {
+            type: 'circle',
             /**
              * 创建圆形路径
              * @param {Context2D} ctx Canvas 2D上下文
              * @param {Object} style 样式
              */
-            buildPath : function(ctx, style) {
+            buildPath : function (ctx, style) {
                 ctx.arc(style.x, style.y, style.r, 0, Math.PI * 2, true);
                 return;
             },
@@ -92,7 +95,11 @@ define(
              * 返回矩形区域，用于局部刷新和文字定位
              * @param {Object} style
              */
-            getRect : function(style) {
+            getRect : function (style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
                 var lineWidth;
                 if (style.brushType == 'stroke' || style.brushType == 'fill') {
                     lineWidth = style.lineWidth || 1;
@@ -100,21 +107,18 @@ define(
                 else {
                     lineWidth = 0;
                 }
-                return {
+                style.__rect = {
                     x : Math.round(style.x - style.r - lineWidth / 2),
                     y : Math.round(style.y - style.r - lineWidth / 2),
                     width : style.r * 2 + lineWidth,
                     height : style.r * 2 + lineWidth
                 };
+                
+                return style.__rect;
             }
         };
 
-        var base = require('./base');
-        base.derive(Circle);
-        
-        var shape = require('../shape');
-        shape.define('circle', new Circle());
-
+        require('../tool/util').inherits(Circle, Base);
         return Circle;
     }
 );

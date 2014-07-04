@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Animation</title>
+    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+</head>
+<body>
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+        
+    require(["zrender/animation/animation"], function(Animation){
+
+        var animation = new Animation,
+            target = (function(){
+                var properties = {
+                    x : 0,
+                    y : 0
+                }
+                return {
+                    get : function(key){
+                        return properties[key];
+                    },
+                    set : function(key, value){
+                        properties[key] = value;
+                    }
+                }
+            })()
+
+        animation.start();
+
+        var getter = function(target, key){
+            return target.get(key);
+        }
+        var setter = function(target, key, value){
+            target.set(key, value);
+        }
+        animation.animate( target, getter, setter )
+                .when(1000, {
+                    x : 10
+                })
+                .when(2000, {
+                    y : 20
+                })
+                .done(function(){
+                    target.set("x", 0)
+                    target.set("y", 0)
+                })
+                .start()
+    })
+    </script>
+    <div id="Main" style="width:600px;height:400px;"></div>
+</body>
+</html>

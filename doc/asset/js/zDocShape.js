@@ -50,17 +50,17 @@ description.shape = [
                 name : 'invisible',
                 des : '默认为false（可见），{boolean}，决定图形元素默认状态是否可见。虽然简单，但很有用。',
                 pre : (function(){
-zr.addShape({
-    shape : 'text',
+var TextShape = require('zrender/shape/Text');
+zr.addShape(new TextShape({
     style : {
         x : 20,
         y : 20,
         color : 'red' ,
         text : 'Find the circle! '
     }
-});
-zr.addShape({
-    shape : 'circle',
+}));
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     invisible : true,
     style : {
         x : 400,
@@ -69,7 +69,7 @@ zr.addShape({
         color : 'red' ,
         text : 'Wonderful! '
     }
-});
+}));
 zr.render();
                         }).toString().slice(13, -10),
                         cantry : true
@@ -100,8 +100,8 @@ zr.render();
                     ['textColor', '{color=}', '默认根据textPosition自动设置，图形<a href="#shape.text">text</a>无此项，默认策略如下，附加文本颜色，textPosition == "inside" ? "#fff" : color']
                 ],
                 pre : (function(){
-zr.addShape({
-    shape : 'circle',
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     style : {
         x : 200,
         y : 200,
@@ -119,7 +119,7 @@ zr.addShape({
         textColor : 'yellow'
     },
     draggable : true
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry : true
@@ -128,8 +128,8 @@ zr.render();
                 name : 'highlightStyle',
                 des : '默认同<a href="#shape.base.style">style</a>，高亮状态样式属性，可设置属性同<a href="#shape.base.style">style</a>，所有在hover层上显示（<a href="#zrenderInstance.addHoverShape">addHoverShape</a>）的图形均使用此属性。可以通过定义highlightStyle实现个性化的hover交互。',
                 pre : (function(){
-zr.addShape({
-    shape : 'circle',
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     style : {
         x : 400,
         y : 200,
@@ -141,7 +141,7 @@ zr.addShape({
         r : 80,
         color : 'green'
     }
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry : true
@@ -155,8 +155,8 @@ zr.render();
                 ],
                 pre : (function(){
 var origin = 10;
-zr.addShape({
-    shape : 'rectangle',
+var RectangleShape = require('zrender/shape/Rectangle');
+zr.addShape(new RectangleShape({
     style : {
         x : 10,
         y : 10,
@@ -174,7 +174,7 @@ zr.addShape({
         zr.modShape(params.target.id, {position : [origin, origin]});
         zr.refresh();
     }
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry : true
@@ -190,8 +190,8 @@ zr.render();
                 pre : (function(){
 var tenDeg = Math.PI / 18;
 var origin = tenDeg;
-zr.addShape({
-    shape : 'rectangle',
+var RectangleShape = require('zrender/shape/Rectangle');
+zr.addShape(new RectangleShape({
     style : {
         x : 100,
         y : 100,
@@ -209,7 +209,7 @@ zr.addShape({
         zr.modShape(params.target.id, {rotation : [origin, 180, 120]});
         zr.refresh();
     }
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry : true
@@ -225,8 +225,8 @@ zr.render();
                 ],
                 pre : (function(){
 var origin = 1.1;
-zr.addShape({
-    shape : 'rectangle',
+var RectangleShape = require('zrender/shape/Rectangle');
+zr.addShape(new RectangleShape({
     style : {
         x : 100,
         y : 100,
@@ -244,7 +244,7 @@ zr.addShape({
         zr.modShape(params.target.id, {scale : [origin, origin, 180, 120]});
         zr.refresh();
     }
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry : true
@@ -253,8 +253,8 @@ zr.render();
                 name : 'hoverable',
                 des : '默认为true，可悬浮响应，默认悬浮响应为高亮显示，可在<a href="#shape.base.ondrift">onbrush</a>中捕获并阻塞高亮绘画',
                 pre : (function(){
-zr.addShape({
-    shape : 'circle',
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     hoverable : false,
     style : {
         x : 200,
@@ -282,7 +282,7 @@ zr.addShape({
         );
         zr.refresh();
     }
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry : true
@@ -291,8 +291,8 @@ zr.render();
                 name : 'clickable',
                 des : '默认为false，可点击响应，可在onclick中捕获并阻塞全局click响应',
                 pre : (function(){
-zr.addShape({
-    shape : 'circle',
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     style : {
         x : 200,
         y : 200,
@@ -301,9 +301,8 @@ zr.addShape({
         text : 'Click silent!',
         textPosition : 'inside'
     }
-});
-zr.addShape({
-    shape : 'circle',
+}));
+zr.addShape(new CircleShape({
     clickable : true,
     style : {
         x : 400,
@@ -313,7 +312,7 @@ zr.addShape({
         text : 'Clickable!',
         textPosition : 'inside'
     }
-});
+}));
 zr.render();
 var config = require('zrender/config');
 zr.on(config.EVENT.CLICK, function(params) {
@@ -331,8 +330,8 @@ zr.on(config.EVENT.CLICK, function(params) {
                 name : 'draggable',
                 des : '默认为false，可拖拽响应，默认拖拽响应改变图形位置，可在ondrift中捕获并阻塞默认拖拽行为',
                 pre : (function(){
-zr.addShape({
-    shape : 'circle',
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     style : {
         x : 200,
         y : 200,
@@ -341,9 +340,8 @@ zr.addShape({
         text : 'Stillness !',
         textPosition : 'inside'
     }
-});
-zr.addShape({
-    shape : 'circle',
+}));
+zr.addShape(new CircleShape({
     draggable : true,
     style : {
         x : 400,
@@ -353,7 +351,7 @@ zr.addShape({
         text : 'Draggable!',
         textPosition : 'inside'
     }
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry : true
@@ -371,8 +369,8 @@ zr.render();
                 ],
                 pre : (function(){
 var block = true;
-zr.addShape({
-    shape : 'circle',
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     style : {
         x : 400, y : 200, r : 80, color : 'red',
         text : 'Hover & click!',
@@ -380,7 +378,7 @@ zr.addShape({
     },
     highlightStyle : { r : 100, color : 'green' },
     clickable : true,
-    onbrush : function(context, shape, isHighlight) {
+    onbrush : function(context, isHighlight) {
         if (isHighlight) {
             // 绘画高亮状态时刻（鼠标悬浮)
             context.fillText("捕获高亮时刻，" + (block ? "" : "不") + "阻塞默认高亮绘画，点击改变" , 100, 100);
@@ -393,7 +391,7 @@ zr.addShape({
     onclick : function() {
         block = !block;
     }
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry : true
@@ -410,8 +408,8 @@ zr.render();
                     'true | false ', '{boolean}','回调返回，true（不执行默认拖拽计算）| false（执行默认拖拽计算）<br/> 无返回值，等同返回false'
                 ],
                 pre : (function(){
-zr.addShape({
-    shape : 'circle',
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     style : {
         x : 400,
         y : 200,
@@ -421,13 +419,13 @@ zr.addShape({
         textPosition : 'inside'
     },
     draggable : true,
-    ondrift : function(shape, dx, dy) {
-        shape.style.x += dx;
-        zr.modShape(shape.id, shape);
+    ondrift : function(dx, dy) {
+        this.style.x += dx;
+        zr.modShape(this.id, this);
         zr.refresh();
         return true;
     }
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry : true
@@ -445,8 +443,8 @@ zr.render();
                     'true | false ', '{boolean}','回调返回，true（阻塞全局zrender事件）| false（不阻塞全局zrender事件）<br/> 无返回值，等同返回false'
                 ],
                 pre : (function(){
-zr.addShape({
-    shape : 'circle',
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     style : {
         x : 200,
         y : 200,
@@ -460,9 +458,8 @@ zr.addShape({
         alert('click on red shape!')
         return true;    // 阻塞全局zrender事件
     }
-});
-zr.addShape({
-    shape : 'circle',
+}));
+zr.addShape(new CircleShape({
     style : {
         x : 400,
         y : 200,
@@ -475,7 +472,7 @@ zr.addShape({
     onclick : function() {
         alert('click on green shape!')
     }
-});
+}));
 zr.render();
 
 var config = require('zrender/config');
@@ -500,8 +497,8 @@ zr.on(config.EVENT.CLICK, function(params) {
                     'true | false ', '{boolean}','回调返回，true（阻塞全局zrender事件）| false（阻塞全局zrender事件）<br/> 无返回值，等同返回false'
                 ],
                 pre : (function(){
-zr.addShape({
-    shape : 'circle',
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     style : {
         x : 400,
         y : 200,
@@ -524,7 +521,7 @@ zr.addShape({
         zr.refresh();
         zrEvent.stop(event);
     }
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry : true
@@ -539,14 +536,14 @@ zr.render();
                     'true | false ', '{boolean}','回调返回，true（阻塞全局zrender事件）| false（阻塞全局zrender事件）<br/> 无返回值，等同返回false'
                 ],
                 pre : (function(){
-var shapeId = zr.newShapeId();
-zr.addShape({
-    shape : 'text',
+var shapeId = require('zrender/tool/guid')();
+var TextShape = require('zrender/shape/Text');
+zr.addShape(new TextShape({
     id : shapeId,
     style : { x : 10, y : 10}
-});
-zr.addShape({
-    shape : 'circle',
+}));
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     style : {
         x : 400, y : 200, r : 100,  color : 'red',
         text : 'mousemove',
@@ -559,7 +556,7 @@ zr.addShape({
         zr.refresh();
         return true;
     }
-});
+}));
 zr.render();
 
 var config = require('zrender/config');
@@ -589,8 +586,8 @@ zr.on(config.EVENT.MOUSEMOVE, function(params) {
                     'true | false ', '{boolean}','回调返回，true（阻塞全局zrender事件）| false（阻塞全局zrender事件）<br/> 无返回值，等同返回false'
                 ],
                 pre : (function(){
-zr.addShape({
-    shape : 'circle',
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     style : {
         x : 200, y : 200, r : 100, color : 'red',
         text : 'Mouse over & out!',
@@ -603,10 +600,9 @@ zr.addShape({
     onmouseout : function(params) {
         _update(params.target, 'Catch your! out!');
     }
-});
+}));
 
-zr.addShape({
-    shape : 'circle',
+zr.addShape(new CircleShape({
     hoverable : false,
     style : {
         x : 400, y : 200, r : 100, color : 'green',
@@ -620,7 +616,7 @@ zr.addShape({
     onmouseup : function(params) {
         _update(params.target, 'Catch your! up!');
     }
-});
+}));
 
 zr.render();
 
@@ -672,8 +668,8 @@ function _update(shape, text) {
                     'true | false ', '{boolean}','回调返回，true（阻塞全局zrender事件）| false（阻塞全局zrender事件）<br/> 无返回值，等同返回false'
                 ],
                 pre : (function(){
-zr.addShape({
-    shape : 'circle',
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     style : { x : 200, y : 200, r : 60, color : 'red'},
     _name : 'red',
     draggable : true,
@@ -683,10 +679,9 @@ zr.addShape({
     ondragover : _update,
     ondragleave : _update,
     ondrop : _update
-});
+}));
 
-zr.addShape({
-    shape : 'circle',
+zr.addShape(new CircleShape({
     style : { x : 400, y : 200, r : 60, color : 'green'},
     _name : 'green',
     draggable : true,
@@ -696,7 +691,7 @@ zr.addShape({
     ondragover : _update,
     ondragleave : _update,
     ondrop : _update
-});
+}));
 
 zr.render();
 
@@ -797,8 +792,8 @@ function _update(params) {
                 ],
                 pre : (function(){
 // 圆形
-zr.addShape({
-    shape : 'circle',
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     style : {
         x : 100,
         y : 100,
@@ -808,7 +803,7 @@ zr.addShape({
         textPosition :'inside'
     },
     draggable : true
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry : true
@@ -831,8 +826,8 @@ zr.render();
                 ],
                 pre : (function(){
 // 椭圆
-zr.addShape({
-    shape : 'ellipse',
+var EllipseShape = require('zrender/shape/Ellipse');
+zr.addShape(new EllipseShape({
     style : {
         x : 200,
         y : 200,
@@ -843,7 +838,7 @@ zr.addShape({
         textPosition :'inside'
     },
     draggable : true
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry : true
@@ -868,8 +863,8 @@ zr.render();
                 ],
                 pre : (function(){
 // 扇形
-zr.addShape({
-    shape : 'sector',
+var SectorShape = require('zrender/shape/Sector');
+zr.addShape(new SectorShape({
     style : {
         x : 200,
         y : 200,
@@ -882,7 +877,7 @@ zr.addShape({
         textPosition:'inside'
     },
     draggable : true
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry : true
@@ -905,19 +900,18 @@ zr.render();
                 ],
                 pre : (function(){
 // 圆环
-zr.addShape({
-    shape : 'ring',
+var RingShape = require('zrender/shape/Ring');
+zr.addShape(new RingShape({
     style : {
         x : 200,
         y : 200,
         r : 100,
         r0 : 50,
         color : 'rgba(135, 206, 250, 0.8)',
-        text:'ring',
-        textPosition:'inside'
+        text:'ring'
     },
     draggable : true
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry : true
@@ -940,8 +934,8 @@ zr.render();
                 ],
                 pre : (function(){
 // 矩形
-zr.addShape({
-    shape : 'rectangle',
+var RectangleShape = require('zrender/shape/Rectangle');
+zr.addShape(new RectangleShape({
     style : {
         x : 100,
         y : 100,
@@ -952,7 +946,7 @@ zr.addShape({
         textPosition:'inside'
     },
     draggable : true
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry : true
@@ -973,8 +967,8 @@ zr.render();
                 ],
                 pre : (function(){
 // 多边形
-zr.addShape({
-    shape : 'polygon',
+var PolygonShape = require('zrender/shape/Polygon');
+zr.addShape(new PolygonShape({
     style : {
         pointList : [[310, 120], [360, 120], [348, 230], [250, 340], [146, 200]],
         color : 'rgba(135, 206, 250, 0.8)',
@@ -982,7 +976,7 @@ zr.addShape({
         textPosition:'inside'
     },
     draggable : true
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry : true
@@ -1005,8 +999,8 @@ zr.render();
                 ],
                 pre : (function(){
 // 正n边形
-zr.addShape({
-    shape : 'isogon',
+var IsogonShape = require('zrender/shape/Isogon');
+zr.addShape(new IsogonShape({
     style : {
         x : 200,
         y : 200,
@@ -1017,7 +1011,7 @@ zr.addShape({
         textPosition:'inside'
     },
     draggable : true
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry : true
@@ -1041,8 +1035,8 @@ zr.render();
                 ],
                 pre : (function(){
 // n角星
-zr.addShape({
-    shape : 'star',
+var StarShape = require('zrender/shape/Star');
+zr.addShape(new StarShape({
     style : {
         x : 200,
         y : 200,
@@ -1053,7 +1047,7 @@ zr.addShape({
         textPosition:'inside'
     },
     draggable : true
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry : true
@@ -1075,8 +1069,8 @@ zr.render();
                 ],
                 pre : (function(){
 // 路径
-zr.addShape({
-    shape : 'path',
+var PathShape = require('zrender/shape/Path');
+zr.addShape(new PathShape({
     style : {
         x : 100,
         y : 100,
@@ -1087,7 +1081,7 @@ zr.addShape({
         textColor : 'red'
     },
     draggable : true
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry : true
@@ -1110,8 +1104,8 @@ zr.render();
                 ],
                 pre : (function(){
 // 心形
-zr.addShape({
-    shape : 'heart',
+var HeartShape = require('zrender/shape/Heart');
+zr.addShape(new HeartShape({
     style : {
         x : 100,
         y : 100,
@@ -1123,7 +1117,7 @@ zr.addShape({
         textColor : 'red'
     },
     draggable : true
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry : true
@@ -1146,8 +1140,8 @@ zr.render();
                 ],
                 pre : (function(){
 // 水滴
-zr.addShape({
-    shape : 'droplet',
+var DropletShape = require('zrender/shape/Droplet');
+zr.addShape(new DropletShape({
     style : {
         x : 100,
         y : 100,
@@ -1159,7 +1153,7 @@ zr.addShape({
         textColor : 'red'
     },
     draggable : true
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry : true
@@ -1183,8 +1177,8 @@ zr.render();
                 ],
                 pre : (function(){
 // 直线
-zr.addShape({
-    shape : 'line',
+var LineShape = require('zrender/shape/Line');
+zr.addShape(new LineShape({
     style : {
         xStart : 100,
         yStart : 100,
@@ -1198,7 +1192,7 @@ zr.addShape({
         textPosition:'end'
     },
     draggable : true
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry : true
@@ -1219,8 +1213,8 @@ zr.render();
                 ],
                 pre : (function(){
 // 折线
-zr.addShape({
-    shape : 'brokenLine',
+var BrokenLineShape = require('zrender/shape/BrokenLine');
+zr.addShape(new BrokenLineShape({
     style : {
         pointList : [[310, 120], [620, 190], [328, 260], [250, 340], [146, 200]],
         strokeColor : 'rgba(135, 206, 250, 0.8)',   // == color
@@ -1233,7 +1227,7 @@ zr.addShape({
         textPosition:'end'
     },
     draggable : true
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry : true
@@ -1260,8 +1254,8 @@ zr.render();
                 ],
                 pre : (function(){
 // 贝塞尔曲线
-zr.addShape({
-    shape : 'beziercurve',
+var BezierCurveShape = require('zrender/shape/BezierCurve');
+zr.addShape(new BezierCurveShape({
     style : {
         xStart : 100,
         yStart : 100,
@@ -1278,7 +1272,7 @@ zr.addShape({
         textPosition:'end'
     },
     draggable : true
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry : true
@@ -1302,8 +1296,8 @@ zr.render();
                 ],
                 pre : (function(){
 // 玫瑰线
-zr.addShape({
-    shape : 'rose',
+var RoseShape = require('zrender/shape/Rose');
+zr.addShape(new RoseShape({
     style : {
         x : 200,
         y : 200,
@@ -1314,7 +1308,7 @@ zr.addShape({
         text:'rose'
     },
     draggable : true
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry : true
@@ -1339,8 +1333,8 @@ zr.render();
                 ],
                 pre : (function(){
 // 旋轮曲线
-zr.addShape({
-    shape : 'trochoid',
+var TrochoidShape = require('zrender/shape/Trochoid');
+zr.addShape(new TrochoidShape({
     style : {
         x : 200,
         y : 200,
@@ -1353,7 +1347,7 @@ zr.addShape({
         text:'trochoid'
     },
     draggable : true
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry : true
@@ -1375,8 +1369,8 @@ zr.render();
                 ],
                 pre : (function(){
 // 文字
-zr.addShape({
-    shape : 'text',
+var TextShape = require('zrender/shape/Text');
+zr.addShape(new TextShape({
     style : {
        x : 200,
        y : 100,
@@ -1392,7 +1386,7 @@ zr.addShape({
        shadowBlur : 5
     },
     draggable : true
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry : true
@@ -1420,8 +1414,8 @@ zr.render();
                 ],
                 pre : (function(){
 // 图片
-zr.addShape({
-    shape : 'image',
+var ImageShape = require('zrender/shape/Image');
+zr.addShape(new ImageShape({
     style : {
         x : 100,
         y : 100,
@@ -1433,7 +1427,7 @@ zr.addShape({
         textColor : 'red'
     },
     draggable : true
-});
+}));
 zr.render();
                 }).toString().slice(13, -10),
                 cantry : true

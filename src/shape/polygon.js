@@ -8,7 +8,7 @@
    {
        // 基础属性
        shape  : 'polygon',      // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
        zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
        invisible : {boolean},   // 默认为false，是否可见
 
@@ -68,27 +68,34 @@
    }
  */
 define(
-    function(require) {
-        function Polygon() {
-            this.type = 'polygon';
+    function (require) {
+        var Base = require('./Base');
+        var smoothSpline = require('./util/smoothSpline');
+        var smoothBezier = require('./util/smoothBezier');
+        var dashedLineTo = require('./util/dashedLineTo');
+
+        
+        function Polygon(options) {
+            Base.call(this, options);
         }
 
         Polygon.prototype = {
+            type: 'polygon',
+
             /**
              * 画刷
              * @param ctx       画布句柄
-             * @param e         形状实体
              * @param isHighlight   是否为高亮状态
              * @param updateCallback 需要异步加载资源的shape可以通过这个callback(e)
              *                       让painter更新视图，base.brush没用，需要的话重载brush
              */
-            brush : function (ctx, e, isHighlight) {
-                var style = e.style || {};
+            brush : function (ctx, isHighlight) {
+                var style = this.style;
                 if (isHighlight) {
                     // 根据style扩展默认高亮样式
                     style = this.getHighlightStyle(
                         style,
-                        e.highlightStyle || {}
+                        this.highlightStyle || {}
                     );
                 }
 
@@ -96,9 +103,7 @@ define(
                 this.setContext(ctx, style);
     
                 // 设置transform
-                if (e.__needTransform) {
-                    ctx.transform.apply(ctx,this.updateTransform(e));
-                }
+                this.updateTransform(ctx);
                 
                 // 先fill再stroke
                 var hasPath = false;
@@ -141,7 +146,7 @@ define(
                 }
     
                 if (style.text) {
-                    this.drawText(ctx, style, e.style);
+                    this.drawText(ctx, style, this.style);
                 }
     
                 ctx.restore();
@@ -158,8 +163,10 @@ define(
                 // 虽然能重用brokenLine，但底层图形基于性能考虑，重复代码减少调用吧
                 var pointList = style.pointList;
                 // 开始点和结束点重复
+                /*
                 var start = pointList[0];
                 var end = pointList[pointList.length-1];
+
                 if (start && end) {
                     if (start[0] == end[0] &&
                         start[1] == end[1]) {
@@ -167,12 +174,15 @@ define(
                         pointList.pop();
                     }
                 }
+                */
+
                 if (pointList.length < 2) {
                     // 少于2个点就不画了~
                     return;
                 }
+
                 if (style.smooth && style.smooth !== 'spline') {
-                    var controlPoints = this.smoothBezier(
+                    var controlPoints = smoothBezier(
                         pointList, style.smooth, true
                     );
 
@@ -192,8 +202,9 @@ define(
                 } 
                 else {
                     if (style.smooth === 'spline') {
-                        pointList = this.smoothSpline(pointList, true);
+                        pointList = smoothSpline(pointList, true);
                     }
+
                     if (!style.lineType || style.lineType == 'solid') {
                         //默认为实线
                         ctx.moveTo(pointList[0][0],pointList[0][1]);
@@ -212,14 +223,14 @@ define(
                         style._dashLength = dashLength;
                         ctx.moveTo(pointList[0][0],pointList[0][1]);
                         for (var i = 1, l = pointList.length; i < l; i++) {
-                            this.dashedLineTo(
+                            dashedLineTo(
                                 ctx,
                                 pointList[i - 1][0], pointList[i - 1][1],
                                 pointList[i][0], pointList[i][1],
                                 dashLength
                             );
                         }
-                        this.dashedLineTo(
+                        dashedLineTo(
                             ctx,
                             pointList[pointList.length - 1][0], 
                             pointList[pointList.length - 1][1],
@@ -237,6 +248,10 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
                 var minX =  Number.MAX_VALUE;
                 var maxX =  Number.MIN_VALUE;
                 var minY = Number.MAX_VALUE;
@@ -265,21 +280,18 @@ define(
                 else {
                     lineWidth = 0;
                 }
-                return {
+                
+                style.__rect = {
                     x : Math.round(minX - lineWidth / 2),
                     y : Math.round(minY - lineWidth / 2),
                     width : maxX - minX + lineWidth,
                     height : maxY - minY + lineWidth
                 };
+                return style.__rect;
             }
         };
 
-        var base = require('./base');
-        base.derive(Polygon);
-        
-        var shape = require('../shape');
-        shape.define('polygon', new Polygon());
-
+        require('../tool/util').inherits(Polygon, Base);
         return Polygon;
     }
 );

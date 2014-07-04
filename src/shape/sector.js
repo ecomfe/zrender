@@ -8,7 +8,7 @@
    {
        // 基础属性
        shape  : 'sector',       // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
        zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
        invisible : {boolean},   // 默认为false，是否可见
 
@@ -75,14 +75,17 @@
    }
  */
 define(
-    function(require) {
+    function (require) {
         var math = require('../tool/math');
+        var Base = require('./Base');
 
-        function Sector() {
-            this.type = 'sector';
+        function Sector(options) {
+            Base.call(this, options);
         }
 
         Sector.prototype = {
+            type: 'sector',
+
             /**
              * 创建扇形路径
              * @param {Context2D} ctx Canvas 2D上下文
@@ -142,7 +145,10 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
-                var shape = require('../shape');
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
                 var x = style.x;   // 圆心x
                 var y = style.y;   // 圆心y
                 var r0 = typeof style.r0 == 'undefined'     // 形内半径[0,r)
@@ -153,7 +159,8 @@ define(
                 
                 if (Math.abs(endAngle - startAngle) >= 360) {
                     // 大于360度的扇形简化为圆环bbox
-                    return shape.get('ring').getRect(style);;
+                    style.__rect = require('./Ring').prototype.getRect(style);
+                    return style.__rect;
                 }
                 
                 startAngle = (720 + startAngle) % 360;
@@ -207,20 +214,18 @@ define(
                     y - math.sin(endAngle) * r0
                 ]);
 
-                return shape.get('polygon').getRect({
+                style.__rect = require('./Polygon').prototype.getRect({
                     brushType : style.brushType,
                     lineWidth : style.lineWidth,
                     pointList : pointList
                 });
+                
+                return style.__rect;
             }
         };
 
-        var base = require('./base');
-        base.derive(Sector);
-        
-        var shape = require('../shape');
-        shape.define('sector', new Sector());
 
+        require('../tool/util').inherits(Sector, Base);
         return Sector;
     }
 );

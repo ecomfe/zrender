@@ -47,7 +47,7 @@
                 <li class="dropdown">
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="icon-download-alt icon-white"></i>Download <b class="caret"></b></a>
                   <ul class="dropdown-menu">
-                    <li><a href="https://github.com/ecomfe/zrender/archive/1.1.2.zip">ZIP (1.1.2)</a></li>
+                    <li><a href="https://github.com/ecomfe/zrender/archive/2.0.0.zip">ZIP (2.0.0)</a></li>
                     <li><a href="https://github.com/ecomfe/zrender/archive/master.zip">ZIP (Latest)</a></li>
                   </ul>
                 </li>
@@ -97,19 +97,36 @@
     <script src="../asset/js/bootstrap-carousel.js"></script>
     <script src="../asset/js/bootstrap-typeahead.js"></script>
     <script type="text/javascript">
-        require.config({
-            packages: [
-                {
-                    name: 'zrender',
-                    location: '../../src',
-                    main: 'zrender'
+        var developMode = false;
+        if (developMode) {
+            // for develop
+            require.config({
+                packages: [
+                    {
+                        name: 'zrender',
+                        location: '../../src',
+                        main: 'zrender'
+                    }
+                ]
+            });
+        }
+        else {
+            // for echarts online home page
+            var fileLocation = './www/js/zrender';
+            require.config({
+                paths:{ 
+                    zrender: fileLocation,
+                    'zrender/shape/Circle': fileLocation,
+                    'zrender/shape/Rectangle': fileLocation,
+                    'zrender/shape/Ring': fileLocation,
+                    'zrender/shape/Polygon': fileLocation
                 }
-            ]
-        });
+            });
+        }
 
         require(
-            ['zrender'],
-            function(zrender) {
+            ['zrender', 'zrender/shape/Circle', 'zrender/shape/Rectangle', 'zrender/shape/Ring', 'zrender/shape/Polygon'],
+            function(zrender, CircleShape, RectangleShape, RingShape, PolygonShape) {
                 zr = zrender.init(document.getElementById('main'));
                 var eventTool = require('zrender/tool/event');
                 var myPalette = ['#ffa500','#87cefa','#da70d6','#32cd32','#ff7f50','#ba55d3','#6495ed','#cd5c5c'];
@@ -135,9 +152,7 @@
                 }
 
                 function buildBrush() {
-                    brush = {
-                        shape : 'circle',
-                        id : zr.newShapeId('circle'),
+                    brush = new CircleShape({
                         zlevel : 3, // 频繁变动的画笔单独在一层中
                         style : {
                             x : width / 2,
@@ -150,7 +165,7 @@
                         },
                         _colorIdx : 0,
                         hoverable : false   // default true
-                    }
+                    })
 
                     if (!isMobile) {
                         zr.addShape(brush);
@@ -182,13 +197,11 @@
                     var pWidth = 60;
                     var pHeight = 40;
                     var startY = 5;
-                    var space = Math.round((height - 10 - pHeight * length)
-                                / (length - 1));
+                    var space = Math.round((height - 10 - pHeight * length) / (length - 1));
                     for (var i = 0; i < length; i++) {
-                        zr.addShape({
+                        zr.addShape(new RectangleShape({
                             shape : 'rectangle',
                             zlevel : 0,             // 默认为0，不变的图形元素可以单独一层
-                            id : zr.newShapeId('rectangle'),
                             style : {
                                 x : 5,
                                 y : startY,
@@ -200,13 +213,12 @@
                             hoverable: false,
                             clickable : true,
                             onclick : paletteHandler
-                        });
+                        }));
                         startY += pHeight + space;
                     }
-                    curPalette = {
+                    curPalette = new RectangleShape({
                         shape : 'rectangle',
                         zlevel : 1,             // 偶尔需要改变的图形元素单独一层
-                        id : zr.newShapeId('rectangle'),
                         style : {
                             x : 5,
                             y : 5,
@@ -217,7 +229,7 @@
                             brushType : 'stroke'
                         },
                         hoverable: false
-                    }
+                    });
                     zr.addShape(curPalette);
                 }
 
@@ -240,56 +252,50 @@
 
                 function Draft() {
                     var shapeList = [];
-                    shapeList.push({
-                        shape : 'polygon',
+                    shapeList.push(new PolygonShape({
                         style : {
                             pointList : [[180, 250], [680, 250], [580, 350], [80, 350]]
                         }
-                    });
-                    shapeList.push({
-                        shape : 'polygon',
+                    }));
+                    shapeList.push(new PolygonShape({
                         style : {
                             pointList : [[300, 150], [400, 200], [200, 200]]
                         }
-                    });
-                    shapeList.push({
-                        shape : 'rectangle',
+                    }));
+                    shapeList.push(new RectangleShape({
                         style : {
                             x : 240,
                             y : 200,
                             width : 120,
                             height : 100
                         }
-                    });
-                    shapeList.push({
-                        shape : 'rectangle',
+                    }));
+                    shapeList.push(new RectangleShape({
                         style : {
                             x : 280,
                             y : 260,
                             width : 40,
                             height : 40
                         }
-                    });
+                    }));
                     for (var i = 0; i < 15; i++) {
-                        shapeList.push({
-                            shape : 'circle',
+                        shapeList.push(new CircleShape({
                             style : {
                                 x : Math.ceil(Math.random() * 500 + 100),
                                 y : Math.ceil(Math.random() * 130 + 20),
                                 r : Math.ceil(Math.random() * 20 + 5)
                             }
-                        });
+                        }));
                     }
                     for (var i = 0; i < 15; i++) {
-                        shapeList.push({
-                            shape : 'ring',
+                        shapeList.push(new RingShape({
                             style : {
                                 x : 900,
                                 y : 200,
                                 r0: i * 12,
                                 r : (i + 1) * 12
                             }
-                        });
+                        }));
                     }
                     for (var i = 0, l = shapeList.length; i < l; i++) {
                         shapeList[i].zlevel = 1;             // 偶尔需要改变的图形元素单独一层

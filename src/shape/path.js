@@ -8,7 +8,7 @@
    {
        // 基础属性
        shape  : 'path',         // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
        zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
        invisible : {boolean},   // 默认为false，是否可见
 
@@ -67,12 +67,16 @@
 
  **/
 
-define(function(require) {
-    function Path() {
-        this.type = 'path';
+define(function (require) {
+    var Base = require('./Base');
+    
+    function Path(options) {
+        Base.call(this, options);
     }
 
     Path.prototype = {
+        type: 'path',
+
         _parsePathData : function(data) {
             if (!data) {
                 return [];
@@ -395,7 +399,7 @@ define(function(require) {
         buildPath : function(ctx, style) {
             var path = style.path;
 
-            var pathArray = this._parsePathData(path);
+            var pathArray = this.pathArray || this._parsePathData(path);
 
             // 平移坐标
             var x = style.x || 0;
@@ -478,6 +482,10 @@ define(function(require) {
          * @param {Object} style 样式
          */
         getRect : function(style) {
+            if (style.__rect) {
+                return style.__rect;
+            }
+            
             var lineWidth;
             if (style.brushType == 'stroke' || style.brushType == 'fill') {
                 lineWidth = style.lineWidth || 1;
@@ -496,7 +504,7 @@ define(function(require) {
             var x = style.x || 0;
             var y = style.y || 0;
 
-            var pathArray = this._parsePathData(style.path);
+            var pathArray = this.pathArray || this._parsePathData(style.path);
             for (var i = 0; i < pathArray.length; i++) {
                 var p = pathArray[i].points;
 
@@ -508,7 +516,8 @@ define(function(require) {
                         if (p[j] + x > maxX) {
                             maxX = p[j] + x;
                         }
-                    } else {
+                    } 
+                    else {
                         if (p[j] + y < minY) {
                             minY = p[j] + y;
                         }
@@ -540,15 +549,11 @@ define(function(require) {
                     height : maxY - minY + lineWidth
                 };
             }
+            style.__rect = rect;
             return rect;
         }
     };
 
-    var base = require('./base');
-    base.derive(Path);
-    
-    var shape = require('../shape');
-    shape.define('path', new Path());
-
+    require('../tool/util').inherits(Path, Base);
     return Path;
 });

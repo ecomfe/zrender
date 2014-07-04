@@ -9,7 +9,7 @@
    {
        // 基础属性
        shape  : 'rectangle',       // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
        zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
        invisible : {boolean},   // 默认为false，是否可见
 
@@ -76,12 +76,16 @@
    }
  */
 define(
-    function(require) {
-        function Rectangle() {
-            this.type = 'rectangle';
+    function (require) {
+        var Base = require('./Base');
+        
+        function Rectangle(options) {
+            Base.call(this, options);
         }
 
         Rectangle.prototype =  {
+            type: 'rectangle',
+
             /**
              * 绘制圆角矩形
              * @param {Context2D} ctx Canvas 2D上下文
@@ -168,6 +172,10 @@ define(
              * @param {Object} style
              */
             getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
                 var lineWidth;
                 if (style.brushType == 'stroke' || style.brushType == 'fill') {
                     lineWidth = style.lineWidth || 1;
@@ -175,21 +183,18 @@ define(
                 else {
                     lineWidth = 0;
                 }
-                return {
+                style.__rect = {
                     x : Math.round(style.x - lineWidth / 2),
                     y : Math.round(style.y - lineWidth / 2),
                     width : style.width + lineWidth,
                     height : style.height + lineWidth
                 };
+                
+                return style.__rect;
             }
         };
 
-        var base = require('./base');
-        base.derive(Rectangle);
-        
-        var shape = require('../shape');
-        shape.define('rectangle', new Rectangle());
-
+        require('../tool/util').inherits(Rectangle, Base);
         return Rectangle;
     }
 );

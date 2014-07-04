@@ -8,7 +8,7 @@
    {
        // 基础属性
        shape  : 'image',       // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
        zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
        invisible : {boolean},   // 默认为false，是否可见
 
@@ -75,28 +75,31 @@
    }
  */
 define(
-    function(require) {
-
+    function (require) {
         var _cache = {};
         var _needsRefresh = [];
         var _refreshTimeout;
 
-        function ZImage() {
-            this.type = 'image';
+        var Base = require('./Base');
+
+        function ZImage(options) {
+            Base.call(this, options);
         }
 
         ZImage.prototype = {
-            brush : function(ctx, e, isHighlight, refresh) {
-                var style = e.style || {};
+            type: 'image',
+            brush : function(ctx, isHighlight, refresh) {
+                var style = this.style || {};
 
                 if (isHighlight) {
                     // 根据style扩展默认高亮样式
                     style = this.getHighlightStyle(
-                        style, e.highlightStyle || {}
+                        style, this.highlightStyle || {}
                     );
                 }
 
                 var image = style.image;
+                var me = this;
 
                 if (typeof(image) === 'string') {
                     var src = image;
@@ -108,10 +111,10 @@ define(
                         image.onload = function(){
                             image.onload = null;
                             clearTimeout( _refreshTimeout );
-                            _needsRefresh.push( e );
+                            _needsRefresh.push( me );
                             // 防止因为缓存短时间内触发多次onload事件
                             _refreshTimeout = setTimeout(function(){
-                                refresh( _needsRefresh );
+                                refresh && refresh( _needsRefresh );
                                 // 清空needsRefresh
                                 _needsRefresh = [];
                             }, 10);
@@ -138,9 +141,7 @@ define(
                     this.setContext(ctx, style);
 
                     // 设置transform
-                    if (e.__needTransform) {
-                        ctx.transform.apply(ctx,this.updateTransform(e));
-                    }
+                    this.updateTransform(ctx);
 
                     var width = style.width || image.width;
                     var height = style.height || image.height;
@@ -172,18 +173,16 @@ define(
                     // 如果没设置宽和高的话自动根据图片宽高设置
                     style.width = width;
                     style.height = height;
-                    e.style.width = width;
-                    e.style.height = height;
+                    this.style.width = width;
+                    this.style.height = height;
 
 
                     if (style.text) {
-                        this.drawText(ctx, style, e.style);
+                        this.drawText(ctx, style, this.style);
                     }
 
                     ctx.restore();
                 }
-
-                return;
             },
 
             /**
@@ -210,12 +209,7 @@ define(
             }
         };
 
-        var base = require('./base');
-        base.derive(ZImage);
-        
-        var shape = require('../shape');
-        shape.define('image', new ZImage());
-
+        require('../tool/util').inherits(ZImage, Base);
         return ZImage;
     }
 );

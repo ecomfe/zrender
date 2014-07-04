@@ -52,7 +52,7 @@
                 <li class="dropdown">
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="icon-download-alt icon-white"></i>Download <b class="caret"></b></a>
                   <ul class="dropdown-menu">
-                    <li><a href="https://github.com/ecomfe/zrender/archive/1.1.2.zip">ZIP (1.1.2)</a></li>
+                    <li><a href="https://github.com/ecomfe/zrender/archive/2.0.0.zip">ZIP (2.0.0)</a></li>
                     <li><a href="https://github.com/ecomfe/zrender/archive/master.zip">ZIP (Latest)</a></li>
                   </ul>
                 </li>
@@ -96,11 +96,10 @@ var height = Math.ceil(zr.getHeight());
 var i;
 var n = 50;
 var shapeList = [];
+var CircleShape = require('zrender/shape/Circle');
 // 动画元素
 for(i = 0; i < n; i++) {
-    shapeList[i] = {
-        shape : 'circle',
-        id : zr.newShapeId(),
+    shapeList[i] = new CircleShape({
         style : {
             x : Math.ceil(Math.random() * width),
             y : Math.ceil(Math.random() * height),
@@ -119,7 +118,7 @@ for(i = 0; i < n; i++) {
         _animationX : Math.ceil(Math.random() * 20),
         _animationY : Math.ceil(Math.random() * 20),
         hoverable : false
-    };
+    });
     if (shapeList[i].style.x < 100 || shapeList[i].style.x > (width - 100)) {
         shapeList[i].style.x = width / 2;
     }
