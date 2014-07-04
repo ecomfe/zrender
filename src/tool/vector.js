@@ -5,10 +5,10 @@
  */
 define(
     function() {
-        var ArrayCtor
-            = typeof Float32Array === 'undefined'
+        var ArrayCtor = typeof Float32Array === 'undefined'
             ? Array
             : Float32Array;
+            
         var vector = {
             create : function(x, y) {
                 var out = new ArrayCtor(2);

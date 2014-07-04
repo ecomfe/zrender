@@ -15,10 +15,10 @@ define(
 
         var Easing = require('./easing');
 
-        var Clip = function(options) {
+        function Clip(options) {
 
             this._targetPool = options.target || {};
-            if (this._targetPool.constructor != Array) {
+            if (!(this._targetPool instanceof Array)) {
                 this._targetPool = [this._targetPool];
             }
 
@@ -30,25 +30,23 @@ define(
             this._startTime = new Date().getTime() + this._delay;//单位毫秒
 
             //结束时间
-            this._endTime = this._startTime + this._life*1000;
+            this._endTime = this._startTime + this._life * 1000;
 
             //是否循环
-            this.loop = typeof(options.loop) == 'undefined'
+            this.loop = typeof options.loop == 'undefined'
                         ? false : options.loop;
 
             this.gap = options.gap || 0;
 
             this.easing = options.easing || 'Linear';
 
-            this.onframe = options.onframe || null;
-
-            this.ondestroy = options.ondestroy || null;
-
-            this.onrestart = options.onrestart || null;
-        };
+            this.onframe = options.onframe;
+            this.ondestroy = options.ondestroy;
+            this.onrestart = options.onrestart;
+        }
 
         Clip.prototype = {
-            step : function(time) {
+            step : function (time) {
                 var percent = (time - this._startTime) / this._life;
 
                 //还没开始
@@ -58,18 +56,16 @@ define(
 
                 percent = Math.min(percent, 1);
 
-                var easingFunc = typeof(this.easing) == 'string'
+                var easingFunc = typeof this.easing == 'string'
                                  ? Easing[this.easing]
                                  : this.easing;
-                var schedule;
-                if (typeof easingFunc === 'function') {
-                    schedule = easingFunc(percent);
-                }else{
-                    schedule = percent;
-                }
+                var schedule = typeof easingFunc === 'function'
+                    ? easingFunc(percent)
+                    : percent;
+
                 this.fire('frame', schedule);
 
-                //结束
+                // 结束
                 if (percent == 1) {
                     if (this.loop) {
                         this.restart();
@@ -77,29 +73,30 @@ define(
                         // 抛出而不是直接调用事件直到 stage.update 后再统一调用这些事件
                         return 'restart';
 
-                    }else{
-                        // 动画完成将这个控制器标识为待删除
-                        // 在Animation.update中进行批量删除
-                        this._needsRemove = true;
-
-                        return 'destroy';
                     }
-                }else{
-                    return null;
+                    
+                    // 动画完成将这个控制器标识为待删除
+                    // 在Animation.update中进行批量删除
+                    this._needsRemove = true;
+                    return 'destroy';
                 }
+                
+                return null;
             },
             restart : function() {
-                this._startTime = new Date().getTime() + this.gap;
+                var time = new Date().getTime();
+                var remainder = (time - this._startTime) % this._life;
+                this._startTime = new Date().getTime() - remainder + this.gap;
             },
             fire : function(eventType, arg) {
-                for(var i = 0, len = this._targetPool.length; i < len; i++) {
+                for (var i = 0, len = this._targetPool.length; i < len; i++) {
                     if (this['on' + eventType]) {
                         this['on' + eventType](this._targetPool[i], arg);
                     }
                 }
-            }
+            },
+            constructor: Clip
         };
-        Clip.prototype.constructor = Clip;
 
         return Clip;
     }

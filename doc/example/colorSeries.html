@@ -47,7 +47,7 @@
                 <li class="dropdown">
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="icon-download-alt icon-white"></i>Download <b class="caret"></b></a>
                   <ul class="dropdown-menu">
-                    <li><a href="https://github.com/ecomfe/zrender/archive/1.1.2.zip">ZIP (1.1.2)</a></li>
+                    <li><a href="https://github.com/ecomfe/zrender/archive/2.0.0.zip">ZIP (2.0.0)</a></li>
                     <li><a href="https://github.com/ecomfe/zrender/archive/master.zip">ZIP (Latest)</a></li>
                   </ul>
                 </li>
@@ -97,19 +97,33 @@
     <script src="../asset/js/bootstrap-carousel.js"></script>
     <script src="../asset/js/bootstrap-typeahead.js"></script>
     <script type="text/javascript">
-        require.config({
-            packages: [
-                {
-                    name: 'zrender',
-                    location: '../../src',
-                    main: 'zrender'
+        var developMode = false;
+        if (developMode) {
+            // for develop
+            require.config({
+                packages: [
+                    {
+                        name: 'zrender',
+                        location: '../../src',
+                        main: 'zrender'
+                    }
+                ]
+            });
+        }
+        else {
+            // for echarts online home page
+            var fileLocation = './www/js/zrender';
+            require.config({
+                paths:{ 
+                    zrender: fileLocation,
+                    'zrender/shape/Rectangle': fileLocation
                 }
-            ]
-        });
+            });
+        }
 
         require(
-            ['zrender'],
-            function(zrender) {
+            ['zrender', 'zrender/shape/Rectangle'],
+            function(zrender, RectangleShape) {
                 zr = zrender.init(document.getElementById('main'));
                 var zrColor = require('zrender/tool/color');
                 var max = 30;
@@ -140,8 +154,7 @@
 
                 function buildDefault() {
                     for (var i = 0; i < max; i++) {
-                        zr.addShape({
-                            shape : 'rectangle',
+                        zr.addShape(new RectangleShape({
                             zlevel:0,
                             style : {
                                 x : i * w + 1,
@@ -152,17 +165,15 @@
                                 color : zrColor.getColor(i),
                                 strokeColor : '#fff'
                             }
-                        });
+                        }));
                     }
                 }
 
                 function buildCustomer() {
                     lastY += h + 20;
                     for (var i = 0; i < max; i++) {
-                        customerShape.push({
-                            shape : 'rectangle',
+                        customerShape.push(new RectangleShape({
                             zlevel:1,
-                            id : zr.newShapeId(),
                             style : {
                                 x : i * w + 1,
                                 y : lastY,
@@ -175,7 +186,7 @@
                             clickable : true,
                             onclick : deleteColor,
                             _idx : i
-                        });
+                        }));
                         zr.addShape(customerShape[i]);
                     }
                 }
@@ -209,8 +220,7 @@
                         colorList = zrColor.getGradientColors(colorSpace[i], 10);
                         w = Math.floor(width / colorList.length) + 0.6;
                         for (var j = 0, k = colorList.length; j < k; j++) {
-                            zr.addShape({
-                                shape: 'rectangle',
+                            zr.addShape(new RectangleShape({
                                 zlevel:2,
                                 style: {
                                     x: w * j, y: lastY, width : w, height : h,
@@ -220,7 +230,7 @@
                                 },
                                 clickable : true,
                                 onclick : selectColor
-                            });
+                            }));
                         }
                         lastY += h + 1;
                     }

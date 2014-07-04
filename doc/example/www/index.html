@@ -18,14 +18,15 @@
     // Step:3 为模块加载器配置zrender的路径，从当前页面链接到zrender.js
     require.config({
         paths:{ 
-            zrender:'./js/zrender' 
+            zrender:'./js/zrender',
+            'zrender/shape/Circle' : './js/zrender'
         }
     });
     
     // Step:4 require zrender and use it in the callback.
     // Step:4 动态加载zrender然后在回调函数中开始使用
     require(
-        ['zrender'],
+        ['zrender','zrender/shape/Circle'],
         function(zrender) {
             var zr = zrender.init(document.getElementById('main'));
             var color = require('zrender/tool/color');
@@ -37,10 +38,11 @@
             var n = document.createElement('canvas').getContext ? 150 : 50;
             var shapeList = [];
             // 动画元素
+            var CircleShape = require('zrender/shape/Circle');
+            var guid = require('zrender/tool/guid');
             for(i = 0; i < n; i++) {
-                shapeList[i] = {
-                    shape : 'circle',
-                    id : zr.newShapeId(),
+                shapeList[i] = new CircleShape({
+                    id : guid(),
                     style : {
                         x : Math.ceil(Math.random() * width),
                         y : Math.ceil(Math.random() * height),
@@ -59,7 +61,7 @@
                     _animationX : Math.ceil(Math.random() * 20),
                     _animationY : Math.ceil(Math.random() * 20),
                     hoverable : false
-                };
+                });
                 if (shapeList[i].style.x < 100 || shapeList[i].style.x > (width - 100)) {
                     shapeList[i].style.x = width / 2;
                 }

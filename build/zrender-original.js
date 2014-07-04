@@ -1450,97 +1450,6 @@ else { // make the canvas test simple by kener.linfeng@gmail.com
 return G_vmlCanvasManager;
 }); // define;
 /**
- * zrender: 向量操作类
- *
- * author : lang(shenyi01@baidu.com)
- */
-define(
-    'zrender/tool/vector',[],function() {
-        var ArrayCtor
-            = typeof Float32Array === 'undefined'
-            ? Array
-            : Float32Array;
-        var vector = {
-            create : function(x, y) {
-                var out = new ArrayCtor(2);
-                out[0] = x || 0;
-                out[1] = y || 0;
-                return out;
-            },
-            copy : function(out, v) {
-                out[0] = v[0];
-                out[1] = v[1];
-            },
-            set : function(out, a, b) {
-                out[0] = a;
-                out[1] = b;
-            },
-            add : function(out, v1, v2) {
-                out[0] = v1[0] + v2[0];
-                out[1] = v1[1] + v2[1];
-                return out;
-            },
-            scaleAndAdd : function(out, v1, v2, a) {
-                out[0] = v1[0] + v2[0] * a;
-                out[1] = v1[1] + v2[1] * a;
-                return out;
-            },
-            sub : function(out, v1, v2) {
-                out[0] = v1[0] - v2[0];
-                out[1] = v1[1] - v2[1];
-                return out;
-            },
-            length : function(v) {
-                return Math.sqrt(this.lengthSquare(v));
-            },
-            lengthSquare : function(v) {
-                return v[0] * v[0] + v[1] * v[1];
-            },
-            mul : function(out, v1, v2) {
-                out[0] = v1[0] * v2[0];
-                out[1] = v1[1] * v2[1];
-                return out;
-            },
-            dot : function(v1, v2) {
-                return v1[0] * v2[0] + v1[1] * v2[1];
-            },
-            scale : function(out, v, s) {
-                out[0] = v[0] * s;
-                out[1] = v[1] * s;
-                return out;
-            },
-            normalize : function(out, v) {
-                var d = vector.length(v);
-                if(d === 0){
-                    out[0] = 0;
-                    out[1] = 0;
-                }else{
-                    out[0] = v[0]/d;
-                    out[1] = v[1]/d;
-                }
-                return out;
-            },
-            distance : function(v1, v2) {
-                return Math.sqrt(
-                    (v1[0] - v2[0]) * (v1[0] - v2[0]) +
-                    (v1[1] - v2[1]) * (v1[1] - v2[1])
-                );
-            },
-            negate : function(out, v) {
-                out[0] = -v[0];
-                out[1] = -v[1];
-            },
-            middle : function(out, v1, v2) {
-                out[0] = (v1[0] + v2[0])/2;
-                out[1] = (v1[1] + v2[1])/2;
-                return out;
-            }
-        };
-
-        return vector;
-    }
-);
-/**
  * zrender: 公共辅助函数
  *
  * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
@@ -1550,9 +1459,15 @@ define(
  * getContext：获取一个自由使用的canvas 2D context，使用原生方法，如isPointInPath，measureText等
  */
 define(
-    'zrender/tool/util',['require','./vector','../lib/excanvas'],function(require) {
-
-        var vec2 = require('./vector');
+    'zrender/tool/util',['require','../lib/excanvas'],function(require) {
+        // 用于处理merge时无法遍历Date等对象的问题
+        var BUILTIN_OBJECT = {
+            '[object Function]': 1,
+            '[object RegExp]': 1,
+            '[object Date]': 1,
+            '[object Error]': 1,
+            '[object CanvasGradient]': 1
+        };
 
         /**
          * 对一个object进行深度拷贝
@@ -1561,45 +1476,46 @@ define(
          * @return {Any} 拷贝后的新对象
          */
         function clone(source) {
-            // buildInObject, 用于处理无法遍历Date等对象的问题
-            var buildInObject = {
-                '[object Function]': 1,
-                '[object RegExp]': 1,
-                '[object Date]': 1,
-                '[object Error]': 1,
-                '[object CanvasGradient]': 1
-            };
-            var result = source;
-            var i;
-            var len;
-            if (!source
-                || source instanceof Number
-                || source instanceof String
-                || source instanceof Boolean
-            ) {
-                return result;
-            }
-            else if (source instanceof Array) {
-                result = [];
-                var resultLen = 0;
-                for (i = 0, len = source.length; i < len; i++) {
-                    result[resultLen++] = this.clone(source[i]);
-                }
-            }
-            else if ('object' == typeof source) {
-                if(buildInObject[Object.prototype.toString.call(source)]
-                   || source.__nonRecursion
-                ) {
-                    return result;
-                }
-                result = {};
-                for (i in source) {
-                    if (source.hasOwnProperty(i)) {
-                        result[i] = this.clone(source[i]);
+            if (typeof source == 'object' && source !== null) {
+                var result = source;
+                if (source instanceof Array) {
+                    result = [];
+                    for (var i = 0, len = source.length; i < len; i++) {
+                        result[i] = clone(source[i]);
                     }
                 }
+                else if (!BUILTIN_OBJECT[Object.prototype.toString.call(source)]) {
+                    result = {};
+                    for (var key in source) {
+                        if (source.hasOwnProperty(key)) {
+                            result[key] = clone(source[key]);
+                        }
+                    }
+                }
+
+                return result;
             }
-            return result;
+
+            return source;
+        }
+
+        function mergeItem(target, source, key, overwrite) {
+            if (source.hasOwnProperty(key)) {
+                if (typeof target[key] == 'object'
+                    && !BUILTIN_OBJECT[ Object.prototype.toString.call(target[key]) ]
+                ) {
+                    // 如果需要递归覆盖，就递归调用merge
+                    merge(
+                        target[key],
+                        source[key],
+                        overwrite
+                    );
+                }
+                else if (overwrite || !(key in target)) {
+                    // 否则只处理overwrite为true，或者在目标对象中没有此属性的情况
+                    target[key] = source[key];
+                }
+            }
         }
 
         /**
@@ -1607,105 +1523,14 @@ define(
          * modify from Tangram
          * @param {*} target 目标对象
          * @param {*} source 源对象
-         * @param {Object} optOptions 选项
-         * @param {boolean} optOptions.overwrite 是否覆盖
-         * @param {boolean} optOptions.recursive 是否递归
-         * @param {boolean} optOptions.whiteList 白名单，如果定义，则仅处理白名单属性
+         * @param {boolean} overwrite 是否覆盖
          */
-        var merge = (function() {
-            // buildInObject, 用于处理无法遍历Date等对象的问题
-            var buildInObject = {
-                '[object Function]': 1,
-                '[object RegExp]': 1,
-                '[object Date]': 1,
-                '[object Error]': 1,
-                '[object CanvasGradient]': 1
-            };
-            function mergeItem(target, source, index, overwrite, recursive) {
-                if (source.hasOwnProperty(index)) {
-                    if (recursive
-                        && typeof target[index] == 'object'
-                        && buildInObject[
-                            Object.prototype.toString.call(target[index])
-                        ] != 1
-                    ) {
-                        // 如果需要递归覆盖，就递归调用merge
-                        merge(
-                            target[index],
-                            source[index],
-                            {
-                                'overwrite': overwrite,
-                                'recursive': recursive
-                            }
-                        );
-                    } else if (overwrite || !(index in target)) {
-                        // 否则只处理overwrite为true，或者在目标对象中没有此属性的情况
-                        target[index] = source[index];
-                    }
-                }
+        function merge(target, source, overwrite) {
+            for (var i in source) {
+                mergeItem(target, source, i, overwrite);
             }
-
-            return function(target, source, optOptions){
-                var i = 0;
-                var options = optOptions || {};
-                var overwrite = options['overwrite'];
-                var whiteList = options['whiteList'];
-                var recursive = options['recursive'];
-                var len;
-
-                // 只处理在白名单中的属性
-                if (whiteList && whiteList.length) {
-                    len = whiteList.length;
-                    for (; i < len; ++i) {
-                        mergeItem(
-                            target, source, whiteList[i], overwrite, recursive
-                        );
-                    }
-                } else {
-                    for (i in source) {
-                        mergeItem(target, source, i, overwrite, recursive);
-                    }
-                }
-                return target;
-            };
-        })();
-
-        /**
-         * 简化版的merge操作，舍去很多判断
-         * @param  {*} target   
-         * @param  {*} source   
-         * @param  {boolean} overwrite
-         * @param  {boolean} recursive     
-         */
-        function mergeFast(target, source, overwrite, recursive) {
-            if (!target || !source) {
-                return;
-            }
-            if (source instanceof Object) {
-                for (var name in source) {
-                    if (source.hasOwnProperty(name)) {
-                        if (
-                            source[name] instanceof Object 
-                            && recursive
-                            && target[name]
-                        ) {
-                            mergeFast(
-                                target[name],
-                                source[name],
-                                overwrite,
-                                recursive
-                            );
-                        } else {
-                            if (
-                                overwrite
-                                || !target.hasOwnProperty(name)
-                            ) {
-                                target[name] = source[name];
-                            }
-                        }
-                    }
-                }
-            }
+            
+            return target;
         }
 
         var _ctx;
@@ -1759,7 +1584,7 @@ define(
         function adjustCanvasSize(x, y) {
             // 每次加的长度
             var _v = 100;
-            var _flag = false;
+            var _flag;
 
             if (x + _offsetX > _width) {
                 _width = x + _offsetX + _v;
@@ -1819,220 +1644,136 @@ define(
         }
 
         /**
-         * 计算包围盒
+         * 构造类继承关系
+         * 
+         * @param {Function} clazz 源类
+         * @param {Function} baseClazz 基类
          */
-        function computeBoundingBox(points, min, max) {
-            if (points.length === 0) {
-                return;
-            }
-            var left = points[0][0];
-            var right = points[0][0];
-            var top = points[0][1];
-            var bottom = points[0][1];
-            
-            for (var i = 1; i < points.length; i++) {
-                var p = points[i];
-                if (p[0] < left) {
-                    left = p[0];
-                }
-                if (p[0] > right) {
-                    right = p[0];
-                }
-                if (p[1] < top) {
-                    top = p[1];
-                }
-                if (p[1] > bottom) {
-                    bottom = p[1];
-                }
-            }
+        function inherits(clazz, baseClazz) {
+            var clazzPrototype = clazz.prototype;
+            function F() {}
+            F.prototype = baseClazz.prototype;
+            clazz.prototype = new F();
 
-            min[0] = left;
-            min[1] = top;
-            max[0] = right;
-            max[1] = bottom;
+            for (var prop in clazzPrototype) {
+                clazz.prototype[prop] = clazzPrototype[prop];
+            }
+            clazz.constructor = clazz;
         }
-
-        /**
-         * 计算三阶贝塞尔曲线的包围盒
-         * http://pissang.net/blog/?p=91
-         */
-        function computeCubeBezierBoundingBox(p0, p1, p2, p3, min, max) {
-            var xDim = _computeCubeBezierExtremitiesDim(
-                p0[0], p1[0], p2[0], p3[0]
-            );
-            var yDim = _computeCubeBezierExtremitiesDim(
-                p0[1], p1[1], p2[1], p3[1]
-            );
-
-            xDim.push(p0[0], p3[0]);
-            yDim.push(p0[1], p3[1]);
-
-            var left = Math.min.apply(null, xDim);
-            var right = Math.max.apply(null, xDim);
-            var top = Math.min.apply(null, yDim);
-            var bottom = Math.max.apply(null, yDim);
-
-            min[0] = left;
-            min[1] = top;
-            max[0] = right;
-            max[1] = bottom;
-        }
-
-        function _computeCubeBezierExtremitiesDim(p0, p1, p2, p3) {
-            var extremities = [];
-
-            var b = 6 * p2 - 12 * p1 + 6 * p0;
-            var a = 9 * p1 + 3 * p3 - 3 * p0 - 9 * p2;
-            var c = 3 * p1 - 3 * p0;
-
-            var tmp = b * b - 4 * a * c;
-            if (tmp > 0){
-                var tmpSqrt = Math.sqrt(tmp);
-                var t1 = (-b + tmpSqrt) / (2 * a);
-                var t2 = (-b - tmpSqrt) / (2 * a);
-                extremities.push(t1, t2);
-            } else if (tmp === 0) {
-                extremities.push(-b / (2 * a));
-            }
-            var result = [];
-            for (var i = 0; i < extremities.length; i++) {
-                var t = extremities[i];
-                if (Math.abs(2 * a * t + b) > 0.0001 && t < 1 && t > 0) {
-                    var ct = 1 - t;
-                    var val = ct * ct * ct * p0 
-                            + 3 * ct * ct * t * p1
-                            + 3 * ct * t * t * p2
-                            + t * t *t * p3;
-
-                    result.push(val);
-                }
-            }
-
-            return result;
-        }
-
-        /**
-         * 计算二阶贝塞尔曲线的包围盒
-         * http://pissang.net/blog/?p=91
-         */
-        function computeQuadraticBezierBoundingBox(p0, p1, p2, min, max) {
-            // Find extremities, where derivative in x dim or y dim is zero
-            var tmp = (p0[0] + p2[0] - 2 * p1[0]);
-            // p1 is center of p0 and p2 in x dim
-            var t1;
-            if (tmp === 0) {
-                t1 = 0.5;
-            } else {
-                t1 = (p0[0] - p1[0]) / tmp;
-            }
-
-            tmp = (p0[1] + p2[1] - 2 * p1[1]);
-            // p1 is center of p0 and p2 in y dim
-            var t2;
-            if (tmp === 0) {
-                t2 = 0.5;
-            } else {
-                t2 = (p0[1] - p1[1]) / tmp;
-            }
-
-            t1 = Math.max(Math.min(t1, 1), 0);
-            t2 = Math.max(Math.min(t2, 1), 0);
-
-            var ct1 = 1-t1;
-            var ct2 = 1-t2;
-
-            var x1 = ct1 * ct1 * p0[0] 
-                     + 2 * ct1 * t1 * p1[0] 
-                     + t1 * t1 * p2[0];
-            var y1 = ct1 * ct1 * p0[1] 
-                     + 2 * ct1 * t1 * p1[1] 
-                     + t1 * t1 * p2[1];
-
-            var x2 = ct2 * ct2 * p0[0] 
-                     + 2 * ct2 * t2 * p1[0] 
-                     + t2 * t2 * p2[0];
-            var y2 = ct2 * ct2 * p0[1] 
-                     + 2 * ct2 * t2 * p1[1] 
-                     + t2 * t2 * p2[1];
-
-            return computeBoundingBox(
-                        [p0.slice(), p2.slice(), [x1, y1], [x2, y2]],
-                        min, max
-                    );
-        }
-
-
-        /**
-         * 计算圆弧的包围盒
-         * http://pissang.net/blog/?p=91
-         */
-        var computeArcBoundingBox = (function(){
-            var start = [];
-            var end = [];
-            // At most 4 extremities
-            var extremities = [[], [], [], []];
-            return function(
-                center, radius, startAngle, endAngle, clockwise, min, max
-            ) {
-                clockwise = clockwise ? 1 : -1;
-                start[0] = Math.cos(startAngle);
-                start[1] = Math.sin(startAngle) * clockwise;
-                vec2.scale(start, start, radius);
-                vec2.add(start, start, center);
-
-                end[0] = Math.cos(endAngle);
-                end[1] = Math.sin(endAngle) * clockwise;
-                vec2.scale(end, end, radius);
-                vec2.add(end, end, center);
-                
-                startAngle = startAngle % (Math.PI * 2);
-                if (startAngle < 0) {
-                    startAngle = startAngle + Math.PI * 2;
-                }
-                endAngle = endAngle % (Math.PI * 2);
-                if (endAngle < 0) {
-                    endAngle = endAngle + Math.PI * 2;
-                }
-
-                if (startAngle > endAngle) {
-                    endAngle += Math.PI * 2;
-                }
-                var number = 0;
-                for (var angle = 0; angle < endAngle; angle += Math.PI / 2) {
-                    if (angle > startAngle) {
-                        var extremity = extremities[number++];
-                        extremity[0] = Math.cos(angle);
-                        extremity[1] = Math.sin(angle) * clockwise;
-                        vec2.scale(extremity, extremity, radius);
-                        vec2.add(extremity, extremity, center);
-                    }
-                }
-                var points = extremities.slice(0, number);
-                points.push(start, end);
-                computeBoundingBox(points, min, max);
-            };
-        })();
 
         return {
+            inherits: inherits,
             clone : clone,
             merge : merge,
-            mergeFast : mergeFast,
             getContext : getContext,
-
             getPixelContext : getPixelContext,
             getPixelOffset : getPixelOffset,
             adjustCanvasSize : adjustCanvasSize,
-
-            computeBoundingBox : computeBoundingBox,
-            computeCubeBezierBoundingBox : computeCubeBezierBoundingBox,
-            computeQuadraticBezierBoundingBox : 
-                computeQuadraticBezierBoundingBox,
-            computeArcBoundingBox : computeArcBoundingBox,
-
             indexOf : indexOf
         };
     }
 );
+
+/**
+ * zrender: config默认配置项
+ *
+ * @desc zrender是一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型。
+ * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *
+ */
+define(
+    'zrender/config',{
+        EVENT : {                       // 支持事件列表
+            RESIZE : 'resize',          // 窗口大小变化
+            CLICK : 'click',            // 鼠标按钮被（手指）按下，事件对象是：目标图形元素或空
+
+            MOUSEWHEEL : 'mousewheel',  // 鼠标滚轮变化，事件对象是：目标图形元素或空
+            MOUSEMOVE : 'mousemove',    // 鼠标（手指）被移动，事件对象是：目标图形元素或空
+            MOUSEOVER : 'mouseover',    // 鼠标移到某图形元素之上，事件对象是：目标图形元素
+            MOUSEOUT : 'mouseout',      // 鼠标从某图形元素移开，事件对象是：目标图形元素
+            MOUSEDOWN : 'mousedown',    // 鼠标按钮（手指）被按下，事件对象是：目标图形元素或空
+            MOUSEUP : 'mouseup',        // 鼠标按键（手指）被松开，事件对象是：目标图形元素或空
+
+            //
+            GLOBALOUT : 'globalout',    // 全局离开，MOUSEOUT触发比较频繁，一次离开优化绑定
+
+            // 一次成功元素拖拽的行为事件过程是：
+            // dragstart > dragenter > dragover [> dragleave] > drop > dragend
+            DRAGSTART : 'dragstart',    // 开始拖拽时触发，事件对象是：被拖拽图形元素
+            DRAGEND : 'dragend',        // 拖拽完毕时触发（在drop之后触发），事件对象是：被拖拽图形元素
+            DRAGENTER : 'dragenter',    // 拖拽图形元素进入目标图形元素时触发，事件对象是：目标图形元素
+            DRAGOVER : 'dragover',      // 拖拽图形元素在目标图形元素上移动时触发，事件对象是：目标图形元素
+            DRAGLEAVE : 'dragleave',    // 拖拽图形元素离开目标图形元素时触发，事件对象是：目标图形元素
+            DROP : 'drop',              // 拖拽图形元素放在目标图形元素内时触发，事件对象是：目标图形元素
+
+            touchClickDelay : 300       // touch end - start < delay is click
+        },
+
+        // 是否异常捕获
+        catchBrushException: false,
+
+        /**
+         * debug日志选项：catchBrushException为true下有效
+         * 0 : 不生成debug数据，发布用
+         * 1 : 异常抛出，调试用
+         * 2 : 控制台输出，调试用
+         */
+        debugMode: 0
+    }
+);
+/**
+ * zrender: 日志记录
+ *
+ * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ */
+
+define(
+    'zrender/tool/log',['require','../config'],function (require) {
+        var config = require('../config');
+
+        return function() {
+            if (config.debugMode === 0) {
+                return;
+            }
+            else if (config.debugMode == 1) {
+                for (var k in arguments) {
+                    throw new Error(arguments[k]);
+                }
+            }
+            else if (config.debugMode > 1) {
+                for (var k in arguments) {
+                    console.log(arguments[k]);
+                }
+            }
+        };
+
+        /* for debug
+        return function(mes) {
+            document.getElementById('wrong-message').innerHTML =
+                mes + ' ' + (new Date() - 0)
+                + '<br/>' 
+                + document.getElementById('wrong-message').innerHTML;
+        };
+        */
+    }
+);
+
+/**
+ * zrender: 生成唯一id
+ *
+ * @author errorrik (errorrik@gmail.com)
+ */
+
+define(
+    'zrender/tool/guid',[],function() {
+        var idStart = 0x0907;
+
+        return function () {
+            return 'zrender__' + (idStart++);
+        };
+    }
+);
+
 /**
  * echarts设备环境识别
  *
@@ -2114,540 +1855,964 @@ define('zrender/tool/env',[],function() {
     return detect( navigator.userAgent );
 });
 /**
- * zrender: shape仓库
- *
- * @desc zrender是一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型。
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
- *
- */
-define(
-    'zrender/shape',[],function(/*require*/) {
-        var self = {};
-
-        var _shapeLibrary = {};     //shape库
-
-        /**
-         * 定义图形实现
-         * @param {Object} name
-         * @param {Object} clazz 图形实现
-         */
-        self.define = function(name, clazz) {
-            _shapeLibrary[name] = clazz;
-            return self;
-        };
-
-        /**
-         * 获取图形实现
-         * @param {Object} name
-         */
-        self.get = function(name) {
-            return _shapeLibrary[name];
-        };
-
-        return self;
-    }
-);
-/**
- * zrender: 图形空间辅助类
+ * zrender: 事件辅助类
  *
  * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
  *
- * isInside：是否在区域内部
- * isOutside：是否在区域外部
- * getTextWidth：测算单行文本宽度
+ * getX：获取事件横坐标
+ * getY：或者事件纵坐标
+ * getDelta：或者鼠标滚轮变化
+ * stop：停止事件传播
+ * Dispatcher：事件分发器
  */
 define(
-    'zrender/tool/area',['require','../tool/util','../shape'],function(require) {
-        var util = require('../tool/util');
-
-        var _ctx;
-
+    'zrender/tool/event',[],function() {
         /**
-         * 包含判断
-         * @param {string} shapeClazz : 图形类
-         * @param {Object} area ： 目标区域
-         * @param {number} x ： 横坐标
-         * @param {number} y ： 纵坐标
-         */
-        function isInside(shapeClazz, area, x, y) {
-            if (!area || !shapeClazz) {
-                // 无参数或不支持类型
-                return false;
-            }
-            var zoneType = shapeClazz.type;
-
-            if (!_ctx) {
-                _ctx = util.getContext();
-            }
-            if (!_isInsideRectangle(
-                    area.__rect || shapeClazz.getRect(area), x, y
-                 )
-             ) {
-                // 不在矩形区域内直接返回false
-                return false;
-            }
-
-            // 未实现或不可用时(excanvas不支持)则数学运算，主要是line，brokenLine，ring
-            var _mathReturn = _mathMethod(zoneType, area, x, y);
-
-            if (typeof _mathReturn != 'undefined') {
-                return _mathReturn;
-            }
-
-            if (zoneType != 'beziercurve'
-                && shapeClazz.buildPath
-                && _ctx.isPointInPath
-            ) {
-                return _buildPathMethod(shapeClazz, _ctx, area, x, y);
-            }
-            else if (_ctx.getImageData) {
-                return _pixelMethod(shapeClazz, area, x, y);
-            }
-
-            // 上面的方法都行不通时
-            switch (zoneType) {
-                //心形----------------------10
-                case 'heart':
-                    return true;    // Todo，不精确
-                //水滴----------------------11
-                case 'droplet':
-                    return true;    // Todo，不精确
-                case 'ellipse':
-                    return true;     // Todo，不精确
-                // 旋轮曲线  不准确
-                case 'trochoid':
-                    var _r = area.location == 'out'
-                            ? area.r1 + area.r2 + area.d
-                            : area.r1 - area.r2 + area.d;
-                    return _isInsideCircle(area, x, y, _r);
-                // 玫瑰线 不准确
-                case 'rose' :
-                    return _isInsideCircle(area, x, y, area.maxr);
-                //路径，椭圆，曲线等-----------------13
-                default:
-                    return false;   // Todo，暂不支持
-            }
+        * 提取鼠标（手指）x坐标
+        * 
+        * @param  {Event} e 事件.
+        * @return {number} 鼠标（手指）x坐标.
+        */
+        function getX(e) {
+            return typeof e.zrenderX != 'undefined' && e.zrenderX
+                   || typeof e.offsetX != 'undefined' && e.offsetX
+                   || typeof e.layerX != 'undefined' && e.layerX
+                   || typeof e.clientX != 'undefined' && e.clientX;
         }
 
         /**
-         * 用数学方法判断，三个方法中最快，但是支持的shape少
-         *
-         * @param {string} zoneType ： 图形类型
-         * @param {Object} area ：目标区域
-         * @param {number} x ： 横坐标
-         * @param {number} y ： 纵坐标
-         * @return {boolean=} true表示坐标处在图形中
-         */
-        function _mathMethod(zoneType, area, x, y) {
-            // 在矩形内则部分图形需要进一步判断
-            switch (zoneType) {
-                //线-----------------------1
-                case 'line':
-                    return _isInsideLine(area, x, y);
-                //折线----------------------2
-                case 'brokenLine':
-                    return _isInsideBrokenLine(area, x, y);
-                //文本----------------------3
-                case 'text':
-                    return true;
-                //圆环----------------------4
-                case 'ring':
-                    return _isInsideRing(area, x, y);
-                //矩形----------------------5
-                case 'rectangle':
-                    return true;
-                //圆形----------------------6
-                case 'circle':
-                    return _isInsideCircle(area, x, y, area.r);
-                //扇形----------------------7
-                case 'sector':
-                    return _isInsideSector(area, x, y);
-                //多边形---------------------8
-                case 'path':
-                    return _isInsidePath(area, x, y);
-                case 'polygon':
-                case 'star':
-                case 'isogon':
-                    return _isInsidePolygon(area, x, y);
-                //图片----------------------9
-                case 'image':
-                    return true;
-            }
+        * 提取鼠标y坐标
+        * 
+        * @param  {Event} e 事件.
+        * @return {number} 鼠标（手指）y坐标.
+        */
+        function getY(e) {
+            return typeof e.zrenderY != 'undefined' && e.zrenderY
+                   || typeof e.offsetY != 'undefined' && e.offsetY
+                   || typeof e.layerY != 'undefined' && e.layerY
+                   || typeof e.clientY != 'undefined' && e.clientY;
         }
 
         /**
-         * 通过buildPath方法来判断，三个方法中较快，但是不支持线条类型的shape，
-         * 而且excanvas不支持isPointInPath方法
-         *
-         * @param {Object} shapeClazz ： shape类
-         * @param {Object} context : 上下文
-         * @param {Object} area ：目标区域
-         * @param {number} x ： 横坐标
-         * @param {number} y ： 纵坐标
-         * @return {boolean} true表示坐标处在图形中
-         */
-        function _buildPathMethod(shapeClazz, context, area, x, y) {
-            // 图形类实现路径创建了则用类的path
-            context.beginPath();
-            shapeClazz.buildPath(context, area);
-            context.closePath();
-            return context.isPointInPath(x, y);
+        * 提取鼠标滚轮变化
+        * 
+        * @param  {Event} e 事件.
+        * @return {number} 滚轮变化，正值说明滚轮是向上滚动，如果是负值说明滚轮是向下滚动
+        */
+        function getDelta(e) {
+            return typeof e.wheelDelta != 'undefined' && e.wheelDelta
+                   || typeof e.detail != 'undefined' && -e.detail;
         }
 
         /**
-         * 通过像素值来判断，三个方法中最慢，但是支持广,不足之处是excanvas不支持像素处理
-         *
-         * @param {Object} shapeClazz ： shape类
-         * @param {Object} area ：目标区域
-         * @param {number} x ： 横坐标
-         * @param {number} y ： 纵坐标
-         * @return {boolean} true表示坐标处在图形中
+         * 停止冒泡和阻止默认行为
+         * 
+         * @type {Function}
+         * @param {Event} e : event对象
          */
-        function _pixelMethod(shapeClazz, area, x, y) {
-            var _rect = area.__rect || shapeClazz.getRect(area);
-            var _context = util.getPixelContext();
-            var _offset = util.getPixelOffset();
-
-            util.adjustCanvasSize(x, y);
-            _context.clearRect(_rect.x, _rect.y, _rect.width, _rect.height);
-            _context.beginPath();
-            shapeClazz.brush(_context, {style : area});
-            _context.closePath();
-
-            return _isPainted(_context, x + _offset.x, y + _offset.y);
-        }
+        var stop = window.Event && Event.prototype.preventDefault
+            ? function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            : function (e) {
+                e.returnValue = false;
+                e.cancelBubble = true;
+            };
 
         /**
-         * 坐标像素值，判断坐标是否被作色
-         *
-         * @param {Object} context : 上下文
-         * @param {number} x : 横坐标
-         * @param {number} y : 纵坐标
-         * @param {number=} unit : 触发的精度，越大越容易触发，可选，缺省是为1
-         * @return {boolean} 已经被画过返回true
+         * 事件分发器
          */
-        function _isPainted(context, x, y, unit) {
-            var pixelsData;
+        function Dispatcher() {
+            var _self = this;
+            var _h = {};
 
-            if (typeof unit != 'undefined') {
-                unit = Math.floor((unit || 1 )/ 2);
-                pixelsData = context.getImageData(
-                    x - unit,
-                    y - unit,
-                    unit + unit,
-                    unit + unit
-                ).data;
-            }
-            else {
-                pixelsData = context.getImageData(x, y, 1, 1).data;
-            }
-
-            var len = pixelsData.length;
-            while (len--) {
-                if (pixelsData[len] !== 0) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        /**
-         * !isInside
-         */
-        function isOutside(shapeClazz, area, x, y) {
-            return !isInside(shapeClazz, area, x, y);
-        }
-
-        /**
-         * 线段包含判断
-         */
-        function _isInsideLine(area, x, y) {
-            var _x1 = area.xStart;
-            var _y1 = area.yStart;
-            var _x2 = area.xEnd;
-            var _y2 = area.yEnd;
-            var _l = Math.max(area.lineWidth, 5);
-            var _a = 0;
-            var _b = _x1;
-
-            if (_x1 !== _x2) {
-                _a = (_y1 - _y2) / (_x1 - _x2);
-                _b = (_x1 * _y2 - _x2 * _y1) / (_x1 - _x2) ;
-            }
-            else {
-                return Math.abs(x - _x1) <= _l / 2;
-            }
-
-            var _s = (_a * x - y + _b) * (_a * x - y + _b) / (_a * _a + 1);
-            return  _s <= _l / 2 * _l / 2;
-        }
-
-        function _isInsideBrokenLine(area, x, y) {
-            var pointList = area.pointList;
-            var lineArea;
-            var insideCatch = false;
-            for (var i = 0, l = pointList.length - 1; i < l; i++) {
-                lineArea = {
-                    xStart : pointList[i][0],
-                    yStart : pointList[i][1],
-                    xEnd : pointList[i + 1][0],
-                    yEnd : pointList[i + 1][1],
-                    lineWidth : Math.max(area.lineWidth, 10)
-                };
-                if (!_isInsideRectangle(
-                        {
-                            x : Math.min(lineArea.xStart, lineArea.xEnd)
-                                - lineArea.lineWidth,
-                            y : Math.min(lineArea.yStart, lineArea.yEnd)
-                                - lineArea.lineWidth,
-                            width : Math.abs(lineArea.xStart - lineArea.xEnd)
-                                    + lineArea.lineWidth,
-                            height : Math.abs(lineArea.yStart - lineArea.yEnd)
-                                     + lineArea.lineWidth
-                        },
-                        x,y
-                    )
-                ) {
-                    // 不在矩形区内跳过
-                    continue;
-                }
-                insideCatch = _isInsideLine(lineArea, x, y);
-                if (insideCatch) {
-                    break;
-                }
-            }
-            return insideCatch;
-        }
-
-        function _isInsideRing(area, x, y) {
-            if (_isInsideCircle(area, x, y, area.r)
-                && !_isInsideCircle(
-                    {
-                        x : area.x,
-                        y : area.y
-                    },
-                    x, y,
-                    area.r0 || 0
-                )
-            ){
-                // 大圆内，小圆外
-                return true;
-            }
-            return false;
-        }
-
-        /**
-         * 矩形包含判断
-         */
-        function _isInsideRectangle(area, x, y) {
-            if (x >= area.x
-                && x <= (area.x + area.width)
-                && y >= area.y
-                && y <= (area.y + area.height)
-            ) {
-                return true;
-            }
-            return false;
-        }
-
-        /**
-         * 圆形包含判断
-         */
-        function _isInsideCircle(area, x, y, r) {
-            return (x - area.x) * (x - area.x) + (y - area.y) * (y - area.y)
-                   < r * r;
-        }
-
-        /**
-         * 扇形包含判断
-         */
-        function _isInsideSector(area, x, y) {
-            if (!_isInsideCircle(area, x, y, area.r)
-                || (area.r0 > 0
-                    && _isInsideCircle(
-                            {
-                                x : area.x,
-                                y : area.y
-                            },
-                            x, y,
-                            area.r0
-                        )
-                    )
-            ){
-                // 大圆外或者小圆内直接false
-                return false;
-            }
-            else {
-                // 判断夹角
-                if (Math.abs(area.endAngle - area.startAngle) >= 360) {
-                    // 大于360度的扇形，在环内就为true
-                    return true;
-                }
-                
-                var angle = (360
-                             - Math.atan2(y - area.y, x - area.x)
-                             / Math.PI
-                             * 180)
-                             % 360;
-                var endA = (360 + area.endAngle) % 360;
-                var startA = (360 + area.startAngle) % 360;
-                if (endA > startA) {
-                    return (angle >= startA && angle <= endA);
-                } else {
-                    return !(angle >= endA && angle <= startA);
-                }
-
-            }
-        }
-
-        /**
-         * 多边形包含判断
-         * 警告：下面这段代码会很难看，建议跳过~
-         */
-        function _isInsidePolygon(area, x, y) {
             /**
-             * 射线判别法
-             * 如果一个点在多边形内部，任意角度做射线肯定会与多边形要么有一个交点，要么有与多边形边界线重叠
-             * 如果一个点在多边形外部，任意角度做射线要么与多边形有一个交点，
-             * 要么有两个交点，要么没有交点，要么有与多边形边界线重叠。
+             * 单次触发绑定，dispatch后销毁
+             * 
+             * @param {string} event 事件字符串
+             * @param {Function} handler 响应函数
              */
-            var i;
-            var j;
-            var polygon = area.pointList;
-            var N = polygon.length;
-            var inside = false;
-            var redo = true;
-            var v;
-
-            for (i = 0; i < N; ++i) {
-                // 是否在顶点上
-                if (polygon[i][0] == x && polygon[i][1] == y ) {
-                    redo = false;
-                    inside = true;
-                    break;
+            function one(event, handler) {
+                if(!handler || !event) {
+                    return _self;
                 }
+
+                if(!_h[event]) {
+                    _h[event] = [];
+                }
+
+                _h[event].push({
+                    h : handler,
+                    one : true
+                });
+
+                return _self;
             }
 
-            if (redo) {
-                redo = false;
-                inside = false;
-                for (i = 0,j = N - 1;i < N;j = i++) {
-                    if ((polygon[i][1] < y && y < polygon[j][1])
-                        || (polygon[j][1] < y && y < polygon[i][1])
-                    ) {
-                        if (x <= polygon[i][0] || x <= polygon[j][0]) {
-                            v = (y - polygon[i][1])
-                                * (polygon[j][0] - polygon[i][0])
-                                / (polygon[j][1] - polygon[i][1])
-                                + polygon[i][0];
-                            if (x < v) {          // 在线的左侧
-                                inside = !inside;
-                            }
-                            else if (x == v) {   // 在线上
-                                inside = true;
-                                break;
+            /**
+             * 事件绑定
+             * 
+             * @param {string} event 事件字符串
+             * @param {Function} handler : 响应函数
+             */
+            function bind(event, handler) {
+                if(!handler || !event) {
+                    return _self;
+                }
+
+                if(!_h[event]) {
+                    _h[event] = [];
+                }
+
+                _h[event].push({
+                    h : handler,
+                    one : false
+                });
+
+                return _self;
+            }
+
+            /**
+             * 事件解绑定
+             * 
+             * @param {string} event 事件字符串
+             * @param {Function} handler : 响应函数
+             */
+            function unbind(event, handler) {
+                if(!event) {
+                    _h = {};
+                    return _self;
+                }
+
+                if(handler) {
+                    if(_h[event]) {
+                        var newList = [];
+                        for (var i = 0, l = _h[event].length; i < l; i++) {
+                            if (_h[event][i]['h'] != handler) {
+                                newList.push(_h[event][i]);
                             }
                         }
+                        _h[event] = newList;
                     }
-                    else if (y == polygon[i][1]) {
-                        if (x < polygon[i][0]) {    // 交点在顶点上
-                            polygon[i][1] > polygon[j][1] ? --y : ++y;
-                            //redo = true;
-                            break;
+
+                    if(_h[event] && _h[event].length === 0) {
+                        delete _h[event];
+                    }
+                }
+                else {
+                    delete _h[event];
+                }
+
+                return _self;
+            }
+
+            /**
+             * 事件分发
+             * 
+             * @param {string} type : 事件类型
+             * @param {Object} event : event对象
+             * @param {Object} [attachment] : 附加信息
+             */
+            function dispatch(type, event, attachment, that) {
+                if(_h[type]) {
+                    var newList = [];
+                    var eventPacket = attachment || {};
+                    eventPacket.type = type;
+                    eventPacket.event = event;
+                    //eventPacket._target = self;
+                    var thisObject;
+                    for (var i = 0, l = _h[type].length; i < l; i++) {
+                        thisObject = that || _h[type][i]['h'];
+                        _h[type][i]['h'].call(thisObject, eventPacket);
+                        if (!_h[type][i]['one']) {
+                            newList.push(_h[type][i]);
                         }
                     }
-                    else if (polygon[i][1] == polygon[j][1] // 在水平的边界线上
-                             && y == polygon[i][1]
-                             && ((polygon[i][0] < x && x < polygon[j][0])
-                                 || (polygon[j][0] < x && x < polygon[i][0]))
-                    ) {
-                        inside = true;
-                        break;
+
+                    if (newList.length != _h[type].length) {
+                        _h[type] = newList;
                     }
                 }
-            }
-            return inside;
-        }
-        
-        /**
-         * 路径包含判断，依赖多边形判断
-         */
-        function _isInsidePath(area, x, y) {
-            if (!area.pointList) {
-                require('../shape').get('path').buildPath(_ctx, area);
-            }
-            var pointList = area.pointList;
-            var insideCatch = false;
-            for (var i = 0, l = pointList.length; i < l; i++) {
-                insideCatch = _isInsidePolygon(
-                    { pointList : pointList[i] }, x, y
-                );
-                if (insideCatch) {
-                    break;
-                }
-            }
-            return insideCatch;
-        }
 
-        /**
-         * 测算多行文本宽度
-         * @param {Object} text
-         * @param {Object} textFont
-         */
-        function getTextWidth(text, textFont) {
-            if (!_ctx) {
-                _ctx = util.getContext();
+                return _self;
             }
 
-            _ctx.save();
-            if (textFont) {
-                _ctx.font = textFont;
-            }
-            
-            text = (text + '').split('\n');
-            var width = 0;
-            for (var i = 0, l = text.length; i < l; i++) {
-                width =  Math.max(
-                    _ctx.measureText(text[i]).width,
-                    width
-                );
-            }
-            _ctx.restore();
-
-            return width;
-        }
-        
-        /**
-         * 测算多行文本高度
-         * @param {Object} text
-         * @param {Object} textFont
-         */
-        function getTextHeight(text, textFont) {
-            if (!_ctx) {
-                _ctx = util.getContext();
-            }
-
-            _ctx.save();
-            if (textFont) {
-                _ctx.font = textFont;
-            }
-            
-            text = (text + '').split('\n');
-            //比较粗暴
-            var height = (_ctx.measureText('国').width + 2) * text.length;
-
-            _ctx.restore();
-
-            return height;
+            _self.one = one;
+            _self.bind = bind;
+            _self.unbind = unbind;
+            _self.dispatch = dispatch;
         }
 
         return {
-            isInside : isInside,
-            isOutside : isOutside,
-            getTextWidth : getTextWidth,
-            getTextHeight : getTextHeight
+            getX : getX,
+            getY : getY,
+            getDelta : getDelta,
+            stop : stop,
+            Dispatcher : Dispatcher
         };
+    }
+);
+/**
+ * Handler控制模块
+ *
+ * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *         errorrik (errorrik@gmail.com)
+ */
+
+define(
+    'zrender/Handler',['require','./config','./tool/env','./tool/event'],function (require) {
+        var config = require('./config');
+        var env = require('./tool/env');
+        var eventTool = require('./tool/event');
+        var EVENT = config.EVENT;
+
+        var domHandlerNames = [
+            'resize', 'click', 
+            'mousewheel', 'mousemove', 'mouseout', 'mouseup', 'mousedown',
+            'touchstart', 'touchend', 'touchmove'
+        ];
+
+        var domHandlers = {
+            /**
+             * 窗口大小改变响应函数
+             * 
+             * @param {event} event dom事件对象
+             */
+            resize: function (event) {
+                event = event || window.event;
+                this._lastHover = null;
+                this._isMouseDown = 0;
+                
+                // 分发config.EVENT.RESIZE事件，global
+                this.dispatch(EVENT.RESIZE, event);
+            },
+
+            /**
+             * 点击响应函数
+             * 
+             * @param {event} event dom事件对象
+             */
+            click: function (event) {
+                event = this._zrenderEventFixed(event);
+
+                //分发config.EVENT.CLICK事件
+                var _lastHover = this._lastHover;
+                if (( _lastHover && _lastHover.clickable )
+                    || !_lastHover
+                ) {
+                    this._dispatchAgency(_lastHover, EVENT.CLICK, event);
+                }
+
+                this._mousemoveHandler(event);
+            },
+
+            /**
+             * 鼠标滚轮响应函数
+             * 
+             * @param {event} event dom事件对象
+             */
+            mousewheel: function (event) {
+                event = this._zrenderEventFixed(event);
+
+                //分发config.EVENT.MOUSEWHEEL事件
+                this._dispatchAgency(this._lastHover, EVENT.MOUSEWHEEL, event);
+                this._mousemoveHandler(event);
+            },
+
+            /**
+             * 鼠标（手指）移动响应函数
+             * 
+             * @param {event} event dom事件对象
+             */
+            mousemove: function (event) {
+                if (this.painter.isLoading()) {
+                    return;
+                }
+
+                event = this._zrenderEventFixed(event);
+                this._lastX = this._mouseX;
+                this._lastY = this._mouseY;
+                this._mouseX = eventTool.getX(event);
+                this._mouseY = eventTool.getY(event);
+
+                // 可能出现config.EVENT.DRAGSTART事件
+                // 避免手抖点击误认为拖拽
+                //if (this._mouseX - this._lastX > 1 || this._mouseY - this._lastY > 1) {
+                    this._processDragStart(event);
+                //}
+                this._hasfound = 0;
+                this._event = event;
+                this.storage.iterShape(this._findHover, { normal: 'down'});
+
+                // 找到的在迭代函数里做了处理，没找到得在迭代完后处理
+                if (!this._hasfound) {
+                    // 过滤首次拖拽产生的mouseout和dragLeave
+                    if (!this._draggingTarget
+                        || (this._lastHover && this._lastHover != this._draggingTarget)
+                    ) {
+                        // 可能出现config.EVENT.MOUSEOUT事件
+                        this._processOutShape(event);
+
+                        // 可能出现config.EVENT.DRAGLEAVE事件
+                        this._processDragLeave(event);
+                    }
+
+                    this._lastHover = null;
+                    this.storage.delHover();
+                    this.painter.clearHover();
+                }
+                //如果存在拖拽中元素，被拖拽的图形元素最后addHover
+                if (this._draggingTarget) {
+                    this.storage.drift(
+                        this._draggingTarget.id,
+                        this._mouseX - this._lastX,
+                        this._mouseY - this._lastY
+                    );
+                    this.storage.addHover(this._draggingTarget);
+                }
+
+                // set cursor for root element
+                var cursor = 'default';
+                if (this._draggingTarget || (this._hasfound && this._lastHover.draggable)) {
+                    cursor = 'move';
+                }
+                else if (this._hasfound && this._lastHover.clickable) {
+                    cursor = 'pointer';
+                }
+                this.root.style.cursor = cursor;
+
+                // 分发config.EVENT.MOUSEMOVE事件
+                this._dispatchAgency(this._lastHover, EVENT.MOUSEMOVE, event);
+
+                if (this._draggingTarget || this._hasfound || this.storage.hasHoverShape()) {
+                    this.painter.refreshHover();
+                }
+            },
+
+            /**
+             * 鼠标（手指）离开响应函数
+             * 
+             * @param {event} event dom事件对象
+             */
+            mouseout: function (event) {
+                event = this._zrenderEventFixed(event);
+
+                var element = event.toElement || event.relatedTarget;
+                if (element != this.root) {
+                    while (element && element.nodeType != 9) {
+                        // 忽略包含在root中的dom引起的mouseOut
+                        if (element == this.root) {
+                            this._mousemoveHandler(event);
+                            return;
+                        }
+
+                        element = element.parentNode;
+                    }
+                }
+
+                event.zrenderX = this._lastX;
+                event.zrenderY = this._lastY;
+                this.root.style.cursor = 'default';
+                this._isMouseDown = 0;
+
+                this._processOutShape(event);
+                this._processDrop(event);
+                this._processDragEnd(event);
+                if (!this.painter.isLoading()) {
+                    this.painter.refreshHover();
+                }
+                
+                this.dispatch(EVENT.GLOBALOUT, event);
+            },
+
+            /**
+             * 鼠标（手指）按下响应函数
+             * 
+             * @param {event} event dom事件对象
+             */
+            mousedown: function (event) {
+                if (this._lastDownButton == 2) {
+                    this._lastDownButton = event.button;
+                    this._mouseDownTarget = null;
+                    // 仅作为关闭右键菜单使用
+                    return;
+                }
+
+                this._lastMouseDownMoment = new Date();
+                event = this._zrenderEventFixed(event);
+                this._isMouseDown = 1;
+
+                //分发config.EVENT.MOUSEDOWN事件
+                this._mouseDownTarget = this._lastHover;
+                this._dispatchAgency(this._lastHover, EVENT.MOUSEDOWN, event);
+                this._lastDownButton = event.button;
+            },
+
+            /**
+             * 鼠标（手指）抬起响应函数
+             * 
+             * @param {event} event dom事件对象
+             */
+            mouseup:function (event) {
+                event = this._zrenderEventFixed(event);
+                this.root.style.cursor = 'default';
+                this._isMouseDown = 0;
+                this._mouseDownTarget = null;
+
+                //分发config.EVENT.MOUSEUP事件
+                this._dispatchAgency(this._lastHover, EVENT.MOUSEUP, event);
+                this._processDrop(event);
+                this._processDragEnd(event);
+            },
+
+            /**
+             * Touch开始响应函数
+             * 
+             * @param {event} event dom事件对象
+             */
+            touchstart: function (event) {
+                //eventTool.stop(event);// 阻止浏览器默认事件，重要
+                event = this._zrenderEventFixed(event, true);
+                this._lastTouchMoment = new Date();
+
+                //平板补充一次findHover
+                this._mobildFindFixed(event);
+                this._mousedownHandler(event);
+            },
+
+            /**
+             * Touch移动响应函数
+             * 
+             * @param {event} event dom事件对象
+             */
+            touchmove: function (event) {
+                event = this._zrenderEventFixed(event, true);
+                this._mousemoveHandler(event);
+                if (this._isDragging) {
+                    eventTool.stop(event);// 阻止浏览器默认事件，重要
+                }
+            },
+
+            /**
+             * Touch结束响应函数
+             * 
+             * @param {event} event dom事件对象
+             */
+            touchend: function (event) {
+                //eventTool.stop(event);// 阻止浏览器默认事件，重要
+                event = this._zrenderEventFixed(event, true);
+                this._mouseupHandler(event);
+
+                if (new Date() - this._lastTouchMoment < EVENT.touchClickDelay) {
+                    this._mobildFindFixed(event);
+                    this._clickHandler(event);
+                }
+                this.painter.clearHover();
+            }
+        };
+
+        /**
+         * bind一个参数的function
+         * 
+         * @inner
+         * @param {Function} handler 要bind的function
+         * @param {Object} context 运行时this环境
+         * @return {Function}
+         */
+        function bind1Arg( handler, context ) {
+            return function ( e ) {
+                return handler.call( context, e );
+            };
+        }
+
+        /**
+         * 为控制类实例初始化dom 事件处理函数
+         * 
+         * @inner
+         * @param {Handler} instance 控制类实例
+         */
+        function initDomHandler( instance ) {
+            var len = domHandlerNames.length;
+            while ( len-- ) {
+                var name = domHandlerNames[ len ];
+                instance[ '_' + name + 'Handler' ] = bind1Arg( domHandlers[ name ], instance );
+            }
+        }
+
+        /**
+         * 控制类 (C)
+         * 
+         * @param {HTMLElement} root 绘图区域
+         * @param {storage} storage Storage实例
+         * @param {painter} painter Painter实例
+         *
+         * 分发事件支持详见config.EVENT
+         */
+        function Handler(root, storage, painter) {
+            // 添加事件分发器特性
+            eventTool.Dispatcher.call(this);
+
+            this.root = root;
+            this.storage = storage;
+            this.painter = painter;
+
+            // 各种事件标识的私有变量
+            // this._hasfound = false;              //是否找到hover图形元素
+            // this._lastHover = null;              //最后一个hover图形元素
+            // this._mouseDownTarget = null;
+            // this._draggingTarget = null;         //当前被拖拽的图形元素
+            // this._isMouseDown = false;
+            // this._isDragging = false;
+            // this._lastMouseDownMoment;
+            // this._lastTouchMoment;
+            // this._lastDownButton;
+
+            this._lastX = 
+            this._lastY = 
+            this._mouseX = 
+            this._mouseY = 0;
+
+            this._findHover = bind1Arg(findHover, this);
+            this._domHover = painter.getDomHover();
+            initDomHandler(this);
+
+            // 初始化，事件绑定，支持的所有事件都由如下原生事件计算得来
+            if (window.addEventListener) {
+                window.addEventListener('resize', this._resizeHandler);
+                
+                if (env.os.tablet || env.os.phone) {
+                    // mobile支持
+                    root.addEventListener('touchstart', this._touchstartHandler);
+                    root.addEventListener('touchmove', this._touchmoveHandler);
+                    root.addEventListener('touchend', this._touchendHandler);
+                }
+                else {
+                    // mobile的click/move/up/down自己模拟
+                    root.addEventListener('click', this._clickHandler);
+                    root.addEventListener('mousewheel', this._mousewheelHandler);
+                    root.addEventListener('mousemove', this._mousemoveHandler);
+                    root.addEventListener('mousedown', this._mousedownHandler);
+                    root.addEventListener('mouseup', this._mouseupHandler);
+                } 
+                root.addEventListener('DOMMouseScroll', this._mousewheelHandler);
+                root.addEventListener('mouseout', this._mouseoutHandler);
+            }
+            else {
+                window.attachEvent('onresize', this._resizeHandler);
+
+                root.attachEvent('onclick', this._clickHandler);
+                root.attachEvent('onmousewheel', this._mousewheelHandler);
+                root.attachEvent('onmousemove', this._mousemoveHandler);
+                root.attachEvent('onmouseout', this._mouseoutHandler);
+                root.attachEvent('onmousedown', this._mousedownHandler);
+                root.attachEvent('onmouseup', this._mouseupHandler);
+            }
+        }
+
+        /**
+         * 自定义事件绑定
+         * @param {string} eventName 事件名称，resize，hover，drag，etc~
+         * @param {Function} handler 响应函数
+         */
+        Handler.prototype.on = function (eventName, handler) {
+            this.bind(eventName, handler);
+            return this;
+        };
+
+        /**
+         * 自定义事件解绑
+         * @param {string} eventName 事件名称，resize，hover，drag，etc~
+         * @param {Function} handler 响应函数
+         */
+        Handler.prototype.un = function (eventName, handler) {
+            this.unbind(eventName, handler);
+            return this;
+        };
+
+        /**
+         * 事件触发
+         * @param {string} eventName 事件名称，resize，hover，drag，etc~
+         * @param {event=} eventArgs event dom事件对象
+         */
+        Handler.prototype.trigger = function (eventName, eventArgs) {
+            switch (eventName) {
+                case EVENT.RESIZE:
+                case EVENT.CLICK:
+                case EVENT.MOUSEWHEEL:
+                case EVENT.MOUSEMOVE:
+                case EVENT.MOUSEDOWN:
+                case EVENT.MOUSEUP:
+                case EVENT.MOUSEOUT:
+                    this['_' + eventName + 'Handler'](eventArgs);
+                    break;
+            }
+        };
+
+        /**
+         * 释放
+         */
+        Handler.prototype.dispose = function () {
+            var root = this.root;
+
+            if (window.removeEventListener) {
+                window.removeEventListener('resize', this._resizeHandler);
+
+                if (env.os.tablet || env.os.phone) {
+                    // mobile支持
+                    root.removeEventListener('touchstart', this._touchstartHandler);
+                    root.removeEventListener('touchmove', this._touchmoveHandler);
+                    root.removeEventListener('touchend', this._touchendHandler);
+                }
+                else {
+                    // mobile的click自己模拟
+                    root.removeEventListener('click', this._clickHandler);
+                    root.removeEventListener('mousewheel', this._mousewheelHandler);
+                    root.removeEventListener('mousemove', this._mousemoveHandler);
+                    root.removeEventListener('mousedown', this._mousedownHandler);
+                    root.removeEventListener('mouseup', this._mouseupHandler);
+                }
+                root.removeEventListener('DOMMouseScroll', this._mousewheelHandler);
+                root.removeEventListener('mouseout', this._mouseoutHandler);
+            }
+            else {
+                window.detachEvent('onresize', this._resizeHandler);
+
+                root.detachEvent('onclick', this._clickHandler);
+                root.detachEvent('onmousewheel', this._mousewheelHandler);
+                root.detachEvent('onmousemove', this._mousemoveHandler);
+                root.detachEvent('onmouseout', this._mouseoutHandler);
+                root.detachEvent('onmousedown', this._mousedownHandler);
+                root.detachEvent('onmouseup', this._mouseupHandler);
+            }
+
+            this.root =
+            this._domHover =
+            this.storage =
+            this.painter = null;
+            
+            this.un();
+        };
+
+        /**
+         * 拖拽开始
+         * 
+         * @private
+         * @param {Object} event 事件对象
+         */
+        Handler.prototype._processDragStart = function (event) {
+            var _lastHover = this._lastHover;
+
+            if (this._isMouseDown
+                && _lastHover
+                && _lastHover.draggable
+                && !this._draggingTarget
+                && this._mouseDownTarget == _lastHover
+            ) {
+                // 拖拽点击生效时长阀门，某些场景需要降低拖拽敏感度
+                if (_lastHover.dragEnableTime && 
+                    new Date() - this._lastMouseDownMoment < _lastHover.dragEnableTime
+                ) {
+                    return;
+                }
+
+                var _draggingTarget = _lastHover;
+                this._draggingTarget = _draggingTarget;
+                this._isDragging = 1;
+
+                _draggingTarget.invisible = true;
+                this.storage.mod(_draggingTarget.id, _draggingTarget);
+
+                //分发config.EVENT.DRAGSTART事件
+                this._dispatchAgency(
+                    _draggingTarget,
+                    EVENT.DRAGSTART,
+                    event
+                );
+                this.painter.refresh();
+            }
+        };
+
+        /**
+         * 拖拽进入目标元素
+         * 
+         * @private
+         * @param {Object} event 事件对象
+         */
+        Handler.prototype._processDragEnter = function (event) {
+            if (this._draggingTarget) {
+                //分发config.EVENT.DRAGENTER事件
+                this._dispatchAgency(
+                    this._lastHover,
+                    EVENT.DRAGENTER,
+                    event,
+                    this._draggingTarget
+                );
+            }
+        };
+
+        /**
+         * 拖拽在目标元素上移动
+         * 
+         * @private
+         * @param {Object} event 事件对象
+         */
+        Handler.prototype._processDragOver = function (event) {
+            if (this._draggingTarget) {
+                //分发config.EVENT.DRAGOVER事件
+                this._dispatchAgency(
+                    this._lastHover,
+                    EVENT.DRAGOVER,
+                    event,
+                    this._draggingTarget
+                );
+            }
+        };
+
+        /**
+         * 拖拽离开目标元素
+         * 
+         * @private
+         * @param {Object} event 事件对象
+         */
+        Handler.prototype._processDragLeave = function (event) {
+            if (this._draggingTarget) {
+                //分发config.EVENT.DRAGLEAVE事件
+                this._dispatchAgency(
+                    this._lastHover,
+                    EVENT.DRAGLEAVE,
+                    event,
+                    this._draggingTarget
+                );
+            }
+        };
+
+        /**
+         * 拖拽在目标元素上完成
+         * 
+         * @private
+         * @param {Object} event 事件对象
+         */
+        Handler.prototype._processDrop = function (event) {
+            if (this._draggingTarget) {
+                this._draggingTarget.invisible = false;
+                this.storage.mod(this._draggingTarget.id, this._draggingTarget);
+                this.painter.refresh();
+
+                //分发config.EVENT.DROP事件
+                this._dispatchAgency(
+                    this._lastHover,
+                    EVENT.DROP,
+                    event,
+                    this._draggingTarget
+                );
+            }
+        };
+
+        /**
+         * 拖拽结束
+         * 
+         * @private
+         * @param {Object} event 事件对象
+         */
+        Handler.prototype._processDragEnd = function (event) {
+            if (this._draggingTarget) {
+                //分发config.EVENT.DRAGEND事件
+                this._dispatchAgency(
+                    this._draggingTarget,
+                    EVENT.DRAGEND,
+                    event
+                );
+
+                this._lastHover = null;
+            }
+
+            this._isDragging = 0;
+            this._draggingTarget = null;
+        };
+
+        /**
+         * 鼠标在某个图形元素上移动
+         * 
+         * @private
+         * @param {Object} event 事件对象
+         */
+        Handler.prototype._processOverShape = function (event) {
+            //分发config.EVENT.MOUSEOVER事件
+            this._dispatchAgency(this._lastHover, EVENT.MOUSEOVER, event);
+        };
+
+        /**
+         * 鼠标离开某个图形元素
+         * 
+         * @private
+         * @param {Object} event 事件对象
+         */
+        Handler.prototype._processOutShape = function (event) {
+            //分发config.EVENT.MOUSEOUT事件
+            this._dispatchAgency(this._lastHover, EVENT.MOUSEOUT, event);
+        };
+
+        /**
+         * 事件分发代理
+         * 
+         * @private
+         * @param {Object} targetShape 目标图形元素
+         * @param {string} eventName 事件名称
+         * @param {Object} event 事件对象
+         * @param {Object=} draggedShape 拖拽事件特有，当前被拖拽图形元素
+         */
+        Handler.prototype._dispatchAgency = function (targetShape, eventName, event, draggedShape) {
+            var eventHandler = 'on' + eventName;
+            var eventPacket = {
+                type : eventName,
+                event : event,
+                target : targetShape
+            };
+
+            if (draggedShape) {
+                eventPacket.dragged = draggedShape;
+            }
+
+            if (targetShape) {
+                //“不存在shape级事件”或“存在shape级事件但事件回调返回非true”
+                if (!targetShape[eventHandler]
+                    || !targetShape[eventHandler](eventPacket)
+                ) {
+                    this.dispatch(
+                        eventName,
+                        event,
+                        eventPacket
+                    );
+                }
+            }
+            else if (!draggedShape) {
+                //无hover目标，无拖拽对象，原生事件分发
+                this.dispatch(eventName, event);
+            }
+        };
+        
+        // touch指尖错觉的尝试偏移量配置
+        var MOBILE_TOUCH_OFFSETS = [
+            { x: 10 },
+            { x: -20 },
+            { x: 10, y: 10},
+            { y: -20}
+        ];
+
+        // touch有指尖错觉，四向尝试，让touch上的点击更好触发事件
+        Handler.prototype._mobildFindFixed = function (event) {
+            this._lastHover = null;
+            this._mouseX = event.zrenderX;
+            this._mouseY = event.zrenderY;
+
+            this._event = event;
+            this.storage.iterShape(this._findHover, { normal: 'down'});
+            for ( var i = 0; !this._lastHover && i < MOBILE_TOUCH_OFFSETS.length ; i++ ) {
+                var offset = MOBILE_TOUCH_OFFSETS[ i ];
+                offset.x && ( this._mouseX += offset.x );
+                offset.y && ( this._mouseX += offset.y );
+                this.storage.iterShape(this._findHover, { normal: 'down'});
+            }
+
+            if (this._lastHover) {
+                event.zrenderX = this._mouseX;
+                event.zrenderY = this._mouseY;
+            }
+        };
+
+        /**
+         * 迭代函数，查找hover到的图形元素并即时做些事件分发
+         * 
+         * @private
+         * @param {Object} e 图形元素
+         */
+        function findHover(shape) {
+            if (
+                ( this._draggingTarget && this._draggingTarget.id == shape.id ) //迭代到当前拖拽的图形上
+                || shape.isSilent() // 打酱油的路过，啥都不响应的shape~
+            ) {
+                return false;
+            }
+
+            var event = this._event;
+            if (shape.isCover(this._mouseX, this._mouseY)) {
+                if (shape.hoverable) {
+                    this.storage.addHover(shape);
+                }
+
+                if (this._lastHover != shape) {
+                    this._processOutShape(event);
+
+                    //可能出现config.EVENT.DRAGLEAVE事件
+                    this._processDragLeave(event);
+
+                    this._lastHover = shape;
+
+                    //可能出现config.EVENT.DRAGENTER事件
+                    this._processDragEnter(event);
+                }
+
+                this._processOverShape(event);
+
+                //可能出现config.EVENT.DRAGOVER
+                this._processDragOver(event);
+
+                this._hasfound = 1;
+
+                return true;    //找到则中断迭代查找
+            }
+
+            return false;
+        }
+
+        /**
+         * 如果存在第三方嵌入的一些dom触发的事件，或touch事件，需要转换一下事件坐标
+         * 
+         * @private
+         */
+        Handler.prototype._zrenderEventFixed = function (event, isTouch) {
+            if ( event.zrenderFixed ) {
+                return event;
+            }
+
+            if (!isTouch) {
+                event = event || window.event;
+                // 进入对象优先~
+                var target = event.toElement
+                              || event.relatedTarget
+                              || event.srcElement
+                              || event.target;
+
+                if (target && target != this._domHover) {
+                    event.zrenderX = (typeof event.offsetX != 'undefined'
+                                        ? event.offsetX
+                                        : event.layerX)
+                                      + target.offsetLeft;
+                    event.zrenderY = (typeof event.offsetY != 'undefined'
+                                        ? event.offsetY
+                                        : event.layerY)
+                                      + target.offsetTop;
+                }
+            }
+            else {
+                var touch = event.type != 'touchend'
+                                ? event.targetTouches[0]
+                                : event.changedTouches[0];
+                if (touch) {
+                    // touch事件坐标是全屏的~
+                    event.zrenderX = touch.clientX - this.root.offsetLeft
+                                        + document.body.scrollLeft;
+                    event.zrenderY = touch.clientY - this.root.offsetTop
+                                        + document.body.scrollTop;
+                }
+            }
+
+            event.zrenderFixed = 1;
+            return event;
+        };
+
+        return Handler;
     }
 );
 
@@ -2987,13 +3152,14 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 获取色板颜色
+     *
      * @param {number} idx : 色板位置
      * @param {array} [userPalete] : 自定义色板
      *
      * @return {color} 颜色#000000~#ffffff
      */
     function getColor(idx, userPalete) {
-        idx = +idx || 0;
+        idx = idx | 0;
         userPalete = userPalete || palette;
         return userPalete[idx % userPalete.length];
     }
@@ -3021,6 +3187,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 径向渐变
+     *
      * @param {number} x0 渐变起点
      * @param {number} y0
      * @param {number} r0
@@ -3083,9 +3250,9 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
         for (var i = 0, r = start[0], g = start[1], b = start[2]; i < step; i++
         ) {
             colors[i] = toColor([
-                adjust(Math.floor(r), [ 0, 255 ]),
-                adjust(Math.floor(g), [ 0, 255 ]), 
-                adjust(Math.floor(b), [ 0, 255 ])
+                adjust(Math.floor(r), [0, 255]),
+                adjust(Math.floor(g), [0, 255]), 
+                adjust(Math.floor(b), [0, 255])
             ]);
             r += stepR;
             g += stepG;
@@ -3094,7 +3261,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
         r = end[0];
         g = end[1];
         b = end[2];
-        colors[i] = toColor( [ r, g, b ]);
+        colors[i] = toColor([r, g, b]);
         return colors;
     }
 
@@ -3141,12 +3308,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
             });
 
             if (format.indexOf('hex') > -1) {
-                data = map(data.slice(0, 3),
-                    function(c) {
-                        c = Number(c).toString(16);
-                        return (c.length === 1) ? '0' + c : c;
-                });
-                return '#' + data.join('');
+                return '#' + ((1 << 24) + (data[0] << 16) + (data[1] << 8) + (+data[2])).toString(16).slice(1);
             } else if (format.indexOf('hs') > -1) {
                 var sx = map(data.slice(1, 3),
                     function(c) {
@@ -3160,7 +3322,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
                 if (data.length === 3) {
                     data.push(1);
                 }
-                data[3] = adjust(data[3], [ 0, 1 ]);
+                data[3] = adjust(data[3], [0, 1]);
                 return format + '(' + data.slice(0, 4).join(',') + ')';
             }
 
@@ -3170,24 +3332,33 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 返回颜色值数组
-     * @param {string} color 颜色
+     *
+     * @param {color} color 颜色
      * @return {Array} 颜色值数组
      */
     function toArray(color) {
         color = trim(color);
-        if (color.indexOf('#') > -1) {
-            color = toRGB(color);
+        if (color.indexOf('rgba') < 0) {
+            color = toRGBA(color);
         }
-        var data = color.replace(/[rgbahsvl%\(\)]/ig, '').split(',');
-        data = map(data,
-            function(c) {
-                return Number(c);
+
+        var data = [];
+        var i = 0;
+        color.replace(/[\d.]+/g, function (n) {
+            if (i < 3) {
+                n = n | 0;
+            } else {
+                // Alpha
+                n = +n;
+            }
+            data[i++] = n;
         });
         return data;
     }
 
     /**
      * 颜色格式转化
+     *
      * @param {Array} data 颜色值数组
      * @param {string} format 格式,默认rgb
      * @return {string} 颜色
@@ -3218,6 +3389,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 转换为rgba格式的颜色
+     * 
      * @param {string} color 颜色
      * @return {string} rgba颜色，rgba(r,g,b,a)
      */
@@ -3227,6 +3399,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 转换为rgb数字格式的颜色
+     * 
      * @param {string} color 颜色
      * @return {string} rgb颜色，rgb(0,0,0)格式
      */
@@ -3236,6 +3409,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 转换为16进制颜色
+     * 
      * @param {string} color 颜色
      * @return {string} 16进制颜色，#rrggbb格式
      */
@@ -3245,6 +3419,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 转换为HSV颜色
+     * 
      * @param {string} color 颜色
      * @return {string} HSVA颜色，hsva(h,s,v,a)
      */
@@ -3254,6 +3429,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 转换为HSV颜色
+     * 
      * @param {string} color 颜色
      * @return {string} HSV颜色，hsv(h,s,v)
      */
@@ -3263,6 +3439,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 转换为HSBA颜色
+     * 
      * @param {string} color 颜色
      * @return {string} HSBA颜色，hsba(h,s,b,a)
      */
@@ -3272,6 +3449,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 转换为HSB颜色
+     * 
      * @param {string} color 颜色
      * @return {string} HSB颜色，hsb(h,s,b)
      */
@@ -3281,6 +3459,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 转换为HSLA颜色
+     * 
      * @param {string} color 颜色
      * @return {string} HSLA颜色，hsla(h,s,l,a)
      */
@@ -3290,6 +3469,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 转换为HSL颜色
+     * 
      * @param {string} color 颜色
      * @return {string} HSL颜色，hsl(h,s,l)
      */
@@ -3299,8 +3479,9 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 转换颜色名
+     * 
      * @param {string} color 颜色
-     * @return {String} 颜色名
+     * @return {string} 颜色名
      */
     function toName(color) {
         for ( var key in _nameColors) {
@@ -3313,19 +3494,20 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 移除颜色中多余空格
-     * @param {String} color 颜色
-     * @return {String} 无空格颜色
+     * 
+     * @param {string} color 颜色
+     * @return {string} 无空格颜色
      */
     function trim(color) {
-        color = String(color);
-        color = color.replace(/(^\s*)|(\s*$)/g, '');
-        if (/^[^#]*?$/i.test(color)) {
-            color = color.replace(/\s/g, '');
-        }
-        return color;
+        return String(color).replace(/\s+/g, '');
     }
 
-    // 规范化
+    /**
+     * 颜色规范化
+     * 
+     * @param {string} color 颜色
+     * @return {string} 规范化后的颜色
+     */
     function normalize(color) {
         // 颜色名
         if (_nameColors[color]) {
@@ -3336,15 +3518,22 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
         // hsv与hsb等价
         color = color.replace(/hsv/i, 'hsb');
         // rgb转为rrggbb
-        if (/^#[0-9a-f]{3}$/i.test(color)) {
-            var d = color.replace('#', '').split('');
-            color = '#' + d[0] + d[0] + d[1] + d[1] + d[2] + d[2];
+        if (/^#[\da-f]{3}$/i.test(color)) {
+            color = parseInt(color.slice(1), 16);
+            var r = (color & 0xf00) << 8;
+            var g = (color & 0xf0) << 4;
+            var b = color & 0xf;
+
+            color = '#'+ ((1 << 24) + (r << 4) + r + (g << 4) + g + (b << 4) + b).toString(16).slice(1);
         }
+        // 或者使用以下正则替换，不过 chrome 下性能相对差点
+        // color = color.replace(/^#([\da-f])([\da-f])([\da-f])$/i, '#$1$1$2$2$3$3');
         return color;
     }
 
     /**
      * 颜色加深或减淡，当level>0加深，当level<0减淡
+     * 
      * @param {string} color 颜色
      * @param {number} level 升降程度,取值区间[-1,1]
      * @return {string} 加深或减淡后颜色值
@@ -3359,9 +3548,9 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
         var data = getData(color);
         for ( var i = 0; i < 3; i++) {
             if (direct === 1) {
-                data[i] = Math.floor(data[i] * (1 - level));
+                data[i] = data[i] * (1 - level) | 0;
             } else {
-                data[i] = Math.floor((255 - data[i]) * level + data[i]);
+                data[i] = ((255 - data[i]) * level + data[i]) | 0;
             }
         }
         return 'rgb(' + data.join(',') + ')';
@@ -3369,6 +3558,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 颜色翻转,[255-r,255-g,255-b,1-a]
+     * 
      * @param {string} color 颜色
      * @return {string} 翻转颜色
      */
@@ -3383,10 +3573,11 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 简单两种颜色混合
-     * @param {String} color1 第一种颜色
-     * @param {String} color2 第二种颜色
-     * @param {String} weight 混合权重[0-1]
-     * @return {String} 结果色,rgb(r,g,b)或rgba(r,g,b,a)
+     * 
+     * @param {string} color1 第一种颜色
+     * @param {string} color2 第二种颜色
+     * @param {string} weight 混合权重[0-1]
+     * @return {string} 结果色,rgb(r,g,b)或rgba(r,g,b,a)
      */
     function mix(color1, color2, weight) {
         if(typeof weight === 'undefined') {
@@ -3421,14 +3612,11 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
 
     /**
      * 随机颜色
+     * 
      * @return {string} 颜色值，#rrggbb格式
      */
     function random() {
-        return toHex(
-            'rgb(' + Math.round(Math.random() * 256) + ','
-                   + Math.round(Math.random() * 256) + ','
-                   + Math.round(Math.random() * 256) + ')'
-        );
+        return '#' + Math.random().toString(16).slice(2, 8);
     }
 
     /**
@@ -3448,6 +3636,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
      * hsl(h,s,l)
      * hsl(h%,s%,l%)
      * hsla(h,s,l,a)
+     *
      * @param {string} color 颜色
      * @return {Array} 颜色值数组或null
      */
@@ -3465,10 +3654,10 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
         if (r[2]) {
             // #rrggbb
             d = r[2].replace('#', '').split('');
-            rgb = [ d[0] + d[1], d[2] + d[3], d[4] + d[5] ];
+            rgb = [d[0] + d[1], d[2] + d[3], d[4] + d[5]];
             data = map(rgb,
                 function(c) {
-                    return adjust(parseInt(c, 16), [ 0, 255 ]);
+                    return adjust(parseInt(c, 16), [0, 255]);
             });
 
         }
@@ -3483,12 +3672,12 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
                     c = Math.floor(
                         c.indexOf('%') > 0 ? parseInt(c, 0) * 2.55 : c
                     );
-                    return adjust(c, [ 0, 255 ]);
+                    return adjust(c, [0, 255]);
                 }
             );
 
-            if( typeof a !== 'undefined') {
-                data.push(adjust(parseFloat(a), [ 0, 1 ]));
+            if(typeof a !== 'undefined') {
+                data.push(adjust(parseFloat(a), [0, 1]));
             }
         }
         else if (r[5] || r[6]) {
@@ -3498,13 +3687,13 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
             var s = hsxa[1];
             var x = hsxa[2];
             a = hsxa[3];
-            data = map( [ s, x ],
+            data = map([s, x],
                 function(c) {
-                    return adjust(parseFloat(c) / 100, [ 0, 1 ]);
+                    return adjust(parseFloat(c) / 100, [0, 1]);
             });
             data.unshift(h);
             if( typeof a !== 'undefined') {
-                data.push(adjust(parseFloat(a), [ 0, 1 ]));
+                data.push(adjust(parseFloat(a), [0, 1]));
             }
         }
         return data;
@@ -3521,7 +3710,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
             a = 1;
         }
         var data = getData(toRGBA(color));
-        data[3] = adjust(Number(a).toFixed(4), [ 0, 1 ]);
+        data[3] = adjust(Number(a).toFixed(4), [0, 1]);
 
         return toColor(data, 'rgba');
     }
@@ -3567,7 +3756,7 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
             if (h === 6) {
                 h = 0;
             }
-            var i = Math.floor(h);
+            var i = h | 0;
             var v1 = V * (1 - S);
             var v2 = V * (1 - S * (h - i));
             var v3 = V * (1 - S * (1 - (h - i)));
@@ -3791,12 +3980,13 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
  *
  * desc:    zrender是一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型。
  * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *          errorrik (errorrik@gmail.com)
  *
  * 可配图形属性：
    {
        // 基础属性，详见各shape
        shape  : {string},       // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
        zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
        invisible : {boolean},   // 默认为false，是否可见
 
@@ -3902,442 +4092,9 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
    }
  */
 define(
-    'zrender/shape/base',['require','../tool/area','../tool/matrix','../tool/vector','../tool/color'],function(require) {
-
-        var self;
-        var area = require('../tool/area');
+    'zrender/shape/Base',['require','../tool/matrix','../tool/guid','../tool/area','../tool/area','../tool/color','../tool/area'],function(require) {
         var matrix = require('../tool/matrix');
-        var vec2 = require('../tool/vector');
-
-        /**
-         * 派生实现通用功能
-         * @param {Object} clazz 图形类
-         */
-        function derive(clazz) {
-            var methods = [             // 派生实现的基类方法
-                    'brush',
-                    'setContext',
-                    'dashedLineTo',
-                    'smoothBezier',
-                    'smoothSpline',
-                    'drawText',
-                    'getHighlightStyle',
-                    'getHighlightZoom',
-                    'drift',
-                    'isCover',
-                    'updateTransform'
-                ];
-            var len = methods.length;
-            var proto = clazz.prototype;
-            var i = 0;
-            var method;
-
-            for (; i < len; i++) {
-                method = methods[i];
-                if (!proto[method]) {
-                    proto[method] = self[method];
-                }
-            }
-        }
-
-        /**
-         * 画刷
-         * @param ctx       画布句柄
-         * @param e         形状实体
-         * @param isHighlight   是否为高亮状态
-         * @param updateCallback 需要异步加载资源的shape可以通过这个callback(e)
-         *                       让painter更新视图，base.brush没用，需要的话重载brush
-         */
-        function brush(ctx, e, isHighlight) {
-            var style = e.style || {};
-
-            if (this.brushTypeOnly) {
-                style.brushType = this.brushTypeOnly;
-            }
-
-            if (isHighlight) {
-                // 根据style扩展默认高亮样式
-                style = this.getHighlightStyle(
-                    style,
-                    e.highlightStyle || {},
-                    this.brushTypeOnly
-                );
-            }
-
-            if (this.brushTypeOnly == 'stroke') {
-                style.strokeColor = style.strokeColor || style.color;
-            }
-
-            ctx.save();
-            this.setContext(ctx, style);
-
-            // 设置transform
-            if (e.__needTransform) {
-                ctx.transform.apply(ctx,this.updateTransform(e));
-            }
-
-            ctx.beginPath();
-            this.buildPath(ctx, style);
-            if (this.brushTypeOnly != 'stroke') {
-                ctx.closePath();
-            }
-
-            switch (style.brushType) {
-                case 'fill':
-                    ctx.fill();
-                    break;
-                case 'stroke':
-                    style.lineWidth > 0 && ctx.stroke();
-                    break;
-                case 'both':
-                    ctx.fill();
-                    style.lineWidth > 0 && ctx.stroke();
-                    break;
-                default:
-                    ctx.fill();
-            }
-
-            if (typeof style.text != 'undefined') {
-                this.drawText(ctx, style, e.style);
-            }
-
-            ctx.restore();
-
-            return;
-        }
-
-        /**
-         * 画布通用设置
-         * @param ctx       画布句柄
-         * @param style     通用样式
-         */
-        function setContext(ctx, style) {
-            // 简单判断不做严格类型检测
-            if (style.color) {
-                ctx.fillStyle = style.color;
-            }
-
-            if (style.strokeColor) {
-                ctx.strokeStyle = style.strokeColor;
-            }
-
-            if (typeof style.opacity != 'undefined') {
-                ctx.globalAlpha = style.opacity;
-            }
-
-            if (style.lineCap) {
-                ctx.lineCap = style.lineCap;
-            }
-
-            if (style.lineJoin) {
-                ctx.lineJoin = style.lineJoin;
-            }
-
-            if (style.miterLimit) {
-                ctx.miterLimit = style.miterLimit;
-            }
-
-            if (typeof style.lineWidth != 'undefined') {
-                ctx.lineWidth = style.lineWidth;
-            }
-
-            if (typeof style.shadowBlur != 'undefined') {
-                ctx.shadowBlur = style.shadowBlur;
-            }
-
-            if (style.shadowColor) {
-                ctx.shadowColor = style.shadowColor;
-            }
-
-            if (typeof style.shadowOffsetX != 'undefined') {
-                ctx.shadowOffsetX = style.shadowOffsetX;
-            }
-
-            if (typeof style.shadowOffsetY != 'undefined') {
-                ctx.shadowOffsetY = style.shadowOffsetY;
-            }
-        }
-        
-        /**
-         * 虚线lineTo 
-         */
-        function dashedLineTo(ctx, x1, y1, x2, y2, dashLength) {
-            dashLength = typeof dashLength == 'undefined'
-                         ? 5 : dashLength;
-            var deltaX = x2 - x1;
-            var deltaY = y2 - y1;
-            var numDashes = Math.floor(
-                Math.sqrt(deltaX * deltaX + deltaY * deltaY) / dashLength
-            );
-            for (var i = 0; i < numDashes; ++i) {
-                ctx[i % 2 === 0 ? 'moveTo' : 'lineTo'](
-                    x1 + (deltaX / numDashes) * i,
-                    y1 + (deltaY / numDashes) * i
-                );
-            }
-        }
-        
-        /**
-         * 贝塞尔平滑曲线 
-         */
-        function smoothBezier(points, smooth, loop) {
-            var len = points.length;
-            var cps = [];
-
-            var v = [];
-            var v1 = [];
-            var v2 = [];
-            var prevPoint;
-            var nextPoint;
-            for(var i = 0; i < len; i++){
-                var point = points[i];
-                var prevPoint;
-                var nextPoint;
-                if (loop) {
-                    prevPoint = points[i === 0 ? len-1 : i-1];
-                    nextPoint = points[(i + 1) % len];
-                } else {
-                    if (i === 0 || i === len-1) {
-                        cps.push(points[i]);
-                        continue;
-                    } else {
-                        prevPoint = points[i-1];
-                        nextPoint = points[i+1];
-                    }
-                }
-
-                vec2.sub(v, nextPoint, prevPoint);
-
-                //use degree to scale the handle length
-                vec2.scale(v, v, smooth);
-
-                var d0 = vec2.distance(point, prevPoint);
-                var d1 = vec2.distance(point, nextPoint);
-                var sum = d0 + d1;
-                d0 /= sum;
-                d1 /= sum;
-
-                vec2.scale(v1, v, -d0);
-                vec2.scale(v2, v, d1);
-
-                cps.push(vec2.add([], point, v1));
-                cps.push(vec2.add([], point, v2));
-            }
-            if (loop) {
-                cps.push(cps.shift());
-            }
-            return cps;
-        }
-
-        /**
-         * 多线段平滑曲线 Catmull-Rom spline
-         */
-        function smoothSpline(points, loop) {
-            var len = points.length;
-            var ret = [];
-
-            var distance = 0;
-            for (var i = 1; i < len; i++) {
-                distance += vec2.distance(points[i-1], points[i]);
-            }
-            var segs = distance / 5;
-            segs = segs < len ? len : segs;
-            for (var i = 0; i < segs; i++) {
-                var pos;
-                if (loop) {
-                    pos = i / (segs-1) * len;
-                } else {
-                    pos = i / (segs-1) * (len - 1);
-                }
-                var idx = Math.floor(pos);
-
-                var w = pos - idx;
-
-                var p0;
-                var p1 = points[idx % len];
-                var p2;
-                var p3;
-                if (!loop) {
-                    p0 = points[idx === 0 ? idx : idx - 1];
-                    p2 = points[idx > len - 2 ? len - 1 : idx + 1];
-                    p3 = points[idx > len - 3 ? len - 1 : idx + 2];
-                } else {
-                    p0 = points[(idx -1 + len) % len];
-                    p2 = points[(idx + 1) % len];
-                    p3 = points[(idx + 2) % len];
-                }
-
-                var w2 = w * w;
-                var w3 = w * w2;
-
-                ret.push([
-                    _interpolate(p0[0], p1[0], p2[0], p3[0], w, w2, w3),
-                    _interpolate(p0[1], p1[1], p2[1], p3[1], w, w2, w3)
-                ]);
-            }
-            return ret;
-        }
-
-        function _interpolate(p0, p1, p2, p3, t, t2, t3) {
-            var v0 = (p2 - p0) * 0.5;
-            var v1 = (p3 - p1) * 0.5;
-            return (2 * (p1 - p2) + v0 + v1) * t3 
-                    + (- 3 * (p1 - p2) - 2 * v0 - v1) * t2
-                    + v0 * t + p1;
-        }
-        
-        /**
-         * 附加文本
-         * @param {Context2D} ctx Canvas 2D上下文
-         * @param {Object} style 样式
-         * @param {Object} normalStyle 默认样式，用于定位文字显示
-         */
-        function drawText(ctx, style, normalStyle) {
-            // 字体颜色策略
-            style.textColor= style.textColor
-                            || style.color
-                            || style.strokeColor;
-            ctx.fillStyle = style.textColor;
-
-            if (style.textPosition == 'inside') {
-                ctx.shadowColor = 'rgba(0,0,0,0)';   // 内部文字不带shadowColor
-            }
-
-            // 文本与图形间空白间隙
-            var dd = 10;
-            var al;         // 文本水平对齐
-            var bl;         // 文本垂直对齐
-            var tx;         // 文本横坐标
-            var ty;         // 文本纵坐标
-
-            var textPosition = style.textPosition       // 用户定义
-                               || this.textPosition     // shape默认
-                               || 'top';                // 全局默认
-
-            if ((textPosition == 'inside'
-                || textPosition == 'top'
-                || textPosition == 'bottom'
-                || textPosition == 'left'
-                || textPosition == 'right')
-                && this.getRect // 矩形定位文字的图形必须提供getRect方法
-            ) {
-                var rect = (normalStyle || style).__rect
-                           || this.getRect(normalStyle || style);
-                switch (textPosition) {
-                    case 'inside':
-                        tx = rect.x + rect.width / 2;
-                        ty = rect.y + rect.height / 2;
-                        al = 'center';
-                        bl = 'middle';
-                        if (style.brushType != 'stroke'
-                            && style.textColor == style.color
-                        ) {
-                            ctx.fillStyle = '#fff';
-                        }
-                        break;
-                    case 'left':
-                        tx = rect.x - dd;
-                        ty = rect.y + rect.height / 2;
-                        al = 'end';
-                        bl = 'middle';
-                        break;
-                    case 'right':
-                        tx = rect.x + rect.width + dd;
-                        ty = rect.y + rect.height / 2;
-                        al = 'start';
-                        bl = 'middle';
-                        break;
-                    case 'top':
-                        tx = rect.x + rect.width / 2;
-                        ty = rect.y - dd;
-                        al = 'center';
-                        bl = 'bottom';
-                        break;
-                    case 'bottom':
-                        tx = rect.x + rect.width / 2;
-                        ty = rect.y + rect.height + dd;
-                        al = 'center';
-                        bl = 'top';
-                        break;
-                }
-            }
-            else if (textPosition == 'start' || textPosition == 'end') {
-                var xStart;
-                var xEnd;
-                var yStart;
-                var yEnd;
-                if (typeof style.pointList != 'undefined') {
-                    var pointList = style.pointList;
-                    if (pointList.length < 2) {
-                        // 少于2个点就不画了~
-                        return;
-                    }
-                    var length = pointList.length;
-                    switch (textPosition) {
-                        case 'start':
-                            xStart = pointList[0][0];
-                            xEnd = pointList[1][0];
-                            yStart = pointList[0][1];
-                            yEnd = pointList[1][1];
-                            break;
-                        case 'end':
-                            xStart = pointList[length - 2][0];
-                            xEnd = pointList[length - 1][0];
-                            yStart = pointList[length - 2][1];
-                            yEnd = pointList[length - 1][1];
-                            break;
-                    }
-                }
-                else {
-                    xStart = style.xStart || 0;
-                    xEnd = style.xEnd || 0;
-                    yStart = style.yStart || 0;
-                    yEnd = style.yEnd || 0;
-                }
-                switch (textPosition) {
-                    case 'start':
-                        al = xStart < xEnd ? 'end' : 'start';
-                        bl = yStart < yEnd ? 'bottom' : 'top';
-                        tx = xStart;
-                        ty = yStart;
-                        break;
-                    case 'end':
-                        al = xStart < xEnd ? 'start' : 'end';
-                        bl = yStart < yEnd ? 'top' : 'bottom';
-                        tx = xEnd;
-                        ty = yEnd;
-                        break;
-                }
-                dd -= 4;
-                if (xStart != xEnd) {
-                    tx -= (al == 'end' ? dd : -dd);
-                } else {
-                    al = 'center';
-                }
-                if (yStart != yEnd) {
-                    ty -= (bl == 'bottom' ? dd : -dd);
-                } else {
-                    bl = 'middle';
-                }
-            }
-            else if (textPosition == 'specific') {
-                tx = style.textX || 0;
-                ty = style.textY || 0;
-                al = 'start';
-                bl = 'middle';
-            }
-
-            if (typeof tx != 'undefined' && typeof ty != 'undefined') {
-                _fillText(
-                    ctx,
-                    style.text, 
-                    tx, ty, 
-                    style.textFont,
-                    style.textAlign || al,
-                    style.textBaseline || bl
-                );
-            }
-        }
+        var guid = require('../tool/guid');
         
         function _fillText(ctx, text, x, y, textFont, textAlign, textBaseline) {
             if (textFont) {
@@ -4350,17 +4107,17 @@ define(
             );
             
             text = (text + '').split('\n');
-            var lineHeight = area.getTextHeight('国', textFont);
-            var x = x;
-            var y;
-            if (textBaseline == 'top') {
-                y = rect.y;
-            }
-            else if (textBaseline == 'bottom') {
-                y = rect.y + lineHeight;
-            }
-            else {
-                y = rect.y + lineHeight / 2;
+            var lineHeight = require('../tool/area').getTextHeight('国', textFont);
+            
+            switch (textBaseline) {
+                case 'top':
+                    y = rect.y;
+                    break;
+                case 'bottom':
+                    y = rect.y + lineHeight;
+                    break;
+                default:
+                    y = rect.y + lineHeight / 2;
             }
             
             for (var i = 0, l = text.length; i < l; i++) {
@@ -4368,51 +4125,162 @@ define(
                 y += lineHeight;
             }
         }
+
         /**
          * 返回矩形区域，用于局部刷新和文字定位
+         * 
+         * @inner
          * @param {Object} style
          */
         function _getTextRect(text, x, y, textFont, textAlign, textBaseline) {
+            var area = require('../tool/area');
             var width = area.getTextWidth(text, textFont);
             var lineHeight = area.getTextHeight('国', textFont);
             
             text = (text + '').split('\n');
             
-            var textX = x;                 //默认start == left
-            if (textAlign == 'end' || textAlign == 'right') {
-                textX -= width;
-            }
-            else if (textAlign == 'center') {
-                textX -= (width / 2);
+            switch (textAlign) {
+                case 'end':
+                case 'right':
+                    x -= width;
+                    break;
+                case 'center':
+                    x -= (width / 2);
+                    break;
             }
 
-            var textY;
-            if (textBaseline == 'top') {
-                textY = y;
-            }
-            else if (textBaseline == 'bottom') {
-                textY = y - lineHeight * text.length;
-            }
-            else {
-                // middle
-                textY = y - lineHeight * text.length / 2;
+            switch (textBaseline) {
+                case 'top':
+                    break;
+                case 'bottom':
+                    y -= lineHeight * text.length;
+                    break;
+                default:
+                    y -= lineHeight * text.length / 2;
             }
 
             return {
-                x : textX,
-                y : textY,
+                x : x,
+                y : y,
                 width : width,
                 height : lineHeight * text.length
             };
         }
+
+        function Base( options ) {
+            this.id = options.id || guid();
+            this.zlevel = 0;
+            this.draggable = false;
+            this.clickable = false;
+            this.hoverable = true;
+            this.position = [0, 0];
+            this.rotation = [0, 0, 0];
+            this.scale = [1, 1, 0, 0];
+
+            for ( var key in options ) {
+                this[ key ] = options[ key ];
+            }
+
+            this.style = this.style || {};
+        }
+
+        /**
+         * 画刷
+         * 
+         * @param ctx       画布句柄
+         * @param isHighlight   是否为高亮状态
+         * @param updateCallback 需要异步加载资源的shape可以通过这个callback(e)
+         *                       让painter更新视图，base.brush没用，需要的话重载brush
+         */
+        Base.prototype.brush = function (ctx, isHighlight) {
+            var style = this.style;
+            
+            if (this.brushTypeOnly) {
+                style.brushType = this.brushTypeOnly;
+            }
+
+            if (isHighlight) {
+                // 根据style扩展默认高亮样式
+                style = this.getHighlightStyle(
+                    style,
+                    this.highlightStyle || {},
+                    this.brushTypeOnly
+                );
+            }
+
+            if (this.brushTypeOnly == 'stroke') {
+                style.strokeColor = style.strokeColor || style.color;
+            }
+
+            ctx.save();
+            this.setContext(ctx, style);
+
+            // 设置transform
+            this.updateTransform(ctx);
+
+            ctx.beginPath();
+            this.buildPath(ctx, style);
+            if (this.brushTypeOnly != 'stroke') {
+                ctx.closePath();
+            }
+
+            switch (style.brushType) {
+                case 'both':
+                    ctx.fill();
+                case 'stroke':
+                    style.lineWidth > 0 && ctx.stroke();
+                    break;
+                default:
+                    ctx.fill();
+            }
+
+            if (style.text) {
+                this.drawText(ctx, style, this.style);
+            }
+
+            ctx.restore();
+        };
+
+        var STYLE_CTX_MAP = [
+            ['color', 'fillStyle'],
+            ['strokeColor', 'strokeStyle'],
+            ['opacity', 'globalAlpha'],
+            ['lineCap'],
+            ['lineJoin'],
+            ['miterLimit'],
+            ['lineWidth'],
+            ['shadowBlur'],
+            ['shadowColor'],
+            ['shadowOffsetX'],
+            ['shadowOffsetY']
+        ];
+
+        /**
+         * 画布通用设置
+         * 
+         * @param ctx       画布句柄
+         * @param style     通用样式
+         */
+        Base.prototype.setContext = function (ctx, style) {
+            for (var i = 0, len = STYLE_CTX_MAP.length; i < len; i++) {
+                var styleProp = STYLE_CTX_MAP[i][0];
+                var styleValue = style[styleProp];
+                var ctxProp = STYLE_CTX_MAP[i][1] || styleProp;
+
+                if (typeof styleValue != 'undefined') {
+                    ctx[ctxProp] = styleValue;
+                }
+            }
+        };
     
         /**
          * 根据默认样式扩展高亮样式
+         * 
          * @param ctx Canvas 2D上下文
          * @param {Object} style 默认样式
          * @param {Object} highlightStyle 高亮样式
          */
-        function getHighlightStyle(style, highlightStyle, brushTypeOnly) {
+        Base.prototype.getHighlightStyle = function (style, highlightStyle, brushTypeOnly) {
             var newStyle = {};
             for (var k in style) {
                 newStyle[k] = style[k];
@@ -4434,7 +4302,8 @@ define(
                     newStyle.strokeColor = highlightColor;
                     newStyle.lineWidth = (style.lineWidth || 1)
                                           + this.getHighlightZoom();
-                } else {
+                } 
+                else {
                     // 线型的则用原色加工高亮
                     newStyle.strokeColor = highlightStyle.strokeColor
                                            || color.mix(
@@ -4452,2104 +4321,317 @@ define(
             }
 
             return newStyle;
-        }
+        };
+
+        Base.prototype.updateNeedTransform = function () {
+            this.needTransform = Math.abs(this.rotation[0]) > 0.0001
+                || Math.abs(this.position[0]) > 0.0001
+                || Math.abs(this.position[1]) > 0.0001
+                || Math.abs(this.scale[0] - 1) > 0.0001
+                || Math.abs(this.scale[1] - 1) > 0.0001;
+        };
 
         /**
          * 高亮放大效果参数
          * 当前统一设置为6，如有需要差异设置，通过this.type判断实例类型
          */
-        function getHighlightZoom() {
+        Base.prototype.getHighlightZoom = function () {
             return this.type != 'text' ? 6 : 2;
-        }
+        };
 
         /**
          * 默认漂移
-         * @param e 图形实体
+         * 
          * @param dx 横坐标变化
          * @param dy 纵坐标变化
          */
-        function drift(e, dx, dy) {
-            e.position[0] += dx;
-            e.position[1] += dy;
-        }
+        Base.prototype.drift = function (dx, dy) {
+            this.position[0] += dx;
+            this.position[1] += dy;
+        };
 
         /**
-         * 默认区域包含判断
-         * @param e 图形实体
-         * @param x 横坐标
-         * @param y 纵坐标
+         * 获取鼠标坐标变换 
          */
-        function isCover(e, x, y) {
-            //对鼠标的坐标也做相同的变换
-            if(e.__needTransform && e._transform){
+        Base.prototype.getTansform = function (x, y) {
+            var originPos = [x, y];
+            // 对鼠标的坐标也做相同的变换
+            if (this.needTransform && this._transform) {
                 var inverseMatrix = [];
-                matrix.invert(inverseMatrix, e._transform);
+                matrix.invert(inverseMatrix, this._transform);
 
-                var originPos = [x, y];
                 matrix.mulVector(originPos, inverseMatrix, [x, y, 1]);
 
                 if (x == originPos[0] && y == originPos[1]) {
-                    // 避免外部修改导致的__needTransform不准确
-                    if (Math.abs(e.rotation[0]) > 0.0001
-                        || Math.abs(e.position[0]) > 0.0001
-                        || Math.abs(e.position[1]) > 0.0001
-                        || Math.abs(e.scale[0] - 1) > 0.0001
-                        || Math.abs(e.scale[1] - 1) > 0.0001
-                    ) {
-                        e.__needTransform = true;
-                    } else {
-                        e.__needTransform = false;
-                    }
+                    // 避免外部修改导致的needTransform不准确
+                    this.updateNeedTransform();
                 }
-
-                x = originPos[0];
-                y = originPos[1];
             }
+            return originPos;
+        };
+        
+        /**
+         * 默认区域包含判断
+         * 
+         * @param x 横坐标
+         * @param y 纵坐标
+         */
+        Base.prototype.isCover = function (x, y) {
+            var originPos = this.getTansform(x, y);
+            x = originPos[0];
+            y = originPos[1];
 
             // 快速预判并保留判断矩形
-            var rect;
-            if (e.style.__rect) {
-                rect = e.style.__rect;
+            var rect = this.style.__rect;
+            if (!rect) {
+                rect = this.style.__rect = this.getRect(this.style);
             }
-            else {
-                rect = this.getRect(e.style);
-                e.style.__rect = rect;
-            }
+
             if (x >= rect.x
                 && x <= (rect.x + rect.width)
                 && y >= rect.y
                 && y <= (rect.y + rect.height)
             ) {
                 // 矩形内
-                return area.isInside(this, e.style, x, y);
+                return require('../tool/area').isInside(this, this.style, x, y);
             }
-            else {
-                return false;
+            
+            return false;
+        };
+
+        /**
+         * 附加文本
+         * 
+         * @param {Context2D} ctx Canvas 2D上下文
+         * @param {Object} style 样式
+         * @param {Object} normalStyle 默认样式，用于定位文字显示
+         */
+        Base.prototype.drawText = function (ctx, style, normalStyle) {
+            // 字体颜色策略
+            var textColor = style.textColor || style.color || style.strokeColor;
+            ctx.fillStyle = textColor;
+
+            /*
+            if (style.textPosition == 'inside') {
+                ctx.shadowColor = 'rgba(0,0,0,0)';   // 内部文字不带shadowColor
+            }
+            */
+
+            // 文本与图形间空白间隙
+            var dd = 10;
+            var al;         // 文本水平对齐
+            var bl;         // 文本垂直对齐
+            var tx;         // 文本横坐标
+            var ty;         // 文本纵坐标
+
+            var textPosition = style.textPosition       // 用户定义
+                               || this.textPosition     // shape默认
+                               || 'top';                // 全局默认
+
+            switch (textPosition) {
+                case 'inside': 
+                case 'top': 
+                case 'bottom': 
+                case 'left': 
+                case 'right': 
+                    if (this.getRect) {
+                        var rect = (normalStyle || style).__rect
+                                   || this.getRect(normalStyle || style);
+
+                        switch (textPosition) {
+                            case 'inside':
+                                tx = rect.x + rect.width / 2;
+                                ty = rect.y + rect.height / 2;
+                                al = 'center';
+                                bl = 'middle';
+                                if (style.brushType != 'stroke'
+                                    && textColor == style.color
+                                ) {
+                                    ctx.fillStyle = '#fff';
+                                }
+                                break;
+                            case 'left':
+                                tx = rect.x - dd;
+                                ty = rect.y + rect.height / 2;
+                                al = 'end';
+                                bl = 'middle';
+                                break;
+                            case 'right':
+                                tx = rect.x + rect.width + dd;
+                                ty = rect.y + rect.height / 2;
+                                al = 'start';
+                                bl = 'middle';
+                                break;
+                            case 'top':
+                                tx = rect.x + rect.width / 2;
+                                ty = rect.y - dd;
+                                al = 'center';
+                                bl = 'bottom';
+                                break;
+                            case 'bottom':
+                                tx = rect.x + rect.width / 2;
+                                ty = rect.y + rect.height + dd;
+                                al = 'center';
+                                bl = 'top';
+                                break;
+                        }
+                    }
+                    break;
+                case 'start':
+                case 'end':
+                    var xStart;
+                    var xEnd;
+                    var yStart;
+                    var yEnd;
+                    if (typeof style.pointList != 'undefined') {
+                        var pointList = style.pointList;
+                        if (pointList.length < 2) {
+                            // 少于2个点就不画了~
+                            return;
+                        }
+                        var length = pointList.length;
+                        switch (textPosition) {
+                            case 'start':
+                                xStart = pointList[0][0];
+                                xEnd = pointList[1][0];
+                                yStart = pointList[0][1];
+                                yEnd = pointList[1][1];
+                                break;
+                            case 'end':
+                                xStart = pointList[length - 2][0];
+                                xEnd = pointList[length - 1][0];
+                                yStart = pointList[length - 2][1];
+                                yEnd = pointList[length - 1][1];
+                                break;
+                        }
+                    }
+                    else {
+                        xStart = style.xStart || 0;
+                        xEnd = style.xEnd || 0;
+                        yStart = style.yStart || 0;
+                        yEnd = style.yEnd || 0;
+                    }
+
+                    switch (textPosition) {
+                        case 'start':
+                            al = xStart < xEnd ? 'end' : 'start';
+                            bl = yStart < yEnd ? 'bottom' : 'top';
+                            tx = xStart;
+                            ty = yStart;
+                            break;
+                        case 'end':
+                            al = xStart < xEnd ? 'start' : 'end';
+                            bl = yStart < yEnd ? 'top' : 'bottom';
+                            tx = xEnd;
+                            ty = yEnd;
+                            break;
+                    }
+                    dd -= 4;
+                    if (xStart != xEnd) {
+                        tx -= (al == 'end' ? dd : -dd);
+                    } 
+                    else {
+                        al = 'center';
+                    }
+
+                    if (yStart != yEnd) {
+                        ty -= (bl == 'bottom' ? dd : -dd);
+                    } 
+                    else {
+                        bl = 'middle';
+                    }
+                    break;
+                case 'specific':
+                    tx = style.textX || 0;
+                    ty = style.textY || 0;
+                    al = 'start';
+                    bl = 'middle';
+                    break;
             }
 
-        }
+            if (tx != null && ty != null) {
+                _fillText(
+                    ctx,
+                    style.text, 
+                    tx, ty, 
+                    style.textFont,
+                    style.textAlign || al,
+                    style.textBaseline || bl
+                );
+            }
+        };
 
-        function updateTransform(e) {
-            var _transform = e._transform || matrix.create();
+        Base.prototype.isSilent = function () {
+            return !(
+                this.hoverable || this.draggable
+                || this.onmousemove || this.onmouseover || this.onmouseout
+                || this.onmousedown || this.onmouseup || this.onclick
+                || this.ondragenter || this.ondragover || this.ondragleave
+                || this.ondrop
+            );
+        };
+
+        Base.prototype.updateTransform = function (ctx) {
+            if (!this.needTransform) {
+                return;
+            }
+
+            var _transform = this._transform || matrix.create();
             matrix.identity(_transform);
-            if (e.scale && (e.scale[0] !== 1 || e.scale[1] !== 1)) {
-                var originX = e.scale[2] || 0;
-                var originY = e.scale[3] || 0;
-                if (originX || originY ) {
+            if (this.scale && (this.scale[0] !== 1 || this.scale[1] !== 1)) {
+                var originX = this.scale[2] || 0;
+                var originY = this.scale[3] || 0;
+                if (originX || originY) {
                     matrix.translate(
                         _transform, _transform, [-originX, -originY]
                     );
                 }
-                matrix.scale(_transform, _transform, e.scale);
+                matrix.scale(_transform, _transform, this.scale);
                 if ( originX || originY ) {
                     matrix.translate(
                         _transform, _transform, [originX, originY]
                     );
                 }
             }
-            if (e.rotation) {
-                if (e.rotation instanceof Array) {
-                    if (e.rotation[0] !== 0) {
-                        var originX = e.rotation[1] || 0,
-                            originY = e.rotation[2] || 0;
-                        if (originX || originY ) {
+
+            if (this.rotation) {
+                if (this.rotation instanceof Array) {
+                    if (this.rotation[0] !== 0) {
+                        var originX = this.rotation[1] || 0;
+                        var originY = this.rotation[2] || 0;
+                        if (originX || originY) {
                             matrix.translate(
                                 _transform, _transform, [-originX, -originY]
                             );
                         }
-                        matrix.rotate(_transform, _transform, e.rotation[0]);
-                        if (originX || originY ) {
+                        matrix.rotate(_transform, _transform, this.rotation[0]);
+                        if (originX || originY) {
                             matrix.translate(
                                 _transform, _transform, [originX, originY]
                             );
                         }
                     }
-                }else{
-                    if (e.rotation !== 0) {
-                        matrix.rotate(_transform, _transform, e.rotation);
+                }
+                else {
+                    if (this.rotation !== 0) {
+                        matrix.rotate(_transform, _transform, this.rotation);
                     }
                 }
             }
-            if (e.position && (e.position[0] !==0 || e.position[1] !== 0)) {
-                matrix.translate(_transform, _transform, e.position);
+
+            if (this.position && (this.position[0] !==0 || this.position[1] !== 0)) {
+                matrix.translate(_transform, _transform, this.position);
             }
+
             // 保存这个变换矩阵
-            e._transform = _transform;
-
-            return _transform;
-        }
-
-        self = {
-            derive : derive,
-            brush : brush,
-            setContext : setContext,
-            dashedLineTo : dashedLineTo,
-            smoothBezier : smoothBezier,
-            smoothSpline : smoothSpline,
-            drawText : drawText,
-            getHighlightStyle : getHighlightStyle,
-            getHighlightZoom : getHighlightZoom,
-            drift : drift,
-            isCover : isCover,
-
-            updateTransform : updateTransform
+            this._transform = _transform;
+            ctx.transform.apply(ctx, _transform);
         };
 
-        return self;
-    }
-);
-/**
- * zrender
- *
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
- *
- * shape类：圆
- * 可配图形属性：
-   {
-       // 基础属性
-       shape  : 'circle',       // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
-       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
-       invisible : {boolean},   // 默认为false，是否可见
-
-       // 样式属性，默认状态样式样式属性
-       style  : {
-           x             : {number},  // 必须，圆心横坐标
-           y             : {number},  // 必须，圆心纵坐标
-           r             : {number},  // 必须，圆半径
-           brushType     : {string},  // 默认为fill，绘画方式
-                                      // fill(填充) | stroke(描边) | both(填充+描边)
-           color         : {color},   // 默认为'#000'，填充颜色，支持rgba
-           strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
-           lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
-
-           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
-           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
-           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
-           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
-           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
-
-           text          : {string},  // 默认为null，附加文本
-           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
-           textPosition  : {string},  // 默认为top，附加文本位置。
-                                      // inside | left | right | top | bottom
-           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
-                                      // start | end | left | right | center
-           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
-                                      // top | bottom | middle |
-                                      // alphabetic | hanging | ideographic
-           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
-                                      // 'inside' ? '#fff' : color
-       },
-
-       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
-       highlightStyle : {
-           // 同style
-       }
-
-       // 交互属性，详见shape.Base
-
-       // 事件属性，详见shape.Base
-   }
-         例子：
-   {
-       shape  : 'circle',
-       id     : '123456',
-       zlevel : 1,
-       style  : {
-           x : 200,
-           y : 100,
-           r : 50,
-           color : '#eee',
-           text : 'Baidu'
-       },
-       myName : 'kener',  // 可自带任何有效自定义属性
-
-       clickable : true,
-       onClick : function(eventPacket) {
-           alert(eventPacket.target.myName);
-       }
-   }
- */
-define(
-    'zrender/shape/circle',['require','./base','../shape'],function(require) {
-        function Circle() {
-            this.type = 'circle';
-        }
-
-        Circle.prototype =  {
-            /**
-             * 创建圆形路径
-             * @param {Context2D} ctx Canvas 2D上下文
-             * @param {Object} style 样式
-             */
-            buildPath : function(ctx, style) {
-                ctx.arc(style.x, style.y, style.r, 0, Math.PI * 2, true);
-                return;
-            },
-
-            /**
-             * 返回矩形区域，用于局部刷新和文字定位
-             * @param {Object} style
-             */
-            getRect : function(style) {
-                var lineWidth;
-                if (style.brushType == 'stroke' || style.brushType == 'fill') {
-                    lineWidth = style.lineWidth || 1;
-                }
-                else {
-                    lineWidth = 0;
-                }
-                return {
-                    x : Math.round(style.x - style.r - lineWidth / 2),
-                    y : Math.round(style.y - style.r - lineWidth / 2),
-                    width : style.r * 2 + lineWidth,
-                    height : style.r * 2 + lineWidth
-                };
-            }
-        };
-
-        var base = require('./base');
-        base.derive(Circle);
-        
-        var shape = require('../shape');
-        shape.define('circle', new Circle());
-
-        return Circle;
-    }
-);
-/**
- * zrender
- *
- * author: loutongbing@baidu.com
- *
- * shape类：椭圆
- * Todo：excanvas bug ~ 连续scale保持?? IE8下不建议使用
- * 可配图形属性：
-   {
-       // 基础属性
-       shape  : 'ellipse',       // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
-       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
-       invisible : {boolean},   // 默认为false，是否可见
-
-       // 样式属性，默认状态样式样式属性
-       style  : {
-           x             : {number},  // 必须，椭圆心横坐标
-           y             : {number},  // 必须，椭圆心纵坐标
-           a             : {number},  // 必须，椭圆横轴半径
-           b             : {number},  // 必须，椭圆纵轴半径
-           brushType     : {string},  // 默认为fill，绘画方式
-                                      // fill(填充) | stroke(描边) | both(填充+描边)
-           color         : {color},   // 默认为'#000'，填充颜色，支持rgba
-           strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
-           lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
-
-           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
-           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
-           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
-           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
-           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
-
-           text          : {string},  // 默认为null，附加文本
-           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
-           textPosition  : {string},  // 默认为top，附加文本位置。
-                                      // inside | left | right | top | bottom
-           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
-                                      // start | end | left | right | center
-           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
-                                      // top | bottom | middle |
-                                      // alphabetic | hanging | ideographic
-           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
-                                      // 'inside' ? '#fff' : color
-       },
-
-       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
-       highlightStyle : {
-           // 同style
-       }
-
-       // 交互属性，详见shape.Base
-
-       // 事件属性，详见shape.Base
-   }
-         例子：
-   {
-       shape  : 'ellipse',
-       id     : '123456',
-       zlevel : 1,
-       style  : {
-           x : 200,
-           y : 100,
-           a : 100,
-           b : 50,
-           color : '#eee',
-           text : 'Baidu'
-       },
-       myName : 'kener',  // 可自带任何有效自定义属性
-
-       clickable : true,
-       onClick : function(eventPacket) {
-           alert(eventPacket.target.myName);
-       }
-   }
- */
-define(
-    'zrender/shape/ellipse',['require','./base','../shape'],function(require) {
-        function Ellipse() {
-            this.type = 'ellipse';
-        }
-
-        Ellipse.prototype =  {
-            /**
-             * 创建圆形路径
-             * @param {Context2D} ctx Canvas 2D上下文
-             * @param {Object} style 样式
-             */
-            buildPath : function(ctx, style) {
-                var k = 0.5522848;
-                var x = style.x;
-                var y = style.y;
-                var a =style.a;
-                var b = style.b;
-                var ox = a * k; // 水平控制点偏移量
-                var oy = b * k; // 垂直控制点偏移量
-                //从椭圆的左端点开始顺时针绘制四条三次贝塞尔曲线
-                ctx.moveTo(x - a, y);
-                ctx.bezierCurveTo(x - a, y - oy, x - ox, y - b, x, y - b);
-                ctx.bezierCurveTo(x + ox, y - b, x + a, y - oy, x + a, y);
-                ctx.bezierCurveTo(x + a, y + oy, x + ox, y + b, x, y + b);
-                ctx.bezierCurveTo(x - ox, y + b, x - a, y + oy, x - a, y);
-                return;
-            },
-
-            /**
-             * 返回矩形区域，用于局部刷新和文字定位
-             * @param {Object} style
-             */
-            getRect : function(style) {
-                var lineWidth;
-                if (style.brushType == 'stroke' || style.brushType == 'fill') {
-                    lineWidth = style.lineWidth || 1;
-                }
-                else {
-                    lineWidth = 0;
-                }
-                return {
-                    x : Math.round(style.x - style.a - lineWidth / 2),
-                    y : Math.round(style.y - style.b - lineWidth / 2),
-                    width : style.a * 2 + lineWidth,
-                    height : style.b * 2 + lineWidth
-                };
-            }
-        };
-
-        var base = require('./base');
-        base.derive(Ellipse);
-        
-        var shape = require('../shape');
-        shape.define('ellipse', new Ellipse());
-        return Ellipse;
-    }
-);
-/**
- * zrender
- *
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
- *
- * shape类：直线
- * 可配图形属性：
-   {
-       // 基础属性
-       shape  : 'line',         // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
-       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
-       invisible : {boolean},   // 默认为false，是否可见
-
-       // 样式属性，默认状态样式样式属性
-       style  : {
-           xStart        : {number},  // 必须，起点横坐标
-           yStart        : {number},  // 必须，起点纵坐标
-           xEnd          : {number},  // 必须，终点横坐标
-           yEnd          : {number},  // 必须，终点纵坐标
-           strokeColor   : {color},   // 默认为'#000'，线条颜色（轮廓），支持rgba
-           lineType      : {string},  // 默认为solid，线条类型，solid | dashed | dotted
-           lineWidth     : {number},  // 默认为1，线条宽度
-           lineCap       : {string},  // 默认为butt，线帽样式。butt | round | square
-
-           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
-           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
-           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
-           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
-           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
-
-           text          : {string},  // 默认为null，附加文本
-           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
-           textPosition  : {string},  // 默认为end，附加文本位置。
-                                      // inside | start | end
-           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
-                                      // start | end | left | right | center
-           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
-                                      // top | bottom | middle |
-                                      // alphabetic | hanging | ideographic
-           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
-                                      // 'inside' ? '#000' : color
-       },
-
-       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
-       highlightStyle : {
-           // 同style
-       }
-
-       // 交互属性，详见shape.Base
-
-       // 事件属性，详见shape.Base
-   }
-         例子：
-   {
-       shape  : 'line',
-       id     : '123456',
-       zlevel : 1,
-       style  : {
-           xStart : 100,
-           yStart : 100,
-           xEnd : 200,
-           yEnd : 200,
-           strokeColor : '#eee',
-           lineWidth : 20,
-           text : 'Baidu'
-       },
-       myName : 'kener',  //可自带任何有效自定义属性
-
-       clickable : true,
-       onClick : function(eventPacket) {
-           alert(eventPacket.target.myName);
-       }
-   }
- */
-define(
-    'zrender/shape/line',['require','./base','../shape'],function(require) {
-        function Line() {
-            this.type = 'line';
-            this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
-            this.textPosition = 'end';
-        }
-
-        Line.prototype =  {
-            /**
-             * 创建线条路径
-             * @param {Context2D} ctx Canvas 2D上下文
-             * @param {Object} style 样式
-             */
-            buildPath : function(ctx, style) {
-                if (!style.lineType || style.lineType == 'solid') {
-                    //默认为实线
-                    ctx.moveTo(style.xStart, style.yStart);
-                    ctx.lineTo(style.xEnd, style.yEnd);
-                }
-                else if (style.lineType == 'dashed'
-                        || style.lineType == 'dotted'
-                ) {
-                    var dashLength =(style.lineWidth || 1)  
-                                     * (style.lineType == 'dashed' ? 5 : 1);
-                    this.dashedLineTo(
-                        ctx,
-                        style.xStart, style.yStart,
-                        style.xEnd, style.yEnd,
-                        dashLength
-                    );
-                }
-            },
-
-            /**
-             * 返回矩形区域，用于局部刷新和文字定位
-             * @param {Object} style
-             */
-            getRect : function(style) {
-                var lineWidth = style.lineWidth || 1;
-                return {
-                    x : Math.min(style.xStart, style.xEnd) - lineWidth,
-                    y : Math.min(style.yStart, style.yEnd) - lineWidth,
-                    width : Math.abs(style.xStart - style.xEnd)
-                            + lineWidth,
-                    height : Math.abs(style.yStart - style.yEnd)
-                             + lineWidth
-                };
-            }
-        };
-
-        var base = require('./base');
-        base.derive(Line);
-        
-        var shape = require('../shape');
-        shape.define('line', new Line());
-
-        return Line;
-    }
-);
-/**
- * zrender
- *
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
- *
- * shape类：多边形
- * 可配图形属性：
-   {
-       // 基础属性
-       shape  : 'polygon',      // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
-       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
-       invisible : {boolean},   // 默认为false，是否可见
-
-       // 样式属性，默认状态样式样式属性
-       style  : {
-           pointList     : {Array},   // 必须，多边形各个顶角坐标
-           brushType     : {string},  // 默认为fill，绘画方式
-                                      // fill(填充) | stroke(描边) | both(填充+描边)
-           color         : {color},   // 默认为'#000'，填充颜色，支持rgba
-           strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
-           lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
-
-           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
-           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
-           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
-           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
-           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
-
-           text          : {string},  // 默认为null，附加文本
-           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
-           textPosition  : {string},  // 默认为top，附加文本位置。
-                                      // inside | left | right | top | bottom
-           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
-                                      // start | end | left | right | center
-           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
-                                      // top | bottom | middle |
-                                      // alphabetic | hanging | ideographic
-           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
-                                      // 'inside' ? '#fff' : color
-       },
-
-       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
-       highlightStyle : {
-           // 同style
-       }
-
-       // 交互属性，详见shape.Base
-
-       // 事件属性，详见shape.Base
-   }
-         例子：
-   {
-       shape  : 'polygon',
-       id     : '123456',
-       zlevel : 1,
-       style  : {
-           pointList : [[10, 10], [300, 20], [298, 400], [50, 450]]
-           color : '#eee',
-           text : 'Baidu'
-       },
-       myName : 'kener',  // 可自带任何有效自定义属性
-
-       clickable : true,
-       onClick : function(eventPacket) {
-           alert(eventPacket.target.myName);
-       }
-   }
- */
-define(
-    'zrender/shape/polygon',['require','./base','../shape'],function(require) {
-        function Polygon() {
-            this.type = 'polygon';
-        }
-
-        Polygon.prototype = {
-            /**
-             * 画刷
-             * @param ctx       画布句柄
-             * @param e         形状实体
-             * @param isHighlight   是否为高亮状态
-             * @param updateCallback 需要异步加载资源的shape可以通过这个callback(e)
-             *                       让painter更新视图，base.brush没用，需要的话重载brush
-             */
-            brush : function (ctx, e, isHighlight) {
-                var style = e.style || {};
-                if (isHighlight) {
-                    // 根据style扩展默认高亮样式
-                    style = this.getHighlightStyle(
-                        style,
-                        e.highlightStyle || {}
-                    );
-                }
-
-                ctx.save();
-                this.setContext(ctx, style);
-    
-                // 设置transform
-                if (e.__needTransform) {
-                    ctx.transform.apply(ctx,this.updateTransform(e));
-                }
-                
-                // 先fill再stroke
-                var hasPath = false;
-                if (style.brushType == 'fill' 
-                    || style.brushType == 'both'
-                    || typeof style.brushType == 'undefined' // 默认为fill
-                ) {
-                    ctx.beginPath();
-                    if (style.lineType == 'dashed' 
-                        || style.lineType == 'dotted'
-                    ) {
-                        // 特殊处理，虚线围不成path，实线再build一次
-                        this.buildPath(
-                            ctx, 
-                            {
-                                lineType: 'solid',
-                                lineWidth: style.lineWidth,
-                                pointList: style.pointList
-                            }
-                        );
-                        hasPath = false; // 这个path不能用
-                    }
-                    else {
-                        this.buildPath(ctx, style);
-                        hasPath = true; // 这个path能用
-                    }
-                    ctx.closePath();
-                    ctx.fill();
-                }
-
-                if (style.lineWidth > 0 
-                    && (style.brushType == 'stroke' || style.brushType == 'both')
-                ) {
-                    if (!hasPath) {
-                        ctx.beginPath();
-                        this.buildPath(ctx, style);
-                        ctx.closePath();
-                    }
-                    ctx.stroke();
-                }
-    
-                if (style.text) {
-                    this.drawText(ctx, style, e.style);
-                }
-    
-                ctx.restore();
-    
-                return;
-            },
-        
-            /**
-             * 创建多边形路径
-             * @param {Context2D} ctx Canvas 2D上下文
-             * @param {Object} style 样式
-             */
-            buildPath : function(ctx, style) {
-                // 虽然能重用brokenLine，但底层图形基于性能考虑，重复代码减少调用吧
-                var pointList = style.pointList;
-                // 开始点和结束点重复
-                var start = pointList[0];
-                var end = pointList[pointList.length-1];
-                if (start && end) {
-                    if (start[0] == end[0] &&
-                        start[1] == end[1]) {
-                        // 移除最后一个点
-                        pointList.pop();
-                    }
-                }
-                if (pointList.length < 2) {
-                    // 少于2个点就不画了~
-                    return;
-                }
-                if (style.smooth && style.smooth !== 'spline') {
-                    var controlPoints = this.smoothBezier(
-                        pointList, style.smooth, true
-                    );
-
-                    ctx.moveTo(pointList[0][0], pointList[0][1]);
-                    var cp1;
-                    var cp2;
-                    var p;
-                    var len = pointList.length;
-                    for (var i = 0; i < len; i++) {
-                        cp1 = controlPoints[i * 2];
-                        cp2 = controlPoints[i * 2 + 1];
-                        p = pointList[(i + 1) % len];
-                        ctx.bezierCurveTo(
-                            cp1[0], cp1[1], cp2[0], cp2[1], p[0], p[1]
-                        );
-                    }
-                } 
-                else {
-                    if (style.smooth === 'spline') {
-                        pointList = this.smoothSpline(pointList, true);
-                    }
-                    if (!style.lineType || style.lineType == 'solid') {
-                        //默认为实线
-                        ctx.moveTo(pointList[0][0],pointList[0][1]);
-                        for (var i = 1, l = pointList.length; i < l; i++) {
-                            ctx.lineTo(pointList[i][0],pointList[i][1]);
-                        }
-                        ctx.lineTo(pointList[0][0], pointList[0][1]);
-                    }
-                    else if (style.lineType == 'dashed'
-                            || style.lineType == 'dotted'
-                    ) {
-                        var dashLength = 
-                            style._dashLength
-                            || (style.lineWidth || 1) 
-                               * (style.lineType == 'dashed' ? 5 : 1);
-                        style._dashLength = dashLength;
-                        ctx.moveTo(pointList[0][0],pointList[0][1]);
-                        for (var i = 1, l = pointList.length; i < l; i++) {
-                            this.dashedLineTo(
-                                ctx,
-                                pointList[i - 1][0], pointList[i - 1][1],
-                                pointList[i][0], pointList[i][1],
-                                dashLength
-                            );
-                        }
-                        this.dashedLineTo(
-                            ctx,
-                            pointList[pointList.length - 1][0], 
-                            pointList[pointList.length - 1][1],
-                            pointList[0][0],
-                            pointList[0][1],
-                            dashLength
-                        );
-                    }
-                }
-                return;
-            },
-
-            /**
-             * 返回矩形区域，用于局部刷新和文字定位
-             * @param {Object} style
-             */
-            getRect : function(style) {
-                var minX =  Number.MAX_VALUE;
-                var maxX =  Number.MIN_VALUE;
-                var minY = Number.MAX_VALUE;
-                var maxY = Number.MIN_VALUE;
-
-                var pointList = style.pointList;
-                for(var i = 0, l = pointList.length; i < l; i++) {
-                    if (pointList[i][0] < minX) {
-                        minX = pointList[i][0];
-                    }
-                    if (pointList[i][0] > maxX) {
-                        maxX = pointList[i][0];
-                    }
-                    if (pointList[i][1] < minY) {
-                        minY = pointList[i][1];
-                    }
-                    if (pointList[i][1] > maxY) {
-                        maxY = pointList[i][1];
-                    }
-                }
-
-                var lineWidth;
-                if (style.brushType == 'stroke' || style.brushType == 'fill') {
-                    lineWidth = style.lineWidth || 1;
-                }
-                else {
-                    lineWidth = 0;
-                }
-                return {
-                    x : Math.round(minX - lineWidth / 2),
-                    y : Math.round(minY - lineWidth / 2),
-                    width : maxX - minX + lineWidth,
-                    height : maxY - minY + lineWidth
-                };
-            }
-        };
-
-        var base = require('./base');
-        base.derive(Polygon);
-        
-        var shape = require('../shape');
-        shape.define('polygon', new Polygon());
-
-        return Polygon;
-    }
-);
-/**
- * zrender
- *
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
- *
- * shape类：折线
- * 可配图形属性：
-   {
-       // 基础属性
-       shape  : 'brokenLine',         // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
-       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
-       invisible : {boolean},   // 默认为false，是否可见
-
-       // 样式属性，默认状态样式样式属性
-       style  : {
-           pointList     : {Array},   // 必须，各个顶角坐标
-           smooth        : {Number},  // 默认为0
-           strokeColor   : {color},   // 默认为'#000'，线条颜色（轮廓），支持rgba
-           lineType      : {string},  // 默认为solid，线条类型，solid | dashed | dotted
-           lineWidth     : {number},  // 默认为1，线条宽度
-           lineCap       : {string},  // 默认为butt，线帽样式。butt | round | square
-           lineJoin      : {string},  // 默认为miter，线段连接样式。miter | round | bevel
-           miterLimit    : {number},  // 默认为10，最大斜接长度，仅当lineJoin为miter时生效
-
-           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
-           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
-           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
-           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
-           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
-
-           text          : {string},  // 默认为null，附加文本
-           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
-           textPosition  : {string},  // 默认为end，附加文本位置。
-                                      // start | end
-           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
-                                      // start | end | left | right | center
-           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
-                                      // top | bottom | middle |
-                                      // alphabetic | hanging | ideographic
-           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
-                                      // 'inside' ? '#000' : color
-       },
-
-       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
-       highlightStyle : {
-           // 同style
-       }
-
-       // 交互属性，详见shape.Base
-
-       // 事件属性，详见shape.Base
-   }
-         例子：
-   {
-       shape  : 'brokenLine',
-       id     : '123456',
-       zlevel : 1,
-       style  : {
-           pointList : [[10, 10], [300, 20], [298, 400], [50, 450]],
-           strokeColor : '#eee',
-           lineWidth : 20,
-           text : 'Baidu'
-       },
-       myName : 'kener',  //可自带任何有效自定义属性
-
-       clickable : true,
-       onClick : function(eventPacket) {
-           alert(eventPacket.target.myName);
-       }
-   }
- */
-define(
-    'zrender/shape/brokenLine',['require','../shape','./base','../shape'],function(require) {
-        function BrokenLine() {
-            this.type = 'brokenLine';
-            this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
-            this.textPosition = 'end';
-        }
-
-        BrokenLine.prototype =  {
-            /**
-             * 创建多边形路径
-             * @param {Context2D} ctx Canvas 2D上下文
-             * @param {Object} style 样式
-             */
-            buildPath : function(ctx, style) {
-                var pointList = style.pointList;
-                if (pointList.length < 2) {
-                    // 少于2个点就不画了~
-                    return;
-                }
-                if (style.smooth && style.smooth !== 'spline') {
-                    var controlPoints = this.smoothBezier(
-                        pointList, style.smooth, false
-                    );
-
-                    ctx.moveTo(pointList[0][0], pointList[0][1]);
-                    var cp1;
-                    var cp2;
-                    var p;
-                    for (var i = 0, l = pointList.length; i < l - 1; i++) {
-                        cp1 = controlPoints[i * 2];
-                        cp2 = controlPoints[i * 2 + 1];
-                        p = pointList[i + 1];
-                        ctx.bezierCurveTo(
-                            cp1[0], cp1[1], cp2[0], cp2[1], p[0], p[1]
-                        );
-                    }
-                } 
-                else {
-                    if (style.smooth === 'spline') {
-                        pointList = this.smoothSpline(pointList, false);
-                    }
-                    if (!style.lineType || style.lineType == 'solid') {
-                        //默认为实线
-                        ctx.moveTo(pointList[0][0],pointList[0][1]);
-                        for (var i = 1, l = pointList.length; i < l; i++) {
-                            ctx.lineTo(pointList[i][0],pointList[i][1]);
-                        }
-                    }
-                    else if (style.lineType == 'dashed'
-                            || style.lineType == 'dotted'
-                    ) {
-                        var dashLength = (style.lineWidth || 1) 
-                                         * (style.lineType == 'dashed' ? 5 : 1);
-                        ctx.moveTo(pointList[0][0],pointList[0][1]);
-                        for (var i = 1, l = pointList.length; i < l; i++) {
-                            this.dashedLineTo(
-                                ctx,
-                                pointList[i - 1][0], pointList[i - 1][1],
-                                pointList[i][0], pointList[i][1],
-                                dashLength
-                            );
-                        }
-                    }
-                }
-                return;
-            },
-
-            /**
-             * 返回矩形区域，用于局部刷新和文字定位
-             * @param {Object} style
-             */
-            getRect : function(style) {
-                var shape = require('../shape');
-                return shape.get('polygon').getRect(style);
-            }
-        };
-
-        var base = require('./base');
-        base.derive(BrokenLine);
-        
-        var shape = require('../shape');
-        shape.define('brokenLine', new BrokenLine());
-
-        return BrokenLine;
-    }
-);
-/**
- * zrender
- *
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com) , 
- *         strwind (@劲风FEI, yaofeifei@baidu.com)
- *
- * shape类：矩形
- * 可配图形属性：
-   {
-       // 基础属性
-       shape  : 'rectangle',       // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
-       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
-       invisible : {boolean},   // 默认为false，是否可见
-
-       // 样式属性，默认状态样式样式属性
-       style  : {
-           x             : {number},  // 必须，左上角横坐标
-           y             : {number},  // 必须，左上角纵坐标
-           width         : {number},  // 必须，宽度
-           height        : {number},  // 必须，高度
-           radius        : {array},   // 默认为[0]，圆角 
-           brushType     : {string},  // 默认为fill，绘画方式
-                                      // fill(填充) | stroke(描边) | both(填充+描边)
-           color         : {color},   // 默认为'#000'，填充颜色，支持rgba
-           strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
-           lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
-
-           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
-           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
-           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
-           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
-           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
-
-           text          : {string},  // 默认为null，附加文本
-           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
-           textPosition  : {string},  // 默认为top，附加文本位置。
-                                      // inside | left | right | top | bottom
-           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
-                                      // start | end | left | right | center
-           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
-                                      // top | bottom | middle |
-                                      // alphabetic | hanging | ideographic
-           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
-                                      // 'inside' ? '#fff' : color
-       },
-
-       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
-       highlightStyle : {
-           // 同style
-       }
-
-       // 交互属性，详见shape.Base
-
-       // 事件属性，详见shape.Base
-   }
-         例子：
-   {
-       shape  : 'rectangle',
-       id     : '123456',
-       zlevel : 1,
-       style  : {
-           x : 200,
-           y : 100,
-           width : 150,
-           height : 50,
-           color : '#eee',
-           text : 'Baidu'
-       },
-       myName : 'kener',  // 可自带任何有效自定义属性
-
-       clickable : true,
-       onClick : function(eventPacket) {
-           alert(eventPacket.target.myName);
-       }
-   }
- */
-define(
-    'zrender/shape/rectangle',['require','./base','../shape'],function(require) {
-        function Rectangle() {
-            this.type = 'rectangle';
-        }
-
-        Rectangle.prototype =  {
-            /**
-             * 绘制圆角矩形
-             * @param {Context2D} ctx Canvas 2D上下文
-             * @param {Object} style 样式
-             */
-            _buildRadiusPath: function(ctx, style) {
-                //左上、右上、右下、左下角的半径依次为r1、r2、r3、r4
-                //r缩写为1         相当于 [1, 1, 1, 1]
-                //r缩写为[1]       相当于 [1, 1, 1, 1]
-                //r缩写为[1, 2]    相当于 [1, 2, 1, 2]
-                //r缩写为[1, 2, 3] 相当于 [1, 2, 3, 2]
-                var x = style.x;
-                var y = style.y;
-                var width = style.width;
-                var height = style.height;
-                var r = style.radius;
-                var r1; 
-                var r2; 
-                var r3; 
-                var r4;
-                  
-                if(typeof r === 'number') {
-                    r1 = r2 = r3 = r4 = r;
-                }
-                else if(r instanceof Array) {
-                    if (r.length === 1) {
-                        r1 = r2 = r3 = r4 = r[0];
-                    }
-                    else if(r.length === 2) {
-                        r1 = r3 = r[0];
-                        r2 = r4 = r[1];
-                    }
-                    else if(r.length === 3) {
-                        r1 = r[0];
-                        r2 = r4 = r[1];
-                        r3 = r[2];
-                    } else {
-                        r1 = r[0];
-                        r2 = r[1];
-                        r3 = r[2];
-                        r4 = r[3];
-                    }
-                } else {
-                    r1 = r2 = r3 = r4 = 0;
-                }
-                ctx.moveTo(x + r1, y);
-                ctx.lineTo(x + width - r2, y);
-                r2 !== 0 && ctx.quadraticCurveTo(
-                    x + width, y, x + width, y + r2
-                );
-                ctx.lineTo(x + width, y + height - r3);
-                r3 !== 0 && ctx.quadraticCurveTo(
-                    x + width, y + height, x + width - r3, y + height
-                );
-                ctx.lineTo(x + r4, y + height);
-                r4 !== 0 && ctx.quadraticCurveTo(
-                    x, y + height, x, y + height - r4
-                );
-                ctx.lineTo(x, y + r1);
-                r1 !== 0 && ctx.quadraticCurveTo(x, y, x + r1, y);
-            },
-            
-            /**
-             * 创建矩形路径
-             * @param {Context2D} ctx Canvas 2D上下文
-             * @param {Object} style 样式
-             */
-            buildPath : function(ctx, style) {
-                if(!style.radius) {
-                    ctx.moveTo(style.x, style.y);
-                    ctx.lineTo(style.x + style.width, style.y);
-                    ctx.lineTo(style.x + style.width, style.y + style.height);
-                    ctx.lineTo(style.x, style.y + style.height);
-                    ctx.lineTo(style.x, style.y);
-                    //ctx.rect(style.x, style.y, style.width, style.height);
-                } else {
-                    this._buildRadiusPath(ctx, style);
-                }
-                return;
-            },
-
-            /**
-             * 返回矩形区域，用于局部刷新和文字定位
-             * @param {Object} style
-             */
-            getRect : function(style) {
-                var lineWidth;
-                if (style.brushType == 'stroke' || style.brushType == 'fill') {
-                    lineWidth = style.lineWidth || 1;
-                }
-                else {
-                    lineWidth = 0;
-                }
-                return {
-                    x : Math.round(style.x - lineWidth / 2),
-                    y : Math.round(style.y - lineWidth / 2),
-                    width : style.width + lineWidth,
-                    height : style.height + lineWidth
-                };
-            }
-        };
-
-        var base = require('./base');
-        base.derive(Rectangle);
-        
-        var shape = require('../shape');
-        shape.define('rectangle', new Rectangle());
-
-        return Rectangle;
-    }
-);
-/**
- * zrender
- *
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
- *
- * shape类：圆环
- * 可配图形属性：
-   {
-       // 基础属性
-       shape  : 'ring',         // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
-       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
-       invisible : {boolean},   // 默认为false，是否可见
-
-       // 样式属性，默认状态样式样式属性
-       style  : {
-           x             : {number},  // 必须，圆心横坐标
-           y             : {number},  // 必须，圆心纵坐标
-           r0            : {number},  // 必须，内圆半径
-           r             : {number},  // 必须，外圆半径
-           brushType     : {string},  // 默认为fill，绘画方式
-                                      // fill(填充) | stroke(描边) | both(填充+描边)
-           color         : {color},   // 默认为'#000'，填充颜色，支持rgba
-           strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
-           lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
-
-           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
-           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
-           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
-           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
-           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
-
-           text          : {string},  // 默认为null，附加文本
-           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
-           textPosition  : {string},  // 默认为outside，附加文本位置。
-                                      // outside | inside
-           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
-                                      // start | end | left | right | center
-           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
-                                      // top | bottom | middle |
-                                      // alphabetic | hanging | ideographic
-           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
-                                      // 'inside' ? '#fff' : color
-       },
-
-       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
-       highlightStyle : {
-           // 同style
-       }
-
-       // 交互属性，详见shape.Base
-
-       // 事件属性，详见shape.Base
-   }
-         例子：
-   {
-       shape  : 'ring',
-       id     : '123456',
-       zlevel : 1,
-       style  : {
-           x : 200,
-           y : 100,
-           r : 50,
-           color : '#eee',
-           text : 'Baidu'
-       },
-       myName : 'kener',  // 可自带任何有效自定义属性
-
-       clickable : true,
-       onClick : function(eventPacket) {
-           alert(eventPacket.target.myName);
-       }
-   }
- */
-define(
-    'zrender/shape/ring',['require','./base','../shape'],function(require) {
-        function Ring() {
-            this.type = 'ring';
-        }
-
-        Ring.prototype = {
-            /**
-             * 创建圆环路径，依赖扇形路径
-             * @param {Context2D} ctx Canvas 2D上下文
-             * @param {Object} style 样式
-             */
-            buildPath : function(ctx, style) {
-                // 非零环绕填充优化
-                ctx.arc(style.x, style.y, style.r, 0, Math.PI * 2, false);
-                ctx.moveTo(style.x + style.r0, style.y);
-                ctx.arc(style.x, style.y, style.r0, 0, Math.PI * 2, true);
-                return;
-            },
-
-            /**
-             * 返回矩形区域，用于局部刷新和文字定位
-             * @param {Object} style
-             */
-            getRect : function(style) {
-                var lineWidth;
-                if (style.brushType == 'stroke' || style.brushType == 'fill') {
-                    lineWidth = style.lineWidth || 1;
-                }
-                else {
-                    lineWidth = 0;
-                }
-                return {
-                    x : Math.round(style.x - style.r - lineWidth / 2),
-                    y : Math.round(style.y - style.r - lineWidth / 2),
-                    width : style.r * 2 + lineWidth,
-                    height : style.r * 2 + lineWidth
-                };
-            }
-        };
-
-        var base = require('./base');
-        base.derive(Ring);
-        
-        var shape = require('../shape');
-        shape.define('ring', new Ring());
-
-        return Ring;
-    }
-);
-/**
- * zrender: 数学辅助类
- *
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
- *
- * sin：正弦函数，自动缓存
- * cos：余弦函数，自动缓存
- * degreeToRadian：角度转弧度
- * radianToDegree：弧度转角度
- */
-define(
-    'zrender/tool/math',[],function() {
-        /*
-        var _cache = {
-            sin : {},     //sin缓存
-            cos : {}      //cos缓存
-        };
-        */
-        var _radians = Math.PI / 180;
-
-        /**
-         * @param angle 弧度（角度）参数
-         * @param isDegrees angle参数是否为角度计算，默认为false，angle为以弧度计量的角度
-         */
-        function sin(angle, isDegrees) {
-            return Math.sin(isDegrees ? angle * _radians : angle);
-            /*
-            angle = (isDegrees ? angle * _radians : angle).toFixed(4);
-            if(typeof _cache.sin[angle] == 'undefined') {
-                _cache.sin[angle] = Math.sin(angle);
-            }
-            return _cache.sin[angle];
-            */
-        }
-
-        /**
-         * @param radians 弧度参数
-         */
-        function cos(angle, isDegrees) {
-            return Math.cos(isDegrees ? angle * _radians : angle);
-            /*
-            angle = (isDegrees ? angle * _radians : angle).toFixed(4);
-            if(typeof _cache.cos[angle] == 'undefined') {
-                _cache.cos[angle] = Math.cos(angle);
-            }
-            return _cache.cos[angle];
-            */
-        }
-
-        /**
-         * 角度转弧度
-         * @param {Object} angle
-         */
-        function degreeToRadian(angle) {
-            return angle * _radians;
-        }
-
-        /**
-         * 弧度转角度
-         * @param {Object} angle
-         */
-        function radianToDegree(angle) {
-            return angle / _radians;
-        }
-
-        return {
-            sin : sin,
-            cos : cos,
-            degreeToRadian : degreeToRadian,
-            radianToDegree : radianToDegree
-        };
-    }
-);
-/**
- * zrender
- *
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
- *
- * shape类：扇形
- * 可配图形属性：
-   {
-       // 基础属性
-       shape  : 'sector',       // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
-       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
-       invisible : {boolean},   // 默认为false，是否可见
-
-       // 样式属性，默认状态样式样式属性
-       style  : {
-           x             : {number},  // 必须，圆心横坐标
-           y             : {number},  // 必须，圆心纵坐标
-           r0            : {number},  // 默认为0，内圆半径，指定后将出现内弧，同时扇边长度 = r - r0
-           r             : {number},  // 必须，外圆半径
-           startAngle    : {number},  // 必须，起始角度[0, 360)
-           endAngle      : {number},  // 必须，结束角度(0, 360]
-           brushType     : {string},  // 默认为fill，绘画方式
-                                      // fill(填充) | stroke(描边) | both(填充+描边)
-           color         : {color},   // 默认为'#000'，填充颜色，支持rgba
-           strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
-           lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
-
-           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
-           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
-           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
-           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
-           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
-
-           text          : {string},  // 默认为null，附加文本
-           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
-           textPosition  : {string},  // 默认为outside，附加文本位置。
-                                      // outside | inside
-           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
-                                      // start | end | left | right | center
-           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
-                                      // top | bottom | middle |
-                                      // alphabetic | hanging | ideographic
-           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
-                                      // 'inside' ? '#fff' : color
-       },
-
-       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
-       highlightStyle : {
-           // 同style
-       }
-
-       // 交互属性，详见shape.Base
-
-       // 事件属性，详见shape.Base
-   }
-         例子：
-   {
-       shape  : 'sector',
-       id     : '123456',
-       zlevel : 1,
-       style  : {
-           x : 200,
-           y : 100,
-           r : 50,
-           color : '#eee',
-           text : 'Baidu'
-       },
-       myName : 'kener',  // 可自带任何有效自定义属性
-
-       clickable : true,
-       onClick : function(eventPacket) {
-           alert(eventPacket.target.myName);
-       }
-   }
- */
-define(
-    'zrender/shape/sector',['require','../tool/math','../shape','./base','../shape'],function(require) {
-        var math = require('../tool/math');
-
-        function Sector() {
-            this.type = 'sector';
-        }
-
-        Sector.prototype = {
-            /**
-             * 创建扇形路径
-             * @param {Context2D} ctx Canvas 2D上下文
-             * @param {Object} style 样式
-             */
-            buildPath : function(ctx, style) {
-                var x = style.x;   // 圆心x
-                var y = style.y;   // 圆心y
-                var r0 = typeof style.r0 == 'undefined'     // 形内半径[0,r)
-                         ? 0 : style.r0;
-                var r = style.r;                            // 扇形外半径(0,r]
-                var startAngle = style.startAngle;          // 起始角度[0,360)
-                var endAngle = style.endAngle;              // 结束角度(0,360]
-
-                if (Math.abs(endAngle - startAngle) >= 360) {
-                    // 大于360度的扇形简化为圆环画法
-                    ctx.arc(x, y, r, 0, Math.PI * 2, false);
-                    if (r0 !== 0) {
-                        ctx.moveTo(x + r0, y);
-                        ctx.arc(x, y, r0, 0, Math.PI * 2, true);
-                    }
-                    return;
-                }
-                
-                startAngle = math.degreeToRadian(startAngle);
-                endAngle = math.degreeToRadian(endAngle);
-
-                var PI2 = Math.PI * 2;
-                var cosStartAngle = math.cos(startAngle);
-                var sinStartAngle = math.sin(startAngle);
-                ctx.moveTo(
-                    cosStartAngle * r0 + x,
-                    y - sinStartAngle * r0
-                );
-
-                ctx.lineTo(
-                    cosStartAngle * r + x,
-                    y - sinStartAngle * r
-                );
-
-                ctx.arc(x, y, r, PI2 - startAngle, PI2 - endAngle, true);
-
-                ctx.lineTo(
-                    math.cos(endAngle) * r0 + x,
-                    y - math.sin(endAngle) * r0
-                );
-
-                if (r0 !== 0) {
-                    ctx.arc(x, y, r0, PI2 - endAngle, PI2 - startAngle, false);
-                }
-
-                return;
-            },
-
-            /**
-             * 返回矩形区域，用于局部刷新和文字定位
-             * @param {Object} style
-             */
-            getRect : function(style) {
-                var shape = require('../shape');
-                var x = style.x;   // 圆心x
-                var y = style.y;   // 圆心y
-                var r0 = typeof style.r0 == 'undefined'     // 形内半径[0,r)
-                         ? 0 : style.r0;
-                var r = style.r;                            // 扇形外半径(0,r]
-                var startAngle = style.startAngle;          // 起始角度[0,360)
-                var endAngle = style.endAngle;              // 结束角度(0,360]
-                
-                if (Math.abs(endAngle - startAngle) >= 360) {
-                    // 大于360度的扇形简化为圆环bbox
-                    return shape.get('ring').getRect(style);;
-                }
-                
-                startAngle = (720 + startAngle) % 360;
-                endAngle = (720 + endAngle) % 360;
-                if (endAngle <= startAngle) {
-                    endAngle += 360;
-                }
-                var pointList = [];
-                if (startAngle <= 90 && endAngle >= 90) {
-                    pointList.push([
-                        x, y - r
-                    ]);
-                }
-                if (startAngle <= 180 && endAngle >= 180) {
-                    pointList.push([
-                        x - r, y
-                    ]);
-                }
-                if (startAngle <= 270 && endAngle >= 270) {
-                    pointList.push([
-                        x, y + r
-                    ]);
-                }
-                if (startAngle <= 360 && endAngle >= 360) {
-                    pointList.push([
-                        x + r, y
-                    ]);
-                }
-
-                startAngle = math.degreeToRadian(startAngle);
-                endAngle = math.degreeToRadian(endAngle);
-
-
-                pointList.push([
-                    math.cos(startAngle) * r0 + x,
-                    y - math.sin(startAngle) * r0
-                ]);
-
-                pointList.push([
-                    math.cos(startAngle) * r + x,
-                    y - math.sin(startAngle) * r
-                ]);
-
-                pointList.push([
-                    math.cos(endAngle) * r + x,
-                    y - math.sin(endAngle) * r
-                ]);
-
-                pointList.push([
-                    math.cos(endAngle) * r0 + x,
-                    y - math.sin(endAngle) * r0
-                ]);
-
-                return shape.get('polygon').getRect({
-                    brushType : style.brushType,
-                    lineWidth : style.lineWidth,
-                    pointList : pointList
-                });
-            }
-        };
-
-        var base = require('./base');
-        base.derive(Sector);
-        
-        var shape = require('../shape');
-        shape.define('sector', new Sector());
-
-        return Sector;
-    }
-);
-/**
- * zrender
- *
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
- *
- * shape类：文字
- * 可配图形属性：
-   {
-       // 基础属性
-       shape  : 'text',         // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
-       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
-       invisible : {boolean},   // 默认为false，是否可见
-
-       // 样式属性，默认状态样式样式属性
-       style  : {
-           x             : {number},  // 必须，横坐标
-           y             : {number},  // 必须，纵坐标
-           brushType     : {string},  // 默认为fill，绘画方式
-                                      // fill(填充) | stroke(描边) | both(填充+描边)
-           color         : {color},   // 默认为'#000'，填充颜色，支持rgba
-           strokeColor   : {color},   // 默认为'#000'，线条颜色（轮廓），支持rgba
-           lineWidth     : {number},  // 默认为1，线条宽度
-
-           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
-           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
-           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
-           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
-           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
-
-           text          : {string},  // 必须，文本内容
-           textFont      : {string},  // 默认为null，文本文字样式，eg:'bold 18px verdana'
-           textAlign     : {string},  // 默认为start，文本水平对齐。
-                                      // start | end | left | right | center
-           textBaseline  : {string},  // 默认为middle，文本垂直对齐。
-                                      // top | bottom | middle |
-                                      // alphabetic | hanging | ideographic
-           maxWidth      : {number}   // 默认为null，最大宽度
-       },
-
-       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
-       highlightStyle : {
-           // 同style
-       }
-
-       // 交互属性，详见shape.Base
-
-       // 事件属性，详见shape.Base
-   }
-         例子：
-   {
-       shape  : 'text',
-       id     : '123456',
-       zlevel : 1,
-       style  : {
-           x : 200,
-           y : 100,
-           color : 'red',
-           text : 'Baidu'
-       },
-       myName : 'kener',  //可自带任何有效自定义属性
-
-       clickable : true,
-       onClick : function(eventPacket) {
-           alert(eventPacket.target.myName);
-       }
-   }
- */
-define(
-    'zrender/shape/text',['require','../tool/area','./base','../shape'],function(require) {
-        var area = require('../tool/area');
-        
-        function Text() {
-            this.type = 'text';
-        }
-
-        Text.prototype =  {
-            /**
-             * 画刷，重载基类方法
-             * @param {Context2D} ctx Canvas 2D上下文
-             * @param e 图形形状实体
-             * @param isHighlight 是否为高亮状态
-             */
-            brush : function(ctx, e, isHighlight) {
-                var style = e.style || {};
-                if (isHighlight) {
-                    // 根据style扩展默认高亮样式
-                    style = this.getHighlightStyle(
-                        style, e.highlightStyle || {}
-                    );
-                }
-                
-                if (typeof style.text == 'undefined') {
-                    return;
-                }
-
-                ctx.save();
-                this.setContext(ctx, style);
-
-                // 设置transform
-                if (e.__needTransform) {
-                    ctx.transform.apply(ctx,this.updateTransform(e));
-                }
-
-                if (style.textFont) {
-                    ctx.font = style.textFont;
-                }
-                ctx.textAlign = style.textAlign || 'start';
-                ctx.textBaseline = style.textBaseline || 'middle';
-
-                var text = (style.text + '').split('\n');
-                var lineHeight = area.getTextHeight('国', style.textFont);
-                var rect = this.getRect(style);
-                var x = style.x;
-                var y;
-                if (style.textBaseline == 'top') {
-                    y = rect.y;
-                }
-                else if (style.textBaseline == 'bottom') {
-                    y = rect.y + lineHeight;
-                }
-                else {
-                    y = rect.y + lineHeight / 2;
-                }
-                
-                for (var i = 0, l = text.length; i < l; i++) {
-                    if (style.maxWidth) {
-                        switch (style.brushType) {
-                            case 'fill':
-                                ctx.fillText(
-                                    text[i],
-                                    x, y, style.maxWidth
-                                );
-                                break;
-                            case 'stroke':
-                                ctx.strokeText(
-                                    text[i],
-                                    x, y, style.maxWidth
-                                );
-                                break;
-                            case 'both':
-                                ctx.fillText(
-                                    text[i],
-                                    x, y, style.maxWidth
-                                );
-                                ctx.strokeText(
-                                    text[i],
-                                    x, y, style.maxWidth
-                                );
-                                break;
-                            default:
-                                ctx.fillText(
-                                    text[i],
-                                    x, y, style.maxWidth
-                                );
-                        }
-                    }
-                    else{
-                        switch (style.brushType) {
-                            case 'fill':
-                                ctx.fillText(text[i], x, y);
-                                break;
-                            case 'stroke':
-                                ctx.strokeText(text[i], x, y);
-                                break;
-                            case 'both':
-                                ctx.fillText(text[i], x, y);
-                                ctx.strokeText(text[i], x, y);
-                                break;
-                            default:
-                                ctx.fillText(text[i], x, y);
-                        }
-                    }
-                    y += lineHeight;
-                }
-
-                ctx.restore();
-                return;
-            },
-
-            /**
-             * 返回矩形区域，用于局部刷新和文字定位
-             * @param {Object} style
-             */
-            getRect : function(style) {
-                var width = area.getTextWidth(style.text, style.textFont);
-                var height = area.getTextHeight(style.text, style.textFont);
-                
-                var textX = style.x;                 //默认start == left
-                if (style.textAlign == 'end' || style.textAlign == 'right') {
-                    textX -= width;
-                }
-                else if (style.textAlign == 'center') {
-                    textX -= (width / 2);
-                }
-
-                var textY;
-                if (style.textBaseline == 'top') {
-                    textY = style.y;
-                }
-                else if (style.textBaseline == 'bottom') {
-                    textY = style.y - height;
-                }
-                else {
-                    // middle
-                    textY = style.y - height / 2;
-                }
-
-                return {
-                    x : textX,
-                    y : textY,
-                    width : width,
-                    height : height
-                };
-            }
-        };
-
-        var base = require('./base');
-        base.derive(Text);
-        
-        var shape = require('../shape');
-        shape.define('text', new Text());
-
-        return Text;
+        return Base;
     }
 );
 
-/**
- * zrender
- *
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
- *
- * shape类：心形
- * 可配图形属性：
-   {
-       // 基础属性
-       shape  : 'heart',       // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
-       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
-       invisible : {boolean},   // 默认为false，是否可见
-
-       // 样式属性，默认状态样式样式属性
-       style  : {
-           x             : {number},  // 必须，心形内部尖端横坐标
-           y             : {number},  // 必须，心形内部尖端纵坐标
-           a             : {number},  // 必须，心形横宽（中轴线到水平边缘最宽处距离）
-           b             : {number},  // 必须，心形纵高（内尖到外尖距离）
-           brushType     : {string},  // 默认为fill，绘画方式
-                                      // fill(填充) | stroke(描边) | both(填充+描边)
-           color         : {color},   // 默认为'#000'，填充颜色，支持rgba
-           strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
-           lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
-
-           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
-           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
-           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
-           shadowOffsetY : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
-
-           text          : {string},  // 默认为null，附加文本
-           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
-           textPosition  : {string},  // 默认为outside，附加文本位置。
-                                      // outside | inside
-           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
-                                      // start | end | left | right | center
-           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
-                                      // top | bottom | middle |
-                                      // alphabetic | hanging | ideographic
-           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
-                                      // 'inside' ? '#fff' : color
-       },
-
-       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
-       highlightStyle : {
-           // 同style
-       }
-
-       // 交互属性，详见shape.Base
-
-       // 事件属性，详见shape.Base
-   }
-         例子：
-   {
-       shape  : 'heart',
-       id     : '123456',
-       zlevel : 1,
-       style  : {
-           x : 200,
-           y : 100,
-           a : 50,
-           b : 80,
-           color : '#eee',
-           text : 'Baidu'
-       },
-       myName : 'kener',  // 可自带任何有效自定义属性
-
-       clickable : true,
-       onClick : function(eventPacket) {
-           alert(eventPacket.target.myName);
-       }
-   }
- */
-define(
-    'zrender/shape/heart',['require','./base','../shape'],function(require) {
-        function Heart() {
-            this.type = 'heart';
-        }
-
-        Heart.prototype = {
-            /**
-             * 创建扇形路径
-             * @param {Context2D} ctx Canvas 2D上下文
-             * @param {Object} style 样式
-             */
-            buildPath : function(ctx, style) {
-                ctx.moveTo(style.x, style.y);
-                ctx.bezierCurveTo(
-                    style.x + style.a / 2,
-                    style.y - style.b * 2 / 3,
-                    style.x + style.a * 2,
-                    style.y + style.b / 3,
-                    style.x,
-                    style.y + style.b
-                );
-                ctx.bezierCurveTo(
-                    style.x - style.a *  2,
-                    style.y + style.b / 3,
-                    style.x - style.a / 2,
-                    style.y - style.b * 2 / 3,
-                    style.x,
-                    style.y
-                );
-                return;
-            },
-
-            /**
-             * 返回矩形区域，用于局部刷新和文字定位
-             * @param {Object} style
-             */
-            getRect : function(style) {
-                var lineWidth;
-                if (style.brushType == 'stroke' || style.brushType == 'fill') {
-                    lineWidth = style.lineWidth || 1;
-                }
-                else {
-                    lineWidth = 0;
-                }
-                return {
-                    x : Math.round(style.x - style.a - lineWidth / 2),
-                    y : Math.round(style.y - style.b / 4 - lineWidth / 2),
-                    width : style.a * 2 + lineWidth,
-                    height : style.b * 5 / 4 + lineWidth
-                };
-            }
-        };
-
-        var base = require('./base');
-        base.derive(Heart);
-        
-        var shape = require('../shape');
-        shape.define('heart', new Heart());
-
-        return Heart;
-    }
-);
-/**
- * zrender
- *
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
- *
- * shape类：水滴
- * 可配图形属性：
-   {
-       // 基础属性
-       shape  : 'heart',       // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
-       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
-       invisible : {boolean},   // 默认为false，是否可见
-
-       // 样式属性，默认状态样式样式属性
-       style  : {
-           x             : {number},  // 必须，水滴中心横坐标
-           y             : {number},  // 必须，水滴中心纵坐标
-           a             : {number},  // 必须，水滴横宽（中心到水平边缘最宽处距离）
-           b             : {number},  // 必须，水滴纵高（中心到尖端距离）
-           brushType     : {string},  // 默认为fill，绘画方式
-                                      // fill(填充) | stroke(描边) | both(填充+描边)
-           color         : {color},   // 默认为'#000'，填充颜色，支持rgba
-           strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
-           lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
-
-           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
-           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
-           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
-           shadowOffsetY : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
-
-           text          : {string},  // 默认为null，附加文本
-           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
-           textPosition  : {string},  // 默认为outside，附加文本位置。
-                                      // outside | inside
-           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
-                                      // start | end | left | right | center
-           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
-                                      // top | bottom | middle |
-                                      // alphabetic | hanging | ideographic
-           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
-                                      // 'inside' ? '#fff' : color
-       },
-
-       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
-       highlightStyle : {
-           // 同style
-       }
-
-       // 交互属性，详见shape.Base
-
-       // 事件属性，详见shape.Base
-   }
-         例子：
-   {
-       shape  : 'droplet',
-       id     : '123456',
-       zlevel : 1,
-       style  : {
-           x : 200,
-           y : 100,
-           a : 50,
-           b : 80,
-           color : '#eee',
-           text : 'Baidu'
-       },
-       myName : 'kener',  // 可自带任何有效自定义属性
-
-       clickable : true,
-       onClick : function(eventPacket) {
-           alert(eventPacket.target.myName);
-       }
-   }
- */
-define(
-    'zrender/shape/droplet',['require','./base','../shape'],function(require) {
-        function Droplet() {
-            this.type = 'droplet';
-        }
-
-        Droplet.prototype = {
-            /**
-             * 创建扇形路径
-             * @param {Context2D} ctx Canvas 2D上下文
-             * @param {Object} style 样式
-             */
-            buildPath : function(ctx, style) {
-                ctx.moveTo(style.x, style.y + style.a);
-                ctx.bezierCurveTo(
-                    style.x + style.a,
-                    style.y + style.a,
-                    style.x + style.a * 3 / 2,
-                    style.y - style.a / 3,
-                    style.x,
-                    style.y - style.b
-                );
-                ctx.bezierCurveTo(
-                    style.x - style.a * 3 / 2,
-                    style.y - style.a / 3,
-                    style.x - style.a,
-                    style.y + style.a,
-                    style.x,
-                    style.y + style.a
-                );
-                return;
-            },
-
-            /**
-             * 返回矩形区域，用于局部刷新和文字定位
-             * @param {Object} style
-             */
-            getRect : function(style) {
-                var lineWidth;
-                if (style.brushType == 'stroke' || style.brushType == 'fill') {
-                    lineWidth = style.lineWidth || 1;
-                }
-                else {
-                    lineWidth = 0;
-                }
-                return {
-                    x : Math.round(style.x - style.a - lineWidth / 2),
-                    y : Math.round(style.y - style.b - lineWidth / 2),
-                    width : style.a * 2 + lineWidth,
-                    height : style.a + style.b + lineWidth
-                };
-            }
-        };
-
-        var base = require('./base');
-        base.derive(Droplet);
-        
-        var shape = require('../shape');
-        shape.define('droplet', new Droplet());
-
-        return Droplet;
-    }
-);
 /**
  * zrender
  *
@@ -6560,7 +4642,7 @@ define(
    {
        // 基础属性
        shape  : 'path',         // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
        zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
        invisible : {boolean},   // 默认为false，是否可见
 
@@ -6619,12 +4701,16 @@ define(
 
  **/
 
-define('zrender/shape/path',['require','./base','../shape'],function(require) {
-    function Path() {
-        this.type = 'path';
+define('zrender/shape/Path',['require','./Base','../tool/util'],function (require) {
+    var Base = require('./Base');
+    
+    function Path(options) {
+        Base.call(this, options);
     }
 
     Path.prototype = {
+        type: 'path',
+
         _parsePathData : function(data) {
             if (!data) {
                 return [];
@@ -6947,7 +5033,7 @@ define('zrender/shape/path',['require','./base','../shape'],function(require) {
         buildPath : function(ctx, style) {
             var path = style.path;
 
-            var pathArray = this._parsePathData(path);
+            var pathArray = this.pathArray || this._parsePathData(path);
 
             // 平移坐标
             var x = style.x || 0;
@@ -7030,6 +5116,10 @@ define('zrender/shape/path',['require','./base','../shape'],function(require) {
          * @param {Object} style 样式
          */
         getRect : function(style) {
+            if (style.__rect) {
+                return style.__rect;
+            }
+            
             var lineWidth;
             if (style.brushType == 'stroke' || style.brushType == 'fill') {
                 lineWidth = style.lineWidth || 1;
@@ -7048,7 +5138,7 @@ define('zrender/shape/path',['require','./base','../shape'],function(require) {
             var x = style.x || 0;
             var y = style.y || 0;
 
-            var pathArray = this._parsePathData(style.path);
+            var pathArray = this.pathArray || this._parsePathData(style.path);
             for (var i = 0; i < pathArray.length; i++) {
                 var p = pathArray[i].points;
 
@@ -7060,7 +5150,8 @@ define('zrender/shape/path',['require','./base','../shape'],function(require) {
                         if (p[j] + x > maxX) {
                             maxX = p[j] + x;
                         }
-                    } else {
+                    } 
+                    else {
                         if (p[j] + y < minY) {
                             minY = p[j] + y;
                         }
@@ -7092,18 +5183,1066 @@ define('zrender/shape/path',['require','./base','../shape'],function(require) {
                     height : maxY - minY + lineWidth
                 };
             }
+            style.__rect = rect;
             return rect;
         }
     };
 
-    var base = require('./base');
-    base.derive(Path);
-    
-    var shape = require('../shape');
-    shape.define('path', new Path());
-
+    require('../tool/util').inherits(Path, Base);
     return Path;
 });
+/**
+ * zrender: 图形空间辅助类
+ *
+ * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *
+ * isInside：是否在区域内部
+ * isOutside：是否在区域外部
+ * getTextWidth：测算单行文本宽度
+ */
+define(
+    'zrender/tool/area',['require','../tool/util','../shape/Path'],function(require) {
+        var util = require('../tool/util');
+
+        var _ctx;
+        
+        var _textWidthCache = {};
+        var _textHeightCache = {};
+        var _textWidthCacheCounter = 0;
+        var _textHeightCacheCounter = 0;
+        var TEXT_CACHE_MAX = 20000;
+        
+        /**
+         * 包含判断
+         *
+         * @param {Object} shape : 图形
+         * @param {Object} area ： 目标区域
+         * @param {number} x ： 横坐标
+         * @param {number} y ： 纵坐标
+         */
+        function isInside(shape, area, x, y) {
+            if (!area || !shape) {
+                // 无参数或不支持类型
+                return false;
+            }
+            var zoneType = shape.type;
+
+            _ctx = _ctx || util.getContext();
+
+            if (!_isInsideRectangle(area.__rect || shape.getRect(area), x, y)) {
+                // 不在矩形区域内直接返回false
+                return false;
+            }
+
+            // 未实现或不可用时(excanvas不支持)则数学运算，主要是line，brokenLine，ring
+            var _mathReturn = _mathMethod(zoneType, area, x, y);
+            if (typeof _mathReturn != 'undefined') {
+                return _mathReturn;
+            }
+
+            if (zoneType != 'bezier-curve'
+                && shape.buildPath
+                && _ctx.isPointInPath
+            ) {
+                return _buildPathMethod(shape, _ctx, area, x, y);
+            }
+            else if (_ctx.getImageData) {
+                return _pixelMethod(shape, area, x, y);
+            }
+
+            // 上面的方法都行不通时
+            switch (zoneType) {
+                case 'heart': //心形---------10 // Todo，不精确
+                case 'droplet':// 水滴----------11 // Todo，不精确
+                case 'ellipse': // Todo，不精确
+                    return true;
+                // 旋轮曲线  不准确
+                case 'trochoid':
+                    var _r = area.location == 'out'
+                            ? area.r1 + area.r2 + area.d
+                            : area.r1 - area.r2 + area.d;
+                    return _isInsideCircle(area, x, y, _r);
+                // 玫瑰线 不准确
+                case 'rose' :
+                    return _isInsideCircle(area, x, y, area.maxr);
+                //路径，椭圆，曲线等-----------------13
+                default:
+                    return false;   // Todo，暂不支持
+            }
+        }
+
+        /**
+         * 用数学方法判断，三个方法中最快，但是支持的shape少
+         *
+         * @param {string} zoneType ： 图形类型
+         * @param {Object} area ：目标区域
+         * @param {number} x ： 横坐标
+         * @param {number} y ： 纵坐标
+         * @return {boolean=} true表示坐标处在图形中
+         */
+        function _mathMethod(zoneType, area, x, y) {
+            // 在矩形内则部分图形需要进一步判断
+            switch (zoneType) {
+                //线-----------------------1
+                case 'line':
+                    return _isInsideLine(area, x, y);
+                //折线----------------------2
+                case 'broken-line':
+                    return _isInsideBrokenLine(area, x, y);
+                //文本----------------------3
+                case 'text':
+                    return true;
+                //圆环----------------------4
+                case 'ring':
+                    return _isInsideRing(area, x, y);
+                //矩形----------------------5
+                case 'rectangle':
+                    return true;
+                //圆形----------------------6
+                case 'circle':
+                    return _isInsideCircle(area, x, y, area.r);
+                //扇形----------------------7
+                case 'sector':
+                    return _isInsideSector(area, x, y);
+                //多边形---------------------8
+                case 'path':
+                    return _isInsidePath(area, x, y);
+                case 'polygon':
+                case 'star':
+                case 'isogon':
+                    return _isInsidePolygon(area, x, y);
+                //图片----------------------9
+                case 'image':
+                    return true;
+            }
+        }
+
+        /**
+         * 通过buildPath方法来判断，三个方法中较快，但是不支持线条类型的shape，
+         * 而且excanvas不支持isPointInPath方法
+         *
+         * @param {Object} shape ： shape
+         * @param {Object} context : 上下文
+         * @param {Object} area ：目标区域
+         * @param {number} x ： 横坐标
+         * @param {number} y ： 纵坐标
+         * @return {boolean} true表示坐标处在图形中
+         */
+        function _buildPathMethod(shape, context, area, x, y) {
+            // 图形类实现路径创建了则用类的path
+            context.beginPath();
+            shape.buildPath(context, area);
+            context.closePath();
+            return context.isPointInPath(x, y);
+        }
+
+        /**
+         * 通过像素值来判断，三个方法中最慢，但是支持广,不足之处是excanvas不支持像素处理
+         *
+         * @param {Object} shape  shape类
+         * @param {Object} area 目标区域
+         * @param {number} x  横坐标
+         * @param {number} y  纵坐标
+         * @return {boolean} true表示坐标处在图形中
+         */
+        function _pixelMethod(shape, area, x, y) {
+            var _rect = area.__rect || shape.getRect(area);
+            var _context = util.getPixelContext();
+            var _offset = util.getPixelOffset();
+
+            util.adjustCanvasSize(x, y);
+            _context.clearRect(_rect.x, _rect.y, _rect.width, _rect.height);
+            _context.beginPath();
+            shape.brush(_context, {style : area});
+            _context.closePath();
+
+            return _isPainted(_context, x + _offset.x, y + _offset.y);
+        }
+
+        /**
+         * 坐标像素值，判断坐标是否被作色
+         *
+         * @param {Object} context : 上下文
+         * @param {number} x : 横坐标
+         * @param {number} y : 纵坐标
+         * @param {number=} unit : 触发的精度，越大越容易触发，可选，缺省是为1
+         * @return {boolean} 已经被画过返回true
+         */
+        function _isPainted(context, x, y, unit) {
+            var pixelsData;
+
+            if (typeof unit != 'undefined') {
+                unit = (unit || 1 ) >> 1;
+                pixelsData = context.getImageData(
+                    x - unit,
+                    y - unit,
+                    unit + unit,
+                    unit + unit
+                ).data;
+            }
+            else {
+                pixelsData = context.getImageData(x, y, 1, 1).data;
+            }
+
+            var len = pixelsData.length;
+            while (len--) {
+                if (pixelsData[len] !== 0) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /**
+         * !isInside
+         */
+        function isOutside(shape, area, x, y) {
+            return !isInside(shape, area, x, y);
+        }
+
+        /**
+         * 线段包含判断
+         */
+        function _isInsideLine(area, x, y) {
+            var _x1 = area.xStart;
+            var _y1 = area.yStart;
+            var _x2 = area.xEnd;
+            var _y2 = area.yEnd;
+            var _l = Math.max(area.lineWidth, 5);
+            var _a = 0;
+            var _b = _x1;
+
+            var minX, maxX;
+            if (_x1 < _x2) {
+                minX = _x1 - _l; maxX = _x2 + _l;
+            } else {
+                minX = _x2 - _l; maxX = _x1 + _l;
+            }
+
+            var minY, maxY;
+            if (_y1 < _y2) {
+                minY = _y1 - _l; maxY = _y2 + _l;
+            } else {
+                minY = _y2 - _l; maxY = _y1 + _l;
+            }
+
+            if (x < minX || x > maxX || y < minY || y > maxY) {
+                return false;
+            }
+
+            if (_x1 !== _x2) {
+                _a = (_y1 - _y2) / (_x1 - _x2);
+                _b = (_x1 * _y2 - _x2 * _y1) / (_x1 - _x2) ;
+            }
+            else {
+                return Math.abs(x - _x1) <= _l / 2;
+            }
+
+            var _s = (_a * x - y + _b) * (_a * x - y + _b) / (_a * _a + 1);
+            return  _s <= _l / 2 * _l / 2;
+        }
+
+        function _isInsideBrokenLine(area, x, y) {
+            var pointList = area.pointList;
+            var lineArea = {
+                xStart : 0,
+                yStart : 0,
+                xEnd : 0,
+                yEnd : 0,
+                lineWidth : 0
+            };
+            for (var i = 0, l = pointList.length - 1; i < l; i++) {
+                lineArea.xStart = pointList[i][0];
+                lineArea.yStart = pointList[i][1];
+                lineArea.xEnd = pointList[i + 1][0];
+                lineArea.yEnd = pointList[i + 1][1];
+                lineArea.lineWidth = Math.max(area.lineWidth, 10);
+
+                if (_isInsideLine(lineArea, x, y)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        function _isInsideRing(area, x, y) {
+            return _isInsideCircle(area, x, y, area.r)
+                && !_isInsideCircle({x: area.x, y: area.y}, x, y, area.r0 || 0);
+        }
+
+        /**
+         * 矩形包含判断
+         */
+        function _isInsideRectangle(area, x, y) {
+            return x >= area.x
+                && x <= (area.x + area.width)
+                && y >= area.y
+                && y <= (area.y + area.height);
+        }
+
+        /**
+         * 圆形包含判断
+         */
+        function _isInsideCircle(area, x, y, r) {
+            return (x - area.x) * (x - area.x) + (y - area.y) * (y - area.y)
+                   < r * r;
+        }
+
+        /**
+         * 扇形包含判断
+         */
+        function _isInsideSector(area, x, y) {
+            if (!_isInsideCircle(area, x, y, area.r)
+                || (area.r0 > 0
+                    && _isInsideCircle(
+                            {
+                                x : area.x,
+                                y : area.y
+                            },
+                            x, y,
+                            area.r0
+                        )
+                    )
+            ){
+                // 大圆外或者小圆内直接false
+                return false;
+            }
+
+            // 判断夹角
+            if (Math.abs(area.endAngle - area.startAngle) >= 360) {
+                // 大于360度的扇形，在环内就为true
+                return true;
+            }
+            
+            var angle = (360
+                         - Math.atan2(y - area.y, x - area.x) / Math.PI
+                         * 180)
+                         % 360;
+            var endA = (360 + area.endAngle) % 360;
+            var startA = (360 + area.startAngle) % 360;
+            if (endA > startA) {
+                return (angle >= startA && angle <= endA);
+            }
+
+            return !(angle >= endA && angle <= startA);
+        }
+
+        /**
+         * 多边形包含判断
+         * 警告：下面这段代码会很难看，建议跳过~
+         */
+        function _isInsidePolygon(area, x, y) {
+            /**
+             * 射线判别法
+             * 如果一个点在多边形内部，任意角度做射线肯定会与多边形要么有一个交点，要么有与多边形边界线重叠
+             * 如果一个点在多边形外部，任意角度做射线要么与多边形有一个交点，
+             * 要么有两个交点，要么没有交点，要么有与多边形边界线重叠。
+             */
+            var i;
+            var j;
+            var polygon = area.pointList;
+            var N = polygon.length;
+            var inside = false;
+            var redo = true;
+            var v;
+
+            for (i = 0; i < N; ++i) {
+                // 是否在顶点上
+                if (polygon[i][0] == x && polygon[i][1] == y ) {
+                    redo = false;
+                    inside = true;
+                    break;
+                }
+            }
+
+            if (redo) {
+                redo = false;
+                inside = false;
+                for (i = 0,j = N - 1; i < N; j = i++) {
+                    if ((polygon[i][1] < y && y < polygon[j][1])
+                        || (polygon[j][1] < y && y < polygon[i][1])
+                    ) {
+                        if (x <= polygon[i][0] || x <= polygon[j][0]) {
+                            v = (y - polygon[i][1])
+                                * (polygon[j][0] - polygon[i][0])
+                                / (polygon[j][1] - polygon[i][1])
+                                + polygon[i][0];
+                            if (x < v) {          // 在线的左侧
+                                inside = !inside;
+                            }
+                            else if (x == v) {   // 在线上
+                                inside = true;
+                                break;
+                            }
+                        }
+                    }
+                    else if (y == polygon[i][1]) {
+                        if (x < polygon[i][0]) {    // 交点在顶点上
+                            polygon[i][1] > polygon[j][1] ? --y : ++y;
+                            //redo = true;
+                            break;
+                        }
+                    }
+                    else if (polygon[i][1] == polygon[j][1] // 在水平的边界线上
+                             && y == polygon[i][1]
+                             && ((polygon[i][0] < x && x < polygon[j][0])
+                                 || (polygon[j][0] < x && x < polygon[i][0]))
+                    ) {
+                        inside = true;
+                        break;
+                    }
+                }
+            }
+            return inside;
+        }
+        
+        /**
+         * 路径包含判断，依赖多边形判断
+         */
+        function _isInsidePath(area, x, y) {
+            if (!area.pointList) {
+                require('../shape/Path').prototype.buildPath(_ctx, area);
+            }
+            var pointList = area.pointList;
+            var insideCatch = false;
+            for (var i = 0, l = pointList.length; i < l; i++) {
+                insideCatch = _isInsidePolygon(
+                    { pointList : pointList[i] }, x, y
+                );
+
+                if (insideCatch) {
+                    break;
+                }
+            }
+
+            return insideCatch;
+        }
+
+        /**
+         * 测算多行文本宽度
+         * @param {Object} text
+         * @param {Object} textFont
+         */
+        function getTextWidth(text, textFont) {
+            var key = text+':'+textFont;
+            if (_textWidthCache[key]) {
+                return _textWidthCache[key];
+            }
+            _ctx = _ctx || util.getContext();
+            _ctx.save();
+
+            if (textFont) {
+                _ctx.font = textFont;
+            }
+            
+            text = (text + '').split('\n');
+            var width = 0;
+            for (var i = 0, l = text.length; i < l; i++) {
+                width =  Math.max(
+                    _ctx.measureText(text[i]).width,
+                    width
+                );
+            }
+            _ctx.restore();
+
+            _textWidthCache[key] = width;
+            if (++_textWidthCacheCounter > TEXT_CACHE_MAX) {
+                // 内存释放
+                _textWidthCacheCounter = 0;
+                _textWidthCache = {};
+            }
+            
+            return width;
+        }
+        
+        /**
+         * 测算多行文本高度
+         * @param {Object} text
+         * @param {Object} textFont
+         */
+        function getTextHeight(text, textFont) {
+            var key = text+':'+textFont;
+            if (_textHeightCache[key]) {
+                return _textHeightCache[key];
+            }
+            
+            _ctx = _ctx || util.getContext();
+
+            _ctx.save();
+            if (textFont) {
+                _ctx.font = textFont;
+            }
+            
+            text = (text + '').split('\n');
+            //比较粗暴
+            var height = (_ctx.measureText('国').width + 2) * text.length;
+
+            _ctx.restore();
+
+            _textHeightCache[key] = height;
+            if (++_textHeightCacheCounter > TEXT_CACHE_MAX) {
+                // 内存释放
+                _textHeightCacheCounter = 0;
+                _textHeightCache = {};
+            }
+            return height;
+        }
+
+        return {
+            isInside : isInside,
+            isOutside : isOutside,
+            getTextWidth : getTextWidth,
+            getTextHeight : getTextHeight
+        };
+    }
+);
+
+/**
+ * zrender
+ *
+ * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *
+ * shape类：文字
+ * 可配图形属性：
+   {
+       // 基础属性
+       shape  : 'text',         // 必须，shape类标识，需要显式指定
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
+       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
+       invisible : {boolean},   // 默认为false，是否可见
+
+       // 样式属性，默认状态样式样式属性
+       style  : {
+           x             : {number},  // 必须，横坐标
+           y             : {number},  // 必须，纵坐标
+           brushType     : {string},  // 默认为fill，绘画方式
+                                      // fill(填充) | stroke(描边) | both(填充+描边)
+           color         : {color},   // 默认为'#000'，填充颜色，支持rgba
+           strokeColor   : {color},   // 默认为'#000'，线条颜色（轮廓），支持rgba
+           lineWidth     : {number},  // 默认为1，线条宽度
+
+           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
+           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
+           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
+           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
+           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
+
+           text          : {string},  // 必须，文本内容
+           textFont      : {string},  // 默认为null，文本文字样式，eg:'bold 18px verdana'
+           textAlign     : {string},  // 默认为start，文本水平对齐。
+                                      // start | end | left | right | center
+           textBaseline  : {string},  // 默认为middle，文本垂直对齐。
+                                      // top | bottom | middle |
+                                      // alphabetic | hanging | ideographic
+           maxWidth      : {number}   // 默认为null，最大宽度
+       },
+
+       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
+       highlightStyle : {
+           // 同style
+       }
+
+       // 交互属性，详见shape.Base
+
+       // 事件属性，详见shape.Base
+   }
+         例子：
+   {
+       shape  : 'text',
+       id     : '123456',
+       zlevel : 1,
+       style  : {
+           x : 200,
+           y : 100,
+           color : 'red',
+           text : 'Baidu'
+       },
+       myName : 'kener',  //可自带任何有效自定义属性
+
+       clickable : true,
+       onClick : function(eventPacket) {
+           alert(eventPacket.target.myName);
+       }
+   }
+ */
+define(
+    'zrender/shape/Text',['require','../tool/area','./Base','../tool/util'],function (require) {
+        var area = require('../tool/area');
+        var Base = require('./Base');
+        
+        function Text(options) {
+            Base.call(this, options);
+        }
+
+        Text.prototype =  {
+            type: 'text',
+
+            /**
+             * 画刷，重载基类方法
+             * @param {Context2D} ctx Canvas 2D上下文
+             * @param isHighlight 是否为高亮状态
+             */
+            brush : function(ctx, isHighlight) {
+                var style = this.style;
+                if (isHighlight) {
+                    // 根据style扩展默认高亮样式
+                    style = this.getHighlightStyle(
+                        style, this.highlightStyle || {}
+                    );
+                }
+                
+                if (typeof style.text == 'undefined') {
+                    return;
+                }
+
+                ctx.save();
+                this.setContext(ctx, style);
+
+                // 设置transform
+                this.updateTransform(ctx);
+
+                if (style.textFont) {
+                    ctx.font = style.textFont;
+                }
+                ctx.textAlign = style.textAlign || 'start';
+                ctx.textBaseline = style.textBaseline || 'middle';
+
+                var text = (style.text + '').split('\n');
+                var lineHeight = area.getTextHeight('国', style.textFont);
+                var rect = this.getRect(style);
+                var x = style.x;
+                var y;
+                if (style.textBaseline == 'top') {
+                    y = rect.y;
+                }
+                else if (style.textBaseline == 'bottom') {
+                    y = rect.y + lineHeight;
+                }
+                else {
+                    y = rect.y + lineHeight / 2;
+                }
+                
+                for (var i = 0, l = text.length; i < l; i++) {
+                    if (style.maxWidth) {
+                        switch (style.brushType) {
+                            case 'fill':
+                                ctx.fillText(
+                                    text[i],
+                                    x, y, style.maxWidth
+                                );
+                                break;
+                            case 'stroke':
+                                ctx.strokeText(
+                                    text[i],
+                                    x, y, style.maxWidth
+                                );
+                                break;
+                            case 'both':
+                                ctx.fillText(
+                                    text[i],
+                                    x, y, style.maxWidth
+                                );
+                                ctx.strokeText(
+                                    text[i],
+                                    x, y, style.maxWidth
+                                );
+                                break;
+                            default:
+                                ctx.fillText(
+                                    text[i],
+                                    x, y, style.maxWidth
+                                );
+                        }
+                    }
+                    else{
+                        switch (style.brushType) {
+                            case 'fill':
+                                ctx.fillText(text[i], x, y);
+                                break;
+                            case 'stroke':
+                                ctx.strokeText(text[i], x, y);
+                                break;
+                            case 'both':
+                                ctx.fillText(text[i], x, y);
+                                ctx.strokeText(text[i], x, y);
+                                break;
+                            default:
+                                ctx.fillText(text[i], x, y);
+                        }
+                    }
+                    y += lineHeight;
+                }
+
+                ctx.restore();
+                return;
+            },
+
+            /**
+             * 返回矩形区域，用于局部刷新和文字定位
+             * @param {Object} style
+             */
+            getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
+                var width = area.getTextWidth(style.text, style.textFont);
+                var height = area.getTextHeight(style.text, style.textFont);
+                
+                var textX = style.x;                 //默认start == left
+                if (style.textAlign == 'end' || style.textAlign == 'right') {
+                    textX -= width;
+                }
+                else if (style.textAlign == 'center') {
+                    textX -= (width / 2);
+                }
+
+                var textY;
+                if (style.textBaseline == 'top') {
+                    textY = style.y;
+                }
+                else if (style.textBaseline == 'bottom') {
+                    textY = style.y - height;
+                }
+                else {
+                    // middle
+                    textY = style.y - height / 2;
+                }
+
+                style.__rect = {
+                    x : textX,
+                    y : textY,
+                    width : width,
+                    height : height
+                };
+                
+                return style.__rect;
+            }
+        };
+
+        require('../tool/util').inherits(Text, Base);
+        return Text;
+    }
+);
+
+/**
+ * zrender
+ *
+ * @author Kener (@Kener-林峰, linzhifeng@baidu.com) , 
+ *         strwind (@劲风FEI, yaofeifei@baidu.com)
+ *
+ * shape类：矩形
+ * 可配图形属性：
+   {
+       // 基础属性
+       shape  : 'rectangle',       // 必须，shape类标识，需要显式指定
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
+       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
+       invisible : {boolean},   // 默认为false，是否可见
+
+       // 样式属性，默认状态样式样式属性
+       style  : {
+           x             : {number},  // 必须，左上角横坐标
+           y             : {number},  // 必须，左上角纵坐标
+           width         : {number},  // 必须，宽度
+           height        : {number},  // 必须，高度
+           radius        : {array},   // 默认为[0]，圆角 
+           brushType     : {string},  // 默认为fill，绘画方式
+                                      // fill(填充) | stroke(描边) | both(填充+描边)
+           color         : {color},   // 默认为'#000'，填充颜色，支持rgba
+           strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
+           lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
+
+           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
+           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
+           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
+           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
+           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
+
+           text          : {string},  // 默认为null，附加文本
+           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
+           textPosition  : {string},  // 默认为top，附加文本位置。
+                                      // inside | left | right | top | bottom
+           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
+                                      // start | end | left | right | center
+           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
+                                      // top | bottom | middle |
+                                      // alphabetic | hanging | ideographic
+           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
+                                      // 'inside' ? '#fff' : color
+       },
+
+       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
+       highlightStyle : {
+           // 同style
+       }
+
+       // 交互属性，详见shape.Base
+
+       // 事件属性，详见shape.Base
+   }
+         例子：
+   {
+       shape  : 'rectangle',
+       id     : '123456',
+       zlevel : 1,
+       style  : {
+           x : 200,
+           y : 100,
+           width : 150,
+           height : 50,
+           color : '#eee',
+           text : 'Baidu'
+       },
+       myName : 'kener',  // 可自带任何有效自定义属性
+
+       clickable : true,
+       onClick : function(eventPacket) {
+           alert(eventPacket.target.myName);
+       }
+   }
+ */
+define(
+    'zrender/shape/Rectangle',['require','./Base','../tool/util'],function (require) {
+        var Base = require('./Base');
+        
+        function Rectangle(options) {
+            Base.call(this, options);
+        }
+
+        Rectangle.prototype =  {
+            type: 'rectangle',
+
+            /**
+             * 绘制圆角矩形
+             * @param {Context2D} ctx Canvas 2D上下文
+             * @param {Object} style 样式
+             */
+            _buildRadiusPath: function(ctx, style) {
+                //左上、右上、右下、左下角的半径依次为r1、r2、r3、r4
+                //r缩写为1         相当于 [1, 1, 1, 1]
+                //r缩写为[1]       相当于 [1, 1, 1, 1]
+                //r缩写为[1, 2]    相当于 [1, 2, 1, 2]
+                //r缩写为[1, 2, 3] 相当于 [1, 2, 3, 2]
+                var x = style.x;
+                var y = style.y;
+                var width = style.width;
+                var height = style.height;
+                var r = style.radius;
+                var r1; 
+                var r2; 
+                var r3; 
+                var r4;
+                  
+                if(typeof r === 'number') {
+                    r1 = r2 = r3 = r4 = r;
+                }
+                else if(r instanceof Array) {
+                    if (r.length === 1) {
+                        r1 = r2 = r3 = r4 = r[0];
+                    }
+                    else if(r.length === 2) {
+                        r1 = r3 = r[0];
+                        r2 = r4 = r[1];
+                    }
+                    else if(r.length === 3) {
+                        r1 = r[0];
+                        r2 = r4 = r[1];
+                        r3 = r[2];
+                    } else {
+                        r1 = r[0];
+                        r2 = r[1];
+                        r3 = r[2];
+                        r4 = r[3];
+                    }
+                } else {
+                    r1 = r2 = r3 = r4 = 0;
+                }
+                ctx.moveTo(x + r1, y);
+                ctx.lineTo(x + width - r2, y);
+                r2 !== 0 && ctx.quadraticCurveTo(
+                    x + width, y, x + width, y + r2
+                );
+                ctx.lineTo(x + width, y + height - r3);
+                r3 !== 0 && ctx.quadraticCurveTo(
+                    x + width, y + height, x + width - r3, y + height
+                );
+                ctx.lineTo(x + r4, y + height);
+                r4 !== 0 && ctx.quadraticCurveTo(
+                    x, y + height, x, y + height - r4
+                );
+                ctx.lineTo(x, y + r1);
+                r1 !== 0 && ctx.quadraticCurveTo(x, y, x + r1, y);
+            },
+            
+            /**
+             * 创建矩形路径
+             * @param {Context2D} ctx Canvas 2D上下文
+             * @param {Object} style 样式
+             */
+            buildPath : function(ctx, style) {
+                if(!style.radius) {
+                    ctx.moveTo(style.x, style.y);
+                    ctx.lineTo(style.x + style.width, style.y);
+                    ctx.lineTo(style.x + style.width, style.y + style.height);
+                    ctx.lineTo(style.x, style.y + style.height);
+                    ctx.lineTo(style.x, style.y);
+                    //ctx.rect(style.x, style.y, style.width, style.height);
+                } else {
+                    this._buildRadiusPath(ctx, style);
+                }
+                return;
+            },
+
+            /**
+             * 返回矩形区域，用于局部刷新和文字定位
+             * @param {Object} style
+             */
+            getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
+                var lineWidth;
+                if (style.brushType == 'stroke' || style.brushType == 'fill') {
+                    lineWidth = style.lineWidth || 1;
+                }
+                else {
+                    lineWidth = 0;
+                }
+                style.__rect = {
+                    x : Math.round(style.x - lineWidth / 2),
+                    y : Math.round(style.y - lineWidth / 2),
+                    width : style.width + lineWidth,
+                    height : style.height + lineWidth
+                };
+                
+                return style.__rect;
+            }
+        };
+
+        require('../tool/util').inherits(Rectangle, Base);
+        return Rectangle;
+    }
+);
+/**
+ * zrender: loading特效类
+ *
+ * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *         errorrik (errorrik@gmail.com)
+ */
+
+define(
+    'zrender/loadingEffect/Base',['require','../tool/util','../shape/Text','../shape/Rectangle'],function(require) {
+        var util = require('../tool/util');
+        var TextShape = require('../shape/Text');
+        var RectangleShape = require('../shape/Rectangle');
+
+
+        var DEFAULT_TEXT = 'Loading...';
+        var DEFAULT_TEXT_FONT = 'normal 16px Arial';
+
+        /**
+         * @constructor
+         * 
+         * @param {Object} options 选项
+         * @param {color} options.backgroundColor 背景颜色
+         * @param {Object} options.textStyle 文字样式，同shape/text.style
+         * @param {number=} options.progress 进度参数，部分特效有用
+         * @param {Object=} options.effect 特效参数，部分特效有用
+         * 
+         * {
+         *     effect,
+         *     //loading话术
+         *     text:'',
+         *     // 水平安放位置，默认为 'center'，可指定x坐标
+         *     x:'center' || 'left' || 'right' || {number},
+         *     // 垂直安放位置，默认为'top'，可指定y坐标
+         *     y:'top' || 'bottom' || {number},
+         *
+         *     textStyle:{
+         *         textFont: 'normal 20px Arial' || {textFont}, //文本字体
+         *         color: {color}
+         *     }
+         * }
+         */
+        function Base(options) {
+            this.setOptions(options);
+        }
+
+        /**
+         * 创建loading文字图形
+         * 
+         * @param {Object} textStyle 文字style，同shape/text.style
+         */
+        Base.prototype.createTextShape = function (textStyle) {
+            return new TextShape({
+                highlightStyle : util.merge(
+                    {
+                        x : this.canvasWidth / 2,
+                        y : this.canvasHeight / 2,
+                        text : DEFAULT_TEXT,
+                        textAlign : 'center',
+                        textBaseline : 'middle',
+                        textFont : DEFAULT_TEXT_FONT,
+                        color: '#333',
+                        brushType : 'fill'
+                    },
+                    textStyle,
+                    true
+                )
+            });
+        };
+        
+        /**
+         * 获取loading背景图形
+         * 
+         * @param {color} color 背景颜色
+         */
+        Base.prototype.createBackgroundShape = function (color) {
+            return new RectangleShape({
+                highlightStyle : {
+                    x : 0,
+                    y : 0,
+                    width : this.canvasWidth,
+                    height : this.canvasHeight,
+                    brushType : 'fill',
+                    color : color
+                }
+            });
+        };
+
+        Base.prototype.start = function (painter) {
+            this.canvasWidth = painter._width;
+            this.canvasHeight = painter._height;
+
+            function addShapeHandle(param) {
+                painter.storage.addHover(param);
+            }
+            function refreshHandle() {
+                painter.refreshHover();
+            }
+            this.loadingTimer = this._start(addShapeHandle, refreshHandle);
+        };
+
+        Base.prototype._start = function (/*addShapeHandle, refreshHandle*/) {
+            return setInterval(function(){}, 10000);
+        };
+
+        Base.prototype.stop = function () {
+            clearInterval(this.loadingTimer);
+        };
+
+        Base.prototype.setOptions = function (options) {
+            this.options = options || {};
+        };
+
+        return Base;
+    }
+);
+
 /**
  * zrender
  *
@@ -7114,7 +6253,7 @@ define('zrender/shape/path',['require','./base','../shape'],function(require) {
    {
        // 基础属性
        shape  : 'image',       // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
        zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
        invisible : {boolean},   // 默认为false，是否可见
 
@@ -7181,28 +6320,31 @@ define('zrender/shape/path',['require','./base','../shape'],function(require) {
    }
  */
 define(
-    'zrender/shape/image',['require','./base','../shape'],function(require) {
-
+    'zrender/shape/Image',['require','./Base','../tool/util'],function (require) {
         var _cache = {};
         var _needsRefresh = [];
         var _refreshTimeout;
 
-        function ZImage() {
-            this.type = 'image';
+        var Base = require('./Base');
+
+        function ZImage(options) {
+            Base.call(this, options);
         }
 
         ZImage.prototype = {
-            brush : function(ctx, e, isHighlight, refresh) {
-                var style = e.style || {};
+            type: 'image',
+            brush : function(ctx, isHighlight, refresh) {
+                var style = this.style || {};
 
                 if (isHighlight) {
                     // 根据style扩展默认高亮样式
                     style = this.getHighlightStyle(
-                        style, e.highlightStyle || {}
+                        style, this.highlightStyle || {}
                     );
                 }
 
                 var image = style.image;
+                var me = this;
 
                 if (typeof(image) === 'string') {
                     var src = image;
@@ -7214,10 +6356,10 @@ define(
                         image.onload = function(){
                             image.onload = null;
                             clearTimeout( _refreshTimeout );
-                            _needsRefresh.push( e );
+                            _needsRefresh.push( me );
                             // 防止因为缓存短时间内触发多次onload事件
                             _refreshTimeout = setTimeout(function(){
-                                refresh( _needsRefresh );
+                                refresh && refresh( _needsRefresh );
                                 // 清空needsRefresh
                                 _needsRefresh = [];
                             }, 10);
@@ -7244,9 +6386,7 @@ define(
                     this.setContext(ctx, style);
 
                     // 设置transform
-                    if (e.__needTransform) {
-                        ctx.transform.apply(ctx,this.updateTransform(e));
-                    }
+                    this.updateTransform(ctx);
 
                     var width = style.width || image.width;
                     var height = style.height || image.height;
@@ -7278,18 +6418,16 @@ define(
                     // 如果没设置宽和高的话自动根据图片宽高设置
                     style.width = width;
                     style.height = height;
-                    e.style.width = width;
-                    e.style.height = height;
+                    this.style.width = width;
+                    this.style.height = height;
 
 
                     if (style.text) {
-                        this.drawText(ctx, style, e.style);
+                        this.drawText(ctx, style, this.style);
                     }
 
                     ctx.restore();
                 }
-
-                return;
             },
 
             /**
@@ -7316,490 +6454,1060 @@ define(
             }
         };
 
-        var base = require('./base');
-        base.derive(ZImage);
-        
-        var shape = require('../shape');
-        shape.define('image', new ZImage());
-
+        require('../tool/util').inherits(ZImage, Base);
         return ZImage;
     }
 );
 /**
- * zrender
+ * Painter绘图模块
  *
- * @author Neil (杨骥, yangji01@baidu.com)
- *
- * shape类：贝塞尔曲线
- * 可配图形属性：
-   {
-       // 基础属性
-       shape  : 'beziercurve',         // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
-       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
-       invisible : {boolean},   // 默认为false，是否可见
-
-       // 样式属性，默认状态样式样式属性
-       style  : {
-           xStart        : {number},  // 必须，起点横坐标
-           yStart        : {number},  // 必须，起点纵坐标
-           cpX1          : {number},  // 必须，第一个关联点横坐标
-           cpY1          : {number},  // 必须，第一个关联点纵坐标
-           cpX2          : {number},  // 可选，第二个关联点横坐标  缺省即为二次贝塞尔曲线
-           cpY2          : {number},  // 可选，第二个关联点纵坐标
-           xEnd          : {number},  // 必须，终点横坐标
-           yEnd          : {number},  // 必须，终点纵坐标
-           strokeColor   : {color},   // 默认为'#000'，线条颜色（轮廓），支持rgba
-
-           lineWidth     : {number},  // 默认为1，线条宽度
-           lineCap       : {string},  // 默认为butt，线帽样式。butt | round | square
-
-           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
-           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
-           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
-           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
-           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
-
-           text          : {string},  // 默认为null，附加文本
-           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
-           textPosition  : {string},  // 默认为end，附加文本位置。
-                                      // inside | start | end
-           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
-                                      // start | end | left | right | center
-           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
-                                      // top | bottom | middle |
-                                      // alphabetic | hanging | ideographic
-           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
-                                      // 'inside' ? '#000' : color
-       },
-
-       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
-       highlightStyle : {
-           // 同style
-       }
-
-       // 交互属性，详见shape.Base
-
-       // 事件属性，详见shape.Base
-   }
-         例子：
-   {
-       shape  : 'beziercurve',
-       id     : '123456',
-       zlevel : 1,
-       style  : {
-           xStart : 100,
-           yStart : 100,
-           xEnd : 200,
-           yEnd : 200,
-           strokeColor : '#eee',
-           lineWidth : 20,
-           text : 'Baidu'
-       },
-       myName : 'kener',  //可自带任何有效自定义属性
-
-       clickable : true,
-       onClick : function(eventPacket) {
-           alert(eventPacket.target.myName);
-       }
-   }
+ * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *         errorrik (errorrik@gmail.com)
  */
+
+
+
 define(
-    'zrender/shape/beziercurve',['require','./base','../shape'],function(require) {
-        function Beziercurve() {
-            this.type = 'beziercurve';
-            this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
-            this.textPosition = 'end';
+    'zrender/Painter',['require','./config','./tool/util','./tool/log','./loadingEffect/Base','./shape/Image'],function (require) {
+        var config = require('./config');
+        var util = require('./tool/util');
+        var log = require('./tool/log');
+        var BaseLoadingEffect = require('./loadingEffect/Base');
+
+        // retina 屏幕优化
+        var devicePixelRatio = window.devicePixelRatio || 1;
+        var vmlCanvasManager = window.G_vmlCanvasManager;
+
+        /**
+         * 返回false的方法，用于避免页面被选中
+         * 
+         * @inner
+         */
+        function returnFalse() {
+            return false;
         }
 
-        Beziercurve.prototype =  {
-            /**
-             * 创建线条路径
-             * @param {Context2D} ctx Canvas 2D上下文
-             * @param {Object} style 样式
-             */
-            buildPath : function(ctx, style) {
-                ctx.moveTo(style.xStart, style.yStart);
-                if (typeof style.cpX2 != 'undefined'
-                    && typeof style.cpY2 != 'undefined'
-                ) {
-                    ctx.bezierCurveTo(
-                        style.cpX1, style.cpY1,
-                        style.cpX2, style.cpY2,
-                        style.xEnd, style.yEnd
+        /**
+         * 什么都不干的空方法
+         * 
+         * @inner
+         */
+        function doNothing() {}
+
+        /**
+         * 绘图类 (V)
+         * 
+         * @param {HTMLElement} root 绘图区域
+         * @param {storage} storage Storage实例
+         */
+        function Painter(root, storage) {
+            this.root = root;
+            this.storage = storage;
+
+            root.innerHTML = '';
+            this._width = this._getWidth(); // 宽，缓存记录
+            this._height = this._getHeight(); // 高，缓存记录
+
+            var domRoot = document.createElement('div');
+            this._domRoot = domRoot;
+
+            //domRoot.onselectstart = returnFalse; // 避免页面选中的尴尬
+            domRoot.style.position = 'relative';
+            domRoot.style.overflow = 'hidden';
+            domRoot.style.width = this._width + 'px';
+            domRoot.style.height = this._height + 'px';
+            root.appendChild(domRoot);
+
+            this._domList = {};       //canvas dom元素
+            this._ctxList = {};       //canvas 2D context对象，与domList对应
+            this._domListBack = {};
+            this._ctxListBack = {};
+            
+           
+            this._zLevelConfig = {}; // 每个zLevel 的配置，@config clearColor
+            this._maxZlevel = storage.getMaxZlevel(); //最大zlevel，缓存记录
+            // this._loadingTimer 
+
+            this._loadingEffect = new BaseLoadingEffect({});
+            this.shapeToImage = this._createShapeToImageProcessor();
+
+            // 创建各层canvas
+            // 背景
+            this._domList.bg = createDom('bg', 'div', this);
+            domRoot.appendChild(this._domList.bg);
+
+            var canvasElem;
+            var canvasCtx;
+
+            // 实体
+            for (var i = 0; i <= this._maxZlevel; i++) {
+                canvasElem = createDom(i, 'canvas', this);
+                domRoot.appendChild(canvasElem);
+                this._domList[i] = canvasElem;
+                vmlCanvasManager && vmlCanvasManager.initElement(canvasElem);
+
+                this._ctxList[i] = canvasCtx = canvasElem.getContext('2d');
+                if (devicePixelRatio != 1) { 
+                    canvasCtx.scale(devicePixelRatio, devicePixelRatio);
+                }
+            }
+
+            // 高亮
+            canvasElem = createDom('hover', 'canvas', this);
+            canvasElem.id = '_zrender_hover_';
+            domRoot.appendChild(canvasElem);
+            this._domList.hover = canvasElem;
+            vmlCanvasManager && vmlCanvasManager.initElement(canvasElem);
+            this._domList.hover.onselectstart = returnFalse;
+            this._ctxList.hover = canvasCtx = canvasElem.getContext('2d');
+            if (devicePixelRatio != 1) {
+                canvasCtx.scale(devicePixelRatio, devicePixelRatio);
+            }
+        }
+
+        /**
+         * 首次绘图，创建各种dom和context
+         * 
+         * @param {Function=} callback 绘画结束后的回调函数
+         */
+        Painter.prototype.render = function (callback) {
+            if (this.isLoading()) {
+                this.hideLoading();
+            }
+
+            //检查_maxZlevel是否变大，如是则同步创建需要的Canvas
+            this._syncMaxZlevelCanvase();
+            
+            //清空已有内容，render默认为首次渲染
+            this.clear();
+
+            //升序遍历，shape上的zlevel指定绘画图层的z轴层叠
+            this.storage.iterShape(
+                this._brush({ all : true }),
+                { normal: 'up' }
+            );
+
+            // update到最新则清空标志位
+            this.storage.clearChangedZlevel();
+
+            if (typeof callback == 'function') {
+                callback();
+            }
+
+            return this;
+        };
+
+        /**
+         * 刷新
+         * 
+         * @param {Function=} callback 刷新结束后的回调函数
+         */
+        Painter.prototype.refresh = function (callback) {
+            //检查_maxZlevel是否变大，如是则同步创建需要的Canvas
+            this._syncMaxZlevelCanvase();
+
+            //仅更新有修改的canvas
+            var changedZlevel = this.storage.getChangedZlevel();
+            //擦除有修改的canvas
+            if (changedZlevel.all){
+                this.clear();
+            }
+            else {
+                for (var k in changedZlevel) {
+                    if (this._ctxList[k]) {
+                        this.clearLayer(k);
+                    }
+                }
+            }
+            // 重绘内容，升序遍历，shape上的zlevel指定绘画图层的z轴层叠
+            this.storage.iterShape(
+                this._brush(changedZlevel),
+                { normal: 'up'}
+            );
+
+            // update到最新则清空标志位
+            this.storage.clearChangedZlevel();
+
+            if (typeof callback == 'function') {
+                callback();
+            }
+
+            return this;
+        };
+
+        /**
+         * 视图更新
+         * 
+         * @param {Array} shapeList 需要更新的图形元素列表
+         * @param {Function} callback  视图更新后回调函数
+         */
+        Painter.prototype.update = function (shapeList, callback) {
+            for (var i = 0, l = shapeList.length; i < l; i++) {
+                var shape = shapeList[i];
+                this.storage.mod(shape.id, shape);
+            }
+
+            this.refresh(callback);
+            return this;
+        };
+
+        /**
+         * 设置loading特效
+         * 
+         * @param {Object} loadingEffect loading特效
+         * @return {Painter}
+         */
+        Painter.prototype.setLoadingEffect = function (loadingEffect) {
+            this._loadingEffect = loadingEffect;
+            return this;
+        };
+
+        /**
+         * 清除hover层外所有内容
+         */
+        Painter.prototype.clear = function () {
+            for (var k in this._ctxList) {
+                if (k == 'hover') {
+                    continue;
+                }
+
+                this.clearLayer(k);
+            }
+
+            return this;
+        };
+
+        /**
+         * 修改指定zlevel的绘制参数
+         */
+        Painter.prototype.modLayer = function (zLevel, config) {
+            if (config) {
+                var zLevelConfig = this._zLevelConfig;
+
+                if (!zLevelConfig[zLevel]) {
+                    zLevelConfig[zLevel] = {};
+                }
+
+                util.merge(zLevelConfig[zLevel], config, true);
+            }
+        };
+
+        /**
+         * 刷新hover层
+         */
+        Painter.prototype.refreshHover = function () {
+            var me = this;
+            function brushHover(e) {
+                me._brushHover(e);
+            }
+            this.clearHover();
+            this.storage.iterShape(brushHover, { hover: true });
+            this.storage.delHover();
+
+            return this;
+        };
+
+        /**
+         * 清除hover层所有内容
+         */
+        Painter.prototype.clearHover = function () {
+            var hover = this._ctxList && this._ctxList.hover;
+            hover && hover.clearRect(
+                0, 0, 
+                this._width * devicePixelRatio, 
+                this._height * devicePixelRatio
+            );
+
+            return this;
+        };
+
+        /**
+         * 显示loading
+         * 
+         * @param {Object=} loadingEffect loading效果对象
+         */
+        Painter.prototype.showLoading = function (loadingEffect) {
+            this._loadingEffect && this._loadingEffect.stop();
+            loadingEffect && this.setLoadingEffect(loadingEffect);
+            this._loadingEffect.start(this);
+            this.loading = true;
+
+            return this;
+        };
+
+        /**
+         * loading结束
+         */
+        Painter.prototype.hideLoading = function () {
+            this._loadingEffect.stop();
+
+            this.clearHover();
+            this.loading = false;
+            return this;
+        };
+
+        /**
+         * loading结束判断
+         */
+        Painter.prototype.isLoading = function () {
+            return this.loading;
+        };
+
+        /**
+         * 区域大小变化后重绘
+         */
+        Painter.prototype.resize = function () {
+            var domRoot = this._domRoot;
+            domRoot.style.display = 'none';
+
+            var width = this._getWidth();
+            var height = this._getHeight();
+
+            domRoot.style.display = '';
+
+            // 优化没有实际改变的resize
+            if (this._width != width || height != this._height){
+                this._width = width;
+                this._height = height;
+
+                domRoot.style.width = width + 'px';
+                domRoot.style.height = height + 'px';
+
+                for (var key in this._domList) {
+                    var dom = this._domList[key];
+
+                    dom.setAttribute('width', width);
+                    dom.setAttribute('height', height);
+                    dom.style.width = width + 'px';
+                    dom.style.height = height + 'px';
+                }
+
+                this.storage.setChangedZlevle('all');
+                this.refresh();
+            }
+
+            return this;
+        };
+
+        /**
+         * 清除单独的一个层
+         */
+        Painter.prototype.clearLayer = function (k) {
+            if (!this._ctxList[k]) {
+                return;
+            }
+            var zLevelConfigK = this._zLevelConfig[k];
+
+            if (zLevelConfigK) {
+                var haveClearColor = typeof(zLevelConfigK.clearColor) !== 'undefined';
+                var haveMotionBLur = zLevelConfigK.motionBlur;
+                var lastFrameAlpha = zLevelConfigK.lastFrameAlpha;
+                if (typeof(lastFrameAlpha) == 'undefined') {
+                    lastFrameAlpha = 0.7;
+                }
+
+                var canvasElem = this._domList[k];
+                if (haveMotionBLur) {
+                    if (typeof this._domListBack[k] === 'undefined') {
+                        var backDom = createDom('back-' + k, 'canvas', this);
+                        backDom.width = canvasElem.width;
+                        backDom.height = canvasElem.height;
+                        backDom.style.width = canvasElem.style.width;
+                        backDom.style.height = canvasElem.style.height;
+                        this._domListBack[k] = backDom;
+                        this._ctxListBack[k] = backDom.getContext('2d');
+                        devicePixelRatio != 1
+                            && this._ctxListBack[k].scale(
+                                   devicePixelRatio, devicePixelRatio
+                               );
+                    }
+                    this._ctxListBack[k].globalCompositeOperation = 'copy';
+                    this._ctxListBack[k].drawImage(
+                        canvasElem, 0, 0,
+                        canvasElem.width / devicePixelRatio,
+                        canvasElem.height / devicePixelRatio
                     );
                 }
+
+                var canvasCtx = this._ctxList[k];
+                if (haveClearColor) {
+                    canvasCtx.save();
+                    canvasCtx.fillStyle = zLevelConfigK.clearColor;
+                    canvasCtx.fillRect(
+                        0, 0,
+                        this._width * devicePixelRatio, 
+                        this._height * devicePixelRatio
+                    );
+                    canvasCtx.restore();
+                }
                 else {
-                    ctx.quadraticCurveTo(
-                        style.cpX1, style.cpY1,
-                        style.xEnd, style.yEnd
+                    canvasCtx.clearRect(
+                        0, 0, 
+                        this._width * devicePixelRatio, 
+                        this._height * devicePixelRatio
                     );
                 }
 
-            },
+                if (haveMotionBLur) {
+                    var backDom = this._domListBack[k];
+                    canvasCtx.save();
+                    canvasCtx.globalAlpha = lastFrameAlpha;
+                    canvasCtx.drawImage(
+                        backDom, 0, 0,
+                        backDom.width / devicePixelRatio,
+                        backDom.height / devicePixelRatio
+                    );
+                    canvasCtx.restore();
+                }
+            }
+            else {
+                this._ctxList[k].clearRect(
+                    0, 0, 
+                    this._width * devicePixelRatio, 
+                    this._height * devicePixelRatio
+                );
+            }
+        };
 
-            /**
-             * 返回矩形区域，用于局部刷新和文字定位
-             * @param {Object} style
-             */
-            getRect : function(style) {
-                var _minX = Math.min(style.xStart, style.xEnd, style.cpX1);
-                var _minY = Math.min(style.yStart, style.yEnd, style.cpY1);
-                var _maxX = Math.max(style.xStart, style.xEnd, style.cpX1);
-                var _maxY = Math.max(style.yStart, style.yEnd, style.cpY1);
-                var _x2 = style.cpX2;
-                var _y2 = style.cpY2;
+        /**
+         * 释放
+         */
+        Painter.prototype.dispose = function () {
+            if (this.isLoading()) {
+                this.hideLoading();
+            }
 
-                if (typeof _x2 != 'undefined'
-                    && typeof _y2 != 'undefined'
+            this.root.innerHTML = '';
+
+            this.root =
+            this.storage =
+
+            this._domRoot = 
+            this._domList = 
+            this._ctxList = 
+
+            this._ctxListBack = 
+            this._domListBack = null;
+        };
+
+        Painter.prototype.getDomHover = function () {
+            return this._domList.hover;
+        };
+
+        Painter.prototype.toDataURL = function (type, backgroundColor, args) {
+            if (vmlCanvasManager) {
+                return null;
+            }
+
+            var imageDom = createDom('image', 'canvas', this);
+            this._domList.bg.appendChild(imageDom);
+            var ctx = imageDom.getContext('2d');
+            devicePixelRatio != 1 
+            && ctx.scale(devicePixelRatio, devicePixelRatio);
+            
+            ctx.fillStyle = backgroundColor || '#fff';
+            ctx.rect(
+                0, 0, 
+                this._width * devicePixelRatio,
+                this._height * devicePixelRatio
+            );
+            ctx.fill();
+            
+            //升序遍历，shape上的zlevel指定绘画图层的z轴层叠
+            var me = this;
+            function updatePainter(shapeList, callback) {
+                me.update(shapeList, callback);
+            }
+            this.storage.iterShape(
+                function (shape) {
+                    if (!shape.invisible) {
+                        if (!shape.onbrush //没有onbrush
+                            //有onbrush并且调用执行返回false或undefined则继续粉刷
+                            || (shape.onbrush && !shape.onbrush(ctx, false))
+                        ) {
+                            if (config.catchBrushException) {
+                                try {
+                                    shape.brush(ctx, false, updatePainter);
+                                }
+                                catch(error) {
+                                    log(
+                                        error,
+                                        'brush error of ' + shape.type,
+                                        shape
+                                    );
+                                }
+                            }
+                            else {
+                                shape.brush(ctx, false, updatePainter);
+                            }
+                        }
+                    }
+                },
+                { normal: 'up' }
+            );
+            var image = imageDom.toDataURL(type, args); 
+            ctx = null;
+            this._domList.bg.removeChild(imageDom);
+            return image;
+        };
+
+        /**
+         * 获取绘图区域宽度
+         */
+        Painter.prototype.getWidth = function () {
+            return this._width;
+        };
+
+        /**
+         * 获取绘图区域高度
+         */
+        Painter.prototype.getHeight = function () {
+            return this._height;
+        };
+
+        Painter.prototype._getWidth = function() {
+            var root = this.root;
+            var stl = root.currentStyle
+                      || document.defaultView.getComputedStyle(root);
+
+            return ((root.clientWidth || parseInt(stl.width, 10))
+                    - parseInt(stl.paddingLeft, 10) // 请原谅我这比较粗暴
+                    - parseInt(stl.paddingRight, 10)).toFixed(0) - 0;
+        };
+
+        Painter.prototype._getHeight = function () {
+            var root = this.root;
+            var stl = root.currentStyle
+                      || document.defaultView.getComputedStyle(root);
+
+            return ((root.clientHeight || parseInt(stl.height, 10))
+                    - parseInt(stl.paddingTop, 10) // 请原谅我这比较粗暴
+                    - parseInt(stl.paddingBottom, 10)).toFixed(0) - 0;
+        };
+
+        /**
+         * 检查_maxZlevel是否变大，如是则同步创建需要的Canvas
+         * 
+         * @private
+         */
+        Painter.prototype._syncMaxZlevelCanvase = function () {
+            var curMaxZlevel = this.storage.getMaxZlevel();
+            if (this._maxZlevel < curMaxZlevel) {
+                //实体
+                for (var i = this._maxZlevel + 1; i <= curMaxZlevel; i++) {
+                    var canvasElem = createDom(i, 'canvas', this);
+                    this._domList[i] = canvasElem;
+                    this._domRoot.insertBefore(canvasElem, this._domList.hover);
+                    if (vmlCanvasManager) {
+                        vmlCanvasManager.initElement(canvasElem);
+                    }
+
+                    var canvasCtx = canvasElem.getContext('2d');
+                    this._ctxList[i] = canvasCtx;
+                    if (devicePixelRatio != 1) { 
+                        canvasCtx.scale(devicePixelRatio, devicePixelRatio);
+                    }
+                }
+                this._maxZlevel = curMaxZlevel;
+            }
+        };
+
+        /**
+         * 刷画图形
+         * 
+         * @private
+         * @param {Object} changedZlevel 需要更新的zlevel索引
+         */
+        Painter.prototype._brush = function (changedZlevel) {
+            var ctxList = this._ctxList;
+            var me = this;
+            function updatePainter(shapeList, callback) {
+                me.update(shapeList, callback);
+            }
+
+            return function(shape) {
+                if ((changedZlevel.all || changedZlevel[shape.zlevel])
+                    && !shape.invisible
                 ) {
-                    _minX = Math.min(_minX, _x2);
-                    _minY = Math.min(_minY, _y2);
-                    _maxX = Math.max(_maxX, _x2);
-                    _maxY = Math.max(_maxY, _y2);
+                    var ctx = ctxList[shape.zlevel];
+                    if (ctx) {
+                        if (!shape.onbrush //没有onbrush
+                            //有onbrush并且调用执行返回false或undefined则继续粉刷
+                            || (shape.onbrush && !shape.onbrush(ctx, false))
+                        ) {
+                            if (config.catchBrushException) {
+                                try {
+                                    shape.brush(ctx, false, updatePainter);
+                                }
+                                catch(error) {
+                                    log(
+                                        error,
+                                        'brush error of ' + shape.type,
+                                        shape
+                                    );
+                                }
+                            }
+                            else {
+                                shape.brush(ctx, false, updatePainter);
+                            }
+                        }
+                    }
+                    else {
+                        log(
+                            'can not find the specific zlevel canvas!'
+                        );
+                    }
                 }
-
-                var lineWidth = style.lineWidth || 1;
-                return {
-                    x : _minX - lineWidth,
-                    y : _minY - lineWidth,
-                    width : _maxX - _minX + lineWidth,
-                    height : _maxY - _minY + lineWidth
-                };
-            }
+            };
         };
 
-        var base = require('./base');
-        base.derive(Beziercurve);
-        
-        var shape = require('../shape');
-        shape.define('beziercurve', new Beziercurve());
+        /**
+         * 鼠标悬浮刷画
+         */
+        Painter.prototype._brushHover = function (shape) {
+            var ctx = this._ctxList.hover;
+            var me = this;
+            function updatePainter(shapeList, callback) {
+                me.update(shapeList, callback);
+            }
 
-        return Beziercurve;
-    }
-);
-/**
- * zrender
- *
- * @author sushuang (宿爽, sushuang@baidu.com)
- *
- * shape类：n角星（n>3）
- * 可配图形属性：
-   {
-       // 基础属性
-       shape  : 'star',       // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
-       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
-       invisible : {boolean},   // 默认为false，是否可见
-
-       // 样式属性，默认状态样式样式属性
-       style  : {
-           x             : {number},  // 必须，n角星外接圆心横坐标
-           y             : {number},  // 必须，n角星外接圆心纵坐标
-           r             : {number},  // 必须，n角星外接圆半径
-           r0            : {number},  // n角星内部顶点（凹点）的外接圆半径，
-                                      // 如果不指定此参数，则自动计算：取相隔外部顶点连线的交点作内部顶点
-           n             : {number},  // 必须，指明几角星
-           brushType     : {string},  // 默认为fill，绘画方式
-                                      // fill(填充) | stroke(描边) | both(填充+描边)
-           color         : {color},   // 默认为'#000'，填充颜色，支持rgba
-           strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
-           lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
-           lineJoin      : {string},  // 默认为miter，线段连接样式。miter | round | bevel
-
-           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
-           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
-           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
-           shadowOffsetY : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
-
-           text          : {string},  // 默认为null，附加文本
-           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
-           textPosition  : {string},  // 默认为outside，附加文本位置。
-                                      // outside | inside
-           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
-                                      // start | end | left | right | center
-           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
-                                      // top | bottom | middle |
-                                      // alphabetic | hanging | ideographic
-           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
-                                      // 'inside' ? '#fff' : color
-       },
-
-       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
-       highlightStyle : {
-           // 同style
-       }
-
-       // 交互属性，详见shape.Base
-
-       // 事件属性，详见shape.Base
-   }
-         例子：
-   {
-       shape  : 'star',
-       id     : '123456',
-       zlevel : 1,
-       style  : {
-           x : 200,
-           y : 100,
-           r : 150,
-           n : 5,
-           color : '#eee'
-       },
-       myName : 'kener',   // 可自带任何有效自定义属性
-
-       clickable : true,
-       onClick : function(eventPacket) {
-           alert(eventPacket.target.myName);
-       }
-   }
- */
-define(
-    'zrender/shape/star',['require','../tool/math','./base','../shape'],function(require) {
-
-        var math = require('../tool/math');
-        var sin = math.sin;
-        var cos = math.cos;
-        var PI = Math.PI;
-
-        function Star() {
-            this.type = 'heart';
-        }
-
-        Star.prototype = {
-            /**
-             * 创建n角星（n>3）路径
-             * @param {Context2D} ctx Canvas 2D上下文
-             * @param {Object} style 样式
-             */
-            buildPath : function(ctx, style) {
-                var n = style.n;
-                if (!n || n < 2) { return; }
-
-                var x = style.x;
-                var y = style.y;
-                var r = style.r;
-                var r0 = style.r0;
-
-                // 如果未指定内部顶点外接圆半径，则自动计算
-                if (r0 == null) {
-                    r0 = n > 4
-                        // 相隔的外部顶点的连线的交点，
-                        // 被取为内部交点，以此计算r0
-                        ? r * cos(2 * PI / n) / cos(PI / n)
-                        // 二三四角星的特殊处理
-                        : r / 3;
-                }
-
-                var dStep = PI / n;
-                var deg = -PI / 2;
-                var xStart = x + r * cos(deg);
-                var yStart = y + r * sin(deg);
-                deg += dStep;
-
-                // 记录边界点，用于判断inside
-                var pointList = style.pointList = [];
-                pointList.push([xStart, yStart]);
-                for (var i = 0, end = n * 2 - 1, ri; i < end; i ++) {
-                    ri = i % 2 === 0 ? r0 : r;
-                    pointList.push([x + ri * cos(deg), y + ri * sin(deg)]);
-                    deg += dStep;
-                }
-                pointList.push([xStart, yStart]);
-
-                // 绘制
-                ctx.moveTo(pointList[0][0], pointList[0][1]);
-                for (var i = 0; i < pointList.length; i ++) {
-                    ctx.lineTo(pointList[i][0], pointList[i][1]);
-                }
-
-                return;
-            },
-
-            /**
-             * 返回矩形区域，用于局部刷新和文字定位
-             * @param {Object} style
-             */
-            getRect : function(style) {
-                var lineWidth;
-                if (style.brushType == 'stroke' || style.brushType == 'fill') {
-                    lineWidth = style.lineWidth || 1;
+            if (!shape.onbrush //没有onbrush
+                //有onbrush并且调用执行返回false或undefined则继续粉刷
+                || (shape.onbrush && !shape.onbrush(ctx, true))
+            ) {
+                // Retina 优化
+                if (config.catchBrushException) {
+                    try {
+                        shape.brush(ctx, true, updatePainter);
+                    }
+                    catch(error) {
+                        log(
+                            error, 'hoverBrush error of ' + shape.type, shape
+                        );
+                    }
                 }
                 else {
-                    lineWidth = 0;
+                    shape.brush(ctx, true, updatePainter);
                 }
-                return {
-                    x : Math.round(style.x - style.r - lineWidth / 2),
-                    y : Math.round(style.y - style.r - lineWidth / 2),
-                    width : style.r * 2 + lineWidth,
-                    height : style.r * 2 + lineWidth
-                };
             }
         };
 
-        var base = require('./base');
-        base.derive(Star);
-        
-        var shape = require('../shape');
-        shape.define('star', new Star());
+        Painter.prototype._shapeToImage = function (
+            id, shape, width, height,
+            canvas, ctx, devicePixelRatio
+        ) {
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            canvas.setAttribute('width', width * devicePixelRatio);
+            canvas.setAttribute('height', height * devicePixelRatio);
 
-        return Star;
-    }
-);
-/**
- * zrender
- *
- * @author sushuang (宿爽, sushuang@baidu.com)
- *
- * shape类：正n边形（n>=3）
- * 可配图形属性：
-   {
-       // 基础属性
-       shape  : 'isogon',       // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过zrender实例方法newShapeId生成
-       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
-       invisible : {boolean},   // 默认为false，是否可见
+            ctx.clearRect(0, 0, width * devicePixelRatio, height * devicePixelRatio);
 
-       // 样式属性，默认状态样式样式属性
-       style  : {
-           x             : {number},  // 必须，正n边形外接圆心横坐标
-           y             : {number},  // 必须，正n边形外接圆心纵坐标
-           r             : {number},  // 必须，正n边形外接圆半径
-           n             : {number},  // 必须，指明正几边形
-           brushType     : {string},  // 默认为fill，绘画方式
-                                      // fill(填充) | stroke(描边) | both(填充+描边)
-           color         : {color},   // 默认为'#000'，填充颜色，支持rgba
-           strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
-           lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
-           lineJoin      : {string},  // 默认为miter，线段连接样式。miter | round | bevel
+            var shapeTransform = {
+                position : shape.position,
+                rotation : shape.rotation,
+                scale : shape.scale
+            };
+            shape.position = [0, 0, 0];
+            shape.rotation = 0;
+            shape.scale = [1, 1];
+            if (shape) {
+                shape.brush(ctx, false);
+            }
 
-           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
-           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
-           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
-           shadowOffsetY : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
+            var ImageShape = require( './shape/Image' );
+            var imgShape = new ImageShape({
+                id : id,
+                style : {
+                    x : 0,
+                    y : 0,
+                    // TODO 直接使用canvas而不是通过base64
+                    image : canvas.toDataURL()
+                }
+            });
 
-           text          : {string},  // 默认为null，附加文本
-           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
-           textPosition  : {string},  // 默认为outside，附加文本位置。
-                                      // outside | inside
-           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
-                                      // start | end | left | right | center
-           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
-                                      // top | bottom | middle |
-                                      // alphabetic | hanging | ideographic
-           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
-                                      // 'inside' ? '#fff' : color
-       },
+            if (shapeTransform.position != null) {
+                imgShape.position = shape.position = shapeTransform.position;
+            }
 
-       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
-       highlightStyle : {
-           // 同style
-       }
+            if (shapeTransform.rotation != null) {
+                imgShape.rotation = shape.rotation = shapeTransform.rotation;
+            }
 
-       // 交互属性，详见shape.Base
+            if (shapeTransform.scale != null) {
+                imgShape.scale = shape.scale = shapeTransform.scale;
+            }
 
-       // 事件属性，详见shape.Base
-   }
-         例子：
-   {
-       shape  : 'isogon',
-       id     : '123456',
-       zlevel : 1,
-       style  : {
-           x : 400,
-           y : 100,
-           r : 150,
-           n : 7,
-           color : '#eee'
-       },
-       myName : 'kener',   // 可自带任何有效自定义属性
+            return imgShape;
+        };
 
-       clickable : true,
-       onClick : function(eventPacket) {
-           alert(eventPacket.target.myName);
-       }
-   }
- */
-define(
-    'zrender/shape/isogon',['require','../tool/math','./base','../shape'],function(require) {
+        Painter.prototype._createShapeToImageProcessor = function () {
+            if (vmlCanvasManager) {
+                return doNothing;
+            }
 
-        var math = require('../tool/math');
-        var sin = math.sin;
-        var cos = math.cos;
-        var PI = Math.PI;
+            var painter = this;
+            var canvas = document.createElement('canvas');
+            var ctx = canvas.getContext('2d');
+            var devicePixelRatio = window.devicePixelRatio || 1;
+            
+            return function (id, e, width, height) {
+                return painter._shapeToImage(
+                    id, e, width, height,
+                    canvas, ctx, devicePixelRatio
+                );
+            };
+        };
 
-        function Isogon() {
-            this.type = 'isogon';
+        /**
+         * 创建dom
+         * 
+         * @inner
+         * @param {string} id dom id 待用
+         * @param {string} type dom type，such as canvas, div etc.
+         * @param {Painter} painter painter instance
+         */
+        function createDom(id, type, painter) {
+            var newDom = document.createElement(type);
+            var width = painter._width;
+            var height = painter._height;
+
+            // 没append呢，请原谅我这样写，清晰~
+            newDom.style.position = 'absolute';
+            newDom.style.left = 0;
+            newDom.style.top = 0;
+            newDom.style.width = width + 'px';
+            newDom.style.height = height + 'px';
+            newDom.setAttribute('width', width * devicePixelRatio);
+            newDom.setAttribute('height', height * devicePixelRatio);
+
+            // id不作为索引用，避免可能造成的重名，定义为私有属性
+            newDom.setAttribute('data-zr-dom-id', id);
+            return newDom;
         }
 
-        Isogon.prototype = {
-            /**
-             * 创建n角星（n>=3）路径
-             * @param {Context2D} ctx Canvas 2D上下文
-             * @param {Object} style 样式
-             */
-            buildPath : function(ctx, style) {
-                var n = style.n;
-                if (!n || n < 2) { return; }
-
-                var x = style.x;
-                var y = style.y;
-                var r = style.r;
-
-                var dStep = 2 * PI / n;
-                var deg = -PI / 2;
-                var xStart = x + r * cos(deg);
-                var yStart = y + r * sin(deg);
-                deg += dStep;
-
-                // 记录边界点，用于判断insight
-                var pointList = style.pointList = [];
-                pointList.push([xStart, yStart]);
-                for (var i = 0, end = n - 1; i < end; i ++) {
-                    pointList.push([x + r * cos(deg), y + r * sin(deg)]);
-                    deg += dStep;
-                }
-                pointList.push([xStart, yStart]);
-
-                // 绘制
-                ctx.moveTo(pointList[0][0], pointList[0][1]);
-                for (var i = 0; i < pointList.length; i ++) {
-                    ctx.lineTo(pointList[i][0], pointList[i][1]);
-                }
-
-                return;
-            },
-
-            /**
-             * 返回矩形区域，用于局部刷新和文字定位
-             * @param {Object} style
-             */
-            getRect : function(style) {
-                var lineWidth;
-                if (style.brushType == 'stroke' || style.brushType == 'fill') {
-                    lineWidth = style.lineWidth || 1;
-                }
-                else {
-                    lineWidth = 0;
-                }
-                return {
-                    x : Math.round(style.x - style.r - lineWidth / 2),
-                    y : Math.round(style.y - style.r - lineWidth / 2),
-                    width : style.r * 2 + lineWidth,
-                    height : style.r * 2 + lineWidth
-                };
-            }
-        };
-
-        var base = require('./base');
-        base.derive(Isogon);
-        
-        var shape = require('../shape');
-        shape.define('isogon', new Isogon());
-
-        return Isogon;
+        return Painter;
     }
 );
+
+/**
+ * Storage内容仓库模块
+ *
+ * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *         errorrik (errorrik@gmail.com)
+ */
+
+
+define(
+    'zrender/Storage',['require','./tool/util','./tool/log','./config'],function (require) {
+        var util = require('./tool/util');
+        var log = require('./tool/log');
+        var config = require('./config');
+
+        /**
+         * 内容仓库 (M)
+         * 
+         */
+        function Storage() {
+            // 所有常规形状，id索引的map
+            this._elements = {};
+
+            // 所有形状的z轴方向排列，提高遍历性能，zElements[0]的形状在zElements[1]形状下方
+            this._zElements = [];
+
+            // 高亮层形状，不稳定，动态增删，数组位置也是z轴方向，靠前显示在下方
+            this._hoverElements = [];
+
+            // 最大zlevel
+            this._maxZlevel = 0; 
+
+            // 有数据改变的zlevel
+            this._changedZlevel = {};
+        }
+
+        /**
+         * 遍历迭代器
+         * 
+         * @param {Function} fun 迭代回调函数，return true终止迭代
+         * @param {Object=} option 迭代参数，缺省为仅降序遍历常规形状
+         *     hover : true 是否迭代高亮层数据
+         *     normal : 'down' | 'up' | 'free' 是否迭代常规数据，迭代时是否指定及z轴顺序
+         */
+        Storage.prototype.iterShape = function (fun, option) {
+            if (!option) {
+                option = {
+                    hover: false,
+                    normal: 'down'
+                };
+            }
+            if (option.hover) {
+                //高亮层数据遍历
+                for (var i = 0, l = this._hoverElements.length; i < l; i++) {
+                    if (fun(this._hoverElements[i])) {
+                        return this;
+                    }
+                }
+            }
+
+            var zlist;
+            var len;
+            if (typeof option.normal != 'undefined') {
+                //z轴遍历: 'down' | 'up' | 'free'
+                switch (option.normal) {
+                    case 'down':
+                        // 降序遍历，高层优先
+                        var l = this._zElements.length;
+                        while (l--) {
+                            zlist = this._zElements[l];
+                            if (zlist) {
+                                len = zlist.length;
+                                while (len--) {
+                                    if (fun(zlist[len])) {
+                                        return this;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    case 'up':
+                        //升序遍历，底层优先
+                        for (var i = 0, l = this._zElements.length; i < l; i++) {
+                            zlist = this._zElements[i];
+                            if (zlist) {
+                                len = zlist.length;
+                                for (var k = 0; k < len; k++) {
+                                    if (fun(zlist[k])) {
+                                        return this;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    // case 'free':
+                    default:
+                        //无序遍历
+                        for (var i in this._elements) {
+                            if (fun(this._elements[i])) {
+                                return this;
+                            }
+                        }
+                        break;
+                }
+            }
+
+            return this;
+        };
+
+        /**
+         * 修改
+         * 
+         * @param {string} idx 唯一标识
+         * @param {Object} params 参数
+         */
+        Storage.prototype.mod = function (shapeId, params) {
+            var shape = this._elements[shapeId];
+            if (shape) {
+                shape.updateNeedTransform();
+                shape.style.__rect = null;
+
+                this._changedZlevel[shape.zlevel] = true;    // 可能修改前后不在一层
+                if (params) {
+                    util.merge(shape, params, true);
+                }
+                
+                this._changedZlevel[shape.zlevel] = true;    // 可能修改前后不在一层
+                this._maxZlevel = Math.max(this._maxZlevel, shape.zlevel);
+            }
+
+            return this;
+        };
+
+        /**
+         * 常规形状位置漂移，形状自身定义漂移函数
+         * 
+         * @param {string} idx 形状唯一标识
+         */
+        Storage.prototype.drift = function (shapeId, dx, dy) {
+            var shape = this._elements[shapeId];
+
+            if (shape) {
+                shape.needTransform = true;
+                if (!shape.ondrift //ondrift
+                    //有onbrush并且调用执行返回false或undefined则继续
+                    || (shape.ondrift && !shape.ondrift(dx, dy))
+                ) {
+                    if (config.catchBrushException) {
+                        try {
+                            shape.drift(dx, dy);
+                        }
+                        catch(error) {
+                            log(error, 'drift error of ' + shape.type, shape);
+                        }
+                    }
+                    else {
+                        shape.drift(dx, dy);
+                    }
+                }
+
+                this._changedZlevel[shape.zlevel] = true;
+            }
+
+            return this;
+        };
+
+        /**
+         * 添加高亮层数据
+         * 
+         * @param {Object} params 参数
+         */
+        Storage.prototype.addHover = function (params) {
+            if ((params.rotation && Math.abs(params.rotation[0]) > 0.0001)
+                || (params.position
+                    && (Math.abs(params.position[0]) > 0.0001
+                        || Math.abs(params.position[1]) > 0.0001))
+                || (params.scale
+                    && (Math.abs(params.scale[0] - 1) > 0.0001
+                    || Math.abs(params.scale[1] - 1) > 0.0001))
+            ) {
+                params.needTransform = true;
+            }
+            else {
+                params.needTransform = false;
+            }
+
+            this._hoverElements.push(params);
+            return this;
+        };
+
+        /**
+         * 删除高亮层数据
+         */
+        Storage.prototype.delHover = function () {
+            this._hoverElements = [];
+            return this;
+        };
+
+        Storage.prototype.hasHoverShape = function () {
+            return this._hoverElements.length > 0;
+        };
+
+        /**
+         * 添加
+         * 
+         * @param {Shape} shape 参数
+         */
+        Storage.prototype.add = function (shape) {
+            shape.updateNeedTransform();
+            shape.style.__rect = null;
+            this._elements[shape.id] = shape;
+            this._zElements[shape.zlevel] = this._zElements[shape.zlevel] || [];
+            this._zElements[shape.zlevel].push(shape);
+
+            this._maxZlevel = Math.max(this._maxZlevel, shape.zlevel);
+            this._changedZlevel[shape.zlevel] = true;
+
+            return this;
+        };
+
+        /**
+         * 根据指定的shapeId获取相应的shape属性
+         * 
+         * @param {string=} idx 唯一标识
+         */
+        Storage.prototype.get = function (shapeId) {
+            return this._elements[shapeId];
+        };
+
+        /**
+         * 删除，shapeId不指定则全清空
+         * 
+         * @param {string= | Array} idx 唯一标识
+         */
+        Storage.prototype.del = function (shapeId) {
+            if (typeof shapeId != 'undefined') {
+                var delMap = {};
+                if (!(shapeId instanceof Array)) {
+                    // 单个
+                    delMap[shapeId] = true;
+                }
+                else {
+                    // 批量删除
+                    if (shapeId.lenth < 1) { // 空数组
+                        return;
+                    }
+                    for (var i = 0, l = shapeId.length; i < l; i++) {
+                        delMap[shapeId[i].id] = true;
+                    }
+                }
+                var newList;
+                var oldList;
+                var zlevel;
+                var zChanged = {};
+                for (var sId in delMap) {
+                    if (this._elements[sId]) {
+                        zlevel = this._elements[sId].zlevel;
+                        this._changedZlevel[zlevel] = true;
+                        if (!zChanged[zlevel]) {
+                            oldList = this._zElements[zlevel];
+                            newList = [];
+                            for (var i = 0, l = oldList.length; i < l; i++){
+                                if (!delMap[oldList[i].id]) {
+                                    newList.push(oldList[i]);
+                                }
+                            }
+                            this._zElements[zlevel] = newList;
+                            zChanged[zlevel] = true;
+                        }
+
+                        delete this._elements[sId];
+                    }
+                }
+            }
+            else{
+                // 不指定shapeId清空
+                this._elements = {};
+                this._zElements = [];
+                this._hoverElements = [];
+                this._maxZlevel = 0;         //最大zlevel
+                this._changedZlevel = {      //有数据改变的zlevel
+                    all : true
+                };
+            }
+
+            return this;
+        };
+
+        Storage.prototype.getMaxZlevel = function () {
+            return this._maxZlevel;
+        };
+
+        Storage.prototype.getChangedZlevel = function () {
+            return this._changedZlevel;
+        };
+
+        Storage.prototype.clearChangedZlevel = function () {
+            this._changedZlevel = {};
+            return this;
+        };
+
+        Storage.prototype.setChangedZlevle = function (level) {
+            this._changedZlevel[level] = true;
+            return this;
+        };
+
+        /**
+         * 释放
+         */
+        Storage.prototype.dispose = function () {
+            this._elements = 
+            this._zElements = 
+            this._hoverElements = null;
+        };
+
+        return Storage;
+    }
+);
+
 /**
  * 缓动代码来自 https://github.com/sole/tween.js/blob/master/src/Tween.js
  * author: lang(shenyi01@baidu.com)
@@ -8034,10 +7742,10 @@ define(
 
         var Easing = require('./easing');
 
-        var Clip = function(options) {
+        function Clip(options) {
 
             this._targetPool = options.target || {};
-            if (this._targetPool.constructor != Array) {
+            if (!(this._targetPool instanceof Array)) {
                 this._targetPool = [this._targetPool];
             }
 
@@ -8049,25 +7757,23 @@ define(
             this._startTime = new Date().getTime() + this._delay;//单位毫秒
 
             //结束时间
-            this._endTime = this._startTime + this._life*1000;
+            this._endTime = this._startTime + this._life * 1000;
 
             //是否循环
-            this.loop = typeof(options.loop) == 'undefined'
+            this.loop = typeof options.loop == 'undefined'
                         ? false : options.loop;
 
             this.gap = options.gap || 0;
 
             this.easing = options.easing || 'Linear';
 
-            this.onframe = options.onframe || null;
-
-            this.ondestroy = options.ondestroy || null;
-
-            this.onrestart = options.onrestart || null;
-        };
+            this.onframe = options.onframe;
+            this.ondestroy = options.ondestroy;
+            this.onrestart = options.onrestart;
+        }
 
         Clip.prototype = {
-            step : function(time) {
+            step : function (time) {
                 var percent = (time - this._startTime) / this._life;
 
                 //还没开始
@@ -8077,18 +7783,16 @@ define(
 
                 percent = Math.min(percent, 1);
 
-                var easingFunc = typeof(this.easing) == 'string'
+                var easingFunc = typeof this.easing == 'string'
                                  ? Easing[this.easing]
                                  : this.easing;
-                var schedule;
-                if (typeof easingFunc === 'function') {
-                    schedule = easingFunc(percent);
-                }else{
-                    schedule = percent;
-                }
+                var schedule = typeof easingFunc === 'function'
+                    ? easingFunc(percent)
+                    : percent;
+
                 this.fire('frame', schedule);
 
-                //结束
+                // 结束
                 if (percent == 1) {
                     if (this.loop) {
                         this.restart();
@@ -8096,33 +7800,35 @@ define(
                         // 抛出而不是直接调用事件直到 stage.update 后再统一调用这些事件
                         return 'restart';
 
-                    }else{
-                        // 动画完成将这个控制器标识为待删除
-                        // 在Animation.update中进行批量删除
-                        this._needsRemove = true;
-
-                        return 'destroy';
                     }
-                }else{
-                    return null;
+                    
+                    // 动画完成将这个控制器标识为待删除
+                    // 在Animation.update中进行批量删除
+                    this._needsRemove = true;
+                    return 'destroy';
                 }
+                
+                return null;
             },
             restart : function() {
-                this._startTime = new Date().getTime() + this.gap;
+                var time = new Date().getTime();
+                var remainder = (time - this._startTime) % this._life;
+                this._startTime = new Date().getTime() - remainder + this.gap;
             },
             fire : function(eventType, arg) {
-                for(var i = 0, len = this._targetPool.length; i < len; i++) {
+                for (var i = 0, len = this._targetPool.length; i < len; i++) {
                     if (this['on' + eventType]) {
                         this['on' + eventType](this._targetPool[i], arg);
                     }
                 }
-            }
+            },
+            constructor: Clip
         };
-        Clip.prototype.constructor = Clip;
 
         return Clip;
     }
 );
+
 /**
  * 动画主类, 调度和管理所有动画控制器
  *
@@ -8138,11 +7844,12 @@ define(
  * @method : stop
  */
 define(
-'zrender/animation/animation',['require','./clip'],function(require) {
+'zrender/animation/animation',['require','./clip','../tool/color'],function(require) {
     
 
 
 var Clip = require('./clip');
+var color = require('../tool/color');
 
 var requestAnimationFrame = window.requestAnimationFrame
                             || window.msRequestAnimationFrame
@@ -8152,7 +7859,7 @@ var requestAnimationFrame = window.requestAnimationFrame
 
 var arraySlice = Array.prototype.slice;
 
-var Animation = function(options) {
+function Animation(options) {
 
     options = options || {};
 
@@ -8166,7 +7873,7 @@ var Animation = function(options) {
     this._running = false;
 
     this._time = 0;
-};
+}
 
 Animation.prototype = {
     add : function(clip) {
@@ -8181,7 +7888,7 @@ Animation.prototype = {
     update : function() {
 
         var time = new Date().getTime();
-        //var delta = time - this._time;
+        var delta = time - this._time;
         var clips = this._clips;
         var len = clips.length;
 
@@ -8197,10 +7904,7 @@ Animation.prototype = {
                 deferredClips.push(clip);
             }
         }
-        if (this.stage
-            && this.stage.update
-            && this._clips.length
-        ) {
+        if (this.stage.update && this._clips.length) {
             this.stage.update();
         }
 
@@ -8222,7 +7926,7 @@ Animation.prototype = {
 
         this._time = time;
 
-        this.onframe();
+        this.onframe(delta);
 
     },
     start : function() {
@@ -8255,13 +7959,14 @@ Animation.prototype = {
         );
         deferred.animation = this;
         return deferred;
-    }
+    },
+    constructor: Animation
 };
-Animation.prototype.constructor = Animation;
 
 function _defaultGetter(target, key) {
     return target[key];
 }
+
 function _defaultSetter(target, key, value) {
     target[key] = value;
 }
@@ -8289,13 +7994,13 @@ function _interpolateArray(p0, p1, percent, out, arrDim) {
 }
 
 function _isArrayLike(data) {
-    if (typeof(data) === 'undefined') {
-        return false;
-    } else if (typeof(data) == 'string') {
-        return false;
-    } else {
-        return typeof(data.length) !== 'undefined';
+    switch (typeof data) {
+        case 'undefined':
+        case 'string':
+            return false;
     }
+    
+    return typeof data.length !== 'undefined';
 }
 
 function _catmullRomInterpolateArray(
@@ -8329,6 +8034,31 @@ function _catmullRomInterpolate(p0, p1, p2, p3, t, t2, t3) {
             + v0 * t + p1;
 }
 
+function _cloneValue(value) {
+    if (_isArrayLike(value)) {
+        var len = value.length;
+        if (_isArrayLike(value[0])) {
+            var ret = [];
+            for (var i = 0; i < len; i++) {
+                ret.push(arraySlice.call(value[i]));
+            }
+            return ret;
+        } else {
+            return arraySlice.call(value)
+        }
+    } else {
+        return value;
+    }
+}
+
+function rgba2String(rgba) {
+    rgba[0] = Math.floor(rgba[0]);
+    rgba[1] = Math.floor(rgba[1]);
+    rgba[2] = Math.floor(rgba[2]);
+
+    return 'rgba(' + rgba.join(',') + ')';
+}
+
 function Deferred(target, loop, getter, setter) {
     this._tracks = {};
     this._target = target;
@@ -8354,11 +8084,18 @@ Deferred.prototype = {
         for (var propName in props) {
             if (! this._tracks[propName]) {
                 this._tracks[propName] = [];
-                // Initialize value
-                this._tracks[propName].push({
-                    time : 0,
-                    value : this._getter(this._target, propName)
-                });
+                // If time is 0 
+                //  Then props is given initialize value
+                // Else
+                //  Initialize value from current prop value
+                if (time !== 0) {
+                    this._tracks[propName].push({
+                        time : 0,
+                        value : _cloneValue(
+                            this._getter(this._target, propName)
+                        )
+                    });
+                }
             }
             this._tracks[propName].push({
                 time : parseInt(time, 10),
@@ -8400,6 +8137,7 @@ Deferred.prototype = {
             // Guess data type
             var firstVal = keyframes[0].value;
             var isValueArray = _isArrayLike(firstVal);
+            var isValueColor = false;
 
             // For vertices morphing
             var arrDim = (
@@ -8423,20 +8161,17 @@ Deferred.prototype = {
             var kfValues = [];
             for (var i = 0; i < trackLen; i++) {
                 kfPercents.push(keyframes[i].time / trackMaxTime);
-                if (isValueArray) {
-                    if (arrDim == 2) {
-                        kfValues[i] = [];
-                        for (var j = 0; j < firstVal.length; j++) {
-                            kfValues[i].push(
-                                arraySlice.call(keyframes[i].value[j])
-                            );
-                        }
-                    } else {
-                        kfValues.push(arraySlice.call(keyframes[i].value));
+                // Assume value is a color when it is a string
+                var value = keyframes[i].value;
+                if (typeof(value) == 'string') {
+                    value = color.toArray(value);
+                    if (value.length == 0) {    // Invalid color
+                        value[0] = value[1] = value[2] = 0;
+                        value[3] = 1;
                     }
-                } else {
-                    kfValues.push(keyframes[i].value);
+                    isValueColor = true;
                 }
+                kfValues.push(value);
             }
 
             // Cache the key of last frame to speed up when 
@@ -8446,6 +8181,11 @@ Deferred.prototype = {
             var start;
             var i, w;
             var p0, p1, p2, p3;
+
+
+            if (isValueColor) {
+                var rgba = [0, 0, 0, 0];
+            }
 
             var onframe = function(target, percent) {
                 // Find the range keyframes
@@ -8477,9 +8217,6 @@ Deferred.prototype = {
                 } else {
                     w = (percent - kfPercents[i]) / range;
                 }
-                if (w < 0) {
-                    console.log(w);
-                }
                 if (useSpline) {
                     p1 = kfValues[i];
                     p0 = kfValues[i === 0 ? i : i - 1];
@@ -8492,12 +8229,22 @@ Deferred.prototype = {
                             arrDim
                         );
                     } else {
+                        var value;
+                        if (isValueColor) {
+                            value = _catmullRomInterpolateArray(
+                                p0, p1, p2, p3, w, w*w, w*w*w,
+                                rgba, 1
+                            );
+                            value = rgba2String(rgba);
+                        } else {
+                            value = _catmullRomInterpolate(
+                                p0, p1, p2, p3, w, w*w, w*w*w
+                            )
+                        }
                         setter(
                             target,
                             propName,
-                            _catmullRomInterpolate(
-                                p0, p1, p2, p3, w, w*w, w*w*w
-                            )
+                            value
                         );
                     }
                 } else {
@@ -8508,10 +8255,20 @@ Deferred.prototype = {
                             arrDim
                         );
                     } else {
+                        var value;
+                        if (isValueColor) {
+                            _interpolateArray(
+                                kfValues[i], kfValues[i+1], w,
+                                rgba, 1
+                            );
+                            value = rgba2String(rgba);
+                        } else {
+                            value = _interpolateNumber(kfValues[i], kfValues[i+1], w);
+                        }
                         setter(
                             target,
                             propName,
-                            _interpolateNumber(kfValues[i], kfValues[i+1], w)
+                            value
                         );
                     }
                 }
@@ -8537,7 +8294,6 @@ Deferred.prototype = {
             self._clipCount++;
             self.animation.add(clip);
         };
-
 
         for (var propName in this._tracks) {
             createTrackClip(this._tracks[propName], propName);
@@ -8565,137 +8321,3168 @@ return Animation;
 }
 );
 
+/*!
+ * ZRender, a lightweight canvas library with a MVC architecture, data-driven 
+ * and provides an event model like DOM.
+ *  
+ * Copyright (c) 2013, Baidu Inc.
+ * All rights reserved.
+ * 
+ * LICENSE
+ * https://github.com/ecomfe/zrender/blob/master/LICENSE.txt
+ */
+
 /**
- * zrender: config默认配置项
+ * zrender: core核心类
  *
  * @desc zrender是一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型。
  * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
  *
  */
 define(
-    'zrender/config',{
-        loadingEffect : 'spin',         // 默认loading特效
-        EVENT : {                       // 支持事件列表
-            RESIZE : 'resize',          // 窗口大小变化
-            CLICK : 'click',            // 鼠标按钮被（手指）按下，事件对象是：目标图形元素或空
+    'zrender/zrender',['require','./lib/excanvas','./tool/util','./tool/log','./tool/guid','./Handler','./Painter','./Storage','./animation/animation','./tool/env'],function(require) {
+        /*
+         * HTML5 Canvas for Internet Explorer!
+         * Modern browsers like Firefox, Safari, Chrome and Opera support
+         * the HTML5 canvas tag to allow 2D command-based drawing.
+         * ExplorerCanvas brings the same functionality to Internet Explorer.
+         * To use, web developers only need to include a single script tag
+         * in their existing web pages.
+         *
+         * https://code.google.com/p/explorercanvas/
+         * http://explorercanvas.googlecode.com/svn/trunk/excanvas.js
+         */
+        // 核心代码会生成一个全局变量 G_vmlCanvasManager，模块改造后借用于快速判断canvas支持
+        require('./lib/excanvas');
 
-            MOUSEWHEEL : 'mousewheel',  // 鼠标滚轮变化，事件对象是：目标图形元素或空
-            MOUSEMOVE : 'mousemove',    // 鼠标（手指）被移动，事件对象是：目标图形元素或空
-            MOUSEOVER : 'mouseover',    // 鼠标移到某图形元素之上，事件对象是：目标图形元素
-            MOUSEOUT : 'mouseout',      // 鼠标从某图形元素移开，事件对象是：目标图形元素
-            MOUSEDOWN : 'mousedown',    // 鼠标按钮（手指）被按下，事件对象是：目标图形元素或空
-            MOUSEUP : 'mouseup',        // 鼠标按键（手指）被松开，事件对象是：目标图形元素或空
+        var util = require('./tool/util');
+        var log = require('./tool/log');
+        var guid = require('./tool/guid');
 
-            //
-            GLOBALOUT : 'globalout',    // 全局离开，MOUSEOUT触发比较频繁，一次离开优化绑定
+        var Handler = require('./Handler');
+        var Painter = require('./Painter');
+        var Storage = require('./Storage');
+        var Animation = require('./animation/animation');
 
-            // 一次成功元素拖拽的行为事件过程是：
-            // dragstart > dragenter > dragover [> dragleave] > drop > dragend
-            DRAGSTART : 'dragstart',    // 开始拖拽时触发，事件对象是：被拖拽图形元素
-            DRAGEND : 'dragend',        // 拖拽完毕时触发（在drop之后触发），事件对象是：被拖拽图形元素
-            DRAGENTER : 'dragenter',    // 拖拽图形元素进入目标图形元素时触发，事件对象是：目标图形元素
-            DRAGOVER : 'dragover',      // 拖拽图形元素在目标图形元素上移动时触发，事件对象是：目标图形元素
-            DRAGLEAVE : 'dragleave',    // 拖拽图形元素离开目标图形元素时触发，事件对象是：目标图形元素
-            DROP : 'drop',              // 拖拽图形元素放在目标图形元素内时触发，事件对象是：目标图形元素
+        var _instances = {};    //ZRender实例map索引
 
-            touchClickDelay : 300       // touch end - start < delay is click
-        }
-    }
-);
-/**
- * zrender: loading特效
- *
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
- *
- * 扩展loading effect：
- * getBackgroundShape：获取背景图形
- * getTextShape：获取文字
- * define : 定义效果
- *
- * 内置效果
- * bar：进度条
- * whirling：旋转水滴
- * dynamicLine：动态线条
- * bubble：气泡
- */
-define(
-    'zrender/tool/loadingEffect',['require','./util','./color','./color','./color','./color','./color','./math'],function(require) {
-        var util = require('./util');
-        var self;
-        var _defaultText = 'Loading...';
-        var _defaultTextFont = 'normal 16px Arial';
-
-        var _width;
-        var _height;
-
-        function define(name, fun) {
-            self[name] = fun;
-        }
+        var zrender = {};
+        zrender.version = '2.0.0';
 
         /**
-         * 获取loading文字图形
-         * @param {Object} textStyle 文字style，同shape/text.style
+         * zrender初始化
+         * 不让外部直接new ZRender实例，为啥？
+         * 不为啥，提供全局可控同时减少全局污染和降低命名冲突的风险！
+         *
+         * @param {HTMLElement} dom dom对象，不帮你做document.getElementById了
+         * @param {Object=} params 个性化参数，如自定义shape集合，带进来就好
+         *
+         * @return {ZRender} ZRender实例
          */
-        function getTextShape(textStyle) {
-            return {
-                shape : 'text',
-                highlightStyle : util.merge(
-                    {
-                        x : _width / 2,
-                        y : _height / 2,
-                        text : _defaultText,
-                        textAlign : 'center',
-                        textBaseline : 'middle',
-                        textFont : _defaultTextFont,
-                        color: '#333',
-                        brushType : 'fill'
-                    },
-                    textStyle,
-                    {'overwrite': true, 'recursive': true}
-                )
-            };
-        }
+        zrender.init = function(dom, params) {
+            var zi = new ZRender(guid(), dom, params || {});
+            _instances[zi.id] = zi;
+            return zi;
+        };
 
         /**
-         * 获取loading背景图形
-         * @param {color} color 背景颜色
+         * zrender实例销毁，记在_instances里的索引也会删除了
+         * 管生就得管死，可以通过zrender.dispose(zi)销毁指定ZRender实例
+         * 当然也可以直接zi.dispose()自己销毁
+         *
+         * @param {ZRender=} zi ZRender对象，不传则销毁全部
          */
-        function getBackgroundShape (color) {
-            return {
-                shape : 'rectangle',
-                highlightStyle : {
-                    x : 0,
-                    y : 0,
-                    width : _width,
-                    height : _height,
-                    brushType : 'fill',
-                    color : color
+        zrender.dispose = function (zi) {
+            if (zi) {
+                zi.dispose();
+            }
+            else {
+                for (var key in _instances) {
+                    _instances[key].dispose();
+                }
+                _instances = {};
+            }
+
+            return zrender;
+        };
+
+        /**
+         * 获取zrender实例
+         *
+         * @param {string} id ZRender对象索引
+         */
+        zrender.getInstance = function (id) {
+            return _instances[id];
+        };
+
+        /**
+         * 删除zrender实例，ZRender实例dispose时会调用，
+         * 删除后getInstance则返回undefined
+         * ps: 仅是删除，删除的实例不代表已经dispose了~~
+         *     这是一个摆脱全局zrender.dispose()自动销毁的后门，
+         *     take care of yourself~
+         *
+         * @param {string} id ZRender对象索引
+         */
+        zrender.delInstance = function (id) {
+            delete _instances[id];
+            return zrender;
+        };
+
+        function getAnimationUpdater(zrenderInstance) {
+            return function(){
+                var animatingShapes = zrenderInstance.animatingShapes;
+                for (var i = 0, l = animatingShapes.length; i < l; i++) {
+                    zrenderInstance.storage.mod(animatingShapes[i].id);
+                }
+
+                if (animatingShapes.length) {
+                    zrenderInstance.painter.refresh();
                 }
             };
         }
 
-        // 调整值区间
-        function _adjust(value, region) {
-            if (value <= region[0]) {
-                value = region[0];
-            }
-            else if (value >= region[1]) {
-                value = region[1];
-            }
-            return value;
+        /**
+         * ZRender接口类，对外可用的所有接口都在这里！！
+         * storage（M）、painter（V）、handler（C）为内部私有类，外部接口不可见
+         * 非get接口统一返回支持链式调用~
+         *
+         * @param {string} id 唯一标识
+         * @param {HTMLElement} dom dom对象，不帮你做document.getElementById
+         *
+         * @return {ZRender} ZRender实例
+         */
+        function ZRender(id, dom) {
+            this.id = id;
+            this.env = require('./tool/env');
+
+            this.storage = new Storage();
+            this.painter = new Painter(dom, this.storage);
+            this.handler = new Handler(dom, this.storage, this.painter);
+
+            // 动画控制
+            this.animatingShapes = [];
+            this.animation = new Animation({
+                stage : {
+                    update : getAnimationUpdater(this)
+                }
+            });
+            this.animation.start();
         }
 
         /**
+         * 获取实例唯一标识
+         */
+        ZRender.prototype.getId = function () {
+            return this.id;
+        };
+
+        /**
+         * 添加图形形状
+         * 
+         * @param {Object} shape 形状对象，可用属性全集，详见各shape
+         */
+        ZRender.prototype.addShape = function (shape) {
+            this.storage.add(shape);
+            return this;
+        };
+
+        /**
+         * 删除图形形状
+         * 
+         * @param {string} shapeId 形状对象唯一标识
+         */
+        ZRender.prototype.delShape = function (shapeId) {
+            this.storage.del(shapeId);
+            return this;
+        };
+
+        /**
+         * 修改图形形状
+         * 
+         * @param {string} shapeId 形状对象唯一标识
+         * @param {Object} shape 形状对象
+         * @param {fast} boolean 默认为false, 如果为true的话会在merge中省略部分判断
+         */
+        ZRender.prototype.modShape = function (shapeId, shape, fast) {
+            this.storage.mod(shapeId, shape, fast);
+            return this;
+        };
+
+        /**
+         * 修改指定zlevel的绘制配置项，例如clearColor
+         * 
+         * @param {string} zLevel
+         * @param {Object} config 配置对象, 目前支持clearColor 
+         */
+        ZRender.prototype.modLayer = function (zLevel, config) {
+            this.painter.modLayer(zLevel, config);
+            return this;
+        };
+
+        /**
+         * 添加额外高亮层显示，仅提供添加方法，每次刷新后高亮层图形均被清空
+         * 
+         * @param {Object} shape 形状对象
+         */
+        ZRender.prototype.addHoverShape = function (shape) {
+            this.storage.addHover(shape);
+            return this;
+        };
+
+        /**
+         * 渲染
+         * 
+         * @param {Function} callback  渲染结束后回调函数
+         * todo:增加缓动函数
+         */
+        ZRender.prototype.render = function (callback) {
+            this.painter.render(callback);
+            return this;
+        };
+
+        /**
+         * 视图更新
+         * 
+         * @param {Function} callback  视图更新后回调函数
+         */
+        ZRender.prototype.refresh = function (callback) {
+            this.painter.refresh(callback);
+            return this;
+        };
+        
+        /**
+         * 高亮层更新
+         * 
+         * @param {Function} callback  视图更新后回调函数
+         */
+        ZRender.prototype.refreshHover = function (callback) {
+            this.painter.refreshHover(callback);
+            return this;
+        };
+
+        /**
+         * 视图更新
+         * 
+         * @param {Array} shapeList 需要更新的图形元素列表
+         * @param {Function} callback  视图更新后回调函数
+         */
+        ZRender.prototype.update = function (shapeList, callback) {
+            this.painter.update(shapeList, callback);
+            return this;
+        };
+
+        ZRender.prototype.resize = function() {
+            this.painter.resize();
+            return this;
+        };
+
+        /**
+         * 动画
+         * 
+         * @param {string} shapeId 形状对象唯一标识
+         * @param {string} path 需要添加动画的属性获取路径，可以通过a.b.c来获取深层的属性
+         * @param {boolean} loop 动画是否循环
+         * @return {Object} 动画的Deferred对象
+         * Example:
+         * zr.animate(circleId, 'style', false)
+         *   .when(1000, { x: 10} )
+         *   .done(function(){ console.log('Animation done')})
+         *   .start()
+         */
+        ZRender.prototype.animate = function (shapeId, path, loop) {
+            var shape = this.storage.get(shapeId);
+            if (shape) {
+                var target;
+                if (path) {
+                    var pathSplitted = path.split('.');
+                    var prop = shape;
+                    for (var i = 0, l = pathSplitted.length; i < l; i++) {
+                        if (!prop) {
+                            continue;
+                        }
+                        prop = prop[pathSplitted[i]];
+                    }
+                    if (prop) {
+                        target = prop;
+                    }
+                }
+                else {
+                    target = shape;
+                }
+
+                if (!target) {
+                    log(
+                        'Property "'
+                        + path
+                        + '" is not existed in shape '
+                        + shapeId
+                    );
+                    return;
+                }
+
+                var animatingShapes = this.animatingShapes;
+                if (typeof shape.__aniCount === 'undefined') {
+                    // 正在进行的动画记数
+                    shape.__aniCount = 0;
+                }
+                if (shape.__aniCount === 0) {
+                    animatingShapes.push(shape);
+                }
+                shape.__aniCount++;
+
+                return this.animation.animate(target, {loop : loop})
+                    .done(function() {
+                        shape.__aniCount --;
+                        if (shape.__aniCount === 0) {
+                            // 从animatingShapes里移除
+                            var idx = util.indexOf(animatingShapes, shape);
+                            animatingShapes.splice(idx, 1);
+                        }
+                    });
+            }
+            else {
+                log('Shape "'+ shapeId + '" not existed');
+            }
+        };
+
+        /**
+         * 停止所有动画
+         */
+        ZRender.prototype.clearAnimation = function () {
+            this.animation.clear();
+        };
+
+        /**
+         * loading显示
+         * 
+         * @param {Object=} loadingEffect loading效果对象
+         */
+        ZRender.prototype.showLoading = function (loadingEffect) {
+            this.painter.showLoading(loadingEffect);
+            return this;
+        };
+
+        /**
+         * loading结束
+         */
+        ZRender.prototype.hideLoading = function () {
+            this.painter.hideLoading();
+            return this;
+        };
+
+        /**
+         * 获取视图宽度
+         */
+        ZRender.prototype.getWidth = function() {
+            return this.painter.getWidth();
+        };
+
+        /**
+         * 获取视图高度
+         */
+        ZRender.prototype.getHeight = function() {
+            return this.painter.getHeight();
+        };
+
+        /**
+         * 图像导出 
+         */
+        ZRender.prototype.toDataURL = function(type, backgroundColor, args) {
+            return this.painter.toDataURL(type, backgroundColor, args);
+        };
+
+        /**
+         * 将常规shape转成image shape
+         */
+        ZRender.prototype.shapeToImage = function(e, width, height) {
+            var id = guid();
+            return this.painter.shapeToImage(id, e, width, height);
+        };
+
+        /**
+         * 事件绑定
+         * 
+         * @param {string} eventName 事件名称
+         * @param {Function} eventHandler 响应函数
+         */
+        ZRender.prototype.on = function(eventName, eventHandler) {
+            this.handler.on(eventName, eventHandler);
+            return this;
+        };
+
+        /**
+         * 事件解绑定，参数为空则解绑所有自定义事件
+         * 
+         * @param {string} eventName 事件名称
+         * @param {Function} eventHandler 响应函数
+         */
+        ZRender.prototype.un = function(eventName, eventHandler) {
+            this.handler.un(eventName, eventHandler);
+            return this;
+        };
+        
+        /**
+         * 事件触发
+         * 
+         * @param {string} event 事件名称，resize，hover，drag，etc~
+         * @param {event=} event event dom事件对象
+         */
+        ZRender.prototype.trigger = function (eventName, event) {
+            this.handler.trigger(eventName, event);
+            return this;
+        };
+        
+
+        /**
+         * 清除当前ZRender下所有类图的数据和显示，clear后MVC和已绑定事件均还存在在，ZRender可用
+         */
+        ZRender.prototype.clear = function () {
+            this.storage.del();
+            this.painter.clear();
+            return this;
+        };
+
+        /**
+         * 释放当前ZR实例（删除包括dom，数据、显示和事件绑定），dispose后ZR不可用
+         */
+        ZRender.prototype.dispose = function () {
+            this.animation.stop();
+            
+            this.clear();
+            this.storage.dispose();
+            this.painter.dispose();
+            this.handler.dispose();
+
+            this.animation = 
+            this.animatingShapes = 
+            this.storage = 
+            this.painter = 
+            this.handler = null;
+
+            //释放后告诉全局删除对自己的索引，没想到啥好方法
+            zrender.delInstance(this.id);
+        };
+
+        return zrender;
+    }
+);
+
+define('zrender', ['zrender/zrender'], function (main) { return main; });
+
+/**
+ * zrender: 数学辅助类
+ *
+ * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *
+ * sin：正弦函数，自动缓存
+ * cos：余弦函数，自动缓存
+ * degreeToRadian：角度转弧度
+ * radianToDegree：弧度转角度
+ */
+define(
+    'zrender/tool/math',[],function() {
+        /*
+        var _cache = {
+            sin : {},     //sin缓存
+            cos : {}      //cos缓存
+        };
+        */
+        var _radians = Math.PI / 180;
+
+        /**
+         * @param angle 弧度（角度）参数
+         * @param isDegrees angle参数是否为角度计算，默认为false，angle为以弧度计量的角度
+         */
+        function sin(angle, isDegrees) {
+            return Math.sin(isDegrees ? angle * _radians : angle);
+            /*
+            angle = (isDegrees ? angle * _radians : angle).toFixed(4);
+            if(typeof _cache.sin[angle] == 'undefined') {
+                _cache.sin[angle] = Math.sin(angle);
+            }
+            return _cache.sin[angle];
+            */
+        }
+
+        /**
+         * @param radians 弧度参数
+         */
+        function cos(angle, isDegrees) {
+            return Math.cos(isDegrees ? angle * _radians : angle);
+            /*
+            angle = (isDegrees ? angle * _radians : angle).toFixed(4);
+            if(typeof _cache.cos[angle] == 'undefined') {
+                _cache.cos[angle] = Math.cos(angle);
+            }
+            return _cache.cos[angle];
+            */
+        }
+
+        /**
+         * 角度转弧度
+         * @param {Object} angle
+         */
+        function degreeToRadian(angle) {
+            return angle * _radians;
+        }
+
+        /**
+         * 弧度转角度
+         * @param {Object} angle
+         */
+        function radianToDegree(angle) {
+            return angle / _radians;
+        }
+
+        return {
+            sin : sin,
+            cos : cos,
+            degreeToRadian : degreeToRadian,
+            radianToDegree : radianToDegree
+        };
+    }
+);
+/**
+ * zrender
+ *
+ * @author Neil (杨骥, yangji01@baidu.com)
+ *
+ * shape类：玫瑰线
+ * 可配图形属性：
+   {
+       // 基础属性
+       shape  : 'rose', // 必须，shape类标识，需要显式指定
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
+       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
+       invisible : {boolean},   // 默认为false，是否可见
+
+       // 样式属性，默认状态样式样式属性
+       style  : {
+           x             : {number},  // 默认为0， 圆心的横坐标
+           y             : {number},  // 默认为0， 圆心的纵坐标
+           r             : {Array<number>},  // 必须，每个线条的最大长度
+           k             : {number},  // 必须，决定花瓣数量，当n为1时，奇数即为花瓣数，偶数时花瓣数量翻倍
+           n             : {number=},  // 默认为1，必须为整数，与k共同决定花瓣的数量
+           strokeColor   : {color},   // 默认为'#000'，线条颜色（轮廓），支持rgba
+           lineWidth     : {number},  // 默认为1，线条宽度
+           lineCap       : {string},  // 默认为butt，线帽样式。butt | round | square
+
+           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
+           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
+           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
+           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
+           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
+
+           text          : {string},  // 默认为null，附加文本
+           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
+           textPosition  : {string},  // 默认为end，附加文本位置。
+                                      // inside | start | end
+           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
+                                      // start | end | left | right | center
+           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
+                                      // top | bottom | middle |
+                                      // alphabetic | hanging | ideographic
+           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
+                                      // 'inside' ? '#000' : color
+       },
+
+       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
+       highlightStyle : {
+           // 同style
+       }
+
+       // 交互属性，详见shape.Base
+
+       // 事件属性，详见shape.Base
+   }
+         例子：
+   {
+       shape  : 'rose',
+       id     : '123456',
+       zlevel : 1,
+       style  : {
+           x : 100,
+           y : 100,
+           r1 : 50,
+           r2 : 30,
+           d  : 50,
+           strokeColor : '#eee',
+           lineWidth : 20,
+           text : 'Baidu'
+       },
+       myName : 'kener',  //可自带任何有效自定义属性
+
+       clickable : true,
+       onClick : function(eventPacket) {
+           alert(eventPacket.target.myName);
+       }
+   }
+ */
+define(
+    'zrender/shape/Rose',['require','./Base','../tool/math','../tool/util'],function (require) {
+        var Base = require('./Base');
+        
+        function Rose(options) {
+            this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
+            Base.call(this, options);
+        }
+
+        Rose.prototype =  {
+            type: 'rose',
+
+            /**
+             * 创建线条路径
+             * @param {Context2D} ctx Canvas 2D上下文
+             * @param {Object} style 样式
+             */
+            buildPath : function(ctx, style) {
+                var _x;
+                var _y;
+                var _R = style.r;
+                var _r;
+                var _k = style.k;
+                var _n = style.n || 1;
+
+                var _offsetX = style.x;
+                var _offsetY = style.y;
+
+                var _math = require('../tool/math');
+                ctx.moveTo(_offsetX, _offsetY);
+
+                for (var i = 0, _len = _R.length; i < _len ; i ++) {
+                    _r = _R[i];
+
+                    for (var j = 0; j <= 360 * _n; j ++) {
+                        _x = _r
+                             * _math.sin(_k / _n * j % 360, true)
+                             * _math.cos( j, true)
+                             + _offsetX;
+                        _y = _r
+                             * _math.sin(_k / _n * j % 360, true)
+                             * _math.sin( j, true)
+                             + _offsetY;
+                        ctx.lineTo( _x, _y );
+                    }
+                }
+            },
+
+            /**
+             * 返回矩形区域，用于局部刷新和文字定位
+             * @param {Object} style
+             */
+            getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
+                var _R = style.r;
+                var _offsetX = style.x;
+                var _offsetY = style.y;
+                var _max = 0;
+
+                for (var i = 0, _len = _R.length; i < _len ; i ++) {
+                    if (_R[i] > _max) {
+                        _max = _R[i];
+                    }
+                }
+                style.maxr = _max;
+
+                var lineWidth;
+                if (style.brushType == 'stroke' || style.brushType == 'fill') {
+                    lineWidth = style.lineWidth || 1;
+                }
+                else {
+                    lineWidth = 0;
+                }
+                style.__rect = {
+                    x : - _max - lineWidth + _offsetX,
+                    y : - _max - lineWidth + _offsetY,
+                    width : 2 * _max + 3 * lineWidth,
+                    height : 2 * _max + 3 * lineWidth
+                };
+                return style.__rect;
+            }
+        };
+        
+        require('../tool/util').inherits(Rose, Base);
+        return Rose;
+    }
+);
+/**
+ * zrender
+ *
+ * @author Neil (杨骥, yangji01@baidu.com)
+ *
+ * shape类：内外旋轮曲线
+ * 可配图形属性：
+   {
+       // 基础属性
+       shape  : 'trochoid', // 必须，shape类标识，需要显式指定
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
+       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
+       invisible : {boolean},   // 默认为false，是否可见
+
+       // 样式属性，默认状态样式样式属性
+       style  : {
+           x             : {number},  // 默认为0， 圆心的横坐标
+           y             : {number},  // 默认为0， 圆心的纵坐标
+           r            : {number},   // 必须，固定圆半径 内旋曲线时必须大于转动圆半径
+           r0            : {number},  // 必须，转动圆半径
+           d             : {number},  // 必须，点到内部转动圆的距离，等于r时曲线为摆线
+           location      : {string},  // 默认为‘in’ 内旋 out 外旋
+           strokeColor   : {color},   // 默认为'#000'，线条颜色（轮廓），支持rgba
+           lineWidth     : {number},  // 默认为1，线条宽度
+           lineCap       : {string},  // 默认为butt，线帽样式。butt | round | square
+
+           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
+           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
+           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
+           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
+           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
+
+           text          : {string},  // 默认为null，附加文本
+           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
+           textPosition  : {string},  // 默认为end，附加文本位置。
+                                      // inside | start | end
+           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
+                                      // start | end | left | right | center
+           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
+                                      // top | bottom | middle |
+                                      // alphabetic | hanging | ideographic
+           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
+                                      // 'inside' ? '#000' : color
+       },
+
+       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
+       highlightStyle : {
+           // 同style
+       }
+
+       // 交互属性，详见shape.Base
+
+       // 事件属性，详见shape.Base
+   }
+         例子：
+   {
+       shape  : 'hypotrochoid',
+       id     : '123456',
+       zlevel : 1,
+       style  : {
+           x : 100,
+           y : 100,
+           r : 50,
+           r0 : 30,
+           d  : 50,
+           strokeColor : '#eee',
+           lineWidth : 20,
+           text : 'Baidu'
+       },
+       myName : 'kener',  //可自带任何有效自定义属性
+
+       clickable : true,
+       onClick : function(eventPacket) {
+           alert(eventPacket.target.myName);
+       }
+   }
+ */
+define(
+    'zrender/shape/Trochoid',['require','./Base','../tool/math','../tool/util'],function (require) {
+        var Base = require('./Base');
+        
+        function Trochoid(options) {
+            this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
+            Base.call(this, options);
+        }
+
+        Trochoid.prototype =  {
+            type: 'trochoid',
+
+            /**
+             * 创建线条路径
+             * @param {Context2D} ctx Canvas 2D上下文
+             * @param {Object} style 样式
+             */
+            buildPath : function(ctx, style) {
+                var _x1;
+                var _y1;
+                var _x2;
+                var _y2;
+                var _R = style.r;
+                var _r = style.r0;
+                var _d = style.d;
+                var _offsetX = style.x;
+                var _offsetY = style.y;
+                var _delta = style.location == 'out' ? 1 : -1;
+
+                var _math = require('../tool/math');
+
+                if (style.location && _R <= _r) {
+                    alert('参数错误');
+                    return;
+                }
+
+                var _num = 0;
+                var i = 1;
+                var _theta;
+
+                _x1 = (_R + _delta * _r) * _math.cos(0)
+                    - _delta * _d * _math.cos(0) + _offsetX;
+                _y1 = (_R + _delta * _r) * _math.sin(0)
+                    - _d * _math.sin(0) + _offsetY;
+
+                ctx.moveTo(_x1, _y1);
+
+                //计算结束时的i
+                do {
+                  _num ++;
+                }
+                while ( ( _r * _num ) % ( _R + _delta * _r ) !== 0);
+
+                do {
+                    _theta = Math.PI / 180 * i;
+                    _x2 = (_R + _delta * _r) * _math.cos(_theta)
+                         - _delta * _d * _math.cos((_R / _r +  _delta) * _theta)
+                         + _offsetX;
+                    _y2 = (_R + _delta * _r) * _math.sin(_theta)
+                         - _d * _math.sin((_R / _r + _delta) * _theta)
+                         + _offsetY;
+                    ctx.lineTo( _x2, _y2 );
+                    i ++;
+                }
+                while (i <= ( _r * _num) / (_R + _delta * _r) * 360);
+
+
+            },
+
+            /**
+             * 返回矩形区域，用于局部刷新和文字定位
+             * @param {Object} style
+             */
+            getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
+                var _R = style.r;
+                var _r = style.r0;
+                var _d = style.d;
+                var _delta = style.location == 'out' ? 1 : -1;
+                var _s = _R + _d + _delta * _r;
+                var _offsetX = style.x;
+                var _offsetY = style.y;
+
+                var lineWidth;
+                if (style.brushType == 'stroke' || style.brushType == 'fill') {
+                    lineWidth = style.lineWidth || 1;
+                }
+                else {
+                    lineWidth = 0;
+                }
+                style.__rect = {
+                    x : - _s - lineWidth + _offsetX,
+                    y : - _s - lineWidth + _offsetY,
+                    width : 2 * _s + 2 * lineWidth,
+                    height : 2 * _s + 2 * lineWidth
+                };
+                return style.__rect;
+            }
+        };
+
+        require('../tool/util').inherits(Trochoid, Base);
+        return Trochoid;
+    }
+);
+/**
+ * zrender
+ *
+ * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *
+ * shape类：圆
+ * 可配图形属性：
+   {
+       // 基础属性
+       shape  : 'circle',       // 必须，shape类标识，需要显式指定
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
+       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
+       invisible : {boolean},   // 默认为false，是否可见
+
+       // 样式属性，默认状态样式样式属性
+       style  : {
+           x             : {number},  // 必须，圆心横坐标
+           y             : {number},  // 必须，圆心纵坐标
+           r             : {number},  // 必须，圆半径
+           brushType     : {string},  // 默认为fill，绘画方式
+                                      // fill(填充) | stroke(描边) | both(填充+描边)
+           color         : {color},   // 默认为'#000'，填充颜色，支持rgba
+           strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
+           lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
+
+           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
+           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
+           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
+           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
+           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
+
+           text          : {string},  // 默认为null，附加文本
+           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
+           textPosition  : {string},  // 默认为top，附加文本位置。
+                                      // inside | left | right | top | bottom
+           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
+                                      // start | end | left | right | center
+           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
+                                      // top | bottom | middle |
+                                      // alphabetic | hanging | ideographic
+           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
+                                      // 'inside' ? '#fff' : color
+       },
+
+       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
+       highlightStyle : {
+           // 同style
+       }
+
+       // 交互属性，详见shape.Base
+
+       // 事件属性，详见shape.Base
+   }
+         例子：
+   {
+       shape  : 'circle',
+       id     : '123456',
+       zlevel : 1,
+       style  : {
+           x : 200,
+           y : 100,
+           r : 50,
+           color : '#eee',
+           text : 'Baidu'
+       },
+       myName : 'kener',  // 可自带任何有效自定义属性
+
+       clickable : true,
+       onClick : function(eventPacket) {
+           alert(eventPacket.target.myName);
+       }
+   }
+ */
+define(
+    'zrender/shape/Circle',['require','./Base','../tool/util'],function (require) {
+        var Base = require('./Base');
+
+        function Circle(options) {
+            Base.call(this, options);
+        }
+
+        Circle.prototype = {
+            type: 'circle',
+            /**
+             * 创建圆形路径
+             * @param {Context2D} ctx Canvas 2D上下文
+             * @param {Object} style 样式
+             */
+            buildPath : function (ctx, style) {
+                ctx.arc(style.x, style.y, style.r, 0, Math.PI * 2, true);
+                return;
+            },
+
+            /**
+             * 返回矩形区域，用于局部刷新和文字定位
+             * @param {Object} style
+             */
+            getRect : function (style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
+                var lineWidth;
+                if (style.brushType == 'stroke' || style.brushType == 'fill') {
+                    lineWidth = style.lineWidth || 1;
+                }
+                else {
+                    lineWidth = 0;
+                }
+                style.__rect = {
+                    x : Math.round(style.x - style.r - lineWidth / 2),
+                    y : Math.round(style.y - style.r - lineWidth / 2),
+                    width : style.r * 2 + lineWidth,
+                    height : style.r * 2 + lineWidth
+                };
+                
+                return style.__rect;
+            }
+        };
+
+        require('../tool/util').inherits(Circle, Base);
+        return Circle;
+    }
+);
+/**
+ * zrender
+ *
+ * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *
+ * shape类：圆环
+ * 可配图形属性：
+   {
+       // 基础属性
+       shape  : 'ring',         // 必须，shape类标识，需要显式指定
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
+       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
+       invisible : {boolean},   // 默认为false，是否可见
+
+       // 样式属性，默认状态样式样式属性
+       style  : {
+           x             : {number},  // 必须，圆心横坐标
+           y             : {number},  // 必须，圆心纵坐标
+           r0            : {number},  // 必须，内圆半径
+           r             : {number},  // 必须，外圆半径
+           brushType     : {string},  // 默认为fill，绘画方式
+                                      // fill(填充) | stroke(描边) | both(填充+描边)
+           color         : {color},   // 默认为'#000'，填充颜色，支持rgba
+           strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
+           lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
+
+           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
+           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
+           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
+           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
+           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
+
+           text          : {string},  // 默认为null，附加文本
+           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
+           textPosition  : {string},  // 默认为outside，附加文本位置。
+                                      // outside | inside
+           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
+                                      // start | end | left | right | center
+           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
+                                      // top | bottom | middle |
+                                      // alphabetic | hanging | ideographic
+           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
+                                      // 'inside' ? '#fff' : color
+       },
+
+       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
+       highlightStyle : {
+           // 同style
+       }
+
+       // 交互属性，详见shape.Base
+
+       // 事件属性，详见shape.Base
+   }
+         例子：
+   {
+       shape  : 'ring',
+       id     : '123456',
+       zlevel : 1,
+       style  : {
+           x : 200,
+           y : 100,
+           r : 50,
+           color : '#eee',
+           text : 'Baidu'
+       },
+       myName : 'kener',  // 可自带任何有效自定义属性
+
+       clickable : true,
+       onClick : function(eventPacket) {
+           alert(eventPacket.target.myName);
+       }
+   }
+ */
+define(
+    'zrender/shape/Ring',['require','./Base','../tool/util'],function (require) {
+        var Base = require('./Base');
+        
+        function Ring(options) {
+            Base.call(this, options);
+        }
+
+        Ring.prototype = {
+            type: 'ring',
+
+            /**
+             * 创建圆环路径，依赖扇形路径
+             * @param {Context2D} ctx Canvas 2D上下文
+             * @param {Object} style 样式
+             */
+            buildPath : function(ctx, style) {
+                // 非零环绕填充优化
+                ctx.arc(style.x, style.y, style.r, 0, Math.PI * 2, false);
+                ctx.moveTo(style.x + style.r0, style.y);
+                ctx.arc(style.x, style.y, style.r0, 0, Math.PI * 2, true);
+                return;
+            },
+
+            /**
+             * 返回矩形区域，用于局部刷新和文字定位
+             * @param {Object} style
+             */
+            getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
+                var lineWidth;
+                if (style.brushType == 'stroke' || style.brushType == 'fill') {
+                    lineWidth = style.lineWidth || 1;
+                }
+                else {
+                    lineWidth = 0;
+                }
+                style.__rect = {
+                    x : Math.round(style.x - style.r - lineWidth / 2),
+                    y : Math.round(style.y - style.r - lineWidth / 2),
+                    width : style.r * 2 + lineWidth,
+                    height : style.r * 2 + lineWidth
+                };
+                
+                return style.__rect;
+            }
+        };
+
+        require('../tool/util').inherits(Ring, Base);
+        return Ring;
+    }
+);
+/**
+ * zrender: 向量操作类
+ *
+ * author : lang(shenyi01@baidu.com)
+ */
+define(
+    'zrender/tool/vector',[],function() {
+        var ArrayCtor = typeof Float32Array === 'undefined'
+            ? Array
+            : Float32Array;
+            
+        var vector = {
+            create : function(x, y) {
+                var out = new ArrayCtor(2);
+                out[0] = x || 0;
+                out[1] = y || 0;
+                return out;
+            },
+            copy : function(out, v) {
+                out[0] = v[0];
+                out[1] = v[1];
+            },
+            set : function(out, a, b) {
+                out[0] = a;
+                out[1] = b;
+            },
+            add : function(out, v1, v2) {
+                out[0] = v1[0] + v2[0];
+                out[1] = v1[1] + v2[1];
+                return out;
+            },
+            scaleAndAdd : function(out, v1, v2, a) {
+                out[0] = v1[0] + v2[0] * a;
+                out[1] = v1[1] + v2[1] * a;
+                return out;
+            },
+            sub : function(out, v1, v2) {
+                out[0] = v1[0] - v2[0];
+                out[1] = v1[1] - v2[1];
+                return out;
+            },
+            length : function(v) {
+                return Math.sqrt(this.lengthSquare(v));
+            },
+            lengthSquare : function(v) {
+                return v[0] * v[0] + v[1] * v[1];
+            },
+            mul : function(out, v1, v2) {
+                out[0] = v1[0] * v2[0];
+                out[1] = v1[1] * v2[1];
+                return out;
+            },
+            dot : function(v1, v2) {
+                return v1[0] * v2[0] + v1[1] * v2[1];
+            },
+            scale : function(out, v, s) {
+                out[0] = v[0] * s;
+                out[1] = v[1] * s;
+                return out;
+            },
+            normalize : function(out, v) {
+                var d = vector.length(v);
+                if(d === 0){
+                    out[0] = 0;
+                    out[1] = 0;
+                }else{
+                    out[0] = v[0]/d;
+                    out[1] = v[1]/d;
+                }
+                return out;
+            },
+            distance : function(v1, v2) {
+                return Math.sqrt(
+                    (v1[0] - v2[0]) * (v1[0] - v2[0]) +
+                    (v1[1] - v2[1]) * (v1[1] - v2[1])
+                );
+            },
+            negate : function(out, v) {
+                out[0] = -v[0];
+                out[1] = -v[1];
+            },
+            middle : function(out, v1, v2) {
+                out[0] = (v1[0] + v2[0])/2;
+                out[1] = (v1[1] + v2[1])/2;
+                return out;
+            }
+        };
+
+        return vector;
+    }
+);
+/**
+ * 多线段平滑曲线 Catmull-Rom spline
+ *
+ * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *          errorrik (errorrik@gmail.com)
+ */
+
+
+define(
+    'zrender/shape/util/smoothSpline',['require','../../tool/vector'],function ( require ) {
+        var vector = require('../../tool/vector');
+
+        /**
+         * @inner
+         */
+        function interpolate(p0, p1, p2, p3, t, t2, t3) {
+            var v0 = (p2 - p0) * 0.5;
+            var v1 = (p3 - p1) * 0.5;
+            return (2 * (p1 - p2) + v0 + v1) * t3 
+                    + (- 3 * (p1 - p2) - 2 * v0 - v1) * t2
+                    + v0 * t + p1;
+        }
+
+        /**
+         * 多线段平滑曲线 Catmull-Rom spline
+         */
+        return function (points, isLoop) {
+            var len = points.length;
+            var ret = [];
+
+            var distance = 0;
+            for (var i = 1; i < len; i++) {
+                distance += vector.distance(points[i-1], points[i]);
+            }
+            
+            var segs = distance / 5;
+            segs = segs < len ? len : segs;
+            for (var i = 0; i < segs; i++) {
+                var pos = i / (segs-1) * (isLoop ? len : len - 1);
+                var idx = Math.floor(pos);
+
+                var w = pos - idx;
+
+                var p0;
+                var p1 = points[idx % len];
+                var p2;
+                var p3;
+                if (!isLoop) {
+                    p0 = points[idx === 0 ? idx : idx - 1];
+                    p2 = points[idx > len - 2 ? len - 1 : idx + 1];
+                    p3 = points[idx > len - 3 ? len - 1 : idx + 2];
+                } else {
+                    p0 = points[(idx -1 + len) % len];
+                    p2 = points[(idx + 1) % len];
+                    p3 = points[(idx + 2) % len];
+                }
+
+                var w2 = w * w;
+                var w3 = w * w2;
+
+                ret.push([
+                    interpolate(p0[0], p1[0], p2[0], p3[0], w, w2, w3),
+                    interpolate(p0[1], p1[1], p2[1], p3[1], w, w2, w3)
+                ]);
+            }
+            return ret;
+        };
+    }
+);
+
+/**
+ * 贝塞尔平滑曲线 
+ *
+ * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *          errorrik (errorrik@gmail.com)
+ */
+
+define(
+    'zrender/shape/util/smoothBezier',['require','../../tool/vector'],function ( require ) {
+        var vector = require('../../tool/vector');
+
+        /**
+         * 贝塞尔平滑曲线 
+         */
+        return function (points, smooth, isLoop) {
+            var cps = [];
+
+            var v = [];
+            var v1 = [];
+            var v2 = [];
+            var prevPoint;
+            var nextPoint;
+
+            for (var i = 0, len = points.length; i < len; i++) {
+                var point = points[i];
+                var prevPoint;
+                var nextPoint;
+
+                if (isLoop) {
+                    prevPoint = points[i ? i - 1 : len - 1];
+                    nextPoint = points[(i + 1) % len];
+                } 
+                else {
+                    if (i === 0 || i === len - 1) {
+                        cps.push(points[i]);
+                        continue;
+                    } 
+                    else {
+                        prevPoint = points[i - 1];
+                        nextPoint = points[i + 1];
+                    }
+                }
+
+                vector.sub(v, nextPoint, prevPoint);
+
+                //use degree to scale the handle length
+                vector.scale(v, v, smooth);
+
+                var d0 = vector.distance(point, prevPoint);
+                var d1 = vector.distance(point, nextPoint);
+                var sum = d0 + d1;
+                d0 /= sum;
+                d1 /= sum;
+
+                vector.scale(v1, v, -d0);
+                vector.scale(v2, v, d1);
+
+                cps.push(vector.add([], point, v1));
+                cps.push(vector.add([], point, v2));
+            }
+            
+            if (isLoop) {
+                cps.push(cps.shift());
+            }
+
+            return cps;
+        };
+    }
+);
+
+/**
+ * 虚线lineTo 
+ *
+ * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *          errorrik (errorrik@gmail.com)
+ */
+
+define(
+    'zrender/shape/util/dashedLineTo',[],function (/* require */) {
+        /**
+         * 虚线lineTo 
+         */
+        return function (ctx, x1, y1, x2, y2, dashLength) {
+            dashLength = typeof dashLength != 'number'
+                            ? 5 
+                            : dashLength;
+
+            var deltaX = x2 - x1;
+            var deltaY = y2 - y1;
+            var numDashes = Math.floor(
+                Math.sqrt(deltaX * deltaX + deltaY * deltaY) / dashLength
+            );
+
+            for (var i = 0; i < numDashes; ++i) {
+                ctx[i % 2 ? 'lineTo' : 'moveTo'](
+                    x1 + (deltaX / numDashes) * i,
+                    y1 + (deltaY / numDashes) * i
+                );
+            }
+            ctx.lineTo(x2, y2);
+        };
+    }
+);
+
+/**
+ * zrender
+ *
+ * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *
+ * shape类：多边形
+ * 可配图形属性：
+   {
+       // 基础属性
+       shape  : 'polygon',      // 必须，shape类标识，需要显式指定
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
+       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
+       invisible : {boolean},   // 默认为false，是否可见
+
+       // 样式属性，默认状态样式样式属性
+       style  : {
+           pointList     : {Array},   // 必须，多边形各个顶角坐标
+           brushType     : {string},  // 默认为fill，绘画方式
+                                      // fill(填充) | stroke(描边) | both(填充+描边)
+           color         : {color},   // 默认为'#000'，填充颜色，支持rgba
+           strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
+           lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
+
+           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
+           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
+           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
+           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
+           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
+
+           text          : {string},  // 默认为null，附加文本
+           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
+           textPosition  : {string},  // 默认为top，附加文本位置。
+                                      // inside | left | right | top | bottom
+           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
+                                      // start | end | left | right | center
+           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
+                                      // top | bottom | middle |
+                                      // alphabetic | hanging | ideographic
+           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
+                                      // 'inside' ? '#fff' : color
+       },
+
+       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
+       highlightStyle : {
+           // 同style
+       }
+
+       // 交互属性，详见shape.Base
+
+       // 事件属性，详见shape.Base
+   }
+         例子：
+   {
+       shape  : 'polygon',
+       id     : '123456',
+       zlevel : 1,
+       style  : {
+           pointList : [[10, 10], [300, 20], [298, 400], [50, 450]]
+           color : '#eee',
+           text : 'Baidu'
+       },
+       myName : 'kener',  // 可自带任何有效自定义属性
+
+       clickable : true,
+       onClick : function(eventPacket) {
+           alert(eventPacket.target.myName);
+       }
+   }
+ */
+define(
+    'zrender/shape/Polygon',['require','./Base','./util/smoothSpline','./util/smoothBezier','./util/dashedLineTo','../tool/util'],function (require) {
+        var Base = require('./Base');
+        var smoothSpline = require('./util/smoothSpline');
+        var smoothBezier = require('./util/smoothBezier');
+        var dashedLineTo = require('./util/dashedLineTo');
+
+        
+        function Polygon(options) {
+            Base.call(this, options);
+        }
+
+        Polygon.prototype = {
+            type: 'polygon',
+
+            /**
+             * 画刷
+             * @param ctx       画布句柄
+             * @param isHighlight   是否为高亮状态
+             * @param updateCallback 需要异步加载资源的shape可以通过这个callback(e)
+             *                       让painter更新视图，base.brush没用，需要的话重载brush
+             */
+            brush : function (ctx, isHighlight) {
+                var style = this.style;
+                if (isHighlight) {
+                    // 根据style扩展默认高亮样式
+                    style = this.getHighlightStyle(
+                        style,
+                        this.highlightStyle || {}
+                    );
+                }
+
+                ctx.save();
+                this.setContext(ctx, style);
+    
+                // 设置transform
+                this.updateTransform(ctx);
+                
+                // 先fill再stroke
+                var hasPath = false;
+                if (style.brushType == 'fill' 
+                    || style.brushType == 'both'
+                    || typeof style.brushType == 'undefined' // 默认为fill
+                ) {
+                    ctx.beginPath();
+                    if (style.lineType == 'dashed' 
+                        || style.lineType == 'dotted'
+                    ) {
+                        // 特殊处理，虚线围不成path，实线再build一次
+                        this.buildPath(
+                            ctx, 
+                            {
+                                lineType: 'solid',
+                                lineWidth: style.lineWidth,
+                                pointList: style.pointList
+                            }
+                        );
+                        hasPath = false; // 这个path不能用
+                    }
+                    else {
+                        this.buildPath(ctx, style);
+                        hasPath = true; // 这个path能用
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                }
+
+                if (style.lineWidth > 0 
+                    && (style.brushType == 'stroke' || style.brushType == 'both')
+                ) {
+                    if (!hasPath) {
+                        ctx.beginPath();
+                        this.buildPath(ctx, style);
+                        ctx.closePath();
+                    }
+                    ctx.stroke();
+                }
+    
+                if (style.text) {
+                    this.drawText(ctx, style, this.style);
+                }
+    
+                ctx.restore();
+    
+                return;
+            },
+        
+            /**
+             * 创建多边形路径
+             * @param {Context2D} ctx Canvas 2D上下文
+             * @param {Object} style 样式
+             */
+            buildPath : function(ctx, style) {
+                // 虽然能重用brokenLine，但底层图形基于性能考虑，重复代码减少调用吧
+                var pointList = style.pointList;
+                // 开始点和结束点重复
+                /*
+                var start = pointList[0];
+                var end = pointList[pointList.length-1];
+
+                if (start && end) {
+                    if (start[0] == end[0] &&
+                        start[1] == end[1]) {
+                        // 移除最后一个点
+                        pointList.pop();
+                    }
+                }
+                */
+
+                if (pointList.length < 2) {
+                    // 少于2个点就不画了~
+                    return;
+                }
+
+                if (style.smooth && style.smooth !== 'spline') {
+                    var controlPoints = smoothBezier(
+                        pointList, style.smooth, true
+                    );
+
+                    ctx.moveTo(pointList[0][0], pointList[0][1]);
+                    var cp1;
+                    var cp2;
+                    var p;
+                    var len = pointList.length;
+                    for (var i = 0; i < len; i++) {
+                        cp1 = controlPoints[i * 2];
+                        cp2 = controlPoints[i * 2 + 1];
+                        p = pointList[(i + 1) % len];
+                        ctx.bezierCurveTo(
+                            cp1[0], cp1[1], cp2[0], cp2[1], p[0], p[1]
+                        );
+                    }
+                } 
+                else {
+                    if (style.smooth === 'spline') {
+                        pointList = smoothSpline(pointList, true);
+                    }
+
+                    if (!style.lineType || style.lineType == 'solid') {
+                        //默认为实线
+                        ctx.moveTo(pointList[0][0],pointList[0][1]);
+                        for (var i = 1, l = pointList.length; i < l; i++) {
+                            ctx.lineTo(pointList[i][0],pointList[i][1]);
+                        }
+                        ctx.lineTo(pointList[0][0], pointList[0][1]);
+                    }
+                    else if (style.lineType == 'dashed'
+                            || style.lineType == 'dotted'
+                    ) {
+                        var dashLength = 
+                            style._dashLength
+                            || (style.lineWidth || 1) 
+                               * (style.lineType == 'dashed' ? 5 : 1);
+                        style._dashLength = dashLength;
+                        ctx.moveTo(pointList[0][0],pointList[0][1]);
+                        for (var i = 1, l = pointList.length; i < l; i++) {
+                            dashedLineTo(
+                                ctx,
+                                pointList[i - 1][0], pointList[i - 1][1],
+                                pointList[i][0], pointList[i][1],
+                                dashLength
+                            );
+                        }
+                        dashedLineTo(
+                            ctx,
+                            pointList[pointList.length - 1][0], 
+                            pointList[pointList.length - 1][1],
+                            pointList[0][0],
+                            pointList[0][1],
+                            dashLength
+                        );
+                    }
+                }
+                return;
+            },
+
+            /**
+             * 返回矩形区域，用于局部刷新和文字定位
+             * @param {Object} style
+             */
+            getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
+                var minX =  Number.MAX_VALUE;
+                var maxX =  Number.MIN_VALUE;
+                var minY = Number.MAX_VALUE;
+                var maxY = Number.MIN_VALUE;
+
+                var pointList = style.pointList;
+                for(var i = 0, l = pointList.length; i < l; i++) {
+                    if (pointList[i][0] < minX) {
+                        minX = pointList[i][0];
+                    }
+                    if (pointList[i][0] > maxX) {
+                        maxX = pointList[i][0];
+                    }
+                    if (pointList[i][1] < minY) {
+                        minY = pointList[i][1];
+                    }
+                    if (pointList[i][1] > maxY) {
+                        maxY = pointList[i][1];
+                    }
+                }
+
+                var lineWidth;
+                if (style.brushType == 'stroke' || style.brushType == 'fill') {
+                    lineWidth = style.lineWidth || 1;
+                }
+                else {
+                    lineWidth = 0;
+                }
+                
+                style.__rect = {
+                    x : Math.round(minX - lineWidth / 2),
+                    y : Math.round(minY - lineWidth / 2),
+                    width : maxX - minX + lineWidth,
+                    height : maxY - minY + lineWidth
+                };
+                return style.__rect;
+            }
+        };
+
+        require('../tool/util').inherits(Polygon, Base);
+        return Polygon;
+    }
+);
+/**
+ * zrender
+ *
+ * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *
+ * shape类：扇形
+ * 可配图形属性：
+   {
+       // 基础属性
+       shape  : 'sector',       // 必须，shape类标识，需要显式指定
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
+       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
+       invisible : {boolean},   // 默认为false，是否可见
+
+       // 样式属性，默认状态样式样式属性
+       style  : {
+           x             : {number},  // 必须，圆心横坐标
+           y             : {number},  // 必须，圆心纵坐标
+           r0            : {number},  // 默认为0，内圆半径，指定后将出现内弧，同时扇边长度 = r - r0
+           r             : {number},  // 必须，外圆半径
+           startAngle    : {number},  // 必须，起始角度[0, 360)
+           endAngle      : {number},  // 必须，结束角度(0, 360]
+           brushType     : {string},  // 默认为fill，绘画方式
+                                      // fill(填充) | stroke(描边) | both(填充+描边)
+           color         : {color},   // 默认为'#000'，填充颜色，支持rgba
+           strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
+           lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
+
+           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
+           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
+           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
+           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
+           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
+
+           text          : {string},  // 默认为null，附加文本
+           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
+           textPosition  : {string},  // 默认为outside，附加文本位置。
+                                      // outside | inside
+           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
+                                      // start | end | left | right | center
+           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
+                                      // top | bottom | middle |
+                                      // alphabetic | hanging | ideographic
+           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
+                                      // 'inside' ? '#fff' : color
+       },
+
+       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
+       highlightStyle : {
+           // 同style
+       }
+
+       // 交互属性，详见shape.Base
+
+       // 事件属性，详见shape.Base
+   }
+         例子：
+   {
+       shape  : 'sector',
+       id     : '123456',
+       zlevel : 1,
+       style  : {
+           x : 200,
+           y : 100,
+           r : 50,
+           color : '#eee',
+           text : 'Baidu'
+       },
+       myName : 'kener',  // 可自带任何有效自定义属性
+
+       clickable : true,
+       onClick : function(eventPacket) {
+           alert(eventPacket.target.myName);
+       }
+   }
+ */
+define(
+    'zrender/shape/Sector',['require','../tool/math','./Base','./Ring','./Polygon','../tool/util'],function (require) {
+        var math = require('../tool/math');
+        var Base = require('./Base');
+
+        function Sector(options) {
+            Base.call(this, options);
+        }
+
+        Sector.prototype = {
+            type: 'sector',
+
+            /**
+             * 创建扇形路径
+             * @param {Context2D} ctx Canvas 2D上下文
+             * @param {Object} style 样式
+             */
+            buildPath : function(ctx, style) {
+                var x = style.x;   // 圆心x
+                var y = style.y;   // 圆心y
+                var r0 = typeof style.r0 == 'undefined'     // 形内半径[0,r)
+                         ? 0 : style.r0;
+                var r = style.r;                            // 扇形外半径(0,r]
+                var startAngle = style.startAngle;          // 起始角度[0,360)
+                var endAngle = style.endAngle;              // 结束角度(0,360]
+
+                if (Math.abs(endAngle - startAngle) >= 360) {
+                    // 大于360度的扇形简化为圆环画法
+                    ctx.arc(x, y, r, 0, Math.PI * 2, false);
+                    if (r0 !== 0) {
+                        ctx.moveTo(x + r0, y);
+                        ctx.arc(x, y, r0, 0, Math.PI * 2, true);
+                    }
+                    return;
+                }
+                
+                startAngle = math.degreeToRadian(startAngle);
+                endAngle = math.degreeToRadian(endAngle);
+
+                var PI2 = Math.PI * 2;
+                var cosStartAngle = math.cos(startAngle);
+                var sinStartAngle = math.sin(startAngle);
+                ctx.moveTo(
+                    cosStartAngle * r0 + x,
+                    y - sinStartAngle * r0
+                );
+
+                ctx.lineTo(
+                    cosStartAngle * r + x,
+                    y - sinStartAngle * r
+                );
+
+                ctx.arc(x, y, r, PI2 - startAngle, PI2 - endAngle, true);
+
+                ctx.lineTo(
+                    math.cos(endAngle) * r0 + x,
+                    y - math.sin(endAngle) * r0
+                );
+
+                if (r0 !== 0) {
+                    ctx.arc(x, y, r0, PI2 - endAngle, PI2 - startAngle, false);
+                }
+
+                return;
+            },
+
+            /**
+             * 返回矩形区域，用于局部刷新和文字定位
+             * @param {Object} style
+             */
+            getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
+                var x = style.x;   // 圆心x
+                var y = style.y;   // 圆心y
+                var r0 = typeof style.r0 == 'undefined'     // 形内半径[0,r)
+                         ? 0 : style.r0;
+                var r = style.r;                            // 扇形外半径(0,r]
+                var startAngle = style.startAngle;          // 起始角度[0,360)
+                var endAngle = style.endAngle;              // 结束角度(0,360]
+                
+                if (Math.abs(endAngle - startAngle) >= 360) {
+                    // 大于360度的扇形简化为圆环bbox
+                    style.__rect = require('./Ring').prototype.getRect(style);
+                    return style.__rect;
+                }
+                
+                startAngle = (720 + startAngle) % 360;
+                endAngle = (720 + endAngle) % 360;
+                if (endAngle <= startAngle) {
+                    endAngle += 360;
+                }
+                var pointList = [];
+                if (startAngle <= 90 && endAngle >= 90) {
+                    pointList.push([
+                        x, y - r
+                    ]);
+                }
+                if (startAngle <= 180 && endAngle >= 180) {
+                    pointList.push([
+                        x - r, y
+                    ]);
+                }
+                if (startAngle <= 270 && endAngle >= 270) {
+                    pointList.push([
+                        x, y + r
+                    ]);
+                }
+                if (startAngle <= 360 && endAngle >= 360) {
+                    pointList.push([
+                        x + r, y
+                    ]);
+                }
+
+                startAngle = math.degreeToRadian(startAngle);
+                endAngle = math.degreeToRadian(endAngle);
+
+
+                pointList.push([
+                    math.cos(startAngle) * r0 + x,
+                    y - math.sin(startAngle) * r0
+                ]);
+
+                pointList.push([
+                    math.cos(startAngle) * r + x,
+                    y - math.sin(startAngle) * r
+                ]);
+
+                pointList.push([
+                    math.cos(endAngle) * r + x,
+                    y - math.sin(endAngle) * r
+                ]);
+
+                pointList.push([
+                    math.cos(endAngle) * r0 + x,
+                    y - math.sin(endAngle) * r0
+                ]);
+
+                style.__rect = require('./Polygon').prototype.getRect({
+                    brushType : style.brushType,
+                    lineWidth : style.lineWidth,
+                    pointList : pointList
+                });
+                
+                return style.__rect;
+            }
+        };
+
+
+        require('../tool/util').inherits(Sector, Base);
+        return Sector;
+    }
+);
+/**
+ * zrender
+ *
+ * author: loutongbing@baidu.com
+ *
+ * shape类：椭圆
+ * Todo：excanvas bug ~ 连续scale保持?? IE8下不建议使用
+ * 可配图形属性：
+   {
+       // 基础属性
+       shape  : 'ellipse',       // 必须，shape类标识，需要显式指定
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
+       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
+       invisible : {boolean},   // 默认为false，是否可见
+
+       // 样式属性，默认状态样式样式属性
+       style  : {
+           x             : {number},  // 必须，椭圆心横坐标
+           y             : {number},  // 必须，椭圆心纵坐标
+           a             : {number},  // 必须，椭圆横轴半径
+           b             : {number},  // 必须，椭圆纵轴半径
+           brushType     : {string},  // 默认为fill，绘画方式
+                                      // fill(填充) | stroke(描边) | both(填充+描边)
+           color         : {color},   // 默认为'#000'，填充颜色，支持rgba
+           strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
+           lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
+
+           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
+           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
+           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
+           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
+           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
+
+           text          : {string},  // 默认为null，附加文本
+           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
+           textPosition  : {string},  // 默认为top，附加文本位置。
+                                      // inside | left | right | top | bottom
+           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
+                                      // start | end | left | right | center
+           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
+                                      // top | bottom | middle |
+                                      // alphabetic | hanging | ideographic
+           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
+                                      // 'inside' ? '#fff' : color
+       },
+
+       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
+       highlightStyle : {
+           // 同style
+       }
+
+       // 交互属性，详见shape.Base
+
+       // 事件属性，详见shape.Base
+   }
+         例子：
+   {
+       shape  : 'ellipse',
+       id     : '123456',
+       zlevel : 1,
+       style  : {
+           x : 200,
+           y : 100,
+           a : 100,
+           b : 50,
+           color : '#eee',
+           text : 'Baidu'
+       },
+       myName : 'kener',  // 可自带任何有效自定义属性
+
+       clickable : true,
+       onClick : function(eventPacket) {
+           alert(eventPacket.target.myName);
+       }
+   }
+ */
+define(
+    'zrender/shape/Ellipse',['require','./Base','../tool/util'],function (require) {
+        var Base = require('./Base');
+
+        function Ellipse(options) {
+            Base.call(this, options);
+        }
+
+        Ellipse.prototype = {
+            type: 'ellipse',
+
+            /**
+             * 创建圆形路径
+             * @param {Context2D} ctx Canvas 2D上下文
+             * @param {Object} style 样式
+             */
+            buildPath : function(ctx, style) {
+                var k = 0.5522848;
+                var x = style.x;
+                var y = style.y;
+                var a =style.a;
+                var b = style.b;
+                var ox = a * k; // 水平控制点偏移量
+                var oy = b * k; // 垂直控制点偏移量
+                //从椭圆的左端点开始顺时针绘制四条三次贝塞尔曲线
+                ctx.moveTo(x - a, y);
+                ctx.bezierCurveTo(x - a, y - oy, x - ox, y - b, x, y - b);
+                ctx.bezierCurveTo(x + ox, y - b, x + a, y - oy, x + a, y);
+                ctx.bezierCurveTo(x + a, y + oy, x + ox, y + b, x, y + b);
+                ctx.bezierCurveTo(x - ox, y + b, x - a, y + oy, x - a, y);
+            },
+
+            /**
+             * 返回矩形区域，用于局部刷新和文字定位
+             * @param {Object} style
+             */
+            getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
+                var lineWidth;
+                if (style.brushType == 'stroke' || style.brushType == 'fill') {
+                    lineWidth = style.lineWidth || 1;
+                }
+                else {
+                    lineWidth = 0;
+                }
+                style.__rect = {
+                    x : Math.round(style.x - style.a - lineWidth / 2),
+                    y : Math.round(style.y - style.b - lineWidth / 2),
+                    width : style.a * 2 + lineWidth,
+                    height : style.b * 2 + lineWidth
+                };
+                
+                return style.__rect;
+            }
+        };
+
+        require('../tool/util').inherits(Ellipse, Base);
+        return Ellipse;
+    }
+);
+/**
+ * zrender
+ *
+ * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *
+ * shape类：心形
+ * 可配图形属性：
+   {
+       // 基础属性
+       shape  : 'heart',       // 必须，shape类标识，需要显式指定
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
+       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
+       invisible : {boolean},   // 默认为false，是否可见
+
+       // 样式属性，默认状态样式样式属性
+       style  : {
+           x             : {number},  // 必须，心形内部尖端横坐标
+           y             : {number},  // 必须，心形内部尖端纵坐标
+           a             : {number},  // 必须，心形横宽（中轴线到水平边缘最宽处距离）
+           b             : {number},  // 必须，心形纵高（内尖到外尖距离）
+           brushType     : {string},  // 默认为fill，绘画方式
+                                      // fill(填充) | stroke(描边) | both(填充+描边)
+           color         : {color},   // 默认为'#000'，填充颜色，支持rgba
+           strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
+           lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
+
+           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
+           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
+           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
+           shadowOffsetY : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
+
+           text          : {string},  // 默认为null，附加文本
+           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
+           textPosition  : {string},  // 默认为outside，附加文本位置。
+                                      // outside | inside
+           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
+                                      // start | end | left | right | center
+           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
+                                      // top | bottom | middle |
+                                      // alphabetic | hanging | ideographic
+           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
+                                      // 'inside' ? '#fff' : color
+       },
+
+       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
+       highlightStyle : {
+           // 同style
+       }
+
+       // 交互属性，详见shape.Base
+
+       // 事件属性，详见shape.Base
+   }
+         例子：
+   {
+       shape  : 'heart',
+       id     : '123456',
+       zlevel : 1,
+       style  : {
+           x : 200,
+           y : 100,
+           a : 50,
+           b : 80,
+           color : '#eee',
+           text : 'Baidu'
+       },
+       myName : 'kener',  // 可自带任何有效自定义属性
+
+       clickable : true,
+       onClick : function(eventPacket) {
+           alert(eventPacket.target.myName);
+       }
+   }
+ */
+define(
+    'zrender/shape/Heart',['require','./Base','../tool/util'],function (require) {
+        var Base = require('./Base');
+        
+        function Heart(options) {
+            Base.call(this, options);
+        }
+
+        Heart.prototype = {
+            type: 'heart',
+
+            /**
+             * 创建扇形路径
+             * @param {Context2D} ctx Canvas 2D上下文
+             * @param {Object} style 样式
+             */
+            buildPath : function(ctx, style) {
+                ctx.moveTo(style.x, style.y);
+                ctx.bezierCurveTo(
+                    style.x + style.a / 2,
+                    style.y - style.b * 2 / 3,
+                    style.x + style.a * 2,
+                    style.y + style.b / 3,
+                    style.x,
+                    style.y + style.b
+                );
+                ctx.bezierCurveTo(
+                    style.x - style.a *  2,
+                    style.y + style.b / 3,
+                    style.x - style.a / 2,
+                    style.y - style.b * 2 / 3,
+                    style.x,
+                    style.y
+                );
+                return;
+            },
+
+            /**
+             * 返回矩形区域，用于局部刷新和文字定位
+             * @param {Object} style
+             */
+            getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
+                var lineWidth;
+                if (style.brushType == 'stroke' || style.brushType == 'fill') {
+                    lineWidth = style.lineWidth || 1;
+                }
+                else {
+                    lineWidth = 0;
+                }
+                style.__rect = {
+                    x : Math.round(style.x - style.a - lineWidth / 2),
+                    y : Math.round(style.y - style.b / 4 - lineWidth / 2),
+                    width : style.a * 2 + lineWidth,
+                    height : style.b * 5 / 4 + lineWidth
+                };
+                
+                return style.__rect;
+            }
+        };
+
+        require('../tool/util').inherits(Heart, Base);
+        return Heart;
+    }
+);
+/**
+ * zrender
+ *
+ * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *
+ * shape类：水滴
+ * 可配图形属性：
+   {
+       // 基础属性
+       shape  : 'heart',       // 必须，shape类标识，需要显式指定
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
+       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
+       invisible : {boolean},   // 默认为false，是否可见
+
+       // 样式属性，默认状态样式样式属性
+       style  : {
+           x             : {number},  // 必须，水滴中心横坐标
+           y             : {number},  // 必须，水滴中心纵坐标
+           a             : {number},  // 必须，水滴横宽（中心到水平边缘最宽处距离）
+           b             : {number},  // 必须，水滴纵高（中心到尖端距离）
+           brushType     : {string},  // 默认为fill，绘画方式
+                                      // fill(填充) | stroke(描边) | both(填充+描边)
+           color         : {color},   // 默认为'#000'，填充颜色，支持rgba
+           strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
+           lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
+
+           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
+           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
+           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
+           shadowOffsetY : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
+
+           text          : {string},  // 默认为null，附加文本
+           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
+           textPosition  : {string},  // 默认为outside，附加文本位置。
+                                      // outside | inside
+           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
+                                      // start | end | left | right | center
+           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
+                                      // top | bottom | middle |
+                                      // alphabetic | hanging | ideographic
+           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
+                                      // 'inside' ? '#fff' : color
+       },
+
+       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
+       highlightStyle : {
+           // 同style
+       }
+
+       // 交互属性，详见shape.Base
+
+       // 事件属性，详见shape.Base
+   }
+         例子：
+   {
+       shape  : 'droplet',
+       id     : '123456',
+       zlevel : 1,
+       style  : {
+           x : 200,
+           y : 100,
+           a : 50,
+           b : 80,
+           color : '#eee',
+           text : 'Baidu'
+       },
+       myName : 'kener',  // 可自带任何有效自定义属性
+
+       clickable : true,
+       onClick : function(eventPacket) {
+           alert(eventPacket.target.myName);
+       }
+   }
+ */
+define(
+    'zrender/shape/Droplet',['require','./Base','../tool/util'],function (require) {
+        var Base = require('./Base');
+
+        function Droplet(options) {
+            Base.call(this, options);
+        }
+
+        Droplet.prototype = {
+            type: 'droplet',
+
+            /**
+             * 创建扇形路径
+             * @param {Context2D} ctx Canvas 2D上下文
+             * @param {Object} style 样式
+             */
+            buildPath : function(ctx, style) {
+                ctx.moveTo(style.x, style.y + style.a);
+                ctx.bezierCurveTo(
+                    style.x + style.a,
+                    style.y + style.a,
+                    style.x + style.a * 3 / 2,
+                    style.y - style.a / 3,
+                    style.x,
+                    style.y - style.b
+                );
+                ctx.bezierCurveTo(
+                    style.x - style.a * 3 / 2,
+                    style.y - style.a / 3,
+                    style.x - style.a,
+                    style.y + style.a,
+                    style.x,
+                    style.y + style.a
+                );
+            },
+
+            /**
+             * 返回矩形区域，用于局部刷新和文字定位
+             * @param {Object} style
+             */
+            getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
+                var lineWidth;
+                if (style.brushType == 'stroke' || style.brushType == 'fill') {
+                    lineWidth = style.lineWidth || 1;
+                }
+                else {
+                    lineWidth = 0;
+                }
+                style.__rect = {
+                    x : Math.round(style.x - style.a - lineWidth / 2),
+                    y : Math.round(style.y - style.b - lineWidth / 2),
+                    width : style.a * 2 + lineWidth,
+                    height : style.a + style.b + lineWidth
+                };
+                
+                return style.__rect;
+            }
+        };
+
+        require('../tool/util').inherits(Droplet, Base);
+        return Droplet;
+    }
+);
+/**
+ * zrender
+ *
+ * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *
+ * shape类：直线
+ * 可配图形属性：
+   {
+       // 基础属性
+       shape  : 'line',         // 必须，shape类标识，需要显式指定
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
+       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
+       invisible : {boolean},   // 默认为false，是否可见
+
+       // 样式属性，默认状态样式样式属性
+       style  : {
+           xStart        : {number},  // 必须，起点横坐标
+           yStart        : {number},  // 必须，起点纵坐标
+           xEnd          : {number},  // 必须，终点横坐标
+           yEnd          : {number},  // 必须，终点纵坐标
+           strokeColor   : {color},   // 默认为'#000'，线条颜色（轮廓），支持rgba
+           lineType      : {string},  // 默认为solid，线条类型，solid | dashed | dotted
+           lineWidth     : {number},  // 默认为1，线条宽度
+           lineCap       : {string},  // 默认为butt，线帽样式。butt | round | square
+
+           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
+           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
+           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
+           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
+           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
+
+           text          : {string},  // 默认为null，附加文本
+           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
+           textPosition  : {string},  // 默认为end，附加文本位置。
+                                      // inside | start | end
+           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
+                                      // start | end | left | right | center
+           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
+                                      // top | bottom | middle |
+                                      // alphabetic | hanging | ideographic
+           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
+                                      // 'inside' ? '#000' : color
+       },
+
+       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
+       highlightStyle : {
+           // 同style
+       }
+
+       // 交互属性，详见shape.Base
+
+       // 事件属性，详见shape.Base
+   }
+         例子：
+   {
+       shape  : 'line',
+       id     : '123456',
+       zlevel : 1,
+       style  : {
+           xStart : 100,
+           yStart : 100,
+           xEnd : 200,
+           yEnd : 200,
+           strokeColor : '#eee',
+           lineWidth : 20,
+           text : 'Baidu'
+       },
+       myName : 'kener',  //可自带任何有效自定义属性
+
+       clickable : true,
+       onClick : function(eventPacket) {
+           alert(eventPacket.target.myName);
+       }
+   }
+ */
+define(
+    'zrender/shape/Line',['require','./Base','./util/dashedLineTo','../tool/util'],function (require) {
+        var Base = require('./Base');
+        var dashedLineTo = require('./util/dashedLineTo');
+        
+        function Line(options) {
+            this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
+            this.textPosition = 'end';
+            Base.call(this, options);
+        }
+
+        Line.prototype =  {
+            type: 'line',
+
+            /**
+             * 创建线条路径
+             * @param {Context2D} ctx Canvas 2D上下文
+             * @param {Object} style 样式
+             */
+            buildPath : function(ctx, style) {
+                if (!style.lineType || style.lineType == 'solid') {
+                    //默认为实线
+                    ctx.moveTo(style.xStart, style.yStart);
+                    ctx.lineTo(style.xEnd, style.yEnd);
+                }
+                else if (style.lineType == 'dashed'
+                        || style.lineType == 'dotted'
+                ) {
+                    var dashLength =(style.lineWidth || 1)  
+                                     * (style.lineType == 'dashed' ? 5 : 1);
+                    dashedLineTo(
+                        ctx,
+                        style.xStart, style.yStart,
+                        style.xEnd, style.yEnd,
+                        dashLength
+                    );
+                }
+            },
+
+            /**
+             * 返回矩形区域，用于局部刷新和文字定位
+             * @param {Object} style
+             */
+            getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
+                var lineWidth = style.lineWidth || 1;
+                style.__rect = {
+                    x : Math.min(style.xStart, style.xEnd) - lineWidth,
+                    y : Math.min(style.yStart, style.yEnd) - lineWidth,
+                    width : Math.abs(style.xStart - style.xEnd)
+                            + lineWidth,
+                    height : Math.abs(style.yStart - style.yEnd)
+                             + lineWidth
+                };
+                
+                return style.__rect;
+            }
+        };
+
+        require('../tool/util').inherits(Line, Base);
+        return Line;
+    }
+);
+/**
+ * zrender
+ *
+ * @author sushuang (宿爽, sushuang@baidu.com)
+ *
+ * shape类：n角星（n>3）
+ * 可配图形属性：
+   {
+       // 基础属性
+       shape  : 'star',       // 必须，shape类标识，需要显式指定
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
+       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
+       invisible : {boolean},   // 默认为false，是否可见
+
+       // 样式属性，默认状态样式样式属性
+       style  : {
+           x             : {number},  // 必须，n角星外接圆心横坐标
+           y             : {number},  // 必须，n角星外接圆心纵坐标
+           r             : {number},  // 必须，n角星外接圆半径
+           r0            : {number},  // n角星内部顶点（凹点）的外接圆半径，
+                                      // 如果不指定此参数，则自动计算：取相隔外部顶点连线的交点作内部顶点
+           n             : {number},  // 必须，指明几角星
+           brushType     : {string},  // 默认为fill，绘画方式
+                                      // fill(填充) | stroke(描边) | both(填充+描边)
+           color         : {color},   // 默认为'#000'，填充颜色，支持rgba
+           strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
+           lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
+           lineJoin      : {string},  // 默认为miter，线段连接样式。miter | round | bevel
+
+           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
+           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
+           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
+           shadowOffsetY : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
+
+           text          : {string},  // 默认为null，附加文本
+           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
+           textPosition  : {string},  // 默认为outside，附加文本位置。
+                                      // outside | inside
+           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
+                                      // start | end | left | right | center
+           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
+                                      // top | bottom | middle |
+                                      // alphabetic | hanging | ideographic
+           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
+                                      // 'inside' ? '#fff' : color
+       },
+
+       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
+       highlightStyle : {
+           // 同style
+       }
+
+       // 交互属性，详见shape.Base
+
+       // 事件属性，详见shape.Base
+   }
+         例子：
+   {
+       shape  : 'star',
+       id     : '123456',
+       zlevel : 1,
+       style  : {
+           x : 200,
+           y : 100,
+           r : 150,
+           n : 5,
+           color : '#eee'
+       },
+       myName : 'kener',   // 可自带任何有效自定义属性
+
+       clickable : true,
+       onClick : function(eventPacket) {
+           alert(eventPacket.target.myName);
+       }
+   }
+ */
+define(
+    'zrender/shape/Star',['require','../tool/math','./Base','../tool/util'],function (require) {
+
+        var math = require('../tool/math');
+        var sin = math.sin;
+        var cos = math.cos;
+        var PI = Math.PI;
+
+        var Base = require('./Base');
+
+        function Star(options) {
+            Base.call(this, options);
+        }
+
+        Star.prototype = {
+            type: 'star',
+
+            /**
+             * 创建n角星（n>3）路径
+             * @param {Context2D} ctx Canvas 2D上下文
+             * @param {Object} style 样式
+             */
+            buildPath : function(ctx, style) {
+                var n = style.n;
+                if (!n || n < 2) { return; }
+
+                var x = style.x;
+                var y = style.y;
+                var r = style.r;
+                var r0 = style.r0;
+
+                // 如果未指定内部顶点外接圆半径，则自动计算
+                if (r0 == null) {
+                    r0 = n > 4
+                        // 相隔的外部顶点的连线的交点，
+                        // 被取为内部交点，以此计算r0
+                        ? r * cos(2 * PI / n) / cos(PI / n)
+                        // 二三四角星的特殊处理
+                        : r / 3;
+                }
+
+                var dStep = PI / n;
+                var deg = -PI / 2;
+                var xStart = x + r * cos(deg);
+                var yStart = y + r * sin(deg);
+                deg += dStep;
+
+                // 记录边界点，用于判断inside
+                var pointList = style.pointList = [];
+                pointList.push([xStart, yStart]);
+                for (var i = 0, end = n * 2 - 1, ri; i < end; i ++) {
+                    ri = i % 2 === 0 ? r0 : r;
+                    pointList.push([x + ri * cos(deg), y + ri * sin(deg)]);
+                    deg += dStep;
+                }
+                pointList.push([xStart, yStart]);
+
+                // 绘制
+                ctx.moveTo(pointList[0][0], pointList[0][1]);
+                for (var i = 0; i < pointList.length; i ++) {
+                    ctx.lineTo(pointList[i][0], pointList[i][1]);
+                }
+
+                return;
+            },
+
+            /**
+             * 返回矩形区域，用于局部刷新和文字定位
+             * @param {Object} style
+             */
+            getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
+                var lineWidth;
+                if (style.brushType == 'stroke' || style.brushType == 'fill') {
+                    lineWidth = style.lineWidth || 1;
+                }
+                else {
+                    lineWidth = 0;
+                }
+                style.__rect = {
+                    x : Math.round(style.x - style.r - lineWidth / 2),
+                    y : Math.round(style.y - style.r - lineWidth / 2),
+                    width : style.r * 2 + lineWidth,
+                    height : style.r * 2 + lineWidth
+                };
+                
+                return style.__rect;
+            }
+        };
+
+        require('../tool/util').inherits(Star, Base);
+        return Star;
+    }
+);
+/**
+ * zrender
+ *
+ * @author sushuang (宿爽, sushuang@baidu.com)
+ *
+ * shape类：正n边形（n>=3）
+ * 可配图形属性：
+   {
+       // 基础属性
+       shape  : 'isogon',       // 必须，shape类标识，需要显式指定
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
+       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
+       invisible : {boolean},   // 默认为false，是否可见
+
+       // 样式属性，默认状态样式样式属性
+       style  : {
+           x             : {number},  // 必须，正n边形外接圆心横坐标
+           y             : {number},  // 必须，正n边形外接圆心纵坐标
+           r             : {number},  // 必须，正n边形外接圆半径
+           n             : {number},  // 必须，指明正几边形
+           brushType     : {string},  // 默认为fill，绘画方式
+                                      // fill(填充) | stroke(描边) | both(填充+描边)
+           color         : {color},   // 默认为'#000'，填充颜色，支持rgba
+           strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
+           lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
+           lineJoin      : {string},  // 默认为miter，线段连接样式。miter | round | bevel
+
+           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
+           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
+           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
+           shadowOffsetY : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
+
+           text          : {string},  // 默认为null，附加文本
+           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
+           textPosition  : {string},  // 默认为outside，附加文本位置。
+                                      // outside | inside
+           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
+                                      // start | end | left | right | center
+           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
+                                      // top | bottom | middle |
+                                      // alphabetic | hanging | ideographic
+           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
+                                      // 'inside' ? '#fff' : color
+       },
+
+       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
+       highlightStyle : {
+           // 同style
+       }
+
+       // 交互属性，详见shape.Base
+
+       // 事件属性，详见shape.Base
+   }
+         例子：
+   {
+       shape  : 'isogon',
+       id     : '123456',
+       zlevel : 1,
+       style  : {
+           x : 400,
+           y : 100,
+           r : 150,
+           n : 7,
+           color : '#eee'
+       },
+       myName : 'kener',   // 可自带任何有效自定义属性
+
+       clickable : true,
+       onClick : function(eventPacket) {
+           alert(eventPacket.target.myName);
+       }
+   }
+ */
+define(
+    'zrender/shape/Isogon',['require','../tool/math','./Base','../tool/util'],function (require) {
+        var math = require('../tool/math');
+        var sin = math.sin;
+        var cos = math.cos;
+        var PI = Math.PI;
+
+        var Base = require('./Base');
+
+        function Isogon(options) {
+            Base.call(this, options);
+        }
+
+        Isogon.prototype = {
+            type: 'isogon',
+
+            /**
+             * 创建n角星（n>=3）路径
+             * @param {Context2D} ctx Canvas 2D上下文
+             * @param {Object} style 样式
+             */
+            buildPath : function(ctx, style) {
+                var n = style.n;
+                if (!n || n < 2) { return; }
+
+                var x = style.x;
+                var y = style.y;
+                var r = style.r;
+
+                var dStep = 2 * PI / n;
+                var deg = -PI / 2;
+                var xStart = x + r * cos(deg);
+                var yStart = y + r * sin(deg);
+                deg += dStep;
+
+                // 记录边界点，用于判断insight
+                var pointList = style.pointList = [];
+                pointList.push([xStart, yStart]);
+                for (var i = 0, end = n - 1; i < end; i ++) {
+                    pointList.push([x + r * cos(deg), y + r * sin(deg)]);
+                    deg += dStep;
+                }
+                pointList.push([xStart, yStart]);
+
+                // 绘制
+                ctx.moveTo(pointList[0][0], pointList[0][1]);
+                for (var i = 0; i < pointList.length; i ++) {
+                    ctx.lineTo(pointList[i][0], pointList[i][1]);
+                }
+
+                return;
+            },
+
+            /**
+             * 返回矩形区域，用于局部刷新和文字定位
+             * @param {Object} style
+             */
+            getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
+                var lineWidth;
+                if (style.brushType == 'stroke' || style.brushType == 'fill') {
+                    lineWidth = style.lineWidth || 1;
+                }
+                else {
+                    lineWidth = 0;
+                }
+                style.__rect = {
+                    x : Math.round(style.x - style.r - lineWidth / 2),
+                    y : Math.round(style.y - style.r - lineWidth / 2),
+                    width : style.r * 2 + lineWidth,
+                    height : style.r * 2 + lineWidth
+                };
+                
+                return style.__rect;
+            }
+        };
+
+        require('../tool/util').inherits(Isogon, Base);
+        return Isogon;
+    }
+);
+/**
+ * zrender
+ *
+ * @author Neil (杨骥, yangji01@baidu.com)
+ *
+ * shape类：贝塞尔曲线
+ * 可配图形属性：
+   {
+       // 基础属性
+       shape  : 'beziercurve',         // 必须，shape类标识，需要显式指定
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
+       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
+       invisible : {boolean},   // 默认为false，是否可见
+
+       // 样式属性，默认状态样式样式属性
+       style  : {
+           xStart        : {number},  // 必须，起点横坐标
+           yStart        : {number},  // 必须，起点纵坐标
+           cpX1          : {number},  // 必须，第一个关联点横坐标
+           cpY1          : {number},  // 必须，第一个关联点纵坐标
+           cpX2          : {number},  // 可选，第二个关联点横坐标  缺省即为二次贝塞尔曲线
+           cpY2          : {number},  // 可选，第二个关联点纵坐标
+           xEnd          : {number},  // 必须，终点横坐标
+           yEnd          : {number},  // 必须，终点纵坐标
+           strokeColor   : {color},   // 默认为'#000'，线条颜色（轮廓），支持rgba
+
+           lineWidth     : {number},  // 默认为1，线条宽度
+           lineCap       : {string},  // 默认为butt，线帽样式。butt | round | square
+
+           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
+           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
+           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
+           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
+           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
+
+           text          : {string},  // 默认为null，附加文本
+           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
+           textPosition  : {string},  // 默认为end，附加文本位置。
+                                      // inside | start | end
+           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
+                                      // start | end | left | right | center
+           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
+                                      // top | bottom | middle |
+                                      // alphabetic | hanging | ideographic
+           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
+                                      // 'inside' ? '#000' : color
+       },
+
+       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
+       highlightStyle : {
+           // 同style
+       }
+
+       // 交互属性，详见shape.Base
+
+       // 事件属性，详见shape.Base
+   }
+         例子：
+   {
+       shape  : 'beziercurve',
+       id     : '123456',
+       zlevel : 1,
+       style  : {
+           xStart : 100,
+           yStart : 100,
+           xEnd : 200,
+           yEnd : 200,
+           strokeColor : '#eee',
+           lineWidth : 20,
+           text : 'Baidu'
+       },
+       myName : 'kener',  //可自带任何有效自定义属性
+
+       clickable : true,
+       onClick : function(eventPacket) {
+           alert(eventPacket.target.myName);
+       }
+   }
+ */
+define(
+    'zrender/shape/BezierCurve',['require','./Base','../tool/util'],function (require) {
+        var Base = require('./Base');
+        
+        function BezierCurve( options ) {
+            this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
+            this.textPosition = 'end';
+            Base.call(this, options);
+        }
+
+        BezierCurve.prototype = {
+            type: 'bezier-curve',
+
+            /**
+             * 创建线条路径
+             * @param {Context2D} ctx Canvas 2D上下文
+             * @param {Object} style 样式
+             */
+            buildPath : function(ctx, style) {
+                ctx.moveTo(style.xStart, style.yStart);
+                if (typeof style.cpX2 != 'undefined'
+                    && typeof style.cpY2 != 'undefined'
+                ) {
+                    ctx.bezierCurveTo(
+                        style.cpX1, style.cpY1,
+                        style.cpX2, style.cpY2,
+                        style.xEnd, style.yEnd
+                    );
+                }
+                else {
+                    ctx.quadraticCurveTo(
+                        style.cpX1, style.cpY1,
+                        style.xEnd, style.yEnd
+                    );
+                }
+
+            },
+
+            /**
+             * 返回矩形区域，用于局部刷新和文字定位
+             * @param {Object} style
+             */
+            getRect : function(style) {
+                if (style.__rect) {
+                    return style.__rect;
+                }
+                
+                var _minX = Math.min(style.xStart, style.xEnd, style.cpX1);
+                var _minY = Math.min(style.yStart, style.yEnd, style.cpY1);
+                var _maxX = Math.max(style.xStart, style.xEnd, style.cpX1);
+                var _maxY = Math.max(style.yStart, style.yEnd, style.cpY1);
+                var _x2 = style.cpX2;
+                var _y2 = style.cpY2;
+
+                if (typeof _x2 != 'undefined'
+                    && typeof _y2 != 'undefined'
+                ) {
+                    _minX = Math.min(_minX, _x2);
+                    _minY = Math.min(_minY, _y2);
+                    _maxX = Math.max(_maxX, _x2);
+                    _maxY = Math.max(_maxY, _y2);
+                }
+
+                var lineWidth = style.lineWidth || 1;
+                style.__rect = {
+                    x : _minX - lineWidth,
+                    y : _minY - lineWidth,
+                    width : _maxX - _minX + lineWidth,
+                    height : _maxY - _minY + lineWidth
+                };
+                
+                return style.__rect;
+            }
+        };
+
+        require('../tool/util').inherits(BezierCurve, Base);
+        return BezierCurve;
+    }
+);
+/**
+ * zrender
+ *
+ * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *
+ * shape类：折线
+ * 可配图形属性：
+   {
+       // 基础属性
+       shape  : 'brokenLine',         // 必须，shape类标识，需要显式指定
+       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
+       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
+       invisible : {boolean},   // 默认为false，是否可见
+
+       // 样式属性，默认状态样式样式属性
+       style  : {
+           pointList     : {Array},   // 必须，各个顶角坐标
+           smooth        : {Number},  // 默认为0
+           strokeColor   : {color},   // 默认为'#000'，线条颜色（轮廓），支持rgba
+           lineType      : {string},  // 默认为solid，线条类型，solid | dashed | dotted
+           lineWidth     : {number},  // 默认为1，线条宽度
+           lineCap       : {string},  // 默认为butt，线帽样式。butt | round | square
+           lineJoin      : {string},  // 默认为miter，线段连接样式。miter | round | bevel
+           miterLimit    : {number},  // 默认为10，最大斜接长度，仅当lineJoin为miter时生效
+
+           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
+           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
+           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
+           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
+           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
+
+           text          : {string},  // 默认为null，附加文本
+           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
+           textPosition  : {string},  // 默认为end，附加文本位置。
+                                      // start | end
+           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
+                                      // start | end | left | right | center
+           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
+                                      // top | bottom | middle |
+                                      // alphabetic | hanging | ideographic
+           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
+                                      // 'inside' ? '#000' : color
+       },
+
+       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
+       highlightStyle : {
+           // 同style
+       }
+
+       // 交互属性，详见shape.Base
+
+       // 事件属性，详见shape.Base
+   }
+         例子：
+   {
+       shape  : 'brokenLine',
+       id     : '123456',
+       zlevel : 1,
+       style  : {
+           pointList : [[10, 10], [300, 20], [298, 400], [50, 450]],
+           strokeColor : '#eee',
+           lineWidth : 20,
+           text : 'Baidu'
+       },
+       myName : 'kener',  //可自带任何有效自定义属性
+
+       clickable : true,
+       onClick : function(eventPacket) {
+           alert(eventPacket.target.myName);
+       }
+   }
+ */
+define(
+    'zrender/shape/BrokenLine',['require','./Base','./util/smoothSpline','./util/smoothBezier','./util/dashedLineTo','./Polygon','../tool/util'],function (require) {
+        var Base = require('./Base');
+        var smoothSpline = require('./util/smoothSpline');
+        var smoothBezier = require('./util/smoothBezier');
+        var dashedLineTo = require('./util/dashedLineTo');
+
+        function BrokenLine( options ) {
+            this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
+            this.textPosition = 'end';
+            Base.call(this, options);
+        }
+
+        BrokenLine.prototype =  {
+            type: 'broken-line',
+
+            /**
+             * 创建多边形路径
+             * @param {Context2D} ctx Canvas 2D上下文
+             * @param {Object} style 样式
+             */
+            buildPath : function(ctx, style) {
+                var pointList = style.pointList;
+                if (pointList.length < 2) {
+                    // 少于2个点就不画了~
+                    return;
+                }
+                
+                var len = Math.min(
+                    style.pointList.length, 
+                    Math.round(style.pointListLength || style.pointList.length)
+                );
+                
+                if (style.smooth && style.smooth !== 'spline') {
+                    var controlPoints = smoothBezier(
+                        pointList, style.smooth
+                    );
+
+                    ctx.moveTo(pointList[0][0], pointList[0][1]);
+                    var cp1;
+                    var cp2;
+                    var p;
+                    for (var i = 0; i < len - 1; i++) {
+                        cp1 = controlPoints[i * 2];
+                        cp2 = controlPoints[i * 2 + 1];
+                        p = pointList[i + 1];
+                        ctx.bezierCurveTo(
+                            cp1[0], cp1[1], cp2[0], cp2[1], p[0], p[1]
+                        );
+                    }
+                } 
+                else {
+                    if (style.smooth === 'spline') {
+                        pointList = smoothSpline(pointList);
+                        len = pointList.length;
+                    }
+                    if (!style.lineType || style.lineType == 'solid') {
+                        //默认为实线
+                        ctx.moveTo(pointList[0][0],pointList[0][1]);
+                        for (var i = 1; i < len; i++) {
+                            ctx.lineTo(pointList[i][0],pointList[i][1]);
+                        }
+                    }
+                    else if (style.lineType == 'dashed'
+                            || style.lineType == 'dotted'
+                    ) {
+                        var dashLength = (style.lineWidth || 1) 
+                                         * (style.lineType == 'dashed' ? 5 : 1);
+                        ctx.moveTo(pointList[0][0],pointList[0][1]);
+                        for (var i = 1; i < len; i++) {
+                            dashedLineTo(
+                                ctx,
+                                pointList[i - 1][0], pointList[i - 1][1],
+                                pointList[i][0], pointList[i][1],
+                                dashLength
+                            );
+                        }
+                    }
+                }
+                return;
+            },
+
+            /**
+             * 返回矩形区域，用于局部刷新和文字定位
+             * @param {Object} style
+             */
+            getRect : function(style) {
+                return require('./Polygon').prototype.getRect(style);
+            }
+        };
+
+        require('../tool/util').inherits(BrokenLine, Base);
+        return BrokenLine;
+    }
+);
+
+
+define(
+    'zrender/loadingEffect/Bar',['require','./Base','../tool/util','../tool/color','../shape/Rectangle'],function (require) {
+        var Base = require('./Base');
+        var util = require('../tool/util');
+        var zrColor = require('../tool/color');
+        var RectangleShape = require('../shape/Rectangle');
+
+        function Bar(options) {
+            Base.call(this, options);
+        }
+        util.inherits(Bar, Base);
+
+        
+        /**
          * 进度条
-         * @param {Object} loadingOption
+         * 
          * @param {Object} addShapeHandle
          * @param {Object} refreshHandle
          */
-        function bar(loadingOption, addShapeHandle, refreshHandle) {
-            var zrColor = require('./color');
+        Bar.prototype._start = function (addShapeHandle, refreshHandle) {
             // 特效默认配置
-            loadingOption = util.merge(
-                loadingOption,
+            var options = util.merge(
+                this.options,
                 {
                     textStyle : {
                         color : '#888'
@@ -8703,26 +11490,25 @@ define(
                     backgroundColor : 'rgba(250, 250, 250, 0.8)',
                     effectOption : {
                         x : 0,
-                        y : _height / 2 - 30,
-                        width : _width,
+                        y : this.canvasHeight / 2 - 30,
+                        width : this.canvasWidth,
                         height : 5,
                         brushType : 'fill',
                         timeInterval : 100
                     }
-                },
-                {'overwrite': false, 'recursive': true}
+                }
             );
 
-            var textShape = getTextShape(loadingOption.textStyle);
+            var textShape = this.createTextShape(options.textStyle);
+            var background = this.createBackgroundShape(options.backgroundColor);
 
-            var background = getBackgroundShape(loadingOption.backgroundColor);
+            var effectOption = options.effectOption;
 
-            var effectOption = loadingOption.effectOption;
             // 初始化动画元素
-            var barShape = {
-                shape : 'rectangle',
+            var barShape = new RectangleShape({
                 highlightStyle : util.clone(effectOption)
-            };
+            });
+
             barShape.highlightStyle.color =
                 effectOption.color
                 || zrColor.getLinearGradient(
@@ -8733,15 +11519,15 @@ define(
                     [[0, '#ff6400'], [0.5, '#ffe100'], [1, '#b1ff00']]
                 );
 
-            if (typeof loadingOption.progress != 'undefined') {
+            if (options.progress != null) {
                 // 指定进度
                 addShapeHandle(background);
 
                 barShape.highlightStyle.width =
-                    _adjust(loadingOption.progress, [0,1])
-                    * loadingOption.effectOption.width;
+                    _adjust(options.progress, [0,1])
+                    * options.effectOption.width;
+                    
                 addShapeHandle(barShape);
-
                 addShapeHandle(textShape);
 
                 refreshHandle();
@@ -8754,37 +11540,528 @@ define(
                     function() {
                         addShapeHandle(background);
 
-                        if (barShape.highlightStyle.width
-                            < loadingOption.effectOption.width
-                        ) {
+                        if (barShape.highlightStyle.width < effectOption.width) {
                             barShape.highlightStyle.width += 8;
                         }
                         else {
                             barShape.highlightStyle.width = 0;
                         }
                         addShapeHandle(barShape);
-
                         addShapeHandle(textShape);
                         refreshHandle();
                     },
                     effectOption.timeInterval
                 );
             }
+        };
+
+        return Bar;
+    }
+);
+
+
+define(
+    'zrender/loadingEffect/Bubble',['require','./Base','../tool/util','../tool/color','../shape/Circle'],function (require) {
+        var Base = require('./Base');
+        var util = require('../tool/util');
+        var zrColor = require('../tool/color');
+        var CircleShape = require('../shape/Circle');
+
+        function Bubble(options) {
+            Base.call(this, options);
         }
+        util.inherits(Bubble, Base);
 
         /**
-         * 旋转水滴
-         * @param {Object} loadingOption
+         * 泡泡
+         *
          * @param {Object} addShapeHandle
          * @param {Object} refreshHandle
          */
-        function whirling(loadingOption, addShapeHandle, refreshHandle) {
+        Bubble.prototype._start = function (addShapeHandle, refreshHandle) {
+            
             // 特效默认配置
-            loadingOption.effectOption = util.merge(
-                loadingOption.effectOption || {},
+            var options = util.merge(
+                this.options,
                 {
-                    x : _width / 2 - 80,
-                    y : _height / 2,
+                    textStyle : {
+                        color : '#888'
+                    },
+                    backgroundColor : 'rgba(250, 250, 250, 0.8)',
+                    effect : {
+                        n : 50,
+                        lineWidth : 2,
+                        brushType : 'stroke',
+                        color : 'random',
+                        timeInterval : 100
+                    }
+                }
+            );
+
+            var textShape = this.createTextShape(options.textStyle);
+            var background = this.createBackgroundShape(options.backgroundColor);
+
+            var effectOption = options.effect;
+            var n = effectOption.n;
+            var brushType = effectOption.brushType;
+            var lineWidth = effectOption.lineWidth;
+
+            var shapeList = [];
+            
+            // 初始化动画元素
+            for(var i = 0; i < n; i++) {
+                var color = effectOption.color == 'random'
+                    ? zrColor.alpha(zrColor.random(), 0.3)
+                    : effectOption.color;
+
+                shapeList[i] = new CircleShape({
+                    highlightStyle : {
+                        x : Math.ceil(Math.random() * this.canvasWidth),
+                        y : Math.ceil(Math.random() * this.canvasHeight),
+                        r : Math.ceil(Math.random() * 40),
+                        brushType : brushType,
+                        color : color,
+                        strokeColor : color,
+                        lineWidth : lineWidth
+                    },
+                    animationY : Math.ceil(Math.random() * 20)
+                });
+            }
+
+            return setInterval(
+                function () {
+                    addShapeHandle(background);
+                    
+                    for(var i = 0; i < n; i++) {
+                        var style = shapeList[i].highlightStyle;
+
+                        if (style.y - shapeList[i].animationY + style.r <= 0){
+                            shapeList[i].highlightStyle.y = this.canvasHeight + style.r;
+                            shapeList[i].highlightStyle.x = Math.ceil(
+                                Math.random() * this.canvasWidth
+                            );
+                        }
+                        shapeList[i].highlightStyle.y -=
+                            shapeList[i].animationY;
+
+                        addShapeHandle(shapeList[i]);
+                    }
+
+                    addShapeHandle(textShape);
+                    refreshHandle();
+                },
+                effectOption.timeInterval
+            );
+        };
+
+        return Bubble;
+    }
+);
+
+
+define(
+    'zrender/loadingEffect/DynamicLine',['require','./Base','../tool/util','../tool/color','../shape/Line'],function (require) {
+        var Base = require('./Base');
+        var util = require('../tool/util');
+        var zrColor = require('../tool/color');
+        var LineShape = require('../shape/Line');
+
+        function DynamicLine(options) {
+            Base.call(this, options);
+        }
+        util.inherits(DynamicLine, Base);
+
+
+        /**
+         * 动态线
+         * 
+         * @param {Object} addShapeHandle
+         * @param {Object} refreshHandle
+         */
+        DynamicLine.prototype._start = function (addShapeHandle, refreshHandle) {
+            // 特效默认配置
+            var options = util.merge(
+                this.options,
+                {
+                    textStyle : {
+                        color : '#fff'
+                    },
+                    backgroundColor : 'rgba(0, 0, 0, 0.8)',
+                    effectOption : {
+                        n : 30,
+                        lineWidth : 1,
+                        color : 'random',
+                        timeInterval : 100
+                    }
+                }
+            );
+
+            var textShape = this.createTextShape(options.textStyle);
+            var background = this.createBackgroundShape(options.backgroundColor);
+
+            var effectOption = options.effectOption;
+            var n = effectOption.n;
+            var lineWidth = effectOption.lineWidth;
+
+            var shapeList = [];
+            
+            // 初始化动画元素
+            for(var i = 0; i < n; i++) {
+                var xStart = -Math.ceil(Math.random() * 1000);
+                var len = Math.ceil(Math.random() * 400);
+                var pos = Math.ceil(Math.random() * this.canvasHeight);
+
+                var color = effectOption.color == 'random'
+                    ? zrColor.random()
+                    : effectOption.color;
+                
+                shapeList[i] = new LineShape({
+                    highlightStyle : {
+                        xStart : xStart,
+                        yStart : pos,
+                        xEnd : xStart + len,
+                        yEnd : pos,
+                        strokeColor : color,
+                        lineWidth : lineWidth
+                    },
+                    animationX : Math.ceil(Math.random() * 100),
+                    len : len
+                });
+            }
+
+            return setInterval(
+                function() {
+                    addShapeHandle(background);
+                    
+                    for(var i = 0; i < n; i++) {
+                        var style = shapeList[i].highlightStyle;
+
+                        if (style.xStart >= this.canvasWidth){
+                            shapeList[i].len = Math.ceil(Math.random() * 400);
+                            style.xStart = -400;
+                            style.xEnd = -400 + shapeList[i].len;
+                            style.yStart = Math.ceil(Math.random() * this.canvasHeight);
+                            style.yEnd = style.yStart;
+                        }
+
+                        style.xStart += shapeList[i].animationX;
+                        style.xEnd += shapeList[i].animationX;
+
+                        addShapeHandle(shapeList[i]);
+                    }
+
+                    addShapeHandle(textShape);
+                    refreshHandle();
+                },
+                effectOption.timeInterval
+            );
+        };
+
+        return DynamicLine;
+    }
+);
+
+
+define(
+    'zrender/loadingEffect/Ring',['require','./Base','../tool/util','../tool/color','../shape/Ring','../shape/Sector'],function (require) {
+        var Base = require('./Base');
+        var util = require('../tool/util');
+        var zrColor = require('../tool/color');
+        var RingShape = require('../shape/Ring');
+        var SectorShape = require('../shape/Sector');
+
+        function Ring(options) {
+            Base.call(this, options);
+        }
+        util.inherits(Ring, Base);
+
+
+        /**
+         * 圆环
+         * 
+         * @param {Object} addShapeHandle
+         * @param {Object} refreshHandle
+         */
+        Ring.prototype._start = function (addShapeHandle, refreshHandle) {
+            
+            // 特效默认配置
+            var options = util.merge(
+                this.options,
+                {
+                    textStyle : {
+                        color : '#07a'
+                    },
+                    backgroundColor : 'rgba(250, 250, 250, 0.8)',
+                    effect : {
+                        x : this.canvasWidth / 2,
+                        y : this.canvasHeight / 2,
+                        r0 : 60,
+                        r : 100,
+                        color : '#bbdcff',
+                        brushType: 'fill',
+                        textPosition : 'inside',
+                        textFont : 'normal 30px verdana',
+                        textColor : 'rgba(30, 144, 255, 0.6)',
+                        timeInterval : 100
+                    }
+                }
+            );
+
+            var effectOption = options.effect;
+
+            var textStyle = options.textStyle;
+            if (textStyle.x == null) {
+                textStyle.x = effectOption.x;
+            }
+            if (textStyle.y == null) {
+                textStyle.y = (effectOption.y + (effectOption.r0 + effectOption.r) / 2 - 5);
+            }
+            
+            var textShape = this.createTextShape(options.textStyle);
+            var background = this.createBackgroundShape(options.backgroundColor);
+
+            var x = effectOption.x;
+            var y = effectOption.y;
+            var r0 = effectOption.r0 + 6;
+            var r = effectOption.r - 6;
+            var color = effectOption.color;
+            var darkColor = zrColor.lift(color, 0.1);
+
+            var shapeRing = new RingShape({
+                highlightStyle : util.clone(effectOption)
+            });
+
+            // 初始化动画元素
+            var shapeList = [];
+            var clolrList = zrColor.getGradientColors(
+                ['#ff6400', '#ffe100', '#97ff00'], 25
+            );
+            var preAngle = 15;
+            var endAngle = 240;
+
+            for(var i = 0; i < 16; i++) {
+                shapeList.push(new SectorShape({
+                    highlightStyle  : {
+                        x : x,
+                        y : y,
+                        r0 : r0,
+                        r : r,
+                        startAngle : endAngle - preAngle,
+                        endAngle : endAngle,
+                        brushType: 'fill',
+                        color : darkColor
+                    },
+                    _color : zrColor.getLinearGradient(
+                        x + r0 * Math.cos(endAngle, true),
+                        y - r0 * Math.sin(endAngle, true),
+                        x + r0 * Math.cos(endAngle - preAngle, true),
+                        y - r0 * Math.sin(endAngle - preAngle, true),
+                        [
+                            [0, clolrList[i * 2]],
+                            [1, clolrList[i * 2 + 1]]
+                        ]
+                    )
+                }));
+                endAngle -= preAngle;
+            }
+            endAngle = 360;
+            for(var i = 0; i < 4; i++) {
+                shapeList.push(new SectorShape({
+                    highlightStyle  : {
+                        x : x,
+                        y : y,
+                        r0 : r0,
+                        r : r,
+                        startAngle : endAngle - preAngle,
+                        endAngle : endAngle,
+                        brushType: 'fill',
+                        color : darkColor
+                    },
+                    _color : zrColor.getLinearGradient(
+                        x + r0 * Math.cos(endAngle, true),
+                        y - r0 * Math.sin(endAngle, true),
+                        x + r0 * Math.cos(endAngle - preAngle, true),
+                        y - r0 * Math.sin(endAngle - preAngle, true),
+                        [
+                            [0, clolrList[i * 2 + 32]],
+                            [1, clolrList[i * 2 + 33]]
+                        ]
+                    )
+                }));
+                endAngle -= preAngle;
+            }
+
+            var n = 0;
+            if (options.progress != null) {
+                // 指定进度
+                addShapeHandle(background);
+
+                n = _adjust(options.progress, [0,1]).toFixed(2) * 100 / 5;
+                shapeRing.highlightStyle.text = n * 5 + '%';
+                addShapeHandle(shapeRing);
+
+                for(var i = 0; i < 20; i++) {
+                    shapeList[i].highlightStyle.color = i < n
+                        ? shapeList[i]._color : darkColor;
+                    addShapeHandle(shapeList[i]);
+                }
+
+                addShapeHandle(textShape);
+                refreshHandle();
+                return;
+            }
+
+            // 循环显示
+            return setInterval(
+                function() {
+                    addShapeHandle(background);
+
+                    n += n >= 20 ? -20 : 1;
+
+                    //shapeRing.highlightStyle.text = n * 5 + '%';
+                    addShapeHandle(shapeRing);
+
+                    for(var i = 0; i < 20; i++) {
+                        shapeList[i].highlightStyle.color = i < n
+                            ? shapeList[i]._color : darkColor;
+                        addShapeHandle(shapeList[i]);
+                    }
+
+                    addShapeHandle(textShape);
+                    refreshHandle();
+                },
+                effectOption.timeInterval
+            );
+        };
+
+        return Ring;
+    }
+);
+
+
+define(
+    'zrender/loadingEffect/Spin',['require','./Base','../tool/util','../tool/color','../shape/Sector'],function (require) {
+        var Base = require('./Base');
+        var util = require('../tool/util');
+        var zrColor = require('../tool/color');
+        var SectorShape = require('../shape/Sector');
+
+        function Spin(options) {
+            Base.call(this, options);
+        }
+        util.inherits(Spin, Base);
+
+        /**
+         * 旋转
+         * 
+         * @param {Object} addShapeHandle
+         * @param {Object} refreshHandle
+         */
+        Spin.prototype._start = function (addShapeHandle, refreshHandle) {
+            // 特效默认配置
+            var effectOption =  util.merge(
+                this.options.effect || {},
+                {
+                    x : this.canvasWidth / 2 - 80,
+                    y : this.canvasHeight / 2,
+                    r0 : 9,
+                    r : 15,
+                    n : 18,
+                    color : '#fff',
+                    timeInterval : 100
+                }
+            );
+
+            var options = util.merge(
+                this.options,
+                {
+                    textStyle : {
+                        color : '#fff',
+                        x : effectOption.x + effectOption.r + 10,
+                        y : effectOption.y,
+                        textAlign : 'start'
+                    },
+                    backgroundColor : 'rgba(0, 0, 0, 0.8)'
+                }
+            );
+
+            var textShape = this.createTextShape(options.textStyle);
+            var background = this.createBackgroundShape(options.backgroundColor);
+
+            var n = effectOption.n;
+            var x = effectOption.x;
+            var y = effectOption.y;
+            var r0 = effectOption.r0;
+            var r = effectOption.r;
+            var color = effectOption.color;
+
+            // 初始化动画元素
+            var shapeList = [];
+            var preAngle = Math.round(180 / n);
+            for(var i = 0; i < n; i++) {
+                shapeList[i] = new SectorShape({
+                    highlightStyle  : {
+                        x : x,
+                        y : y,
+                        r0 : r0,
+                        r : r,
+                        startAngle : preAngle * i * 2,
+                        endAngle : preAngle * i * 2 + preAngle,
+                        color : zrColor.alpha(color, (i + 1) / n),
+                        brushType: 'fill'
+                    }
+                });
+            }
+
+            var pos = [0, x, y];
+
+            return setInterval(
+                function() {
+                    addShapeHandle(background);
+                    pos[0] -= 0.3;
+                    for(var i = 0; i < n; i++) {
+                        shapeList[i].rotation = pos;
+                        addShapeHandle(shapeList[i]);
+                    }
+
+                    addShapeHandle(textShape);
+                    refreshHandle();
+                },
+                effectOption.timeInterval
+            );
+        };
+
+        return Spin;
+    }
+);
+
+
+define(
+    'zrender/loadingEffect/Whirling',['require','./Base','../tool/util','../shape/Ring','../shape/Droplet','../shape/Circle'],function (require) {
+        var Base = require('./Base');
+        var util = require('../tool/util');
+        var RingShape = require('../shape/Ring');
+        var DropletShape = require('../shape/Droplet');
+        var CircleShape = require('../shape/Circle');
+
+        function Whirling(options) {
+            Base.call(this, options);
+        }
+        util.inherits(Whirling, Base);
+
+        /**
+         * 旋转水滴
+         * 
+         * @param {Object} addShapeHandle
+         * @param {Object} refreshHandle
+         */
+        Whirling.prototype._start = function (addShapeHandle, refreshHandle) {
+            // 特效默认配置
+            var effectOption = util.merge(
+                this.options.effect || {},
+                {
+                    x : this.canvasWidth / 2 - 80,
+                    y : this.canvasHeight / 2,
                     r : 18,
                     colorIn : '#fff',
                     colorOut : '#555',
@@ -8793,9 +12070,8 @@ define(
                 }
             );
 
-            var effectOption = loadingOption.effectOption;
-            loadingOption = util.merge(
-                loadingOption,
+            var options = util.merge(
+                this.options,
                 {
                     textStyle : {
                         color : '#888',
@@ -8804,41 +12080,36 @@ define(
                         textAlign : 'start'
                     },
                     backgroundColor : 'rgba(250, 250, 250, 0.8)'
-                },
-                {'overwrite': false, 'recursive': true}
+                }
             );
 
-            var textShape = getTextShape(loadingOption.textStyle);
-
-            var background = getBackgroundShape(loadingOption.backgroundColor);
+            var textShape = this.createTextShape(options.textStyle);
+            var background = this.createBackgroundShape(options.backgroundColor);
 
             // 初始化动画元素
-            var droplet = {
-                shape : 'droplet',
+            var droplet = new DropletShape({
                 highlightStyle : {
                     a : Math.round(effectOption.r / 2),
                     b : Math.round(effectOption.r - effectOption.r / 6),
                     brushType : 'fill',
                     color : effectOption.colorWhirl
                 }
-            };
-            var circleIn = {
-                shape : 'circle',
+            });
+            var circleIn = new CircleShape({
                 highlightStyle : {
                     r : Math.round(effectOption.r / 6),
                     brushType : 'fill',
                     color : effectOption.colorIn
                 }
-            };
-            var circleOut = {
-                shape : 'ring',
+            });
+            var circleOut = new RingShape({
                 highlightStyle : {
                     r0 : Math.round(effectOption.r - effectOption.r / 3),
                     r : effectOption.r,
                     brushType : 'fill',
                     color : effectOption.colorOut
                 }
-            };
+            });
 
             var pos = [0, effectOption.x, effectOption.y];
 
@@ -8864,2971 +12135,8 @@ define(
                 },
                 effectOption.timeInterval
             );
-        }
-
-        /**
-         * 动态线
-         * @param {Object} loadingOption
-         * @param {Object} addShapeHandle
-         * @param {Object} refreshHandle
-         */
-        function dynamicLine(loadingOption, addShapeHandle, refreshHandle) {
-            var zrColor = require('./color');
-            // 特效默认配置
-            loadingOption = util.merge(
-                loadingOption,
-                {
-                    textStyle : {
-                        color : '#fff'
-                    },
-                    backgroundColor : 'rgba(0, 0, 0, 0.8)',
-                    effectOption : {
-                        n : 30,
-                        lineWidth : 1,
-                        color : 'random',
-                        timeInterval : 100
-                    }
-                },
-                {'overwrite': false, 'recursive': true}
-            );
-
-            var textShape = getTextShape(loadingOption.textStyle);
-
-            var background = getBackgroundShape(loadingOption.backgroundColor);
-
-            var effectOption = loadingOption.effectOption;
-            var n = effectOption.n;
-            var lineWidth = effectOption.lineWidth;
-
-            var shapeList = [];
-            var pos;
-            var len;
-            var xStart;
-            var color;
-            // 初始化动画元素
-            for(var i = 0; i < n; i++) {
-                xStart = -Math.ceil(Math.random() * 1000);
-                len = Math.ceil(Math.random() * 400);
-                pos = Math.ceil(Math.random() * _height);
-
-                if (effectOption.color == 'random') {
-                    color = zrColor.random();
-                }
-                else {
-                    color = effectOption.color;
-                }
-                shapeList[i] = {
-                    shape : 'line',
-                    highlightStyle : {
-                        xStart : xStart,
-                        yStart : pos,
-                        xEnd : xStart + len,
-                        yEnd : pos,
-                        strokeColor : color,
-                        lineWidth : lineWidth
-                    },
-                    animationX : Math.ceil(Math.random() * 100),
-                    len : len
-                };
-            }
-
-            return setInterval(
-                function() {
-                    addShapeHandle(background);
-                    var style;
-                    for(var i = 0; i < n; i++) {
-                        style = shapeList[i].highlightStyle ;
-
-                        if (style.xStart >= _width){
-                            shapeList[i].len = Math.ceil(Math.random() * 400);
-                            shapeList[i].highlightStyle .xStart = -400;
-                            shapeList[i].highlightStyle .xEnd =
-                                -400 + shapeList[i].len;
-                            shapeList[i].highlightStyle .yStart =
-                                Math.ceil(Math.random() * _height);
-                            shapeList[i].highlightStyle .yEnd =
-                                shapeList[i].highlightStyle.yStart;
-                        }
-                        shapeList[i].highlightStyle.xStart +=
-                            shapeList[i].animationX;
-                        shapeList[i].highlightStyle.xEnd +=
-                            shapeList[i].animationX;
-
-                        addShapeHandle(shapeList[i]);
-                    }
-
-                    addShapeHandle(textShape);
-                    refreshHandle();
-                },
-                effectOption.timeInterval
-            );
-        }
-
-        /**
-         * 泡泡
-         * @param {Object} loadingOption
-         * @param {Object} addShapeHandle
-         * @param {Object} refreshHandle
-         */
-        function bubble(loadingOption, addShapeHandle, refreshHandle) {
-            var zrColor = require('./color');
-            // 特效默认配置
-            loadingOption = util.merge(
-                loadingOption,
-                {
-                    textStyle : {
-                        color : '#888'
-                    },
-                    backgroundColor : 'rgba(250, 250, 250, 0.8)',
-                    effectOption : {
-                        n : 50,
-                        lineWidth : 2,
-                        brushType : 'stroke',
-                        color : 'random',
-                        timeInterval : 100
-                    }
-                },
-                {'overwrite': false, 'recursive': true}
-            );
-
-            var textShape = getTextShape(loadingOption.textStyle);
-
-            var background = getBackgroundShape(loadingOption.backgroundColor);
-
-            var effectOption = loadingOption.effectOption;
-            var n = effectOption.n;
-            var brushType = effectOption.brushType;
-            var lineWidth = effectOption.lineWidth;
-
-            var shapeList = [];
-            var color;
-            // 初始化动画元素
-            for(var i = 0; i < n; i++) {
-                if (effectOption.color == 'random') {
-                    color = zrColor.alpha(zrColor.random(), 0.3);
-                }
-                else {
-                    color = effectOption.color;
-                }
-                shapeList[i] = {
-                    shape : 'circle',
-                    highlightStyle : {
-                        x : Math.ceil(Math.random() * _width),
-                        y : Math.ceil(Math.random() * _height),
-                        r : Math.ceil(Math.random() * 40),
-                        brushType : brushType,
-                        color : color,
-                        strokeColor : color,
-                        lineWidth : lineWidth
-                    },
-                    animationY : Math.ceil(Math.random() * 20)
-                };
-            }
-
-            return setInterval(
-                function () {
-                    addShapeHandle(background);
-                    var style;
-                    for(var i = 0; i < n; i++) {
-                        style = shapeList[i].highlightStyle;
-
-                        if (style.y - shapeList[i].animationY + style.r <= 0){
-                            shapeList[i].highlightStyle.y = _height + style.r;
-                            shapeList[i].highlightStyle.x = Math.ceil(
-                                Math.random() * _width
-                            );
-                        }
-                        shapeList[i].highlightStyle.y -=
-                            shapeList[i].animationY;
-
-                        addShapeHandle(shapeList[i]);
-                    }
-
-                    addShapeHandle(textShape);
-                    refreshHandle();
-                },
-                effectOption.timeInterval
-            );
-        }
-
-        /**
-         * 旋转
-         * @param {Object} loadingOption
-         * @param {Object} addShapeHandle
-         * @param {Object} refreshHandle
-         */
-        function spin(loadingOption, addShapeHandle, refreshHandle) {
-            var zrColor = require('./color');
-            // 特效默认配置
-            loadingOption.effectOption = util.merge(
-                loadingOption.effectOption || {},
-                {
-                    x : _width / 2 - 80,
-                    y : _height / 2,
-                    r0 : 9,
-                    r : 15,
-                    n : 18,
-                    color : '#fff',
-                    timeInterval : 100
-                }
-            );
-
-            var effectOption = loadingOption.effectOption;
-            loadingOption = util.merge(
-                loadingOption,
-                {
-                    textStyle : {
-                        color : '#fff',
-                        x : effectOption.x + effectOption.r + 10,
-                        y : effectOption.y,
-                        textAlign : 'start'
-                    },
-                    backgroundColor : 'rgba(0, 0, 0, 0.8)'
-                },
-                {'overwrite': false, 'recursive': true}
-            );
-
-            var textShape = getTextShape(loadingOption.textStyle);
-
-            var background = getBackgroundShape(loadingOption.backgroundColor);
-
-            var n = effectOption.n;
-            var x = effectOption.x;
-            var y = effectOption.y;
-            var r0 = effectOption.r0;
-            var r = effectOption.r;
-            var color = effectOption.color;
-            // 初始化动画元素
-            var shapeList = [];
-            var preAngle = Math.round(180 / n);
-            for(var i = 0; i < n; i++) {
-                shapeList[i] = {
-                    shape : 'sector',
-                    highlightStyle  : {
-                        x : x,
-                        y : y,
-                        r0 : r0,
-                        r : r,
-                        startAngle : preAngle * i * 2,
-                        endAngle : preAngle * i * 2 + preAngle,
-                        color : zrColor.alpha(color, (i + 1) / n),
-                        brushType: 'fill'
-                    }
-                };
-            }
-
-            var pos = [0, x, y];
-
-            return setInterval(
-                function() {
-                    addShapeHandle(background);
-                    pos[0] -= 0.3;
-                    for(var i = 0; i < n; i++) {
-                        shapeList[i].rotation = pos;
-                        addShapeHandle(shapeList[i]);
-                    }
-
-                    addShapeHandle(textShape);
-                    refreshHandle();
-                },
-                effectOption.timeInterval
-            );
-        }
-
-
-        /**
-         * 圆环
-         * @param {Object} loadingOption
-         * @param {Object} addShapeHandle
-         * @param {Object} refreshHandle
-         */
-        function ring(loadingOption, addShapeHandle, refreshHandle) {
-            var zrColor = require('./color');
-            var zrMath = require('./math');
-            // 特效默认配置
-            loadingOption = util.merge(
-                loadingOption,
-                {
-                    textStyle : {
-                        color : '#07a'
-                    },
-                    backgroundColor : 'rgba(250, 250, 250, 0.8)',
-                    effectOption : {
-                        x : _width / 2,
-                        y : _height / 2,
-                        r0 : 60,
-                        r : 100,
-                        color : '#bbdcff',
-                        brushType: 'fill',
-                        textPosition : 'inside',
-                        textFont : 'normal 30px verdana',
-                        textColor : 'rgba(30, 144, 255, 0.6)',
-                        timeInterval : 100
-                    }
-                },
-                {'overwrite': false, 'recursive': true}
-            );
-
-            var effectOption = loadingOption.effectOption;
-            var textStyle = loadingOption.textStyle;
-            textStyle.x = typeof textStyle.x != 'undefined'
-                ? textStyle.x : effectOption.x;
-            textStyle.y = typeof textStyle.y != 'undefined'
-                ? textStyle.y
-                : (effectOption.y + (effectOption.r0 + effectOption.r) / 2 - 5);
-            var textShape = getTextShape(loadingOption.textStyle);
-
-            var background = getBackgroundShape(loadingOption.backgroundColor);
-
-            var x = effectOption.x;
-            var y = effectOption.y;
-            var r0 = effectOption.r0 + 6;
-            var r = effectOption.r - 6;
-            var color = effectOption.color;
-            var darkColor = zrColor.lift(color, 0.1);
-
-            var shapeRing = {
-                shape : 'ring',
-                highlightStyle : util.clone(effectOption)
-            };
-            // 初始化动画元素
-            var shapeList = [];
-            var clolrList = zrColor.getGradientColors(
-                ['#ff6400', '#ffe100', '#97ff00'], 25
-            );
-            var preAngle = 15;
-            var endAngle = 240;
-
-            for(var i = 0; i < 16; i++) {
-                shapeList.push({
-                    shape : 'sector',
-                    highlightStyle  : {
-                        x : x,
-                        y : y,
-                        r0 : r0,
-                        r : r,
-                        startAngle : endAngle - preAngle,
-                        endAngle : endAngle,
-                        brushType: 'fill',
-                        color : darkColor
-                    },
-                    _color : zrColor.getLinearGradient(
-                        x + r0 * zrMath.cos(endAngle, true),
-                        y - r0 * zrMath.sin(endAngle, true),
-                        x + r0 * zrMath.cos(endAngle - preAngle, true),
-                        y - r0 * zrMath.sin(endAngle - preAngle, true),
-                        [
-                            [0, clolrList[i * 2]],
-                            [1, clolrList[i * 2 + 1]]
-                        ]
-                    )
-                });
-                endAngle -= preAngle;
-            }
-            endAngle = 360;
-            for(var i = 0; i < 4; i++) {
-                shapeList.push({
-                    shape : 'sector',
-                    highlightStyle  : {
-                        x : x,
-                        y : y,
-                        r0 : r0,
-                        r : r,
-                        startAngle : endAngle - preAngle,
-                        endAngle : endAngle,
-                        brushType: 'fill',
-                        color : darkColor
-                    },
-                    _color : zrColor.getLinearGradient(
-                        x + r0 * zrMath.cos(endAngle, true),
-                        y - r0 * zrMath.sin(endAngle, true),
-                        x + r0 * zrMath.cos(endAngle - preAngle, true),
-                        y - r0 * zrMath.sin(endAngle - preAngle, true),
-                        [
-                            [0, clolrList[i * 2 + 32]],
-                            [1, clolrList[i * 2 + 33]]
-                        ]
-                    )
-                });
-                endAngle -= preAngle;
-            }
-
-            var n = 0;
-            if (typeof loadingOption.progress != 'undefined') {
-                // 指定进度
-                addShapeHandle(background);
-
-                n = _adjust(loadingOption.progress, [0,1]).toFixed(2) * 100 / 5;
-                shapeRing.highlightStyle.text = n * 5 + '%';
-                addShapeHandle(shapeRing);
-
-                for(var i = 0; i < 20; i++) {
-                    shapeList[i].highlightStyle.color = i < n
-                        ? shapeList[i]._color : darkColor;
-                    addShapeHandle(shapeList[i]);
-                }
-
-                addShapeHandle(textShape);
-
-                refreshHandle();
-                return;
-            }
-            else {
-                // 循环显示
-                return setInterval(
-                    function() {
-                        addShapeHandle(background);
-
-                        n += n >= 20 ? -20 : 1;
-
-                        //shapeRing.highlightStyle.text = n * 5 + '%';
-                        addShapeHandle(shapeRing);
-
-                        for(var i = 0; i < 20; i++) {
-                            shapeList[i].highlightStyle.color = i < n
-                                ? shapeList[i]._color : darkColor;
-                            addShapeHandle(shapeList[i]);
-                        }
-
-                        addShapeHandle(textShape);
-                        refreshHandle();
-                    },
-                    effectOption.timeInterval
-                );
-            }
-        }
-
-        function start(loadingOption, addShapeHandle, refreshHandle) {
-            var loadingEffect = self.ring;   // 默认特效
-            if (typeof loadingOption.effect == 'function') {
-                // 自定义特效
-                loadingEffect = loadingOption.effect;
-            }
-            else if (typeof self[loadingOption.effect] == 'function'){
-                // 指定特效
-                loadingEffect = self[loadingOption.effect];
-            }
-
-            _width = loadingOption.canvasSize.width;
-            _height = loadingOption.canvasSize.height;
-
-            return loadingEffect(
-                loadingOption, addShapeHandle, refreshHandle
-            );
-        }
-
-        function stop(loadingTimer) {
-            clearInterval(loadingTimer);
-        }
-
-        self = {
-            // 这三个方法用于扩展loading effect
-            getBackgroundShape : getBackgroundShape,
-            getTextShape : getTextShape,
-            define : define,
-            // 内置特效
-            bar : bar,
-            whirling : whirling,
-            dynamicLine : dynamicLine,
-            bubble : bubble,
-            spin : spin,
-            ring : ring,
-            // 方法
-            start : start,
-            stop : stop
         };
 
-        return self;
+        return Whirling;
     }
 );
-/**
- * zrender: 事件辅助类
- *
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
- *
- * getX：获取事件横坐标
- * getY：或者事件纵坐标
- * getDelta：或者鼠标滚轮变化
- * stop：停止事件传播
- * Dispatcher：事件分发器
- */
-define(
-    'zrender/tool/event',[],function() {
-        /**
-        * 提取鼠标（手指）x坐标
-        * @param  {event} e 事件.
-        * @return {number} 鼠标（手指）x坐标.
-        */
-        function getX(e) {
-            return typeof e.zrenderX != 'undefined' && e.zrenderX
-                   || typeof e.offsetX != 'undefined' && e.offsetX
-                   || typeof e.layerX != 'undefined' && e.layerX
-                   || typeof e.clientX != 'undefined' && e.clientX;
-        }
-
-        /**
-        * 提取鼠标y坐标
-        * @param  {event} e 事件.
-        * @return {number} 鼠标（手指）y坐标.
-        */
-        function getY(e) {
-            return typeof e.zrenderY != 'undefined' && e.zrenderY
-                   || typeof e.offsetY != 'undefined' && e.offsetY
-                   || typeof e.layerY != 'undefined' && e.layerY
-                   || typeof e.clientY != 'undefined' && e.clientY;
-        }
-
-        /**
-        * 提取鼠标滚轮变化
-        * @param  {event} e 事件.
-        * @return {number} 滚轮变化，正值说明滚轮是向上滚动，如果是负值说明滚轮是向下滚动
-        */
-        function getDelta(e) {
-            return typeof e.wheelDelta != 'undefined' && e.wheelDelta
-                   || typeof e.detail != 'undefined' && -e.detail;
-        }
-
-        /**
-         * 停止冒泡和阻止默认行为
-         * @param {Object} e : event对象
-         */
-        function stop(e) {
-            if (e.preventDefault) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
-            else {
-                e.returnValue = false;
-                e.cancelBubble = true;
-            }
-        }
-
-        /**
-         * 事件分发器
-         */
-        function Dispatcher() {
-            var _self = this;
-            var _h = {};
-
-            /**
-             * 单次触发绑定，dispatch后销毁
-             * @param {string} event 事件字符串
-             * @param {function} handler 响应函数
-             */
-            function one(event, handler) {
-                if(!handler || !event) {
-                    return _self;
-                }
-
-                if(!_h[event]) {
-                    _h[event] = [];
-                }
-
-                _h[event].push({
-                    h : handler,
-                    one : true
-                });
-
-                return _self;
-            }
-
-            /**
-             * 事件绑定
-             * @param {string} event 事件字符串
-             * @param {function} handler : 响应函数
-             */
-            function bind(event, handler) {
-                if(!handler || !event) {
-                    return _self;
-                }
-
-                if(!_h[event]) {
-                    _h[event] = [];
-                }
-
-                _h[event].push({
-                    h : handler,
-                    one : false
-                });
-
-                return _self;
-            }
-
-            /**
-             * 事件解绑定
-             * @param {string} event 事件字符串
-             * @param {function} handler : 响应函数
-             */
-            function unbind(event, handler) {
-                if(!event) {
-                    _h = {};
-                    return _self;
-                }
-
-                if(handler) {
-                    if(_h[event]) {
-                        var newList = [];
-                        for (var i = 0, l = _h[event].length; i < l; i++) {
-                            if (_h[event][i]['h'] != handler) {
-                                newList.push(_h[event][i]);
-                            }
-                        }
-                        _h[event] = newList;
-                    }
-
-                    if(_h[event] && _h[event].length === 0) {
-                        delete _h[event];
-                    }
-                }
-                else {
-                    delete _h[event];
-                }
-
-                return _self;
-            }
-
-            /**
-             * 事件分发
-             * @param {string} type : 事件类型
-             * @param {Object} event : event对象
-             * @param {Object} [attachment] : 附加信息
-             */
-            function dispatch(type, event, attachment) {
-                if(_h[type]) {
-                    var newList = [];
-                    var eventPacket = attachment || {};
-                    eventPacket.type = type;
-                    eventPacket.event = event;
-                    //eventPacket._target = self;
-                    for (var i = 0, l = _h[type].length; i < l; i++) {
-                        _h[type][i]['h'](eventPacket);
-                        if (!_h[type][i]['one']) {
-                            newList.push(_h[type][i]);
-                        }
-                    }
-
-                    if (newList.length != _h[type].length) {
-                        _h[type] = newList;
-                    }
-                }
-
-                return _self;
-            }
-
-            _self.one = one;
-            _self.bind = bind;
-            _self.unbind = unbind;
-            _self.dispatch = dispatch;
-        }
-
-        return {
-            getX : getX,
-            getY : getY,
-            getDelta : getDelta,
-            stop : stop,
-            Dispatcher : Dispatcher
-        };
-    }
-);
-/*!
- * ZRender, a lightweight canvas library with a MVC architecture, data-driven 
- * and provides an event model like DOM.
- *  
- * Copyright (c) 2013, Baidu Inc.
- * All rights reserved.
- * 
- * LICENSE
- * https://github.com/ecomfe/zrender/blob/master/LICENSE.txt
- */
-
-/**
- * zrender: core核心类
- *
- * @desc zrender是一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型。
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
- *
- */
-define(
-    'zrender/zrender',['require','./lib/excanvas','./tool/util','./tool/env','./shape','./shape/circle','./shape/ellipse','./shape/line','./shape/polygon','./shape/brokenLine','./shape/rectangle','./shape/ring','./shape/sector','./shape/text','./shape/heart','./shape/droplet','./shape/path','./shape/image','./shape/beziercurve','./shape/star','./shape/isogon','./animation/animation','./config','./tool/loadingEffect','./tool/loadingEffect','./config','./tool/env','./tool/event'],function(require) {
-        /*
-         * HTML5 Canvas for Internet Explorer!
-         * Modern browsers like Firefox, Safari, Chrome and Opera support
-         * the HTML5 canvas tag to allow 2D command-based drawing.
-         * ExplorerCanvas brings the same functionality to Internet Explorer.
-         * To use, web developers only need to include a single script tag
-         * in their existing web pages.
-         *
-         * https://code.google.com/p/explorercanvas/
-         * http://explorercanvas.googlecode.com/svn/trunk/excanvas.js
-         */
-        // 核心代码会生成一个全局变量 G_vmlCanvasManager，模块改造后借用于快速判断canvas支持
-        require('./lib/excanvas');
-
-        var util = require('./tool/util');
-
-        var self = {};
-        var zrender = self;     // 提供MVC内部反向使用静态方法；
-
-        var _idx = 0;           //ZRender instance's id
-        var _instances = {};    //ZRender实例map索引
-
-        self.version = '1.1.2';
-
-        /**
-         * zrender初始化
-         * 不让外部直接new ZRender实例，为啥？
-         * 不为啥，提供全局可控同时减少全局污染和降低命名冲突的风险！
-         *
-         * @param {HTMLElement} dom dom对象，不帮你做document.getElementById了
-         * @param {Object=} params 个性化参数，如自定义shape集合，带进来就好
-         *
-         * @return {ZRender} ZRender实例
-         */
-        self.init = function(dom, params) {
-            var zi = new ZRender(++_idx + '', dom, params || {});
-            _instances[_idx] = zi;
-            return zi;
-        };
-
-        /**
-         * zrender实例销毁，记在_instances里的索引也会删除了
-         * 管生就得管死，可以通过zrender.dispose(zi)销毁指定ZRender实例
-         * 当然也可以直接zi.dispose()自己销毁
-         *
-         * @param {ZRender=} zi ZRender对象，不传则销毁全部
-         */
-        self.dispose = function(zi) {
-            if (zi) {
-                zi.dispose();
-            }
-            else {
-                for (var z in _instances) {
-                    _instances[z].dispose();
-                }
-                _instances = {};
-            }
-            return self;
-        };
-
-        /**
-         * 获取zrender实例
-         *
-         * @param {string} id ZRender对象索引
-         */
-        self.getInstance = function(id) {
-            return _instances[id];
-        };
-
-        /**
-         * 删除zrender实例，ZRender实例dispose时会调用，
-         * 删除后getInstance则返回undefined
-         * ps: 仅是删除，删除的实例不代表已经dispose了~~
-         *     这是一个摆脱全局zrender.dispose()自动销毁的后门，
-         *     take care of yourself~
-         *
-         * @param {string} id ZRender对象索引
-         */
-        self.delInstance = function(id) {
-            if (_instances[id]) {
-                //只是对垃圾回收上的友好照顾，不写也大不了~
-                _instances[id] = null;
-                delete _instances[id];
-            }
-            return self;
-        };
-
-        // 是否异常捕获
-        self.catchBrushException = false;
-
-        /**
-         * debug日志选项：catchBrushException为true下有效
-         * 0 : 不生成debug数据，发布用
-         * 1 : 异常抛出，调试用
-         * 2 : 控制台输出，调试用
-         */
-        self.debugMode = 0;
-        self.log = function() {
-            if (self.debugMode === 0) {
-                return;
-            }
-            else if (self.debugMode == 1) {
-                for (var k in arguments) {
-                    throw new Error(arguments[k]);
-                }
-            }
-            else if (self.debugMode > 1) {
-                for (var k in arguments) {
-                    console.log(arguments[k]);
-                }
-            }
-
-            return self;
-        };
-        /* for debug
-        self.log = function(mes) {
-            document.getElementById('wrong-message').innerHTML =
-                mes + ' ' + (new Date() - 0)
-                + '<br/>' 
-                + document.getElementById('wrong-message').innerHTML;
-        };
-        */
-        /**
-         * ZRender接口类，对外可用的所有接口都在这里！！
-         * storage（M）、painter（V）、handler（C）为内部私有类，外部接口不可见
-         * 非get接口统一返回self支持链式调用~
-         *
-         * @param {string} id 唯一标识
-         * @param {HTMLElement} dom dom对象，不帮你做document.getElementById
-         * @param {Object=} params 个性化参数，如自定义shape集合，带进来就好
-         *
-         * @return {ZRender} ZRender实例
-         */
-        function ZRender(id, dom, params) {
-            var self = this;
-            self.env = require('./tool/env');
-            
-            var shape = require('./shape');
-            // 内置图形注册
-            require('./shape/circle');
-            require('./shape/ellipse');
-            require('./shape/line');
-            require('./shape/polygon');
-            require('./shape/brokenLine');
-            require('./shape/rectangle');
-            require('./shape/ring');
-            require('./shape/sector');
-            require('./shape/text');
-            require('./shape/heart');
-            require('./shape/droplet');
-            require('./shape/path');
-            require('./shape/image');
-            require('./shape/beziercurve');
-            require('./shape/star');
-            require('./shape/isogon');
-            
-            var shapeLibrary;
-
-            if (typeof params.shape == 'undefined') {
-                //默认图形库
-                shapeLibrary = shape;
-            }
-            else {
-                //自定义图形库，私有化，实例独占
-                shapeLibrary = {};
-                for (var s in params.shape) {
-                    shapeLibrary[s] = params.shape[s];
-                }
-                shapeLibrary.get = function(name) {
-                    return shapeLibrary[name] || shape.get(name);
-                };
-            }
-
-            var storage = new Storage(shapeLibrary);
-            var painter = new Painter(dom, storage, shapeLibrary);
-            var handler = new Handler(dom, storage, painter, shapeLibrary);
-
-            // 动画控制
-            var Animation = require('./animation/animation');
-            var animatingShapes = [];
-            var animation = new Animation({
-                stage : {
-                    update : function(){
-                        var shapes = animatingShapes;
-                        for (var i = 0, l = shapes.length; i < l; i++) {
-                            storage.mod(shapes[i].id);
-                        }
-                        if (shapes.length > 0) {
-                            painter.refresh();
-                        }
-                    }
-                }
-            });
-            animation.start();
-
-            /**
-             * 获取实例唯一标识
-             */
-            self.getId = function() {
-                return id;
-            };
-
-            /**
-             * 添加图形形状
-             * @param {Object} shape 形状对象，可用属性全集，详见各shape
-             */
-            self.addShape = function(shape) {
-                storage.add(shape);
-                return self;
-            };
-
-            /**
-             * 删除图形形状
-             * @param {string} shapeId 形状对象唯一标识
-             */
-            self.delShape = function(shapeId) {
-                storage.del(shapeId);
-                return self;
-            };
-
-            /**
-             * 修改图形形状
-             * @param {string} shapeId 形状对象唯一标识
-             * @param {Object} shape 形状对象
-             * @param {fast} boolean 默认为false, 如果为true的话会在merge中省略部分判断
-             */
-            self.modShape = function(shapeId, shape, fast) {
-                storage.mod(shapeId, shape, fast);
-                return self;
-            };
-
-            /**
-             * 修改指定zlevel的绘制配置项，例如clearColor
-             * @param {string} zLevel
-             * @param {Object} config 配置对象, 目前支持clearColor 
-             */
-            self.modLayer = function(zLevel, config) {
-                painter.modLayer(zLevel, config);
-            }
-
-            /**
-             * 添加额外高亮层显示，仅提供添加方法，每次刷新后高亮层图形均被清空
-             * @param {Object} shape 形状对象
-             */
-            self.addHoverShape = function(shape) {
-                storage.addHover(shape);
-                return self;
-            };
-
-            /**
-             * 渲染
-             * @param {Function} callback  渲染结束后回调函数
-             * todo:增加缓动函数
-             */
-            self.render = function(callback) {
-                painter.render(callback);
-                return self;
-            };
-
-            /**
-             * 视图更新
-             * @param {Function} callback  视图更新后回调函数
-             */
-            self.refresh = function(callback) {
-                painter.refresh(callback);
-                return self;
-            };
-            
-            /**
-             * 高亮层更新
-             * @param {Function} callback  视图更新后回调函数
-             */
-            self.refreshHover = function(callback) {
-                painter.refreshHover(callback);
-                return self;
-            };
-
-            /**
-             * 视图更新
-             * @param {Array} shapeList 需要更新的图形元素列表
-             * @param {Function} callback  视图更新后回调函数
-             */
-            self.update = function(shapeList, callback) {
-                painter.update(shapeList, callback);
-                return self;
-            };
-
-            self.resize = function() {
-                painter.resize();
-                return self;
-            };
-
-            /**
-             * 动画
-             * @param {string} shapeId 形状对象唯一标识
-             * @param {string} path 需要添加动画的属性获取路径，可以通过a.b.c来获取深层的属性
-             * @param {boolean} loop 动画是否循环
-             * @return {Object} 动画的Deferred对象
-             * Example:
-             * zr.animate( circleId, 'style', false)
-             *   .when(1000, { x: 10} )
-             *   .done( function(){ console.log('Animation done')})
-             *   .start()
-             */
-            self.animate = function(shapeId, path, loop) {
-                var shape = storage.get(shapeId);
-                if (shape) {
-                    var target;
-                    if (path) {
-                        var pathSplitted = path.split('.');
-                        var prop = shape;
-                        for (var i = 0, l = pathSplitted.length; i < l; i++) {
-                            if (!prop) {
-                                continue;
-                            }
-                            prop = prop[pathSplitted[i]];
-                        }
-                        if (prop) {
-                            target = prop;
-                        }
-                    }
-                    else {
-                        target = shape;
-                    }
-                    if (!target) {
-                        zrender.log(
-                            'Property "'
-                            + path
-                            + '" is not existed in shape '
-                            + shapeId
-                        );
-                        return;
-                    }
-
-                    if (typeof(shape.__aniCount) === 'undefined') {
-                        // 正在进行的动画记数
-                        shape.__aniCount = 0;
-                    }
-                    if (shape.__aniCount === 0) {
-                        animatingShapes.push(shape);
-                    }
-                    shape.__aniCount++;
-
-                    return animation.animate(target, {loop : loop})
-                        .done(function() {
-                            shape.__aniCount --;
-                            if( shape.__aniCount === 0){
-                                // 从animatingShapes里移除
-                                var idx = util.indexOf(animatingShapes, shape);
-                                animatingShapes.splice(idx, 1);
-                            }
-                        });
-                }
-                else {
-                    zrender.log('Shape "'+ shapeId + '" not existed');
-                }
-            };
-
-            /**
-             * 停止所有动画
-             */
-            self.clearAnimation = function() {
-                animation.clear();
-            };
-
-            /**
-             * loading显示
-             * @param  {Object} loadingOption 参数
-             * {
-             *     effect,
-             *     //loading话术
-             *     text:'',
-             *     // 水平安放位置，默认为 'center'，可指定x坐标
-             *     x:'center' || 'left' || 'right' || {number},
-             *     // 垂直安放位置，默认为'top'，可指定y坐标
-             *     y:'top' || 'bottom' || {number},
-             *
-             *     textStyle:{
-             *         textFont: 'normal 20px Arial' || {textFont}, //文本字体
-             *         color: {color}
-             *     }
-             * }
-             */
-            self.showLoading = function(loadingOption) {
-                painter.showLoading(loadingOption);
-                return self;
-            };
-
-            /**
-             * loading结束
-             */
-            self.hideLoading = function() {
-                painter.hideLoading();
-                return self;
-            };
-
-            /**
-             * 生成形状唯一ID
-             * @param {string} [idPrefix] id前缀
-             * @return {string} 不重复ID
-             */
-            self.newShapeId = function(idPrefix) {
-                return storage.newShapeId(idPrefix);
-            };
-
-            /**
-             * 获取视图宽度
-             */
-            self.getWidth = function() {
-                return painter.getWidth();
-            };
-
-            /**
-             * 获取视图高度
-             */
-            self.getHeight = function() {
-                return painter.getHeight();
-            };
-
-            /**
-             * 图像导出 
-             */
-            self.toDataURL = function(type, backgroundColor, args) {
-                return painter.toDataURL(type, backgroundColor, args);
-            };
-
-            /**
-             * 将常规shape转成image shape
-             */
-            self.shapeToImage = function(e, width, height) {
-                var id = self.newShapeId('image');
-                return painter.shapeToImage(id, e, width, height);
-            };
-
-            /**
-             * 事件绑定
-             * @param {string} eventName 事件名称
-             * @param {Function} eventHandler 响应函数
-             */
-            self.on = function(eventName, eventHandler) {
-                handler.on(eventName, eventHandler);
-                return self;
-            };
-
-            /**
-             * 事件解绑定，参数为空则解绑所有自定义事件
-             * @param {string} eventName 事件名称
-             * @param {Function} eventHandler 响应函数
-             */
-            self.un = function(eventName, eventHandler) {
-                handler.un(eventName, eventHandler);
-                return self;
-            };
-            
-            /**
-             * 事件触发
-             * @param {string} event 事件名称，resize，hover，drag，etc~
-             * @param {event=} event event dom事件对象
-             */
-            self.trigger = function(eventName, event) {
-                handler.trigger(eventName, event);
-                return self;
-            };
-            
-
-            /**
-             * 清除当前ZRender下所有类图的数据和显示，clear后MVC和已绑定事件均还存在在，ZRender可用
-             */
-            self.clear = function() {
-                storage.del();
-                painter.clear();
-                return self;
-            };
-
-            /**
-             * 释放当前ZR实例（删除包括dom，数据、显示和事件绑定），dispose后ZR不可用
-             */
-            self.dispose = function() {
-                animation.stop();
-                animation = null;
-                animatingShapes = null;
-
-                self.clear();
-                self = null;
-
-                storage.dispose();
-                storage = null;
-
-                painter.dispose();
-                painter = null;
-
-                handler.dispose();
-                handler = null;
-
-                //释放后告诉全局删除对自己的索引，没想到啥好方法
-                zrender.delInstance(id);
-
-                return;
-            };
-        }
-
-        /**
-         * 内容仓库 (M)
-         * @param {Object} shape 图形库
-         */
-        function Storage(shape) {
-            var self = this;
-
-            var _idBase = 0;            //图形数据id自增基础
-
-            // 所有常规形状，id索引的map
-            var _elements = {};
-
-            // 所有形状的z轴方向排列，提高遍历性能，zElements[0]的形状在zElements[1]形状下方
-            var _zElements = [];
-
-            // 高亮层形状，不稳定，动态增删，数组位置也是z轴方向，靠前显示在下方
-            var _hoverElements = [];
-
-            var _maxZlevel = 0;         // 最大zlevel
-            var _changedZlevel = {};    // 有数据改变的zlevel
-
-            /**
-             * 快速判断标志~
-             * e.__silent 是否需要hover判断
-             * e.__needTransform 是否需要进行transform
-             * e.style.__rect 区域矩阵缓存，修改后清空，重新计算一次
-             */
-            function _mark(e) {
-                if (e.hoverable || e.onclick || e.draggable
-                    || e.onmousemove || e.onmouseover || e.onmouseout
-                    || e.onmousedown || e.onmouseup
-                    || e.ondragenter || e.ondragover || e.ondragleave
-                    || e.ondrop
-                ) {
-                    e.__silent = false;
-                }
-                else {
-                    e.__silent = true;
-                }
-
-                if (Math.abs(e.rotation[0]) > 0.0001
-                    || Math.abs(e.position[0]) > 0.0001
-                    || Math.abs(e.position[1]) > 0.0001
-                    || Math.abs(e.scale[0] - 1) > 0.0001
-                    || Math.abs(e.scale[1] - 1) > 0.0001
-                ) {
-                    e.__needTransform = true;
-                }
-                else {
-                    e.__needTransform = false;
-                }
-
-                e.style = e.style || {};
-                e.style.__rect = null;
-            }
-
-            /**
-             * 唯一标识id生成
-             * @param {string=} idHead 标识前缀
-             */
-            function newShapeId(idHead) {
-                return (idHead || '') + (++_idBase);
-            }
-
-            /**
-             * 添加
-             * @param {Object} params 参数
-             */
-            function add(params) {
-                // 默认&必须的参数
-                var e = {
-                    'shape': 'circle',                      // 形状
-                    'id': params.id || self.newShapeId(),   // 唯一标识
-                    'zlevel': 0,                            // z轴位置
-                    'draggable': false,                     // draggable可拖拽
-                    'clickable': false,                     // clickable可点击响应
-                    'hoverable': true,                      // hoverable可悬浮响应
-                    'position': [0, 0],
-                    'rotation' : [0, 0, 0],
-                    'scale' : [1, 1, 0, 0]
-                };
-                util.merge(
-                    e,
-                    params,
-                    {
-                        'overwrite': true,
-                        'recursive': true
-                    }
-                );
-                _mark(e);
-                _elements[e.id] = e;
-                _zElements[e.zlevel] = _zElements[e.zlevel] || [];
-                _zElements[e.zlevel].push(e);
-
-                _maxZlevel = Math.max(_maxZlevel,e.zlevel);
-                _changedZlevel[e.zlevel] = true;
-
-                return self;
-            }
-
-            /**
-             * 根据指定的shapeId获取相应的shape属性
-             * @param {string=} idx 唯一标识
-             */
-            function get(shapeId) {
-                return _elements[shapeId];
-            }
-
-            /**
-             * 删除，shapeId不指定则全清空
-             * @param {string= | Array} idx 唯一标识
-             */
-            function del(shapeId) {
-                if (typeof shapeId != 'undefined') {
-                    var delMap = {};
-                    if (!(shapeId instanceof Array)) {
-                        // 单个
-                        delMap[shapeId] = true;
-                    }
-                    else {
-                        // 批量删除
-                        if (shapeId.lenth < 1) { // 空数组
-                            return;
-                        }
-                        for (var i = 0, l = shapeId.length; i < l; i++) {
-                            delMap[shapeId[i].id] = true;
-                        }
-                    }
-                    var newList;
-                    var oldList;
-                    var zlevel;
-                    var zChanged = {};
-                    for (var sId in delMap) {
-                        if (_elements[sId]) {
-                            zlevel = _elements[sId].zlevel;
-                            _changedZlevel[zlevel] = true;
-                            if (!zChanged[zlevel]) {
-                                oldList = _zElements[zlevel];
-                                newList = [];
-                                for (var i = 0, l = oldList.length; i < l; i++){
-                                    if (!delMap[oldList[i].id]) {
-                                        newList.push(oldList[i]);
-                                    }
-                                }
-                                _zElements[zlevel] = newList;
-                                zChanged[zlevel] = true;
-                            }
-                            delete _elements[sId];
-                        }
-                    }
-                }
-                else{
-                    //不指定shapeId清空
-                    _elements = {};
-                    _zElements = [];
-                    _hoverElements = [];
-                    _maxZlevel = 0;         //最大zlevel
-                    _changedZlevel = {      //有数据改变的zlevel
-                        all : true
-                    };
-                }
-
-                return self;
-            }
-
-            /**
-             * 修改
-             * @param {string} idx 唯一标识
-             * @param {Object} params]参数
-             * @param {boolean} fast
-             */
-            function mod(shapeId, params, fast) {
-                var e = _elements[shapeId];
-                if (e) {
-                    _changedZlevel[e.zlevel] = true;    // 可能修改前后不在一层
-                    if (params) {
-                        if (fast) {
-                            util.mergeFast(
-                                e,
-                                params,
-                                true,
-                                true
-                            );
-                        } else {
-                            util.merge(
-                                e,
-                                params,
-                                {
-                                    'overwrite': true,
-                                    'recursive': true
-                                }
-                            );
-                        }   
-                    }
-                    _mark(e);
-                    _changedZlevel[e.zlevel] = true;    // 可能修改前后不在一层
-                    _maxZlevel = Math.max(_maxZlevel,e.zlevel);
-                }
-
-                return self;
-            }
-
-            /**
-             * 常规形状位置漂移，形状自身定义漂移函数
-             * @param {string} idx 形状唯一标识
-             *
-             */
-            function drift(shapeId, dx, dy) {
-                var e = _elements[shapeId];
-                if (!e) {
-                    return;
-                }
-                e.__needTransform = true;
-                if (!e.ondrift //ondrift
-                    //有onbrush并且调用执行返回false或undefined则继续
-                    || (e.ondrift && !e.ondrift(e, dx, dy))
-                ) {
-                    if (zrender.catchBrushException) {
-                        try {
-                            shape.get(e.shape).drift(e, dx, dy);
-                        }
-                        catch(error) {
-                            zrender.log(error, 'drift error of ' + e.shape, e);
-                        }
-                    }
-                    else {
-                        shape.get(e.shape).drift(e, dx, dy);
-                    }
-                }
-
-                _changedZlevel[e.zlevel] = true;
-
-                return self;
-            }
-
-            /**
-             * 添加高亮层数据
-             * @param {Object} params 参数
-             */
-            function addHover(params) {
-                if ((params.rotation && Math.abs(params.rotation[0]) > 0.0001)
-                    || (params.position
-                        && (Math.abs(params.position[0]) > 0.0001
-                            || Math.abs(params.position[1]) > 0.0001))
-                    || (params.scale
-                        && (Math.abs(params.scale[0] - 1) > 0.0001
-                        || Math.abs(params.scale[1] - 1) > 0.0001))
-                ) {
-                    params.__needTransform = true;
-                }
-                else {
-                    params.__needTransform = false;
-                }
-
-                _hoverElements.push(params);
-                return self;
-            }
-
-            /**
-             * 删除高亮层数据
-             */
-            function delHover() {
-                _hoverElements = [];
-                return self;
-            }
-
-            function hasHoverShape() {
-                return _hoverElements.length > 0;
-            }
-
-            /**
-             * 遍历迭代器
-             * @param {Function} fun 迭代回调函数，return true终止迭代
-             * @param {Object=} option 迭代参数，缺省为仅降序遍历常规形状
-             *     hover : true 是否迭代高亮层数据
-             *     normal : 'down' | 'up' | 'free' 是否迭代常规数据，迭代时是否指定及z轴顺序
-             */
-            function iterShape(fun, option) {
-                if (!option) {
-                    option = {
-                        hover: false,
-                        normal: 'down'
-                    };
-                }
-                if (option.hover) {
-                    //高亮层数据遍历
-                    for (var i = 0, l = _hoverElements.length; i < l; i++) {
-                        if (fun(_hoverElements[i])) {
-                            return self;
-                        }
-                    }
-                }
-
-                var zlist;
-                var len;
-                if (typeof option.normal != 'undefined') {
-                    //z轴遍历: 'down' | 'up' | 'free'
-                    switch (option.normal) {
-                        case 'down':
-                            //降序遍历，高层优先
-                            for (var l = _zElements.length - 1; l >= 0; l--) {
-                                zlist = _zElements[l];
-                                if (zlist) {
-                                    len = zlist.length;
-                                    while (len--) {
-                                        if (fun(zlist[len])) {
-                                            return self;
-                                        }
-                                    }
-                                }
-                            }
-                            break;
-                        case 'up':
-                            //升序遍历，底层优先
-                            for (var i = 0, l = _zElements.length; i < l; i++) {
-                                zlist = _zElements[i];
-                                if (zlist) {
-                                    len = zlist.length;
-                                    for (var k = 0; k < len; k++) {
-                                        if (fun(zlist[k])) {
-                                            return self;
-                                        }
-                                    }
-                                }
-                            }
-                            break;
-                        // case 'free':
-                        default:
-                            //无序遍历
-                            for (var i in _elements) {
-                                if (fun(_elements[i])) {
-                                    return self;
-                                }
-                            }
-                            break;
-                    }
-                }
-
-                return self;
-            }
-
-            function getMaxZlevel() {
-                return _maxZlevel;
-            }
-
-            function getChangedZlevel() {
-                return _changedZlevel;
-            }
-
-            function clearChangedZlevel() {
-                _changedZlevel = {};
-                return self;
-            }
-
-            function setChangedZlevle(level){
-                _changedZlevel[level] = true;
-                return self;
-            }
-
-            /**
-             * 释放
-             */
-            function dispose() {
-                _elements = null;
-                _zElements = null;
-                _hoverElements = null;
-                self = null;
-
-                return;
-            }
-
-            self.newShapeId = newShapeId;
-            self.add = add;
-            self.get = get;
-            self.del = del;
-            self.addHover = addHover;
-            self.delHover = delHover;
-            self.hasHoverShape = hasHoverShape;
-            self.mod = mod;
-            self.drift = drift;
-            self.iterShape = iterShape;
-            self.getMaxZlevel = getMaxZlevel;
-            self.getChangedZlevel = getChangedZlevel;
-            self.clearChangedZlevel = clearChangedZlevel;
-            self.setChangedZlevle = setChangedZlevle;
-            self.dispose = dispose;
-        }
-
-        /**
-         * 绘图类 (V)
-         * @param {HTMLElement} root 绘图区域
-         * @param {storage} storage Storage实例
-         * @param {Object} shape 图形库
-         */
-        function Painter(root, storage, shape) {
-            var config = require('./config');
-            var self = this;
-
-            var _domList = {};              //canvas dom元素
-            var _ctxList = {};              //canvas 2D context对象，与domList对应
-            var _domListBack = {};
-            var _ctxListBack = {};
-            
-            // 每个zLevel 的配置
-            // @config clearColor
-            var _zLevelConfig = {};
-
-            var _maxZlevel = 0;             //最大zlevel，缓存记录
-            var _loadingTimer;
-
-            var _domRoot = document.createElement('div');
-            // 避免页面选中的尴尬
-            _domRoot.onselectstart = function() {
-                return false;
-            };
-
-            //宽，缓存记录
-            var _width;
-            //高，缓存记录
-            var _height;
-
-            //retina 屏幕优化
-            var _devicePixelRatio = window.devicePixelRatio || 1;
-
-            function _getWidth() {
-                var stl = root.currentStyle
-                          || document.defaultView.getComputedStyle(root);
-
-                return ((root.clientWidth || parseInt(stl.width, 10))
-                       - parseInt(stl.paddingLeft, 10)   // 请原谅我这比较粗暴
-                       - parseInt(stl.paddingRight, 10)).toFixed(0) - 0;
-            }
-
-            function _getHeight(){
-                var stl = root.currentStyle
-                          || document.defaultView.getComputedStyle(root);
-
-                return ((root.clientHeight || parseInt(stl.height, 10))
-                       - parseInt(stl.paddingTop, 10)    // 请原谅我这比较粗暴
-                       - parseInt(stl.paddingBottom, 10)).toFixed(0) - 0;
-            }
-
-            function _init() {
-                _domRoot.innerHTML = '';
-                root.innerHTML = '';
-
-                _width = _getWidth();
-                _height = _getHeight();
-
-                //没append呢，原谅我这样写，清晰~
-                _domRoot.style.position = 'relative';
-                _domRoot.style.overflow = 'hidden';
-                _domRoot.style.width = _width + 'px';
-                _domRoot.style.height = _height + 'px';
-
-                root.appendChild(_domRoot);
-
-                _domList = {};
-                _ctxList = {};
-
-                _domListBack = {};
-                _ctxListBack = {};
-
-                _maxZlevel = storage.getMaxZlevel();
-
-                //创建各层canvas
-                //背景
-                _domList['bg'] = _createDom('bg','div');
-                _domRoot.appendChild(_domList['bg']);
-
-                //实体
-                for (var i = 0; i <= _maxZlevel; i++) {
-                    _domList[i] = _createDom(i,'canvas');
-                    _domRoot.appendChild(_domList[i]);
-                    if (G_vmlCanvasManager) {
-                        G_vmlCanvasManager.initElement(_domList[i]);
-                    }
-                    _ctxList[i] = _domList[i].getContext('2d');
-                    _devicePixelRatio != 1 
-                    && _ctxList[i].scale(_devicePixelRatio, _devicePixelRatio);
-                }
-
-                //高亮
-                _domList['hover'] = _createDom('hover','canvas');
-                _domList['hover'].id = '_zrender_hover_';
-                _domRoot.appendChild(_domList['hover']);
-                if (G_vmlCanvasManager) {
-                    G_vmlCanvasManager.initElement(_domList['hover']);
-                }
-                _ctxList['hover'] = _domList['hover'].getContext('2d');
-                _devicePixelRatio != 1 
-                && _ctxList['hover'].scale(
-                       _devicePixelRatio, _devicePixelRatio
-                   );
-            }
-
-            /**
-             * 检查_maxZlevel是否变大，如是则同步创建需要的Canvas
-             */
-            function _syncMaxZlevelCanvase(){
-                var curMaxZlevel = storage.getMaxZlevel();
-                if (_maxZlevel < curMaxZlevel) {
-                    //实体
-                    for (var i = _maxZlevel + 1; i <= curMaxZlevel; i++) {
-                        _domList[i] = _createDom(i,'canvas');
-                        _domRoot.insertBefore(_domList[i], _domList['hover']);
-                        if (G_vmlCanvasManager) {
-                            G_vmlCanvasManager.initElement(_domList[i]);
-                        }
-                        _ctxList[i] = _domList[i].getContext('2d');
-                        _devicePixelRatio != 1 
-                        && _ctxList[i].scale(
-                               _devicePixelRatio, _devicePixelRatio
-                           );
-                    }
-                    _maxZlevel = curMaxZlevel;
-                }
-            }
-
-            /**
-             * 创建dom
-             * @param {string} id dom id 待用
-             * @param {string} type : dom type， such as canvas, div etc.
-             */
-            function _createDom(id, type) {
-                var newDom = document.createElement(type);
-
-                //没append呢，请原谅我这样写，清晰~
-                newDom.style.position = 'absolute';
-                newDom.style.left = 0;
-                newDom.style.top = 0;
-                newDom.style.width = _width + 'px';
-                newDom.style.height = _height + 'px';
-                newDom.setAttribute('width', _width * _devicePixelRatio);
-                newDom.setAttribute('height', _height * _devicePixelRatio);
-                //id不作为索引用，避免可能造成的重名，定义为私有属性
-                newDom.setAttribute('data-id', id);
-                return newDom;
-            }
-
-            /**
-             * 刷画图形
-             * @param {Object} changedZlevel 需要更新的zlevel索引
-             */
-            function _brush(changedZlevel) {
-                return function(e) {
-                    if ((changedZlevel.all || changedZlevel[e.zlevel])
-                        && !e.invisible
-                    ) {
-                        var ctx = _ctxList[e.zlevel];
-                        if (ctx) {
-                            if (!e.onbrush //没有onbrush
-                                //有onbrush并且调用执行返回false或undefined则继续粉刷
-                                || (e.onbrush && !e.onbrush(ctx, e, false))
-                            ) {
-                                if (zrender.catchBrushException) {
-                                    try {
-                                        shape.get(e.shape).brush(
-                                            ctx, e, false, update
-                                        );
-                                    }
-                                    catch(error) {
-                                        zrender.log(
-                                            error,
-                                            'brush error of ' + e.shape,
-                                            e
-                                        );
-                                    }
-                                }
-                                else {
-                                    shape.get(e.shape).brush(
-                                        ctx, e, false, update
-                                    );
-                                }
-                            }
-                        }
-                        else {
-                            zrender.log(
-                                'can not find the specific zlevel canvas!'
-                            );
-                        }
-                    }
-                };
-            }
-
-            /**
-             * 鼠标悬浮刷画
-             */
-            function _brushHover(e) {
-                var ctx = _ctxList['hover'];
-                if (!e.onbrush //没有onbrush
-                    //有onbrush并且调用执行返回false或undefined则继续粉刷
-                    || (e.onbrush && !e.onbrush(ctx, e, true))
-                ) {
-                    // Retina 优化
-                    if (zrender.catchBrushException) {
-                        try {
-                            shape.get(e.shape).brush(ctx, e, true, update);
-                        }
-                        catch(error) {
-                            zrender.log(
-                                error, 'hoverBrush error of ' + e.shape, e
-                            );
-                        }
-                    }
-                    else {
-                        shape.get(e.shape).brush(ctx, e, true, update);
-                    }
-                }
-            }
-
-            /**
-             * 首次绘图，创建各种dom和context
-             * @param {Function=} callback 绘画结束后的回调函数
-             */
-            function render(callback) {
-                if (isLoading()) {
-                    hideLoading();
-                }
-                //检查_maxZlevel是否变大，如是则同步创建需要的Canvas
-                _syncMaxZlevelCanvase();
-                
-                //清空已有内容，render默认为首次渲染
-                clear();
-
-                //升序遍历，shape上的zlevel指定绘画图层的z轴层叠
-                storage.iterShape(
-                    _brush({ all : true }),
-                    { normal: 'up' }
-                );
-
-                //update到最新则清空标志位
-                storage.clearChangedZlevel();
-
-                if (typeof callback == 'function') {
-                    callback();
-                }
-
-                return self;
-            }
-
-            /**
-             * 刷新
-             * @param {Function=} callback 刷新结束后的回调函数
-             */
-            function refresh(callback) {
-                //检查_maxZlevel是否变大，如是则同步创建需要的Canvas
-                _syncMaxZlevelCanvase();
-
-                //仅更新有修改的canvas
-                var changedZlevel = storage.getChangedZlevel();
-                //擦除有修改的canvas
-                if (changedZlevel.all){
-                    clear();
-                }
-                else {
-                    for (var k in changedZlevel) {
-                        if (_ctxList[k]) {
-                            clearLayer(k);
-                        }
-                    }
-                }
-                //重绘内容，升序遍历，shape上的zlevel指定绘画图层的z轴层叠
-                storage.iterShape(
-                    _brush(changedZlevel),
-                    { normal: 'up'}
-                );
-
-                //update到最新则清空标志位
-                storage.clearChangedZlevel();
-
-                if (typeof callback == 'function') {
-                    callback();
-                }
-
-                return self;
-            }
-
-
-            /**
-             * 视图更新
-             * @param {Array} shapeList 需要更新的图形元素列表
-             * @param {Function} callback  视图更新后回调函数
-             */
-            function update(shapeList, callback) {
-                var shape;
-                for (var i = 0, l = shapeList.length; i < l; i++) {
-                    shape = shapeList[i];
-                    storage.mod(shape.id, shape);
-                }
-                refresh(callback);
-                return self;
-            }
-
-            /**
-             * 清除hover层外所有内容
-             */
-            function clear() {
-                for (var k in _ctxList) {
-                    if (k == 'hover') {
-                        continue;
-                    }
-
-                    clearLayer(k);
-                }
-                return self;
-            }
-
-            /**
-             * 清除单独的一个层
-             */
-            function clearLayer(k) {
-                if (_zLevelConfig[k]) {
-                    var haveClearColor = typeof(_zLevelConfig[k].clearColor) !== 'undefined';
-                    var haveMotionBLur = _zLevelConfig[k].motionBlur;
-                    var lastFrameAlpha = _zLevelConfig[k].lastFrameAlpha;
-                    if (typeof(lastFrameAlpha) == 'undefined') {
-                        lastFrameAlpha = 0.7;
-                    }
-                    if (haveMotionBLur) {
-                        if (typeof(_domListBack[k]) === 'undefined') {
-                            var backDom = _createDom('back-' + k, 'canvas');
-                            backDom.width = _domList[k].width;
-                            backDom.height = _domList[k].height;
-                            backDom.style.width = _domList[k].style.width;
-                            backDom.style.height = _domList[k].style.height;
-                            _domListBack[k] = backDom;
-                            _ctxListBack[k] = backDom.getContext('2d');
-                            _devicePixelRatio != 1
-                                && _ctxListBack[k].scale(
-                                       _devicePixelRatio, _devicePixelRatio
-                                   );
-                        }
-                        _ctxListBack[k].globalCompositeOperation = 'copy';
-                        _ctxListBack[k].drawImage(
-                            _domList[k], 0, 0,
-                            _domList[k].width / _devicePixelRatio,
-                            _domList[k].height / _devicePixelRatio
-                        );
-                    }
-                    if (haveClearColor) {
-                        _ctxList[k].save();
-                        _ctxList[k].fillStyle = _zLevelConfig[k].clearColor;
-                        _ctxList[k].fillRect(
-                            0, 0,
-                            _width * _devicePixelRatio, 
-                            _height * _devicePixelRatio
-                        );
-                        _ctxList[k].restore();
-                    } else {
-                        _ctxList[k].clearRect(
-                            0, 0, 
-                            _width * _devicePixelRatio, 
-                            _height * _devicePixelRatio
-                        );
-                    }
-                    if (haveMotionBLur) {
-                        var backDom = _domListBack[k];
-                        var ctx = _ctxList[k];
-                        ctx.save();
-                        ctx.globalAlpha = lastFrameAlpha;
-                        ctx.drawImage(
-                            backDom, 0, 0,
-                            backDom.width / _devicePixelRatio,
-                            backDom.height / _devicePixelRatio
-                        );
-                        ctx.restore();
-                    }
-                } else {
-                    _ctxList[k].clearRect(
-                        0, 0, 
-                        _width * _devicePixelRatio, 
-                        _height * _devicePixelRatio
-                    );
-                }
-            }
-
-            /**
-             * 修改指定zlevel的绘制参数
-             * @return {[type]} [description]
-             */
-            function modLayer(zLevel, config) {
-                if (config) {
-                    if (typeof(_zLevelConfig[zLevel]) === 'undefined' ) {
-                        _zLevelConfig[zLevel] = {};
-                    }
-                    util.merge(_zLevelConfig[zLevel], config, {
-                        recursive : true,
-                        overwrite : true
-                    });
-                }
-            }
-
-            /**
-             * 刷新hover层
-             */
-            function refreshHover() {
-                clearHover();
-
-                storage.iterShape(_brushHover, { hover: true });
-
-                storage.delHover();
-
-                return self;
-            }
-
-            /**
-             * 清除hover层所有内容
-             */
-            function clearHover() {
-                _ctxList
-                && _ctxList['hover']
-                && _ctxList['hover'].clearRect(
-                    0, 0, 
-                    _width * _devicePixelRatio, 
-                    _height * _devicePixelRatio
-                );
-
-                return self;
-            }
-
-            /**
-             * 显示loading
-             * @param {Object} loadingOption 选项，内容见下
-             * @param {color} -.backgroundColor 背景颜色
-             * @param {Object} -.textStyle 文字样式，同shape/text.style
-             * @param {number=} -.progress 进度参数，部分特效有用
-             * @param {Object=} -.effectOption 特效参数，部分特效有用
-             * @param {string | function} -.effect 特效依赖tool/loadingEffect，
-             *                                     可传入自定义特效function
-             */
-            function showLoading(loadingOption) {
-                var effect = require('./tool/loadingEffect');
-                effect.stop(_loadingTimer);
-
-                loadingOption = loadingOption || {};
-                loadingOption.effect = loadingOption.effect
-                                       || config.loadingEffect;
-                loadingOption.canvasSize = {
-                    width : _width,
-                    height : _height
-                };
-
-                _loadingTimer = effect.start(
-                    loadingOption,
-                    storage.addHover,
-                    refreshHover
-                );
-                self.loading = true;
-
-                return self;
-            }
-
-            /**
-             * loading结束
-             * 乱来的，待重写
-             */
-            function hideLoading() {
-                var effect = require('./tool/loadingEffect');
-                effect.stop(_loadingTimer);
-                clearHover();
-                self.loading = false;
-                return self;
-            }
-
-            /**
-             * loading结束判断
-             */
-            function isLoading() {
-                return self.loading;
-            }
-
-            /**
-             * 获取绘图区域宽度
-             */
-            function getWidth() {
-                return _width;
-            }
-
-            /**
-             * 获取绘图区域高度
-             */
-            function getHeight() {
-                return _height;
-            }
-
-            /**
-             * 区域大小变化后重绘
-             */
-            function resize() {
-                var width;
-                var height;
-                var dom;
-
-                _domRoot.style.display = 'none';
-
-                width = _getWidth();
-                height = _getHeight();
-
-                _domRoot.style.display = '';
-
-                //优化没有实际改变的resize
-                if (_width != width || height != _height){
-                    _width = width;
-                    _height = height;
-
-                    _domRoot.style.width = _width + 'px';
-                    _domRoot.style.height = _height + 'px';
-
-                    for (var i in _domList) {
-                        dom = _domList[i];
-                        dom.setAttribute('width', _width);
-                        dom.setAttribute('height', _height);
-                        dom.style.width = _width + 'px';
-                        dom.style.height = _height + 'px';
-                    }
-
-                    storage.setChangedZlevle('all');
-                    refresh();
-                }
-
-                return self;
-            }
-
-            /**
-             * 释放
-             */
-            function dispose() {
-                if (isLoading()) {
-                    hideLoading();
-                }
-                root.innerHTML = '';
-
-                root = null;
-                storage = null;
-                shape = null;
-
-                _domRoot = null;
-                _domList = null;
-                _ctxList = null;
-
-                _ctxListBack = null;
-                _domListBack = null;
-
-                self = null;
-
-                return;
-            }
-
-            function getDomHover() {
-                return _domList['hover'];
-            }
-
-            function toDataURL(type, backgroundColor, args) {
-                if (G_vmlCanvasManager) {
-                    return null;
-                }
-                var imageDom = _createDom('image','canvas');
-                _domList['bg'].appendChild(imageDom);
-                var ctx = imageDom.getContext('2d');
-                _devicePixelRatio != 1 
-                && ctx.scale(_devicePixelRatio, _devicePixelRatio);
-                
-                ctx.fillStyle = backgroundColor || '#fff';
-                ctx.rect(
-                    0, 0, 
-                    _width * _devicePixelRatio,
-                    _height * _devicePixelRatio
-                );
-                ctx.fill();
-                
-                //升序遍历，shape上的zlevel指定绘画图层的z轴层叠
-                storage.iterShape(
-                    function (e) {
-                        if (!e.invisible) {
-                            if (!e.onbrush //没有onbrush
-                                //有onbrush并且调用执行返回false或undefined则继续粉刷
-                                || (e.onbrush && !e.onbrush(ctx, e, false))
-                            ) {
-                                if (zrender.catchBrushException) {
-                                    try {
-                                        shape.get(e.shape).brush(
-                                            ctx, e, false, update
-                                        );
-                                    }
-                                    catch(error) {
-                                        zrender.log(
-                                            error,
-                                            'brush error of ' + e.shape,
-                                            e
-                                        );
-                                    }
-                                }
-                                else {
-                                    shape.get(e.shape).brush(
-                                        ctx, e, false, update
-                                    );
-                                }
-                            }
-                        }
-                    },
-                    { normal: 'up' }
-                );
-                var image = imageDom.toDataURL(type, args); 
-                ctx = null;
-                _domList['bg'].removeChild(imageDom);
-                return image;
-            }
-            
-            var shapeToImage = (function() {
-                if (G_vmlCanvasManager) {
-                    return function(){};
-                }
-                var canvas = document.createElement('canvas');
-                var ctx = canvas.getContext('2d');
-                var devicePixelRatio = window.devicePixelRatio || 1;
-                
-                return function(id, e, width, height) {
-                    canvas.style.width = width + 'px';
-                    canvas.style.height = height + 'px';
-                    canvas.setAttribute('width', width * devicePixelRatio);
-                    canvas.setAttribute('height', height * devicePixelRatio);
-
-                    ctx.clearRect(0, 0, width * devicePixelRatio, height * devicePixelRatio);
-
-                    var brush = shape.get(e.shape);
-                    var shapeTransform = {
-                        position : e.position,
-                        rotation : e.rotation,
-                        scale : e.scale
-                    };
-                    e.position = [0, 0, 0];
-                    e.rotation = 0;
-                    e.scale = [1, 1];
-                    if (brush) {
-                        brush.brush(ctx, e, false);
-                    }
-
-                    var imgShape = {
-                        shape : 'image',
-                        id : id,
-                        style : {
-                            x : 0,
-                            y : 0,
-                            // TODO 直接使用canvas而不是通过base64
-                            image : canvas.toDataURL()
-                        }
-                    }
-
-                    if (typeof(shapeTransform.position) !== 'undefined') {
-                        imgShape.position = e.position = shapeTransform.position;
-                    }
-                    if (typeof(shapeTransform.rotation) !== 'undefined') {
-                        imgShape.rotation = e.rotation = shapeTransform.rotation;
-                    }
-                    if (typeof(shapeTransform.scale) !== 'undefined') {
-                        imgShape.scale = e.scale = shapeTransform.scale;
-                    }
-
-                    return imgShape;
-                }
-            })();
-
-            self.render = render;
-            self.refresh = refresh;
-            self.update = update;
-            self.clear = clear;
-            self.modLayer = modLayer;
-            self.refreshHover = refreshHover;
-            self.clearHover = clearHover;
-            self.showLoading = showLoading;
-            self.hideLoading = hideLoading;
-            self.isLoading = isLoading;
-            self.getWidth = getWidth;
-            self.getHeight = getHeight;
-            self.resize = resize;
-            self.dispose = dispose;
-            self.getDomHover = getDomHover;
-            self.toDataURL = toDataURL;
-            self.shapeToImage = shapeToImage;
-
-            _init();
-        }
-
-        /**
-         * 控制类 (C)
-         * @param {HTMLElement} root 绘图区域
-         * @param {storage} storage Storage实例
-         * @param {painter} painter Painter实例
-         * @param {Object} shape 图形库
-         *
-         * 分发事件支持详见config.EVENT
-         */
-        function Handler(root, storage, painter, shape) {
-            var config = require('./config');
-            var env = require('./tool/env');
-            //添加事件分发器特性
-            var eventTool = require('./tool/event');
-            eventTool.Dispatcher.call(this);
-
-            var self = this;
-
-            //常用函数加速
-            var getX = eventTool.getX;
-            var getY = eventTool.getY;
-
-            //各种事件标识的私有变量
-            var _event;                         //原生dom事件
-            var _hasfound = false;              //是否找到hover图形元素
-            var _lastHover = null;              //最后一个hover图形元素
-            var _mouseDownTarget = null;
-            var _draggingTarget = null;         //当前被拖拽的图形元素
-            var _isMouseDown = false;
-            var _isDragging = false;
-            var _lastMouseDownMoment;
-            var _lastTouchMoment;
-            var _lastDownButton;
-
-            var _lastX = 0;
-            var _lastY = 0;
-            var _mouseX = 0;
-            var _mouseY = 0;
-
-
-            var _domHover = painter.getDomHover();
-
-            /**
-             * 初始化，事件绑定，支持的所有事件都由如下原生事件计算得来
-             */
-            function _init() {
-                if (window.addEventListener) {
-                    window.addEventListener('resize', _resizeHandler);
-                    
-                    if (!env.os.tablet && !env.os.phone) {
-                        // mobile的click/move/up/down自己模拟
-                        root.addEventListener('click', _clickHandler);
-                        root.addEventListener('mousewheel', _mouseWheelHandler);
-                        root.addEventListener('mousemove', _mouseMoveHandler);
-                        root.addEventListener('mousedown', _mouseDownHandler);
-                        root.addEventListener('mouseup', _mouseUpHandler);
-                    }
-                    else {
-                        // mobile支持
-                        root.addEventListener('touchstart', _touchStartHandler);
-                        root.addEventListener('touchmove', _touchMoveHandler);
-                        root.addEventListener('touchend', _touchEndHandler);
-                    } 
-                    root.addEventListener('DOMMouseScroll', _mouseWheelHandler);
-                    root.addEventListener('mouseout', _mouseOutHandler);
-                }
-                else {
-                    window.attachEvent('onresize', _resizeHandler);
-
-                    root.attachEvent('onclick', _clickHandler);
-                    root.attachEvent('onmousewheel', _mouseWheelHandler);
-                    root.attachEvent('onmousemove', _mouseMoveHandler);
-                    root.attachEvent('onmouseout', _mouseOutHandler);
-                    root.attachEvent('onmousedown', _mouseDownHandler);
-                    root.attachEvent('onmouseup', _mouseUpHandler);
-                }
-            }
-
-            /**
-             * 窗口大小改变响应函数
-             * @param {event} event dom事件对象
-             */
-            function _resizeHandler(event) {
-                _event = event || window.event;
-                _lastHover = null;
-                _isMouseDown = false;
-                //分发config.EVENT.RESIZE事件，global
-                self.dispatch(config.EVENT.RESIZE, _event);
-            }
-
-            /**
-             * 点击事件
-             * @param {event} event dom事件对象
-             */
-            function _clickHandler(event) {
-                _event = _zrenderEventFixed(event);
-                //分发config.EVENT.CLICK事件
-                if (!_lastHover) {
-                    _dispatchAgency(_lastHover, config.EVENT.CLICK);
-                }
-                else if (_lastHover && _lastHover.clickable) {
-                    _dispatchAgency(_lastHover, config.EVENT.CLICK);
-                }
-                _mouseMoveHandler(_event);
-            }
-
-            /**
-             * 鼠标滚轮响应函数
-             * @param {event} event dom事件对象
-             */
-            function _mouseWheelHandler(event) {
-                _event = _zrenderEventFixed(event);
-                //分发config.EVENT.MOUSEWHEEL事件
-                _dispatchAgency(_lastHover, config.EVENT.MOUSEWHEEL);
-                _mouseMoveHandler(_event);
-            }
-
-            /**
-             * 鼠标（手指）移动响应函数
-             * @param {event} event dom事件对象
-             */
-            function _mouseMoveHandler(event) {
-                if (painter.isLoading()) {
-                    return;
-                }
-                _event = _zrenderEventFixed(event);
-                _lastX = _mouseX;
-                _lastY = _mouseY;
-                _mouseX = getX(_event);
-                _mouseY = getY(_event);
-
-                // 可能出现config.EVENT.DRAGSTART事件
-                // 避免手抖点击误认为拖拽
-                //if (_mouseX - _lastX > 1 || _mouseY - _lastY > 1) {
-                    _dragStartHandler();
-                //}
-                _hasfound = false;
-                storage.iterShape(_findHover, { normal: 'down'});
-
-                //找到的在迭代函数里做了处理，没找到得在迭代完后处理
-                if (!_hasfound) {
-                    //过滤首次拖拽产生的mouseout和dragLeave
-                    if (!_draggingTarget
-                        || (_lastHover && _lastHover.id != _draggingTarget.id)
-                    ) {
-                        //可能出现config.EVENT.MOUSEOUT事件
-                        _outShapeHandler();
-
-                        //可能出现config.EVENT.DRAGLEAVE事件
-                        _dragLeaveHandler();
-                    }
-
-                    _lastHover = null;
-                    storage.delHover();
-                    painter.clearHover();
-                }
-                //如果存在拖拽中元素，被拖拽的图形元素最后addHover
-                if (_draggingTarget) {
-                    storage.drift(
-                        _draggingTarget.id,
-                        _mouseX - _lastX,
-                        _mouseY - _lastY
-                    );
-                    storage.addHover(_draggingTarget);
-                }
-
-                if (_draggingTarget || (_hasfound && _lastHover.draggable)) {
-                    root.style.cursor = 'move';
-                }
-                else if (_hasfound && _lastHover.clickable) {
-                    root.style.cursor = 'pointer';
-                }
-                else {
-                    root.style.cursor = 'default';
-                }
-
-                //分发config.EVENT.MOUSEMOVE事件
-                _dispatchAgency(_lastHover, config.EVENT.MOUSEMOVE);
-
-                if (_draggingTarget || _hasfound || storage.hasHoverShape()) {
-                    painter.refreshHover();
-                }
-            }
-
-            /**
-             * 鼠标（手指）离开响应函数
-             * @param {event} event dom事件对象
-             */
-            function _mouseOutHandler(event) {
-                _event = _zrenderEventFixed(event);
-
-                var element = _event.toElement || _event.relatedTarget;
-                if (element != root) {
-                    while (element && element.nodeType != 9) {
-                        if (element == root) {
-                            // 忽略包含在root中的dom引起的mouseOut
-                            _mouseMoveHandler(event);
-                            return;
-                        }
-                        element = element.parentNode;
-                    }
-                }
-                _event.zrenderX = _lastX;
-                _event.zrenderY = _lastY;
-                root.style.cursor = 'default';
-                _isMouseDown = false;
-
-                _outShapeHandler();
-                _dropHandler();
-                _dragEndHandler();
-                if (!painter.isLoading()) {
-                    painter.refreshHover();
-                }
-                
-                self.dispatch(config.EVENT.GLOBALOUT, _event);
-            }
-
-            /**
-             * 鼠标在某个图形元素上移动
-             */
-            function _overShapeHandler() {
-                //分发config.EVENT.MOUSEOVER事件
-                _dispatchAgency(_lastHover, config.EVENT.MOUSEOVER);
-            }
-
-            /**
-             * 鼠标离开某个图形元素
-             */
-            function _outShapeHandler() {
-                //分发config.EVENT.MOUSEOUT事件
-                _dispatchAgency(_lastHover, config.EVENT.MOUSEOUT);
-            }
-
-            /**
-             * 鼠标（手指）按下响应函数
-             * @param {event} event dom事件对象
-             */
-            function _mouseDownHandler(event) {
-                if (_lastDownButton == 2) {
-                    _lastDownButton = event.button;
-                    _mouseDownTarget = null;
-                    // 仅作为关闭右键菜单使用
-                    return;
-                }
-                _lastMouseDownMoment = new Date();
-                _event = _zrenderEventFixed(event);
-                _isMouseDown = true;
-                //分发config.EVENT.MOUSEDOWN事件
-                _mouseDownTarget = _lastHover;
-                _dispatchAgency(_lastHover, config.EVENT.MOUSEDOWN);
-                _lastDownButton = event.button;
-            }
-
-            /**
-             * 鼠标（手指）抬起响应函数
-             * @param {event} event dom事件对象
-             */
-            function _mouseUpHandler(event) {
-                _event = _zrenderEventFixed(event);
-                root.style.cursor = 'default';
-                _isMouseDown = false;
-                _mouseDownTarget = null;
-
-                //分发config.EVENT.MOUSEUP事件
-                _dispatchAgency(_lastHover, config.EVENT.MOUSEUP);
-                _dropHandler();
-                _dragEndHandler();
-            }
-
-            /**
-             * Touch开始响应函数
-             * @param {event} event dom事件对象
-             */
-            function _touchStartHandler(event) {
-                //eventTool.stop(event);// 阻止浏览器默认事件，重要
-                _event = _zrenderEventFixed(event, true);
-                _lastTouchMoment = new Date();
-                //平板补充一次findHover
-                _mobildFindFixed();
-                _mouseDownHandler(_event);
-            }
-
-            /**
-             * Touch移动响应函数
-             * @param {event} event dom事件对象
-             */
-            function _touchMoveHandler(event) {
-                _event = _zrenderEventFixed(event, true);
-                _mouseMoveHandler(_event);
-                if (_isDragging) {
-                    eventTool.stop(event);// 阻止浏览器默认事件，重要
-                }
-            }
-
-            /**
-             * Touch结束响应函数
-             * @param {event} event dom事件对象
-             */
-            function _touchEndHandler(event) {
-                //eventTool.stop(event);// 阻止浏览器默认事件，重要
-                _event = _zrenderEventFixed(event, true);
-                _mouseUpHandler(_event);
-
-                if (new Date() - _lastTouchMoment
-                    < config.EVENT.touchClickDelay
-                ) {
-                     _mobildFindFixed();
-                    _clickHandler(_event);
-                }
-                painter.clearHover();
-            }
-
-            /**
-             * 拖拽开始
-             */
-            function _dragStartHandler() {
-                if (_isMouseDown
-                    && _lastHover
-                    && _lastHover.draggable
-                    && !_draggingTarget
-                    && _mouseDownTarget == _lastHover
-                ) {
-                    // 拖拽点击生效时长阀门，某些场景需要降低拖拽敏感度
-                    if (_lastHover.dragEnableTime && 
-                        new Date() - _lastMouseDownMoment < _lastHover.dragEnableTime
-                    ) {
-                        return;
-                    }
-                    _draggingTarget = _lastHover;
-                    _isDragging = true;
-
-                    _draggingTarget.invisible = true;
-                    storage.mod(_draggingTarget.id,_draggingTarget);
-
-                    //分发config.EVENT.DRAGSTART事件
-                    _dispatchAgency(
-                        _draggingTarget,
-                        config.EVENT.DRAGSTART
-                    );
-                    painter.refresh();
-                }
-            }
-
-            /**
-             * 拖拽进入目标元素
-             */
-            function _dragEnterHandler() {
-                if (_draggingTarget) {
-                    //分发config.EVENT.DRAGENTER事件
-                    _dispatchAgency(
-                        _lastHover,
-                        config.EVENT.DRAGENTER,
-                        _draggingTarget
-                    );
-                }
-            }
-
-            /**
-             * 拖拽在目标元素上移动
-             */
-            function _dragOverHandler() {
-                if (_draggingTarget) {
-                    //分发config.EVENT.DRAGOVER事件
-                    _dispatchAgency(
-                        _lastHover,
-                        config.EVENT.DRAGOVER,
-                        _draggingTarget
-                    );
-                }
-            }
-
-            /**
-             * 拖拽离开目标元素
-             */
-            function _dragLeaveHandler() {
-                if (_draggingTarget) {
-                    //分发config.EVENT.DRAGLEAVE事件
-                    _dispatchAgency(
-                        _lastHover,
-                        config.EVENT.DRAGLEAVE,
-                        _draggingTarget
-                    );
-                }
-            }
-
-            /**
-             * 拖拽在目标元素上完成
-             */
-            function _dropHandler() {
-                if (_draggingTarget) {
-                    _draggingTarget.invisible = false;
-                    storage.mod(_draggingTarget.id,_draggingTarget);
-                    painter.refresh();
-                    //分发config.EVENT.DROP事件
-                    _dispatchAgency(
-                        _lastHover,
-                        config.EVENT.DROP,
-                        _draggingTarget
-                    );
-                }
-            }
-
-            /**
-             * 拖拽结束
-             */
-            function _dragEndHandler() {
-                if (_draggingTarget) {
-                    //分发config.EVENT.DRAGEND事件
-                    _dispatchAgency(
-                        _draggingTarget,
-                        config.EVENT.DRAGEND
-                    );
-                    _lastHover = null;
-                }
-                _isDragging = false;
-                _draggingTarget = null;
-            }
-
-            /**
-             * 事件分发代理
-             * @param {Object} targetShape 目标图形元素
-             * @param {string} eventName 事件名称
-             * @param {Object=} draggedShape 拖拽事件特有，当前被拖拽图形元素
-             */
-            function _dispatchAgency(targetShape, eventName, draggedShape) {
-                var eventHandler = 'on' + eventName;
-                var eventPacket = {
-                    type : eventName,
-                    event : _event,
-                    target : targetShape
-                };
-
-                if (draggedShape) {
-                    eventPacket.dragged = draggedShape;
-                }
-
-                if (targetShape) {
-                    //“不存在shape级事件”或“存在shape级事件但事件回调返回非true”
-                    if (!targetShape[eventHandler]
-                        || !targetShape[eventHandler](eventPacket)
-                    ) {
-                        self.dispatch(
-                            eventName,
-                            _event,
-                            eventPacket
-                        );
-                    }
-                }
-                else if (!draggedShape) {
-                    //无hover目标，无拖拽对象，原生事件分发
-                    self.dispatch(eventName, _event);
-                }
-            }
-            
-            // touch有指尖错觉，四向尝试，让touch上的点击更好触发事件
-            function _mobildFindFixed() {
-                _lastHover = null;
-                _mouseX = _event.zrenderX;
-                _mouseY = _event.zrenderY;
-                storage.iterShape(_findHover, { normal: 'down'});
-                if (!_lastHover) {
-                    _mouseX += 10;
-                    storage.iterShape(_findHover, { normal: 'down'});
-                }
-                if (!_lastHover) {
-                    _mouseX -= 20;
-                    storage.iterShape(_findHover, { normal: 'down'});
-                }
-                if (!_lastHover) {
-                    _mouseX += 10;
-                    _mouseY += 10;
-                    storage.iterShape(_findHover, { normal: 'down'});
-                }
-                if (!_lastHover) {
-                    _mouseY -= 20;
-                    storage.iterShape(_findHover, { normal: 'down'});
-                }
-                if (_lastHover) {
-                    _event.zrenderX = _mouseX;
-                    _event.zrenderY = _mouseY;
-                }
-            }
-
-            /**
-             * 迭代函数，查找hover到的图形元素并即时做些事件分发
-             * @param {Object} e 图形元素
-             */
-            function _findHover(e) {
-                if (_draggingTarget && _draggingTarget.id == e.id) {
-                    //迭代到当前拖拽的图形上
-                    return false;
-                }
-
-                //打酱油的路过，啥都不响应的shape~
-                if (e.__silent) {
-                    return false;
-                }
-
-                var shapeInstance = shape.get(e.shape);
-                if (shapeInstance.isCover(e, _mouseX, _mouseY)) {
-                    if (e.hoverable) {
-                        storage.addHover(e);
-                    }
-
-                    if (_lastHover != e) {
-                        _outShapeHandler();
-
-                        //可能出现config.EVENT.DRAGLEAVE事件
-                        _dragLeaveHandler();
-
-                        _lastHover = e;
-
-                        //可能出现config.EVENT.DRAGENTER事件
-                        _dragEnterHandler();
-                    }
-                    _overShapeHandler();
-
-                    //可能出现config.EVENT.DRAGOVER
-                    _dragOverHandler();
-
-                    _hasfound = true;
-
-                    return true;    //找到则中断迭代查找
-                }
-
-                return false;
-            }
-
-            // 如果存在第三方嵌入的一些dom触发的事件，或touch事件，需要转换一下事件坐标
-            function _zrenderEventFixed(event, isTouch) {
-                if (!isTouch) {
-                    _event = event || window.event;
-                    // 进入对象优先~
-                    var target = _event.toElement
-                              || _event.relatedTarget
-                              || _event.srcElement
-                              || _event.target;
-                    if (target && target != _domHover) {
-                        _event.zrenderX = (typeof _event.offsetX != 'undefined'
-                                          ? _event.offsetX
-                                          : _event.layerX)
-                                          + target.offsetLeft;
-                        _event.zrenderY = (typeof _event.offsetY != 'undefined'
-                                          ? _event.offsetY
-                                          : _event.layerY)
-                                          + target.offsetTop;
-                    }
-                }
-                else {
-                    _event = event;
-                    var touch = _event.type != 'touchend'
-                                ? _event.targetTouches[0]
-                                : _event.changedTouches[0];
-                    if (touch) {
-                        // touch事件坐标是全屏的~
-                        _event.zrenderX = touch.clientX - root.offsetLeft
-                                          + document.body.scrollLeft;
-                        _event.zrenderY = touch.clientY - root.offsetTop
-                                          + document.body.scrollTop;
-                    }
-                }
-
-                return _event;
-            }
-
-            /**
-             * 自定义事件绑定
-             * @param {string} eventName 事件名称，resize，hover，drag，etc~
-             * @param {Function} handler 响应函数
-             */
-            function on(eventName, handler) {
-                self.bind(eventName, handler);
-
-                return self;
-            }
-
-            /**
-             * 自定义事件解绑
-             * @param {string} event 事件名称，resize，hover，drag，etc~
-             * @param {Function} handler 响应函数
-             */
-            function un(eventName, handler) {
-                self.unbind(eventName, handler);
-                return self;
-            }
-
-            /**
-             * 事件触发
-             * @param {string} event 事件名称，resize，hover，drag，etc~
-             * @param {event=} event event dom事件对象
-             */
-            function trigger(eventName, event) {
-                switch (eventName) {
-                    case config.EVENT.RESIZE :
-                        _resizeHandler(event);
-                        break;
-                    case config.EVENT.CLICK :
-                        _clickHandler(event);
-                        break;
-                    case config.EVENT.MOUSEWHEEL :
-                        _mouseWheelHandler(event);
-                        break;
-                    case config.EVENT.MOUSEMOVE :
-                        _mouseMoveHandler(event);
-                        break;
-                    case config.EVENT.MOUSEDOWN :
-                        _mouseDownHandler(event);
-                        break;
-                    case config.EVENT.MOUSEUP :
-                        _mouseUpHandleru(event);
-                        break;
-                    case config.EVENT.MOUSEOUT :
-                        _mouseOutHandler(event);
-                        break;
-                }
-            }
-
-            /**
-             * 释放
-             */
-            function dispose() {
-                if (window.removeEventListener) {
-                    window.removeEventListener('resize', _resizeHandler);
-
-                    if (!env.os.tablet && !env.os.phone) {
-                        // mobile的click自己模拟
-                        root.removeEventListener(
-                            'click', _clickHandler
-                        );
-                        root.removeEventListener(
-                            'mousewheel', _mouseWheelHandler
-                        );
-                        root.removeEventListener(
-                            'mousemove', _mouseMoveHandler
-                        );
-                        root.removeEventListener(
-                            'mousedown', _mouseDownHandler
-                        );
-                        root.removeEventListener(
-                            'mouseup', _mouseUpHandler
-                        );
-                    }
-                    else {
-                        // mobile支持
-                        root.removeEventListener(
-                            'touchstart', _touchStartHandler
-                        );
-                        root.removeEventListener(
-                            'touchmove', _touchMoveHandler
-                        );
-                        root.removeEventListener(
-                            'touchend', _touchEndHandler
-                        );
-                    }
-                    root.removeEventListener(
-                        'DOMMouseScroll', _mouseWheelHandler
-                    );
-                    root.removeEventListener(
-                        'mouseout', _mouseOutHandler
-                    );
-                }
-                else {
-                    window.detachEvent('onresize', _resizeHandler);
-
-                    root.detachEvent('onclick', _clickHandler);
-                    root.detachEvent('onmousewheel', _mouseWheelHandler);
-                    root.detachEvent('onmousemove', _mouseMoveHandler);
-                    root.detachEvent('onmouseout', _mouseOutHandler);
-                    root.detachEvent('onmousedown', _mouseDownHandler);
-                    root.detachEvent('onmouseup', _mouseUpHandler);
-                }
-
-                root = null;
-                _domHover = null;
-                storage = null;
-                painter  = null;
-                shape = null;
-
-                un();
-
-                self = null;
-
-                return;
-            }
-
-            self.on = on;
-            self.un = un;
-            self.trigger = trigger;
-            self.dispose = dispose;
-
-            _init();
-        }
-
-        return self;
-    }
-);
-define('zrender', ['zrender/zrender'], function (main) { return main; });

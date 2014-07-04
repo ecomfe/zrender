@@ -50,25 +50,5 @@ zz = zrender.getInstance(id); // == zr
             ['id', '{string}', 'ZRender索引，实例唯一标识']
         ],
         res: ['self', '{zrender}', '返回自身支持链式调用']
-    },
-    {
-        name: 'catchBrushException',
-        des: 'canvas绘图时是否使用异常捕获',
-        value: [
-            [true, '{boolean}', '默认，发布用'],
-            [false, '{boolean}', '不使用try catch，可以在控制台上看到错误行，调试用']
-        ]
-    },
-    {
-        name: 'debugMode',
-        des: 'debug日志选项，{number}，catchBrushException为true下有效，有效取值有<br>0 : 不生成debug数据，发布用<br>1 : 异常抛出，调试用<br>2 : 控制台输出，调试用'
-    },
-    {
-        name: 'log',
-        des: '根据debugMode设置会有不同的日志输出',
-        params: [
-            ['arguments', '{Any}', '日志内容']
-        ],
-        res: ['self', '{zrender}', '返回自身支持链式调用']
     }
 ];

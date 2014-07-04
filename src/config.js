@@ -7,7 +7,6 @@
  */
 define(
     {
-        loadingEffect : 'spin',         // 默认loading特效
         EVENT : {                       // 支持事件列表
             RESIZE : 'resize',          // 窗口大小变化
             CLICK : 'click',            // 鼠标按钮被（手指）按下，事件对象是：目标图形元素或空
@@ -32,6 +31,17 @@ define(
             DROP : 'drop',              // 拖拽图形元素放在目标图形元素内时触发，事件对象是：目标图形元素
 
             touchClickDelay : 300       // touch end - start < delay is click
-        }
+        },
+
+        // 是否异常捕获
+        catchBrushException: false,
+
+        /**
+         * debug日志选项：catchBrushException为true下有效
+         * 0 : 不生成debug数据，发布用
+         * 1 : 异常抛出，调试用
+         * 2 : 控制台输出，调试用
+         */
+        debugMode: 0
     }
 );

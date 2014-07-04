@@ -12,59 +12,57 @@ define(
         var util = require('../tool/util');
 
         var _ctx;
-
+        
+        var _textWidthCache = {};
+        var _textHeightCache = {};
+        var _textWidthCacheCounter = 0;
+        var _textHeightCacheCounter = 0;
+        var TEXT_CACHE_MAX = 20000;
+        
         /**
          * 包含判断
-         * @param {string} shapeClazz : 图形类
+         *
+         * @param {Object} shape : 图形
          * @param {Object} area ： 目标区域
          * @param {number} x ： 横坐标
          * @param {number} y ： 纵坐标
          */
-        function isInside(shapeClazz, area, x, y) {
-            if (!area || !shapeClazz) {
+        function isInside(shape, area, x, y) {
+            if (!area || !shape) {
                 // 无参数或不支持类型
                 return false;
             }
-            var zoneType = shapeClazz.type;
+            var zoneType = shape.type;
 
-            if (!_ctx) {
-                _ctx = util.getContext();
-            }
-            if (!_isInsideRectangle(
-                    area.__rect || shapeClazz.getRect(area), x, y
-                 )
-             ) {
+            _ctx = _ctx || util.getContext();
+
+            if (!_isInsideRectangle(area.__rect || shape.getRect(area), x, y)) {
                 // 不在矩形区域内直接返回false
                 return false;
             }
 
             // 未实现或不可用时(excanvas不支持)则数学运算，主要是line，brokenLine，ring
             var _mathReturn = _mathMethod(zoneType, area, x, y);
-
             if (typeof _mathReturn != 'undefined') {
                 return _mathReturn;
             }
 
-            if (zoneType != 'beziercurve'
-                && shapeClazz.buildPath
+            if (zoneType != 'bezier-curve'
+                && shape.buildPath
                 && _ctx.isPointInPath
             ) {
-                return _buildPathMethod(shapeClazz, _ctx, area, x, y);
+                return _buildPathMethod(shape, _ctx, area, x, y);
             }
             else if (_ctx.getImageData) {
-                return _pixelMethod(shapeClazz, area, x, y);
+                return _pixelMethod(shape, area, x, y);
             }
 
             // 上面的方法都行不通时
             switch (zoneType) {
-                //心形----------------------10
-                case 'heart':
-                    return true;    // Todo，不精确
-                //水滴----------------------11
-                case 'droplet':
-                    return true;    // Todo，不精确
-                case 'ellipse':
-                    return true;     // Todo，不精确
+                case 'heart': //心形---------10 // Todo，不精确
+                case 'droplet':// 水滴----------11 // Todo，不精确
+                case 'ellipse': // Todo，不精确
+                    return true;
                 // 旋轮曲线  不准确
                 case 'trochoid':
                     var _r = area.location == 'out'
@@ -96,7 +94,7 @@ define(
                 case 'line':
                     return _isInsideLine(area, x, y);
                 //折线----------------------2
-                case 'brokenLine':
+                case 'broken-line':
                     return _isInsideBrokenLine(area, x, y);
                 //文本----------------------3
                 case 'text':
@@ -130,17 +128,17 @@ define(
          * 通过buildPath方法来判断，三个方法中较快，但是不支持线条类型的shape，
          * 而且excanvas不支持isPointInPath方法
          *
-         * @param {Object} shapeClazz ： shape类
+         * @param {Object} shape ： shape
          * @param {Object} context : 上下文
          * @param {Object} area ：目标区域
          * @param {number} x ： 横坐标
          * @param {number} y ： 纵坐标
          * @return {boolean} true表示坐标处在图形中
          */
-        function _buildPathMethod(shapeClazz, context, area, x, y) {
+        function _buildPathMethod(shape, context, area, x, y) {
             // 图形类实现路径创建了则用类的path
             context.beginPath();
-            shapeClazz.buildPath(context, area);
+            shape.buildPath(context, area);
             context.closePath();
             return context.isPointInPath(x, y);
         }
@@ -148,21 +146,21 @@ define(
         /**
          * 通过像素值来判断，三个方法中最慢，但是支持广,不足之处是excanvas不支持像素处理
          *
-         * @param {Object} shapeClazz ： shape类
-         * @param {Object} area ：目标区域
-         * @param {number} x ： 横坐标
-         * @param {number} y ： 纵坐标
+         * @param {Object} shape  shape类
+         * @param {Object} area 目标区域
+         * @param {number} x  横坐标
+         * @param {number} y  纵坐标
          * @return {boolean} true表示坐标处在图形中
          */
-        function _pixelMethod(shapeClazz, area, x, y) {
-            var _rect = area.__rect || shapeClazz.getRect(area);
+        function _pixelMethod(shape, area, x, y) {
+            var _rect = area.__rect || shape.getRect(area);
             var _context = util.getPixelContext();
             var _offset = util.getPixelOffset();
 
             util.adjustCanvasSize(x, y);
             _context.clearRect(_rect.x, _rect.y, _rect.width, _rect.height);
             _context.beginPath();
-            shapeClazz.brush(_context, {style : area});
+            shape.brush(_context, {style : area});
             _context.closePath();
 
             return _isPainted(_context, x + _offset.x, y + _offset.y);
@@ -181,7 +179,7 @@ define(
             var pixelsData;
 
             if (typeof unit != 'undefined') {
-                unit = Math.floor((unit || 1 )/ 2);
+                unit = (unit || 1 ) >> 1;
                 pixelsData = context.getImageData(
                     x - unit,
                     y - unit,
@@ -206,8 +204,8 @@ define(
         /**
          * !isInside
          */
-        function isOutside(shapeClazz, area, x, y) {
-            return !isInside(shapeClazz, area, x, y);
+        function isOutside(shape, area, x, y) {
+            return !isInside(shape, area, x, y);
         }
 
         /**
@@ -221,6 +219,24 @@ define(
             var _l = Math.max(area.lineWidth, 5);
             var _a = 0;
             var _b = _x1;
+
+            var minX, maxX;
+            if (_x1 < _x2) {
+                minX = _x1 - _l; maxX = _x2 + _l;
+            } else {
+                minX = _x2 - _l; maxX = _x1 + _l;
+            }
+
+            var minY, maxY;
+            if (_y1 < _y2) {
+                minY = _y1 - _l; maxY = _y2 + _l;
+            } else {
+                minY = _y2 - _l; maxY = _y1 + _l;
+            }
+
+            if (x < minX || x > maxX || y < minY || y > maxY) {
+                return false;
+            }
 
             if (_x1 !== _x2) {
                 _a = (_y1 - _y2) / (_x1 - _x2);
@@ -236,70 +252,41 @@ define(
 
         function _isInsideBrokenLine(area, x, y) {
             var pointList = area.pointList;
-            var lineArea;
-            var insideCatch = false;
+            var lineArea = {
+                xStart : 0,
+                yStart : 0,
+                xEnd : 0,
+                yEnd : 0,
+                lineWidth : 0
+            };
             for (var i = 0, l = pointList.length - 1; i < l; i++) {
-                lineArea = {
-                    xStart : pointList[i][0],
-                    yStart : pointList[i][1],
-                    xEnd : pointList[i + 1][0],
-                    yEnd : pointList[i + 1][1],
-                    lineWidth : Math.max(area.lineWidth, 10)
-                };
-                if (!_isInsideRectangle(
-                        {
-                            x : Math.min(lineArea.xStart, lineArea.xEnd)
-                                - lineArea.lineWidth,
-                            y : Math.min(lineArea.yStart, lineArea.yEnd)
-                                - lineArea.lineWidth,
-                            width : Math.abs(lineArea.xStart - lineArea.xEnd)
-                                    + lineArea.lineWidth,
-                            height : Math.abs(lineArea.yStart - lineArea.yEnd)
-                                     + lineArea.lineWidth
-                        },
-                        x,y
-                    )
-                ) {
-                    // 不在矩形区内跳过
-                    continue;
-                }
-                insideCatch = _isInsideLine(lineArea, x, y);
-                if (insideCatch) {
-                    break;
+                lineArea.xStart = pointList[i][0];
+                lineArea.yStart = pointList[i][1];
+                lineArea.xEnd = pointList[i + 1][0];
+                lineArea.yEnd = pointList[i + 1][1];
+                lineArea.lineWidth = Math.max(area.lineWidth, 10);
+
+                if (_isInsideLine(lineArea, x, y)) {
+                    return true;
                 }
             }
-            return insideCatch;
+
+            return false;
         }
 
         function _isInsideRing(area, x, y) {
-            if (_isInsideCircle(area, x, y, area.r)
-                && !_isInsideCircle(
-                    {
-                        x : area.x,
-                        y : area.y
-                    },
-                    x, y,
-                    area.r0 || 0
-                )
-            ){
-                // 大圆内，小圆外
-                return true;
-            }
-            return false;
+            return _isInsideCircle(area, x, y, area.r)
+                && !_isInsideCircle({x: area.x, y: area.y}, x, y, area.r0 || 0);
         }
 
         /**
          * 矩形包含判断
          */
         function _isInsideRectangle(area, x, y) {
-            if (x >= area.x
+            return x >= area.x
                 && x <= (area.x + area.width)
                 && y >= area.y
-                && y <= (area.y + area.height)
-            ) {
-                return true;
-            }
-            return false;
+                && y <= (area.y + area.height);
         }
 
         /**
@@ -329,27 +316,24 @@ define(
                 // 大圆外或者小圆内直接false
                 return false;
             }
-            else {
-                // 判断夹角
-                if (Math.abs(area.endAngle - area.startAngle) >= 360) {
-                    // 大于360度的扇形，在环内就为true
-                    return true;
-                }
-                
-                var angle = (360
-                             - Math.atan2(y - area.y, x - area.x)
-                             / Math.PI
-                             * 180)
-                             % 360;
-                var endA = (360 + area.endAngle) % 360;
-                var startA = (360 + area.startAngle) % 360;
-                if (endA > startA) {
-                    return (angle >= startA && angle <= endA);
-                } else {
-                    return !(angle >= endA && angle <= startA);
-                }
 
+            // 判断夹角
+            if (Math.abs(area.endAngle - area.startAngle) >= 360) {
+                // 大于360度的扇形，在环内就为true
+                return true;
             }
+            
+            var angle = (360
+                         - Math.atan2(y - area.y, x - area.x) / Math.PI
+                         * 180)
+                         % 360;
+            var endA = (360 + area.endAngle) % 360;
+            var startA = (360 + area.startAngle) % 360;
+            if (endA > startA) {
+                return (angle >= startA && angle <= endA);
+            }
+
+            return !(angle >= endA && angle <= startA);
         }
 
         /**
@@ -383,7 +367,7 @@ define(
             if (redo) {
                 redo = false;
                 inside = false;
-                for (i = 0,j = N - 1;i < N;j = i++) {
+                for (i = 0,j = N - 1; i < N; j = i++) {
                     if ((polygon[i][1] < y && y < polygon[j][1])
                         || (polygon[j][1] < y && y < polygon[i][1])
                     ) {
@@ -426,7 +410,7 @@ define(
          */
         function _isInsidePath(area, x, y) {
             if (!area.pointList) {
-                require('../shape').get('path').buildPath(_ctx, area);
+                require('../shape/Path').prototype.buildPath(_ctx, area);
             }
             var pointList = area.pointList;
             var insideCatch = false;
@@ -434,10 +418,12 @@ define(
                 insideCatch = _isInsidePolygon(
                     { pointList : pointList[i] }, x, y
                 );
+
                 if (insideCatch) {
                     break;
                 }
             }
+
             return insideCatch;
         }
 
@@ -447,11 +433,13 @@ define(
          * @param {Object} textFont
          */
         function getTextWidth(text, textFont) {
-            if (!_ctx) {
-                _ctx = util.getContext();
+            var key = text+':'+textFont;
+            if (_textWidthCache[key]) {
+                return _textWidthCache[key];
             }
-
+            _ctx = _ctx || util.getContext();
             _ctx.save();
+
             if (textFont) {
                 _ctx.font = textFont;
             }
@@ -466,6 +454,13 @@ define(
             }
             _ctx.restore();
 
+            _textWidthCache[key] = width;
+            if (++_textWidthCacheCounter > TEXT_CACHE_MAX) {
+                // 内存释放
+                _textWidthCacheCounter = 0;
+                _textWidthCache = {};
+            }
+            
             return width;
         }
         
@@ -475,9 +470,12 @@ define(
          * @param {Object} textFont
          */
         function getTextHeight(text, textFont) {
-            if (!_ctx) {
-                _ctx = util.getContext();
+            var key = text+':'+textFont;
+            if (_textHeightCache[key]) {
+                return _textHeightCache[key];
             }
+            
+            _ctx = _ctx || util.getContext();
 
             _ctx.save();
             if (textFont) {
@@ -490,6 +488,12 @@ define(
 
             _ctx.restore();
 
+            _textHeightCache[key] = height;
+            if (++_textHeightCacheCounter > TEXT_CACHE_MAX) {
+                // 内存释放
+                _textHeightCacheCounter = 0;
+                _textHeightCache = {};
+            }
             return height;
         }
 

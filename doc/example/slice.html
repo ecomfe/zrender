@@ -47,7 +47,7 @@
                 <li class="dropdown">
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="icon-download-alt icon-white"></i>Download <b class="caret"></b></a>
                   <ul class="dropdown-menu">
-                    <li><a href="https://github.com/ecomfe/zrender/archive/1.1.2.zip">ZIP (1.1.2)</a></li>
+                    <li><a href="https://github.com/ecomfe/zrender/archive/2.0.0.zip">ZIP (2.0.0)</a></li>
                     <li><a href="https://github.com/ecomfe/zrender/archive/master.zip">ZIP (Latest)</a></li>
                   </ul>
                 </li>
@@ -97,19 +97,35 @@
     <script src="../asset/js/bootstrap-carousel.js"></script>
     <script src="../asset/js/bootstrap-typeahead.js"></script>
     <script type="text/javascript">
-        require.config({
-            packages: [
-                {
-                    name: 'zrender',
-                    location: '../../src',
-                    main: 'zrender'
+        var developMode = false;
+        if (developMode) {
+            // for develop
+            require.config({
+                packages: [
+                    {
+                        name: 'zrender',
+                        location: '../../src',
+                        main: 'zrender'
+                    }
+                ]
+            });
+        }
+        else {
+            // for echarts online home page
+            var fileLocation = './www/js/zrender';
+            require.config({
+                paths:{ 
+                    zrender: fileLocation,
+                    'zrender/shape/Circle': fileLocation,
+                    'zrender/shape/Text': fileLocation,
+                    'zrender/shape/BrokenLine': fileLocation
                 }
-            ]
-        });
+            });
+        };
 
         require(
-            ['zrender'],
-            function(zrender) {
+            ['zrender', 'zrender/shape/Circle', 'zrender/shape/Text', 'zrender/shape/BrokenLine'],
+            function(zrender, CircleShape, TextShape, BrokenLineShape) {
                 zr = zrender.init(document.getElementById('main'));
                 var width = Math.ceil(zr.getWidth());
                 var height = Math.ceil(zr.getHeight());
@@ -143,9 +159,7 @@
 
                 function _bulidTime() {
                     shapeList = [];
-                    shapeList.push({
-                        shape : 'circle',
-                        id : zr.newShapeId(),
+                    shapeList.push(new CircleShape({
                         rotation : [0, 100, 100],
                         style : {
                             x : 100,
@@ -158,10 +172,8 @@
                         },
                         hoverable : false,
                         _round : 2
-                    });
-                    shapeList.push({
-                        shape : 'circle',
-                        id : zr.newShapeId(),
+                    }));
+                    shapeList.push(new CircleShape({
                         rotation : [0, 170, 200],
                         style : {
                             x : 170,
@@ -173,10 +185,8 @@
                         },
                         _round : 10,
                         hoverable : false
-                    });
-                    shapeList.push({
-                        shape : 'circle',
-                        id : zr.newShapeId(),
+                    }));
+                    shapeList.push(new CircleShape({
                         rotation : [0, 130, 260],
                         style : {
                             x : 130,
@@ -188,15 +198,13 @@
                         },
                         hoverable : false,
                         _round : 4
-                    });
+                    }));
 
                     for(var i = 0, l = shapeList.length; i < l; i++) {
                         zr.addShape(shapeList[i]);
                     }
 
-                    pointText = {
-                        shape : 'text',
-                        id : zr.newShapeId(),
+                    pointText = new TextShape({
                         scale : [1, 1, 100, height-40],
                         style : {
                             x : 100,
@@ -206,11 +214,10 @@
                             textFont : 'bold 30px "Times New Roman"',
                             textAlign : 'center'
                         }
-                    };
+                    });
                     zr.addShape(pointText);
-                    knife = {
+                    knife = new BrokenLineShape({
                         shape : 'brokenLine',
-                        id : zr.newShapeId(),
                         zlevel : 1, // 频繁变动的画笔单独在一层中
                         style : {
                             pointList : [
@@ -227,7 +234,7 @@
                             lineWidth : Math.round(Math.random() * 5)
                         },
                         hoverable : false   // default true
-                    }
+                    });
 
                     zr.addShape(knife);
                     zr.render();
@@ -258,9 +265,8 @@
                     clearInterval(gamTicket);
                     gamTicket = setInterval(function(){
                         var sizePoint = Math.ceil(Math.random() * 40);
-                        var bubble = {
+                        var bubble = new CircleShape({
                             shape : 'circle',
-                            id : zr.newShapeId(),
                             style : {
                                 x : Math.ceil(Math.random() * (width - 320) + 300),
                                 y : height -40,
@@ -271,7 +277,7 @@
                                 text : 50 - sizePoint,
                                 textPosition : 'inside'
                             },
-                            _ticket :zr.newShapeId(),
+                            _ticket :require('zrender/tool/guid')(),
                             _point : 50 - sizePoint,
                             hoverable : false,
                             clickable : true,
@@ -306,16 +312,16 @@
                                     })
                                     .start();
                                 var newShape = util.clone(params.target);
-                                newShape.id = zr.newShapeId();
+                                newShape.id = require('zrender/tool/guid')();
                                 newShape.style.brushType = 'fill';
-                                zr.addShape(newShape);
+                                zr.addShape(new CircleShape(newShape));
                                 zr.animate(newShape.id, 'style')
                                     .when(1000, {
                                         y : height - newShape.style.r
                                     })
                                     .start('BounceOut');
                             }
-                        };
+                        });
                         zr.addShape(bubble);
                         zr.animate(bubble.id, 'style')
                             .when(3000, {
