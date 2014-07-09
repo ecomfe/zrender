@@ -1,7 +1,7 @@
 /**
  * zrender: 向量操作类
  *
- * author : lang(shenyi01@baidu.com)
+ * author : https://github.com/pissang
  */
 define(
     function() {
@@ -82,6 +82,13 @@ define(
             middle : function(out, v1, v2) {
                 out[0] = (v1[0] + v2[0])/2;
                 out[1] = (v1[1] + v2[1])/2;
+                return out;
+            },
+            applyTransform: function(out, v, m) {
+                var x = v[0];
+                var y = v[1];
+                out[0] = m[0] * x + m[2] * y + m[4];
+                out[1] = m[1] * x + m[3] * y + m[5];
                 return out;
             }
         };

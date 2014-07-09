@@ -141,7 +141,7 @@ define(
                     this.setContext(ctx, style);
 
                     // 设置transform
-                    this.updateTransform(ctx);
+                    this.setTransform(ctx);
 
                     var width = style.width || image.width;
                     var height = style.height || image.height;

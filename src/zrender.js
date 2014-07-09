@@ -39,7 +39,7 @@ define(
         var Handler = require('./Handler');
         var Painter = require('./Painter');
         var Storage = require('./Storage');
-        var Animation = require('./animation/animation');
+        var Animation = require('./animation/Animation');
 
         var _instances = {};    //ZRender实例map索引
 
@@ -155,22 +155,42 @@ define(
         };
 
         /**
-         * 添加图形形状
+         * 添加图形形状到根节点
          * 
-         * @param {Object} shape 形状对象，可用属性全集，详见各shape
+         * @param {zrender.shape.Base} shape 形状对象，可用属性全集，详见各shape
          */
         ZRender.prototype.addShape = function (shape) {
-            this.storage.add(shape);
+            this.storage.addRoot(shape);
             return this;
         };
 
         /**
-         * 删除图形形状
+         * 添加组到根节点
+         *
+         * @param {zrender.shape.Group} group
+         */
+        ZRender.prototype.addGroup = function(group) {
+            this.storage.addRoot(group);
+            return this;
+        }
+
+        /**
+         * 从根节点删除图形形状
          * 
          * @param {string} shapeId 形状对象唯一标识
          */
         ZRender.prototype.delShape = function (shapeId) {
-            this.storage.del(shapeId);
+            this.storage.delRoot(shapeId);
+            return this;
+        };
+
+        /**
+         * 从根节点删除组
+         * 
+         * @param {string} groupId
+         */
+        ZRender.prototype.delGroup = function (groupId) {
+            this.storage.delRoot(groupId);
             return this;
         };
 
@@ -179,10 +199,20 @@ define(
          * 
          * @param {string} shapeId 形状对象唯一标识
          * @param {Object} shape 形状对象
-         * @param {fast} boolean 默认为false, 如果为true的话会在merge中省略部分判断
          */
-        ZRender.prototype.modShape = function (shapeId, shape, fast) {
-            this.storage.mod(shapeId, shape, fast);
+        ZRender.prototype.modShape = function (shapeId, shape) {
+            this.storage.mod(shapeId, shape);
+            return this;
+        };
+
+        /**
+         * 修改组
+         * 
+         * @param {string} shapeId
+         * @param {Object} group
+         */
+        ZRender.prototype.modGroup = function (groupId, group) {
+            this.storage.mod(shapeId, group);
             return this;
         };
 
