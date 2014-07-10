@@ -38,6 +38,10 @@ define(function(require) {
     }
 
     Group.prototype.addChild = function(child) {
+        if (child == this) {
+            return;
+        }
+        
         if (child.parent == this) {
             return;
         }

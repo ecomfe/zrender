@@ -10,7 +10,7 @@ define(
     function (require) {
 
         'use strict';
-        
+
         var util = require('./tool/util');
         var log = require('./tool/log');
         var config = require('./config');
@@ -64,7 +64,9 @@ define(
             if (option.hover) {
                 //高亮层数据遍历
                 for (var i = 0, l = this._hoverElements.length; i < l; i++) {
-                    if (fun(this._hoverElements[i])) {
+                    var el = this._hoverElements[i];
+                    el.updateTransform();
+                    if (fun(el)) {
                         return this;
                     }
                 }

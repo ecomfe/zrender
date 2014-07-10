@@ -7,9 +7,9 @@
 
 define(
     function (require) {
-        
+
         'use strict';
-        
+
         var config = require('./config');
         var env = require('./tool/env');
         var eventTool = require('./tool/event');
@@ -616,24 +616,31 @@ define(
             var eventPacket = {
                 type : eventName,
                 event : event,
-                target : targetShape
+                target : targetShape,
+                cancelBubble: false
             };
+
+            var el = targetShape;
 
             if (draggedShape) {
                 eventPacket.dragged = draggedShape;
             }
 
-            if (targetShape) {
+            while (el) {
+                el[eventHandler] && el[eventHandler](eventPacket);
+                el.dispatch(eventName, eventPacket);
 
-                //“不存在shape级事件”或“存在shape级事件但事件回调返回非true”
-                if (!targetShape[eventHandler]
-                    || !targetShape[eventHandler](eventPacket)
-                ) {
-                    this.dispatch(
-                        eventName,
-                        event,
-                        eventPacket
-                    );
+                el = el.parent;
+                
+                if (eventPacket.cancelBubble) {
+                    break;
+                }
+            }
+
+            if (targetShape) {
+                // 冒泡到顶级 zrender 对象
+                if (!eventPacket.cancelBubble) {
+                    this.dispatch(eventName, eventPacket);
                 }
             }
             else if (!draggedShape) {
