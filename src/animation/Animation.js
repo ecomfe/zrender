@@ -20,7 +20,7 @@ define(
         var Clip = require('./Clip');
         var color = require('../tool/color');
         var util = require('../tool/util');
-        var notifier = require('../tool/notifier');
+        var Dispatcher = require('../tool/event').Dispatcher;
 
         var requestAnimationFrame = window.requestAnimationFrame
                                     || window.msRequestAnimationFrame
@@ -44,6 +44,8 @@ define(
             this._running = false;
 
             this._time = 0;
+
+            Dispatcher.call(this);
         }
 
         Animation.prototype = {
@@ -99,7 +101,7 @@ define(
 
                 this.onframe(delta);
 
-                this.trigger('frame', delta);
+                this.dispatch('frame', delta);
             },
             start : function() {
                 var self = this;
@@ -136,7 +138,7 @@ define(
             constructor: Animation
         };
 
-        util.merge(Animation.prototype, notifier);
+        util.merge(Animation.prototype, Dispatcher.prototype, true);
 
         function _defaultGetter(target, key) {
             return target[key];

@@ -2,8 +2,8 @@ define(function(require) {
 
     var guid = require('../tool/guid');
     var util = require('../tool/util');
-    var notifier = require('../tool/notifier');
 
+    var Dispatcher = require('../tool/event').Dispatcher;
     var Transformable = require('./mixin/Transformable');
 
     function Group(options) {
@@ -24,7 +24,9 @@ define(function(require) {
 
         this.__dirty = true;
 
+        // Mixin
         Transformable.call(this);
+        Dispatcher.call(this);
     }
 
     Group.prototype.children = function() {
@@ -118,7 +120,7 @@ define(function(require) {
     }
 
     util.merge(Group.prototype, Transformable.prototype, true);
-    util.merge(Group.prototype, notifier, true);
+    util.merge(Group.prototype, Dispatcher.prototype, true);
 
     return Group
 });

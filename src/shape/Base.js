@@ -119,9 +119,9 @@ define(
         var matrix = require('../tool/matrix');
         var guid = require('../tool/guid');
         var util = require('../tool/util');
-        var notifier = require('../tool/notifier');
 
         var Transformable = require('./mixin/Transformable');
+        var Dispatcher = require('../tool/event').Dispatcher;
 
         function _fillText(ctx, text, x, y, textFont, textAlign, textBaseline) {
             if (textFont) {
@@ -215,6 +215,7 @@ define(
             this.__dirty = true;
 
             Transformable.call(this);
+            Dispatcher.call(this);
         }
 
         /**
@@ -385,9 +386,9 @@ define(
         Base.prototype.getTansform = function (x, y) {
             var originPos = [x, y];
             // 对鼠标的坐标也做相同的变换
-            if (this.needTransform && this._transform) {
+            if (this.needTransform && this.transform) {
                 var inverseMatrix = [];
-                matrix.invert(inverseMatrix, this._transform);
+                matrix.invert(inverseMatrix, this.transform);
 
                 matrix.mulVector(originPos, inverseMatrix, [x, y, 1]);
 
@@ -601,7 +602,7 @@ define(
         };
 
         util.merge(Base.prototype, Transformable.prototype, true);
-        util.merge(Base.prototype, notifier, true);
+        util.merge(Base.prototype, Dispatcher.prototype, true);
 
         return Base;
     }

@@ -7,9 +7,13 @@
 
 define(
     function (require) {
+        
+        'use strict';
+        
         var config = require('./config');
         var env = require('./tool/env');
         var eventTool = require('./tool/event');
+        var util = require('./tool/util');
         var EVENT = config.EVENT;
 
         var domHandlerNames = [
@@ -620,6 +624,7 @@ define(
             }
 
             if (targetShape) {
+
                 //“不存在shape级事件”或“存在shape级事件但事件回调返回非true”
                 if (!targetShape[eventHandler]
                     || !targetShape[eventHandler](eventPacket)
@@ -756,6 +761,8 @@ define(
             event.zrenderFixed = 1;
             return event;
         };
+
+        util.merge(Handler.prototype, eventTool.Dispatcher.prototype, true);
 
         return Handler;
     }

@@ -76,6 +76,7 @@ define(
             // 高亮
             var hoverLayer = new Layer('_zrender_hover_', this);
             this._layers['hover'] = hoverLayer;
+            domRoot.appendChild(hoverLayer.dom);
 
             hoverLayer.onselectstart = returnFalse;
 
@@ -295,7 +296,7 @@ define(
                 me._brushHover(e);
             }
             this.clearHover();
-            this.storage.iterShape(brushHover, { hover: true });
+            this.storage.iterShape(brushHover, { hover: true, update: true });
             this.storage.delHover();
 
             return this;
@@ -305,12 +306,8 @@ define(
          * 清除hover层所有内容
          */
         Painter.prototype.clearHover = function () {
-            var hover = this._ctxList && this._ctxList.hover;
-            hover && hover.clearRect(
-                0, 0, 
-                this._width * devicePixelRatio, 
-                this._height * devicePixelRatio
-            );
+            var hover = this._layers.hover;
+            hover && hover.clear();
 
             return this;
         };

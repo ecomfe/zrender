@@ -11,6 +11,9 @@
  */
 define(
     function() {
+
+        'use strict';
+
         /**
         * 提取鼠标（手指）x坐标
         * 
@@ -68,124 +71,127 @@ define(
          * 事件分发器
          */
         function Dispatcher() {
-            var _self = this;
-            var _h = {};
+            this._handlers = {};
+        }
+        /**
+         * 单次触发绑定，dispatch后销毁
+         * 
+         * @param {string} event 事件字符串
+         * @param {Function} handler 响应函数
+         */
+        Dispatcher.prototype.one = function(event, handler) {
+            
+            var _h = this._handlers;
 
-            /**
-             * 单次触发绑定，dispatch后销毁
-             * 
-             * @param {string} event 事件字符串
-             * @param {Function} handler 响应函数
-             */
-            function one(event, handler) {
-                if(!handler || !event) {
-                    return _self;
-                }
-
-                if(!_h[event]) {
-                    _h[event] = [];
-                }
-
-                _h[event].push({
-                    h : handler,
-                    one : true
-                });
-
-                return _self;
+            if(!handler || !event) {
+                return this;
             }
 
-            /**
-             * 事件绑定
-             * 
-             * @param {string} event 事件字符串
-             * @param {Function} handler : 响应函数
-             */
-            function bind(event, handler) {
-                if(!handler || !event) {
-                    return _self;
-                }
-
-                if(!_h[event]) {
-                    _h[event] = [];
-                }
-
-                _h[event].push({
-                    h : handler,
-                    one : false
-                });
-
-                return _self;
+            if(!_h[event]) {
+                _h[event] = [];
             }
 
-            /**
-             * 事件解绑定
-             * 
-             * @param {string} event 事件字符串
-             * @param {Function} handler : 响应函数
-             */
-            function unbind(event, handler) {
-                if(!event) {
-                    _h = {};
-                    return _self;
-                }
+            _h[event].push({
+                h : handler,
+                one : true
+            });
 
-                if(handler) {
-                    if(_h[event]) {
-                        var newList = [];
-                        for (var i = 0, l = _h[event].length; i < l; i++) {
-                            if (_h[event][i]['h'] != handler) {
-                                newList.push(_h[event][i]);
-                            }
+            return this;
+        }
+
+        /**
+         * 事件绑定
+         * 
+         * @param {string} event 事件字符串
+         * @param {Function} handler : 响应函数
+         */
+        Dispatcher.prototype.bind = function(event, handler) {
+            
+            var _h = this._handlers;
+
+            if(!handler || !event) {
+                return this;
+            }
+
+            if(!_h[event]) {
+                _h[event] = [];
+            }
+
+            _h[event].push({
+                h : handler,
+                one : false
+            });
+
+            return this;
+        }
+
+        /**
+         * 事件解绑定
+         * 
+         * @param {string} event 事件字符串
+         * @param {Function} handler : 响应函数
+         */
+        Dispatcher.prototype.unbind = function(event, handler) {
+
+            var _h = this._handlers;
+
+            if(!event) {
+                this._handlers = {};
+                return this;
+            }
+
+            if(handler) {
+                if(_h[event]) {
+                    var newList = [];
+                    for (var i = 0, l = _h[event].length; i < l; i++) {
+                        if (_h[event][i]['h'] != handler) {
+                            newList.push(_h[event][i]);
                         }
-                        _h[event] = newList;
                     }
-
-                    if(_h[event] && _h[event].length === 0) {
-                        delete _h[event];
-                    }
+                    _h[event] = newList;
                 }
-                else {
+
+                if(_h[event] && _h[event].length === 0) {
                     delete _h[event];
                 }
-
-                return _self;
+            }
+            else {
+                delete _h[event];
             }
 
-            /**
-             * 事件分发
-             * 
-             * @param {string} type : 事件类型
-             * @param {Object} event : event对象
-             * @param {Object} [attachment] : 附加信息
-             */
-            function dispatch(type, event, attachment, that) {
-                if(_h[type]) {
-                    var newList = [];
-                    var eventPacket = attachment || {};
-                    eventPacket.type = type;
-                    eventPacket.event = event;
-                    //eventPacket._target = self;
-                    var thisObject;
-                    for (var i = 0, l = _h[type].length; i < l; i++) {
-                        thisObject = that || _h[type][i]['h'];
-                        _h[type][i]['h'].call(thisObject, eventPacket);
-                        if (!_h[type][i]['one']) {
-                            newList.push(_h[type][i]);
-                        }
-                    }
+            return this;
+        }
 
-                    if (newList.length != _h[type].length) {
-                        _h[type] = newList;
+        /**
+         * 事件分发
+         * 
+         * @param {string} type : 事件类型
+         * @param {Object} event : event对象
+         * @param {Object} [attachment] : 附加信息
+         */
+        Dispatcher.prototype.dispatch = function(type, event, attachment, that) {
+
+            if(this._handlers[type]) {
+                var _h = this._handlers[type];
+                var eventPacket = attachment || {};
+                eventPacket.type = type;
+                eventPacket.event = event;
+                //eventPacket._target = self;
+                var thisObject;
+                var l = _h.length;
+                for (var i = 0; i < l;) {
+                    thisObject = that || this;
+                    _h[i]['h'].call(thisObject, eventPacket);
+                    if (_h[i]['one']) {
+                        _h.splice(i, 1);
+                        l--;
+                    } else {
+                        i++;
                     }
                 }
-
-                return _self;
             }
 
-            _self.one = one;
-            _self.bind = bind;
-            _self.unbind = unbind;
-            _self.dispatch = dispatch;
+            return this;
         }
 
         return {

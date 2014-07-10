@@ -8,6 +8,9 @@
 
 define(
     function (require) {
+
+        'use strict';
+        
         var util = require('./tool/util');
         var log = require('./tool/log');
         var config = require('./config');
