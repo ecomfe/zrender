@@ -69,13 +69,13 @@ define(function(require) {
                         if (this.rotation[0] !== 0) {
                             origin[0] = -this.rotation[1] || 0;
                             origin[1] = -this.rotation[2] || 0;
-                            if (originX || originY) {
+                            if (origin[0] || origin[1]) {
                                 matrix.translate(
                                     m, m, origin
                                 );
                             }
                             matrix.rotate(m, m, this.rotation[0]);
-                            if (originX || originY) {
+                            if (origin[0] || origin[1]) {
                                 origin[0] = -origin[0];
                                 origin[1] = -origin[1];
                                 matrix.translate(

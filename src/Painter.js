@@ -110,6 +110,18 @@ define(
         Painter.prototype.refresh = function (callback) {
 
             var list = this.storage.getShapeList(true);
+
+            this._paintList(list);
+
+            if (typeof callback == 'function') {
+                callback();
+            }
+
+            return this;
+        };
+
+        Painter.prototype._paintList = function(list) {
+
             var layerStatus = this._getLayerStatus(list);
 
             var currentLayer;
@@ -123,7 +135,7 @@ define(
                 }
             }
 
-            for (var i = 0; i < list.length; i++) {
+            for (var i = 0, l = list.length; i < l; i++) {
                 var shape = list[i];
 
                 if (currentZLevel !== shape.zlevel) {
@@ -140,23 +152,24 @@ define(
                     }
                 }
 
-                if (currentLayerDirty) {
-                    if (!shape.invisible) {
-                        if (!shape.onbrush || (shape.onbrush && !shape.onbrush(ctx, false))) {
-                            if (config.catchBrushException) {
-                                try {
-                                    shape.brush(ctx, false, this.updatePainter);
-                                }
-                                catch(error) {
-                                    log(
-                                        error,
-                                        'brush error of ' + shape.type,
-                                        shape
-                                    );
-                                }
-                            } else {
+                if (currentLayerDirty && !shape.invisible) {
+                    if (
+                        !shape.onbrush
+                        || (shape.onbrush && !shape.onbrush(ctx, false))
+                    ) {
+                        if (config.catchBrushException) {
+                            try {
                                 shape.brush(ctx, false, this.updatePainter);
                             }
+                            catch(error) {
+                                log(
+                                    error,
+                                    'brush error of ' + shape.type,
+                                    shape
+                                );
+                            }
+                        } else {
+                            shape.brush(ctx, false, this.updatePainter);
                         }
                     }
                 }
@@ -173,13 +186,7 @@ define(
                     }
                 }
             }
-
-            if (typeof callback == 'function') {
-                callback();
-            }
-
-            return this;
-        };
+        }
 
         Painter.prototype._getLayer = function(zlevel, prevLayer) {
             // Change draw layer
@@ -212,7 +219,7 @@ define(
             var currentZLevel;
             var obj = {};
 
-            for (var i = 0; i < list.length; i++) {
+            for (var i = 0, l = list.length; i < l; i++) {
                 var shape = list[i];
                 if (currentZLevel !== shape.zlevel) {
                     if (shape.__dirty) {
@@ -291,12 +298,11 @@ define(
          * 刷新hover层
          */
         Painter.prototype.refreshHover = function () {
-            var me = this;
-            function brushHover(e) {
-                me._brushHover(e);
-            }
             this.clearHover();
-            this.storage.iterShape(brushHover, { hover: true, update: true });
+            var list = this.storage.getHoverShapes(true);
+            for (var i = 0, l = list.length; i < l; i++) {
+                this._brushHover(list[i]);
+            }
             this.storage.delHover();
 
             return this;
@@ -621,9 +627,9 @@ define(
          *****************************************/
         function Layer(id, painter) {
             this.dom = createDom(id, 'canvas', painter);
-            this.ctx = this.dom.getContext('2d');
-
             vmlCanvasManager && vmlCanvasManager.initElement(this.dom);
+
+            this.ctx = this.dom.getContext('2d');
 
             if (devicePixelRatio != 1) { 
                 this.ctx.scale(devicePixelRatio, devicePixelRatio);
@@ -683,8 +689,10 @@ define(
             var height = dom.height;
 
             if (config) {
-                var haveClearColor = typeof(config.clearColor) !== 'undefined';
-                var haveMotionBLur = config.motionBlur;
+                var haveClearColor =
+                    typeof(config.clearColor) !== 'undefined'
+                    && !vmlCanvasManager;
+                var haveMotionBLur = config.motionBlur && !vmlCanvasManager;
                 var lastFrameAlpha = config.lastFrameAlpha;
                 if (typeof(lastFrameAlpha) == 'undefined') {
                     lastFrameAlpha = 0.7;

@@ -101,6 +101,15 @@ define(
             return this;
         };
 
+        Storage.prototype.getHoverShapes = function(update) {
+            if (update) {
+                for (var i = 0, l = this._hoverElements.length; i < l; i++) {
+                    this._hoverElements[i].updateTransform();
+                }
+            }
+            return this._hoverElements;
+        }
+
         Storage.prototype.getShapeList = function(update) {
             if (update) {
                 this.updateShapeList();
