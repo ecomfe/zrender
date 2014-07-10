@@ -126,16 +126,19 @@ define(
                 }
                 if (image) {
                     //图片已经加载完成
-                    if (window.ActiveXObject) {
-                        if (image.readyState != 'complete') {
-                            return;
+                    if (image.nodeName.toUpperCase() == 'IMG') {
+                        if (window.ActiveXObject) {
+                            if (image.readyState != 'complete') {
+                                return;
+                            }
+                        }
+                        else {
+                            if (!image.complete) {
+                                return;
+                            }
                         }
                     }
-                    else {
-                        if (!image.complete) {
-                            return;
-                        }
-                    }
+                    // Else is canvas
 
                     ctx.save();
                     this.setContext(ctx, style);

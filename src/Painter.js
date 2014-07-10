@@ -133,11 +133,30 @@ define(
 
                     // Reset the count
                     currentLayer.unusedCount = 0;
+
+                    if (currentLayerDirty) {
+                        currentLayer.clear();
+                    }
                 }
 
                 if (currentLayerDirty) {
-                    if (!shape.onbrush || (shape.onbrush && !shape.onbrush(ctx, false))) {
-                        shape.brush(ctx, false, this.updatePainter);
+                    if (!shape.invisible) {
+                        if (!shape.onbrush || (shape.onbrush && !shape.onbrush(ctx, false))) {
+                            if (config.catchBrushException) {
+                                try {
+                                    shape.brush(ctx, false, this.updatePainter);
+                                }
+                                catch(error) {
+                                    log(
+                                        error,
+                                        'brush error of ' + shape.type,
+                                        shape
+                                    );
+                                }
+                            } else {
+                                shape.brush(ctx, false, this.updatePainter);
+                            }
+                        }
                     }
                 }
 
@@ -182,8 +201,6 @@ define(
                 this._layers[zlevel] = currentLayer;
 
                 currentLayer.config = this._layerConfig[zlevel];
-            } else {
-                currentLayer.clear();
             }
 
             return currentLayer;
@@ -412,10 +429,7 @@ define(
             ctx.fill();
             
             //升序遍历，shape上的zlevel指定绘画图层的z轴层叠
-            var me = this;
-            function updatePainter(shapeList, callback) {
-                me.update(shapeList, callback);
-            }
+            
             this.storage.iterShape(
                 function (shape) {
                     if (!shape.invisible) {
@@ -425,7 +439,7 @@ define(
                         ) {
                             if (config.catchBrushException) {
                                 try {
-                                    shape.brush(ctx, false, updatePainter);
+                                    shape.brush(ctx, false, this.updatePainter);
                                 }
                                 catch(error) {
                                     log(
@@ -436,12 +450,12 @@ define(
                                 }
                             }
                             else {
-                                shape.brush(ctx, false, updatePainter);
+                                shape.brush(ctx, false, this.updatePainter);
                             }
                         }
                     }
                 },
-                { normal: 'up' }
+                { normal: 'up', update: true }
             );
             var image = imageDom.toDataURL(type, args); 
             ctx = null;
@@ -541,7 +555,7 @@ define(
                     x : 0,
                     y : 0,
                     // TODO 直接使用canvas而不是通过base64
-                    image : canvas.toDataURL()
+                    image : canvas
                 }
             });
 

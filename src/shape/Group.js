@@ -29,6 +29,10 @@ define(function(require) {
         return this._children.slice();
     }
 
+    Group.prototype.childAt = function(idx) {
+        return this._children[idx];
+    }
+
     Group.prototype.addChild = function(child) {
         if (child.parent == this) {
             return;
