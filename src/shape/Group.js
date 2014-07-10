@@ -1,6 +1,8 @@
 define(function(require) {
 
     var guid = require('../tool/guid');
+    var util = require('../tool/util');
+    var notifier = require('../tool/notifier');
 
     var Transformable = require('./mixin/Transformable');
 
@@ -115,9 +117,8 @@ define(function(require) {
         }
     }
 
-    for (var name in Transformable.prototype) {
-        Group.prototype[name] = Transformable.prototype[name];
-    }
+    util.merge(Group.prototype, Transformable.prototype, true);
+    util.merge(Group.prototype, notifier, true);
 
     return Group
 });

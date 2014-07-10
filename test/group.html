@@ -32,11 +32,8 @@
                 style : {
                     x : 0,
                     y : 0,
-                    r : 50,
-                    brushType : 'fill',
-                    lineWidth : 5,
-                    text :'circle',
-                    textPosition :'inside'
+                    r : 10,
+                    brushType : 'fill'
                 },
                 draggable : true
             });
@@ -77,6 +74,12 @@
                     position: [0, 0]
                 })
                 .start();
+
+            zr.modLayer(0, {
+                // clearColor : 'rgba(255, 255, 255, 0.1)'
+                motionBlur : true,
+                lastFrameAlpha : 0.99
+            });
 
             zr.render();
         })

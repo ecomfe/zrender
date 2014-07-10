@@ -118,6 +118,8 @@ define(
     function(require) {
         var matrix = require('../tool/matrix');
         var guid = require('../tool/guid');
+        var util = require('../tool/util');
+        var notifier = require('../tool/notifier');
 
         var Transformable = require('./mixin/Transformable');
 
@@ -300,7 +302,7 @@ define(
                 var styleProp = STYLE_CTX_MAP[i][0];
                 var styleValue = style[styleProp];
                 var ctxProp = STYLE_CTX_MAP[i][1];
-                
+
                 if (typeof styleValue != 'undefined') {
                     ctx[ctxProp] = styleValue;
                 }
@@ -598,9 +600,8 @@ define(
             );
         };
 
-        for (var name in Transformable.prototype) {
-            Base.prototype[name] = Transformable.prototype[name];
-        }
+        util.merge(Base.prototype, Transformable.prototype, true);
+        util.merge(Base.prototype, notifier, true);
 
         return Base;
     }
