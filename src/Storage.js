@@ -161,7 +161,7 @@ define(
             var el = this._elements[elId];
             if (el) {
                 el.updateNeedTransform();
-                if (!el instanceof Group) {
+                if (!(el instanceof Group)) {
                     el.style.__rect = null;
                 }
                 el.__dirty = true;
