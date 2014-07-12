@@ -181,24 +181,13 @@ define(
          */
         Storage.prototype.drift = function (shapeId, dx, dy) {
             var shape = this._elements[shapeId];
-
             if (shape) {
                 shape.needTransform = true;
                 if (!shape.ondrift //ondrift
                     //有onbrush并且调用执行返回false或undefined则继续
                     || (shape.ondrift && !shape.ondrift(dx, dy))
                 ) {
-                    if (config.catchBrushException) {
-                        try {
-                            shape.drift(dx, dy);
-                        }
-                        catch(error) {
-                            log(error, 'drift error of ' + shape.type, shape);
-                        }
-                    }
-                    else {
-                        shape.drift(dx, dy);
-                    }
+                    shape.drift(dx, dy);
                 }
             }
 
@@ -210,22 +199,9 @@ define(
          * 
          * @param {Object} params 参数
          */
-        Storage.prototype.addHover = function (params) {
-            if ((params.rotation && Math.abs(params.rotation[0]) > 0.0001)
-                || (params.position
-                    && (Math.abs(params.position[0]) > 0.0001
-                        || Math.abs(params.position[1]) > 0.0001))
-                || (params.scale
-                    && (Math.abs(params.scale[0] - 1) > 0.0001
-                    || Math.abs(params.scale[1] - 1) > 0.0001))
-            ) {
-                params.needTransform = true;
-            }
-            else {
-                params.needTransform = false;
-            }
-
-            this._hoverElements.push(params);
+        Storage.prototype.addHover = function (shape) {
+            shape.updateNeedTransform();
+            this._hoverElements.push(shape);
             return this;
         };
 
@@ -251,19 +227,44 @@ define(
                 el.addChildrenToStorage(this);
             }
             
-            this.add(el);
+            this.addToMap(el);
             this._roots.push(el);
         }
 
         Storage.prototype.delRoot = function (elId) {
-            var el = this._elements[elId];
-            if (!el) {
+            if (typeof(elId) == 'undefined') {
+                // 不指定elId清空
+                for (var i = 0; i < this._roots.length; i++) {
+                    var root = this._roots[i];
+                    if (root instanceof Group) {
+                        root.delChildrenFromStorage(this);
+                    }
+                }
+
+                this._elements = {};
+                this._hoverElements = [];
+                this._roots = [];
+
                 return;
+            }
+
+            if (elId instanceof Array) {
+                for (var i = 0; i < elId.length; i++) {
+                    this.delRoot(elId[i]);
+                }
+                return;
+            }
+
+            var el;
+            if (typeof(elId) == 'string') {
+                el = this._elements[elId];
+            } else {
+                el = elId;
             }
 
             var idx = this._roots.indexOf(el);
             if (idx >= 0) {
-                this.del(el.id);
+                this.delFromMap(el.id);
                 this._roots.splice(idx, 1);
                 if (el instanceof Group) {
                     el.delChildrenFromStorage(this);
@@ -276,7 +277,7 @@ define(
          * 
          * @param {Shape|Group} el 参数
          */
-        Storage.prototype.add = function (el) {
+        Storage.prototype.addToMap = function (el) {
             el.updateNeedTransform();
             if (!el instanceof Group) {
                 el.style.__rect = null;
@@ -298,30 +299,10 @@ define(
         /**
          * 删除，elId不指定则全清空
          * 
-         * @param {string= | Array} idx 唯一标识
+         * @param {string} idx 唯一标识
          */
-        Storage.prototype.del = function (elId) {
-            if (typeof elId != 'undefined') {
-                if (!(elId instanceof Array)) {
-                    // 单个
-                    delete this._elements[elId];
-                }
-                else {
-                    // 批量删除
-                    if (elId.length < 1) { // 空数组
-                        return;
-                    }
-                    for (var i = 0, l = elId.length; i < l; i++) {
-                        delete this._elements[elId[i]];
-                    }
-                }
-            }
-            else{
-                // 不指定elId清空
-                this._elements = {};
-                this._hoverElements = [];
-                this._roots = [];
-            }
+        Storage.prototype.delFromMap = function (elId) {
+            delete this._elements[elId];
 
             return this;
         };

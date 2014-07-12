@@ -106,7 +106,7 @@ define(function(require) {
     Group.prototype.addChildrenToStorage = function(storage) {
         for (var i = 0; i < this._children.length; i++) {
             var child = this._children[i];
-            storage.add(child);
+            storage.addToMap(child);
             if (child.type === 'group') {
                 child.addChildrenToStorage(storage);
             }
@@ -116,7 +116,7 @@ define(function(require) {
     Group.prototype.delChildrenFromStorage = function(storage) {
         for (var i = 0; i < this._children.length; i++) {
             var child = this._children[i];
-            storage.del(child);
+            storage.delFromMap(child);
             if (child.type === 'group') {
                 child.delChildrenFromStorage(storage);
             }

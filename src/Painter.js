@@ -180,9 +180,12 @@ define(
             for (var id in this._layers) {
                 if (id !== 'hover') {
                     var layer = this._layers[id];
-                    if (layer.unusedCount > 5) {
+                    if (layer.unusedCount >= 5) {
                         delete this._layers[id];
                         layer.dom.parentNode.removeChild(layer.dom);
+                    }
+                    else if (layer.unusedCount == 1) {
+                        layer.clear();
                     }
                 }
             }
@@ -221,14 +224,12 @@ define(
 
             for (var i = 0, l = list.length; i < l; i++) {
                 var shape = list[i];
-                if (currentZLevel !== shape.zlevel) {
-                    if (shape.__dirty) {
-                        obj[shape.zlevel] = true;
-                    } else {
-                        obj[shape.zlevel] = false;
-                    }
-                    currentZLevel = shape.zlevel;
+                var zlevel = shape.zlevel;
+                // Already mark as dirty
+                if (obj[zlevel]) {
+                    continue;
                 }
+                obj[zlevel] = shape.__dirty;
             }
 
             return obj;

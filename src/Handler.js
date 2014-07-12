@@ -645,7 +645,10 @@ define(
             }
             else if (!draggedShape) {
                 //无hover目标，无拖拽对象，原生事件分发
-                this.dispatch(eventName, event);
+                this.dispatch(eventName, {
+                    type: eventName,
+                    event: event
+                });
             }
         };
         

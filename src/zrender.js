@@ -445,7 +445,7 @@ define(
          * 清除当前ZRender下所有类图的数据和显示，clear后MVC和已绑定事件均还存在在，ZRender可用
          */
         ZRender.prototype.clear = function () {
-            this.storage.del();
+            this.storage.delRoot();
             this.painter.clear();
             return this;
         };
