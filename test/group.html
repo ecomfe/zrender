@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>Animation</title>
+    <title>Group</title>
     <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
 </head>
 <body>
@@ -20,40 +20,32 @@
         [
             "zrender",
             "zrender/animation/animation",
-            'zrender/shape/Circle'
+            'zrender/shape/Circle',
+            'zrender/shape/Group'
         ], 
-        function(zrender, Animation, CircleShape){
+        function(zrender, Animation, CircleShape, Group){
 
             // 初始化zrender
             var zr = zrender.init( document.getElementById("Main") );
             var circle = new CircleShape({
-                position : [100, 100],
                 scale : [1, 1],
                 style : {
                     x : 0,
                     y : 0,
-                    r : 50,
-                    brushType : 'fill',
-                    color : 'rgba(33, 222, 10, 0.1)',
-                    lineWidth : 5,
-                    text :'circle',
-                    textPosition :'inside'
+                    r : 10,
+                    brushType : 'fill'
                 },
-                draggable : true,
-                onmouseover  : function(){
-                    zr.animate( circle.id,"style")
-                        .when( 1000, {
-                            r : 100
-                        }).when( 2000, {
-                            r : 50
-                        })
-                        .start();
-                }
+                hoverable: false
             });
-            zr.addShape(circle);
-            zr.render();
 
-            var tm1 = zr.animate( circle.id, "", true)
+            var group = new Group({
+                position : [100, 100]
+            });
+            group.addChild(circle);
+
+            zr.addGroup(group);
+
+            var tm1 = zr.animate(group.id, "", true)
                 .when(1000, {
                     position : [200, 0]
                 })
@@ -68,11 +60,28 @@
                 })
                 .start();
 
-            zr.animate(circle.id, 'style', true)
-                .when(4000, {
-                    color: 'rgba(222, 222, 10, 1)'
+            var tm2 = zr.animate(circle.id, "", true)
+                .when(100, {
+                    position: [20, 0]
+                })
+                .when(200, {
+                    position: [0, 0]
+                })
+                .when(300, {
+                    position: [-20, 0]
+                })
+                .when(400, {
+                    position: [0, 0]
                 })
                 .start();
+
+            zr.modLayer(0, {
+                // clearColor : 'rgba(255, 255, 255, 0.1)'
+                motionBlur : true,
+                lastFrameAlpha : 0.99
+            });
+
+            zr.render();
         })
     </script>
     <div id="Main" style="width:600px;height:400px;"></div>

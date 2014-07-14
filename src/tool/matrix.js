@@ -1,18 +1,22 @@
 /**
  * zrender: 3x2矩阵操作类
  *
- * author: lang(shenyi01@baidu.com)
- * code from mat2d in http://glmatrix.net/
+ * author: https://github.com/pissang
  */
 
 define(
     function() {
 
+        var ArrayCtor = typeof Float32Array === 'undefined'
+            ? Array
+            : Float32Array;
+
         var matrix = {
             create : function() {
-                return [1, 0,
-                        0, 1,
-                        0, 0];
+                var out = new ArrayCtor(6);
+                matrix.identity(out);
+                
+                return out;
             },
             identity : function(out) {
                 out[0] = 1;
@@ -21,6 +25,14 @@ define(
                 out[3] = 1;
                 out[4] = 0;
                 out[5] = 0;
+            },
+            copy: function(out, m) {
+                out[0] = m[0];
+                out[1] = m[1];
+                out[2] = m[2];
+                out[3] = m[3];
+                out[4] = m[4];
+                out[5] = m[5];
             },
             mul : function(out, m1, m2) {
                out[0] = m1[0] * m2[0] + m1[2] * m2[1];
@@ -31,7 +43,6 @@ define(
                out[5] = m1[1] * m2[4] + m1[3] * m2[5] + m1[5];
                return out;
             },
-
             translate : function(out, a, v) {
                 out[0] = a[0];
                 out[1] = a[1];

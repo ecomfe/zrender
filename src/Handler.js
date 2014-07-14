@@ -7,9 +7,13 @@
 
 define(
     function (require) {
+
+        'use strict';
+
         var config = require('./config');
         var env = require('./tool/env');
         var eventTool = require('./tool/event');
+        var util = require('./tool/util');
         var EVENT = config.EVENT;
 
         var domHandlerNames = [
@@ -612,28 +616,39 @@ define(
             var eventPacket = {
                 type : eventName,
                 event : event,
-                target : targetShape
+                target : targetShape,
+                cancelBubble: false
             };
+
+            var el = targetShape;
 
             if (draggedShape) {
                 eventPacket.dragged = draggedShape;
             }
 
+            while (el) {
+                el[eventHandler] && el[eventHandler](eventPacket);
+                el.dispatch(eventName, eventPacket);
+
+                el = el.parent;
+                
+                if (eventPacket.cancelBubble) {
+                    break;
+                }
+            }
+
             if (targetShape) {
-                //“不存在shape级事件”或“存在shape级事件但事件回调返回非true”
-                if (!targetShape[eventHandler]
-                    || !targetShape[eventHandler](eventPacket)
-                ) {
-                    this.dispatch(
-                        eventName,
-                        event,
-                        eventPacket
-                    );
+                // 冒泡到顶级 zrender 对象
+                if (!eventPacket.cancelBubble) {
+                    this.dispatch(eventName, eventPacket);
                 }
             }
             else if (!draggedShape) {
                 //无hover目标，无拖拽对象，原生事件分发
-                this.dispatch(eventName, event);
+                this.dispatch(eventName, {
+                    type: eventName,
+                    event: event
+                });
             }
         };
         
@@ -756,6 +771,8 @@ define(
             event.zrenderFixed = 1;
             return event;
         };
+
+        util.merge(Handler.prototype, eventTool.Dispatcher.prototype, true);
 
         return Handler;
     }

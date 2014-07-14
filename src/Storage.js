@@ -8,10 +8,27 @@
 
 define(
     function (require) {
+
+        'use strict';
+
         var util = require('./tool/util');
         var log = require('./tool/log');
         var config = require('./config');
 
+        var Group = require('./shape/Group');
+
+        var defaultIterateOption = {
+            hover: false,
+            normal: 'down',
+            update: false
+        }
+
+        function shapeCompareFunc(a, b) {
+            if (a.zlevel == b.zlevel) {
+                return a.__renderidx__ - b.__renderidx__;
+            }
+            return a.zlevel - b.zlevel;
+        }
         /**
          * 内容仓库 (M)
          * 
@@ -20,17 +37,14 @@ define(
             // 所有常规形状，id索引的map
             this._elements = {};
 
-            // 所有形状的z轴方向排列，提高遍历性能，zElements[0]的形状在zElements[1]形状下方
-            this._zElements = [];
-
             // 高亮层形状，不稳定，动态增删，数组位置也是z轴方向，靠前显示在下方
             this._hoverElements = [];
 
-            // 最大zlevel
-            this._maxZlevel = 0; 
+            this._roots = [];
 
-            // 有数据改变的zlevel
-            this._changedZlevel = {};
+            this._shapeList = [];
+
+            this._shapeListOffset = 0;
         }
 
         /**
@@ -39,92 +53,122 @@ define(
          * @param {Function} fun 迭代回调函数，return true终止迭代
          * @param {Object=} option 迭代参数，缺省为仅降序遍历常规形状
          *     hover : true 是否迭代高亮层数据
-         *     normal : 'down' | 'up' | 'free' 是否迭代常规数据，迭代时是否指定及z轴顺序
+         *     normal : 'down' | 'up' 是否迭代常规数据，迭代时是否指定及z轴顺序
+         *     update : false 是否更新shapeList
          */
         Storage.prototype.iterShape = function (fun, option) {
             if (!option) {
-                option = {
-                    hover: false,
-                    normal: 'down'
-                };
+                option = defaultIterateOption;
             }
+
             if (option.hover) {
                 //高亮层数据遍历
                 for (var i = 0, l = this._hoverElements.length; i < l; i++) {
-                    if (fun(this._hoverElements[i])) {
+                    var el = this._hoverElements[i];
+                    el.updateTransform();
+                    if (fun(el)) {
                         return this;
                     }
                 }
             }
 
-            var zlist;
-            var len;
-            if (typeof option.normal != 'undefined') {
-                //z轴遍历: 'down' | 'up' | 'free'
-                switch (option.normal) {
-                    case 'down':
-                        // 降序遍历，高层优先
-                        var l = this._zElements.length;
-                        while (l--) {
-                            zlist = this._zElements[l];
-                            if (zlist) {
-                                len = zlist.length;
-                                while (len--) {
-                                    if (fun(zlist[len])) {
-                                        return this;
-                                    }
-                                }
-                            }
+            if (option.update) {
+                this.updateShapeList();
+            }
+
+            //遍历: 'down' | 'up'
+            switch (option.normal) {
+                case 'down':
+                    // 降序遍历，高层优先
+                    var l = this._shapeList.length;
+                    while (l--) {
+                        if (fun(this._shapeList[l])) {
+                            return this;
                         }
-                        break;
-                    case 'up':
-                        //升序遍历，底层优先
-                        for (var i = 0, l = this._zElements.length; i < l; i++) {
-                            zlist = this._zElements[i];
-                            if (zlist) {
-                                len = zlist.length;
-                                for (var k = 0; k < len; k++) {
-                                    if (fun(zlist[k])) {
-                                        return this;
-                                    }
-                                }
-                            }
+                    }
+                    break;
+                // case 'up':
+                default:
+                    //升序遍历，底层优先
+                    for (var i = 0, l = this._shapeList.length; i < l; i++) {
+                        if (fun(this._shapeList[i])) {
+                            return this;
                         }
-                        break;
-                    // case 'free':
-                    default:
-                        //无序遍历
-                        for (var i in this._elements) {
-                            if (fun(this._elements[i])) {
-                                return this;
-                            }
-                        }
-                        break;
-                }
+                    }
+                    break;
             }
 
             return this;
         };
 
+        Storage.prototype.getHoverShapes = function(update) {
+            if (update) {
+                for (var i = 0, l = this._hoverElements.length; i < l; i++) {
+                    this._hoverElements[i].updateTransform();
+                }
+            }
+            return this._hoverElements;
+        }
+
+        Storage.prototype.getShapeList = function(update) {
+            if (update) {
+                this.updateShapeList();
+            }
+            return this._shapeList;
+        }
+
+
+        Storage.prototype.updateShapeList = function() {
+            this._shapeListOffset = 0;
+            for (var i = 0; i < this._roots.length; i++) {
+                var root = this._roots[i];
+                this._updateAndAddShape(root);
+            }
+            this._shapeList.length = this._shapeListOffset;
+
+            for (var i = 0; i < this._shapeList.length; i++) {
+                this._shapeList[i].__renderidx__ = i;
+            }
+
+            this._shapeList.sort(shapeCompareFunc);
+        }
+
+        Storage.prototype._updateAndAddShape = function(el) {
+            
+            el.updateTransform();
+
+            if (el.type == 'group') {
+                for (var i = 0; i < el._children.length; i++) {
+                    var child = el._children[i];
+
+                    // Force to mark as dirty if group is dirty
+                    child.__dirty = el.__dirty || el.__dirty;
+
+                    this._updateAndAddShape(child);
+                }
+            } else {
+                this._shapeList[this._shapeListOffset++] = el;
+            }
+        }
+
         /**
          * 修改
          * 
          * @param {string} idx 唯一标识
-         * @param {Object} params 参数
+         * @param {Object} [params] 参数
          */
-        Storage.prototype.mod = function (shapeId, params) {
-            var shape = this._elements[shapeId];
-            if (shape) {
-                shape.updateNeedTransform();
-                shape.style.__rect = null;
-
-                this._changedZlevel[shape.zlevel] = true;    // 可能修改前后不在一层
-                if (params) {
-                    util.merge(shape, params, true);
+        Storage.prototype.mod = function (elId, params) {
+            var el = this._elements[elId];
+            if (el) {
+                el.updateNeedTransform();
+                if (!(el instanceof Group)) {
+                    el.style.__rect = null;
                 }
-                
-                this._changedZlevel[shape.zlevel] = true;    // 可能修改前后不在一层
-                this._maxZlevel = Math.max(this._maxZlevel, shape.zlevel);
+                el.__dirty = true;
+
+                if (params) {
+                    util.merge(el, params, true);
+                }
             }
 
             return this;
@@ -137,27 +181,14 @@ define(
          */
         Storage.prototype.drift = function (shapeId, dx, dy) {
             var shape = this._elements[shapeId];
-
             if (shape) {
                 shape.needTransform = true;
                 if (!shape.ondrift //ondrift
                     //有onbrush并且调用执行返回false或undefined则继续
                     || (shape.ondrift && !shape.ondrift(dx, dy))
                 ) {
-                    if (config.catchBrushException) {
-                        try {
-                            shape.drift(dx, dy);
-                        }
-                        catch(error) {
-                            log(error, 'drift error of ' + shape.type, shape);
-                        }
-                    }
-                    else {
-                        shape.drift(dx, dy);
-                    }
+                    shape.drift(dx, dy);
                 }
-
-                this._changedZlevel[shape.zlevel] = true;
             }
 
             return this;
@@ -168,22 +199,9 @@ define(
          * 
          * @param {Object} params 参数
          */
-        Storage.prototype.addHover = function (params) {
-            if ((params.rotation && Math.abs(params.rotation[0]) > 0.0001)
-                || (params.position
-                    && (Math.abs(params.position[0]) > 0.0001
-                        || Math.abs(params.position[1]) > 0.0001))
-                || (params.scale
-                    && (Math.abs(params.scale[0] - 1) > 0.0001
-                    || Math.abs(params.scale[1] - 1) > 0.0001))
-            ) {
-                params.needTransform = true;
-            }
-            else {
-                params.needTransform = false;
-            }
-
-            this._hoverElements.push(params);
+        Storage.prototype.addHover = function (shape) {
+            shape.updateNeedTransform();
+            this._hoverElements.push(shape);
             return this;
         };
 
@@ -200,115 +218,103 @@ define(
         };
 
         /**
+         * 添加到根节点
+         * 
+         * @param {Shape|Group} el 参数
+         */
+        Storage.prototype.addRoot = function (el) {
+            if (el instanceof Group) {
+                el.addChildrenToStorage(this);
+            }
+            
+            this.addToMap(el);
+            this._roots.push(el);
+        }
+
+        Storage.prototype.delRoot = function (elId) {
+            if (typeof(elId) == 'undefined') {
+                // 不指定elId清空
+                for (var i = 0; i < this._roots.length; i++) {
+                    var root = this._roots[i];
+                    if (root instanceof Group) {
+                        root.delChildrenFromStorage(this);
+                    }
+                }
+
+                this._elements = {};
+                this._hoverElements = [];
+                this._roots = [];
+
+                return;
+            }
+
+            if (elId instanceof Array) {
+                for (var i = 0, l = elId.length; i < l; i++) {
+                    this.delRoot(elId[i]);
+                }
+                return;
+            }
+
+            var el;
+            if (typeof(elId) == 'string') {
+                el = this._elements[elId];
+            } else {
+                el = elId;
+            }
+
+            var idx = this._roots.indexOf(el);
+            if (idx >= 0) {
+                this.delFromMap(el.id);
+                this._roots.splice(idx, 1);
+                if (el instanceof Group) {
+                    el.delChildrenFromStorage(this);
+                }
+            }
+        }
+
+        /**
          * 添加
          * 
-         * @param {Shape} shape 参数
+         * @param {Shape|Group} el 参数
          */
-        Storage.prototype.add = function (shape) {
-            shape.updateNeedTransform();
-            shape.style.__rect = null;
-            this._elements[shape.id] = shape;
-            this._zElements[shape.zlevel] = this._zElements[shape.zlevel] || [];
-            this._zElements[shape.zlevel].push(shape);
-
-            this._maxZlevel = Math.max(this._maxZlevel, shape.zlevel);
-            this._changedZlevel[shape.zlevel] = true;
+        Storage.prototype.addToMap = function (el) {
+            el.updateNeedTransform();
+            if (!el instanceof Group) {
+                el.style.__rect = null;
+            }
+            this._elements[el.id] = el;
 
             return this;
         };
 
         /**
-         * 根据指定的shapeId获取相应的shape属性
+         * 根据指定的elId获取相应的shape属性
          * 
          * @param {string=} idx 唯一标识
          */
-        Storage.prototype.get = function (shapeId) {
-            return this._elements[shapeId];
+        Storage.prototype.get = function (elId) {
+            return this._elements[elId];
         };
 
         /**
-         * 删除，shapeId不指定则全清空
+         * 删除，elId不指定则全清空
          * 
-         * @param {string= | Array} idx 唯一标识
+         * @param {string} idx 唯一标识
          */
-        Storage.prototype.del = function (shapeId) {
-            if (typeof shapeId != 'undefined') {
-                var delMap = {};
-                if (!(shapeId instanceof Array)) {
-                    // 单个
-                    delMap[shapeId] = true;
-                }
-                else {
-                    // 批量删除
-                    if (shapeId.lenth < 1) { // 空数组
-                        return;
-                    }
-                    for (var i = 0, l = shapeId.length; i < l; i++) {
-                        delMap[shapeId[i].id] = true;
-                    }
-                }
-                var newList;
-                var oldList;
-                var zlevel;
-                var zChanged = {};
-                for (var sId in delMap) {
-                    if (this._elements[sId]) {
-                        zlevel = this._elements[sId].zlevel;
-                        this._changedZlevel[zlevel] = true;
-                        if (!zChanged[zlevel]) {
-                            oldList = this._zElements[zlevel];
-                            newList = [];
-                            for (var i = 0, l = oldList.length; i < l; i++){
-                                if (!delMap[oldList[i].id]) {
-                                    newList.push(oldList[i]);
-                                }
-                            }
-                            this._zElements[zlevel] = newList;
-                            zChanged[zlevel] = true;
-                        }
-
-                        delete this._elements[sId];
-                    }
-                }
-            }
-            else{
-                // 不指定shapeId清空
-                this._elements = {};
-                this._zElements = [];
-                this._hoverElements = [];
-                this._maxZlevel = 0;         //最大zlevel
-                this._changedZlevel = {      //有数据改变的zlevel
-                    all : true
-                };
-            }
+        Storage.prototype.delFromMap = function (elId) {
+            delete this._elements[elId];
 
             return this;
         };
 
-        Storage.prototype.getMaxZlevel = function () {
-            return this._maxZlevel;
-        };
-
-        Storage.prototype.getChangedZlevel = function () {
-            return this._changedZlevel;
-        };
-
-        Storage.prototype.clearChangedZlevel = function () {
-            this._changedZlevel = {};
-            return this;
-        };
-
-        Storage.prototype.setChangedZlevle = function (level) {
-            this._changedZlevel[level] = true;
-            return this;
-        };
 
         /**
          * 释放
          */
         Storage.prototype.dispose = function () {
             this._elements = 
-            this._zElements = 
+            this._renderList = 
+            this._roots =
             this._hoverElements = null;
         };
 
