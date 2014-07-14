@@ -212,6 +212,53 @@ define(
             return this;
         }
 
+        /**
+         * 带有context的事件分发, 最后一个参数是事件回调的context
+         * 
+         * @param {string} type : 事件类型
+         */
+        Dispatcher.prototype.dispatchWithContext = function(type) {
+            var args = arguments;
+            var argLen = args.length;
+
+            if (argLen > 4) {
+                args = Array.prototype.slice.call(args, 1, args.length - 1);
+            }
+            var ctx = args[args.length - 1]
+
+            if(this._handlers[type]) {
+                var _h = this._handlers[type];
+                var len = _h.length;
+                for (var i = 0; i < len;) {
+                    // Optimize advise from backbone
+                    switch (argLen) {
+                        case 1:
+                            _h[i]['h'].call(ctx);
+                            break;
+                        case 2:
+                            _h[i]['h'].call(ctx, args[1]);
+                            break;
+                        case 3:
+                            _h[i]['h'].call(ctx, args[1], args[2]);
+                            break;
+                        default:
+                            // have more than 2 given arguments
+                            _h[i]['h'].apply(ctx, args);
+                            break;
+                    }
+                    
+                    if (_h[i]['one']) {
+                        _h.splice(i, 1);
+                        len--;
+                    } else {
+                        i++;
+                    }
+                }
+            }
+
+            return this;
+        }
+
         return {
             getX : getX,
             getY : getY,
