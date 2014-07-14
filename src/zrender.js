@@ -106,15 +106,16 @@ define(
             return zrender;
         };
 
-        function getAnimationUpdater(zrenderInstance) {
+        function getFrameCallback(zrInstance) {
             return function(){
-                var animatingShapes = zrenderInstance.animatingShapes;
+                var animatingShapes = zrInstance.animatingShapes;
                 for (var i = 0, l = animatingShapes.length; i < l; i++) {
-                    zrenderInstance.storage.mod(animatingShapes[i].id);
+                    zrInstance.storage.mod(animatingShapes[i].id);
                 }
 
-                if (animatingShapes.length) {
-                    zrenderInstance.painter.refresh();
+                if (animatingShapes.length || zrInstance._needsRefreshNextFrame) {
+                    zrInstance.painter.refresh();
+                    zrInstance._needsRefreshNextFrame = true;
                 }
             };
         }
@@ -141,10 +142,12 @@ define(
             this.animatingShapes = [];
             this.animation = new Animation({
                 stage : {
-                    update : getAnimationUpdater(this)
+                    update : getFrameCallback(this)
                 }
             });
             this.animation.start();
+
+            this._needsRefreshNextFrame = false;
         }
 
         /**
@@ -257,6 +260,10 @@ define(
             this.painter.refresh(callback);
             return this;
         };
+
+        ZRender.prototype.refreshNextFrame = function() {
+            this._needsRefreshNextFrame = true;
+        }
         
         /**
          * 高亮层更新

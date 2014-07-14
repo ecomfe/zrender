@@ -180,7 +180,7 @@ define(
             for (var id in this._layers) {
                 if (id !== 'hover') {
                     var layer = this._layers[id];
-                    if (layer.unusedCount >= 5) {
+                    if (layer.unusedCount >= 2) {
                         delete this._layers[id];
                         layer.dom.parentNode.removeChild(layer.dom);
                     }
