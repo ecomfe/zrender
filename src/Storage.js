@@ -249,7 +249,7 @@ define(
             }
 
             if (elId instanceof Array) {
-                for (var i = 0; i < elId.length; i++) {
+                for (var i = 0, l = elId.length; i < l; i++) {
                     this.delRoot(elId[i]);
                 }
                 return;
