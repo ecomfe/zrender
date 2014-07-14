@@ -590,7 +590,7 @@ define(
                 );
             }
         };
-
+        // TODO
         Base.prototype.isSilent = function () {
             return !(
                 this.hoverable || this.draggable

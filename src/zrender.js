@@ -263,6 +263,7 @@ define(
 
         ZRender.prototype.refreshNextFrame = function() {
             this._needsRefreshNextFrame = true;
+            return this;
         }
         
         /**

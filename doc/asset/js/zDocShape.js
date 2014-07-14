@@ -1,6 +1,82 @@
 description = description || {};
 description.shape = [
     {
+        name: 'Group',
+        des: '组',
+        value: [
+            ['id', '{string}', '基础属性，必须，图形唯一标识，详见<a href="#shape.base.id">id</a>'],
+            ['position', '{array=}', '样式属性，默认为[0, 0]，绘图坐标原点平移，详见<a href="#shape.base.position">position</a>'],
+            ['rotation', '{array=}', '样式属性，默认为[0, 0, 0]，shape绕自身旋转的角度，详见<a href="#shape.base.rotation">rotation</a>'],
+            ['scale', '{array=}', '样式属性，默认为[1, 1], shape纵横缩放比例，详见<a href="#shape.base.scale">scale</a>'],
+        ],
+        content: [
+            {
+                name : 'id',
+                des : '必须，{string}，图形唯一标识，可通过zrender实例方法<a href="#zrenderInstance.newShapeId">newShapeId</a>生成'
+            },
+            {
+                name : 'position',
+                des : '默认为[0, 0]，默认绘图坐标原点在左上角，绘图坐标原点平移,可传数组长度为2的数组，数组各值定义如下',
+                value : [
+                    ['{各异}', '{number}','横坐标'],
+                    ['{各异}', '{number}','纵坐标']
+                ],
+                cantry : true
+            },
+            {
+                name : 'rotation',
+                des : '默认为0，group旋转的角度，不被position影响，可传数组长度为3的数组，数组各值定义如下',
+                value : [
+                    ['{各异}', '{number}','旋转角度，单位弧度'],
+                    ['{各异}', '{number=}','默认为0，旋转中心横坐标，单位px'],
+                    ['{各异}', '{number=}','默认为0，旋转中心纵坐标，单位px']
+                ],
+                cantry : true
+            },
+            {
+                name : 'scale',
+                des : '默认为[1, 1], group纵横缩放比例，不被position影响，可传数组长度为4的数组，数组各值定义如下',
+                value : [
+                    ['{各异}', '{number}','横向缩放比例，>1放大，<1缩小'],
+                    ['{各异}', '{number}','纵向缩放比例，>1放大，<1缩小'],
+                    ['{各异}', '{number=}','默认为0，缩放中心横坐标，单位px'],
+                    ['{各异}', '{number=}','默认为0，缩放中心纵坐标，单位px']
+                ],
+                cantry : true
+            },
+            {
+                name: 'addChild',
+                des: '添加子节点',
+                params: [
+                    ['child', '{Shape|Group}', '子节点，可以是一个 shape 或者 group']
+                ]
+            },
+            {
+                name: 'removeChild',
+                des: '移除子节点',
+                params: [
+                    ['child', '{Shape|Group}', '子节点，可以是一个 shape 或者 group']
+                ]
+            },
+            {
+                name: 'each',
+                des: '遍历所有子节点',
+                params: [
+                    ['cb', '{Function}', '回调函数'],
+                    ['context', '{Object}', '可选，调用回调的context']
+                ]
+            },
+            {
+                name: 'iterate',
+                des: '深度遍历所有子孙节点',
+                params: [
+                    ['cb', '{Function}', '回调函数'],
+                    ['context', '{Object}', '可选，调用回调的context']
+                ]
+            }
+        ]
+    },
+    {
         name : 'base',
         plus : true,
         des : 'shape基类，如无特殊说明base下属性和方法为所有图形通用',
@@ -12,7 +88,7 @@ description.shape = [
             ['style', '{Object}', '样式属性，必须，默认状态样式属性，详见<a href="#shape.base.style">style</a>'],
             ['highlightStyle', '{Object=}', '样式属性，默认同style，高亮状态样式属性，详见<a href="#shape.base.highlightStyle">highlightStyle</a>'],
             ['position', '{array=}', '样式属性，默认为[0, 0]，绘图坐标原点平移，详见<a href="#shape.base.position">position</a>'],
-            ['rotation', '{number=}', '样式属性，默认为0，shape绕自身旋转的角度，详见<a href="#shape.base.rotation">rotation</a>'],
+            ['rotation', '{array=}', '样式属性，默认为[0, 0, 0]，shape绕自身旋转的角度，详见<a href="#shape.base.rotation">rotation</a>'],
             ['scale', '{array=}', '样式属性，默认为[1, 1], shape纵横缩放比例，详见<a href="#shape.base.scale">scale</a>'],
             ['hoverable', '{boolean=}', '交互属性，默认为true，可悬浮响应，详见<a href="#shape.base.hoverable">hoverable</a>'],
             ['clickable', '{boolean=}', '交互属性，默认为false，可点击响应，详见<a href="#shape.base.clickable">clickable</a>'],
