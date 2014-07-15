@@ -36,9 +36,9 @@ define(
             var flag = true;
             for (var i = 0; i < numDashes; ++i) {
                 if (flag) {
-                    ctx.lineTo(x1, y1);
-                } else {
                     ctx.moveTo(x1, y1);
+                } else {
+                    ctx.lineTo(x1, y1);
                 }
                 flag = !flag;
                 x1 += dx;
