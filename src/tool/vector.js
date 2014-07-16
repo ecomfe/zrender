@@ -93,6 +93,9 @@ define(
             }
         };
 
+        vector.len = vector.length;
+        vector.dist = vector.distance;
+
         return vector;
     }
 );

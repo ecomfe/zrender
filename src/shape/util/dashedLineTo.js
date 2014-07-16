@@ -16,7 +16,7 @@ define(
             // http://msdn.microsoft.com/en-us/library/ie/dn265063(v=vs.85).aspx
             if (ctx.setLineDash) {
                 dashPattern[0] = dashPattern[1] = dashLength;
-                ctx.setLineDash(dashPattern)
+                ctx.setLineDash(dashPattern);
                 ctx.moveTo(x1, y1);
                 ctx.lineTo(x2, y2);
                 return;

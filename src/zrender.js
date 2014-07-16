@@ -114,8 +114,8 @@ define(
                 }
 
                 if (animatingShapes.length || zrInstance._needsRefreshNextFrame) {
-                    zrInstance.painter.refresh();
-                    zrInstance._needsRefreshNextFrame = true;
+                    zrInstance.refresh();
+                    zrInstance._needsRefreshNextFrame = false;
                 }
             };
         }
@@ -261,6 +261,8 @@ define(
             return this;
         };
 
+        // TODO
+        // 好像会有奇怪的问题
         ZRender.prototype.refreshNextFrame = function() {
             this._needsRefreshNextFrame = true;
             return this;

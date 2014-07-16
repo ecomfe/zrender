@@ -77,7 +77,7 @@ define(
                         deferredClips.push(clip);
                     }
                 }
-                if (this.stage.update && this._clips.length) {
+                if (this.stage.update) {
                     this.stage.update();
                 }
 
