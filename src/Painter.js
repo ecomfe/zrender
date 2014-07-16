@@ -530,9 +530,12 @@ define(
         };
 
         Painter.prototype._shapeToImage = function (
-            id, shape, width, height,
-            canvas, ctx, devicePixelRatio
+            id, shape, width, height, devicePixelRatio
         ) {
+            var canvas = document.createElement('canvas');
+            var ctx = canvas.getContext('2d');
+            var devicePixelRatio = window.devicePixelRatio || 1;
+            
             canvas.style.width = width + 'px';
             canvas.style.height = height + 'px';
             canvas.setAttribute('width', width * devicePixelRatio);
@@ -558,7 +561,6 @@ define(
                 style : {
                     x : 0,
                     y : 0,
-                    // TODO 直接使用canvas而不是通过base64
                     image : canvas
                 }
             });
@@ -584,14 +586,10 @@ define(
             }
 
             var painter = this;
-            var canvas = document.createElement('canvas');
-            var ctx = canvas.getContext('2d');
-            var devicePixelRatio = window.devicePixelRatio || 1;
-            
+
             return function (id, e, width, height) {
                 return painter._shapeToImage(
-                    id, e, width, height,
-                    canvas, ctx, devicePixelRatio
+                    id, e, width, height, devicePixelRatio
                 );
             };
         };
