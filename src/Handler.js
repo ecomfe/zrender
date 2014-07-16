@@ -760,11 +760,10 @@ define(
                                 ? event.targetTouches[0]
                                 : event.changedTouches[0];
                 if (touch) {
+                    var rBounding = this.root.getBoundingClientRect();
                     // touch事件坐标是全屏的~
-                    event.zrenderX = touch.clientX - this.root.offsetLeft
-                                        + document.body.scrollLeft;
-                    event.zrenderY = touch.clientY - this.root.offsetTop
-                                        + document.body.scrollTop;
+                    event.zrenderX = touch.clientX - rBounding.left;
+                    event.zrenderY = touch.clientY - rBounding.top;
                 }
             }
 
