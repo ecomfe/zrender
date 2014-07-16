@@ -32,6 +32,9 @@ define(function(require) {
         },
 
         updateTransform: function() {
+            
+            this.updateNeedTransform();
+
             if (this.parent) {
                 this.needTransform = this.needLocalTransform || this.parent.needTransform;
             } else {

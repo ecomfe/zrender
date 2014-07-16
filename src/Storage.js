@@ -160,7 +160,6 @@ define(
         Storage.prototype.mod = function (elId, params) {
             var el = this._elements[elId];
             if (el) {
-                el.updateNeedTransform();
                 if (!(el instanceof Group)) {
                     el.style.__rect = null;
                 }
@@ -278,7 +277,6 @@ define(
          * @param {Shape|Group} el 参数
          */
         Storage.prototype.addToMap = function (el) {
-            el.updateNeedTransform();
             if (!el instanceof Group) {
                 el.style.__rect = null;
             }
