@@ -53,7 +53,7 @@ define(
                 this._clips.push(clip);
             },
             remove : function(clip) {
-                var idx = this._clips.indexOf(clip);
+                var idx = util.indexOf(this._clips, clip);
                 if (idx >= 0) {
                     this._clips.splice(idx, 1);
                 }
@@ -221,7 +221,7 @@ define(
                     }
                     return ret;
                 } else {
-                    return arraySlice.call(value)
+                    return arraySlice.call(value);
                 }
             } else {
                 return value;
@@ -342,7 +342,7 @@ define(
                         var value = keyframes[i].value;
                         if (typeof(value) == 'string') {
                             value = color.toArray(value);
-                            if (value.length == 0) {    // Invalid color
+                            if (value.length === 0) {    // Invalid color
                                 value[0] = value[1] = value[2] = 0;
                                 value[3] = 1;
                             }
@@ -416,7 +416,7 @@ define(
                                 } else {
                                     value = _catmullRomInterpolate(
                                         p0, p1, p2, p3, w, w*w, w*w*w
-                                    )
+                                    );
                                 }
                                 setter(
                                     target,

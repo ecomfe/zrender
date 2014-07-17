@@ -12,8 +12,6 @@ define(
         'use strict';
 
         var util = require('./tool/util');
-        var log = require('./tool/log');
-        var config = require('./config');
 
         var Group = require('./shape/Group');
 
@@ -21,7 +19,7 @@ define(
             hover: false,
             normal: 'down',
             update: false
-        }
+        };
 
         function shapeCompareFunc(a, b) {
             if (a.zlevel == b.zlevel) {
@@ -108,30 +106,30 @@ define(
                 }
             }
             return this._hoverElements;
-        }
+        };
 
         Storage.prototype.getShapeList = function(update) {
             if (update) {
                 this.updateShapeList();
             }
             return this._shapeList;
-        }
+        };
 
 
         Storage.prototype.updateShapeList = function() {
             this._shapeListOffset = 0;
-            for (var i = 0; i < this._roots.length; i++) {
+            for (var i = 0, len = this._roots.length; i < len; i++) {
                 var root = this._roots[i];
                 this._updateAndAddShape(root);
             }
             this._shapeList.length = this._shapeListOffset;
 
-            for (var i = 0; i < this._shapeList.length; i++) {
+            for (var i = 0, len = this._roots.length; i < len; i++) {
                 this._shapeList[i].__renderidx__ = i;
             }
 
             this._shapeList.sort(shapeCompareFunc);
-        }
+        };
 
         Storage.prototype._updateAndAddShape = function(el) {
             
@@ -149,7 +147,7 @@ define(
             } else {
                 this._shapeList[this._shapeListOffset++] = el;
             }
-        }
+        };
 
         /**
          * 修改
@@ -228,7 +226,7 @@ define(
             
             this.addToMap(el);
             this._roots.push(el);
-        }
+        };
 
         Storage.prototype.delRoot = function (elId) {
             if (typeof(elId) == 'undefined') {
@@ -261,7 +259,7 @@ define(
                 el = elId;
             }
 
-            var idx = this._roots.indexOf(el);
+            var idx = util.indexOf(this._roots, el);
             if (idx >= 0) {
                 this.delFromMap(el.id);
                 this._roots.splice(idx, 1);
@@ -269,7 +267,7 @@ define(
                     el.delChildrenFromStorage(this);
                 }
             }
-        }
+        };
 
         /**
          * 添加

@@ -31,11 +31,11 @@ define(function(require) {
 
     Group.prototype.children = function() {
         return this._children.slice();
-    }
+    };
 
     Group.prototype.childAt = function(idx) {
         return this._children[idx];
-    }
+    };
 
     Group.prototype.addChild = function(child) {
         if (child == this) {
@@ -58,10 +58,10 @@ define(function(require) {
 
             child.addChildrenToStorage(this.storage);
         }
-    }
+    };
 
     Group.prototype.removeChild = function(child) {
-        var idx = this._children.indexOf(child);
+        var idx = util.indexOf(this._children, child);
 
         this._children.splice(idx, 1);
         child.parent = null;
@@ -72,7 +72,7 @@ define(function(require) {
 
             child.delChildrenFromStorage(child._storage);
         }
-    }
+    };
 
     Group.prototype.each = function(cb, context) {
         var haveContext = !!context;
@@ -84,7 +84,7 @@ define(function(require) {
                 cb(child);
             }
         }
-    }
+    };
 
     Group.prototype.iterate = function(cb, context) {
         var haveContext = !!context;
@@ -101,7 +101,7 @@ define(function(require) {
                 child.iterate(cb, context);
             }
         }
-    }
+    };
 
     Group.prototype.addChildrenToStorage = function(storage) {
         for (var i = 0; i < this._children.length; i++) {
@@ -111,7 +111,7 @@ define(function(require) {
                 child.addChildrenToStorage(storage);
             }
         }
-    }
+    };
 
     Group.prototype.delChildrenFromStorage = function(storage) {
         for (var i = 0; i < this._children.length; i++) {
@@ -121,10 +121,10 @@ define(function(require) {
                 child.delChildrenFromStorage(storage);
             }
         }
-    }
+    };
 
     util.merge(Group.prototype, Transformable.prototype, true);
     util.merge(Group.prototype, Dispatcher.prototype, true);
 
-    return Group
+    return Group;
 });

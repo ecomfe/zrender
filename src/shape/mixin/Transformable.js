@@ -17,7 +17,7 @@ define(function(require) {
 
         this.needLocalTransform = false;
         this.needTransform = false;
-    }
+    };
 
     Transformable.prototype = {
         
@@ -122,7 +122,7 @@ define(function(require) {
                 );
             }
         }
-    }
+    };
 
     return Transformable;
 });

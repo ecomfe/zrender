@@ -219,7 +219,6 @@ define(
 
         Painter.prototype._getLayerStatus = function(list) {
 
-            var currentZLevel;
             var obj = {};
 
             for (var i = 0, l = list.length; i < l; i++) {
@@ -506,7 +505,6 @@ define(
          */
         Painter.prototype._brushHover = function (shape) {
             var ctx = this._layers.hover.ctx;
-            var me = this;
 
             if (!shape.onbrush //没有onbrush
                 //有onbrush并且调用执行返回false或undefined则继续粉刷
