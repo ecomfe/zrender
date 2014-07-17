@@ -83,7 +83,7 @@ define(
             var me = this;
             this.updatePainter = function(shapeList, callback) {
                 me.update(shapeList, callback);
-            }
+            };
         }
 
         /**
@@ -189,7 +189,7 @@ define(
                     }
                 }
             }
-        }
+        };
 
         Painter.prototype._getLayer = function(zlevel, prevLayer) {
             // Change draw layer
@@ -215,7 +215,7 @@ define(
             }
 
             return currentLayer;
-        }
+        };
 
         Painter.prototype._getLayerStatus = function(list) {
 
@@ -232,7 +232,7 @@ define(
             }
 
             return obj;
-        }
+        };
 
         /**
          * 视图更新
@@ -652,7 +652,7 @@ define(
             if (devicePixelRatio != 1) { 
                 this.ctxBack.scale(devicePixelRatio, devicePixelRatio);
             }
-        }
+        };
 
         Layer.prototype.resize = function(width, height) {
             
@@ -676,7 +676,7 @@ define(
                     this.ctxBack.scale(devicePixelRatio, devicePixelRatio);
                 }
             }
-        }
+        };
 
         Layer.prototype.clear = function() {
             var config = this.config;
@@ -745,7 +745,7 @@ define(
                     height
                 );
             }
-        }
+        };
 
         return Painter;
     }

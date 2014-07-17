@@ -57,7 +57,7 @@ define(
          * @type {Function}
          * @param {Event} e : event对象
          */
-        var stop = window.Event && Event.prototype.preventDefault
+        var stop = window.Event && window.Event.prototype.preventDefault
             ? function (e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -99,7 +99,7 @@ define(
             });
 
             return this;
-        }
+        };
 
         /**
          * 事件绑定
@@ -127,7 +127,7 @@ define(
             });
 
             return this;
-        }
+        };
 
         /**
          * 事件解绑定
@@ -164,7 +164,7 @@ define(
             }
 
             return this;
-        }
+        };
 
         /**
          * 事件分发
@@ -210,7 +210,7 @@ define(
             }
 
             return this;
-        }
+        };
 
         /**
          * 带有context的事件分发, 最后一个参数是事件回调的context
@@ -224,7 +224,7 @@ define(
             if (argLen > 4) {
                 args = Array.prototype.slice.call(args, 1, args.length - 1);
             }
-            var ctx = args[args.length - 1]
+            var ctx = args[args.length - 1];
 
             if(this._handlers[type]) {
                 var _h = this._handlers[type];
@@ -257,7 +257,7 @@ define(
             }
 
             return this;
-        }
+        };
 
         return {
             getX : getX,

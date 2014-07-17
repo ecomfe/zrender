@@ -175,7 +175,7 @@ define(
         ZRender.prototype.addGroup = function(group) {
             this.storage.addRoot(group);
             return this;
-        }
+        };
 
         /**
          * 从根节点删除图形形状
@@ -215,7 +215,7 @@ define(
          * @param {Object} group
          */
         ZRender.prototype.modGroup = function (groupId, group) {
-            this.storage.mod(shapeId, group);
+            this.storage.mod(groupId, group);
             return this;
         };
 
@@ -266,7 +266,7 @@ define(
         ZRender.prototype.refreshNextFrame = function() {
             this._needsRefreshNextFrame = true;
             return this;
-        }
+        };
         
         /**
          * 高亮层更新

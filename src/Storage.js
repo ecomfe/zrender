@@ -23,7 +23,7 @@ define(
 
         function shapeCompareFunc(a, b) {
             if (a.zlevel == b.zlevel) {
-                return a.__renderidx__ - b.__renderidx__;
+                return a.__renderidx - b.__renderidx;
             }
             return a.zlevel - b.zlevel;
         }
@@ -125,7 +125,7 @@ define(
             this._shapeList.length = this._shapeListOffset;
 
             for (var i = 0, len = this._roots.length; i < len; i++) {
-                this._shapeList[i].__renderidx__ = i;
+                this._shapeList[i].__renderidx = i;
             }
 
             this._shapeList.sort(shapeCompareFunc);
