@@ -8,16 +8,16 @@ description.zrenderInstance = [
     },
     {
         name: 'addShape',
-        des: '添加图形形状',
+        des: '添加形状到根节点',
         params: [
-            ['shape', '{Object}', '形状对象，可用属性全集，建议创建并记录shape id可用于索引，更新，删除等，详见各<a href="#shape">shape</a>']
+            ['shape', '{Object}', '详见各<a href="#shape">shape</a>']
         ],
         res: ['self', '{ZRender}', '返回自身支持链式调用'],
         pre: (function() {
-var shapeId = zr.newShapeId();
+var CircleShape = require('zrender/shape/Circle');
+var shapeId = require('zrender/tool/guid')();
 // maybe is '123456'
-zr.addShape({ // add a shape with id '123456'
-    shape: 'circle',
+zr.addShape(new CircleShape({ // add a shape with id '123456'
     id: shapeId,
     style: {
         x: 100,
@@ -35,23 +35,23 @@ zr.addShape({ // add a shape with id '123456'
         // modify the '123456' shape's color to be green
         zr.refresh();
     }
-});
+}));
 zr.render();
         }).toString().slice(13, -10),
         cantry: true
     },
     {
         name: 'delShape',
-        des: '删除图形形状',
+        des: '从根节点删除图形',
         params: [
             ['shapeId', '{string}', '形状对象唯一标识']
         ],
         res: ['self', '{ZRender}', '返回自身支持链式调用'],
         pre: (function() {
-var shapeId = zr.newShapeId();
+var CircleShape = require('zrender/shape/Circle');
+var shapeId = require('zrender/tool/guid')();
 // maybe is '123456'
-zr.addShape({ // add a shape with id '123456'
-    shape: 'circle',
+zr.addShape(new CircleShape({ // add a shape with id '123456'
     id: shapeId,
     style: {
         x: 100,
@@ -65,7 +65,7 @@ zr.addShape({ // add a shape with id '123456'
         // delete the '123456' shape
         zr.refresh();
     }
-});
+}));
 zr.render();
         }).toString().slice(13, -10),
         cantry: true
@@ -75,10 +75,38 @@ zr.render();
         des: '修改形状，使用例子查看<a href="#addShape">addShape</a>',
         params: [
             ['shapeId', '{string}', '形状对象唯一标识'],
-            ['shape', '{Object}', '形状对象，包含需要修改的属性，与原对象进行merge合并']
+            ['shape', '{Object}', '可选，形状对象，包含需要修改的属性，与原对象进行merge合并']
         ],
         res: ['self', '{ZRender}', '返回自身支持链式调用'],
         cantry: false
+    },
+    {
+        name: 'addGroup',
+        des: '添加组到根节点',
+        params: [
+            ['group', '{Group}', '组对象']
+        ],
+        res: ['self', '{ZRender}', '返回自身支持链式调用'],
+        cantry: true
+    },
+    {
+        name: 'modGroup',
+        des: '修改组',
+        params: [
+            ['groupId', '{string}', '组对象唯一标识'],
+            ['group', '{Object}', '可选，组对象，包含需要修改的属性，与原对象进行merge合并']
+        ],
+        res: ['self', '{ZRender}', '返回自身支持链式调用'],
+        cantry: true
+    },
+    {
+        name: 'delGroup',
+        des: '从根节点删除组',
+        params: [
+            ['groupId', '{string}', '组对象唯一标识']
+        ],
+        res: ['self', '{ZRender}', '返回自身支持链式调用'],
+        cantry: true
     },
     {
         name: 'addHoverShape',
@@ -88,8 +116,9 @@ zr.render();
         ],
         res: ['self', '{ZRender}', '返回自身支持链式调用'],
         pre: (function() {
-zr.addShape({
-    shape: 'circle',
+var CircleShape = require('zrender/shape/Circle');
+var TextShape = require('zrender/shape/Text');
+zr.addShape(new CircleShape({
     style: {
         x: 100,
         y: 100,
@@ -97,17 +126,16 @@ zr.addShape({
         color: 'red'
     },
     onmouseover: function(param) {
-        zr.addHoverShape({
-            shape: 'text',
+        zr.addHoverShape(new TextShape({
             style: {
                 x: 80,
                 y: 30,
                 color: 'red',
                 text: 'Hello~'
             }
-        });
+        }));
     }
-});
+}));
 zr.render();
         }).toString().slice(13, -10),
         cantry: true
@@ -120,15 +148,15 @@ zr.render();
         ],
         res: ['self', '{ZRender}', '返回自身支持链式调用'],
         pre: (function() {
-zr.addShape({
-    shape: 'circle',
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     style: {
         x: 100,
         y: 100,
         r: 50,
         color: 'red'
     }
-});
+}));
 zr.render(function() {
     alert('render finished');
 });
@@ -143,9 +171,9 @@ zr.render(function() {
         ],
         res: ['self', '{ZRender}', '返回自身支持链式调用'],
         pre: (function() {
-var shapeId = zr.newShapeId();
-zr.addShape({
-    shape: 'circle',
+var shapeId = require('zrender/tool/guid')();
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     id: shapeId,
     style: {
         x: 400,
@@ -165,9 +193,16 @@ zr.addShape({
             alert('refresh finished')
         });
     }
-});
+}));
 zr.render();
         }).toString().slice(13, -10),
+        cantry: true
+    },
+    {
+        name: 'refreshNextFrame',
+        des: '标记下一帧做绘制',
+        params: [],
+        res: ['self', '{ZRender}', '返回自身支持链式调用'],
         cantry: true
     },
     {
@@ -179,19 +214,19 @@ zr.render();
         ],
         res: ['self', '{ZRender}', '返回自身支持链式调用'],
         pre: (function() {
+var CircleShape = require('zrender/shape/Circle');
 var shapeList = [];
 var shape;
 for (var i = 0; i < 10; i++) {
-    shape = {
-        shape: 'circle',
-        id: zr.newShapeId(),
+    shape = new CircleShape({
+        id: require('zrender/tool/guid')(),
         style: {
             x: Math.round(Math.random() * 500),
             y: Math.round(Math.random() * 300),
             r: Math.round(Math.random() * 50),
             color: 'red'
         }
-    };
+    });
     zr.addShape(shape);
     shapeList.push(shape);
 }
@@ -224,9 +259,9 @@ setTimeout(function() {
         ],
         res: ['deffer', '{Object}', '动画的Deferred对象，支持链式调用，详见<a href="#animation.animation">animation</a>'],
         pre: (function() {
-var circle = {
-    shape: 'circle',
-    id: zr.newShapeId(),
+var CircleShape = require('zrender/shape/Circle');
+var circle = new CircleShape({
+    id: require('zrender/tool/guid')(),
     position: [100, 100],
     rotation: [0, 0, 0],
     scale: [1, 1],
@@ -242,7 +277,7 @@ var circle = {
         textPosition: 'inside'
     },
     draggable: true
-}
+});
 zr.addShape(circle);
 zr.render();
 
@@ -267,8 +302,7 @@ zr.animate(circle.id, "", true)
         des: 'loading显示',
         params: [
             ['loadingOption', '{Object}', 'loading参数，见下'],
-            ['loadingOption.effect', '{string | Function}', 'loading效果，当前内置效果有"bar"（默认） | "whirling" | "dynamicLine" | "bubble"，详见<a href="#tool.loadingEffect">tool.loadingEffect</a>可自定义效果函数，如有动态效果，需返回setInterval ID'],
-            ['loadingOption.effectOption', '{Object=}', 'loading效果选项，效果各异。'],
+            ['loadingOption.effect', '{Object=}', 'loading效果选项，效果各异。'],
             ['loadingOption.progress ', '{number=}', '指定当前进度。[0~1],部分效果有。'],
             ['loadingOption.textStyle', '{Object}', '文本样式，见下'],
             ['-.textStyle.text', '{string}', 'loading话术'],
@@ -279,45 +313,42 @@ zr.animate(circle.id, "", true)
         ],
         res: ['self', '{ZRender}', '返回自身支持链式调用'],
         pre: (function() {
-zr.addShape({
-    shape: 'circle',
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     style: {x: 100, y: 100, r: 50, color: 'red'}
-});
+}));
 zr.render();
-
-var effectList = [
-    {
-        //progress : [0~1],
-        effect : 'bar',
-        effectOption : {
-            // x,y,width,timeInterval
-            height : 15
-        },
-        textStyle : {text:'装载中'}
-    },
-
-    { effect : 'ring' },
-    //progress : [0~1],
-    //effectOption : { // x,y,r0,r,color,textFont,textColor,timeInterval,n}
-
-    { effect : 'whirling' },
-    //effectOption : { // x,y,r,colorIn,colorOut,colorWhirl,timeInterval}
-
-    { effect : 'dynamicLine' },
-    //effectOption : { // lineWidth,color,timeInterval,n : 50}
-
-    { effect : 'bubble' },
-    //effectOption : { // lineWidth,color,brushType,timeInterval,n}
-
-    {effect : 'spin' }
-    //effectOption : { // x,y,r0,r,color,timeInterval,n}
-]
-var curIdx = 0;
-zr.on('click', switchEffect);
-function switchEffect() {
-    zr.showLoading(effectList[curIdx++ % effectList.length]);
-}
-switchEffect();
+require([
+    'zrender/loadingEffect/Bar',
+    'zrender/loadingEffect/Bubble',
+    'zrender/loadingEffect/DynamicLine',
+    'zrender/loadingEffect/Ring',
+    'zrender/loadingEffect/Spin',
+    'zrender/loadingEffect/Whirling'
+    ],
+    function(BarEffect,BubbleEffect,DynamicLineEffect,RingEffect,Spineffect,WhirlingEffect){
+        var effectList = [
+            new BarEffect(),
+            new RingEffect(),
+            //progress : [0~1],
+            //effect : { // x,y,r0,r,color,textFont,textColor,timeInterval,n}
+            new WhirlingEffect(),
+            //effect : { // x,y,r,colorIn,colorOut,colorWhirl,timeInterval}
+            new DynamicLineEffect(),
+            //effect : { // lineWidth,color,timeInterval,n : 50}
+            new BubbleEffect(),
+            //effect : { // lineWidth,color,brushType,timeInterval,n}
+            new Spineffect()
+            //effect : { // x,y,r0,r,color,timeInterval,n}
+        ];
+        var curIdx = 0;
+        zr.on('click', switchEffect);
+        function switchEffect() {
+            zr.showLoading(effectList[curIdx++ % effectList.length]);
+        }
+        switchEffect();
+    }
+)
         }).toString().slice(13, -10),
         cantry: true
     },
@@ -325,46 +356,7 @@ switchEffect();
         name: 'hideLoading',
         des: 'loading显示',
         params: [],
-        res: ['self', '{ZRender}', '返回自身支持链式调用'],
-        pre: (function() {
-zr.showLoading({
-    effect: 'bar', // 'dynamicLine' | 'bubble'
-    textStyle: {
-        text: '装载中...',
-        color: 'green'
-    }
-});
-setTimeout(function() {
-    zr.hideLoading();
-    zr.addShape({
-        shape: 'circle',
-        style: {
-            x: 100,
-            y: 100,
-            r: 50,
-            color: 'red'
-        }
-    });
-    zr.refresh();
-}, 4000);
-        }).toString().slice(13, -10),
-        cantry: true
-    },
-    {
-        name: 'newShapeId',
-        des: '生成形状唯一ID',
-        params: [
-            ['idPrefix', '{string=}', 'id前缀']
-        ],
-        res: ['shapeId', '{string}', '可用不重复id'],
-        pre: (function() {
-var idList = [];
-for (var i = 0; i < 10; i++) {
-    idList.push(zr.newShapeId('myShape'))
-}
-alert(idList.join('\n'));
-        }).toString().slice(13, -10),
-        cantry: true
+        res: ['self', '{ZRender}', '返回自身支持链式调用']
     },
     {
         name: 'getWidth',
@@ -405,8 +397,8 @@ alert(zr.getHeight());
         ],
         res: ['self', '{ZRender}', '返回自身支持链式调用'],
         pre: (function() {
-zr.addShape({
-    shape: 'circle',
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     clickable : true,
     style: {
         x: 100,
@@ -414,7 +406,7 @@ zr.addShape({
         r: 50,
         color: 'red'
     }
-});
+}));
 zr.render();
 
 var config = require('zrender/config');
@@ -441,8 +433,8 @@ zr.on(
         ],
         res: ['self', '{ZRender}', '返回自身支持链式调用'],
         pre: (function() {
-zr.addShape({
-    shape: 'circle',
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     clickable : true,
     style: {
         x: 100,
@@ -450,7 +442,7 @@ zr.addShape({
         r: 50,
         color: 'red'
     }
-});
+}));
 zr.render();
 
 var config = require('zrender/config');
@@ -472,8 +464,8 @@ zr.on(config.EVENT.CLICK, function(params) {
         params: [],
         res: ['self', '{ZRender}', '返回自身支持链式调用'],
         pre: (function() {
-zr.addShape({
-    shape: 'circle',
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     clickable : true,
     style: {
         x: 400,
@@ -482,7 +474,7 @@ zr.addShape({
         color: 'red',
         text: 'Click me to clear or click empty space to add!'
     }
-});
+}));
 zr.render();
 
 var config = require('zrender/config');
@@ -491,8 +483,7 @@ zr.on(config.EVENT.CLICK, function(params) {
         zr.clear();
     }
     else {
-        zr.addShape({
-            shape: 'circle',
+        zr.addShape(new CircleShape({
             clickable : true,
             style: {
                 x: Math.round(Math.random() * 500),
@@ -501,7 +492,7 @@ zr.on(config.EVENT.CLICK, function(params) {
                 color: 'red',
                 text: 'try click again!'
             }
-        });
+        }));
         zr.refresh();
     }
 });
@@ -514,23 +505,22 @@ zr.on(config.EVENT.CLICK, function(params) {
         params: [],
         res: ['self', '{ZRender}', '返回自身支持链式调用'],
         pre: (function() {
-var shapeId = zr.newShapeId();
+var shapeId = require('zrender/tool/guid')();
 var t = 5;
-zr.addShape({
-    shape: 'circle',
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     id: shapeId,
     zlevel: 1,
     style: {
         x: 400, y: 200, r: 30, color: 'red',
         text: 'Dispose in 5s'
     }
-});
+}));
 zr.render();
 
 var config = require('zrender/config');
 zr.on(config.EVENT.CLICK, function(params) {
-    zr.addShape({
-        shape: 'circle',
+    zr.addShape(new CircleShape({
         style: {
             x: Math.round(Math.random() * 500),
             y: Math.round(Math.random() * 300),
@@ -538,7 +528,7 @@ zr.on(config.EVENT.CLICK, function(params) {
             color: 'green',
             text: 'Alive!'
         }
-    });
+    }));
     zr.refresh();
 });
 
@@ -581,24 +571,23 @@ var ticket = setInterval(
             ['DROP', '{string}', '拖拽图形元素放在目标图形元素内时触发，事件对象（eventPacket.target）是：拖拽目标图形元素，拖拽对象（eventPacket.dragged）是：被拖拽图形元素']
         ],
         pre: (function() {
-var logText = {
-    shape: 'text',
-    id: zr.newShapeId(),
+var TextShape = require('zrender/shape/Text');
+var logText = new TextShape({
+    id: require('zrender/tool/guid')(),
     style: {x: 20, y: 20}
-}
+});
 zr.addShape(logText);
-zr.addShape({
-    shape: 'circle',
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
     style: { x: 200, y: 200, r: 80, color: 'red' },
     clickable: true, draggable: true,
     _text: 'red'
-});
-zr.addShape({
-    shape: 'circle',
+}));
+zr.addShape(new CircleShape({
     style: { x: 400, y: 200, r: 80, color: 'green' },
     clickable: true, draggable: true,
     _text: 'green'
-});
+}));
 zr.render();
 var config = require('zrender/config');
 zr.on(config.EVENT.CLICK, _eventHandler);

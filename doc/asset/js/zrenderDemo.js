@@ -61,21 +61,73 @@ function QueryString() {
     }
 }
 
-require.config({
-    packages: [
-        {
-            name: 'zrender',
-            location: '../../src',
-            main: 'zrender'
+var developMode = false;
+if (developMode) {
+    // for develop
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../../src',
+                main: 'zrender'
+            }
+        ]
+    });
+}
+else {
+    // for echarts online home page
+    var fileLocation = './www/js/zrender';
+    require.config({
+        paths:{ 
+            zrender: fileLocation,
+            'zrender/shape/Rose': fileLocation,
+            'zrender/shape/Trochoid': fileLocation,
+            'zrender/shape/Circle': fileLocation,
+            'zrender/shape/Sector': fileLocation,
+            'zrender/shape/Ring': fileLocation,
+            'zrender/shape/Ellipse': fileLocation,
+            'zrender/shape/Rectangle': fileLocation,
+            'zrender/shape/Text': fileLocation,
+            'zrender/shape/Heart': fileLocation,
+            'zrender/shape/Droplet': fileLocation,
+            'zrender/shape/Line': fileLocation,
+            'zrender/shape/Image': fileLocation,
+            'zrender/shape/Star': fileLocation,
+            'zrender/shape/Isogon': fileLocation,
+            'zrender/shape/BezierCurve': fileLocation,
+            'zrender/shape/BrokenLine': fileLocation,
+            'zrender/shape/Path': fileLocation,
+            'zrender/shape/Polygon': fileLocation
         }
-    ]
-});
+    });
+}
+
 
 require(
-    ['zrender','zrender/shape/rose','zrender/shape/trochoid'],
+    [
+        'zrender',
+        'zrender/shape/Rose',
+        'zrender/shape/Trochoid',
+        'zrender/shape/Circle',
+        'zrender/shape/Sector',
+        'zrender/shape/Ring',
+        'zrender/shape/Ellipse',
+        'zrender/shape/Rectangle',
+        'zrender/shape/Text',
+        'zrender/shape/Heart',
+        'zrender/shape/Droplet',
+        'zrender/shape/Line',
+        'zrender/shape/Image',
+        'zrender/shape/Star',
+        'zrender/shape/Isogon',
+        'zrender/shape/BezierCurve',
+        'zrender/shape/BrokenLine',
+        'zrender/shape/Path',
+        'zrender/shape/Polygon'
+    ],
     function(zrender) {
         zr = zrender.init(document.getElementById('main'));
-        var request=new QueryString();
+        var request = new QueryString();
         if (request.code) {
             editor.doc.setValue(
                 "zr.clear()\n" +

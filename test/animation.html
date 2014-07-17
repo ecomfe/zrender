@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Animation</title>
+    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+</head>
+<body>
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+    require(
+        [
+            "zrender",
+            "zrender/animation/animation",
+            'zrender/shape/Circle'
+        ], 
+        function(zrender, Animation, CircleShape){
+
+            // 初始化zrender
+            var zr = zrender.init( document.getElementById("Main") );
+            var circle = new CircleShape({
+                position : [100, 100],
+                scale : [1, 1],
+                style : {
+                    x : 0,
+                    y : 0,
+                    r : 50,
+                    brushType : 'fill',
+                    color : 'rgba(33, 222, 10, 0.1)',
+                    lineWidth : 5,
+                    text :'circle',
+                    textPosition :'inside'
+                },
+                draggable : true,
+                onmouseover  : function(){
+                    zr.animate( circle.id,"style")
+                        .when( 1000, {
+                            r : 100
+                        }).when( 2000, {
+                            r : 50
+                        })
+                        .start();
+                }
+            });
+            zr.addShape(circle);
+            zr.render();
+
+            var tm1 = zr.animate( circle.id, "", true)
+                .when(1000, {
+                    position : [200, 0]
+                })
+                .when(2000, {
+                    position : [200, 200]
+                })
+                .when(3000, {
+                    position : [0, 200]
+                })
+                .when(4000, {
+                    position : [100, 100]
+                })
+                .start();
+
+            zr.animate(circle.id, 'style', true)
+                .when(4000, {
+                    color: 'rgba(222, 222, 10, 1)'
+                })
+                .start();
+        })
+    </script>
+    <div id="Main" style="width:600px;height:400px;"></div>
+</body>
+</html>
