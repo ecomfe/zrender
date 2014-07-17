@@ -124,7 +124,7 @@ define(
             }
             this._shapeList.length = this._shapeListOffset;
 
-            for (var i = 0, len = this._roots.length; i < len; i++) {
+            for (var i = 0, len = this._shapeList.length; i < len; i++) {
                 this._shapeList[i].__renderidx = i;
             }
 
