@@ -145,9 +145,7 @@ define(
                     ctx.stroke();
                 }
     
-                if (style.text) {
-                    this.drawText(ctx, style, this.style);
-                }
+                this.drawText(ctx, style, this.style);
     
                 ctx.restore();
     
