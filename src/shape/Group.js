@@ -6,6 +6,9 @@ define(function(require) {
     var Dispatcher = require('../tool/event').Dispatcher;
     var Transformable = require('./mixin/Transformable');
 
+    /**
+     * @constructor zrender.shape.Group
+     */
     function Group(options) {
 
         options = options || {};
@@ -17,6 +20,8 @@ define(function(require) {
         }
 
         this.type = 'group';
+
+        this.clipShape = null;
 
         this._children = [];
 
@@ -54,9 +59,11 @@ define(function(require) {
 
         if (this._storage && this._storage !== child._storage) {
             
-            this._storage.add(child);
+            this._storage.addToMap(child);
 
-            child.addChildrenToStorage(this.storage);
+            if (child instanceof Group) {
+                child.addChildrenToStorage(this._storage);
+            }
         }
     };
 
@@ -68,9 +75,11 @@ define(function(require) {
 
         if (child._storage) {
             
-            this._storage.del(child.id);
+            this._storage.delFromMap(child.id);
 
-            child.delChildrenFromStorage(child._storage);
+            if (child instanceof Group) {
+                child.delChildrenFromStorage(child._storage);
+            }
         }
     };
 

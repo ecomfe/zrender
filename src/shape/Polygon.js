@@ -103,7 +103,7 @@ define(
                 this.setContext(ctx, style);
     
                 // 设置transform
-                this.updateTransform(ctx);
+                this.setTransform(ctx);
                 
                 // 先fill再stroke
                 var hasPath = false;

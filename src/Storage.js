@@ -136,6 +136,18 @@ define(
             el.updateTransform();
 
             if (el.type == 'group') {
+                
+                if (el.clipShape) {
+                    // clipShape 的变换是基于 group 的变换
+                    el.clipShape.parent = el;
+                    el.clipShape.updateTransform();
+
+                    var startClipShape = el._children[0];
+                    if (startClipShape) {
+                        startClipShape.__startClip = el.clipShape;
+                    }
+                }
+
                 for (var i = 0; i < el._children.length; i++) {
                     var child = el._children[i];
 
@@ -143,6 +155,13 @@ define(
                     child.__dirty = el.__dirty || el.__dirty;
 
                     this._updateAndAddShape(child);
+                }
+
+                if (el.clipShape) {
+                    var stopClipShape = this._shapeList[this._shapeListOffset - 1];
+                    if (stopClipShape) {
+                        stopClipShape.__stopClip = true;
+                    }
                 }
             } else {
                 this._shapeList[this._shapeListOffset++] = el;
@@ -164,7 +183,27 @@ define(
                 el.__dirty = true;
 
                 if (params) {
-                    util.merge(el, params, true);
+                    // 如果第二个参数直接使用 shape
+                    // parent, _storage, __startClip 三个属性会有循环引用
+                    // 主要为了向 1.x 版本兼容，2.x 版本不建议使用第二个参数
+                    if (params.parent || params._storage || params.__startClip) {
+                        var target = {};
+                        for (var name in params) {
+                            if (
+                                name == 'parent'
+                                || name == '_storage'
+                                || name == '__startClip'
+                            ) {
+                                continue;
+                            }
+                            if (params.hasOwnProperty(name)) {
+                                target[name] = params[name];
+                            }
+                        }
+                        util.merge(el, target, true);
+                    } else {
+                        util.merge(el, params, true);
+                    }
                 }
             }
 
@@ -223,7 +262,7 @@ define(
             if (el instanceof Group) {
                 el.addChildrenToStorage(this);
             }
-            
+
             this.addToMap(el);
             this._roots.push(el);
         };
@@ -275,9 +314,12 @@ define(
          * @param {Shape|Group} el 参数
          */
         Storage.prototype.addToMap = function (el) {
-            if (!el instanceof Group) {
+            if (el instanceof Group) {
+                el._storage = this;
+            } else {
                 el.style.__rect = null;
             }
+
             this._elements[el.id] = el;
 
             return this;
@@ -298,7 +340,14 @@ define(
          * @param {string} idx 唯一标识
          */
         Storage.prototype.delFromMap = function (elId) {
-            delete this._elements[elId];
+            var el = this._elements[elId];
+            if (el) {
+                delete this._elements[elId];
+
+                if (el instanceof Group) {
+                    el._storage = null;
+                }
+            }
 
             return this;
         };

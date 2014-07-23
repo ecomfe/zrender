@@ -383,22 +383,26 @@ define(
          * 获取鼠标坐标变换 
          * TODO Performance
          */
-        Base.prototype.getTansform = function (x, y) {
-            var originPos = [x, y];
-            // 对鼠标的坐标也做相同的变换
-            if (this.needTransform && this.transform) {
-                var inverseMatrix = [];
-                matrix.invert(inverseMatrix, this.transform);
+        Base.prototype.getTansform = (function() {
+            
+            var invTransform = [];
 
-                matrix.mulVector(originPos, inverseMatrix, [x, y, 1]);
+            return function (x, y) {
+                var originPos = [x, y];
+                // 对鼠标的坐标也做相同的变换
+                if (this.needTransform && this.transform) {
+                    matrix.invert(invTransform, this.transform);
 
-                if (x == originPos[0] && y == originPos[1]) {
-                    // 避免外部修改导致的needTransform不准确
-                    this.updateNeedTransform();
+                    matrix.mulVector(originPos, invTransform, [x, y, 1]);
+
+                    if (x == originPos[0] && y == originPos[1]) {
+                        // 避免外部修改导致的needTransform不准确
+                        this.updateNeedTransform();
+                    }
                 }
-            }
-            return originPos;
-        };
+                return originPos;
+            };
+        })();
         
         /**
          * 默认区域包含判断

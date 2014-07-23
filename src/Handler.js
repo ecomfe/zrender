@@ -470,7 +470,7 @@ define(
                 this._isDragging = 1;
 
                 _draggingTarget.invisible = true;
-                this.storage.mod(_draggingTarget.id, _draggingTarget);
+                this.storage.mod(_draggingTarget.id);
 
                 //分发config.EVENT.DRAGSTART事件
                 this._dispatchAgency(
@@ -545,7 +545,7 @@ define(
         Handler.prototype._processDrop = function (event) {
             if (this._draggingTarget) {
                 this._draggingTarget.invisible = false;
-                this.storage.mod(this._draggingTarget.id, this._draggingTarget);
+                this.storage.mod(this._draggingTarget.id);
                 this.painter.refresh();
 
                 //分发config.EVENT.DROP事件
@@ -699,6 +699,15 @@ define(
             if (shape.isCover(this._mouseX, this._mouseY)) {
                 if (shape.hoverable) {
                     this.storage.addHover(shape);
+                }
+                // 查找是否在 clipShape 中
+                var p = shape.parent;
+                while (p) {
+                    if (p.clipShape && !p.clipShape.isCover(this._mouseX, this._mouseY))  {
+                        // 已经被祖先 clip 掉了
+                        return false;
+                    }
+                    p = p.parent;
                 }
 
                 if (this._lastHover != shape) {

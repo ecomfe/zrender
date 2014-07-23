@@ -15,6 +15,7 @@ define(
         var config = require('./config');
         var util = require('./tool/util');
         var log = require('./tool/log');
+        var matrix = require('./tool/matrix');
         var BaseLoadingEffect = require('./loadingEffect/Base');
 
         // retina 屏幕优化
@@ -135,6 +136,8 @@ define(
                 }
             }
 
+            var invTransform = [];
+
             for (var i = 0, l = list.length; i < l; i++) {
                 var shape = list[i];
 
@@ -149,6 +152,36 @@ define(
 
                     if (currentLayerDirty) {
                         currentLayer.clear();
+                    }
+                }
+
+                // Start group clipping
+                if (shape.__startClip && !vmlCanvasManager) {
+                    var clipShape = shape.__startClip;
+                    ctx.save();
+                    // Set transform
+                    if (clipShape.needTransform) {
+                        var m = clipShape.transform;
+                        matrix.invert(invTransform, m);
+                        ctx.transform(
+                            m[0], m[1],
+                            m[2], m[3],
+                            m[4], m[5]
+                        );
+                    }
+
+                    ctx.beginPath();
+                    clipShape.buildPath(ctx, clipShape.style);
+                    ctx.clip();
+
+                    // Transform back
+                    if (clipShape.needTransform) {
+                        var m = invTransform;
+                        ctx.transform(
+                            m[0], m[1],
+                            m[2], m[3],
+                            m[4], m[5]
+                        );
                     }
                 }
 
@@ -172,6 +205,11 @@ define(
                             shape.brush(ctx, false, this.updatePainter);
                         }
                     }
+                }
+
+                // Stop group clipping
+                if (shape.__stopClip && !vmlCanvasManager) {
+                    ctx.restore();
                 }
 
                 shape.__dirty = false;
@@ -243,7 +281,7 @@ define(
         Painter.prototype.update = function (shapeList, callback) {
             for (var i = 0, l = shapeList.length; i < l; i++) {
                 var shape = shapeList[i];
-                this.storage.mod(shape.id, shape);
+                this.storage.mod(shape.id);
             }
 
             this.refresh(callback);
