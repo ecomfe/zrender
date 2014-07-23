@@ -439,7 +439,7 @@ define(
          * @param {Object} normalStyle 默认样式，用于定位文字显示
          */
         Base.prototype.drawText = function (ctx, style, normalStyle) {
-            if (style.text == undefined || style.text === false ) {
+            if (typeof(style.text) == 'undefined' || style.text === false ) {
                 return;
             }
             // 字体颜色策略
