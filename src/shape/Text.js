@@ -92,7 +92,7 @@ define(
                     );
                 }
                 
-                if (typeof style.text == 'undefined') {
+                if (style.text == undefined || style.text === false) {
                     return;
                 }
 

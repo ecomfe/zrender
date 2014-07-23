@@ -269,9 +269,7 @@ define(
                     ctx.fill();
             }
 
-            if (style.text) {
-                this.drawText(ctx, style, this.style);
-            }
+            this.drawText(ctx, style, this.style);
 
             ctx.restore();
         };
@@ -441,6 +439,9 @@ define(
          * @param {Object} normalStyle 默认样式，用于定位文字显示
          */
         Base.prototype.drawText = function (ctx, style, normalStyle) {
+            if (style.text == undefined || style.text === false ) {
+                return;
+            }
             // 字体颜色策略
             var textColor = style.textColor || style.color || style.strokeColor;
             ctx.fillStyle = textColor;
