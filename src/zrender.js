@@ -39,12 +39,12 @@ define(
         var Handler = require('./Handler');
         var Painter = require('./Painter');
         var Storage = require('./Storage');
-        var Animation = require('./animation/animation');
+        var Animation = require('./animation/Animation');
 
         var _instances = {};    //ZRender实例map索引
 
         var zrender = {};
-        zrender.version = '2.0.0';
+        zrender.version = '2.0.1';
 
         /**
          * zrender初始化
@@ -106,15 +106,16 @@ define(
             return zrender;
         };
 
-        function getAnimationUpdater(zrenderInstance) {
+        function getFrameCallback(zrInstance) {
             return function(){
-                var animatingShapes = zrenderInstance.animatingShapes;
+                var animatingShapes = zrInstance.animatingShapes;
                 for (var i = 0, l = animatingShapes.length; i < l; i++) {
-                    zrenderInstance.storage.mod(animatingShapes[i].id);
+                    zrInstance.storage.mod(animatingShapes[i].id);
                 }
 
-                if (animatingShapes.length) {
-                    zrenderInstance.painter.refresh();
+                if (animatingShapes.length || zrInstance._needsRefreshNextFrame) {
+                    zrInstance.refresh();
+                    zrInstance._needsRefreshNextFrame = false;
                 }
             };
         }
@@ -141,10 +142,12 @@ define(
             this.animatingShapes = [];
             this.animation = new Animation({
                 stage : {
-                    update : getAnimationUpdater(this)
+                    update : getFrameCallback(this)
                 }
             });
             this.animation.start();
+
+            this._needsRefreshNextFrame = false;
         }
 
         /**
@@ -155,22 +158,42 @@ define(
         };
 
         /**
-         * 添加图形形状
+         * 添加图形形状到根节点
          * 
-         * @param {Object} shape 形状对象，可用属性全集，详见各shape
+         * @param {zrender.shape.Base} shape 形状对象，可用属性全集，详见各shape
          */
         ZRender.prototype.addShape = function (shape) {
-            this.storage.add(shape);
+            this.storage.addRoot(shape);
             return this;
         };
 
         /**
-         * 删除图形形状
+         * 添加组到根节点
+         *
+         * @param {zrender.shape.Group} group
+         */
+        ZRender.prototype.addGroup = function(group) {
+            this.storage.addRoot(group);
+            return this;
+        };
+
+        /**
+         * 从根节点删除图形形状
          * 
          * @param {string} shapeId 形状对象唯一标识
          */
         ZRender.prototype.delShape = function (shapeId) {
-            this.storage.del(shapeId);
+            this.storage.delRoot(shapeId);
+            return this;
+        };
+
+        /**
+         * 从根节点删除组
+         * 
+         * @param {string} groupId
+         */
+        ZRender.prototype.delGroup = function (groupId) {
+            this.storage.delRoot(groupId);
             return this;
         };
 
@@ -179,10 +202,20 @@ define(
          * 
          * @param {string} shapeId 形状对象唯一标识
          * @param {Object} shape 形状对象
-         * @param {fast} boolean 默认为false, 如果为true的话会在merge中省略部分判断
          */
-        ZRender.prototype.modShape = function (shapeId, shape, fast) {
-            this.storage.mod(shapeId, shape, fast);
+        ZRender.prototype.modShape = function (shapeId, shape) {
+            this.storage.mod(shapeId, shape);
+            return this;
+        };
+
+        /**
+         * 修改组
+         * 
+         * @param {string} shapeId
+         * @param {Object} group
+         */
+        ZRender.prototype.modGroup = function (groupId, group) {
+            this.storage.mod(groupId, group);
             return this;
         };
 
@@ -225,6 +258,13 @@ define(
          */
         ZRender.prototype.refresh = function (callback) {
             this.painter.refresh(callback);
+            return this;
+        };
+
+        // TODO
+        // 好像会有奇怪的问题
+        ZRender.prototype.refreshNextFrame = function() {
+            this._needsRefreshNextFrame = true;
             return this;
         };
         
@@ -415,7 +455,7 @@ define(
          * 清除当前ZRender下所有类图的数据和显示，clear后MVC和已绑定事件均还存在在，ZRender可用
          */
         ZRender.prototype.clear = function () {
-            this.storage.del();
+            this.storage.delRoot();
             this.painter.clear();
             return this;
         };

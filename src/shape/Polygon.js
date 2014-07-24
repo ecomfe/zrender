@@ -103,7 +103,7 @@ define(
                 this.setContext(ctx, style);
     
                 // 设置transform
-                this.updateTransform(ctx);
+                this.setTransform(ctx);
                 
                 // 先fill再stroke
                 var hasPath = false;
@@ -145,9 +145,7 @@ define(
                     ctx.stroke();
                 }
     
-                if (style.text) {
-                    this.drawText(ctx, style, this.style);
-                }
+                this.drawText(ctx, style, this.style);
     
                 ctx.restore();
     

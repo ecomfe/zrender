@@ -92,7 +92,7 @@ define(
                     );
                 }
                 
-                if (typeof style.text == 'undefined') {
+                if (typeof(style.text) == 'undefined' || style.text === false) {
                     return;
                 }
 
@@ -100,7 +100,7 @@ define(
                 this.setContext(ctx, style);
 
                 // 设置transform
-                this.updateTransform(ctx);
+                this.setTransform(ctx);
 
                 if (style.textFont) {
                     ctx.font = style.textFont;

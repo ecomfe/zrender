@@ -63,7 +63,7 @@ define(
                 addShapeHandle(background);
 
                 barShape.highlightStyle.width =
-                    _adjust(options.progress, [0,1])
+                    this.adjust(options.progress, [0,1])
                     * options.effectOption.width;
                     
                 addShapeHandle(barShape);

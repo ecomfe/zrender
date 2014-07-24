@@ -7,9 +7,13 @@
 
 define(
     function (require) {
+
+        'use strict';
+
         var config = require('./config');
         var env = require('./tool/env');
         var eventTool = require('./tool/event');
+        var util = require('./tool/util');
         var EVENT = config.EVENT;
 
         var domHandlerNames = [
@@ -466,7 +470,7 @@ define(
                 this._isDragging = 1;
 
                 _draggingTarget.invisible = true;
-                this.storage.mod(_draggingTarget.id, _draggingTarget);
+                this.storage.mod(_draggingTarget.id);
 
                 //分发config.EVENT.DRAGSTART事件
                 this._dispatchAgency(
@@ -541,7 +545,7 @@ define(
         Handler.prototype._processDrop = function (event) {
             if (this._draggingTarget) {
                 this._draggingTarget.invisible = false;
-                this.storage.mod(this._draggingTarget.id, this._draggingTarget);
+                this.storage.mod(this._draggingTarget.id);
                 this.painter.refresh();
 
                 //分发config.EVENT.DROP事件
@@ -612,28 +616,39 @@ define(
             var eventPacket = {
                 type : eventName,
                 event : event,
-                target : targetShape
+                target : targetShape,
+                cancelBubble: false
             };
+
+            var el = targetShape;
 
             if (draggedShape) {
                 eventPacket.dragged = draggedShape;
             }
 
+            while (el) {
+                el[eventHandler] && el[eventHandler](eventPacket);
+                el.dispatch(eventName, eventPacket);
+
+                el = el.parent;
+                
+                if (eventPacket.cancelBubble) {
+                    break;
+                }
+            }
+
             if (targetShape) {
-                //“不存在shape级事件”或“存在shape级事件但事件回调返回非true”
-                if (!targetShape[eventHandler]
-                    || !targetShape[eventHandler](eventPacket)
-                ) {
-                    this.dispatch(
-                        eventName,
-                        event,
-                        eventPacket
-                    );
+                // 冒泡到顶级 zrender 对象
+                if (!eventPacket.cancelBubble) {
+                    this.dispatch(eventName, eventPacket);
                 }
             }
             else if (!draggedShape) {
                 //无hover目标，无拖拽对象，原生事件分发
-                this.dispatch(eventName, event);
+                this.dispatch(eventName, {
+                    type: eventName,
+                    event: event
+                });
             }
         };
         
@@ -684,6 +699,15 @@ define(
             if (shape.isCover(this._mouseX, this._mouseY)) {
                 if (shape.hoverable) {
                     this.storage.addHover(shape);
+                }
+                // 查找是否在 clipShape 中
+                var p = shape.parent;
+                while (p) {
+                    if (p.clipShape && !p.clipShape.isCover(this._mouseX, this._mouseY))  {
+                        // 已经被祖先 clip 掉了
+                        return false;
+                    }
+                    p = p.parent;
                 }
 
                 if (this._lastHover != shape) {
@@ -745,17 +769,18 @@ define(
                                 ? event.targetTouches[0]
                                 : event.changedTouches[0];
                 if (touch) {
+                    var rBounding = this.root.getBoundingClientRect();
                     // touch事件坐标是全屏的~
-                    event.zrenderX = touch.clientX - this.root.offsetLeft
-                                        + document.body.scrollLeft;
-                    event.zrenderY = touch.clientY - this.root.offsetTop
-                                        + document.body.scrollTop;
+                    event.zrenderX = touch.clientX - rBounding.left;
+                    event.zrenderY = touch.clientY - rBounding.top;
                 }
             }
 
             event.zrenderFixed = 1;
             return event;
         };
+
+        util.merge(Handler.prototype, eventTool.Dispatcher.prototype, true);
 
         return Handler;
     }

@@ -8,9 +8,9 @@ description.zrenderInstance = [
     },
     {
         name: 'addShape',
-        des: '添加图形形状',
+        des: '添加形状到根节点',
         params: [
-            ['shape', '{Object}', '形状对象，可用属性全集，建议创建并记录shape id可用于索引，更新，删除等，详见各<a href="#shape">shape</a>']
+            ['shape', '{Object}', '详见各<a href="#shape">shape</a>']
         ],
         res: ['self', '{ZRender}', '返回自身支持链式调用'],
         pre: (function() {
@@ -42,7 +42,7 @@ zr.render();
     },
     {
         name: 'delShape',
-        des: '删除图形形状',
+        des: '从根节点删除图形',
         params: [
             ['shapeId', '{string}', '形状对象唯一标识']
         ],
@@ -75,10 +75,38 @@ zr.render();
         des: '修改形状，使用例子查看<a href="#addShape">addShape</a>',
         params: [
             ['shapeId', '{string}', '形状对象唯一标识'],
-            ['shape', '{Object}', '形状对象，包含需要修改的属性，与原对象进行merge合并']
+            ['shape', '{Object}', '可选，形状对象，包含需要修改的属性，与原对象进行merge合并']
         ],
         res: ['self', '{ZRender}', '返回自身支持链式调用'],
         cantry: false
+    },
+    {
+        name: 'addGroup',
+        des: '添加组到根节点',
+        params: [
+            ['group', '{Group}', '组对象']
+        ],
+        res: ['self', '{ZRender}', '返回自身支持链式调用'],
+        cantry: true
+    },
+    {
+        name: 'modGroup',
+        des: '修改组',
+        params: [
+            ['groupId', '{string}', '组对象唯一标识'],
+            ['group', '{Object}', '可选，组对象，包含需要修改的属性，与原对象进行merge合并']
+        ],
+        res: ['self', '{ZRender}', '返回自身支持链式调用'],
+        cantry: true
+    },
+    {
+        name: 'delGroup',
+        des: '从根节点删除组',
+        params: [
+            ['groupId', '{string}', '组对象唯一标识']
+        ],
+        res: ['self', '{ZRender}', '返回自身支持链式调用'],
+        cantry: true
     },
     {
         name: 'addHoverShape',
@@ -168,6 +196,13 @@ zr.addShape(new CircleShape({
 }));
 zr.render();
         }).toString().slice(13, -10),
+        cantry: true
+    },
+    {
+        name: 'refreshNextFrame',
+        des: '标记下一帧做绘制',
+        params: [],
+        res: ['self', '{ZRender}', '返回自身支持链式调用'],
         cantry: true
     },
     {

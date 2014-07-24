@@ -118,7 +118,11 @@ define(
     function(require) {
         var matrix = require('../tool/matrix');
         var guid = require('../tool/guid');
-        
+        var util = require('../tool/util');
+
+        var Transformable = require('./mixin/Transformable');
+        var Dispatcher = require('../tool/event').Dispatcher;
+
         function _fillText(ctx, text, x, y, textFont, textAlign, textBaseline) {
             if (textFont) {
                 ctx.font = textFont;
@@ -191,20 +195,27 @@ define(
         }
 
         function Base( options ) {
+            
+            options = options || {};
+            
             this.id = options.id || guid();
             this.zlevel = 0;
             this.draggable = false;
             this.clickable = false;
             this.hoverable = true;
-            this.position = [0, 0];
-            this.rotation = [0, 0, 0];
-            this.scale = [1, 1, 0, 0];
 
             for ( var key in options ) {
                 this[ key ] = options[ key ];
             }
 
             this.style = this.style || {};
+
+            this.parent = null;
+
+            this.__dirty = true;
+
+            Transformable.call(this);
+            Dispatcher.call(this);
         }
 
         /**
@@ -236,10 +247,11 @@ define(
             }
 
             ctx.save();
+
             this.setContext(ctx, style);
 
             // 设置transform
-            this.updateTransform(ctx);
+            this.setTransform(ctx);
 
             ctx.beginPath();
             this.buildPath(ctx, style);
@@ -257,9 +269,7 @@ define(
                     ctx.fill();
             }
 
-            if (style.text) {
-                this.drawText(ctx, style, this.style);
-            }
+            this.drawText(ctx, style, this.style);
 
             ctx.restore();
         };
@@ -268,18 +278,20 @@ define(
             ['color', 'fillStyle'],
             ['strokeColor', 'strokeStyle'],
             ['opacity', 'globalAlpha'],
-            ['lineCap'],
-            ['lineJoin'],
-            ['miterLimit'],
-            ['lineWidth'],
-            ['shadowBlur'],
-            ['shadowColor'],
-            ['shadowOffsetX'],
-            ['shadowOffsetY']
+            ['lineCap', 'lineCap'],
+            ['lineJoin', 'lineJoin'],
+            ['miterLimit', 'miterLimit'],
+            ['lineWidth', 'lineWidth'],
+            ['shadowBlur', 'shadowBlur'],
+            ['shadowColor', 'shadowColor'],
+            ['shadowOffsetX', 'shadowOffsetX'],
+            ['shadowOffsetY', 'shadowOffsetY']
         ];
 
         /**
          * 画布通用设置
+         * 
+         * TODO Performance
          * 
          * @param ctx       画布句柄
          * @param style     通用样式
@@ -288,7 +300,7 @@ define(
             for (var i = 0, len = STYLE_CTX_MAP.length; i < len; i++) {
                 var styleProp = STYLE_CTX_MAP[i][0];
                 var styleValue = style[styleProp];
-                var ctxProp = STYLE_CTX_MAP[i][1] || styleProp;
+                var ctxProp = STYLE_CTX_MAP[i][1];
 
                 if (typeof styleValue != 'undefined') {
                     ctx[ctxProp] = styleValue;
@@ -346,14 +358,6 @@ define(
             return newStyle;
         };
 
-        Base.prototype.updateNeedTransform = function () {
-            this.needTransform = Math.abs(this.rotation[0]) > 0.0001
-                || Math.abs(this.position[0]) > 0.0001
-                || Math.abs(this.position[1]) > 0.0001
-                || Math.abs(this.scale[0] - 1) > 0.0001
-                || Math.abs(this.scale[1] - 1) > 0.0001;
-        };
-
         /**
          * 高亮放大效果参数
          * 当前统一设置为6，如有需要差异设置，通过this.type判断实例类型
@@ -375,23 +379,28 @@ define(
 
         /**
          * 获取鼠标坐标变换 
+         * TODO Performance
          */
-        Base.prototype.getTansform = function (x, y) {
-            var originPos = [x, y];
-            // 对鼠标的坐标也做相同的变换
-            if (this.needTransform && this._transform) {
-                var inverseMatrix = [];
-                matrix.invert(inverseMatrix, this._transform);
+        Base.prototype.getTansform = (function() {
+            
+            var invTransform = [];
 
-                matrix.mulVector(originPos, inverseMatrix, [x, y, 1]);
+            return function (x, y) {
+                var originPos = [x, y];
+                // 对鼠标的坐标也做相同的变换
+                if (this.needTransform && this.transform) {
+                    matrix.invert(invTransform, this.transform);
 
-                if (x == originPos[0] && y == originPos[1]) {
-                    // 避免外部修改导致的needTransform不准确
-                    this.updateNeedTransform();
+                    matrix.mulVector(originPos, invTransform, [x, y, 1]);
+
+                    if (x == originPos[0] && y == originPos[1]) {
+                        // 避免外部修改导致的needTransform不准确
+                        this.updateNeedTransform();
+                    }
                 }
-            }
-            return originPos;
-        };
+                return originPos;
+            };
+        })();
         
         /**
          * 默认区域包含判断
@@ -430,6 +439,9 @@ define(
          * @param {Object} normalStyle 默认样式，用于定位文字显示
          */
         Base.prototype.drawText = function (ctx, style, normalStyle) {
+            if (typeof(style.text) == 'undefined' || style.text === false ) {
+                return;
+            }
             // 字体颜色策略
             var textColor = style.textColor || style.color || style.strokeColor;
             ctx.fillStyle = textColor;
@@ -583,7 +595,7 @@ define(
                 );
             }
         };
-
+        // TODO
         Base.prototype.isSilent = function () {
             return !(
                 this.hoverable || this.draggable
@@ -594,62 +606,8 @@ define(
             );
         };
 
-        Base.prototype.updateTransform = function (ctx) {
-            if (!this.needTransform) {
-                return;
-            }
-
-            var _transform = this._transform || matrix.create();
-            matrix.identity(_transform);
-            if (this.scale && (this.scale[0] !== 1 || this.scale[1] !== 1)) {
-                var originX = this.scale[2] || 0;
-                var originY = this.scale[3] || 0;
-                if (originX || originY) {
-                    matrix.translate(
-                        _transform, _transform, [-originX, -originY]
-                    );
-                }
-                matrix.scale(_transform, _transform, this.scale);
-                if ( originX || originY ) {
-                    matrix.translate(
-                        _transform, _transform, [originX, originY]
-                    );
-                }
-            }
-
-            if (this.rotation) {
-                if (this.rotation instanceof Array) {
-                    if (this.rotation[0] !== 0) {
-                        var originX = this.rotation[1] || 0;
-                        var originY = this.rotation[2] || 0;
-                        if (originX || originY) {
-                            matrix.translate(
-                                _transform, _transform, [-originX, -originY]
-                            );
-                        }
-                        matrix.rotate(_transform, _transform, this.rotation[0]);
-                        if (originX || originY) {
-                            matrix.translate(
-                                _transform, _transform, [originX, originY]
-                            );
-                        }
-                    }
-                }
-                else {
-                    if (this.rotation !== 0) {
-                        matrix.rotate(_transform, _transform, this.rotation);
-                    }
-                }
-            }
-
-            if (this.position && (this.position[0] !==0 || this.position[1] !== 0)) {
-                matrix.translate(_transform, _transform, this.position);
-            }
-
-            // 保存这个变换矩阵
-            this._transform = _transform;
-            ctx.transform.apply(ctx, _transform);
-        };
+        util.merge(Base.prototype, Transformable.prototype, true);
+        util.merge(Base.prototype, Dispatcher.prototype, true);
 
         return Base;
     }

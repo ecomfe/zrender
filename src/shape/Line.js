@@ -101,7 +101,7 @@ define(
                 else if (style.lineType == 'dashed'
                         || style.lineType == 'dotted'
                 ) {
-                    var dashLength =(style.lineWidth || 1)  
+                    var dashLength = (style.lineWidth || 1)  
                                      * (style.lineType == 'dashed' ? 5 : 1);
                     dashedLineTo(
                         ctx,

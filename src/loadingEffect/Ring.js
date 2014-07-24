@@ -133,7 +133,7 @@ define(
                 // 指定进度
                 addShapeHandle(background);
 
-                n = _adjust(options.progress, [0,1]).toFixed(2) * 100 / 5;
+                n = this.adjust(options.progress, [0,1]).toFixed(2) * 100 / 5;
                 shapeRing.highlightStyle.text = n * 5 + '%';
                 addShapeHandle(shapeRing);
 
