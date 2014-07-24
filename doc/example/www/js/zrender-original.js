@@ -1867,6 +1867,9 @@ define('zrender/tool/env',[],function() {
  */
 define(
     'zrender/tool/event',[],function() {
+
+        
+
         /**
         * 提取鼠标（手指）x坐标
         * 
@@ -1910,7 +1913,7 @@ define(
          * @type {Function}
          * @param {Event} e : event对象
          */
-        var stop = window.Event && Event.prototype.preventDefault
+        var stop = window.Event && window.Event.prototype.preventDefault
             ? function (e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -1924,125 +1927,193 @@ define(
          * 事件分发器
          */
         function Dispatcher() {
-            var _self = this;
-            var _h = {};
+            this._handlers = {};
+        }
+        /**
+         * 单次触发绑定，dispatch后销毁
+         * 
+         * @param {string} event 事件字符串
+         * @param {Function} handler 响应函数
+         * @param {Object} [context]
+         */
+        Dispatcher.prototype.one = function(event, handler, context) {
+            
+            var _h = this._handlers;
 
-            /**
-             * 单次触发绑定，dispatch后销毁
-             * 
-             * @param {string} event 事件字符串
-             * @param {Function} handler 响应函数
-             */
-            function one(event, handler) {
-                if(!handler || !event) {
-                    return _self;
-                }
-
-                if(!_h[event]) {
-                    _h[event] = [];
-                }
-
-                _h[event].push({
-                    h : handler,
-                    one : true
-                });
-
-                return _self;
+            if(!handler || !event) {
+                return this;
             }
 
-            /**
-             * 事件绑定
-             * 
-             * @param {string} event 事件字符串
-             * @param {Function} handler : 响应函数
-             */
-            function bind(event, handler) {
-                if(!handler || !event) {
-                    return _self;
-                }
-
-                if(!_h[event]) {
-                    _h[event] = [];
-                }
-
-                _h[event].push({
-                    h : handler,
-                    one : false
-                });
-
-                return _self;
+            if(!_h[event]) {
+                _h[event] = [];
             }
 
-            /**
-             * 事件解绑定
-             * 
-             * @param {string} event 事件字符串
-             * @param {Function} handler : 响应函数
-             */
-            function unbind(event, handler) {
-                if(!event) {
-                    _h = {};
-                    return _self;
-                }
+            _h[event].push({
+                h : handler,
+                one : true,
+                ctx: context || this
+            });
 
-                if(handler) {
-                    if(_h[event]) {
-                        var newList = [];
-                        for (var i = 0, l = _h[event].length; i < l; i++) {
-                            if (_h[event][i]['h'] != handler) {
-                                newList.push(_h[event][i]);
-                            }
+            return this;
+        };
+
+        /**
+         * 事件绑定
+         * 
+         * @param {string} event 事件字符串
+         * @param {Function} handler : 响应函数
+         * @param {Object} [context]
+         */
+        Dispatcher.prototype.bind = function(event, handler, context) {
+            
+            var _h = this._handlers;
+
+            if(!handler || !event) {
+                return this;
+            }
+
+            if(!_h[event]) {
+                _h[event] = [];
+            }
+
+            _h[event].push({
+                h : handler,
+                one : false,
+                ctx: context || this
+            });
+
+            return this;
+        };
+
+        /**
+         * 事件解绑定
+         * 
+         * @param {string} event 事件字符串
+         * @param {Function} handler : 响应函数
+         */
+        Dispatcher.prototype.unbind = function(event, handler) {
+
+            var _h = this._handlers;
+
+            if(!event) {
+                this._handlers = {};
+                return this;
+            }
+
+            if(handler) {
+                if(_h[event]) {
+                    var newList = [];
+                    for (var i = 0, l = _h[event].length; i < l; i++) {
+                        if (_h[event][i]['h'] != handler) {
+                            newList.push(_h[event][i]);
                         }
-                        _h[event] = newList;
                     }
-
-                    if(_h[event] && _h[event].length === 0) {
-                        delete _h[event];
-                    }
+                    _h[event] = newList;
                 }
-                else {
+
+                if(_h[event] && _h[event].length === 0) {
                     delete _h[event];
                 }
-
-                return _self;
+            }
+            else {
+                delete _h[event];
             }
 
-            /**
-             * 事件分发
-             * 
-             * @param {string} type : 事件类型
-             * @param {Object} event : event对象
-             * @param {Object} [attachment] : 附加信息
-             */
-            function dispatch(type, event, attachment, that) {
-                if(_h[type]) {
-                    var newList = [];
-                    var eventPacket = attachment || {};
-                    eventPacket.type = type;
-                    eventPacket.event = event;
-                    //eventPacket._target = self;
-                    var thisObject;
-                    for (var i = 0, l = _h[type].length; i < l; i++) {
-                        thisObject = that || _h[type][i]['h'];
-                        _h[type][i]['h'].call(thisObject, eventPacket);
-                        if (!_h[type][i]['one']) {
-                            newList.push(_h[type][i]);
-                        }
-                    }
+            return this;
+        };
 
-                    if (newList.length != _h[type].length) {
-                        _h[type] = newList;
+        /**
+         * 事件分发
+         * 
+         * @param {string} type : 事件类型
+         */
+        Dispatcher.prototype.dispatch = function(type) {
+            var args = arguments;
+            var argLen = args.length;
+
+            if (argLen > 3) {
+                args = Array.prototype.slice.call(args, 1);
+            }
+
+            if(this._handlers[type]) {
+                var _h = this._handlers[type];
+                var len = _h.length;
+                for (var i = 0; i < len;) {
+                    // Optimize advise from backbone
+                    switch (argLen) {
+                        case 1:
+                            _h[i]['h'].call(_h[i]['ctx']);
+                            break;
+                        case 2:
+                            _h[i]['h'].call(_h[i]['ctx'], args[1]);
+                            break;
+                        case 3:
+                            _h[i]['h'].call(_h[i]['ctx'], args[1], args[2]);
+                            break;
+                        default:
+                            // have more than 2 given arguments
+                            _h[i]['h'].apply(_h[i]['ctx'], args);
+                            break;
+                    }
+                    
+                    if (_h[i]['one']) {
+                        _h.splice(i, 1);
+                        len--;
+                    } else {
+                        i++;
                     }
                 }
-
-                return _self;
             }
 
-            _self.one = one;
-            _self.bind = bind;
-            _self.unbind = unbind;
-            _self.dispatch = dispatch;
-        }
+            return this;
+        };
+
+        /**
+         * 带有context的事件分发, 最后一个参数是事件回调的context
+         * 
+         * @param {string} type : 事件类型
+         */
+        Dispatcher.prototype.dispatchWithContext = function(type) {
+            var args = arguments;
+            var argLen = args.length;
+
+            if (argLen > 4) {
+                args = Array.prototype.slice.call(args, 1, args.length - 1);
+            }
+            var ctx = args[args.length - 1];
+
+            if(this._handlers[type]) {
+                var _h = this._handlers[type];
+                var len = _h.length;
+                for (var i = 0; i < len;) {
+                    // Optimize advise from backbone
+                    switch (argLen) {
+                        case 1:
+                            _h[i]['h'].call(ctx);
+                            break;
+                        case 2:
+                            _h[i]['h'].call(ctx, args[1]);
+                            break;
+                        case 3:
+                            _h[i]['h'].call(ctx, args[1], args[2]);
+                            break;
+                        default:
+                            // have more than 2 given arguments
+                            _h[i]['h'].apply(ctx, args);
+                            break;
+                    }
+                    
+                    if (_h[i]['one']) {
+                        _h.splice(i, 1);
+                        len--;
+                    } else {
+                        i++;
+                    }
+                }
+            }
+
+            return this;
+        };
 
         return {
             getX : getX,
@@ -2061,10 +2132,14 @@ define(
  */
 
 define(
-    'zrender/Handler',['require','./config','./tool/env','./tool/event'],function (require) {
+    'zrender/Handler',['require','./config','./tool/env','./tool/event','./tool/util'],function (require) {
+
+        
+
         var config = require('./config');
         var env = require('./tool/env');
         var eventTool = require('./tool/event');
+        var util = require('./tool/util');
         var EVENT = config.EVENT;
 
         var domHandlerNames = [
@@ -2521,7 +2596,7 @@ define(
                 this._isDragging = 1;
 
                 _draggingTarget.invisible = true;
-                this.storage.mod(_draggingTarget.id, _draggingTarget);
+                this.storage.mod(_draggingTarget.id);
 
                 //分发config.EVENT.DRAGSTART事件
                 this._dispatchAgency(
@@ -2596,7 +2671,7 @@ define(
         Handler.prototype._processDrop = function (event) {
             if (this._draggingTarget) {
                 this._draggingTarget.invisible = false;
-                this.storage.mod(this._draggingTarget.id, this._draggingTarget);
+                this.storage.mod(this._draggingTarget.id);
                 this.painter.refresh();
 
                 //分发config.EVENT.DROP事件
@@ -2667,28 +2742,39 @@ define(
             var eventPacket = {
                 type : eventName,
                 event : event,
-                target : targetShape
+                target : targetShape,
+                cancelBubble: false
             };
+
+            var el = targetShape;
 
             if (draggedShape) {
                 eventPacket.dragged = draggedShape;
             }
 
+            while (el) {
+                el[eventHandler] && el[eventHandler](eventPacket);
+                el.dispatch(eventName, eventPacket);
+
+                el = el.parent;
+                
+                if (eventPacket.cancelBubble) {
+                    break;
+                }
+            }
+
             if (targetShape) {
-                //“不存在shape级事件”或“存在shape级事件但事件回调返回非true”
-                if (!targetShape[eventHandler]
-                    || !targetShape[eventHandler](eventPacket)
-                ) {
-                    this.dispatch(
-                        eventName,
-                        event,
-                        eventPacket
-                    );
+                // 冒泡到顶级 zrender 对象
+                if (!eventPacket.cancelBubble) {
+                    this.dispatch(eventName, eventPacket);
                 }
             }
             else if (!draggedShape) {
                 //无hover目标，无拖拽对象，原生事件分发
-                this.dispatch(eventName, event);
+                this.dispatch(eventName, {
+                    type: eventName,
+                    event: event
+                });
             }
         };
         
@@ -2739,6 +2825,15 @@ define(
             if (shape.isCover(this._mouseX, this._mouseY)) {
                 if (shape.hoverable) {
                     this.storage.addHover(shape);
+                }
+                // 查找是否在 clipShape 中
+                var p = shape.parent;
+                while (p) {
+                    if (p.clipShape && !p.clipShape.isCover(this._mouseX, this._mouseY))  {
+                        // 已经被祖先 clip 掉了
+                        return false;
+                    }
+                    p = p.parent;
                 }
 
                 if (this._lastHover != shape) {
@@ -2800,17 +2895,18 @@ define(
                                 ? event.targetTouches[0]
                                 : event.changedTouches[0];
                 if (touch) {
+                    var rBounding = this.root.getBoundingClientRect();
                     // touch事件坐标是全屏的~
-                    event.zrenderX = touch.clientX - this.root.offsetLeft
-                                        + document.body.scrollLeft;
-                    event.zrenderY = touch.clientY - this.root.offsetTop
-                                        + document.body.scrollTop;
+                    event.zrenderX = touch.clientX - rBounding.left;
+                    event.zrenderY = touch.clientY - rBounding.top;
                 }
             }
 
             event.zrenderFixed = 1;
             return event;
         };
+
+        util.merge(Handler.prototype, eventTool.Dispatcher.prototype, true);
 
         return Handler;
     }
@@ -2819,18 +2915,22 @@ define(
 /**
  * zrender: 3x2矩阵操作类
  *
- * author: lang(shenyi01@baidu.com)
- * code from mat2d in http://glmatrix.net/
+ * author: https://github.com/pissang
  */
 
 define(
     'zrender/tool/matrix',[],function() {
 
+        var ArrayCtor = typeof Float32Array === 'undefined'
+            ? Array
+            : Float32Array;
+
         var matrix = {
             create : function() {
-                return [1, 0,
-                        0, 1,
-                        0, 0];
+                var out = new ArrayCtor(6);
+                matrix.identity(out);
+                
+                return out;
             },
             identity : function(out) {
                 out[0] = 1;
@@ -2839,6 +2939,14 @@ define(
                 out[3] = 1;
                 out[4] = 0;
                 out[5] = 0;
+            },
+            copy: function(out, m) {
+                out[0] = m[0];
+                out[1] = m[1];
+                out[2] = m[2];
+                out[3] = m[3];
+                out[4] = m[4];
+                out[5] = m[5];
             },
             mul : function(out, m1, m2) {
                out[0] = m1[0] * m2[0] + m1[2] * m2[1];
@@ -2849,7 +2957,6 @@ define(
                out[5] = m1[1] * m2[4] + m1[3] * m2[5] + m1[5];
                return out;
             },
-
             translate : function(out, a, v) {
                 out[0] = a[0];
                 out[1] = a[1];
@@ -2923,6 +3030,134 @@ define(
         return matrix;
     }
 );
+define('zrender/shape/mixin/Transformable',['require','../../tool/matrix'],function(require) {
+
+    var matrix = require('../../tool/matrix');
+    var origin = [0, 0];
+
+    var Transformable = function() {
+
+        if (!this.position) {
+            this.position = [0, 0];
+        }
+        if (typeof(this.rotation) == 'undefined') {
+            this.rotation = [0, 0, 0];
+        }
+        if (!this.scale) {
+            this.scale = [1, 1, 0, 0];
+        }
+
+        this.needLocalTransform = false;
+        this.needTransform = false;
+    };
+
+    Transformable.prototype = {
+        
+        constructor: Transformable,
+
+        updateNeedTransform: function() {
+            this.needLocalTransform = Math.abs(this.rotation[0]) > 0.0001
+                || Math.abs(this.position[0]) > 0.0001
+                || Math.abs(this.position[1]) > 0.0001
+                || Math.abs(this.scale[0] - 1) > 0.0001
+                || Math.abs(this.scale[1] - 1) > 0.0001;
+        },
+
+        updateTransform: function() {
+            
+            this.updateNeedTransform();
+
+            if (this.parent) {
+                this.needTransform = this.needLocalTransform || this.parent.needTransform;
+            } else {
+                this.needTransform = this.needLocalTransform;
+            }
+            
+            if (!this.needTransform) {
+                return;
+            }
+
+            var m = this.transform || matrix.create();
+            matrix.identity(m);
+
+            if (this.needLocalTransform) {
+                if (this.scale && (this.scale[0] !== 1 || this.scale[1] !== 1)) {
+                    origin[0] = -this.scale[2] || 0;
+                    origin[1] = -this.scale[3] || 0;
+                    if (origin[0] || origin[1]) {
+                        matrix.translate(
+                            m, m, origin
+                        );
+                    }
+                    matrix.scale(m, m, this.scale);
+                    if (origin[0] || origin[1]) {
+                        origin[0] = -origin[0];
+                        origin[1] = -origin[1];
+                        matrix.translate(
+                            m, m, origin
+                        );
+                    }
+                }
+
+                if (this.rotation) {
+                    if (this.rotation instanceof Array) {
+                        if (this.rotation[0] !== 0) {
+                            origin[0] = -this.rotation[1] || 0;
+                            origin[1] = -this.rotation[2] || 0;
+                            if (origin[0] || origin[1]) {
+                                matrix.translate(
+                                    m, m, origin
+                                );
+                            }
+                            matrix.rotate(m, m, this.rotation[0]);
+                            if (origin[0] || origin[1]) {
+                                origin[0] = -origin[0];
+                                origin[1] = -origin[1];
+                                matrix.translate(
+                                    m, m, origin
+                                );
+                            }
+                        }
+                    }
+                    else {
+                        if (this.rotation !== 0) {
+                            matrix.rotate(m, m, this.rotation);
+                        }
+                    }
+                }
+
+                if (this.position && (this.position[0] !==0 || this.position[1] !== 0)) {
+                    matrix.translate(m, m, this.position);
+                }
+            }
+
+            // 保存这个变换矩阵
+            this.transform = m;
+
+            // 应用父节点变换
+            if (this.parent && this.parent.needTransform) {
+                if (this.needLocalTransform) {
+                    matrix.mul(this.transform, this.parent.transform, this.transform);
+                } else {
+                    matrix.copy(this.transform, this.parent.transform);
+                }
+            }
+        },
+
+        setTransform: function(ctx) {
+            if (this.needTransform) {
+                var m = this.transform;
+                ctx.transform(
+                    m[0], m[1],
+                    m[2], m[3],
+                    m[4], m[5]
+                );
+            }
+        }
+    };
+
+    return Transformable;
+});
 /**
  * zrender : 颜色辅助类
  *
@@ -4092,10 +4327,14 @@ define( 'zrender/tool/color',['require','../tool/util'],function(require) {
    }
  */
 define(
-    'zrender/shape/Base',['require','../tool/matrix','../tool/guid','../tool/area','../tool/area','../tool/color','../tool/area'],function(require) {
+    'zrender/shape/Base',['require','../tool/matrix','../tool/guid','../tool/util','./mixin/Transformable','../tool/event','../tool/area','../tool/area','../tool/color','../tool/area'],function(require) {
         var matrix = require('../tool/matrix');
         var guid = require('../tool/guid');
-        
+        var util = require('../tool/util');
+
+        var Transformable = require('./mixin/Transformable');
+        var Dispatcher = require('../tool/event').Dispatcher;
+
         function _fillText(ctx, text, x, y, textFont, textAlign, textBaseline) {
             if (textFont) {
                 ctx.font = textFont;
@@ -4168,20 +4407,27 @@ define(
         }
 
         function Base( options ) {
+            
+            options = options || {};
+            
             this.id = options.id || guid();
             this.zlevel = 0;
             this.draggable = false;
             this.clickable = false;
             this.hoverable = true;
-            this.position = [0, 0];
-            this.rotation = [0, 0, 0];
-            this.scale = [1, 1, 0, 0];
 
             for ( var key in options ) {
                 this[ key ] = options[ key ];
             }
 
             this.style = this.style || {};
+
+            this.parent = null;
+
+            this.__dirty = true;
+
+            Transformable.call(this);
+            Dispatcher.call(this);
         }
 
         /**
@@ -4213,10 +4459,11 @@ define(
             }
 
             ctx.save();
+
             this.setContext(ctx, style);
 
             // 设置transform
-            this.updateTransform(ctx);
+            this.setTransform(ctx);
 
             ctx.beginPath();
             this.buildPath(ctx, style);
@@ -4234,9 +4481,7 @@ define(
                     ctx.fill();
             }
 
-            if (style.text) {
-                this.drawText(ctx, style, this.style);
-            }
+            this.drawText(ctx, style, this.style);
 
             ctx.restore();
         };
@@ -4245,18 +4490,20 @@ define(
             ['color', 'fillStyle'],
             ['strokeColor', 'strokeStyle'],
             ['opacity', 'globalAlpha'],
-            ['lineCap'],
-            ['lineJoin'],
-            ['miterLimit'],
-            ['lineWidth'],
-            ['shadowBlur'],
-            ['shadowColor'],
-            ['shadowOffsetX'],
-            ['shadowOffsetY']
+            ['lineCap', 'lineCap'],
+            ['lineJoin', 'lineJoin'],
+            ['miterLimit', 'miterLimit'],
+            ['lineWidth', 'lineWidth'],
+            ['shadowBlur', 'shadowBlur'],
+            ['shadowColor', 'shadowColor'],
+            ['shadowOffsetX', 'shadowOffsetX'],
+            ['shadowOffsetY', 'shadowOffsetY']
         ];
 
         /**
          * 画布通用设置
+         * 
+         * TODO Performance
          * 
          * @param ctx       画布句柄
          * @param style     通用样式
@@ -4265,7 +4512,7 @@ define(
             for (var i = 0, len = STYLE_CTX_MAP.length; i < len; i++) {
                 var styleProp = STYLE_CTX_MAP[i][0];
                 var styleValue = style[styleProp];
-                var ctxProp = STYLE_CTX_MAP[i][1] || styleProp;
+                var ctxProp = STYLE_CTX_MAP[i][1];
 
                 if (typeof styleValue != 'undefined') {
                     ctx[ctxProp] = styleValue;
@@ -4323,14 +4570,6 @@ define(
             return newStyle;
         };
 
-        Base.prototype.updateNeedTransform = function () {
-            this.needTransform = Math.abs(this.rotation[0]) > 0.0001
-                || Math.abs(this.position[0]) > 0.0001
-                || Math.abs(this.position[1]) > 0.0001
-                || Math.abs(this.scale[0] - 1) > 0.0001
-                || Math.abs(this.scale[1] - 1) > 0.0001;
-        };
-
         /**
          * 高亮放大效果参数
          * 当前统一设置为6，如有需要差异设置，通过this.type判断实例类型
@@ -4352,23 +4591,28 @@ define(
 
         /**
          * 获取鼠标坐标变换 
+         * TODO Performance
          */
-        Base.prototype.getTansform = function (x, y) {
-            var originPos = [x, y];
-            // 对鼠标的坐标也做相同的变换
-            if (this.needTransform && this._transform) {
-                var inverseMatrix = [];
-                matrix.invert(inverseMatrix, this._transform);
+        Base.prototype.getTansform = (function() {
+            
+            var invTransform = [];
 
-                matrix.mulVector(originPos, inverseMatrix, [x, y, 1]);
+            return function (x, y) {
+                var originPos = [x, y];
+                // 对鼠标的坐标也做相同的变换
+                if (this.needTransform && this.transform) {
+                    matrix.invert(invTransform, this.transform);
 
-                if (x == originPos[0] && y == originPos[1]) {
-                    // 避免外部修改导致的needTransform不准确
-                    this.updateNeedTransform();
+                    matrix.mulVector(originPos, invTransform, [x, y, 1]);
+
+                    if (x == originPos[0] && y == originPos[1]) {
+                        // 避免外部修改导致的needTransform不准确
+                        this.updateNeedTransform();
+                    }
                 }
-            }
-            return originPos;
-        };
+                return originPos;
+            };
+        })();
         
         /**
          * 默认区域包含判断
@@ -4407,6 +4651,9 @@ define(
          * @param {Object} normalStyle 默认样式，用于定位文字显示
          */
         Base.prototype.drawText = function (ctx, style, normalStyle) {
+            if (typeof(style.text) == 'undefined' || style.text === false ) {
+                return;
+            }
             // 字体颜色策略
             var textColor = style.textColor || style.color || style.strokeColor;
             ctx.fillStyle = textColor;
@@ -4560,7 +4807,7 @@ define(
                 );
             }
         };
-
+        // TODO
         Base.prototype.isSilent = function () {
             return !(
                 this.hoverable || this.draggable
@@ -4571,62 +4818,8 @@ define(
             );
         };
 
-        Base.prototype.updateTransform = function (ctx) {
-            if (!this.needTransform) {
-                return;
-            }
-
-            var _transform = this._transform || matrix.create();
-            matrix.identity(_transform);
-            if (this.scale && (this.scale[0] !== 1 || this.scale[1] !== 1)) {
-                var originX = this.scale[2] || 0;
-                var originY = this.scale[3] || 0;
-                if (originX || originY) {
-                    matrix.translate(
-                        _transform, _transform, [-originX, -originY]
-                    );
-                }
-                matrix.scale(_transform, _transform, this.scale);
-                if ( originX || originY ) {
-                    matrix.translate(
-                        _transform, _transform, [originX, originY]
-                    );
-                }
-            }
-
-            if (this.rotation) {
-                if (this.rotation instanceof Array) {
-                    if (this.rotation[0] !== 0) {
-                        var originX = this.rotation[1] || 0;
-                        var originY = this.rotation[2] || 0;
-                        if (originX || originY) {
-                            matrix.translate(
-                                _transform, _transform, [-originX, -originY]
-                            );
-                        }
-                        matrix.rotate(_transform, _transform, this.rotation[0]);
-                        if (originX || originY) {
-                            matrix.translate(
-                                _transform, _transform, [originX, originY]
-                            );
-                        }
-                    }
-                }
-                else {
-                    if (this.rotation !== 0) {
-                        matrix.rotate(_transform, _transform, this.rotation);
-                    }
-                }
-            }
-
-            if (this.position && (this.position[0] !==0 || this.position[1] !== 0)) {
-                matrix.translate(_transform, _transform, this.position);
-            }
-
-            // 保存这个变换矩阵
-            this._transform = _transform;
-            ctx.transform.apply(ctx, _transform);
-        };
+        util.merge(Base.prototype, Transformable.prototype, true);
+        util.merge(Base.prototype, Dispatcher.prototype, true);
 
         return Base;
     }
@@ -5793,7 +5986,7 @@ define(
                     );
                 }
                 
-                if (typeof style.text == 'undefined') {
+                if (typeof(style.text) == 'undefined' || style.text === false) {
                     return;
                 }
 
@@ -5801,7 +5994,7 @@ define(
                 this.setContext(ctx, style);
 
                 // 设置transform
-                this.updateTransform(ctx);
+                this.setTransform(ctx);
 
                 if (style.textFont) {
                     ctx.font = style.textFont;
@@ -6238,6 +6431,16 @@ define(
         Base.prototype.setOptions = function (options) {
             this.options = options || {};
         };
+        
+        Base.prototype.adjust = function (value, region) {
+            if (value <= region[0]) {
+                value = region[0];
+            }
+            else if (value >= region[1]) {
+                value = region[1];
+            }
+            return value;
+        };
 
         return Base;
     }
@@ -6371,22 +6574,25 @@ define(
                 }
                 if (image) {
                     //图片已经加载完成
-                    if (window.ActiveXObject) {
-                        if (image.readyState != 'complete') {
-                            return;
+                    if (image.nodeName.toUpperCase() == 'IMG') {
+                        if (window.ActiveXObject) {
+                            if (image.readyState != 'complete') {
+                                return;
+                            }
+                        }
+                        else {
+                            if (!image.complete) {
+                                return;
+                            }
                         }
                     }
-                    else {
-                        if (!image.complete) {
-                            return;
-                        }
-                    }
+                    // Else is canvas
 
                     ctx.save();
                     this.setContext(ctx, style);
 
                     // 设置transform
-                    this.updateTransform(ctx);
+                    this.setTransform(ctx);
 
                     var width = style.width || image.width;
                     var height = style.height || image.height;
@@ -6422,9 +6628,7 @@ define(
                     this.style.height = height;
 
 
-                    if (style.text) {
-                        this.drawText(ctx, style, this.style);
-                    }
+                    this.drawText(ctx, style, this.style);
 
                     ctx.restore();
                 }
@@ -6468,10 +6672,14 @@ define(
 
 
 define(
-    'zrender/Painter',['require','./config','./tool/util','./tool/log','./loadingEffect/Base','./shape/Image'],function (require) {
+    'zrender/Painter',['require','./config','./tool/util','./tool/log','./tool/matrix','./loadingEffect/Base','./shape/Image'],function (require) {
+
+        
+
         var config = require('./config');
         var util = require('./tool/util');
         var log = require('./tool/log');
+        var matrix = require('./tool/matrix');
         var BaseLoadingEffect = require('./loadingEffect/Base');
 
         // retina 屏幕优化
@@ -6518,51 +6726,29 @@ define(
             domRoot.style.height = this._height + 'px';
             root.appendChild(domRoot);
 
-            this._domList = {};       //canvas dom元素
-            this._ctxList = {};       //canvas 2D context对象，与domList对应
-            this._domListBack = {};
-            this._ctxListBack = {};
-            
-           
-            this._zLevelConfig = {}; // 每个zLevel 的配置，@config clearColor
-            this._maxZlevel = storage.getMaxZlevel(); //最大zlevel，缓存记录
-            // this._loadingTimer 
+            this._layers = {};
+
+            this._layerConfig = {};
 
             this._loadingEffect = new BaseLoadingEffect({});
             this.shapeToImage = this._createShapeToImageProcessor();
 
             // 创建各层canvas
             // 背景
-            this._domList.bg = createDom('bg', 'div', this);
-            domRoot.appendChild(this._domList.bg);
-
-            var canvasElem;
-            var canvasCtx;
-
-            // 实体
-            for (var i = 0; i <= this._maxZlevel; i++) {
-                canvasElem = createDom(i, 'canvas', this);
-                domRoot.appendChild(canvasElem);
-                this._domList[i] = canvasElem;
-                vmlCanvasManager && vmlCanvasManager.initElement(canvasElem);
-
-                this._ctxList[i] = canvasCtx = canvasElem.getContext('2d');
-                if (devicePixelRatio != 1) { 
-                    canvasCtx.scale(devicePixelRatio, devicePixelRatio);
-                }
-            }
+            this._bgDom = createDom('bg', 'div', this);
+            domRoot.appendChild(this._bgDom);
 
             // 高亮
-            canvasElem = createDom('hover', 'canvas', this);
-            canvasElem.id = '_zrender_hover_';
-            domRoot.appendChild(canvasElem);
-            this._domList.hover = canvasElem;
-            vmlCanvasManager && vmlCanvasManager.initElement(canvasElem);
-            this._domList.hover.onselectstart = returnFalse;
-            this._ctxList.hover = canvasCtx = canvasElem.getContext('2d');
-            if (devicePixelRatio != 1) {
-                canvasCtx.scale(devicePixelRatio, devicePixelRatio);
-            }
+            var hoverLayer = new Layer('_zrender_hover_', this);
+            this._layers['hover'] = hoverLayer;
+            domRoot.appendChild(hoverLayer.dom);
+
+            hoverLayer.onselectstart = returnFalse;
+
+            var me = this;
+            this.updatePainter = function(shapeList, callback) {
+                me.update(shapeList, callback);
+            };
         }
 
         /**
@@ -6575,24 +6761,8 @@ define(
                 this.hideLoading();
             }
 
-            //检查_maxZlevel是否变大，如是则同步创建需要的Canvas
-            this._syncMaxZlevelCanvase();
-            
-            //清空已有内容，render默认为首次渲染
-            this.clear();
-
-            //升序遍历，shape上的zlevel指定绘画图层的z轴层叠
-            this.storage.iterShape(
-                this._brush({ all : true }),
-                { normal: 'up' }
-            );
-
-            // update到最新则清空标志位
-            this.storage.clearChangedZlevel();
-
-            if (typeof callback == 'function') {
-                callback();
-            }
+            // TODO
+            this.refresh(callback);
 
             return this;
         };
@@ -6603,36 +6773,167 @@ define(
          * @param {Function=} callback 刷新结束后的回调函数
          */
         Painter.prototype.refresh = function (callback) {
-            //检查_maxZlevel是否变大，如是则同步创建需要的Canvas
-            this._syncMaxZlevelCanvase();
 
-            //仅更新有修改的canvas
-            var changedZlevel = this.storage.getChangedZlevel();
-            //擦除有修改的canvas
-            if (changedZlevel.all){
-                this.clear();
-            }
-            else {
-                for (var k in changedZlevel) {
-                    if (this._ctxList[k]) {
-                        this.clearLayer(k);
-                    }
-                }
-            }
-            // 重绘内容，升序遍历，shape上的zlevel指定绘画图层的z轴层叠
-            this.storage.iterShape(
-                this._brush(changedZlevel),
-                { normal: 'up'}
-            );
+            var list = this.storage.getShapeList(true);
 
-            // update到最新则清空标志位
-            this.storage.clearChangedZlevel();
+            this._paintList(list);
 
             if (typeof callback == 'function') {
                 callback();
             }
 
             return this;
+        };
+
+        Painter.prototype._paintList = function(list) {
+
+            var layerStatus = this._getLayerStatus(list);
+
+            var currentLayer;
+            var currentZLevel;
+            var currentLayerDirty = true;
+            var ctx;
+
+            for (var id in this._layers) {
+                if (id !== 'hover') {
+                    this._layers[id].unusedCount++;
+                }
+            }
+
+            var invTransform = [];
+
+            for (var i = 0, l = list.length; i < l; i++) {
+                var shape = list[i];
+
+                if (currentZLevel !== shape.zlevel) {
+                    currentLayer = this._getLayer(shape.zlevel, currentLayer);
+                    ctx = currentLayer.ctx;
+                    currentZLevel = shape.zlevel;
+                    currentLayerDirty = layerStatus[currentZLevel];
+
+                    // Reset the count
+                    currentLayer.unusedCount = 0;
+
+                    if (currentLayerDirty) {
+                        currentLayer.clear();
+                    }
+                }
+
+                // Start group clipping
+                if (shape.__startClip && !vmlCanvasManager) {
+                    var clipShape = shape.__startClip;
+                    ctx.save();
+                    // Set transform
+                    if (clipShape.needTransform) {
+                        var m = clipShape.transform;
+                        matrix.invert(invTransform, m);
+                        ctx.transform(
+                            m[0], m[1],
+                            m[2], m[3],
+                            m[4], m[5]
+                        );
+                    }
+
+                    ctx.beginPath();
+                    clipShape.buildPath(ctx, clipShape.style);
+                    ctx.clip();
+
+                    // Transform back
+                    if (clipShape.needTransform) {
+                        var m = invTransform;
+                        ctx.transform(
+                            m[0], m[1],
+                            m[2], m[3],
+                            m[4], m[5]
+                        );
+                    }
+                }
+
+                if (currentLayerDirty && !shape.invisible) {
+                    if (
+                        !shape.onbrush
+                        || (shape.onbrush && !shape.onbrush(ctx, false))
+                    ) {
+                        if (config.catchBrushException) {
+                            try {
+                                shape.brush(ctx, false, this.updatePainter);
+                            }
+                            catch(error) {
+                                log(
+                                    error,
+                                    'brush error of ' + shape.type,
+                                    shape
+                                );
+                            }
+                        } else {
+                            shape.brush(ctx, false, this.updatePainter);
+                        }
+                    }
+                }
+
+                // Stop group clipping
+                if (shape.__stopClip && !vmlCanvasManager) {
+                    ctx.restore();
+                }
+
+                shape.__dirty = false;
+            }
+
+            for (var id in this._layers) {
+                if (id !== 'hover') {
+                    var layer = this._layers[id];
+                    if (layer.unusedCount >= 2) {
+                        delete this._layers[id];
+                        layer.dom.parentNode.removeChild(layer.dom);
+                    }
+                    else if (layer.unusedCount == 1) {
+                        layer.clear();
+                    }
+                }
+            }
+        };
+
+        Painter.prototype._getLayer = function(zlevel, prevLayer) {
+            // Change draw layer
+            var currentLayer = this._layers[zlevel];
+            if (!currentLayer) {
+                // Create a new layer
+                currentLayer = new Layer(zlevel, this);
+                var prevDom = prevLayer ? prevLayer.dom : this._bgDom;
+                if (prevDom.nextSibling) {
+                    prevDom.parentNode.insertBefore(
+                        currentLayer.dom,
+                        prevDom.nextSibling
+                    );
+                } else {
+                    prevDom.parentNode.appendChild(
+                        currentLayer.dom
+                    );
+                }
+
+                this._layers[zlevel] = currentLayer;
+
+                currentLayer.config = this._layerConfig[zlevel];
+            }
+
+            return currentLayer;
+        };
+
+        Painter.prototype._getLayerStatus = function(list) {
+
+            var obj = {};
+
+            for (var i = 0, l = list.length; i < l; i++) {
+                var shape = list[i];
+                var zlevel = shape.zlevel;
+                // Already mark as dirty
+                if (obj[zlevel]) {
+                    continue;
+                }
+                obj[zlevel] = shape.__dirty;
+            }
+
+            return obj;
         };
 
         /**
@@ -6644,7 +6945,7 @@ define(
         Painter.prototype.update = function (shapeList, callback) {
             for (var i = 0, l = shapeList.length; i < l; i++) {
                 var shape = shapeList[i];
-                this.storage.mod(shape.id, shape);
+                this.storage.mod(shape.id);
             }
 
             this.refresh(callback);
@@ -6666,12 +6967,11 @@ define(
          * 清除hover层外所有内容
          */
         Painter.prototype.clear = function () {
-            for (var k in this._ctxList) {
+            for (var k in this._layers) {
                 if (k == 'hover') {
                     continue;
                 }
-
-                this.clearLayer(k);
+                this._layers[k].clear();
             }
 
             return this;
@@ -6680,15 +6980,19 @@ define(
         /**
          * 修改指定zlevel的绘制参数
          */
-        Painter.prototype.modLayer = function (zLevel, config) {
+        Painter.prototype.modLayer = function (zlevel, config) {
             if (config) {
-                var zLevelConfig = this._zLevelConfig;
-
-                if (!zLevelConfig[zLevel]) {
-                    zLevelConfig[zLevel] = {};
+                if (!this._layerConfig[zlevel]) {
+                    this._layerConfig[zlevel] = config;
+                } else {
+                    util.merge(this._layerConfig[zlevel], config, true);
                 }
 
-                util.merge(zLevelConfig[zLevel], config, true);
+                var layer = this._layers[zlevel];
+
+                if (layer) {
+                    layer.config = this._layerConfig[zlevel];
+                }
             }
         };
 
@@ -6696,12 +7000,11 @@ define(
          * 刷新hover层
          */
         Painter.prototype.refreshHover = function () {
-            var me = this;
-            function brushHover(e) {
-                me._brushHover(e);
-            }
             this.clearHover();
-            this.storage.iterShape(brushHover, { hover: true });
+            var list = this.storage.getHoverShapes(true);
+            for (var i = 0, l = list.length; i < l; i++) {
+                this._brushHover(list[i]);
+            }
             this.storage.delHover();
 
             return this;
@@ -6711,12 +7014,8 @@ define(
          * 清除hover层所有内容
          */
         Painter.prototype.clearHover = function () {
-            var hover = this._ctxList && this._ctxList.hover;
-            hover && hover.clearRect(
-                0, 0, 
-                this._width * devicePixelRatio, 
-                this._height * devicePixelRatio
-            );
+            var hover = this._layers.hover;
+            hover && hover.clear();
 
             return this;
         };
@@ -6773,16 +7072,11 @@ define(
                 domRoot.style.width = width + 'px';
                 domRoot.style.height = height + 'px';
 
-                for (var key in this._domList) {
-                    var dom = this._domList[key];
+                for (var id in this._layers) {
 
-                    dom.setAttribute('width', width);
-                    dom.setAttribute('height', height);
-                    dom.style.width = width + 'px';
-                    dom.style.height = height + 'px';
+                    this._layers[id].resize(width, height);
                 }
 
-                this.storage.setChangedZlevle('all');
                 this.refresh();
             }
 
@@ -6793,79 +7087,9 @@ define(
          * 清除单独的一个层
          */
         Painter.prototype.clearLayer = function (k) {
-            if (!this._ctxList[k]) {
-                return;
-            }
-            var zLevelConfigK = this._zLevelConfig[k];
-
-            if (zLevelConfigK) {
-                var haveClearColor = typeof(zLevelConfigK.clearColor) !== 'undefined';
-                var haveMotionBLur = zLevelConfigK.motionBlur;
-                var lastFrameAlpha = zLevelConfigK.lastFrameAlpha;
-                if (typeof(lastFrameAlpha) == 'undefined') {
-                    lastFrameAlpha = 0.7;
-                }
-
-                var canvasElem = this._domList[k];
-                if (haveMotionBLur) {
-                    if (typeof this._domListBack[k] === 'undefined') {
-                        var backDom = createDom('back-' + k, 'canvas', this);
-                        backDom.width = canvasElem.width;
-                        backDom.height = canvasElem.height;
-                        backDom.style.width = canvasElem.style.width;
-                        backDom.style.height = canvasElem.style.height;
-                        this._domListBack[k] = backDom;
-                        this._ctxListBack[k] = backDom.getContext('2d');
-                        devicePixelRatio != 1
-                            && this._ctxListBack[k].scale(
-                                   devicePixelRatio, devicePixelRatio
-                               );
-                    }
-                    this._ctxListBack[k].globalCompositeOperation = 'copy';
-                    this._ctxListBack[k].drawImage(
-                        canvasElem, 0, 0,
-                        canvasElem.width / devicePixelRatio,
-                        canvasElem.height / devicePixelRatio
-                    );
-                }
-
-                var canvasCtx = this._ctxList[k];
-                if (haveClearColor) {
-                    canvasCtx.save();
-                    canvasCtx.fillStyle = zLevelConfigK.clearColor;
-                    canvasCtx.fillRect(
-                        0, 0,
-                        this._width * devicePixelRatio, 
-                        this._height * devicePixelRatio
-                    );
-                    canvasCtx.restore();
-                }
-                else {
-                    canvasCtx.clearRect(
-                        0, 0, 
-                        this._width * devicePixelRatio, 
-                        this._height * devicePixelRatio
-                    );
-                }
-
-                if (haveMotionBLur) {
-                    var backDom = this._domListBack[k];
-                    canvasCtx.save();
-                    canvasCtx.globalAlpha = lastFrameAlpha;
-                    canvasCtx.drawImage(
-                        backDom, 0, 0,
-                        backDom.width / devicePixelRatio,
-                        backDom.height / devicePixelRatio
-                    );
-                    canvasCtx.restore();
-                }
-            }
-            else {
-                this._ctxList[k].clearRect(
-                    0, 0, 
-                    this._width * devicePixelRatio, 
-                    this._height * devicePixelRatio
-                );
+            var layer = this._layers[k];
+            if (layer) {
+                layer.clear();
             }
         };
 
@@ -6883,15 +7107,11 @@ define(
             this.storage =
 
             this._domRoot = 
-            this._domList = 
-            this._ctxList = 
-
-            this._ctxListBack = 
-            this._domListBack = null;
+            this._layers = null;
         };
 
         Painter.prototype.getDomHover = function () {
-            return this._domList.hover;
+            return this._layers.hover.dom;
         };
 
         Painter.prototype.toDataURL = function (type, backgroundColor, args) {
@@ -6900,7 +7120,7 @@ define(
             }
 
             var imageDom = createDom('image', 'canvas', this);
-            this._domList.bg.appendChild(imageDom);
+            this._bgDom.appendChild(imageDom);
             var ctx = imageDom.getContext('2d');
             devicePixelRatio != 1 
             && ctx.scale(devicePixelRatio, devicePixelRatio);
@@ -6914,10 +7134,7 @@ define(
             ctx.fill();
             
             //升序遍历，shape上的zlevel指定绘画图层的z轴层叠
-            var me = this;
-            function updatePainter(shapeList, callback) {
-                me.update(shapeList, callback);
-            }
+            
             this.storage.iterShape(
                 function (shape) {
                     if (!shape.invisible) {
@@ -6927,7 +7144,7 @@ define(
                         ) {
                             if (config.catchBrushException) {
                                 try {
-                                    shape.brush(ctx, false, updatePainter);
+                                    shape.brush(ctx, false, this.updatePainter);
                                 }
                                 catch(error) {
                                     log(
@@ -6938,16 +7155,16 @@ define(
                                 }
                             }
                             else {
-                                shape.brush(ctx, false, updatePainter);
+                                shape.brush(ctx, false, this.updatePainter);
                             }
                         }
                     }
                 },
-                { normal: 'up' }
+                { normal: 'up', update: true }
             );
             var image = imageDom.toDataURL(type, args); 
             ctx = null;
-            this._domList.bg.removeChild(imageDom);
+            this._bgDom.removeChild(imageDom);
             return image;
         };
 
@@ -6986,90 +7203,10 @@ define(
         };
 
         /**
-         * 检查_maxZlevel是否变大，如是则同步创建需要的Canvas
-         * 
-         * @private
-         */
-        Painter.prototype._syncMaxZlevelCanvase = function () {
-            var curMaxZlevel = this.storage.getMaxZlevel();
-            if (this._maxZlevel < curMaxZlevel) {
-                //实体
-                for (var i = this._maxZlevel + 1; i <= curMaxZlevel; i++) {
-                    var canvasElem = createDom(i, 'canvas', this);
-                    this._domList[i] = canvasElem;
-                    this._domRoot.insertBefore(canvasElem, this._domList.hover);
-                    if (vmlCanvasManager) {
-                        vmlCanvasManager.initElement(canvasElem);
-                    }
-
-                    var canvasCtx = canvasElem.getContext('2d');
-                    this._ctxList[i] = canvasCtx;
-                    if (devicePixelRatio != 1) { 
-                        canvasCtx.scale(devicePixelRatio, devicePixelRatio);
-                    }
-                }
-                this._maxZlevel = curMaxZlevel;
-            }
-        };
-
-        /**
-         * 刷画图形
-         * 
-         * @private
-         * @param {Object} changedZlevel 需要更新的zlevel索引
-         */
-        Painter.prototype._brush = function (changedZlevel) {
-            var ctxList = this._ctxList;
-            var me = this;
-            function updatePainter(shapeList, callback) {
-                me.update(shapeList, callback);
-            }
-
-            return function(shape) {
-                if ((changedZlevel.all || changedZlevel[shape.zlevel])
-                    && !shape.invisible
-                ) {
-                    var ctx = ctxList[shape.zlevel];
-                    if (ctx) {
-                        if (!shape.onbrush //没有onbrush
-                            //有onbrush并且调用执行返回false或undefined则继续粉刷
-                            || (shape.onbrush && !shape.onbrush(ctx, false))
-                        ) {
-                            if (config.catchBrushException) {
-                                try {
-                                    shape.brush(ctx, false, updatePainter);
-                                }
-                                catch(error) {
-                                    log(
-                                        error,
-                                        'brush error of ' + shape.type,
-                                        shape
-                                    );
-                                }
-                            }
-                            else {
-                                shape.brush(ctx, false, updatePainter);
-                            }
-                        }
-                    }
-                    else {
-                        log(
-                            'can not find the specific zlevel canvas!'
-                        );
-                    }
-                }
-            };
-        };
-
-        /**
          * 鼠标悬浮刷画
          */
         Painter.prototype._brushHover = function (shape) {
-            var ctx = this._ctxList.hover;
-            var me = this;
-            function updatePainter(shapeList, callback) {
-                me.update(shapeList, callback);
-            }
+            var ctx = this._layers.hover.ctx;
 
             if (!shape.onbrush //没有onbrush
                 //有onbrush并且调用执行返回false或undefined则继续粉刷
@@ -7078,7 +7215,7 @@ define(
                 // Retina 优化
                 if (config.catchBrushException) {
                     try {
-                        shape.brush(ctx, true, updatePainter);
+                        shape.brush(ctx, true, this.updatePainter);
                     }
                     catch(error) {
                         log(
@@ -7087,15 +7224,18 @@ define(
                     }
                 }
                 else {
-                    shape.brush(ctx, true, updatePainter);
+                    shape.brush(ctx, true, this.updatePainter);
                 }
             }
         };
 
         Painter.prototype._shapeToImage = function (
-            id, shape, width, height,
-            canvas, ctx, devicePixelRatio
+            id, shape, width, height, devicePixelRatio
         ) {
+            var canvas = document.createElement('canvas');
+            var ctx = canvas.getContext('2d');
+            var devicePixelRatio = window.devicePixelRatio || 1;
+            
             canvas.style.width = width + 'px';
             canvas.style.height = height + 'px';
             canvas.setAttribute('width', width * devicePixelRatio);
@@ -7121,8 +7261,7 @@ define(
                 style : {
                     x : 0,
                     y : 0,
-                    // TODO 直接使用canvas而不是通过base64
-                    image : canvas.toDataURL()
+                    image : canvas
                 }
             });
 
@@ -7147,14 +7286,10 @@ define(
             }
 
             var painter = this;
-            var canvas = document.createElement('canvas');
-            var ctx = canvas.getContext('2d');
-            var devicePixelRatio = window.devicePixelRatio || 1;
-            
+
             return function (id, e, width, height) {
                 return painter._shapeToImage(
-                    id, e, width, height,
-                    canvas, ctx, devicePixelRatio
+                    id, e, width, height, devicePixelRatio
                 );
             };
         };
@@ -7186,10 +7321,277 @@ define(
             return newDom;
         }
 
+        /*****************************************
+         * Layer
+         *****************************************/
+        function Layer(id, painter) {
+            this.dom = createDom(id, 'canvas', painter);
+            vmlCanvasManager && vmlCanvasManager.initElement(this.dom);
+
+            this.ctx = this.dom.getContext('2d');
+
+            if (devicePixelRatio != 1) { 
+                this.ctx.scale(devicePixelRatio, devicePixelRatio);
+            }
+
+            this.domBack = null;
+            this.ctxBack = null;
+
+            this.painter = painter;
+
+            this.unusedCount = 0;
+
+            this.config = null;
+        }
+
+        Layer.prototype.createBackBuffer = function() {
+            if (vmlCanvasManager) { // IE 8- should not support back buffer
+                return;
+            }
+            this.domBack = createDom('back-' + this.id, 'canvas', this.painter);
+            this.ctxBack = this.domBack.getContext('2d');
+
+            if (devicePixelRatio != 1) { 
+                this.ctxBack.scale(devicePixelRatio, devicePixelRatio);
+            }
+        };
+
+        Layer.prototype.resize = function(width, height) {
+            
+            this.dom.setAttribute('width', width);
+            this.dom.setAttribute('height', height);
+            this.dom.style.width = width + 'px';
+            this.dom.style.height = height + 'px';
+
+            this.dom.setAttribute('width', width * devicePixelRatio);
+            this.dom.setAttribute('height', height * devicePixelRatio);
+
+            if (devicePixelRatio != 1) { 
+                this.ctx.scale(devicePixelRatio, devicePixelRatio);
+            }
+
+            if (this.domBack) {
+                this.domBack.setAttribute('width', width * devicePixelRatio);
+                this.domBack.setAttribute('height', width * devicePixelRatio);
+
+                if (devicePixelRatio != 1) { 
+                    this.ctxBack.scale(devicePixelRatio, devicePixelRatio);
+                }
+            }
+        };
+
+        Layer.prototype.clear = function() {
+            var config = this.config;
+            var dom = this.dom;
+            var ctx = this.ctx;
+            var width = dom.width;
+            var height = dom.height;
+
+            if (config) {
+                var haveClearColor =
+                    typeof(config.clearColor) !== 'undefined'
+                    && !vmlCanvasManager;
+                var haveMotionBLur = config.motionBlur && !vmlCanvasManager;
+                var lastFrameAlpha = config.lastFrameAlpha;
+                if (typeof(lastFrameAlpha) == 'undefined') {
+                    lastFrameAlpha = 0.7;
+                }
+
+                if (haveMotionBLur) {
+                    if (!this.domBack) {
+                        this.createBackBuffer();
+                    } 
+
+                    this.ctxBack.globalCompositeOperation = 'copy';
+                    this.ctxBack.drawImage(
+                        dom, 0, 0,
+                        width / devicePixelRatio,
+                        height / devicePixelRatio
+                    );
+                }
+
+                if (haveClearColor) {
+                    ctx.save();
+                    ctx.fillStyle = this.config.clearColor;
+                    ctx.fillRect(
+                        0, 0,
+                        width * devicePixelRatio, 
+                        height * devicePixelRatio
+                    );
+                    ctx.restore();
+                }
+                else {
+                    ctx.clearRect(
+                        0, 0, 
+                        width * devicePixelRatio, 
+                        height * devicePixelRatio
+                    );
+                }
+
+                if (haveMotionBLur) {
+                    var domBack = this.domBack;
+                    ctx.save();
+                    ctx.globalAlpha = lastFrameAlpha;
+                    ctx.drawImage(
+                        domBack, 0, 0,
+                        width / devicePixelRatio,
+                        height / devicePixelRatio
+                    );
+                    ctx.restore();
+                }
+            }
+            else {
+                ctx.clearRect(
+                    0, 0, 
+                    width,
+                    height
+                );
+            }
+        };
+
         return Painter;
     }
 );
 
+define('zrender/shape/Group',['require','../tool/guid','../tool/util','../tool/event','./mixin/Transformable'],function(require) {
+
+    var guid = require('../tool/guid');
+    var util = require('../tool/util');
+
+    var Dispatcher = require('../tool/event').Dispatcher;
+    var Transformable = require('./mixin/Transformable');
+
+    /**
+     * @constructor zrender.shape.Group
+     */
+    function Group(options) {
+
+        options = options || {};
+
+        this.id = options.id || guid();
+
+        for (var key in options) {
+            this[key] = options[key];
+        }
+
+        this.type = 'group';
+
+        this.clipShape = null;
+
+        this._children = [];
+
+        this._storage = null;
+
+        this.__dirty = true;
+
+        // Mixin
+        Transformable.call(this);
+        Dispatcher.call(this);
+    }
+
+    Group.prototype.children = function() {
+        return this._children.slice();
+    };
+
+    Group.prototype.childAt = function(idx) {
+        return this._children[idx];
+    };
+
+    Group.prototype.addChild = function(child) {
+        if (child == this) {
+            return;
+        }
+        
+        if (child.parent == this) {
+            return;
+        }
+        if (child.parent) {
+            child.parent.removeChild(child);
+        }
+
+        this._children.push(child);
+        child.parent = this;
+
+        if (this._storage && this._storage !== child._storage) {
+            
+            this._storage.addToMap(child);
+
+            if (child instanceof Group) {
+                child.addChildrenToStorage(this._storage);
+            }
+        }
+    };
+
+    Group.prototype.removeChild = function(child) {
+        var idx = util.indexOf(this._children, child);
+
+        this._children.splice(idx, 1);
+        child.parent = null;
+
+        if (child._storage) {
+            
+            this._storage.delFromMap(child.id);
+
+            if (child instanceof Group) {
+                child.delChildrenFromStorage(child._storage);
+            }
+        }
+    };
+
+    Group.prototype.each = function(cb, context) {
+        var haveContext = !!context;
+        for (var i = 0; i < this._children.length; i++) {
+            var child = this._children[i];
+            if (haveContext) {
+                cb.call(context, child);
+            } else {
+                cb(child);
+            }
+        }
+    };
+
+    Group.prototype.iterate = function(cb, context) {
+        var haveContext = !!context;
+
+        for (var i = 0; i < this._children.length; i++) {
+            var child = this._children[i];
+            if (haveContext) {
+                cb.call(context, child);
+            } else {
+                cb(child);
+            }
+
+            if (child.type === 'group') {
+                child.iterate(cb, context);
+            }
+        }
+    };
+
+    Group.prototype.addChildrenToStorage = function(storage) {
+        for (var i = 0; i < this._children.length; i++) {
+            var child = this._children[i];
+            storage.addToMap(child);
+            if (child.type === 'group') {
+                child.addChildrenToStorage(storage);
+            }
+        }
+    };
+
+    Group.prototype.delChildrenFromStorage = function(storage) {
+        for (var i = 0; i < this._children.length; i++) {
+            var child = this._children[i];
+            storage.delFromMap(child);
+            if (child.type === 'group') {
+                child.delChildrenFromStorage(storage);
+            }
+        }
+    };
+
+    util.merge(Group.prototype, Transformable.prototype, true);
+    util.merge(Group.prototype, Dispatcher.prototype, true);
+
+    return Group;
+});
 /**
  * Storage内容仓库模块
  *
@@ -7199,11 +7601,26 @@ define(
 
 
 define(
-    'zrender/Storage',['require','./tool/util','./tool/log','./config'],function (require) {
-        var util = require('./tool/util');
-        var log = require('./tool/log');
-        var config = require('./config');
+    'zrender/Storage',['require','./tool/util','./shape/Group'],function (require) {
 
+        
+
+        var util = require('./tool/util');
+
+        var Group = require('./shape/Group');
+
+        var defaultIterateOption = {
+            hover: false,
+            normal: 'down',
+            update: false
+        };
+
+        function shapeCompareFunc(a, b) {
+            if (a.zlevel == b.zlevel) {
+                return a.__renderidx - b.__renderidx;
+            }
+            return a.zlevel - b.zlevel;
+        }
         /**
          * 内容仓库 (M)
          * 
@@ -7212,17 +7629,14 @@ define(
             // 所有常规形状，id索引的map
             this._elements = {};
 
-            // 所有形状的z轴方向排列，提高遍历性能，zElements[0]的形状在zElements[1]形状下方
-            this._zElements = [];
-
             // 高亮层形状，不稳定，动态增删，数组位置也是z轴方向，靠前显示在下方
             this._hoverElements = [];
 
-            // 最大zlevel
-            this._maxZlevel = 0; 
+            this._roots = [];
 
-            // 有数据改变的zlevel
-            this._changedZlevel = {};
+            this._shapeList = [];
+
+            this._shapeListOffset = 0;
         }
 
         /**
@@ -7231,92 +7645,160 @@ define(
          * @param {Function} fun 迭代回调函数，return true终止迭代
          * @param {Object=} option 迭代参数，缺省为仅降序遍历常规形状
          *     hover : true 是否迭代高亮层数据
-         *     normal : 'down' | 'up' | 'free' 是否迭代常规数据，迭代时是否指定及z轴顺序
+         *     normal : 'down' | 'up' 是否迭代常规数据，迭代时是否指定及z轴顺序
+         *     update : false 是否更新shapeList
          */
         Storage.prototype.iterShape = function (fun, option) {
             if (!option) {
-                option = {
-                    hover: false,
-                    normal: 'down'
-                };
+                option = defaultIterateOption;
             }
+
             if (option.hover) {
                 //高亮层数据遍历
                 for (var i = 0, l = this._hoverElements.length; i < l; i++) {
-                    if (fun(this._hoverElements[i])) {
+                    var el = this._hoverElements[i];
+                    el.updateTransform();
+                    if (fun(el)) {
                         return this;
                     }
                 }
             }
 
-            var zlist;
-            var len;
-            if (typeof option.normal != 'undefined') {
-                //z轴遍历: 'down' | 'up' | 'free'
-                switch (option.normal) {
-                    case 'down':
-                        // 降序遍历，高层优先
-                        var l = this._zElements.length;
-                        while (l--) {
-                            zlist = this._zElements[l];
-                            if (zlist) {
-                                len = zlist.length;
-                                while (len--) {
-                                    if (fun(zlist[len])) {
-                                        return this;
-                                    }
-                                }
-                            }
+            if (option.update) {
+                this.updateShapeList();
+            }
+
+            //遍历: 'down' | 'up'
+            switch (option.normal) {
+                case 'down':
+                    // 降序遍历，高层优先
+                    var l = this._shapeList.length;
+                    while (l--) {
+                        if (fun(this._shapeList[l])) {
+                            return this;
                         }
-                        break;
-                    case 'up':
-                        //升序遍历，底层优先
-                        for (var i = 0, l = this._zElements.length; i < l; i++) {
-                            zlist = this._zElements[i];
-                            if (zlist) {
-                                len = zlist.length;
-                                for (var k = 0; k < len; k++) {
-                                    if (fun(zlist[k])) {
-                                        return this;
-                                    }
-                                }
-                            }
+                    }
+                    break;
+                // case 'up':
+                default:
+                    //升序遍历，底层优先
+                    for (var i = 0, l = this._shapeList.length; i < l; i++) {
+                        if (fun(this._shapeList[i])) {
+                            return this;
                         }
-                        break;
-                    // case 'free':
-                    default:
-                        //无序遍历
-                        for (var i in this._elements) {
-                            if (fun(this._elements[i])) {
-                                return this;
-                            }
-                        }
-                        break;
-                }
+                    }
+                    break;
             }
 
             return this;
+        };
+
+        Storage.prototype.getHoverShapes = function(update) {
+            if (update) {
+                for (var i = 0, l = this._hoverElements.length; i < l; i++) {
+                    this._hoverElements[i].updateTransform();
+                }
+            }
+            return this._hoverElements;
+        };
+
+        Storage.prototype.getShapeList = function(update) {
+            if (update) {
+                this.updateShapeList();
+            }
+            return this._shapeList;
+        };
+
+
+        Storage.prototype.updateShapeList = function() {
+            this._shapeListOffset = 0;
+            for (var i = 0, len = this._roots.length; i < len; i++) {
+                var root = this._roots[i];
+                this._updateAndAddShape(root);
+            }
+            this._shapeList.length = this._shapeListOffset;
+
+            for (var i = 0, len = this._shapeList.length; i < len; i++) {
+                this._shapeList[i].__renderidx = i;
+            }
+
+            this._shapeList.sort(shapeCompareFunc);
+        };
+
+        Storage.prototype._updateAndAddShape = function(el) {
+            
+            el.updateTransform();
+
+            if (el.type == 'group') {
+                
+                if (el.clipShape) {
+                    // clipShape 的变换是基于 group 的变换
+                    el.clipShape.parent = el;
+                    el.clipShape.updateTransform();
+
+                    var startClipShape = el._children[0];
+                    if (startClipShape) {
+                        startClipShape.__startClip = el.clipShape;
+                    }
+                }
+
+                for (var i = 0; i < el._children.length; i++) {
+                    var child = el._children[i];
+
+                    // Force to mark as dirty if group is dirty
+                    child.__dirty = el.__dirty || el.__dirty;
+
+                    this._updateAndAddShape(child);
+                }
+
+                if (el.clipShape) {
+                    var stopClipShape = this._shapeList[this._shapeListOffset - 1];
+                    if (stopClipShape) {
+                        stopClipShape.__stopClip = true;
+                    }
+                }
+            } else {
+                this._shapeList[this._shapeListOffset++] = el;
+            }
         };
 
         /**
          * 修改
          * 
          * @param {string} idx 唯一标识
-         * @param {Object} params 参数
+         * @param {Object} [params] 参数
          */
-        Storage.prototype.mod = function (shapeId, params) {
-            var shape = this._elements[shapeId];
-            if (shape) {
-                shape.updateNeedTransform();
-                shape.style.__rect = null;
-
-                this._changedZlevel[shape.zlevel] = true;    // 可能修改前后不在一层
-                if (params) {
-                    util.merge(shape, params, true);
+        Storage.prototype.mod = function (elId, params) {
+            var el = this._elements[elId];
+            if (el) {
+                if (!(el instanceof Group)) {
+                    el.style.__rect = null;
                 }
-                
-                this._changedZlevel[shape.zlevel] = true;    // 可能修改前后不在一层
-                this._maxZlevel = Math.max(this._maxZlevel, shape.zlevel);
+                el.__dirty = true;
+
+                if (params) {
+                    // 如果第二个参数直接使用 shape
+                    // parent, _storage, __startClip 三个属性会有循环引用
+                    // 主要为了向 1.x 版本兼容，2.x 版本不建议使用第二个参数
+                    if (params.parent || params._storage || params.__startClip) {
+                        var target = {};
+                        for (var name in params) {
+                            if (
+                                name == 'parent'
+                                || name == '_storage'
+                                || name == '__startClip'
+                            ) {
+                                continue;
+                            }
+                            if (params.hasOwnProperty(name)) {
+                                target[name] = params[name];
+                            }
+                        }
+                        util.merge(el, target, true);
+                    } else {
+                        util.merge(el, params, true);
+                    }
+                }
             }
 
             return this;
@@ -7329,27 +7811,14 @@ define(
          */
         Storage.prototype.drift = function (shapeId, dx, dy) {
             var shape = this._elements[shapeId];
-
             if (shape) {
                 shape.needTransform = true;
                 if (!shape.ondrift //ondrift
                     //有onbrush并且调用执行返回false或undefined则继续
                     || (shape.ondrift && !shape.ondrift(dx, dy))
                 ) {
-                    if (config.catchBrushException) {
-                        try {
-                            shape.drift(dx, dy);
-                        }
-                        catch(error) {
-                            log(error, 'drift error of ' + shape.type, shape);
-                        }
-                    }
-                    else {
-                        shape.drift(dx, dy);
-                    }
+                    shape.drift(dx, dy);
                 }
-
-                this._changedZlevel[shape.zlevel] = true;
             }
 
             return this;
@@ -7360,22 +7829,9 @@ define(
          * 
          * @param {Object} params 参数
          */
-        Storage.prototype.addHover = function (params) {
-            if ((params.rotation && Math.abs(params.rotation[0]) > 0.0001)
-                || (params.position
-                    && (Math.abs(params.position[0]) > 0.0001
-                        || Math.abs(params.position[1]) > 0.0001))
-                || (params.scale
-                    && (Math.abs(params.scale[0] - 1) > 0.0001
-                    || Math.abs(params.scale[1] - 1) > 0.0001))
-            ) {
-                params.needTransform = true;
-            }
-            else {
-                params.needTransform = false;
-            }
-
-            this._hoverElements.push(params);
+        Storage.prototype.addHover = function (shape) {
+            shape.updateNeedTransform();
+            this._hoverElements.push(shape);
             return this;
         };
 
@@ -7392,115 +7848,112 @@ define(
         };
 
         /**
+         * 添加到根节点
+         * 
+         * @param {Shape|Group} el 参数
+         */
+        Storage.prototype.addRoot = function (el) {
+            if (el instanceof Group) {
+                el.addChildrenToStorage(this);
+            }
+
+            this.addToMap(el);
+            this._roots.push(el);
+        };
+
+        Storage.prototype.delRoot = function (elId) {
+            if (typeof(elId) == 'undefined') {
+                // 不指定elId清空
+                for (var i = 0; i < this._roots.length; i++) {
+                    var root = this._roots[i];
+                    if (root instanceof Group) {
+                        root.delChildrenFromStorage(this);
+                    }
+                }
+
+                this._elements = {};
+                this._hoverElements = [];
+                this._roots = [];
+
+                return;
+            }
+
+            if (elId instanceof Array) {
+                for (var i = 0, l = elId.length; i < l; i++) {
+                    this.delRoot(elId[i]);
+                }
+                return;
+            }
+
+            var el;
+            if (typeof(elId) == 'string') {
+                el = this._elements[elId];
+            } else {
+                el = elId;
+            }
+
+            var idx = util.indexOf(this._roots, el);
+            if (idx >= 0) {
+                this.delFromMap(el.id);
+                this._roots.splice(idx, 1);
+                if (el instanceof Group) {
+                    el.delChildrenFromStorage(this);
+                }
+            }
+        };
+
+        /**
          * 添加
          * 
-         * @param {Shape} shape 参数
+         * @param {Shape|Group} el 参数
          */
-        Storage.prototype.add = function (shape) {
-            shape.updateNeedTransform();
-            shape.style.__rect = null;
-            this._elements[shape.id] = shape;
-            this._zElements[shape.zlevel] = this._zElements[shape.zlevel] || [];
-            this._zElements[shape.zlevel].push(shape);
+        Storage.prototype.addToMap = function (el) {
+            if (el instanceof Group) {
+                el._storage = this;
+            } else {
+                el.style.__rect = null;
+            }
 
-            this._maxZlevel = Math.max(this._maxZlevel, shape.zlevel);
-            this._changedZlevel[shape.zlevel] = true;
+            this._elements[el.id] = el;
 
             return this;
         };
 
         /**
-         * 根据指定的shapeId获取相应的shape属性
+         * 根据指定的elId获取相应的shape属性
          * 
          * @param {string=} idx 唯一标识
          */
-        Storage.prototype.get = function (shapeId) {
-            return this._elements[shapeId];
+        Storage.prototype.get = function (elId) {
+            return this._elements[elId];
         };
 
         /**
-         * 删除，shapeId不指定则全清空
+         * 删除，elId不指定则全清空
          * 
-         * @param {string= | Array} idx 唯一标识
+         * @param {string} idx 唯一标识
          */
-        Storage.prototype.del = function (shapeId) {
-            if (typeof shapeId != 'undefined') {
-                var delMap = {};
-                if (!(shapeId instanceof Array)) {
-                    // 单个
-                    delMap[shapeId] = true;
-                }
-                else {
-                    // 批量删除
-                    if (shapeId.lenth < 1) { // 空数组
-                        return;
-                    }
-                    for (var i = 0, l = shapeId.length; i < l; i++) {
-                        delMap[shapeId[i].id] = true;
-                    }
-                }
-                var newList;
-                var oldList;
-                var zlevel;
-                var zChanged = {};
-                for (var sId in delMap) {
-                    if (this._elements[sId]) {
-                        zlevel = this._elements[sId].zlevel;
-                        this._changedZlevel[zlevel] = true;
-                        if (!zChanged[zlevel]) {
-                            oldList = this._zElements[zlevel];
-                            newList = [];
-                            for (var i = 0, l = oldList.length; i < l; i++){
-                                if (!delMap[oldList[i].id]) {
-                                    newList.push(oldList[i]);
-                                }
-                            }
-                            this._zElements[zlevel] = newList;
-                            zChanged[zlevel] = true;
-                        }
+        Storage.prototype.delFromMap = function (elId) {
+            var el = this._elements[elId];
+            if (el) {
+                delete this._elements[elId];
 
-                        delete this._elements[sId];
-                    }
+                if (el instanceof Group) {
+                    el._storage = null;
                 }
             }
-            else{
-                // 不指定shapeId清空
-                this._elements = {};
-                this._zElements = [];
-                this._hoverElements = [];
-                this._maxZlevel = 0;         //最大zlevel
-                this._changedZlevel = {      //有数据改变的zlevel
-                    all : true
-                };
-            }
 
             return this;
         };
 
-        Storage.prototype.getMaxZlevel = function () {
-            return this._maxZlevel;
-        };
-
-        Storage.prototype.getChangedZlevel = function () {
-            return this._changedZlevel;
-        };
-
-        Storage.prototype.clearChangedZlevel = function () {
-            this._changedZlevel = {};
-            return this;
-        };
-
-        Storage.prototype.setChangedZlevle = function (level) {
-            this._changedZlevel[level] = true;
-            return this;
-        };
 
         /**
          * 释放
          */
         Storage.prototype.dispose = function () {
             this._elements = 
-            this._zElements = 
+            this._renderList = 
+            this._roots =
             this._hoverElements = null;
         };
 
@@ -7738,7 +8191,7 @@ define(
  * @config onrestart(optional)
  */
 define(
-    'zrender/animation/clip',['require','./easing'],function(require) {
+    'zrender/animation/Clip',['require','./easing'],function(require) {
 
         var Easing = require('./easing');
 
@@ -7844,481 +8297,489 @@ define(
  * @method : stop
  */
 define(
-'zrender/animation/animation',['require','./clip','../tool/color'],function(require) {
-    
+    'zrender/animation/Animation',['require','./Clip','../tool/color','../tool/util','../tool/event'],function(require) {
+        
+        
 
+        var Clip = require('./Clip');
+        var color = require('../tool/color');
+        var util = require('../tool/util');
+        var Dispatcher = require('../tool/event').Dispatcher;
 
-var Clip = require('./clip');
-var color = require('../tool/color');
+        var requestAnimationFrame = window.requestAnimationFrame
+                                    || window.msRequestAnimationFrame
+                                    || window.mozRequestAnimationFrame
+                                    || window.webkitRequestAnimationFrame
+                                    || function(func){setTimeout(func, 16);};
 
-var requestAnimationFrame = window.requestAnimationFrame
-                            || window.msRequestAnimationFrame
-                            || window.mozRequestAnimationFrame
-                            || window.webkitRequestAnimationFrame
-                            || function(func){setTimeout(func, 16);};
+        var arraySlice = Array.prototype.slice;
 
-var arraySlice = Array.prototype.slice;
+        function Animation(options) {
 
-function Animation(options) {
+            options = options || {};
 
-    options = options || {};
+            this.stage = options.stage || {};
 
-    this.stage = options.stage || {};
+            this.onframe = options.onframe || function() {};
 
-    this.onframe = options.onframe || function() {};
+            // private properties
+            this._clips = [];
 
-    // private properties
-    this._clips = [];
+            this._running = false;
 
-    this._running = false;
+            this._time = 0;
 
-    this._time = 0;
-}
-
-Animation.prototype = {
-    add : function(clip) {
-        this._clips.push(clip);
-    },
-    remove : function(clip) {
-        var idx = this._clips.indexOf(clip);
-        if (idx >= 0) {
-            this._clips.splice(idx, 1);
-        }
-    },
-    update : function() {
-
-        var time = new Date().getTime();
-        var delta = time - this._time;
-        var clips = this._clips;
-        var len = clips.length;
-
-        var deferredEvents = [];
-        var deferredClips = [];
-        for (var i = 0; i < len; i++) {
-            var clip = clips[i];
-            var e = clip.step(time);
-            // Throw out the events need to be called after
-            // stage.update, like destroy
-            if (e) {
-                deferredEvents.push(e);
-                deferredClips.push(clip);
-            }
-        }
-        if (this.stage.update && this._clips.length) {
-            this.stage.update();
+            Dispatcher.call(this);
         }
 
-        // Remove the finished clip
-        for (var i = 0; i < len;) {
-            if (clips[i]._needsRemove) {
-                clips[i] = clips[len-1];
-                clips.pop();
-                len--;
-            } else {
-                i++;
-            }
-        }
+        Animation.prototype = {
+            add : function(clip) {
+                this._clips.push(clip);
+            },
+            remove : function(clip) {
+                var idx = util.indexOf(this._clips, clip);
+                if (idx >= 0) {
+                    this._clips.splice(idx, 1);
+                }
+            },
+            update : function() {
 
-        len = deferredEvents.length;
-        for (var i = 0; i < len; i++) {
-            deferredClips[i].fire(deferredEvents[i]);
-        }
+                var time = new Date().getTime();
+                var delta = time - this._time;
+                var clips = this._clips;
+                var len = clips.length;
 
-        this._time = time;
+                var deferredEvents = [];
+                var deferredClips = [];
+                for (var i = 0; i < len; i++) {
+                    var clip = clips[i];
+                    var e = clip.step(time);
+                    // Throw out the events need to be called after
+                    // stage.update, like destroy
+                    if (e) {
+                        deferredEvents.push(e);
+                        deferredClips.push(clip);
+                    }
+                }
+                if (this.stage.update) {
+                    this.stage.update();
+                }
 
-        this.onframe(delta);
+                // Remove the finished clip
+                for (var i = 0; i < len;) {
+                    if (clips[i]._needsRemove) {
+                        clips[i] = clips[len-1];
+                        clips.pop();
+                        len--;
+                    } else {
+                        i++;
+                    }
+                }
 
-    },
-    start : function() {
-        var self = this;
+                len = deferredEvents.length;
+                for (var i = 0; i < len; i++) {
+                    deferredClips[i].fire(deferredEvents[i]);
+                }
 
-        this._running = true;
+                this._time = time;
 
-        function step() {
-            if (self._running) {
-                self.update();
+                this.onframe(delta);
+
+                this.dispatch('frame', delta);
+            },
+            start : function() {
+                var self = this;
+
+                this._running = true;
+
+                function step() {
+                    if (self._running) {
+                        self.update();
+                        requestAnimationFrame(step);
+                    }
+                }
+
+                this._time = new Date().getTime();
                 requestAnimationFrame(step);
-            }
-        }
-
-        requestAnimationFrame(step);
-    },
-    stop : function() {
-        this._running = false;
-    },
-    clear : function() {
-        this._clips = [];
-    },
-    animate : function(target, options) {
-        options = options || {};
-        var deferred = new Deferred(
-            target,
-            options.loop,
-            options.getter, 
-            options.setter
-        );
-        deferred.animation = this;
-        return deferred;
-    },
-    constructor: Animation
-};
-
-function _defaultGetter(target, key) {
-    return target[key];
-}
-
-function _defaultSetter(target, key, value) {
-    target[key] = value;
-}
-
-function _interpolateNumber(p0, p1, percent) {
-    return (p1 - p0) * percent + p0;
-}
-
-function _interpolateArray(p0, p1, percent, out, arrDim) {
-    var len = p0.length;
-    if (arrDim == 1) {
-        for (var i = 0; i < len; i++) {
-            out[i] = _interpolateNumber(p0[i], p1[i], percent); 
-        }
-    } else {
-        var len2 = p0[0].length;
-        for (var i = 0; i < len; i++) {
-            for (var j = 0; j < len2; j++) {
-                out[i][j] = _interpolateNumber(
-                    p0[i][j], p1[i][j], percent
+            },
+            stop : function() {
+                this._running = false;
+            },
+            clear : function() {
+                this._clips = [];
+            },
+            animate : function(target, options) {
+                options = options || {};
+                var deferred = new Deferred(
+                    target,
+                    options.loop,
+                    options.getter, 
+                    options.setter
                 );
+                deferred.animation = this;
+                return deferred;
+            },
+            constructor: Animation
+        };
+
+        util.merge(Animation.prototype, Dispatcher.prototype, true);
+
+        function _defaultGetter(target, key) {
+            return target[key];
+        }
+
+        function _defaultSetter(target, key, value) {
+            target[key] = value;
+        }
+
+        function _interpolateNumber(p0, p1, percent) {
+            return (p1 - p0) * percent + p0;
+        }
+
+        function _interpolateArray(p0, p1, percent, out, arrDim) {
+            var len = p0.length;
+            if (arrDim == 1) {
+                for (var i = 0; i < len; i++) {
+                    out[i] = _interpolateNumber(p0[i], p1[i], percent); 
+                }
+            } else {
+                var len2 = p0[0].length;
+                for (var i = 0; i < len; i++) {
+                    for (var j = 0; j < len2; j++) {
+                        out[i][j] = _interpolateNumber(
+                            p0[i][j], p1[i][j], percent
+                        );
+                    }
+                }
             }
         }
-    }
-}
 
-function _isArrayLike(data) {
-    switch (typeof data) {
-        case 'undefined':
-        case 'string':
-            return false;
-    }
-    
-    return typeof data.length !== 'undefined';
-}
-
-function _catmullRomInterpolateArray(
-    p0, p1, p2, p3, t, t2, t3, out, arrDim
-) {
-    var len = p0.length;
-    if (arrDim == 1) {
-        for (var i = 0; i < len; i++) {
-            out[i] = _catmullRomInterpolate(
-                p0[i], p1[i], p2[i], p3[i], t, t2, t3
-            );
+        function _isArrayLike(data) {
+            switch (typeof data) {
+                case 'undefined':
+                case 'string':
+                    return false;
+            }
+            
+            return typeof data.length !== 'undefined';
         }
-    } else {
-        var len2 = p0[0].length;
-        for (var i = 0; i < len; i++) {
-            for (var j = 0; j < len2; j++) {
-                out[i][j] = _catmullRomInterpolate(
-                    p0[i][j], p1[i][j], p2[i][j], p3[i][j],
-                    t, t2, t3
-                );
+
+        function _catmullRomInterpolateArray(
+            p0, p1, p2, p3, t, t2, t3, out, arrDim
+        ) {
+            var len = p0.length;
+            if (arrDim == 1) {
+                for (var i = 0; i < len; i++) {
+                    out[i] = _catmullRomInterpolate(
+                        p0[i], p1[i], p2[i], p3[i], t, t2, t3
+                    );
+                }
+            } else {
+                var len2 = p0[0].length;
+                for (var i = 0; i < len; i++) {
+                    for (var j = 0; j < len2; j++) {
+                        out[i][j] = _catmullRomInterpolate(
+                            p0[i][j], p1[i][j], p2[i][j], p3[i][j],
+                            t, t2, t3
+                        );
+                    }
+                }
             }
         }
-    }
-}
 
-function _catmullRomInterpolate(p0, p1, p2, p3, t, t2, t3) {
-    var v0 = (p2 - p0) * 0.5;
-    var v1 = (p3 - p1) * 0.5;
-    return (2 * (p1 - p2) + v0 + v1) * t3 
-            + (- 3 * (p1 - p2) - 2 * v0 - v1) * t2
-            + v0 * t + p1;
-}
-
-function _cloneValue(value) {
-    if (_isArrayLike(value)) {
-        var len = value.length;
-        if (_isArrayLike(value[0])) {
-            var ret = [];
-            for (var i = 0; i < len; i++) {
-                ret.push(arraySlice.call(value[i]));
-            }
-            return ret;
-        } else {
-            return arraySlice.call(value)
+        function _catmullRomInterpolate(p0, p1, p2, p3, t, t2, t3) {
+            var v0 = (p2 - p0) * 0.5;
+            var v1 = (p3 - p1) * 0.5;
+            return (2 * (p1 - p2) + v0 + v1) * t3 
+                    + (- 3 * (p1 - p2) - 2 * v0 - v1) * t2
+                    + v0 * t + p1;
         }
-    } else {
-        return value;
-    }
-}
 
-function rgba2String(rgba) {
-    rgba[0] = Math.floor(rgba[0]);
-    rgba[1] = Math.floor(rgba[1]);
-    rgba[2] = Math.floor(rgba[2]);
+        function _cloneValue(value) {
+            if (_isArrayLike(value)) {
+                var len = value.length;
+                if (_isArrayLike(value[0])) {
+                    var ret = [];
+                    for (var i = 0; i < len; i++) {
+                        ret.push(arraySlice.call(value[i]));
+                    }
+                    return ret;
+                } else {
+                    return arraySlice.call(value);
+                }
+            } else {
+                return value;
+            }
+        }
 
-    return 'rgba(' + rgba.join(',') + ')';
-}
+        function rgba2String(rgba) {
+            rgba[0] = Math.floor(rgba[0]);
+            rgba[1] = Math.floor(rgba[1]);
+            rgba[2] = Math.floor(rgba[2]);
 
-function Deferred(target, loop, getter, setter) {
-    this._tracks = {};
-    this._target = target;
+            return 'rgba(' + rgba.join(',') + ')';
+        }
 
-    this._loop = loop || false;
+        function Deferred(target, loop, getter, setter) {
+            this._tracks = {};
+            this._target = target;
 
-    this._getter = getter || _defaultGetter;
-    this._setter = setter || _defaultSetter;
+            this._loop = loop || false;
 
-    this._clipCount = 0;
+            this._getter = getter || _defaultGetter;
+            this._setter = setter || _defaultSetter;
 
-    this._delay = 0;
+            this._clipCount = 0;
 
-    this._doneList = [];
+            this._delay = 0;
 
-    this._onframeList = [];
+            this._doneList = [];
 
-    this._clipList = [];
-}
+            this._onframeList = [];
 
-Deferred.prototype = {
-    when : function(time /* ms */, props) {
-        for (var propName in props) {
-            if (! this._tracks[propName]) {
-                this._tracks[propName] = [];
-                // If time is 0 
-                //  Then props is given initialize value
-                // Else
-                //  Initialize value from current prop value
-                if (time !== 0) {
+            this._clipList = [];
+        }
+
+        Deferred.prototype = {
+            when : function(time /* ms */, props) {
+                for (var propName in props) {
+                    if (! this._tracks[propName]) {
+                        this._tracks[propName] = [];
+                        // If time is 0 
+                        //  Then props is given initialize value
+                        // Else
+                        //  Initialize value from current prop value
+                        if (time !== 0) {
+                            this._tracks[propName].push({
+                                time : 0,
+                                value : _cloneValue(
+                                    this._getter(this._target, propName)
+                                )
+                            });
+                        }
+                    }
                     this._tracks[propName].push({
-                        time : 0,
-                        value : _cloneValue(
-                            this._getter(this._target, propName)
-                        )
+                        time : parseInt(time, 10),
+                        value : props[propName]
                     });
                 }
-            }
-            this._tracks[propName].push({
-                time : parseInt(time, 10),
-                value : props[propName]
-            });
-        }
-        return this;
-    },
-    during : function(callback) {
-        this._onframeList.push(callback);
-        return this;
-    },
-    start : function(easing) {
+                return this;
+            },
+            during : function(callback) {
+                this._onframeList.push(callback);
+                return this;
+            },
+            start : function(easing) {
 
-        var self = this;
-        var setter = this._setter;
-        var getter = this._getter;
-        var onFrameListLen = self._onframeList.length;
-        var useSpline = easing === 'spline';
+                var self = this;
+                var setter = this._setter;
+                var getter = this._getter;
+                var onFrameListLen = self._onframeList.length;
+                var useSpline = easing === 'spline';
 
-        var ondestroy = function() {
-            self._clipCount--;
-            if (self._clipCount === 0) {
-                // Clear all tracks
-                self._tracks = {};
+                var ondestroy = function() {
+                    self._clipCount--;
+                    if (self._clipCount === 0) {
+                        // Clear all tracks
+                        self._tracks = {};
 
-                var len = self._doneList.length;
-                for (var i = 0; i < len; i++) {
-                    self._doneList[i].call(self);
+                        var len = self._doneList.length;
+                        for (var i = 0; i < len; i++) {
+                            self._doneList[i].call(self);
+                        }
+                    }
+                };
+
+                var createTrackClip = function(keyframes, propName) {
+                    var trackLen = keyframes.length;
+                    if (!trackLen) {
+                        return;
+                    }
+                    // Guess data type
+                    var firstVal = keyframes[0].value;
+                    var isValueArray = _isArrayLike(firstVal);
+                    var isValueColor = false;
+
+                    // For vertices morphing
+                    var arrDim = (
+                            isValueArray 
+                            && _isArrayLike(firstVal[0])
+                        )
+                        ? 2 : 1;
+                    // Sort keyframe as ascending
+                    keyframes.sort(function(a, b) {
+                        return a.time - b.time;
+                    });
+                    var trackMaxTime;
+                    if (trackLen) {
+                        trackMaxTime = keyframes[trackLen-1].time;
+                    }else{
+                        return;
+                    }
+                    // Percents of each keyframe
+                    var kfPercents = [];
+                    // Value of each keyframe
+                    var kfValues = [];
+                    for (var i = 0; i < trackLen; i++) {
+                        kfPercents.push(keyframes[i].time / trackMaxTime);
+                        // Assume value is a color when it is a string
+                        var value = keyframes[i].value;
+                        if (typeof(value) == 'string') {
+                            value = color.toArray(value);
+                            if (value.length === 0) {    // Invalid color
+                                value[0] = value[1] = value[2] = 0;
+                                value[3] = 1;
+                            }
+                            isValueColor = true;
+                        }
+                        kfValues.push(value);
+                    }
+
+                    // Cache the key of last frame to speed up when 
+                    // animation playback is sequency
+                    var cacheKey = 0;
+                    var cachePercent = 0;
+                    var start;
+                    var i, w;
+                    var p0, p1, p2, p3;
+
+
+                    if (isValueColor) {
+                        var rgba = [0, 0, 0, 0];
+                    }
+
+                    var onframe = function(target, percent) {
+                        // Find the range keyframes
+                        // kf1-----kf2---------current--------kf3
+                        // find kf2 and kf3 and do interpolation
+                        if (percent < cachePercent) {
+                            // Start from next key
+                            start = Math.min(cacheKey + 1, trackLen - 1);
+                            for (i = start; i >= 0; i--) {
+                                if (kfPercents[i] <= percent) {
+                                    break;
+                                }
+                            }
+                            i = Math.min(i, trackLen-2);
+                        } else {
+                            for (i = cacheKey; i < trackLen; i++) {
+                                if (kfPercents[i] > percent) {
+                                    break;
+                                }
+                            }
+                            i = Math.min(i-1, trackLen-2);
+                        }
+                        cacheKey = i;
+                        cachePercent = percent;
+
+                        var range = (kfPercents[i+1] - kfPercents[i]);
+                        if (range === 0) {
+                            return;
+                        } else {
+                            w = (percent - kfPercents[i]) / range;
+                        }
+                        if (useSpline) {
+                            p1 = kfValues[i];
+                            p0 = kfValues[i === 0 ? i : i - 1];
+                            p2 = kfValues[i > trackLen - 2 ? trackLen - 1 : i + 1];
+                            p3 = kfValues[i > trackLen - 3 ? trackLen - 1 : i + 2];
+                            if (isValueArray) {
+                                _catmullRomInterpolateArray(
+                                    p0, p1, p2, p3, w, w*w, w*w*w,
+                                    getter(target, propName),
+                                    arrDim
+                                );
+                            } else {
+                                var value;
+                                if (isValueColor) {
+                                    value = _catmullRomInterpolateArray(
+                                        p0, p1, p2, p3, w, w*w, w*w*w,
+                                        rgba, 1
+                                    );
+                                    value = rgba2String(rgba);
+                                } else {
+                                    value = _catmullRomInterpolate(
+                                        p0, p1, p2, p3, w, w*w, w*w*w
+                                    );
+                                }
+                                setter(
+                                    target,
+                                    propName,
+                                    value
+                                );
+                            }
+                        } else {
+                            if (isValueArray) {
+                                _interpolateArray(
+                                    kfValues[i], kfValues[i+1], w,
+                                    getter(target, propName),
+                                    arrDim
+                                );
+                            } else {
+                                var value;
+                                if (isValueColor) {
+                                    _interpolateArray(
+                                        kfValues[i], kfValues[i+1], w,
+                                        rgba, 1
+                                    );
+                                    value = rgba2String(rgba);
+                                } else {
+                                    value = _interpolateNumber(kfValues[i], kfValues[i+1], w);
+                                }
+                                setter(
+                                    target,
+                                    propName,
+                                    value
+                                );
+                            }
+                        }
+
+                        for (i = 0; i < onFrameListLen; i++) {
+                            self._onframeList[i](target, percent);
+                        }
+                    };
+
+                    var clip = new Clip({
+                        target : self._target,
+                        life : trackMaxTime,
+                        loop : self._loop,
+                        delay : self._delay,
+                        onframe : onframe,
+                        ondestroy : ondestroy
+                    });
+
+                    if (easing && easing !== 'spline') {
+                        clip.easing = easing;
+                    }
+                    self._clipList.push(clip);
+                    self._clipCount++;
+                    self.animation.add(clip);
+                };
+
+                for (var propName in this._tracks) {
+                    createTrackClip(this._tracks[propName], propName);
                 }
+                return this;
+            },
+            stop : function() {
+                for (var i = 0; i < this._clipList.length; i++) {
+                    var clip = this._clipList[i];
+                    this.animation.remove(clip);
+                }
+                this._clipList = [];
+            },
+            delay : function(time){
+                this._delay = time;
+                return this;
+            },
+            done : function(func) {
+                this._doneList.push(func);
+                return this;
             }
         };
 
-        var createTrackClip = function(keyframes, propName) {
-            var trackLen = keyframes.length;
-            if (!trackLen) {
-                return;
-            }
-            // Guess data type
-            var firstVal = keyframes[0].value;
-            var isValueArray = _isArrayLike(firstVal);
-            var isValueColor = false;
-
-            // For vertices morphing
-            var arrDim = (
-                    isValueArray 
-                    && _isArrayLike(firstVal[0])
-                )
-                ? 2 : 1;
-            // Sort keyframe as ascending
-            keyframes.sort(function(a, b) {
-                return a.time - b.time;
-            });
-            var trackMaxTime;
-            if (trackLen) {
-                trackMaxTime = keyframes[trackLen-1].time;
-            }else{
-                return;
-            }
-            // Percents of each keyframe
-            var kfPercents = [];
-            // Value of each keyframe
-            var kfValues = [];
-            for (var i = 0; i < trackLen; i++) {
-                kfPercents.push(keyframes[i].time / trackMaxTime);
-                // Assume value is a color when it is a string
-                var value = keyframes[i].value;
-                if (typeof(value) == 'string') {
-                    value = color.toArray(value);
-                    if (value.length == 0) {    // Invalid color
-                        value[0] = value[1] = value[2] = 0;
-                        value[3] = 1;
-                    }
-                    isValueColor = true;
-                }
-                kfValues.push(value);
-            }
-
-            // Cache the key of last frame to speed up when 
-            // animation playback is sequency
-            var cacheKey = 0;
-            var cachePercent = 0;
-            var start;
-            var i, w;
-            var p0, p1, p2, p3;
-
-
-            if (isValueColor) {
-                var rgba = [0, 0, 0, 0];
-            }
-
-            var onframe = function(target, percent) {
-                // Find the range keyframes
-                // kf1-----kf2---------current--------kf3
-                // find kf2 and kf3 and do interpolation
-                if (percent < cachePercent) {
-                    // Start from next key
-                    start = Math.min(cacheKey + 1, trackLen - 1);
-                    for (i = start; i >= 0; i--) {
-                        if (kfPercents[i] <= percent) {
-                            break;
-                        }
-                    }
-                    i = Math.min(i, trackLen-2);
-                } else {
-                    for (i = cacheKey; i < trackLen; i++) {
-                        if (kfPercents[i] > percent) {
-                            break;
-                        }
-                    }
-                    i = Math.min(i-1, trackLen-2);
-                }
-                cacheKey = i;
-                cachePercent = percent;
-
-                var range = (kfPercents[i+1] - kfPercents[i]);
-                if (range === 0) {
-                    return;
-                } else {
-                    w = (percent - kfPercents[i]) / range;
-                }
-                if (useSpline) {
-                    p1 = kfValues[i];
-                    p0 = kfValues[i === 0 ? i : i - 1];
-                    p2 = kfValues[i > trackLen - 2 ? trackLen - 1 : i + 1];
-                    p3 = kfValues[i > trackLen - 3 ? trackLen - 1 : i + 2];
-                    if (isValueArray) {
-                        _catmullRomInterpolateArray(
-                            p0, p1, p2, p3, w, w*w, w*w*w,
-                            getter(target, propName),
-                            arrDim
-                        );
-                    } else {
-                        var value;
-                        if (isValueColor) {
-                            value = _catmullRomInterpolateArray(
-                                p0, p1, p2, p3, w, w*w, w*w*w,
-                                rgba, 1
-                            );
-                            value = rgba2String(rgba);
-                        } else {
-                            value = _catmullRomInterpolate(
-                                p0, p1, p2, p3, w, w*w, w*w*w
-                            )
-                        }
-                        setter(
-                            target,
-                            propName,
-                            value
-                        );
-                    }
-                } else {
-                    if (isValueArray) {
-                        _interpolateArray(
-                            kfValues[i], kfValues[i+1], w,
-                            getter(target, propName),
-                            arrDim
-                        );
-                    } else {
-                        var value;
-                        if (isValueColor) {
-                            _interpolateArray(
-                                kfValues[i], kfValues[i+1], w,
-                                rgba, 1
-                            );
-                            value = rgba2String(rgba);
-                        } else {
-                            value = _interpolateNumber(kfValues[i], kfValues[i+1], w);
-                        }
-                        setter(
-                            target,
-                            propName,
-                            value
-                        );
-                    }
-                }
-
-                for (i = 0; i < onFrameListLen; i++) {
-                    self._onframeList[i](target, percent);
-                }
-            };
-
-            var clip = new Clip({
-                target : self._target,
-                life : trackMaxTime,
-                loop : self._loop,
-                delay : self._delay,
-                onframe : onframe,
-                ondestroy : ondestroy
-            });
-
-            if (easing && easing !== 'spline') {
-                clip.easing = easing;
-            }
-            self._clipList.push(clip);
-            self._clipCount++;
-            self.animation.add(clip);
-        };
-
-        for (var propName in this._tracks) {
-            createTrackClip(this._tracks[propName], propName);
-        }
-        return this;
-    },
-    stop : function() {
-        for (var i = 0; i < this._clipList.length; i++) {
-            var clip = this._clipList[i];
-            this.animation.remove(clip);
-        }
-        this._clipList = [];
-    },
-    delay : function(time){
-        this._delay = time;
-        return this;
-    },
-    done : function(func) {
-        this._doneList.push(func);
-        return this;
+        return Animation;
     }
-};
-
-return Animation;
-}
 );
 
 /*!
@@ -8340,7 +8801,7 @@ return Animation;
  *
  */
 define(
-    'zrender/zrender',['require','./lib/excanvas','./tool/util','./tool/log','./tool/guid','./Handler','./Painter','./Storage','./animation/animation','./tool/env'],function(require) {
+    'zrender/zrender',['require','./lib/excanvas','./tool/util','./tool/log','./tool/guid','./Handler','./Painter','./Storage','./animation/Animation','./tool/env'],function(require) {
         /*
          * HTML5 Canvas for Internet Explorer!
          * Modern browsers like Firefox, Safari, Chrome and Opera support
@@ -8362,12 +8823,12 @@ define(
         var Handler = require('./Handler');
         var Painter = require('./Painter');
         var Storage = require('./Storage');
-        var Animation = require('./animation/animation');
+        var Animation = require('./animation/Animation');
 
         var _instances = {};    //ZRender实例map索引
 
         var zrender = {};
-        zrender.version = '2.0.0';
+        zrender.version = '2.0.1';
 
         /**
          * zrender初始化
@@ -8429,15 +8890,16 @@ define(
             return zrender;
         };
 
-        function getAnimationUpdater(zrenderInstance) {
+        function getFrameCallback(zrInstance) {
             return function(){
-                var animatingShapes = zrenderInstance.animatingShapes;
+                var animatingShapes = zrInstance.animatingShapes;
                 for (var i = 0, l = animatingShapes.length; i < l; i++) {
-                    zrenderInstance.storage.mod(animatingShapes[i].id);
+                    zrInstance.storage.mod(animatingShapes[i].id);
                 }
 
-                if (animatingShapes.length) {
-                    zrenderInstance.painter.refresh();
+                if (animatingShapes.length || zrInstance._needsRefreshNextFrame) {
+                    zrInstance.refresh();
+                    zrInstance._needsRefreshNextFrame = false;
                 }
             };
         }
@@ -8464,10 +8926,12 @@ define(
             this.animatingShapes = [];
             this.animation = new Animation({
                 stage : {
-                    update : getAnimationUpdater(this)
+                    update : getFrameCallback(this)
                 }
             });
             this.animation.start();
+
+            this._needsRefreshNextFrame = false;
         }
 
         /**
@@ -8478,22 +8942,42 @@ define(
         };
 
         /**
-         * 添加图形形状
+         * 添加图形形状到根节点
          * 
-         * @param {Object} shape 形状对象，可用属性全集，详见各shape
+         * @param {zrender.shape.Base} shape 形状对象，可用属性全集，详见各shape
          */
         ZRender.prototype.addShape = function (shape) {
-            this.storage.add(shape);
+            this.storage.addRoot(shape);
             return this;
         };
 
         /**
-         * 删除图形形状
+         * 添加组到根节点
+         *
+         * @param {zrender.shape.Group} group
+         */
+        ZRender.prototype.addGroup = function(group) {
+            this.storage.addRoot(group);
+            return this;
+        };
+
+        /**
+         * 从根节点删除图形形状
          * 
          * @param {string} shapeId 形状对象唯一标识
          */
         ZRender.prototype.delShape = function (shapeId) {
-            this.storage.del(shapeId);
+            this.storage.delRoot(shapeId);
+            return this;
+        };
+
+        /**
+         * 从根节点删除组
+         * 
+         * @param {string} groupId
+         */
+        ZRender.prototype.delGroup = function (groupId) {
+            this.storage.delRoot(groupId);
             return this;
         };
 
@@ -8502,10 +8986,20 @@ define(
          * 
          * @param {string} shapeId 形状对象唯一标识
          * @param {Object} shape 形状对象
-         * @param {fast} boolean 默认为false, 如果为true的话会在merge中省略部分判断
          */
-        ZRender.prototype.modShape = function (shapeId, shape, fast) {
-            this.storage.mod(shapeId, shape, fast);
+        ZRender.prototype.modShape = function (shapeId, shape) {
+            this.storage.mod(shapeId, shape);
+            return this;
+        };
+
+        /**
+         * 修改组
+         * 
+         * @param {string} shapeId
+         * @param {Object} group
+         */
+        ZRender.prototype.modGroup = function (groupId, group) {
+            this.storage.mod(groupId, group);
             return this;
         };
 
@@ -8548,6 +9042,13 @@ define(
          */
         ZRender.prototype.refresh = function (callback) {
             this.painter.refresh(callback);
+            return this;
+        };
+
+        // TODO
+        // 好像会有奇怪的问题
+        ZRender.prototype.refreshNextFrame = function() {
+            this._needsRefreshNextFrame = true;
             return this;
         };
         
@@ -8738,7 +9239,7 @@ define(
          * 清除当前ZRender下所有类图的数据和显示，clear后MVC和已绑定事件均还存在在，ZRender可用
          */
         ZRender.prototype.clear = function () {
-            this.storage.del();
+            this.storage.delRoot();
             this.painter.clear();
             return this;
         };
@@ -9449,7 +9950,7 @@ define(
 /**
  * zrender: 向量操作类
  *
- * author : lang(shenyi01@baidu.com)
+ * author : https://github.com/pissang
  */
 define(
     'zrender/tool/vector',[],function() {
@@ -9531,8 +10032,18 @@ define(
                 out[0] = (v1[0] + v2[0])/2;
                 out[1] = (v1[1] + v2[1])/2;
                 return out;
+            },
+            applyTransform: function(out, v, m) {
+                var x = v[0];
+                var y = v[1];
+                out[0] = m[0] * x + m[2] * y + m[4];
+                out[1] = m[1] * x + m[3] * y + m[5];
+                return out;
             }
         };
+
+        vector.len = vector.length;
+        vector.dist = vector.distance;
 
         return vector;
     }
@@ -9686,25 +10197,42 @@ define(
 
 define(
     'zrender/shape/util/dashedLineTo',[],function (/* require */) {
+
+        var dashPattern = [5, 5];
         /**
          * 虚线lineTo 
          */
         return function (ctx, x1, y1, x2, y2, dashLength) {
+            // http://msdn.microsoft.com/en-us/library/ie/dn265063(v=vs.85).aspx
+            if (ctx.setLineDash) {
+                dashPattern[0] = dashPattern[1] = dashLength;
+                ctx.setLineDash(dashPattern);
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                return;
+            }
+
             dashLength = typeof dashLength != 'number'
                             ? 5 
                             : dashLength;
 
-            var deltaX = x2 - x1;
-            var deltaY = y2 - y1;
+            var dx = x2 - x1;
+            var dy = y2 - y1;
             var numDashes = Math.floor(
-                Math.sqrt(deltaX * deltaX + deltaY * deltaY) / dashLength
+                Math.sqrt(dx * dx + dy * dy) / dashLength
             );
-
+            dx = dx / numDashes;
+            dy = dy / numDashes;
+            var flag = true;
             for (var i = 0; i < numDashes; ++i) {
-                ctx[i % 2 ? 'lineTo' : 'moveTo'](
-                    x1 + (deltaX / numDashes) * i,
-                    y1 + (deltaY / numDashes) * i
-                );
+                if (flag) {
+                    ctx.moveTo(x1, y1);
+                } else {
+                    ctx.lineTo(x1, y1);
+                }
+                flag = !flag;
+                x1 += dx;
+                y1 += dy;
             }
             ctx.lineTo(x2, y2);
         };
@@ -9816,7 +10344,7 @@ define(
                 this.setContext(ctx, style);
     
                 // 设置transform
-                this.updateTransform(ctx);
+                this.setTransform(ctx);
                 
                 // 先fill再stroke
                 var hasPath = false;
@@ -9858,9 +10386,7 @@ define(
                     ctx.stroke();
                 }
     
-                if (style.text) {
-                    this.drawText(ctx, style, this.style);
-                }
+                this.drawText(ctx, style, this.style);
     
                 ctx.restore();
     
@@ -10764,7 +11290,7 @@ define(
                 else if (style.lineType == 'dashed'
                         || style.lineType == 'dotted'
                 ) {
-                    var dashLength =(style.lineWidth || 1)  
+                    var dashLength = (style.lineWidth || 1)  
                                      * (style.lineType == 'dashed' ? 5 : 1);
                     dashedLineTo(
                         ctx,
@@ -11524,7 +12050,7 @@ define(
                 addShapeHandle(background);
 
                 barShape.highlightStyle.width =
-                    _adjust(options.progress, [0,1])
+                    this.adjust(options.progress, [0,1])
                     * options.effectOption.width;
                     
                 addShapeHandle(barShape);
@@ -11607,6 +12133,8 @@ define(
             var lineWidth = effectOption.lineWidth;
 
             var shapeList = [];
+            var canvasWidth = this.canvasWidth;
+            var canvasHeight = this.canvasHeight;
             
             // 初始化动画元素
             for(var i = 0; i < n; i++) {
@@ -11616,8 +12144,8 @@ define(
 
                 shapeList[i] = new CircleShape({
                     highlightStyle : {
-                        x : Math.ceil(Math.random() * this.canvasWidth),
-                        y : Math.ceil(Math.random() * this.canvasHeight),
+                        x : Math.ceil(Math.random() * canvasWidth),
+                        y : Math.ceil(Math.random() * canvasHeight),
                         r : Math.ceil(Math.random() * 40),
                         brushType : brushType,
                         color : color,
@@ -11627,7 +12155,7 @@ define(
                     animationY : Math.ceil(Math.random() * 20)
                 });
             }
-
+            
             return setInterval(
                 function () {
                     addShapeHandle(background);
@@ -11636,9 +12164,9 @@ define(
                         var style = shapeList[i].highlightStyle;
 
                         if (style.y - shapeList[i].animationY + style.r <= 0){
-                            shapeList[i].highlightStyle.y = this.canvasHeight + style.r;
+                            shapeList[i].highlightStyle.y = canvasHeight + style.r;
                             shapeList[i].highlightStyle.x = Math.ceil(
-                                Math.random() * this.canvasWidth
+                                Math.random() * canvasWidth
                             );
                         }
                         shapeList[i].highlightStyle.y -=
@@ -11704,12 +12232,14 @@ define(
             var lineWidth = effectOption.lineWidth;
 
             var shapeList = [];
+            var canvasWidth = this.canvasWidth;
+            var canvasHeight = this.canvasHeight;
             
             // 初始化动画元素
             for(var i = 0; i < n; i++) {
                 var xStart = -Math.ceil(Math.random() * 1000);
                 var len = Math.ceil(Math.random() * 400);
-                var pos = Math.ceil(Math.random() * this.canvasHeight);
+                var pos = Math.ceil(Math.random() * canvasHeight);
 
                 var color = effectOption.color == 'random'
                     ? zrColor.random()
@@ -11728,7 +12258,7 @@ define(
                     len : len
                 });
             }
-
+            
             return setInterval(
                 function() {
                     addShapeHandle(background);
@@ -11736,11 +12266,12 @@ define(
                     for(var i = 0; i < n; i++) {
                         var style = shapeList[i].highlightStyle;
 
-                        if (style.xStart >= this.canvasWidth){
+                        if (style.xStart >= canvasWidth){
+                            
                             shapeList[i].len = Math.ceil(Math.random() * 400);
                             style.xStart = -400;
                             style.xEnd = -400 + shapeList[i].len;
-                            style.yStart = Math.ceil(Math.random() * this.canvasHeight);
+                            style.yStart = Math.ceil(Math.random() * canvasHeight);
                             style.yEnd = style.yStart;
                         }
 
@@ -11896,7 +12427,7 @@ define(
                 // 指定进度
                 addShapeHandle(background);
 
-                n = _adjust(options.progress, [0,1]).toFixed(2) * 100 / 5;
+                n = this.adjust(options.progress, [0,1]).toFixed(2) * 100 / 5;
                 shapeRing.highlightStyle.text = n * 5 + '%';
                 addShapeHandle(shapeRing);
 
