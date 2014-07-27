@@ -150,6 +150,11 @@ define(
                     var height = style.height || image.height;
                     var x = style.x;
                     var y = style.y;
+                    
+                    // 图片加载失败
+                    if (!width || !height) {
+                        return;
+                    }
                     if (style.sWidth && style.sHeight) {
                         var sx = style.sx || 0;
                         var sy = style.sy || 0;

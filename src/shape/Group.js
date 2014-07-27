@@ -34,6 +34,8 @@ define(function(require) {
         Dispatcher.call(this);
     }
 
+    Group.prototype.ignore = false;
+
     Group.prototype.children = function() {
         return this._children.slice();
     };

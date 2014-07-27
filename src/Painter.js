@@ -142,7 +142,7 @@ define(
                 var shape = list[i];
 
                 if (currentZLevel !== shape.zlevel) {
-                    currentLayer = this._getLayer(shape.zlevel, currentLayer);
+                    currentLayer = this.getLayer(shape.zlevel, currentLayer);
                     ctx = currentLayer.ctx;
                     currentZLevel = shape.zlevel;
                     currentLayerDirty = layerStatus[currentZLevel];
@@ -229,7 +229,7 @@ define(
             }
         };
 
-        Painter.prototype._getLayer = function(zlevel, prevLayer) {
+        Painter.prototype.getLayer = function(zlevel, prevLayer) {
             // Change draw layer
             var currentLayer = this._layers[zlevel];
             if (!currentLayer) {
