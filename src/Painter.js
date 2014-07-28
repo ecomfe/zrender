@@ -123,11 +123,10 @@ define(
 
         Painter.prototype._paintList = function(list) {
 
-            var layerStatus = this._getLayerStatus(list);
+            this._updateLayerStatus(list);
 
             var currentLayer;
             var currentZLevel;
-            var currentLayerDirty = true;
             var ctx;
 
             for (var id in this._layers) {
@@ -145,12 +144,11 @@ define(
                     currentLayer = this.getLayer(shape.zlevel, currentLayer);
                     ctx = currentLayer.ctx;
                     currentZLevel = shape.zlevel;
-                    currentLayerDirty = layerStatus[currentZLevel];
 
                     // Reset the count
                     currentLayer.unusedCount = 0;
 
-                    if (currentLayerDirty) {
+                    if (currentLayer.dirty) {
                         currentLayer.clear();
                     }
                 }
@@ -185,7 +183,7 @@ define(
                     }
                 }
 
-                if (currentLayerDirty && !shape.invisible) {
+                if (currentLayer.dirty && !shape.invisible) {
                     if (
                         !shape.onbrush
                         || (shape.onbrush && !shape.onbrush(ctx, false))
@@ -218,7 +216,9 @@ define(
             for (var id in this._layers) {
                 if (id !== 'hover') {
                     var layer = this._layers[id];
-                    if (layer.unusedCount >= 2) {
+                    layer.dirty = false;
+                    // 删除过期的层
+                    if (layer.unusedCount >= 500) {
                         delete this._layers[id];
                         layer.dom.parentNode.removeChild(layer.dom);
                     }
@@ -255,21 +255,40 @@ define(
             return currentLayer;
         };
 
-        Painter.prototype._getLayerStatus = function(list) {
+        Painter.prototype._updateLayerStatus = function(list) {
+            
+            var layers = this._layers;
 
-            var obj = {};
+            var elCounts = {};
+            for (var z in layers) {
+                if (z !== 'hover') {
+                    elCounts[z] = layers[z].elCount;
+                    layers[z].elCount = 0;
+                }
+            }
 
             for (var i = 0, l = list.length; i < l; i++) {
                 var shape = list[i];
                 var zlevel = shape.zlevel;
-                // Already mark as dirty
-                if (obj[zlevel]) {
-                    continue;
+                var layer = layers[zlevel];
+                if (layer) {
+                    layer.elCount++;
+                    // 已经被标记为需要刷新
+                    if (layer.dirty) {
+                        continue;
+                    }
+                    layer.dirty = shape.__dirty;
                 }
-                obj[zlevel] = shape.__dirty;
             }
 
-            return obj;
+            // 层中的元素数量有发生变化
+            for (var z in layers) {
+                if (z !== 'hover') {
+                    if (elCounts[z] !== layers[z].elCount) {
+                        layers[z].dirty = true;
+                    }
+                }
+            }
         };
 
         /**
@@ -678,6 +697,10 @@ define(
             this.unusedCount = 0;
 
             this.config = null;
+
+            this.dirty = true;
+
+            this.elCount = 0;
         }
 
         Layer.prototype.createBackBuffer = function() {
