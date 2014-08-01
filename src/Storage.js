@@ -159,7 +159,7 @@ define(
                     var child = el._children[i];
 
                     // Force to mark as dirty if group is dirty
-                    child.__dirty = el.__dirty || el.__dirty;
+                    child.__dirty = el.__dirty || child.__dirty;
 
                     this._updateAndAddShape(child);
                 }
@@ -170,6 +170,10 @@ define(
                         stopClipShape.__stopClip = true;
                     }
                 }
+
+                // Mark group clean here
+                el.__dirty = false;
+                
             } else {
                 this._shapeList[this._shapeListOffset++] = el;
             }
