@@ -98,7 +98,7 @@ define(
             }
 
             // TODO
-            this.refresh(callback);
+            this.refresh(callback, true);
 
             return this;
         };
@@ -107,12 +107,13 @@ define(
          * 刷新
          * 
          * @param {Function=} callback 刷新结束后的回调函数
+         * @param {Boolean} paintAll 强制绘制所有shape
          */
-        Painter.prototype.refresh = function (callback) {
+        Painter.prototype.refresh = function (callback, paintAll) {
 
             var list = this.storage.getShapeList(true);
 
-            this._paintList(list);
+            this._paintList(list, paintAll);
 
             if (typeof callback == 'function') {
                 callback();
@@ -121,7 +122,11 @@ define(
             return this;
         };
 
-        Painter.prototype._paintList = function(list) {
+        Painter.prototype._paintList = function(list, paintAll) {
+
+            if (typeof(paintAll) == 'undefined') {
+                paintAll = false;
+            }
 
             this._updateLayerStatus(list);
 
@@ -148,7 +153,7 @@ define(
                     // Reset the count
                     currentLayer.unusedCount = 0;
 
-                    if (currentLayer.dirty) {
+                    if (currentLayer.dirty || paintAll) {
                         currentLayer.clear();
                     }
                 }
@@ -183,7 +188,7 @@ define(
                     }
                 }
 
-                if (currentLayer.dirty && !shape.invisible) {
+                if ((currentLayer.dirty || paintAll) && !shape.invisible) {
                     if (
                         !shape.onbrush
                         || (shape.onbrush && !shape.onbrush(ctx, false))
@@ -432,7 +437,7 @@ define(
                     this._layers[id].resize(width, height);
                 }
 
-                this.refresh();
+                this.refresh(null, true);
             }
 
             return this;
@@ -716,9 +721,6 @@ define(
         };
 
         Layer.prototype.resize = function(width, height) {
-            
-            this.dom.setAttribute('width', width);
-            this.dom.setAttribute('height', height);
             this.dom.style.width = width + 'px';
             this.dom.style.height = height + 'px';
 
@@ -731,7 +733,7 @@ define(
 
             if (this.domBack) {
                 this.domBack.setAttribute('width', width * devicePixelRatio);
-                this.domBack.setAttribute('height', width * devicePixelRatio);
+                this.domBack.setAttribute('height', height * devicePixelRatio);
 
                 if (devicePixelRatio != 1) { 
                     this.ctxBack.scale(devicePixelRatio, devicePixelRatio);
