@@ -78,6 +78,7 @@ define(
             var hoverLayer = new Layer('_zrender_hover_', this);
             this._layers['hover'] = hoverLayer;
             domRoot.appendChild(hoverLayer.dom);
+            hoverLayer.initContext();
 
             hoverLayer.onselectstart = returnFalse;
 
@@ -96,7 +97,6 @@ define(
             if (this.isLoading()) {
                 this.hideLoading();
             }
-
             // TODO
             this.refresh(callback, true);
 
@@ -110,9 +110,7 @@ define(
          * @param {Boolean} paintAll 强制绘制所有shape
          */
         Painter.prototype.refresh = function (callback, paintAll) {
-
             var list = this.storage.getShapeList(true);
-
             this._paintList(list, paintAll);
 
             if (typeof callback == 'function') {
@@ -251,7 +249,8 @@ define(
                         currentLayer.dom
                     );
                 }
-
+                currentLayer.initContext();
+                
                 this._layers[zlevel] = currentLayer;
 
                 currentLayer.config = this._layerConfig[zlevel];
@@ -688,12 +687,6 @@ define(
             this.dom = createDom(id, 'canvas', painter);
             vmlCanvasManager && vmlCanvasManager.initElement(this.dom);
 
-            this.ctx = this.dom.getContext('2d');
-
-            if (devicePixelRatio != 1) { 
-                this.ctx.scale(devicePixelRatio, devicePixelRatio);
-            }
-
             this.domBack = null;
             this.ctxBack = null;
 
@@ -706,6 +699,13 @@ define(
             this.dirty = true;
 
             this.elCount = 0;
+        }
+
+        Layer.prototype.initContext = function() {
+            this.ctx = this.dom.getContext('2d');
+            if (devicePixelRatio != 1) { 
+                this.ctx.scale(devicePixelRatio, devicePixelRatio);
+            }
         }
 
         Layer.prototype.createBackBuffer = function() {
