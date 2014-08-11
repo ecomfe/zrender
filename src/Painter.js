@@ -20,6 +20,7 @@ define(
 
         // retina 屏幕优化
         var devicePixelRatio = window.devicePixelRatio || 1;
+        devicePixelRatio = Math.max(devicePixelRatio, 1);
         var vmlCanvasManager = window.G_vmlCanvasManager;
 
         /**
@@ -482,7 +483,7 @@ define(
             this._bgDom.appendChild(imageDom);
             var ctx = imageDom.getContext('2d');
             devicePixelRatio != 1 
-            && ctx.scale(devicePixelRatio, devicePixelRatio);
+                && ctx.scale(devicePixelRatio, devicePixelRatio);
             
             ctx.fillStyle = backgroundColor || '#fff';
             ctx.rect(
@@ -776,16 +777,16 @@ define(
                     ctx.fillStyle = this.config.clearColor;
                     ctx.fillRect(
                         0, 0,
-                        width * devicePixelRatio, 
-                        height * devicePixelRatio
+                        width / devicePixelRatio, 
+                        height / devicePixelRatio
                     );
                     ctx.restore();
                 }
                 else {
                     ctx.clearRect(
                         0, 0, 
-                        width * devicePixelRatio, 
-                        height * devicePixelRatio
+                        width / devicePixelRatio,
+                        height / devicePixelRatio
                     );
                 }
 
@@ -804,8 +805,8 @@ define(
             else {
                 ctx.clearRect(
                     0, 0, 
-                    width,
-                    height
+                    width / devicePixelRatio,
+                    height / devicePixelRatio
                 );
             }
         };
