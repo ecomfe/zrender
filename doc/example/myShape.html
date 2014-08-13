@@ -52,7 +52,7 @@
                 <li class="dropdown">
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="icon-download-alt icon-white"></i>Download <b class="caret"></b></a>
                   <ul class="dropdown-menu">
-                    <li><a href="https://github.com/ecomfe/zrender/archive/2.0.1.zip">ZIP (2.0.1)</a></li>
+                    <li><a href="https://github.com/ecomfe/zrender/archive/2.0.2.zip">ZIP (2.0.2)</a></li>
                     <li><a href="https://github.com/ecomfe/zrender/archive/master.zip">ZIP (Latest)</a></li>
                   </ul>
                 </li>
@@ -87,17 +87,19 @@
  *  var zr = zrender.init(document.getElementById('main'));
  */
 zr.clear();
-function Cross() {
-    this.type = 'cross';
+var Base = require('zrender/shape/Base');
+function Cross(options) {
+    Base.call(this, options);
 }
 Cross.prototype = {
-    brush : function(ctx, e, isHighlight) {
-        var style = e.style || {};
+    type : 'cross',
+    brush : function(ctx, isHighlight) {
+        var style = this.style || {};
         if (isHighlight) {
             // 根据style扩展默认高亮样式
-            style = e.highlightStyle || {};
-            for (var k in e.style) {
-                style[k] = e.style[k];
+            style = this.highlightStyle || {};
+            for (var k in this.style) {
+                style[k] = this.style[k];
             }
         }
         ctx.save();
@@ -113,27 +115,29 @@ Cross.prototype = {
         return;
     },
 
-    drift : function(e, dx, dy) {
-        e.style.x += dx;
-        e.style.y += dy;
+    drift : function(dx, dy) {
+        this.style.x += dx;
+        this.style.y += dy;
     },
 
-    isCover : function(e, x, y) {
-        if (x >= (e.style.x - e.style.width / 2)
-            && x <= (e.style.x + e.style.width / 2)
-            && y >= e.style.y - e.style.height / 2
-            && y <= (e.style.y + e.style.height / 2)
+    isCover : function(x, y) {
+        var originPos = this.getTansform(x, y);
+        x = originPos[0];
+        y = originPos[1];
+
+        if (x >= (this.style.x - this.style.width / 2)
+            && x <= (this.style.x + this.style.width / 2)
+            && y >= this.style.y - this.style.height / 2
+            && y <= (this.style.y + this.style.height / 2)
         ) {
             return true;
         }
         return false;
     }
 }
+require('zrender/tool/util').inherits(Cross, Base);
 
-var shape = require('zrender/shape');
-shape.define('cross', new Cross());
-zr.addShape({
-    shape : 'cross',
+zr.addShape(new Cross({
     style : {
          x : 100,
          y : 100,
@@ -142,13 +146,14 @@ zr.addShape({
          color : 'red'
     },
     draggable : true
-});
+}));
 
-function Audi() {
-    this.type = 'auid';
+function Audi(options) {
     this.brushTypeOnly = 'stroke';
+    Base.call(this, options);
 }
 Audi.prototype = {
+    type : 'auid',
     buildPath : function(ctx, style) {
         var x = style.x;
         var y = style.y;
@@ -174,20 +179,19 @@ Audi.prototype = {
         };
     }
 }
-var base = require('zrender/shape/base');
-base.derive(Audi);
-shape.define('audi', new Audi());
-zr.addShape({
-    shape : 'audi',
+
+require('zrender/tool/util').inherits(Audi, Base);
+zr.addShape(new Audi({
     style : {
          x : 200,
          y : 100,
          r : 50,
          color : '#1e90ff',
+         lineWidth : 1,
          text : 'Audi'
     },
     draggable : true
-});
+}));
 zr.render();
                     </textarea>
               </div><!--/.well -->

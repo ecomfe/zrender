@@ -1913,7 +1913,7 @@ define(
          * @type {Function}
          * @param {Event} e : event对象
          */
-        var stop = window.Event && window.Event.prototype.preventDefault
+        var stop = typeof window.addEventListener === 'function'
             ? function (e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -2124,6 +2124,7 @@ define(
         };
     }
 );
+
 /**
  * Handler控制模块
  *
@@ -4411,10 +4412,6 @@ define(
             options = options || {};
             
             this.id = options.id || guid();
-            this.zlevel = 0;
-            this.draggable = false;
-            this.clickable = false;
-            this.hoverable = true;
 
             for ( var key in options ) {
                 this[ key ] = options[ key ];
@@ -4429,6 +4426,20 @@ define(
             Transformable.call(this);
             Dispatcher.call(this);
         }
+
+        Base.prototype.invisible = false;
+
+        Base.prototype.ignore = false;
+
+        Base.prototype.zlevel = 0;
+
+        Base.prototype.draggable = false;
+
+        Base.prototype.clickable = false;
+
+        Base.prototype.hoverable = true;
+
+        Base.prototype.z = 0;
 
         /**
          * 画刷
@@ -6558,7 +6569,7 @@ define(
                         image = new Image();//document.createElement('image');
                         image.onload = function(){
                             image.onload = null;
-                            clearTimeout( _refreshTimeout );
+                            clearTimeout(_refreshTimeout);
                             _needsRefresh.push( me );
                             // 防止因为缓存短时间内触发多次onload事件
                             _refreshTimeout = setTimeout(function(){
@@ -6567,7 +6578,7 @@ define(
                                 _needsRefresh = [];
                             }, 10);
                         };
-                        _cache[ src ] = image;
+                        _cache[src] = image;
 
                         image.src = src;
                     }
@@ -6588,16 +6599,22 @@ define(
                     }
                     // Else is canvas
 
+                    var width = style.width || image.width;
+                    var height = style.height || image.height;
+                    var x = style.x;
+                    var y = style.y;
+                    
+                    // 图片加载失败
+                    if (!image.width || !image.height) {
+                        return;
+                    }
+
                     ctx.save();
                     this.setContext(ctx, style);
 
                     // 设置transform
                     this.setTransform(ctx);
 
-                    var width = style.width || image.width;
-                    var height = style.height || image.height;
-                    var x = style.x;
-                    var y = style.y;
                     if (style.sWidth && style.sHeight) {
                         var sx = style.sx || 0;
                         var sy = style.sy || 0;
@@ -6684,6 +6701,7 @@ define(
 
         // retina 屏幕优化
         var devicePixelRatio = window.devicePixelRatio || 1;
+        devicePixelRatio = Math.max(devicePixelRatio, 1);
         var vmlCanvasManager = window.G_vmlCanvasManager;
 
         /**
@@ -6742,6 +6760,7 @@ define(
             var hoverLayer = new Layer('_zrender_hover_', this);
             this._layers['hover'] = hoverLayer;
             domRoot.appendChild(hoverLayer.dom);
+            hoverLayer.initContext();
 
             hoverLayer.onselectstart = returnFalse;
 
@@ -6760,9 +6779,8 @@ define(
             if (this.isLoading()) {
                 this.hideLoading();
             }
-
             // TODO
-            this.refresh(callback);
+            this.refresh(callback, true);
 
             return this;
         };
@@ -6771,12 +6789,11 @@ define(
          * 刷新
          * 
          * @param {Function=} callback 刷新结束后的回调函数
+         * @param {Boolean} paintAll 强制绘制所有shape
          */
-        Painter.prototype.refresh = function (callback) {
-
+        Painter.prototype.refresh = function (callback, paintAll) {
             var list = this.storage.getShapeList(true);
-
-            this._paintList(list);
+            this._paintList(list, paintAll);
 
             if (typeof callback == 'function') {
                 callback();
@@ -6785,13 +6802,16 @@ define(
             return this;
         };
 
-        Painter.prototype._paintList = function(list) {
+        Painter.prototype._paintList = function(list, paintAll) {
 
-            var layerStatus = this._getLayerStatus(list);
+            if (typeof(paintAll) == 'undefined') {
+                paintAll = false;
+            }
+
+            this._updateLayerStatus(list);
 
             var currentLayer;
             var currentZLevel;
-            var currentLayerDirty = true;
             var ctx;
 
             for (var id in this._layers) {
@@ -6806,15 +6826,14 @@ define(
                 var shape = list[i];
 
                 if (currentZLevel !== shape.zlevel) {
-                    currentLayer = this._getLayer(shape.zlevel, currentLayer);
+                    currentLayer = this.getLayer(shape.zlevel, currentLayer);
                     ctx = currentLayer.ctx;
                     currentZLevel = shape.zlevel;
-                    currentLayerDirty = layerStatus[currentZLevel];
 
                     // Reset the count
                     currentLayer.unusedCount = 0;
 
-                    if (currentLayerDirty) {
+                    if (currentLayer.dirty || paintAll) {
                         currentLayer.clear();
                     }
                 }
@@ -6849,7 +6868,7 @@ define(
                     }
                 }
 
-                if (currentLayerDirty && !shape.invisible) {
+                if ((currentLayer.dirty || paintAll) && !shape.invisible) {
                     if (
                         !shape.onbrush
                         || (shape.onbrush && !shape.onbrush(ctx, false))
@@ -6882,7 +6901,9 @@ define(
             for (var id in this._layers) {
                 if (id !== 'hover') {
                     var layer = this._layers[id];
-                    if (layer.unusedCount >= 2) {
+                    layer.dirty = false;
+                    // 删除过期的层
+                    if (layer.unusedCount >= 500) {
                         delete this._layers[id];
                         layer.dom.parentNode.removeChild(layer.dom);
                     }
@@ -6893,7 +6914,7 @@ define(
             }
         };
 
-        Painter.prototype._getLayer = function(zlevel, prevLayer) {
+        Painter.prototype.getLayer = function(zlevel, prevLayer) {
             // Change draw layer
             var currentLayer = this._layers[zlevel];
             if (!currentLayer) {
@@ -6910,7 +6931,8 @@ define(
                         currentLayer.dom
                     );
                 }
-
+                currentLayer.initContext();
+                
                 this._layers[zlevel] = currentLayer;
 
                 currentLayer.config = this._layerConfig[zlevel];
@@ -6919,21 +6941,40 @@ define(
             return currentLayer;
         };
 
-        Painter.prototype._getLayerStatus = function(list) {
+        Painter.prototype._updateLayerStatus = function(list) {
+            
+            var layers = this._layers;
 
-            var obj = {};
+            var elCounts = {};
+            for (var z in layers) {
+                if (z !== 'hover') {
+                    elCounts[z] = layers[z].elCount;
+                    layers[z].elCount = 0;
+                }
+            }
 
             for (var i = 0, l = list.length; i < l; i++) {
                 var shape = list[i];
                 var zlevel = shape.zlevel;
-                // Already mark as dirty
-                if (obj[zlevel]) {
-                    continue;
+                var layer = layers[zlevel];
+                if (layer) {
+                    layer.elCount++;
+                    // 已经被标记为需要刷新
+                    if (layer.dirty) {
+                        continue;
+                    }
+                    layer.dirty = shape.__dirty;
                 }
-                obj[zlevel] = shape.__dirty;
             }
 
-            return obj;
+            // 层中的元素数量有发生变化
+            for (var z in layers) {
+                if (z !== 'hover') {
+                    if (elCounts[z] !== layers[z].elCount) {
+                        layers[z].dirty = true;
+                    }
+                }
+            }
         };
 
         /**
@@ -7077,7 +7118,7 @@ define(
                     this._layers[id].resize(width, height);
                 }
 
-                this.refresh();
+                this.refresh(null, true);
             }
 
             return this;
@@ -7123,7 +7164,7 @@ define(
             this._bgDom.appendChild(imageDom);
             var ctx = imageDom.getContext('2d');
             devicePixelRatio != 1 
-            && ctx.scale(devicePixelRatio, devicePixelRatio);
+                && ctx.scale(devicePixelRatio, devicePixelRatio);
             
             ctx.fillStyle = backgroundColor || '#fff';
             ctx.rect(
@@ -7328,12 +7369,6 @@ define(
             this.dom = createDom(id, 'canvas', painter);
             vmlCanvasManager && vmlCanvasManager.initElement(this.dom);
 
-            this.ctx = this.dom.getContext('2d');
-
-            if (devicePixelRatio != 1) { 
-                this.ctx.scale(devicePixelRatio, devicePixelRatio);
-            }
-
             this.domBack = null;
             this.ctxBack = null;
 
@@ -7342,6 +7377,17 @@ define(
             this.unusedCount = 0;
 
             this.config = null;
+
+            this.dirty = true;
+
+            this.elCount = 0;
+        }
+
+        Layer.prototype.initContext = function() {
+            this.ctx = this.dom.getContext('2d');
+            if (devicePixelRatio != 1) { 
+                this.ctx.scale(devicePixelRatio, devicePixelRatio);
+            }
         }
 
         Layer.prototype.createBackBuffer = function() {
@@ -7357,9 +7403,6 @@ define(
         };
 
         Layer.prototype.resize = function(width, height) {
-            
-            this.dom.setAttribute('width', width);
-            this.dom.setAttribute('height', height);
             this.dom.style.width = width + 'px';
             this.dom.style.height = height + 'px';
 
@@ -7372,7 +7415,7 @@ define(
 
             if (this.domBack) {
                 this.domBack.setAttribute('width', width * devicePixelRatio);
-                this.domBack.setAttribute('height', width * devicePixelRatio);
+                this.domBack.setAttribute('height', height * devicePixelRatio);
 
                 if (devicePixelRatio != 1) { 
                     this.ctxBack.scale(devicePixelRatio, devicePixelRatio);
@@ -7415,16 +7458,16 @@ define(
                     ctx.fillStyle = this.config.clearColor;
                     ctx.fillRect(
                         0, 0,
-                        width * devicePixelRatio, 
-                        height * devicePixelRatio
+                        width / devicePixelRatio, 
+                        height / devicePixelRatio
                     );
                     ctx.restore();
                 }
                 else {
                     ctx.clearRect(
                         0, 0, 
-                        width * devicePixelRatio, 
-                        height * devicePixelRatio
+                        width / devicePixelRatio,
+                        height / devicePixelRatio
                     );
                 }
 
@@ -7443,8 +7486,8 @@ define(
             else {
                 ctx.clearRect(
                     0, 0, 
-                    width,
-                    height
+                    width / devicePixelRatio,
+                    height / devicePixelRatio
                 );
             }
         };
@@ -7488,6 +7531,8 @@ define('zrender/shape/Group',['require','../tool/guid','../tool/util','../tool/e
         Transformable.call(this);
         Dispatcher.call(this);
     }
+
+    Group.prototype.ignore = false;
 
     Group.prototype.children = function() {
         return this._children.slice();
@@ -7617,7 +7662,10 @@ define(
 
         function shapeCompareFunc(a, b) {
             if (a.zlevel == b.zlevel) {
-                return a.__renderidx - b.__renderidx;
+                if (a.z == b.z) {
+                    return a.__renderidx - b.__renderidx;
+                }
+                return a.z - b.z;
             }
             return a.zlevel - b.zlevel;
         }
@@ -7727,6 +7775,10 @@ define(
 
         Storage.prototype._updateAndAddShape = function(el) {
             
+            if (el.ignore) {
+                return;
+            }
+
             el.updateTransform();
 
             if (el.type == 'group') {
@@ -7746,7 +7798,7 @@ define(
                     var child = el._children[i];
 
                     // Force to mark as dirty if group is dirty
-                    child.__dirty = el.__dirty || el.__dirty;
+                    child.__dirty = el.__dirty || child.__dirty;
 
                     this._updateAndAddShape(child);
                 }
@@ -7757,6 +7809,10 @@ define(
                         stopClipShape.__stopClip = true;
                     }
                 }
+
+                // Mark group clean here
+                el.__dirty = false;
+                
             } else {
                 this._shapeList[this._shapeListOffset++] = el;
             }
@@ -8828,7 +8884,7 @@ define(
         var _instances = {};    //ZRender实例map索引
 
         var zrender = {};
-        zrender.version = '2.0.1';
+        zrender.version = '2.0.2';
 
         /**
          * zrender初始化
@@ -8899,7 +8955,6 @@ define(
 
                 if (animatingShapes.length || zrInstance._needsRefreshNextFrame) {
                     zrInstance.refresh();
-                    zrInstance._needsRefreshNextFrame = false;
                 }
             };
         }
@@ -9032,6 +9087,7 @@ define(
          */
         ZRender.prototype.render = function (callback) {
             this.painter.render(callback);
+            this._needsRefreshNextFrame = false;
             return this;
         };
 
@@ -9042,6 +9098,7 @@ define(
          */
         ZRender.prototype.refresh = function (callback) {
             this.painter.refresh(callback);
+            this._needsRefreshNextFrame = false;
             return this;
         };
 

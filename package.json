@@ -1,10 +1,10 @@
 {
     "name": "zrender",
-    "version": "2.0.1",
+    "version": "2.0.2",
     "maintainers": [
         { "name": "Kener", "email": "linzhifeng@baidu.com" },
         { "name": "Pissang", "email": "shenyi01@baidu.com" },
-        { "name": "CrossDo", "email": "chenhuaimu@baidu.com)" },
+        { "name": "Erik", "email": "erik@baidu.com)" },
         { "name": "Loutongbing", "email": "loutongbing@baidu.com" },
         { "name": "Yangji", "email": "yangji01@baidu.com" },
         { "name": "Sushuang", "email": "sushuang@baidu.com" }

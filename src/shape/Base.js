@@ -199,10 +199,6 @@ define(
             options = options || {};
             
             this.id = options.id || guid();
-            this.zlevel = 0;
-            this.draggable = false;
-            this.clickable = false;
-            this.hoverable = true;
 
             for ( var key in options ) {
                 this[ key ] = options[ key ];
@@ -217,6 +213,20 @@ define(
             Transformable.call(this);
             Dispatcher.call(this);
         }
+
+        Base.prototype.invisible = false;
+
+        Base.prototype.ignore = false;
+
+        Base.prototype.zlevel = 0;
+
+        Base.prototype.draggable = false;
+
+        Base.prototype.clickable = false;
+
+        Base.prototype.hoverable = true;
+
+        Base.prototype.z = 0;
 
         /**
          * 画刷

@@ -23,7 +23,10 @@ define(
 
         function shapeCompareFunc(a, b) {
             if (a.zlevel == b.zlevel) {
-                return a.__renderidx - b.__renderidx;
+                if (a.z == b.z) {
+                    return a.__renderidx - b.__renderidx;
+                }
+                return a.z - b.z;
             }
             return a.zlevel - b.zlevel;
         }
@@ -133,6 +136,10 @@ define(
 
         Storage.prototype._updateAndAddShape = function(el) {
             
+            if (el.ignore) {
+                return;
+            }
+
             el.updateTransform();
 
             if (el.type == 'group') {
@@ -152,7 +159,7 @@ define(
                     var child = el._children[i];
 
                     // Force to mark as dirty if group is dirty
-                    child.__dirty = el.__dirty || el.__dirty;
+                    child.__dirty = el.__dirty || child.__dirty;
 
                     this._updateAndAddShape(child);
                 }
@@ -163,6 +170,10 @@ define(
                         stopClipShape.__stopClip = true;
                     }
                 }
+
+                // Mark group clean here
+                el.__dirty = false;
+                
             } else {
                 this._shapeList[this._shapeListOffset++] = el;
             }

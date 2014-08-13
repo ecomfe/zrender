@@ -110,7 +110,7 @@ define(
                         image = new Image();//document.createElement('image');
                         image.onload = function(){
                             image.onload = null;
-                            clearTimeout( _refreshTimeout );
+                            clearTimeout(_refreshTimeout);
                             _needsRefresh.push( me );
                             // 防止因为缓存短时间内触发多次onload事件
                             _refreshTimeout = setTimeout(function(){
@@ -119,7 +119,7 @@ define(
                                 _needsRefresh = [];
                             }, 10);
                         };
-                        _cache[ src ] = image;
+                        _cache[src] = image;
 
                         image.src = src;
                     }
@@ -140,16 +140,22 @@ define(
                     }
                     // Else is canvas
 
+                    var width = style.width || image.width;
+                    var height = style.height || image.height;
+                    var x = style.x;
+                    var y = style.y;
+                    
+                    // 图片加载失败
+                    if (!image.width || !image.height) {
+                        return;
+                    }
+
                     ctx.save();
                     this.setContext(ctx, style);
 
                     // 设置transform
                     this.setTransform(ctx);
 
-                    var width = style.width || image.width;
-                    var height = style.height || image.height;
-                    var x = style.x;
-                    var y = style.y;
                     if (style.sWidth && style.sHeight) {
                         var sx = style.sx || 0;
                         var sy = style.sy || 0;

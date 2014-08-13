@@ -57,7 +57,7 @@ define(
          * @type {Function}
          * @param {Event} e : event对象
          */
-        var stop = window.Event && window.Event.prototype.preventDefault
+        var stop = typeof window.addEventListener === 'function'
             ? function (e) {
                 e.preventDefault();
                 e.stopPropagation();

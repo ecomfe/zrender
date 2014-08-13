@@ -20,6 +20,7 @@ define(
 
         // retina 屏幕优化
         var devicePixelRatio = window.devicePixelRatio || 1;
+        devicePixelRatio = Math.max(devicePixelRatio, 1);
         var vmlCanvasManager = window.G_vmlCanvasManager;
 
         /**
@@ -78,6 +79,7 @@ define(
             var hoverLayer = new Layer('_zrender_hover_', this);
             this._layers['hover'] = hoverLayer;
             domRoot.appendChild(hoverLayer.dom);
+            hoverLayer.initContext();
 
             hoverLayer.onselectstart = returnFalse;
 
@@ -96,9 +98,8 @@ define(
             if (this.isLoading()) {
                 this.hideLoading();
             }
-
             // TODO
-            this.refresh(callback);
+            this.refresh(callback, true);
 
             return this;
         };
@@ -107,12 +108,11 @@ define(
          * 刷新
          * 
          * @param {Function=} callback 刷新结束后的回调函数
+         * @param {Boolean} paintAll 强制绘制所有shape
          */
-        Painter.prototype.refresh = function (callback) {
-
+        Painter.prototype.refresh = function (callback, paintAll) {
             var list = this.storage.getShapeList(true);
-
-            this._paintList(list);
+            this._paintList(list, paintAll);
 
             if (typeof callback == 'function') {
                 callback();
@@ -121,13 +121,16 @@ define(
             return this;
         };
 
-        Painter.prototype._paintList = function(list) {
+        Painter.prototype._paintList = function(list, paintAll) {
 
-            var layerStatus = this._getLayerStatus(list);
+            if (typeof(paintAll) == 'undefined') {
+                paintAll = false;
+            }
+
+            this._updateLayerStatus(list);
 
             var currentLayer;
             var currentZLevel;
-            var currentLayerDirty = true;
             var ctx;
 
             for (var id in this._layers) {
@@ -142,15 +145,14 @@ define(
                 var shape = list[i];
 
                 if (currentZLevel !== shape.zlevel) {
-                    currentLayer = this._getLayer(shape.zlevel, currentLayer);
+                    currentLayer = this.getLayer(shape.zlevel, currentLayer);
                     ctx = currentLayer.ctx;
                     currentZLevel = shape.zlevel;
-                    currentLayerDirty = layerStatus[currentZLevel];
 
                     // Reset the count
                     currentLayer.unusedCount = 0;
 
-                    if (currentLayerDirty) {
+                    if (currentLayer.dirty || paintAll) {
                         currentLayer.clear();
                     }
                 }
@@ -185,7 +187,7 @@ define(
                     }
                 }
 
-                if (currentLayerDirty && !shape.invisible) {
+                if ((currentLayer.dirty || paintAll) && !shape.invisible) {
                     if (
                         !shape.onbrush
                         || (shape.onbrush && !shape.onbrush(ctx, false))
@@ -218,7 +220,9 @@ define(
             for (var id in this._layers) {
                 if (id !== 'hover') {
                     var layer = this._layers[id];
-                    if (layer.unusedCount >= 2) {
+                    layer.dirty = false;
+                    // 删除过期的层
+                    if (layer.unusedCount >= 500) {
                         delete this._layers[id];
                         layer.dom.parentNode.removeChild(layer.dom);
                     }
@@ -229,7 +233,7 @@ define(
             }
         };
 
-        Painter.prototype._getLayer = function(zlevel, prevLayer) {
+        Painter.prototype.getLayer = function(zlevel, prevLayer) {
             // Change draw layer
             var currentLayer = this._layers[zlevel];
             if (!currentLayer) {
@@ -246,7 +250,8 @@ define(
                         currentLayer.dom
                     );
                 }
-
+                currentLayer.initContext();
+                
                 this._layers[zlevel] = currentLayer;
 
                 currentLayer.config = this._layerConfig[zlevel];
@@ -255,21 +260,40 @@ define(
             return currentLayer;
         };
 
-        Painter.prototype._getLayerStatus = function(list) {
+        Painter.prototype._updateLayerStatus = function(list) {
+            
+            var layers = this._layers;
 
-            var obj = {};
+            var elCounts = {};
+            for (var z in layers) {
+                if (z !== 'hover') {
+                    elCounts[z] = layers[z].elCount;
+                    layers[z].elCount = 0;
+                }
+            }
 
             for (var i = 0, l = list.length; i < l; i++) {
                 var shape = list[i];
                 var zlevel = shape.zlevel;
-                // Already mark as dirty
-                if (obj[zlevel]) {
-                    continue;
+                var layer = layers[zlevel];
+                if (layer) {
+                    layer.elCount++;
+                    // 已经被标记为需要刷新
+                    if (layer.dirty) {
+                        continue;
+                    }
+                    layer.dirty = shape.__dirty;
                 }
-                obj[zlevel] = shape.__dirty;
             }
 
-            return obj;
+            // 层中的元素数量有发生变化
+            for (var z in layers) {
+                if (z !== 'hover') {
+                    if (elCounts[z] !== layers[z].elCount) {
+                        layers[z].dirty = true;
+                    }
+                }
+            }
         };
 
         /**
@@ -413,7 +437,7 @@ define(
                     this._layers[id].resize(width, height);
                 }
 
-                this.refresh();
+                this.refresh(null, true);
             }
 
             return this;
@@ -459,7 +483,7 @@ define(
             this._bgDom.appendChild(imageDom);
             var ctx = imageDom.getContext('2d');
             devicePixelRatio != 1 
-            && ctx.scale(devicePixelRatio, devicePixelRatio);
+                && ctx.scale(devicePixelRatio, devicePixelRatio);
             
             ctx.fillStyle = backgroundColor || '#fff';
             ctx.rect(
@@ -664,12 +688,6 @@ define(
             this.dom = createDom(id, 'canvas', painter);
             vmlCanvasManager && vmlCanvasManager.initElement(this.dom);
 
-            this.ctx = this.dom.getContext('2d');
-
-            if (devicePixelRatio != 1) { 
-                this.ctx.scale(devicePixelRatio, devicePixelRatio);
-            }
-
             this.domBack = null;
             this.ctxBack = null;
 
@@ -678,6 +696,17 @@ define(
             this.unusedCount = 0;
 
             this.config = null;
+
+            this.dirty = true;
+
+            this.elCount = 0;
+        }
+
+        Layer.prototype.initContext = function() {
+            this.ctx = this.dom.getContext('2d');
+            if (devicePixelRatio != 1) { 
+                this.ctx.scale(devicePixelRatio, devicePixelRatio);
+            }
         }
 
         Layer.prototype.createBackBuffer = function() {
@@ -693,9 +722,6 @@ define(
         };
 
         Layer.prototype.resize = function(width, height) {
-            
-            this.dom.setAttribute('width', width);
-            this.dom.setAttribute('height', height);
             this.dom.style.width = width + 'px';
             this.dom.style.height = height + 'px';
 
@@ -708,7 +734,7 @@ define(
 
             if (this.domBack) {
                 this.domBack.setAttribute('width', width * devicePixelRatio);
-                this.domBack.setAttribute('height', width * devicePixelRatio);
+                this.domBack.setAttribute('height', height * devicePixelRatio);
 
                 if (devicePixelRatio != 1) { 
                     this.ctxBack.scale(devicePixelRatio, devicePixelRatio);
@@ -751,16 +777,16 @@ define(
                     ctx.fillStyle = this.config.clearColor;
                     ctx.fillRect(
                         0, 0,
-                        width * devicePixelRatio, 
-                        height * devicePixelRatio
+                        width / devicePixelRatio, 
+                        height / devicePixelRatio
                     );
                     ctx.restore();
                 }
                 else {
                     ctx.clearRect(
                         0, 0, 
-                        width * devicePixelRatio, 
-                        height * devicePixelRatio
+                        width / devicePixelRatio,
+                        height / devicePixelRatio
                     );
                 }
 
@@ -779,8 +805,8 @@ define(
             else {
                 ctx.clearRect(
                     0, 0, 
-                    width,
-                    height
+                    width / devicePixelRatio,
+                    height / devicePixelRatio
                 );
             }
         };

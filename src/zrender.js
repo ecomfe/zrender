@@ -44,7 +44,7 @@ define(
         var _instances = {};    //ZRender实例map索引
 
         var zrender = {};
-        zrender.version = '2.0.1';
+        zrender.version = '2.0.2';
 
         /**
          * zrender初始化
@@ -115,7 +115,6 @@ define(
 
                 if (animatingShapes.length || zrInstance._needsRefreshNextFrame) {
                     zrInstance.refresh();
-                    zrInstance._needsRefreshNextFrame = false;
                 }
             };
         }
@@ -248,6 +247,7 @@ define(
          */
         ZRender.prototype.render = function (callback) {
             this.painter.render(callback);
+            this._needsRefreshNextFrame = false;
             return this;
         };
 
@@ -258,6 +258,7 @@ define(
          */
         ZRender.prototype.refresh = function (callback) {
             this.painter.refresh(callback);
+            this._needsRefreshNextFrame = false;
             return this;
         };
 
