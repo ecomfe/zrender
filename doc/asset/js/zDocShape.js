@@ -119,12 +119,20 @@ description.shape = [
                 des : '必须，{string}，图形唯一标识，可通过zrender实例方法<a href="#zrenderInstance.newShapeId">newShapeId</a>生成'
             },
             {
+                name : 'z',
+                des : '默认为0，{number}，z值，跟zlevel一样影响shape绘制的前后顺序，z值大的shape会覆盖在z值小的上面，但是并不会创建新的canvas，所以优先级低于zlevel，而且频繁改动的开销比zlevel小很多。'
+            },
+            {
                 name : 'zlevel',
                 des : '默认为0，{number}，z层level，决定绘画在哪层canvas中，数值越大离用户越近，正如css中zlevel的作用一样，你可以定义把不同的shape分别放在不同的层中，这不仅实现了视觉上的上下覆盖，更重要的是当图形元素发生变化后的refresh将局限在发生了变化的图形层中，这在你利用zrender做各种动画效果时将十分有用，性能自然也更加出色~ 读<a href="example/artist.html" target="_blank">artist</a>源码，理解分层的用意和好处。'
             },
             {
+                name : 'ignore',
+                des : '默认为false，{boolean}，true时元素（及其子元素）会被忽略，不被绘制，也不会触发鼠标事件。'
+            },
+            {
                 name : 'invisible',
-                des : '默认为false（可见），{boolean}，决定图形元素默认状态是否可见。虽然简单，但很有用。',
+                des : '默认为false（可见），{boolean}，决定图形元素默认状态是否可见，但是仍然能触发鼠标事件。',
                 pre : (function(){
 var TextShape = require('zrender/shape/Text');
 zr.addShape(new TextShape({
