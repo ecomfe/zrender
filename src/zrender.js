@@ -44,7 +44,7 @@ define(
         var _instances = {};    //ZRender实例map索引
 
         var zrender = {};
-        zrender.version = '2.0.1';
+        zrender.version = '2.0.2';
 
         /**
          * zrender初始化
