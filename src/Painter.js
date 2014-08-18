@@ -493,6 +493,7 @@ define(
             );
             ctx.fill();
             
+            var self = this;
             //升序遍历，shape上的zlevel指定绘画图层的z轴层叠
             
             this.storage.iterShape(
@@ -504,7 +505,7 @@ define(
                         ) {
                             if (config.catchBrushException) {
                                 try {
-                                    shape.brush(ctx, false, this.updatePainter);
+                                    shape.brush(ctx, false, self.updatePainter);
                                 }
                                 catch(error) {
                                     log(
@@ -515,7 +516,7 @@ define(
                                 }
                             }
                             else {
-                                shape.brush(ctx, false, this.updatePainter);
+                                shape.brush(ctx, false, self.updatePainter);
                             }
                         }
                     }
