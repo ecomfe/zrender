@@ -279,6 +279,9 @@ define(
                     this._clickHandler(event);
                     if (now - this._lastClickMoment < EVENT.touchClickDelay / 2) {
                         this._dblclickHandler(event);
+                        if (this._lastHover && this._lastHover.clickable) {
+                            eventTool.stop(event);// 阻止浏览器默认事件，重要
+                        }
                     }
                     this._lastClickMoment = now;
                 }
@@ -444,6 +447,7 @@ define(
                 else {
                     // mobile的click自己模拟
                     root.removeEventListener('click', this._clickHandler);
+                    root.removeEventListener('dblclick', this._dblclickHandler);
                     root.removeEventListener('mousewheel', this._mousewheelHandler);
                     root.removeEventListener('mousemove', this._mousemoveHandler);
                     root.removeEventListener('mousedown', this._mousedownHandler);
@@ -456,6 +460,7 @@ define(
                 window.detachEvent('onresize', this._resizeHandler);
 
                 root.detachEvent('onclick', this._clickHandler);
+                root.detachEvent('dblclick', this._dblclickHandler);
                 root.detachEvent('onmousewheel', this._mousewheelHandler);
                 root.detachEvent('onmousemove', this._mousemoveHandler);
                 root.detachEvent('onmouseout', this._mouseoutHandler);
