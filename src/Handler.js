@@ -17,7 +17,7 @@ define(
         var EVENT = config.EVENT;
 
         var domHandlerNames = [
-            'resize', 'click', 
+            'resize', 'click', 'dblclick',
             'mousewheel', 'mousemove', 'mouseout', 'mouseup', 'mousedown',
             'touchstart', 'touchend', 'touchmove'
         ];
@@ -55,6 +55,26 @@ define(
 
                 this._mousemoveHandler(event);
             },
+            
+            /**
+             * 双击响应函数
+             * 
+             * @param {event} event dom事件对象
+             */
+            dblclick: function (event) {
+                event = this._zrenderEventFixed(event);
+
+                //分发config.EVENT.DBLCLICK事件
+                var _lastHover = this._lastHover;
+                if (( _lastHover && _lastHover.clickable )
+                    || !_lastHover
+                ) {
+                    this._dispatchAgency(_lastHover, EVENT.DBLCLICK, event);
+                }
+
+                this._mousemoveHandler(event);
+            },
+            
 
             /**
              * 鼠标滚轮响应函数
@@ -252,10 +272,15 @@ define(
                 //eventTool.stop(event);// 阻止浏览器默认事件，重要
                 event = this._zrenderEventFixed(event, true);
                 this._mouseupHandler(event);
-
-                if (new Date() - this._lastTouchMoment < EVENT.touchClickDelay) {
+                
+                var now = new Date();
+                if (now - this._lastTouchMoment < EVENT.touchClickDelay) {
                     this._mobildFindFixed(event);
                     this._clickHandler(event);
+                    if (now - this._lastClickMoment < EVENT.touchClickDelay / 2) {
+                        this._dblclickHandler(event);
+                    }
+                    this._lastClickMoment = now;
                 }
                 this.painter.clearHover();
             }
@@ -339,6 +364,7 @@ define(
                 else {
                     // mobile的click/move/up/down自己模拟
                     root.addEventListener('click', this._clickHandler);
+                    root.addEventListener('dblclick', this._dblclickHandler);
                     root.addEventListener('mousewheel', this._mousewheelHandler);
                     root.addEventListener('mousemove', this._mousemoveHandler);
                     root.addEventListener('mousedown', this._mousedownHandler);
@@ -351,6 +377,7 @@ define(
                 window.attachEvent('onresize', this._resizeHandler);
 
                 root.attachEvent('onclick', this._clickHandler);
+                root.attachEvent('ondblclick ', this._dblclickHandler);
                 root.attachEvent('onmousewheel', this._mousewheelHandler);
                 root.attachEvent('onmousemove', this._mousemoveHandler);
                 root.attachEvent('onmouseout', this._mouseoutHandler);
@@ -388,6 +415,7 @@ define(
             switch (eventName) {
                 case EVENT.RESIZE:
                 case EVENT.CLICK:
+                case EVENT.DBLCLICK:
                 case EVENT.MOUSEWHEEL:
                 case EVENT.MOUSEMOVE:
                 case EVENT.MOUSEDOWN:
@@ -627,7 +655,8 @@ define(
             }
 
             while (el) {
-                el[eventHandler] && el[eventHandler](eventPacket);
+                el[eventHandler] 
+                && (eventPacket.cancelBubble = el[eventHandler](eventPacket));
                 el.dispatch(eventName, eventPacket);
 
                 el = el.parent;

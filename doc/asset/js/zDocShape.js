@@ -572,6 +572,63 @@ zr.on(config.EVENT.CLICK, function(params) {
                 cantry : true
             },
             {
+                name : 'ondblclick',
+                des : '默认为null，当前图形双击响应，回传参数和有效返回值见下',
+                params : [
+                    ['eventPacket', '{Object}','事件包，结构如下'],
+                    ['eventPacket.type', '{string}','事件类型为EVENT.DBLCLICK'],
+                    ['eventPacket.event', '{event}','原始dom事件对象'],
+                    ['eventPacket.target', '{Object}','当前图形shape对象']
+                ],
+                res : [
+                    'true | false ', '{boolean}','回调返回，true（阻塞全局zrender事件）| false（不阻塞全局zrender事件）<br/> 无返回值，等同返回false'
+                ],
+                pre : (function(){
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
+    style : {
+        x : 200,
+        y : 200,
+        r : 80,
+        color : 'red',
+        text : 'dblclick and block!',
+        textPosition : 'inside'
+    },
+    clickable : true,
+    ondblclick : function() {
+        alert('dblclick on red shape!')
+        return true;    // 阻塞全局zrender事件
+    }
+}));
+zr.addShape(new CircleShape({
+    style : {
+        x : 400,
+        y : 200,
+        r : 80,
+        color : 'green',
+        text : 'dblclick!',
+        textPosition : 'inside'
+    },
+    clickable : true,
+    ondblclick : function() {
+        alert('dblclick on green shape!')
+    }
+}));
+zr.render();
+
+var config = require('zrender/config');
+zr.on(config.EVENT.DBLCLICK, function(params) {
+    if (params.target) {
+        alert('Global catch! Double Click on shape!');
+    }
+    else {
+        alert('Global catch! None shape, but i catch you!');
+    }
+});
+                }).toString().slice(13, -10),
+                cantry : true
+            },
+            {
                 name : 'onmousewheel',
                 des : '默认为null，当前图形上鼠标滚轮触发，回传参数格式见<a href="#zrenderInstance.eventPacket">eventPacket</a>，参数差异和有效返回值见下',
                 params : [
