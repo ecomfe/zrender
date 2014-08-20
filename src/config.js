@@ -10,6 +10,7 @@ define(
         EVENT : {                       // 支持事件列表
             RESIZE : 'resize',          // 窗口大小变化
             CLICK : 'click',            // 鼠标按钮被（手指）按下，事件对象是：目标图形元素或空
+            DBLCLICK : 'dblclick',      // 双击事件
 
             MOUSEWHEEL : 'mousewheel',  // 鼠标滚轮变化，事件对象是：目标图形元素或空
             MOUSEMOVE : 'mousemove',    // 鼠标（手指）被移动，事件对象是：目标图形元素或空

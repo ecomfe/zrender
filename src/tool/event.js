@@ -61,6 +61,7 @@ define(
             ? function (e) {
                 e.preventDefault();
                 e.stopPropagation();
+                e.cancelBubble = true;
             }
             : function (e) {
                 e.returnValue = false;
