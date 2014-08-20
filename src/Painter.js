@@ -14,9 +14,11 @@ define(
 
         var config = require('./config');
         var util = require('./tool/util');
+        var vec2 = require('./tool/vector');
         var log = require('./tool/log');
         var matrix = require('./tool/matrix');
         var BaseLoadingEffect = require('./loadingEffect/Base');
+        var Transformable = require('./shape/mixin/Transformable');
 
         // retina 屏幕优化
         var devicePixelRatio = window.devicePixelRatio || 1;
@@ -145,6 +147,10 @@ define(
                 var shape = list[i];
 
                 if (currentZLevel !== shape.zlevel) {
+                    if (currentLayer && currentLayer.needTransform) {
+                        ctx.restore();
+                    }
+
                     currentLayer = this.getLayer(shape.zlevel, currentLayer);
                     ctx = currentLayer.ctx;
                     currentZLevel = shape.zlevel;
@@ -154,6 +160,12 @@ define(
 
                     if (currentLayer.dirty || paintAll) {
                         currentLayer.clear();
+                    }
+                    
+                    currentLayer.updateTransform();
+                    if (currentLayer.needTransform) {
+                        ctx.save();
+                        currentLayer.setTransform(ctx);
                     }
                 }
 
@@ -217,6 +229,10 @@ define(
                 shape.__dirty = false;
             }
 
+            if (currentLayer && currentLayer.needTransform) {
+                ctx.restore();
+            }
+
             for (var id in this._layers) {
                 if (id !== 'hover') {
                     var layer = this._layers[id];
@@ -254,11 +270,17 @@ define(
                 
                 this._layers[zlevel] = currentLayer;
 
-                currentLayer.config = this._layerConfig[zlevel];
+                if (this._layerConfig[zlevel]) {
+                    util.merge(currentLayer, this._layerConfig[zlevel], true);
+                }
             }
 
             return currentLayer;
         };
+
+        Painter.prototype.getLayers = function() {
+            return this._layers;
+        }
 
         Painter.prototype._updateLayerStatus = function(list) {
             
@@ -351,7 +373,7 @@ define(
                 var layer = this._layers[zlevel];
 
                 if (layer) {
-                    layer.config = this._layerConfig[zlevel];
+                    util.merge(layer, this._layerConfig[zlevel], true);
                 }
             }
         };
@@ -573,6 +595,11 @@ define(
                 //有onbrush并且调用执行返回false或undefined则继续粉刷
                 || (shape.onbrush && !shape.onbrush(ctx, true))
             ) {
+                var layer = this.getLayer(shape.zlevel);
+                if (layer.needTransform) {
+                    ctx.save();
+                    layer.setTransform(ctx);
+                }
                 // Retina 优化
                 if (config.catchBrushException) {
                     try {
@@ -586,6 +613,9 @@ define(
                 }
                 else {
                     shape.brush(ctx, true, this.updatePainter);
+                }
+                if (layer.needTransform) {
+                    ctx.restore();
                 }
             }
         };
@@ -701,6 +731,16 @@ define(
             this.dirty = true;
 
             this.elCount = 0;
+
+            // Configs
+            this.clearColor = 0;
+            this.motionBlur = false;
+            this.lastFrameAlpha = 0.7;
+
+            this.zoomable = false;
+            this.panable = false;
+
+            Transformable.call(this);
         }
 
         Layer.prototype.initContext = function() {
@@ -744,64 +784,37 @@ define(
         };
 
         Layer.prototype.clear = function() {
-            var config = this.config;
             var dom = this.dom;
             var ctx = this.ctx;
             var width = dom.width;
             var height = dom.height;
 
-            if (config) {
-                var haveClearColor =
-                    typeof(config.clearColor) !== 'undefined'
-                    && !vmlCanvasManager;
-                var haveMotionBLur = config.motionBlur && !vmlCanvasManager;
-                var lastFrameAlpha = config.lastFrameAlpha;
-                if (typeof(lastFrameAlpha) == 'undefined') {
-                    lastFrameAlpha = 0.7;
-                }
+            var haveClearColor = this.clearColor && !vmlCanvasManager;
+            var haveMotionBLur = this.motionBlur && !vmlCanvasManager;
+            var lastFrameAlpha = this.lastFrameAlpha;
 
-                if (haveMotionBLur) {
-                    if (!this.domBack) {
-                        this.createBackBuffer();
-                    } 
+            if (haveMotionBLur) {
+                if (!this.domBack) {
+                    this.createBackBuffer();
+                } 
 
-                    this.ctxBack.globalCompositeOperation = 'copy';
-                    this.ctxBack.drawImage(
-                        dom, 0, 0,
-                        width / devicePixelRatio,
-                        height / devicePixelRatio
-                    );
-                }
+                this.ctxBack.globalCompositeOperation = 'copy';
+                this.ctxBack.drawImage(
+                    dom, 0, 0,
+                    width / devicePixelRatio,
+                    height / devicePixelRatio
+                );
+            }
 
-                if (haveClearColor) {
-                    ctx.save();
-                    ctx.fillStyle = this.config.clearColor;
-                    ctx.fillRect(
-                        0, 0,
-                        width / devicePixelRatio, 
-                        height / devicePixelRatio
-                    );
-                    ctx.restore();
-                }
-                else {
-                    ctx.clearRect(
-                        0, 0, 
-                        width / devicePixelRatio,
-                        height / devicePixelRatio
-                    );
-                }
-
-                if (haveMotionBLur) {
-                    var domBack = this.domBack;
-                    ctx.save();
-                    ctx.globalAlpha = lastFrameAlpha;
-                    ctx.drawImage(
-                        domBack, 0, 0,
-                        width / devicePixelRatio,
-                        height / devicePixelRatio
-                    );
-                    ctx.restore();
-                }
+            if (haveClearColor) {
+                ctx.save();
+                ctx.fillStyle = this.config.clearColor;
+                ctx.fillRect(
+                    0, 0,
+                    width / devicePixelRatio, 
+                    height / devicePixelRatio
+                );
+                ctx.restore();
             }
             else {
                 ctx.clearRect(
@@ -810,7 +823,21 @@ define(
                     height / devicePixelRatio
                 );
             }
+
+            if (haveMotionBLur) {
+                var domBack = this.domBack;
+                ctx.save();
+                ctx.globalAlpha = lastFrameAlpha;
+                ctx.drawImage(
+                    domBack, 0, 0,
+                    width / devicePixelRatio,
+                    height / devicePixelRatio
+                );
+                ctx.restore();
+            }
         };
+
+        util.merge(Layer.prototype, Transformable.prototype);
 
         return Painter;
     }

@@ -180,11 +180,18 @@ define(
                         ctx.drawImage(image, x, y, width, height);
                     }
                     // 如果没设置宽和高的话自动根据图片宽高设置
-                    style.width = width;
-                    style.height = height;
-                    this.style.width = width;
-                    this.style.height = height;
-
+                    if (!style.width) {
+                        style.width = width;
+                    }
+                    if (!style.height) {
+                        style.height = height;
+                    }
+                    if (!this.style.width) {
+                        this.style.width = width;
+                    }
+                    if (!this.style.height) {
+                        this.style.height = height;
+                    }
 
                     this.drawText(ctx, style, this.style);
 

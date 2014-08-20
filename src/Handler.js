@@ -14,6 +14,8 @@ define(
         var env = require('./tool/env');
         var eventTool = require('./tool/event');
         var util = require('./tool/util');
+        var vec2 = require('./tool/vector');
+        var mat2d = require('./tool/matrix');
         var EVENT = config.EVENT;
 
         var domHandlerNames = [
@@ -64,6 +66,33 @@ define(
             mousewheel: function (event) {
                 event = this._zrenderEventFixed(event);
 
+                // http://www.sitepoint.com/html5-javascript-mouse-wheel/
+                // https://developer.mozilla.org/en-US/docs/DOM/DOM_event_reference/mousewheel
+                var delta = event.wheelDelta // Webkit
+                            || -event.detail; // Firefox
+                var scale = delta > 0 ? 1.1 : 1 / 1.1;
+
+                var layers = this.painter.getLayers();
+
+                var needsRefresh = false;
+                for (var z in layers) {
+                    if (z !=='hover') {
+                        var layer = layers[z];
+                        if (layer.zoomable) {
+                            // Keep the mouse center when scaling
+                            layer.position[0] -= (this._mouseX - layer.position[0]) * (scale - 1);
+                            layer.position[1] -= (this._mouseY - layer.position[1]) * (scale - 1);
+                            layer.scale[0] *= scale;
+                            layer.scale[1] *= scale;
+                            layer.dirty = true;
+                            needsRefresh = true;
+                        }
+                    }
+                }
+                if (needsRefresh) {
+                    this.painter.refresh();
+                }
+
                 //分发config.EVENT.MOUSEWHEEL事件
                 this._dispatchAgency(this._lastHover, EVENT.MOUSEWHEEL, event);
                 this._mousemoveHandler(event);
@@ -84,6 +113,8 @@ define(
                 this._lastY = this._mouseY;
                 this._mouseX = eventTool.getX(event);
                 this._mouseY = eventTool.getY(event);
+                var dx = this._mouseX - this._lastX;
+                var dy = this._mouseY - this._lastY;
 
                 // 可能出现config.EVENT.DRAGSTART事件
                 // 避免手抖点击误认为拖拽
@@ -92,7 +123,8 @@ define(
                 //}
                 this._hasfound = 0;
                 this._event = event;
-                this.storage.iterShape(this._findHover, { normal: 'down'});
+
+                this._iterateAndFindHover();
 
                 // 找到的在迭代函数里做了处理，没找到得在迭代完后处理
                 if (!this._hasfound) {
@@ -111,18 +143,38 @@ define(
                     this.storage.delHover();
                     this.painter.clearHover();
                 }
-                //如果存在拖拽中元素，被拖拽的图形元素最后addHover
-                if (this._draggingTarget) {
-                    this.storage.drift(
-                        this._draggingTarget.id,
-                        this._mouseX - this._lastX,
-                        this._mouseY - this._lastY
-                    );
-                    this.storage.addHover(this._draggingTarget);
-                }
 
                 // set cursor for root element
                 var cursor = 'default';
+
+                //如果存在拖拽中元素，被拖拽的图形元素最后addHover
+                if (this._draggingTarget) {
+                    this.storage.drift(this._draggingTarget.id, dx, dy);
+                    this.storage.addHover(this._draggingTarget);
+                } else if (this._isMouseDown) {
+                    // Layer dragging
+                    var layers = this.painter.getLayers();
+
+                    var needsRefresh = false;
+                    for (var z in layers) {
+                        if (z !=='hover') {
+                            var layer = layers[z];
+                            if (layer.zoomable) {
+                                // PENDING
+                                cursor = 'move';
+                                // Keep the mouse center when scaling
+                                layer.position[0] += dx;
+                                layer.position[1] += dy;
+                                needsRefresh = true;
+                                layer.dirty = true;
+                            }
+                        }
+                    }
+                    if (needsRefresh) {
+                        this.painter.refresh();
+                    }
+                }
+
                 if (this._draggingTarget || (this._hasfound && this._lastHover.draggable)) {
                     cursor = 'move';
                 }
@@ -269,12 +321,23 @@ define(
          * @param {Object} context 运行时this环境
          * @return {Function}
          */
-        function bind1Arg( handler, context ) {
-            return function ( e ) {
-                return handler.call( context, e );
+        function bind1Arg(handler, context) {
+            return function (e) {
+                return handler.call(context, e);
             };
         }
 
+        function bind2Arg(handler, context) {
+            return function (arg1, arg2) {
+                return handler.call(context, arg1, arg2);
+            };
+        }
+
+        function bind3Arg(handler, context) {
+            return function (arg1, arg2, arg3) {
+                return handler.call(context, arg1, arg2, arg3);
+            };
+        }
         /**
          * 为控制类实例初始化dom 事件处理函数
          * 
@@ -322,7 +385,7 @@ define(
             this._mouseX = 
             this._mouseY = 0;
 
-            this._findHover = bind1Arg(findHover, this);
+            this._findHover = bind3Arg(findHover, this);
             this._domHover = painter.getDomHover();
             initDomHandler(this);
 
@@ -651,6 +714,38 @@ define(
                 });
             }
         };
+
+        /**
+         * 迭代寻找hover shape
+         * @return {[type]}
+         */
+        Handler.prototype._iterateAndFindHover = (function() {
+            var invTransform = mat2d.create();
+            return function() {
+                var list = this.storage.getShapeList();
+                var currentZLevel;
+                var currentLayer;
+                var tmp = [0, 0];
+                for (var i = list.length - 1; i >= 0 ; i--) {
+                    var shape = list[i];
+
+                    if (currentZLevel !== shape.zlevel) {
+                        currentLayer = this.painter.getLayer(shape.zlevel, currentLayer);
+                        tmp[0] = this._mouseX;
+                        tmp[1] = this._mouseY;
+
+                        if (currentLayer.needTransform) {
+                            mat2d.invert(invTransform, currentLayer.transform);
+                            vec2.applyTransform(tmp, tmp, invTransform);
+                        }
+                    }
+
+                    if (this._findHover(shape, tmp[0], tmp[1])) {
+                        break;
+                    }
+                }
+            }
+        })()
         
         // touch指尖错觉的尝试偏移量配置
         var MOBILE_TOUCH_OFFSETS = [
@@ -667,12 +762,15 @@ define(
             this._mouseY = event.zrenderY;
 
             this._event = event;
-            this.storage.iterShape(this._findHover, { normal: 'down'});
+
+            this._iterateAndFindHover();
+
             for ( var i = 0; !this._lastHover && i < MOBILE_TOUCH_OFFSETS.length ; i++ ) {
                 var offset = MOBILE_TOUCH_OFFSETS[ i ];
                 offset.x && ( this._mouseX += offset.x );
                 offset.y && ( this._mouseX += offset.y );
-                this.storage.iterShape(this._findHover, { normal: 'down'});
+
+                this._iterateAndFindHover();
             }
 
             if (this._lastHover) {
@@ -687,7 +785,7 @@ define(
          * @private
          * @param {Object} e 图形元素
          */
-        function findHover(shape) {
+        function findHover(shape, x, y) {
             if (
                 ( this._draggingTarget && this._draggingTarget.id == shape.id ) //迭代到当前拖拽的图形上
                 || shape.isSilent() // 打酱油的路过，啥都不响应的shape~
@@ -696,7 +794,7 @@ define(
             }
 
             var event = this._event;
-            if (shape.isCover(this._mouseX, this._mouseY)) {
+            if (shape.isCover(x, y)) {
                 if (shape.hoverable) {
                     this.storage.addHover(shape);
                 }
