@@ -50,6 +50,11 @@ define(
                 out[1] = v1[1] * v2[1];
                 return out;
             },
+            div : function(out, v1, v2) {
+                out[0] = v1[0] / v2[0];
+                out[1] = v1[1] / v2[1];
+                return out;
+            },
             dot : function(v1, v2) {
                 return v1[0] * v2[0] + v1[1] * v2[1];
             },

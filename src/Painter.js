@@ -238,6 +238,7 @@ define(
                     var layer = this._layers[id];
                     layer.dirty = false;
                     // 删除过期的层
+                    // PENDING
                     if (layer.unusedCount >= 500) {
                         delete this._layers[id];
                         layer.dom.parentNode.removeChild(layer.dom);
@@ -740,6 +741,11 @@ define(
             this.zoomable = false;
             this.panable = false;
 
+            this.maxZoom = Infinity;
+            this.minZoom = 0;
+
+            // TODO
+            // 在 layerConfig 里同步 position, rotation, scale
             Transformable.call(this);
         }
 
