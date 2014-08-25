@@ -111,7 +111,7 @@ define(
                         image.onload = function(){
                             image.onload = null;
                             clearTimeout(_refreshTimeout);
-                            _needsRefresh.push( me );
+                            _needsRefresh.push(me);
                             // 防止因为缓存短时间内触发多次onload事件
                             _refreshTimeout = setTimeout(function(){
                                 refresh && refresh( _needsRefresh );

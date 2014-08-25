@@ -138,6 +138,7 @@ define(
             for (var id in this._layers) {
                 if (id !== 'hover') {
                     this._layers[id].unusedCount++;
+                    this._layers[id].updateTransform();
                 }
             }
 
@@ -161,8 +162,7 @@ define(
                     if (currentLayer.dirty || paintAll) {
                         currentLayer.clear();
                     }
-                    
-                    currentLayer.updateTransform();
+
                     if (currentLayer.needTransform) {
                         ctx.save();
                         currentLayer.setTransform(ctx);
@@ -239,11 +239,10 @@ define(
                     layer.dirty = false;
                     // 删除过期的层
                     // PENDING
-                    if (layer.unusedCount >= 500) {
-                        delete this._layers[id];
-                        layer.dom.parentNode.removeChild(layer.dom);
-                    }
-                    else if (layer.unusedCount == 1) {
+                    // if (layer.unusedCount >= 500) {
+                    //     this.delLayer(id);
+                    // }
+                    if (layer.unusedCount == 1) {
                         layer.clear();
                     }
                 }
@@ -274,6 +273,8 @@ define(
                 if (this._layerConfig[zlevel]) {
                     util.merge(currentLayer, this._layerConfig[zlevel], true);
                 }
+
+                currentLayer.updateTransform();
             }
 
             return currentLayer;
@@ -378,6 +379,24 @@ define(
                 }
             }
         };
+
+        /**
+         * 删除指定zlevel
+         */
+        Painter.prototype.delLayer = function(zlevel) {
+            var layer = this._layers[zlevel];
+            if (!layer) {
+                return;
+            }
+            // Save config
+            this.modLayer(zlevel, {
+                position: layer.position,
+                rotation: layer.rotation,
+                scale: layer.scale
+            });
+            layer.dom.parentNode.removeChild(layer.dom);
+            delete this._layers[zlevel];
+        }
 
         /**
          * 刷新hover层
