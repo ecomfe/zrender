@@ -140,7 +140,6 @@ define(
                     if (!hasPath) {
                         ctx.beginPath();
                         this.buildPath(ctx, style);
-                        ctx.closePath();
                     }
                     ctx.stroke();
                 }
