@@ -82,7 +82,6 @@ define(
          * @param {Object} [context]
          */
         Dispatcher.prototype.one = function(event, handler, context) {
-            
             var _h = this._handlers;
 
             if(!handler || !event) {
@@ -110,7 +109,6 @@ define(
          * @param {Object} [context]
          */
         Dispatcher.prototype.bind = function(event, handler, context) {
-            
             var _h = this._handlers;
 
             if(!handler || !event) {
@@ -137,7 +135,6 @@ define(
          * @param {Function} handler : 响应函数
          */
         Dispatcher.prototype.unbind = function(event, handler) {
-
             var _h = this._handlers;
 
             if(!event) {
@@ -173,14 +170,14 @@ define(
          * @param {string} type : 事件类型
          */
         Dispatcher.prototype.dispatch = function(type) {
-            var args = arguments;
-            var argLen = args.length;
-
-            if (argLen > 3) {
-                args = Array.prototype.slice.call(args, 1);
-            }
-
             if(this._handlers[type]) {
+                var args = arguments;
+                var argLen = args.length;
+    
+                if (argLen > 3) {
+                    args = Array.prototype.slice.call(args, 1);
+                }
+                
                 var _h = this._handlers[type];
                 var len = _h.length;
                 for (var i = 0; i < len;) {
@@ -219,15 +216,15 @@ define(
          * @param {string} type : 事件类型
          */
         Dispatcher.prototype.dispatchWithContext = function(type) {
-            var args = arguments;
-            var argLen = args.length;
-
-            if (argLen > 4) {
-                args = Array.prototype.slice.call(args, 1, args.length - 1);
-            }
-            var ctx = args[args.length - 1];
-
             if(this._handlers[type]) {
+                var args = arguments;
+                var argLen = args.length;
+    
+                if (argLen > 4) {
+                    args = Array.prototype.slice.call(args, 1, args.length - 1);
+                }
+                var ctx = args[args.length - 1];
+                
                 var _h = this._handlers[type];
                 var len = _h.length;
                 for (var i = 0; i < len;) {
