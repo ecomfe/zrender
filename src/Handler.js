@@ -189,7 +189,7 @@ define(
                     for (var z in layers) {
                         if (z !=='hover') {
                             var layer = layers[z];
-                            if (layer.zoomable) {
+                            if (layer.panable) {
                                 // PENDING
                                 cursor = 'move';
                                 // Keep the mouse center when scaling

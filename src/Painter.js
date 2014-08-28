@@ -763,8 +763,6 @@ define(
             this.maxZoom = Infinity;
             this.minZoom = 0;
 
-            // TODO
-            // 在 layerConfig 里同步 position, rotation, scale
             Transformable.call(this);
         }
 
