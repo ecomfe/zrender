@@ -1,15 +1,12 @@
 /**
  * Painter绘图模块
- *
+ * @module zrender/Painter
  * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
  *         errorrik (errorrik@gmail.com)
+ *         pissang (https://www.github.com/pissang)
  */
-
-
-
-define(
+ define(
     function (require) {
-
         'use strict';
 
         var config = require('./config');
@@ -25,30 +22,30 @@ define(
         devicePixelRatio = Math.max(devicePixelRatio, 1);
         var vmlCanvasManager = window.G_vmlCanvasManager;
 
-        /**
-         * 返回false的方法，用于避免页面被选中
-         * 
-         * @inner
-         */
+        
+        // 返回false的方法，用于避免页面被选中
         function returnFalse() {
             return false;
         }
 
-        /**
-         * 什么都不干的空方法
-         * 
-         * @inner
-         */
+        // 什么都不干的空方法
         function doNothing() {}
 
         /**
-         * 绘图类 (V)
-         * 
-         * @param {HTMLElement} root 绘图区域
-         * @param {storage} storage Storage实例
+         * @alias module:zrender/Painter
+         * @constructor
+         * @param {HTMLElement} root 绘图容器
+         * @param {module:zrender/Storage} storage
          */
-        function Painter(root, storage) {
+        var Painter = function(root, storage) {
+            /**
+             * 绘图容器
+             * @type {HTMLElement}
+             */
             this.root = root;
+            /**
+             * @type {module:zrender/Storage}
+             */
             this.storage = storage;
 
             root.innerHTML = '';
@@ -87,14 +84,14 @@ define(
 
             var me = this;
             this.updatePainter = function(shapeList, callback) {
-                me.update(shapeList, callback);
+                me.refreshShapes(shapeList, callback);
             };
         }
 
         /**
          * 首次绘图，创建各种dom和context
          * 
-         * @param {Function=} callback 绘画结束后的回调函数
+         * @param {Function} callback 绘画结束后的回调函数
          */
         Painter.prototype.render = function (callback) {
             if (this.isLoading()) {
@@ -108,9 +105,8 @@ define(
 
         /**
          * 刷新
-         * 
-         * @param {Function=} callback 刷新结束后的回调函数
-         * @param {Boolean} paintAll 强制绘制所有shape
+         * @param {Function} callback 刷新结束后的回调函数
+         * @param {boolean} paintAll 强制绘制所有shape
          */
         Painter.prototype.refresh = function (callback, paintAll) {
             var list = this.storage.getShapeList(true);
@@ -249,6 +245,12 @@ define(
             }
         };
 
+        /**
+         * 获取 zlevel 所在层，如果不存在则会创建一个新的层
+         * @param {number} zlevel
+         * @param {module:zrender/Painter~Layer} [prevLayer]
+         *        在需要创建新的层时需要使用，新创建层的dom节点会插在该层后面
+         */
         Painter.prototype.getLayer = function(zlevel, prevLayer) {
             // Change draw layer
             var currentLayer = this._layers[zlevel];
@@ -280,6 +282,10 @@ define(
             return currentLayer;
         };
 
+        /**
+         * 获取所有已创建的层
+         * @param {Array.<module:zrender/Painter~Layer>} [prevLayer]
+         */
         Painter.prototype.getLayers = function() {
             return this._layers;
         }
@@ -321,12 +327,11 @@ define(
         };
 
         /**
-         * 视图更新
-         * 
-         * @param {Array} shapeList 需要更新的图形元素列表
-         * @param {Function} callback  视图更新后回调函数
+         * 指定的图形列表
+         * @param {Array.<module:zrender/shape/Base>} shapeList 需要更新的图形元素列表
+         * @param {Function} [callback] 视图更新后回调函数
          */
-        Painter.prototype.update = function (shapeList, callback) {
+        Painter.prototype.refreshShapes = function (shapeList, callback) {
             for (var i = 0, l = shapeList.length; i < l; i++) {
                 var shape = shapeList[i];
                 this.storage.mod(shape.id);
@@ -363,6 +368,18 @@ define(
 
         /**
          * 修改指定zlevel的绘制参数
+         * 
+         * @param {string} zLevel
+         * @param {Object} config 配置对象
+         * @param {string} [config.clearColor=0] 每次清空画布的颜色
+         * @param {string} [config.motionBlur=false] 是否开启动态模糊
+         * @param {number} [config.lastFrameAlpha=0.7]
+         *                 在开启动态模糊的时候使用，与上一帧混合的alpha值，值越大尾迹越明显
+         * @param {Array.<number>} [position] 层的平移
+         * @param {Array.<number>} [rotation] 层的旋转
+         * @param {Array.<number>} [scale] 层的缩放
+         * @param {boolean} [zoomable=false] 层是否支持鼠标缩放操作
+         * @param {boolean} [panable=false] 层是否支持鼠标平移操作
          */
         Painter.prototype.modLayer = function (zlevel, config) {
             if (config) {
@@ -381,7 +398,8 @@ define(
         };
 
         /**
-         * 删除指定zlevel
+         * 删除指定层
+         * @param {number} zlevel 层所在的zlevel
          */
         Painter.prototype.delLayer = function(zlevel) {
             var layer = this._layers[zlevel];
@@ -487,9 +505,10 @@ define(
 
         /**
          * 清除单独的一个层
+         * @param {number} zlevel
          */
-        Painter.prototype.clearLayer = function (k) {
-            var layer = this._layers[k];
+        Painter.prototype.clearLayer = function (zLevel) {
+            var layer = this._layers[zLevel];
             if (layer) {
                 layer.clear();
             }
@@ -516,6 +535,12 @@ define(
             return this._layers.hover.dom;
         };
 
+        /**
+         * 图像导出
+         * @param {string} type
+         * @param {string} [backgroundColor='#fff'] 背景色
+         * @return {string} 图片的Base64 url
+         */
         Painter.prototype.toDataURL = function (type, backgroundColor, args) {
             if (vmlCanvasManager) {
                 return null;
@@ -573,6 +598,7 @@ define(
 
         /**
          * 获取绘图区域宽度
+         * @param {number}
          */
         Painter.prototype.getWidth = function () {
             return this._width;
@@ -580,6 +606,7 @@ define(
 
         /**
          * 获取绘图区域高度
+         * @param {number}
          */
         Painter.prototype.getHeight = function () {
             return this._height;
@@ -606,7 +633,7 @@ define(
         };
 
         /**
-         * 鼠标悬浮刷画
+         * 绘制高亮层图形
          */
         Painter.prototype._brushHover = function (shape) {
             var ctx = this._layers.hover.ctx;
@@ -732,10 +759,13 @@ define(
             return newDom;
         }
 
-        /*****************************************
-         * Layer
-         *****************************************/
-        function Layer(id, painter) {
+        /**
+         * @alias module:zrender/Painter~Layer
+         * @constructor
+         * @param {string} id
+         * @param {module:zrender/Painter} painter
+         */
+        var Layer = function(id, painter) {
             this.dom = createDom(id, 'canvas', painter);
             vmlCanvasManager && vmlCanvasManager.initElement(this.dom);
 
@@ -753,11 +783,35 @@ define(
             this.elCount = 0;
 
             // Configs
+            /**
+             * 每次清空画布的颜色
+             * @type {string}
+             * @default 0
+             */
             this.clearColor = 0;
+            /**
+             * 是否开启动态模糊
+             * @type {boolean}
+             * @default false
+             */
             this.motionBlur = false;
+            /**
+             * 在开启动态模糊的时候使用，与上一帧混合的alpha值，值越大尾迹越明显
+             * @type {number}
+             * @default 0.7
+             */
             this.lastFrameAlpha = 0.7;
-
+            /**
+             * 层是否支持鼠标平移操作
+             * @type {boolean}
+             * @default false
+             */
             this.zoomable = false;
+            /**
+             * 层是否支持鼠标缩放操作
+             * @type {boolean}
+             * @default false
+             */
             this.panable = false;
 
             this.maxZoom = Infinity;
@@ -785,6 +839,10 @@ define(
             }
         };
 
+        /**
+         * @param  {number} width
+         * @param  {number} height
+         */
         Layer.prototype.resize = function(width, height) {
             this.dom.style.width = width + 'px';
             this.dom.style.height = height + 'px';
@@ -806,6 +864,9 @@ define(
             }
         };
 
+        /**
+         * 清空该层画布
+         */
         Layer.prototype.clear = function() {
             var dom = this.dom;
             var ctx = this.ctx;

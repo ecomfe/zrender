@@ -1,6 +1,6 @@
 /**
  * Handler控制模块
- *
+ * @module zrender/Handler
  * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
  *         errorrik (errorrik@gmail.com)
  */
@@ -27,8 +27,8 @@ define(
         var domHandlers = {
             /**
              * 窗口大小改变响应函数
-             * 
-             * @param {event} event dom事件对象
+             * @inner
+             * @param {Event} event
              */
             resize: function (event) {
                 event = event || window.event;
@@ -41,8 +41,8 @@ define(
 
             /**
              * 点击响应函数
-             * 
-             * @param {event} event dom事件对象
+             * @inner
+             * @param {Event} event
              */
             click: function (event) {
                 event = this._zrenderEventFixed(event);
@@ -60,8 +60,8 @@ define(
             
             /**
              * 双击响应函数
-             * 
-             * @param {event} event dom事件对象
+             * @inner
+             * @param {Event} event
              */
             dblclick: function (event) {
                 event = this._zrenderEventFixed(event);
@@ -80,8 +80,8 @@ define(
 
             /**
              * 鼠标滚轮响应函数
-             * 
-             * @param {event} event dom事件对象
+             * @inner
+             * @param {Event} event
              */
             mousewheel: function (event) {
                 event = this._zrenderEventFixed(event);
@@ -130,8 +130,8 @@ define(
 
             /**
              * 鼠标（手指）移动响应函数
-             * 
-             * @param {event} event dom事件对象
+             * @inner
+             * @param {Event} event
              */
             mousemove: function (event) {
                 if (this.painter.isLoading()) {
@@ -223,8 +223,8 @@ define(
 
             /**
              * 鼠标（手指）离开响应函数
-             * 
-             * @param {event} event dom事件对象
+             * @inner
+             * @param {Event} event
              */
             mouseout: function (event) {
                 event = this._zrenderEventFixed(event);
@@ -259,8 +259,8 @@ define(
 
             /**
              * 鼠标（手指）按下响应函数
-             * 
-             * @param {event} event dom事件对象
+             * @inner
+             * @param {Event} event
              */
             mousedown: function (event) {
                 if (this._lastDownButton == 2) {
@@ -282,8 +282,8 @@ define(
 
             /**
              * 鼠标（手指）抬起响应函数
-             * 
-             * @param {event} event dom事件对象
+             * @inner
+             * @param {Event} event
              */
             mouseup:function (event) {
                 event = this._zrenderEventFixed(event);
@@ -299,8 +299,8 @@ define(
 
             /**
              * Touch开始响应函数
-             * 
-             * @param {event} event dom事件对象
+             * @inner
+             * @param {Event} event
              */
             touchstart: function (event) {
                 //eventTool.stop(event);// 阻止浏览器默认事件，重要
@@ -314,8 +314,8 @@ define(
 
             /**
              * Touch移动响应函数
-             * 
-             * @param {event} event dom事件对象
+             * @inner
+             * @param {Event} event
              */
             touchmove: function (event) {
                 event = this._zrenderEventFixed(event, true);
@@ -327,8 +327,8 @@ define(
 
             /**
              * Touch结束响应函数
-             * 
-             * @param {event} event dom事件对象
+             * @inner
+             * @param {Event} event
              */
             touchend: function (event) {
                 //eventTool.stop(event);// 阻止浏览器默认事件，重要
@@ -364,7 +364,6 @@ define(
                 return handler.call(context, e);
             };
         }
-
         function bind2Arg(handler, context) {
             return function (arg1, arg2) {
                 return handler.call(context, arg1, arg2);
@@ -380,26 +379,24 @@ define(
          * 为控制类实例初始化dom 事件处理函数
          * 
          * @inner
-         * @param {Handler} instance 控制类实例
+         * @param {module:zrender/Handler} instance 控制类实例
          */
-        function initDomHandler( instance ) {
+        function initDomHandler(instance) {
             var len = domHandlerNames.length;
-            while ( len-- ) {
-                var name = domHandlerNames[ len ];
-                instance[ '_' + name + 'Handler' ] = bind1Arg( domHandlers[ name ], instance );
+            while (len--) {
+                var name = domHandlerNames[len];
+                instance['_' + name + 'Handler'] = bind1Arg(domHandlers[name], instance);
             }
         }
 
         /**
-         * 控制类 (C)
-         * 
+         * @alias module:zrender/Handler
+         * @constructor
          * @param {HTMLElement} root 绘图区域
-         * @param {storage} storage Storage实例
-         * @param {painter} painter Painter实例
-         *
-         * 分发事件支持详见config.EVENT
+         * @param {module:zrender/Storage} storage Storage实例
+         * @param {module:zrender/Painter} painter Painter实例
          */
-        function Handler(root, storage, painter) {
+        var Handler = function(root, storage, painter) {
             // 添加事件分发器特性
             eventTool.Dispatcher.call(this);
 
@@ -503,7 +500,7 @@ define(
         };
 
         /**
-         * 释放
+         * 释放，解绑所有事件
          */
         Handler.prototype.dispose = function () {
             var root = this.root;
@@ -761,7 +758,8 @@ define(
 
         /**
          * 迭代寻找hover shape
-         * @return {[type]}
+         * @private
+         * @method
          */
         Handler.prototype._iterateAndFindHover = (function() {
             var invTransform = mat2d.create();
@@ -826,8 +824,10 @@ define(
         /**
          * 迭代函数，查找hover到的图形元素并即时做些事件分发
          * 
-         * @private
+         * @inner
          * @param {Object} e 图形元素
+         * @param {number} x
+         * @param {number} y
          */
         function findHover(shape, x, y) {
             if (

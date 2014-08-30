@@ -1,16 +1,8 @@
 /**
  * 动画主类, 调度和管理所有动画控制器
- *
+ * 
+ * @module zrender/animation/Animation
  * @author pissang(https://github.com/pissang)
- *
- * @class : Animation
- * @config : stage(optional) 绘制类, 需要提供update接口
- * @config : onframe(optional)
- * @method : add
- * @method : remove
- * @method : update
- * @method : start
- * @method : stop
  */
 define(
     function(require) {
@@ -30,7 +22,35 @@ define(
 
         var arraySlice = Array.prototype.slice;
 
-        function Animation(options) {
+        /**
+         * @typedef {Object} IZRenderStage
+         * @property {Function} update
+         */
+        
+        /** 
+         * @alias module:zrender/animation/Animation
+         * @constructor
+         * @param {Object} [options]
+         * @param {Function} [options.onframe]
+         * @param {IZRenderStage} [options.stage]
+         * @example
+         *     var animation = new Animation();
+         *     var obj = {
+         *         x: 100,
+         *         y: 100
+         *     };
+         *     animation.animate(node.position)
+         *         .when(1000, {
+         *             x: 500,
+         *             y: 500
+         *         })
+         *         .when(2000, {
+         *             x: 100,
+         *             y: 100
+         *         })
+         *         .start('spline');
+         */
+        var Animation = function(options) {
 
             options = options || {};
 
@@ -49,16 +69,24 @@ define(
         }
 
         Animation.prototype = {
+            /**
+             * 添加动画片段
+             * @param {module:zrender/animation/Clip} clip
+             */
             add : function(clip) {
                 this._clips.push(clip);
             },
+            /**
+             * 删除动画片段
+             * @param {module:zrender/animation/Clip} clip
+             */
             remove : function(clip) {
                 var idx = util.indexOf(this._clips, clip);
                 if (idx >= 0) {
                     this._clips.splice(idx, 1);
                 }
             },
-            update : function() {
+            _update : function() {
 
                 var time = new Date().getTime();
                 var delta = time - this._time;
@@ -103,6 +131,9 @@ define(
 
                 this.dispatch('frame', delta);
             },
+            /**
+             * 开始运行动画
+             */
             start : function() {
                 var self = this;
 
@@ -110,7 +141,7 @@ define(
 
                 function step() {
                     if (self._running) {
-                        self.update();
+                        self._update();
                         requestAnimationFrame(step);
                     }
                 }
@@ -118,15 +149,32 @@ define(
                 this._time = new Date().getTime();
                 requestAnimationFrame(step);
             },
+            /**
+             * 停止运行动画
+             */
             stop : function() {
                 this._running = false;
             },
+            /**
+             * 清除所有动画片段
+             */
             clear : function() {
                 this._clips = [];
             },
+            /**
+             * 对一个目标创建一个animator对象，可以指定目标中的属性使用动画
+             * @param  {Object} target
+             * @param  {Object} options
+             * @param  {boolean} [options.loop=false] 是否循环播放动画
+             * @param  {Function} [options.getter=null]
+             *         如果指定getter函数，会通过getter函数取属性值
+             * @param  {Function} [options.setter=null]
+             *         如果指定setter函数，会通过setter函数设置属性值
+             * @return {module:zrender/animation/Animation~Animator}
+             */
             animate : function(target, options) {
                 options = options || {};
-                var deferred = new Deferred(
+                var deferred = new Animator(
                     target,
                     options.loop,
                     options.getter, 
@@ -236,7 +284,15 @@ define(
             return 'rgba(' + rgba.join(',') + ')';
         }
 
-        function Deferred(target, loop, getter, setter) {
+        /**
+         * @alias module:zrender/animation/Animation~Animator
+         * @constructor
+         * @param {Object} target
+         * @param {boolean} loop
+         * @param {Function} getter
+         * @param {Function} setter
+         */
+        var Animator = function(target, loop, getter, setter) {
             this._tracks = {};
             this._target = target;
 
@@ -256,7 +312,13 @@ define(
             this._clipList = [];
         }
 
-        Deferred.prototype = {
+        Animator.prototype = {
+            /**
+             * 设置动画关键帧
+             * @param  {number} time 关键帧时间，单位是ms
+             * @param  {Object} props 关键帧的属性值，key-value表示
+             * @return {module:zrender/animation/Animation~Animator}
+             */
             when : function(time /* ms */, props) {
                 for (var propName in props) {
                     if (! this._tracks[propName]) {
@@ -281,10 +343,21 @@ define(
                 }
                 return this;
             },
+            /**
+             * 添加动画每一帧的回调函数
+             * @param  {Function} callback
+             * @return {module:zrender/animation/Animation~Animator}
+             */
             during : function(callback) {
                 this._onframeList.push(callback);
                 return this;
             },
+            /**
+             * 开始执行动画
+             * @param  {string|Function} easing 
+             *         动画缓动函数，详见{@link module:zrender/animation/easing}
+             * @return {module:zrender/animation/Animation~Animator}
+             */
             start : function(easing) {
 
                 var self = this;
@@ -477,6 +550,9 @@ define(
                 }
                 return this;
             },
+            /**
+             * 停止动画
+             */
             stop : function() {
                 for (var i = 0; i < this._clipList.length; i++) {
                     var clip = this._clipList[i];
@@ -484,12 +560,22 @@ define(
                 }
                 this._clipList = [];
             },
+            /**
+             * 设置动画延迟开始的时间
+             * @param  {number} time 单位ms
+             * @return {module:zrender/animation/Animation~Animator}
+             */
             delay : function(time){
                 this._delay = time;
                 return this;
             },
-            done : function(func) {
-                this._doneList.push(func);
+            /**
+             * 添加动画结束的回调
+             * @param  {Function} cb
+             * @return {module:zrender/animation/Animation~Animator}
+             */
+            done : function(cb) {
+                this._doneList.push(cb);
                 return this;
             }
         };

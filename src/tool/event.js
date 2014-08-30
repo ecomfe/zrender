@@ -1,13 +1,7 @@
 /**
- * zrender: 事件辅助类
- *
+ * 事件辅助类
+ * @module zrender/tool/event
  * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
- *
- * getX：获取事件横坐标
- * getY：或者事件纵坐标
- * getDelta：或者鼠标滚轮变化
- * stop：停止事件传播
- * Dispatcher：事件分发器
  */
 define(
     function() {
@@ -16,7 +10,7 @@ define(
 
         /**
         * 提取鼠标（手指）x坐标
-        * 
+        * @memberOf module:zrender/tool/event
         * @param  {Event} e 事件.
         * @return {number} 鼠标（手指）x坐标.
         */
@@ -29,7 +23,7 @@ define(
 
         /**
         * 提取鼠标y坐标
-        * 
+        * @memberOf module:zrender/tool/event
         * @param  {Event} e 事件.
         * @return {number} 鼠标（手指）y坐标.
         */
@@ -42,7 +36,7 @@ define(
 
         /**
         * 提取鼠标滚轮变化
-        * 
+        * @memberOf module:zrender/tool/event
         * @param  {Event} e 事件.
         * @return {number} 滚轮变化，正值说明滚轮是向上滚动，如果是负值说明滚轮是向下滚动
         */
@@ -53,8 +47,8 @@ define(
 
         /**
          * 停止冒泡和阻止默认行为
-         * 
-         * @type {Function}
+         * @memberOf module:zrender/tool/event
+         * @method
          * @param {Event} e : event对象
          */
         var stop = typeof window.addEventListener === 'function'
@@ -70,16 +64,18 @@ define(
 
         /**
          * 事件分发器
+         * @alias module:zrender/tool/event.Dispatcher
+         * @constructor
          */
-        function Dispatcher() {
+        var Dispatcher = function() {
             this._handlers = {};
         }
         /**
          * 单次触发绑定，dispatch后销毁
          * 
-         * @param {string} event 事件字符串
+         * @param {string} event 事件名
          * @param {Function} handler 响应函数
-         * @param {Object} [context]
+         * @param {} [context]
          */
         Dispatcher.prototype.one = function(event, handler, context) {
             var _h = this._handlers;
@@ -102,11 +98,10 @@ define(
         };
 
         /**
-         * 事件绑定
-         * 
-         * @param {string} event 事件字符串
-         * @param {Function} handler : 响应函数
-         * @param {Object} [context]
+         * 绑定事件
+         * @param {string} event 事件名
+         * @param {Function} handler 事件处理函数
+         * @param {} [context]
          */
         Dispatcher.prototype.bind = function(event, handler, context) {
             var _h = this._handlers;
@@ -129,10 +124,9 @@ define(
         };
 
         /**
-         * 事件解绑定
-         * 
-         * @param {string} event 事件字符串
-         * @param {Function} handler : 响应函数
+         * 解绑事件
+         * @param {string} event 事件名
+         * @param {Function} [handler] 事件处理函数
          */
         Dispatcher.prototype.unbind = function(event, handler) {
             var _h = this._handlers;
@@ -167,7 +161,7 @@ define(
         /**
          * 事件分发
          * 
-         * @param {string} type : 事件类型
+         * @param {string} type 事件类型
          */
         Dispatcher.prototype.dispatch = function(type) {
             if(this._handlers[type]) {
@@ -212,19 +206,18 @@ define(
 
         /**
          * 带有context的事件分发, 最后一个参数是事件回调的context
-         * 
-         * @param {string} type : 事件类型
+         * @param {string} type 事件类型
          */
         Dispatcher.prototype.dispatchWithContext = function(type) {
             if(this._handlers[type]) {
                 var args = arguments;
                 var argLen = args.length;
-    
+
                 if (argLen > 4) {
                     args = Array.prototype.slice.call(args, 1, args.length - 1);
                 }
                 var ctx = args[args.length - 1];
-                
+
                 var _h = this._handlers[type];
                 var len = _h.length;
                 for (var i = 0; i < len;) {
@@ -257,6 +250,73 @@ define(
             return this;
         };
 
+        // 对象可以通过 onxxxx 绑定事件
+        /**
+         * @name module:zrender/tool/event.Dispatcher#onclick
+         * @type {Function}
+         * @default null
+         */
+        /**
+         * @name module:zrender/tool/event.Dispatcher#onmouseover
+         * @type {Function}
+         * @default null
+         */
+        /**
+         * @name module:zrender/tool/event.Dispatcher#onmouseout
+         * @type {Function}
+         * @default null
+         */
+        /**
+         * @name module:zrender/tool/event.Dispatcher#onmousemove
+         * @type {Function}
+         * @default null
+         */
+        /**
+         * @name module:zrender/tool/event.Dispatcher#onmousewheel
+         * @type {Function}
+         * @default null
+         */
+        /**
+         * @name module:zrender/tool/event.Dispatcher#onmousedown
+         * @type {Function}
+         * @default null
+         */
+        /**
+         * @name module:zrender/tool/event.Dispatcher#onmouseup
+         * @type {Function}
+         * @default null
+         */
+        /**
+         * @name module:zrender/tool/event.Dispatcher#ondragstart
+         * @type {Function}
+         * @default null
+         */
+        /**
+         * @name module:zrender/tool/event.Dispatcher#ondragend
+         * @type {Function}
+         * @default null
+         */
+        /**
+         * @name module:zrender/tool/event.Dispatcher#ondragenter
+         * @type {Function}
+         * @default null
+         */
+        /**
+         * @name module:zrender/tool/event.Dispatcher#ondragleave
+         * @type {Function}
+         * @default null
+         */
+        /**
+         * @name module:zrender/tool/event.Dispatcher#ondragover
+         * @type {Function}
+         * @default null
+         */
+        /**
+         * @name module:zrender/tool/event.Dispatcher#ondrop
+         * @type {Function}
+         * @default null
+         */
+        
         return {
             getX : getX,
             getY : getY,

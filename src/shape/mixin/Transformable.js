@@ -1,8 +1,15 @@
+/**
+ * @module zrender/shape/mixin/Transformable
+ */
 define(function(require) {
 
     var matrix = require('../../tool/matrix');
     var origin = [0, 0];
 
+    /**
+     * @alias module:zrender/shape/mixin/Transformable
+     * @constructor
+     */
     var Transformable = function() {
 
         if (!this.position) {
@@ -31,6 +38,10 @@ define(function(require) {
                 || Math.abs(this.scale[1] - 1) > 0.0001;
         },
 
+        /**
+         * 判断是否需要有坐标变换，更新needTransform属性。
+         * 如果有坐标变换, 则从position, rotation, scale以及父节点的transform计算出自身的transform矩阵
+         */
         updateTransform: function() {
             
             this.updateNeedTransform();
@@ -111,7 +122,10 @@ define(function(require) {
                 }
             }
         },
-
+        /**
+         * 将自己的transform应用到context上
+         * @param {Context2D} ctx
+         */
         setTransform: function(ctx) {
             if (this.needTransform) {
                 var m = this.transform;

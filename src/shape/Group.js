@@ -1,3 +1,22 @@
+/**
+ * Group是一个容器，可以插入子节点，Group的变换也会被应用到子节点上
+ * @module zrender/shape/Group
+ * @example
+ *     var Group = require('zrender/shape/Group');
+ *     var Circle = require('zrender/shape/Circle');
+ *     var g = new Group();
+ *     g.position[0] = 100;
+ *     g.position[1] = 100;
+ *     g.addChild(new Circle({
+ *         style: {
+ *             x: 100,
+ *             y: 100,
+ *             r: 20,
+ *             brushType: 'fill'
+ *         }
+ *     }));
+ *     zr.addGroup(g);
+ */
 define(function(require) {
 
     var guid = require('../tool/guid');
@@ -7,20 +26,36 @@ define(function(require) {
     var Transformable = require('./mixin/Transformable');
 
     /**
-     * @constructor zrender.shape.Group
+     * @alias module:zrender/shape/Group
+     * @constructor
+     * @extends module:zrender/shape/mixin/Transformable
+     * @extends module:zrender/tool/event.Dispatcher
      */
-    function Group(options) {
+    var Group = function(options) {
 
         options = options || {};
 
+        /**
+         * Group id
+         * @type {string}
+         */
         this.id = options.id || guid();
 
         for (var key in options) {
             this[key] = options[key];
         }
 
+        /**
+         * @type {string}
+         */
         this.type = 'group';
 
+        /**
+         * 用于裁剪的图形(shape)，所有 Group 内的图形在绘制时都会被这个图形裁剪
+         * 该图形会继承Group的变换
+         * @type {module:zrender/shape/Base}
+         * @see http://www.w3.org/TR/2dcontext/#clipping-region
+         */
         this.clipShape = null;
 
         this._children = [];
@@ -34,16 +69,34 @@ define(function(require) {
         Dispatcher.call(this);
     }
 
+    /**
+     * 是否忽略该 Group 及其所有子节点
+     * @type {boolean}
+     * @default false
+     */
     Group.prototype.ignore = false;
 
+    /**
+     * 复制并返回一份新的包含所有儿子节点的数组
+     * @return {Array.<module:zrender/shape/Group|module:zrender/shape/Base>}
+     */
     Group.prototype.children = function() {
         return this._children.slice();
     };
 
+    /**
+     * 获取指定 index 的儿子节点
+     * @param  {number} idx
+     * @return {module:zrender/shape/Group|module:zrender/shape/Base}
+     */
     Group.prototype.childAt = function(idx) {
         return this._children[idx];
     };
 
+    /**
+     * 添加子节点，可以是Shape或者Group
+     * @param {module:zrender/shape/Group|module:zrender/shape/Base} child
+     */
     Group.prototype.addChild = function(child) {
         if (child == this) {
             return;
@@ -69,6 +122,10 @@ define(function(require) {
         }
     };
 
+    /**
+     * 移除子节点
+     * @param {module:zrender/shape/Group|module:zrender/shape/Base} child
+     */
     Group.prototype.removeChild = function(child) {
         var idx = util.indexOf(this._children, child);
 
@@ -85,6 +142,11 @@ define(function(require) {
         }
     };
 
+    /**
+     * 遍历所有子节点
+     * @param  {Function} cb
+     * @param  {}   context
+     */
     Group.prototype.each = function(cb, context) {
         var haveContext = !!context;
         for (var i = 0; i < this._children.length; i++) {
@@ -97,9 +159,13 @@ define(function(require) {
         }
     };
 
+    /**
+     * 深度优先遍历所有子孙节点
+     * @param  {Function} cb
+     * @param  {}   context
+     */
     Group.prototype.iterate = function(cb, context) {
         var haveContext = !!context;
-
         for (var i = 0; i < this._children.length; i++) {
             var child = this._children[i];
             if (haveContext) {

@@ -1,124 +1,38 @@
 /**
- * zrender : shape基类
- *
- * desc:    zrender是一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型。
- * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * shape基类
+ * @module zrender/shape/Base
+ * @author  Kener (@Kener-林峰, linzhifeng@baidu.com)
  *          errorrik (errorrik@gmail.com)
- *
- * 可配图形属性：
-   {
-       // 基础属性，详见各shape
-       shape  : {string},       // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
-       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
-       invisible : {boolean},   // 默认为false，是否可见
-
-       // 变换
-       position : {array},        // 默认为[0, 0], shape的坐标
-       rotation : {number|array}, // 默认为[0, 0, 0]，shape绕自身旋转的角度，不被translate 影响
-                                  // 后两个值为旋转的origin
-       scale : {array},           // 默认为[1, 1, 0, 0], shape纵横缩放比例，不被translate影响
-                                  // 后两个值为缩放的origin
-
-       // 样式属性，详见各shape，默认状态样式属性
-       style  : {Object},
-
-       // 样式属性，详见各shape，高亮样式属性，当不存在highlightStyle时使用默认样式扩展显示
-       highlightStyle : {Object},
-
-       // 交互属性，zrender支持，非图形类实现
-       hoverable : {boolean},   // 默认为true，可悬浮响应，默认悬浮响应为高亮显示
-                                // 可在onbrush中捕获并阻塞高亮绘画
-       clickable : {boolean},   // 默认为false，可点击响应，影响鼠标hover时图标是否为可点击样式
-                                // 为false则阻断点击事件抛出，为true可在onclick中捕获
-       draggable : {boolean},   // 默认为false，可拖拽响应，默认拖拽响应改变图形位置，
-                                // 可在ondrift中捕获并阻塞默认拖拽行为
-
-       // 事件属性
-       onbrush : {Function}, // 默认为null，当前图形被刷画时回调，可用于实现自定义绘画
-                 // 回传参数为：
-                 // @param {2D Context} context 当前canvas context
-                 // @param {Object} shape 当前shape
-                 // @param {boolean} isHighlight 是否高亮
-                 // @return {boolean} 回调返回true则不执行默认绘画
-       ondrift : {Function}, // 默认为null，当前图形被拖拽改变位置时回调，可用于限制拖拽范围
-                 // 回传参数为：
-                 // @param {Object} shape 当前shape
-                 // @param {number} dx x方向变化
-                 // @param {number} dy y方向变化
-       onclick : {Function}, // 默认为null，当前图形点击响应，回传参数为：
-                 // @param {Object} eventPacket 对象内容如下：
-                 // @param {string} eventPacket.type 事件类型，EVENT.CLICK
-                 // @param {event} eventPacket.event 原始dom事件对象
-                 // @param {Object} eventPacket.target 当前图形shape对象
-                 // @return {boolean} 回调返回true则阻止抛出全局事件
-
-       onmousewheel : {Function}, // 默认为null，当前图形上鼠标滚轮触发，回传参数格式同onclick，其中：
-                      // 事件类型为confit.EVENT.MOUSEWHEEL
-                      // @return {boolean} 回调返回true则阻止抛出全局事件
-
-       onmousemove : {Function}, // 默认为null，当前图上形鼠标（或手指）移动触发，回传参数格式同onclick，其中：
-                     // 事件类型为confit.EVENT.MOUSEMOVE
-                     // @return {boolean} 回调返回true则阻止抛出全局事件
-
-       onmouseover : {Function}, // 默认为null，鼠标（或手指）移动到当前图形上触发，回传参数格式同onclick：
-                     // 事件类型为confit.EVENT.MOUSEOVER
-                     // @return {boolean} 回调返回true则阻止抛出全局事件
-
-       onmouseout : {Function}, // 默认为null，鼠标（或手指）从当前图形移开，回传参数格式同onclick，其中：
-                    // 事件类型为confit.EVENT.MOUSEOUT
-                    // @return {boolean} 回调返回true则阻止抛出全局事件
-
-       onmousedown : {Function}, // 默认为null，鼠标按钮（或手指）按下，回传参数格式同onclick，其中：
-                     // 事件类型为confit.EVENT.MOUSEDOWN
-                     // @return {boolean} 回调返回true则阻止抛出全局事件
-
-       onmouseup : {Function}, // 默认为null，鼠标按钮（或手指）松开，回传参数格式同onclick，其中：
-                   // 事件类型为confit.EVENT.MOUSEUP
-                   // @return {boolean} 回调返回true则阻止抛出全局事件
-
-       ondragstart : {Function}, // 默认为null，开始拖拽时触发，回传参数格式同onclick，其中：
-                     // 事件类型为confit.EVENT.DRAGSTART
-                     // @return {boolean} 回调返回true则阻止抛出全局事件
-
-       ondragend : {Function}, // 默认为null，拖拽完毕时触发，回传参数格式同onclick，其中：
-                   // 事件类型为confit.EVENT.DRAGEND
-                   // @return {boolean} 回调返回true则阻止抛出全局事件
-
-       ondragenter : {Function}, // 默认为null，拖拽图形元素进入目标图形元素时触发
-                     // 回传参数格式同onclick，其中：
-                     // @param {string} eventPacket.type 事件类型，EVENT.DRAGENTER
-                     // @param {Object} eventPacket.target 目标图形元素shape对象
-                     // @param {Object} eventPacket.dragged 拖拽图形元素shape对象
-                     // @return {boolean} 回调返回true则阻止抛出全局事件
-
-       ondragover : {Function}, // 默认为null，拖拽图形元素在目标图形元素上移动时触发，
-                    // 回传参数格式同onclick，其中：
-                    // @param {string} eventPacket.type 事件类型，EVENT.DRAGOVER
-                    // @param {Object} eventPacket.target 目标图形元素shape对象
-                    // @param {Object} eventPacket.dragged 拖拽图形元素shape对象
-                    // @return {boolean} 回调返回true则阻止抛出全局事件
-
-       ondragleave : {Function}, // 默认为null，拖拽图形元素离开目标图形元素时触发，
-                     // 回传参数格式同onclick，其中：
-                     // @param {string} eventPacket.type 事件类型，EVENT.DRAGLEAVE
-                     // @param {Object} eventPacket.target 目标图形元素shape对象
-                     // @param {Object} eventPacket.dragged 拖拽图形元素shape对象
-                     // @return {boolean} 回调返回true则阻止抛出全局事件
-
-       ondrop : {Function}, // 默认为null，拖拽图形元素放在目标图形元素内时触发，
-                // 回传参数格式同onclick，其中：
-                // @param {string} eventPacket.type 事件类型，EVENT.DRAG
-                // @param {Object} eventPacket.target 目标图形元素shape对象
-                // @param {Object} eventPacket.dragged 拖拽图形元素shape对象
-                // @return {boolean} 回调返回true则阻止抛出全局事件
-   }
  */
+
+/**
+ * @typedef {Object} IZRenderBaseShapeStyle
+ * @property {string} [brushType='fill']
+ * @property {string} [color='#000000'] 填充颜色
+ * @property {string} [strokeColor='#000000'] 描边颜色
+ * @property {string} [lineCape='butt'] 线帽样式，可以是 butt, round, square
+ * @property {number} [lineWidth=1] 描边宽度
+ * @property {number} [opacity=1] 绘制透明度
+ * @property {number} [shadowBlur=0] 阴影模糊度，大于0有效
+ * @property {string} [shadowColor='#000000'] 阴影颜色
+ * @property {number} [shadowOffsetX=0] 阴影横向偏移
+ * @property {number} [shadowOffsetY=0] 阴影纵向偏移
+ * @property {string} [text] 图形中的附加文本
+ * @property {string} [textColor='#000000'] 文本颜色
+ * @property {string} [textFont] 附加文本样式，eg:'bold 18px verdana'
+ * @property {string} [textPosition='end'] 附加文本位置, 可以是 inside, left, right, top, bottom
+ * @property {string} [textAlign] 默认根据textPosition自动设置，附加文本水平对齐。
+ *                                可以是start, end, left, right, center
+ * @property {string} [textBaseline] 默认根据textPosition自动设置，附加文本垂直对齐。
+ *                                可以是top, bottom, middle, alphabetic, hanging, ideographic
+ */
+
 define(
     function(require) {
         var matrix = require('../tool/matrix');
         var guid = require('../tool/guid');
         var util = require('../tool/util');
+        var log = require('../tool/log');
 
         var Transformable = require('./mixin/Transformable');
         var Dispatcher = require('../tool/event').Dispatcher;
@@ -155,7 +69,6 @@ define(
 
         /**
          * 返回矩形区域，用于局部刷新和文字定位
-         * 
          * @inner
          * @param {Object} style
          */
@@ -194,18 +107,45 @@ define(
             };
         }
 
-        function Base( options ) {
+        /**
+         * @alias module:zrender/shape/Base
+         * @constructor
+         * @extends module:zrender/shape/mixin/Transformable
+         * @extends module:zrender/tool/event.Dispatcher
+         * @param {Object} options  关于shape的配置项，可以是shape的自有属性，也可以是自定义的属性。
+         */
+        var Base = function(options) {
             
             options = options || {};
             
+            /**
+             * Shape id, 全局唯一
+             * @type {string}
+             */
             this.id = options.id || guid();
 
-            for ( var key in options ) {
-                this[ key ] = options[ key ];
+            for (var key in options) {
+                this[key] = options[key];
             }
 
+            /**
+             * 基础绘制样式
+             * @type {IZRenderBaseShapeStyle}
+             */
             this.style = this.style || {};
 
+            /**
+             * 高亮样式
+             * @type {IZRenderBaseShapeStyle}
+             */
+            this.highlightStyle = this.highlightStyle || null;
+
+            /**
+             * 父节点
+             * @readonly
+             * @type {module:zrender/shape/Group}
+             * @default null
+             */
             this.parent = null;
 
             this.__dirty = true;
@@ -213,28 +153,72 @@ define(
             Transformable.call(this);
             Dispatcher.call(this);
         }
-
+        /**
+         * 图形是否可见，为true时不绘制图形，但是仍能触发鼠标事件
+         * @name module:zrender/shape/Base#invisible
+         * @type {boolean}
+         * @default false
+         */
         Base.prototype.invisible = false;
 
+        /**
+         * 图形是否忽略，为true时忽略图形的绘制以及事件触发
+         * @name module:zrender/shape/Base#ignore
+         * @type {boolean}
+         * @default false
+         */
         Base.prototype.ignore = false;
 
+        /**
+         * z层level，决定绘画在哪层canvas中
+         * @name module:zrender/shape/Base#zlevel
+         * @type {number}
+         * @default 0
+         */
         Base.prototype.zlevel = 0;
 
+        /**
+         * 是否可拖拽
+         * @name module:zrender/shape/Base#draggable
+         * @type {boolean}
+         * @default false
+         */
         Base.prototype.draggable = false;
 
+        /**
+         * 是否可点击
+         * @name module:zrender/shape/Base#clickable
+         * @type {boolean}
+         * @default false
+         */
         Base.prototype.clickable = false;
 
+        /**
+         * 是否可以hover
+         * @name module:zrender/shape/Base#hoverable
+         * @type {boolean}
+         * @default true
+         */
         Base.prototype.hoverable = true;
-
+        
+        /**
+         * z值，跟zlevel一样影响shape绘制的前后顺序，z值大的shape会覆盖在z值小的上面，
+         * 但是并不会创建新的canvas，所以优先级低于zlevel，而且频繁改动的开销比zlevel小很多。
+         * 
+         * @name module:zrender/shape/Base#z
+         * @type {number}
+         * @default 0
+         */
         Base.prototype.z = 0;
 
         /**
-         * 画刷
+         * 绘制图形
          * 
-         * @param ctx       画布句柄
-         * @param isHighlight   是否为高亮状态
-         * @param updateCallback 需要异步加载资源的shape可以通过这个callback(e)
-         *                       让painter更新视图，base.brush没用，需要的话重载brush
+         * @param {CanvasRenderingContext2D} ctx
+         * @param {boolean} [isHighlight=false] 是否使用高亮属性
+         * @param {Function} [updateCallback]
+         *        需要异步加载资源的shape可以通过这个callback(e), 
+         *        让painter更新视图，base.brush没用，需要的话重载brush
          */
         Base.prototype.brush = function (ctx, isHighlight) {
             var style = this.style;
@@ -299,12 +283,9 @@ define(
         ];
 
         /**
-         * 画布通用设置
-         * 
-         * TODO Performance
-         * 
-         * @param ctx       画布句柄
-         * @param style     通用样式
+         * 设置 fillStyle, strokeStyle, shadow 等通用绘制样式
+         * @param {CanvasRenderingContext2D} ctx
+         * @param {IZRenderBaseShapeStyle} style
          */
         Base.prototype.setContext = function (ctx, style) {
             for (var i = 0, len = STYLE_CTX_MAP.length; i < len; i++) {
@@ -321,9 +302,10 @@ define(
         /**
          * 根据默认样式扩展高亮样式
          * 
-         * @param ctx Canvas 2D上下文
-         * @param {Object} style 默认样式
-         * @param {Object} highlightStyle 高亮样式
+         * @param {CanvasRenderingContext2D} ctx
+         * @param {IZRenderBaseShapeStyle} style 默认样式
+         * @param {IZRenderBaseShapeStyle} highlightStyle 高亮样式
+         * @param {string} [brushTypeOnly]
          */
         Base.prototype.getHighlightStyle = function (style, highlightStyle, brushTypeOnly) {
             var newStyle = {};
@@ -368,19 +350,16 @@ define(
             return newStyle;
         };
 
-        /**
-         * 高亮放大效果参数
-         * 当前统一设置为6，如有需要差异设置，通过this.type判断实例类型
-         */
+        // 高亮放大效果参数
+        // 当前统一设置为6，如有需要差异设置，通过this.type判断实例类型
         Base.prototype.getHighlightZoom = function () {
             return this.type != 'text' ? 6 : 2;
         };
 
         /**
-         * 默认漂移
-         * 
-         * @param dx 横坐标变化
-         * @param dy 纵坐标变化
+         * 移动位置
+         * @param {number} dx 横坐标变化
+         * @param {number} dy 纵坐标变化
          */
         Base.prototype.drift = function (dx, dy) {
             this.position[0] += dx;
@@ -388,8 +367,11 @@ define(
         };
 
         /**
-         * 获取鼠标坐标变换 
-         * TODO Performance
+         * 变换鼠标位置到 shape 的局部坐标空间
+         * @method
+         * @param {number} x
+         * @param {number} y
+         * @return {Array.<number>}
          */
         Base.prototype.getTansform = (function() {
             
@@ -411,12 +393,29 @@ define(
                 return originPos;
             };
         })();
+
+        /**
+         * 构建绘制的Path
+         * @param {CanvasRenderingContext2D} ctx
+         * @param {IZRenderBaseShapeStyle} style
+         */
+        Base.prototype.buildPath = function(ctx, style) {
+            log('buildPath not implemented in ' + this.type);
+        }
+
+        /**
+         * 计算返回包围盒矩形
+         * @param {IZRenderBaseShapeStyle} style
+         */
+        Base.prototype.getRect = function(style) {
+            log('getRect not implemented in ' + this.type);   
+        }
         
         /**
-         * 默认区域包含判断
-         * 
-         * @param x 横坐标
-         * @param y 纵坐标
+         * 判断鼠标位置是否在图形内
+         * @param {number} x
+         * @param {number} y
+         * @return {boolean}
          */
         Base.prototype.isCover = function (x, y) {
             var originPos = this.getTansform(x, y);
@@ -442,11 +441,10 @@ define(
         };
 
         /**
-         * 附加文本
-         * 
-         * @param {Context2D} ctx Canvas 2D上下文
-         * @param {Object} style 样式
-         * @param {Object} normalStyle 默认样式，用于定位文字显示
+         * 绘制附加文本
+         * @param {CanvasRenderingContext2D} ctx
+         * @param {IZRenderBaseShapeStyle} style 样式
+         * @param {IZRenderBaseShapeStyle} normalStyle 默认样式，用于定位文字显示
          */
         Base.prototype.drawText = function (ctx, style, normalStyle) {
             if (typeof(style.text) == 'undefined' || style.text === false ) {
@@ -455,12 +453,6 @@ define(
             // 字体颜色策略
             var textColor = style.textColor || style.color || style.strokeColor;
             ctx.fillStyle = textColor;
-
-            /*
-            if (style.textPosition == 'inside') {
-                ctx.shadowColor = 'rgba(0,0,0,0)';   // 内部文字不带shadowColor
-            }
-            */
 
             // 文本与图形间空白间隙
             var dd = 10;
@@ -605,7 +597,12 @@ define(
                 );
             }
         };
-        // TODO
+
+        /**
+         * 图形是否会触发事件
+         * @return {boolean}
+         */
+        // TODO, 通过 bind 绑定的事件
         Base.prototype.isSilent = function () {
             return !(
                 this.hoverable || this.draggable

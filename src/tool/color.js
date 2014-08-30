@@ -343,7 +343,7 @@ define( function(require) {
     /**
      * 获取指定级数的渐变颜色数组
      * @param {Array} colors 颜色组
-     * @param {number=20} step 渐变级数
+     * @param {number} [step=20] 渐变级数
      * @return {Array}  颜色数组
      */
     function getGradientColors(colors, step) {
