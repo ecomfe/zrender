@@ -13,16 +13,37 @@ define(function(require) {
     var Transformable = function() {
 
         if (!this.position) {
+            /**
+             * 平移
+             * @type {Array.<number>}
+             * @default [0, 0]
+             */
             this.position = [0, 0];
         }
         if (typeof(this.rotation) == 'undefined') {
+            /**
+             * 旋转，可以通过数组二三项指定旋转的原点
+             * @type {Array.<number>}
+             * @default [0, 0, 0]
+             */
             this.rotation = [0, 0, 0];
         }
         if (!this.scale) {
+            /**
+             * 缩放，可以通过数组三四项指定缩放的原点
+             * @type {Array.<number>}
+             * @default [1, 1, 0, 0]
+             */
             this.scale = [1, 1, 0, 0];
         }
 
         this.needLocalTransform = false;
+
+        /**
+         * 是否有坐标变换
+         * @type {boolean}
+         * @readOnly
+         */
         this.needTransform = false;
     };
 

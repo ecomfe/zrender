@@ -59,12 +59,12 @@ define(
         var Heart = function(options) {
             Base.call(this, options);
             /**
-             * 水滴绘制样式
+             * 心形绘制样式
              * @name module:zrender/shape/Heart#style
              * @type {IZRenderHeartStyle}
              */
             /**
-             * 水滴高亮绘制样式
+             * 心形高亮绘制样式
              * @name module:zrender/shape/Heart#highlightStyle
              * @type {IZRenderHeartStyle}
              */

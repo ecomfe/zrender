@@ -46,12 +46,12 @@ define(
         function Isogon(options) {
             Base.call(this, options);
             /**
-             * 贝赛尔曲线绘制样式
+             * 多边形绘制样式
              * @name module:zrender/shape/Isogon#style
              * @type {IZRenderIsogonStyle}
              */
             /**
-             * 贝赛尔曲线高亮绘制样式
+             * 多边形高亮绘制样式
              * @name module:zrender/shape/Isogon#highlightStyle
              * @type {IZRenderIsogonStyle}
              */
