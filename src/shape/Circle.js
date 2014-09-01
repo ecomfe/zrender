@@ -20,7 +20,7 @@
  */
 
 /**
- * @typedef {Object} IZRenderCircleStyle
+ * @typedef {Object} ICircleStyle
  * @property {number} x 圆心x坐标
  * @property {number} y 圆心y坐标
  * @property {number} r 半径
@@ -60,12 +60,12 @@ define(
             /**
              * 圆形绘制样式
              * @name module:zrender/shape/Circle#style
-             * @type {IZRenderCircleStyle}
+             * @type {module:zrender/shape/Circle~ICircleStyle}
              */
             /**
              * 圆形高亮绘制样式
              * @name module:zrender/shape/Circle#highlightStyle
-             * @type {IZRenderCircleStyle}
+             * @type {module:zrender/shape/Circle~ICircleStyle}
              */
         }
 
@@ -74,7 +74,7 @@ define(
             /**
              * 创建圆形路径
              * @param {CanvasRenderingContext2D} ctx
-             * @param {IZRenderCircleStyle} style
+             * @param {module:zrender/shape/Circle~ICircleStyle} style
              */
             buildPath : function (ctx, style) {
                 ctx.arc(style.x, style.y, style.r, 0, Math.PI * 2, true);
@@ -83,7 +83,8 @@ define(
 
             /**
              * 计算返回圆形的包围盒矩形
-             * @param {IZRenderCircleStyle} style
+             * @param {module:zrender/shape/Circle~ICircleStyle} style
+             * @return {module:zrender/shape/Base~IBoundingRect}
              */
             getRect : function (style) {
                 if (style.__rect) {

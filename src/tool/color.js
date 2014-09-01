@@ -1,40 +1,9 @@
 /**
- * zrender : 颜色辅助类
- *
- * author: CrossDo (chenhuaimu@baidu.com)
- *
- * getColor：获取色板颜色
- * customPalette : 自定义调色板
- * resetPalette : 重置调色板
- *
- * getHighlightColor : 获取默认高亮颜色
- * customHighlight : 自定义默认高亮颜色
- * resetHighlight : 重置默认高亮颜色
- *
- * getRadialGradient : 径向渐变
- * getLinearGradient : 线性渐变
- * getGradientColors : 获取颜色之间渐变颜色数组
- * getStepColors : 获取两种颜色之间渐变颜色数组
- * reverse : 颜色翻转
- * mix : 颜色混合
- * lift : 颜色升降
- * trim : 清除空格
- * random : 随机颜色
- * toRGB  : 转为RGB格式
- * toRGBA : 转为RGBA格式
- * toHex  : 转为#RRGGBB格式
- * toHSL  : 转为HSL格式
- * toHSLA : 转为HSLA格式
- * toHSB  : 转为HSB格式
- * toHSBA : 转为HSBA格式
- * toHSV  : 转为HSV格式
- * toHSVA : 转为HSVA格式
- * toName : 转为颜色名字
- * toColor: 颜色值数组转为指定格式颜色
- * toArray: 返回颜色值数组
- * alpha  : 设置颜色的透明度
- **/
-define( function(require) {
+ * 颜色辅助类
+ * @module zrender/tool/color
+ * @author CrossDo (chenhuaimu@baidu.com)
+ */
+define(function(require) {
     var util = require('../tool/util');
 
     var _ctx;
@@ -227,11 +196,10 @@ define( function(require) {
 
     /**
      * 获取色板颜色
-     *
-     * @param {number} idx : 色板位置
-     * @param {array} [userPalete] : 自定义色板
-     *
-     * @return {color} 颜色#000000~#ffffff
+     * @memberOf module:zrender/tool/color
+     * @param {number} idx 色板位置
+     * @param {Array.<string>} [userPalete] 自定义色板
+     * @return {string} 颜色
      */
     function getColor(idx, userPalete) {
         idx = idx | 0;
@@ -262,7 +230,7 @@ define( function(require) {
 
     /**
      * 径向渐变
-     *
+     * @memberOf module:zrender/tool/color
      * @param {number} x0 渐变起点
      * @param {number} y0
      * @param {number} r0
@@ -270,6 +238,7 @@ define( function(require) {
      * @param {number} y1
      * @param {number} r1
      * @param {Array} colorList 颜色列表
+     * @return {CanvasGradient}
      */
     function getRadialGradient(x0, y0, r0, x1, y1, r1, colorList) {
         if (!_ctx) {
@@ -342,9 +311,10 @@ define( function(require) {
 
     /**
      * 获取指定级数的渐变颜色数组
-     * @param {Array} colors 颜色组
+     * @memberOf module:zrender/tool/color
+     * @param {Array.<string>} colors 颜色组
      * @param {number} [step=20] 渐变级数
-     * @return {Array}  颜色数组
+     * @return {Array.<string>}  颜色数组
      */
     function getGradientColors(colors, step) {
         var ret = [];
@@ -406,10 +376,10 @@ define( function(require) {
     }
 
     /**
-     * 返回颜色值数组
-     *
-     * @param {color} color 颜色
-     * @return {Array} 颜色值数组
+     * 颜色字符串转换为rgba数组
+     * @memberOf module:zrender/tool/color
+     * @param {string} color 颜色
+     * @return {Array.<number>} 颜色值数组
      */
     function toArray(color) {
         color = trim(color);
@@ -434,7 +404,7 @@ define( function(require) {
     /**
      * 颜色格式转化
      *
-     * @param {Array} data 颜色值数组
+     * @param {string} data 颜色值数组
      * @param {string} format 格式,默认rgb
      * @return {string} 颜色
      */
@@ -464,7 +434,7 @@ define( function(require) {
 
     /**
      * 转换为rgba格式的颜色
-     * 
+     * @memberOf module:zrender/tool/color
      * @param {string} color 颜色
      * @return {string} rgba颜色，rgba(r,g,b,a)
      */
@@ -474,7 +444,7 @@ define( function(require) {
 
     /**
      * 转换为rgb数字格式的颜色
-     * 
+     * @memberOf module:zrender/tool/color
      * @param {string} color 颜色
      * @return {string} rgb颜色，rgb(0,0,0)格式
      */
@@ -484,7 +454,7 @@ define( function(require) {
 
     /**
      * 转换为16进制颜色
-     * 
+     * @memberOf module:zrender/tool/color
      * @param {string} color 颜色
      * @return {string} 16进制颜色，#rrggbb格式
      */
@@ -494,7 +464,7 @@ define( function(require) {
 
     /**
      * 转换为HSV颜色
-     * 
+     * @memberOf module:zrender/tool/color
      * @param {string} color 颜色
      * @return {string} HSVA颜色，hsva(h,s,v,a)
      */
@@ -504,7 +474,7 @@ define( function(require) {
 
     /**
      * 转换为HSV颜色
-     * 
+     * @memberOf module:zrender/tool/color
      * @param {string} color 颜色
      * @return {string} HSV颜色，hsv(h,s,v)
      */
@@ -514,7 +484,7 @@ define( function(require) {
 
     /**
      * 转换为HSBA颜色
-     * 
+     * @memberOf module:zrender/tool/color
      * @param {string} color 颜色
      * @return {string} HSBA颜色，hsba(h,s,b,a)
      */
@@ -524,7 +494,7 @@ define( function(require) {
 
     /**
      * 转换为HSB颜色
-     * 
+     * @memberOf module:zrender/tool/color
      * @param {string} color 颜色
      * @return {string} HSB颜色，hsb(h,s,b)
      */
@@ -534,7 +504,7 @@ define( function(require) {
 
     /**
      * 转换为HSLA颜色
-     * 
+     * @memberOf module:zrender/tool/color
      * @param {string} color 颜色
      * @return {string} HSLA颜色，hsla(h,s,l,a)
      */
@@ -544,7 +514,7 @@ define( function(require) {
 
     /**
      * 转换为HSL颜色
-     * 
+     * @memberOf module:zrender/tool/color
      * @param {string} color 颜色
      * @return {string} HSL颜色，hsl(h,s,l)
      */
@@ -579,7 +549,7 @@ define( function(require) {
 
     /**
      * 颜色规范化
-     * 
+     * @memberOf module:zrender/tool/color
      * @param {string} color 颜色
      * @return {string} 规范化后的颜色
      */
@@ -608,7 +578,7 @@ define( function(require) {
 
     /**
      * 颜色加深或减淡，当level>0加深，当level<0减淡
-     * 
+     * @memberOf module:zrender/tool/color
      * @param {string} color 颜色
      * @param {number} level 升降程度,取值区间[-1,1]
      * @return {string} 加深或减淡后颜色值
@@ -633,7 +603,7 @@ define( function(require) {
 
     /**
      * 颜色翻转,[255-r,255-g,255-b,1-a]
-     * 
+     * @memberOf module:zrender/tool/color
      * @param {string} color 颜色
      * @return {string} 翻转颜色
      */
@@ -648,10 +618,10 @@ define( function(require) {
 
     /**
      * 简单两种颜色混合
-     * 
+     * @memberOf module:zrender/tool/color
      * @param {string} color1 第一种颜色
      * @param {string} color2 第二种颜色
-     * @param {string} weight 混合权重[0-1]
+     * @param {number} weight 混合权重[0-1]
      * @return {string} 结果色,rgb(r,g,b)或rgba(r,g,b,a)
      */
     function mix(color1, color2, weight) {
@@ -713,7 +683,7 @@ define( function(require) {
      * hsla(h,s,l,a)
      *
      * @param {string} color 颜色
-     * @return {Array} 颜色值数组或null
+     * @return {Array.<number>} 颜色值数组或null
      */
     function getData(color) {
         color = normalize(color);
@@ -776,6 +746,7 @@ define( function(require) {
 
     /**
      * 设置颜色透明度
+     * @memberOf module:zrender/tool/color
      * @param {string} color 颜色
      * @param {number} alpha 透明度,区间[0,1]
      * @return {string} rgba颜色值

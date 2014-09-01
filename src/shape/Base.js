@@ -6,7 +6,7 @@
  */
 
 /**
- * @typedef {Object} IZRenderBaseShapeStyle
+ * @typedef {Object} IBaseShapeStyle
  * @property {string} [brushType='fill']
  * @property {string} [color='#000000'] 填充颜色
  * @property {string} [strokeColor='#000000'] 描边颜色
@@ -25,6 +25,14 @@
  *                                可以是start, end, left, right, center
  * @property {string} [textBaseline] 默认根据textPosition自动设置，附加文本垂直对齐。
  *                                可以是top, bottom, middle, alphabetic, hanging, ideographic
+ */
+
+/**
+ * @typedef {Object} module:zrender/shape/Base~IBoundingRect
+ * @property {number} x 左上角顶点x轴坐标 
+ * @property {number} y 左上角顶点y轴坐标
+ * @property {number} width 包围盒矩形宽度
+ * @property {number} height 包围盒矩形高度
  */
 
 define(
@@ -130,13 +138,13 @@ define(
 
             /**
              * 基础绘制样式
-             * @type {IZRenderBaseShapeStyle}
+             * @type {module:zrender/shape/Base~IBaseShapeStyle}
              */
             this.style = this.style || {};
 
             /**
              * 高亮样式
-             * @type {IZRenderBaseShapeStyle}
+             * @type {module:zrender/shape/Base~IBaseShapeStyle}
              */
             this.highlightStyle = this.highlightStyle || null;
 
@@ -285,7 +293,7 @@ define(
         /**
          * 设置 fillStyle, strokeStyle, shadow 等通用绘制样式
          * @param {CanvasRenderingContext2D} ctx
-         * @param {IZRenderBaseShapeStyle} style
+         * @param {module:zrender/shape/Base~IBaseShapeStyle} style
          */
         Base.prototype.setContext = function (ctx, style) {
             for (var i = 0, len = STYLE_CTX_MAP.length; i < len; i++) {
@@ -303,8 +311,8 @@ define(
          * 根据默认样式扩展高亮样式
          * 
          * @param {CanvasRenderingContext2D} ctx
-         * @param {IZRenderBaseShapeStyle} style 默认样式
-         * @param {IZRenderBaseShapeStyle} highlightStyle 高亮样式
+         * @param {module:zrender/shape/Base~IBaseShapeStyle} style 默认样式
+         * @param {module:zrender/shape/Base~IBaseShapeStyle} highlightStyle 高亮样式
          * @param {string} [brushTypeOnly]
          */
         Base.prototype.getHighlightStyle = function (style, highlightStyle, brushTypeOnly) {
@@ -397,7 +405,7 @@ define(
         /**
          * 构建绘制的Path
          * @param {CanvasRenderingContext2D} ctx
-         * @param {IZRenderBaseShapeStyle} style
+         * @param {module:zrender/shape/Base~IBaseShapeStyle} style
          */
         Base.prototype.buildPath = function(ctx, style) {
             log('buildPath not implemented in ' + this.type);
@@ -405,7 +413,8 @@ define(
 
         /**
          * 计算返回包围盒矩形
-         * @param {IZRenderBaseShapeStyle} style
+         * @param {module:zrender/shape/Base~IBaseShapeStyle} style
+         * @return {module:zrender/shape/Base~IBoundingRect}
          */
         Base.prototype.getRect = function(style) {
             log('getRect not implemented in ' + this.type);   
@@ -443,8 +452,10 @@ define(
         /**
          * 绘制附加文本
          * @param {CanvasRenderingContext2D} ctx
-         * @param {IZRenderBaseShapeStyle} style 样式
-         * @param {IZRenderBaseShapeStyle} normalStyle 默认样式，用于定位文字显示
+         * @param {module:zrender/shape/Base~IBaseShapeStyle}
+         *        style 样式
+         * @param {module:zrender/shape/Base~IBaseShapeStyle} 
+         *        normalStyle 默认样式，用于定位文字显示
          */
         Base.prototype.drawText = function (ctx, style, normalStyle) {
             if (typeof(style.text) == 'undefined' || style.text === false ) {

@@ -7,12 +7,6 @@
  * LICENSE
  * https://github.com/ecomfe/zrender/blob/master/LICENSE.txt
  */
-
-/**
- * @module zrender
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
- *         pissang (https://www.github.com/pissang)
- */
 define(
     function(require) {
         /*
@@ -40,35 +34,41 @@ define(
 
         var _instances = {};    //ZRender实例map索引
 
+        /**
+         * @exports zrender
+         * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+         *         pissang (https://www.github.com/pissang)
+         */
         var zrender = {};
+        /**
+         * @type {string}
+         */
         zrender.version = '2.0.2';
 
         /**
-         * zrender初始化
-         * 不让外部直接new ZRender实例，为啥？
-         * 不为啥，提供全局可控同时减少全局污染和降低命名冲突的风险！
+         * 创建zrender实例
          *
-         * @param {HTMLElement} dom dom对象，不帮你做document.getElementById了
-         * @param {Object=} params 个性化参数，如自定义shape集合，带进来就好
-         *
-         * @return {ZRender} ZRender实例
+         * @param {HTMLElement} dom 绘图容器
+         * @return {module:zrender~ZRender} ZRender实例
          */
-        zrender.init = function(dom, params) {
-            var zi = new ZRender(guid(), dom, params || {});
-            _instances[zi.id] = zi;
-            return zi;
+        // 不让外部直接new ZRender实例，为啥？
+        // 不为啥，提供全局可控同时减少全局污染和降低命名冲突的风险！
+        zrender.init = function(dom) {
+            var zr = new ZRender(guid(), dom);
+            _instances[zr.id] = zr;
+            return zr;
         };
 
         /**
-         * zrender实例销毁，记在_instances里的索引也会删除了
-         * 管生就得管死，可以通过zrender.dispose(zi)销毁指定ZRender实例
-         * 当然也可以直接zi.dispose()自己销毁
-         *
-         * @param {ZRender=} zi ZRender对象，不传则销毁全部
+         * zrender实例销毁
+         * @param {module:zrender~ZRender} zr ZRender对象，不传则销毁全部
          */
-        zrender.dispose = function (zi) {
-            if (zi) {
-                zi.dispose();
+        // 在_instances里的索引也会删除了
+        // 管生就得管死，可以通过zrender.dispose(zr)销毁指定ZRender实例
+        // 当然也可以直接zr.dispose()自己销毁
+        zrender.dispose = function (zr) {
+            if (zr) {
+                zr.dispose();
             }
             else {
                 for (var key in _instances) {
@@ -82,8 +82,8 @@ define(
 
         /**
          * 获取zrender实例
-         *
          * @param {string} id ZRender对象索引
+         * @return {module:zrender~ZRender}
          */
         zrender.getInstance = function (id) {
             return _instances[id];
@@ -118,7 +118,7 @@ define(
 
         /**
          * ZRender接口类，对外可用的所有接口都在这里
-         * 非get接口统一返回支持链式调用~
+         * 非get接口统一返回支持链式调用
          *
          * @constructor
          * @alias module:zrender~ZRender
@@ -140,7 +140,7 @@ define(
 
             // 动画控制
             this.animatingShapes = [];
-            /**=
+            /**
              * @type {module:zrender/animation/Animation}
              */
             this.animation = new Animation({
@@ -232,11 +232,11 @@ define(
          * @param {string} [config.motionBlur=false] 是否开启动态模糊
          * @param {number} [config.lastFrameAlpha=0.7]
          *                 在开启动态模糊的时候使用，与上一帧混合的alpha值，值越大尾迹越明显
-         * @param {Array.<number>} [position] 层的平移
-         * @param {Array.<number>} [rotation] 层的旋转
-         * @param {Array.<number>} [scale] 层的缩放
-         * @param {boolean} [zoomable=false] 层是否支持鼠标缩放操作
-         * @param {boolean} [panable=false] 层是否支持鼠标平移操作
+         * @param {Array.<number>} [config.position] 层的平移
+         * @param {Array.<number>} [config.rotation] 层的旋转
+         * @param {Array.<number>} [config.scale] 层的缩放
+         * @param {boolean} [config.zoomable=false] 层是否支持鼠标缩放操作
+         * @param {boolean} [config.panable=false] 层是否支持鼠标平移操作
          */
         ZRender.prototype.modLayer = function (zLevel, config) {
             this.painter.modLayer(zLevel, config);

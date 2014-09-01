@@ -5,7 +5,7 @@
  */
 
 /**
- * @typedef {Object} IZRenderIsogonStyle
+ * @typedef {Object} IIsogonStyle
  * @property {number} x 正n边形外接圆心x坐标
  * @property {number} y 正n边形外接圆心y坐标
  * @property {number} r 正n边形外接圆半径
@@ -48,12 +48,12 @@ define(
             /**
              * 多边形绘制样式
              * @name module:zrender/shape/Isogon#style
-             * @type {IZRenderIsogonStyle}
+             * @type {module:zrender/shape/Isogon~IIsogonStyle}
              */
             /**
              * 多边形高亮绘制样式
              * @name module:zrender/shape/Isogon#highlightStyle
-             * @type {IZRenderIsogonStyle}
+             * @type {module:zrender/shape/Isogon~IIsogonStyle}
              */
         }
 
@@ -63,7 +63,7 @@ define(
             /**
              * 创建n角星（n>=3）路径
              * @param {CanvasRenderingContext2D} ctx
-             * @param {IZRenderIsogonStyle} style
+             * @param {module:zrender/shape/Isogon~IIsogonStyle} style
              */
             buildPath : function(ctx, style) {
                 var n = style.n;
@@ -99,7 +99,8 @@ define(
 
             /**
              * 计算返回正多边形的包围盒矩形
-             * @param {IZRenderIsogonStyle} style
+             * @param {module:zrender/shape/Isogon~IIsogonStyle} style
+             * @return {module:zrender/shape/Base~IBoundingRect}
              */
             getRect : function(style) {
                 if (style.__rect) {

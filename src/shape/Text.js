@@ -1,88 +1,69 @@
 /**
- * zrender
- *
+ * @module zrender/shape/Text
  * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
- *
- * shape类：文字
- * 可配图形属性：
-   {
-       // 基础属性
-       shape  : 'text',         // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
-       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
-       invisible : {boolean},   // 默认为false，是否可见
-
-       // 样式属性，默认状态样式样式属性
-       style  : {
-           x             : {number},  // 必须，横坐标
-           y             : {number},  // 必须，纵坐标
-           brushType     : {string},  // 默认为fill，绘画方式
-                                      // fill(填充) | stroke(描边) | both(填充+描边)
-           color         : {color},   // 默认为'#000'，填充颜色，支持rgba
-           strokeColor   : {color},   // 默认为'#000'，线条颜色（轮廓），支持rgba
-           lineWidth     : {number},  // 默认为1，线条宽度
-
-           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
-           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
-           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
-           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
-           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
-
-           text          : {string},  // 必须，文本内容
-           textFont      : {string},  // 默认为null，文本文字样式，eg:'bold 18px verdana'
-           textAlign     : {string},  // 默认为start，文本水平对齐。
-                                      // start | end | left | right | center
-           textBaseline  : {string},  // 默认为middle，文本垂直对齐。
-                                      // top | bottom | middle |
-                                      // alphabetic | hanging | ideographic
-           maxWidth      : {number}   // 默认为null，最大宽度
-       },
-
-       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
-       highlightStyle : {
-           // 同style
-       }
-
-       // 交互属性，详见shape.Base
-
-       // 事件属性，详见shape.Base
-   }
-         例子：
-   {
-       shape  : 'text',
-       id     : '123456',
-       zlevel : 1,
-       style  : {
-           x : 200,
-           y : 100,
-           color : 'red',
-           text : 'Baidu'
-       },
-       myName : 'kener',  //可自带任何有效自定义属性
-
-       clickable : true,
-       onClick : function(eventPacket) {
-           alert(eventPacket.target.myName);
-       }
-   }
+ * @example
+ *     var Text = require('zrender/shape/Text');
+ *     var shape = new Text({
+ *         style: {
+ *             text: 'Label',
+ *             x: 100,
+ *             y: 100,
+ *             textFont: '14px Arial'
+ *         }
+ *     });
+ *     zr.addShape(shape);
  */
+
+/**
+ * @typedef {Object} ITextStyle
+ * @property {number} x 横坐标
+ * @property {number} y 纵坐标
+ * @property {string} text 文本内容
+ * @property {number} [maxWidth=null] 最大宽度限制
+ * @property {string} [textFont] 附加文本样式，eg:'bold 18px verdana'
+ * @property {string} [textAlign] 默认根据textPosition自动设置，附加文本水平对齐。
+ *                                可以是start, end, left, right, center
+ * @property {string} [textBaseline] 默认根据textPosition自动设置，附加文本垂直对齐。
+ *                                可以是top, bottom, middle, alphabetic, hanging, ideographic
+ * @property {string} [brushType='fill']
+ * @property {string} [color='#000000'] 填充颜色
+ * @property {string} [strokeColor='#000000'] 描边颜色
+ * @property {number} [lineWidth=1] 描边宽度
+ * @property {number} [opacity=1] 绘制透明度
+ * @property {number} [shadowBlur=0] 阴影模糊度，大于0有效
+ * @property {string} [shadowColor='#000000'] 阴影颜色
+ * @property {number} [shadowOffsetX=0] 阴影横向偏移
+ * @property {number} [shadowOffsetY=0] 阴影纵向偏移
+ */
+
 define(
     function (require) {
         var area = require('../tool/area');
         var Base = require('./Base');
         
-        function Text(options) {
+        /**
+         * @alias module:zrender/shape/Text
+         * @constructor
+         * @extends module:zrender/shape/Base
+         * @param {Object} options
+         */
+        var Text = function(options) {
             Base.call(this, options);
+            /**
+             * 文字绘制样式
+             * @name module:zrender/shape/Text#style
+             * @type {module:zrender/shape/Text~ITextStyle}
+             */
+            /**
+             * 文字高亮绘制样式
+             * @name module:zrender/shape/Text#highlightStyle
+             * @type {module:zrender/shape/Text~ITextStyle}
+             */
         }
 
         Text.prototype =  {
             type: 'text',
 
-            /**
-             * 画刷，重载基类方法
-             * @param {Context2D} ctx Canvas 2D上下文
-             * @param isHighlight 是否为高亮状态
-             */
             brush : function(ctx, isHighlight) {
                 var style = this.style;
                 if (isHighlight) {
@@ -179,8 +160,9 @@ define(
             },
 
             /**
-             * 返回矩形区域，用于局部刷新和文字定位
-             * @param {Object} style
+             * 返回文字包围盒矩形
+             * @param {module:zrender/shape/Text~ITextStyle} style
+             * @return {module:zrender/shape/Base~IBoundingRect}
              */
             getRect : function(style) {
                 if (style.__rect) {

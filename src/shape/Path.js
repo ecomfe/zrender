@@ -6,7 +6,7 @@
  */
 
 /**
- * @typedef {Object} IZRenderPathStyle
+ * @typedef {Object} IPathStyle
  * @property {string} path path描述数据, 详见 {@link http://www.w3.org/TR/2011/REC-SVG11-20110816/paths.html#PathData}
  * @property {number} x x轴位移
  * @property {number} y y轴位移
@@ -53,12 +53,12 @@ define(function (require) {
         /**
          * Path绘制样式
          * @name module:zrender/shape/Path#style
-         * @type {IZRenderPathStyle}
+         * @type {module:zrender/shape/Path~IPathStyle}
          */
         /**
          * Path高亮绘制样式
          * @name module:zrender/shape/Path#highlightStyle
-         * @type {IZRenderPathStyle}
+         * @type {module:zrender/shape/Path~IPathStyle}
          */
     }
 
@@ -372,7 +372,7 @@ define(function (require) {
         /**
          * 创建路径
          * @param {CanvasRenderingContext2D} ctx
-         * @param {IZRenderPathStyle} style
+         * @param {module:zrender/shape/Path~IPathStyle} style
          */
         buildPath : function(ctx, style) {
             var path = style.path;
@@ -457,7 +457,8 @@ define(function (require) {
 
         /**
          * 计算返回Path包围盒矩形。
-         * @param {IZRenderPathStyle} style
+         * @param {module:zrender/shape/Path~IPathStyle} style
+         * @return {module:zrender/shape/Base~IBoundingRect}
          */
         getRect : function(style) {
             if (style.__rect) {

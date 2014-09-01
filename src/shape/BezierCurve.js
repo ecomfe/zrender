@@ -21,7 +21,7 @@
  */
 
 /**
- * @typedef {Object} IZRenderBezierCurveStyle
+ * @typedef {Object} IBezierCurveStyle
  * @property {number} xStart 起点x坐标
  * @property {number} yStart 起点y坐标
  * @property {number} cpX1 第一个控制点x坐标
@@ -67,12 +67,12 @@ define(
             /**
              * 贝赛尔曲线绘制样式
              * @name module:zrender/shape/BezierCurve#style
-             * @type {IZRenderBezierCurveStyle}
+             * @type {module:zrender/shape/BezierCurve~IBezierCurveStyle}
              */
             /**
              * 贝赛尔曲线高亮绘制样式
              * @name module:zrender/shape/BezierCurve#highlightStyle
-             * @type {IZRenderBezierCurveStyle}
+             * @type {module:zrender/shape/BezierCurve~IBezierCurveStyle}
              */
         }
 
@@ -82,7 +82,7 @@ define(
             /**
              * 创建贝塞尔曲线路径
              * @param {CanvasRenderingContext2D} ctx
-             * @param {IZRenderBezierCurveStyle} style
+             * @param {module:zrender/shape/BezierCurve~IBezierCurveStyle} style
              */
             buildPath : function(ctx, style) {
                 ctx.moveTo(style.xStart, style.yStart);
@@ -106,7 +106,8 @@ define(
             /**
              * 计算返回贝赛尔曲线包围盒矩形。
              * 该包围盒是直接从四个控制点计算，并非最小包围盒。
-             * @param {IZRenderBezierCurveStyle} style
+             * @param {module:zrender/shape/BezierCurve~IBezierCurveStyle} style
+             * @return {module:zrender/shape/Base~IBoundingRect}
              */
             getRect : function(style) {
                 if (style.__rect) {

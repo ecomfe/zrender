@@ -632,9 +632,6 @@
                     - parseInt(stl.paddingBottom, 10)).toFixed(0) - 0;
         };
 
-        /**
-         * 绘制高亮层图形
-         */
         Painter.prototype._brushHover = function (shape) {
             var ctx = this._layers.hover.ctx;
 
