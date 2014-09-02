@@ -73,6 +73,8 @@
             // 背景
             this._bgDom = createDom('bg', 'div', this);
             domRoot.appendChild(this._bgDom);
+            this._bgDom.onselectstart = returnFalse;
+            this._bgDom.style['-webkit-user-select'] = 'none';
 
             // 高亮
             var hoverLayer = new Layer('_zrender_hover_', this);
@@ -80,7 +82,8 @@
             domRoot.appendChild(hoverLayer.dom);
             hoverLayer.initContext();
 
-            hoverLayer.onselectstart = returnFalse;
+            hoverLayer.dom.onselectstart = returnFalse;
+            hoverLayer.dom.style['-webkit-user-select'] = 'none';
 
             var me = this;
             this.updatePainter = function(shapeList, callback) {
@@ -765,6 +768,8 @@
          */
         var Layer = function(id, painter) {
             this.dom = createDom(id, 'canvas', painter);
+            this.dom.onselectstart = returnFalse; // 避免页面选中的尴尬
+            this.dom.style['-webkit-user-select'] = 'none';
             vmlCanvasManager && vmlCanvasManager.initElement(this.dom);
 
             this.domBack = null;
