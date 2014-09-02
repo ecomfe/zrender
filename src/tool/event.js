@@ -43,7 +43,8 @@ define(
         * @return {number} 滚轮变化，正值说明滚轮是向上滚动，如果是负值说明滚轮是向下滚动
         */
         function getDelta(e) {
-            return typeof e.wheelDelta != 'undefined' && e.wheelDelta
+            return typeof e.zrenderDelta != 'undefined' && e.zrenderDelta
+                   || typeof e.wheelDelta != 'undefined' && e.wheelDelta
                    || typeof e.detail != 'undefined' && -e.detail;
         }
 
