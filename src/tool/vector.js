@@ -139,7 +139,7 @@ define(
              * @param {Float32Array|Array.<number>} v1
              */
             normalize : function(out, v) {
-                var d = vector.length(v);
+                var d = vector.len(v);
                 if(d === 0){
                     out[0] = 0;
                     out[1] = 0;
@@ -196,6 +196,7 @@ define(
             }
         };
 
+        vector.length = vector.len;
         vector.dist = vector.distance;
 
         return vector;

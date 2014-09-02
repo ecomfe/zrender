@@ -15,7 +15,7 @@
         var log = require('./tool/log');
         var matrix = require('./tool/matrix');
         var BaseLoadingEffect = require('./loadingEffect/Base');
-        var Transformable = require('./shape/mixin/Transformable');
+        var Transformable = require('./mixin/Transformable');
 
         // retina 屏幕优化
         var devicePixelRatio = window.devicePixelRatio || 1;
@@ -759,6 +759,7 @@
         /**
          * @alias module:zrender/Painter~Layer
          * @constructor
+         * @extends module:zrender/mixin/Transformable
          * @param {string} id
          * @param {module:zrender/Painter} painter
          */

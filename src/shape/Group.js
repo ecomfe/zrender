@@ -22,14 +22,14 @@ define(function(require) {
     var guid = require('../tool/guid');
     var util = require('../tool/util');
 
-    var Dispatcher = require('../tool/event').Dispatcher;
-    var Transformable = require('./mixin/Transformable');
+    var Transformable = require('../mixin/Transformable');
+    var Eventful = require('../mixin/Eventful');
 
     /**
      * @alias module:zrender/shape/Group
      * @constructor
-     * @extends module:zrender/shape/mixin/Transformable
-     * @extends module:zrender/tool/event.Dispatcher
+     * @extends module:zrender/mixin/Transformable
+     * @extends module:zrender/mixin/Eventful
      */
     var Group = function(options) {
 
@@ -66,7 +66,7 @@ define(function(require) {
 
         // Mixin
         Transformable.call(this);
-        Dispatcher.call(this);
+        Eventful.call(this);
     }
 
     /**
@@ -201,7 +201,7 @@ define(function(require) {
     };
 
     util.merge(Group.prototype, Transformable.prototype, true);
-    util.merge(Group.prototype, Dispatcher.prototype, true);
+    util.merge(Group.prototype, Eventful.prototype, true);
 
     return Group;
 });

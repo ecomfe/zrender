@@ -42,8 +42,8 @@ define(
         var util = require('../tool/util');
         var log = require('../tool/log');
 
-        var Transformable = require('./mixin/Transformable');
-        var Dispatcher = require('../tool/event').Dispatcher;
+        var Transformable = require('../mixin/Transformable');
+        var Eventful = require('../mixin/Eventful');
 
         function _fillText(ctx, text, x, y, textFont, textAlign, textBaseline) {
             if (textFont) {
@@ -118,9 +118,9 @@ define(
         /**
          * @alias module:zrender/shape/Base
          * @constructor
-         * @extends module:zrender/shape/mixin/Transformable
-         * @extends module:zrender/tool/event.Dispatcher
-         * @param {Object} options  关于shape的配置项，可以是shape的自有属性，也可以是自定义的属性。
+         * @extends module:zrender/mixin/Transformable
+         * @extends module:zrender/mixin/Eventful
+         * @param {Object} options 关于shape的配置项，可以是shape的自有属性，也可以是自定义的属性。
          */
         var Base = function(options) {
             
@@ -159,7 +159,7 @@ define(
             this.__dirty = true;
 
             Transformable.call(this);
-            Dispatcher.call(this);
+            Eventful.call(this);
         }
         /**
          * 图形是否可见，为true时不绘制图形，但是仍能触发鼠标事件
@@ -625,7 +625,7 @@ define(
         };
 
         util.merge(Base.prototype, Transformable.prototype, true);
-        util.merge(Base.prototype, Dispatcher.prototype, true);
+        util.merge(Base.prototype, Eventful.prototype, true);
 
         return Base;
     }
