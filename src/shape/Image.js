@@ -96,7 +96,6 @@ define(
                             _needsRefresh = [];
                         }, 10);
                     };
-                    _cache[src] = image;
 
                     image.src = src;
                 }
