@@ -17,7 +17,7 @@
  */
 
 /**
- * @typedef {Object} IZRenderRingStyle
+ * @typedef {Object} IRingStyle
  * @property {number} x 圆心x坐标
  * @property {number} y 圆心y坐标
  * @property {number} r0 内圆半径
@@ -55,12 +55,12 @@ define(
             /**
              * 圆环绘制样式
              * @name module:zrender/shape/Ring#style
-             * @type {IZRenderRingStyle}
+             * @type {module:zrender/shape/Ring~IRingStyle}
              */
             /**
              * 圆环高亮绘制样式
              * @name module:zrender/shape/Ring#highlightStyle
-             * @type {IZRenderRingStyle}
+             * @type {module:zrender/shape/Ring~IRingStyle}
              */
         }
 
@@ -70,7 +70,7 @@ define(
             /**
              * 创建圆环路径
              * @param {CanvasRenderingContext2D} ctx
-             * @param {IZRenderRingStyle} style
+             * @param {module:zrender/shape/Ring~IRingStyle} style
              */
             buildPath : function(ctx, style) {
                 // 非零环绕填充优化
@@ -82,7 +82,8 @@ define(
 
             /**
              * 计算返回圆环包围盒矩阵
-             * @param {IZRenderRingStyle} style
+             * @param {module:zrender/shape/Ring~IRingStyle} style
+             * @return {module:zrender/shape/Base~IBoundingRect}
              */
             getRect : function(style) {
                 if (style.__rect) {

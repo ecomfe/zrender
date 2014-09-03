@@ -15,7 +15,7 @@
  */
 
 /**
- * @typedef {Object} IZRenderPolygonStyle
+ * @typedef {Object} IPolygonStyle
  * @property {string} pointList 多边形顶点数组
  * @property {string} [brushType='fill']
  * @property {string} [color='#000000'] 填充颜色
@@ -54,12 +54,12 @@ define(
             /**
              * 多边形绘制样式
              * @name module:zrender/shape/Polygon#style
-             * @type {IZRenderPolygonStyle}
+             * @type {module:zrender/shape/Polygon~IPolygonStyle}
              */
             /**
              * 多边形高亮绘制样式
              * @name module:zrender/shape/Polygon#highlightStyle
-             * @type {IZRenderPolygonStyle}
+             * @type {module:zrender/shape/Polygon~IPolygonStyle}
              */
         }
 
@@ -131,7 +131,7 @@ define(
             /**
              * 创建多边形路径
              * @param {CanvasRenderingContext2D} ctx
-             * @param {IZRenderPolygonStyle} style
+             * @param {module:zrender/shape/Polygon~IPolygonStyle} style
              */
             buildPath : function(ctx, style) {
                 // 虽然能重用brokenLine，但底层图形基于性能考虑，重复代码减少调用吧
@@ -219,7 +219,8 @@ define(
 
             /**
              * 计算返回多边形包围盒矩阵
-             * @param {IZRenderPolygonStyle} style
+             * @param {module:zrender/shape/Polygon~IPolygonStyle} style
+             * @return {module:zrender/shape/Base~IBoundingRect}
              */
             getRect : function(style) {
                 if (style.__rect) {

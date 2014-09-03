@@ -20,7 +20,7 @@
  */
 
 /**
- * @typedef {Object} IZRenderHeartStyle
+ * @typedef {Object} IHeartStyle
  * @property {number} x 心形内部尖端横坐标
  * @property {number} y 心形内部尖端纵坐标
  * @property {number} a 心形横宽（中轴线到水平边缘最宽处距离）
@@ -61,12 +61,12 @@ define(
             /**
              * 心形绘制样式
              * @name module:zrender/shape/Heart#style
-             * @type {IZRenderHeartStyle}
+             * @type {module:zrender/shape/Heart~IHeartStyle}
              */
             /**
              * 心形高亮绘制样式
              * @name module:zrender/shape/Heart#highlightStyle
-             * @type {IZRenderHeartStyle}
+             * @type {module:zrender/shape/Heart~IHeartStyle}
              */
         }
 
@@ -76,7 +76,7 @@ define(
             /**
              * 创建扇形路径
              * @param {CanvasRenderingContext2D} ctx
-             * @param {IZRenderHeartStyle} style
+             * @param {module:zrender/shape/Heart~IHeartStyle} style
              */
             buildPath : function(ctx, style) {
                 ctx.moveTo(style.x, style.y);
@@ -101,7 +101,8 @@ define(
 
             /**
              * 计算返回心形的包围盒矩形
-             * @param {IZRenderHeartStyle} style
+             * @param {module:zrender/shape/Heart~IHeartStyle} style
+             * @return {module:zrender/shape/Base~IBoundingRect}
              */
             getRect : function(style) {
                 if (style.__rect) {

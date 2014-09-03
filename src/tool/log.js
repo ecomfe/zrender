@@ -1,13 +1,10 @@
-/**
- * @module zrender/tool/log
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
- */
 define(
     function (require) {
         var config = require('../config');
 
         /**
-         * @alias module:zrender/tool/log
+         * @exports zrender/tool/log
+         * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
          */
         return function() {
             if (config.debugMode === 0) {

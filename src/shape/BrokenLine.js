@@ -15,7 +15,7 @@
  */
 
 /**
- * @typedef {Object} IZRenderBrokenLineStyle
+ * @typedef {Object} IBrokenLineStyle
  * @property {Array.<number>} pointList 顶点坐标数组
  * @property {string} [smooth=''] 是否做平滑插值, 平滑算法可以选择 bezier, spline
  * @property {string} [strokeColor='#000000'] 描边颜色
@@ -56,12 +56,12 @@ define(
             /**
              * 贝赛尔曲线绘制样式
              * @name module:zrender/shape/BrokenLine#style
-             * @type {IZRenderBrokenLineStyle}
+             * @type {module:zrender/shape/BrokenLine~IBrokenLineStyle}
              */
             /**
              * 贝赛尔曲线高亮绘制样式
              * @name module:zrender/shape/BrokenLine#highlightStyle
-             * @type {IZRenderBrokenLineStyle}
+             * @type {module:zrender/shape/BrokenLine~IBrokenLineStyle}
              */
         }
 
@@ -71,7 +71,7 @@ define(
             /**
              * 创建多边形路径
              * @param {CanvasRenderingContext2D} ctx
-             * @param {IZRenderBrokenLineStyle} style
+             * @param {module:zrender/shape/BrokenLine~IBrokenLineStyle} style
              */
             buildPath : function(ctx, style) {
                 var pointList = style.pointList;
@@ -137,6 +137,7 @@ define(
             /**
              * 计算返回折线包围盒矩形。
              * @param {IZRenderBezierCurveStyle} style
+             * @return {module:zrender/shape/Base~IBoundingRect}
              */
             getRect : function(style) {
                 return require('./Polygon').prototype.getRect(style);

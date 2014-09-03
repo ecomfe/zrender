@@ -21,7 +21,7 @@
  */
 
 /**
- * @typedef {Object} IZRenderDropletStyle
+ * @typedef {Object} IDropletStyle
  * @property {number} x 水滴中心x坐标
  * @property {number} y 水滴中心y坐标
  * @property {number} a 水滴横宽（中心到水平边缘最宽处距离）
@@ -62,12 +62,12 @@ define(
             /**
              * 水滴绘制样式
              * @name module:zrender/shape/Droplet#style
-             * @type {IZRenderDropletStyle}
+             * @type {module:zrender/shape/Droplet~IDropletStyle}
              */
             /**
              * 水滴高亮绘制样式
              * @name module:zrender/shape/Droplet#highlightStyle
-             * @type {IZRenderDropletStyle}
+             * @type {module:zrender/shape/Droplet~IDropletStyle}
              */
         }
 
@@ -77,7 +77,7 @@ define(
             /**
              * 创建水滴路径
              * @param {CanvasRenderingContext2D} ctx
-             * @param {IZRenderDropletStyle} style
+             * @param {module:zrender/shape/Droplet~IDropletStyle} style
              */
             buildPath : function(ctx, style) {
                 ctx.moveTo(style.x, style.y + style.a);
@@ -101,7 +101,8 @@ define(
 
             /**
              * 计算返回水滴的包围盒矩形
-             * @param {IZRenderDropletStyle} style
+             * @param {module:zrender/shape/Droplet~IDropletStyle} style
+             * @return {module:zrender/shape/Base~IBoundingRect}
              */
             getRect : function(style) {
                 if (style.__rect) {

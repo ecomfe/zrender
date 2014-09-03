@@ -15,7 +15,7 @@
         var log = require('./tool/log');
         var matrix = require('./tool/matrix');
         var BaseLoadingEffect = require('./loadingEffect/Base');
-        var Transformable = require('./shape/mixin/Transformable');
+        var Transformable = require('./mixin/Transformable');
 
         // retina 屏幕优化
         var devicePixelRatio = window.devicePixelRatio || 1;
@@ -73,6 +73,8 @@
             // 背景
             this._bgDom = createDom('bg', 'div', this);
             domRoot.appendChild(this._bgDom);
+            this._bgDom.onselectstart = returnFalse;
+            this._bgDom.style['-webkit-user-select'] = 'none';
 
             // 高亮
             var hoverLayer = new Layer('_zrender_hover_', this);
@@ -80,7 +82,8 @@
             domRoot.appendChild(hoverLayer.dom);
             hoverLayer.initContext();
 
-            hoverLayer.onselectstart = returnFalse;
+            hoverLayer.dom.onselectstart = returnFalse;
+            hoverLayer.dom.style['-webkit-user-select'] = 'none';
 
             var me = this;
             this.updatePainter = function (shapeList, callback) {
@@ -633,9 +636,6 @@
                     - parseInt(stl.paddingBottom, 10)).toFixed(0) - 0;
         };
 
-        /**
-         * 绘制高亮层图形
-         */
         Painter.prototype._brushHover = function (shape) {
             var ctx = this._layers.hover.ctx;
 
@@ -763,11 +763,14 @@
         /**
          * @alias module:zrender/Painter~Layer
          * @constructor
+         * @extends module:zrender/mixin/Transformable
          * @param {string} id
          * @param {module:zrender/Painter} painter
          */
         var Layer = function(id, painter) {
             this.dom = createDom(id, 'canvas', painter);
+            this.dom.onselectstart = returnFalse; // 避免页面选中的尴尬
+            this.dom.style['-webkit-user-select'] = 'none';
             vmlCanvasManager && vmlCanvasManager.initElement(this.dom);
 
             this.domBack = null;

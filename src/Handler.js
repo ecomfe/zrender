@@ -18,6 +18,8 @@ define(
         var mat2d = require('./tool/matrix');
         var EVENT = config.EVENT;
 
+        var Eventful = require('./mixin/Eventful');
+
         var domHandlerNames = [
             'resize', 'click', 'dblclick',
             'mousewheel', 'mousemove', 'mouseout', 'mouseup', 'mousedown',
@@ -393,13 +395,14 @@ define(
         /**
          * @alias module:zrender/Handler
          * @constructor
+         * @extends module:zrender/mixin/Eventful
          * @param {HTMLElement} root 绘图区域
          * @param {module:zrender/Storage} storage Storage实例
          * @param {module:zrender/Painter} painter Painter实例
          */
         var Handler = function(root, storage, painter) {
             // 添加事件分发器特性
-            eventTool.Dispatcher.call(this);
+            Eventful.call(this);
 
             this.root = root;
             this.storage = storage;
@@ -923,7 +926,7 @@ define(
             return event;
         };
 
-        util.merge(Handler.prototype, eventTool.Dispatcher.prototype, true);
+        util.merge(Handler.prototype, Eventful.prototype, true);
 
         return Handler;
     }

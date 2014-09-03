@@ -1,17 +1,18 @@
 /**
- * zrender: 计算包围盒
- *
  * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
  *         pissang(https://github.com/pissang)
  *         errorrik (errorrik@gmail.com)
  */
-
 define(
     function (require) {
         var vec2 = require('./vector');
 
         /**
-         * 计算包围盒
+         * 从顶点数组中计算出最小包围盒，写入`min`和`max`中
+         * @module zrender/tool/computeBoundingBox
+         * @param {Array} poitns 顶点数组
+         * @param {Array.<number>} min
+         * @param {Array.<number>} max
          */
         function computeBoundingBox(points, min, max) {
             if (points.length === 0) {
@@ -45,8 +46,14 @@ define(
         }
 
         /**
-         * 计算三阶贝塞尔曲线的包围盒
-         * http://pissang.net/blog/?p=91
+         * 从三阶贝塞尔曲线(p0, p1, p2, p3)中计算出最小包围盒，写入`min`和`max`中
+         * @memberOf module:zrender/tool/computeBoundingBox
+         * @param {Array.<number>} p0
+         * @param {Array.<number>} p1
+         * @param {Array.<number>} p2
+         * @param {Array.<number>} p3
+         * @param {Array.<number>} min
+         * @param {Array.<number>} max
          */
         function computeCubeBezierBoundingBox(p0, p1, p2, p3, min, max) {
             var xDim = _computeCubeBezierExtremitiesDim(
@@ -106,8 +113,13 @@ define(
         }
 
         /**
-         * 计算二阶贝塞尔曲线的包围盒
-         * http://pissang.net/blog/?p=91
+         * 从二阶贝塞尔曲线(p0, p1, p2)中计算出最小包围盒，写入`min`和`max`中
+         * @memberOf module:zrender/tool/computeBoundingBox
+         * @param {Array.<number>} p0
+         * @param {Array.<number>} p1
+         * @param {Array.<number>} p2
+         * @param {Array.<number>} min
+         * @param {Array.<number>} max
          */
         function computeQuadraticBezierBoundingBox(p0, p1, p2, min, max) {
             // Find extremities, where derivative in x dim or y dim is zero
@@ -156,8 +168,15 @@ define(
         }
 
         /**
-         * 计算圆弧的包围盒
-         * http://pissang.net/blog/?p=91
+         * 从圆弧中计算出最小包围盒，写入`min`和`max`中
+         * @memberOf module:zrender/tool/computeBoundingBox
+         * @param {Array.<number>} center 圆弧中心点
+         * @param {number} radius 圆弧半径
+         * @param {number} startAngle 圆弧开始角度
+         * @param {number} endAngle 圆弧结束角度
+         * @param {number} clockwise 是否是顺时针
+         * @param {Array.<number>} min
+         * @param {Array.<number>} max
          */
         var computeArcBoundingBox = (function(){
             var start = [];

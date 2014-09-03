@@ -18,7 +18,7 @@
  */
 
 /**
- * @typedef {Object} IZRenderRectangleStyle
+ * @typedef {Object} IRectangleStyle
  * @property {number} x 左上角x坐标
  * @property {number} y 左上角y坐标
  * @property {number} width 宽度
@@ -58,12 +58,12 @@ define(
             /**
              * 矩形绘制样式
              * @name module:zrender/shape/Rectangle#style
-             * @type {IZRenderRectangleStyle}
+             * @type {module:zrender/shape/Rectangle~IRectangleStyle}
              */
             /**
              * 矩形高亮绘制样式
              * @name module:zrender/shape/Rectangle#highlightStyle
-             * @type {IZRenderRectangleStyle}
+             * @type {module:zrender/shape/Rectangle~IRectangleStyle}
              */
         }
 
@@ -148,7 +148,8 @@ define(
 
             /**
              * 计算返回矩形包围盒矩阵
-             * @param {IZRenderRectangleStyle} style
+             * @param {module:zrender/shape/Rectangle~IRectangleStyle} style
+             * @return {module:zrender/shape/Base~IBoundingRect}
              */
             getRect : function(style) {
                 if (style.__rect) {

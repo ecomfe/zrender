@@ -190,8 +190,8 @@ function attachModuleSymbols(doclets, modules) {
  * @param {array<object>} members.externals
  * @param {array<object>} members.globals
  * @param {array<object>} members.mixins
- * @param {array<object>} members.modules
  * @param {array<object>} members.namespaces
+ * @param {array<object>} members.modules
  * @param {array<object>} members.tutorials
  * @param {array<object>} members.events
  * @return {string} The HTML for the navigation sidebar.
@@ -199,10 +199,10 @@ function attachModuleSymbols(doclets, modules) {
 function buildNav(members) {
     var nav = [];
 
-    if (members.namespaces.length) {
-        _.each(members.namespaces, function (v) {
+    if (members.modules.length) {
+        _.each(members.modules, function (v) {
             nav.push({
-                type: 'namespace',
+                type: 'module',
                 longname: v.longname,
                 name: v.name,
                 members: find({

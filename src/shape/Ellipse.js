@@ -21,7 +21,7 @@
  */
 
 /**
- * @typedef {Object} IZRenderEllipseStyle
+ * @typedef {Object} IEllipseStyle
  * @property {number} x 圆心x坐标
  * @property {number} y 圆心y坐标
  * @property {number} a 横轴半径
@@ -60,12 +60,12 @@ define(
             /**
              * 椭圆绘制样式
              * @name module:zrender/shape/Ellipse#style
-             * @type {IZRenderEllipseStyle}
+             * @type {module:zrender/shape/Ellipse~IEllipseStyle}
              */
             /**
              * 椭圆高亮绘制样式
              * @name module:zrender/shape/Ellipse#highlightStyle
-             * @type {IZRenderEllipseStyle}
+             * @type {module:zrender/shape/Ellipse~IEllipseStyle}
              */
         }
 
@@ -75,7 +75,7 @@ define(
             /**
              * 构建椭圆的Path
              * @param {CanvasRenderingContext2D} ctx
-             * @param {IZRenderEllipseStyle} style
+             * @param {module:zrender/shape/Ellipse~IEllipseStyle} style
              */
             buildPath : function(ctx, style) {
                 var k = 0.5522848;
@@ -96,7 +96,8 @@ define(
             /**
             /**
              * 计算返回椭圆包围盒矩形。
-             * @param {IZRenderEllipseStyle} style
+             * @param {module:zrender/shape/Ellipse~IEllipseStyle} style
+             * @return {module:zrender/shape/Base~IBoundingRect}
              */
             getRect : function(style) {
                 if (style.__rect) {

@@ -15,7 +15,7 @@
  */
 
 /**
- * @typedef {Object} IZRenderImageStyle
+ * @typedef {Object} IImageStyle
  * @property {string|HTMLImageElement|HTMLCanvasElement} image 图片url或者图片对象
  * @property {number} x 左上角横坐标
  * @property {number} y 左上角纵坐标
@@ -56,12 +56,12 @@ define(
             /**
              * 图片绘制样式
              * @name module:zrender/shape/Image#style
-             * @type {IZRenderImageStyle}
+             * @type {module:zrender/shape/Image~IImageStyle}
              */
             /**
              * 图片高亮绘制样式
              * @name module:zrender/shape/Image#highlightStyle
-             * @type {IZRenderImageStyle}
+             * @type {module:zrender/shape/Image~IImageStyle}
              */
         }
 
@@ -96,7 +96,6 @@ define(
                             _needsRefresh = [];
                         }, 10);
                     };
-                    _cache[src] = image;
 
                     image.src = src;
                 }
@@ -176,7 +175,8 @@ define(
 
             /**
              * 计算返回图片的包围盒矩形
-             * @param {IZRenderImageStyle} style
+             * @param {module:zrender/shape/Image~IImageStyle} style
+             * @return {module:zrender/shape/Base~IBoundingRect}
              */
             getRect : function(style) {
                 return {

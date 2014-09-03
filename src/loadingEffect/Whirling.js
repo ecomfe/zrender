@@ -3,6 +3,7 @@ define(
     function (require) {
         var Base = require('./Base');
         var util = require('../tool/util');
+        var zrArea = require('../tool/area');
         var RingShape = require('../shape/Ring');
         var DropletShape = require('../shape/Droplet');
         var CircleShape = require('../shape/Circle');
@@ -19,12 +20,30 @@ define(
          * @param {Object} refreshHandle
          */
         Whirling.prototype._start = function (addShapeHandle, refreshHandle) {
+            var options = util.merge(
+                this.options,
+                {
+                    textStyle : {
+                        color : '#888',
+                        textAlign : 'start'
+                    },
+                    backgroundColor : 'rgba(250, 250, 250, 0.8)'
+                }
+            );
+            var textShape = this.createTextShape(options.textStyle);
+            
+            var textGap = 10;
+            var textWidth = zrArea.getTextWidth(
+                textShape.highlightStyle.text, textShape.highlightStyle.textFont
+            );
+            var textHeight = zrArea.getTextHeight(
+                textShape.highlightStyle.text, textShape.highlightStyle.textFont
+            );
+            
             // 特效默认配置
             var effectOption = util.merge(
                 this.options.effect || {},
                 {
-                    x : this.canvasWidth / 2 - 80,
-                    y : this.canvasHeight / 2,
                     r : 18,
                     colorIn : '#fff',
                     colorOut : '#555',
@@ -32,23 +51,17 @@ define(
                     timeInterval : 50
                 }
             );
-
-            var options = util.merge(
-                this.options,
-                {
-                    textStyle : {
-                        color : '#888',
-                        x : effectOption.x + effectOption.r + 10,
-                        y : effectOption.y,
-                        textAlign : 'start'
-                    },
-                    backgroundColor : 'rgba(250, 250, 250, 0.8)'
-                }
+            
+            var location = this.getLocation(
+                this.options.textStyle,
+                textWidth + textGap + effectOption.r * 2,
+                Math.max(effectOption.r * 2, textHeight)
             );
-
-            var textShape = this.createTextShape(options.textStyle);
+            effectOption.x = location.x + effectOption.r;
+            effectOption.y = textShape.highlightStyle.y = location.y + location.height / 2;
+            textShape.highlightStyle.x = effectOption.x + effectOption.r + textGap;
+            
             var background = this.createBackgroundShape(options.backgroundColor);
-
             // 初始化动画元素
             var droplet = new DropletShape({
                 highlightStyle : {

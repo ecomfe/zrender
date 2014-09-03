@@ -17,7 +17,7 @@
  *   zr.addShape(line);
  */
 /**
- * @typedef {Object} IZRenderLineStyle
+ * @typedef {Object} ILineStyle
  * @property {number} xStart 起点x坐标
  * @property {number} yStart 起点y坐标
  * @property {number} xEnd 终止点x坐标
@@ -58,12 +58,12 @@ define(
             /**
              * 直线绘制样式
              * @name module:zrender/shape/Line#style
-             * @type {IZRenderLineStyle}
+             * @type {module:zrender/shape/Line~ILineStyle}
              */
             /**
              * 直线高亮绘制样式
              * @name module:zrender/shape/Line#highlightStyle
-             * @type {IZRenderLineStyle}
+             * @type {module:zrender/shape/Line~ILineStyle}
              */
         }
 
@@ -73,7 +73,7 @@ define(
             /**
              * 创建线条路径
              * @param {CanvasRenderingContext2D} ctx
-             * @param {IZRenderLineStyle} style
+             * @param {module:zrender/shape/Line~ILineStyle} style
              */
             buildPath : function(ctx, style) {
                 if (!style.lineType || style.lineType == 'solid') {
@@ -97,7 +97,8 @@ define(
 
             /**
              * 计算返回线条的包围盒矩形
-             * @param {IZRenderLineStyle} style
+             * @param {module:zrender/shape/Line~ILineStyle} style
+             * @return {module:zrender/shape/Base~IBoundingRect}
              */
             getRect : function(style) {
                 if (style.__rect) {
