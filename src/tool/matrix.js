@@ -1,5 +1,5 @@
 define(
-    function() {
+    function () {
 
         var ArrayCtor = typeof Float32Array === 'undefined'
             ? Array
@@ -52,14 +52,14 @@ define(
              * @param {Float32Array|Array.<number>} m1
              * @param {Float32Array|Array.<number>} m2
              */
-            mul : function(out, m1, m2) {
-               out[0] = m1[0] * m2[0] + m1[2] * m2[1];
-               out[1] = m1[1] * m2[0] + m1[3] * m2[1];
-               out[2] = m1[0] * m2[2] + m1[2] * m2[3];
-               out[3] = m1[1] * m2[2] + m1[3] * m2[3];
-               out[4] = m1[0] * m2[4] + m1[2] * m2[5] + m1[4];
-               out[5] = m1[1] * m2[4] + m1[3] * m2[5] + m1[5];
-               return out;
+            mul : function (out, m1, m2) {
+                out[0] = m1[0] * m2[0] + m1[2] * m2[1];
+                out[1] = m1[1] * m2[0] + m1[3] * m2[1];
+                out[2] = m1[0] * m2[2] + m1[2] * m2[3];
+                out[3] = m1[1] * m2[2] + m1[3] * m2[3];
+                out[4] = m1[0] * m2[4] + m1[2] * m2[5] + m1[4];
+                out[5] = m1[1] * m2[4] + m1[3] * m2[5] + m1[5];
+                return out;
             },
             /**
              * 平移变换
@@ -83,17 +83,21 @@ define(
              * @param {number} rad
              */
             rotate : function(out, a, rad) {
-                var aa = a[0], ac = a[2], atx = a[4];
-                var ab = a[1], ad = a[3], aty = a[5];
+                var aa = a[0];
+                var ac = a[2];
+                var atx = a[4];
+                var ab = a[1];
+                var ad = a[3];
+                var aty = a[5];
                 var st = Math.sin(rad);
                 var ct = Math.cos(rad);
 
-                out[0] = aa*ct + ab*st;
-                out[1] = -aa*st + ab*ct;
-                out[2] = ac*ct + ad*st;
-                out[3] = -ac*st + ct*ad;
-                out[4] = ct*atx + st*aty;
-                out[5] = ct*aty - st*atx;
+                out[0] = aa * ct + ab * st;
+                out[1] = -aa * st + ab * ct;
+                out[2] = ac * ct + ad * st;
+                out[3] = -ac * st + ct * ad;
+                out[4] = ct * atx + st * aty;
+                out[5] = ct * aty - st * atx;
                 return out;
             },
             /**
@@ -103,7 +107,8 @@ define(
              * @param {Float32Array|Array.<number>} v
              */
             scale : function(out, a, v) {
-                var vx = v[0], vy = v[1];
+                var vx = v[0];
+                var vy = v[1];
                 out[0] = a[0] * vx;
                 out[1] = a[1] * vy;
                 out[2] = a[2] * vx;
@@ -119,11 +124,15 @@ define(
              */
             invert : function(out, a) {
             
-                var aa = a[0], ac = a[2], atx = a[4];
-                var ab = a[1], ad = a[3], aty = a[5];
+                var aa = a[0];
+                var ac = a[2];
+                var atx = a[4];
+                var ab = a[1];
+                var ad = a[3];
+                var aty = a[5];
 
                 var det = aa * ad - ab * ac;
-                if(!det){
+                if (!det) {
                     return null;
                 }
                 det = 1.0 / det;
@@ -144,8 +153,12 @@ define(
              * @param {Float32Array|Array.<number>} v
              */
             mulVector : function(out, a, v) {
-                var aa = a[0], ac = a[2], atx = a[4];
-                var ab = a[1], ad = a[3], aty = a[5];
+                var aa = a[0];
+                var ac = a[2];
+                var atx = a[4];
+                var ab = a[1];
+                var ad = a[3];
+                var aty = a[5];
 
                 out[0] = v[0] * aa + v[1] * ac + atx;
                 out[1] = v[0] * ab + v[1] * ad + aty;

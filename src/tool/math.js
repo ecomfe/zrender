@@ -9,20 +9,21 @@
  * radianToDegree：弧度转角度
  */
 define(
-    function() {
+    function () {
 
         var _radians = Math.PI / 180;
 
         /**
-         * @param angle 弧度（角度）参数
-         * @param isDegrees angle参数是否为角度计算，默认为false，angle为以弧度计量的角度
+         * @param {number} angle 弧度（角度）参数
+         * @param {boolean} isDegrees angle参数是否为角度计算，默认为false，angle为以弧度计量的角度
          */
         function sin(angle, isDegrees) {
             return Math.sin(isDegrees ? angle * _radians : angle);
         }
 
         /**
-         * @param radians 弧度参数
+         * @param {number} angle 弧度（角度）参数
+         * @param {boolean} isDegrees angle参数是否为角度计算，默认为false，angle为以弧度计量的角度
          */
         function cos(angle, isDegrees) {
             return Math.cos(isDegrees ? angle * _radians : angle);

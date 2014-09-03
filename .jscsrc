@@ -10,7 +10,9 @@
         "node_modules/**",
         "dep/**",
         "example/**",
-        "doc/**"
+        "doc/**",
+        "src/tool/env.js",
+        "src/tool/util.js"
     ],
 
     "requireCurlyBraces": [
