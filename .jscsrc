@@ -90,7 +90,7 @@
 
     "requireCapitalizedConstructors": true,
     "safeContextKeyword": ["me", "self"],
-    "requireDotNotation": true,
+
 
     "validateJSDoc": {
         "checkParamNames": true,

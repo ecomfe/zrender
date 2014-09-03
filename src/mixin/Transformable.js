@@ -3,13 +3,13 @@
  * @module zrender/mixin/Transformable
  * @author pissang (https://www.github.com/pissang)
  */
-define(function(require) {
+define(function (require) {
 
     'use strict';
 
     var matrix = require('../tool/matrix');
     var vector = require('../tool/vector');
-    var origin = [0, 0];
+    var origin = [ 0, 0 ];
 
     var EPSILON = 5e-5;
 
@@ -24,7 +24,7 @@ define(function(require) {
      * @alias module:zrender/mixin/Transformable
      * @constructor
      */
-    var Transformable = function() {
+    var Transformable = function () {
 
         if (!this.position) {
             /**
@@ -32,7 +32,7 @@ define(function(require) {
              * @type {Array.<number>}
              * @default [0, 0]
              */
-            this.position = [0, 0];
+            this.position = [ 0, 0 ];
         }
         if (typeof(this.rotation) == 'undefined') {
             /**
@@ -40,7 +40,7 @@ define(function(require) {
              * @type {Array.<number>}
              * @default [0, 0, 0]
              */
-            this.rotation = [0, 0, 0];
+            this.rotation = [ 0, 0, 0 ];
         }
         if (!this.scale) {
             /**
@@ -48,7 +48,7 @@ define(function(require) {
              * @type {Array.<number>}
              * @default [1, 1, 0, 0]
              */
-            this.scale = [1, 1, 0, 0];
+            this.scale = [ 1, 1, 0, 0 ];
         }
 
         this.needLocalTransform = false;
@@ -65,25 +65,26 @@ define(function(require) {
         
         constructor: Transformable,
 
-        updateNeedTransform: function() {
+        updateNeedTransform: function () {
             this.needLocalTransform = isNotAroundZero(this.rotation[0])
                 || isNotAroundZero(this.position[0])
                 || isNotAroundZero(this.position[1])
                 || isNotAroundZero(this.scale[0] - 1)
-                || isNotAroundZero(this.scale[1] - 1) 
+                || isNotAroundZero(this.scale[1] - 1);
         },
 
         /**
          * 判断是否需要有坐标变换，更新needTransform属性。
          * 如果有坐标变换, 则从position, rotation, scale以及父节点的transform计算出自身的transform矩阵
          */
-        updateTransform: function() {
+        updateTransform: function () {
             
             this.updateNeedTransform();
 
             if (this.parent) {
                 this.needTransform = this.needLocalTransform || this.parent.needTransform;
-            } else {
+            }
+            else {
                 this.needTransform = this.needLocalTransform;
             }
             
@@ -159,7 +160,8 @@ define(function(require) {
             if (this.parent && this.parent.needTransform) {
                 if (this.needLocalTransform) {
                     matrix.mul(this.transform, this.parent.transform, this.transform);
-                } else {
+                }
+                else {
                     matrix.copy(this.transform, this.parent.transform);
                 }
             }
@@ -168,7 +170,7 @@ define(function(require) {
          * 将自己的transform应用到context上
          * @param {Context2D} ctx
          */
-        setTransform: function(ctx) {
+        setTransform: function (ctx) {
             if (this.needTransform) {
                 var m = this.transform;
                 ctx.transform(
@@ -183,7 +185,7 @@ define(function(require) {
          * @param  {Array.<number>|Float32Array} target
          * @method
          */
-        lookAt: (function() {
+        lookAt: (function () {
             var v = vector.create();
             return function(target) {
                 if (!this.transform) {
@@ -207,12 +209,12 @@ define(function(require) {
                 m[5] = this.position[1];
 
                 this.decomposeTransform();
-            }
+            };
         })(),
         /**
          * 分解`transform`矩阵到`position`, `rotation`, `scale`
          */
-        decomposeTransform: function() {
+        decomposeTransform: function () {
             if (!this.transform) {
                 return;
             }

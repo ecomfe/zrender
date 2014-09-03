@@ -20,7 +20,7 @@
         // retina 屏幕优化
         var devicePixelRatio = window.devicePixelRatio || 1;
         devicePixelRatio = Math.max(devicePixelRatio, 1);
-        var vmlCanvasManager = window.G_vmlCanvasManager;
+        var vmlCanvasManager = window['G_vmlCanvasManager'];
 
         
         // 返回false的方法，用于避免页面被选中

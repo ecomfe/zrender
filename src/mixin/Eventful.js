@@ -4,31 +4,31 @@
  * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
  *         pissang (https://www.github.com/pissang)
  */
-define(function(require) {
+define(function (require) {
 
     /**
      * 事件分发器
      * @alias module:zrender/mixin/Eventful
      * @constructor
      */
-    var Eventful = function() {
+    var Eventful = function () {
         this._handlers = {};
-    }
+    };
     /**
      * 单次触发绑定，dispatch后销毁
      * 
      * @param {string} event 事件名
      * @param {Function} handler 响应函数
-     * @param {} [context]
+     * @param {Object} context
      */
-    Eventful.prototype.one = function(event, handler, context) {
+    Eventful.prototype.one = function (event, handler, context) {
         var _h = this._handlers;
 
-        if(!handler || !event) {
+        if (!handler || !event) {
             return this;
         }
 
-        if(!_h[event]) {
+        if (!_h[event]) {
             _h[event] = [];
         }
 
@@ -45,16 +45,16 @@ define(function(require) {
      * 绑定事件
      * @param {string} event 事件名
      * @param {Function} handler 事件处理函数
-     * @param {} [context]
+     * @param {Object} context
      */
-    Eventful.prototype.bind = function(event, handler, context) {
+    Eventful.prototype.bind = function (event, handler, context) {
         var _h = this._handlers;
 
-        if(!handler || !event) {
+        if (!handler || !event) {
             return this;
         }
 
-        if(!_h[event]) {
+        if (!_h[event]) {
             _h[event] = [];
         }
 
@@ -72,16 +72,16 @@ define(function(require) {
      * @param {string} event 事件名
      * @param {Function} [handler] 事件处理函数
      */
-    Eventful.prototype.unbind = function(event, handler) {
+    Eventful.prototype.unbind = function (event, handler) {
         var _h = this._handlers;
 
-        if(!event) {
+        if (!event) {
             this._handlers = {};
             return this;
         }
 
-        if(handler) {
-            if(_h[event]) {
+        if (handler) {
+            if (_h[event]) {
                 var newList = [];
                 for (var i = 0, l = _h[event].length; i < l; i++) {
                     if (_h[event][i]['h'] != handler) {
@@ -91,7 +91,7 @@ define(function(require) {
                 _h[event] = newList;
             }
 
-            if(_h[event] && _h[event].length === 0) {
+            if (_h[event] && _h[event].length === 0) {
                 delete _h[event];
             }
         }
@@ -107,8 +107,8 @@ define(function(require) {
      * 
      * @param {string} type 事件类型
      */
-    Eventful.prototype.dispatch = function(type) {
-        if(this._handlers[type]) {
+    Eventful.prototype.dispatch = function (type) {
+        if (this._handlers[type]) {
             var args = arguments;
             var argLen = args.length;
 
@@ -139,7 +139,8 @@ define(function(require) {
                 if (_h[i]['one']) {
                     _h.splice(i, 1);
                     len--;
-                } else {
+                }
+                else {
                     i++;
                 }
             }
@@ -152,8 +153,8 @@ define(function(require) {
      * 带有context的事件分发, 最后一个参数是事件回调的context
      * @param {string} type 事件类型
      */
-    Eventful.prototype.dispatchWithContext = function(type) {
-        if(this._handlers[type]) {
+    Eventful.prototype.dispatchWithContext = function (type) {
+        if (this._handlers[type]) {
             var args = arguments;
             var argLen = args.length;
 
@@ -185,7 +186,8 @@ define(function(require) {
                 if (_h[i]['one']) {
                     _h.splice(i, 1);
                     len--;
-                } else {
+                }
+                else {
                     i++;
                 }
             }
