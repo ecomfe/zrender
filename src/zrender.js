@@ -1,5 +1,6 @@
-/*!
- * ZRender, a high performance canvas library.
+/**
+ * ZRender, a lightweight canvas library with a MVC architecture, data-driven 
+ * and provides an event model like DOM.
  *  
  * Copyright (c) 2013, Baidu Inc.
  * All rights reserved.
@@ -9,12 +10,14 @@
  */
 
 /**
- * @module zrender
+ * zrender: core核心类
+ *
+ * @desc zrender是一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型。
  * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
- *         pissang (https://www.github.com/pissang)
+ *
  */
 define(
-    function(require) {
+    function (require) {
         /*
          * HTML5 Canvas for Internet Explorer!
          * Modern browsers like Firefox, Safari, Chrome and Opera support
@@ -36,12 +39,12 @@ define(
         var Handler = require('./Handler');
         var Painter = require('./Painter');
         var Storage = require('./Storage');
-        var Animation = require('./animation/Animation');
+        var Animation = require('./animation/animation');
 
-        var _instances = {};    //ZRender实例map索引
+        var _instances = {};    // ZRender实例map索引
 
         var zrender = {};
-        zrender.version = '2.0.2';
+        zrender.version = '2.0.0';
 
         /**
          * zrender初始化
@@ -53,7 +56,7 @@ define(
          *
          * @return {ZRender} ZRender实例
          */
-        zrender.init = function(dom, params) {
+        zrender.init = function (dom, params) {
             var zi = new ZRender(guid(), dom, params || {});
             _instances[zi.id] = zi;
             return zi;
@@ -103,34 +106,30 @@ define(
             return zrender;
         };
 
-        function getFrameCallback(zrInstance) {
-            return function(){
-                var animatingShapes = zrInstance.animatingShapes;
+        function getAnimationUpdater(zrenderInstance) {
+            return function () {
+                var animatingShapes = zrenderInstance.animatingShapes;
                 for (var i = 0, l = animatingShapes.length; i < l; i++) {
-                    zrInstance.storage.mod(animatingShapes[i].id);
+                    zrenderInstance.storage.mod(animatingShapes[i].id);
                 }
 
-                if (animatingShapes.length || zrInstance._needsRefreshNextFrame) {
-                    zrInstance.refresh();
+                if (animatingShapes.length) {
+                    zrenderInstance.painter.refresh();
                 }
             };
         }
 
         /**
-         * ZRender接口类，对外可用的所有接口都在这里
+         * ZRender接口类，对外可用的所有接口都在这里！！
+         * storage（M）、painter（V）、handler（C）为内部私有类，外部接口不可见
          * 非get接口统一返回支持链式调用~
          *
-         * @constructor
-         * @alias module:zrender~ZRender
          * @param {string} id 唯一标识
          * @param {HTMLElement} dom dom对象，不帮你做document.getElementById
+         *
          * @return {ZRender} ZRender实例
          */
-        var ZRender = function(id, dom) {
-            /**
-             * 实例 id
-             * @type {string}
-             */
+        function ZRender(id, dom) {
             this.id = id;
             this.env = require('./tool/env');
 
@@ -140,64 +139,38 @@ define(
 
             // 动画控制
             this.animatingShapes = [];
-            /**=
-             * @type {module:zrender/animation/Animation}
-             */
             this.animation = new Animation({
                 stage : {
-                    update : getFrameCallback(this)
+                    update : getAnimationUpdater(this)
                 }
             });
             this.animation.start();
-
-            this._needsRefreshNextFrame = false;
         }
 
         /**
          * 获取实例唯一标识
-         * @return {string}
          */
         ZRender.prototype.getId = function () {
             return this.id;
         };
 
         /**
-         * 添加图形形状到根节点
+         * 添加图形形状
          * 
-         * @param {zrender.shape.Base} shape 形状对象，可用属性全集，详见各shape
+         * @param {Object} shape 形状对象，可用属性全集，详见各shape
          */
         ZRender.prototype.addShape = function (shape) {
-            this.storage.addRoot(shape);
+            this.storage.add(shape);
             return this;
         };
 
         /**
-         * 添加组到根节点
-         *
-         * @param {zrender.shape.Group} group
-         */
-        ZRender.prototype.addGroup = function(group) {
-            this.storage.addRoot(group);
-            return this;
-        };
-
-        /**
-         * 从根节点删除图形形状
+         * 删除图形形状
          * 
          * @param {string} shapeId 形状对象唯一标识
          */
         ZRender.prototype.delShape = function (shapeId) {
-            this.storage.delRoot(shapeId);
-            return this;
-        };
-
-        /**
-         * 从根节点删除组
-         * 
-         * @param {string} groupId
-         */
-        ZRender.prototype.delGroup = function (groupId) {
-            this.storage.delRoot(groupId);
+            this.storage.del(shapeId);
             return this;
         };
 
@@ -206,37 +179,18 @@ define(
          * 
          * @param {string} shapeId 形状对象唯一标识
          * @param {Object} shape 形状对象
+         * @param {boolean} fast 默认为false, 如果为true的话会在merge中省略部分判断
          */
-        ZRender.prototype.modShape = function (shapeId, shape) {
-            this.storage.mod(shapeId, shape);
+        ZRender.prototype.modShape = function (shapeId, shape, fast) {
+            this.storage.mod(shapeId, shape, fast);
             return this;
         };
 
         /**
-         * 修改组
-         * 
-         * @param {string} shapeId
-         * @param {Object} group
-         */
-        ZRender.prototype.modGroup = function (groupId, group) {
-            this.storage.mod(groupId, group);
-            return this;
-        };
-
-        /**
-         * 修改指定zlevel的绘制配置项
+         * 修改指定zlevel的绘制配置项，例如clearColor
          * 
          * @param {string} zLevel
-         * @param {Object} config 配置对象
-         * @param {string} [config.clearColor=0] 每次清空画布的颜色
-         * @param {string} [config.motionBlur=false] 是否开启动态模糊
-         * @param {number} [config.lastFrameAlpha=0.7]
-         *                 在开启动态模糊的时候使用，与上一帧混合的alpha值，值越大尾迹越明显
-         * @param {Array.<number>} [position] 层的平移
-         * @param {Array.<number>} [rotation] 层的旋转
-         * @param {Array.<number>} [scale] 层的缩放
-         * @param {boolean} [zoomable=false] 层是否支持鼠标缩放操作
-         * @param {boolean} [panable=false] 层是否支持鼠标平移操作
+         * @param {Object} config 配置对象, 目前支持clearColor 
          */
         ZRender.prototype.modLayer = function (zLevel, config) {
             this.painter.modLayer(zLevel, config);
@@ -257,10 +211,10 @@ define(
          * 渲染
          * 
          * @param {Function} callback  渲染结束后回调函数
+         * todo:增加缓动函数
          */
         ZRender.prototype.render = function (callback) {
             this.painter.render(callback);
-            this._needsRefreshNextFrame = false;
             return this;
         };
 
@@ -271,20 +225,12 @@ define(
          */
         ZRender.prototype.refresh = function (callback) {
             this.painter.refresh(callback);
-            this._needsRefreshNextFrame = false;
-            return this;
-        };
-
-        /**
-         * 标记视图在浏览器下一帧需要绘制
-         */
-        ZRender.prototype.refreshNextFrame = function() {
-            this._needsRefreshNextFrame = true;
             return this;
         };
         
         /**
-         * 绘制高亮层
+         * 高亮层更新
+         * 
          * @param {Function} callback  视图更新后回调函数
          */
         ZRender.prototype.refreshHover = function (callback) {
@@ -295,17 +241,14 @@ define(
         /**
          * 视图更新
          * 
-         * @param {Array.<module:zrender/shape/Base>} shapeList 需要更新的图形列表
+         * @param {Array} shapeList 需要更新的图形元素列表
          * @param {Function} callback  视图更新后回调函数
          */
-        ZRender.prototype.refreshShapes = function (shapeList, callback) {
-            this.painter.refreshShapes(shapeList, callback);
+        ZRender.prototype.update = function (shapeList, callback) {
+            this.painter.update(shapeList, callback);
             return this;
         };
 
-        /**
-         * 调整视图大小
-         */
         ZRender.prototype.resize = function() {
             this.painter.resize();
             return this;
@@ -316,13 +259,13 @@ define(
          * 
          * @param {string} shapeId 形状对象唯一标识
          * @param {string} path 需要添加动画的属性获取路径，可以通过a.b.c来获取深层的属性
-         * @param {boolean} [loop] 动画是否循环
-         * @return {module:zrender/animation/Animation~Animator}
-         * @example:
-         *     zr.animate(circle.id, 'style', false)
-         *         .when(1000, {x: 10} )
-         *         .done(function(){ // Animation done })
-         *         .start()
+         * @param {boolean} loop 动画是否循环
+         * @return {Object} 动画的Deferred对象
+         * Example:
+         * zr.animate(circleId, 'style', false)
+         *   .when(1000, { x: 10} )
+         *   .done(function(){ console.log('Animation done')})
+         *   .start()
          */
         ZRender.prototype.animate = function (shapeId, path, loop) {
             var shape = this.storage.get(shapeId);
@@ -365,9 +308,9 @@ define(
                 }
                 shape.__aniCount++;
 
-                return this.animation.animate(target, {loop : loop})
+                return this.animation.animate(target, { loop: loop })
                     .done(function() {
-                        shape.__aniCount --;
+                        shape.__aniCount--;
                         if (shape.__aniCount === 0) {
                             // 从animatingShapes里移除
                             var idx = util.indexOf(animatingShapes, shape);
@@ -376,7 +319,7 @@ define(
                     });
             }
             else {
-                log('Shape "'+ shapeId + '" not existed');
+                log('Shape "' + shapeId + '" not existed');
             }
         };
 
@@ -408,34 +351,28 @@ define(
         /**
          * 获取视图宽度
          */
-        ZRender.prototype.getWidth = function() {
+        ZRender.prototype.getWidth = function () {
             return this.painter.getWidth();
         };
 
         /**
          * 获取视图高度
          */
-        ZRender.prototype.getHeight = function() {
+        ZRender.prototype.getHeight = function () {
             return this.painter.getHeight();
         };
 
         /**
-         * 图像导出
-         * @param {string} type
-         * @param {string} [backgroundColor='#fff'] 背景色
-         * @return {string} 图片的Base64 url
+         * 图像导出 
          */
-        ZRender.prototype.toDataURL = function(type, backgroundColor, args) {
+        ZRender.prototype.toDataURL = function (type, backgroundColor, args) {
             return this.painter.toDataURL(type, backgroundColor, args);
         };
 
         /**
          * 将常规shape转成image shape
-         * @param {module:zrender/shape/Base} e
-         * @param {number} width
-         * @param {number} height
          */
-        ZRender.prototype.shapeToImage = function(e, width, height) {
+        ZRender.prototype.shapeToImage = function (e, width, height) {
             var id = guid();
             return this.painter.shapeToImage(id, e, width, height);
         };
@@ -446,7 +383,7 @@ define(
          * @param {string} eventName 事件名称
          * @param {Function} eventHandler 响应函数
          */
-        ZRender.prototype.on = function(eventName, eventHandler) {
+        ZRender.prototype.on = function (eventName, eventHandler) {
             this.handler.on(eventName, eventHandler);
             return this;
         };
@@ -457,7 +394,7 @@ define(
          * @param {string} eventName 事件名称
          * @param {Function} eventHandler 响应函数
          */
-        ZRender.prototype.un = function(eventName, eventHandler) {
+        ZRender.prototype.un = function (eventName, eventHandler) {
             this.handler.un(eventName, eventHandler);
             return this;
         };
@@ -465,7 +402,7 @@ define(
         /**
          * 事件触发
          * 
-         * @param {string} event 事件名称，resize，hover，drag，etc
+         * @param {string} eventName 事件名称，resize，hover，drag，etc~
          * @param {event=} event event dom事件对象
          */
         ZRender.prototype.trigger = function (eventName, event) {
@@ -478,7 +415,7 @@ define(
          * 清除当前ZRender下所有类图的数据和显示，clear后MVC和已绑定事件均还存在在，ZRender可用
          */
         ZRender.prototype.clear = function () {
-            this.storage.delRoot();
+            this.storage.del();
             this.painter.clear();
             return this;
         };
@@ -500,7 +437,7 @@ define(
             this.painter = 
             this.handler = null;
 
-            //释放后告诉全局删除对自己的索引，没想到啥好方法
+            // 释放后告诉全局删除对自己的索引，没想到啥好方法
             zrender.delInstance(this.id);
         };
 

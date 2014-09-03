@@ -11,7 +11,7 @@
 
         var config = require('./config');
         var util = require('./tool/util');
-        var vec2 = require('./tool/vector');
+        // var vec2 = require('./tool/vector');
         var log = require('./tool/log');
         var matrix = require('./tool/matrix');
         var BaseLoadingEffect = require('./loadingEffect/Base');
@@ -37,7 +37,7 @@
          * @param {HTMLElement} root 绘图容器
          * @param {module:zrender/Storage} storage
          */
-        var Painter = function(root, storage) {
+        var Painter = function (root, storage) {
             /**
              * 绘图容器
              * @type {HTMLElement}
@@ -55,7 +55,7 @@
             var domRoot = document.createElement('div');
             this._domRoot = domRoot;
 
-            //domRoot.onselectstart = returnFalse; // 避免页面选中的尴尬
+            // domRoot.onselectstart = returnFalse; // 避免页面选中的尴尬
             domRoot.style.position = 'relative';
             domRoot.style.overflow = 'hidden';
             domRoot.style.width = this._width + 'px';
@@ -83,10 +83,10 @@
             hoverLayer.onselectstart = returnFalse;
 
             var me = this;
-            this.updatePainter = function(shapeList, callback) {
+            this.updatePainter = function (shapeList, callback) {
                 me.refreshShapes(shapeList, callback);
             };
-        }
+        };
 
         /**
          * 首次绘图，创建各种dom和context
@@ -119,7 +119,7 @@
             return this;
         };
 
-        Painter.prototype._paintList = function(list, paintAll) {
+        Painter.prototype._paintList = function (list, paintAll) {
 
             if (typeof(paintAll) == 'undefined') {
                 paintAll = false;
@@ -204,14 +204,15 @@
                             try {
                                 shape.brush(ctx, false, this.updatePainter);
                             }
-                            catch(error) {
+                            catch (error) {
                                 log(
                                     error,
                                     'brush error of ' + shape.type,
                                     shape
                                 );
                             }
-                        } else {
+                        }
+                        else {
                             shape.brush(ctx, false, this.updatePainter);
                         }
                     }
@@ -251,7 +252,7 @@
          * @param {module:zrender/Painter~Layer} [prevLayer]
          *        在需要创建新的层时需要使用，新创建层的dom节点会插在该层后面
          */
-        Painter.prototype.getLayer = function(zlevel, prevLayer) {
+        Painter.prototype.getLayer = function (zlevel, prevLayer) {
             // Change draw layer
             var currentLayer = this._layers[zlevel];
             if (!currentLayer) {
@@ -263,7 +264,8 @@
                         currentLayer.dom,
                         prevDom.nextSibling
                     );
-                } else {
+                }
+                else {
                     prevDom.parentNode.appendChild(
                         currentLayer.dom
                     );
@@ -286,11 +288,11 @@
          * 获取所有已创建的层
          * @param {Array.<module:zrender/Painter~Layer>} [prevLayer]
          */
-        Painter.prototype.getLayers = function() {
+        Painter.prototype.getLayers = function () {
             return this._layers;
-        }
+        };
 
-        Painter.prototype._updateLayerStatus = function(list) {
+        Painter.prototype._updateLayerStatus = function (list) {
             
             var layers = this._layers;
 
@@ -369,7 +371,7 @@
         /**
          * 修改指定zlevel的绘制参数
          * 
-         * @param {string} zLevel
+         * @param {string} zlevel
          * @param {Object} config 配置对象
          * @param {string} [config.clearColor=0] 每次清空画布的颜色
          * @param {string} [config.motionBlur=false] 是否开启动态模糊
@@ -385,7 +387,8 @@
             if (config) {
                 if (!this._layerConfig[zlevel]) {
                     this._layerConfig[zlevel] = config;
-                } else {
+                }
+                else {
                     util.merge(this._layerConfig[zlevel], config, true);
                 }
 
@@ -401,7 +404,7 @@
          * 删除指定层
          * @param {number} zlevel 层所在的zlevel
          */
-        Painter.prototype.delLayer = function(zlevel) {
+        Painter.prototype.delLayer = function (zlevel) {
             var layer = this._layers[zlevel];
             if (!layer) {
                 return;
@@ -414,7 +417,7 @@
             });
             layer.dom.parentNode.removeChild(layer.dom);
             delete this._layers[zlevel];
-        }
+        };
 
         /**
          * 刷新hover层
@@ -485,7 +488,7 @@
             domRoot.style.display = '';
 
             // 优化没有实际改变的resize
-            if (this._width != width || height != this._height){
+            if (this._width != width || height != this._height) {
                 this._width = width;
                 this._height = height;
 
@@ -505,7 +508,7 @@
 
         /**
          * 清除单独的一个层
-         * @param {number} zlevel
+         * @param {number} zLevel
          */
         Painter.prototype.clearLayer = function (zLevel) {
             var layer = this._layers[zLevel];
@@ -561,20 +564,20 @@
             ctx.fill();
             
             var self = this;
-            //升序遍历，shape上的zlevel指定绘画图层的z轴层叠
+            // 升序遍历，shape上的zlevel指定绘画图层的z轴层叠
             
             this.storage.iterShape(
                 function (shape) {
                     if (!shape.invisible) {
-                        if (!shape.onbrush //没有onbrush
-                            //有onbrush并且调用执行返回false或undefined则继续粉刷
+                        if (!shape.onbrush // 没有onbrush
+                            // 有onbrush并且调用执行返回false或undefined则继续粉刷
                             || (shape.onbrush && !shape.onbrush(ctx, false))
                         ) {
                             if (config.catchBrushException) {
                                 try {
                                     shape.brush(ctx, false, self.updatePainter);
                                 }
-                                catch(error) {
+                                catch (error) {
                                     log(
                                         error,
                                         'brush error of ' + shape.type,
@@ -598,7 +601,6 @@
 
         /**
          * 获取绘图区域宽度
-         * @param {number}
          */
         Painter.prototype.getWidth = function () {
             return this._width;
@@ -606,13 +608,12 @@
 
         /**
          * 获取绘图区域高度
-         * @param {number}
          */
         Painter.prototype.getHeight = function () {
             return this._height;
         };
 
-        Painter.prototype._getWidth = function() {
+        Painter.prototype._getWidth = function () {
             var root = this.root;
             var stl = root.currentStyle
                       || document.defaultView.getComputedStyle(root);
@@ -638,8 +639,8 @@
         Painter.prototype._brushHover = function (shape) {
             var ctx = this._layers.hover.ctx;
 
-            if (!shape.onbrush //没有onbrush
-                //有onbrush并且调用执行返回false或undefined则继续粉刷
+            if (!shape.onbrush // 没有onbrush
+                // 有onbrush并且调用执行返回false或undefined则继续粉刷
                 || (shape.onbrush && !shape.onbrush(ctx, true))
             ) {
                 var layer = this.getLayer(shape.zlevel);
@@ -652,7 +653,7 @@
                     try {
                         shape.brush(ctx, true, this.updatePainter);
                     }
-                    catch(error) {
+                    catch (error) {
                         log(
                             error, 'hoverBrush error of ' + shape.type, shape
                         );
@@ -686,14 +687,14 @@
                 rotation : shape.rotation,
                 scale : shape.scale
             };
-            shape.position = [0, 0, 0];
+            shape.position = [ 0, 0, 0 ];
             shape.rotation = 0;
-            shape.scale = [1, 1];
+            shape.scale = [ 1, 1 ];
             if (shape) {
                 shape.brush(ctx, false);
             }
 
-            var ImageShape = require( './shape/Image' );
+            var ImageShape = require('./shape/Image');
             var imgShape = new ImageShape({
                 id : id,
                 style : {
@@ -723,10 +724,10 @@
                 return doNothing;
             }
 
-            var painter = this;
+            var me = this;
 
             return function (id, e, width, height) {
-                return painter._shapeToImage(
+                return me._shapeToImage(
                     id, e, width, height, devicePixelRatio
                 );
             };
@@ -818,16 +819,16 @@
             this.minZoom = 0;
 
             Transformable.call(this);
-        }
+        };
 
-        Layer.prototype.initContext = function() {
+        Layer.prototype.initContext = function () {
             this.ctx = this.dom.getContext('2d');
             if (devicePixelRatio != 1) { 
                 this.ctx.scale(devicePixelRatio, devicePixelRatio);
             }
-        }
+        };
 
-        Layer.prototype.createBackBuffer = function() {
+        Layer.prototype.createBackBuffer = function () {
             if (vmlCanvasManager) { // IE 8- should not support back buffer
                 return;
             }
@@ -843,7 +844,7 @@
          * @param  {number} width
          * @param  {number} height
          */
-        Layer.prototype.resize = function(width, height) {
+        Layer.prototype.resize = function (width, height) {
             this.dom.style.width = width + 'px';
             this.dom.style.height = height + 'px';
 
@@ -867,7 +868,7 @@
         /**
          * 清空该层画布
          */
-        Layer.prototype.clear = function() {
+        Layer.prototype.clear = function () {
             var dom = this.dom;
             var ctx = this.ctx;
             var width = dom.width;

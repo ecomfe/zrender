@@ -34,7 +34,7 @@ define(
          * @alias module:zrender/Storage
          * @constructor
          */
-        var Storage = function() {
+        var Storage = function () {
             // 所有常规形状，id索引的map
             this._elements = {};
 
@@ -46,12 +46,12 @@ define(
             this._shapeList = [];
 
             this._shapeListOffset = 0;
-        }
+        };
 
         /**
          * 遍历迭代器
          * 
-         * @param {Function} cb 迭代回调函数，return true终止迭代
+         * @param {Function} fun 迭代回调函数，return true终止迭代
          * @param {Object} [option] 迭代参数，缺省为仅降序遍历普通层图形
          * @param {boolean} [option.hover=true] 是否是高亮层图形
          * @param {string} [option.normal='up'] 是否是普通层图形，迭代时是否指定及z轴顺序
@@ -64,7 +64,7 @@ define(
             }
 
             if (option.hover) {
-                //高亮层数据遍历
+                // 高亮层数据遍历
                 for (var i = 0, l = this._hoverElements.length; i < l; i++) {
                     var el = this._hoverElements[i];
                     el.updateTransform();
@@ -78,7 +78,7 @@ define(
                 this.updateShapeList();
             }
 
-            //遍历: 'down' | 'up'
+            // 遍历: 'down' | 'up'
             switch (option.normal) {
                 case 'down':
                     // 降序遍历，高层优先
@@ -91,7 +91,7 @@ define(
                     break;
                 // case 'up':
                 default:
-                    //升序遍历，底层优先
+                    // 升序遍历，底层优先
                     for (var i = 0, l = this._shapeList.length; i < l; i++) {
                         if (fun(this._shapeList[i])) {
                             return this;
@@ -108,7 +108,7 @@ define(
          * @param  {boolean} [update=false] 是否在返回前更新图形的变换
          * @return {Array.<module:zrender/shape/Base>}
          */
-        Storage.prototype.getHoverShapes = function(update) {
+        Storage.prototype.getHoverShapes = function (update) {
             if (update) {
                 for (var i = 0, l = this._hoverElements.length; i < l; i++) {
                     this._hoverElements[i].updateTransform();
@@ -123,7 +123,7 @@ define(
          * 详见{@link module:zrender/shape/Base.prototype.updateShapeList}
          * @return {Array.<module:zrender/shape/Base>}
          */
-        Storage.prototype.getShapeList = function(update) {
+        Storage.prototype.getShapeList = function (update) {
             if (update) {
                 this.updateShapeList();
             }
@@ -135,7 +135,7 @@ define(
          * 每次绘制前都会调用，该方法会先深度优先遍历整个树，更新所有Group和Shape的变换并且把所有可见的Shape保存到数组中，
          * 最后根据绘制的优先级（zlevel > z > 插入顺序）排序得到绘制队列
          */
-        Storage.prototype.updateShapeList = function() {
+        Storage.prototype.updateShapeList = function () {
             this._shapeListOffset = 0;
             for (var i = 0, len = this._roots.length; i < len; i++) {
                 var root = this._roots[i];
@@ -150,7 +150,7 @@ define(
             this._shapeList.sort(shapeCompareFunc);
         };
 
-        Storage.prototype._updateAndAddShape = function(el) {
+        Storage.prototype._updateAndAddShape = function (el) {
             
             if (el.ignore) {
                 return;
@@ -190,7 +190,8 @@ define(
                 // Mark group clean here
                 el.__dirty = false;
                 
-            } else {
+            }
+            else {
                 this._shapeList[this._shapeListOffset++] = el;
             }
         };
@@ -198,7 +199,7 @@ define(
         /**
          * 修改图形(Shape)或者组(Group)
          * 
-         * @param {string} idx 唯一标识
+         * @param {string} elId 唯一标识
          * @param {Object} [params] 参数
          */
         Storage.prototype.mod = function (elId, params) {
@@ -228,7 +229,8 @@ define(
                             }
                         }
                         util.merge(el, target, true);
-                    } else {
+                    }
+                    else {
                         util.merge(el, params, true);
                     }
                 }
@@ -247,8 +249,8 @@ define(
             var shape = this._elements[shapeId];
             if (shape) {
                 shape.needTransform = true;
-                if (!shape.ondrift //ondrift
-                    //有onbrush并且调用执行返回false或undefined则继续
+                if (!shape.ondrift // ondrift
+                    // 有onbrush并且调用执行返回false或undefined则继续
                     || (shape.ondrift && !shape.ondrift(dx, dy))
                 ) {
                     shape.drift(dx, dy);
@@ -329,7 +331,8 @@ define(
             var el;
             if (typeof(elId) == 'string') {
                 el = this._elements[elId];
-            } else {
+            }
+            else {
                 el = elId;
             }
 
@@ -346,7 +349,8 @@ define(
         Storage.prototype.addToMap = function (el) {
             if (el instanceof Group) {
                 el._storage = this;
-            } else {
+            }
+            else {
                 el.style.__rect = null;
             }
 
