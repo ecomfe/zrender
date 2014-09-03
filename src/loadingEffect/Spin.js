@@ -71,7 +71,7 @@ define(
             // 初始化动画元素
             var shapeList = [];
             var preAngle = Math.round(180 / n);
-            for(var i = 0; i < n; i++) {
+            for (var i = 0; i < n; i++) {
                 shapeList[i] = new SectorShape({
                     highlightStyle  : {
                         x : x,
@@ -86,13 +86,13 @@ define(
                 });
             }
 
-            var pos = [0, x, y];
+            var pos = [ 0, x, y ];
 
             return setInterval(
                 function() {
                     addShapeHandle(background);
                     pos[0] -= 0.3;
-                    for(var i = 0; i < n; i++) {
+                    for (var i = 0; i < n; i++) {
                         shapeList[i].rotation = pos;
                         addShapeHandle(shapeList[i]);
                     }

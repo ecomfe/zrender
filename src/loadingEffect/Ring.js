@@ -71,12 +71,12 @@ define(
             // 初始化动画元素
             var shapeList = [];
             var clolrList = zrColor.getGradientColors(
-                ['#ff6400', '#ffe100', '#97ff00'], 25
+                [ '#ff6400', '#ffe100', '#97ff00' ], 25
             );
             var preAngle = 15;
             var endAngle = 240;
 
-            for(var i = 0; i < 16; i++) {
+            for (var i = 0; i < 16; i++) {
                 shapeList.push(new SectorShape({
                     highlightStyle  : {
                         x : x,
@@ -94,15 +94,15 @@ define(
                         x + r0 * Math.cos(endAngle - preAngle, true),
                         y - r0 * Math.sin(endAngle - preAngle, true),
                         [
-                            [0, clolrList[i * 2]],
-                            [1, clolrList[i * 2 + 1]]
+                            [ 0, clolrList[i * 2] ],
+                            [ 1, clolrList[i * 2 + 1] ]
                         ]
                     )
                 }));
                 endAngle -= preAngle;
             }
             endAngle = 360;
-            for(var i = 0; i < 4; i++) {
+            for (var i = 0; i < 4; i++) {
                 shapeList.push(new SectorShape({
                     highlightStyle  : {
                         x : x,
@@ -120,8 +120,8 @@ define(
                         x + r0 * Math.cos(endAngle - preAngle, true),
                         y - r0 * Math.sin(endAngle - preAngle, true),
                         [
-                            [0, clolrList[i * 2 + 32]],
-                            [1, clolrList[i * 2 + 33]]
+                            [ 0, clolrList[i * 2 + 32] ],
+                            [ 1, clolrList[i * 2 + 33] ]
                         ]
                     )
                 }));
@@ -133,11 +133,11 @@ define(
                 // 指定进度
                 addShapeHandle(background);
 
-                n = this.adjust(options.progress, [0,1]).toFixed(2) * 100 / 5;
+                n = this.adjust(options.progress, [ 0, 1 ]).toFixed(2) * 100 / 5;
                 shapeRing.highlightStyle.text = n * 5 + '%';
                 addShapeHandle(shapeRing);
 
-                for(var i = 0; i < 20; i++) {
+                for (var i = 0; i < 20; i++) {
                     shapeList[i].highlightStyle.color = i < n
                         ? shapeList[i]._color : darkColor;
                     addShapeHandle(shapeList[i]);
@@ -155,10 +155,10 @@ define(
 
                     n += n >= 20 ? -20 : 1;
 
-                    //shapeRing.highlightStyle.text = n * 5 + '%';
+                    // shapeRing.highlightStyle.text = n * 5 + '%';
                     addShapeHandle(shapeRing);
 
-                    for(var i = 0; i < 20; i++) {
+                    for (var i = 0; i < 20; i++) {
                         shapeList[i].highlightStyle.color = i < n
                             ? shapeList[i]._color : darkColor;
                         addShapeHandle(shapeList[i]);

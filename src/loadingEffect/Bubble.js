@@ -50,7 +50,7 @@ define(
             var canvasHeight = this.canvasHeight;
             
             // 初始化动画元素
-            for(var i = 0; i < n; i++) {
+            for (var i = 0; i < n; i++) {
                 var color = effectOption.color == 'random'
                     ? zrColor.alpha(zrColor.random(), 0.3)
                     : effectOption.color;
@@ -73,10 +73,10 @@ define(
                 function () {
                     addShapeHandle(background);
                     
-                    for(var i = 0; i < n; i++) {
+                    for (var i = 0; i < n; i++) {
                         var style = shapeList[i].highlightStyle;
 
-                        if (style.y - shapeList[i].animationY + style.r <= 0){
+                        if (style.y - shapeList[i].animationY + style.r <= 0) {
                             shapeList[i].highlightStyle.y = canvasHeight + style.r;
                             shapeList[i].highlightStyle.x = Math.ceil(
                                 Math.random() * canvasWidth

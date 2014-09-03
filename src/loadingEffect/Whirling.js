@@ -87,7 +87,7 @@ define(
                 }
             });
 
-            var pos = [0, effectOption.x, effectOption.y];
+            var pos = [ 0, effectOption.x, effectOption.y ];
 
             droplet.highlightStyle.x
                 = circleIn.highlightStyle.x

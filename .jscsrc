@@ -12,7 +12,8 @@
         "example/**",
         "doc/**",
         "src/tool/env.js",
-        "src/tool/util.js"
+        "src/tool/util.js",
+        "src/lib/*"
     ],
 
     "requireCurlyBraces": [

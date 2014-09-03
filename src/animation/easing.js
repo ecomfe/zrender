@@ -11,7 +11,7 @@ define(
              * @param {number} k
              * @return {number}
              */
-            Linear: function(k) {
+            Linear: function (k) {
                 return k;
             },
 
@@ -20,25 +20,25 @@ define(
              * @param {number} k
              * @return {number}
              */
-            QuadraticIn: function(k) {
+            QuadraticIn: function (k) {
                 return k * k;
             },
             /**
              * @param {number} k
              * @return {number}
              */
-            QuadraticOut: function(k) {
+            QuadraticOut: function (k) {
                 return k * (2 - k);
             },
             /**
              * @param {number} k
              * @return {number}
              */
-            QuadraticInOut: function(k) {
+            QuadraticInOut: function (k) {
                 if ((k *= 2) < 1) {
                     return 0.5 * k * k;
                 }
-                return - 0.5 * (--k * (k - 2) - 1);
+                return -0.5 * (--k * (k - 2) - 1);
             },
 
             // 三次方的缓动（t^3）
@@ -46,21 +46,21 @@ define(
              * @param {number} k
              * @return {number}
              */
-            CubicIn: function(k) {
+            CubicIn: function (k) {
                 return k * k * k;
             },
             /**
              * @param {number} k
              * @return {number}
              */
-            CubicOut: function(k) {
+            CubicOut: function (k) {
                 return --k * k * k + 1;
             },
             /**
              * @param {number} k
              * @return {number}
              */
-            CubicInOut: function(k) {
+            CubicInOut: function (k) {
                 if ((k *= 2) < 1) {
                     return 0.5 * k * k * k;
                 }
@@ -72,25 +72,25 @@ define(
              * @param {number} k
              * @return {number}
              */
-            QuarticIn: function(k) {
+            QuarticIn: function (k) {
                 return k * k * k * k;
             },
             /**
              * @param {number} k
              * @return {number}
              */
-            QuarticOut: function(k) {
+            QuarticOut: function (k) {
                 return 1 - (--k * k * k * k);
             },
             /**
              * @param {number} k
              * @return {number}
              */
-            QuarticInOut: function(k) {
+            QuarticInOut: function (k) {
                 if ((k *= 2) < 1) {
                     return 0.5 * k * k * k * k;
                 }
-                return - 0.5 * ((k -= 2) * k * k * k - 2);
+                return -0.5 * ((k -= 2) * k * k * k - 2);
             },
 
             // 五次方的缓动（t^5）
@@ -98,21 +98,21 @@ define(
              * @param {number} k
              * @return {number}
              */
-            QuinticIn: function(k) {
+            QuinticIn: function (k) {
                 return k * k * k * k * k;
             },
             /**
              * @param {number} k
              * @return {number}
              */
-            QuinticOut: function(k) {
+            QuinticOut: function (k) {
                 return --k * k * k * k * k + 1;
             },
             /**
              * @param {number} k
              * @return {number}
              */
-            QuinticInOut: function(k) {
+            QuinticInOut: function (k) {
                 if ((k *= 2) < 1) {
                     return 0.5 * k * k * k * k * k;
                 }
@@ -124,21 +124,21 @@ define(
              * @param {number} k
              * @return {number}
              */
-            SinusoidalIn: function(k) {
+            SinusoidalIn: function (k) {
                 return 1 - Math.cos(k * Math.PI / 2);
             },
             /**
              * @param {number} k
              * @return {number}
              */
-            SinusoidalOut: function(k) {
+            SinusoidalOut: function (k) {
                 return Math.sin(k * Math.PI / 2);
             },
             /**
              * @param {number} k
              * @return {number}
              */
-            SinusoidalInOut: function(k) {
+            SinusoidalInOut: function (k) {
                 return 0.5 * (1 - Math.cos(Math.PI * k));
             },
 
@@ -147,21 +147,21 @@ define(
              * @param {number} k
              * @return {number}
              */
-            ExponentialIn: function(k) {
+            ExponentialIn: function (k) {
                 return k === 0 ? 0 : Math.pow(1024, k - 1);
             },
             /**
              * @param {number} k
              * @return {number}
              */
-            ExponentialOut: function(k) {
-                return k === 1 ? 1 : 1 - Math.pow(2, - 10 * k);
+            ExponentialOut: function (k) {
+                return k === 1 ? 1 : 1 - Math.pow(2, -10 * k);
             },
             /**
              * @param {number} k
              * @return {number}
              */
-            ExponentialInOut: function(k) {
+            ExponentialInOut: function (k) {
                 if (k === 0) {
                     return 0;
                 }
@@ -171,7 +171,7 @@ define(
                 if ((k *= 2) < 1) {
                     return 0.5 * Math.pow(1024, k - 1);
                 }
-                return 0.5 * (- Math.pow(2, - 10 * (k - 1)) + 2);
+                return 0.5 * (-Math.pow(2, -10 * (k - 1)) + 2);
             },
 
             // 圆形曲线的缓动（sqrt(1-t^2)）
@@ -179,23 +179,23 @@ define(
              * @param {number} k
              * @return {number}
              */
-            CircularIn: function(k) {
+            CircularIn: function (k) {
                 return 1 - Math.sqrt(1 - k * k);
             },
             /**
              * @param {number} k
              * @return {number}
              */
-            CircularOut: function(k) {
+            CircularOut: function (k) {
                 return Math.sqrt(1 - (--k * k));
             },
             /**
              * @param {number} k
              * @return {number}
              */
-            CircularInOut: function(k) {
+            CircularInOut: function (k) {
                 if ((k *= 2) < 1) {
-                    return - 0.5 * (Math.sqrt(1 - k * k) - 1);
+                    return -0.5 * (Math.sqrt(1 - k * k) - 1);
                 }
                 return 0.5 * (Math.sqrt(1 - (k -= 2) * k) + 1);
             },
@@ -205,8 +205,10 @@ define(
              * @param {number} k
              * @return {number}
              */
-            ElasticIn: function(k) {
-                var s, a = 0.1, p = 0.4;
+            ElasticIn: function (k) {
+                var s; 
+                var a = 0.1;
+                var p = 0.4;
                 if (k === 0) {
                     return 0;
                 }
@@ -215,18 +217,21 @@ define(
                 }
                 if (!a || a < 1) {
                     a = 1; s = p / 4;
-                }else{
+                }
+                else {
                     s = p * Math.asin(1 / a) / (2 * Math.PI);
                 }
-                return - (a * Math.pow(2, 10 * (k -= 1)) *
+                return -(a * Math.pow(2, 10 * (k -= 1)) *
                             Math.sin((k - s) * (2 * Math.PI) / p));
             },
             /**
              * @param {number} k
              * @return {number}
              */
-            ElasticOut: function(k) {
-                var s, a = 0.1, p = 0.4;
+            ElasticOut: function (k) {
+                var s;
+                var a = 0.1;
+                var p = 0.4;
                 if (k === 0) {
                     return 0;
                 }
@@ -236,18 +241,20 @@ define(
                 if (!a || a < 1) {
                     a = 1; s = p / 4;
                 }
-                else{
+                else {
                     s = p * Math.asin(1 / a) / (2 * Math.PI);
                 }
-                return (a * Math.pow(2, - 10 * k) *
+                return (a * Math.pow(2, -10 * k) *
                         Math.sin((k - s) * (2 * Math.PI) / p) + 1);
             },
             /**
              * @param {number} k
              * @return {number}
              */
-            ElasticInOut: function(k) {
-                var s, a = 0.1, p = 0.4;
+            ElasticInOut: function (k) {
+                var s;
+                var a = 0.1;
+                var p = 0.4;
                 if (k === 0) {
                     return 0;
                 }
@@ -257,11 +264,11 @@ define(
                 if (!a || a < 1) {
                     a = 1; s = p / 4;
                 }
-                else{
+                else {
                     s = p * Math.asin(1 / a) / (2 * Math.PI);
                 }
                 if ((k *= 2) < 1) {
-                    return - 0.5 * (a * Math.pow(2, 10 * (k -= 1))
+                    return -0.5 * (a * Math.pow(2, 10 * (k -= 1))
                         * Math.sin((k - s) * (2 * Math.PI) / p));
                 }
                 return a * Math.pow(2, -10 * (k -= 1))
@@ -274,7 +281,7 @@ define(
              * @param {number} k
              * @return {number}
              */
-            BackIn: function(k) {
+            BackIn: function (k) {
                 var s = 1.70158;
                 return k * k * ((s + 1) * k - s);
             },
@@ -282,7 +289,7 @@ define(
              * @param {number} k
              * @return {number}
              */
-            BackOut: function(k) {
+            BackOut: function (k) {
                 var s = 1.70158;
                 return --k * k * ((s + 1) * k + s) + 1;
             },
@@ -290,7 +297,7 @@ define(
              * @param {number} k
              * @return {number}
              */
-            BackInOut: function(k) {
+            BackInOut: function (k) {
                 var s = 1.70158 * 1.525;
                 if ((k *= 2) < 1) {
                     return 0.5 * (k * k * ((s + 1) * k - s));
@@ -303,22 +310,24 @@ define(
              * @param {number} k
              * @return {number}
              */
-            BounceIn: function(k) {
+            BounceIn: function (k) {
                 return 1 - easing.BounceOut(1 - k);
             },
             /**
              * @param {number} k
              * @return {number}
              */
-            BounceOut: function(k) {
+            BounceOut: function (k) {
                 if (k < (1 / 2.75)) {
                     return 7.5625 * k * k;
                 }
                 else if (k < (2 / 2.75)) {
                     return 7.5625 * (k -= (1.5 / 2.75)) * k + 0.75;
-                } else if (k < (2.5 / 2.75)) {
+                }
+                else if (k < (2.5 / 2.75)) {
                     return 7.5625 * (k -= (2.25 / 2.75)) * k + 0.9375;
-                } else {
+                }
+                else {
                     return 7.5625 * (k -= (2.625 / 2.75)) * k + 0.984375;
                 }
             },
@@ -326,7 +335,7 @@ define(
              * @param {number} k
              * @return {number}
              */
-            BounceInOut: function(k) {
+            BounceInOut: function (k) {
                 if (k < 0.5) {
                     return easing.BounceIn(k * 2) * 0.5;
                 }

@@ -99,7 +99,8 @@ define(
         };
 
         Base.prototype._start = function (/*addShapeHandle, refreshHandle*/) {
-            return setInterval(function(){}, 10000);
+            return setInterval(function () {
+            }, 10000);
         };
 
         Base.prototype.stop = function () {
@@ -150,7 +151,7 @@ define(
                 y : y,
                 width : totalWidth,
                 height : totalHeight
-            }
+            };
         };
 
         return Base;
