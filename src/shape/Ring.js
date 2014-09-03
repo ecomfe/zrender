@@ -50,7 +50,7 @@ define(
          * @extends module:zrender/shape/Base
          * @param {Object} options
          */
-        var Ring = function(options) {
+        var Ring = function (options) {
             Base.call(this, options);
             /**
              * 圆环绘制样式
@@ -62,7 +62,7 @@ define(
              * @name module:zrender/shape/Ring#highlightStyle
              * @type {module:zrender/shape/Ring~IRingStyle}
              */
-        }
+        };
 
         Ring.prototype = {
             type: 'ring',
@@ -72,7 +72,7 @@ define(
              * @param {CanvasRenderingContext2D} ctx
              * @param {module:zrender/shape/Ring~IRingStyle} style
              */
-            buildPath : function(ctx, style) {
+            buildPath : function (ctx, style) {
                 // 非零环绕填充优化
                 ctx.arc(style.x, style.y, style.r, 0, Math.PI * 2, false);
                 ctx.moveTo(style.x + style.r0, style.y);
@@ -85,7 +85,7 @@ define(
              * @param {module:zrender/shape/Ring~IRingStyle} style
              * @return {module:zrender/shape/Base~IBoundingRect}
              */
-            getRect : function(style) {
+            getRect : function (style) {
                 if (style.__rect) {
                     return style.__rect;
                 }

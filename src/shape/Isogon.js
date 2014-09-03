@@ -65,9 +65,11 @@ define(
              * @param {CanvasRenderingContext2D} ctx
              * @param {module:zrender/shape/Isogon~IIsogonStyle} style
              */
-            buildPath : function(ctx, style) {
+            buildPath : function (ctx, style) {
                 var n = style.n;
-                if (!n || n < 2) { return; }
+                if (!n || n < 2) {
+                    return;
+                }
 
                 var x = style.x;
                 var y = style.y;
@@ -81,16 +83,16 @@ define(
 
                 // 记录边界点，用于判断insight
                 var pointList = style.pointList = [];
-                pointList.push([xStart, yStart]);
-                for (var i = 0, end = n - 1; i < end; i ++) {
-                    pointList.push([x + r * cos(deg), y + r * sin(deg)]);
+                pointList.push([ xStart, yStart ]);
+                for (var i = 0, end = n - 1; i < end; i++) {
+                    pointList.push([ x + r * cos(deg), y + r * sin(deg) ]);
                     deg += dStep;
                 }
-                pointList.push([xStart, yStart]);
+                pointList.push([ xStart, yStart ]);
 
                 // 绘制
                 ctx.moveTo(pointList[0][0], pointList[0][1]);
-                for (var i = 0; i < pointList.length; i ++) {
+                for (var i = 0; i < pointList.length; i++) {
                     ctx.lineTo(pointList[i][0], pointList[i][1]);
                 }
 
@@ -102,7 +104,7 @@ define(
              * @param {module:zrender/shape/Isogon~IIsogonStyle} style
              * @return {module:zrender/shape/Base~IBoundingRect}
              */
-            getRect : function(style) {
+            getRect : function (style) {
                 if (style.__rect) {
                     return style.__rect;
                 }

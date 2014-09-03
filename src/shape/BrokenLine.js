@@ -50,7 +50,7 @@ define(
          * @param {Object} options
          */
         var BrokenLine = function(options) {
-            this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
+            this.brushTypeOnly = 'stroke';  // 线条只能描边，填充后果自负
             this.textPosition = 'end';
             Base.call(this, options);
             /**
@@ -63,7 +63,7 @@ define(
              * @name module:zrender/shape/BrokenLine#highlightStyle
              * @type {module:zrender/shape/BrokenLine~IBrokenLineStyle}
              */
-        }
+        };
 
         BrokenLine.prototype =  {
             type: 'broken-line',
@@ -109,10 +109,10 @@ define(
                         len = pointList.length;
                     }
                     if (!style.lineType || style.lineType == 'solid') {
-                        //默认为实线
-                        ctx.moveTo(pointList[0][0],pointList[0][1]);
+                        // 默认为实线
+                        ctx.moveTo(pointList[0][0], pointList[0][1]);
                         for (var i = 1; i < len; i++) {
-                            ctx.lineTo(pointList[i][0],pointList[i][1]);
+                            ctx.lineTo(pointList[i][0], pointList[i][1]);
                         }
                     }
                     else if (style.lineType == 'dashed'
@@ -120,7 +120,7 @@ define(
                     ) {
                         var dashLength = (style.lineWidth || 1) 
                                          * (style.lineType == 'dashed' ? 5 : 1);
-                        ctx.moveTo(pointList[0][0],pointList[0][1]);
+                        ctx.moveTo(pointList[0][0], pointList[0][1]);
                         for (var i = 1; i < len; i++) {
                             dashedLineTo(
                                 ctx,

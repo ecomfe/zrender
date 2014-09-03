@@ -49,7 +49,7 @@ define(
          * @constructor
          * @extends module:zrender/shape/Base
          */
-        var Polygon = function(options) {
+        var Polygon = function (options) {
             Base.call(this, options);
             /**
              * 多边形绘制样式
@@ -61,7 +61,7 @@ define(
              * @name module:zrender/shape/Polygon#highlightStyle
              * @type {module:zrender/shape/Polygon~IPolygonStyle}
              */
-        }
+        };
 
         Polygon.prototype = {
             type: 'polygon',
@@ -133,7 +133,7 @@ define(
              * @param {CanvasRenderingContext2D} ctx
              * @param {module:zrender/shape/Polygon~IPolygonStyle} style
              */
-            buildPath : function(ctx, style) {
+            buildPath : function (ctx, style) {
                 // 虽然能重用brokenLine，但底层图形基于性能考虑，重复代码减少调用吧
                 var pointList = style.pointList;
                 // 开始点和结束点重复
@@ -180,10 +180,10 @@ define(
                     }
 
                     if (!style.lineType || style.lineType == 'solid') {
-                        //默认为实线
-                        ctx.moveTo(pointList[0][0],pointList[0][1]);
+                        // 默认为实线
+                        ctx.moveTo(pointList[0][0], pointList[0][1]);
                         for (var i = 1, l = pointList.length; i < l; i++) {
-                            ctx.lineTo(pointList[i][0],pointList[i][1]);
+                            ctx.lineTo(pointList[i][0], pointList[i][1]);
                         }
                         ctx.lineTo(pointList[0][0], pointList[0][1]);
                     }
@@ -195,7 +195,7 @@ define(
                             || (style.lineWidth || 1) 
                                * (style.lineType == 'dashed' ? 5 : 1);
                         style._dashLength = dashLength;
-                        ctx.moveTo(pointList[0][0],pointList[0][1]);
+                        ctx.moveTo(pointList[0][0], pointList[0][1]);
                         for (var i = 1, l = pointList.length; i < l; i++) {
                             dashedLineTo(
                                 ctx,
@@ -222,7 +222,7 @@ define(
              * @param {module:zrender/shape/Polygon~IPolygonStyle} style
              * @return {module:zrender/shape/Base~IBoundingRect}
              */
-            getRect : function(style) {
+            getRect : function (style) {
                 if (style.__rect) {
                     return style.__rect;
                 }
@@ -233,7 +233,7 @@ define(
                 var maxY = Number.MIN_VALUE;
 
                 var pointList = style.pointList;
-                for(var i = 0, l = pointList.length; i < l; i++) {
+                for (var i = 0, l = pointList.length; i < l; i++) {
                     if (pointList[i][0] < minX) {
                         minX = pointList[i][0];
                     }
@@ -270,3 +270,4 @@ define(
         return Polygon;
     }
 );
+

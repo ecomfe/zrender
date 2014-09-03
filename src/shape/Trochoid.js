@@ -53,8 +53,8 @@ define(
          * @constructor
          * @extends zrender/shape/Base
          */
-        var Trochoid = function(options) {
-            this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
+        var Trochoid = function (options) {
+            this.brushTypeOnly = 'stroke';  // 线条只能描边，填充后果自负
             Base.call(this, options);
             /**
              * 内外旋轮曲线绘制样式
@@ -66,7 +66,7 @@ define(
              * @name module:zrender/shape/Trochold#highlightStyle
              * @type {module:zrender/shape/Trochold~ITrocholdStyle}
              */
-        }
+        };
 
         Trochoid.prototype =  {
             type: 'trochoid',
@@ -76,7 +76,7 @@ define(
              * @param {CanvasRenderingContext2D} ctx
              * @param {module:zrender/shape/Trochold~ITrocholdStyle} style
              */
-            buildPath : function(ctx, style) {
+            buildPath : function (ctx, style) {
                 var _x1;
                 var _y1;
                 var _x2;
@@ -106,11 +106,11 @@ define(
 
                 ctx.moveTo(_x1, _y1);
 
-                //计算结束时的i
+                // 计算结束时的i
                 do {
-                  _num ++;
+                    _num++;
                 }
-                while ( ( _r * _num ) % ( _R + _delta * _r ) !== 0);
+                while ((_r * _num) % (_R + _delta * _r) !== 0);
 
                 do {
                     _theta = Math.PI / 180 * i;
@@ -120,10 +120,10 @@ define(
                     _y2 = (_R + _delta * _r) * _math.sin(_theta)
                          - _d * _math.sin((_R / _r + _delta) * _theta)
                          + _offsetY;
-                    ctx.lineTo( _x2, _y2 );
-                    i ++;
+                    ctx.lineTo(_x2, _y2);
+                    i++;
                 }
-                while (i <= ( _r * _num) / (_R + _delta * _r) * 360);
+                while (i <= (_r * _num) / (_R + _delta * _r) * 360);
 
 
             },
@@ -133,7 +133,7 @@ define(
              * @param {module:zrender/shape/Trochold~ITrocholdStyle} style
              * @return {module:zrender/shape/Base~IBoundingRect}
              */
-            getRect : function(style) {
+            getRect : function (style) {
                 if (style.__rect) {
                     return style.__rect;
                 }
@@ -154,8 +154,8 @@ define(
                     lineWidth = 0;
                 }
                 style.__rect = {
-                    x : - _s - lineWidth + _offsetX,
-                    y : - _s - lineWidth + _offsetY,
+                    x : -_s - lineWidth + _offsetX,
+                    y : -_s - lineWidth + _offsetY,
                     width : 2 * _s + 2 * lineWidth,
                     height : 2 * _s + 2 * lineWidth
                 };

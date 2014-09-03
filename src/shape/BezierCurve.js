@@ -61,7 +61,7 @@ define(
          * @param {Object} options
          */
         var BezierCurve = function(options) {
-            this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
+            this.brushTypeOnly = 'stroke';  // 线条只能描边，填充后果自负
             this.textPosition = 'end';
             Base.call(this, options);
             /**
@@ -74,7 +74,7 @@ define(
              * @name module:zrender/shape/BezierCurve#highlightStyle
              * @type {module:zrender/shape/BezierCurve~IBezierCurveStyle}
              */
-        }
+        };
 
         BezierCurve.prototype = {
             type: 'bezier-curve',

@@ -69,7 +69,7 @@ define(
              * @name module:zrender/shape/Droplet#highlightStyle
              * @type {module:zrender/shape/Droplet~IDropletStyle}
              */
-        }
+        };
 
         Droplet.prototype = {
             type: 'droplet',

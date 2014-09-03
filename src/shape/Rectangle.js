@@ -53,7 +53,7 @@ define(
          * @extends module:zrender/shape/Base
          * @param {Object} options
          */
-        var Rectangle = function(options) {
+        var Rectangle = function (options) {
             Base.call(this, options);
             /**
              * 矩形绘制样式
@@ -65,17 +65,17 @@ define(
              * @name module:zrender/shape/Rectangle#highlightStyle
              * @type {module:zrender/shape/Rectangle~IRectangleStyle}
              */
-        }
+        };
 
         Rectangle.prototype =  {
             type: 'rectangle',
 
-            _buildRadiusPath: function(ctx, style) {
-                //左上、右上、右下、左下角的半径依次为r1、r2、r3、r4
-                //r缩写为1         相当于 [1, 1, 1, 1]
-                //r缩写为[1]       相当于 [1, 1, 1, 1]
-                //r缩写为[1, 2]    相当于 [1, 2, 1, 2]
-                //r缩写为[1, 2, 3] 相当于 [1, 2, 3, 2]
+            _buildRadiusPath: function (ctx, style) {
+                // 左上、右上、右下、左下角的半径依次为r1、r2、r3、r4
+                // r缩写为1         相当于 [1, 1, 1, 1]
+                // r缩写为[1]       相当于 [1, 1, 1, 1]
+                // r缩写为[1, 2]    相当于 [1, 2, 1, 2]
+                // r缩写为[1, 2, 3] 相当于 [1, 2, 3, 2]
                 var x = style.x;
                 var y = style.y;
                 var width = style.width;
@@ -86,28 +86,30 @@ define(
                 var r3; 
                 var r4;
                   
-                if(typeof r === 'number') {
+                if (typeof r === 'number') {
                     r1 = r2 = r3 = r4 = r;
                 }
-                else if(r instanceof Array) {
+                else if (r instanceof Array) {
                     if (r.length === 1) {
                         r1 = r2 = r3 = r4 = r[0];
                     }
-                    else if(r.length === 2) {
+                    else if (r.length === 2) {
                         r1 = r3 = r[0];
                         r2 = r4 = r[1];
                     }
-                    else if(r.length === 3) {
+                    else if (r.length === 3) {
                         r1 = r[0];
                         r2 = r4 = r[1];
                         r3 = r[2];
-                    } else {
+                    }
+                    else {
                         r1 = r[0];
                         r2 = r[1];
                         r3 = r[2];
                         r4 = r[3];
                     }
-                } else {
+                }
+                else {
                     r1 = r2 = r3 = r4 = 0;
                 }
                 ctx.moveTo(x + r1, y);
@@ -132,15 +134,16 @@ define(
              * @param {CanvasRenderingContext2D} ctx
              * @param {Object} style
              */
-            buildPath : function(ctx, style) {
-                if(!style.radius) {
+            buildPath : function (ctx, style) {
+                if (!style.radius) {
                     ctx.moveTo(style.x, style.y);
                     ctx.lineTo(style.x + style.width, style.y);
                     ctx.lineTo(style.x + style.width, style.y + style.height);
                     ctx.lineTo(style.x, style.y + style.height);
                     ctx.lineTo(style.x, style.y);
-                    //ctx.rect(style.x, style.y, style.width, style.height);
-                } else {
+                    // ctx.rect(style.x, style.y, style.width, style.height);
+                }
+                else {
                     this._buildRadiusPath(ctx, style);
                 }
                 return;

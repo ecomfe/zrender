@@ -78,7 +78,12 @@ define(
         /**
          * 返回矩形区域，用于局部刷新和文字定位
          * @inner
-         * @param {Object} style
+         * @param {string} text
+         * @param {number} x
+         * @param {number} y
+         * @param {string} textFont
+         * @param {string} textAlign
+         * @param {string} textBaseline
          */
         function _getTextRect(text, x, y, textFont, textAlign, textBaseline) {
             var area = require('../tool/area');
@@ -160,7 +165,7 @@ define(
 
             Transformable.call(this);
             Eventful.call(this);
-        }
+        };
         /**
          * 图形是否可见，为true时不绘制图形，但是仍能触发鼠标事件
          * @name module:zrender/shape/Base#invisible
@@ -264,6 +269,7 @@ define(
             switch (style.brushType) {
                 case 'both':
                     ctx.fill();
+                    break;
                 case 'stroke':
                     style.lineWidth > 0 && ctx.stroke();
                     break;
@@ -277,17 +283,17 @@ define(
         };
 
         var STYLE_CTX_MAP = [
-            ['color', 'fillStyle'],
-            ['strokeColor', 'strokeStyle'],
-            ['opacity', 'globalAlpha'],
-            ['lineCap', 'lineCap'],
-            ['lineJoin', 'lineJoin'],
-            ['miterLimit', 'miterLimit'],
-            ['lineWidth', 'lineWidth'],
-            ['shadowBlur', 'shadowBlur'],
-            ['shadowColor', 'shadowColor'],
-            ['shadowOffsetX', 'shadowOffsetX'],
-            ['shadowOffsetY', 'shadowOffsetY']
+            [ 'color', 'fillStyle' ],
+            [ 'strokeColor', 'strokeStyle' ],
+            [ 'opacity', 'globalAlpha' ],
+            [ 'lineCap', 'lineCap' ],
+            [ 'lineJoin', 'lineJoin' ],
+            [ 'miterLimit', 'miterLimit' ],
+            [ 'lineWidth', 'lineWidth' ],
+            [ 'shadowBlur', 'shadowBlur' ],
+            [ 'shadowColor', 'shadowColor' ],
+            [ 'shadowOffsetX', 'shadowOffsetX' ],
+            [ 'shadowOffsetY', 'shadowOffsetY' ]
         ];
 
         /**
@@ -310,10 +316,9 @@ define(
         /**
          * 根据默认样式扩展高亮样式
          * 
-         * @param {CanvasRenderingContext2D} ctx
          * @param {module:zrender/shape/Base~IBaseShapeStyle} style 默认样式
          * @param {module:zrender/shape/Base~IBaseShapeStyle} highlightStyle 高亮样式
-         * @param {string} [brushTypeOnly]
+         * @param {string} brushTypeOnly
          */
         Base.prototype.getHighlightStyle = function (style, highlightStyle, brushTypeOnly) {
             var newStyle = {};
@@ -386,12 +391,12 @@ define(
             var invTransform = [];
 
             return function (x, y) {
-                var originPos = [x, y];
+                var originPos = [ x, y ];
                 // 对鼠标的坐标也做相同的变换
                 if (this.needTransform && this.transform) {
                     matrix.invert(invTransform, this.transform);
 
-                    matrix.mulVector(originPos, invTransform, [x, y, 1]);
+                    matrix.mulVector(originPos, invTransform, [ x, y, 1 ]);
 
                     if (x == originPos[0] && y == originPos[1]) {
                         // 避免外部修改导致的needTransform不准确
@@ -407,18 +412,18 @@ define(
          * @param {CanvasRenderingContext2D} ctx
          * @param {module:zrender/shape/Base~IBaseShapeStyle} style
          */
-        Base.prototype.buildPath = function(ctx, style) {
+        Base.prototype.buildPath = function (ctx, style) {
             log('buildPath not implemented in ' + this.type);
-        }
+        };
 
         /**
          * 计算返回包围盒矩形
          * @param {module:zrender/shape/Base~IBaseShapeStyle} style
          * @return {module:zrender/shape/Base~IBoundingRect}
          */
-        Base.prototype.getRect = function(style) {
+        Base.prototype.getRect = function (style) {
             log('getRect not implemented in ' + this.type);   
-        }
+        };
         
         /**
          * 判断鼠标位置是否在图形内
@@ -452,13 +457,11 @@ define(
         /**
          * 绘制附加文本
          * @param {CanvasRenderingContext2D} ctx
-         * @param {module:zrender/shape/Base~IBaseShapeStyle}
-         *        style 样式
-         * @param {module:zrender/shape/Base~IBaseShapeStyle} 
-         *        normalStyle 默认样式，用于定位文字显示
+         * @param {module:zrender/shape/Base~IBaseShapeStyle} style 样式
+         * @param {module:zrender/shape/Base~IBaseShapeStyle} normalStyle 默认样式，用于定位文字显示
          */
         Base.prototype.drawText = function (ctx, style, normalStyle) {
-            if (typeof(style.text) == 'undefined' || style.text === false ) {
+            if (typeof(style.text) == 'undefined' || style.text === false) {
                 return;
             }
             // 字体颜色策略

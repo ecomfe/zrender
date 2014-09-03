@@ -47,7 +47,7 @@ define(
          * @extends module:zrender/shape/Base
          * @param {Object} options
          */
-        var Text = function(options) {
+        var Text = function (options) {
             Base.call(this, options);
             /**
              * 文字绘制样式
@@ -59,12 +59,12 @@ define(
              * @name module:zrender/shape/Text#highlightStyle
              * @type {module:zrender/shape/Text~ITextStyle}
              */
-        }
+        };
 
         Text.prototype =  {
             type: 'text',
 
-            brush : function(ctx, isHighlight) {
+            brush : function (ctx, isHighlight) {
                 var style = this.style;
                 if (isHighlight) {
                     // 根据style扩展默认高亮样式
@@ -136,7 +136,7 @@ define(
                                 );
                         }
                     }
-                    else{
+                    else {
                         switch (style.brushType) {
                             case 'fill':
                                 ctx.fillText(text[i], x, y);
@@ -164,7 +164,7 @@ define(
              * @param {module:zrender/shape/Text~ITextStyle} style
              * @return {module:zrender/shape/Base~IBoundingRect}
              */
-            getRect : function(style) {
+            getRect : function (style) {
                 if (style.__rect) {
                     return style.__rect;
                 }
@@ -172,7 +172,7 @@ define(
                 var width = area.getTextWidth(style.text, style.textFont);
                 var height = area.getTextHeight(style.text, style.textFont);
                 
-                var textX = style.x;                 //默认start == left
+                var textX = style.x;                 // 默认start == left
                 if (style.textAlign == 'end' || style.textAlign == 'right') {
                     textX -= width;
                 }
@@ -207,3 +207,4 @@ define(
         return Text;
     }
 );
+

@@ -53,8 +53,8 @@ define(
          * @extends module:zrender/shape/Base
          * @param {Object} options
          */
-        var Rose = function(options) {
-            this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
+        var Rose = function (options) {
+            this.brushTypeOnly = 'stroke';  // 线条只能描边，填充后果自负
             Base.call(this, options);
             /**
              * 玫瑰线绘制样式
@@ -66,7 +66,7 @@ define(
              * @name module:zrender/shape/Rose#highlightStyle
              * @type {module:zrender/shape/Rose~IRoseStyle}
              */
-        }
+        };
 
         Rose.prototype =  {
             type: 'rose',
@@ -76,7 +76,7 @@ define(
              * @param {CanvasRenderingContext2D} ctx
              * @param {module:zrender/shape/Rose~IRoseStyle} style
              */
-            buildPath : function(ctx, style) {
+            buildPath : function (ctx, style) {
                 var _x;
                 var _y;
                 var _R = style.r;
@@ -90,19 +90,19 @@ define(
                 var _math = require('../tool/math');
                 ctx.moveTo(_offsetX, _offsetY);
 
-                for (var i = 0, _len = _R.length; i < _len ; i ++) {
+                for (var i = 0, _len = _R.length; i < _len ; i++) {
                     _r = _R[i];
 
-                    for (var j = 0; j <= 360 * _n; j ++) {
+                    for (var j = 0; j <= 360 * _n; j++) {
                         _x = _r
                              * _math.sin(_k / _n * j % 360, true)
-                             * _math.cos( j, true)
+                             * _math.cos(j, true)
                              + _offsetX;
                         _y = _r
                              * _math.sin(_k / _n * j % 360, true)
-                             * _math.sin( j, true)
+                             * _math.sin(j, true)
                              + _offsetY;
-                        ctx.lineTo( _x, _y );
+                        ctx.lineTo(_x, _y);
                     }
                 }
             },
@@ -112,7 +112,7 @@ define(
              * @param {module:zrender/shape/Rose~IRoseStyle} style
              * @return {module:zrender/shape/Base~IBoundingRect}
              */
-            getRect : function(style) {
+            getRect : function (style) {
                 if (style.__rect) {
                     return style.__rect;
                 }
@@ -122,7 +122,7 @@ define(
                 var _offsetY = style.y;
                 var _max = 0;
 
-                for (var i = 0, _len = _R.length; i < _len ; i ++) {
+                for (var i = 0, _len = _R.length; i < _len ; i++) {
                     if (_R[i] > _max) {
                         _max = _R[i];
                     }
@@ -137,8 +137,8 @@ define(
                     lineWidth = 0;
                 }
                 style.__rect = {
-                    x : - _max - lineWidth + _offsetX,
-                    y : - _max - lineWidth + _offsetY,
+                    x : -_max - lineWidth + _offsetX,
+                    y : -_max - lineWidth + _offsetY,
                     width : 2 * _max + 3 * lineWidth,
                     height : 2 * _max + 3 * lineWidth
                 };

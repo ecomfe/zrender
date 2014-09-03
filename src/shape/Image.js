@@ -63,7 +63,7 @@ define(
              * @name module:zrender/shape/Image#highlightStyle
              * @type {module:zrender/shape/Image~IImageStyle}
              */
-        }
+        };
 
         ZImage.prototype = {
             
@@ -85,13 +85,13 @@ define(
                 if (typeof(image) === 'string') {
                     var src = image;
                     image = new Image();
-                    image.onload = function(){
+                    image.onload = function () {
                         image.onload = null;
                         clearTimeout(_refreshTimeout);
                         _needsRefresh.push(me);
                         // 防止因为缓存短时间内触发多次onload事件
-                        _refreshTimeout = setTimeout(function(){
-                            refresh && refresh( _needsRefresh );
+                        _refreshTimeout = setTimeout(function () {
+                            refresh && refresh(_needsRefresh);
                             // 清空needsRefresh
                             _needsRefresh = [];
                         }, 10);
@@ -100,7 +100,7 @@ define(
                     image.src = src;
                 }
                 if (image) {
-                    //图片已经加载完成
+                    // 图片已经加载完成
                     if (image.nodeName.toUpperCase() == 'IMG') {
                         if (window.ActiveXObject) {
                             if (image.readyState != 'complete') {

@@ -56,7 +56,7 @@ define(
          * @extends module:zrender/shape/Base
          * @param {Object} options
          */
-        var Heart = function(options) {
+        var Heart = function (options) {
             Base.call(this, options);
             /**
              * 心形绘制样式
@@ -68,7 +68,7 @@ define(
              * @name module:zrender/shape/Heart#highlightStyle
              * @type {module:zrender/shape/Heart~IHeartStyle}
              */
-        }
+        };
 
         Heart.prototype = {
             type: 'heart',
@@ -78,7 +78,7 @@ define(
              * @param {CanvasRenderingContext2D} ctx
              * @param {module:zrender/shape/Heart~IHeartStyle} style
              */
-            buildPath : function(ctx, style) {
+            buildPath : function (ctx, style) {
                 ctx.moveTo(style.x, style.y);
                 ctx.bezierCurveTo(
                     style.x + style.a / 2,
@@ -104,7 +104,7 @@ define(
              * @param {module:zrender/shape/Heart~IHeartStyle} style
              * @return {module:zrender/shape/Base~IBoundingRect}
              */
-            getRect : function(style) {
+            getRect : function (style) {
                 if (style.__rect) {
                     return style.__rect;
                 }

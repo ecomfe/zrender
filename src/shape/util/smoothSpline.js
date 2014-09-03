@@ -7,7 +7,7 @@
 
 
 define(
-    function ( require ) {
+    function (require) {
         var vector = require('../../tool/vector');
 
         /**
@@ -17,7 +17,7 @@ define(
             var v0 = (p2 - p0) * 0.5;
             var v1 = (p3 - p1) * 0.5;
             return (2 * (p1 - p2) + v0 + v1) * t3 
-                    + (- 3 * (p1 - p2) - 2 * v0 - v1) * t2
+                    + (-3 * (p1 - p2) - 2 * v0 - v1) * t2
                     + v0 * t + p1;
         }
 
@@ -30,13 +30,13 @@ define(
 
             var distance = 0;
             for (var i = 1; i < len; i++) {
-                distance += vector.distance(points[i-1], points[i]);
+                distance += vector.distance(points[i - 1], points[i]);
             }
             
             var segs = distance / 5;
             segs = segs < len ? len : segs;
             for (var i = 0; i < segs; i++) {
-                var pos = i / (segs-1) * (isLoop ? len : len - 1);
+                var pos = i / (segs - 1) * (isLoop ? len : len - 1);
                 var idx = Math.floor(pos);
 
                 var w = pos - idx;
@@ -49,8 +49,9 @@ define(
                     p0 = points[idx === 0 ? idx : idx - 1];
                     p2 = points[idx > len - 2 ? len - 1 : idx + 1];
                     p3 = points[idx > len - 3 ? len - 1 : idx + 2];
-                } else {
-                    p0 = points[(idx -1 + len) % len];
+                }
+                else {
+                    p0 = points[(idx - 1 + len) % len];
                     p2 = points[(idx + 1) % len];
                     p3 = points[(idx + 2) % len];
                 }

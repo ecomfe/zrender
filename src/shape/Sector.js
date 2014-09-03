@@ -56,7 +56,7 @@ define(
          * @extends module:zrender/shape/Base
          * @param {Object} options
          */
-        var Sector = function(options) {
+        var Sector = function (options) {
             Base.call(this, options);
             /**
              * 扇形绘制样式
@@ -68,7 +68,7 @@ define(
              * @name module:zrender/shape/Sector#highlightStyle
              * @type {module:zrender/shape/Sector~ISectorStyle}
              */
-        }
+        };
 
         Sector.prototype = {
             type: 'sector',
@@ -78,7 +78,7 @@ define(
              * @param {CanvasRenderingContext2D} ctx
              * @param {module:zrender/shape/Sector~ISectorStyle} style
              */
-            buildPath : function(ctx, style) {
+            buildPath : function (ctx, style) {
                 var x = style.x;   // 圆心x
                 var y = style.y;   // 圆心y
                 var r0 = typeof style.r0 == 'undefined'     // 形内半径[0,r)
@@ -132,7 +132,7 @@ define(
              * @param {module:zrender/shape/Sector~ISectorStyle} style
              * @return {module:zrender/shape/Base~IBoundingRect}
              */
-            getRect : function(style) {
+            getRect : function (style) {
                 if (style.__rect) {
                     return style.__rect;
                 }

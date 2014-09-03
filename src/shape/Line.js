@@ -50,8 +50,8 @@ define(
          * @constructor
          * @extends module:zrender/shape/Base
          */
-        var Line = function(options) {
-            this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
+        var Line = function (options) {
+            this.brushTypeOnly = 'stroke';  // 线条只能描边，填充后果自负
             this.textPosition = 'end';
             Base.call(this, options);
 
@@ -65,7 +65,7 @@ define(
              * @name module:zrender/shape/Line#highlightStyle
              * @type {module:zrender/shape/Line~ILineStyle}
              */
-        }
+        };
 
         Line.prototype =  {
             type: 'line',
@@ -75,9 +75,9 @@ define(
              * @param {CanvasRenderingContext2D} ctx
              * @param {module:zrender/shape/Line~ILineStyle} style
              */
-            buildPath : function(ctx, style) {
+            buildPath : function (ctx, style) {
                 if (!style.lineType || style.lineType == 'solid') {
-                    //默认为实线
+                    // 默认为实线
                     ctx.moveTo(style.xStart, style.yStart);
                     ctx.lineTo(style.xEnd, style.yEnd);
                 }
@@ -100,7 +100,7 @@ define(
              * @param {module:zrender/shape/Line~ILineStyle} style
              * @return {module:zrender/shape/Base~IBoundingRect}
              */
-            getRect : function(style) {
+            getRect : function (style) {
                 if (style.__rect) {
                     return style.__rect;
                 }

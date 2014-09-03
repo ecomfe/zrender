@@ -31,7 +31,7 @@ define(function(require) {
      * @extends module:zrender/mixin/Transformable
      * @extends module:zrender/mixin/Eventful
      */
-    var Group = function(options) {
+    var Group = function (options) {
 
         options = options || {};
 
@@ -67,7 +67,7 @@ define(function(require) {
         // Mixin
         Transformable.call(this);
         Eventful.call(this);
-    }
+    };
 
     /**
      * 是否忽略该 Group 及其所有子节点
@@ -126,7 +126,7 @@ define(function(require) {
      * 移除子节点
      * @param {module:zrender/shape/Group|module:zrender/shape/Base} child
      */
-    Group.prototype.removeChild = function(child) {
+    Group.prototype.removeChild = function (child) {
         var idx = util.indexOf(this._children, child);
 
         this._children.splice(idx, 1);
@@ -145,15 +145,16 @@ define(function(require) {
     /**
      * 遍历所有子节点
      * @param  {Function} cb
-     * @param  {}   context
+     * @param  {Object}   context
      */
-    Group.prototype.each = function(cb, context) {
+    Group.prototype.each = function (cb, context) {
         var haveContext = !!context;
         for (var i = 0; i < this._children.length; i++) {
             var child = this._children[i];
             if (haveContext) {
                 cb.call(context, child);
-            } else {
+            }
+            else {
                 cb(child);
             }
         }
@@ -162,15 +163,16 @@ define(function(require) {
     /**
      * 深度优先遍历所有子孙节点
      * @param  {Function} cb
-     * @param  {}   context
+     * @param  {Object}   context
      */
-    Group.prototype.iterate = function(cb, context) {
+    Group.prototype.iterate = function (cb, context) {
         var haveContext = !!context;
         for (var i = 0; i < this._children.length; i++) {
             var child = this._children[i];
             if (haveContext) {
                 cb.call(context, child);
-            } else {
+            }
+            else {
                 cb(child);
             }
 
@@ -180,7 +182,7 @@ define(function(require) {
         }
     };
 
-    Group.prototype.addChildrenToStorage = function(storage) {
+    Group.prototype.addChildrenToStorage = function (storage) {
         for (var i = 0; i < this._children.length; i++) {
             var child = this._children[i];
             storage.addToMap(child);
@@ -190,7 +192,7 @@ define(function(require) {
         }
     };
 
-    Group.prototype.delChildrenFromStorage = function(storage) {
+    Group.prototype.delChildrenFromStorage = function (storage) {
         for (var i = 0; i < this._children.length; i++) {
             var child = this._children[i];
             storage.delFromMap(child);

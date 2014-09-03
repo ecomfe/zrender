@@ -48,7 +48,7 @@ define(function (require) {
      * @extends module:zrender/shape/Base
      * @param {Object} options
      */
-    var Path = function(options) {
+    var Path = function (options) {
         Base.call(this, options);
         /**
          * Path绘制样式
@@ -60,12 +60,12 @@ define(function (require) {
          * @name module:zrender/shape/Path#highlightStyle
          * @type {module:zrender/shape/Path~IPathStyle}
          */
-    }
+    };
 
     Path.prototype = {
         type: 'path',
 
-        _parsePathData : function(data) {
+        _parsePathData : function (data) {
             if (!data) {
                 return [];
             }
@@ -312,7 +312,7 @@ define(function (require) {
 
         },
 
-        _convertPoint : function(x1, y1, x2, y2, fa, fs, rx, ry, psiDeg) {
+        _convertPoint : function (x1, y1, x2, y2, fa, fs, rx, ry, psiDeg) {
             var psi = psiDeg * (Math.PI / 180.0);
             var xp = Math.cos(psi) * (x1 - x2) / 2.0
                      + Math.sin(psi) * (y1 - y2) / 2.0;
@@ -374,7 +374,7 @@ define(function (require) {
          * @param {CanvasRenderingContext2D} ctx
          * @param {module:zrender/shape/Path~IPathStyle} style
          */
-        buildPath : function(ctx, style) {
+        buildPath : function (ctx, style) {
             var path = style.path;
 
             var pathArray = this.pathArray || this._parsePathData(path);
@@ -395,7 +395,7 @@ define(function (require) {
                 }
                 p = pathArray[i].points;
                 for (var j = 0, k = p.length; j < k; j += 2) {
-                    singlePointList.push([p[j] + x, p[j+1] + y]);
+                    singlePointList.push([ p[j] + x, p[j + 1] + y ]);
                 }
             }
             singlePointList.length > 0 && pointList.push(singlePointList);
@@ -408,7 +408,8 @@ define(function (require) {
                 for (var j = 0, k = p.length; j < k; j++) {
                     if (j % 2 === 0) {
                         p[j] += x;
-                    } else {
+                    }
+                    else {
                         p[j] += y;
                     }
                 }
@@ -460,7 +461,7 @@ define(function (require) {
          * @param {module:zrender/shape/Path~IPathStyle} style
          * @return {module:zrender/shape/Base~IBoundingRect}
          */
-        getRect : function(style) {
+        getRect : function (style) {
             if (style.__rect) {
                 return style.__rect;
             }

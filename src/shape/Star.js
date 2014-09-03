@@ -72,7 +72,7 @@ define(
              * @name module:zrender/shape/Star#highlightStyle
              * @type {module:zrender/shape/Star~IStarStyle}
              */
-        }
+        };
 
         Star.prototype = {
             type: 'star',
@@ -84,7 +84,9 @@ define(
              */
             buildPath : function(ctx, style) {
                 var n = style.n;
-                if (!n || n < 2) { return; }
+                if (!n || n < 2) {
+                    return;
+                }
 
                 var x = style.x;
                 var y = style.y;
@@ -109,17 +111,17 @@ define(
 
                 // 记录边界点，用于判断inside
                 var pointList = style.pointList = [];
-                pointList.push([xStart, yStart]);
-                for (var i = 0, end = n * 2 - 1, ri; i < end; i ++) {
+                pointList.push([ xStart, yStart ]);
+                for (var i = 0, end = n * 2 - 1, ri; i < end; i++) {
                     ri = i % 2 === 0 ? r0 : r;
-                    pointList.push([x + ri * cos(deg), y + ri * sin(deg)]);
+                    pointList.push([ x + ri * cos(deg), y + ri * sin(deg) ]);
                     deg += dStep;
                 }
-                pointList.push([xStart, yStart]);
+                pointList.push([ xStart, yStart ]);
 
                 // 绘制
                 ctx.moveTo(pointList[0][0], pointList[0][1]);
-                for (var i = 0; i < pointList.length; i ++) {
+                for (var i = 0; i < pointList.length; i++) {
                     ctx.lineTo(pointList[i][0], pointList[i][1]);
                 }
 

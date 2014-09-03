@@ -67,7 +67,7 @@ define(
              * @name module:zrender/shape/Circle#highlightStyle
              * @type {module:zrender/shape/Circle~ICircleStyle}
              */
-        }
+        };
 
         Circle.prototype = {
             type: 'circle',
