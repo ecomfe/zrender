@@ -21,7 +21,7 @@ define(
          * http://explorercanvas.googlecode.com/svn/trunk/excanvas.js
          */
         // 核心代码会生成一个全局变量 G_vmlCanvasManager，模块改造后借用于快速判断canvas支持
-        require('./deps/excanvas');
+        require('./dep/excanvas');
 
         var util = require('./tool/util');
         var log = require('./tool/log');

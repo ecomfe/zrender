@@ -86,7 +86,7 @@ define(
 
         function getContext() {
             if (!_ctx) {
-                require('../deps/excanvas');
+                require('../dep/excanvas');
                 if (G_vmlCanvasManager) {
                     var _div = document.createElement('div');
                     _div.style.position = 'absolute';
