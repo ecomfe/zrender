@@ -110,7 +110,7 @@ define(function(require) {
                     }
                     // Is a shape
                     if (nodeName !== 'g') {
-                        extendShapeStyle(el, styleMap);
+                        extendShapeStyle(el, styleMap, defs);
                         el.hoverable = opts.hoverable;
                         el.clickable = opts.clickable;
                         el.draggable = opts.draggable;
@@ -129,7 +129,7 @@ define(function(require) {
 
             // Quit define
             if (nodeName === 'defs') {
-                this._isDefine = false;
+                inDefine = false;
             }
         }
 
