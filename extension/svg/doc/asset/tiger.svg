@@ -3,6 +3,18 @@
 <svg version="1.1" id="svg2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
      width="595.279px" height="841.891px" viewBox="0 0 595.279 841.891" style="enable-background:new 0 0 595.279 841.891;"
      xml:space="preserve">
+
+<g font-family="Verdana" font-size="45" transform="translate(700, 100)">
+    <text y="150" fill="blue" >
+      TI
+        <tspan dx="10" dy="-5" font-weight="bold" fill="red" >
+          G
+        </tspan>
+        <tspan dx="10" dy="5">
+           ER
+        </tspan>
+    </text>
+</g>
 <g id="g4" transform="matrix(1.7656463,0,0,1.7656463,324.90716,255.00942)">
     <g id="g6">
         <path id="path8" style="fill:#FFFFFF;stroke:#000000;stroke-width:0.172;" d="M-143.196,76.683c0,0,0.066,1.253-0.483,1.24

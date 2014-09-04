@@ -16,6 +16,7 @@ define(function(require) {
     var mat2d = require('zrender/tool/matrix');
     var vec2 = require('zrender/tool/vector');
     var log = require('zrender/tool/log');
+    var guid = require('zrender/tool/guid');
 
     var Group = require('zrender/Group');
 
@@ -23,6 +24,30 @@ define(function(require) {
 
     function trim(str) {
         return str.replace(/^\s+/, '').replace(/\s+$/, '');
+    }
+
+    /**
+     * 加载并解析返回svg文件
+     * @param {string|module:zrender/core/http~IHTTPGetOption} url
+     * @param {Function} onsuccess
+     * @param {Function} [onerror]
+     * @param {Object} [opts] 额外参数
+     */
+    function load(url, onsuccess, onerror, opts) {
+        if (typeof(url) === 'object') {
+            var obj = url;
+            url = obj.url;
+            onsuccess = obj.onsuccess;
+            onerror = obj.onerror;
+            opts = obj;
+        } else {
+            if (typeof(onerror) === 'object') {
+                opts = onerror;
+            }
+        }
+        http.get(url, function(xml) {
+            onsuccess(parse(xml, opts));
+        }, onerror);
     }
 
     // Cross browser XMLParser
@@ -35,6 +60,7 @@ define(function(require) {
             } else { // IE
                 doc = new ActiveXObject('Microsoft.XMLDOM');
                 doc.async = 'false';
+                // Remove DOCTYPE ?
                 doc.loadXML(str);
             }
             if (
@@ -54,6 +80,8 @@ define(function(require) {
      * 解析SVG, 返回Group
      * @param {string|HTMLSVGElement} xml
      * @param {Object} opts 配置参数
+     * @param {string} [opts.namespace] svg里所有节点的id都会带上`namespace/` 的前缀防止冲突。
+     *                                  如果不指定则自动生成一个guid作为namespace
      * @param {boolean} [opts.hoverable=true]
      * @param {boolean} [opts.clickable=false]
      * @param {boolean} [opts.draggable=false]
@@ -64,6 +92,7 @@ define(function(require) {
         if (typeof(opts.hoverable) == 'undefined') {
             opts.hoverable = true;
         }
+        var namespace = opts.namespace || guid();
 
         var inDefine = false;
         var defs = {};
@@ -87,7 +116,11 @@ define(function(require) {
             } else {
                 var parser = nodeParsers[nodeName];
                 if (parser) {
-                    el = parser(xmlNode);
+                    el = parser(xmlNode, parentStyle, defs);
+                    if (!el) {
+                        log("Unsupported svg node " + nodeName);
+                        return;
+                    }
                     // 解析通用样式
                     styleMap = parseAttributes(xmlNode);
                     // PENDING
@@ -96,35 +129,32 @@ define(function(require) {
                             styleMap[name] = parentStyle[name];
                         }
                     }
-                    // 解析变换
+                    // 解析坐标变换
                     var m = parseTransformAttribute(xmlNode);
                     if (m) {
                         el.transform = m;
                         el.decomposeTransform();
                     }
-                    // id
-                    // 多个svg解决命名空间的问题？
                     var id = xmlNode.getAttribute('id');
                     if (id) {
-                        el.id = id;
+                        el.id = namespace + '/' + id;
                     }
                     // Is a shape
-                    if (nodeName !== 'g') {
-                        extendShapeStyle(el, styleMap, defs);
-                        el.hoverable = opts.hoverable;
-                        el.clickable = opts.clickable;
-                        el.draggable = opts.draggable;
+                    if (el.type !== 'group') {
+                        extendShapeCommonStyle(el, styleMap, defs);
                     }
                     parent.addChild(el);
                 }
             }
 
-            var child = xmlNode.firstChild;
-            while (child) {
-                if (child.nodeType === 1){
-                    parseNode(child, el, styleMap);
+            if (inDefine || nodeName === 'g') {
+                var child = xmlNode.firstChild;
+                while (child) {
+                    if (child.nodeType === 1){
+                        parseNode(child, el, styleMap);
+                    }
+                    child = child.nextSibling;
                 }
-                child = child.nextSibling;
             }
 
             // Quit define
@@ -157,30 +187,15 @@ define(function(require) {
             child = child.nextSibling;
         }
 
-        return root;
-    }
-
-    /**
-     * @param {string|module:zrender/core/http~IHTTPGetOption} url
-     * @param {Function} onsuccess
-     * @param {Function} [onerror]
-     * @param {Object} [opts] 额外参数
-     */
-    function load(url, onsuccess, onerror, opts) {
-        if (typeof(url) === 'object') {
-            var obj = url;
-            url = obj.url;
-            onsuccess = obj.onsuccess;
-            onerror = obj.onerror;
-            opts = obj;
-        } else {
-            if (typeof(onerror) === 'object') {
-                opts = onerror;
+        root.traverse(function(el) {
+            if (el.type !== 'group') {
+                el.hoverable = opts.hoverable;
+                el.clickable = opts.clickable;
+                el.draggable = opts.draggable;
             }
-        }
-        http.get(url, function(xml) {
-            onsuccess(parse(xml, opts));
-        }, onerror);
+        });
+
+        return root;
     }
 
     var transformRegex = /(translate|scale|rotate|skewX|skewY|matrix)\(([\-\s0-9\.,]*)\)/g;
@@ -195,26 +210,22 @@ define(function(require) {
             });
             for (var i = transformOps.length - 1; i > 0; i-=2) {
                 var value = transformOps[i];
+                value = trim(value).replace(/,/g, ' ').split(/\s+/);
                 var type = transformOps[i-1];
                 switch (type) {
                     case 'translate':
-                        value = trim(value).split(/\s+/);
                         mat2d.translate(m, m, [+value[0], +(value[1] || value[0])]);
                         break;
                     case 'scale':
-                        value = trim(value).split(/\s+/);
                         mat2d.scale(m, m, [+value[0], +(value[1] || value[0])]);
                         break;
                     case 'rotate':
-                        value = trim(value).split(/\s*/);
                         mat2d.rotate(m, m, +value[0]);
                         break;
                     case 'skew':
-                        value = trim(value).split(/\s*/);
                         // console.warn('Skew transform is not supported yet');
                         break;
                     case 'matrix':
-                        var value = trim(value).replace(/,/g, ' ').split(/\s+/);
                         m[0] = +value[0];
                         m[1] = +value[1];
                         m[2] = +value[2];
@@ -229,6 +240,11 @@ define(function(require) {
         }
     }
 
+    var styleList = [
+        'fill', 'stroke', 'stroke-width', 'opacity', 'stroke-dasharray',
+        'stroke-linecap', 'stroke-linejoin', 'stroke-miterlimit',
+        'font-style', 'font-weight', 'font-size', 'font-family'
+    ];
     var styleRegex = /(\S*?):(.*?);/g;
     function parseStyleAttribute(xmlNode) {
         var style = xmlNode.getAttribute('style');
@@ -239,45 +255,34 @@ define(function(require) {
             style.replace(styleRegex, function(str, key, val){
                 styleMap[key] = val;
             });
-
-            return {
-                fill: styleMap['fill'],
-                stroke: styleMap['stroke'],
-                lineWidth: styleMap['stroke-width'],
-                opacity: styleMap['opacity'],
-                lineDash: styleMap['stroke-dasharray'],
-                lineCap: styleMap['stroke-linecap'],
-                lineJoin: styleMap['stroke-linjoin'],
-                miterLimit: styleMap['stroke-miterlimit']
-            }
+            return styleMap;
         }
         return {};
     }
 
     function parseAttributes(xmlNode) {
-        var styleMap = {
-            fill: xmlNode.getAttribute('fill'),
-            stroke: xmlNode.getAttribute('stroke'),
-            lineWidth: xmlNode.getAttribute('stroke-width'),
-            opacity: xmlNode.getAttribute('opacity'),
-            lineDash: xmlNode.getAttribute('stroke-dasharray'),
-            lineCap: xmlNode.getAttribute('stroke-linecap'),
-            lineJoin: xmlNode.getAttribute('stroke-linjoin'),
-            miterLimit: xmlNode.getAttribute('stroke-miterlimit')
-        }
+        var styleMap = {}
 
+        for (var i = 0; i < styleList.length; i++) {
+            var styleName = styleList[i];
+            var attrVal = xmlNode.getAttribute(styleName);
+            if (attrVal) {
+                styleMap[styleName] = attrVal;
+            }
+        }
+        // style属性里的样式拥有更高优先级
         var styleMap2 = parseStyleAttribute(xmlNode);
         for (var name in styleMap2) {
             styleMap[name] = styleMap2[name];
         }
 
-        return styleMap
+        return styleMap;
     }
 
-    function extendShapeStyle(shape, styleMap, defs) {
+    function extendShapeCommonStyle(shape, styleMap, defs) {
         var brushType = 'fill';
-        var fillStyle = getPaint(styleMap.fill, defs);
-        var strokeStyle = getPaint(styleMap.stroke, defs);
+        var fillStyle = getPaint(styleMap['fill'], defs);
+        var strokeStyle = getPaint(styleMap['stroke'], defs);
         if (fillStyle) {
             shape.style.color = fillStyle;
             brushType = 'fill';
@@ -289,17 +294,17 @@ define(function(require) {
             } else {
                 brushType = 'stroke';
             }
-            shape.style.lineWidth = +(styleMap.lineWidth || 1);
+            shape.style.lineWidth = +(styleMap['stroke-width'] || 1);
         }
 
-        styleMap.opacity
-            && (shape.style.opacity = +styleMap.opacity);
-        styleMap.lineCap
-            && (shape.style.lineCap = +styleMap.lineCap);
-        styleMap.lineJoin
-            && (shape.style.lineJoin = +styleMap.lineJoin);
-        styleMap.miterLimit
-            && (shape.style.miterLimit = +styleMap.miterLimit);
+        styleMap['opacity']
+            && (shape.style.opacity = +styleMap['opacity']);
+        styleMap['stroke-linecap']
+            && (shape.style.lineCap = +styleMap['stroke-linecap']);
+        styleMap['stroke-linejoin']
+            && (shape.style.lineJoin = +styleMap['stroke-linejoin']);
+        styleMap['stroke-miterlimit']
+            && (shape.style.miterLimit = +styleMap['stroke-miterlimit']);
 
         shape.style.brushType = brushType;
         // TODO lineDash
@@ -372,6 +377,131 @@ define(function(require) {
         'radialgradient' : function(xmlNode) {
             // TODO
         }
+    }
+
+    function haveTSpanChildNode(xmlNode) {
+        var child = xmlNode.firstChild;
+        while (child && child.nodeName.toLowerCase() !== 'tspan') {
+            child = child.nextSibling;
+        }
+        return !!child;
+    }
+
+    // http://www.w3.org/TR/SVG/text.html
+    function parseTextNode(xmlNode, parentStyle, defs) {
+        return parseTSpanNode(xmlNode, 0, 0, parentStyle);
+    }
+
+    // TODO dom id
+    function parseTSpanNode(xmlNode, cx, cy, parentStyle, defs) {
+        var x = xmlNode.getAttribute('x');
+        var y = xmlNode.getAttribute('y');
+        var dx = (+xmlNode.getAttribute('dx') || 0);
+        var dy = (+xmlNode.getAttribute('dy') || 0);
+        if (!x) {
+            x = cx + dx;
+        } else {
+            x = +(x || 0);
+        }
+        if (!y) {
+            y = cy + dy;
+        } else {
+            y = +(y || 0);
+        }
+        var styleMap = parseAttributes(xmlNode);
+        for (var name in parentStyle) {
+            if (!styleMap[name]) {
+                styleMap[name] = parentStyle[name];
+            }
+        }
+        if (haveTSpanChildNode(xmlNode)) {
+            var node = new Group();
+            node.rect = {};
+            var child = xmlNode.firstChild;
+            node.rect.width = dx;
+            node.rect.x = x;
+            node.rect.y = y;
+            while (child) {
+                if (child.nodeType === 3) { // text node
+                    var textContent = filterText(child.textContent || child.innerText);
+                    if (textContent) {
+                        var textShape = new Text({
+                            style: {
+                                x: x,
+                                y: y,
+                                text: textContent,
+                                textFont: getTextFont(styleMap)
+                            }
+                        });
+                        extendShapeCommonStyle(textShape, styleMap, defs);
+
+                        var width = textShape.getRect(textShape.style).width;
+                        x += width;
+                        node.rect.width += width;
+                        node.addChild(textShape);
+                    }
+                } else if (
+                    child.nodeType === 1
+                    && child.nodeName.toLowerCase() == 'tspan'
+                ) {
+                    var childNode = parseTSpanNode(child, x, y, styleMap);
+                    y = childNode.rect.y;
+                    x += childNode.rect.width;
+                    node.rect.width += childNode.rect.width;
+                    node.addChild(childNode);
+                }
+                child = child.nextSibling;
+            }
+            return node;
+        } else {
+            var text = '';
+            var child = xmlNode.firstChild;
+            while (child) {
+                if (child.nodeType === 3) { // text node
+                    text += child.textContent || child.innerText;
+                }
+                child = child.nextSibling;
+            }
+            var textShape = new Text({
+                style: {
+                    x: x,
+                    y: y,
+                    text: filterText(text),
+                    textFont: getTextFont(styleMap)
+                }
+            });
+            extendShapeCommonStyle(textShape, styleMap, defs);
+
+            textShape.rect = {
+                width: dx + textShape.getRect(textShape.style).width,
+                x: x,
+                y: y
+            }
+            x += textShape.getRect(textShape.style).width;
+
+            return textShape;
+        }
+    }
+
+    function filterText(str) {
+        return trim(str.replace(/\n/g, ' ').replace(/\s+/g, ' '));
+    }
+
+    function getTextFont(style) {
+        var font = [];
+        if (style['font-style']) {
+            font.push(style['font-style']);
+        }
+        if (style['font-weight']) {
+            font.push(style['font-weight']);
+        }
+        if (style['font-size']) {
+            font.push(+style['font-size'] + 'px');
+        }
+        if (style['font-family']) {
+            font.push(style['font-family']);
+        }
+        return font.join(' ');
     }
 
     var nodeParsers = {
@@ -469,8 +599,8 @@ define(function(require) {
                 });
             }
         },
-        text: function(xmlNode) {
-
+        text: function(xmlNode, parentStyle, defs) {
+            return parseTextNode(xmlNode, parentStyle, defs);
         }
     }
 
