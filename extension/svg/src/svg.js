@@ -15,6 +15,7 @@ define(function(require) {
     var BrokenLine = require('zrender/shape/BrokenLine');
     var mat2d = require('zrender/tool/matrix');
     var vec2 = require('zrender/tool/vector');
+    var log = require('zrender/tool/log');
 
     var Group = require('zrender/Group');
 
@@ -27,16 +28,24 @@ define(function(require) {
     // Cross browser XMLParser
     function parseXML(str) {
         try {
+            var doc;
             if (window.DOMParser) {
                 var parser = new DOMParser();
-                var doc = parser.parseFromString(str, 'text/xml');
-                return doc;
+                doc = parser.parseFromString(str, 'text/xml');
             } else { // IE
-                var doc = new ActiveXObject('Microsoft.XMLDOM');
-                xml.async = 'false';
-                xml.loadXML(str);
+                doc = new ActiveXObject('Microsoft.XMLDOM');
+                doc.async = 'false';
+                doc.loadXML(str);
             }
-        } catch(e) {
+            if (
+                !doc || !doc.documentElement
+                || doc.getElementsByTagName('parsererror').length
+            ) {
+                log('Invalid XML: ' + str);
+            } else {
+                return doc;
+            }
+        } catch (e) {
             return null;
         }
     }
@@ -131,11 +140,14 @@ define(function(require) {
                 return;
             }
             var svg = doc.firstChild;
-            while (!(svg.nodeName.toLowerCase() == 'svg' && svg.nodeType == 1)) {
+            while (svg && !(svg.nodeName.toLowerCase() === 'svg' && svg.nodeType === 1)) {
                 svg = svg.nextSibling;
             }
         } else {
             var svg = xml;
+        }
+        if (!svg) {
+            return;
         }
         var root = new Group();
 
@@ -174,7 +186,7 @@ define(function(require) {
     var transformRegex = /(translate|scale|rotate|skewX|skewY|matrix)\(([\-\s0-9\.,]*)\)/g;
 
     function parseTransformAttribute(xmlNode) {
-        var transform = xmlNode.getAttribute("transform");
+        var transform = xmlNode.getAttribute('transform');
         if (transform) {
             var m = mat2d.create();
             var transformOps = [];
@@ -185,24 +197,24 @@ define(function(require) {
                 var value = transformOps[i];
                 var type = transformOps[i-1];
                 switch (type) {
-                    case "translate":
+                    case 'translate':
                         value = trim(value).split(/\s+/);
                         mat2d.translate(m, m, [+value[0], +(value[1] || value[0])]);
                         break;
-                    case "scale":
+                    case 'scale':
                         value = trim(value).split(/\s+/);
                         mat2d.scale(m, m, [+value[0], +(value[1] || value[0])]);
                         break;
-                    case "rotate":
+                    case 'rotate':
                         value = trim(value).split(/\s*/);
                         mat2d.rotate(m, m, +value[0]);
                         break;
-                    case "skew":
+                    case 'skew':
                         value = trim(value).split(/\s*/);
-                        // console.warn("Skew transform is not supported yet");
+                        // console.warn('Skew transform is not supported yet');
                         break;
-                    case "matrix":
-                        var value = trim(value).split(/\s*,\s*/);
+                    case 'matrix':
+                        var value = trim(value).replace(/,/g, ' ').split(/\s+/);
                         m[0] = +value[0];
                         m[1] = +value[1];
                         m[2] = +value[2];
@@ -219,11 +231,11 @@ define(function(require) {
 
     var styleRegex = /(\S*?):(.*?);/g;
     function parseStyleAttribute(xmlNode) {
-        var style = xmlNode.getAttribute("style");
+        var style = xmlNode.getAttribute('style');
 
         if (style) {
             var styleMap = {};
-            style = style.replace(/\s*([;:])\s*/g, "$1");
+            style = style.replace(/\s*([;:])\s*/g, '$1');
             style.replace(styleRegex, function(str, key, val){
                 styleMap[key] = val;
             });
@@ -245,13 +257,13 @@ define(function(require) {
     function parseAttributes(xmlNode) {
         var styleMap = {
             fill: xmlNode.getAttribute('fill'),
-            stroke: xmlNode.getAttribute("stroke"),
-            lineWidth: xmlNode.getAttribute("stroke-width"),
+            stroke: xmlNode.getAttribute('stroke'),
+            lineWidth: xmlNode.getAttribute('stroke-width'),
             opacity: xmlNode.getAttribute('opacity'),
             lineDash: xmlNode.getAttribute('stroke-dasharray'),
             lineCap: xmlNode.getAttribute('stroke-linecap'),
             lineJoin: xmlNode.getAttribute('stroke-linjoin'),
-            miterLimit: xmlNode.getAttribute("stroke-miterlimit")
+            miterLimit: xmlNode.getAttribute('stroke-miterlimit')
         }
 
         var styleMap2 = parseStyleAttribute(xmlNode);
@@ -308,7 +320,7 @@ define(function(require) {
     }
 
     function parsePoints(pointsString) {
-        var list = trim(pointsString).replace(",", " ").split(/\s+/);
+        var list = trim(pointsString).replace(/,/g, ' ').split(/\s+/);
         var points = [];
 
         for (var i = 0; i < list.length;) {
@@ -325,8 +337,8 @@ define(function(require) {
 
         while (stop) {
             if (stop.nodeType === 1) {
-                var offset = stop.getAttribute("offset");
-                if (offset.indexOf("%") > 0) {  // percentage
+                var offset = stop.getAttribute('offset');
+                if (offset.indexOf('%') > 0) {  // percentage
                     offset = parseInt(offset) / 100;
                 } else if(offset) {    // number from 0 to 1
                     offset = parseFloat(offset);
@@ -334,7 +346,7 @@ define(function(require) {
                     offset = 0;
                 }
 
-                var stopColor = stop.getAttribute("stop-color") || '#000000';
+                var stopColor = stop.getAttribute('stop-color') || '#000000';
 
                 gradient.addColorStop(offset, stopColor);
             }
@@ -345,10 +357,10 @@ define(function(require) {
     var defineParsers = {
 
         'lineargradient' : function(xmlNode) {
-            var x1 = +(xmlNode.getAttribute("x1") || 0);
-            var y1 = +(xmlNode.getAttribute("y1") || 0);
-            var x2 = +(xmlNode.getAttribute("x2") || 10);
-            var y2 = +(xmlNode.getAttribute("y2") || 0);
+            var x1 = +(xmlNode.getAttribute('x1') || 0);
+            var y1 = +(xmlNode.getAttribute('y1') || 0);
+            var x2 = +(xmlNode.getAttribute('x2') || 10);
+            var y2 = +(xmlNode.getAttribute('y2') || 0);
 
             var gradient = util.getContext().createLinearGradient(x1, y1, x2, y2);
 
@@ -368,10 +380,10 @@ define(function(require) {
             return g;
         },
         rect: function(xmlNode) {
-            var x = +(xmlNode.getAttribute("x") || 0);
-            var y = +(xmlNode.getAttribute("y") || 0);
-            var width = +(xmlNode.getAttribute("width") || 0);
-            var height = +(xmlNode.getAttribute("height") || 0);
+            var x = +(xmlNode.getAttribute('x') || 0);
+            var y = +(xmlNode.getAttribute('y') || 0);
+            var width = +(xmlNode.getAttribute('width') || 0);
+            var height = +(xmlNode.getAttribute('height') || 0);
 
             return new Rectangle({
                 style: {
@@ -383,9 +395,9 @@ define(function(require) {
             });
         },
         circle: function(xmlNode) {
-            var cx = +(xmlNode.getAttribute("cx") || 0);
-            var cy = +(xmlNode.getAttribute("cy") || 0);
-            var r = +(xmlNode.getAttribute("r") || 0);
+            var cx = +(xmlNode.getAttribute('cx') || 0);
+            var cy = +(xmlNode.getAttribute('cy') || 0);
+            var r = +(xmlNode.getAttribute('r') || 0);
 
             return new Circle({
                 style: {
@@ -396,10 +408,10 @@ define(function(require) {
             });
         },
         line: function(xmlNode) {
-            var x1 = +(xmlNode.getAttribute("x1") || 0);
-            var y1 = +(xmlNode.getAttribute("y1") || 0);
-            var x2 = +(xmlNode.getAttribute("x2") || 0);
-            var y2 = +(xmlNode.getAttribute("y2") || 0);
+            var x1 = +(xmlNode.getAttribute('x1') || 0);
+            var y1 = +(xmlNode.getAttribute('y1') || 0);
+            var x2 = +(xmlNode.getAttribute('x2') || 0);
+            var y2 = +(xmlNode.getAttribute('y2') || 0);
 
             return new Line({
                 style: {
@@ -411,10 +423,10 @@ define(function(require) {
             });
         },
         ellipse: function(xmlNode) {
-            var cx = +(xmlNode.getAttribute("cx") || 0);
-            var cy = +(xmlNode.getAttribute("cy") || 0);
-            var rx = +(xmlNode.getAttribute("rx") || 0);
-            var ry = +(xmlNode.getAttribute("ry") || 0);
+            var cx = +(xmlNode.getAttribute('cx') || 0);
+            var cy = +(xmlNode.getAttribute('cy') || 0);
+            var rx = +(xmlNode.getAttribute('rx') || 0);
+            var ry = +(xmlNode.getAttribute('ry') || 0);
 
             return new Ellipse({
                 style: {
@@ -437,7 +449,7 @@ define(function(require) {
             }
         },
         polyline: function(xmlNode) {
-            var pointsStr = xmlNode.getAttribute("points");
+            var pointsStr = xmlNode.getAttribute('points');
             if (pointsStr) {
                 var points = parsePoints(pointsStr);
                 return new BrokenLine({
@@ -448,7 +460,7 @@ define(function(require) {
             }
         },
         path: function(xmlNode) {
-            var d = xmlNode.getAttribute("d");
+            var d = xmlNode.getAttribute('d');
             if (d) {
                 return new Path({
                     style: {

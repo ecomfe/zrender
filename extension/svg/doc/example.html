@@ -30,7 +30,7 @@
         // 初始化zrender
         var zr = zrender.init(document.getElementById("main"));
 
-        svg.load('assets/tiger.svg', function(group) {
+        svg.load('asset/tiger.svg', function(group) {
             zr.addGroup(group);
             group.onclick = function(e) {
                 document.getElementById('log').innerHTML += '选中' + e.target.parent.id + ' > ' + e.target.type + ' <br />';
