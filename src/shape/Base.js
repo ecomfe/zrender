@@ -156,7 +156,7 @@ define(
             /**
              * 父节点
              * @readonly
-             * @type {module:zrender/shape/Group}
+             * @type {module:zrender/Group}
              * @default null
              */
             this.parent = null;
@@ -269,7 +269,6 @@ define(
             switch (style.brushType) {
                 case 'both':
                     ctx.fill();
-                    break;
                 case 'stroke':
                     style.lineWidth > 0 && ctx.stroke();
                     break;
@@ -619,7 +618,7 @@ define(
         // TODO, 通过 bind 绑定的事件
         Base.prototype.isSilent = function () {
             return !(
-                this.hoverable || this.draggable
+                this.hoverable || this.draggable || this.clickable
                 || this.onmousemove || this.onmouseover || this.onmouseout
                 || this.onmousedown || this.onmouseup || this.onclick
                 || this.ondragenter || this.ondragover || this.ondragleave

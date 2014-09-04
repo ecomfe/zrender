@@ -1,2 +1,2 @@
-src/lib/excanvas.js
+src/deps/excanvas.js
 src/tool/env.js

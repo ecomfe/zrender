@@ -12,7 +12,7 @@ define(
 
         var util = require('./tool/util');
 
-        var Group = require('./shape/Group');
+        var Group = require('./Group');
 
         var defaultIterateOption = {
             hover: false,
@@ -289,7 +289,7 @@ define(
 
         /**
          * 添加图形(Shape)或者组(Group)到根节点
-         * @param {module:zrender/shape/Shape|module:zrneder/shape/Group} el
+         * @param {module:zrender/shape/Shape|module:zrender/Group} el
          */
         Storage.prototype.addRoot = function (el) {
             if (el instanceof Group) {

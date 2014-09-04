@@ -41,6 +41,9 @@ define(
                 return false;
             }
 
+            if (zoneType === 'path') {
+                return _buildPathMethod(shape, _ctx, area, x, y);
+            }
             // 未实现或不可用时(excanvas不支持)则数学运算，主要是line，brokenLine，ring
             var _mathReturn = _mathMethod(zoneType, area, x, y);
             if (typeof _mathReturn != 'undefined') {
@@ -112,8 +115,8 @@ define(
                 case 'sector':
                     return _isInsideSector(area, x, y);
                 // 多边形---------------------8
-                case 'path':
-                    return _isInsidePath(area, x, y);
+                // case 'path':
+                //     return _isInsidePath(area, x, y);
                 case 'polygon':
                 case 'star':
                 case 'isogon':

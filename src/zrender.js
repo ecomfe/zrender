@@ -21,7 +21,7 @@ define(
          * http://explorercanvas.googlecode.com/svn/trunk/excanvas.js
          */
         // 核心代码会生成一个全局变量 G_vmlCanvasManager，模块改造后借用于快速判断canvas支持
-        require('./lib/excanvas');
+        require('./deps/excanvas');
 
         var util = require('./tool/util');
         var log = require('./tool/log');
@@ -164,7 +164,7 @@ define(
         /**
          * 添加图形形状到根节点
          * 
-         * @param {zrender.shape.Base} shape 形状对象，可用属性全集，详见各shape
+         * @param {module:zrender/shape/Base} shape 形状对象，可用属性全集，详见各shape
          */
         ZRender.prototype.addShape = function (shape) {
             this.storage.addRoot(shape);
@@ -174,7 +174,7 @@ define(
         /**
          * 添加组到根节点
          *
-         * @param {zrender.shape.Group} group
+         * @param {module:zrender/Group} group
          */
         ZRender.prototype.addGroup = function(group) {
             this.storage.addRoot(group);
