@@ -67,7 +67,7 @@ define(function(require) {
         // Mixin
         Transformable.call(this);
         Eventful.call(this);
-    }
+    };
 
     /**
      * 是否忽略该 Group 及其所有子节点

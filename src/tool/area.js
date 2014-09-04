@@ -414,7 +414,6 @@ define(
         
         /**
          * 路径包含判断，依赖多边形判断
-         */
         function _isInsidePath(area, x, y) {
             if (!area.pointList) {
                 require('../shape/Path').prototype.buildPath(_ctx, area);
@@ -433,7 +432,8 @@ define(
 
             return insideCatch;
         }
-
+        */
+       
         /**
          * 测算多行文本宽度
          * @param {Object} text

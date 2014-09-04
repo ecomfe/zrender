@@ -28,7 +28,7 @@ define(function(require) {
                 opts = onerror;
             }
         }
-
+        /* jshint ignore:start */
         var xhr = window.XMLHttpRequest
             ? new XMLHttpRequest()
             : new ActiveXObject('Microsoft.XMLHTTP');
@@ -46,6 +46,7 @@ define(function(require) {
         };
 
         xhr.send(null);
+        /* jshint ignore:end */
     }
 
     return {

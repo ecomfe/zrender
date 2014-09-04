@@ -267,15 +267,17 @@ define(
             }
 
             switch (style.brushType) {
+                /* jshint ignore:start */
                 case 'both':
                     ctx.fill();
                 case 'stroke':
                     style.lineWidth > 0 && ctx.stroke();
                     break;
+                /* jshint ignore:end */
                 default:
                     ctx.fill();
             }
-
+            
             this.drawText(ctx, style, this.style);
 
             ctx.restore();

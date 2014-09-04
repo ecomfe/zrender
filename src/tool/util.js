@@ -87,6 +87,7 @@ define(
         function getContext() {
             if (!_ctx) {
                 require('../dep/excanvas');
+                /* jshint ignore:start */
                 if (G_vmlCanvasManager) {
                     var _div = document.createElement('div');
                     _div.style.position = 'absolute';
@@ -99,6 +100,7 @@ define(
                 else {
                     _ctx = document.createElement('canvas').getContext('2d');
                 }
+                /* jshint ignore:end */
             }
             return _ctx;
         }
