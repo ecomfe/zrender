@@ -1,17 +1,18 @@
 /**
- * zrender: 计算包围盒
- *
  * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
  *         pissang(https://github.com/pissang)
  *         errorrik (errorrik@gmail.com)
  */
-
 define(
     function (require) {
         var vec2 = require('./vector');
 
         /**
-         * 计算包围盒
+         * 从顶点数组中计算出最小包围盒，写入`min`和`max`中
+         * @module zrender/tool/computeBoundingBox
+         * @param {Array<Object>} points 顶点数组
+         * @param {number} min
+         * @param {number} max
          */
         function computeBoundingBox(points, min, max) {
             if (points.length === 0) {
@@ -45,8 +46,14 @@ define(
         }
 
         /**
-         * 计算三阶贝塞尔曲线的包围盒
-         * http://pissang.net/blog/?p=91
+         * 从三阶贝塞尔曲线(p0, p1, p2, p3)中计算出最小包围盒，写入`min`和`max`中
+         * @memberOf module:zrender/tool/computeBoundingBox
+         * @param {Array.<number>} p0
+         * @param {Array.<number>} p1
+         * @param {Array.<number>} p2
+         * @param {Array.<number>} p3
+         * @param {Array.<number>} min
+         * @param {Array.<number>} max
          */
         function computeCubeBezierBoundingBox(p0, p1, p2, p3, min, max) {
             var xDim = _computeCubeBezierExtremitiesDim(
@@ -78,7 +85,7 @@ define(
             var c = 3 * p1 - 3 * p0;
 
             var tmp = b * b - 4 * a * c;
-            if (tmp > 0){
+            if (tmp > 0) {
                 var tmpSqrt = Math.sqrt(tmp);
                 var t1 = (-b + tmpSqrt) / (2 * a);
                 var t2 = (-b - tmpSqrt) / (2 * a);
@@ -96,7 +103,7 @@ define(
                     var val = ct * ct * ct * p0 
                             + 3 * ct * ct * t * p1
                             + 3 * ct * t * t * p2
-                            + t * t *t * p3;
+                            + t * t * t * p3;
 
                     result.push(val);
                 }
@@ -106,8 +113,13 @@ define(
         }
 
         /**
-         * 计算二阶贝塞尔曲线的包围盒
-         * http://pissang.net/blog/?p=91
+         * 从二阶贝塞尔曲线(p0, p1, p2)中计算出最小包围盒，写入`min`和`max`中
+         * @memberOf module:zrender/tool/computeBoundingBox
+         * @param {Array.<number>} p0
+         * @param {Array.<number>} p1
+         * @param {Array.<number>} p2
+         * @param {Array.<number>} min
+         * @param {Array.<number>} max
          */
         function computeQuadraticBezierBoundingBox(p0, p1, p2, min, max) {
             // Find extremities, where derivative in x dim or y dim is zero
@@ -116,7 +128,8 @@ define(
             var t1;
             if (tmp === 0) {
                 t1 = 0.5;
-            } else {
+            }
+            else {
                 t1 = (p0[0] - p1[0]) / tmp;
             }
 
@@ -125,15 +138,16 @@ define(
             var t2;
             if (tmp === 0) {
                 t2 = 0.5;
-            } else {
+            }
+            else {
                 t2 = (p0[1] - p1[1]) / tmp;
             }
 
             t1 = Math.max(Math.min(t1, 1), 0);
             t2 = Math.max(Math.min(t2, 1), 0);
 
-            var ct1 = 1-t1;
-            var ct2 = 1-t2;
+            var ct1 = 1 - t1;
+            var ct2 = 1 - t2;
 
             var x1 = ct1 * ct1 * p0[0] 
                      + 2 * ct1 * t1 * p1[0] 
@@ -150,21 +164,28 @@ define(
                      + t2 * t2 * p2[1];
 
             return computeBoundingBox(
-                        [p0.slice(), p2.slice(), [x1, y1], [x2, y2]],
+                        [ p0.slice(), p2.slice(), [ x1, y1 ], [ x2, y2 ] ],
                         min, max
                     );
         }
 
         /**
-         * 计算圆弧的包围盒
-         * http://pissang.net/blog/?p=91
+         * 从圆弧中计算出最小包围盒，写入`min`和`max`中
+         * @memberOf module:zrender/tool/computeBoundingBox
+         * @param {Array.<number>} center 圆弧中心点
+         * @param {number} radius 圆弧半径
+         * @param {number} startAngle 圆弧开始角度
+         * @param {number} endAngle 圆弧结束角度
+         * @param {number} clockwise 是否是顺时针
+         * @param {Array.<number>} min
+         * @param {Array.<number>} max
          */
-        var computeArcBoundingBox = (function(){
+        var computeArcBoundingBox = (function () {
             var start = [];
             var end = [];
             // At most 4 extremities
             var extremities = [[], [], [], []];
-            return function(
+            return function (
                 center, radius, startAngle, endAngle, clockwise, min, max
             ) {
                 clockwise = clockwise ? 1 : -1;

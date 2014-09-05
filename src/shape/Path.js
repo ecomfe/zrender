@@ -1,83 +1,71 @@
 /**
- * zrender
- *
- * author: CrossDo (chenhuaimu@baidu.com)
- *
- * shape类：路径
- * 可配图形属性：
-   {
-       // 基础属性
-       shape  : 'path',         // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
-       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
-       invisible : {boolean},   // 默认为false，是否可见
+ * SVG Path
+ * @module zrender/shape/Path
+ * @see http://www.w3.org/TR/2011/REC-SVG11-20110816/paths.html#PathData
+ * @author: CrossDo (chenhuaimu@baidu.com)
+ */
 
-       // 样式属性，默认状态样式样式属性
-       style  : {
-           path          : {string},// 必须，路径。例如:M 0 0 L 0 10 L 10 10 Z (一个三角形)
-                                    //M = moveto
-                                    //L = lineto
-                                    //H = horizontal lineto
-                                    //V = vertical lineto
-                                    //C = curveto
-                                    //S = smooth curveto
-                                    //Q = quadratic Belzier curve
-                                    //T = smooth quadratic Belzier curveto
-                                    //Z = closepath
-
-
-           x             : {number},  // 必须，x轴坐标
-           y             : {number},  // 必须，y轴坐标
-
-
-           brushType     : {string},  // 默认为fill，绘画方式
-                                      // fill(填充) | stroke(描边) | both(填充+描边)
-           color         : {color},   // 默认为'#000'，填充颜色，支持rgba
-           strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
-           lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
-
-           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
-           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
-           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
-           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
-           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
-
-           text          : {string},  // 默认为null，附加文本
-           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
-           textPosition  : {string},  // 默认为top，附加文本位置。
-                                      // inside | left | right | top | bottom
-           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
-                                      // start | end | left | right | center
-           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
-                                      // top | bottom | middle |
-                                      // alphabetic | hanging | ideographic
-           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
-                                      // 'inside' ? '#fff' : color
-       },
-
-       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
-       highlightStyle : {
-           // 同style
-       }
-
-       // 交互属性，详见shape.Base
-
-       // 事件属性，详见shape.Base
-   }
-
- **/
-
+/**
+ * @typedef {Object} IPathStyle
+ * @property {string} path path描述数据, 详见 {@link http://www.w3.org/TR/2011/REC-SVG11-20110816/paths.html#PathData}
+ * @property {number} x x轴位移
+ * @property {number} y y轴位移
+ * @property {string} [brushType='fill']
+ * @property {string} [color='#000000'] 填充颜色
+ * @property {string} [strokeColor='#000000'] 描边颜色
+ * @property {string} [lineCape='butt'] 线帽样式，可以是 butt, round, square
+ * @property {number} [lineWidth=1] 描边宽度
+ * @property {number} [opacity=1] 绘制透明度
+ * @property {number} [shadowBlur=0] 阴影模糊度，大于0有效
+ * @property {string} [shadowColor='#000000'] 阴影颜色
+ * @property {number} [shadowOffsetX=0] 阴影横向偏移
+ * @property {number} [shadowOffsetY=0] 阴影纵向偏移
+ * @property {string} [text] 图形中的附加文本
+ * @property {string} [textColor='#000000'] 文本颜色
+ * @property {string} [textFont] 附加文本样式，eg:'bold 18px verdana'
+ * @property {string} [textPosition='end'] 附加文本位置, 可以是 inside, left, right, top, bottom
+ * @property {string} [textAlign] 默认根据textPosition自动设置，附加文本水平对齐。
+ *                                可以是start, end, left, right, center
+ * @property {string} [textBaseline] 默认根据textPosition自动设置，附加文本垂直对齐。
+ *                                可以是top, bottom, middle, alphabetic, hanging, ideographic
+ */
 define(function (require) {
     var Base = require('./Base');
-    
-    function Path(options) {
+
+    var vMag = function(v) {
+        return Math.sqrt(v[0] * v[0] + v[1] * v[1]);
+    };
+    var vRatio = function(u, v) {
+        return (u[0] * v[0] + u[1] * v[1]) / (vMag(u) * vMag(v));
+    };
+    var vAngle = function(u, v) {
+        return (u[0] * v[1] < u[1] * v[0] ? -1 : 1)
+                * Math.acos(vRatio(u, v));
+    };
+    /**
+     * @alias module:zrender/shape/Path
+     * @constructor
+     * @extends module:zrender/shape/Base
+     * @param {Object} options
+     */
+    var Path = function (options) {
         Base.call(this, options);
-    }
+        /**
+         * Path绘制样式
+         * @name module:zrender/shape/Path#style
+         * @type {module:zrender/shape/Path~IPathStyle}
+         */
+        /**
+         * Path高亮绘制样式
+         * @name module:zrender/shape/Path#highlightStyle
+         * @type {module:zrender/shape/Path~IPathStyle}
+         */
+    };
 
     Path.prototype = {
         type: 'path',
 
-        _parsePathData : function(data) {
+        _parsePathData : function (data) {
             if (!data) {
                 return [];
             }
@@ -324,7 +312,7 @@ define(function (require) {
 
         },
 
-        _convertPoint : function(x1, y1, x2, y2, fa, fs, rx, ry, psiDeg) {
+        _convertPoint : function (x1, y1, x2, y2, fa, fs, rx, ry, psiDeg) {
             var psi = psiDeg * (Math.PI / 180.0);
             var xp = Math.cos(psi) * (x1 - x2) / 2.0
                      + Math.sin(psi) * (y1 - y2) / 2.0;
@@ -361,16 +349,6 @@ define(function (require) {
                     + Math.sin(psi) * cxp
                     + Math.cos(psi) * cyp;
 
-            var vMag = function(v) {
-                return Math.sqrt(v[0] * v[0] + v[1] * v[1]);
-            };
-            var vRatio = function(u, v) {
-                return (u[0] * v[0] + u[1] * v[1]) / (vMag(u) * vMag(v));
-            };
-            var vAngle = function(u, v) {
-                return (u[0] * v[1] < u[1] * v[0] ? -1 : 1)
-                        * Math.acos(vRatio(u, v));
-            };
             var theta = vAngle([ 1, 0 ], [ (xp - cxp) / rx, (yp - cyp) / ry ]);
             var u = [ (xp - cxp) / rx, (yp - cyp) / ry ];
             var v = [ (-1 * xp - cxp) / rx, (-1 * yp - cyp) / ry ];
@@ -393,10 +371,10 @@ define(function (require) {
 
         /**
          * 创建路径
-         * @param {Context2D} ctx Canvas 2D上下文
-         * @param {Object} style 样式
+         * @param {CanvasRenderingContext2D} ctx
+         * @param {module:zrender/shape/Path~IPathStyle} style
          */
-        buildPath : function(ctx, style) {
+        buildPath : function (ctx, style) {
             var path = style.path;
 
             var pathArray = this.pathArray || this._parsePathData(path);
@@ -417,7 +395,7 @@ define(function (require) {
                 }
                 p = pathArray[i].points;
                 for (var j = 0, k = p.length; j < k; j += 2) {
-                    singlePointList.push([p[j] + x, p[j+1] + y]);
+                    singlePointList.push([ p[j] + x, p[j + 1] + y ]);
                 }
             }
             singlePointList.length > 0 && pointList.push(singlePointList);
@@ -430,7 +408,8 @@ define(function (require) {
                 for (var j = 0, k = p.length; j < k; j++) {
                     if (j % 2 === 0) {
                         p[j] += x;
-                    } else {
+                    }
+                    else {
                         p[j] += y;
                     }
                 }
@@ -478,10 +457,11 @@ define(function (require) {
         },
 
         /**
-         * 返回矩形区域，用于局部刷新和文字定位
-         * @param {Object} style 样式
+         * 计算返回Path包围盒矩形。
+         * @param {module:zrender/shape/Path~IPathStyle} style
+         * @return {module:zrender/shape/Base~IBoundingRect}
          */
-        getRect : function(style) {
+        getRect : function (style) {
             if (style.__rect) {
                 return style.__rect;
             }

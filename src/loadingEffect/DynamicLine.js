@@ -48,7 +48,7 @@ define(
             var canvasHeight = this.canvasHeight;
             
             // 初始化动画元素
-            for(var i = 0; i < n; i++) {
+            for (var i = 0; i < n; i++) {
                 var xStart = -Math.ceil(Math.random() * 1000);
                 var len = Math.ceil(Math.random() * 400);
                 var pos = Math.ceil(Math.random() * canvasHeight);
@@ -75,10 +75,10 @@ define(
                 function() {
                     addShapeHandle(background);
                     
-                    for(var i = 0; i < n; i++) {
+                    for (var i = 0; i < n; i++) {
                         var style = shapeList[i].highlightStyle;
 
-                        if (style.xStart >= canvasWidth){
+                        if (style.xStart >= canvasWidth) {
                             
                             shapeList[i].len = Math.ceil(Math.random() * 400);
                             style.xStart = -400;

@@ -1,11 +1,10 @@
 /**
  * Storage内容仓库模块
- *
+ * @module zrender/Storage
  * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
- *         errorrik (errorrik@gmail.com)
+ * @author errorrik (errorrik@gmail.com)
+ * @author pissang (https://github.com/pissang/)
  */
-
-
 define(
     function (require) {
 
@@ -13,7 +12,7 @@ define(
 
         var util = require('./tool/util');
 
-        var Group = require('./shape/Group');
+        var Group = require('./Group');
 
         var defaultIterateOption = {
             hover: false,
@@ -32,9 +31,10 @@ define(
         }
         /**
          * 内容仓库 (M)
-         * 
+         * @alias module:zrender/Storage
+         * @constructor
          */
-        function Storage() {
+        var Storage = function () {
             // 所有常规形状，id索引的map
             this._elements = {};
 
@@ -46,16 +46,17 @@ define(
             this._shapeList = [];
 
             this._shapeListOffset = 0;
-        }
+        };
 
         /**
          * 遍历迭代器
          * 
          * @param {Function} fun 迭代回调函数，return true终止迭代
-         * @param {Object=} option 迭代参数，缺省为仅降序遍历常规形状
-         *     hover : true 是否迭代高亮层数据
-         *     normal : 'down' | 'up' 是否迭代常规数据，迭代时是否指定及z轴顺序
-         *     update : false 是否更新shapeList
+         * @param {Object} [option] 迭代参数，缺省为仅降序遍历普通层图形
+         * @param {boolean} [option.hover=true] 是否是高亮层图形
+         * @param {string} [option.normal='up'] 是否是普通层图形，迭代时是否指定及z轴顺序
+         * @param {boolean} [option.update=false] 是否在迭代前更新形状列表
+         * 
          */
         Storage.prototype.iterShape = function (fun, option) {
             if (!option) {
@@ -63,7 +64,7 @@ define(
             }
 
             if (option.hover) {
-                //高亮层数据遍历
+                // 高亮层数据遍历
                 for (var i = 0, l = this._hoverElements.length; i < l; i++) {
                     var el = this._hoverElements[i];
                     el.updateTransform();
@@ -77,7 +78,7 @@ define(
                 this.updateShapeList();
             }
 
-            //遍历: 'down' | 'up'
+            // 遍历: 'down' | 'up'
             switch (option.normal) {
                 case 'down':
                     // 降序遍历，高层优先
@@ -90,7 +91,7 @@ define(
                     break;
                 // case 'up':
                 default:
-                    //升序遍历，底层优先
+                    // 升序遍历，底层优先
                     for (var i = 0, l = this._shapeList.length; i < l; i++) {
                         if (fun(this._shapeList[i])) {
                             return this;
@@ -102,7 +103,12 @@ define(
             return this;
         };
 
-        Storage.prototype.getHoverShapes = function(update) {
+        /**
+         * 返回hover层的形状数组
+         * @param  {boolean} [update=false] 是否在返回前更新图形的变换
+         * @return {Array.<module:zrender/shape/Base>}
+         */
+        Storage.prototype.getHoverShapes = function (update) {
             if (update) {
                 for (var i = 0, l = this._hoverElements.length; i < l; i++) {
                     this._hoverElements[i].updateTransform();
@@ -111,15 +117,25 @@ define(
             return this._hoverElements;
         };
 
-        Storage.prototype.getShapeList = function(update) {
+        /**
+         * 返回所有图形的绘制队列
+         * @param  {boolean} [update=false] 是否在返回前更新该数组
+         * 详见{@link module:zrender/shape/Base.prototype.updateShapeList}
+         * @return {Array.<module:zrender/shape/Base>}
+         */
+        Storage.prototype.getShapeList = function (update) {
             if (update) {
                 this.updateShapeList();
             }
             return this._shapeList;
         };
 
-
-        Storage.prototype.updateShapeList = function() {
+        /**
+         * 更新图形的绘制队列。
+         * 每次绘制前都会调用，该方法会先深度优先遍历整个树，更新所有Group和Shape的变换并且把所有可见的Shape保存到数组中，
+         * 最后根据绘制的优先级（zlevel > z > 插入顺序）排序得到绘制队列
+         */
+        Storage.prototype.updateShapeList = function () {
             this._shapeListOffset = 0;
             for (var i = 0, len = this._roots.length; i < len; i++) {
                 var root = this._roots[i];
@@ -134,7 +150,7 @@ define(
             this._shapeList.sort(shapeCompareFunc);
         };
 
-        Storage.prototype._updateAndAddShape = function(el) {
+        Storage.prototype._updateAndAddShape = function (el) {
             
             if (el.ignore) {
                 return;
@@ -174,15 +190,16 @@ define(
                 // Mark group clean here
                 el.__dirty = false;
                 
-            } else {
+            }
+            else {
                 this._shapeList[this._shapeListOffset++] = el;
             }
         };
 
         /**
-         * 修改
+         * 修改图形(Shape)或者组(Group)
          * 
-         * @param {string} idx 唯一标识
+         * @param {string} elId 唯一标识
          * @param {Object} [params] 参数
          */
         Storage.prototype.mod = function (elId, params) {
@@ -212,7 +229,8 @@ define(
                             }
                         }
                         util.merge(el, target, true);
-                    } else {
+                    }
+                    else {
                         util.merge(el, params, true);
                     }
                 }
@@ -222,16 +240,17 @@ define(
         };
 
         /**
-         * 常规形状位置漂移，形状自身定义漂移函数
-         * 
-         * @param {string} idx 形状唯一标识
+         * 移动指定的图形(Shape)或者组(Group)的位置
+         * @param {string} shapeId 形状唯一标识
+         * @param {number} dx
+         * @param {number} dy
          */
         Storage.prototype.drift = function (shapeId, dx, dy) {
             var shape = this._elements[shapeId];
             if (shape) {
                 shape.needTransform = true;
-                if (!shape.ondrift //ondrift
-                    //有onbrush并且调用执行返回false或undefined则继续
+                if (!shape.ondrift // ondrift
+                    // 有onbrush并且调用执行返回false或undefined则继续
                     || (shape.ondrift && !shape.ondrift(dx, dy))
                 ) {
                     shape.drift(dx, dy);
@@ -244,7 +263,7 @@ define(
         /**
          * 添加高亮层数据
          * 
-         * @param {Object} params 参数
+         * @param {module:zrender/shape/Base} shape
          */
         Storage.prototype.addHover = function (shape) {
             shape.updateNeedTransform();
@@ -253,21 +272,24 @@ define(
         };
 
         /**
-         * 删除高亮层数据
+         * 清空高亮层数据
          */
         Storage.prototype.delHover = function () {
             this._hoverElements = [];
             return this;
         };
 
+        /**
+         * 是否有图形在高亮层里
+         * @return {boolean}
+         */
         Storage.prototype.hasHoverShape = function () {
             return this._hoverElements.length > 0;
         };
 
         /**
-         * 添加到根节点
-         * 
-         * @param {Shape|Group} el 参数
+         * 添加图形(Shape)或者组(Group)到根节点
+         * @param {module:zrender/shape/Shape|module:zrender/Group} el
          */
         Storage.prototype.addRoot = function (el) {
             if (el instanceof Group) {
@@ -278,6 +300,10 @@ define(
             this._roots.push(el);
         };
 
+        /**
+         * 删除指定的图形(Shape)或者组(Group)
+         * @param  {string|Array.<string>} [elId] 如果为空清空整个Storage
+         */
         Storage.prototype.delRoot = function (elId) {
             if (typeof(elId) == 'undefined') {
                 // 不指定elId清空
@@ -305,7 +331,8 @@ define(
             var el;
             if (typeof(elId) == 'string') {
                 el = this._elements[elId];
-            } else {
+            }
+            else {
                 el = elId;
             }
 
@@ -319,15 +346,11 @@ define(
             }
         };
 
-        /**
-         * 添加
-         * 
-         * @param {Shape|Group} el 参数
-         */
         Storage.prototype.addToMap = function (el) {
             if (el instanceof Group) {
                 el._storage = this;
-            } else {
+            }
+            else {
                 el.style.__rect = null;
             }
 
@@ -336,20 +359,10 @@ define(
             return this;
         };
 
-        /**
-         * 根据指定的elId获取相应的shape属性
-         * 
-         * @param {string=} idx 唯一标识
-         */
         Storage.prototype.get = function (elId) {
             return this._elements[elId];
         };
 
-        /**
-         * 删除，elId不指定则全清空
-         * 
-         * @param {string} idx 唯一标识
-         */
         Storage.prototype.delFromMap = function (elId) {
             var el = this._elements[elId];
             if (el) {
@@ -365,7 +378,7 @@ define(
 
 
         /**
-         * 释放
+         * 清空并且释放Storage
          */
         Storage.prototype.dispose = function () {
             this._elements = 

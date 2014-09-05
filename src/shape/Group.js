@@ -1,26 +1,61 @@
+/**
+ * Group是一个容器，可以插入子节点，Group的变换也会被应用到子节点上
+ * @module zrender/shape/Group
+ * @example
+ *     var Group = require('zrender/shape/Group');
+ *     var Circle = require('zrender/shape/Circle');
+ *     var g = new Group();
+ *     g.position[0] = 100;
+ *     g.position[1] = 100;
+ *     g.addChild(new Circle({
+ *         style: {
+ *             x: 100,
+ *             y: 100,
+ *             r: 20,
+ *             brushType: 'fill'
+ *         }
+ *     }));
+ *     zr.addGroup(g);
+ */
 define(function(require) {
 
     var guid = require('../tool/guid');
     var util = require('../tool/util');
 
-    var Dispatcher = require('../tool/event').Dispatcher;
-    var Transformable = require('./mixin/Transformable');
+    var Transformable = require('../mixin/Transformable');
+    var Eventful = require('../mixin/Eventful');
 
     /**
-     * @constructor zrender.shape.Group
+     * @alias module:zrender/shape/Group
+     * @constructor
+     * @extends module:zrender/mixin/Transformable
+     * @extends module:zrender/mixin/Eventful
      */
-    function Group(options) {
+    var Group = function (options) {
 
         options = options || {};
 
+        /**
+         * Group id
+         * @type {string}
+         */
         this.id = options.id || guid();
 
         for (var key in options) {
             this[key] = options[key];
         }
 
+        /**
+         * @type {string}
+         */
         this.type = 'group';
 
+        /**
+         * 用于裁剪的图形(shape)，所有 Group 内的图形在绘制时都会被这个图形裁剪
+         * 该图形会继承Group的变换
+         * @type {module:zrender/shape/Base}
+         * @see http://www.w3.org/TR/2dcontext/#clipping-region
+         */
         this.clipShape = null;
 
         this._children = [];
@@ -31,19 +66,37 @@ define(function(require) {
 
         // Mixin
         Transformable.call(this);
-        Dispatcher.call(this);
-    }
+        Eventful.call(this);
+    };
 
+    /**
+     * 是否忽略该 Group 及其所有子节点
+     * @type {boolean}
+     * @default false
+     */
     Group.prototype.ignore = false;
 
+    /**
+     * 复制并返回一份新的包含所有儿子节点的数组
+     * @return {Array.<module:zrender/shape/Group|module:zrender/shape/Base>}
+     */
     Group.prototype.children = function() {
         return this._children.slice();
     };
 
+    /**
+     * 获取指定 index 的儿子节点
+     * @param  {number} idx
+     * @return {module:zrender/shape/Group|module:zrender/shape/Base}
+     */
     Group.prototype.childAt = function(idx) {
         return this._children[idx];
     };
 
+    /**
+     * 添加子节点，可以是Shape或者Group
+     * @param {module:zrender/shape/Group|module:zrender/shape/Base} child
+     */
     Group.prototype.addChild = function(child) {
         if (child == this) {
             return;
@@ -69,7 +122,11 @@ define(function(require) {
         }
     };
 
-    Group.prototype.removeChild = function(child) {
+    /**
+     * 移除子节点
+     * @param {module:zrender/shape/Group|module:zrender/shape/Base} child
+     */
+    Group.prototype.removeChild = function (child) {
         var idx = util.indexOf(this._children, child);
 
         this._children.splice(idx, 1);
@@ -85,26 +142,37 @@ define(function(require) {
         }
     };
 
-    Group.prototype.each = function(cb, context) {
+    /**
+     * 遍历所有子节点
+     * @param  {Function} cb
+     * @param  {Object}   context
+     */
+    Group.prototype.each = function (cb, context) {
         var haveContext = !!context;
         for (var i = 0; i < this._children.length; i++) {
             var child = this._children[i];
             if (haveContext) {
                 cb.call(context, child);
-            } else {
+            }
+            else {
                 cb(child);
             }
         }
     };
 
-    Group.prototype.iterate = function(cb, context) {
+    /**
+     * 深度优先遍历所有子孙节点
+     * @param  {Function} cb
+     * @param  {Object}   context
+     */
+    Group.prototype.iterate = function (cb, context) {
         var haveContext = !!context;
-
         for (var i = 0; i < this._children.length; i++) {
             var child = this._children[i];
             if (haveContext) {
                 cb.call(context, child);
-            } else {
+            }
+            else {
                 cb(child);
             }
 
@@ -114,7 +182,7 @@ define(function(require) {
         }
     };
 
-    Group.prototype.addChildrenToStorage = function(storage) {
+    Group.prototype.addChildrenToStorage = function (storage) {
         for (var i = 0; i < this._children.length; i++) {
             var child = this._children[i];
             storage.addToMap(child);
@@ -124,7 +192,7 @@ define(function(require) {
         }
     };
 
-    Group.prototype.delChildrenFromStorage = function(storage) {
+    Group.prototype.delChildrenFromStorage = function (storage) {
         for (var i = 0; i < this._children.length; i++) {
             var child = this._children[i];
             storage.delFromMap(child);
@@ -135,7 +203,7 @@ define(function(require) {
     };
 
     util.merge(Group.prototype, Transformable.prototype, true);
-    util.merge(Group.prototype, Dispatcher.prototype, true);
+    util.merge(Group.prototype, Eventful.prototype, true);
 
     return Group;
 });

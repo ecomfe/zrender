@@ -55,7 +55,7 @@ define(
                     effectOption.y,
                     effectOption.x + effectOption.width,
                     effectOption.y + effectOption.height,
-                    [[0, '#ff6400'], [0.5, '#ffe100'], [1, '#b1ff00']]
+                    [ [ 0, '#ff6400' ], [ 0.5, '#ffe100' ], [ 1, '#b1ff00' ] ]
                 );
 
             if (options.progress != null) {
@@ -63,7 +63,7 @@ define(
                 addShapeHandle(background);
 
                 barShape.highlightStyle.width =
-                    this.adjust(options.progress, [0,1])
+                    this.adjust(options.progress, [ 0, 1 ])
                     * options.effectOption.width;
                     
                 addShapeHandle(barShape);
@@ -76,7 +76,7 @@ define(
                 // 循环显示
                 barShape.highlightStyle.width = 0;
                 return setInterval(
-                    function() {
+                    function () {
                         addShapeHandle(background);
 
                         if (barShape.highlightStyle.width < effectOption.width) {

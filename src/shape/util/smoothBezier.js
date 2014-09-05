@@ -6,7 +6,7 @@
  */
 
 define(
-    function ( require ) {
+    function (require) {
         var vector = require('../../tool/vector');
 
         /**
@@ -43,7 +43,7 @@ define(
 
                 vector.sub(v, nextPoint, prevPoint);
 
-                //use degree to scale the handle length
+                // use degree to scale the handle length
                 vector.scale(v, v, smooth);
 
                 var d0 = vector.distance(point, prevPoint);

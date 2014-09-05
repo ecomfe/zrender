@@ -8,7 +8,7 @@
  * getTextWidth：测算单行文本宽度
  */
 define(
-    function(require) {
+    function (require) {
         var util = require('../tool/util');
 
         var _ctx;
@@ -17,7 +17,7 @@ define(
         var _textHeightCache = {};
         var _textWidthCacheCounter = 0;
         var _textHeightCacheCounter = 0;
-        var TEXT_CACHE_MAX = 20000;
+        var TEXT_CACHE_MAX = 5000;
         
         /**
          * 包含判断
@@ -59,7 +59,7 @@ define(
 
             // 上面的方法都行不通时
             switch (zoneType) {
-                case 'heart': //心形---------10 // Todo，不精确
+                case 'heart': // 心形---------10 // Todo，不精确
                 case 'droplet':// 水滴----------11 // Todo，不精确
                 case 'ellipse': // Todo，不精确
                     return true;
@@ -72,7 +72,7 @@ define(
                 // 玫瑰线 不准确
                 case 'rose' :
                     return _isInsideCircle(area, x, y, area.maxr);
-                //路径，椭圆，曲线等-----------------13
+                // 路径，椭圆，曲线等-----------------13
                 default:
                     return false;   // Todo，暂不支持
             }
@@ -90,35 +90,35 @@ define(
         function _mathMethod(zoneType, area, x, y) {
             // 在矩形内则部分图形需要进一步判断
             switch (zoneType) {
-                //线-----------------------1
+                // 线-----------------------1
                 case 'line':
                     return _isInsideLine(area, x, y);
-                //折线----------------------2
+                // 折线----------------------2
                 case 'broken-line':
                     return _isInsideBrokenLine(area, x, y);
-                //文本----------------------3
+                // 文本----------------------3
                 case 'text':
                     return true;
-                //圆环----------------------4
+                // 圆环----------------------4
                 case 'ring':
                     return _isInsideRing(area, x, y);
-                //矩形----------------------5
+                // 矩形----------------------5
                 case 'rectangle':
                     return true;
-                //圆形----------------------6
+                // 圆形----------------------6
                 case 'circle':
                     return _isInsideCircle(area, x, y, area.r);
-                //扇形----------------------7
+                // 扇形----------------------7
                 case 'sector':
                     return _isInsideSector(area, x, y);
-                //多边形---------------------8
+                // 多边形---------------------8
                 case 'path':
-                    return _isInsidePath(area, x, y);
+                     return _isInsidePath(area, x, y);
                 case 'polygon':
                 case 'star':
                 case 'isogon':
                     return _isInsidePolygon(area, x, y);
-                //图片----------------------9
+                // 图片----------------------9
                 case 'image':
                     return true;
             }
@@ -160,7 +160,7 @@ define(
             util.adjustCanvasSize(x, y);
             _context.clearRect(_rect.x, _rect.y, _rect.width, _rect.height);
             _context.beginPath();
-            shape.brush(_context, {style : area});
+            shape.brush(_context, { style: area });
             _context.closePath();
 
             return _isPainted(_context, x + _offset.x, y + _offset.y);
@@ -179,7 +179,7 @@ define(
             var pixelsData;
 
             if (typeof unit != 'undefined') {
-                unit = (unit || 1 ) >> 1;
+                unit = (unit || 1) >> 1;
                 pixelsData = context.getImageData(
                     x - unit,
                     y - unit,
@@ -220,17 +220,21 @@ define(
             var _a = 0;
             var _b = _x1;
 
-            var minX, maxX;
+            var minX;
+            var maxX;
             if (_x1 < _x2) {
                 minX = _x1 - _l; maxX = _x2 + _l;
-            } else {
+            }
+            else {
                 minX = _x2 - _l; maxX = _x1 + _l;
             }
 
-            var minY, maxY;
+            var minY;
+            var maxY;
             if (_y1 < _y2) {
                 minY = _y1 - _l; maxY = _y2 + _l;
-            } else {
+            }
+            else {
                 minY = _y2 - _l; maxY = _y1 + _l;
             }
 
@@ -247,7 +251,7 @@ define(
             }
 
             var _s = (_a * x - y + _b) * (_a * x - y + _b) / (_a * _a + 1);
-            return  _s <= _l / 2 * _l / 2;
+            return _s <= _l / 2 * _l / 2;
         }
 
         function _isInsideBrokenLine(area, x, y) {
@@ -276,7 +280,7 @@ define(
 
         function _isInsideRing(area, x, y) {
             return _isInsideCircle(area, x, y, area.r)
-                && !_isInsideCircle({x: area.x, y: area.y}, x, y, area.r0 || 0);
+                && !_isInsideCircle({ x: area.x, y: area.y }, x, y, area.r0 || 0);
         }
 
         /**
@@ -312,7 +316,7 @@ define(
                             area.r0
                         )
                     )
-            ){
+            ) {
                 // 大圆外或者小圆内直接false
                 return false;
             }
@@ -357,7 +361,7 @@ define(
 
             for (i = 0; i < N; ++i) {
                 // 是否在顶点上
-                if (polygon[i][0] == x && polygon[i][1] == y ) {
+                if (polygon[i][0] == x && polygon[i][1] == y) {
                     redo = false;
                     inside = true;
                     break;
@@ -367,7 +371,7 @@ define(
             if (redo) {
                 redo = false;
                 inside = false;
-                for (i = 0,j = N - 1; i < N; j = i++) {
+                for (i = 0, j = N - 1; i < N; j = i++) {
                     if ((polygon[i][1] < y && y < polygon[j][1])
                         || (polygon[j][1] < y && y < polygon[i][1])
                     ) {
@@ -388,7 +392,7 @@ define(
                     else if (y == polygon[i][1]) {
                         if (x < polygon[i][0]) {    // 交点在顶点上
                             polygon[i][1] > polygon[j][1] ? --y : ++y;
-                            //redo = true;
+                            // redo = true;
                             break;
                         }
                     }
@@ -426,14 +430,14 @@ define(
 
             return insideCatch;
         }
-
+        
         /**
          * 测算多行文本宽度
          * @param {Object} text
          * @param {Object} textFont
          */
         function getTextWidth(text, textFont) {
-            var key = text+':'+textFont;
+            var key = text + ':' + textFont;
             if (_textWidthCache[key]) {
                 return _textWidthCache[key];
             }
@@ -470,7 +474,7 @@ define(
          * @param {Object} textFont
          */
         function getTextHeight(text, textFont) {
-            var key = text+':'+textFont;
+            var key = text + ':' + textFont;
             if (_textHeightCache[key]) {
                 return _textHeightCache[key];
             }
@@ -483,7 +487,7 @@ define(
             }
             
             text = (text + '').split('\n');
-            //比较粗暴
+            // 比较粗暴
             var height = (_ctx.measureText('国').width + 2) * text.length;
 
             _ctx.restore();
