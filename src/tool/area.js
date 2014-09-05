@@ -17,7 +17,7 @@ define(
         var _textHeightCache = {};
         var _textWidthCacheCounter = 0;
         var _textHeightCacheCounter = 0;
-        var TEXT_CACHE_MAX = 20000;
+        var TEXT_CACHE_MAX = 5000;
         
         /**
          * 包含判断
