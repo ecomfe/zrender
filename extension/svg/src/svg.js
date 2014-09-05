@@ -423,7 +423,7 @@ define(function(require) {
             node.rect.y = y;
             while (child) {
                 if (child.nodeType === 3) { // text node
-                    var textContent = filterText(child.textContent || child.innerText);
+                    var textContent = filterText(child.textContent || child.nodeValue);
                     if (textContent) {
                         var textShape = new Text({
                             style: {
@@ -458,7 +458,7 @@ define(function(require) {
             var child = xmlNode.firstChild;
             while (child) {
                 if (child.nodeType === 3) { // text node
-                    text += child.textContent || child.innerText;
+                    text += child.textContent || child.nodeValue;
                 }
                 child = child.nextSibling;
             }
