@@ -43,7 +43,7 @@ define(
         /**
          * @type {string}
          */
-        zrender.version = '2.0.2';
+        zrender.version = '2.0.3';
 
         /**
          * 创建zrender实例
