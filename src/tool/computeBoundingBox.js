@@ -6,6 +6,7 @@
 define(
     function (require) {
         var vec2 = require('./vector');
+        var curve = require('./curve');
 
         /**
          * 从顶点数组中计算出最小包围盒，写入`min`和`max`中
@@ -56,12 +57,16 @@ define(
          * @param {Array.<number>} max
          */
         function computeCubeBezierBoundingBox(p0, p1, p2, p3, min, max) {
-            var xDim = _computeCubeBezierExtremitiesDim(
-                p0[0], p1[0], p2[0], p3[0]
-            );
-            var yDim = _computeCubeBezierExtremitiesDim(
-                p0[1], p1[1], p2[1], p3[1]
-            );
+            var xDim = [];
+            curve.cubicExtrema(p0[0], p1[0], p2[0], p3[0], xDim);
+            for (var i = 0; i < xDim.length; i++) {
+                xDim[i] = curve.cubicAt(p0[0], p1[0], p2[0], p3[0], xDim[i]);
+            }
+            var yDim = [];
+            curve.cubicExtrema(p0[1], p1[1], p2[1], p3[1], yDim);
+            for (var i = 0; i < yDim.length; i++) {
+                yDim[i] = curve.cubicAt(p0[1], p1[1], p2[1], p3[1], yDim[i]);
+            }
 
             xDim.push(p0[0], p3[0]);
             yDim.push(p0[1], p3[1]);
@@ -77,41 +82,6 @@ define(
             max[1] = bottom;
         }
 
-        function _computeCubeBezierExtremitiesDim(p0, p1, p2, p3) {
-            var extremities = [];
-
-            var b = 6 * p2 - 12 * p1 + 6 * p0;
-            var a = 9 * p1 + 3 * p3 - 3 * p0 - 9 * p2;
-            var c = 3 * p1 - 3 * p0;
-
-            var tmp = b * b - 4 * a * c;
-            if (tmp > 0) {
-                var tmpSqrt = Math.sqrt(tmp);
-                var t1 = (-b + tmpSqrt) / (2 * a);
-                var t2 = (-b - tmpSqrt) / (2 * a);
-                extremities.push(t1, t2);
-            } 
-            else if (tmp === 0) {
-                extremities.push(-b / (2 * a));
-            }
-
-            var result = [];
-            for (var i = 0; i < extremities.length; i++) {
-                var t = extremities[i];
-                if (Math.abs(2 * a * t + b) > 0.0001 && t < 1 && t > 0) {
-                    var ct = 1 - t;
-                    var val = ct * ct * ct * p0 
-                            + 3 * ct * ct * t * p1
-                            + 3 * ct * t * t * p2
-                            + t * t * t * p3;
-
-                    result.push(val);
-                }
-            }
-
-            return result;
-        }
-
         /**
          * 从二阶贝塞尔曲线(p0, p1, p2)中计算出最小包围盒，写入`min`和`max`中
          * @memberOf module:zrender/tool/computeBoundingBox
@@ -123,25 +93,8 @@ define(
          */
         function computeQuadraticBezierBoundingBox(p0, p1, p2, min, max) {
             // Find extremities, where derivative in x dim or y dim is zero
-            var tmp = (p0[0] + p2[0] - 2 * p1[0]);
-            // p1 is center of p0 and p2 in x dim
-            var t1;
-            if (tmp === 0) {
-                t1 = 0.5;
-            }
-            else {
-                t1 = (p0[0] - p1[0]) / tmp;
-            }
-
-            tmp = (p0[1] + p2[1] - 2 * p1[1]);
-            // p1 is center of p0 and p2 in y dim
-            var t2;
-            if (tmp === 0) {
-                t2 = 0.5;
-            }
-            else {
-                t2 = (p0[1] - p1[1]) / tmp;
-            }
+            var t1 = curve.quadraticExtrema(p0[0], p1[0], p2[0]);
+            var t2 = curve.quadraticExtrema(p0[1], p1[1], p2[1]);
 
             t1 = Math.max(Math.min(t1, 1), 0);
             t2 = Math.max(Math.min(t2, 1), 0);
