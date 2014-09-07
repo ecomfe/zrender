@@ -105,12 +105,12 @@ define(
 
         function getFrameCallback(zrInstance) {
             return function () {
-                var animatingShapes = zrInstance.animatingShapes;
-                for (var i = 0, l = animatingShapes.length; i < l; i++) {
-                    zrInstance.storage.mod(animatingShapes[i].id);
+                var animatingElements = zrInstance.animatingElements;
+                for (var i = 0, l = animatingElements.length; i < l; i++) {
+                    zrInstance.storage.mod(animatingElements[i].id);
                 }
 
-                if (animatingShapes.length || zrInstance._needsRefreshNextFrame) {
+                if (animatingElements.length || zrInstance._needsRefreshNextFrame) {
                     zrInstance.refresh();
                 }
             };
@@ -139,7 +139,7 @@ define(
             this.handler = new Handler(dom, this.storage, this.painter);
 
             // 动画控制
-            this.animatingShapes = [];
+            this.animatingElements = [];
             /**
              * @type {module:zrender/animation/Animation}
              */
@@ -314,7 +314,7 @@ define(
         /**
          * 动画
          * 
-         * @param {string} shapeId 形状对象唯一标识
+         * @param {string|module:zrender/Group|module:zrender/shape/Base} el 动画对象
          * @param {string} path 需要添加动画的属性获取路径，可以通过a.b.c来获取深层的属性
          * @param {boolean} [loop] 动画是否循环
          * @return {module:zrender/animation/Animation~Animator}
@@ -324,13 +324,15 @@ define(
          *         .done(function(){ // Animation done })
          *         .start()
          */
-        ZRender.prototype.animate = function (shapeId, path, loop) {
-            var shape = this.storage.get(shapeId);
-            if (shape) {
+        ZRender.prototype.animate = function (el, path, loop) {
+            if (typeof(el) === 'string') {
+                el = this.storage.get(el);
+            }
+            if (el) {
                 var target;
                 if (path) {
                     var pathSplitted = path.split('.');
-                    var prop = shape;
+                    var prop = el;
                     for (var i = 0, l = pathSplitted.length; i < l; i++) {
                         if (!prop) {
                             continue;
@@ -342,41 +344,41 @@ define(
                     }
                 }
                 else {
-                    target = shape;
+                    target = el;
                 }
 
                 if (!target) {
                     log(
                         'Property "'
                         + path
-                        + '" is not existed in shape '
-                        + shapeId
+                        + '" is not existed in element '
+                        + el.id
                     );
                     return;
                 }
 
-                var animatingShapes = this.animatingShapes;
-                if (typeof shape.__aniCount === 'undefined') {
+                var animatingElements = this.animatingElements;
+                if (typeof el.__aniCount === 'undefined') {
                     // 正在进行的动画记数
-                    shape.__aniCount = 0;
+                    el.__aniCount = 0;
                 }
-                if (shape.__aniCount === 0) {
-                    animatingShapes.push(shape);
+                if (el.__aniCount === 0) {
+                    animatingElements.push(el);
                 }
-                shape.__aniCount++;
+                el.__aniCount++;
 
                 return this.animation.animate(target, { loop: loop })
                     .done(function () {
-                        shape.__aniCount--;
-                        if (shape.__aniCount === 0) {
-                            // 从animatingShapes里移除
-                            var idx = util.indexOf(animatingShapes, shape);
-                            animatingShapes.splice(idx, 1);
+                        el.__aniCount--;
+                        if (el.__aniCount === 0) {
+                            // 从animatingElements里移除
+                            var idx = util.indexOf(animatingElements, el);
+                            animatingElements.splice(idx, 1);
                         }
                     });
             }
             else {
-                log('Shape "' + shapeId + '" not existed');
+                log('Element not existed');
             }
         };
 
@@ -495,7 +497,7 @@ define(
             this.handler.dispose();
 
             this.animation = 
-            this.animatingShapes = 
+            this.animatingElements = 
             this.storage = 
             this.painter = 
             this.handler = null;
