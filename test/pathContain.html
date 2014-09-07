@@ -29,22 +29,32 @@
 
         var pathShape = new PathShape({
             style: {
-                path: 'M142.651,294.796C12.699,345.559-30.035,425.197,29.129,423.392c59.164-1.803,101.571,32.148,73.938,83.76c-27.634,51.605,86.419,41.451,86.419,41.451l46.896-104.904c0,0,93.796-3.459,75.06,20.305c-62.854,17.879-53.774,130.289,35.85,111.676c29.873-60.914,73.189-140.439,73.189-140.439s168.791-265.652-11.947-133.672c-137.886,109.729-158.628,26.486-137.422-21.996C292.317,231.084,272.604,244.035,142.651,294.796z'
+                brushType: 'both',
+                lineWidth: 1,
+                path: 'M142.651,294.796C12.699,345.559-30.035,425.197,29.129,423.392c59.164-1.803,101.571,32.148,73.938,83.76c-27.634,51.605,86.419,41.451,86.419,41.451l46.896-104.904c0,0,93.796-3.459,75.06,20.305c-62.854,17.879-53.774,130.289,35.85,111.676c29.873-60.914,73.189-140.439,73.189-140.439s168.791-265.652-11.947-133.672c-137.886,109.729-158.628,26.486-137.422-21.996C292.317,231.084,272.604,244.035,142.651,294.796z\
+                        M600,350 l 50,-25\
+           a25,25 0 0,1 50,-25 l 50,-25\
+           a25,50 0 0,1 50,-25 l 50,-25\
+           a25,75 0 0,1 50,-25 l 50,-25\
+           a25,100 0 0,1 50,-25 l 50,-25'
                 // path: 'M142.651,294.796C12.699,345.559-30.035,425.197,29.129,423.392c59.164-1.803,101.571,32.148,73.938,83.76c-27.634,51.605,86.419,41.451,86.419,41.451l46.896-104.904'
-            },
-            hoverable: true
+            }
         });
 
         zr.addShape(pathShape);
 
         zr.render();
 
+        console.log(area.isInsidePath(pathShape.style, 730, 254));
+
+        // 随机散落点
         var pointsDom = document.getElementById('points');
         var ctx = pointsDom.getContext('2d');
 
         var points = [];
 
-        for (var i = 0; i < 20000; i++) {
+        var N_ITER = 1e5;
+        for (var i = 0; i < N_ITER; i++) {
             var x = Math.random() * pointsDom.width;
             var y = Math.random() * pointsDom.height;
             points.push([x, y, false]);
@@ -63,11 +73,15 @@
             }
             ctx.fillRect(points[i][0], points[i][1], 2, 2);
         }
-        document.getElementById('log').innerHTML = cost + 'ms';
+        document.getElementById('log').innerHTML = Math.round(1000 / cost * N_ITER) + ' ops/sec';
+
+        document.body.onclick = function(e) {
+            console.log(e.offsetX, e.offsetY);
+        }
     })
     </script>
     <div id="main" style="width:1000px;height:600px;position:absolute;left:0px;top:0px;"></div>
     <canvas id="points" width="1000" height="600" style="position:absolute;left:0px;top:0px;"></canvas>
-    <div id="log" style="font-size:30px;color:blue;"></div>
+    <div id="log" style="font-size:30px;color:blue;position:absolute;z-index:1;background-color:grey;"></div>
 </body>
 </html>

@@ -10,6 +10,9 @@
  */
 define(
     function (require) {
+
+        'use strict';
+
         var util = require('./util');
         var curve = require('./curve');
 
@@ -481,6 +484,65 @@ define(
             }
         }
         
+        // TODO
+        // Arc 旋转
+        function windingArc(cx, cy, a, b, theta, dTheta, clockwise, x, y) {
+            y -= cy;
+            if (y > b || y < -b) {
+                return 0;
+            }
+            var tmp = Math.sqrt(b * b - y * y) * a / b;
+            roots[0] = -tmp;
+            roots[1] = tmp;
+
+            var PI2 = Math.PI * 2;
+            // Thresh to [0, 360]
+            var startAngle = theta % PI2;
+            var endAngle = (theta + dTheta) % PI2;
+            if (startAngle < 0) {
+                startAngle = startAngle + PI2;
+            }
+            if (endAngle < 0) {
+                endAngle = endAngle + PI2;
+            }
+            if (clockwise) {
+                // Make sure start angle is smaller than end angle
+                if (startAngle >= endAngle) {
+                    endAngle = endAngle + PI2;
+                }
+            } else {
+                // Make sure start angle is larger than end angle
+                if (startAngle <= endAngle) {
+                    endAngle = endAngle - PI2;
+                }
+            }
+
+            var w = 0;
+            for (var i = 0; i < 2; i++) {
+                var x_ = roots[i];
+                if (x_ + cx > x) {
+                    // zr 使用scale来模拟椭圆，在缩放后角度会有细微的变化
+                    // 所以这里先将 x 缩放至原来值
+                    x_ *= b / a;
+                    var angle = Math.atan2(y, x_);
+                    var dir = clockwise ? -1 : 1;
+                    if (angle < 0) {
+                        angle = PI2 + angle;
+                    }
+                    if (
+                        clockwise && (angle >= startAngle && angle <= endAngle)
+                     || (!clockwise && (angle <= startAngle && angle >= endAngle))
+                    ) {
+                        if (angle > Math.PI / 2 && angle < Math.PI * 1.5) {
+                            dir = -dir;
+                        }
+                        w += dir;
+                    }
+                }
+            }
+            return w;
+        }
+
         /**
          * 路径包含判断
          * 与 canvas 一样采用 non-zero winding rule
@@ -492,10 +554,10 @@ define(
             }
             var w = 0;
             var pathArray = area.pathArray;
-            var cx = 0;
-            var cy = 0;
-            var sx = 0;
-            var sy = 0;
+            var xi = 0;
+            var yi = 0;
+            var x0 = 0;
+            var y0 = 0;
             var beginSubpath = true;
 
             var roots = [-1, -1, -1];
@@ -505,49 +567,58 @@ define(
                 // Begin a new subpath
                 if (beginSubpath || seg.command === 'M') {
                     if (i > 0) {
-                        // Close subpath
-                        w += windingLine(cx, cy, sx, sy);
+                        // Close previous subpath
+                        w += windingLine(xi, yi, x0, y0);
                         if (w !== 0) {
                             return true;
                         }
                     }
-                    sx = p[0];
-                    sy = p[1];
+                    x0 = p[p.length - 2];
+                    y0 = p[p.length - 1];
                     beginSubpath = false;
                 }
                 switch (seg.command) {
                     case 'M':
-                        cx = p[0];
-                        cy = p[1];
+                        xi = p[0];
+                        yi = p[1];
                         break;
                     case 'L':
-                        w += windingLine(cx, cy, p[0], p[1], x, y);
-                        cx = p[0];
-                        cy = p[1];
+                        w += windingLine(xi, yi, p[0], p[1], x, y);
+                        xi = p[0];
+                        yi = p[1];
                         break;
                     case 'C':
-                        var a = windingCubic(cx, cy, p[0], p[1], p[2], p[3], p[4], p[5], x, y);
-                        w += a;
-                        if (a !== 0) {
-                            windingCubic(cx, cy, p[0], p[1], p[2], p[3], p[4], p[5], x, y);
-                        }
-                        cx = p[4];
-                        cy = p[5];
+                        w += windingCubic(xi, yi, p[0], p[1], p[2], p[3], p[4], p[5], x, y);
+                        xi = p[4];
+                        yi = p[5];
                         break;
                     case 'Q':
-                        w += windingQuadratic(cx, cy, p[0], p[1], p[2], p[3], p[4], p[5], x, y);
-                        cx = p[2];
-                        cy = p[3];
+                        w += windingQuadratic(xi, yi, p[0], p[1], p[2], p[3], p[4], p[5], x, y);
+                        xi = p[2];
+                        yi = p[3];
                         break;
                     case 'A':
-                        // TODO
+                        // TODO Arc 旋转
+                        // TODO Arc 判断的开销比较大
+                        var cx = p[0];
+                        var cy = p[1];
+                        var rx = p[2];
+                        var ry = p[3];
+                        var theta = p[4];
+                        var dTheta = p[5];
+                        var x1 = Math.cos(theta) * rx + cx;
+                        var y1 = Math.sin(theta) * ry + cy;
+                        w += windingLine(xi, yi, x1, y1);
+                        w += windingArc(cx, cy, rx, ry, theta, dTheta, p[7], x, y);
+                        xi = Math.cos(theta + dTheta) * rx + cx;
+                        yi = Math.sin(theta + dTheta) * ry + cy;
                         break;
                     case 'z':
                         beginSubpath = true;
                         break;
                 }
             }
-            w += windingLine(cx, cy, sx, sy, x, y);
+            w += windingLine(xi, yi, x0, y0, x, y);
             return w != 0;
         }
         
