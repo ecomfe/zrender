@@ -262,9 +262,6 @@ define(
 
             ctx.beginPath();
             this.buildPath(ctx, style);
-            if (this.brushTypeOnly != 'stroke') {
-                ctx.closePath();
-            }
 
             switch (style.brushType) {
                 /* jshint ignore:start */
