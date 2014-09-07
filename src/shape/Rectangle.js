@@ -112,6 +112,28 @@ define(
                 else {
                     r1 = r2 = r3 = r4 = 0;
                 }
+                
+                var total;
+                if (r1 + r2 > width) {
+                    total = r1 + r2;
+                    r1 *= width / total;
+                    r2 *= width / total;
+                }
+                if (r3 + r4 > width) {
+                    total = r3 + r4;
+                    r3 *= width / total;
+                    r4 *= width / total;
+                }
+                if (r2 + r3 > height) {
+                    total = r2 + r3;
+                    r2 *= height / total;
+                    r3 *= height / total;
+                }
+                if (r1 + r4 > height) {
+                    total = r1 + r4;
+                    r1 *= height / total;
+                    r4 *= height / total;
+                }
                 ctx.moveTo(x + r1, y);
                 ctx.lineTo(x + width - r2, y);
                 r2 !== 0 && ctx.quadraticCurveTo(
