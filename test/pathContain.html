@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Path Contain</title>
+    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+</head>
+<body>
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+
+    require([
+        "zrender",
+        'zrender/shape/Path',
+        'zrender/shape/Line',
+        "zrender/tool/area"
+    ], function(zrender, PathShape, LineShape, area){
+
+        // 初始化zrender
+        var zr = zrender.init( document.getElementById("main") );
+
+        var pathShape = new PathShape({
+            style: {
+                path: 'M142.651,294.796C12.699,345.559-30.035,425.197,29.129,423.392c59.164-1.803,101.571,32.148,73.938,83.76c-27.634,51.605,86.419,41.451,86.419,41.451l46.896-104.904c0,0,93.796-3.459,75.06,20.305c-62.854,17.879-53.774,130.289,35.85,111.676c29.873-60.914,73.189-140.439,73.189-140.439s168.791-265.652-11.947-133.672c-137.886,109.729-158.628,26.486-137.422-21.996C292.317,231.084,272.604,244.035,142.651,294.796z'
+                // path: 'M142.651,294.796C12.699,345.559-30.035,425.197,29.129,423.392c59.164-1.803,101.571,32.148,73.938,83.76c-27.634,51.605,86.419,41.451,86.419,41.451l46.896-104.904'
+            },
+            hoverable: true
+        });
+
+        zr.addShape(pathShape);
+
+        zr.render();
+
+        var pointsDom = document.getElementById('points');
+        var ctx = pointsDom.getContext('2d');
+
+        var points = [];
+
+        for (var i = 0; i < 20000; i++) {
+            var x = Math.random() * pointsDom.width;
+            var y = Math.random() * pointsDom.height;
+            points.push([x, y, false]);
+        }
+        var time = Date.now();
+        for (var i = 0; i < points.length; i++) {
+            points[i][2] = area.isInsidePath(pathShape.style, points[i][0], points[i][1]);
+        }
+        var cost = Date.now() - time;
+
+        for (var i = 0; i < points.length; i++) {
+            if (points[i][2]) {
+                ctx.fillStyle = 'green'
+            } else {
+                ctx.fillStyle = 'red';
+            }
+            ctx.fillRect(points[i][0], points[i][1], 2, 2);
+        }
+        document.getElementById('log').innerHTML = cost + 'ms';
+    })
+    </script>
+    <div id="main" style="width:1000px;height:600px;position:absolute;left:0px;top:0px;"></div>
+    <canvas id="points" width="1000" height="600" style="position:absolute;left:0px;top:0px;"></canvas>
+    <div id="log" style="font-size:30px;color:blue;"></div>
+</body>
+</html>

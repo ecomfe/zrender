@@ -2,6 +2,7 @@
  * zrender: 图形空间辅助类
  *
  * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *         pissang (https://www.github.com/pissang)
  *
  * isInside：是否在区域内部
  * isOutside：是否在区域外部
@@ -9,7 +10,8 @@
  */
 define(
     function (require) {
-        var util = require('../tool/util');
+        var util = require('./util');
+        var curve = require('./curve');
 
         var _ctx;
         
@@ -36,7 +38,7 @@ define(
 
             _ctx = _ctx || util.getContext();
 
-            if (!_isInsideRectangle(area.__rect || shape.getRect(area), x, y)) {
+            if (!isInsideRect(area.__rect || shape.getRect(area), x, y)) {
                 // 不在矩形区域内直接返回false
                 return false;
             }
@@ -68,10 +70,10 @@ define(
                     var _r = area.location == 'out'
                             ? area.r1 + area.r2 + area.d
                             : area.r1 - area.r2 + area.d;
-                    return _isInsideCircle(area, x, y, _r);
+                    return isInsideCircle(area, x, y, _r);
                 // 玫瑰线 不准确
                 case 'rose' :
-                    return _isInsideCircle(area, x, y, area.maxr);
+                    return isInsideCircle(area, x, y, area.maxr);
                 // 路径，椭圆，曲线等-----------------13
                 default:
                     return false;   // Todo，暂不支持
@@ -92,10 +94,10 @@ define(
             switch (zoneType) {
                 // 线-----------------------1
                 case 'line':
-                    return _isInsideLine(area, x, y);
+                    return isInsideLine(area, x, y);
                 // 折线----------------------2
                 case 'broken-line':
-                    return _isInsideBrokenLine(area, x, y);
+                    return isInsideBrokenLine(area, x, y);
                 // 文本----------------------3
                 case 'text':
                     return true;
@@ -107,17 +109,17 @@ define(
                     return true;
                 // 圆形----------------------6
                 case 'circle':
-                    return _isInsideCircle(area, x, y, area.r);
+                    return isInsideCircle(area, x, y, area.r);
                 // 扇形----------------------7
                 case 'sector':
-                    return _isInsideSector(area, x, y);
+                    return isInsideSector(area, x, y);
                 // 多边形---------------------8
                 case 'path':
-                     return _isInsidePath(area, x, y);
+                     return isInsidePath(area, x, y);
                 case 'polygon':
                 case 'star':
                 case 'isogon':
-                    return _isInsidePolygon(area, x, y);
+                    return isInsidePolygon(area, x, y);
                 // 图片----------------------9
                 case 'image':
                     return true;
@@ -211,7 +213,7 @@ define(
         /**
          * 线段包含判断
          */
-        function _isInsideLine(area, x, y) {
+        function isInsideLine(area, x, y) {
             var _x1 = area.xStart;
             var _y1 = area.yStart;
             var _x2 = area.xEnd;
@@ -254,7 +256,7 @@ define(
             return _s <= _l / 2 * _l / 2;
         }
 
-        function _isInsideBrokenLine(area, x, y) {
+        function isInsideBrokenLine(area, x, y) {
             var pointList = area.pointList;
             var lineArea = {
                 xStart : 0,
@@ -270,7 +272,7 @@ define(
                 lineArea.yEnd = pointList[i + 1][1];
                 lineArea.lineWidth = Math.max(area.lineWidth, 10);
 
-                if (_isInsideLine(lineArea, x, y)) {
+                if (isInsideLine(lineArea, x, y)) {
                     return true;
                 }
             }
@@ -279,14 +281,14 @@ define(
         }
 
         function _isInsideRing(area, x, y) {
-            return _isInsideCircle(area, x, y, area.r)
-                && !_isInsideCircle({ x: area.x, y: area.y }, x, y, area.r0 || 0);
+            return isInsideCircle(area, x, y, area.r)
+                && !isInsideCircle({ x: area.x, y: area.y }, x, y, area.r0 || 0);
         }
 
         /**
          * 矩形包含判断
          */
-        function _isInsideRectangle(area, x, y) {
+        function isInsideRect(area, x, y) {
             return x >= area.x
                 && x <= (area.x + area.width)
                 && y >= area.y
@@ -296,7 +298,7 @@ define(
         /**
          * 圆形包含判断
          */
-        function _isInsideCircle(area, x, y, r) {
+        function isInsideCircle(area, x, y, r) {
             return (x - area.x) * (x - area.x) + (y - area.y) * (y - area.y)
                    < r * r;
         }
@@ -304,10 +306,10 @@ define(
         /**
          * 扇形包含判断
          */
-        function _isInsideSector(area, x, y) {
-            if (!_isInsideCircle(area, x, y, area.r)
+        function isInsideSector(area, x, y) {
+            if (!isInsideCircle(area, x, y, area.r)
                 || (area.r0 > 0
-                    && _isInsideCircle(
+                    && isInsideCircle(
                             {
                                 x : area.x,
                                 y : area.y
@@ -342,93 +344,211 @@ define(
 
         /**
          * 多边形包含判断
-         * 警告：下面这段代码会很难看，建议跳过~
+         * 与 canvas 一样采用 non-zero winding rule
          */
-        function _isInsidePolygon(area, x, y) {
-            /**
-             * 射线判别法
-             * 如果一个点在多边形内部，任意角度做射线肯定会与多边形要么有一个交点，要么有与多边形边界线重叠
-             * 如果一个点在多边形外部，任意角度做射线要么与多边形有一个交点，
-             * 要么有两个交点，要么没有交点，要么有与多边形边界线重叠。
-             */
-            var i;
-            var j;
-            var polygon = area.pointList;
-            var N = polygon.length;
-            var inside = false;
-            var redo = true;
-            var v;
+        function isInsidePolygon(area, x, y) {
+            var points = area.pointList;
+            var N = points.length;
+            var w = 0;
 
-            for (i = 0; i < N; ++i) {
-                // 是否在顶点上
-                if (polygon[i][0] == x && polygon[i][1] == y) {
-                    redo = false;
-                    inside = true;
-                    break;
-                }
+            for (var i = 0, j = N - 1; i < N; i++) {
+                var x0 = points[j][0];
+                var y0 = points[j][1];
+                var x1 = points[i][0];
+                var y1 = points[i][1];
+                w += windingLine(x0, y0, x1, y1, x, y);
+                j = i;
             }
+            return w !== 0;
+        }
 
-            if (redo) {
-                redo = false;
-                inside = false;
-                for (i = 0, j = N - 1; i < N; j = i++) {
-                    if ((polygon[i][1] < y && y < polygon[j][1])
-                        || (polygon[j][1] < y && y < polygon[i][1])
-                    ) {
-                        if (x <= polygon[i][0] || x <= polygon[j][0]) {
-                            v = (y - polygon[i][1])
-                                * (polygon[j][0] - polygon[i][0])
-                                / (polygon[j][1] - polygon[i][1])
-                                + polygon[i][0];
-                            if (x < v) {          // 在线的左侧
-                                inside = !inside;
+        function windingLine(x0, y0, x1, y1, x, y) {
+            if ((y > y0 && y > y1) || (y < y0 && y < y1)) {
+                return 0;
+            }
+            if (y1 == y0) {
+                return 0;
+            }
+            var dir = y1 < y0 ? 1 : -1;
+            var t = (y - y0) / (y1 - y0);
+            var x_ = t * (x1 - x0) + x0;
+
+            return x_ > x ? dir : 0;
+        }
+
+        var roots = [-1, -1, -1];
+        var extrema = [-1, -1];
+
+        function swapExtrema() {
+            var tmp = extrema[0];
+            extrema[0] = extrema[1];
+            extrema[1] = tmp;
+        }
+        function windingCubic(x0, y0, x1, y1, x2, y2, x3, y3, x, y) {
+            // Quick reject
+            if (
+                (y > y0 && y > y1 && y > y2 && y > y3)
+                || (y < y0 && y < y1 && y < y2 && y < y3)
+            ) {
+                return 0;
+            }
+            var nRoots = curve.cubicRootAt(y0, y1, y2, y3, y, roots);
+            switch (nRoots) {
+                case 0:
+                    return 0;
+                // PENDING
+                case 1:
+                case 2:
+                case 3:
+                    var w = 0;
+                    var nExtrema = -1;
+                    var y0_, y1_;
+                    for (var i = 0; i < nRoots; i++) {
+                        var t = roots[i];
+                        var x_ = curve.cubicAt(x0, x1, x2, x3, t);
+                        if (x_ < x) { // Quick reject
+                            continue;
+                        }
+                        if (nExtrema < 0) {
+                            nExtrema = curve.cubicExtrema(y0, y1, y2, y3, extrema);
+                            if (extrema[1] < extrema[0] && nExtrema > 1) {
+                                swapExtrema();
                             }
-                            else if (x == v) {   // 在线上
-                                inside = true;
-                                break;
+                            y0_ = curve.cubicAt(y0, y1, y2, y3, extrema[0]);
+                            if (nExtrema > 1) {
+                                y1_ = curve.cubicAt(y0, y1, y2, y3, extrema[1]);
+                            }
+                        }
+                        if (nExtrema == 2) {
+                            // 分成三段单调函数
+                            if (t < extrema[0]) {
+                                w += y0_ < y0 ? 1 : -1;
+                            } else if (t < extrema[1]) {
+                                w += y1_ < y0_ ? 1 : -1;
+                            } else {
+                                w += y3 < y1_ ? 1 : -1;
+                            }
+                        } else {
+                            // 分成两段单调函数
+                            if (t < extrema[0]) {
+                                w += y0_ < y0 ? 1 : -1;
+                            } else {
+                                w += y3 < y0_ ? 1 : -1;
                             }
                         }
                     }
-                    else if (y == polygon[i][1]) {
-                        if (x < polygon[i][0]) {    // 交点在顶点上
-                            polygon[i][1] > polygon[j][1] ? --y : ++y;
-                            // redo = true;
-                            break;
-                        }
-                    }
-                    else if (polygon[i][1] == polygon[j][1] // 在水平的边界线上
-                             && y == polygon[i][1]
-                             && ((polygon[i][0] < x && x < polygon[j][0])
-                                 || (polygon[j][0] < x && x < polygon[i][0]))
-                    ) {
-                        inside = true;
-                        break;
-                    }
-                }
+                    return w;
             }
-            return inside;
+        }
+
+        function windingQuadratic(x0, y0, x1, y1, x2, y2, x, y) {
+            // Quick reject
+            if (
+                (y > y0 && y > y1 && y > y2)
+                || (y < y0 && y < y1 && y < y2)
+            ) {
+                return 0;
+            }
+            var nRoots = curve.quadraticRootAt(y0, y1, y2, y, roots);
+            switch (nRoots) {
+                case 0:
+                    return 0;
+                case 1:
+                case 2:
+                    var t = curve.quadraticExtremum(y0, y1, y2);
+                    if (t >=0 && t <= 1) {
+                        var w = 0;
+                        var y_ = curve.quadraticAt(y0, y1, y2, t);
+                        for (var i = 0; i < nRoots; i++) {
+                            var x_ = curve.quadraticAt(x0, x1, x2, roots[i]);
+                            if (x_ > x) {
+                                continue;
+                            }
+                            if (roots[i] < t) {
+                                w += y_ < y0 ? 1 : -1;
+                            } else {
+                                w += y2 < y_ ? 1 : -1;
+                            }
+                        }
+                        return w;
+                    } else {
+                        var x_ = curve.quadraticAt(x0, x1, x2, roots[0]);
+                        if (x_ > x) {
+                            return 0;
+                        }
+                        return y2 < y0 ? 1 : -1;
+                    }
+            }
         }
         
         /**
-         * 路径包含判断，依赖多边形判断
+         * 路径包含判断
+         * 与 canvas 一样采用 non-zero winding rule
          */
-        function _isInsidePath(area, x, y) {
-            if (!area.pointList) {
-                require('../shape/Path').prototype.buildPath(_ctx, area);
+        function isInsidePath(area, x, y) {
+            if (!area.pathArray) {
+                var Path = require('../shape/Path');
+                area.pathArray = Path.prototype.buildPathArray(area.path);
             }
-            var pointList = area.pointList;
-            var insideCatch = false;
-            for (var i = 0, l = pointList.length; i < l; i++) {
-                insideCatch = _isInsidePolygon(
-                    { pointList : pointList[i] }, x, y
-                );
+            var w = 0;
+            var pathArray = area.pathArray;
+            var cx = 0;
+            var cy = 0;
+            var sx = 0;
+            var sy = 0;
+            var beginSubpath = true;
 
-                if (insideCatch) {
-                    break;
+            var roots = [-1, -1, -1];
+            for (var i = 0; i < pathArray.length; i++) {
+                var seg = pathArray[i];
+                var p = seg.points;
+                // Begin a new subpath
+                if (beginSubpath || seg.command === 'M') {
+                    if (i > 0) {
+                        // Close subpath
+                        w += windingLine(cx, cy, sx, sy);
+                        if (w !== 0) {
+                            return true;
+                        }
+                    }
+                    sx = p[0];
+                    sy = p[1];
+                    beginSubpath = false;
+                }
+                switch (seg.command) {
+                    case 'M':
+                        cx = p[0];
+                        cy = p[1];
+                        break;
+                    case 'L':
+                        w += windingLine(cx, cy, p[0], p[1], x, y);
+                        cx = p[0];
+                        cy = p[1];
+                        break;
+                    case 'C':
+                        var a = windingCubic(cx, cy, p[0], p[1], p[2], p[3], p[4], p[5], x, y);
+                        w += a;
+                        if (a !== 0) {
+                            windingCubic(cx, cy, p[0], p[1], p[2], p[3], p[4], p[5], x, y);
+                        }
+                        cx = p[4];
+                        cy = p[5];
+                        break;
+                    case 'Q':
+                        w += windingQuadratic(cx, cy, p[0], p[1], p[2], p[3], p[4], p[5], x, y);
+                        cx = p[2];
+                        cy = p[3];
+                        break;
+                    case 'A':
+                        // TODO
+                        break;
+                    case 'z':
+                        beginSubpath = true;
+                        break;
                 }
             }
-
-            return insideCatch;
+            w += windingLine(cx, cy, sx, sy, x, y);
+            return w != 0;
         }
         
         /**
@@ -505,7 +625,15 @@ define(
             isInside : isInside,
             isOutside : isOutside,
             getTextWidth : getTextWidth,
-            getTextHeight : getTextHeight
+            getTextHeight : getTextHeight,
+
+            isInsidePath: isInsidePath,
+            isInsidePolygon: isInsidePolygon,
+            isInsideSector: isInsideSector,
+            isInsideCircle: isInsideCircle,
+            isInsideLine: isInsideLine,
+            isInsideRect: isInsideRect,
+            isInsideBrokenLine: isInsideBrokenLine
         };
     }
 );

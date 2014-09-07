@@ -47,6 +47,7 @@ define(function(require) {
      * @param  {number} p3
      * @param  {number} val
      * @param  {Array.<number>} roots
+     * @return {number} 有效根数目
      */
     function cubicRootAt(p0, p1, p2, p3, val, roots) {
         // Evaluate roots of cubic functions
@@ -59,13 +60,15 @@ define(function(require) {
         var B = b * c - 9 * a * d;
         var C = c * c - 3 * b * d;
 
+        var n = 0;
+
         if (isAroundZero(A) && isAroundZero(B)) {
             if (isAroundZero(b)) {
                 roots[0] = 0;
             } else {
                 var t1 = -c / b;  //t1, t2, t3, b is not zero
                 if (t1 >=0 && t1 <= 1) {
-                    roots[0] = t1;
+                    roots[n++] = t1;
                 }
             }
         } else {
@@ -76,10 +79,10 @@ define(function(require) {
                 var t1 = -b / a + K;  // t1, a is not zero
                 var t2 = -K / 2;  // t2, t3
                 if (t1 >= 0 && t1 <= 1) {
-                    roots[0] = t1;
+                    roots[n++] = t1;
                 }
                 if (t2 >= 0 && t2 <= 1) {
-                    roots[1] = t2;
+                    roots[n++] = t2;
                 }
             } else if (disc > 0) {
                 var discSqrt = Math.sqrt(disc);
@@ -97,7 +100,7 @@ define(function(require) {
                 }
                 var t1 = (-b - (Y1 + Y2)) / (3 * a);
                 if (t1 >= 0 && t1 <= 1) {
-                    roots[0] = t1;
+                    roots[n++] = t1;
                 }
             } else {
                 var T = (2 * A * b - 3 * a * B) / (2 * Math.sqrt(A * A * A));
@@ -109,37 +112,40 @@ define(function(require) {
                 var t2 = (-b + ASqrt * (tmp + THREE_SQRT * Math.sin(theta))) / (3 * a);
                 var t3 = (-b + ASqrt * (tmp - THREE_SQRT * Math.sin(theta))) / (3 * a);
                 if (t1 >= 0 && t1 <= 1) {
-                    roots[0] = t1;
+                    roots[n++] = t1;
                 }
                 if (t2 >= 0 && t2 <= 1) {
-                    roots[1] = t2;
+                    roots[n++] = t2;
                 }
                 if (t3 >= 0 && t3 <= 1) {
-                    roots[2] = t3;
+                    roots[n++] = t3;
                 }
             }
         }
+        return n;
     }
 
     /**
-     * 计算三次贝塞尔方程极限值
+     * 计算三次贝塞尔方程极限值的位置
      * @memberOf module:zrender/tool/curve
      * @param  {number} p0
      * @param  {number} p1
      * @param  {number} p2
      * @param  {number} p3
      * @param  {Array.<number>} extrema
+     * @return {number} 有效数目
      */
     function cubicExtrema(p0, p1, p2, p3, extrema) {
         var b = 6 * p2 - 12 * p1 + 6 * p0;
         var a = 9 * p1 + 3 * p3 - 3 * p0 - 9 * p2;
         var c = 3 * p1 - 3 * p0;
 
+        var n = 0;
         if (isAroundZero(a)) {
             if (isNotAroundZero(b)) {
                 var t1 = -c / b;
                 if (t1 >= 0 && t1 <=1) {
-                    extrema[0] = t1;
+                    extrema[n++] = t1;
                 }
             }
         } else {
@@ -151,13 +157,14 @@ define(function(require) {
                 var t1 = (-b + discSqrt) / (2 * a);
                 var t2 = (-b - discSqrt) / (2 * a);
                 if (t1 >= 0 && t1 <= 1) {
-                    extrema[0] = t1;
+                    extrema[n++] = t1;
                 }
                 if (t2 >= 0 && t2 <= 1) {
-                    extrema[1] = t2;
+                    extrema[n++] = t2;
                 }
             }
         }
+        return n;
     }
 
     /**
@@ -210,18 +217,20 @@ define(function(require) {
      * @param  {number} p1
      * @param  {number} p2
      * @param  {number} t
-     * @return {number}
+     * @param  {Array.<number>} roots
+     * @return {number} 有效根数目
      */
     function quadraticRootAt(p0, p1, p2, val, roots) {
         var a = p0 - 2 * p1 + p2;
         var b = 2 * (p1 - p0);
         var c = p0 - val;
 
+        var n = 0;
         if (isAroundZero(a)) {
             if (isNotAroundZero(b)) {
                 var t1 = -c / b;
                 if (t1 >= 0 && t1 <= 1) {
-                    extrema[0] = t1;
+                    extrema[n++] = t1;
                 }
             }
         } else {
@@ -229,20 +238,21 @@ define(function(require) {
             if (isAroundZero(disc)) {
                 var t1 = -b / (2 * a);
                 if (t1 >= 0 && t1 <= 1) {
-                    roots[0] = t1;
+                    roots[n++] = t1;
                 }
             } else if (disc > 0) {
                 var discSqrt = Math.sqrt(disc);
                 var t1 = (-b + discSqrt) / (2 * a);
                 var t2 = (-b - discSqrt) / (2 * a);
                 if (t1 >= 0 && t1 <= 1) {
-                    roots[0] = t1;
+                    roots[n++] = t1;
                 }
                 if (t2 >= 0 && t2 <= 1) {
-                    roots[1] = t2;
+                    roots[n++] = t2;
                 }
             }
         }
+        return n;
     }
 
     /**
@@ -253,7 +263,7 @@ define(function(require) {
      * @param  {number} p2
      * @return {number}
      */
-    function quadraticExtrema(p0, p1, p2) {
+    function quadraticExtremum(p0, p1, p2) {
         var divider = p0 + p2 - 2 * p1;
         if (divider == 0) {
             // p1 is center of p0 and p2 
@@ -277,6 +287,6 @@ define(function(require) {
 
         quadraticRootAt: quadraticRootAt,
 
-        quadraticExtrema: quadraticExtrema
+        quadraticExtremum: quadraticExtremum
     }
 });

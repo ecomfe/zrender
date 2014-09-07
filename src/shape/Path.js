@@ -65,7 +65,7 @@ define(function (require) {
     Path.prototype = {
         type: 'path',
 
-        _parsePathData : function (data) {
+        buildPathArray : function (data) {
             if (!data) {
                 return [];
             }
@@ -308,6 +308,7 @@ define(function (require) {
                 }
             }
 
+
             return ca;
 
         },
@@ -377,8 +378,8 @@ define(function (require) {
         buildPath : function (ctx, style) {
             var path = style.path;
 
-            var pathArray = this.pathArray || this._parsePathData(path);
-
+            style.pathArray = style.pathArray || this.buildPathArray(path);
+            var pathArray = style.pathArray;
             // 平移坐标
             var x = style.x || 0;
             var y = style.y || 0;
@@ -484,7 +485,7 @@ define(function (require) {
             var x = style.x || 0;
             var y = style.y || 0;
 
-            var pathArray = this.pathArray || this._parsePathData(style.path);
+            var pathArray = style.pathArray || this.buildPathArray(style.path);
             for (var i = 0; i < pathArray.length; i++) {
                 var p = pathArray[i].points;
 
