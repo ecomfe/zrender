@@ -93,8 +93,8 @@ define(
          */
         function computeQuadraticBezierBoundingBox(p0, p1, p2, min, max) {
             // Find extremities, where derivative in x dim or y dim is zero
-            var t1 = curve.quadraticExtrema(p0[0], p1[0], p2[0]);
-            var t2 = curve.quadraticExtrema(p0[1], p1[1], p2[1]);
+            var t1 = curve.quadraticExtremum(p0[0], p1[0], p2[0]);
+            var t2 = curve.quadraticExtremum(p0[1], p1[1], p2[1]);
 
             t1 = Math.max(Math.min(t1, 1), 0);
             t2 = Math.max(Math.min(t2, 1), 0);
