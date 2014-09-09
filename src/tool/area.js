@@ -379,6 +379,7 @@ define(
             return x_ > x ? dir : 0;
         }
 
+        // 临时数组
         var roots = [-1, -1, -1];
         var extrema = [-1, -1];
 
@@ -396,51 +397,52 @@ define(
                 return 0;
             }
             var nRoots = curve.cubicRootAt(y0, y1, y2, y3, y, roots);
-            switch (nRoots) {
-                case 0:
-                    return 0;
-                // PENDING
-                case 1:
-                case 2:
-                case 3:
-                    var w = 0;
-                    var nExtrema = -1;
-                    var y0_, y1_;
-                    for (var i = 0; i < nRoots; i++) {
-                        var t = roots[i];
-                        var x_ = curve.cubicAt(x0, x1, x2, x3, t);
-                        if (x_ < x) { // Quick reject
-                            continue;
+            if (nRoots === 0) {
+                return 0;
+            }
+            else {
+                var w = 0;
+                var nExtrema = -1;
+                var y0_, y1_;
+                for (var i = 0; i < nRoots; i++) {
+                    var t = roots[i];
+                    var x_ = curve.cubicAt(x0, x1, x2, x3, t);
+                    if (x_ < x) { // Quick reject
+                        continue;
+                    }
+                    if (nExtrema < 0) {
+                        nExtrema = curve.cubicExtrema(y0, y1, y2, y3, extrema);
+                        if (extrema[1] < extrema[0] && nExtrema > 1) {
+                            swapExtrema();
                         }
-                        if (nExtrema < 0) {
-                            nExtrema = curve.cubicExtrema(y0, y1, y2, y3, extrema);
-                            if (extrema[1] < extrema[0] && nExtrema > 1) {
-                                swapExtrema();
-                            }
-                            y0_ = curve.cubicAt(y0, y1, y2, y3, extrema[0]);
-                            if (nExtrema > 1) {
-                                y1_ = curve.cubicAt(y0, y1, y2, y3, extrema[1]);
-                            }
-                        }
-                        if (nExtrema == 2) {
-                            // 分成三段单调函数
-                            if (t < extrema[0]) {
-                                w += y0_ < y0 ? 1 : -1;
-                            } else if (t < extrema[1]) {
-                                w += y1_ < y0_ ? 1 : -1;
-                            } else {
-                                w += y3 < y1_ ? 1 : -1;
-                            }
-                        } else {
-                            // 分成两段单调函数
-                            if (t < extrema[0]) {
-                                w += y0_ < y0 ? 1 : -1;
-                            } else {
-                                w += y3 < y0_ ? 1 : -1;
-                            }
+                        y0_ = curve.cubicAt(y0, y1, y2, y3, extrema[0]);
+                        if (nExtrema > 1) {
+                            y1_ = curve.cubicAt(y0, y1, y2, y3, extrema[1]);
                         }
                     }
-                    return w;
+                    if (nExtrema == 2) {
+                        // 分成三段单调函数
+                        if (t < extrema[0]) {
+                            w += y0_ < y0 ? 1 : -1;
+                        } 
+                        else if (t < extrema[1]) {
+                            w += y1_ < y0_ ? 1 : -1;
+                        } 
+                        else {
+                            w += y3 < y1_ ? 1 : -1;
+                        }
+                    } 
+                    else {
+                        // 分成两段单调函数
+                        if (t < extrema[0]) {
+                            w += y0_ < y0 ? 1 : -1;
+                        } 
+                        else {
+                            w += y3 < y0_ ? 1 : -1;
+                        }
+                    }
+                }
+                return w;
             }
         }
 
@@ -453,34 +455,35 @@ define(
                 return 0;
             }
             var nRoots = curve.quadraticRootAt(y0, y1, y2, y, roots);
-            switch (nRoots) {
-                case 0:
-                    return 0;
-                case 1:
-                case 2:
-                    var t = curve.quadraticExtremum(y0, y1, y2);
-                    if (t >=0 && t <= 1) {
-                        var w = 0;
-                        var y_ = curve.quadraticAt(y0, y1, y2, t);
-                        for (var i = 0; i < nRoots; i++) {
-                            var x_ = curve.quadraticAt(x0, x1, x2, roots[i]);
-                            if (x_ > x) {
-                                continue;
-                            }
-                            if (roots[i] < t) {
-                                w += y_ < y0 ? 1 : -1;
-                            } else {
-                                w += y2 < y_ ? 1 : -1;
-                            }
-                        }
-                        return w;
-                    } else {
-                        var x_ = curve.quadraticAt(x0, x1, x2, roots[0]);
+            if (nRoots === 0) {
+                return 0;
+            } 
+            else {
+                var t = curve.quadraticExtremum(y0, y1, y2);
+                if (t >=0 && t <= 1) {
+                    var w = 0;
+                    var y_ = curve.quadraticAt(y0, y1, y2, t);
+                    for (var i = 0; i < nRoots; i++) {
+                        var x_ = curve.quadraticAt(x0, x1, x2, roots[i]);
                         if (x_ > x) {
-                            return 0;
+                            continue;
                         }
-                        return y2 < y0 ? 1 : -1;
+                        if (roots[i] < t) {
+                            w += y_ < y0 ? 1 : -1;
+                        } 
+                        else {
+                            w += y2 < y_ ? 1 : -1;
+                        }
                     }
+                    return w;
+                } 
+                else {
+                    var x_ = curve.quadraticAt(x0, x1, x2, roots[0]);
+                    if (x_ > x) {
+                        return 0;
+                    }
+                    return y2 < y0 ? 1 : -1;
+                }
             }
         }
         
@@ -510,7 +513,8 @@ define(
                 if (startAngle >= endAngle) {
                     endAngle = endAngle + PI2;
                 }
-            } else {
+            } 
+            else {
                 // Make sure start angle is larger than end angle
                 if (startAngle <= endAngle) {
                     endAngle = endAngle - PI2;

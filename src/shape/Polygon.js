@@ -17,6 +17,8 @@
 /**
  * @typedef {Object} IPolygonStyle
  * @property {string} pointList 多边形顶点数组
+ * @property {string} [smooth=''] 是否做平滑插值, 平滑算法可以选择 bezier, spline
+ * @property {number} [smoothConstraint] 平滑约束
  * @property {string} [brushType='fill']
  * @property {string} [color='#000000'] 填充颜色
  * @property {string} [strokeColor='#000000'] 描边颜色
@@ -157,7 +159,7 @@ define(
 
                 if (style.smooth && style.smooth !== 'spline') {
                     var controlPoints = smoothBezier(
-                        pointList, style.smooth, true
+                        pointList, style.smooth, true, style.smoothConstraint
                     );
 
                     ctx.moveTo(pointList[0][0], pointList[0][1]);

@@ -1,6 +1,6 @@
 /**
  * @module zrender/tool/curve
- * @return {}
+ * @author pissang(https://www.github.com/pissang)
  */
 define(function(require) {
 
@@ -65,13 +65,15 @@ define(function(require) {
         if (isAroundZero(A) && isAroundZero(B)) {
             if (isAroundZero(b)) {
                 roots[0] = 0;
-            } else {
+            }
+            else {
                 var t1 = -c / b;  //t1, t2, t3, b is not zero
                 if (t1 >=0 && t1 <= 1) {
                     roots[n++] = t1;
                 }
             }
-        } else {
+        }
+        else {
             var disc = B * B - 4 * A * C;
 
             if (isAroundZero(disc)) {
@@ -84,25 +86,29 @@ define(function(require) {
                 if (t2 >= 0 && t2 <= 1) {
                     roots[n++] = t2;
                 }
-            } else if (disc > 0) {
+            }
+            else if (disc > 0) {
                 var discSqrt = Math.sqrt(disc);
                 var Y1 = A * b + 1.5 * a * (-B + discSqrt);
                 var Y2 = A * b + 1.5 * a * (-B - discSqrt);
                 if (Y1 < 0) {
                     Y1 = -Math.pow(-Y1, ONE_THIRD);
-                } else {
+                }
+                else {
                     Y1 = Math.pow(Y1, ONE_THIRD);
                 }
                 if (Y2 < 0) {
                     Y2 = -Math.pow(-Y2, ONE_THIRD);
-                } else {
+                }
+                else {
                     Y2 = Math.pow(Y2, ONE_THIRD);
                 }
                 var t1 = (-b - (Y1 + Y2)) / (3 * a);
                 if (t1 >= 0 && t1 <= 1) {
                     roots[n++] = t1;
                 }
-            } else {
+            }
+            else {
                 var T = (2 * A * b - 3 * a * B) / (2 * Math.sqrt(A * A * A));
                 var theta = Math.acos(T) / 3;
                 var ASqrt = Math.sqrt(A);
@@ -148,11 +154,13 @@ define(function(require) {
                     extrema[n++] = t1;
                 }
             }
-        } else {
+        }
+        else {
             var disc = b * b - 4 * a * c;
             if (isAroundZero(disc)) {
                 extrema[0] = -b / (2 * a);
-            } else if (disc > 0) {
+            }
+            else if (disc > 0) {
                 var discSqrt = Math.sqrt(disc);
                 var t1 = (-b + discSqrt) / (2 * a);
                 var t2 = (-b - discSqrt) / (2 * a);
@@ -233,14 +241,16 @@ define(function(require) {
                     extrema[n++] = t1;
                 }
             }
-        } else {
+        }
+        else {
             var disc = b * b - 4 * a * c;
             if (isAroundZero(disc)) {
                 var t1 = -b / (2 * a);
                 if (t1 >= 0 && t1 <= 1) {
                     roots[n++] = t1;
                 }
-            } else if (disc > 0) {
+            }
+            else if (disc > 0) {
                 var discSqrt = Math.sqrt(disc);
                 var t1 = (-b + discSqrt) / (2 * a);
                 var t2 = (-b - discSqrt) / (2 * a);
@@ -268,7 +278,8 @@ define(function(require) {
         if (divider == 0) {
             // p1 is center of p0 and p2 
             return 0.5;
-        } else {
+        }
+        else {
             return (p0 - p1) / divider;
         }
     }

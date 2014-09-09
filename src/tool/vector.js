@@ -185,17 +185,21 @@ define(
             negate: function (out, v) {
                 out[0] = -v[0];
                 out[1] = -v[1];
+                return out;
             },
 
             /**
-             * 计算两个点的中间点
+             * 插值两个点
              * @param {Float32Array|Array.<number>} out
              * @param {Float32Array|Array.<number>} v1
              * @param {Float32Array|Array.<number>} v2
+             * @param {number} t
              */
-            middle: function (out, v1, v2) {
-                out[0] = (v1[0] + v2[0]) / 2;
-                out[1] = (v1[1] + v2[1]) / 2;
+            lerp: function (out, v1, v2, t) {
+                var ax = v1[0];
+                var ay = v1[1];
+                out[0] = v1[0] + t * (v2[0] - v1[0]);
+                out[1] = v1[1] + t * (v2[1] - v1[1]);
                 return out;
             },
             
@@ -210,6 +214,28 @@ define(
                 var y = v[1];
                 out[0] = m[0] * x + m[2] * y + m[4];
                 out[1] = m[1] * x + m[3] * y + m[5];
+                return out;
+            },
+            /**
+             * 求两个向量最小值
+             * @param  {Float32Array|Array.<number>} out
+             * @param  {Float32Array|Array.<number>} v1
+             * @param  {Float32Array|Array.<number>} v2
+             */
+            min: function (out, v1, v2) {
+                out[0] = Math.min(v1[0], v2[0]);
+                out[1] = Math.min(v1[1], v2[1]);
+                return out;
+            },
+            /**
+             * 求两个向量最大值
+             * @param  {Float32Array|Array.<number>} out
+             * @param  {Float32Array|Array.<number>} v1
+             * @param  {Float32Array|Array.<number>} v2
+             */
+            max: function (out, v1, v2) {
+                out[0] = Math.max(v1[0], v2[0]);
+                out[1] = Math.max(v1[1], v2[1]);
                 return out;
             }
         };

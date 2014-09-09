@@ -4,7 +4,6 @@
  * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
  *          errorrik (errorrik@gmail.com)
  */
-
 define(
     function (/* require */) {
 
