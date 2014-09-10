@@ -205,10 +205,8 @@ define(
         Storage.prototype.mod = function (elId, params) {
             var el = this._elements[elId];
             if (el) {
-                if (!(el instanceof Group)) {
-                    el.style.__rect = null;
-                }
-                el.__dirty = true;
+
+                el.modSelf();
 
                 if (params) {
                     // 如果第二个参数直接使用 shape
@@ -350,9 +348,7 @@ define(
             if (el instanceof Group) {
                 el._storage = this;
             }
-            else {
-                el.style.__rect = null;
-            }
+            el.modSelf();
 
             this._elements[el.id] = el;
 

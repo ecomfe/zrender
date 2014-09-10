@@ -610,6 +610,13 @@ define(
             }
         };
 
+        Base.prototype.modSelf = function() {
+            this.__dirty = true;
+            if (this.style) {
+                this.style.__rect = null;
+            }
+        }
+
         /**
          * 图形是否会触发事件
          * @return {boolean}

@@ -53,6 +53,8 @@ define(
          */
         var ZImage = function(options) {
             Base.call(this, options);
+
+            this._imageCache = {};
             /**
              * 图片绘制样式
              * @name module:zrender/shape/Image#style
@@ -84,20 +86,25 @@ define(
 
                 if (typeof(image) === 'string') {
                     var src = image;
-                    image = new Image();
-                    image.onload = function () {
-                        image.onload = null;
-                        clearTimeout(_refreshTimeout);
-                        _needsRefresh.push(me);
-                        // 防止因为缓存短时间内触发多次onload事件
-                        _refreshTimeout = setTimeout(function () {
-                            refresh && refresh(_needsRefresh);
-                            // 清空needsRefresh
-                            _needsRefresh = [];
-                        }, 10);
-                    };
+                    if (this._imageCache[src]) {
+                        image = this._imageCache[src];
+                    } else {
+                        image = new Image();
+                        image.onload = function () {
+                            image.onload = null;
+                            clearTimeout(_refreshTimeout);
+                            _needsRefresh.push(me);
+                            // 防止因为缓存短时间内触发多次onload事件
+                            _refreshTimeout = setTimeout(function () {
+                                refresh && refresh(_needsRefresh);
+                                // 清空needsRefresh
+                                _needsRefresh = [];
+                            }, 10);
+                        };
 
-                    image.src = src;
+                        image.src = src;
+                        this._imageCache[src] = image;
+                    }
                 }
                 if (image) {
                     // 图片已经加载完成
@@ -178,13 +185,17 @@ define(
              * @param {module:zrender/shape/Image~IImageStyle} style
              * @return {module:zrender/shape/Base~IBoundingRect}
              */
-            getRect : function(style) {
+            getRect: function(style) {
                 return {
                     x : style.x,
                     y : style.y,
                     width : style.width,
                     height : style.height
                 };
+            },
+
+            clearCache: function() {
+                this._imageCache = {};
             }
         };
 
