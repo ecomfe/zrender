@@ -124,6 +124,7 @@ define(
 
         /**
          * 从圆弧中计算出最小包围盒，写入`min`和`max`中
+         * @method
          * @memberOf module:zrender/tool/computeBoundingBox
          * @param {Array.<number>} center 圆弧中心点
          * @param {number} radius 圆弧半径

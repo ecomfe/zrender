@@ -234,7 +234,7 @@ define(function(require) {
 
     /**
      * 投射点到三次贝塞尔曲线上，返回投射距离。
-     * 投射点有可能会有一个或者多个，这里只返回其中的一个。
+     * 投射点有可能会有一个或者多个，这里只返回其中距离最短的一个。
      * @param {number} x0
      * @param {number} y0
      * @param {number} x1
@@ -255,7 +255,7 @@ define(function(require) {
         // http://pomax.github.io/bezierinfo/#projections
         var t;
         var interval = 0.005;
-        var d = Infinity, d2 = 0, d3 = 0;
+        var d = Infinity;
 
         _v0[0] = x;
         _v0[1] = y;
@@ -406,7 +406,7 @@ define(function(require) {
 
     /**
      * 投射点到二次贝塞尔曲线上，返回投射距离。
-     * 投射点有可能会有一个或者多个，这里只返回其中的一个。
+     * 投射点有可能会有一个或者多个，这里只返回其中距离最短的一个。
      * @param {number} x0
      * @param {number} y0
      * @param {number} x1
@@ -425,7 +425,7 @@ define(function(require) {
         // http://pomax.github.io/bezierinfo/#projections
         var t;
         var interval = 0.005;
-        var d = Infinity, d2 = 0, d3 = 0;
+        var d = Infinity;
 
         _v0[0] = x;
         _v0[1] = y;

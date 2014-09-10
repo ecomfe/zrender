@@ -30,7 +30,10 @@
  *                                可以是top, bottom, middle, alphabetic, hanging, ideographic
  */
 define(function (require) {
+
     var Base = require('./Base');
+    var PathProxy = require('./util/PathProxy');
+    var PathSegment = PathProxy.PathSegment;
 
     var vMag = function(v) {
         return Math.sqrt(v[0] * v[0] + v[1] * v[1]);
@@ -133,171 +136,169 @@ define(function (require) {
 
                     // convert l, H, h, V, and v to L
                     switch (c) {
-                    case 'l':
-                        cpx += p.shift();
-                        cpy += p.shift();
-                        cmd = 'L';
-                        points.push(cpx, cpy);
-                        break;
-                    case 'L':
-                        cpx = p.shift();
-                        cpy = p.shift();
-                        points.push(cpx, cpy);
-                        break;
-                    case 'm':
-                        cpx += p.shift();
-                        cpy += p.shift();
-                        cmd = 'M';
-                        points.push(cpx, cpy);
-                        c = 'l';
-                        break;
-                    case 'M':
-                        cpx = p.shift();
-                        cpy = p.shift();
-                        cmd = 'M';
-                        points.push(cpx, cpy);
-                        c = 'L';
-                        break;
+                        case 'l':
+                            cpx += p.shift();
+                            cpy += p.shift();
+                            cmd = 'L';
+                            points.push(cpx, cpy);
+                            break;
+                        case 'L':
+                            cpx = p.shift();
+                            cpy = p.shift();
+                            points.push(cpx, cpy);
+                            break;
+                        case 'm':
+                            cpx += p.shift();
+                            cpy += p.shift();
+                            cmd = 'M';
+                            points.push(cpx, cpy);
+                            c = 'l';
+                            break;
+                        case 'M':
+                            cpx = p.shift();
+                            cpy = p.shift();
+                            cmd = 'M';
+                            points.push(cpx, cpy);
+                            c = 'L';
+                            break;
 
-                    case 'h':
-                        cpx += p.shift();
-                        cmd = 'L';
-                        points.push(cpx, cpy);
-                        break;
-                    case 'H':
-                        cpx = p.shift();
-                        cmd = 'L';
-                        points.push(cpx, cpy);
-                        break;
-                    case 'v':
-                        cpy += p.shift();
-                        cmd = 'L';
-                        points.push(cpx, cpy);
-                        break;
-                    case 'V':
-                        cpy = p.shift();
-                        cmd = 'L';
-                        points.push(cpx, cpy);
-                        break;
-                    case 'C':
-                        points.push(p.shift(), p.shift(), p.shift(), p.shift());
-                        cpx = p.shift();
-                        cpy = p.shift();
-                        points.push(cpx, cpy);
-                        break;
-                    case 'c':
-                        points.push(
-                            cpx + p.shift(), cpy + p.shift(),
-                            cpx + p.shift(), cpy + p.shift()
-                        );
-                        cpx += p.shift();
-                        cpy += p.shift();
-                        cmd = 'C';
-                        points.push(cpx, cpy);
-                        break;
-                    case 'S':
-                        ctlPtx = cpx;
-                        ctlPty = cpy;
-                        prevCmd = ca[ca.length - 1];
-                        if (prevCmd.command === 'C') {
-                            ctlPtx = cpx + (cpx - prevCmd.points[2]);
-                            ctlPty = cpy + (cpy - prevCmd.points[3]);
-                        }
-                        points.push(ctlPtx, ctlPty, p.shift(), p.shift());
-                        cpx = p.shift();
-                        cpy = p.shift();
-                        cmd = 'C';
-                        points.push(cpx, cpy);
-                        break;
-                    case 's':
-                        ctlPtx = cpx, ctlPty = cpy;
-                        prevCmd = ca[ca.length - 1];
-                        if (prevCmd.command === 'C') {
-                            ctlPtx = cpx + (cpx - prevCmd.points[2]);
-                            ctlPty = cpy + (cpy - prevCmd.points[3]);
-                        }
-                        points.push(
-                            ctlPtx, ctlPty,
-                            cpx + p.shift(), cpy + p.shift()
-                        );
-                        cpx += p.shift();
-                        cpy += p.shift();
-                        cmd = 'C';
-                        points.push(cpx, cpy);
-                        break;
-                    case 'Q':
-                        points.push(p.shift(), p.shift());
-                        cpx = p.shift();
-                        cpy = p.shift();
-                        points.push(cpx, cpy);
-                        break;
-                    case 'q':
-                        points.push(cpx + p.shift(), cpy + p.shift());
-                        cpx += p.shift();
-                        cpy += p.shift();
-                        cmd = 'Q';
-                        points.push(cpx, cpy);
-                        break;
-                    case 'T':
-                        ctlPtx = cpx, ctlPty = cpy;
-                        prevCmd = ca[ca.length - 1];
-                        if (prevCmd.command === 'Q') {
-                            ctlPtx = cpx + (cpx - prevCmd.points[0]);
-                            ctlPty = cpy + (cpy - prevCmd.points[1]);
-                        }
-                        cpx = p.shift();
-                        cpy = p.shift();
-                        cmd = 'Q';
-                        points.push(ctlPtx, ctlPty, cpx, cpy);
-                        break;
-                    case 't':
-                        ctlPtx = cpx, ctlPty = cpy;
-                        prevCmd = ca[ca.length - 1];
-                        if (prevCmd.command === 'Q') {
-                            ctlPtx = cpx + (cpx - prevCmd.points[0]);
-                            ctlPty = cpy + (cpy - prevCmd.points[1]);
-                        }
-                        cpx += p.shift();
-                        cpy += p.shift();
-                        cmd = 'Q';
-                        points.push(ctlPtx, ctlPty, cpx, cpy);
-                        break;
-                    case 'A':
-                        rx = p.shift();
-                        ry = p.shift();
-                        psi = p.shift();
-                        fa = p.shift();
-                        fs = p.shift();
+                        case 'h':
+                            cpx += p.shift();
+                            cmd = 'L';
+                            points.push(cpx, cpy);
+                            break;
+                        case 'H':
+                            cpx = p.shift();
+                            cmd = 'L';
+                            points.push(cpx, cpy);
+                            break;
+                        case 'v':
+                            cpy += p.shift();
+                            cmd = 'L';
+                            points.push(cpx, cpy);
+                            break;
+                        case 'V':
+                            cpy = p.shift();
+                            cmd = 'L';
+                            points.push(cpx, cpy);
+                            break;
+                        case 'C':
+                            points.push(p.shift(), p.shift(), p.shift(), p.shift());
+                            cpx = p.shift();
+                            cpy = p.shift();
+                            points.push(cpx, cpy);
+                            break;
+                        case 'c':
+                            points.push(
+                                cpx + p.shift(), cpy + p.shift(),
+                                cpx + p.shift(), cpy + p.shift()
+                            );
+                            cpx += p.shift();
+                            cpy += p.shift();
+                            cmd = 'C';
+                            points.push(cpx, cpy);
+                            break;
+                        case 'S':
+                            ctlPtx = cpx;
+                            ctlPty = cpy;
+                            prevCmd = ca[ca.length - 1];
+                            if (prevCmd.command === 'C') {
+                                ctlPtx = cpx + (cpx - prevCmd.points[2]);
+                                ctlPty = cpy + (cpy - prevCmd.points[3]);
+                            }
+                            points.push(ctlPtx, ctlPty, p.shift(), p.shift());
+                            cpx = p.shift();
+                            cpy = p.shift();
+                            cmd = 'C';
+                            points.push(cpx, cpy);
+                            break;
+                        case 's':
+                            ctlPtx = cpx, ctlPty = cpy;
+                            prevCmd = ca[ca.length - 1];
+                            if (prevCmd.command === 'C') {
+                                ctlPtx = cpx + (cpx - prevCmd.points[2]);
+                                ctlPty = cpy + (cpy - prevCmd.points[3]);
+                            }
+                            points.push(
+                                ctlPtx, ctlPty,
+                                cpx + p.shift(), cpy + p.shift()
+                            );
+                            cpx += p.shift();
+                            cpy += p.shift();
+                            cmd = 'C';
+                            points.push(cpx, cpy);
+                            break;
+                        case 'Q':
+                            points.push(p.shift(), p.shift());
+                            cpx = p.shift();
+                            cpy = p.shift();
+                            points.push(cpx, cpy);
+                            break;
+                        case 'q':
+                            points.push(cpx + p.shift(), cpy + p.shift());
+                            cpx += p.shift();
+                            cpy += p.shift();
+                            cmd = 'Q';
+                            points.push(cpx, cpy);
+                            break;
+                        case 'T':
+                            ctlPtx = cpx, ctlPty = cpy;
+                            prevCmd = ca[ca.length - 1];
+                            if (prevCmd.command === 'Q') {
+                                ctlPtx = cpx + (cpx - prevCmd.points[0]);
+                                ctlPty = cpy + (cpy - prevCmd.points[1]);
+                            }
+                            cpx = p.shift();
+                            cpy = p.shift();
+                            cmd = 'Q';
+                            points.push(ctlPtx, ctlPty, cpx, cpy);
+                            break;
+                        case 't':
+                            ctlPtx = cpx, ctlPty = cpy;
+                            prevCmd = ca[ca.length - 1];
+                            if (prevCmd.command === 'Q') {
+                                ctlPtx = cpx + (cpx - prevCmd.points[0]);
+                                ctlPty = cpy + (cpy - prevCmd.points[1]);
+                            }
+                            cpx += p.shift();
+                            cpy += p.shift();
+                            cmd = 'Q';
+                            points.push(ctlPtx, ctlPty, cpx, cpy);
+                            break;
+                        case 'A':
+                            rx = p.shift();
+                            ry = p.shift();
+                            psi = p.shift();
+                            fa = p.shift();
+                            fs = p.shift();
 
-                        x1 = cpx, y1 = cpy;
-                        cpx = p.shift(), cpy = p.shift();
-                        cmd = 'A';
-                        points = this._convertPoint(
-                            x1, y1, cpx, cpy, fa, fs, rx, ry, psi
-                        );
-                        break;
-                    case 'a':
-                        rx = p.shift();
-                        ry = p.shift();
-                        psi = p.shift();
-                        fa = p.shift();
-                        fs = p.shift();
+                            x1 = cpx, y1 = cpy;
+                            cpx = p.shift(), cpy = p.shift();
+                            cmd = 'A';
+                            points = this._convertPoint(
+                                x1, y1, cpx, cpy, fa, fs, rx, ry, psi
+                            );
+                            break;
+                        case 'a':
+                            rx = p.shift();
+                            ry = p.shift();
+                            psi = p.shift();
+                            fa = p.shift();
+                            fs = p.shift();
 
-                        x1 = cpx, y1 = cpy;
-                        cpx += p.shift();
-                        cpy += p.shift();
-                        cmd = 'A';
-                        points = this._convertPoint(
-                            x1, y1, cpx, cpy, fa, fs, rx, ry, psi
-                        );
-                        break;
-
+                            x1 = cpx, y1 = cpy;
+                            cpx += p.shift();
+                            cpy += p.shift();
+                            cmd = 'A';
+                            points = this._convertPoint(
+                                x1, y1, cpx, cpy, fa, fs, rx, ry, psi
+                            );
+                            break;
                     }
 
-                    ca.push({
-                        command : cmd || c,
-                        points : points
-                    });
+                    ca.push(new PathSegment(
+                        cmd || c, points
+                    ));
                 }
 
                 if (c === 'z' || c === 'Z') {
