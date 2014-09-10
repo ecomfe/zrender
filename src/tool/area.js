@@ -50,11 +50,6 @@ define(
 
             _ctx = _ctx || util.getContext();
 
-            if (!isInsideRect(area.__rect || shape.getRect(area), x, y)) {
-                // 不在矩形区域内直接返回false
-                return false;
-            }
-
             // 未实现或不可用时(excanvas不支持)则数学运算，主要是line，brokenLine，ring
             var _mathReturn = _mathMethod(zoneType, area, x, y);
             if (typeof _mathReturn != 'undefined') {
@@ -334,14 +329,23 @@ define(
             if ((d - _l > r) || (d + _l < r)) {
                 return false;
             }
-            startAngle = normalizeRadian(startAngle);
-            endAngle = normalizeRadian(endAngle);
+            if (anticlockwise) {
+                startAngle = normalizeRadian(endAngle);
+                endAngle = normalizeRadian(startAngle);
+            } else {
+                startAngle = normalizeRadian(startAngle);
+                endAngle = normalizeRadian(endAngle);
+            }
+            if (startAngle > endAngle) {
+                endAngle += PI2;
+            }
+            
             var angle = Math.atan2(y, x);
             if (angle < 0) {
                 angle += PI2;
             }
-            return !anticlockwise && (angle >= startAngle && angle <= endAngle)
-                || (anticlockwise && (angle <= startAngle && angle >= endAngle));
+            return (angle >= startAngle && angle <= endAngle)
+                || (angle + PI2 >= startAngle && angle + PI2 <= endAngle);
         }
 
         function isInsideBrokenLine(points, lineWidth, x, y) {
@@ -563,19 +567,15 @@ define(
             roots[0] = -tmp;
             roots[1] = tmp;
 
-            var startAngle = normalizeRadian(startAngle);
-            var endAngle = normalizeRadian(endAngle);
             if (anticlockwise) {
-                // Make sure start angle is larger than end angle
-                if (startAngle <= endAngle) {
-                    endAngle = endAngle - PI2;
-                }
-            } 
-            else {
-                // Make sure start angle is smaller than end angle
-                if (startAngle >= endAngle) {
-                    endAngle = endAngle + PI2;
-                }
+                startAngle = normalizeRadian(endAngle);
+                endAngle = normalizeRadian(startAngle);
+            } else {
+                startAngle = normalizeRadian(startAngle);
+                endAngle = normalizeRadian(endAngle);
+            }
+            if (startAngle > endAngle) {
+                endAngle += PI2;
             }
 
             var w = 0;
@@ -588,8 +588,8 @@ define(
                         angle = PI2 + angle;
                     }
                     if (
-                        !anticlockwise && (angle >= startAngle && angle <= endAngle)
-                     || (anticlockwise && (angle <= startAngle && angle >= endAngle))
+                        (angle >= startAngle && angle <= endAngle)
+                        || (angle + PI2 >= startAngle && angle + PI2 <= endAngle)
                     ) {
                         if (angle > Math.PI / 2 && angle < Math.PI * 1.5) {
                             dir = -dir;
