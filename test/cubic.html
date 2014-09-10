@@ -25,7 +25,12 @@
 
             dom.onmousemove = function(e) {
                 var roots = [];
+                var projection = [];
                 curve.cubicRootAt(20, 300, -100, 200, e.offsetY, roots);
+                curve.cubicProjectPoint(
+                    100, 20, 200, 300, 300, -100, 400, 200,
+                    e.offsetX, e.offsetY, projection
+                );
                 ctx.clearRect(0, 0, dom.width, dom.height);
                 drawBezier();
                 ctx.lineWidth = 1;
@@ -39,6 +44,10 @@
                     ctx.arc(x, e.offsetY, 5, 0, Math.PI * 2, true);
                     ctx.fill();
                 }
+
+                ctx.moveTo(projection[0], projection[1]);
+                ctx.lineTo(e.offsetX, e.offsetY);
+                ctx.stroke();
             }
 
             function drawBezier() {
@@ -58,7 +67,12 @@
 
             dom.onmousemove = function(e) {
                 var roots = [];
+                var projection = [];
                 curve.quadraticRootAt(20, 300, 100, e.offsetY, roots);
+                curve.quadraticProjectPoint(
+                    40, 20, 200, 300, 400, 100,
+                    e.offsetX, e.offsetY, projection
+                );
                 ctx.clearRect(0, 0, dom.width, dom.height);
                 drawBezier();
                 ctx.lineWidth = 1;
@@ -72,6 +86,9 @@
                     ctx.arc(x, e.offsetY, 5, 0, Math.PI * 2, true);
                     ctx.fill();
                 }
+                ctx.moveTo(projection[0], projection[1]);
+                ctx.lineTo(e.offsetX, e.offsetY);
+                ctx.stroke();
             }
 
             function drawBezier() {

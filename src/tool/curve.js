@@ -4,12 +4,20 @@
  */
 define(function(require) {
 
+    var vector = require('./vector');
+
     'use strict';
 
     var EPSILON = 1e-4;
 
     var THREE_SQRT = Math.sqrt(3);
     var ONE_THIRD = 1 / 3;
+
+    // 临时变量
+    var _v0 = vector.create();
+    var _v1 = vector.create();
+    var _v2 = vector.create();
+    var _v3 = vector.create();
 
     function isAroundZero(val) {
         return val > -EPSILON && val < EPSILON;
@@ -33,9 +41,27 @@ define(function(require) {
      * @return {number}
      */
     function cubicAt(p0, p1, p2, p3, t) {
-        var ct = 1 - t;
-        return ct * ct * (ct * p0 + 3 * t * p1)
-             + t * t * (t * p3 + 3 * ct * p2);
+        var onet = 1 - t;
+        return onet * onet * (onet * p0 + 3 * t * p1)
+             + t * t * (t * p3 + 3 * onet * p2);
+    }
+
+    /** 
+     * 计算三次贝塞尔导数值
+     * @memberOf module:zrender/tool/curve
+     * @param  {number} p0
+     * @param  {number} p1
+     * @param  {number} p2
+     * @param  {number} p3
+     * @param  {number} t
+     * @return {number}
+     */
+    function cubicDerivativeAt(p0, p1, p2, p3, t) {
+        var onet = 1 - t;
+        return 3 * (
+            ((p1 - p0) * onet + 2 * (p2 - p1) * t) * onet
+            + (p3 - p2) * t * t
+        );
     }
 
     /**
@@ -207,6 +233,71 @@ define(function(require) {
     }
 
     /**
+     * 投射点到三次贝塞尔曲线上，返回投射距离。
+     * 投射点有可能会有一个或者多个，这里只返回其中的一个。
+     * @param {number} x0
+     * @param {number} y0
+     * @param {number} x1
+     * @param {number} y1
+     * @param {number} x2
+     * @param {number} y2
+     * @param {number} x3
+     * @param {number} y3
+     * @param {number} x
+     * @param {number} y
+     * @param {Array.<number>} out 投射点
+     * @return {number}
+     */
+    function cubicProjectPoint(
+        x0, y0, x1, y1, x2, y2, x3, y3,
+        x, y, out
+    ) {
+        // http://pomax.github.io/bezierinfo/#projections
+        var t = 0.5;
+        var interval = 0.1;
+        var d = Infinity, d2 = 0, d3 = 0;
+
+        _v0[0] = x;
+        _v0[1] = y;
+
+        // At most 32 iteration
+        for (var i = 0; i < 32; i++) {
+            if (interval < EPSILON) {
+                break;
+            }
+            var prev = t - interval;
+            var next = t + interval;
+            // t - interval
+            _v1[0] = cubicAt(x0, x1, x2, x3, prev);
+            _v1[1] = cubicAt(y0, y1, y2, y3, prev);
+
+            var d1 = vector.distSquare(_v1, _v0);
+
+            if (prev >= 0 && d1 < d) {
+                t = prev;
+                d = d1;
+            } else {
+                // t + interval
+                _v2[0] = cubicAt(x0, x1, x2, x3, next);
+                _v2[1] = cubicAt(y0, y1, y2, y3, next);
+                var d2 = vector.distSquare(_v2, _v0);
+
+                if (next <= 1 && d2 < d) {
+                    t = next;
+                    d = d2;
+                } else {
+                    interval *= 0.5;
+                }
+            }
+        }
+        // t
+        out[0] = cubicAt(x0, x1, x2, x3, t);
+        out[1] = cubicAt(y0, y1, y2, y3, t);
+        // console.log(interval, i);
+        return Math.sqrt(d);
+    }
+
+    /**
      * 计算二次方贝塞尔值
      * @param  {number} p0
      * @param  {number} p1
@@ -215,8 +306,20 @@ define(function(require) {
      * @return {number}
      */
     function quadraticAt(p0, p1, p2, t) {
-        var ct = 1 - t;
-        return ct * (ct * p0 + 2 * t * p1) + t * t * p2;
+        var onet = 1 - t;
+        return onet * (onet * p0 + 2 * t * p1) + t * t * p2;
+    }
+
+    /**
+     * 计算二次方贝塞尔导数值
+     * @param  {number} p0
+     * @param  {number} p1
+     * @param  {number} p2
+     * @param  {number} t
+     * @return {number}
+     */
+    function quadraticDerivativeAt(p0, p1, p2, t) {
+        return 2 * ((1 - t) * (p1 - p0) + t * (p2 - p1));
     }
 
     /**
@@ -284,9 +387,73 @@ define(function(require) {
         }
     }
 
+    /**
+     * 投射点到二次贝塞尔曲线上，返回投射距离。
+     * 投射点有可能会有一个或者多个，这里只返回其中的一个。
+     * @param {number} x0
+     * @param {number} y0
+     * @param {number} x1
+     * @param {number} y1
+     * @param {number} x2
+     * @param {number} y2
+     * @param {number} x
+     * @param {number} y
+     * @param {Array.<number>} out 投射点
+     * @return {number}
+     */
+    function quadraticProjectPoint(
+        x0, y0, x1, y1, x2, y2,
+        x, y, out
+    ) {
+        // http://pomax.github.io/bezierinfo/#projections
+        var t = 0.5;
+        var interval = 0.1;
+        var d = Infinity, d2 = 0, d3 = 0;
+
+        _v0[0] = x;
+        _v0[1] = y;
+
+        // At most 32 iteration
+        for (var i = 0; i < 32; i++) {
+            if (interval < EPSILON) {
+                break;
+            }
+            var prev = t - interval;
+            var next = t + interval;
+            // t - interval
+            _v1[0] = quadraticAt(x0, x1, x2, prev);
+            _v1[1] = quadraticAt(y0, y1, y2, prev);
+
+            var d1 = vector.distSquare(_v1, _v0);
+
+            if (prev >= 0 && d1 < d) {
+                t = prev;
+                d = d1;
+            } else {
+                // t + interval
+                _v2[0] = quadraticAt(x0, x1, x2, next);
+                _v2[1] = quadraticAt(y0, y1, y2, next);
+                var d2 = vector.distSquare(_v2, _v0);
+                if (next <= 1 && d2 < d) {
+                    t = next;
+                    d = d2;
+                } else {
+                    interval *= 0.5;
+                }
+            }
+        }
+        // t
+        out[0] = quadraticAt(x0, x1, x2, t);
+        out[1] = quadraticAt(y0, y1, y2, t);
+        // console.log(interval, i);
+        return Math.sqrt(d);
+    }
+
     return {
 
         cubicAt: cubicAt,
+
+        cubicDerivativeAt: cubicDerivativeAt,
 
         cubicRootAt: cubicRootAt,
 
@@ -294,10 +461,16 @@ define(function(require) {
 
         cubicSubdivide: cubicSubdivide,
 
+        cubicProjectPoint: cubicProjectPoint,
+
         quadraticAt: quadraticAt,
+
+        quadraticDerivativeAt: quadraticDerivativeAt,
 
         quadraticRootAt: quadraticRootAt,
 
-        quadraticExtremum: quadraticExtremum
+        quadraticExtremum: quadraticExtremum,
+
+        quadraticProjectPoint: quadraticProjectPoint
     }
 });

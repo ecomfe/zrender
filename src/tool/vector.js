@@ -172,9 +172,20 @@ define(
              */
             distance: function (v1, v2) {
                 return Math.sqrt(
-                    (v1[0] - v2[0]) * (v1[0] - v2[0]) +
-                    (v1[1] - v2[1]) * (v1[1] - v2[1])
+                    (v1[0] - v2[0]) * (v1[0] - v2[0])
+                    + (v1[1] - v2[1]) * (v1[1] - v2[1])
                 );
+            },
+
+            /**
+             * 向量距离平方
+             * @param {Float32Array|Array.<number>} v1
+             * @param {Float32Array|Array.<number>} v2
+             * @return {number}
+             */
+            distanceSquare: function (v1, v2) {
+                return (v1[0] - v2[0]) * (v1[0] - v2[0])
+                    + (v1[1] - v2[1]) * (v1[1] - v2[1]);
             },
 
             /**
@@ -241,7 +252,9 @@ define(
         };
 
         vector.length = vector.len;
+        vector.lengthSquare = vector.lenSquare;
         vector.dist = vector.distance;
+        vector.distSquare = vector.distanceSquare;
 
         return vector;
     }
