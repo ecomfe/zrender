@@ -193,7 +193,7 @@ define(function(require) {
     Group.prototype.delChildrenFromStorage = function(storage) {
         for (var i = 0; i < this._children.length; i++) {
             var child = this._children[i];
-            storage.delFromMap(child);
+            storage.delFromMap(child.id);
             if (child.type === 'group') {
                 child.delChildrenFromStorage(storage);
             }
