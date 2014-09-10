@@ -22,13 +22,14 @@
         function initCubic() {
             var dom = document.getElementById('cubic');
             var ctx = dom.getContext('2d');
-
+            var p = [120.481, 235.242, 120.481, 235.242, 289.27, -169.589, 108.534, 101.57];
+            // var p = [100, 20, 200, 300, 300, -100, 400, 200];
             dom.onmousemove = function(e) {
                 var roots = [];
                 var projection = [];
-                curve.cubicRootAt(20, 300, -100, 200, e.offsetY, roots);
+                curve.cubicRootAt(p[1], p[3], p[5], p[7], e.offsetY, roots);
                 curve.cubicProjectPoint(
-                    100, 20, 200, 300, 300, -100, 400, 200,
+                    p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7],
                     e.offsetX, e.offsetY, projection
                 );
                 ctx.clearRect(0, 0, dom.width, dom.height);
@@ -38,7 +39,7 @@
                 ctx.lineTo(1000, e.offsetY);
                 ctx.stroke();
                 for (var i = 0; i < roots.length; i++) {
-                    var x = curve.cubicAt(100, 200, 300, 400, roots[i]);
+                    var x = curve.cubicAt(p[0], p[2], p[4], p[6], roots[i]);
                     ctx.fillStyle = 'red';
                     ctx.beginPath();
                     ctx.arc(x, e.offsetY, 5, 0, Math.PI * 2, true);
@@ -53,8 +54,8 @@
             function drawBezier() {
                 ctx.beginPath();
                 ctx.lineWidth = 5;
-                ctx.moveTo(100, 20);
-                ctx.bezierCurveTo(200, 300, 300, -100, 400, 200);
+                ctx.moveTo(p[0], p[1]);
+                ctx.bezierCurveTo(p[2], p[3], p[4], p[5], p[6], p[7]);
                 ctx.stroke();
             }
 

@@ -245,7 +245,7 @@ define(function(require) {
      * @param {number} y3
      * @param {number} x
      * @param {number} y
-     * @param {Array.<number>} out 投射点
+     * @param {Array.<number>} [out] 投射点
      * @return {number}
      */
     function cubicProjectPoint(
@@ -253,12 +253,25 @@ define(function(require) {
         x, y, out
     ) {
         // http://pomax.github.io/bezierinfo/#projections
-        var t = 0.5;
-        var interval = 0.1;
+        var t;
+        var interval = 0.005;
         var d = Infinity, d2 = 0, d3 = 0;
 
         _v0[0] = x;
         _v0[1] = y;
+
+        // 先粗略估计一下可能的最小距离的 t 值
+        // PENDING
+        for (var _t = 0; _t < 1; _t += 0.05) {
+            _v1[0] = cubicAt(x0, x1, x2, x3, _t);
+            _v1[1] = cubicAt(y0, y1, y2, y3, _t);
+            var d1 = vector.distSquare(_v0, _v1);
+            if (d1 < d) {
+                t = _t;
+                d = d1;
+            }
+        }
+        d = Infinity;
 
         // At most 32 iteration
         for (var i = 0; i < 32; i++) {
@@ -276,7 +289,8 @@ define(function(require) {
             if (prev >= 0 && d1 < d) {
                 t = prev;
                 d = d1;
-            } else {
+            }
+            else {
                 // t + interval
                 _v2[0] = cubicAt(x0, x1, x2, x3, next);
                 _v2[1] = cubicAt(y0, y1, y2, y3, next);
@@ -285,14 +299,17 @@ define(function(require) {
                 if (next <= 1 && d2 < d) {
                     t = next;
                     d = d2;
-                } else {
+                }
+                else {
                     interval *= 0.5;
                 }
             }
         }
         // t
-        out[0] = cubicAt(x0, x1, x2, x3, t);
-        out[1] = cubicAt(y0, y1, y2, y3, t);
+        if (out) {
+            out[0] = cubicAt(x0, x1, x2, x3, t);
+            out[1] = cubicAt(y0, y1, y2, y3, t);   
+        }
         // console.log(interval, i);
         return Math.sqrt(d);
     }
@@ -406,12 +423,25 @@ define(function(require) {
         x, y, out
     ) {
         // http://pomax.github.io/bezierinfo/#projections
-        var t = 0.5;
-        var interval = 0.1;
+        var t;
+        var interval = 0.005;
         var d = Infinity, d2 = 0, d3 = 0;
 
         _v0[0] = x;
         _v0[1] = y;
+
+        // 先粗略估计一下可能的最小距离的 t 值
+        // PENDING
+        for (var _t = 0; _t < 1; _t += 0.05) {
+            _v1[0] = quadraticAt(x0, x1, x2, _t);
+            _v1[1] = quadraticAt(y0, y1, y2, _t);
+            var d1 = vector.distSquare(_v0, _v1);
+            if (d1 < d) {
+                t = _t;
+                d = d1;
+            }
+        }
+        d = Infinity;
 
         // At most 32 iteration
         for (var i = 0; i < 32; i++) {
@@ -429,7 +459,8 @@ define(function(require) {
             if (prev >= 0 && d1 < d) {
                 t = prev;
                 d = d1;
-            } else {
+            }
+            else {
                 // t + interval
                 _v2[0] = quadraticAt(x0, x1, x2, next);
                 _v2[1] = quadraticAt(y0, y1, y2, next);
@@ -437,14 +468,17 @@ define(function(require) {
                 if (next <= 1 && d2 < d) {
                     t = next;
                     d = d2;
-                } else {
+                }
+                else {
                     interval *= 0.5;
                 }
             }
         }
         // t
-        out[0] = quadraticAt(x0, x1, x2, t);
-        out[1] = quadraticAt(y0, y1, y2, t);
+        if (out) {
+            out[0] = quadraticAt(x0, x1, x2, t);
+            out[1] = quadraticAt(y0, y1, y2, t);   
+        }
         // console.log(interval, i);
         return Math.sqrt(d);
     }
