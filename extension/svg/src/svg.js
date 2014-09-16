@@ -12,6 +12,7 @@ define(function(require) {
     var Path = require('zrender/shape/Path');
     var Polygon = require('zrender/shape/Polygon');
     var Text = require('zrender/shape/Text');
+    var ImageShape = require('zrender/shape/Image');
     var BrokenLine = require('zrender/shape/BrokenLine');
     var mat2d = require('zrender/tool/matrix');
     var vec2 = require('zrender/tool/vector');
@@ -505,11 +506,11 @@ define(function(require) {
     }
 
     var nodeParsers = {
-        g: function(xmlNode) {
+        g: function (xmlNode) {
             var g = new Group();
             return g;
         },
-        rect: function(xmlNode) {
+        rect: function (xmlNode) {
             var x = +(xmlNode.getAttribute('x') || 0);
             var y = +(xmlNode.getAttribute('y') || 0);
             var width = +(xmlNode.getAttribute('width') || 0);
@@ -524,7 +525,7 @@ define(function(require) {
                 }
             });
         },
-        circle: function(xmlNode) {
+        circle: function (xmlNode) {
             var cx = +(xmlNode.getAttribute('cx') || 0);
             var cy = +(xmlNode.getAttribute('cy') || 0);
             var r = +(xmlNode.getAttribute('r') || 0);
@@ -537,7 +538,7 @@ define(function(require) {
                 }
             });
         },
-        line: function(xmlNode) {
+        line: function (xmlNode) {
             var x1 = +(xmlNode.getAttribute('x1') || 0);
             var y1 = +(xmlNode.getAttribute('y1') || 0);
             var x2 = +(xmlNode.getAttribute('x2') || 0);
@@ -552,7 +553,7 @@ define(function(require) {
                 }
             });
         },
-        ellipse: function(xmlNode) {
+        ellipse: function (xmlNode) {
             var cx = +(xmlNode.getAttribute('cx') || 0);
             var cy = +(xmlNode.getAttribute('cy') || 0);
             var rx = +(xmlNode.getAttribute('rx') || 0);
@@ -567,7 +568,7 @@ define(function(require) {
                 }
             });
         },
-        polygon: function(xmlNode) {
+        polygon: function (xmlNode) {
             var pointsStr = xmlNode.getAttribute('points');
             if (pointsStr) {
                 var points = parsePoints(pointsStr);
@@ -578,7 +579,7 @@ define(function(require) {
                 });
             }
         },
-        polyline: function(xmlNode) {
+        polyline: function (xmlNode) {
             var pointsStr = xmlNode.getAttribute('points');
             if (pointsStr) {
                 var points = parsePoints(pointsStr);
@@ -589,7 +590,7 @@ define(function(require) {
                 });
             }
         },
-        path: function(xmlNode) {
+        path: function (xmlNode) {
             var d = xmlNode.getAttribute('d');
             if (d) {
                 return new Path({
@@ -599,8 +600,27 @@ define(function(require) {
                 });
             }
         },
-        text: function(xmlNode, parentStyle, defs) {
+        text: function (xmlNode, parentStyle, defs) {
             return parseTextNode(xmlNode, parentStyle, defs);
+        },
+        image: function (xmlNode) {
+            var x = +(xmlNode.getAttribute('x') || 0);
+            var y = +(xmlNode.getAttribute('y') || 0);
+            var width = +(xmlNode.getAttribute('width') || 0);
+            var height = +(xmlNode.getAttribute('height') || 0);
+            var href = xmlNode.getAttribute('xlink:href');
+
+            if (href) {
+                return new ImageShape({
+                    style: {
+                        image: href,
+                        x: x,
+                        y: y,
+                        width: width,
+                        height: height
+                    }
+                });
+            }
         }
     }
 

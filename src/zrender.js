@@ -144,8 +144,8 @@ define(
              * @type {module:zrender/animation/Animation}
              */
             this.animation = new Animation({
-                stage : {
-                    update : getFrameCallback(this)
+                stage: {
+                    update: getFrameCallback(this)
                 }
             });
             this.animation.start();
