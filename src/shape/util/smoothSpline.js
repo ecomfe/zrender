@@ -1,13 +1,12 @@
 /**
- * 多线段平滑曲线 Catmull-Rom spline
- *
- * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
- *          errorrik (errorrik@gmail.com)
+ * Catmull-Rom spline 插值折线
+ * @module zrender/shape/util/smoothSpline
+ * @author pissang (https://www.github.com/pissang) 
+ *         Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *         errorrik (errorrik@gmail.com)
  */
-
-
 define(
-    function ( require ) {
+    function (require) {
         var vector = require('../../tool/vector');
 
         /**
@@ -17,26 +16,30 @@ define(
             var v0 = (p2 - p0) * 0.5;
             var v1 = (p3 - p1) * 0.5;
             return (2 * (p1 - p2) + v0 + v1) * t3 
-                    + (- 3 * (p1 - p2) - 2 * v0 - v1) * t2
+                    + (-3 * (p1 - p2) - 2 * v0 - v1) * t2
                     + v0 * t + p1;
         }
 
         /**
-         * 多线段平滑曲线 Catmull-Rom spline
+         * @alias module:zrender/shape/util/smoothSpline
+         * @param {Array} points 线段顶点数组
+         * @param {boolean} isLoop
+         * @param {Array} constraint 
+         * @return {Array}
          */
-        return function (points, isLoop) {
+        return function (points, isLoop, constraint) {
             var len = points.length;
             var ret = [];
 
             var distance = 0;
             for (var i = 1; i < len; i++) {
-                distance += vector.distance(points[i-1], points[i]);
+                distance += vector.distance(points[i - 1], points[i]);
             }
             
             var segs = distance / 5;
             segs = segs < len ? len : segs;
             for (var i = 0; i < segs; i++) {
-                var pos = i / (segs-1) * (isLoop ? len : len - 1);
+                var pos = i / (segs - 1) * (isLoop ? len : len - 1);
                 var idx = Math.floor(pos);
 
                 var w = pos - idx;
@@ -49,8 +52,9 @@ define(
                     p0 = points[idx === 0 ? idx : idx - 1];
                     p2 = points[idx > len - 2 ? len - 1 : idx + 1];
                     p3 = points[idx > len - 3 ? len - 1 : idx + 2];
-                } else {
-                    p0 = points[(idx -1 + len) % len];
+                }
+                else {
+                    p0 = points[(idx - 1 + len) % len];
                     p2 = points[(idx + 1) % len];
                     p3 = points[(idx + 2) % len];
                 }

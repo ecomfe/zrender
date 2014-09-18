@@ -1,16 +1,8 @@
 /**
  * 动画主类, 调度和管理所有动画控制器
- *
+ * 
+ * @module zrender/animation/Animation
  * @author pissang(https://github.com/pissang)
- *
- * @class : Animation
- * @config : stage(optional) 绘制类, 需要提供update接口
- * @config : onframe(optional)
- * @method : add
- * @method : remove
- * @method : update
- * @method : start
- * @method : stop
  */
 define(
     function(require) {
@@ -26,11 +18,41 @@ define(
                                     || window.msRequestAnimationFrame
                                     || window.mozRequestAnimationFrame
                                     || window.webkitRequestAnimationFrame
-                                    || function(func){setTimeout(func, 16);};
+                                    || function (func) {
+                                        setTimeout(func, 16);
+                                    };
 
         var arraySlice = Array.prototype.slice;
 
-        function Animation(options) {
+        /**
+         * @typedef {Object} IZRenderStage
+         * @property {Function} update
+         */
+        
+        /** 
+         * @alias module:zrender/animation/Animation
+         * @constructor
+         * @param {Object} [options]
+         * @param {Function} [options.onframe]
+         * @param {IZRenderStage} [options.stage]
+         * @example
+         *     var animation = new Animation();
+         *     var obj = {
+         *         x: 100,
+         *         y: 100
+         *     };
+         *     animation.animate(node.position)
+         *         .when(1000, {
+         *             x: 500,
+         *             y: 500
+         *         })
+         *         .when(2000, {
+         *             x: 100,
+         *             y: 100
+         *         })
+         *         .start('spline');
+         */
+        var Animation = function (options) {
 
             options = options || {};
 
@@ -46,19 +68,27 @@ define(
             this._time = 0;
 
             Dispatcher.call(this);
-        }
+        };
 
         Animation.prototype = {
-            add : function(clip) {
+            /**
+             * 添加动画片段
+             * @param {module:zrender/animation/Clip} clip
+             */
+            add: function(clip) {
                 this._clips.push(clip);
             },
-            remove : function(clip) {
-                var idx = this._clips.indexOf(clip);
+            /**
+             * 删除动画片段
+             * @param {module:zrender/animation/Clip} clip
+             */
+            remove: function(clip) {
+                var idx = util.indexOf(this._clips, clip);
                 if (idx >= 0) {
                     this._clips.splice(idx, 1);
                 }
             },
-            update : function() {
+            _update: function() {
 
                 var time = new Date().getTime();
                 var delta = time - this._time;
@@ -84,10 +114,11 @@ define(
                 // Remove the finished clip
                 for (var i = 0; i < len;) {
                     if (clips[i]._needsRemove) {
-                        clips[i] = clips[len-1];
+                        clips[i] = clips[len - 1];
                         clips.pop();
                         len--;
-                    } else {
+                    }
+                    else {
                         i++;
                     }
                 }
@@ -103,14 +134,17 @@ define(
 
                 this.dispatch('frame', delta);
             },
-            start : function() {
+            /**
+             * 开始运行动画
+             */
+            start: function () {
                 var self = this;
 
                 this._running = true;
 
                 function step() {
                     if (self._running) {
-                        self.update();
+                        self._update();
                         requestAnimationFrame(step);
                     }
                 }
@@ -118,15 +152,32 @@ define(
                 this._time = new Date().getTime();
                 requestAnimationFrame(step);
             },
-            stop : function() {
+            /**
+             * 停止运行动画
+             */
+            stop: function () {
                 this._running = false;
             },
-            clear : function() {
+            /**
+             * 清除所有动画片段
+             */
+            clear : function () {
                 this._clips = [];
             },
-            animate : function(target, options) {
+            /**
+             * 对一个目标创建一个animator对象，可以指定目标中的属性使用动画
+             * @param  {Object} target
+             * @param  {Object} options
+             * @param  {boolean} [options.loop=false] 是否循环播放动画
+             * @param  {Function} [options.getter=null]
+             *         如果指定getter函数，会通过getter函数取属性值
+             * @param  {Function} [options.setter=null]
+             *         如果指定setter函数，会通过setter函数设置属性值
+             * @return {module:zrender/animation/Animation~Animator}
+             */
+            animate : function (target, options) {
                 options = options || {};
-                var deferred = new Deferred(
+                var deferred = new Animator(
                     target,
                     options.loop,
                     options.getter, 
@@ -158,7 +209,8 @@ define(
                 for (var i = 0; i < len; i++) {
                     out[i] = _interpolateNumber(p0[i], p1[i], percent); 
                 }
-            } else {
+            }
+            else {
                 var len2 = p0[0].length;
                 for (var i = 0; i < len; i++) {
                     for (var j = 0; j < len2; j++) {
@@ -190,7 +242,8 @@ define(
                         p0[i], p1[i], p2[i], p3[i], t, t2, t3
                     );
                 }
-            } else {
+            }
+            else {
                 var len2 = p0[0].length;
                 for (var i = 0; i < len; i++) {
                     for (var j = 0; j < len2; j++) {
@@ -207,7 +260,7 @@ define(
             var v0 = (p2 - p0) * 0.5;
             var v1 = (p3 - p1) * 0.5;
             return (2 * (p1 - p2) + v0 + v1) * t3 
-                    + (- 3 * (p1 - p2) - 2 * v0 - v1) * t2
+                    + (-3 * (p1 - p2) - 2 * v0 - v1) * t2
                     + v0 * t + p1;
         }
 
@@ -220,10 +273,12 @@ define(
                         ret.push(arraySlice.call(value[i]));
                     }
                     return ret;
-                } else {
-                    return arraySlice.call(value)
                 }
-            } else {
+                else {
+                    return arraySlice.call(value);
+                }
+            }
+            else {
                 return value;
             }
         }
@@ -236,7 +291,15 @@ define(
             return 'rgba(' + rgba.join(',') + ')';
         }
 
-        function Deferred(target, loop, getter, setter) {
+        /**
+         * @alias module:zrender/animation/Animation~Animator
+         * @constructor
+         * @param {Object} target
+         * @param {boolean} loop
+         * @param {Function} getter
+         * @param {Function} setter
+         */
+        var Animator = function(target, loop, getter, setter) {
             this._tracks = {};
             this._target = target;
 
@@ -254,12 +317,18 @@ define(
             this._onframeList = [];
 
             this._clipList = [];
-        }
+        };
 
-        Deferred.prototype = {
+        Animator.prototype = {
+            /**
+             * 设置动画关键帧
+             * @param  {number} time 关键帧时间，单位是ms
+             * @param  {Object} props 关键帧的属性值，key-value表示
+             * @return {module:zrender/animation/Animation~Animator}
+             */
             when : function(time /* ms */, props) {
                 for (var propName in props) {
-                    if (! this._tracks[propName]) {
+                    if (!this._tracks[propName]) {
                         this._tracks[propName] = [];
                         // If time is 0 
                         //  Then props is given initialize value
@@ -281,11 +350,22 @@ define(
                 }
                 return this;
             },
-            during : function(callback) {
+            /**
+             * 添加动画每一帧的回调函数
+             * @param  {Function} callback
+             * @return {module:zrender/animation/Animation~Animator}
+             */
+            during: function (callback) {
                 this._onframeList.push(callback);
                 return this;
             },
-            start : function(easing) {
+            /**
+             * 开始执行动画
+             * @param  {string|Function} easing 
+             *         动画缓动函数，详见{@link module:zrender/animation/easing}
+             * @return {module:zrender/animation/Animation~Animator}
+             */
+            start: function (easing) {
 
                 var self = this;
                 var setter = this._setter;
@@ -306,7 +386,7 @@ define(
                     }
                 };
 
-                var createTrackClip = function(keyframes, propName) {
+                var createTrackClip = function (keyframes, propName) {
                     var trackLen = keyframes.length;
                     if (!trackLen) {
                         return;
@@ -328,8 +408,9 @@ define(
                     });
                     var trackMaxTime;
                     if (trackLen) {
-                        trackMaxTime = keyframes[trackLen-1].time;
-                    }else{
+                        trackMaxTime = keyframes[trackLen - 1].time;
+                    }
+                    else {
                         return;
                     }
                     // Percents of each keyframe
@@ -342,7 +423,7 @@ define(
                         var value = keyframes[i].value;
                         if (typeof(value) == 'string') {
                             value = color.toArray(value);
-                            if (value.length == 0) {    // Invalid color
+                            if (value.length === 0) {    // Invalid color
                                 value[0] = value[1] = value[2] = 0;
                                 value[3] = 1;
                             }
@@ -356,15 +437,19 @@ define(
                     var cacheKey = 0;
                     var cachePercent = 0;
                     var start;
-                    var i, w;
-                    var p0, p1, p2, p3;
+                    var i;
+                    var w;
+                    var p0;
+                    var p1;
+                    var p2;
+                    var p3;
 
 
                     if (isValueColor) {
-                        var rgba = [0, 0, 0, 0];
+                        var rgba = [ 0, 0, 0, 0 ];
                     }
 
-                    var onframe = function(target, percent) {
+                    var onframe = function (target, percent) {
                         // Find the range keyframes
                         // kf1-----kf2---------current--------kf3
                         // find kf2 and kf3 and do interpolation
@@ -376,22 +461,24 @@ define(
                                     break;
                                 }
                             }
-                            i = Math.min(i, trackLen-2);
-                        } else {
+                            i = Math.min(i, trackLen - 2);
+                        }
+                        else {
                             for (i = cacheKey; i < trackLen; i++) {
                                 if (kfPercents[i] > percent) {
                                     break;
                                 }
                             }
-                            i = Math.min(i-1, trackLen-2);
+                            i = Math.min(i - 1, trackLen - 2);
                         }
                         cacheKey = i;
                         cachePercent = percent;
 
-                        var range = (kfPercents[i+1] - kfPercents[i]);
+                        var range = (kfPercents[i + 1] - kfPercents[i]);
                         if (range === 0) {
                             return;
-                        } else {
+                        }
+                        else {
                             w = (percent - kfPercents[i]) / range;
                         }
                         if (useSpline) {
@@ -401,22 +488,24 @@ define(
                             p3 = kfValues[i > trackLen - 3 ? trackLen - 1 : i + 2];
                             if (isValueArray) {
                                 _catmullRomInterpolateArray(
-                                    p0, p1, p2, p3, w, w*w, w*w*w,
+                                    p0, p1, p2, p3, w, w * w, w * w * w,
                                     getter(target, propName),
                                     arrDim
                                 );
-                            } else {
+                            }
+                            else {
                                 var value;
                                 if (isValueColor) {
                                     value = _catmullRomInterpolateArray(
-                                        p0, p1, p2, p3, w, w*w, w*w*w,
+                                        p0, p1, p2, p3, w, w * w, w * w * w,
                                         rgba, 1
                                     );
                                     value = rgba2String(rgba);
-                                } else {
+                                }
+                                else {
                                     value = _catmullRomInterpolate(
-                                        p0, p1, p2, p3, w, w*w, w*w*w
-                                    )
+                                        p0, p1, p2, p3, w, w * w, w * w * w
+                                    );
                                 }
                                 setter(
                                     target,
@@ -424,23 +513,26 @@ define(
                                     value
                                 );
                             }
-                        } else {
+                        }
+                        else {
                             if (isValueArray) {
                                 _interpolateArray(
-                                    kfValues[i], kfValues[i+1], w,
+                                    kfValues[i], kfValues[i + 1], w,
                                     getter(target, propName),
                                     arrDim
                                 );
-                            } else {
+                            }
+                            else {
                                 var value;
                                 if (isValueColor) {
                                     _interpolateArray(
-                                        kfValues[i], kfValues[i+1], w,
+                                        kfValues[i], kfValues[i + 1], w,
                                         rgba, 1
                                     );
                                     value = rgba2String(rgba);
-                                } else {
-                                    value = _interpolateNumber(kfValues[i], kfValues[i+1], w);
+                                }
+                                else {
+                                    value = _interpolateNumber(kfValues[i], kfValues[i + 1], w);
                                 }
                                 setter(
                                     target,
@@ -477,6 +569,9 @@ define(
                 }
                 return this;
             },
+            /**
+             * 停止动画
+             */
             stop : function() {
                 for (var i = 0; i < this._clipList.length; i++) {
                     var clip = this._clipList[i];
@@ -484,12 +579,22 @@ define(
                 }
                 this._clipList = [];
             },
-            delay : function(time){
+            /**
+             * 设置动画延迟开始的时间
+             * @param  {number} time 单位ms
+             * @return {module:zrender/animation/Animation~Animator}
+             */
+            delay : function (time) {
                 this._delay = time;
                 return this;
             },
-            done : function(func) {
-                this._doneList.push(func);
+            /**
+             * 添加动画结束的回调
+             * @param  {Function} cb
+             * @return {module:zrender/animation/Animation~Animator}
+             */
+            done : function(cb) {
+                this._doneList.push(cb);
                 return this;
             }
         };

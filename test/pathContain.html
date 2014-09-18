@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Path Contain</title>
+    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+</head>
+<body>
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+
+    require([
+        "zrender",
+        'zrender/shape/Path',
+        'zrender/shape/Line',
+        "zrender/tool/area"
+    ], function(zrender, PathShape, LineShape, area){
+
+        // 初始化zrender
+        var zr = zrender.init( document.getElementById("main") );
+
+        var pathShape = new PathShape({
+            style: {
+                brushType: 'both',
+                lineWidth: 1,
+                path: '"M142.651,294.796C12.699,345.559-30.035,425.197,29.129,423.392c59.164-1.803,101.571,32.148,73.938,83.76c-27.634,51.605,86.419,41.451,86.419,41.451l46.896-104.904c0,0,93.796-3.459,75.06,20.305c-62.854,17.879-53.774,130.289,35.85,111.676c29.873-60.914,73.189-140.439,73.189-140.439s168.791-265.652-11.947-133.672c-137.886,109.729-158.628,26.486-137.422-21.996C292.317,231.084,272.604,244.035,142.651,294.796z\
+                        M600,350 l 50,-25\
+           a25,25 0 0,1 50,-25 l 50,-25\
+           a25,50 0 0,1 50,-25 l 50,-25\
+           a25,75 0 0,1 50,-25 l 50,-25\
+           a25,100 0 0,1 50,-25 l 50,-25'
+                // path: 'M142.651,294.796C12.699,345.559-30.035,425.197,29.129,423.392c59.164-1.803,101.571,32.148,73.938,83.76c-27.634,51.605,86.419,41.451,86.419,41.451l46.896-104.904'
+            }
+        });
+
+        zr.addShape(pathShape);
+
+        zr.render();
+
+        console.log(area.isInsidePath(pathShape.style.pathArray, 10, 'stroke', 219, 271));
+
+        // 随机散落点测试
+        var pointsDom = document.getElementById('points');
+        var ctx = pointsDom.getContext('2d');
+
+        var points = [];
+
+        var N_ITER = 1e5;
+        for (var i = 0; i < N_ITER; i++) {
+            var x = Math.random() * pointsDom.width;
+            var y = Math.random() * pointsDom.height;
+            points.push([x, y, false]);
+        }
+        var time = Date.now();
+        for (var i = 0; i < points.length; i++) {
+            if (area.isInsidePath(
+                pathShape.style.pathArray, 10, 'stroke', points[i][0], points[i][1]
+            )) {
+                points[i][2] = 2;
+            }
+            else if (area.isInsidePath(
+                pathShape.style.pathArray, 0, 'fill', points[i][0], points[i][1]
+            )) {
+                points[i][2] = 1;
+            }
+            else {
+                points[i][2] = 0;
+            }
+        }
+        var cost = Date.now() - time;
+
+        for (var i = 0; i < points.length; i++) {
+            switch(points[i][2]) {
+                case 0:
+                    ctx.fillStyle = 'red';
+                    break;
+                case 1:
+                    ctx.fillStyle = 'green';
+                    break;
+                case 2:
+                    ctx.fillStyle = 'blue';
+                    break;
+            }
+            ctx.fillRect(points[i][0], points[i][1], 2, 2);
+        }
+        document.getElementById('log').innerHTML = Math.round(1000 / cost * N_ITER) + ' ops/sec';
+
+        // 原生isPointInPath测试
+        var time = Date.now();
+        for (var i = 0; i < 100; i++) {
+            pathShape.buildPath(ctx, pathShape.style);
+            ctx.isPointInPath(points[i][0], points[i][1]);
+        }
+        var cost = Date.now() - time;
+        document.getElementById('log').innerHTML += '<br />原生: ' + Math.round(1000 / cost * 100) + ' ops/sec';
+
+        document.body.onclick = function(e) {
+            console.log(e.offsetX, e.offsetY);
+        }
+    })
+    </script>
+    <div id="main" style="width:1000px;height:600px;position:absolute;left:0px;top:0px;"></div>
+    <canvas id="points" width="1000" height="600" style="position:absolute;left:0px;top:0px;"></canvas>
+    <div id="log" style="font-size:30px;color:blue;position:absolute;z-index:1;background-color:grey;"></div>
+</body>
+</html>

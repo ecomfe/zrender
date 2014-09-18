@@ -1,6 +1,6 @@
 /**
  * Handler控制模块
- *
+ * @module zrender/Handler
  * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
  *         errorrik (errorrik@gmail.com)
  */
@@ -14,10 +14,14 @@ define(
         var env = require('./tool/env');
         var eventTool = require('./tool/event');
         var util = require('./tool/util');
+        var vec2 = require('./tool/vector');
+        var mat2d = require('./tool/matrix');
         var EVENT = config.EVENT;
 
+        var Eventful = require('./mixin/Eventful');
+
         var domHandlerNames = [
-            'resize', 'click', 
+            'resize', 'click', 'dblclick',
             'mousewheel', 'mousemove', 'mouseout', 'mouseup', 'mousedown',
             'touchstart', 'touchend', 'touchmove'
         ];
@@ -25,8 +29,8 @@ define(
         var domHandlers = {
             /**
              * 窗口大小改变响应函数
-             * 
-             * @param {event} event dom事件对象
+             * @inner
+             * @param {Event} event
              */
             resize: function (event) {
                 event = event || window.event;
@@ -39,15 +43,15 @@ define(
 
             /**
              * 点击响应函数
-             * 
-             * @param {event} event dom事件对象
+             * @inner
+             * @param {Event} event
              */
             click: function (event) {
                 event = this._zrenderEventFixed(event);
 
-                //分发config.EVENT.CLICK事件
+                // 分发config.EVENT.CLICK事件
                 var _lastHover = this._lastHover;
-                if (( _lastHover && _lastHover.clickable )
+                if ((_lastHover && _lastHover.clickable)
                     || !_lastHover
                 ) {
                     this._dispatchAgency(_lastHover, EVENT.CLICK, event);
@@ -55,24 +59,81 @@ define(
 
                 this._mousemoveHandler(event);
             },
+            
+            /**
+             * 双击响应函数
+             * @inner
+             * @param {Event} event
+             */
+            dblclick: function (event) {
+                event = this._zrenderEventFixed(event);
+
+                // 分发config.EVENT.DBLCLICK事件
+                var _lastHover = this._lastHover;
+                if ((_lastHover && _lastHover.clickable)
+                    || !_lastHover
+                ) {
+                    this._dispatchAgency(_lastHover, EVENT.DBLCLICK, event);
+                }
+
+                this._mousemoveHandler(event);
+            },
+            
 
             /**
              * 鼠标滚轮响应函数
-             * 
-             * @param {event} event dom事件对象
+             * @inner
+             * @param {Event} event
              */
             mousewheel: function (event) {
                 event = this._zrenderEventFixed(event);
 
-                //分发config.EVENT.MOUSEWHEEL事件
+                // http://www.sitepoint.com/html5-javascript-mouse-wheel/
+                // https://developer.mozilla.org/en-US/docs/DOM/DOM_event_reference/mousewheel
+                var delta = event.wheelDelta // Webkit
+                            || -event.detail; // Firefox
+                var scale = delta > 0 ? 1.1 : 1 / 1.1;
+
+                var layers = this.painter.getLayers();
+
+                var needsRefresh = false;
+                for (var z in layers) {
+                    if (z !== 'hover') {
+                        var layer = layers[z];
+                        var pos = layer.position;
+                        if (layer.zoomable) {
+                            layer.__zoom = layer.__zoom || 1;
+                            var newZoom = layer.__zoom;
+                            newZoom *= scale;
+                            newZoom = Math.max(
+                                Math.min(layer.maxZoom, newZoom),
+                                layer.minZoom
+                            );
+                            scale = newZoom / layer.__zoom;
+                            layer.__zoom = newZoom;
+                            // Keep the mouse center when scaling
+                            pos[0] -= (this._mouseX - pos[0]) * (scale - 1);
+                            pos[1] -= (this._mouseY - pos[1]) * (scale - 1);
+                            layer.scale[0] *= scale;
+                            layer.scale[1] *= scale;
+                            layer.dirty = true;
+                            needsRefresh = true;
+                        }
+                    }
+                }
+                if (needsRefresh) {
+                    this.painter.refresh();
+                }
+
+                // 分发config.EVENT.MOUSEWHEEL事件
                 this._dispatchAgency(this._lastHover, EVENT.MOUSEWHEEL, event);
                 this._mousemoveHandler(event);
             },
 
             /**
              * 鼠标（手指）移动响应函数
-             * 
-             * @param {event} event dom事件对象
+             * @inner
+             * @param {Event} event
              */
             mousemove: function (event) {
                 if (this.painter.isLoading()) {
@@ -84,15 +145,18 @@ define(
                 this._lastY = this._mouseY;
                 this._mouseX = eventTool.getX(event);
                 this._mouseY = eventTool.getY(event);
+                var dx = this._mouseX - this._lastX;
+                var dy = this._mouseY - this._lastY;
 
                 // 可能出现config.EVENT.DRAGSTART事件
                 // 避免手抖点击误认为拖拽
-                //if (this._mouseX - this._lastX > 1 || this._mouseY - this._lastY > 1) {
-                    this._processDragStart(event);
-                //}
+                // if (this._mouseX - this._lastX > 1 || this._mouseY - this._lastY > 1) {
+                this._processDragStart(event);
+                // }
                 this._hasfound = 0;
                 this._event = event;
-                this.storage.iterShape(this._findHover, { normal: 'down'});
+
+                this._iterateAndFindHover();
 
                 // 找到的在迭代函数里做了处理，没找到得在迭代完后处理
                 if (!this._hasfound) {
@@ -111,18 +175,39 @@ define(
                     this.storage.delHover();
                     this.painter.clearHover();
                 }
-                //如果存在拖拽中元素，被拖拽的图形元素最后addHover
-                if (this._draggingTarget) {
-                    this.storage.drift(
-                        this._draggingTarget.id,
-                        this._mouseX - this._lastX,
-                        this._mouseY - this._lastY
-                    );
-                    this.storage.addHover(this._draggingTarget);
-                }
 
                 // set cursor for root element
                 var cursor = 'default';
+
+                // 如果存在拖拽中元素，被拖拽的图形元素最后addHover
+                if (this._draggingTarget) {
+                    this.storage.drift(this._draggingTarget.id, dx, dy);
+                    this.storage.addHover(this._draggingTarget);
+                }
+                else if (this._isMouseDown) {
+                    // Layer dragging
+                    var layers = this.painter.getLayers();
+
+                    var needsRefresh = false;
+                    for (var z in layers) {
+                        if (z !== 'hover') {
+                            var layer = layers[z];
+                            if (layer.panable) {
+                                // PENDING
+                                cursor = 'move';
+                                // Keep the mouse center when scaling
+                                layer.position[0] += dx;
+                                layer.position[1] += dy;
+                                needsRefresh = true;
+                                layer.dirty = true;
+                            }
+                        }
+                    }
+                    if (needsRefresh) {
+                        this.painter.refresh();
+                    }
+                }
+
                 if (this._draggingTarget || (this._hasfound && this._lastHover.draggable)) {
                     cursor = 'move';
                 }
@@ -141,8 +226,8 @@ define(
 
             /**
              * 鼠标（手指）离开响应函数
-             * 
-             * @param {event} event dom事件对象
+             * @inner
+             * @param {Event} event
              */
             mouseout: function (event) {
                 event = this._zrenderEventFixed(event);
@@ -177,8 +262,8 @@ define(
 
             /**
              * 鼠标（手指）按下响应函数
-             * 
-             * @param {event} event dom事件对象
+             * @inner
+             * @param {Event} event
              */
             mousedown: function (event) {
                 if (this._lastDownButton == 2) {
@@ -192,7 +277,7 @@ define(
                 event = this._zrenderEventFixed(event);
                 this._isMouseDown = 1;
 
-                //分发config.EVENT.MOUSEDOWN事件
+                // 分发config.EVENT.MOUSEDOWN事件
                 this._mouseDownTarget = this._lastHover;
                 this._dispatchAgency(this._lastHover, EVENT.MOUSEDOWN, event);
                 this._lastDownButton = event.button;
@@ -200,16 +285,16 @@ define(
 
             /**
              * 鼠标（手指）抬起响应函数
-             * 
-             * @param {event} event dom事件对象
+             * @inner
+             * @param {Event} event
              */
-            mouseup:function (event) {
+            mouseup: function (event) {
                 event = this._zrenderEventFixed(event);
                 this.root.style.cursor = 'default';
                 this._isMouseDown = 0;
                 this._mouseDownTarget = null;
 
-                //分发config.EVENT.MOUSEUP事件
+                // 分发config.EVENT.MOUSEUP事件
                 this._dispatchAgency(this._lastHover, EVENT.MOUSEUP, event);
                 this._processDrop(event);
                 this._processDragEnd(event);
@@ -217,23 +302,23 @@ define(
 
             /**
              * Touch开始响应函数
-             * 
-             * @param {event} event dom事件对象
+             * @inner
+             * @param {Event} event
              */
             touchstart: function (event) {
-                //eventTool.stop(event);// 阻止浏览器默认事件，重要
+                // eventTool.stop(event);// 阻止浏览器默认事件，重要
                 event = this._zrenderEventFixed(event, true);
                 this._lastTouchMoment = new Date();
 
-                //平板补充一次findHover
+                // 平板补充一次findHover
                 this._mobildFindFixed(event);
                 this._mousedownHandler(event);
             },
 
             /**
              * Touch移动响应函数
-             * 
-             * @param {event} event dom事件对象
+             * @inner
+             * @param {Event} event
              */
             touchmove: function (event) {
                 event = this._zrenderEventFixed(event, true);
@@ -245,17 +330,25 @@ define(
 
             /**
              * Touch结束响应函数
-             * 
-             * @param {event} event dom事件对象
+             * @inner
+             * @param {Event} event
              */
             touchend: function (event) {
-                //eventTool.stop(event);// 阻止浏览器默认事件，重要
+                // eventTool.stop(event);// 阻止浏览器默认事件，重要
                 event = this._zrenderEventFixed(event, true);
                 this._mouseupHandler(event);
-
-                if (new Date() - this._lastTouchMoment < EVENT.touchClickDelay) {
+                
+                var now = new Date();
+                if (now - this._lastTouchMoment < EVENT.touchClickDelay) {
                     this._mobildFindFixed(event);
                     this._clickHandler(event);
+                    if (now - this._lastClickMoment < EVENT.touchClickDelay / 2) {
+                        this._dblclickHandler(event);
+                        if (this._lastHover && this._lastHover.clickable) {
+                            eventTool.stop(event);// 阻止浏览器默认事件，重要
+                        }
+                    }
+                    this._lastClickMoment = now;
                 }
                 this.painter.clearHover();
             }
@@ -269,38 +362,47 @@ define(
          * @param {Object} context 运行时this环境
          * @return {Function}
          */
-        function bind1Arg( handler, context ) {
-            return function ( e ) {
-                return handler.call( context, e );
+        function bind1Arg(handler, context) {
+            return function (e) {
+                return handler.call(context, e);
             };
         }
+        /**function bind2Arg(handler, context) {
+            return function (arg1, arg2) {
+                return handler.call(context, arg1, arg2);
+            };
+        }*/
 
+        function bind3Arg(handler, context) {
+            return function (arg1, arg2, arg3) {
+                return handler.call(context, arg1, arg2, arg3);
+            };
+        }
         /**
          * 为控制类实例初始化dom 事件处理函数
          * 
          * @inner
-         * @param {Handler} instance 控制类实例
+         * @param {module:zrender/Handler} instance 控制类实例
          */
-        function initDomHandler( instance ) {
+        function initDomHandler(instance) {
             var len = domHandlerNames.length;
-            while ( len-- ) {
-                var name = domHandlerNames[ len ];
-                instance[ '_' + name + 'Handler' ] = bind1Arg( domHandlers[ name ], instance );
+            while (len--) {
+                var name = domHandlerNames[len];
+                instance['_' + name + 'Handler'] = bind1Arg(domHandlers[name], instance);
             }
         }
 
         /**
-         * 控制类 (C)
-         * 
+         * @alias module:zrender/Handler
+         * @constructor
+         * @extends module:zrender/mixin/Eventful
          * @param {HTMLElement} root 绘图区域
-         * @param {storage} storage Storage实例
-         * @param {painter} painter Painter实例
-         *
-         * 分发事件支持详见config.EVENT
+         * @param {module:zrender/Storage} storage Storage实例
+         * @param {module:zrender/Painter} painter Painter实例
          */
-        function Handler(root, storage, painter) {
+        var Handler = function(root, storage, painter) {
             // 添加事件分发器特性
-            eventTool.Dispatcher.call(this);
+            Eventful.call(this);
 
             this.root = root;
             this.storage = storage;
@@ -322,7 +424,7 @@ define(
             this._mouseX = 
             this._mouseY = 0;
 
-            this._findHover = bind1Arg(findHover, this);
+            this._findHover = bind3Arg(findHover, this);
             this._domHover = painter.getDomHover();
             initDomHandler(this);
 
@@ -339,6 +441,7 @@ define(
                 else {
                     // mobile的click/move/up/down自己模拟
                     root.addEventListener('click', this._clickHandler);
+                    root.addEventListener('dblclick', this._dblclickHandler);
                     root.addEventListener('mousewheel', this._mousewheelHandler);
                     root.addEventListener('mousemove', this._mousemoveHandler);
                     root.addEventListener('mousedown', this._mousedownHandler);
@@ -351,13 +454,14 @@ define(
                 window.attachEvent('onresize', this._resizeHandler);
 
                 root.attachEvent('onclick', this._clickHandler);
+                root.attachEvent('ondblclick ', this._dblclickHandler);
                 root.attachEvent('onmousewheel', this._mousewheelHandler);
                 root.attachEvent('onmousemove', this._mousemoveHandler);
                 root.attachEvent('onmouseout', this._mouseoutHandler);
                 root.attachEvent('onmousedown', this._mousedownHandler);
                 root.attachEvent('onmouseup', this._mouseupHandler);
             }
-        }
+        };
 
         /**
          * 自定义事件绑定
@@ -388,6 +492,7 @@ define(
             switch (eventName) {
                 case EVENT.RESIZE:
                 case EVENT.CLICK:
+                case EVENT.DBLCLICK:
                 case EVENT.MOUSEWHEEL:
                 case EVENT.MOUSEMOVE:
                 case EVENT.MOUSEDOWN:
@@ -399,7 +504,7 @@ define(
         };
 
         /**
-         * 释放
+         * 释放，解绑所有事件
          */
         Handler.prototype.dispose = function () {
             var root = this.root;
@@ -416,6 +521,7 @@ define(
                 else {
                     // mobile的click自己模拟
                     root.removeEventListener('click', this._clickHandler);
+                    root.removeEventListener('dblclick', this._dblclickHandler);
                     root.removeEventListener('mousewheel', this._mousewheelHandler);
                     root.removeEventListener('mousemove', this._mousemoveHandler);
                     root.removeEventListener('mousedown', this._mousedownHandler);
@@ -428,6 +534,7 @@ define(
                 window.detachEvent('onresize', this._resizeHandler);
 
                 root.detachEvent('onclick', this._clickHandler);
+                root.detachEvent('dblclick', this._dblclickHandler);
                 root.detachEvent('onmousewheel', this._mousewheelHandler);
                 root.detachEvent('onmousemove', this._mousemoveHandler);
                 root.detachEvent('onmouseout', this._mouseoutHandler);
@@ -470,9 +577,9 @@ define(
                 this._isDragging = 1;
 
                 _draggingTarget.invisible = true;
-                this.storage.mod(_draggingTarget.id, _draggingTarget);
+                this.storage.mod(_draggingTarget.id);
 
-                //分发config.EVENT.DRAGSTART事件
+                // 分发config.EVENT.DRAGSTART事件
                 this._dispatchAgency(
                     _draggingTarget,
                     EVENT.DRAGSTART,
@@ -490,7 +597,7 @@ define(
          */
         Handler.prototype._processDragEnter = function (event) {
             if (this._draggingTarget) {
-                //分发config.EVENT.DRAGENTER事件
+                // 分发config.EVENT.DRAGENTER事件
                 this._dispatchAgency(
                     this._lastHover,
                     EVENT.DRAGENTER,
@@ -508,7 +615,7 @@ define(
          */
         Handler.prototype._processDragOver = function (event) {
             if (this._draggingTarget) {
-                //分发config.EVENT.DRAGOVER事件
+                // 分发config.EVENT.DRAGOVER事件
                 this._dispatchAgency(
                     this._lastHover,
                     EVENT.DRAGOVER,
@@ -526,7 +633,7 @@ define(
          */
         Handler.prototype._processDragLeave = function (event) {
             if (this._draggingTarget) {
-                //分发config.EVENT.DRAGLEAVE事件
+                // 分发config.EVENT.DRAGLEAVE事件
                 this._dispatchAgency(
                     this._lastHover,
                     EVENT.DRAGLEAVE,
@@ -545,10 +652,10 @@ define(
         Handler.prototype._processDrop = function (event) {
             if (this._draggingTarget) {
                 this._draggingTarget.invisible = false;
-                this.storage.mod(this._draggingTarget.id, this._draggingTarget);
+                this.storage.mod(this._draggingTarget.id);
                 this.painter.refresh();
 
-                //分发config.EVENT.DROP事件
+                // 分发config.EVENT.DROP事件
                 this._dispatchAgency(
                     this._lastHover,
                     EVENT.DROP,
@@ -566,7 +673,7 @@ define(
          */
         Handler.prototype._processDragEnd = function (event) {
             if (this._draggingTarget) {
-                //分发config.EVENT.DRAGEND事件
+                // 分发config.EVENT.DRAGEND事件
                 this._dispatchAgency(
                     this._draggingTarget,
                     EVENT.DRAGEND,
@@ -587,7 +694,7 @@ define(
          * @param {Object} event 事件对象
          */
         Handler.prototype._processOverShape = function (event) {
-            //分发config.EVENT.MOUSEOVER事件
+            // 分发config.EVENT.MOUSEOVER事件
             this._dispatchAgency(this._lastHover, EVENT.MOUSEOVER, event);
         };
 
@@ -598,7 +705,7 @@ define(
          * @param {Object} event 事件对象
          */
         Handler.prototype._processOutShape = function (event) {
-            //分发config.EVENT.MOUSEOUT事件
+            // 分发config.EVENT.MOUSEOUT事件
             this._dispatchAgency(this._lastHover, EVENT.MOUSEOUT, event);
         };
 
@@ -627,7 +734,8 @@ define(
             }
 
             while (el) {
-                el[eventHandler] && el[eventHandler](eventPacket);
+                el[eventHandler] 
+                && (eventPacket.cancelBubble = el[eventHandler](eventPacket));
                 el.dispatch(eventName, eventPacket);
 
                 el = el.parent;
@@ -644,20 +752,53 @@ define(
                 }
             }
             else if (!draggedShape) {
-                //无hover目标，无拖拽对象，原生事件分发
+                // 无hover目标，无拖拽对象，原生事件分发
                 this.dispatch(eventName, {
                     type: eventName,
                     event: event
                 });
             }
         };
+
+        /**
+         * 迭代寻找hover shape
+         * @private
+         * @method
+         */
+        Handler.prototype._iterateAndFindHover = (function() {
+            var invTransform = mat2d.create();
+            return function() {
+                var list = this.storage.getShapeList();
+                var currentZLevel;
+                var currentLayer;
+                var tmp = [ 0, 0 ];
+                for (var i = list.length - 1; i >= 0 ; i--) {
+                    var shape = list[i];
+
+                    if (currentZLevel !== shape.zlevel) {
+                        currentLayer = this.painter.getLayer(shape.zlevel, currentLayer);
+                        tmp[0] = this._mouseX;
+                        tmp[1] = this._mouseY;
+
+                        if (currentLayer.needTransform) {
+                            mat2d.invert(invTransform, currentLayer.transform);
+                            vec2.applyTransform(tmp, tmp, invTransform);
+                        }
+                    }
+
+                    if (this._findHover(shape, tmp[0], tmp[1])) {
+                        break;
+                    }
+                }
+            };
+        })();
         
         // touch指尖错觉的尝试偏移量配置
         var MOBILE_TOUCH_OFFSETS = [
             { x: 10 },
             { x: -20 },
-            { x: 10, y: 10},
-            { y: -20}
+            { x: 10, y: 10 },
+            { y: -20 }
         ];
 
         // touch有指尖错觉，四向尝试，让touch上的点击更好触发事件
@@ -667,12 +808,15 @@ define(
             this._mouseY = event.zrenderY;
 
             this._event = event;
-            this.storage.iterShape(this._findHover, { normal: 'down'});
-            for ( var i = 0; !this._lastHover && i < MOBILE_TOUCH_OFFSETS.length ; i++ ) {
+
+            this._iterateAndFindHover();
+
+            for (var i = 0; !this._lastHover && i < MOBILE_TOUCH_OFFSETS.length ; i++) {
                 var offset = MOBILE_TOUCH_OFFSETS[ i ];
-                offset.x && ( this._mouseX += offset.x );
-                offset.y && ( this._mouseX += offset.y );
-                this.storage.iterShape(this._findHover, { normal: 'down'});
+                offset.x && (this._mouseX += offset.x);
+                offset.y && (this._mouseX += offset.y);
+
+                this._iterateAndFindHover();
             }
 
             if (this._lastHover) {
@@ -684,43 +828,54 @@ define(
         /**
          * 迭代函数，查找hover到的图形元素并即时做些事件分发
          * 
-         * @private
-         * @param {Object} e 图形元素
+         * @inner
+         * @param {Object} shape 图形元素
+         * @param {number} x
+         * @param {number} y
          */
-        function findHover(shape) {
+        function findHover(shape, x, y) {
             if (
-                ( this._draggingTarget && this._draggingTarget.id == shape.id ) //迭代到当前拖拽的图形上
+                (this._draggingTarget && this._draggingTarget.id == shape.id) // 迭代到当前拖拽的图形上
                 || shape.isSilent() // 打酱油的路过，啥都不响应的shape~
             ) {
                 return false;
             }
 
             var event = this._event;
-            if (shape.isCover(this._mouseX, this._mouseY)) {
+            if (shape.isCover(x, y)) {
                 if (shape.hoverable) {
                     this.storage.addHover(shape);
+                }
+                // 查找是否在 clipShape 中
+                var p = shape.parent;
+                while (p) {
+                    if (p.clipShape && !p.clipShape.isCover(this._mouseX, this._mouseY))  {
+                        // 已经被祖先 clip 掉了
+                        return false;
+                    }
+                    p = p.parent;
                 }
 
                 if (this._lastHover != shape) {
                     this._processOutShape(event);
 
-                    //可能出现config.EVENT.DRAGLEAVE事件
+                    // 可能出现config.EVENT.DRAGLEAVE事件
                     this._processDragLeave(event);
 
                     this._lastHover = shape;
 
-                    //可能出现config.EVENT.DRAGENTER事件
+                    // 可能出现config.EVENT.DRAGENTER事件
                     this._processDragEnter(event);
                 }
 
                 this._processOverShape(event);
 
-                //可能出现config.EVENT.DRAGOVER
+                // 可能出现config.EVENT.DRAGOVER
                 this._processDragOver(event);
 
                 this._hasfound = 1;
 
-                return true;    //找到则中断迭代查找
+                return true;    // 找到则中断迭代查找
             }
 
             return false;
@@ -732,7 +887,7 @@ define(
          * @private
          */
         Handler.prototype._zrenderEventFixed = function (event, isTouch) {
-            if ( event.zrenderFixed ) {
+            if (event.zrenderFixed) {
                 return event;
             }
 
@@ -771,7 +926,7 @@ define(
             return event;
         };
 
-        util.merge(Handler.prototype, eventTool.Dispatcher.prototype, true);
+        util.merge(Handler.prototype, Eventful.prototype, true);
 
         return Handler;
     }

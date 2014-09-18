@@ -1,71 +1,42 @@
 /**
- * zrender
- *
+ * 多边形
+ * @module zrender/shape/Polygon
  * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
- *
- * shape类：多边形
- * 可配图形属性：
-   {
-       // 基础属性
-       shape  : 'polygon',      // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
-       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
-       invisible : {boolean},   // 默认为false，是否可见
+ * @example
+ *     var Polygon = require('zrender/shape/Polygon');
+ *     var shape = new Polygon({
+ *         style: {
+ *             // 100x100的正方形
+ *             pointList: [[0, 0], [100, 0], [100, 100], [0, 100]],
+ *             color: 'blue'
+ *         }
+ *     });
+ *     zr.addShape(shape);
+ */
 
-       // 样式属性，默认状态样式样式属性
-       style  : {
-           pointList     : {Array},   // 必须，多边形各个顶角坐标
-           brushType     : {string},  // 默认为fill，绘画方式
-                                      // fill(填充) | stroke(描边) | both(填充+描边)
-           color         : {color},   // 默认为'#000'，填充颜色，支持rgba
-           strokeColor   : {color},   // 默认为'#000'，描边颜色（轮廓），支持rgba
-           lineWidth     : {number},  // 默认为1，线条宽度，描边下有效
-
-           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
-           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
-           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
-           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
-           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
-
-           text          : {string},  // 默认为null，附加文本
-           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
-           textPosition  : {string},  // 默认为top，附加文本位置。
-                                      // inside | left | right | top | bottom
-           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
-                                      // start | end | left | right | center
-           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
-                                      // top | bottom | middle |
-                                      // alphabetic | hanging | ideographic
-           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
-                                      // 'inside' ? '#fff' : color
-       },
-
-       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
-       highlightStyle : {
-           // 同style
-       }
-
-       // 交互属性，详见shape.Base
-
-       // 事件属性，详见shape.Base
-   }
-         例子：
-   {
-       shape  : 'polygon',
-       id     : '123456',
-       zlevel : 1,
-       style  : {
-           pointList : [[10, 10], [300, 20], [298, 400], [50, 450]]
-           color : '#eee',
-           text : 'Baidu'
-       },
-       myName : 'kener',  // 可自带任何有效自定义属性
-
-       clickable : true,
-       onClick : function(eventPacket) {
-           alert(eventPacket.target.myName);
-       }
-   }
+/**
+ * @typedef {Object} IPolygonStyle
+ * @property {string} pointList 多边形顶点数组
+ * @property {string} [smooth=''] 是否做平滑插值, 平滑算法可以选择 bezier, spline
+ * @property {number} [smoothConstraint] 平滑约束
+ * @property {string} [brushType='fill']
+ * @property {string} [color='#000000'] 填充颜色
+ * @property {string} [strokeColor='#000000'] 描边颜色
+ * @property {string} [lineCape='butt'] 线帽样式，可以是 butt, round, square
+ * @property {number} [lineWidth=1] 描边宽度
+ * @property {number} [opacity=1] 绘制透明度
+ * @property {number} [shadowBlur=0] 阴影模糊度，大于0有效
+ * @property {string} [shadowColor='#000000'] 阴影颜色
+ * @property {number} [shadowOffsetX=0] 阴影横向偏移
+ * @property {number} [shadowOffsetY=0] 阴影纵向偏移
+ * @property {string} [text] 图形中的附加文本
+ * @property {string} [textColor='#000000'] 文本颜色
+ * @property {string} [textFont] 附加文本样式，eg:'bold 18px verdana'
+ * @property {string} [textPosition='end'] 附加文本位置, 可以是 inside, left, right, top, bottom
+ * @property {string} [textAlign] 默认根据textPosition自动设置，附加文本水平对齐。
+ *                                可以是start, end, left, right, center
+ * @property {string} [textBaseline] 默认根据textPosition自动设置，附加文本垂直对齐。
+ *                                可以是top, bottom, middle, alphabetic, hanging, ideographic
  */
 define(
     function (require) {
@@ -74,21 +45,29 @@ define(
         var smoothBezier = require('./util/smoothBezier');
         var dashedLineTo = require('./util/dashedLineTo');
 
-        
-        function Polygon(options) {
+        /**
+         * @alias module:zrender/shape/Polygon
+         * @param {Object} options
+         * @constructor
+         * @extends module:zrender/shape/Base
+         */
+        var Polygon = function (options) {
             Base.call(this, options);
-        }
+            /**
+             * 多边形绘制样式
+             * @name module:zrender/shape/Polygon#style
+             * @type {module:zrender/shape/Polygon~IPolygonStyle}
+             */
+            /**
+             * 多边形高亮绘制样式
+             * @name module:zrender/shape/Polygon#highlightStyle
+             * @type {module:zrender/shape/Polygon~IPolygonStyle}
+             */
+        };
 
         Polygon.prototype = {
             type: 'polygon',
 
-            /**
-             * 画刷
-             * @param ctx       画布句柄
-             * @param isHighlight   是否为高亮状态
-             * @param updateCallback 需要异步加载资源的shape可以通过这个callback(e)
-             *                       让painter更新视图，base.brush没用，需要的话重载brush
-             */
             brush : function (ctx, isHighlight) {
                 var style = this.style;
                 if (isHighlight) {
@@ -103,7 +82,7 @@ define(
                 this.setContext(ctx, style);
     
                 // 设置transform
-                this.updateTransform(ctx);
+                this.setTransform(ctx);
                 
                 // 先fill再stroke
                 var hasPath = false;
@@ -140,14 +119,11 @@ define(
                     if (!hasPath) {
                         ctx.beginPath();
                         this.buildPath(ctx, style);
-                        ctx.closePath();
                     }
                     ctx.stroke();
                 }
     
-                if (style.text) {
-                    this.drawText(ctx, style, this.style);
-                }
+                this.drawText(ctx, style, this.style);
     
                 ctx.restore();
     
@@ -156,10 +132,10 @@ define(
         
             /**
              * 创建多边形路径
-             * @param {Context2D} ctx Canvas 2D上下文
-             * @param {Object} style 样式
+             * @param {CanvasRenderingContext2D} ctx
+             * @param {module:zrender/shape/Polygon~IPolygonStyle} style
              */
-            buildPath : function(ctx, style) {
+            buildPath : function (ctx, style) {
                 // 虽然能重用brokenLine，但底层图形基于性能考虑，重复代码减少调用吧
                 var pointList = style.pointList;
                 // 开始点和结束点重复
@@ -183,7 +159,7 @@ define(
 
                 if (style.smooth && style.smooth !== 'spline') {
                     var controlPoints = smoothBezier(
-                        pointList, style.smooth, true
+                        pointList, style.smooth, true, style.smoothConstraint
                     );
 
                     ctx.moveTo(pointList[0][0], pointList[0][1]);
@@ -206,10 +182,10 @@ define(
                     }
 
                     if (!style.lineType || style.lineType == 'solid') {
-                        //默认为实线
-                        ctx.moveTo(pointList[0][0],pointList[0][1]);
+                        // 默认为实线
+                        ctx.moveTo(pointList[0][0], pointList[0][1]);
                         for (var i = 1, l = pointList.length; i < l; i++) {
-                            ctx.lineTo(pointList[i][0],pointList[i][1]);
+                            ctx.lineTo(pointList[i][0], pointList[i][1]);
                         }
                         ctx.lineTo(pointList[0][0], pointList[0][1]);
                     }
@@ -221,7 +197,7 @@ define(
                             || (style.lineWidth || 1) 
                                * (style.lineType == 'dashed' ? 5 : 1);
                         style._dashLength = dashLength;
-                        ctx.moveTo(pointList[0][0],pointList[0][1]);
+                        ctx.moveTo(pointList[0][0], pointList[0][1]);
                         for (var i = 1, l = pointList.length; i < l; i++) {
                             dashedLineTo(
                                 ctx,
@@ -244,10 +220,11 @@ define(
             },
 
             /**
-             * 返回矩形区域，用于局部刷新和文字定位
-             * @param {Object} style
+             * 计算返回多边形包围盒矩阵
+             * @param {module:zrender/shape/Polygon~IPolygonStyle} style
+             * @return {module:zrender/shape/Base~IBoundingRect}
              */
-            getRect : function(style) {
+            getRect : function (style) {
                 if (style.__rect) {
                     return style.__rect;
                 }
@@ -258,7 +235,7 @@ define(
                 var maxY = Number.MIN_VALUE;
 
                 var pointList = style.pointList;
-                for(var i = 0, l = pointList.length; i < l; i++) {
+                for (var i = 0, l = pointList.length; i < l; i++) {
                     if (pointList[i][0] < minX) {
                         minX = pointList[i][0];
                     }
@@ -295,3 +272,4 @@ define(
         return Polygon;
     }
 );
+

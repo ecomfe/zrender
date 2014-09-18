@@ -4,11 +4,10 @@
  * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
  *          errorrik (errorrik@gmail.com)
  */
-
 define(
     function (/* require */) {
 
-        var dashPattern = [5, 5];
+        var dashPattern = [ 5, 5 ];
         /**
          * 虚线lineTo 
          */
@@ -37,7 +36,8 @@ define(
             for (var i = 0; i < numDashes; ++i) {
                 if (flag) {
                     ctx.moveTo(x1, y1);
-                } else {
+                }
+                else {
                     ctx.lineTo(x1, y1);
                 }
                 flag = !flag;

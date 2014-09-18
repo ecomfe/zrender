@@ -21,7 +21,7 @@
             "zrender",
             "zrender/animation/animation",
             'zrender/shape/Circle',
-            'zrender/shape/Group'
+            'zrender/Group'
         ], 
         function(zrender, Animation, CircleShape, Group){
 
@@ -37,12 +37,24 @@
                 },
                 hoverable: false
             });
+            var circle2 = new CircleShape({
+                scale : [1, 1],
+                style : {
+                    x : 10,
+                    y : 10,
+                    r : 10,
+                    color:'red',
+                    brushType : 'fill'
+                },
+                hoverable: false
+            });
 
             var group = new Group({
                 position : [100, 100]
             });
             group.addChild(circle);
-
+            group.addChild(circle2);
+            
             zr.addGroup(group);
 
             var tm1 = zr.animate(group.id, "", true)

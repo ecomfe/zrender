@@ -52,7 +52,7 @@
                 <li class="dropdown">
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="icon-download-alt icon-white"></i>Download <b class="caret"></b></a>
                   <ul class="dropdown-menu">
-                    <li><a href="https://github.com/ecomfe/zrender/archive/2.0.0.zip">ZIP (2.0.0)</a></li>
+                    <li><a href="https://github.com/ecomfe/zrender/archive/2.0.3.zip">ZIP (2.0.3)</a></li>
                     <li><a href="https://github.com/ecomfe/zrender/archive/master.zip">ZIP (Latest)</a></li>
 
                   </ul>
@@ -64,7 +64,7 @@
                     <li><a href="http://fe.baidu.com/doc/ecom/tech/topic/dv/index.html" target="_blank">Data Visualization</a></li>
                     <li class="divider"></li>
                     <!--li class="nav-header">Library</li-->
-                    <li><a href="http://tangram.baidu.com/" target="_blank">Tangram</a></li>
+                    <li><a href="http://echarts.baidu.com//" target="_blank">ECharts</a></li>
                   </ul>
                 </li>
               </ul>
@@ -263,15 +263,48 @@ zr.addShape(
         var zr; // 全局可用zrender对象
         var animationTicket;    // 全局动画索引
 
-        require.config({
-            packages: [
-                {
-                    name: 'zrender',
-                    location: 'src',
-                    main: 'zrender'
+        var developMode = false;
+        if (developMode) {
+            // for develop
+            require.config({
+                packages: [
+                    {
+                        name: 'zrender',
+                        location: 'src',
+                        main: 'zrender'
+                    }
+                ]
+            });
+        }
+        else {
+            // for echarts online home page
+            var fileLocation = './doc/example/www/js/zrender';
+            require.config({
+                paths:{ 
+                    zrender: fileLocation,
+                    'zrender/shape/Rose': fileLocation,
+                    'zrender/shape/Trochoid': fileLocation,
+                    'zrender/shape/Circle': fileLocation,
+                    'zrender/shape/Sector': fileLocation,
+                    'zrender/shape/Ring': fileLocation,
+                    'zrender/shape/Ellipse': fileLocation,
+                    'zrender/shape/Rectangle': fileLocation,
+                    'zrender/shape/Text': fileLocation,
+                    'zrender/shape/Heart': fileLocation,
+                    'zrender/shape/Droplet': fileLocation,
+                    'zrender/shape/Line': fileLocation,
+                    'zrender/shape/Image': fileLocation,
+                    'zrender/shape/Star': fileLocation,
+                    'zrender/shape/Isogon': fileLocation,
+                    'zrender/shape/BezierCurve': fileLocation,
+                    'zrender/shape/BrokenLine': fileLocation,
+                    'zrender/shape/Path': fileLocation,
+                    'zrender/shape/Polygon': fileLocation
                 }
-            ]
-        });
+            });
+        }
+
+        
         require(
             [
                 'zrender', 

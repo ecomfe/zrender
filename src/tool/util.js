@@ -86,7 +86,8 @@ define(
 
         function getContext() {
             if (!_ctx) {
-                require('../lib/excanvas');
+                require('../dep/excanvas');
+                /* jshint ignore:start */
                 if (G_vmlCanvasManager) {
                     var _div = document.createElement('div');
                     _div.style.position = 'absolute';
@@ -99,6 +100,7 @@ define(
                 else {
                     _ctx = document.createElement('canvas').getContext('2d');
                 }
+                /* jshint ignore:end */
             }
             return _ctx;
         }
@@ -180,11 +182,11 @@ define(
         /**
          * 查询数组中元素的index
          */
-        function indexOf(array, value){
+        function indexOf(array, value) {
             if (array.indexOf) {
                 return array.indexOf(value);
             }
-            for(var i = 0, len=array.length; i<len; i++) {
+            for (var i = 0, len = array.length; i < len; i++) {
                 if (array[i] === value) {
                     return i;
                 }

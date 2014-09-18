@@ -99,7 +99,8 @@ define(
         };
 
         Base.prototype._start = function (/*addShapeHandle, refreshHandle*/) {
-            return setInterval(function(){}, 10000);
+            return setInterval(function () {
+            }, 10000);
         };
 
         Base.prototype.stop = function () {
@@ -108,6 +109,49 @@ define(
 
         Base.prototype.setOptions = function (options) {
             this.options = options || {};
+        };
+        
+        Base.prototype.adjust = function (value, region) {
+            if (value <= region[0]) {
+                value = region[0];
+            }
+            else if (value >= region[1]) {
+                value = region[1];
+            }
+            return value;
+        };
+        
+        Base.prototype.getLocation = function(loc, totalWidth, totalHeight) {
+            var x = loc.x != null ? loc.x : 'center';
+            switch (x) {
+                case 'center' :
+                    x = Math.floor((this.canvasWidth - totalWidth) / 2);
+                    break;
+                case 'left' :
+                    x = 0;
+                    break;
+                case 'right' :
+                    x = this.canvasWidth - totalWidth;
+                    break;
+            }
+            var y = loc.y != null ? loc.y : 'center';
+            switch (y) {
+                case 'center' :
+                    y = Math.floor((this.canvasHeight - totalHeight) / 2);
+                    break;
+                case 'top' :
+                    y = 0;
+                    break;
+                case 'bottom' :
+                    y = this.canvasHeight - totalHeight;
+                    break;
+            }
+            return {
+                x : x,
+                y : y,
+                width : totalWidth,
+                height : totalHeight
+            };
         };
 
         return Base;

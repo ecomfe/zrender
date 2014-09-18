@@ -1,99 +1,88 @@
 /**
- * zrender
- *
+ * 贝塞尔曲线
+ * @module zrender/shape/BezierCurve
  * @author Neil (杨骥, yangji01@baidu.com)
- *
- * shape类：贝塞尔曲线
- * 可配图形属性：
-   {
-       // 基础属性
-       shape  : 'beziercurve',         // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
-       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
-       invisible : {boolean},   // 默认为false，是否可见
-
-       // 样式属性，默认状态样式样式属性
-       style  : {
-           xStart        : {number},  // 必须，起点横坐标
-           yStart        : {number},  // 必须，起点纵坐标
-           cpX1          : {number},  // 必须，第一个关联点横坐标
-           cpY1          : {number},  // 必须，第一个关联点纵坐标
-           cpX2          : {number},  // 可选，第二个关联点横坐标  缺省即为二次贝塞尔曲线
-           cpY2          : {number},  // 可选，第二个关联点纵坐标
-           xEnd          : {number},  // 必须，终点横坐标
-           yEnd          : {number},  // 必须，终点纵坐标
-           strokeColor   : {color},   // 默认为'#000'，线条颜色（轮廓），支持rgba
-
-           lineWidth     : {number},  // 默认为1，线条宽度
-           lineCap       : {string},  // 默认为butt，线帽样式。butt | round | square
-
-           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
-           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
-           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
-           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
-           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
-
-           text          : {string},  // 默认为null，附加文本
-           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
-           textPosition  : {string},  // 默认为end，附加文本位置。
-                                      // inside | start | end
-           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
-                                      // start | end | left | right | center
-           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
-                                      // top | bottom | middle |
-                                      // alphabetic | hanging | ideographic
-           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
-                                      // 'inside' ? '#000' : color
-       },
-
-       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
-       highlightStyle : {
-           // 同style
-       }
-
-       // 交互属性，详见shape.Base
-
-       // 事件属性，详见shape.Base
-   }
-         例子：
-   {
-       shape  : 'beziercurve',
-       id     : '123456',
-       zlevel : 1,
-       style  : {
-           xStart : 100,
-           yStart : 100,
-           xEnd : 200,
-           yEnd : 200,
-           strokeColor : '#eee',
-           lineWidth : 20,
-           text : 'Baidu'
-       },
-       myName : 'kener',  //可自带任何有效自定义属性
-
-       clickable : true,
-       onClick : function(eventPacket) {
-           alert(eventPacket.target.myName);
-       }
-   }
+ * @example
+ *     var BezierCurve = require('zrender/shape/BezierCurve');
+ *     var shape = new BezierCurve({
+ *         style: {
+ *             xStart: 0,
+ *             yStart: 0,
+ *             cpX1: 100,
+ *             cpY1: 0,
+ *             cpX2: 0,
+ *             cpY2: 100,
+ *             xEnd: 100,
+ *             yEnd: 100,
+ *             strokeColor: 'red'
+ *         }
+ *     });
+ *     zr.addShape(shape);
  */
+
+/**
+ * @typedef {Object} IBezierCurveStyle
+ * @property {number} xStart 起点x坐标
+ * @property {number} yStart 起点y坐标
+ * @property {number} cpX1 第一个控制点x坐标
+ * @property {number} cpY1 第一个控制点y坐标
+ * @property {number} [cpX2] 第二个控制点x坐标，如果不给则为二次贝塞尔曲线
+ * @property {number} [cpY2] 第二个控制点y坐标，如果不给则为二次贝塞尔曲线
+ * @property {number} xEnd 终止点x坐标
+ * @property {number} yEnd 终止点y坐标
+ * @property {string} [strokeColor='#000000'] 描边颜色
+ * @property {string} [lineCape='butt'] 线帽样式，可以是 butt, round, square
+ * @property {number} [lineWidth=1] 描边宽度
+ * @property {number} [opacity=1] 绘制透明度
+ * @property {number} [shadowBlur=0] 阴影模糊度，大于0有效
+ * @property {string} [shadowColor='#000000'] 阴影颜色
+ * @property {number} [shadowOffsetX=0] 阴影横向偏移
+ * @property {number} [shadowOffsetY=0] 阴影纵向偏移
+ * @property {string} [text] 图形中的附加文本
+ * @property {string} [textColor='#000000'] 文本颜色
+ * @property {string} [textFont] 附加文本样式，eg:'bold 18px verdana'
+ * @property {string} [textPosition='end'] 附加文本位置, 可以是 inside, left, right, top, bottom
+ * @property {string} [textAlign] 默认根据textPosition自动设置，附加文本水平对齐。
+ *                                可以是start, end, left, right, center
+ * @property {string} [textBaseline] 默认根据textPosition自动设置，附加文本垂直对齐。
+ *                                可以是top, bottom, middle, alphabetic, hanging, ideographic
+ */
+
 define(
     function (require) {
+        'use strict';
+
         var Base = require('./Base');
         
-        function BezierCurve( options ) {
-            this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
+        /**
+         * @alias module:zrender/shape/BezierCurve
+         * @constructor
+         * @extends module:zrender/shape/Base
+         * @param {Object} options
+         */
+        var BezierCurve = function(options) {
+            this.brushTypeOnly = 'stroke';  // 线条只能描边，填充后果自负
             this.textPosition = 'end';
             Base.call(this, options);
-        }
+            /**
+             * 贝赛尔曲线绘制样式
+             * @name module:zrender/shape/BezierCurve#style
+             * @type {module:zrender/shape/BezierCurve~IBezierCurveStyle}
+             */
+            /**
+             * 贝赛尔曲线高亮绘制样式
+             * @name module:zrender/shape/BezierCurve#highlightStyle
+             * @type {module:zrender/shape/BezierCurve~IBezierCurveStyle}
+             */
+        };
 
         BezierCurve.prototype = {
             type: 'bezier-curve',
 
             /**
-             * 创建线条路径
-             * @param {Context2D} ctx Canvas 2D上下文
-             * @param {Object} style 样式
+             * 创建贝塞尔曲线路径
+             * @param {CanvasRenderingContext2D} ctx
+             * @param {module:zrender/shape/BezierCurve~IBezierCurveStyle} style
              */
             buildPath : function(ctx, style) {
                 ctx.moveTo(style.xStart, style.yStart);
@@ -112,12 +101,13 @@ define(
                         style.xEnd, style.yEnd
                     );
                 }
-
             },
 
             /**
-             * 返回矩形区域，用于局部刷新和文字定位
-             * @param {Object} style
+             * 计算返回贝赛尔曲线包围盒矩形。
+             * 该包围盒是直接从四个控制点计算，并非最小包围盒。
+             * @param {module:zrender/shape/BezierCurve~IBezierCurveStyle} style
+             * @return {module:zrender/shape/Base~IBoundingRect}
              */
             getRect : function(style) {
                 if (style.__rect) {

@@ -1,98 +1,82 @@
 /**
- * zrender
- *
+ * 内外旋轮曲线
+ * @module zrender/shape/Trochold
  * @author Neil (杨骥, yangji01@baidu.com)
- *
- * shape类：内外旋轮曲线
- * 可配图形属性：
-   {
-       // 基础属性
-       shape  : 'trochoid', // 必须，shape类标识，需要显式指定
-       id     : {string},       // 必须，图形唯一标识，可通过'zrender/tool/guid'方法生成
-       zlevel : {number},       // 默认为0，z层level，决定绘画在哪层canvas中
-       invisible : {boolean},   // 默认为false，是否可见
+ * @example
+ *     var Trochold = require('zrender/shape/Trochold');
+ *     var shape = new Trochold({
+ *         style: {
+ *             x: 100,
+ *             y: 100,
+ *             r: 50,
+ *             r0: 30,
+ *             d: 50,
+ *             strokeColor: '#eee',
+ *             text: 'trochold'
+ *         }
+ *     });
+ *     zr.addShape(shape);
+ */
 
-       // 样式属性，默认状态样式样式属性
-       style  : {
-           x             : {number},  // 默认为0， 圆心的横坐标
-           y             : {number},  // 默认为0， 圆心的纵坐标
-           r            : {number},   // 必须，固定圆半径 内旋曲线时必须大于转动圆半径
-           r0            : {number},  // 必须，转动圆半径
-           d             : {number},  // 必须，点到内部转动圆的距离，等于r时曲线为摆线
-           location      : {string},  // 默认为‘in’ 内旋 out 外旋
-           strokeColor   : {color},   // 默认为'#000'，线条颜色（轮廓），支持rgba
-           lineWidth     : {number},  // 默认为1，线条宽度
-           lineCap       : {string},  // 默认为butt，线帽样式。butt | round | square
-
-           opacity       : {number},  // 默认为1，透明度设置，如果color为rgba，则最终透明度效果叠加
-           shadowBlur    : {number},  // 默认为0，阴影模糊度，大于0有效
-           shadowColor   : {color},   // 默认为'#000'，阴影色彩，支持rgba
-           shadowOffsetX : {number},  // 默认为0，阴影横向偏移，正值往右，负值往左
-           shadowOffsetY : {number},  // 默认为0，阴影纵向偏移，正值往下，负值往上
-
-           text          : {string},  // 默认为null，附加文本
-           textFont      : {string},  // 默认为null，附加文本样式，eg:'bold 18px verdana'
-           textPosition  : {string},  // 默认为end，附加文本位置。
-                                      // inside | start | end
-           textAlign     : {string},  // 默认根据textPosition自动设置，附加文本水平对齐。
-                                      // start | end | left | right | center
-           textBaseline  : {string},  // 默认根据textPosition自动设置，附加文本垂直对齐。
-                                      // top | bottom | middle |
-                                      // alphabetic | hanging | ideographic
-           textColor     : {color},   // 默认根据textPosition自动设置，默认策略如下，附加文本颜色
-                                      // 'inside' ? '#000' : color
-       },
-
-       // 样式属性，高亮样式属性，当不存在highlightStyle时使用基于默认样式扩展显示
-       highlightStyle : {
-           // 同style
-       }
-
-       // 交互属性，详见shape.Base
-
-       // 事件属性，详见shape.Base
-   }
-         例子：
-   {
-       shape  : 'hypotrochoid',
-       id     : '123456',
-       zlevel : 1,
-       style  : {
-           x : 100,
-           y : 100,
-           r : 50,
-           r0 : 30,
-           d  : 50,
-           strokeColor : '#eee',
-           lineWidth : 20,
-           text : 'Baidu'
-       },
-       myName : 'kener',  //可自带任何有效自定义属性
-
-       clickable : true,
-       onClick : function(eventPacket) {
-           alert(eventPacket.target.myName);
-       }
-   }
+/**
+ * @typedef {Object} ITrocholdStyle
+ * @property {number} x 中心x坐标
+ * @property {number} y 中心y坐标
+ * @property {number} r 固定圆半径 内旋曲线时必须大于转动圆半径
+ * @property {number} r0 转动圆半径
+ * @property {number} d 点到内部转动圆的距离，等于r时曲线为摆线
+ * @property {string} [location='in'] 内旋 out 外旋
+ * @property {string} [strokeColor='#000000'] 描边颜色
+ * @property {string} [lineCape='butt'] 线帽样式，可以是 butt, round, square
+ * @property {number} [lineWidth=1] 描边宽度
+ * @property {number} [opacity=1] 绘制透明度
+ * @property {number} [shadowBlur=0] 阴影模糊度，大于0有效
+ * @property {string} [shadowColor='#000000'] 阴影颜色
+ * @property {number} [shadowOffsetX=0] 阴影横向偏移
+ * @property {number} [shadowOffsetY=0] 阴影纵向偏移
+ * @property {string} [text] 图形中的附加文本
+ * @property {string} [textColor='#000000'] 文本颜色
+ * @property {string} [textFont] 附加文本样式，eg:'bold 18px verdana'
+ * @property {string} [textPosition='end'] 附加文本位置, 可以是 inside, left, right, top, bottom
+ * @property {string} [textAlign] 默认根据textPosition自动设置，附加文本水平对齐。
+ *                                可以是start, end, left, right, center
+ * @property {string} [textBaseline] 默认根据textPosition自动设置，附加文本垂直对齐。
+ *                                可以是top, bottom, middle, alphabetic, hanging, ideographic
  */
 define(
     function (require) {
         var Base = require('./Base');
         
-        function Trochoid(options) {
-            this.brushTypeOnly = 'stroke';  //线条只能描边，填充后果自负
+        /**
+         * @alias module:zrender/shape/Trochold
+         * @param {Object} options
+         * @constructor
+         * @extends zrender/shape/Base
+         */
+        var Trochoid = function (options) {
+            this.brushTypeOnly = 'stroke';  // 线条只能描边，填充后果自负
             Base.call(this, options);
-        }
+            /**
+             * 内外旋轮曲线绘制样式
+             * @name module:zrender/shape/Trochold#style
+             * @type {module:zrender/shape/Trochold~ITrocholdStyle}
+             */
+            /**
+             * 内外旋轮曲线高亮绘制样式
+             * @name module:zrender/shape/Trochold#highlightStyle
+             * @type {module:zrender/shape/Trochold~ITrocholdStyle}
+             */
+        };
 
         Trochoid.prototype =  {
             type: 'trochoid',
 
             /**
-             * 创建线条路径
-             * @param {Context2D} ctx Canvas 2D上下文
-             * @param {Object} style 样式
+             * 创建内外旋轮曲线路径
+             * @param {CanvasRenderingContext2D} ctx
+             * @param {module:zrender/shape/Trochold~ITrocholdStyle} style
              */
-            buildPath : function(ctx, style) {
+            buildPath : function (ctx, style) {
                 var _x1;
                 var _y1;
                 var _x2;
@@ -122,11 +106,11 @@ define(
 
                 ctx.moveTo(_x1, _y1);
 
-                //计算结束时的i
+                // 计算结束时的i
                 do {
-                  _num ++;
+                    _num++;
                 }
-                while ( ( _r * _num ) % ( _R + _delta * _r ) !== 0);
+                while ((_r * _num) % (_R + _delta * _r) !== 0);
 
                 do {
                     _theta = Math.PI / 180 * i;
@@ -136,19 +120,20 @@ define(
                     _y2 = (_R + _delta * _r) * _math.sin(_theta)
                          - _d * _math.sin((_R / _r + _delta) * _theta)
                          + _offsetY;
-                    ctx.lineTo( _x2, _y2 );
-                    i ++;
+                    ctx.lineTo(_x2, _y2);
+                    i++;
                 }
-                while (i <= ( _r * _num) / (_R + _delta * _r) * 360);
+                while (i <= (_r * _num) / (_R + _delta * _r) * 360);
 
 
             },
 
             /**
-             * 返回矩形区域，用于局部刷新和文字定位
-             * @param {Object} style
+             * 返回内外旋轮曲线包围盒矩形
+             * @param {module:zrender/shape/Trochold~ITrocholdStyle} style
+             * @return {module:zrender/shape/Base~IBoundingRect}
              */
-            getRect : function(style) {
+            getRect : function (style) {
                 if (style.__rect) {
                     return style.__rect;
                 }
@@ -169,8 +154,8 @@ define(
                     lineWidth = 0;
                 }
                 style.__rect = {
-                    x : - _s - lineWidth + _offsetX,
-                    y : - _s - lineWidth + _offsetY,
+                    x : -_s - lineWidth + _offsetX,
+                    y : -_s - lineWidth + _offsetY,
                     width : 2 * _s + 2 * lineWidth,
                     height : 2 * _s + 2 * lineWidth
                 };

@@ -47,7 +47,7 @@
                 <li class="dropdown">
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="icon-download-alt icon-white"></i>Download <b class="caret"></b></a>
                   <ul class="dropdown-menu">
-                    <li><a href="https://github.com/ecomfe/zrender/archive/1.1.2.zip">ZIP (1.1.2)</a></li>
+                    <li><a href="https://github.com/ecomfe/zrender/archive/2.0.3.zip">ZIP (2.0.3)</a></li>
                     <li><a href="https://github.com/ecomfe/zrender/archive/master.zip">ZIP (Latest)</a></li>
                   </ul>
                 </li>
@@ -58,7 +58,7 @@
                     <li><a href="http://fe.baidu.com/doc/ecom/tech/topic/dv/index.html" target="_blank">Data Visualization</a></li>
                     <li class="divider"></li>
                     <!--li class="nav-header">Library</li-->
-                    <li><a href="http://tangram.baidu.com/" target="_blank">Tangram</a></li>
+                    <li><a href="http://echarts.baidu.com//" target="_blank">ECharts</a></li>
                   </ul>
                 </li>
               </ul>
@@ -71,20 +71,35 @@
         <h2>修改记录</h2>
         <div class="row-fluid">
             <div>
-                <h3>2.0.1<small>（2014-07-14）</small></h3>
+                <h3>2.0.3<small>（2014-09-05）</small></h3>
                 <ul>
-                    <li>
-                        增加 Group 对象，支持元素的层级管理 （类似 svg 或者 html 的 dom 树）
-                    </li>
-                    <li>
-                        可以通过 bind 和 unbind 方法绑定 shape 和 group 上的事件，支持事件冒泡
-                    </li>
-                    <li>
-                        Canvas dom 延迟创建，只在带有 shape 的 zlevel 上创建 canvas dom
-                    </li>
-                    <li>
-                        zrender 下新增 refreshNextFrame 方法标记下一帧需要刷新
-                    </li>
+                    <li>Dom user select forbidden</li>
+                    <li>Loading text H/V center</li>
+                    <li>Image remove cache</li>
+                    <li>Polygon dashline bug fix</li>
+                    <li>Layer transform, pan and zoom</li>
+                    <li>dblclick event support</li>
+            </div>
+            <div>
+                <h3>2.0.2<small>（2014-08-13）</small></h3>
+                <ul>
+                    <li>IE8-不显示bug fixed（2.0.1引入）</li>
+                    <li>优化image加载错误处理逻辑</li>
+                    <li>不分层z排序</li>
+                    <li>group加入ignore控制</li>
+                    <li>prototype混用冲突</li>
+                    <li>resize bug fixed</li>
+                    <li>devicePixelRatio限制最小为1</li>
+            </div>
+            <div>
+                <h3>2.0.1<small>（2014-07-24）</small></h3>
+                <ul>
+                    <li>移动设备touch事件修复</li>
+                    <li>event可携带指定this对象</li>
+                    <li>增加 Group 对象，支持元素的层级管理 （类似 svg 或者 html 的 dom 树）</li>
+                    <li>可以通过 bind 和 unbind 方法绑定 shape 和 group 上的事件，支持事件冒泡</li>
+                    <li>Canvas dom 延迟创建，只在带有 shape 的 zlevel 上创建 canvas dom</li>
+                    <li>zrender 下新增 refreshNextFrame 方法标记下一帧需要刷新</li>
             </div>
             <div>
                 <h3>2.0.0<small>（2014-06-30）</small></h3>

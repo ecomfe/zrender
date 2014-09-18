@@ -119,12 +119,20 @@ description.shape = [
                 des : '必须，{string}，图形唯一标识，可通过zrender实例方法<a href="#zrenderInstance.newShapeId">newShapeId</a>生成'
             },
             {
+                name : 'z',
+                des : '默认为0，{number}，z值，跟zlevel一样影响shape绘制的前后顺序，z值大的shape会覆盖在z值小的上面，但是并不会创建新的canvas，所以优先级低于zlevel，而且频繁改动的开销比zlevel小很多。'
+            },
+            {
                 name : 'zlevel',
                 des : '默认为0，{number}，z层level，决定绘画在哪层canvas中，数值越大离用户越近，正如css中zlevel的作用一样，你可以定义把不同的shape分别放在不同的层中，这不仅实现了视觉上的上下覆盖，更重要的是当图形元素发生变化后的refresh将局限在发生了变化的图形层中，这在你利用zrender做各种动画效果时将十分有用，性能自然也更加出色~ 读<a href="example/artist.html" target="_blank">artist</a>源码，理解分层的用意和好处。'
             },
             {
+                name : 'ignore',
+                des : '默认为false，{boolean}，true时元素（及其子元素）会被忽略，不被绘制，也不会触发鼠标事件。'
+            },
+            {
                 name : 'invisible',
-                des : '默认为false（可见），{boolean}，决定图形元素默认状态是否可见。虽然简单，但很有用。',
+                des : '默认为false（可见），{boolean}，决定图形元素默认状态是否可见，但是仍然能触发鼠标事件。',
                 pre : (function(){
 var TextShape = require('zrender/shape/Text');
 zr.addShape(new TextShape({
@@ -555,6 +563,63 @@ var config = require('zrender/config');
 zr.on(config.EVENT.CLICK, function(params) {
     if (params.target) {
         alert('Global catch! Click on shape!');
+    }
+    else {
+        alert('Global catch! None shape, but i catch you!');
+    }
+});
+                }).toString().slice(13, -10),
+                cantry : true
+            },
+            {
+                name : 'ondblclick',
+                des : '默认为null，当前图形双击响应，回传参数和有效返回值见下',
+                params : [
+                    ['eventPacket', '{Object}','事件包，结构如下'],
+                    ['eventPacket.type', '{string}','事件类型为EVENT.DBLCLICK'],
+                    ['eventPacket.event', '{event}','原始dom事件对象'],
+                    ['eventPacket.target', '{Object}','当前图形shape对象']
+                ],
+                res : [
+                    'true | false ', '{boolean}','回调返回，true（阻塞全局zrender事件）| false（不阻塞全局zrender事件）<br/> 无返回值，等同返回false'
+                ],
+                pre : (function(){
+var CircleShape = require('zrender/shape/Circle');
+zr.addShape(new CircleShape({
+    style : {
+        x : 200,
+        y : 200,
+        r : 80,
+        color : 'red',
+        text : 'dblclick and block!',
+        textPosition : 'inside'
+    },
+    clickable : true,
+    ondblclick : function() {
+        alert('dblclick on red shape!')
+        return true;    // 阻塞全局zrender事件
+    }
+}));
+zr.addShape(new CircleShape({
+    style : {
+        x : 400,
+        y : 200,
+        r : 80,
+        color : 'green',
+        text : 'dblclick!',
+        textPosition : 'inside'
+    },
+    clickable : true,
+    ondblclick : function() {
+        alert('dblclick on green shape!')
+    }
+}));
+zr.render();
+
+var config = require('zrender/config');
+zr.on(config.EVENT.DBLCLICK, function(params) {
+    if (params.target) {
+        alert('Global catch! Double Click on shape!');
     }
     else {
         alert('Global catch! None shape, but i catch you!');
