@@ -392,7 +392,7 @@ define(
          * 扇形包含判断
          */
         function isInsideSector(area, x, y) {
-            if (!isInsideRing(area.x, area.y, area.r0, area.r, x, y)) {
+            if (!isInsideRing(area.x, area.y, area.r0 || 0, area.r, x, y)) {
                 // 大圆外或者小圆内直接false
                 return false;
             }
