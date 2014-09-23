@@ -168,6 +168,7 @@ define(
                 else {
                     this._buildRadiusPath(ctx, style);
                 }
+                ctx.closePath();
                 return;
             },
 

@@ -91,6 +91,7 @@ define(
                 ctx.bezierCurveTo(x + ox, y - b, x + a, y - oy, x + a, y);
                 ctx.bezierCurveTo(x + a, y + oy, x + ox, y + b, x, y + b);
                 ctx.bezierCurveTo(x - ox, y + b, x - a, y + oy, x - a, y);
+                ctx.closePath();
             },
 
             /**
