@@ -68,11 +68,14 @@ define(function (require) {
     Path.prototype = {
         type: 'path',
 
-        buildPathArray : function (data) {
+        buildPathArray : function (data, x, y) {
             if (!data) {
                 return [];
             }
 
+            // 平移
+            x = x || 0;
+            y = y || 0;
             // command string
             var cs = data;
 
@@ -87,7 +90,6 @@ define(function (require) {
             cs = cs.replace(/ /g, ',');
             cs = cs.replace(/,,/g, ',');
             
-
             var n;
             // create pipes so that we can split the data
             for (n = 0; n < cc.length; n++) {
@@ -296,6 +298,11 @@ define(function (require) {
                             break;
                     }
 
+                    // 平移变换
+                    for (var j = 0, l = points.length; j < l; j += 2) {
+                        points[j] += x;
+                        points[j + 1] += y;
+                    }
                     ca.push(new PathSegment(
                         cmd || c, points
                     ));
@@ -374,13 +381,13 @@ define(function (require) {
         buildPath : function (ctx, style) {
             var path = style.path;
 
-            style.pathArray = style.pathArray || this.buildPathArray(path);
-            var pathArray = style.pathArray;
             // 平移坐标
             var x = style.x || 0;
             var y = style.y || 0;
 
-            var p;
+            style.pathArray = style.pathArray || this.buildPathArray(path, x, y);
+            var pathArray = style.pathArray;
+
             // 记录边界点，用于判断inside
             var pointList = style.pointList = [];
             var singlePointList = [];
@@ -390,22 +397,16 @@ define(function (require) {
                     && pointList.push(singlePointList);
                     singlePointList = [];
                 }
-                p = pathArray[i].points;
+                var p = pathArray[i].points;
                 for (var j = 0, k = p.length; j < k; j += 2) {
-                    singlePointList.push([ p[j] + x, p[j + 1] + y ]);
+                    singlePointList.push([p[j], p[j + 1]]);
                 }
             }
             singlePointList.length > 0 && pointList.push(singlePointList);
             
-            var c;
-            var p = [0, 0, 0, 0, 0, 0];
             for (var i = 0, l = pathArray.length; i < l; i++) {
-                c = pathArray[i].command;
-                // 平移变换
-                for (var j = 0, k = pathArray[i].points.length; j < k; j += 2) {
-                    p[j] = pathArray[i].points[j] + x;
-                    p[j + 1] = pathArray[i].points[j + 1] + y;
-                }
+                var c = pathArray[i].command;
+                var p = pathArray[i].points;
                 switch (c) {
                     case 'L':
                         ctx.lineTo(p[0], p[1]);
@@ -484,18 +485,18 @@ define(function (require) {
                 for (var j = 0; j < p.length; j++) {
                     if (j % 2 === 0) {
                         if (p[j] + x < minX) {
-                            minX = p[j] + x;
+                            minX = p[j];
                         }
                         if (p[j] + x > maxX) {
-                            maxX = p[j] + x;
+                            maxX = p[j];
                         }
                     } 
                     else {
                         if (p[j] + y < minY) {
-                            minY = p[j] + y;
+                            minY = p[j];
                         }
                         if (p[j] + y > maxY) {
-                            maxY = p[j] + y;
+                            maxY = p[j];
                         }
                     }
                 }
