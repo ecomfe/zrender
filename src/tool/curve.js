@@ -359,7 +359,7 @@ define(function(require) {
             if (isNotAroundZero(b)) {
                 var t1 = -c / b;
                 if (t1 >= 0 && t1 <= 1) {
-                    extrema[n++] = t1;
+                    roots[n++] = t1;
                 }
             }
         }
