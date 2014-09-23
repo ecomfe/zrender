@@ -51,7 +51,7 @@ define(
             _ctx = _ctx || util.getContext();
 
             // 未实现或不可用时(excanvas不支持)则数学运算，主要是line，brokenLine，ring
-            var _mathReturn = _mathMethod(zoneType, area, x, y);
+            var _mathReturn = _mathMethod(shape, area, x, y);
             if (typeof _mathReturn != 'undefined') {
                 return _mathReturn;
             }
@@ -84,13 +84,14 @@ define(
         /**
          * 用数学方法判断，三个方法中最快，但是支持的shape少
          *
-         * @param {string} zoneType ： 图形类型
+         * @param {Object} shape : 图形
          * @param {Object} area ：目标区域
          * @param {number} x ： 横坐标
          * @param {number} y ： 纵坐标
          * @return {boolean=} true表示坐标处在图形中
          */
-        function _mathMethod(zoneType, area, x, y) {
+        function _mathMethod(shape, area, x, y) {
+            var zoneType = shape.type;
             // 在矩形内则部分图形需要进一步判断
             switch (zoneType) {
                 // 贝塞尔曲线
@@ -110,38 +111,32 @@ define(
                         area.xEnd, area.yEnd,
                         area.lineWidth, x, y
                     );
-                // 线-----------------------1
+                // 线
                 case 'line':
                     return isInsideLine(
                         area.xStart, area.yStart,
                         area.xEnd, area.yEnd,
                         area.lineWidth, x, y
                     );
-                // 折线----------------------2
+                // 折线
                 case 'broken-line':
                     return isInsideBrokenLine(
                         area.pointList, area.lineWidth, x, y
                     );
-                // 文本----------------------3
-                case 'text':
-                    return true;
-                // 圆环----------------------4
+                // 圆环
                 case 'ring':
                     return isInsideRing(
                         area.x, area.y, area.r0, area.r, x, y
                     );
-                // 矩形----------------------5
-                case 'rectangle':
-                    return true;
-                // 圆形----------------------6
+                // 圆形
                 case 'circle':
                     return isInsideCircle(
                         area.x, area.y, area.r, x, y
                     );
-                // 扇形----------------------7
+                // 扇形
                 case 'sector':
                     return isInsideSector(area, x, y);
-                // 多边形---------------------8
+                // 多边形
                 case 'path':
                     return isInsidePath(
                         area.pathArray, Math.max(area.lineWidth, 5),
@@ -151,9 +146,19 @@ define(
                 case 'star':
                 case 'isogon':
                     return isInsidePolygon(area.pointList, x, y);
-                // 图片----------------------9
+                // 文本
+                case 'text':
+                    var rect =  area.__rect || shape.getRect(area);
+                    return isInsideRect(
+                        rect.x, rect.y, rect.width, rect.height, x, y
+                    );
+                // 矩形
+                case 'rectangle':
+                // 图片
                 case 'image':
-                    return true;
+                    return isInsideRect(
+                        area.x, area.y, area.width, area.height, x, y
+                    );
             }
         }
 
