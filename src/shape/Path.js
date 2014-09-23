@@ -302,16 +302,11 @@ define(function (require) {
                 }
 
                 if (c === 'z' || c === 'Z') {
-                    ca.push({
-                        command : 'z',
-                        points : []
-                    });
+                    ca.push(new PathSegment('z', []));
                 }
             }
 
-
             return ca;
-
         },
 
         _convertPoint : function (x1, y1, x2, y2, fa, fs, rx, ry, psiDeg) {
@@ -403,17 +398,13 @@ define(function (require) {
             singlePointList.length > 0 && pointList.push(singlePointList);
             
             var c;
+            var p = [0, 0, 0, 0, 0, 0];
             for (var i = 0, l = pathArray.length; i < l; i++) {
                 c = pathArray[i].command;
-                p = pathArray[i].points;
                 // 平移变换
-                for (var j = 0, k = p.length; j < k; j++) {
-                    if (j % 2 === 0) {
-                        p[j] += x;
-                    }
-                    else {
-                        p[j] += y;
-                    }
+                for (var j = 0, k = pathArray[i].points.length; j < k; j += 2) {
+                    p[j] = pathArray[i].points[j] + x;
+                    p[j + 1] = pathArray[i].points[j + 1] + y;
                 }
                 switch (c) {
                     case 'L':
