@@ -17,7 +17,7 @@ define(function(require) {
     var _v0 = vector.create();
     var _v1 = vector.create();
     var _v2 = vector.create();
-    var _v3 = vector.create();
+    // var _v3 = vector.create();
 
     function isAroundZero(val) {
         return val > -EPSILON && val < EPSILON;
@@ -25,10 +25,11 @@ define(function(require) {
     function isNotAroundZero(val) {
         return val > EPSILON || val < -EPSILON;
     }
-
+    /*
     function evalCubicCoeff(a, b, c, d, t) {
         return ((a * t + b) * t + c) * t + d;
     }
+    */
 
     /** 
      * 计算三次贝塞尔值
@@ -395,7 +396,7 @@ define(function(require) {
      */
     function quadraticExtremum(p0, p1, p2) {
         var divider = p0 + p2 - 2 * p1;
-        if (divider == 0) {
+        if (divider === 0) {
             // p1 is center of p0 and p2 
             return 0.5;
         }
@@ -506,5 +507,5 @@ define(function(require) {
         quadraticExtremum: quadraticExtremum,
 
         quadraticProjectPoint: quadraticProjectPoint
-    }
+    };
 });

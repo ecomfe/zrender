@@ -40,12 +40,12 @@
 define(function (require) {
     
     var vector = require('../../tool/vector');
-    var computeBoundingBox = require('../../tool/computeBoundingBox');
+    // var computeBoundingBox = require('../../tool/computeBoundingBox');
 
     var PathSegment = function(command, points) {
         this.command = command;
         this.points = points || null;
-    }
+    };
 
     /**
      * @alias module:zrender/shape/tool/PathProxy
@@ -63,7 +63,7 @@ define(function (require) {
 
         this._min = [];
         this._max = [];
-    }
+    };
 
     /**
      * 快速计算Path包围盒（并不是最小包围盒）
@@ -92,7 +92,7 @@ define(function (require) {
                         min[1] = Math.min(min[1], min[1], p[j + 1]);
                         max[0] = Math.max(max[0], max[0], p[j]);
                         max[1] = Math.max(max[1], max[1], p[j + 1]);
-                    };
+                    }
                     break;
                 case 'Q':
                     for (var j = 0; j < 4; j += 2) {
@@ -100,9 +100,9 @@ define(function (require) {
                         min[1] = Math.min(min[1], min[1], p[j + 1]);
                         max[0] = Math.max(max[0], max[0], p[j]);
                         max[1] = Math.max(max[1], max[1], p[j + 1]);
-                    };
+                    }
                     break;
-                case "A":
+                case 'A':
                     var cx = p[0];
                     var cy = p[1];
                     var rx = p[2];
@@ -120,7 +120,7 @@ define(function (require) {
             y: min[1],
             width: max[0] - min[0],
             height: max[1] - min[1]
-        }
+        };
     };
 
     /**
@@ -245,7 +245,7 @@ define(function (require) {
      */
     PathProxy.prototype.isEmpty = function() {
         return this.pathCommands.length === 0;
-    }
+    };
 
     PathProxy.PathSegment = PathSegment;
 

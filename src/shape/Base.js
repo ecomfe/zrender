@@ -615,7 +615,7 @@ define(
             if (this.style) {
                 this.style.__rect = null;
             }
-        }
+        };
 
         /**
          * 图形是否会触发事件

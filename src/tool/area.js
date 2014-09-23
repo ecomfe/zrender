@@ -103,15 +103,13 @@ define(
                             area.lineWidth, x, y
                         );
                     }
-                    else {
-                        return isInsideCubicStroke(
-                            area.xStart, area.yStart,
-                            area.cpX1, area.cpY1, 
-                            area.cpX2, area.cpY2, 
-                            area.xEnd, area.yEnd,
-                            area.lineWidth, x, y
-                        );
-                    }
+                    return isInsideCubicStroke(
+                        area.xStart, area.yStart,
+                        area.cpX1, area.cpY1, 
+                        area.cpX2, area.cpY2, 
+                        area.xEnd, area.yEnd,
+                        area.lineWidth, x, y
+                    );
                 // 线-----------------------1
                 case 'line':
                     return isInsideLine(
@@ -616,7 +614,7 @@ define(
             var hasStroke = brushType === 'stroke' || brushType === 'both';
             var hasFill = brushType === 'fill' || brushType === 'both';
 
-            var roots = [-1, -1, -1];
+            // var roots = [-1, -1, -1];
             for (var i = 0; i < pathArray.length; i++) {
                 var seg = pathArray[i];
                 var p = seg.points;
@@ -734,7 +732,7 @@ define(
             if (hasFill) {
                 w += windingLine(xi, yi, x0, y0, x, y);
             }
-            return w != 0;
+            return w !== 0;
         }
 
         /**

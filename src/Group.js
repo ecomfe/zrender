@@ -202,7 +202,7 @@ define(function(require) {
 
     Group.prototype.modSelf = function() {
         this.__dirty = true;
-    }
+    };
 
     util.merge(Group.prototype, Transformable.prototype, true);
     util.merge(Group.prototype, Eventful.prototype, true);
