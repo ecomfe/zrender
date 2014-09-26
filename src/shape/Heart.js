@@ -96,6 +96,7 @@ define(
                     style.x,
                     style.y
                 );
+                ctx.closePath();
                 return;
             },
 

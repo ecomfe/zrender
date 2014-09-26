@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>cubic 函数测试</title>
+    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+</head>
+<body style="margin:0px;">
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+
+    require(["zrender/tool/curve"], function(curve){
+
+        function initCubic() {
+            var dom = document.getElementById('cubic');
+            var ctx = dom.getContext('2d');
+            var p = [120.481, 235.242, 120.481, 235.242, 289.27, -169.589, 108.534, 101.57];
+            // var p = [100, 20, 200, 300, 300, -100, 400, 200];
+            dom.onmousemove = function(e) {
+                var roots = [];
+                var projection = [];
+                curve.cubicRootAt(p[1], p[3], p[5], p[7], e.offsetY, roots);
+                curve.cubicProjectPoint(
+                    p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7],
+                    e.offsetX, e.offsetY, projection
+                );
+                ctx.clearRect(0, 0, dom.width, dom.height);
+                drawBezier();
+                ctx.lineWidth = 1;
+                ctx.moveTo(0, e.offsetY);
+                ctx.lineTo(1000, e.offsetY);
+                ctx.stroke();
+                for (var i = 0; i < roots.length; i++) {
+                    var x = curve.cubicAt(p[0], p[2], p[4], p[6], roots[i]);
+                    ctx.fillStyle = 'red';
+                    ctx.beginPath();
+                    ctx.arc(x, e.offsetY, 5, 0, Math.PI * 2, true);
+                    ctx.fill();
+                }
+
+                ctx.moveTo(projection[0], projection[1]);
+                ctx.lineTo(e.offsetX, e.offsetY);
+                ctx.stroke();
+            }
+
+            function drawBezier() {
+                ctx.beginPath();
+                ctx.lineWidth = 5;
+                ctx.moveTo(p[0], p[1]);
+                ctx.bezierCurveTo(p[2], p[3], p[4], p[5], p[6], p[7]);
+                ctx.stroke();
+            }
+
+            drawBezier();
+        }
+
+        function initQuadratic() {
+            var dom = document.getElementById('quadratic');
+            var ctx = dom.getContext('2d');
+
+            dom.onmousemove = function(e) {
+                var roots = [];
+                var projection = [];
+                curve.quadraticRootAt(20, 300, 100, e.offsetY, roots);
+                curve.quadraticProjectPoint(
+                    40, 20, 200, 300, 400, 100,
+                    e.offsetX, e.offsetY, projection
+                );
+                ctx.clearRect(0, 0, dom.width, dom.height);
+                drawBezier();
+                ctx.lineWidth = 1;
+                ctx.moveTo(0, e.offsetY);
+                ctx.lineTo(1000, e.offsetY);
+                ctx.stroke();
+                for (var i = 0; i < roots.length; i++) {
+                    var x = curve.quadraticAt(40, 200, 400, roots[i]);
+                    ctx.fillStyle = 'red';
+                    ctx.beginPath();
+                    ctx.arc(x, e.offsetY, 5, 0, Math.PI * 2, true);
+                    ctx.fill();
+                }
+                ctx.moveTo(projection[0], projection[1]);
+                ctx.lineTo(e.offsetX, e.offsetY);
+                ctx.stroke();
+            }
+
+            function drawBezier() {
+                ctx.beginPath();
+                ctx.lineWidth = 5;
+                ctx.moveTo(40, 20);
+                ctx.quadraticCurveTo(200, 300, 400, 100);
+                ctx.stroke();
+            }
+
+            drawBezier();
+        }
+
+        initCubic();
+        initQuadratic();
+    });
+    </script>
+    <canvas id="cubic" width="500" height="300"></canvas>
+    <canvas id="quadratic" width="500" height="300"></canvas>
+</body>
+</html>

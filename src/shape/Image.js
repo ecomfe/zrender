@@ -21,6 +21,8 @@
  * @property {number} y 左上角纵坐标
  * @property {number} [width] 绘制到画布上的宽度，默认为图片宽度
  * @property {number} [height] 绘制到画布上的高度，默认为图片高度
+ * @property {number} [sx=0] 从图片中裁剪的左上角横坐标
+ * @property {number} [sy=0] 从图片中裁剪的左上角纵坐标
  * @property {number} [sWidth] 从图片中裁剪的宽度，默认为图片高度
  * @property {number} [sHeight] 从图片中裁剪的高度，默认为图片高度
  * @property {number} [opacity=1] 绘制透明度
@@ -53,6 +55,8 @@ define(
          */
         var ZImage = function(options) {
             Base.call(this, options);
+
+            this._imageCache = {};
             /**
              * 图片绘制样式
              * @name module:zrender/shape/Image#style
@@ -84,20 +88,25 @@ define(
 
                 if (typeof(image) === 'string') {
                     var src = image;
-                    image = new Image();
-                    image.onload = function () {
-                        image.onload = null;
-                        clearTimeout(_refreshTimeout);
-                        _needsRefresh.push(me);
-                        // 防止因为缓存短时间内触发多次onload事件
-                        _refreshTimeout = setTimeout(function () {
-                            refresh && refresh(_needsRefresh);
-                            // 清空needsRefresh
-                            _needsRefresh = [];
-                        }, 10);
-                    };
+                    if (this._imageCache[src]) {
+                        image = this._imageCache[src];
+                    } else {
+                        image = new Image();
+                        image.onload = function () {
+                            image.onload = null;
+                            clearTimeout(_refreshTimeout);
+                            _needsRefresh.push(me);
+                            // 防止因为缓存短时间内触发多次onload事件
+                            _refreshTimeout = setTimeout(function () {
+                                refresh && refresh(_needsRefresh);
+                                // 清空needsRefresh
+                                _needsRefresh = [];
+                            }, 10);
+                        };
 
-                    image.src = src;
+                        image.src = src;
+                        this._imageCache[src] = image;
+                    }
                 }
                 if (image) {
                     // 图片已经加载完成
@@ -178,13 +187,17 @@ define(
              * @param {module:zrender/shape/Image~IImageStyle} style
              * @return {module:zrender/shape/Base~IBoundingRect}
              */
-            getRect : function(style) {
+            getRect: function(style) {
                 return {
                     x : style.x,
                     y : style.y,
                     width : style.width,
                     height : style.height
                 };
+            },
+
+            clearCache: function() {
+                this._imageCache = {};
             }
         };
 

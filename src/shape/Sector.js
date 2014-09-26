@@ -124,6 +124,8 @@ define(
                     ctx.arc(x, y, r0, PI2 - endAngle, PI2 - startAngle, false);
                 }
 
+                ctx.closePath();
+
                 return;
             },
 

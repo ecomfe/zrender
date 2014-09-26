@@ -30,7 +30,10 @@
  *                                可以是top, bottom, middle, alphabetic, hanging, ideographic
  */
 define(function (require) {
+
     var Base = require('./Base');
+    var PathProxy = require('./util/PathProxy');
+    var PathSegment = PathProxy.PathSegment;
 
     var vMag = function(v) {
         return Math.sqrt(v[0] * v[0] + v[1] * v[1]);
@@ -65,11 +68,14 @@ define(function (require) {
     Path.prototype = {
         type: 'path',
 
-        _parsePathData : function (data) {
+        buildPathArray : function (data, x, y) {
             if (!data) {
                 return [];
             }
 
+            // 平移
+            x = x || 0;
+            y = y || 0;
             // command string
             var cs = data;
 
@@ -84,7 +90,6 @@ define(function (require) {
             cs = cs.replace(/ /g, ',');
             cs = cs.replace(/,,/g, ',');
             
-
             var n;
             // create pipes so that we can split the data
             for (n = 0; n < cc.length; n++) {
@@ -133,183 +138,182 @@ define(function (require) {
 
                     // convert l, H, h, V, and v to L
                     switch (c) {
-                    case 'l':
-                        cpx += p.shift();
-                        cpy += p.shift();
-                        cmd = 'L';
-                        points.push(cpx, cpy);
-                        break;
-                    case 'L':
-                        cpx = p.shift();
-                        cpy = p.shift();
-                        points.push(cpx, cpy);
-                        break;
-                    case 'm':
-                        cpx += p.shift();
-                        cpy += p.shift();
-                        cmd = 'M';
-                        points.push(cpx, cpy);
-                        c = 'l';
-                        break;
-                    case 'M':
-                        cpx = p.shift();
-                        cpy = p.shift();
-                        cmd = 'M';
-                        points.push(cpx, cpy);
-                        c = 'L';
-                        break;
+                        case 'l':
+                            cpx += p.shift();
+                            cpy += p.shift();
+                            cmd = 'L';
+                            points.push(cpx, cpy);
+                            break;
+                        case 'L':
+                            cpx = p.shift();
+                            cpy = p.shift();
+                            points.push(cpx, cpy);
+                            break;
+                        case 'm':
+                            cpx += p.shift();
+                            cpy += p.shift();
+                            cmd = 'M';
+                            points.push(cpx, cpy);
+                            c = 'l';
+                            break;
+                        case 'M':
+                            cpx = p.shift();
+                            cpy = p.shift();
+                            cmd = 'M';
+                            points.push(cpx, cpy);
+                            c = 'L';
+                            break;
 
-                    case 'h':
-                        cpx += p.shift();
-                        cmd = 'L';
-                        points.push(cpx, cpy);
-                        break;
-                    case 'H':
-                        cpx = p.shift();
-                        cmd = 'L';
-                        points.push(cpx, cpy);
-                        break;
-                    case 'v':
-                        cpy += p.shift();
-                        cmd = 'L';
-                        points.push(cpx, cpy);
-                        break;
-                    case 'V':
-                        cpy = p.shift();
-                        cmd = 'L';
-                        points.push(cpx, cpy);
-                        break;
-                    case 'C':
-                        points.push(p.shift(), p.shift(), p.shift(), p.shift());
-                        cpx = p.shift();
-                        cpy = p.shift();
-                        points.push(cpx, cpy);
-                        break;
-                    case 'c':
-                        points.push(
-                            cpx + p.shift(), cpy + p.shift(),
-                            cpx + p.shift(), cpy + p.shift()
-                        );
-                        cpx += p.shift();
-                        cpy += p.shift();
-                        cmd = 'C';
-                        points.push(cpx, cpy);
-                        break;
-                    case 'S':
-                        ctlPtx = cpx;
-                        ctlPty = cpy;
-                        prevCmd = ca[ca.length - 1];
-                        if (prevCmd.command === 'C') {
-                            ctlPtx = cpx + (cpx - prevCmd.points[2]);
-                            ctlPty = cpy + (cpy - prevCmd.points[3]);
-                        }
-                        points.push(ctlPtx, ctlPty, p.shift(), p.shift());
-                        cpx = p.shift();
-                        cpy = p.shift();
-                        cmd = 'C';
-                        points.push(cpx, cpy);
-                        break;
-                    case 's':
-                        ctlPtx = cpx, ctlPty = cpy;
-                        prevCmd = ca[ca.length - 1];
-                        if (prevCmd.command === 'C') {
-                            ctlPtx = cpx + (cpx - prevCmd.points[2]);
-                            ctlPty = cpy + (cpy - prevCmd.points[3]);
-                        }
-                        points.push(
-                            ctlPtx, ctlPty,
-                            cpx + p.shift(), cpy + p.shift()
-                        );
-                        cpx += p.shift();
-                        cpy += p.shift();
-                        cmd = 'C';
-                        points.push(cpx, cpy);
-                        break;
-                    case 'Q':
-                        points.push(p.shift(), p.shift());
-                        cpx = p.shift();
-                        cpy = p.shift();
-                        points.push(cpx, cpy);
-                        break;
-                    case 'q':
-                        points.push(cpx + p.shift(), cpy + p.shift());
-                        cpx += p.shift();
-                        cpy += p.shift();
-                        cmd = 'Q';
-                        points.push(cpx, cpy);
-                        break;
-                    case 'T':
-                        ctlPtx = cpx, ctlPty = cpy;
-                        prevCmd = ca[ca.length - 1];
-                        if (prevCmd.command === 'Q') {
-                            ctlPtx = cpx + (cpx - prevCmd.points[0]);
-                            ctlPty = cpy + (cpy - prevCmd.points[1]);
-                        }
-                        cpx = p.shift();
-                        cpy = p.shift();
-                        cmd = 'Q';
-                        points.push(ctlPtx, ctlPty, cpx, cpy);
-                        break;
-                    case 't':
-                        ctlPtx = cpx, ctlPty = cpy;
-                        prevCmd = ca[ca.length - 1];
-                        if (prevCmd.command === 'Q') {
-                            ctlPtx = cpx + (cpx - prevCmd.points[0]);
-                            ctlPty = cpy + (cpy - prevCmd.points[1]);
-                        }
-                        cpx += p.shift();
-                        cpy += p.shift();
-                        cmd = 'Q';
-                        points.push(ctlPtx, ctlPty, cpx, cpy);
-                        break;
-                    case 'A':
-                        rx = p.shift();
-                        ry = p.shift();
-                        psi = p.shift();
-                        fa = p.shift();
-                        fs = p.shift();
+                        case 'h':
+                            cpx += p.shift();
+                            cmd = 'L';
+                            points.push(cpx, cpy);
+                            break;
+                        case 'H':
+                            cpx = p.shift();
+                            cmd = 'L';
+                            points.push(cpx, cpy);
+                            break;
+                        case 'v':
+                            cpy += p.shift();
+                            cmd = 'L';
+                            points.push(cpx, cpy);
+                            break;
+                        case 'V':
+                            cpy = p.shift();
+                            cmd = 'L';
+                            points.push(cpx, cpy);
+                            break;
+                        case 'C':
+                            points.push(p.shift(), p.shift(), p.shift(), p.shift());
+                            cpx = p.shift();
+                            cpy = p.shift();
+                            points.push(cpx, cpy);
+                            break;
+                        case 'c':
+                            points.push(
+                                cpx + p.shift(), cpy + p.shift(),
+                                cpx + p.shift(), cpy + p.shift()
+                            );
+                            cpx += p.shift();
+                            cpy += p.shift();
+                            cmd = 'C';
+                            points.push(cpx, cpy);
+                            break;
+                        case 'S':
+                            ctlPtx = cpx;
+                            ctlPty = cpy;
+                            prevCmd = ca[ca.length - 1];
+                            if (prevCmd.command === 'C') {
+                                ctlPtx = cpx + (cpx - prevCmd.points[2]);
+                                ctlPty = cpy + (cpy - prevCmd.points[3]);
+                            }
+                            points.push(ctlPtx, ctlPty, p.shift(), p.shift());
+                            cpx = p.shift();
+                            cpy = p.shift();
+                            cmd = 'C';
+                            points.push(cpx, cpy);
+                            break;
+                        case 's':
+                            ctlPtx = cpx, ctlPty = cpy;
+                            prevCmd = ca[ca.length - 1];
+                            if (prevCmd.command === 'C') {
+                                ctlPtx = cpx + (cpx - prevCmd.points[2]);
+                                ctlPty = cpy + (cpy - prevCmd.points[3]);
+                            }
+                            points.push(
+                                ctlPtx, ctlPty,
+                                cpx + p.shift(), cpy + p.shift()
+                            );
+                            cpx += p.shift();
+                            cpy += p.shift();
+                            cmd = 'C';
+                            points.push(cpx, cpy);
+                            break;
+                        case 'Q':
+                            points.push(p.shift(), p.shift());
+                            cpx = p.shift();
+                            cpy = p.shift();
+                            points.push(cpx, cpy);
+                            break;
+                        case 'q':
+                            points.push(cpx + p.shift(), cpy + p.shift());
+                            cpx += p.shift();
+                            cpy += p.shift();
+                            cmd = 'Q';
+                            points.push(cpx, cpy);
+                            break;
+                        case 'T':
+                            ctlPtx = cpx, ctlPty = cpy;
+                            prevCmd = ca[ca.length - 1];
+                            if (prevCmd.command === 'Q') {
+                                ctlPtx = cpx + (cpx - prevCmd.points[0]);
+                                ctlPty = cpy + (cpy - prevCmd.points[1]);
+                            }
+                            cpx = p.shift();
+                            cpy = p.shift();
+                            cmd = 'Q';
+                            points.push(ctlPtx, ctlPty, cpx, cpy);
+                            break;
+                        case 't':
+                            ctlPtx = cpx, ctlPty = cpy;
+                            prevCmd = ca[ca.length - 1];
+                            if (prevCmd.command === 'Q') {
+                                ctlPtx = cpx + (cpx - prevCmd.points[0]);
+                                ctlPty = cpy + (cpy - prevCmd.points[1]);
+                            }
+                            cpx += p.shift();
+                            cpy += p.shift();
+                            cmd = 'Q';
+                            points.push(ctlPtx, ctlPty, cpx, cpy);
+                            break;
+                        case 'A':
+                            rx = p.shift();
+                            ry = p.shift();
+                            psi = p.shift();
+                            fa = p.shift();
+                            fs = p.shift();
 
-                        x1 = cpx, y1 = cpy;
-                        cpx = p.shift(), cpy = p.shift();
-                        cmd = 'A';
-                        points = this._convertPoint(
-                            x1, y1, cpx, cpy, fa, fs, rx, ry, psi
-                        );
-                        break;
-                    case 'a':
-                        rx = p.shift();
-                        ry = p.shift();
-                        psi = p.shift();
-                        fa = p.shift();
-                        fs = p.shift();
+                            x1 = cpx, y1 = cpy;
+                            cpx = p.shift(), cpy = p.shift();
+                            cmd = 'A';
+                            points = this._convertPoint(
+                                x1, y1, cpx, cpy, fa, fs, rx, ry, psi
+                            );
+                            break;
+                        case 'a':
+                            rx = p.shift();
+                            ry = p.shift();
+                            psi = p.shift();
+                            fa = p.shift();
+                            fs = p.shift();
 
-                        x1 = cpx, y1 = cpy;
-                        cpx += p.shift();
-                        cpy += p.shift();
-                        cmd = 'A';
-                        points = this._convertPoint(
-                            x1, y1, cpx, cpy, fa, fs, rx, ry, psi
-                        );
-                        break;
-
+                            x1 = cpx, y1 = cpy;
+                            cpx += p.shift();
+                            cpy += p.shift();
+                            cmd = 'A';
+                            points = this._convertPoint(
+                                x1, y1, cpx, cpy, fa, fs, rx, ry, psi
+                            );
+                            break;
                     }
 
-                    ca.push({
-                        command : cmd || c,
-                        points : points
-                    });
+                    // 平移变换
+                    for (var j = 0, l = points.length; j < l; j += 2) {
+                        points[j] += x;
+                        points[j + 1] += y;
+                    }
+                    ca.push(new PathSegment(
+                        cmd || c, points
+                    ));
                 }
 
                 if (c === 'z' || c === 'Z') {
-                    ca.push({
-                        command : 'z',
-                        points : []
-                    });
+                    ca.push(new PathSegment('z', []));
                 }
             }
 
             return ca;
-
         },
 
         _convertPoint : function (x1, y1, x2, y2, fa, fs, rx, ry, psiDeg) {
@@ -377,13 +381,13 @@ define(function (require) {
         buildPath : function (ctx, style) {
             var path = style.path;
 
-            var pathArray = this.pathArray || this._parsePathData(path);
-
             // 平移坐标
             var x = style.x || 0;
             var y = style.y || 0;
 
-            var p;
+            style.pathArray = style.pathArray || this.buildPathArray(path, x, y);
+            var pathArray = style.pathArray;
+
             // 记录边界点，用于判断inside
             var pointList = style.pointList = [];
             var singlePointList = [];
@@ -393,26 +397,16 @@ define(function (require) {
                     && pointList.push(singlePointList);
                     singlePointList = [];
                 }
-                p = pathArray[i].points;
+                var p = pathArray[i].points;
                 for (var j = 0, k = p.length; j < k; j += 2) {
-                    singlePointList.push([ p[j] + x, p[j + 1] + y ]);
+                    singlePointList.push([p[j], p[j + 1]]);
                 }
             }
             singlePointList.length > 0 && pointList.push(singlePointList);
             
-            var c;
             for (var i = 0, l = pathArray.length; i < l; i++) {
-                c = pathArray[i].command;
-                p = pathArray[i].points;
-                // 平移变换
-                for (var j = 0, k = p.length; j < k; j++) {
-                    if (j % 2 === 0) {
-                        p[j] += x;
-                    }
-                    else {
-                        p[j] += y;
-                    }
-                }
+                var c = pathArray[i].command;
+                var p = pathArray[i].points;
                 switch (c) {
                     case 'L':
                         ctx.lineTo(p[0], p[1]);
@@ -484,25 +478,25 @@ define(function (require) {
             var x = style.x || 0;
             var y = style.y || 0;
 
-            var pathArray = this.pathArray || this._parsePathData(style.path);
+            var pathArray = style.pathArray || this.buildPathArray(style.path);
             for (var i = 0; i < pathArray.length; i++) {
                 var p = pathArray[i].points;
 
                 for (var j = 0; j < p.length; j++) {
                     if (j % 2 === 0) {
                         if (p[j] + x < minX) {
-                            minX = p[j] + x;
+                            minX = p[j];
                         }
                         if (p[j] + x > maxX) {
-                            maxX = p[j] + x;
+                            maxX = p[j];
                         }
                     } 
                     else {
                         if (p[j] + y < minY) {
-                            minY = p[j] + y;
+                            minY = p[j];
                         }
                         if (p[j] + y > maxY) {
-                            maxY = p[j] + y;
+                            maxY = p[j];
                         }
                     }
                 }

@@ -18,6 +18,7 @@
  * @typedef {Object} IBrokenLineStyle
  * @property {Array.<number>} pointList 顶点坐标数组
  * @property {string} [smooth=''] 是否做平滑插值, 平滑算法可以选择 bezier, spline
+ * @property {number} [smoothConstraint] 平滑约束
  * @property {string} [strokeColor='#000000'] 描边颜色
  * @property {string} [lineCape='butt'] 线帽样式，可以是 butt, round, square
  * @property {string} [lineJoin='miter'] 线段连接样式，可以是 miter, round, bevel
@@ -87,7 +88,7 @@ define(
                 
                 if (style.smooth && style.smooth !== 'spline') {
                     var controlPoints = smoothBezier(
-                        pointList, style.smooth
+                        pointList, style.smooth, false, style.smoothConstraint
                     );
 
                     ctx.moveTo(pointList[0][0], pointList[0][1]);

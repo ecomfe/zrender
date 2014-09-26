@@ -124,6 +124,8 @@ define(
                 for (var i = 0; i < pointList.length; i++) {
                     ctx.lineTo(pointList[i][0], pointList[i][1]);
                 }
+                
+                ctx.closePath();
 
                 return;
             },

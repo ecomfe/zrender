@@ -1,11 +1,10 @@
 /**
- * 多线段平滑曲线 Catmull-Rom spline
- *
- * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
- *          errorrik (errorrik@gmail.com)
+ * Catmull-Rom spline 插值折线
+ * @module zrender/shape/util/smoothSpline
+ * @author pissang (https://www.github.com/pissang) 
+ *         Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *         errorrik (errorrik@gmail.com)
  */
-
-
 define(
     function (require) {
         var vector = require('../../tool/vector');
@@ -22,9 +21,13 @@ define(
         }
 
         /**
-         * 多线段平滑曲线 Catmull-Rom spline
+         * @alias module:zrender/shape/util/smoothSpline
+         * @param {Array} points 线段顶点数组
+         * @param {boolean} isLoop
+         * @param {Array} constraint 
+         * @return {Array}
          */
-        return function (points, isLoop) {
+        return function (points, isLoop, constraint) {
             var len = points.length;
             var ret = [];
 

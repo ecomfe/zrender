@@ -262,9 +262,6 @@ define(
 
             ctx.beginPath();
             this.buildPath(ctx, style);
-            if (this.brushTypeOnly != 'stroke') {
-                ctx.closePath();
-            }
 
             switch (style.brushType) {
                 /* jshint ignore:start */
@@ -610,6 +607,13 @@ define(
                     style.textAlign || al,
                     style.textBaseline || bl
                 );
+            }
+        };
+
+        Base.prototype.modSelf = function() {
+            this.__dirty = true;
+            if (this.style) {
+                this.style.__rect = null;
             }
         };
 
