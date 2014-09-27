@@ -54,7 +54,11 @@ define(
                 if ((_lastHover && _lastHover.clickable)
                     || !_lastHover
                 ) {
-                    this._dispatchAgency(_lastHover, EVENT.CLICK, event);
+
+                    // 判断没有发生拖拽才触发click事件
+                    if (!this._noClick) {
+                        this._dispatchAgency(_lastHover, EVENT.CLICK, event);
+                    }
                 }
 
                 this._mousemoveHandler(event);
@@ -73,7 +77,11 @@ define(
                 if ((_lastHover && _lastHover.clickable)
                     || !_lastHover
                 ) {
-                    this._dispatchAgency(_lastHover, EVENT.DBLCLICK, event);
+
+                    // 判断没有发生拖拽才触发dblclick事件
+                    if (!this._noClick) {
+                        this._dispatchAgency(_lastHover, EVENT.DBLCLICK, event);
+                    }
                 }
 
                 this._mousemoveHandler(event);
@@ -139,6 +147,8 @@ define(
                 if (this.painter.isLoading()) {
                     return;
                 }
+                // 拖拽不触发click事件
+                this._noClick = true;
 
                 event = this._zrenderEventFixed(event);
                 this._lastX = this._mouseX;
@@ -266,6 +276,9 @@ define(
              * @param {Event} event
              */
             mousedown: function (event) {
+                // 重置 noClick flag
+                this._noClick = false;
+
                 if (this._lastDownButton == 2) {
                     this._lastDownButton = event.button;
                     this._mouseDownTarget = null;
