@@ -56,7 +56,7 @@ define(
                 ) {
 
                     // 判断没有发生拖拽才触发click事件
-                    if (!this._noClick) {
+                    if (this._clickThreshold < 5) {
                         this._dispatchAgency(_lastHover, EVENT.CLICK, event);
                     }
                 }
@@ -79,7 +79,7 @@ define(
                 ) {
 
                     // 判断没有发生拖拽才触发dblclick事件
-                    if (!this._noClick) {
+                    if (this._clickThreshold < 5) {
                         this._dispatchAgency(_lastHover, EVENT.DBLCLICK, event);
                     }
                 }
@@ -148,7 +148,7 @@ define(
                     return;
                 }
                 // 拖拽不触发click事件
-                this._noClick = true;
+                this._clickThreshold++;
 
                 event = this._zrenderEventFixed(event);
                 this._lastX = this._mouseX;
@@ -276,8 +276,8 @@ define(
              * @param {Event} event
              */
             mousedown: function (event) {
-                // 重置 noClick flag
-                this._noClick = false;
+                // 重置 clickThreshold
+                this._clickThreshold = 0;
 
                 if (this._lastDownButton == 2) {
                     this._lastDownButton = event.button;
