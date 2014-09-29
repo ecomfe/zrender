@@ -97,6 +97,7 @@ define(function(require) {
      * 添加子节点，可以是Shape或者Group
      * @param {module:zrender/Group|module:zrender/shape/Base} child
      */
+    // TODO Type Check
     Group.prototype.addChild = function(child) {
         if (child == this) {
             return;
@@ -126,18 +127,19 @@ define(function(require) {
      * 移除子节点
      * @param {module:zrender/Group|module:zrender/shape/Base} child
      */
+    // TODO Type Check
     Group.prototype.removeChild = function(child) {
         var idx = util.indexOf(this._children, child);
 
         this._children.splice(idx, 1);
         child.parent = null;
 
-        if (child._storage) {
+        if (this._storage) {
             
             this._storage.delFromMap(child.id);
 
             if (child instanceof Group) {
-                child.delChildrenFromStorage(child._storage);
+                child.delChildrenFromStorage(this._storage);
             }
         }
     };
