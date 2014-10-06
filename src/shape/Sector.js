@@ -25,6 +25,7 @@
  * @property {number} [r0=0] 内圆半径，指定后将出现内弧，同时扇边长度为`r - r0`
  * @property {number} startAngle 起始角度，`[0, 360)`
  * @property {number} endAngle 结束角度，`(0, 360]`
+ * @property {boolean} [clockwise=false] 是否是顺时针
  * @property {string} [brushType='fill']
  * @property {string} [color='#000000'] 填充颜色
  * @property {string} [strokeColor='#000000'] 描边颜色
@@ -47,9 +48,16 @@
 
 define(
     function (require) {
-        var math = require('../tool/math');
-        var Base = require('./Base');
 
+        var math = require('../tool/math');
+        var computeBoundingBox = require('../tool/computeBoundingBox');
+        var vec2 = require('../tool/vector');
+        var Base = require('./Base');
+        
+        var min0 = vec2.create();
+        var min1 = vec2.create();
+        var max0 = vec2.create();
+        var max1 = vec2.create();
         /**
          * @alias module:zrender/shape/Sector
          * @constructor
@@ -81,47 +89,43 @@ define(
             buildPath : function (ctx, style) {
                 var x = style.x;   // 圆心x
                 var y = style.y;   // 圆心y
-                var r0 = typeof style.r0 == 'undefined'     // 形内半径[0,r)
-                         ? 0 : style.r0;
-                var r = style.r;                            // 扇形外半径(0,r]
+                var r0 = style.r0 || 0;     // 形内半径[0,r)
+                var r = style.r;            // 扇形外半径(0,r]
                 var startAngle = style.startAngle;          // 起始角度[0,360)
                 var endAngle = style.endAngle;              // 结束角度(0,360]
+                var clockwise = style.clockwise || false;
 
-                if (Math.abs(endAngle - startAngle) >= 360) {
-                    // 大于360度的扇形简化为圆环画法
-                    ctx.arc(x, y, r, 0, Math.PI * 2, false);
-                    if (r0 !== 0) {
-                        ctx.moveTo(x + r0, y);
-                        ctx.arc(x, y, r0, 0, Math.PI * 2, true);
-                    }
-                    return;
-                }
-                
                 startAngle = math.degreeToRadian(startAngle);
                 endAngle = math.degreeToRadian(endAngle);
 
-                var PI2 = Math.PI * 2;
-                var cosStartAngle = math.cos(startAngle);
-                var sinStartAngle = math.sin(startAngle);
+                if (!clockwise) {
+                    // 扇形默认是逆时针方向，Y轴向上
+                    // 这个跟arc的标准不一样，为了兼容echarts
+                    startAngle = -startAngle;
+                    endAngle = -endAngle;
+                }
+
+                var unitX = math.cos(startAngle);
+                var unitY = math.sin(startAngle);
                 ctx.moveTo(
-                    cosStartAngle * r0 + x,
-                    y - sinStartAngle * r0
+                    unitX * r0 + x,
+                    unitY * r0 + y
                 );
 
                 ctx.lineTo(
-                    cosStartAngle * r + x,
-                    y - sinStartAngle * r
+                    unitX * r + x,
+                    unitY * r + y
                 );
 
-                ctx.arc(x, y, r, PI2 - startAngle, PI2 - endAngle, true);
+                ctx.arc(x, y, r, startAngle, endAngle, !clockwise);
 
                 ctx.lineTo(
                     math.cos(endAngle) * r0 + x,
-                    y - math.sin(endAngle) * r0
+                    math.sin(endAngle) * r0 + y
                 );
 
                 if (r0 !== 0) {
-                    ctx.arc(x, y, r0, PI2 - endAngle, PI2 - startAngle, false);
+                    ctx.arc(x, y, r0, endAngle, startAngle, clockwise);
                 }
 
                 ctx.closePath();
@@ -141,75 +145,37 @@ define(
                 
                 var x = style.x;   // 圆心x
                 var y = style.y;   // 圆心y
-                var r0 = typeof style.r0 == 'undefined'     // 形内半径[0,r)
-                         ? 0 : style.r0;
-                var r = style.r;                            // 扇形外半径(0,r]
-                var startAngle = style.startAngle;          // 起始角度[0,360)
-                var endAngle = style.endAngle;              // 结束角度(0,360]
-                
-                if (Math.abs(endAngle - startAngle) >= 360) {
-                    // 大于360度的扇形简化为圆环bbox
-                    style.__rect = require('./Ring').prototype.getRect(style);
-                    return style.__rect;
-                }
-                
-                startAngle = (720 + startAngle) % 360;
-                endAngle = (720 + endAngle) % 360;
-                if (endAngle <= startAngle) {
-                    endAngle += 360;
-                }
-                var pointList = [];
-                if (startAngle <= 90 && endAngle >= 90) {
-                    pointList.push([
-                        x, y - r
-                    ]);
-                }
-                if (startAngle <= 180 && endAngle >= 180) {
-                    pointList.push([
-                        x - r, y
-                    ]);
-                }
-                if (startAngle <= 270 && endAngle >= 270) {
-                    pointList.push([
-                        x, y + r
-                    ]);
-                }
-                if (startAngle <= 360 && endAngle >= 360) {
-                    pointList.push([
-                        x + r, y
-                    ]);
+                var r0 = style.r0 || 0;     // 形内半径[0,r)
+                var r = style.r;            // 扇形外半径(0,r]
+                var startAngle = math.degreeToRadian(style.startAngle);
+                var endAngle = math.degreeToRadian(style.endAngle);
+                var clockwise = style.clockwise;
+
+                if (!clockwise) {
+                    startAngle = -startAngle;
+                    endAngle = -endAngle;
                 }
 
-                startAngle = math.degreeToRadian(startAngle);
-                endAngle = math.degreeToRadian(endAngle);
+                if (r0 > 1) {
+                    computeBoundingBox.arc(
+                        x, y, r0, startAngle, endAngle, !clockwise, min0, max0
+                    );   
+                } else {
+                    min0[0] = max0[0] = x;
+                    min0[1] = max0[1] = y;
+                }
+                computeBoundingBox.arc(
+                    x, y, r, startAngle, endAngle, !clockwise, min1, max1
+                );
 
-
-                pointList.push([
-                    math.cos(startAngle) * r0 + x,
-                    y - math.sin(startAngle) * r0
-                ]);
-
-                pointList.push([
-                    math.cos(startAngle) * r + x,
-                    y - math.sin(startAngle) * r
-                ]);
-
-                pointList.push([
-                    math.cos(endAngle) * r + x,
-                    y - math.sin(endAngle) * r
-                ]);
-
-                pointList.push([
-                    math.cos(endAngle) * r0 + x,
-                    y - math.sin(endAngle) * r0
-                ]);
-
-                style.__rect = require('./Polygon').prototype.getRect({
-                    brushType : style.brushType,
-                    lineWidth : style.lineWidth,
-                    pointList : pointList
-                });
-                
+                vec2.min(min0, min0, min1);
+                vec2.max(max0, max0, max1);
+                style.__rect = {
+                    x: min0[0],
+                    y: min0[1],
+                    width: max0[0] - min0[0],
+                    height: max0[1] - min0[1]
+                }
                 return style.__rect;
             }
         };

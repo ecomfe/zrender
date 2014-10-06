@@ -3,6 +3,10 @@ define(
         var ArrayCtor = typeof Float32Array === 'undefined'
             ? Array
             : Float32Array;
+
+        /**
+         * @typedef {Float32Array|Array.<number>} Vector2
+         */
         /**
          * 二维向量类
          * @exports zrender/tool/vector
@@ -12,7 +16,7 @@ define(
              * 创建一个向量
              * @param {number} [x=0]
              * @param {number} [y=0]
-             * @return {Float32Array|Array.<number>}
+             * @return {Vector2}
              */
             create: function (x, y) {
                 var out = new ArrayCtor(2);
@@ -23,8 +27,8 @@ define(
 
             /**
              * 复制一个向量
-             * @return {Float32Array|Array.<number>} out
-             * @return {Float32Array|Array.<number>} v
+             * @return {Vector2} out
+             * @return {Vector2} v
              */
             copy: function (out, v) {
                 out[0] = v[0];
@@ -34,10 +38,10 @@ define(
 
             /**
              * 设置向量的两个项
-             * @param {Float32Array|Array.<number>} out
+             * @param {Vector2} out
              * @param {number} a
              * @param {number} b
-             * @return {Float32Array|Array.<number>} 结果
+             * @return {Vector2} 结果
              */
             set: function (out, a, b) {
                 out[0] = a;
@@ -47,9 +51,9 @@ define(
 
             /**
              * 向量相加
-             * @param {Float32Array|Array.<number>} out
-             * @param {Float32Array|Array.<number>} v1
-             * @param {Float32Array|Array.<number>} v2
+             * @param {Vector2} out
+             * @param {Vector2} v1
+             * @param {Vector2} v2
              */
             add: function (out, v1, v2) {
                 out[0] = v1[0] + v2[0];
@@ -59,9 +63,9 @@ define(
 
             /**
              * 向量缩放后相加
-             * @param {Float32Array|Array.<number>} out
-             * @param {Float32Array|Array.<number>} v1
-             * @param {Float32Array|Array.<number>} v2
+             * @param {Vector2} out
+             * @param {Vector2} v1
+             * @param {Vector2} v2
              * @param {number} a
              */
             scaleAndAdd: function (out, v1, v2, a) {
@@ -72,9 +76,9 @@ define(
 
             /**
              * 向量相减
-             * @param {Float32Array|Array.<number>} out
-             * @param {Float32Array|Array.<number>} v1
-             * @param {Float32Array|Array.<number>} v2
+             * @param {Vector2} out
+             * @param {Vector2} v1
+             * @param {Vector2} v2
              */
             sub: function (out, v1, v2) {
                 out[0] = v1[0] - v2[0];
@@ -84,7 +88,7 @@ define(
 
             /**
              * 向量长度
-             * @param {Float32Array|Array.<number>} v
+             * @param {Vector2} v
              * @return {number}
              */
             len: function (v) {
@@ -93,7 +97,7 @@ define(
 
             /**
              * 向量长度平方
-             * @param {Float32Array|Array.<number>} v
+             * @param {Vector2} v
              * @return {number}
              */
             lenSquare: function (v) {
@@ -102,9 +106,9 @@ define(
 
             /**
              * 向量乘法
-             * @param {Float32Array|Array.<number>} out
-             * @param {Float32Array|Array.<number>} v1
-             * @param {Float32Array|Array.<number>} v2
+             * @param {Vector2} out
+             * @param {Vector2} v1
+             * @param {Vector2} v2
              */
             mul: function (out, v1, v2) {
                 out[0] = v1[0] * v2[0];
@@ -114,9 +118,9 @@ define(
 
             /**
              * 向量除法
-             * @param {Float32Array|Array.<number>} out
-             * @param {Float32Array|Array.<number>} v1
-             * @param {Float32Array|Array.<number>} v2
+             * @param {Vector2} out
+             * @param {Vector2} v1
+             * @param {Vector2} v2
              */
             div: function (out, v1, v2) {
                 out[0] = v1[0] / v2[0];
@@ -126,8 +130,8 @@ define(
 
             /**
              * 向量点乘
-             * @param {Float32Array|Array.<number>} v1
-             * @param {Float32Array|Array.<number>} v2
+             * @param {Vector2} v1
+             * @param {Vector2} v2
              * @return {number}
              */
             dot: function (v1, v2) {
@@ -136,8 +140,8 @@ define(
 
             /**
              * 向量缩放
-             * @param {Float32Array|Array.<number>} out
-             * @param {Float32Array|Array.<number>} v
+             * @param {Vector2} out
+             * @param {Vector2} v
              * @param {number} s
              */
             scale: function (out, v, s) {
@@ -148,8 +152,8 @@ define(
 
             /**
              * 向量归一化
-             * @param {Float32Array|Array.<number>} out
-             * @param {Float32Array|Array.<number>} v
+             * @param {Vector2} out
+             * @param {Vector2} v
              */
             normalize: function (out, v) {
                 var d = vector.len(v);
@@ -166,8 +170,8 @@ define(
 
             /**
              * 计算向量间距离
-             * @param {Float32Array|Array.<number>} v1
-             * @param {Float32Array|Array.<number>} v2
+             * @param {Vector2} v1
+             * @param {Vector2} v2
              * @return {number}
              */
             distance: function (v1, v2) {
@@ -179,8 +183,8 @@ define(
 
             /**
              * 向量距离平方
-             * @param {Float32Array|Array.<number>} v1
-             * @param {Float32Array|Array.<number>} v2
+             * @param {Vector2} v1
+             * @param {Vector2} v2
              * @return {number}
              */
             distanceSquare: function (v1, v2) {
@@ -190,8 +194,8 @@ define(
 
             /**
              * 求负向量
-             * @param {Float32Array|Array.<number>} out
-             * @param {Float32Array|Array.<number>} v
+             * @param {Vector2} out
+             * @param {Vector2} v
              */
             negate: function (out, v) {
                 out[0] = -v[0];
@@ -201,9 +205,9 @@ define(
 
             /**
              * 插值两个点
-             * @param {Float32Array|Array.<number>} out
-             * @param {Float32Array|Array.<number>} v1
-             * @param {Float32Array|Array.<number>} v2
+             * @param {Vector2} out
+             * @param {Vector2} v1
+             * @param {Vector2} v2
              * @param {number} t
              */
             lerp: function (out, v1, v2, t) {
@@ -216,9 +220,9 @@ define(
             
             /**
              * 矩阵左乘向量
-             * @param {Float32Array|Array.<number>} out
-             * @param {Float32Array|Array.<number>} v
-             * @param {Float32Array|Array.<number>} m
+             * @param {Vector2} out
+             * @param {Vector2} v
+             * @param {Vector2} m
              */
             applyTransform: function (out, v, m) {
                 var x = v[0];
@@ -229,9 +233,9 @@ define(
             },
             /**
              * 求两个向量最小值
-             * @param  {Float32Array|Array.<number>} out
-             * @param  {Float32Array|Array.<number>} v1
-             * @param  {Float32Array|Array.<number>} v2
+             * @param  {Vector2} out
+             * @param  {Vector2} v1
+             * @param  {Vector2} v2
              */
             min: function (out, v1, v2) {
                 out[0] = Math.min(v1[0], v2[0]);
@@ -240,9 +244,9 @@ define(
             },
             /**
              * 求两个向量最大值
-             * @param  {Float32Array|Array.<number>} out
-             * @param  {Float32Array|Array.<number>} v1
-             * @param  {Float32Array|Array.<number>} v2
+             * @param  {Vector2} out
+             * @param  {Vector2} v1
+             * @param  {Vector2} v2
              */
             max: function (out, v1, v2) {
                 out[0] = Math.max(v1[0], v2[0]);
@@ -255,7 +259,7 @@ define(
         vector.lengthSquare = vector.lenSquare;
         vector.dist = vector.distance;
         vector.distSquare = vector.distanceSquare;
-
+        
         return vector;
     }
 );

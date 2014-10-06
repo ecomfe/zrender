@@ -135,7 +135,18 @@ define(
                     );
                 // 扇形
                 case 'sector':
-                    return isInsideSector(area, x, y);
+                    var startAngle = area.startAngle * Math.PI / 180;
+                    var endAngle = area.endAngle * Math.PI / 180;
+                    if (!area.clockwise) {
+                        startAngle = -startAngle;
+                        endAngle = -endAngle;
+                    }
+                    return isInsideSector(
+                        area.x, area.y, area.r0, area.r,
+                        startAngle, endAngle,
+                        !area.clockwise,
+                        x, y
+                    );
                 // 多边形
                 case 'path':
                     return isInsidePath(
@@ -333,8 +344,9 @@ define(
                 return false;
             }
             if (anticlockwise) {
+                var tmp = startAngle;
                 startAngle = normalizeRadian(endAngle);
-                endAngle = normalizeRadian(startAngle);
+                endAngle = normalizeRadian(tmp);
             } else {
                 startAngle = normalizeRadian(startAngle);
                 endAngle = normalizeRadian(endAngle);
@@ -391,29 +403,13 @@ define(
         /**
          * 扇形包含判断
          */
-        function isInsideSector(area, x, y) {
-            if (!isInsideRing(area.x, area.y, area.r0 || 0, area.r, x, y)) {
-                // 大圆外或者小圆内直接false
-                return false;
-            }
-
-            // 判断夹角
-            if (Math.abs(area.endAngle - area.startAngle) >= 360) {
-                // 大于360度的扇形，在环内就为true
-                return true;
-            }
-            
-            var angle = (360
-                         - Math.atan2(y - area.y, x - area.x) / Math.PI
-                         * 180)
-                         % 360;
-            var endA = (360 + area.endAngle) % 360;
-            var startA = (360 + area.startAngle) % 360;
-            if (endA > startA) {
-                return (angle >= startA && angle <= endA);
-            }
-
-            return !(angle >= endA && angle <= startA);
+        function isInsideSector(
+            cx, cy, r0, r, startAngle, endAngle, anticlockwise, x, y
+        ) {
+            return isInsideArcStroke(
+                cx, cy, (r0 + r) / 2, startAngle, endAngle, anticlockwise,
+                r - r0, x, y
+            );
         }
 
         /**
