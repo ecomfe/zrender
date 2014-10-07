@@ -567,8 +567,9 @@ define(
             roots[1] = tmp;
 
             if (anticlockwise) {
+                var tmp = startAngle;
                 startAngle = normalizeRadian(endAngle);
-                endAngle = normalizeRadian(startAngle);
+                endAngle = normalizeRadian(tmp);
             } else {
                 startAngle = normalizeRadian(startAngle);
                 endAngle = normalizeRadian(endAngle);

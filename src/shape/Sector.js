@@ -25,7 +25,7 @@
  * @property {number} [r0=0] 内圆半径，指定后将出现内弧，同时扇边长度为`r - r0`
  * @property {number} startAngle 起始角度，`[0, 360)`
  * @property {number} endAngle 结束角度，`(0, 360]`
- * @property {boolean} [clockwise=false] 是否是顺时针
+ * @property {boolean} [clockWise=false] 是否是顺时针
  * @property {string} [brushType='fill']
  * @property {string} [color='#000000'] 填充颜色
  * @property {string} [strokeColor='#000000'] 描边颜色
@@ -93,12 +93,12 @@ define(
                 var r = style.r;            // 扇形外半径(0,r]
                 var startAngle = style.startAngle;          // 起始角度[0,360)
                 var endAngle = style.endAngle;              // 结束角度(0,360]
-                var clockwise = style.clockwise || false;
+                var clockWise = style.clockWise || false;
 
                 startAngle = math.degreeToRadian(startAngle);
                 endAngle = math.degreeToRadian(endAngle);
 
-                if (!clockwise) {
+                if (!clockWise) {
                     // 扇形默认是逆时针方向，Y轴向上
                     // 这个跟arc的标准不一样，为了兼容echarts
                     startAngle = -startAngle;
@@ -117,7 +117,7 @@ define(
                     unitY * r + y
                 );
 
-                ctx.arc(x, y, r, startAngle, endAngle, !clockwise);
+                ctx.arc(x, y, r, startAngle, endAngle, !clockWise);
 
                 ctx.lineTo(
                     math.cos(endAngle) * r0 + x,
@@ -125,7 +125,7 @@ define(
                 );
 
                 if (r0 !== 0) {
-                    ctx.arc(x, y, r0, endAngle, startAngle, clockwise);
+                    ctx.arc(x, y, r0, endAngle, startAngle, clockWise);
                 }
 
                 ctx.closePath();
@@ -149,23 +149,23 @@ define(
                 var r = style.r;            // 扇形外半径(0,r]
                 var startAngle = math.degreeToRadian(style.startAngle);
                 var endAngle = math.degreeToRadian(style.endAngle);
-                var clockwise = style.clockwise;
+                var clockWise = style.clockWise;
 
-                if (!clockwise) {
+                if (!clockWise) {
                     startAngle = -startAngle;
                     endAngle = -endAngle;
                 }
 
                 if (r0 > 1) {
                     computeBoundingBox.arc(
-                        x, y, r0, startAngle, endAngle, !clockwise, min0, max0
+                        x, y, r0, startAngle, endAngle, !clockWise, min0, max0
                     );   
                 } else {
                     min0[0] = max0[0] = x;
                     min0[1] = max0[1] = y;
                 }
                 computeBoundingBox.arc(
-                    x, y, r, startAngle, endAngle, !clockwise, min1, max1
+                    x, y, r, startAngle, endAngle, !clockWise, min1, max1
                 );
 
                 vec2.min(min0, min0, min1);
