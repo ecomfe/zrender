@@ -76,7 +76,7 @@
             this._bgDom.onselectstart = returnFalse;
             this._bgDom.style['-webkit-user-select'] = 'none';
             this._bgDom.style['user-select'] = 'none';
-            // this._bgDom.style[' -webkit-touch-callout'] = 'none';
+            this._bgDom.style['-webkit-touch-callout'] = 'none';
 
             // 高亮
             var hoverLayer = new Layer('_zrender_hover_', this);
@@ -87,7 +87,7 @@
             hoverLayer.dom.onselectstart = returnFalse;
             hoverLayer.dom.style['-webkit-user-select'] = 'none';
             hoverLayer.dom.style['user-select'] = 'none';
-            // hoverLayer.dom.style[' -webkit-touch-callout'] = 'none';
+            hoverLayer.dom.style['-webkit-touch-callout'] = 'none';
 
             var me = this;
             this.updatePainter = function (shapeList, callback) {
@@ -776,7 +776,7 @@
             this.dom.onselectstart = returnFalse; // 避免页面选中的尴尬
             this.dom.style['-webkit-user-select'] = 'none';
             this.dom.style['user-select'] = 'none';
-            // this.dom.style[' -webkit-touch-callout'] = 'none';
+            this.dom.style['-webkit-touch-callout'] = 'none';
             vmlCanvasManager && vmlCanvasManager.initElement(this.dom);
 
             this.domBack = null;
