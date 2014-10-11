@@ -62,8 +62,6 @@ define(
 
             // 上面的方法都行不通时
             switch (zoneType) {
-                case 'heart': // 心形---------10 // Todo，不精确
-                case 'droplet':// 水滴----------11 // Todo，不精确
                 case 'ellipse': // Todo，不精确
                     return true;
                 // 旋轮曲线  不准确
