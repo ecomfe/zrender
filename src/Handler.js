@@ -192,6 +192,7 @@ define(
                 // 如果存在拖拽中元素，被拖拽的图形元素最后addHover
                 if (this._draggingTarget) {
                     this.storage.drift(this._draggingTarget.id, dx, dy);
+                    this._draggingTarget.modSelf();
                     this.storage.addHover(this._draggingTarget);
                 }
                 else if (this._isMouseDown) {
