@@ -39,8 +39,8 @@ define(function (require) {
             });
         },
         makeRectangle: function (w, h) {
-            var width = Math.random() * 100;
-            var height = Math.random() * 50;
+            var width = 100 + Math.random() * 100;
+            var height = 100 + Math.random() * 100;
             return new RectangleShape({
                 style: {
                     x: w * Math.random(),
@@ -100,6 +100,8 @@ define(function (require) {
                     y: h * Math.random(),
                     r: 50 * Math.random() + 50,
                     r0: 20 * Math.random() + 20,
+                    startAngle: Math.random() * 360,
+                    endAngle: Math.random() * 360,
                     brushType: 'fill'
                 },
                 hoverable: false

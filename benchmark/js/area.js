@@ -6,6 +6,7 @@ define(function(require) {
     var etpl = require('etpl');
     var area = require('zrender/tool/area');
     var shapeMakers = require('./shapes');
+    var PathProxy = require('zrender/shape/util/PathProxy');
 
     window.zr = zrender.init(document.getElementById('main'));
     var canvas = document.getElementById('points');
@@ -24,8 +25,7 @@ define(function(require) {
         suite.benchmarks.push(e.target);
     });
 
-    var renderResult = etpl.compile('<div class="result">\
-        <h3>${name}</h3>\
+    var renderResult = etpl.compile('<h3>${name}</h3>\
         <table>\
             <tr>\
             <th>shape类型</th>\
@@ -37,8 +37,7 @@ define(function(require) {
             <td>${item.ops}</td>\
             </tr>\
             <!-- /for -->\
-        </table>\
-    </div>');
+        </table>');
 
     var shapeList = [];
     var N_SHAPE = 20;
@@ -53,6 +52,10 @@ define(function(require) {
         var res = [];
 
         var count = shapeTypes.length;
+        var resultDom = document.createElement('div');
+        resultDom.className = 'result';
+        document.getElementById('results').appendChild(resultDom);
+
         shapeTypes.forEach(function(shapeType) {
             
             function setup () {
@@ -75,11 +78,11 @@ define(function(require) {
             function onComplete(e) {
                 var bench = e.target;
                 res.push({
-                    ops: (1000 * N_ITER / (bench.stats.mean + bench.stats.moe)).toFixed(2),
+                    ops: (1000 * N_ITER / (bench.stats.mean + bench.stats.moe)).toFixed(0),
                     shapeType: shapeType
                 });
                 count--;
-                document.getElementById('result').innerHTML = renderResult({
+                resultDom.innerHTML = renderResult({
                     result: res,
                     name: name
                 });
@@ -97,6 +100,10 @@ define(function(require) {
                     zr.storage.delRoot();
                     for (var i = 0; i < N_SHAPE; i++) {
                         var shape = shapeMakers['make' + shapeType](width, height);
+                        if (!shape._pathProxy) {
+                            shape._pathProxy = new PathProxy();
+                            shape.buildPath(shape._pathProxy, shape.style);
+                        }
                         shapeList[i] = shape;
                         zr.addShape(shape);
                     }
@@ -113,7 +120,7 @@ define(function(require) {
 
     $('#run').bind('click', function() {
 
-        window['isInsidePath'] = function (x, y) {
+        window['mathMethod'] = function (x, y) {
             for (var j = 0; j < N_SHAPE; j++) {
                 var shape = shapeList[j];
                 if (area.isInside(shape, shape.style, x, y)) {
@@ -122,7 +129,33 @@ define(function(require) {
             }
         }
 
-        addBenck('isInsidePath', 'Math method')
+        window['buildPath'] = function (x, y) {
+            for (var j = 0; j < N_SHAPE; j++) {
+                var shape = shapeList[j];
+                ctx.beginPath();
+                shape.buildPath(ctx, shape.style);
+                ctx.closePath();
+                if (ctx.isPointInPath(x, y)) {
+                    return true;
+                }
+            }
+        }
+
+        window['jsInsidePath'] = function (x, y) {
+            for (var j = 0; j < N_SHAPE; j++) {
+                var shape = shapeList[j];
+                if (area.isInsidePath(
+                    shape._pathProxy.pathCommands, shape.style.lineWidth, shape.style.brushType, x, y
+                )) {
+                    return true;
+                }
+            }
+        }
+
+        addBenck('mathMethod', 'Math method')
+        addBenck('buildPath', 'Native isPointInPath')
+        addBenck('jsInsidePath', 'JS isPointInPath');
+
 
         suite.run();
     });
