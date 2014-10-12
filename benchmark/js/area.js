@@ -5,6 +5,7 @@ define(function(require) {
     var zrender = require('zrender');
     var etpl = require('etpl');
     var area = require('zrender/tool/area');
+    var util = require('zrender/tool/util');
     var shapeMakers = require('./shapes');
     var PathProxy = require('zrender/shape/util/PathProxy');
 
@@ -18,7 +19,8 @@ define(function(require) {
 
     var suite = new Benchmark.Suite();
 
-    var shapeTypes = ['Circle', 'Line', 'Rectangle', 'Star', 'Sector', 'Heart', 'Curve'];
+    var shapeTypes = ['Circle', 'Line', 'Rectangle', 'Star', 'Sector', 'Heart', 'Cubic', 'Quadratic'];
+    // var shapeTypes = ['Curve'];
 
     suite.benchmarks = [];
     suite.on('add', function(e) {
@@ -29,20 +31,22 @@ define(function(require) {
         <table>\
             <tr>\
             <th>shape类型</th>\
-            <th>op/s</th>\
-            </tr>\
             <!-- for: ${result} as ${item} -->\
-            <tr>\
-            <td>${item.shapeType}</td>\
-            <td>${item.ops}</td>\
-            </tr>\
+            <th>${item.shapeType}</th>\
             <!-- /for -->\
+            </tr>\
+            <tr>\
+            <td>op/s</td>\
+            <!-- for: ${result} as ${item} -->\
+            <td>${item.ops}</td>\
+            <!-- /for -->\
+            </tr>\
         </table>');
 
     var shapeList = [];
     var N_SHAPE = 20;
 
-    window.N_ITER = 500;
+    window.N_ITER = 2000;
     window.points = [];
     for (var i = 0; i < N_ITER; i++) {
         points[i] = [0, 0, false];
@@ -118,7 +122,7 @@ define(function(require) {
         });
     }
 
-    $('#run').bind('click', function() {
+    document.getElementById('run').addEventListener('click', function() {
 
         window['mathMethod'] = function (x, y) {
             for (var j = 0; j < N_SHAPE; j++) {
@@ -152,10 +156,53 @@ define(function(require) {
             }
         }
 
-        addBenck('mathMethod', 'Math method')
-        addBenck('buildPath', 'Native isPointInPath')
-        addBenck('jsInsidePath', 'JS isPointInPath');
+        function _isPainted(context, x, y, unit) {
+            var pixelsData;
+            if (typeof unit != 'undefined') {
+                unit = (unit || 1) >> 1;
+                pixelsData = context.getImageData(
+                    x - unit,
+                    y - unit,
+                    unit + unit,
+                    unit + unit
+                ).data;
+            }
+            else {
+                pixelsData = context.getImageData(x, y, 1, 1).data;
+            }
 
+            var len = pixelsData.length;
+            while (len--) {
+                if (pixelsData[len] !== 0) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        window['pixelMethod'] = function (x, y) {
+            for (var j = 0; j < N_SHAPE; j++) {
+                var shape = shapeList[j];
+
+                var _rect = shape.getRect(shape.style);
+                var _context = util.getPixelContext();
+                var _offset = util.getPixelOffset();
+
+                util.adjustCanvasSize(x, y);
+                _context.clearRect(_rect.x, _rect.y, _rect.width, _rect.height);
+                _context.beginPath();
+                shape.brush(_context, { style: shape.style });
+                _context.closePath();
+
+                if (_isPainted(_context, x + _offset.x, y + _offset.y)) {
+                    return true;
+                }
+            }
+        }
+
+        addBenck('mathMethod', 'Math method');
+        addBenck('buildPath', 'Native isPointInPath');
+        addBenck('jsInsidePath', 'JS isPointInPath');
+        // addBenck('pixelMethod', 'pixelMethod');
 
         suite.run();
     });

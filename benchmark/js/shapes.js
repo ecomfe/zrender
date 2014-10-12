@@ -58,8 +58,8 @@ define(function (require) {
                 style: {
                     x: w * Math.random(),
                     y: h * Math.random(),
-                    r: Math.random() * 100,
-                    r0: Math.random() * 50,
+                    r: Math.random() * 200,
+                    r0: Math.random() * 200,
                     n: Math.round(Math.random() * 10),
                     brushType: 'fill'
                 },
@@ -71,13 +71,13 @@ define(function (require) {
                 style: {
                     x: w * Math.random(),
                     y: h * Math.random(),
-                    a: Math.random() * 100,
-                    b: Math.random() * 50
+                    a: Math.random() * 200,
+                    b: Math.random() * 200
                 },
                 hoverable: false
             });
         },
-        makeCurve: function (w, h) {
+        makeQuadratic: function (w, h) {
             return new CurveShape({
                 style: {
                     xStart: Math.random() * w,
@@ -86,7 +86,23 @@ define(function (require) {
                     yEnd: Math.random() * h,
                     cpX1: Math.random() * w,
                     cpY1: Math.random() * h,
+                    lineWidth: 20,
+                    brushType: 'stroke'
+                },
+                hoverable: false
+            });
+        },
+        makeCubic: function (w, h) {
+            return new CurveShape({
+                style: {
+                    xStart: Math.random() * w,
                     yStart: Math.random() * h,
+                    xEnd: Math.random() * w,
+                    yEnd: Math.random() * h,
+                    cpX1: Math.random() * w,
+                    cpY1: Math.random() * h,
+                    cpX2: Math.random() * w,
+                    cpY2: Math.random() * h,
                     lineWidth: 20,
                     brushType: 'stroke'
                 },
