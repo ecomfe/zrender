@@ -341,6 +341,10 @@ define(
             if ((d - _l > r) || (d + _l < r)) {
                 return false;
             }
+            if (Math.abs(startAngle - endAngle) >= PI2) {
+                // Is a circle
+                return true;
+            }
             if (anticlockwise) {
                 var tmp = startAngle;
                 startAngle = normalizeRadian(endAngle);
@@ -564,13 +568,25 @@ define(
             roots[0] = -tmp;
             roots[1] = tmp;
 
+            if (Math.abs(startAngle - endAngle) >= PI2) {
+                // Is a circle
+                startAngle = 0;
+                endAngle = PI2;
+                var dir = anticlockwise ? 1 : -1;
+                if (x >= roots[0] + cx && x <= roots[1] + cx) {
+                    return dir;
+                } else {
+                    return 0;
+                }
+            }
+
             if (anticlockwise) {
                 var tmp = startAngle;
                 startAngle = normalizeRadian(endAngle);
-                endAngle = normalizeRadian(tmp);
+                endAngle = normalizeRadian(tmp);   
             } else {
                 startAngle = normalizeRadian(startAngle);
-                endAngle = normalizeRadian(endAngle);
+                endAngle = normalizeRadian(endAngle);   
             }
             if (startAngle > endAngle) {
                 endAngle += PI2;
@@ -610,6 +626,9 @@ define(
             var x0 = 0;
             var y0 = 0;
             var beginSubpath = true;
+            var firstCmd = true;
+
+            brushType = brushType || 'fill';
 
             var hasStroke = brushType === 'stroke' || brushType === 'both';
             var hasFill = brushType === 'fill' || brushType === 'both';
@@ -632,6 +651,14 @@ define(
                     x0 = p[p.length - 2];
                     y0 = p[p.length - 1];
                     beginSubpath = false;
+                    if (firstCmd && seg.command !== 'A') {
+                        // 如果第一个命令不是M, 是lineTo, bezierCurveTo
+                        // 等绘制命令的话，是会从该绘制的起点开始算的
+                        // Arc 会在之后做单独处理所以这里忽略
+                        firstCmd = false;
+                        xi = x0;
+                        yi = y0;
+                    }
                 }
                 switch (seg.command) {
                     case 'M':
@@ -697,7 +724,15 @@ define(
                         var dTheta = p[5];
                         var x1 = Math.cos(theta) * rx + cx;
                         var y1 = Math.sin(theta) * ry + cy;
-                        w += windingLine(xi, yi, x1, y1);
+                        // 不是直接使用 arc 命令
+                        if (!firstCmd) {
+                            w += windingLine(xi, yi, x1, y1);
+                        } else {
+                            firstCmd = false;
+                            // 第一个命令起点还未定义
+                            x0 = x1;
+                            y0 = y1;
+                        }
                         // zr 使用scale来模拟椭圆, 这里也对x做一定的缩放
                         var _x = (x - cx) * ry / rx + cx;
                         if (hasStroke) {

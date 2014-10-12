@@ -186,7 +186,7 @@ define(function (require) {
      * @return {PathProxy}
      */
     PathProxy.prototype.quadraticCurveTo = function (x1, y1, x2, y2) {
-        this.pathCommands.push(new PathSegment('A', [x1, y1, x2, y2]));
+        this.pathCommands.push(new PathSegment('Q', [x1, y1, x2, y2]));
         if (this._ctx) {
             this._ctx.quadraticCurveTo(x1, y1, x2, y2);
         }
