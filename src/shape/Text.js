@@ -78,6 +78,8 @@ define(
                 }
 
                 ctx.save();
+                this.doClip(ctx);
+
                 this.setContext(ctx, style);
 
                 // 设置transform

@@ -594,7 +594,9 @@ define(
              * @return {module:zrender/animation/Animation~Animator}
              */
             done : function(cb) {
-                this._doneList.push(cb);
+                if (cb) {
+                    this._doneList.push(cb);
+                }
                 return this;
             }
         };

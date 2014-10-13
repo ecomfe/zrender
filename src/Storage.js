@@ -150,7 +150,7 @@ define(
             this._shapeList.sort(shapeCompareFunc);
         };
 
-        Storage.prototype._updateAndAddShape = function (el) {
+        Storage.prototype._updateAndAddShape = function (el, clipShapes) {
             
             if (el.ignore) {
                 return;
@@ -165,9 +165,12 @@ define(
                     el.clipShape.parent = el;
                     el.clipShape.updateTransform();
 
-                    var startClipShape = el._children[0];
-                    if (startClipShape) {
-                        startClipShape.__startClip = el.clipShape;
+                    // PENDING 效率影响
+                    if (clipShapes) {
+                        clipShapes = clipShapes.slice();
+                        clipShapes.push(el.clipShape);
+                    } else {
+                        clipShapes = [el.clipShape];
                     }
                 }
 
@@ -177,14 +180,7 @@ define(
                     // Force to mark as dirty if group is dirty
                     child.__dirty = el.__dirty || child.__dirty;
 
-                    this._updateAndAddShape(child);
-                }
-
-                if (el.clipShape) {
-                    var stopClipShape = this._shapeList[this._shapeListOffset - 1];
-                    if (stopClipShape) {
-                        stopClipShape.__stopClip = true;
-                    }
+                    this._updateAndAddShape(child, clipShapes);
                 }
 
                 // Mark group clean here
@@ -192,6 +188,8 @@ define(
                 
             }
             else {
+                el.__clipShapes = clipShapes;
+
                 this._shapeList[this._shapeListOffset++] = el;
             }
         };
