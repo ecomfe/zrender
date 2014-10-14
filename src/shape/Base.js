@@ -351,18 +351,18 @@ define(
                             m[2], m[3],
                             m[4], m[5]
                         );
-                        ctx.beginPath();
-                        clipShape.buildPath(ctx, clipShape.style);
-                        ctx.clip();
-                        // Transform back
-                        if (clipShape.needTransform) {
-                            var m = clipShapeInvTransform;
-                            ctx.transform(
-                                m[0], m[1],
-                                m[2], m[3],
-                                m[4], m[5]
-                            );
-                        }
+                    }
+                    ctx.beginPath();
+                    clipShape.buildPath(ctx, clipShape.style);
+                    ctx.clip();
+                    // Transform back
+                    if (clipShape.needTransform) {
+                        var m = clipShapeInvTransform;
+                        ctx.transform(
+                            m[0], m[1],
+                            m[2], m[3],
+                            m[4], m[5]
+                        );
                     }
                 }
             }

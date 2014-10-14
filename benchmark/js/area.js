@@ -82,7 +82,7 @@ define(function(require) {
             function onComplete(e) {
                 var bench = e.target;
                 res.push({
-                    ops: (1000 * N_ITER / (bench.stats.mean + bench.stats.moe)).toFixed(0),
+                    ops: (N_ITER * N_SHAPE / (bench.stats.mean + bench.stats.moe)).toFixed(0),
                     shapeType: shapeType
                 });
                 count--;
