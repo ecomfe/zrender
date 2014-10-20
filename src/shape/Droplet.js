@@ -83,7 +83,7 @@ define(
              * @param {module:zrender/shape/Droplet~IDropletStyle} style
              */
             buildPath : function(ctx, style) {
-                var path = this._pathProxy;
+                var path = this._pathProxy || new PathProxy();
                 path.begin(ctx);
 
                 path.moveTo(style.x, style.y + style.a);
