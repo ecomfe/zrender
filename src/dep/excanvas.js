@@ -253,8 +253,8 @@ if (!document.createElement('canvas').getContext) {
     o2.font          = o1.font;
     o2.textAlign     = o1.textAlign;
     o2.textBaseline  = o1.textBaseline;
-    o2.arcScaleX_    = o1.arcScaleX_;
-    o2.arcScaleY_    = o1.arcScaleY_;
+    o2.scaleX_    = o1.scaleX_;
+    o2.scaleY_    = o1.scaleY_;
     o2.lineScale_    = o1.lineScale_;
   }
 
@@ -606,8 +606,8 @@ if (!document.createElement('canvas').getContext) {
     canvasElement.appendChild(overlayEl);
 
     this.element_ = el;
-    this.arcScaleX_ = 1;
-    this.arcScaleY_ = 1;
+    this.scaleX_ = 1;
+    this.scaleY_ = 1;
     this.lineScale_ = 1;
   }
 
@@ -844,9 +844,8 @@ if (!document.createElement('canvas').getContext) {
         this.m_[1][1] != 1 || this.m_[1][0]) {
       var filter = [];
 
-      scaleX = Math.sqrt(this.m_[0][0] * this.m_[0][0] + this.m_[0][1] * this.m_[0][1]);
-      scaleY = Math.sqrt(this.m_[1][0] * this.m_[1][0] + this.m_[1][1] * this.m_[1][1]);
-
+     var scaleX = this.scaleX_;
+     var scaleY = this.scaleY_;
       // Note the 12/21 reversal
       filter.push('M11=', this.m_[0][0] / scaleX, ',',
                   'M12=', this.m_[1][0] / scaleY, ',',
@@ -867,7 +866,7 @@ if (!document.createElement('canvas').getContext) {
 
       vmlStr.push('padding:0 ', mr(max.x / Z), 'px ', mr(max.y / Z),
                   'px 0;filter:progid:DXImageTransform.Microsoft.Matrix(',
-                  filter.join(''), ", sizingmethod='clip');");
+                  filter.join(''), ", SizingMethod='clip');");
 
     } else {
       vmlStr.push('top:', mr(d.y / Z), 'px;left:', mr(d.x / Z), 'px;');
@@ -949,10 +948,10 @@ if (!document.createElement('canvas').getContext) {
         case 'at':
         case 'wa':
           lineStr.push(' ', p.type, ' ',
-                       mr(p.x - this.arcScaleX_ * p.radius), ',',
-                       mr(p.y - this.arcScaleY_ * p.radius), ' ',
-                       mr(p.x + this.arcScaleX_ * p.radius), ',',
-                       mr(p.y + this.arcScaleY_ * p.radius), ' ',
+                       mr(p.x - this.scaleX_ * p.radius), ',',
+                       mr(p.y - this.scaleY_ * p.radius), ' ',
+                       mr(p.x + this.scaleX_ * p.radius), ',',
+                       mr(p.y + this.scaleY_ * p.radius), ' ',
                        mr(p.xStart), ',', mr(p.yStart), ' ',
                        mr(p.xEnd), ',', mr(p.yEnd));
           break;
@@ -1017,8 +1016,8 @@ if (!document.createElement('canvas').getContext) {
 
   function appendFill(ctx, lineStr, min, max) {
     var fillStyle = ctx.fillStyle;
-    var arcScaleX = ctx.arcScaleX_;
-    var arcScaleY = ctx.arcScaleY_;
+    var arcScaleX = ctx.scaleX_;
+    var arcScaleY = ctx.scaleY_;
     var width = max.x - min.x;
     var height = max.y - min.y;
     if (fillStyle instanceof CanvasGradient_) {
@@ -1161,6 +1160,9 @@ if (!document.createElement('canvas').getContext) {
     }
     ctx.m_ = m;
 
+    ctx.scaleX_ = Math.sqrt(m[0][0] * m[0][0] + m[0][1] * m[0][1]);
+    ctx.scaleY_ = Math.sqrt(m[1][0] * m[1][0] + m[1][1] * m[1][1]);
+
     if (updateLineScale) {
       // Get the line scale.
       // Determinant of this.m_ means how much the area is enlarged by the
@@ -1195,8 +1197,6 @@ if (!document.createElement('canvas').getContext) {
   };
 
   contextPrototype.scale = function(aX, aY) {
-    this.arcScaleX_ *= aX;
-    this.arcScaleY_ *= aY;
     var m1 = [
       [aX, 0,  0],
       [0,  aY, 0],
@@ -1214,6 +1214,7 @@ if (!document.createElement('canvas').getContext) {
     ];
 
     setM(this, matrixMultiply(m1, this.m_), true);
+
   };
 
   contextPrototype.setTransform = function(m11, m12, m21, m22, dx, dy) {
