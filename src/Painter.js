@@ -64,6 +64,8 @@
 
             this._layers = {};
 
+            this._zlevelList = [];
+
             this._layerConfig = {};
 
             this._loadingEffect = new BaseLoadingEffect({});
@@ -155,7 +157,7 @@
                         ctx.restore();
                     }
 
-                    currentLayer = this.getLayer(shape.zlevel, currentLayer);
+                    currentLayer = this.getLayer(shape.zlevel);
                     ctx = currentLayer.ctx;
                     currentZLevel = shape.zlevel;
 
@@ -256,13 +258,27 @@
         /**
          * 获取 zlevel 所在层，如果不存在则会创建一个新的层
          * @param {number} zlevel
-         * @param {module:zrender/Painter~Layer} [prevLayer]
-         *        在需要创建新的层时需要使用，新创建层的dom节点会插在该层后面
          */
-        Painter.prototype.getLayer = function (zlevel, prevLayer) {
+        Painter.prototype.getLayer = function (zlevel) {
             // Change draw layer
             var currentLayer = this._layers[zlevel];
             if (!currentLayer) {
+                var len = this._zlevelList.length;
+                var prevLayer = null;
+                var i = -1;
+                if (len > 0 && zlevel > this._zlevelList[0]) {
+                    for (i = 0; i < len - 1; i++) {
+                        if (
+                            this._zlevelList[i] < zlevel
+                            && this._zlevelList[i + 1] > zlevel
+                        ) {
+                            break;
+                        }
+                    }
+                    prevLayer = this._layers[this._zlevelList[i]];
+                }
+                this._zlevelList.splice(i + 1, 0, zlevel);
+
                 // Create a new layer
                 currentLayer = new Layer(zlevel, this);
                 var prevDom = prevLayer ? prevLayer.dom : this._bgDom;
@@ -424,6 +440,8 @@
             });
             layer.dom.parentNode.removeChild(layer.dom);
             delete this._layers[zlevel];
+
+            this._zlevelList.splice(util.indexOf(this._zlevelList, zlevel), 1);
         };
 
         /**
@@ -777,6 +795,7 @@
             this.dom.style['-webkit-user-select'] = 'none';
             this.dom.style['user-select'] = 'none';
             this.dom.style['-webkit-touch-callout'] = 'none';
+
             vmlCanvasManager && vmlCanvasManager.initElement(this.dom);
 
             this.domBack = null;
