@@ -245,6 +245,12 @@ define(
             var shape = this._elements[shapeId];
             if (shape) {
                 shape.needTransform = true;
+                if (shape.draggable === 'horizontal') {
+                    dy = 0;
+                }
+                else if (shape.draggable === 'vertical') {
+                    dx = 0;
+                }
                 if (!shape.ondrift // ondrift
                     // 有onbrush并且调用执行返回false或undefined则继续
                     || (shape.ondrift && !shape.ondrift(dx, dy))
