@@ -672,6 +672,9 @@ define(
             if (this.style) {
                 this.style.__rect = null;
             }
+            if (this.highlightStyle) {
+                this.highlightStyle.__rect = null;
+            }
         };
 
         /**
