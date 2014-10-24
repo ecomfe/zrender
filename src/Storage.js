@@ -109,6 +109,28 @@ define(
          * @return {Array.<module:zrender/shape/Base>}
          */
         Storage.prototype.getHoverShapes = function (update) {
+            // hoverConnect
+            for (var i = 0, l = this._hoverElements.length; i < l; i++) {
+                var target = this._hoverElements[i].hoverConnect;
+                if (target) {
+                    var zlevel = Number.MAX_INTEGER;
+                    var shape;
+                    if (!(target instanceof Array)) {
+                        target = [target];
+                    }
+                    for (var i = 0, l = target.length; i < l; i++) {
+                        shape = target[i].id ? target[i] : this.get(target[i]);
+                        if (shape) {
+                            this._hoverElements.push(shape);
+                            zlevel = Math.min(zlevel, shape.zlevel);
+                        }
+                    }
+                    if (zlevel < this._hoverElements[i].zlevel) {
+                        this._hoverElements.push(this._hoverElements[i]);
+                    }
+                }
+            }
+            
             if (update) {
                 for (var i = 0, l = this._hoverElements.length; i < l; i++) {
                     this._hoverElements[i].updateTransform();
