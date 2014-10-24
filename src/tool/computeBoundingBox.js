@@ -169,7 +169,7 @@ define(
                 startAngle = tmp;
             }
 
-            var number = 0;
+            // var number = 0;
             // var step = (anticlockwise ? -Math.PI : Math.PI) / 2;
             for (var angle = 0; angle < endAngle; angle += Math.PI / 2) {
                 if (angle > startAngle) {

@@ -175,7 +175,7 @@ define(
                     y: min0[1],
                     width: max0[0] - min0[0],
                     height: max0[1] - min0[1]
-                }
+                };
                 return style.__rect;
             }
         };

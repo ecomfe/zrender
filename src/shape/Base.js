@@ -297,7 +297,7 @@ define(
             this.setTransform(ctx);
 
             return style;
-        }
+        };
 
         /**
          * 绘制后的处理
@@ -305,7 +305,7 @@ define(
          */
         Base.prototype.afterBrush = function (ctx) {
             ctx.restore();
-        }
+        };
 
         var STYLE_CTX_MAP = [
             [ 'color', 'fillStyle' ],
@@ -366,7 +366,7 @@ define(
                     }
                 }
             }
-        }
+        };
     
         /**
          * 根据默认样式扩展高亮样式
