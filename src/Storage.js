@@ -110,33 +110,28 @@ define(
          */
         Storage.prototype.getHoverShapes = function (update) {
             // hoverConnect
+            var hoverElements = [];
             for (var i = 0, l = this._hoverElements.length; i < l; i++) {
+                hoverElements.push(this._hoverElements[i]);
                 var target = this._hoverElements[i].hoverConnect;
                 if (target) {
-                    var zlevel = Number.MAX_INTEGER;
                     var shape;
-                    if (!(target instanceof Array)) {
-                        target = [target];
-                    }
-                    for (var i = 0, l = target.length; i < l; i++) {
-                        shape = target[i].id ? target[i] : this.get(target[i]);
+                    target = target instanceof Array ? target : [target];
+                    for (var j = 0, k = target.length; j < k; j++) {
+                        shape = target[j].id ? target[j] : this.get(target[j]);
                         if (shape) {
-                            this._hoverElements.push(shape);
-                            zlevel = Math.min(zlevel, shape.zlevel);
+                            hoverElements.push(shape);
                         }
                     }
-                    if (zlevel < this._hoverElements[i].zlevel) {
-                        this._hoverElements.push(this._hoverElements[i]);
-                    }
                 }
             }
-            
+            hoverElements.sort(shapeCompareFunc);
             if (update) {
-                for (var i = 0, l = this._hoverElements.length; i < l; i++) {
-                    this._hoverElements[i].updateTransform();
+                for (var i = 0, l = hoverElements.length; i < l; i++) {
+                    hoverElements[i].updateTransform();
                 }
             }
-            return this._hoverElements;
+            return hoverElements;
         };
 
         /**
