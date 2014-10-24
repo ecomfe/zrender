@@ -70,6 +70,7 @@ define(
              * @param {Event} event
              */
             dblclick: function (event) {
+                event = event || window.event;
                 event = this._zrenderEventFixed(event);
 
                 // 分发config.EVENT.DBLCLICK事件
@@ -468,7 +469,8 @@ define(
                 window.attachEvent('onresize', this._resizeHandler);
 
                 root.attachEvent('onclick', this._clickHandler);
-                root.attachEvent('ondblclick ', this._dblclickHandler);
+                //root.attachEvent('ondblclick ', this._dblclickHandler);
+                root.ondblclick = this._dblclickHandler;
                 root.attachEvent('onmousewheel', this._mousewheelHandler);
                 root.attachEvent('onmousemove', this._mousemoveHandler);
                 root.attachEvent('onmouseout', this._mouseoutHandler);
