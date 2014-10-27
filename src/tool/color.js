@@ -289,23 +289,26 @@ define(function(require) {
         var stepR = (end[0] - start[0]) / step;
         var stepG = (end[1] - start[1]) / step;
         var stepB = (end[2] - start[2]) / step;
+        var stepA = (end[3] - start[3]) / step;
         // 生成颜色集合
         // fix by linfeng 颜色堆积
-        for (var i = 0, r = start[0], g = start[1], b = start[2]; i < step; i++
-        ) {
+        for (var i = 0, r = start[0], g = start[1], b = start[2], a = start[3]; i < step; i++) {
             colors[i] = toColor([
                 adjust(Math.floor(r), [ 0, 255 ]),
                 adjust(Math.floor(g), [ 0, 255 ]), 
-                adjust(Math.floor(b), [ 0, 255 ])
-            ]);
+                adjust(Math.floor(b), [ 0, 255 ]),
+                a.toFixed(4) - 0
+            ],'rgba');
             r += stepR;
             g += stepG;
             b += stepB;
+            a += stepA;
         }
         r = end[0];
         g = end[1];
         b = end[2];
-        colors[i] = toColor([ r, g, b ]);
+        a = end[3];
+        colors[i] = toColor([r, g, b, a], 'rgba');
         return colors;
     }
 
