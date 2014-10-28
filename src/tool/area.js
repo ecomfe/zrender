@@ -135,14 +135,14 @@ define(
                 case 'sector':
                     var startAngle = area.startAngle * Math.PI / 180;
                     var endAngle = area.endAngle * Math.PI / 180;
-                    if (!area.clockwise) {
+                    if (!area.clockWise) {
                         startAngle = -startAngle;
                         endAngle = -endAngle;
                     }
                     return isInsideSector(
                         area.x, area.y, area.r0, area.r,
                         startAngle, endAngle,
-                        !area.clockwise,
+                        !area.clockWise,
                         x, y
                     );
                 // 多边形
