@@ -32,6 +32,7 @@
 // * Optimize. There is always room for speed improvements.
 
 // AMD by kener.linfeng@gmail.com
+// Optimized by https://github.com/pissang
 define(function(require) {
     
 // Only add this code if we do not already have a canvas implementation
@@ -94,7 +95,10 @@ if (!document.createElement('canvas').getContext) {
 
   function addNamespace(doc, prefix, urn) {
     if (!doc.namespaces[prefix]) {
-      doc.namespaces.add(prefix, urn, '#default#VML');
+      // TODO, It will not work proply if add '#default#VML' 
+      // When using appendChild to add dom
+      // doc.namespaces.add(prefix, urn, '#default#VML');
+      doc.namespaces.add(prefix, urn);
     }
   }
 
@@ -108,8 +112,15 @@ if (!document.createElement('canvas').getContext) {
       ss.owningElement.id = 'ex_canvas_';
       ss.cssText = 'canvas{display:inline-block;overflow:hidden;' +
           // default size is 300x150 in Gecko and Opera
-          'text-align:left;width:300px;height:150px}';
+          'text-align:left;width:300px;height:150px} .g_vml_ {behavior:url(#default#VML);}';
     }
+  }
+
+  function createVMLElement(tagName) {
+    // TODO Why using createElement needs to add behavior:url(#default#VML) in style
+    var dom = document.createElement('<g_vml_:' + tagName + ' class="g_vml_">');
+    return dom;
+
   }
 
   // Add namespaces and stylesheet at startup.
@@ -601,46 +612,51 @@ if (!document.createElement('canvas').getContext) {
     var W = 10;
     var H = 10;
 
-    var rootDom_ = document.createElement('g_vml_:shape');
+    var rootDom_ = createVMLElement('shape');
     rootDom_.style.position = 'absolute';
     rootDom_.style.width = W + 'px';
     rootDom_.style.height = H + 'px';
-
     rootDom_.path = path;
-    rootDom_.coordorigin = '0,0';
-    rootDom_.coordsize = Z * W + ',' + Z * H;
+    rootDom_.coordorigin = '0 0';
+    rootDom_.coordsize = Z * W + ' ' + Z * H;
+
+    rootDom_.stroked = 'false';
+    rootDom_.filled = 'false';
 
     this.rootDom_ = rootDom_;
   };
 
   /**
    * Remove fill and stroke dom
-   * TODO Set filled and stroked to "" or false ?
    */
   ShapeVirtualDom_.prototype.reset_ = function () {
     if (this.fillDom_) {
       this.rootDom_.filled = "false";
-      this.rootDom_.removeChild(this.fillDom_);
+      if (this.fillDom_.parentNode === this.rootDom_) {
+        this.rootDom_.removeChild(this.fillDom_);
+      }
     }
     if (this.strokeDom_) {
       this.rootDom_.stroked = "false";
-      this.rootDom_.removeChild(this.strokeDom_);
+      if (this.strokeDom_.parentNode === this.rootDom_) {
+        this.rootDom_.removeChild(this.strokeDom_);
+      }
     }
   }
 
   ShapeVirtualDom_.prototype.isFilled = function () {
-    return this.rootDom_.filled;
+    return this.rootDom_.filled === 'true';
   };
 
   ShapeVirtualDom_.prototype.isStroked = function () {
-    return this.rootDom_.stroked;
+    return this.rootDom_.stroked === 'true';
   }
 
   ShapeVirtualDom_.prototype.fill = function (ctx, min, max) {
-    this.rootDom_.filled = "true";
+    this.rootDom_.filled = 'true';
 
     if (!this.fillDom_) {
-      this.fillDom_ = document.createElement('g_vml_:fill');
+      this.fillDom_ = createVMLElement('fill');
     }
     var fillDom_ = this.fillDom_;
 
@@ -742,14 +758,13 @@ if (!document.createElement('canvas').getContext) {
       fillDom_.color = color;
       fillDom_.opacity = opacity;
     }
-
     this.rootDom_.appendChild(this.fillDom_);
   };
 
   ShapeVirtualDom_.prototype.stroke = function (ctx) {
     this.rootDom_.stroked = "true";
     if (!this.strokeDom_) {
-      this.strokeDom_ = document.createElement('g_vml_:stroke');
+      this.strokeDom_ = createVMLElement('stroke');
     }
 
     var a = processStyle(ctx.strokeStyle);
@@ -766,7 +781,7 @@ if (!document.createElement('canvas').getContext) {
     this.strokeDom_.joinstyle = ctx.lineJoin;
     this.strokeDom_.miterlimit = ctx.miterLimit;
     this.strokeDom_.endcap = processLineCap(ctx.lineCap);
-    this.strokeDom_.width = lineWidth + 'px';
+    this.strokeDom_.weight = lineWidth + 'px';
     this.strokeDom_.color = color;
 
     this.rootDom_.appendChild(this.strokeDom_);
@@ -858,7 +873,7 @@ if (!document.createElement('canvas').getContext) {
     if (m[0][0] != 1 || m[0][1] ||
         m[1][1] != 1 || m[1][0]) {
       if (!this.skewDom_) {
-        this.skewDom_ = document.createElement('g_vml_:skew');
+        this.skewDom_ = createVMLElement('skew');
         this.skewDom_.on = 't';
       }
       var skewM = m[0][0].toFixed(3) + ',' + m[1][0].toFixed(3) + ',' +
@@ -877,8 +892,8 @@ if (!document.createElement('canvas').getContext) {
     }
 
     if (!this.textPathDom_) {
-      this.textPathDom_ = document.createElement('g_vml_:textpath');
-      var pathDom_ = document.createElement('g_vml_:path');
+      this.textPathDom_ = createVMLElement('textpath');
+      var pathDom_ = createVMLElement('path');
       pathDom_.textpathok = 'true';
       this.textPathDom_.on = 'true';
       this.textPathDom_.string = encodeHtmlAttribute(text);
@@ -895,11 +910,11 @@ if (!document.createElement('canvas').getContext) {
   TextVirtualDom_.prototype.createDom_ = function () {
     var W = 10;
     var H = 10;
-    this.rootDom_ = document.createElement('g_vml_:line');
+    this.rootDom_ = createVMLElement('line');
     this.rootDom_.style.position = 'absolute';
     this.rootDom_.style.width = '1px';
     this.rootDom_.style.height = '1px';
-    this.rootDom_.style.coordsize = Z * W + ',' + Z * H;
+    this.rootDom_.style.coordsize = Z * W + ' ' + Z * H;
     this.rootDom_.style.coordorigin = '0 0';
   };
 
@@ -912,7 +927,7 @@ if (!document.createElement('canvas').getContext) {
    * It will be cached in Context2D object. And created only if needed when redrawing
    * @author https://github.com/pissang/
    *
-   * TODO Image cropping testing
+   * TODO Image cropping testing, Image rotate testing
    */
   function ImageVirtualDom_() {
     this.rootDom_ = null;
@@ -985,7 +1000,7 @@ if (!document.createElement('canvas').getContext) {
     if (ctx.m_[0][0] != 1 || ctx.m_[0][1] ||
         ctx.m_[1][1] != 1 || ctx.m_[1][0]) {
       var filter = [];
-      var d = getCoords(this, dx, dy);
+      var d = getCoords(ctx, dx, dy);
 
       scaleX = ctx.scaleX_;
       scaleY = ctx.scaleY_;
@@ -1068,9 +1083,9 @@ if (!document.createElement('canvas').getContext) {
       var H = 10;
 
       // For some reason that I've now forgotten, using divs didn't work
-      this.rootDom_ = document.createElement('g_vml_:group');
-      this.rootDom_.coordsize = Z * W + ',' + Z * H;
-      this.rootDom_.coordorigin = '0,0';
+      this.rootDom_ = createVMLElement('group');
+      this.rootDom_.coordsize = Z * W + ' ' + Z * H;
+      this.rootDom_.coordorigin = '00';
 
       this.rootDom_.style.width = W + 'px';
       this.rootDom_.style.height = H + 'px';
@@ -1091,6 +1106,11 @@ if (!document.createElement('canvas').getContext) {
     this.aStack_ = [];
     this.currentPath_ = [];
 
+    // TODO
+    // http://louisremi.com/2009/03/30/changes-in-vml-for-ie8-or-what-feature-can-the-ie-dev-team-break-for-you-today/
+    // It is no longer possible to create a VML element outside of the DOM
+    // this.fragment_ = document.createDocumentFragment();
+    
     // Keep current drawed dom. So we can merge fill and stroke in one shape dom
     this.currentVirtualDom_ = null;
 
@@ -1137,8 +1157,6 @@ if (!document.createElement('canvas').getContext) {
 
     this.x_ = 0;
     this.y_ = 0;
-
-    this.fragment_ = document.createDocumentFragment();
   }
 
   var contextPrototype = CanvasRenderingContext2D_.prototype;
@@ -1157,9 +1175,6 @@ if (!document.createElement('canvas').getContext) {
   };
 
   contextPrototype.flush = function () {
-    // TODO Why clone node ?
-    this.element_.appendChild(this.fragment_.cloneNode(true));
-    this.fragment_ = document.createDocumentFragment();
     this.shapeVDomList_.length = this.nShapeVDom_;
     this.imageVDomList_.length = this.nImageVDom_;
     this.textVDomList_.length = this.nTextVDom_;
@@ -1342,7 +1357,7 @@ if (!document.createElement('canvas').getContext) {
     var args = Array.prototype.slice.call(arguments);
     args.unshift(this);
     var dom = vDom.getDom.apply(vDom, args);
-    this.fragment_.appendChild(dom);
+    this.element_.appendChild(dom);
 
     this.currentVirtualDom_ = null;
   };
@@ -1431,7 +1446,9 @@ if (!document.createElement('canvas').getContext) {
     var shapeDom = vDom.getDom(pathStr, this.x_, this.y_);
     aFill ? vDom.fill(this, min, max) : vDom.stroke(this);
 
-    this.fragment_.appendChild(shapeDom);
+    this.element_.appendChild(shapeDom);
+
+    this.currentVirtualDom_ = vDom;
   };
 
   contextPrototype.fill = function() {
@@ -1569,7 +1586,7 @@ if (!document.createElement('canvas').getContext) {
     this.nTextVDom_++;
 
     var dom = vDom.getDom(ctx, text, x, y, maxWidth, stroke);
-    this.fragment_.appendChild(dom);
+    this.element_.appendChild(dom);
 
     this.currentVirtualDom_ = null;
   };
