@@ -1018,7 +1018,7 @@ if (!document.createElement('canvas').getContext) {
       max.x = m.max(max.x, c2.x, c3.x, c4.x);
       max.y = m.max(max.y, c2.y, c3.y, c4.y);
 
-      rootDom_.style.padding = [0, mr(max.x / Z) + 'px', mr(max.y / Z) + 'px', 0].join(' ');
+      rootDom_.style.padding = [0, Math.max(mr(max.x / Z), 0) + 'px', Math.max(mr(max.y / Z), 0) + 'px', 0].join(' ');
       rootDom_.style.filter = 'progid:DXImageTransform.Microsoft.Matrix('
           + filter.join('') + ", SizingMethod='clip')";
     } else {
@@ -1150,9 +1150,9 @@ if (!document.createElement('canvas').getContext) {
     this.scaleY_ = 1;
     this.lineScale_ = 1;
 
-    this.root_ = canvasElement.ownerDocument.createElement('div');
+    this.shapeDomContainer_ = document.createElement('div');
     var cssText = 'position:absolute; left:0px; right: 0px; top: 0px; bottom: 0px;';
-    this.root_.style.cssText = cssText;
+    this.shapeDomContainer_.style.cssText = cssText;
 
     this.x_ = 0;
     this.y_ = 0;
@@ -1165,6 +1165,11 @@ if (!document.createElement('canvas').getContext) {
       this.textMeasureEl_ = null;
     }
 
+    if (this.shapeDomContainer_.parentNode) {
+      this.shapeDomContainer_.parentNode.removeChild(this.shapeDomContainer_);
+      this.shapeDomContainer_.innerHTML = '';
+    }
+
     this.currentVirtualDom_ = null;
 
     this.nShapeVDom_ = 0;
@@ -1173,7 +1178,12 @@ if (!document.createElement('canvas').getContext) {
   };
 
   contextPrototype.flush = function () {
-    console.log(this.element_.innerHTML);
+    // TODO Why this.shapeDomContainer_ will be added to document
+    if (this.shapeDomContainer_.parentNode) {
+      this.shapeDomContainer_.parentNode.removeChild(this.shapeDomContainer_);
+    }
+    this.element_.insertBefore(this.shapeDomContainer_, this.element_.firstChild);
+
     this.shapeVDomList_.length = this.nShapeVDom_;
     this.imageVDomList_.length = this.nImageVDom_;
     this.textVDomList_.length = this.nTextVDom_;
@@ -1356,7 +1366,7 @@ if (!document.createElement('canvas').getContext) {
     var args = Array.prototype.slice.call(arguments);
     args.unshift(this);
     var dom = vDom.getDom.apply(vDom, args);
-    this.element_.appendChild(dom);
+    this.shapeDomContainer_.appendChild(dom);
 
     this.currentVirtualDom_ = null;
   };
@@ -1445,7 +1455,7 @@ if (!document.createElement('canvas').getContext) {
     var shapeDom = vDom.getDom(pathStr, this.x_, this.y_);
     aFill ? vDom.fill(this, min, max) : vDom.stroke(this);
 
-    this.element_.appendChild(shapeDom);
+    this.shapeDomContainer_.appendChild(shapeDom);
 
     this.currentVirtualDom_ = vDom;
   };
@@ -1585,7 +1595,7 @@ if (!document.createElement('canvas').getContext) {
     this.nTextVDom_++;
 
     var dom = vDom.getDom(this, text, x, y, maxWidth, stroke);
-    this.element_.appendChild(dom);
+    this.shapeDomContainer_.appendChild(dom);
 
     this.currentVirtualDom_ = null;
   };
