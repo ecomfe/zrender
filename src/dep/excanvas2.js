@@ -95,7 +95,7 @@ if (!document.createElement('canvas').getContext) {
 
   function addNamespace(doc, prefix, urn) {
     if (!doc.namespaces[prefix]) {
-      // TODO, It will not work proply if add '#default#VML' 
+      // NOTES, It will not work proply if add '#default#VML' 
       // When using appendChild to add dom
       // doc.namespaces.add(prefix, urn, '#default#VML');
       doc.namespaces.add(prefix, urn);
@@ -117,7 +117,7 @@ if (!document.createElement('canvas').getContext) {
   }
 
   function createVMLElement(tagName) {
-    // TODO Why using createElement needs to add behavior:url(#default#VML) in style
+    // NOTES Why using createElement needs to add behavior:url(#default#VML) in style
     var dom = document.createElement('<g_vml_:' + tagName + ' class="g_vml_">');
     return dom;
 
@@ -858,37 +858,33 @@ if (!document.createElement('canvas').getContext) {
         break;
     }
 
-    var d = getCoords(this, x + offset.x, y + offset.y);
+    var d = getCoords(ctx, x + offset.x, y + offset.y);
     this.rootDom_.from = -left + ' 0';
     this.rootDom_.to = right + ' 0.05';
 
-    this.reset_();
-
     if (stroke) {
       this.stroke(ctx);
+      this.rootDom_.stroked = 'true';
+      this.rootDom_.filled = 'false';
     } else {
       this.fill(ctx, {x: -left, y: 0}, {x: right, y: fontStyle.size});
+      this.rootDom_.stroked = 'false';
+      this.rootDom_.filled = 'true';
     }
 
-    if (m[0][0] != 1 || m[0][1] ||
-        m[1][1] != 1 || m[1][0]) {
-      if (!this.skewDom_) {
-        this.skewDom_ = createVMLElement('skew');
-        this.skewDom_.on = 't';
-      }
-      var skewM = m[0][0].toFixed(3) + ',' + m[1][0].toFixed(3) + ',' +
-                m[0][1].toFixed(3) + ',' + m[1][1].toFixed(3) + ',0,0';
+    if (!this.skewDom_) {
+      this.skewDom_ = createVMLElement('skew');
+      this.skewDom_.on = 't';
+    }
+    var skewM = m[0][0].toFixed(3) + ',' + m[1][0].toFixed(3) + ',' +
+              m[0][1].toFixed(3) + ',' + m[1][1].toFixed(3) + ',0,0';
 
-      var skewOffset = mr(d.x / Z) + ',' + mr(d.y / Z);
-
-      this.skewDom_.matrix = skewM;
-      this.skewDom_.offset = skewOffset;
-      this.skewDom_.origin = left + ' 0';
-      if (this.skewDom_.parentNode !== this.rootDom_) {
-        this.rootDom_.appendChild(this.skewDom_);
-      }
-    } else if (this.skewDom_ && this.skewDom_.parentNode) {
-      this.skewDom_.parentNode.removeChild(this.skewDom_);
+    var skewOffset = mr(d.x / Z) + ',' + mr(d.y / Z);
+    this.skewDom_.matrix = skewM;
+    this.skewDom_.offset = skewOffset;
+    this.skewDom_.origin = left + ' 0';
+    if (this.skewDom_.parentNode !== this.rootDom_) {
+      this.rootDom_.appendChild(this.skewDom_);
     }
 
     if (!this.textPathDom_) {
@@ -897,7 +893,7 @@ if (!document.createElement('canvas').getContext) {
       pathDom_.textpathok = 'true';
       this.textPathDom_.on = 'true';
       this.textPathDom_.string = encodeHtmlAttribute(text);
-      this.textPathDom_.style.vTextAlign = textAlign;
+      this.textPathDom_.style['v-text-align'] = textAlign;
       this.textPathDom_.style.font = encodeHtmlAttribute(fontStyleString);
 
       this.rootDom_.appendChild(pathDom_);
@@ -911,23 +907,23 @@ if (!document.createElement('canvas').getContext) {
     var W = 10;
     var H = 10;
     this.rootDom_ = createVMLElement('line');
+    this.rootDom_.coordsize = Z * W + ' ' + Z * H;
+    this.rootDom_.coordorigin = '0 0';
     this.rootDom_.style.position = 'absolute';
     this.rootDom_.style.width = '1px';
     this.rootDom_.style.height = '1px';
-    this.rootDom_.style.coordsize = Z * W + ' ' + Z * H;
-    this.rootDom_.style.coordorigin = '0 0';
   };
 
-  TextVirtualDom_.prototype.fill = ShapeVirtualDom_.fill;
-  TextVirtualDom_.prototype.stroke = ShapeVirtualDom_.stroke;
-  TextVirtualDom_.prototype.reset_ = ShapeVirtualDom_.reset_;
+  TextVirtualDom_.prototype.fill = ShapeVirtualDom_.prototype.fill;
+  TextVirtualDom_.prototype.stroke = ShapeVirtualDom_.prototype.stroke;
+  TextVirtualDom_.prototype.reset_ = ShapeVirtualDom_.prototype.reset_;
 
   /**
    * Virtual image dom is created by drawImage operation.
    * It will be cached in Context2D object. And created only if needed when redrawing
    * @author https://github.com/pissang/
    *
-   * TODO Image cropping testing, Image rotate testing
+   * TODO Image cropping testing
    */
   function ImageVirtualDom_() {
     this.rootDom_ = null;
@@ -1005,12 +1001,12 @@ if (!document.createElement('canvas').getContext) {
       scaleX = ctx.scaleX_;
       scaleY = ctx.scaleY_;
       // Note the 12/21 reversal
-      filter.push('M11=', ctx.m_[0][0] / scaleX,
-                  'M12=', ctx.m_[1][0] / scaleY,
-                  'M21=', ctx.m_[0][1] / scaleX,
-                  'M22=', ctx.m_[1][1] / scaleY,
-                  'Dx=', mr(d.x / Z),
-                  'Dy=', mr(d.y / Z));
+      filter.push('M11=', ctx.m_[0][0] / scaleX, ',',
+                  'M12=', ctx.m_[1][0] / scaleY, ',',
+                  'M21=', ctx.m_[0][1] / scaleX, ',',
+                  'M22=', ctx.m_[1][1] / scaleY, ',',
+                  'Dx=', mr(d.x / Z), ',',
+                  'Dy=', mr(d.y / Z), '');
 
       // Bounding box calculation (need to minimize displayed area so that
       // filters don't waste time on unused pixels.
@@ -1024,15 +1020,16 @@ if (!document.createElement('canvas').getContext) {
 
       rootDom_.style.padding = [0, mr(max.x / Z) + 'px', mr(max.y / Z) + 'px', 0].join(' ');
       rootDom_.style.filter = 'progid:DXImageTransform.Microsoft.Matrix('
-          + filter.join(',') + ', SizingMethod=\'clip\');';
+          + filter.join('') + ", SizingMethod='clip')";
     } else {
       rootDom_.style.left = dx + ctx.x_ + 'px';
       rootDom_.style.top = dy + ctx.y_ + 'px';
     }
 
     if (!this.imageDom_) {
+      // NOTES
+      // Matrix of rootDom will work if imageDom.style.position = 'absolute'
       this.imageDom_ = document.createElement('img');
-      this.imageDom_.style.position = 'absolute';
     }
     var imageDom_ = this.imageDom_;
 
@@ -1045,6 +1042,8 @@ if (!document.createElement('canvas').getContext) {
       }
       this.cropDom_.style.width = Math.ceil((dw + sx * dw / sw) * scaleX) + 'px';
       this.cropDom_.style.height = Math.ceil((dh + sy * dh / sh) * scaleY) + 'px';
+      this.cropDom_.style.filter = 'progid:DxImageTransform.Microsoft.Matrix(Dx='
+          + -dw / sw * scaleX * sx + ',Dy=' + -dh / sh * scaleY * sy + ')';
 
       if (!this.cropDom_.parentNode) {
         rootDom_.appendChild(this.cropDom_); 
@@ -1052,9 +1051,6 @@ if (!document.createElement('canvas').getContext) {
       if (this.imageDom_.parentNode !== this.cropDom_) {
         this.cropDom_.appendChild(imageDom_);
       }
-
-      imageDom_.style.left = -dw / sw * scaleX * sx + 'px';
-      imageDom_.style.top = -dh / sh * scaleY * sy + 'px';
     } else {
       if (this.cropDom_ && this.cropDom_.parentNode) {
         this.cropDom_.parentNode.removeChild(this.cropDom_);
@@ -1067,13 +1063,12 @@ if (!document.createElement('canvas').getContext) {
     imageDom_.width = scaleX * dw / sw * w;
     imageDom_.height = scaleY * dh / sh * h;
 
+    this.imageDom_.src = image.src;
     if (imageDom_.style.globalAlpha < 1) {
       imageDom_.style.filter = 'alpha(opacity=' + mr(ctx.globalAlpha * 100) +')';
     } else {
       imageDom_.style.filter = '';
     }
-
-    imageDom_.src = image.src;
 
     return this.rootDom_;
   };
@@ -1085,7 +1080,7 @@ if (!document.createElement('canvas').getContext) {
       // For some reason that I've now forgotten, using divs didn't work
       this.rootDom_ = createVMLElement('group');
       this.rootDom_.coordsize = Z * W + ' ' + Z * H;
-      this.rootDom_.coordorigin = '00';
+      this.rootDom_.coordorigin = '0 0';
 
       this.rootDom_.style.width = W + 'px';
       this.rootDom_.style.height = H + 'px';
@@ -1106,7 +1101,7 @@ if (!document.createElement('canvas').getContext) {
     this.aStack_ = [];
     this.currentPath_ = [];
 
-    // TODO
+    // NOTES
     // http://louisremi.com/2009/03/30/changes-in-vml-for-ie8-or-what-feature-can-the-ie-dev-team-break-for-you-today/
     // It is no longer possible to create a VML element outside of the DOM
     // this.fragment_ = document.createDocumentFragment();
@@ -1155,6 +1150,10 @@ if (!document.createElement('canvas').getContext) {
     this.scaleY_ = 1;
     this.lineScale_ = 1;
 
+    this.root_ = canvasElement.ownerDocument.createElement('div');
+    var cssText = 'position:absolute; left:0px; right: 0px; top: 0px; bottom: 0px;';
+    this.root_.style.cssText = cssText;
+
     this.x_ = 0;
     this.y_ = 0;
   }
@@ -1165,7 +1164,6 @@ if (!document.createElement('canvas').getContext) {
       this.textMeasureEl_.removeNode(true);
       this.textMeasureEl_ = null;
     }
-    this.element_.innerHTML = '';
 
     this.currentVirtualDom_ = null;
 
@@ -1175,6 +1173,7 @@ if (!document.createElement('canvas').getContext) {
   };
 
   contextPrototype.flush = function () {
+    console.log(this.element_.innerHTML);
     this.shapeVDomList_.length = this.nShapeVDom_;
     this.imageVDomList_.length = this.nImageVDom_;
     this.textVDomList_.length = this.nTextVDom_;
@@ -1585,7 +1584,7 @@ if (!document.createElement('canvas').getContext) {
     }
     this.nTextVDom_++;
 
-    var dom = vDom.getDom(ctx, text, x, y, maxWidth, stroke);
+    var dom = vDom.getDom(this, text, x, y, maxWidth, stroke);
     this.element_.appendChild(dom);
 
     this.currentVirtualDom_ = null;
