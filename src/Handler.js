@@ -127,6 +127,14 @@ define(
                             layer.scale[1] *= scale;
                             layer.dirty = true;
                             needsRefresh = true;
+
+                            // Prevent browser default scroll action 
+                            if (event.preventDefault) {
+                                event.preventDefault();
+                            } else {
+                                // In ID
+                                event.returnValue = false;
+                            }
                         }
                     }
                 }
