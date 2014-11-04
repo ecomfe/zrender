@@ -3,6 +3,8 @@
  * @module zrender/Handler
  * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
  *         errorrik (errorrik@gmail.com)
+ *
+ * TODO mouseover 只触发一次
  */
 
 define(
@@ -129,12 +131,7 @@ define(
                             needsRefresh = true;
 
                             // Prevent browser default scroll action 
-                            if (event.preventDefault) {
-                                event.preventDefault();
-                            } else {
-                                // In ID
-                                event.returnValue = false;
-                            }
+                            eventTool.stop(event);
                         }
                     }
                 }

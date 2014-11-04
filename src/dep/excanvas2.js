@@ -54,6 +54,14 @@ if (!document.createElement('canvas').getContext) {
 
   var IE_VERSION = +navigator.userAgent.match(/MSIE ([\d.]+)?/)[1];
 
+  var EPSILON = 1e-5;
+  var isAroundZero = function (val) {
+      return val > -EPSILON && val < EPSILON;
+  }
+  function isNotAroundZero(val) {
+      return val > EPSILON || val < -EPSILON;
+  }
+
   /**
    * This funtion is assigned to the <canvas> elements as element.getContext().
    * @this {HTMLElement}
@@ -266,6 +274,8 @@ if (!document.createElement('canvas').getContext) {
     o2.textBaseline  = o1.textBaseline;
     o2.scaleX_    = o1.scaleX_;
     o2.scaleY_    = o1.scaleY_;
+    o2.x_    = o1.x_;
+    o2.y_    = o1.y_;
     o2.lineScale_    = o1.lineScale_;
   }
 
@@ -796,13 +806,15 @@ if (!document.createElement('canvas').getContext) {
 
     this.skewEl_ = null;
     this.textPathEl_ = null;
+
+    this.simpleRootEl_ = null;
   }
 
   TextVirtualDom_.prototype.getElement = function (ctx, text, x, y, maxWidth, stroke) {
     if (!this.rootEl_) {
       this.createEl_();
     }
-    var m = ctx.m_,
+    var m_ = ctx.m_,
         delta = 1000,
         left = 0,
         right = delta,
@@ -829,76 +841,127 @@ if (!document.createElement('canvas').getContext) {
         textAlign = 'left';
     }
 
-    // 1.75 is an arbitrary number, as there is no info about the text baseline
-    switch (this.textBaseline) {
-      case 'hanging':
-      case 'top':
-        offset.y = fontStyle.size / 1.75;
-        break;
-      case 'middle':
-        break;
-      default:
-      case null:
-      case 'alphabetic':
-      case 'ideographic':
-      case 'bottom':
-        offset.y = -fontStyle.size / 2.25;
-        break;
-    }
+    if (isNotAroundZero(m_[0][0] - 1) || isNotAroundZero(m_[0][1]) ||
+        isNotAroundZero(m_[1][1] - 1) || isNotAroundZero(m_[1][0]) || stroke) {
+      // 1.75 is an arbitrary number, as there is no info about the text baseline
+      switch (ctx.textBaseline) {
+        case 'hanging':
+        case 'top':
+          offset.y = fontStyle.size / 1.75;
+          break;
+        case 'middle':
+          break;
+        default:
+        case null:
+        case 'alphabetic':
+        case 'ideographic':
+        case 'bottom':
+          offset.y = -fontStyle.size / 2.25;
+          break;
+      }
 
-    switch(textAlign) {
-      case 'right':
-        left = delta;
-        right = 0.05;
-        break;
-      case 'center':
-        left = right = delta / 2;
-        break;
-    }
+      switch(textAlign) {
+        case 'right':
+          left = delta;
+          right = 0.05;
+          break;
+        case 'center':
+          left = right = delta / 2;
+          break;
+      }
 
-    var d = getCoords(ctx, x + offset.x, y + offset.y);
-    this.rootEl_.from = -left + ' 0';
-    this.rootEl_.to = right + ' 0.05';
+      var d = getCoords(ctx, x + offset.x, y + offset.y);
+      this.rootEl_.from = -left + ' 0';
+      this.rootEl_.to = right + ' 0.05';
 
-    if (stroke) {
-      this.stroke(ctx);
-      this.rootEl_.stroked = 'true';
-      this.rootEl_.filled = 'false';
+      if (stroke) {
+        this.stroke(ctx);
+        this.rootEl_.stroked = 'true';
+        this.rootEl_.filled = 'false';
+      } else {
+        this.fill(ctx, {x: -left, y: 0}, {x: right, y: fontStyle.size});
+        this.rootEl_.stroked = 'false';
+        this.rootEl_.filled = 'true';
+      }
+
+      if (!this.skewEl_) {
+        this.skewEl_ = createVMLElement('skew');
+        this.skewEl_.on = 't';
+      }
+      var skewM = m_[0][0].toFixed(3) + ',' + m_[1][0].toFixed(3) + ',' +
+                m_[0][1].toFixed(3) + ',' + m_[1][1].toFixed(3) + ',0,0';
+      var skewOffset = mr(d.x / Z) + ',' + mr(d.y / Z);
+      this.skewEl_.matrix = skewM;
+      this.skewEl_.offset = skewOffset;
+      this.skewEl_.origin = left + ' 0';
+      if (this.skewEl_.parentNode !== this.rootEl_) {
+        this.rootEl_.appendChild(this.skewEl_);
+      }
+
+      if (!this.textPathEl_) {
+        this.textPathEl_ = createVMLElement('textpath');
+        this.pathEl_ = createVMLElement('path');
+        this.pathEl_.textpathok = 'true';
+        this.textPathEl_.on = 'true';
+      }
+      this.rootEl_.appendChild(this.pathEl_);
+      this.rootEl_.appendChild(this.textPathEl_);
+
+      this.textPathEl_.string = encodeHtmlAttribute(text);
+      this.textPathEl_.style['v-text-align'] = textAlign;
+      this.textPathEl_.style.font = encodeHtmlAttribute(fontStyleString);
+
+      return this.rootEl_;
     } else {
-      this.fill(ctx, {x: -left, y: 0}, {x: right, y: fontStyle.size});
-      this.rootEl_.stroked = 'false';
-      this.rootEl_.filled = 'true';
-    }
+      if (!this.simpleRootEl_) {
+        this.simpleRootEl_ = document.createElement('div');
+        this.simpleRootEl_.style.position = 'absolute';
+      }
+      this.simpleRootEl_.style.font = encodeHtmlAttribute(fontStyleString);
 
-    if (!this.skewEl_) {
-      this.skewEl_ = createVMLElement('skew');
-      this.skewEl_.on = 't';
-    }
-    var skewM = m[0][0].toFixed(3) + ',' + m[1][0].toFixed(3) + ',' +
-              m[0][1].toFixed(3) + ',' + m[1][1].toFixed(3) + ',0,0';
+      var a = processStyle(ctx.fillStyle);
+      var color = a.color;
+      var opacity = a.alpha * ctx.globalAlpha;
+      this.simpleRootEl_.style.color = color;
+      if (opacity < 1) {
+        this.simpleRootEl_.style.filter = 'alpha(opacity=' + mr(opacity * 100) +')';
+      }
 
-    var skewOffset = mr(d.x / Z) + ',' + mr(d.y / Z);
-    this.skewEl_.matrix = skewM;
-    this.skewEl_.offset = skewOffset;
-    this.skewEl_.origin = left + ' 0';
-    if (this.skewEl_.parentNode !== this.rootEl_) {
-      this.rootEl_.appendChild(this.skewEl_);
-    }
+      this.simpleRootEl_.innerHTML = text;
 
-    if (!this.textPathEl_) {
-      this.textPathEl_ = createVMLElement('textpath');
-      this.pathEl_ = createVMLElement('path');
-      this.pathEl_.textpathok = 'true';
-      this.textPathEl_.on = 'true';
-    }
-    this.rootEl_.appendChild(this.pathEl_);
-    this.rootEl_.appendChild(this.textPathEl_);
+      switch (ctx.textBaseline) {
+        case 'hanging':
+        case 'top':
+          this.simpleRootEl_.style.top = m_[2][1] + y + 'px';
+          break;
+        case 'middle':
+          // TODO
+          this.simpleRootEl_.style.top = m_[2][1] + y - fontStyle.size / 2.25 + 'px';
+          break;
+        default:
+        case null:
+        case 'alphabetic':
+        case 'ideographic':
+        case 'bottom':
+        //
+          this.simpleRootEl_.style.bottom = ctx.element_.clientHeight - m_[2][1] + y + 'px';
+          break;
+      }
 
-    this.textPathEl_.string = encodeHtmlAttribute(text);
-    this.textPathEl_.style['v-text-align'] = textAlign;
-    this.textPathEl_.style.font = encodeHtmlAttribute(fontStyleString);
-    
-    return this.rootEl_;
+      switch(textAlign) {
+        case 'right':
+          this.simpleRootEl_.style.right = ctx.element_.clientWidth - m_[2][0] - x + 'px';
+          break;
+        case 'center':
+          // TODO
+          this.simpleRootEl_.style.left = m_[2][0] + x - fontStyle.size / 4.5 * text.length + 'px';
+          break;
+        case 'left':
+          this.simpleRootEl_.style.left = m_[2][0] + x + 'px';
+          break;
+      }
+      return this.simpleRootEl_;
+    }
   };
 
   TextVirtualDom_.prototype.createEl_ = function () {

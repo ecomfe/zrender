@@ -153,8 +153,11 @@
                 var shape = list[i];
 
                 if (currentZLevel !== shape.zlevel) {
-                    if (currentLayer && currentLayer.needTransform) {
-                        ctx.restore();
+                    if (currentLayer) {
+                        if (currentLayer.needTransform) {
+                            ctx.restore();
+                        }
+                        ctx.flush && ctx.flush();
                     }
 
                     currentLayer = this.getLayer(shape.zlevel);
@@ -235,8 +238,11 @@
                 shape.__dirty = false;
             }
 
-            if (currentLayer && currentLayer.needTransform) {
-                ctx.restore();
+            if (currentLayer) {
+                if (currentLayer.needTransform) {
+                    ctx.restore();
+                }
+                ctx.flush && ctx.flush();
             }
 
             for (var id in this._layers) {
@@ -453,6 +459,9 @@
             for (var i = 0, l = list.length; i < l; i++) {
                 this._brushHover(list[i]);
             }
+            var ctx = this._layers.hover.ctx;
+            ctx.flush && ctx.flush();
+
             this.storage.delHover();
 
             return this;
