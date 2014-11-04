@@ -55,8 +55,6 @@ define(
          */
         var ZImage = function(options) {
             Base.call(this, options);
-
-            this._imageCache = {};
             /**
              * 图片绘制样式
              * @name module:zrender/shape/Image#style
@@ -86,6 +84,9 @@ define(
                 var image = style.image;
                 var me = this;
 
+                if (!this._imageCache) {
+                    this._imageCache = {};
+                }
                 if (typeof(image) === 'string') {
                     var src = image;
                     if (this._imageCache[src]) {
@@ -127,7 +128,6 @@ define(
                     var height = style.height || image.height;
                     var x = style.x;
                     var y = style.y;
-                    
                     // 图片加载失败
                     if (!image.width || !image.height) {
                         return;
