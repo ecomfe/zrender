@@ -583,82 +583,80 @@ if (!document.createElement('canvas').getContext) {
    */
   function ShapeVirtualDom_() {
     
-    this.rootDom_ = null;
+    this.rootEl_ = null;
 
-    this.strokeDom_ = null;
+    this.strokeEl_ = null;
 
-    this.fillDom_ = null;
+    this.fillEl_ = null;
   }
 
-  ShapeVirtualDom_.prototype.getDom = function (path, x, y) {
-    if (!this.rootDom_) {
-      this.createShapeDom_(path);
+  ShapeVirtualDom_.prototype.getElement = function (path, x, y) {
+    if (!this.rootEl_) {
+      this.createShapeEl_(path);
     }
 
-    this.rootDom_.style.left = x + 'px';
-    this.rootDom_.style.top = y + 'px';
+    this.rootEl_.style.left = x + 'px';
+    this.rootEl_.style.top = y + 'px';
 
-    if (path !== this.rootDom_.path) {
-      this.rootDom_.path = path;
-    }
+    this.rootEl_.path = path;
 
     this.reset_();
 
-    return this.rootDom_;
+    return this.rootEl_;
   };
 
-  ShapeVirtualDom_.prototype.createShapeDom_ = function (path) {
+  ShapeVirtualDom_.prototype.createShapeEl_ = function (path) {
 
     var W = 10;
     var H = 10;
 
-    var rootDom_ = createVMLElement('shape');
-    rootDom_.style.position = 'absolute';
-    rootDom_.style.width = W + 'px';
-    rootDom_.style.height = H + 'px';
-    rootDom_.path = path;
-    rootDom_.coordorigin = '0 0';
-    rootDom_.coordsize = Z * W + ' ' + Z * H;
+    var rootEl_ = createVMLElement('shape');
+    rootEl_.style.position = 'absolute';
+    rootEl_.style.width = W + 'px';
+    rootEl_.style.height = H + 'px';
+    rootEl_.path = path;
+    rootEl_.coordorigin = '0 0';
+    rootEl_.coordsize = Z * W + ' ' + Z * H;
 
-    rootDom_.stroked = 'false';
-    rootDom_.filled = 'false';
+    rootEl_.stroked = 'false';
+    rootEl_.filled = 'false';
 
-    this.rootDom_ = rootDom_;
+    this.rootEl_ = rootEl_;
   };
 
   /**
    * Remove fill and stroke dom
    */
   ShapeVirtualDom_.prototype.reset_ = function () {
-    if (this.fillDom_) {
-      this.rootDom_.filled = "false";
-      if (this.fillDom_.parentNode === this.rootDom_) {
-        this.rootDom_.removeChild(this.fillDom_);
+    if (this.fillEl_) {
+      this.rootEl_.filled = "false";
+      if (this.fillEl_.parentNode === this.rootEl_) {
+        this.rootEl_.removeChild(this.fillEl_);
       }
     }
-    if (this.strokeDom_) {
-      this.rootDom_.stroked = "false";
-      if (this.strokeDom_.parentNode === this.rootDom_) {
-        this.rootDom_.removeChild(this.strokeDom_);
+    if (this.strokeEl_) {
+      this.rootEl_.stroked = "false";
+      if (this.strokeEl_.parentNode === this.rootEl_) {
+        this.rootEl_.removeChild(this.strokeEl_);
       }
     }
   }
 
   ShapeVirtualDom_.prototype.isFilled = function () {
-    return this.rootDom_.filled === 'true';
+    return this.rootEl_.filled === 'true';
   };
 
   ShapeVirtualDom_.prototype.isStroked = function () {
-    return this.rootDom_.stroked === 'true';
+    return this.rootEl_.stroked === 'true';
   }
 
   ShapeVirtualDom_.prototype.fill = function (ctx, min, max) {
-    this.rootDom_.filled = 'true';
+    this.rootEl_.filled = 'true';
 
-    if (!this.fillDom_) {
-      this.fillDom_ = createVMLElement('fill');
+    if (!this.fillEl_) {
+      this.fillEl_ = createVMLElement('fill');
     }
-    var fillDom_ = this.fillDom_;
+    var fillEl_ = this.fillEl_;
 
     var fillStyle = ctx.fillStyle;
     var arcScaleX = ctx.scaleX_;
@@ -730,41 +728,41 @@ if (!document.createElement('canvas').getContext) {
         colors.push(stop.offset * expansion + shift + ' ' + stop.color);
       }
 
-      fillDom_.type = fillStyle.type_;
-      fillDom_.method = 'none';
-      fillDom_.focus = '100%';
-      fillDom_.color = color1;
-      fillDom_.color2 = color2;
-      fillDom_.colors = colors.join(',');
-      fillDom_.opacity = opacity2;
-      fillDom_.setAttribute('g_o_:opacity2', opacity1);
-      fillDom_.angle = angle;
-      fillDom_.focusposition = focus.x + ',' + focus.y;
+      fillEl_.type = fillStyle.type_;
+      fillEl_.method = 'none';
+      fillEl_.focus = '100%';
+      fillEl_.color = color1;
+      fillEl_.color2 = color2;
+      fillEl_.colors = colors.join(',');
+      fillEl_.opacity = opacity2;
+      fillEl_.setAttribute('g_o_:opacity2', opacity1);
+      fillEl_.angle = angle;
+      fillEl_.focusposition = focus.x + ',' + focus.y;
     }
     else if (fillStyle instanceof CanvasPattern_) {
       if (width && height) {
         var deltaLeft = -min.x;
         var deltaTop = -min.y;
-        fillDom_.position = deltaLeft / width * arcScaleX * arcScaleX + ',' +
+        fillEl_.position = deltaLeft / width * arcScaleX * arcScaleX + ',' +
           deltaTop / height * arcScaleY * arcScaleY;
-        fillDom_.type = 'tile';
-        fillDom_.src = fillStyle.src_;
+        fillEl_.type = 'tile';
+        fillEl_.src = fillStyle.src_;
       }
     }
     else {
       var a = processStyle(ctx.fillStyle);
       var color = a.color;
       var opacity = a.alpha * ctx.globalAlpha;
-      fillDom_.color = color;
-      fillDom_.opacity = opacity;
+      fillEl_.color = color;
+      fillEl_.opacity = opacity;
     }
-    this.rootDom_.appendChild(this.fillDom_);
+    this.rootEl_.appendChild(this.fillEl_);
   };
 
   ShapeVirtualDom_.prototype.stroke = function (ctx) {
-    this.rootDom_.stroked = "true";
-    if (!this.strokeDom_) {
-      this.strokeDom_ = createVMLElement('stroke');
+    this.rootEl_.stroked = "true";
+    if (!this.strokeEl_) {
+      this.strokeEl_ = createVMLElement('stroke');
     }
 
     var a = processStyle(ctx.strokeStyle);
@@ -777,14 +775,14 @@ if (!document.createElement('canvas').getContext) {
     if (lineWidth < 1) {
       opacity *= lineWidth;
     }
-    this.strokeDom_.opacity = opacity;
-    this.strokeDom_.joinstyle = ctx.lineJoin;
-    this.strokeDom_.miterlimit = ctx.miterLimit;
-    this.strokeDom_.endcap = processLineCap(ctx.lineCap);
-    this.strokeDom_.weight = lineWidth + 'px';
-    this.strokeDom_.color = color;
+    this.strokeEl_.opacity = opacity;
+    this.strokeEl_.joinstyle = ctx.lineJoin;
+    this.strokeEl_.miterlimit = ctx.miterLimit;
+    this.strokeEl_.endcap = processLineCap(ctx.lineCap);
+    this.strokeEl_.weight = lineWidth + 'px';
+    this.strokeEl_.color = color;
 
-    this.rootDom_.appendChild(this.strokeDom_);
+    this.rootEl_.appendChild(this.strokeEl_);
   };
 
 
@@ -794,15 +792,15 @@ if (!document.createElement('canvas').getContext) {
    * @author https://github.com/pissang/
    */
   function TextVirtualDom_() {
-    this.rootDom_ = null;
+    this.rootEl_ = null;
 
-    this.skewDom_ = null;
-    this.textPathDom_ = null;
+    this.skewEl_ = null;
+    this.textPathEl_ = null;
   }
 
-  TextVirtualDom_.prototype.getDom = function (ctx, text, x, y, maxWidth, stroke) {
-    if (!this.rootDom_) {
-      this.createDom_();
+  TextVirtualDom_.prototype.getElement = function (ctx, text, x, y, maxWidth, stroke) {
+    if (!this.rootEl_) {
+      this.createEl_();
     }
     var m = ctx.m_,
         delta = 1000,
@@ -859,59 +857,59 @@ if (!document.createElement('canvas').getContext) {
     }
 
     var d = getCoords(ctx, x + offset.x, y + offset.y);
-    this.rootDom_.from = -left + ' 0';
-    this.rootDom_.to = right + ' 0.05';
+    this.rootEl_.from = -left + ' 0';
+    this.rootEl_.to = right + ' 0.05';
 
     if (stroke) {
       this.stroke(ctx);
-      this.rootDom_.stroked = 'true';
-      this.rootDom_.filled = 'false';
+      this.rootEl_.stroked = 'true';
+      this.rootEl_.filled = 'false';
     } else {
       this.fill(ctx, {x: -left, y: 0}, {x: right, y: fontStyle.size});
-      this.rootDom_.stroked = 'false';
-      this.rootDom_.filled = 'true';
+      this.rootEl_.stroked = 'false';
+      this.rootEl_.filled = 'true';
     }
 
-    if (!this.skewDom_) {
-      this.skewDom_ = createVMLElement('skew');
-      this.skewDom_.on = 't';
+    if (!this.skewEl_) {
+      this.skewEl_ = createVMLElement('skew');
+      this.skewEl_.on = 't';
     }
     var skewM = m[0][0].toFixed(3) + ',' + m[1][0].toFixed(3) + ',' +
               m[0][1].toFixed(3) + ',' + m[1][1].toFixed(3) + ',0,0';
 
     var skewOffset = mr(d.x / Z) + ',' + mr(d.y / Z);
-    this.skewDom_.matrix = skewM;
-    this.skewDom_.offset = skewOffset;
-    this.skewDom_.origin = left + ' 0';
-    if (this.skewDom_.parentNode !== this.rootDom_) {
-      this.rootDom_.appendChild(this.skewDom_);
+    this.skewEl_.matrix = skewM;
+    this.skewEl_.offset = skewOffset;
+    this.skewEl_.origin = left + ' 0';
+    if (this.skewEl_.parentNode !== this.rootEl_) {
+      this.rootEl_.appendChild(this.skewEl_);
     }
 
-    if (!this.textPathDom_) {
-      this.textPathDom_ = createVMLElement('textpath');
-      var pathDom_ = createVMLElement('path');
-      pathDom_.textpathok = 'true';
-      this.textPathDom_.on = 'true';
-      this.textPathDom_.string = encodeHtmlAttribute(text);
-      this.textPathDom_.style['v-text-align'] = textAlign;
-      this.textPathDom_.style.font = encodeHtmlAttribute(fontStyleString);
-
-      this.rootDom_.appendChild(pathDom_);
-      this.rootDom_.appendChild(this.textPathDom_);
+    if (!this.textPathEl_) {
+      this.textPathEl_ = createVMLElement('textpath');
+      this.pathEl_ = createVMLElement('path');
+      this.pathEl_.textpathok = 'true';
+      this.textPathEl_.on = 'true';
     }
+    this.rootEl_.appendChild(this.pathEl_);
+    this.rootEl_.appendChild(this.textPathEl_);
 
-    return this.rootDom_;
+    this.textPathEl_.string = encodeHtmlAttribute(text);
+    this.textPathEl_.style['v-text-align'] = textAlign;
+    this.textPathEl_.style.font = encodeHtmlAttribute(fontStyleString);
+    
+    return this.rootEl_;
   };
 
-  TextVirtualDom_.prototype.createDom_ = function () {
+  TextVirtualDom_.prototype.createEl_ = function () {
     var W = 10;
     var H = 10;
-    this.rootDom_ = createVMLElement('line');
-    this.rootDom_.coordsize = Z * W + ' ' + Z * H;
-    this.rootDom_.coordorigin = '0 0';
-    this.rootDom_.style.position = 'absolute';
-    this.rootDom_.style.width = '1px';
-    this.rootDom_.style.height = '1px';
+    this.rootEl_ = createVMLElement('line');
+    this.rootEl_.coordsize = Z * W + ' ' + Z * H;
+    this.rootEl_.coordorigin = '0 0';
+    this.rootEl_.style.position = 'absolute';
+    this.rootEl_.style.width = '1px';
+    this.rootEl_.style.height = '1px';
   };
 
   TextVirtualDom_.prototype.fill = ShapeVirtualDom_.prototype.fill;
@@ -926,19 +924,19 @@ if (!document.createElement('canvas').getContext) {
    * TODO Image cropping testing
    */
   function ImageVirtualDom_() {
-    this.rootDom_ = null;
+    this.rootEl_ = null;
 
-    this.cropDom_ = null;
+    this.cropEl_ = null;
 
-    this.imageDom_ = null;
+    this.imageEl_ = null;
   };
 
-  ImageVirtualDom_.prototype.getDom = function (ctx, image, var_args) {
+  ImageVirtualDom_.prototype.getElement = function (ctx, image, var_args) {
 
-    if (!this.rootDom_) {
-      this.createRootDom_();
+    if (!this.rootEl_) {
+      this.createRootEl_();
     }
-    var rootDom_ = this.rootDom_;
+    var rootEl_ = this.rootEl_;
 
     var dx, dy, dw, dh, sx, sy, sw, sh;
 
@@ -1018,74 +1016,74 @@ if (!document.createElement('canvas').getContext) {
       max.x = m.max(max.x, c2.x, c3.x, c4.x);
       max.y = m.max(max.y, c2.y, c3.y, c4.y);
 
-      rootDom_.style.padding = [0, Math.max(mr(max.x / Z), 0) + 'px', Math.max(mr(max.y / Z), 0) + 'px', 0].join(' ');
-      rootDom_.style.filter = 'progid:DXImageTransform.Microsoft.Matrix('
+      rootEl_.style.padding = [0, Math.max(mr(max.x / Z), 0) + 'px', Math.max(mr(max.y / Z), 0) + 'px', 0].join(' ');
+      rootEl_.style.filter = 'progid:DXImageTransform.Microsoft.Matrix('
           + filter.join('') + ", SizingMethod='clip')";
     } else {
-      rootDom_.style.left = dx + ctx.x_ + 'px';
-      rootDom_.style.top = dy + ctx.y_ + 'px';
+      rootEl_.style.left = dx + ctx.x_ + 'px';
+      rootEl_.style.top = dy + ctx.y_ + 'px';
     }
 
-    if (!this.imageDom_) {
+    if (!this.imageEl_) {
       // NOTES
       // Matrix of rootDom will work if imageDom.style.position = 'absolute'
-      this.imageDom_ = document.createElement('img');
+      this.imageEl_ = document.createElement('img');
     }
-    var imageDom_ = this.imageDom_;
+    var imageEl_ = this.imageEl_;
 
     // Draw a special cropping div if needed
     if (sx || sy) {
-      if (!this.cropDom_) {
-        this.cropDom_ = document.createElement('div');
-        this.cropDom_.style.overflow = 'hidden';
-        this.cropDom_.style.position = 'absolute';
+      if (!this.cropEl_) {
+        this.cropEl_ = document.createElement('div');
+        this.cropEl_.style.overflow = 'hidden';
+        this.cropEl_.style.position = 'absolute';
       }
-      this.cropDom_.style.width = Math.ceil((dw + sx * dw / sw) * scaleX) + 'px';
-      this.cropDom_.style.height = Math.ceil((dh + sy * dh / sh) * scaleY) + 'px';
-      this.cropDom_.style.filter = 'progid:DxImageTransform.Microsoft.Matrix(Dx='
+      this.cropEl_.style.width = Math.ceil((dw + sx * dw / sw) * scaleX) + 'px';
+      this.cropEl_.style.height = Math.ceil((dh + sy * dh / sh) * scaleY) + 'px';
+      this.cropEl_.style.filter = 'progid:DxImageTransform.Microsoft.Matrix(Dx='
           + -dw / sw * scaleX * sx + ',Dy=' + -dh / sh * scaleY * sy + ')';
 
-      if (!this.cropDom_.parentNode) {
-        rootDom_.appendChild(this.cropDom_); 
+      if (this.cropEl_.parentNode !== rootEl_) {
+        rootEl_.appendChild(this.cropEl_); 
       }
-      if (this.imageDom_.parentNode !== this.cropDom_) {
-        this.cropDom_.appendChild(imageDom_);
+      if (this.imageEl_.parentNode !== this.cropEl_) {
+        this.cropEl_.appendChild(imageEl_);
       }
     } else {
-      if (this.cropDom_ && this.cropDom_.parentNode) {
-        this.cropDom_.parentNode.removeChild(this.cropDom_);
+      if (this.cropEl_ && this.cropEl_.parentNode === rootEl_) {
+        rootEl_.removeChild(this.cropEl_);
       }
-      if (this.imageDom_.parentNode !== rootDom_) {
-        rootDom_.appendChild(imageDom_);
+      if (this.imageEl_.parentNode !== rootEl_) {
+        rootEl_.appendChild(imageEl_);
       }
     }
 
-    imageDom_.width = scaleX * dw / sw * w;
-    imageDom_.height = scaleY * dh / sh * h;
+    imageEl_.width = scaleX * dw / sw * w;
+    imageEl_.height = scaleY * dh / sh * h;
 
-    this.imageDom_.src = image.src;
-    if (imageDom_.style.globalAlpha < 1) {
-      imageDom_.style.filter = 'alpha(opacity=' + mr(ctx.globalAlpha * 100) +')';
+    this.imageEl_.src = image.src;
+    if (imageEl_.style.globalAlpha < 1) {
+      imageEl_.style.filter = 'alpha(opacity=' + mr(ctx.globalAlpha * 100) +')';
     } else {
-      imageDom_.style.filter = '';
+      imageEl_.style.filter = '';
     }
 
-    return this.rootDom_;
+    return this.rootEl_;
   };
 
-  ImageVirtualDom_.prototype.createRootDom_ = function () {
+  ImageVirtualDom_.prototype.createRootEl_ = function () {
       var W = 10;
       var H = 10;
 
       // For some reason that I've now forgotten, using divs didn't work
-      this.rootDom_ = createVMLElement('group');
-      this.rootDom_.coordsize = Z * W + ' ' + Z * H;
-      this.rootDom_.coordorigin = '0 0';
+      this.rootEl_ = createVMLElement('group');
+      this.rootEl_.coordsize = Z * W + ' ' + Z * H;
+      this.rootEl_.coordorigin = '0 0';
 
-      this.rootDom_.style.width = W + 'px';
-      this.rootDom_.style.height = H + 'px';
+      this.rootEl_.style.width = W + 'px';
+      this.rootEl_.style.height = H + 'px';
 
-      this.rootDom_.style.position = 'absolute';
+      this.rootEl_.style.position = 'absolute';
   }
 
   /**
@@ -1114,9 +1112,9 @@ if (!document.createElement('canvas').getContext) {
     this.textVDomList_ = [];
     this.imageVDomList_ = [];
 
-    this.nShapeVDom_ = 0;
-    this.nTextVDom_ = 0;
-    this.nImageVDom_ = 0;
+    this.nShapeVEl_ = 0;
+    this.nTextVEl_ = 0;
+    this.nImageVEl_ = 0;
 
     // Canvas context properties
     this.strokeStyle = '#000';
@@ -1150,9 +1148,9 @@ if (!document.createElement('canvas').getContext) {
     this.scaleY_ = 1;
     this.lineScale_ = 1;
 
-    this.shapeDomContainer_ = document.createElement('div');
+    this.ghost_ = document.createElement('div');
     var cssText = 'position:absolute; left:0px; right: 0px; top: 0px; bottom: 0px;';
-    this.shapeDomContainer_.style.cssText = cssText;
+    this.ghost_.style.cssText = cssText;
 
     this.x_ = 0;
     this.y_ = 0;
@@ -1164,29 +1162,28 @@ if (!document.createElement('canvas').getContext) {
       this.textMeasureEl_.removeNode(true);
       this.textMeasureEl_ = null;
     }
-
-    if (this.shapeDomContainer_.parentNode) {
-      this.shapeDomContainer_.parentNode.removeChild(this.shapeDomContainer_);
-      this.shapeDomContainer_.innerHTML = '';
+    // NOTES: Using innerHTML = '' will cause all descendant elements detached
+    var ghost_ = this.ghost_;
+    while (ghost_.firstChild) {
+      ghost_.removeChild(ghost_.firstChild);
     }
-
+    // NOTES: removeChild in IE8 will not set the parentNode to null
+    if (ghost_.parentNode === this.element_) {
+      this.element_.removeChild(ghost_);
+    }
     this.currentVirtualDom_ = null;
 
-    this.nShapeVDom_ = 0;
-    this.nTextVDom_ = 0;
-    this.nImageVDom_ = 0;
+    this.nShapeVEl_ = 0;
+    this.nTextVEl_ = 0;
+    this.nImageVEl_ = 0;
   };
 
   contextPrototype.flush = function () {
-    // TODO Why this.shapeDomContainer_ will be added to document
-    if (this.shapeDomContainer_.parentNode) {
-      this.shapeDomContainer_.parentNode.removeChild(this.shapeDomContainer_);
-    }
-    this.element_.insertBefore(this.shapeDomContainer_, this.element_.firstChild);
+    this.element_.insertBefore(this.ghost_, this.element_.firstChild);
 
-    this.shapeVDomList_.length = this.nShapeVDom_;
-    this.imageVDomList_.length = this.nImageVDom_;
-    this.textVDomList_.length = this.nTextVDom_;
+    this.shapeVDomList_.length = this.nShapeVEl_;
+    this.imageVDomList_.length = this.nImageVEl_;
+    this.textVDomList_.length = this.nTextVEl_;
   }
 
   contextPrototype.beginPath = function() {
@@ -1357,16 +1354,16 @@ if (!document.createElement('canvas').getContext) {
 
   contextPrototype.drawImage = function(image, var_args) {
 
-    var vDom = this.imageVDomList_[this.nImageVDom_];
+    var vDom = this.imageVDomList_[this.nImageVEl_];
     if (!vDom) {
       vDom = new ImageVirtualDom_();
-      this.imageVDomList_[this.nImageVDom_] = vDom;
+      this.imageVDomList_[this.nImageVEl_] = vDom;
     }
-    this.nImageVDom_++;
+    this.nImageVEl_++;
     var args = Array.prototype.slice.call(arguments);
     args.unshift(this);
-    var dom = vDom.getDom.apply(vDom, args);
-    this.shapeDomContainer_.appendChild(dom);
+    var dom = vDom.getElement.apply(vDom, args);
+    this.ghost_.appendChild(dom);
 
     this.currentVirtualDom_ = null;
   };
@@ -1445,17 +1442,17 @@ if (!document.createElement('canvas').getContext) {
 
     pathStr = pathStr.join('');
 
-    var vDom = this.shapeVDomList_[this.nShapeVDom_];
+    var vDom = this.shapeVDomList_[this.nShapeVEl_];
     if (!vDom) {
       vDom = new ShapeVirtualDom_();
-      this.shapeVDomList_[this.nShapeVDom_] = vDom;
+      this.shapeVDomList_[this.nShapeVEl_] = vDom;
     }
-    this.nShapeVDom_++;
+    this.nShapeVEl_++;
 
-    var shapeDom = vDom.getDom(pathStr, this.x_, this.y_);
+    var shapeDom = vDom.getElement(pathStr, this.x_, this.y_);
     aFill ? vDom.fill(this, min, max) : vDom.stroke(this);
 
-    this.shapeDomContainer_.appendChild(shapeDom);
+    this.ghost_.appendChild(shapeDom);
 
     this.currentVirtualDom_ = vDom;
   };
@@ -1476,7 +1473,8 @@ if (!document.createElement('canvas').getContext) {
     };
   };
 
-  function getSkewedCoords(ctx, aX, aY) {var m = ctx.m_;
+  function getSkewedCoords(ctx, aX, aY) {
+    var m = ctx.m_;
     return {
       x: Z * (aX * m[0][0] + aY * m[1][0]) - Z2,
       y: Z * (aX * m[0][1] + aY * m[1][1]) - Z2
@@ -1587,16 +1585,15 @@ if (!document.createElement('canvas').getContext) {
    */
   contextPrototype.drawText_ = function(text, x, y, maxWidth, stroke) {
     
-    var vDom = this.textVDomList_[this.nTextVDom_];
+    var vDom = this.textVDomList_[this.nTextVEl_];
     if (!vDom) {
       vDom = new TextVirtualDom_();
-      this.textVDomList_[this.nTextVDom_] = vDom;
+      this.textVDomList_[this.nTextVEl_] = vDom;
     }
-    this.nTextVDom_++;
+    this.nTextVEl_++;
 
-    var dom = vDom.getDom(this, text, x, y, maxWidth, stroke);
-    this.shapeDomContainer_.appendChild(dom);
-
+    var dom = vDom.getElement(this, text, x, y, maxWidth, stroke);
+    this.ghost_.appendChild(dom);
     this.currentVirtualDom_ = null;
   };
 
