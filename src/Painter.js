@@ -365,7 +365,7 @@
         Painter.prototype.refreshShapes = function (shapeList, callback) {
             for (var i = 0, l = shapeList.length; i < l; i++) {
                 var shape = shapeList[i];
-                this.storage.mod(shape.id);
+                shape.modSelf();
             }
 
             this.refresh(callback);

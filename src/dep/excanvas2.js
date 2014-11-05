@@ -944,7 +944,7 @@ if (!document.createElement('canvas').getContext) {
         case 'ideographic':
         case 'bottom':
         //
-          this.simpleRootEl_.style.bottom = ctx.element_.clientHeight - m_[2][1] + y + 'px';
+          this.simpleRootEl_.style.bottom = ctx.element_.clientHeight - m_[2][1] - y + 'px';
           break;
       }
 
