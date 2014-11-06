@@ -626,8 +626,8 @@ if (!document.createElement('canvas').getContext) {
     attr.font = '12px 微软雅黑';
     attr.textAlign = 'left';
     attr.textBaseline = 'alphabetic';
-    attr.sx = 0;
-    attr.sy = 0;
+    attr.offX = 0;
+    attr.offY = 0;
     attr.maxWidth = 0;
 
     return attr;
@@ -640,8 +640,8 @@ if (!document.createElement('canvas').getContext) {
     o1.font = o2.font;
     o1.textAlign = o2.textAlign;
     o1.textBaseline = o2.textBaseline;
-    o1.sx = o2.sx;
-    o1.sy = o2.sy;
+    o1.offX = o2.offX;
+    o1.offY = o2.offY;
     o1.maxWidth = o2.maxWidth;
   }
 
@@ -710,7 +710,7 @@ if (!document.createElement('canvas').getContext) {
     if (this.attached_) {
       var p = this.rootEl_.parentNode;
       if (p) {
-        this.rootEl_.removeNode(false);
+        p.removeChild(this.rootEl_);
       }
     }
     this.attached_ = false;
@@ -721,7 +721,8 @@ if (!document.createElement('canvas').getContext) {
       this.createShapeEl_(path);
     }
     this.attr_.path = path;
-    this.reset_();
+    this.attr_.filled = false;
+    this.attr_.stroked = false;
 
     return this.rootEl_;
   };
@@ -743,14 +744,6 @@ if (!document.createElement('canvas').getContext) {
 
     this.rootEl_ = rootEl_;
   };
-
-  /**
-   * Remove fill and stroke dom
-   */
-  ShapeVirtualDom_.prototype.reset_ = function () {
-    this.attr_.filled = false;
-    this.attr_.stroked = false;
-  }
 
   ShapeVirtualDom_.prototype.isFilled = function () {
     return this.attr_.filled;
@@ -808,7 +801,9 @@ if (!document.createElement('canvas').getContext) {
         this.rootEl_.appendChild(this.fillEl_);
       } else {
         this.rootEl_.filled = 'false';
-        this.rootEl_.removeChild(this.fillEl_);
+        if (this.fillEl_) {
+          this.rootEl_.removeChild(this.fillEl_);
+        }
       }
     }
     if (!this.attr_.filled) {
@@ -825,6 +820,8 @@ if (!document.createElement('canvas').getContext) {
     ) {
       // TODO Canvas gradient and pattern still not be optimized
       // There problem when canvas gradient add color stop dynamically
+      // 
+      // Text fill doesn't support Gradient or Pattern
       if ((fillStyle instanceof CanvasGradient_) && this.attr_.min) {
         // TODO: Gradients transformed with the transformation matrix.
         var angle = 0;
@@ -941,7 +938,9 @@ if (!document.createElement('canvas').getContext) {
         this.rootEl_.appendChild(this.strokeEl_);
       } else {
         this.rootEl_.stroked = 'false';
-        this.rootEl_.removeChild(this.strokeEl_);
+        if (this.strokeEl_) {
+          this.rootEl_.removeChild(this.strokeEl_);
+        }
       }
     }
 
@@ -1022,17 +1021,62 @@ if (!document.createElement('canvas').getContext) {
 
     var attr_ = this.attr_;
     attr_.text = text;
+
     attr_.sx = x;
     attr_.sy = y;
     attr_.maxWidth = maxWidth;
+    attr_.textAlign = ctx.textAlign;
+    attr_.textBaseline = ctx.textBaseline;
 
     attr_.stroked = !!stroke;
     attr_.filled = !stroke;
 
+    var fontStyle = getComputedStyle(processFontStyle(ctx.font),
+                                       ctx.element_);
+    var fontStyleString = buildStyle(fontStyle);
+
+    attr_.font = fontStyleString;
+
+    var offset = {x: 0, y: 0};
+    // 1.75 is an arbitrary number, as there is no info about the text baseline
+    switch (ctx.textBaseline) {
+      case 'hanging':
+      case 'top':
+        offset.y = fontStyle.size / 1.75;
+        break;
+      case 'middle':
+        break;
+      default:
+      case null:
+      case 'alphabetic':
+      case 'ideographic':
+      case 'bottom':
+        offset.y = -fontStyle.size / 2.25;
+        break;
+    }
+
+    var d = getCoords(ctx, x + offset.x, y + offset.y);
+    attr_.offX = d.x;
+    attr_.offY = d.y;
     // attr_.skewed = isNotAroundZero(m_[0][0] - 1) || isNotAroundZero(m_[0][1]) ||
         // isNotAroundZero(m_[1][1] - 1) || isNotAroundZero(m_[1][0])
     attr_.skewM = m_[0][0].toFixed(3) + ',' + m_[1][0].toFixed(3) + ',' +
         m_[0][1].toFixed(3) + ',' + m_[1][1].toFixed(3);
+
+    if (stroke) {
+      this.attr_.globalAlpha = ctx.globalAlpha;
+      this.attr_.lineCap = ctx.lineCap;
+      this.attr_.lineJoin = ctx.lineJoin;
+      this.attr_.lineWidth = ctx.lineWidth * ctx.lineScale_;
+      this.attr_.miterlimit = ctx.miterlimit;
+      this.attr_.strokeStyle = ctx.strokeStyle;
+    } else {
+      this.attr_.fillStyle = ctx.fillStyle;
+      this.attr_.globalAlpha = ctx.globalAlpha; 
+    }
+    // TODO It is strange that flush after the rootEl has been appended to document
+    // SkewOffset like '10, 10'(which one item is not zero) will cause the shape disappeared.
+    this.flush(ctx);
 
     return this.rootEl_;
   };
@@ -1046,6 +1090,8 @@ if (!document.createElement('canvas').getContext) {
     this.rootEl_.style.position = 'absolute';
     this.rootEl_.style.width = '1px';
     this.rootEl_.style.height = '1px';
+    this.rootEl_.stroked = 'false';
+    this.rootEl_.filled = 'false';
   };
 
   TextVirtualDom_.prototype.flush = function (ctx) {
@@ -1053,7 +1099,8 @@ if (!document.createElement('canvas').getContext) {
     var delta = 1000;
     var left = 0;
     var right = delta;
-    var offset = {x: 0, y: 0};
+    var attr_ = this.attr_;
+    var attrPrev_ = this.attrPrev_;
 
     if (!this.skewEl_) {
       this.skewEl_ = createVMLElement('skew');
@@ -1071,18 +1118,16 @@ if (!document.createElement('canvas').getContext) {
     var fontStyle = getComputedStyle(processFontStyle(this.attr_.font),
                                        ctx.element_);
     if (
-      this.attr_.font !== this.attrPrev_.font ||
-      this.attr_.text !== this.attrPrev_.text
+      attr_.font !== attrPrev_.font ||
+      attr_.text !== attrPrev_.text
     ) {
-      var fontStyleString = buildStyle(fontStyle);
-
-      this.textPathEl_.string = encodeHtmlAttribute(this.attr_.text);
-      this.textPathEl_.style.font = encodeHtmlAttribute(fontStyleString);
+      this.textPathEl_.string = encodeHtmlAttribute(attr_.text);
+      this.textPathEl_.style.font = encodeHtmlAttribute(attr_.font);
     }
 
-    if (this.attr_.textAlign !== this.attrPrev_.textAlign) {
+    if (attr_.textAlign !== attrPrev_.textAlign) {
       var elementStyle = ctx.element_.currentStyle;
-      var textAlign = this.attr_.textAlign.toLowerCase();
+      var textAlign = attr_.textAlign.toLowerCase();
       switch (textAlign) {
         case 'left':
         case 'center':
@@ -1109,43 +1154,28 @@ if (!document.createElement('canvas').getContext) {
       this.rootEl_.from = -left + ' 0';
       this.rootEl_.to = right + ' 0.05';
       this.skewEl_.origin = left + ' 0';
-
       this.textPathEl_.style['v-text-align'] = textAlign;
     }
 
-    // if (this.attr_.skewed || stroke) {
-      // 1.75 is an arbitrary number, as there is no info about the text baseline
-    switch (ctx.textBaseline) {
-      case 'hanging':
-      case 'top':
-        offset.y = fontStyle.size / 1.75;
-        break;
-      case 'middle':
-        break;
-      default:
-      case null:
-      case 'alphabetic':
-      case 'ideographic':
-      case 'bottom':
-        offset.y = -fontStyle.size / 2.25;
-        break;
+    // if (attr_.skewed || stroke) {
+    if (attr_.skewM !== attrPrev_.skewM) {
+      this.skewEl_.matrix = attr_.skewM + ',0,0';
     }
 
-    if (this.attr_.skewM !== this.attrPrev_.skewM) {
-      this.skewEl_.matrix = this.attr_.skewM + ',0,0';
+    if (attr_.offX !== attrPrev_.offX || 
+      attr_.offY !== attrPrev_.offY
+    ) {
+      var skewOffset = mr(attr_.offX / Z) + ',' + mr(attr_.offY / Z);
+      this.skewEl_.offset = skewOffset;
     }
-
-    var d = getCoords(ctx, this.attr_.sx + offset.x, this.attr_.sy + offset.y);
-    var skewOffset = mr(d.x / Z) + ',' + mr(d.y / Z);
-    this.skewEl_.offset = skewOffset;
-
-    if (this.attr_.stroked) {
+    
+    if (attr_.stroked) {
       this.doStroke_();
     } else {
       this.doFill_();
     }
-    
-    copyTextAttr(this.attrPrev_, this.attr_);
+
+    copyTextAttr(attrPrev_, attr_);
 
     // } else {
     //   if (!this.simpleRootEl_) {
@@ -1277,8 +1307,8 @@ if (!document.createElement('canvas').getContext) {
       throw Error('Invalid number of arguments');
     }
 
-    attr_.skewed = ctx.m_[0][0] != 1 || ctx.m_[0][1] ||
-        ctx.m_[1][1] != 1 || ctx.m_[1][0];
+    // Have rotation
+    attr_.skewed = ctx.m_[0][1] || ctx.m_[1][0];
 
     if (attr_.skewed) {
       var d = getCoords(ctx, dx, dy);
@@ -1305,8 +1335,8 @@ if (!document.createElement('canvas').getContext) {
 
       attr_.padding = [0, Math.max(mr(max.x / Z), 0) + 'px', Math.max(mr(max.y / Z), 0) + 'px', 0].join(' ');
     } else {
-      attr_.x = dx + ctx.x_;
-      attr_.y = dy + ctx.y_;
+      attr_.x = dx * scaleX + ctx.x_;
+      attr_.y = dy * scaleY + ctx.y_;
     }
 
     attr_.cropped = sx || sy;
@@ -1322,6 +1352,7 @@ if (!document.createElement('canvas').getContext) {
 
     attr_.image = image.src;
 
+    this.flush(ctx);
     return this.rootEl_;
   };
 
@@ -1371,7 +1402,7 @@ if (!document.createElement('canvas').getContext) {
 
     if (!this.imageEl_) {
       // NOTES
-      // Matrix of rootDom will work if imageDom.style.position = 'absolute'
+      // Matrix of rootDom will not work if imageDom.style.position = 'absolute'
       this.imageEl_ = document.createElement('img');
     }
     var imageEl_ = this.imageEl_;
@@ -1417,7 +1448,7 @@ if (!document.createElement('canvas').getContext) {
     }
     if (attr_.globalAlpha !== attrPrev_.globalAlpha) {
       if (imageEl_.style.globalAlpha < 1) {
-        imageEl_.style.filter = 'alpha(opacity=' + mr(ctx.globalAlpha * 100) +')';
+        imageEl_.style.filter = 'alpha(opacity=' + mr(attr_.globalAlpha * 100) +')';
       } else {
         imageEl_.style.filter = '';
       }
@@ -1508,12 +1539,15 @@ if (!document.createElement('canvas').getContext) {
       this.textMeasureEl_ = null;
     }
     var ghost_ = this.ghost_;
+    // Hide everything
+    this.element_.style.display = 'none';
     // NOTES: Using innerHTML = '' will cause all descendant elements detached
     // while (ghost_.firstChild) {
     //   ghost_.removeChild(ghost_.firstChild);
     // }
     // NOTES: removeChild in IE8 will not set the parentNode to null
-    // TODO Remove ghost element before add everything to it each frame is even more slow
+    // 
+    // TODO Remove ghost element before change the attributes of children each frame is even more slow
     // if (ghost_.parentNode === this.element_) {
     //   this.element_.removeChild(ghost_);
     // }
@@ -1528,12 +1562,9 @@ if (!document.createElement('canvas').getContext) {
     for (var i = 0; i < this.nShapeVEl_; i++) {
       this.shapeVDomList_[i].flush(this);
     }
-    for (var i = 0; i < this.nTextVEl_; i++) {
-      this.textVDomList_[i].flush(this);
-    }
-    for (var i = 0; i < this.nImageVEl_; i++) {
-      this.imageVDomList_[i].flush(this);
-    }
+    // Show everything
+    this.element_.style.display = 'block';
+
     for (var i = this.nShapeVEl_, len = this.shapeVDomList_.length; i < len; i++) {
       this.shapeVDomList_[i].detach();
     }
@@ -1715,7 +1746,6 @@ if (!document.createElement('canvas').getContext) {
     gradient.r1_ = aR1;
     return gradient;
   };
-
   contextPrototype.drawImage = function(image, var_args) {
 
     var vDom = this.imageVDomList_[this.nImageVEl_];
