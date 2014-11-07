@@ -2,7 +2,7 @@
  * Path 代理，可以在`buildPath`中用于替代`ctx`, 会保存每个path操作的命令到pathCommands属性中
  * 可以用于 isInsidePath 判断以及获取boundingRect
  * 
- * @module zrender/shape/util/PathProxy
+ * @module zrender/shape/tool/PathProxy
  * @author pissang (http://www.github.com/pissang)
  * 
  * @example
@@ -125,7 +125,7 @@ define(function (require) {
 
     /**
      * @param  {CanvasRenderingContext2D} ctx
-     * @return {PathProxy}
+     * @return {module:zrender/shape/util/PathProxy}
      */
     PathProxy.prototype.begin = function (ctx) {
         this._ctx = ctx || null;
@@ -138,7 +138,7 @@ define(function (require) {
     /**
      * @param  {number} x
      * @param  {number} y
-     * @return {PathProxy}
+     * @return {module:zrender/shape/util/PathProxy}
      */
     PathProxy.prototype.moveTo = function (x, y) {
         this.pathCommands.push(new PathSegment('M', [x, y]));
@@ -151,7 +151,7 @@ define(function (require) {
     /**
      * @param  {number} x
      * @param  {number} y
-     * @return {PathProxy}
+     * @return {module:zrender/shape/util/PathProxy}
      */
     PathProxy.prototype.lineTo = function (x, y) {
         this.pathCommands.push(new PathSegment('L', [x, y]));
@@ -168,7 +168,7 @@ define(function (require) {
      * @param  {number} y2
      * @param  {number} x3
      * @param  {number} y3
-     * @return {PathProxy}
+     * @return {module:zrender/shape/util/PathProxy}
      */
     PathProxy.prototype.bezierCurveTo = function (x1, y1, x2, y2, x3, y3) {
         this.pathCommands.push(new PathSegment('C', [x1, y1, x2, y2, x3, y3]));
@@ -183,7 +183,7 @@ define(function (require) {
      * @param  {number} y1
      * @param  {number} x2
      * @param  {number} y2
-     * @return {PathProxy}
+     * @return {module:zrender/shape/util/PathProxy}
      */
     PathProxy.prototype.quadraticCurveTo = function (x1, y1, x2, y2) {
         this.pathCommands.push(new PathSegment('Q', [x1, y1, x2, y2]));
@@ -200,7 +200,7 @@ define(function (require) {
      * @param  {number} startAngle
      * @param  {number} endAngle
      * @param  {boolean} anticlockwise
-     * @return {PathProxy}
+     * @return {module:zrender/shape/util/PathProxy}
      */
     PathProxy.prototype.arc = function (cx, cy, r, startAngle, endAngle, anticlockwise) {
         this.pathCommands.push(new PathSegment(
@@ -229,7 +229,7 @@ define(function (require) {
     };
 
     /**
-     * @return {PathProxy}
+     * @return {module:zrender/shape/util/PathProxy}
      */
     PathProxy.prototype.closePath = function () {
         this.pathCommands.push(new PathSegment('z'));

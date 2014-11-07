@@ -1,5 +1,5 @@
 /**
- * 颜色辅助类
+ * 颜色辅助模块
  * @module zrender/tool/color
  * @author CrossDo (chenhuaimu@baidu.com)
  */
