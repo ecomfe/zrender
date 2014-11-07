@@ -594,7 +594,7 @@ if (!document.createElement('canvas').getContext) {
       globalAlpha: 1,
       lineCap: 'butt',
       lineJoin: 'miter',
-      lineWidth: '',
+      lineWidth: 1,
       miterlimit: Z * 1,
 
       x: 0,
@@ -754,44 +754,49 @@ if (!document.createElement('canvas').getContext) {
   };
 
   ShapeVirtualDom_.prototype.fill = function(ctx, min, max) {
-    this.attr_.filled = true;
-    this.attr_.fillStyle = ctx.fillStyle;
-    this.attr_.globalAlpha = ctx.globalAlpha;
+    var attr_ = this.attr_;
 
-    this.attr_.x = ctx.x_;
-    this.attr_.y = ctx.y_;
+    attr_.filled = true;
+    attr_.fillStyle = ctx.fillStyle;
+    attr_.globalAlpha = ctx.globalAlpha;
+
+    attr_.x = ctx.x_;
+    attr_.y = ctx.y_;
 
     if (ctx.fillStyle instanceof CanvasGradient_) {
-      this.attr_.m_ = ctx.m_;
-      this.attr_.scaleX = ctx.scaleX_;
-      this.attr_.scaleY = ctx.scaleY_;
-      this.attr_.min = min;
-      this.attr_.max = max;
+      attr_.m_ = ctx.m_;
+      attr_.scaleX = ctx.scaleX_;
+      attr_.scaleY = ctx.scaleY_;
+      attr_.min = min;
+      attr_.max = max;
     } else if (ctx.fillStyle instanceof CanvasPattern_) {
-      this.attr_.scaleX = ctx.scaleX_;
-      this.attr_.scaleY = ctx.scaleY_;
-      this.attr_.min = min;
-      this.attr_.max = max;
+      attr_.scaleX = ctx.scaleX_;
+      attr_.scaleY = ctx.scaleY_;
+      attr_.min = min;
+      attr_.max = max;
     }
   };
 
   ShapeVirtualDom_.prototype.stroke = function (ctx) {
-    this.attr_.stroked = true;
+    var attr_ = this.attr_;
 
-    this.attr_.globalAlpha = ctx.globalAlpha;
-    this.attr_.lineCap = ctx.lineCap;
-    this.attr_.lineJoin = ctx.lineJoin;
-    this.attr_.lineWidth = ctx.lineWidth * ctx.lineScale_;
-    this.attr_.miterlimit = ctx.miterlimit;
-    this.attr_.strokeStyle = ctx.strokeStyle;
+    attr_.stroked = true;
+    attr_.globalAlpha = ctx.globalAlpha;
+    attr_.lineCap = ctx.lineCap;
+    attr_.lineJoin = ctx.lineJoin;
+    attr_.lineWidth = ctx.lineWidth * ctx.lineScale_;
+    attr_.miterlimit = ctx.miterlimit;
+    attr_.strokeStyle = ctx.strokeStyle;
 
-    this.attr_.x = ctx.x_;
-    this.attr_.y = ctx.y_;
+    attr_.x = ctx.x_;
+    attr_.y = ctx.y_;
   }
 
   ShapeVirtualDom_.prototype.doFill_ = function () {
-    if (this.attr_.filled !== this.attrPrev_.filled) {
-      if (this.attr_.filled) {
+    var attr_ = this.attr_;
+    var attrPrev_ = this.attrPrev_;
+    if (attr_.filled !== attrPrev_.filled) {
+      if (attr_.filled) {
         this.rootEl_.filled = 'true';
         if (!this.fillEl_) {
           this.fillEl_ = createVMLElement('fill');
@@ -806,23 +811,23 @@ if (!document.createElement('canvas').getContext) {
         }
       }
     }
-    if (!this.attr_.filled) {
+    if (!attr_.filled) {
       return;
     }
 
     var fillEl_ = this.fillEl_;
 
-    var fillStyle = this.attr_.fillStyle;
+    var fillStyle = attr_.fillStyle;
 
     if (
-      fillStyle !== this.attrPrev_.fillStyle || 
-      this.attr_.globalAlpha !== this.attrPrev_.globalAlpha
+      fillStyle !== attrPrev_.fillStyle || 
+      attr_.globalAlpha !== attrPrev_.globalAlpha
     ) {
       // TODO Canvas gradient and pattern still not be optimized
       // There problem when canvas gradient add color stop dynamically
       // 
       // Text fill doesn't support Gradient or Pattern
-      if ((fillStyle instanceof CanvasGradient_) && this.attr_.min) {
+      if ((fillStyle instanceof CanvasGradient_) && attr_.min) {
         // TODO: Gradients transformed with the transformation matrix.
         var angle = 0;
         var focus = {x: 0, y: 0};
@@ -832,10 +837,10 @@ if (!document.createElement('canvas').getContext) {
         // scale factor for offset
         var expansion = 1;
 
-        var scaleX = this.attr_.scaleX_;
-        var scaleY = this.attr_.scaleY_;
-        var min = this.attr_.min;
-        var max = this.attr_.max;
+        var scaleX = attr_.scaleX_;
+        var scaleY = attr_.scaleY_;
+        var min = attr_.min;
+        var max = attr_.max;
         var width = max.x - min.x;
         var height = max.y - min.y;
 
@@ -904,10 +909,10 @@ if (!document.createElement('canvas').getContext) {
         fillEl_.angle = angle;
         fillEl_.focusposition = focus.x + ',' + focus.y;
       }
-      else if ((fillStyle instanceof CanvasPattern_) && this.attr_.min) {
+      else if ((fillStyle instanceof CanvasPattern_) && attr_.min) {
         if (width && height) {
-          var deltaLeft = -this.attr_.min.x;
-          var deltaTop = -this.attr_.min.y;
+          var deltaLeft = -attr_.min.x;
+          var deltaTop = -attr_.min.y;
           fillEl_.position = deltaLeft / width * scaleX * scaleX + ',' +
             deltaTop / height * scaleY * scaleY;
           fillEl_.type = 'tile';
@@ -915,9 +920,9 @@ if (!document.createElement('canvas').getContext) {
         }
       }
       else {
-        var a = processStyle(this.attr_.fillStyle);
+        var a = processStyle(attr_.fillStyle);
         var color = a.color;
-        var opacity = a.alpha * this.attr_.globalAlpha;
+        var opacity = a.alpha * attr_.globalAlpha;
         fillEl_.color = color;
         if (opacity < 1) {
           fillEl_.opacity = opacity;
@@ -927,35 +932,38 @@ if (!document.createElement('canvas').getContext) {
   };
 
   ShapeVirtualDom_.prototype.doStroke_ = function () {
-    if (this.attr_.stroked !== this.attrPrev_.stroked) {
-      if (this.attr_.stroked) {
+    var attr_ = this.attr_;
+    var attrPrev_ = this.attrPrev_;
+    if (attr_.stroked !== attrPrev_.stroked) {
+      var rootEl_ = this.rootEl_;
+      if (attr_.stroked) {
         if (!this.strokeEl_) {
           this.strokeEl_ = createVMLElement('stroke');
           // PENDING 
           // Set default attribute ?
         }
-        this.rootEl_.stroked = 'true';
-        this.rootEl_.appendChild(this.strokeEl_);
+        rootEl_.stroked = 'true';
+        rootEl_.appendChild(this.strokeEl_);
       } else {
-        this.rootEl_.stroked = 'false';
+        rootEl_.stroked = 'false';
         if (this.strokeEl_) {
-          this.rootEl_.removeChild(this.strokeEl_);
+          rootEl_.removeChild(this.strokeEl_);
         }
       }
     }
 
-    if (!this.attr_.stroked) {
+    if (!attr_.stroked) {
       return;
     }
 
     if (
-      this.attr_.strokeStyle !== this.attrPrev_.strokeStyle ||
-      this.attr_.globalAlpha !== this.attrPrev_.globalAlpha ||
-      this.attr_.lineWidth !== this.attrPrev_.lineWidth
+      attr_.strokeStyle !== attrPrev_.strokeStyle ||
+      attr_.globalAlpha !== attrPrev_.globalAlpha ||
+      attr_.lineWidth !== attrPrev_.lineWidth
     ) {
-      var a = processStyle(this.attr_.strokeStyle);
-      var opacity = a.alpha * this.attr_.globalAlpha;
-      var lineWidth = this.attr_.lineWidth;
+      var a = processStyle(attr_.strokeStyle);
+      var opacity = a.alpha * attr_.globalAlpha;
+      var lineWidth = attr_.lineWidth;
       // VML cannot correctly render a line if the width is less than 1px.
       // In that case, we dilute the color to make the line look thinner.
       if (lineWidth < 1) {
@@ -966,34 +974,36 @@ if (!document.createElement('canvas').getContext) {
       }
       this.strokeEl_.color = a.color;
     }
-    if (this.attr_.lineJoin !==this.attrPrev_.lineJoin) {
-      this.strokeEl_.joinstyle = this.attr_.lineJoin;
+    if (attr_.lineJoin !== attrPrev_.lineJoin) {
+      this.strokeEl_.joinstyle = attr_.lineJoin;
     }
-    if (this.attr_.miterLimit !==this.attrPrev_.miterLimit) {
-      this.strokeEl_.miterlimit = this.attr_.miterLimit;
+    if (attr_.miterLimit !== attrPrev_.miterLimit) {
+      this.strokeEl_.miterlimit = attr_.miterLimit;
     }
-    if (this.attr_.lineCap !==this.attrPrev_.lineCap) {
-      this.strokeEl_.endcap = processLineCap(this.attr_.lineCap);
+    if (attr_.lineCap !== attrPrev_.lineCap) {
+      this.strokeEl_.endcap = processLineCap(attr_.lineCap);
     }
-    if (this.attr_.lineWidth !== this.attrPrev_.lineWidth) {
+    if (attr_.lineWidth !== attrPrev_.lineWidth) {
       this.strokeEl_.weight = lineWidth + 'px';
     }
   };
 
   ShapeVirtualDom_.prototype.flush = function (ctx) {
-    if (this.attr_.x !== this.attrPrev_.x) {
-      this.rootEl_.style.left = this.attr_.x + 'px';
+    var attr_ = this.attr_;
+    var attrPrev_ = this.attrPrev_;
+    if (attr_.x !== attrPrev_.x) {
+      this.rootEl_.style.left = attr_.x + 'px';
     }
-    if (this.attr_.y !== this.attrPrev_.y) {
-      this.rootEl_.style.top = this.attr_.y + 'px';
+    if (attr_.y !== attrPrev_.y) {
+      this.rootEl_.style.top = attr_.y + 'px';
     }
-    if (this.attr_.path !== this.attrPrev_.path) {
-      this.rootEl_.path = this.attr_.path;
+    if (attr_.path !== attrPrev_.path) {
+      this.rootEl_.path = attr_.path;
     }
     this.doFill_();
     this.doStroke_();
 
-    copyShapeAttr(this.attrPrev_, this.attr_);
+    copyShapeAttr(attrPrev_, attr_);
   }
 
   /**
@@ -1064,15 +1074,15 @@ if (!document.createElement('canvas').getContext) {
         m_[0][1].toFixed(3) + ',' + m_[1][1].toFixed(3);
 
     if (stroke) {
-      this.attr_.globalAlpha = ctx.globalAlpha;
-      this.attr_.lineCap = ctx.lineCap;
-      this.attr_.lineJoin = ctx.lineJoin;
-      this.attr_.lineWidth = ctx.lineWidth * ctx.lineScale_;
-      this.attr_.miterlimit = ctx.miterlimit;
-      this.attr_.strokeStyle = ctx.strokeStyle;
+      attr_.globalAlpha = ctx.globalAlpha;
+      attr_.lineCap = ctx.lineCap;
+      attr_.lineJoin = ctx.lineJoin;
+      attr_.lineWidth = ctx.lineWidth * ctx.lineScale_;
+      attr_.miterlimit = ctx.miterlimit;
+      attr_.strokeStyle = ctx.strokeStyle;
     } else {
-      this.attr_.fillStyle = ctx.fillStyle;
-      this.attr_.globalAlpha = ctx.globalAlpha; 
+      attr_.fillStyle = ctx.fillStyle;
+      attr_.globalAlpha = ctx.globalAlpha; 
     }
     // TODO It is strange that flush after the rootEl has been appended to document
     // SkewOffset like '10, 10'(which one item is not zero) will cause the shape disappeared.
@@ -1085,13 +1095,14 @@ if (!document.createElement('canvas').getContext) {
     var W = 10;
     var H = 10;
     this.rootEl_ = createVMLElement('line');
-    this.rootEl_.coordsize = Z * W + ' ' + Z * H;
-    this.rootEl_.coordorigin = '0 0';
-    this.rootEl_.style.position = 'absolute';
-    this.rootEl_.style.width = '1px';
-    this.rootEl_.style.height = '1px';
-    this.rootEl_.stroked = 'false';
-    this.rootEl_.filled = 'false';
+    var rootEl_ = this.rootEl_;
+    rootEl_.coordsize = Z * W + ' ' + Z * H;
+    rootEl_.coordorigin = '0 0';
+    rootEl_.style.position = 'absolute';
+    rootEl_.style.width = '1px';
+    rootEl_.style.height = '1px';
+    rootEl_.stroked = 'false';
+    rootEl_.filled = 'false';
   };
 
   TextVirtualDom_.prototype.flush = function (ctx) {
@@ -1101,6 +1112,7 @@ if (!document.createElement('canvas').getContext) {
     var right = delta;
     var attr_ = this.attr_;
     var attrPrev_ = this.attrPrev_;
+    var rootEl_ = this.rootEl_;
 
     if (!this.skewEl_) {
       this.skewEl_ = createVMLElement('skew');
@@ -1110,9 +1122,9 @@ if (!document.createElement('canvas').getContext) {
       this.pathEl_.textpathok = 'true';
       this.textPathEl_.on = 'true';
 
-      this.rootEl_.appendChild(this.skewEl_);
-      this.rootEl_.appendChild(this.pathEl_);
-      this.rootEl_.appendChild(this.textPathEl_);
+      rootEl_.appendChild(this.skewEl_);
+      rootEl_.appendChild(this.pathEl_);
+      rootEl_.appendChild(this.textPathEl_);
     }
 
     var fontStyle = getComputedStyle(processFontStyle(this.attr_.font),
@@ -1151,8 +1163,8 @@ if (!document.createElement('canvas').getContext) {
           left = right = delta / 2;
           break;
       }
-      this.rootEl_.from = -left + ' 0';
-      this.rootEl_.to = right + ' 0.05';
+      rootEl_.from = -left + ' 0';
+      rootEl_.to = right + ' 0.05';
       this.skewEl_.origin = left + ' 0';
       this.textPathEl_.style['v-text-align'] = textAlign;
     }
@@ -1263,6 +1275,7 @@ if (!document.createElement('canvas').getContext) {
     // to find the original width we overide the width and height
     var oldRuntimeWidth = image.runtimeStyle.width;
     var oldRuntimeHeight = image.runtimeStyle.height;
+    var m_ = ctx.m_;
     image.runtimeStyle.width = 'auto';
     image.runtimeStyle.height = 'auto';
 
@@ -1308,17 +1321,17 @@ if (!document.createElement('canvas').getContext) {
     }
 
     // Have rotation
-    attr_.skewed = ctx.m_[0][1] || ctx.m_[1][0];
+    attr_.skewed = m_[0][1] || m_[1][0];
 
     if (attr_.skewed) {
       var d = getCoords(ctx, dx, dy);
       attr_.x = d.x;
       attr_.y = d.y;
       var filter = [];
-      filter.push('M11=', ctx.m_[0][0] / scaleX, ',',
-                  'M12=', ctx.m_[1][0] / scaleY, ',',
-                  'M21=', ctx.m_[0][1] / scaleX, ',',
-                  'M22=', ctx.m_[1][1] / scaleY, ',',
+      filter.push('M11=', m_[0][0] / scaleX, ',',
+                  'M12=', m_[1][0] / scaleY, ',',
+                  'M21=', m_[0][1] / scaleX, ',',
+                  'M22=', m_[1][1] / scaleY, ',',
                   'Dx=', d.x, ',',
                   'Dy=', d.y, '');
       attr_.skewM = filter.join('');
@@ -1414,6 +1427,7 @@ if (!document.createElement('canvas').getContext) {
         this.cropEl_.style.overflow = 'hidden';
         this.cropEl_.style.position = 'absolute';
       }
+
       if (attr_.cropWidth !== attrPrev_.cropWidth) {
         this.cropEl_.style.width = attr_.cropWidth + 'px';
       }
