@@ -33,6 +33,9 @@
 
 // AMD by kener.linfeng@gmail.com
 // Optimized by https://github.com/pissang
+// 
+// NOTES http://jsperf.com/dom-attr-read-perf/2
+// http://jsperf.com/arr-vs-obj-in-ie
 define(function(require) {
     
 // Only add this code if we do not already have a canvas implementation
@@ -257,6 +260,7 @@ if (!document.createElement('canvas').getContext) {
     return result;
   }
 
+
   function copyState(o1, o2) {
     o2.fillStyle     = o1.fillStyle;
     o2.lineCap       = o1.lineCap;
@@ -408,7 +412,6 @@ if (!document.createElement('canvas').getContext) {
     whitesmoke: '#F5F5F5',
     yellowgreen: '#9ACD32'
   };
-
 
   function getRgbHslContent(styleString) {
     var start = styleString.indexOf('(', 3);
@@ -603,21 +606,26 @@ if (!document.createElement('canvas').getContext) {
   }
 
   function copyShapeAttr(o1, o2) {
-    o1.filled = o2.filled;
-    o1.stroked = o2.stroked;
-
     o1.path = o2.path;
+
     o1.fillStyle = o2.fillStyle;
-    o1.strokeStyle = o2.strokeStyle;
 
     o1.globalAlpha = o2.globalAlpha;
-    o1.lineCap = o2.lineCap;
-    o1.lineJoin = o2.lineJoin;
-    o1.lineWidth = o2.lineWidth;
-    o1.miterlimit = o2.miterlimit;
+    
+    // PENDING When shape changed from not stroked to stroked
+    if (o2.stroked) {
+      o1.strokeStyle = o2.strokeStyle;
+      o1.lineCap = o2.lineCap;
+      o1.lineJoin = o2.lineJoin;
+      o1.lineWidth = o2.lineWidth;
+      o1.miterlimit = o2.miterlimit; 
+    }
 
     o1.x = o2.x;
     o1.y = o2.y;
+
+    o1.filled = o2.filled;
+    o1.stroked = o2.stroked;
   }
 
   function createTextAttr() {
@@ -664,18 +672,23 @@ if (!document.createElement('canvas').getContext) {
     o1.image = o2.image;
     o1.x = o2.x;
     o1.y = o2.y;
-    o1.padding = o2.padding;
-    o1.skewM = o2.skewM;
-    o1.cropped = o2.cropped;
     o1.width = o2.width;
     o1.height = o2.height;
     o1.globalAlpha = o2.globalAlpha;
+
+    if (o2.skewed) {
+      o1.skewM = o2.skewM;
+      o1.padding = o2.padding; 
+    }
 
     if (o2.cropped) {
       o1.cropWidth = o2.cropWidth;
       o1.cropHeight = o2.cropHeight;
       o1.cropFilter = o2.cropFilter;
     }
+
+    o1.cropped = o2.cropped;
+    o1.skewed = o2.skewed;
   }
 
   /**
@@ -684,13 +697,10 @@ if (!document.createElement('canvas').getContext) {
    * @author https://github.com/pissang/
    */
   function ShapeVirtualDom_() {
-    
-    this.rootEl_ = null;
+    // this.rootEl_ = null;
+    // this.strokeEl_ = null;
+    // this.fillEl_ = null;
 
-    this.strokeEl_ = null;
-
-    this.fillEl_ = null;
-    // NOTES http://jsperf.com/dom-attr-read-perf
     this.attr_ = createShapeAttr();
 
     this.attrPrev_ = {};
@@ -720,9 +730,10 @@ if (!document.createElement('canvas').getContext) {
     if (!this.rootEl_) {
       this.createShapeEl_(path);
     }
-    this.attr_.path = path;
-    this.attr_.filled = false;
-    this.attr_.stroked = false;
+    var attr_ = this.attr_;
+    attr_.path = path;
+    attr_.filled = false;
+    attr_.stroked = false;
 
     return this.rootEl_;
   };
@@ -733,9 +744,7 @@ if (!document.createElement('canvas').getContext) {
     var H = 10;
 
     var rootEl_ = createVMLElement('shape');
-    rootEl_.style.position = 'absolute';
-    rootEl_.style.width = W + 'px';
-    rootEl_.style.height = H + 'px';
+    rootEl_.style.cssText = ['position:absolute;width:', W, 'px;height:', H, 'px'].join('');
     rootEl_.coordorigin = '0 0';
     rootEl_.coordsize = Z * W + ' ' + Z * H;
 
@@ -796,18 +805,19 @@ if (!document.createElement('canvas').getContext) {
     var attr_ = this.attr_;
     var attrPrev_ = this.attrPrev_;
     if (attr_.filled !== attrPrev_.filled) {
+      var rootEl_ = this.rootEl_;
       if (attr_.filled) {
-        this.rootEl_.filled = 'true';
+        rootEl_.filled = 'true';
         if (!this.fillEl_) {
           this.fillEl_ = createVMLElement('fill');
           // PENDING 
           // Set default attribute ?
         }
-        this.rootEl_.appendChild(this.fillEl_);
+        rootEl_.appendChild(this.fillEl_);
       } else {
-        this.rootEl_.filled = 'false';
+        rootEl_.filled = 'false';
         if (this.fillEl_) {
-          this.rootEl_.removeChild(this.fillEl_);
+          rootEl_.removeChild(this.fillEl_);
         }
       }
     }
@@ -889,8 +899,8 @@ if (!document.createElement('canvas').getContext) {
         var length = stops.length;
         var color1 = stops[0].color;
         var color2 = stops[length - 1].color;
-        var opacity1 = stops[0].alpha * ctx.globalAlpha;
-        var opacity2 = stops[length - 1].alpha * ctx.globalAlpha;
+        var opacity1 = stops[0].alpha * attr_.globalAlpha;
+        var opacity2 = stops[length - 1].alpha * attr_.globalAlpha;
 
         var colors = [];
         for (var i = 0; i < length; i++) {
@@ -920,7 +930,7 @@ if (!document.createElement('canvas').getContext) {
         }
       }
       else {
-        var a = processStyle(attr_.fillStyle);
+        var a = processStyle(fillStyle);
         var color = a.color;
         var opacity = a.alpha * attr_.globalAlpha;
         fillEl_.color = color;
@@ -983,7 +993,7 @@ if (!document.createElement('canvas').getContext) {
     if (attr_.lineCap !== attrPrev_.lineCap) {
       this.strokeEl_.endcap = processLineCap(attr_.lineCap);
     }
-    if (attr_.lineWidth !== attrPrev_.lineWidth) {
+    if (lineWidth !== attrPrev_.lineWidth) {
       this.strokeEl_.weight = lineWidth + 'px';
     }
   };
@@ -1012,12 +1022,10 @@ if (!document.createElement('canvas').getContext) {
    * @author https://github.com/pissang/
    */
   function TextVirtualDom_() {
-    this.rootEl_ = null;
-
-    this.skewEl_ = null;
-    this.textPathEl_ = null;
-
-    this.simpleRootEl_ = null;
+    // this.rootEl_ = null;
+    // this.skewEl_ = null;
+    // this.textPathEl_ = null;
+    // this.simpleRootEl_ = null;
 
     this.attr_ = createTextAttr();
     this.attrPrev_ = {};
@@ -1068,10 +1076,10 @@ if (!document.createElement('canvas').getContext) {
     var d = getCoords(ctx, x + offset.x, y + offset.y);
     attr_.offX = d.x;
     attr_.offY = d.y;
-    // attr_.skewed = isNotAroundZero(m_[0][0] - 1) || isNotAroundZero(m_[0][1]) ||
-        // isNotAroundZero(m_[1][1] - 1) || isNotAroundZero(m_[1][0])
+    // attr_.skewed = isNotAroundZero(m_[0] - 1) || isNotAroundZero(m_[1]) ||
+        // isNotAroundZero(m_[3] - 1) || isNotAroundZero(m_[2])
     attr_.skewM = m_[0][0].toFixed(3) + ',' + m_[1][0].toFixed(3) + ',' +
-        m_[0][1].toFixed(3) + ',' + m_[1][1].toFixed(3);
+                m_[0][1].toFixed(3) + ',' + m_[1][1].toFixed(3);
 
     if (stroke) {
       attr_.globalAlpha = ctx.globalAlpha;
@@ -1098,9 +1106,7 @@ if (!document.createElement('canvas').getContext) {
     var rootEl_ = this.rootEl_;
     rootEl_.coordsize = Z * W + ' ' + Z * H;
     rootEl_.coordorigin = '0 0';
-    rootEl_.style.position = 'absolute';
-    rootEl_.style.width = '1px';
-    rootEl_.style.height = '1px';
+    rootEl_.style.cssText = 'position:absolute;width:1px;height:1px';
     rootEl_.stroked = 'false';
     rootEl_.filled = 'false';
   };
@@ -1254,11 +1260,10 @@ if (!document.createElement('canvas').getContext) {
    * TODO Image cropping testing
    */
   function ImageVirtualDom_() {
-    this.rootEl_ = null;
-
-    this.cropEl_ = null;
-
-    this.imageEl_ = null;
+    // this.rootEl_ = null;
+    // this.cropEl_ = null;
+    // this.imageEl_ = null;
+    // this.groupEl_ = null;
 
     this.attr_ = createImageAttr();
 
@@ -1266,10 +1271,6 @@ if (!document.createElement('canvas').getContext) {
   };
 
   ImageVirtualDom_.prototype.getElement = function (ctx, image, var_args) {
-    if (!this.rootEl_) {
-      this.createRootEl_();
-    }
-    var rootEl_ = this.rootEl_;
     var dx, dy, dw, dh, sx, sy, sw, sh;
 
     // to find the original width we overide the width and height
@@ -1365,23 +1366,41 @@ if (!document.createElement('canvas').getContext) {
 
     attr_.image = image.src;
 
+    if (!this.imageEl_) {
+      // NOTES
+      // Matrix of rootDom will not work if imageDom.style.position = 'absolute'
+      this.imageEl_ = document.createElement('img');
+    }
+
+    if (!(attr_.skewed || attr_.cropped)) {
+      this.rootEl_ = this.imageEl_;
+    } else if (attr_.skewed) {
+      if (!this.groupEl_) {
+        this.createGroupEl_();
+      }
+      this.rootEl_ = this.groupEl_;
+    } else {
+      if (!this.cropEl_) {
+        this.cropEl_ = document.createElement('div');
+        this.cropEl_.style.cssText = 'position:absolute; overflow:hidden;';
+      }
+      this.rootEl_ = this.cropEl_;
+    }
+
     this.flush(ctx);
     return this.rootEl_;
   };
 
-  ImageVirtualDom_.prototype.createRootEl_ = function () {
+  ImageVirtualDom_.prototype.createGroupEl_ = function () {
     var W = 10;
     var H = 10;
 
     // For some reason that I've now forgotten, using divs didn't work
-    this.rootEl_ = createVMLElement('group');
-    this.rootEl_.coordsize = Z * W + ' ' + Z * H;
-    this.rootEl_.coordorigin = '0 0';
+    this.groupEl_ = createVMLElement('group');
+    this.groupEl_.coordsize = Z * W + ' ' + Z * H;
+    this.groupEl_.coordorigin = '0 0';
 
-    this.rootEl_.style.width = W + 'px';
-    this.rootEl_.style.height = H + 'px';
-
-    this.rootEl_.style.position = 'absolute';
+    this.groupEl_.style.cssText = ['position:absolute;width:', W, 'px;height:', H, 'px'].join('');
   }
 
   ImageVirtualDom_.prototype.flush = function (ctx) {
@@ -1389,45 +1408,55 @@ if (!document.createElement('canvas').getContext) {
     var attrPrev_ = this.attrPrev_;
     var w2 = attr_.sw / 2;
     var h2 = attr_.sh / 2;
-    var rootEl_ = this.rootEl_;
+
+    var imageEl_ = this.imageEl_;
 
     // If filters are necessary (rotation exists), create them
     // filters are bog-slow, so only create them if abbsolutely necessary
     // The following check doesn't account for skews (which don't exist
     // in the canvas spec (yet) anyway.
-    if (attr_.skewed) {
+    if (!attr_.skewed && !attr_.cropped) {
+      if (attr_.x !== attrPrev_.x) {
+        imageEl_.style.left = attr_.x + 'px';
+      }
+      if (attr_.y !== attrPrev_.y) {
+        imageEl_.style.top = attr_.y + 'px';
+      }
+      if (!attrPrev_.skewed) {
+        imageEl_.style.position = 'absolute';
+      } else {
+        imageEl_.style.position = 'static';
+      }
+    } else if (attr_.skewed) {
+      var groupEl_ = this.groupEl_;
       if (attr_.padding !== attrPrev_.padding) {
-        rootEl_.style.padding = attr_.padding;
+        groupEl_.style.padding = attr_.padding;
       }
 
       if (attr_.skewM !== attrPrev_.skewM) {
-        rootEl_.style.filter = 'progid:DXImageTransform.Microsoft.Matrix('
+        groupEl_.style.filter = 'progid:DXImageTransform.Microsoft.Matrix('
           + attr_.skewM + ", SizingMethod='clip')";
       }
-    } else {
-      if (attr_.x !== attrPrev_.x) {
-        rootEl_.style.left = attr_.x + 'px';
-      }
-      if (attr_.y !== attrPrev_.y) {
-        rootEl_.style.top = attr_.y + 'px';
-      }
-    }
 
-    if (!this.imageEl_) {
-      // NOTES
-      // Matrix of rootDom will not work if imageDom.style.position = 'absolute'
-      this.imageEl_ = document.createElement('img');
+      if (attr_.cropped) {
+        if (!attrPrev_.cropped) {
+          groupEl_.appendChild(this.cropEl_);
+          this.cropEl_.appendChild(imageEl_);
+        }
+      } else {
+        if (!attrPrev_.skewed) {
+          groupEl_.appendChild(imageEl_);
+        }
+      }
+    } else if (attr_.cropped) {
+      if (!attrPrev_.cropped) {
+        this.cropEl_.appendChild(imageEl_);
+      }
     }
-    var imageEl_ = this.imageEl_;
 
     // Draw a special cropping div if needed
     if (attr_.cropped) {
-      if (!this.cropEl_) {
-        this.cropEl_ = document.createElement('div');
-        this.cropEl_.style.overflow = 'hidden';
-        this.cropEl_.style.position = 'absolute';
-      }
-
+      var groupEl_ = this.groupEl_;
       if (attr_.cropWidth !== attrPrev_.cropWidth) {
         this.cropEl_.style.width = attr_.cropWidth + 'px';
       }
@@ -1437,24 +1466,13 @@ if (!document.createElement('canvas').getContext) {
       if (attr_.filter !== attrPrev_.filter) {
         this.cropEl_.style.filter = attr_.filter;
       }
-
-      if (this.attr_.cropped !== this.attrPrev_.cropped) {
-        rootEl_.appendChild(this.cropEl_); 
-        this.cropEl_.appendChild(imageEl_);
-      }
-    } else {
-      if (this.attr_.cropped !== this.attrPrev_.cropped) {
-        rootEl_.appendChild(imageEl_);
-        if (this.cropEl_) {
-          rootEl_.removeChild(this.cropEl_);
-        }
-      }
     }
+
     if (attr_.width !== attrPrev_.width) {
-      imageEl_.width = attr_.width;
+      imageEl_.style.width = attr_.width + 'px';
     }
     if (attr_.height !== attrPrev_.height) {
-      imageEl_.height = attr_.height;
+      imageEl_.style.height = attr_.height + 'px';
     }
 
     if (attr_.image !== attrPrev_.image) {
@@ -1536,11 +1554,11 @@ if (!document.createElement('canvas').getContext) {
     this.scaleY_ = 1;
     this.lineScale_ = 1;
 
-    // this.ghost_ = document.createElement('div');
-    // var cssText = 'position:absolute; left:0px; right: 0px; top: 0px; bottom: 0px;';
-    // this.ghost_.style.cssText = cssText;
+    this.ghost_ = document.createElement('div');
+    var cssText = 'position:absolute; left:0px; right: 0px; top: 0px; bottom: 0px;';
+    this.ghost_.style.cssText = cssText;
 
-    // this.element_.appendChild(this.ghost_);
+    this.element_.appendChild(this.ghost_);
 
     this.x_ = 0;
     this.y_ = 0;
@@ -1552,9 +1570,9 @@ if (!document.createElement('canvas').getContext) {
       this.textMeasureEl_.removeNode(true);
       this.textMeasureEl_ = null;
     }
-    var ghost_ = this.ghost_;
+    // var ghost_ = this.ghost_;
     // Hide everything
-    this.element_.style.display = 'none';
+    this.ghost_.style.display = 'none';
     // NOTES: Using innerHTML = '' will cause all descendant elements detached
     // while (ghost_.firstChild) {
     //   ghost_.removeChild(ghost_.firstChild);
@@ -1577,7 +1595,7 @@ if (!document.createElement('canvas').getContext) {
       this.shapeVDomList_[i].flush(this);
     }
     // Show everything
-    this.element_.style.display = 'block';
+    this.ghost_.style.display = 'block';
 
     for (var i = this.nShapeVEl_, len = this.shapeVDomList_.length; i < len; i++) {
       this.shapeVDomList_[i].detach();
@@ -1605,14 +1623,16 @@ if (!document.createElement('canvas').getContext) {
 
   contextPrototype.moveTo = function(aX, aY) {
     var p = getSkewedCoords(this, aX, aY);
-    this.currentPath_.push({type: 'moveTo', x: p.x, y: p.y});
+    p.type = 'moveTo';
+    this.currentPath_.push(p);
     this.currentX_ = p.x;
     this.currentY_ = p.y;
   };
 
   contextPrototype.lineTo = function(aX, aY) {
     var p = getSkewedCoords(this, aX, aY);
-    this.currentPath_.push({type: 'lineTo', x: p.x, y: p.y});
+    p.type = 'lineTo';
+    this.currentPath_.push(p);
 
     this.currentX_ = p.x;
     this.currentY_ = p.y;
@@ -1699,6 +1719,7 @@ if (!document.createElement('canvas').getContext) {
                            xEnd: pEnd.x,
                            yEnd: pEnd.y});
 
+
     this.currentVirtualDom_ = null;
   };
 
@@ -1772,7 +1793,7 @@ if (!document.createElement('canvas').getContext) {
     args.unshift(this);
     var el = vDom.getElement.apply(vDom, args);
     
-    vDom.attachTo(this.element_);
+    vDom.attachTo(this.ghost_);
 
     this.currentVirtualDom_ = null;
   };
@@ -1861,7 +1882,7 @@ if (!document.createElement('canvas').getContext) {
     var shapeEl = vDom.getElement(pathStr, this.x_, this.y_);
     aFill ? vDom.fill(this, min, max) : vDom.stroke(this);
 
-    vDom.attachTo(this.element_);
+    vDom.attachTo(this.ghost_);
 
     this.currentVirtualDom_ = vDom;
 
@@ -1921,7 +1942,6 @@ if (!document.createElement('canvas').getContext) {
 
     ctx.scaleX_ = Math.sqrt(m[0][0] * m[0][0] + m[0][1] * m[0][1]);
     ctx.scaleY_ = Math.sqrt(m[1][0] * m[1][0] + m[1][1] * m[1][1]);
-
     ctx.x_ = m[2][0];
     ctx.y_ = m[2][1];
 
@@ -1934,6 +1954,7 @@ if (!document.createElement('canvas').getContext) {
       ctx.lineScale_ = sqrt(abs(det));
     }
   }
+
 
   contextPrototype.translate = function(aX, aY) {
     var m1 = [
@@ -1980,6 +2001,7 @@ if (!document.createElement('canvas').getContext) {
   };
 
   contextPrototype.setTransform = function(m11, m12, m21, m22, dx, dy) {
+    
     var m = [
       [m11, m12, 0],
       [m21, m22, 0],
@@ -2005,7 +2027,7 @@ if (!document.createElement('canvas').getContext) {
 
     var el = vDom.getElement(this, text, x, y, maxWidth, stroke);
     
-    vDom.attachTo(this.element_);
+    vDom.attachTo(this.ghost_);
     
     this.currentVirtualDom_ = null;
   };
