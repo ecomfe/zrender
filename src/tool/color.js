@@ -1,5 +1,5 @@
 /**
- * 颜色辅助类
+ * 颜色辅助模块
  * @module zrender/tool/color
  * @author CrossDo (chenhuaimu@baidu.com)
  */
@@ -289,23 +289,26 @@ define(function(require) {
         var stepR = (end[0] - start[0]) / step;
         var stepG = (end[1] - start[1]) / step;
         var stepB = (end[2] - start[2]) / step;
+        var stepA = (end[3] - start[3]) / step;
         // 生成颜色集合
         // fix by linfeng 颜色堆积
-        for (var i = 0, r = start[0], g = start[1], b = start[2]; i < step; i++
-        ) {
+        for (var i = 0, r = start[0], g = start[1], b = start[2], a = start[3]; i < step; i++) {
             colors[i] = toColor([
                 adjust(Math.floor(r), [ 0, 255 ]),
                 adjust(Math.floor(g), [ 0, 255 ]), 
-                adjust(Math.floor(b), [ 0, 255 ])
-            ]);
+                adjust(Math.floor(b), [ 0, 255 ]),
+                a.toFixed(4) - 0
+            ],'rgba');
             r += stepR;
             g += stepG;
             b += stepB;
+            a += stepA;
         }
         r = end[0];
         g = end[1];
         b = end[2];
-        colors[i] = toColor([ r, g, b ]);
+        a = end[3];
+        colors[i] = toColor([r, g, b, a], 'rgba');
         return colors;
     }
 
@@ -414,6 +417,9 @@ define(function(require) {
      * @return {string} 颜色
      */
     function convert(color, format) {
+        if (!isCalculableColor(color)) {
+            return color;
+        }
         var data = getData(color);
         var alpha = data[3];
         if (typeof alpha === 'undefined') {
@@ -591,6 +597,9 @@ define(function(require) {
      * @return {string} 加深或减淡后颜色值
      */
     function lift(color, level) {
+        if (!isCalculableColor(color)) {
+            return color;
+        }
         var direct = level > 0 ? 1 : -1;
         if (typeof level === 'undefined') {
             level = 0;
@@ -616,6 +625,9 @@ define(function(require) {
      * @return {string} 翻转颜色
      */
     function reverse(color) {
+        if (!isCalculableColor(color)) {
+            return color;
+        }
         var data = getData(toRGBA(color));
         data = map(data,
             function(c) {
@@ -634,6 +646,10 @@ define(function(require) {
      * @return {string} 结果色,rgb(r,g,b)或rgba(r,g,b,a)
      */
     function mix(color1, color2, weight) {
+        if (!isCalculableColor(color1) || !isCalculableColor(color2)) {
+            return color1;
+        }
+        
         if (typeof weight === 'undefined') {
             weight = 0.5;
         }
@@ -763,6 +779,9 @@ define(function(require) {
      * @return {string} rgba颜色值
      */
     function alpha(color, a) {
+        if (!isCalculableColor(color)) {
+            return color;
+        }
         if (a === null) {
             a = 1;
         }
@@ -795,6 +814,10 @@ define(function(require) {
             value = region[1];
         }
         return value;
+    }
+    
+    function isCalculableColor(color) {
+        return color instanceof Array || typeof color === 'string';
     }
 
     // 参见 http:// www.easyrgb.com/index.php?X=MATH

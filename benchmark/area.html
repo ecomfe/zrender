@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Benchmark</title>
+    <!--
+    <script src="http://s1.bdstatic.com/r/www/cache/ecom/esl/1-8-6/esl.js"></script>
+-->
+    <script src="../doc/asset/js/esl/esl.js"></script>
+    <style>
+        html {
+            height: 100%;
+        }
+        body {
+            height: 100%;
+            margin: 0px;
+        }
+        #main {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        #run {
+            position: absolute;
+            left: 50%;
+            top: 20px;
+            width: 50px;
+            margin-left: -25px;
+
+            background-color: purple;
+            color: white;
+            border-radius: 5px;
+            padding: 5px 10px;
+            border: none;
+        }
+        #points,
+        #results {
+            position: absolute;
+            left: 0px;
+            right: 0px;
+            top: 0px;
+            bottom: 0px;
+        }
+        .result {
+            margin: 30px;
+            background-color: white;
+        }
+        .result td {
+            width: 100px;
+            border-right: 1px solid grey;
+        }
+    </style>
+</head>
+<body>
+    <div id="main"></div>
+    <canvas id="points"></canvas>
+    <div id="results"></div>
+    <button id="run">RUN</button>
+    <script type="text/javascript">
+        require.config({
+            paths: {
+                lodash: 'lib/lodash.compat',
+                platform: 'lib/platform',
+                benchmark: 'lib/benchmark',
+                etpl: 'lib/etpl'
+            },
+            packages: [
+                {
+                    name: 'zrender',
+                    location: '../src',
+                    main: 'zrender'
+                }
+            ]
+        });
+        require(["js/area"], function() {});
+    </script>
+</body>
+</html>

@@ -50,6 +50,8 @@ define(
         'use strict';
 
         var Base = require('./Base');
+        var PathProxy = require('./util/PathProxy');
+        var area = require('zrender/tool/area');
 
         /**
          * @alias module:zrender/shape/Droplet
@@ -59,6 +61,7 @@ define(
          */
         var Droplet = function(options) {
             Base.call(this, options);
+            this._pathProxy = new PathProxy();
             /**
              * 水滴绘制样式
              * @name module:zrender/shape/Droplet#style
@@ -80,8 +83,11 @@ define(
              * @param {module:zrender/shape/Droplet~IDropletStyle} style
              */
             buildPath : function(ctx, style) {
-                ctx.moveTo(style.x, style.y + style.a);
-                ctx.bezierCurveTo(
+                var path = this._pathProxy || new PathProxy();
+                path.begin(ctx);
+
+                path.moveTo(style.x, style.y + style.a);
+                path.bezierCurveTo(
                     style.x + style.a,
                     style.y + style.a,
                     style.x + style.a * 3 / 2,
@@ -89,7 +95,7 @@ define(
                     style.x,
                     style.y - style.b
                 );
-                ctx.bezierCurveTo(
+                path.bezierCurveTo(
                     style.x - style.a * 3 / 2,
                     style.y - style.a / 3,
                     style.x - style.a,
@@ -97,7 +103,7 @@ define(
                     style.x,
                     style.y + style.a
                 );
-                ctx.closePath();
+                path.closePath();
             },
 
             /**
@@ -105,26 +111,31 @@ define(
              * @param {module:zrender/shape/Droplet~IDropletStyle} style
              * @return {module:zrender/shape/Base~IBoundingRect}
              */
-            getRect : function(style) {
+            getRect : function (style) {
                 if (style.__rect) {
                     return style.__rect;
                 }
-                
-                var lineWidth;
-                if (style.brushType == 'stroke' || style.brushType == 'fill') {
-                    lineWidth = style.lineWidth || 1;
+                if (!this._pathProxy.isEmpty()) {
+                    this.buildPath(null, style);
                 }
-                else {
-                    lineWidth = 0;
-                }
-                style.__rect = {
-                    x : Math.round(style.x - style.a - lineWidth / 2),
-                    y : Math.round(style.y - style.b - lineWidth / 2),
-                    width : style.a * 2 + lineWidth,
-                    height : style.a + style.b + lineWidth
-                };
+                return this._pathProxy.fastBoundingRect();
+            },
+
+            isCover: function (x, y) {
+                var originPos = this.getTansform(x, y);
+                x = originPos[0];
+                y = originPos[1];
                 
-                return style.__rect;
+                var rect = this.getRect(this.style);
+                if (x >= rect.x
+                    && x <= (rect.x + rect.width)
+                    && y >= rect.y
+                    && y <= (rect.y + rect.height)
+                ) {
+                    return area.isInsidePath(
+                        this._pathProxy.pathCommands, this.style.lineWidth, this.style.brushType, x, y
+                    );
+                }
             }
         };
 

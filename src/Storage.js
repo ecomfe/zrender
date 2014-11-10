@@ -109,12 +109,29 @@ define(
          * @return {Array.<module:zrender/shape/Base>}
          */
         Storage.prototype.getHoverShapes = function (update) {
-            if (update) {
-                for (var i = 0, l = this._hoverElements.length; i < l; i++) {
-                    this._hoverElements[i].updateTransform();
+            // hoverConnect
+            var hoverElements = [];
+            for (var i = 0, l = this._hoverElements.length; i < l; i++) {
+                hoverElements.push(this._hoverElements[i]);
+                var target = this._hoverElements[i].hoverConnect;
+                if (target) {
+                    var shape;
+                    target = target instanceof Array ? target : [target];
+                    for (var j = 0, k = target.length; j < k; j++) {
+                        shape = target[j].id ? target[j] : this.get(target[j]);
+                        if (shape) {
+                            hoverElements.push(shape);
+                        }
+                    }
                 }
             }
-            return this._hoverElements;
+            hoverElements.sort(shapeCompareFunc);
+            if (update) {
+                for (var i = 0, l = hoverElements.length; i < l; i++) {
+                    hoverElements[i].updateTransform();
+                }
+            }
+            return hoverElements;
         };
 
         /**
@@ -150,7 +167,7 @@ define(
             this._shapeList.sort(shapeCompareFunc);
         };
 
-        Storage.prototype._updateAndAddShape = function (el) {
+        Storage.prototype._updateAndAddShape = function (el, clipShapes) {
             
             if (el.ignore) {
                 return;
@@ -165,9 +182,12 @@ define(
                     el.clipShape.parent = el;
                     el.clipShape.updateTransform();
 
-                    var startClipShape = el._children[0];
-                    if (startClipShape) {
-                        startClipShape.__startClip = el.clipShape;
+                    // PENDING 效率影响
+                    if (clipShapes) {
+                        clipShapes = clipShapes.slice();
+                        clipShapes.push(el.clipShape);
+                    } else {
+                        clipShapes = [el.clipShape];
                     }
                 }
 
@@ -177,14 +197,7 @@ define(
                     // Force to mark as dirty if group is dirty
                     child.__dirty = el.__dirty || child.__dirty;
 
-                    this._updateAndAddShape(child);
-                }
-
-                if (el.clipShape) {
-                    var stopClipShape = this._shapeList[this._shapeListOffset - 1];
-                    if (stopClipShape) {
-                        stopClipShape.__stopClip = true;
-                    }
+                    this._updateAndAddShape(child, clipShapes);
                 }
 
                 // Mark group clean here
@@ -192,6 +205,8 @@ define(
                 
             }
             else {
+                el.__clipShapes = clipShapes;
+
                 this._shapeList[this._shapeListOffset++] = el;
             }
         };
@@ -247,6 +262,12 @@ define(
             var shape = this._elements[shapeId];
             if (shape) {
                 shape.needTransform = true;
+                if (shape.draggable === 'horizontal') {
+                    dy = 0;
+                }
+                else if (shape.draggable === 'vertical') {
+                    dx = 0;
+                }
                 if (!shape.ondrift // ondrift
                     // 有onbrush并且调用执行返回false或undefined则继续
                     || (shape.ondrift && !shape.ondrift(dx, dy))

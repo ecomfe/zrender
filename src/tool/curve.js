@@ -1,4 +1,5 @@
 /**
+ * 曲线辅助模块
  * @module zrender/tool/curve
  * @author pissang(https://www.github.com/pissang)
  */

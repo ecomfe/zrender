@@ -115,13 +115,15 @@ define(
             var y2 = ct2 * ct2 * p0[1] 
                      + 2 * ct2 * t2 * p1[1] 
                      + t2 * t2 * p2[1];
-
-            return computeBoundingBox(
-                        [ p0.slice(), p2.slice(), [ x1, y1 ], [ x2, y2 ] ],
-                        min, max
-                    );
+            min[0] = Math.min(p0[0], p2[0], x1, x2);
+            min[1] = Math.min(p0[1], p2[1], y1, y2);
+            max[0] = Math.max(p0[0], p2[0], x1, x2);
+            max[1] = Math.max(p0[1], p2[1], y1, y2);
         }
 
+        var start = vec2.create();
+        var end = vec2.create();
+        var extremity = vec2.create();
         /**
          * 从圆弧中计算出最小包围盒，写入`min`和`max`中
          * @method
@@ -130,56 +132,55 @@ define(
          * @param {number} radius 圆弧半径
          * @param {number} startAngle 圆弧开始角度
          * @param {number} endAngle 圆弧结束角度
-         * @param {number} clockwise 是否是顺时针
+         * @param {number} anticlockwise 是否是顺时针
          * @param {Array.<number>} min
          * @param {Array.<number>} max
          */
-        var computeArcBoundingBox = (function () {
-            var start = [];
-            var end = [];
-            // At most 4 extremities
-            var extremities = [[], [], [], []];
-            return function (
-                center, radius, startAngle, endAngle, clockwise, min, max
-            ) {
-                clockwise = clockwise ? 1 : -1;
-                start[0] = Math.cos(startAngle);
-                start[1] = Math.sin(startAngle) * clockwise;
-                vec2.scale(start, start, radius);
-                vec2.add(start, start, center);
+        var computeArcBoundingBox = function (
+            x, y, r, startAngle, endAngle, anticlockwise, min, max
+        ) { 
+            start[0] = Math.cos(startAngle) * r + x;
+            start[1] = Math.sin(startAngle) * r + y;
 
-                end[0] = Math.cos(endAngle);
-                end[1] = Math.sin(endAngle) * clockwise;
-                vec2.scale(end, end, radius);
-                vec2.add(end, end, center);
-                
-                startAngle = startAngle % (Math.PI * 2);
-                if (startAngle < 0) {
-                    startAngle = startAngle + Math.PI * 2;
-                }
-                endAngle = endAngle % (Math.PI * 2);
-                if (endAngle < 0) {
-                    endAngle = endAngle + Math.PI * 2;
-                }
+            end[0] = Math.cos(endAngle) * r + x;
+            end[1] = Math.sin(endAngle) * r + y;
 
-                if (startAngle > endAngle) {
-                    endAngle += Math.PI * 2;
+            vec2.min(min, start, end);
+            vec2.max(max, start, end);
+            
+            // Thresh to [0, Math.PI * 2]
+            startAngle = startAngle % (Math.PI * 2);
+            if (startAngle < 0) {
+                startAngle = startAngle + Math.PI * 2;
+            }
+            endAngle = endAngle % (Math.PI * 2);
+            if (endAngle < 0) {
+                endAngle = endAngle + Math.PI * 2;
+            }
+
+            if (startAngle > endAngle && !anticlockwise) {
+                endAngle += Math.PI * 2;
+            } else if (startAngle < endAngle && anticlockwise) {
+                startAngle += Math.PI * 2;
+            }
+            if (anticlockwise) {
+                var tmp = endAngle;
+                endAngle = startAngle;
+                startAngle = tmp;
+            }
+
+            // var number = 0;
+            // var step = (anticlockwise ? -Math.PI : Math.PI) / 2;
+            for (var angle = 0; angle < endAngle; angle += Math.PI / 2) {
+                if (angle > startAngle) {
+                    extremity[0] = Math.cos(angle) * r + x;
+                    extremity[1] = Math.sin(angle) * r + y;
+
+                    vec2.min(min, extremity, min);
+                    vec2.max(max, extremity, max);
                 }
-                var number = 0;
-                for (var angle = 0; angle < endAngle; angle += Math.PI / 2) {
-                    if (angle > startAngle) {
-                        var extremity = extremities[number++];
-                        extremity[0] = Math.cos(angle);
-                        extremity[1] = Math.sin(angle) * clockwise;
-                        vec2.scale(extremity, extremity, radius);
-                        vec2.add(extremity, extremity, center);
-                    }
-                }
-                var points = extremities.slice(0, number);
-                points.push(start, end);
-                computeBoundingBox(points, min, max);
-            };
-        })();
+            }
+        };
 
         computeBoundingBox.cubeBezier = computeCubeBezierBoundingBox;
         computeBoundingBox.quadraticBezier = computeQuadraticBezierBoundingBox;

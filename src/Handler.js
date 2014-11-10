@@ -3,8 +3,9 @@
  * @module zrender/Handler
  * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
  *         errorrik (errorrik@gmail.com)
+ *
  */
-
+// TODO mouseover 只触发一次
 define(
     function (require) {
 
@@ -54,7 +55,11 @@ define(
                 if ((_lastHover && _lastHover.clickable)
                     || !_lastHover
                 ) {
-                    this._dispatchAgency(_lastHover, EVENT.CLICK, event);
+
+                    // 判断没有发生拖拽才触发click事件
+                    if (this._clickThreshold < 5) {
+                        this._dispatchAgency(_lastHover, EVENT.CLICK, event);
+                    }
                 }
 
                 this._mousemoveHandler(event);
@@ -66,6 +71,7 @@ define(
              * @param {Event} event
              */
             dblclick: function (event) {
+                event = event || window.event;
                 event = this._zrenderEventFixed(event);
 
                 // 分发config.EVENT.DBLCLICK事件
@@ -73,7 +79,11 @@ define(
                 if ((_lastHover && _lastHover.clickable)
                     || !_lastHover
                 ) {
-                    this._dispatchAgency(_lastHover, EVENT.DBLCLICK, event);
+
+                    // 判断没有发生拖拽才触发dblclick事件
+                    if (this._clickThreshold < 5) {
+                        this._dispatchAgency(_lastHover, EVENT.DBLCLICK, event);
+                    }
                 }
 
                 this._mousemoveHandler(event);
@@ -118,6 +128,9 @@ define(
                             layer.scale[1] *= scale;
                             layer.dirty = true;
                             needsRefresh = true;
+
+                            // Prevent browser default scroll action 
+                            eventTool.stop(event);
                         }
                     }
                 }
@@ -139,6 +152,8 @@ define(
                 if (this.painter.isLoading()) {
                     return;
                 }
+                // 拖拽不触发click事件
+                this._clickThreshold++;
 
                 event = this._zrenderEventFixed(event);
                 this._lastX = this._mouseX;
@@ -182,6 +197,7 @@ define(
                 // 如果存在拖拽中元素，被拖拽的图形元素最后addHover
                 if (this._draggingTarget) {
                     this.storage.drift(this._draggingTarget.id, dx, dy);
+                    this._draggingTarget.modSelf();
                     this.storage.addHover(this._draggingTarget);
                 }
                 else if (this._isMouseDown) {
@@ -266,6 +282,9 @@ define(
              * @param {Event} event
              */
             mousedown: function (event) {
+                // 重置 clickThreshold
+                this._clickThreshold = 0;
+
                 if (this._lastDownButton == 2) {
                     this._lastDownButton = event.button;
                     this._mouseDownTarget = null;
@@ -454,7 +473,8 @@ define(
                 window.attachEvent('onresize', this._resizeHandler);
 
                 root.attachEvent('onclick', this._clickHandler);
-                root.attachEvent('ondblclick ', this._dblclickHandler);
+                //root.attachEvent('ondblclick ', this._dblclickHandler);
+                root.ondblclick = this._dblclickHandler;
                 root.attachEvent('onmousewheel', this._mousewheelHandler);
                 root.attachEvent('onmousemove', this._mousemoveHandler);
                 root.attachEvent('onmouseout', this._mouseoutHandler);

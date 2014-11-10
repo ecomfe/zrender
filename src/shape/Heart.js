@@ -49,6 +49,8 @@ define(
         'use strict';
         
         var Base = require('./Base');
+        var PathProxy = require('./util/PathProxy');
+        var area = require('zrender/tool/area');
         
         /**
          * @alias module:zrender/shape/Heart
@@ -58,6 +60,8 @@ define(
          */
         var Heart = function (options) {
             Base.call(this, options);
+
+            this._pathProxy = new PathProxy();
             /**
              * 心形绘制样式
              * @name module:zrender/shape/Heart#style
@@ -79,8 +83,11 @@ define(
              * @param {module:zrender/shape/Heart~IHeartStyle} style
              */
             buildPath : function (ctx, style) {
-                ctx.moveTo(style.x, style.y);
-                ctx.bezierCurveTo(
+                var path = this._pathProxy || new PathProxy();
+                path.begin(ctx);
+
+                path.moveTo(style.x, style.y);
+                path.bezierCurveTo(
                     style.x + style.a / 2,
                     style.y - style.b * 2 / 3,
                     style.x + style.a * 2,
@@ -88,7 +95,7 @@ define(
                     style.x,
                     style.y + style.b
                 );
-                ctx.bezierCurveTo(
+                path.bezierCurveTo(
                     style.x - style.a *  2,
                     style.y + style.b / 3,
                     style.x - style.a / 2,
@@ -96,7 +103,7 @@ define(
                     style.x,
                     style.y
                 );
-                ctx.closePath();
+                path.closePath();
                 return;
             },
 
@@ -109,22 +116,27 @@ define(
                 if (style.__rect) {
                     return style.__rect;
                 }
-                
-                var lineWidth;
-                if (style.brushType == 'stroke' || style.brushType == 'fill') {
-                    lineWidth = style.lineWidth || 1;
+                if (!this._pathProxy.isEmpty()) {
+                    this.buildPath(null, style);
                 }
-                else {
-                    lineWidth = 0;
-                }
-                style.__rect = {
-                    x : Math.round(style.x - style.a - lineWidth / 2),
-                    y : Math.round(style.y - style.b / 4 - lineWidth / 2),
-                    width : style.a * 2 + lineWidth,
-                    height : style.b * 5 / 4 + lineWidth
-                };
+                return this._pathProxy.fastBoundingRect();
+            },
+
+            isCover: function (x, y) {
+                var originPos = this.getTansform(x, y);
+                x = originPos[0];
+                y = originPos[1];
                 
-                return style.__rect;
+                var rect = this.getRect(this.style);
+                if (x >= rect.x
+                    && x <= (rect.x + rect.width)
+                    && y >= rect.y
+                    && y <= (rect.y + rect.height)
+                ) {
+                    return area.isInsidePath(
+                        this._pathProxy.pathCommands, this.style.lineWidth, this.style.brushType, x, y
+                    );
+                }
             }
         };
 

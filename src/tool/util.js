@@ -88,7 +88,7 @@ define(
             if (!_ctx) {
                 require('../dep/excanvas');
                 /* jshint ignore:start */
-                if (G_vmlCanvasManager) {
+                if (window['G_vmlCanvasManager']) {
                     var _div = document.createElement('div');
                     _div.style.position = 'absolute';
                     _div.style.top = '-1000px';

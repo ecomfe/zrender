@@ -64,6 +64,8 @@
 
             this._layers = {};
 
+            this._zlevelList = [];
+
             this._layerConfig = {};
 
             this._loadingEffect = new BaseLoadingEffect({});
@@ -76,7 +78,7 @@
             this._bgDom.onselectstart = returnFalse;
             this._bgDom.style['-webkit-user-select'] = 'none';
             this._bgDom.style['user-select'] = 'none';
-            // this._bgDom.style[' -webkit-touch-callout'] = 'none';
+            this._bgDom.style['-webkit-touch-callout'] = 'none';
 
             // 高亮
             var hoverLayer = new Layer('_zrender_hover_', this);
@@ -87,7 +89,7 @@
             hoverLayer.dom.onselectstart = returnFalse;
             hoverLayer.dom.style['-webkit-user-select'] = 'none';
             hoverLayer.dom.style['user-select'] = 'none';
-            // hoverLayer.dom.style[' -webkit-touch-callout'] = 'none';
+            hoverLayer.dom.style['-webkit-touch-callout'] = 'none';
 
             var me = this;
             this.updatePainter = function (shapeList, callback) {
@@ -151,11 +153,14 @@
                 var shape = list[i];
 
                 if (currentZLevel !== shape.zlevel) {
-                    if (currentLayer && currentLayer.needTransform) {
-                        ctx.restore();
+                    if (currentLayer) {
+                        if (currentLayer.needTransform) {
+                            ctx.restore();
+                        }
+                        ctx.flush && ctx.flush();
                     }
 
-                    currentLayer = this.getLayer(shape.zlevel, currentLayer);
+                    currentLayer = this.getLayer(shape.zlevel);
                     ctx = currentLayer.ctx;
                     currentZLevel = shape.zlevel;
 
@@ -233,8 +238,11 @@
                 shape.__dirty = false;
             }
 
-            if (currentLayer && currentLayer.needTransform) {
-                ctx.restore();
+            if (currentLayer) {
+                if (currentLayer.needTransform) {
+                    ctx.restore();
+                }
+                ctx.flush && ctx.flush();
             }
 
             for (var id in this._layers) {
@@ -256,13 +264,27 @@
         /**
          * 获取 zlevel 所在层，如果不存在则会创建一个新的层
          * @param {number} zlevel
-         * @param {module:zrender/Painter~Layer} [prevLayer]
-         *        在需要创建新的层时需要使用，新创建层的dom节点会插在该层后面
          */
-        Painter.prototype.getLayer = function (zlevel, prevLayer) {
+        Painter.prototype.getLayer = function (zlevel) {
             // Change draw layer
             var currentLayer = this._layers[zlevel];
             if (!currentLayer) {
+                var len = this._zlevelList.length;
+                var prevLayer = null;
+                var i = -1;
+                if (len > 0 && zlevel > this._zlevelList[0]) {
+                    for (i = 0; i < len - 1; i++) {
+                        if (
+                            this._zlevelList[i] < zlevel
+                            && this._zlevelList[i + 1] > zlevel
+                        ) {
+                            break;
+                        }
+                    }
+                    prevLayer = this._layers[this._zlevelList[i]];
+                }
+                this._zlevelList.splice(i + 1, 0, zlevel);
+
                 // Create a new layer
                 currentLayer = new Layer(zlevel, this);
                 var prevDom = prevLayer ? prevLayer.dom : this._bgDom;
@@ -343,7 +365,7 @@
         Painter.prototype.refreshShapes = function (shapeList, callback) {
             for (var i = 0, l = shapeList.length; i < l; i++) {
                 var shape = shapeList[i];
-                this.storage.mod(shape.id);
+                shape.modSelf();
             }
 
             this.refresh(callback);
@@ -424,6 +446,8 @@
             });
             layer.dom.parentNode.removeChild(layer.dom);
             delete this._layers[zlevel];
+
+            this._zlevelList.splice(util.indexOf(this._zlevelList, zlevel), 1);
         };
 
         /**
@@ -435,6 +459,9 @@
             for (var i = 0, l = list.length; i < l; i++) {
                 this._brushHover(list[i]);
             }
+            var ctx = this._layers.hover.ctx;
+            ctx.flush && ctx.flush();
+
             this.storage.delHover();
 
             return this;
@@ -776,7 +803,8 @@
             this.dom.onselectstart = returnFalse; // 避免页面选中的尴尬
             this.dom.style['-webkit-user-select'] = 'none';
             this.dom.style['user-select'] = 'none';
-            // this.dom.style[' -webkit-touch-callout'] = 'none';
+            this.dom.style['-webkit-touch-callout'] = 'none';
+
             vmlCanvasManager && vmlCanvasManager.initElement(this.dom);
 
             this.domBack = null;

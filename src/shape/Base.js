@@ -37,6 +37,8 @@
 
 define(
     function(require) {
+        var vmlCanvasManager = window['G_vmlCanvasManager'];
+
         var matrix = require('../tool/matrix');
         var guid = require('../tool/guid');
         var util = require('../tool/util');
@@ -163,6 +165,8 @@ define(
 
             this.__dirty = true;
 
+            this.__clipShapes = [];
+
             Transformable.call(this);
             Eventful.call(this);
         };
@@ -234,6 +238,36 @@ define(
          *        让painter更新视图，base.brush没用，需要的话重载brush
          */
         Base.prototype.brush = function (ctx, isHighlight) {
+
+            var style = this.beforeBrush(ctx, isHighlight);
+
+            ctx.beginPath();
+            this.buildPath(ctx, style);
+
+            switch (style.brushType) {
+                /* jshint ignore:start */
+                case 'both':
+                    ctx.fill();
+                case 'stroke':
+                    style.lineWidth > 0 && ctx.stroke();
+                    break;
+                /* jshint ignore:end */
+                default:
+                    ctx.fill();
+            }
+            
+            this.drawText(ctx, style, this.style);
+
+            this.afterBrush(ctx);
+        };
+
+        /**
+         * 具体绘制操作前的一些公共操作
+         * @param {CanvasRenderingContext2D} ctx
+         * @param {boolean} [isHighlight=false] 是否使用高亮属性
+         * @return {Object} 处理后的样式
+         */
+        Base.prototype.beforeBrush = function (ctx, isHighlight) {
             var style = this.style;
             
             if (this.brushTypeOnly) {
@@ -255,28 +289,21 @@ define(
 
             ctx.save();
 
+            this.doClip(ctx);
+
             this.setContext(ctx, style);
 
             // 设置transform
             this.setTransform(ctx);
 
-            ctx.beginPath();
-            this.buildPath(ctx, style);
+            return style;
+        };
 
-            switch (style.brushType) {
-                /* jshint ignore:start */
-                case 'both':
-                    ctx.fill();
-                case 'stroke':
-                    style.lineWidth > 0 && ctx.stroke();
-                    break;
-                /* jshint ignore:end */
-                default:
-                    ctx.fill();
-            }
-            
-            this.drawText(ctx, style, this.style);
-
+        /**
+         * 绘制后的处理
+         * @param {CanvasRenderingContext2D} ctx
+         */
+        Base.prototype.afterBrush = function (ctx) {
             ctx.restore();
         };
 
@@ -307,6 +334,36 @@ define(
 
                 if (typeof styleValue != 'undefined') {
                     ctx[ctxProp] = styleValue;
+                }
+            }
+        };
+
+        var clipShapeInvTransform = matrix.create();
+        Base.prototype.doClip = function (ctx) {
+            if (this.__clipShapes && !vmlCanvasManager) {
+                for (var i = 0; i < this.__clipShapes.length; i++) {
+                    var clipShape = this.__clipShapes[i];
+                    if (clipShape.needTransform) {
+                        var m = clipShape.transform;
+                        matrix.invert(clipShapeInvTransform, m);
+                        ctx.transform(
+                            m[0], m[1],
+                            m[2], m[3],
+                            m[4], m[5]
+                        );
+                    }
+                    ctx.beginPath();
+                    clipShape.buildPath(ctx, clipShape.style);
+                    ctx.clip();
+                    // Transform back
+                    if (clipShape.needTransform) {
+                        var m = clipShapeInvTransform;
+                        ctx.transform(
+                            m[0], m[1],
+                            m[2], m[3],
+                            m[4], m[5]
+                        );
+                    }
                 }
             }
         };
@@ -614,6 +671,9 @@ define(
             this.__dirty = true;
             if (this.style) {
                 this.style.__rect = null;
+            }
+            if (this.highlightStyle) {
+                this.highlightStyle.__rect = null;
             }
         };
 

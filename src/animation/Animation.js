@@ -370,7 +370,6 @@ define(
                 var self = this;
                 var setter = this._setter;
                 var getter = this._getter;
-                var onFrameListLen = self._onframeList.length;
                 var useSpline = easing === 'spline';
 
                 var ondestroy = function() {
@@ -542,7 +541,7 @@ define(
                             }
                         }
 
-                        for (i = 0; i < onFrameListLen; i++) {
+                        for (i = 0; i < self._onframeList.length; i++) {
                             self._onframeList[i](target, percent);
                         }
                     };
@@ -594,7 +593,9 @@ define(
              * @return {module:zrender/animation/Animation~Animator}
              */
             done : function(cb) {
-                this._doneList.push(cb);
+                if (cb) {
+                    this._doneList.push(cb);
+                }
                 return this;
             }
         };

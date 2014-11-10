@@ -62,8 +62,6 @@ define(
 
             // 上面的方法都行不通时
             switch (zoneType) {
-                case 'heart': // 心形---------10 // Todo，不精确
-                case 'droplet':// 水滴----------11 // Todo，不精确
                 case 'ellipse': // Todo，不精确
                     return true;
                 // 旋轮曲线  不准确
@@ -135,7 +133,18 @@ define(
                     );
                 // 扇形
                 case 'sector':
-                    return isInsideSector(area, x, y);
+                    var startAngle = area.startAngle * Math.PI / 180;
+                    var endAngle = area.endAngle * Math.PI / 180;
+                    if (!area.clockWise) {
+                        startAngle = -startAngle;
+                        endAngle = -endAngle;
+                    }
+                    return isInsideSector(
+                        area.x, area.y, area.r0, area.r,
+                        startAngle, endAngle,
+                        !area.clockWise,
+                        x, y
+                    );
                 // 多边形
                 case 'path':
                     return isInsidePath(
@@ -332,9 +341,14 @@ define(
             if ((d - _l > r) || (d + _l < r)) {
                 return false;
             }
+            if (Math.abs(startAngle - endAngle) >= PI2) {
+                // Is a circle
+                return true;
+            }
             if (anticlockwise) {
+                var tmp = startAngle;
                 startAngle = normalizeRadian(endAngle);
-                endAngle = normalizeRadian(startAngle);
+                endAngle = normalizeRadian(tmp);
             } else {
                 startAngle = normalizeRadian(startAngle);
                 endAngle = normalizeRadian(endAngle);
@@ -391,29 +405,13 @@ define(
         /**
          * 扇形包含判断
          */
-        function isInsideSector(area, x, y) {
-            if (!isInsideRing(area.x, area.y, area.r0 || 0, area.r, x, y)) {
-                // 大圆外或者小圆内直接false
-                return false;
-            }
-
-            // 判断夹角
-            if (Math.abs(area.endAngle - area.startAngle) >= 360) {
-                // 大于360度的扇形，在环内就为true
-                return true;
-            }
-            
-            var angle = (360
-                         - Math.atan2(y - area.y, x - area.x) / Math.PI
-                         * 180)
-                         % 360;
-            var endA = (360 + area.endAngle) % 360;
-            var startA = (360 + area.startAngle) % 360;
-            if (endA > startA) {
-                return (angle >= startA && angle <= endA);
-            }
-
-            return !(angle >= endA && angle <= startA);
+        function isInsideSector(
+            cx, cy, r0, r, startAngle, endAngle, anticlockwise, x, y
+        ) {
+            return isInsideArcStroke(
+                cx, cy, (r0 + r) / 2, startAngle, endAngle, anticlockwise,
+                r - r0, x, y
+            );
         }
 
         /**
@@ -570,12 +568,25 @@ define(
             roots[0] = -tmp;
             roots[1] = tmp;
 
+            if (Math.abs(startAngle - endAngle) >= PI2) {
+                // Is a circle
+                startAngle = 0;
+                endAngle = PI2;
+                var dir = anticlockwise ? 1 : -1;
+                if (x >= roots[0] + cx && x <= roots[1] + cx) {
+                    return dir;
+                } else {
+                    return 0;
+                }
+            }
+
             if (anticlockwise) {
+                var tmp = startAngle;
                 startAngle = normalizeRadian(endAngle);
-                endAngle = normalizeRadian(startAngle);
+                endAngle = normalizeRadian(tmp);   
             } else {
                 startAngle = normalizeRadian(startAngle);
-                endAngle = normalizeRadian(endAngle);
+                endAngle = normalizeRadian(endAngle);   
             }
             if (startAngle > endAngle) {
                 endAngle += PI2;
@@ -615,6 +626,9 @@ define(
             var x0 = 0;
             var y0 = 0;
             var beginSubpath = true;
+            var firstCmd = true;
+
+            brushType = brushType || 'fill';
 
             var hasStroke = brushType === 'stroke' || brushType === 'both';
             var hasFill = brushType === 'fill' || brushType === 'both';
@@ -637,6 +651,14 @@ define(
                     x0 = p[p.length - 2];
                     y0 = p[p.length - 1];
                     beginSubpath = false;
+                    if (firstCmd && seg.command !== 'A') {
+                        // 如果第一个命令不是M, 是lineTo, bezierCurveTo
+                        // 等绘制命令的话，是会从该绘制的起点开始算的
+                        // Arc 会在之后做单独处理所以这里忽略
+                        firstCmd = false;
+                        xi = x0;
+                        yi = y0;
+                    }
                 }
                 switch (seg.command) {
                     case 'M':
@@ -702,7 +724,15 @@ define(
                         var dTheta = p[5];
                         var x1 = Math.cos(theta) * rx + cx;
                         var y1 = Math.sin(theta) * ry + cy;
-                        w += windingLine(xi, yi, x1, y1);
+                        // 不是直接使用 arc 命令
+                        if (!firstCmd) {
+                            w += windingLine(xi, yi, x1, y1);
+                        } else {
+                            firstCmd = false;
+                            // 第一个命令起点还未定义
+                            x0 = x1;
+                            y0 = y1;
+                        }
                         // zr 使用scale来模拟椭圆, 这里也对x做一定的缩放
                         var _x = (x - cx) * ry / rx + cx;
                         if (hasStroke) {
