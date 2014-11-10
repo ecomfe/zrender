@@ -310,10 +310,9 @@ zr.addShape(
                 'zrender', 
                 'zrender/shape/Line', 
                 'zrender/shape/Text', 
-                'zrender/shape/Circle',
-                'zrender/tool/guid'
+                'zrender/shape/Circle'
             ],
-            function (zrender, LineShape, TextShape, CircleShape, guid) {
+            function (zrender, LineShape, TextShape, CircleShape) {
                 var zr = zrender.init(document.getElementById('face'));
                 var zrColor = require('zrender/tool/color');
                 var colorIdx = 0;
@@ -332,7 +331,7 @@ zr.addShape(
                     len = Math.ceil(Math.random() * 400);
                     pos = Math.ceil(Math.random() * height);
                     shapeList[i] = new LineShape({
-                        id : guid(),
+                        id : (new Date() - 1) + '-' + i,
                         style : {
                             xStart : xStart,
                             yStart : pos,
@@ -348,7 +347,7 @@ zr.addShape(
                     zr.addShape(shapeList[i]);
                 }
                 var aniText = new TextShape({
-                    id : guid(),
+                    id : (new Date() - 1) + '-kener',
                     style : {
                         x : width / 2,
                         y : 90,
