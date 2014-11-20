@@ -336,6 +336,8 @@ define(
                 this._elements = {};
                 this._hoverElements = [];
                 this._roots = [];
+                this._shapeList = [];
+                this._shapeListOffset = 0;
 
                 return;
             }
