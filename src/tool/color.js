@@ -686,7 +686,7 @@ define(function(require) {
      * @return {string} 颜色值，#rrggbb格式
      */
     function random() {
-        return '#' + Math.random().toString(16).slice(2, 8);
+        return '#' + (Math.random().toString(16) + '0000').slice(2, 8);
     }
 
     /**
