@@ -852,7 +852,10 @@ define(
             isInsideCircle: isInsideCircle,
             isInsideLine: isInsideLine,
             isInsideRect: isInsideRect,
-            isInsideBrokenLine: isInsideBrokenLine
+            isInsideBrokenLine: isInsideBrokenLine,
+
+            isInsideCubicStroke: isInsideCubicStroke,
+            isInsideQuadraticStroke: isInsideQuadraticStroke
         };
     }
 );
