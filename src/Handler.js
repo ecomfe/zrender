@@ -316,6 +316,7 @@ define(
                 event = this._zrenderEventFixed(event);
                 this.root.style.cursor = 'default';
                 this._isMouseDown = 0;
+                this._clickThreshold = 0;
                 this._mouseDownTarget = null;
 
                 // 分发config.EVENT.MOUSEUP事件
