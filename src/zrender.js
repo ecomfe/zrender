@@ -153,7 +153,7 @@ define(
             var self = this;
             this.painter.refreshNextFrame = function () {
                 self.refreshNextFrame();
-            }
+            };
 
             this._needsRefreshNextFrame = false;
         };

@@ -34,7 +34,7 @@
 
 // AMD by kener.linfeng@gmail.com
 define('zrender/dep/excanvas',['require'],function(require) {
-
+    
 // Only add this code if we do not already have a canvas implementation
 if (!document.createElement('canvas').getContext) {
 
@@ -2944,7 +2944,12 @@ define(
                 this.root.style.cursor = cursor;
 
                 // 分发config.EVENT.MOUSEMOVE事件
-                this._dispatchAgency(this._lastHover, EVENT.MOUSEMOVE, event);
+                // 避免动态dom造成无限mousemove
+                if (Math.abs(this._mouseX - this._lastX) > 2
+                    || Math.abs(this._mouseY - this._lastY) > 2
+                ) {
+                    this._dispatchAgency(this._lastHover, EVENT.MOUSEMOVE, event);
+                }
 
                 if (this._draggingTarget || this._hasfound || this.storage.hasHoverShape()) {
                     this.painter.refreshHover();
@@ -3022,6 +3027,7 @@ define(
                 event = this._zrenderEventFixed(event);
                 this.root.style.cursor = 'default';
                 this._isMouseDown = 0;
+                this._clickThreshold = 0;
                 this._mouseDownTarget = null;
 
                 // 分发config.EVENT.MOUSEUP事件
@@ -5029,7 +5035,10 @@ define(
             isInsideCircle: isInsideCircle,
             isInsideLine: isInsideLine,
             isInsideRect: isInsideRect,
-            isInsideBrokenLine: isInsideBrokenLine
+            isInsideBrokenLine: isInsideBrokenLine,
+
+            isInsideCubicStroke: isInsideCubicStroke,
+            isInsideQuadraticStroke: isInsideQuadraticStroke
         };
     }
 );
@@ -5967,7 +5976,7 @@ define('zrender/tool/color',['require','../tool/util'],function(require) {
      * @return {string} 颜色值，#rrggbb格式
      */
     function random() {
-        return '#' + Math.random().toString(16).slice(2, 8);
+        return '#' + (Math.random().toString(16) + '0000').slice(2, 8);
     }
 
     /**
@@ -7680,9 +7689,6 @@ define(
 define(
     'zrender/shape/Image',['require','./Base','../tool/util'],function (require) {
 
-        var _needsRefresh = [];
-        var _refreshTimeout;
-
         var Base = require('./Base');
 
         /**
@@ -7709,7 +7715,7 @@ define(
             
             type: 'image',
 
-            brush : function(ctx, isHighlight, refresh) {
+            brush : function(ctx, isHighlight, refreshNextFrame) {
                 var style = this.style || {};
 
                 if (isHighlight) {
@@ -7720,7 +7726,7 @@ define(
                 }
 
                 var image = style.image;
-                var me = this;
+                var self = this;
 
                 if (!this._imageCache) {
                     this._imageCache = {};
@@ -7733,14 +7739,8 @@ define(
                         image = new Image();
                         image.onload = function () {
                             image.onload = null;
-                            clearTimeout(_refreshTimeout);
-                            _needsRefresh.push(me);
-                            // 防止因为缓存短时间内触发多次onload事件
-                            _refreshTimeout = setTimeout(function () {
-                                refresh && refresh(_needsRefresh);
-                                // 清空needsRefresh
-                                _needsRefresh = [];
-                            }, 10);
+                            self.modSelf();
+                            refreshNextFrame();
                         };
 
                         image.src = src;
@@ -7940,10 +7940,8 @@ define(
             hoverLayer.dom.style['user-select'] = 'none';
             hoverLayer.dom.style['-webkit-touch-callout'] = 'none';
 
-            var me = this;
-            this.updatePainter = function (shapeList, callback) {
-                me.refreshShapes(shapeList, callback);
-            };
+            // Will be injected by zrender instance
+            this.refreshNextFrame = null;
         };
 
         /**
@@ -8063,7 +8061,7 @@ define(
                     ) {
                         if (config.catchBrushException) {
                             try {
-                                shape.brush(ctx, false, this.updatePainter);
+                                shape.brush(ctx, false, this.refreshNextFrame);
                             }
                             catch (error) {
                                 log(
@@ -8074,7 +8072,7 @@ define(
                             }
                         }
                         else {
-                            shape.brush(ctx, false, this.updatePainter);
+                            shape.brush(ctx, false, this.refreshNextFrame);
                         }
                     }
                 }
@@ -8458,7 +8456,7 @@ define(
                         ) {
                             if (config.catchBrushException) {
                                 try {
-                                    shape.brush(ctx, false, self.updatePainter);
+                                    shape.brush(ctx, false, self.refreshNextFrame);
                                 }
                                 catch (error) {
                                     log(
@@ -8469,7 +8467,7 @@ define(
                                 }
                             }
                             else {
-                                shape.brush(ctx, false, self.updatePainter);
+                                shape.brush(ctx, false, self.refreshNextFrame);
                             }
                         }
                     }
@@ -8531,7 +8529,7 @@ define(
                 // Retina 优化
                 if (config.catchBrushException) {
                     try {
-                        shape.brush(ctx, true, this.updatePainter);
+                        shape.brush(ctx, true, this.refreshNextFrame);
                     }
                     catch (error) {
                         log(
@@ -8540,7 +8538,7 @@ define(
                     }
                 }
                 else {
-                    shape.brush(ctx, true, this.updatePainter);
+                    shape.brush(ctx, true, this.refreshNextFrame);
                 }
                 if (layer.needTransform) {
                     ctx.restore();
@@ -9365,6 +9363,8 @@ define(
                 this._elements = {};
                 this._hoverElements = [];
                 this._roots = [];
+                this._shapeList = [];
+                this._shapeListOffset = 0;
 
                 return;
             }
@@ -9861,7 +9861,6 @@ define(
                         // 重新开始周期
                         // 抛出而不是直接调用事件直到 stage.update 后再统一调用这些事件
                         return 'restart';
-
                     }
                     
                     // 动画完成将这个控制器标识为待删除
@@ -9876,6 +9875,8 @@ define(
                 var time = new Date().getTime();
                 var remainder = (time - this._startTime) % this._life;
                 this._startTime = new Date().getTime() - remainder + this.gap;
+
+                this._needsRemove = false;
             },
             fire : function(eventType, arg) {
                 for (var i = 0, len = this._targetPool.length; i < len; i++) {
@@ -10542,7 +10543,7 @@ define(
         /**
          * @type {string}
          */
-        zrender.version = '2.0.5';
+        zrender.version = '2.0.6';
 
         /**
          * 创建zrender实例
@@ -10648,6 +10649,11 @@ define(
                 }
             });
             this.animation.start();
+
+            var self = this;
+            this.painter.refreshNextFrame = function () {
+                self.refreshNextFrame();
+            };
 
             this._needsRefreshNextFrame = false;
         };
