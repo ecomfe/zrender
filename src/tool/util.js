@@ -1,7 +1,7 @@
 /**
  * zrender: 公共辅助函数
  *
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *
  * clone：深度克隆
  * merge：合并源对象的属性到目标对象

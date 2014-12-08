@@ -1,7 +1,7 @@
 /**
  * 贝塞尔曲线
  * @module zrender/shape/BezierCurve
- * @author Neil (杨骥, yangji01@baidu.com)
+ * @author Neil (杨骥, 511415343@qq.com)
  * @example
  *     var BezierCurve = require('zrender/shape/BezierCurve');
  *     var shape = new BezierCurve({

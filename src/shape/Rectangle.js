@@ -1,8 +1,8 @@
 /**
  * 矩形
  * @module zrender/shape/Rectangle
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com) , 
- *         strwind (@劲风FEI, yaofeifei@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com) , 
+ *         strwind (@劲风FEI)
  * @example
  *     var Rectangle = require('zrender/shape/Rectangle');
  *     var shape = new Rectangle({

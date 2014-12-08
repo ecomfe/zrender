@@ -4,7 +4,7 @@ define(
 
         /**
          * @exports zrender/tool/log
-         * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+         * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
          */
         return function() {
             if (config.debugMode === 0) {

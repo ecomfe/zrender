@@ -1,7 +1,7 @@
 /**
  * 事件扩展
  * @module zrender/mixin/Eventful
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *         pissang (https://www.github.com/pissang)
  */
 define(function (require) {

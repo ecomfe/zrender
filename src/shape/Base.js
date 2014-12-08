@@ -1,7 +1,7 @@
 /**
  * shape基类
  * @module zrender/shape/Base
- * @author  Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author  Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *          errorrik (errorrik@gmail.com)
  */
 

@@ -1,7 +1,7 @@
 /**
  * 玫瑰线
  * @module zrender/shape/Rose
- * @author Neil (杨骥, yangji01@baidu.com)
+ * @author Neil (杨骥, 511415343@qq.com)
  * @example
  *     var Rose = require('zrender/shape/Rose');
  *     var shape = new Rose({

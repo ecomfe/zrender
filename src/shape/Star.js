@@ -1,7 +1,7 @@
 /**
  * n角星（n>3）
  * @module zrender/shape/Star
- * @author sushuang (宿爽, sushuang@baidu.com)
+ * @author sushuang (宿爽, sushuang0322@gmail.com)
  * @example
  *     var Star = require('zrender/shape/Star');
  *     var shape = new Star({

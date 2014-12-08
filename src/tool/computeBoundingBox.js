@@ -1,5 +1,5 @@
 /**
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *         pissang(https://github.com/pissang)
  *         errorrik (errorrik@gmail.com)
  */

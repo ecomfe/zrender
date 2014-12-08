@@ -1,7 +1,7 @@
 /**
  * 内外旋轮曲线
  * @module zrender/shape/Trochold
- * @author Neil (杨骥, yangji01@baidu.com)
+ * @author Neil (杨骥, 511415343@qq.com)
  * @example
  *     var Trochold = require('zrender/shape/Trochold');
  *     var shape = new Trochold({

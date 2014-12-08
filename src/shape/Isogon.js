@@ -1,7 +1,7 @@
 /**
  * 正多边形
  * @module zrender/shape/Isogon
- * @author sushuang (宿爽, sushuang@baidu.com)
+ * @author sushuang (宿爽, sushuang0322@gmail.com)
  */
 
 /**
