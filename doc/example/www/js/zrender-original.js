@@ -2944,12 +2944,7 @@ define(
                 this.root.style.cursor = cursor;
 
                 // 分发config.EVENT.MOUSEMOVE事件
-                // 避免动态dom造成无限mousemove
-                if (Math.abs(this._mouseX - this._lastX) > 2
-                    || Math.abs(this._mouseY - this._lastY) > 2
-                ) {
-                    this._dispatchAgency(this._lastHover, EVENT.MOUSEMOVE, event);
-                }
+                this._dispatchAgency(this._lastHover, EVENT.MOUSEMOVE, event);
 
                 if (this._draggingTarget || this._hasfound || this.storage.hasHoverShape()) {
                     this.painter.refreshHover();
