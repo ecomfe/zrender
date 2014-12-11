@@ -42,9 +42,6 @@
 define(
     function (require) {
 
-        var _needsRefresh = [];
-        var _refreshTimeout;
-
         var Base = require('./Base');
 
         /**
@@ -71,7 +68,7 @@ define(
             
             type: 'image',
 
-            brush : function(ctx, isHighlight, refresh) {
+            brush : function(ctx, isHighlight, refreshNextFrame) {
                 var style = this.style || {};
 
                 if (isHighlight) {
@@ -82,7 +79,7 @@ define(
                 }
 
                 var image = style.image;
-                var me = this;
+                var self = this;
 
                 if (!this._imageCache) {
                     this._imageCache = {};
@@ -95,14 +92,8 @@ define(
                         image = new Image();
                         image.onload = function () {
                             image.onload = null;
-                            clearTimeout(_refreshTimeout);
-                            _needsRefresh.push(me);
-                            // 防止因为缓存短时间内触发多次onload事件
-                            _refreshTimeout = setTimeout(function () {
-                                refresh && refresh(_needsRefresh);
-                                // 清空needsRefresh
-                                _needsRefresh = [];
-                            }, 10);
+                            self.modSelf();
+                            refreshNextFrame();
                         };
 
                         image.src = src;

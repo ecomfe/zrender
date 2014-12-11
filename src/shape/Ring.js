@@ -1,7 +1,7 @@
 /**
  * 圆环
  * @module zrender/shape/Ring
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *
  * @example
  *     var Ring = require('zrender/shape/Ring');

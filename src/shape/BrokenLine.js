@@ -1,6 +1,6 @@
 /**
  * 折线
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  * @module zrender/shape/BrokenLine
  * @example
  *     var BrokenLine = require('zrender/shape/BrokenLine');

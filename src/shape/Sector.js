@@ -1,6 +1,6 @@
 /**
  * 扇形
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  * @module zrender/shape/Sector
  * @example
  *     var Sector = require('zrender/shape/Sector');

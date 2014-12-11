@@ -1,7 +1,6 @@
 /**
  * 水滴形状
  * @module zrender/shape/Ellipse
- * @author loutongbing@baidu.com
  * @example
  *   var Ellipse = require('zrender/shape/Ellipse');
  *   var shape = new Ellipse({

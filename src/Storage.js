@@ -1,7 +1,7 @@
 /**
  * Storage内容仓库模块
  * @module zrender/Storage
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  * @author errorrik (errorrik@gmail.com)
  * @author pissang (https://github.com/pissang/)
  */
@@ -336,6 +336,8 @@ define(
                 this._elements = {};
                 this._hoverElements = [];
                 this._roots = [];
+                this._shapeList = [];
+                this._shapeListOffset = 0;
 
                 return;
             }

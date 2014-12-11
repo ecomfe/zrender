@@ -1,7 +1,6 @@
 /**
  * 颜色辅助模块
  * @module zrender/tool/color
- * @author CrossDo (chenhuaimu@baidu.com)
  */
 define(function(require) {
     var util = require('../tool/util');
@@ -686,7 +685,7 @@ define(function(require) {
      * @return {string} 颜色值，#rrggbb格式
      */
     function random() {
-        return '#' + Math.random().toString(16).slice(2, 8);
+        return '#' + (Math.random().toString(16) + '0000').slice(2, 8);
     }
 
     /**

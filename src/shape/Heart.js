@@ -1,6 +1,6 @@
 /**
  * @module zrender/shape/Heart
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  * @example
  *   var Heart = require('zrender/shape/Heart');
  *   var shape = new Heart({

@@ -1,7 +1,7 @@
 /**
  * Handler控制模块
  * @module zrender/Handler
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *         errorrik (errorrik@gmail.com)
  *
  */
@@ -311,6 +311,7 @@ define(
                 event = this._zrenderEventFixed(event);
                 this.root.style.cursor = 'default';
                 this._isMouseDown = 0;
+                this._clickThreshold = 0;
                 this._mouseDownTarget = null;
 
                 // 分发config.EVENT.MOUSEUP事件

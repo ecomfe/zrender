@@ -1,13 +1,12 @@
 {
     "name": "zrender",
-    "version": "2.0.4",
+    "version": "2.0.6",
     "maintainers": [
-        { "name": "Kener", "email": "linzhifeng@baidu.com" },
-        { "name": "Pissang", "email": "shenyi01@baidu.com" },
-        { "name": "Erik", "email": "erik@baidu.com)" },
-        { "name": "Loutongbing", "email": "loutongbing@baidu.com" },
-        { "name": "Yangji", "email": "yangji01@baidu.com" },
-        { "name": "Sushuang", "email": "sushuang@baidu.com" }
+        { "name": "Kener", "email": "kener.linfeng@gmail.com" },
+        { "name": "Pissang", "email": "shenyi.914@gmail.com" },
+        { "name": "Erik", "email": "errorrik@gmail.com" },
+        { "name": "Yangji", "email": "511415343@qq.com" },
+        { "name": "Sushuang", "email": "sushuang0322@gmail.com" }
     ],
     "main": "zrender",
     "description": "一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型，让canvas绘图大不同！",

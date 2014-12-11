@@ -1,7 +1,7 @@
 /**
  * 事件辅助类
  * @module zrender/tool/event
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  */
 define(
     function(require) {

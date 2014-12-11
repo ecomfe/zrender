@@ -1,7 +1,7 @@
 /**
  * Painter绘图模块
  * @module zrender/Painter
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *         errorrik (errorrik@gmail.com)
  *         pissang (https://www.github.com/pissang)
  */
@@ -91,10 +91,8 @@
             hoverLayer.dom.style['user-select'] = 'none';
             hoverLayer.dom.style['-webkit-touch-callout'] = 'none';
 
-            var me = this;
-            this.updatePainter = function (shapeList, callback) {
-                me.refreshShapes(shapeList, callback);
-            };
+            // Will be injected by zrender instance
+            this.refreshNextFrame = null;
         };
 
         /**
@@ -214,7 +212,7 @@
                     ) {
                         if (config.catchBrushException) {
                             try {
-                                shape.brush(ctx, false, this.updatePainter);
+                                shape.brush(ctx, false, this.refreshNextFrame);
                             }
                             catch (error) {
                                 log(
@@ -225,7 +223,7 @@
                             }
                         }
                         else {
-                            shape.brush(ctx, false, this.updatePainter);
+                            shape.brush(ctx, false, this.refreshNextFrame);
                         }
                     }
                 }
@@ -609,7 +607,7 @@
                         ) {
                             if (config.catchBrushException) {
                                 try {
-                                    shape.brush(ctx, false, self.updatePainter);
+                                    shape.brush(ctx, false, self.refreshNextFrame);
                                 }
                                 catch (error) {
                                     log(
@@ -620,7 +618,7 @@
                                 }
                             }
                             else {
-                                shape.brush(ctx, false, self.updatePainter);
+                                shape.brush(ctx, false, self.refreshNextFrame);
                             }
                         }
                     }
@@ -682,7 +680,7 @@
                 // Retina 优化
                 if (config.catchBrushException) {
                     try {
-                        shape.brush(ctx, true, this.updatePainter);
+                        shape.brush(ctx, true, this.refreshNextFrame);
                     }
                     catch (error) {
                         log(
@@ -691,7 +689,7 @@
                     }
                 }
                 else {
-                    shape.brush(ctx, true, this.updatePainter);
+                    shape.brush(ctx, true, this.refreshNextFrame);
                 }
                 if (layer.needTransform) {
                     ctx.restore();

@@ -34,7 +34,7 @@
 
 // AMD by kener.linfeng@gmail.com
 define('zrender/dep/excanvas',['require'],function(require) {
-
+    
 // Only add this code if we do not already have a canvas implementation
 if (!document.createElement('canvas').getContext) {
 
@@ -1453,7 +1453,7 @@ return G_vmlCanvasManager;
 /**
  * zrender: 公共辅助函数
  *
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *
  * clone：深度克隆
  * merge：合并源对象的属性到目标对象
@@ -1681,7 +1681,7 @@ define('zrender/config',[],function () {
     /**
      * config默认配置项
      * @exports zrender/config
-     * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+     * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
      */
     var config = {
         /**
@@ -1799,7 +1799,7 @@ define(
 
         /**
          * @exports zrender/tool/log
-         * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+         * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
          */
         return function() {
             if (config.debugMode === 0) {
@@ -1927,7 +1927,7 @@ define('zrender/tool/env',[],function() {
 /**
  * 事件扩展
  * @module zrender/mixin/Eventful
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *         pissang (https://www.github.com/pissang)
  */
 define('zrender/mixin/Eventful',['require'],function (require) {
@@ -2195,7 +2195,7 @@ define('zrender/mixin/Eventful',['require'],function (require) {
 /**
  * 事件辅助类
  * @module zrender/tool/event
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  */
 define(
     'zrender/tool/event',['require','../mixin/Eventful'],function(require) {
@@ -2712,7 +2712,7 @@ define(
 /**
  * Handler控制模块
  * @module zrender/Handler
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *         errorrik (errorrik@gmail.com)
  *
  */
@@ -3022,6 +3022,7 @@ define(
                 event = this._zrenderEventFixed(event);
                 this.root.style.cursor = 'default';
                 this._isMouseDown = 0;
+                this._clickThreshold = 0;
                 this._mouseDownTarget = null;
 
                 // 分发config.EVENT.MOUSEUP事件
@@ -4178,7 +4179,7 @@ define('zrender/tool/curve',['require','./vector'],function(require) {
 /**
  * zrender: 图形空间辅助类
  *
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *         pissang (https://www.github.com/pissang)
  *
  * isInside：是否在区域内部
@@ -5029,7 +5030,10 @@ define(
             isInsideCircle: isInsideCircle,
             isInsideLine: isInsideLine,
             isInsideRect: isInsideRect,
-            isInsideBrokenLine: isInsideBrokenLine
+            isInsideBrokenLine: isInsideBrokenLine,
+
+            isInsideCubicStroke: isInsideCubicStroke,
+            isInsideQuadraticStroke: isInsideQuadraticStroke
         };
     }
 );
@@ -5282,7 +5286,6 @@ define('zrender/mixin/Transformable',['require','../tool/matrix','../tool/vector
 /**
  * 颜色辅助模块
  * @module zrender/tool/color
- * @author CrossDo (chenhuaimu@baidu.com)
  */
 define('zrender/tool/color',['require','../tool/util'],function(require) {
     var util = require('../tool/util');
@@ -5967,7 +5970,7 @@ define('zrender/tool/color',['require','../tool/util'],function(require) {
      * @return {string} 颜色值，#rrggbb格式
      */
     function random() {
-        return '#' + Math.random().toString(16).slice(2, 8);
+        return '#' + (Math.random().toString(16) + '0000').slice(2, 8);
     }
 
     /**
@@ -6358,7 +6361,7 @@ define('zrender/tool/color',['require','../tool/util'],function(require) {
 /**
  * shape基类
  * @module zrender/shape/Base
- * @author  Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author  Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *          errorrik (errorrik@gmail.com)
  */
 
@@ -7058,7 +7061,7 @@ define(
 
 /**
  * @module zrender/shape/Text
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  * @example
  *     var Text = require('zrender/shape/Text');
  *     var shape = new Text({
@@ -7272,8 +7275,8 @@ define(
 /**
  * 矩形
  * @module zrender/shape/Rectangle
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com) , 
- *         strwind (@劲风FEI, yaofeifei@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com) , 
+ *         strwind (@劲风FEI)
  * @example
  *     var Rectangle = require('zrender/shape/Rectangle');
  *     var shape = new Rectangle({
@@ -7479,7 +7482,7 @@ define(
 /**
  * zrender: loading特效类
  *
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *         errorrik (errorrik@gmail.com)
  */
 
@@ -7680,9 +7683,6 @@ define(
 define(
     'zrender/shape/Image',['require','./Base','../tool/util'],function (require) {
 
-        var _needsRefresh = [];
-        var _refreshTimeout;
-
         var Base = require('./Base');
 
         /**
@@ -7709,7 +7709,7 @@ define(
             
             type: 'image',
 
-            brush : function(ctx, isHighlight, refresh) {
+            brush : function(ctx, isHighlight, refreshNextFrame) {
                 var style = this.style || {};
 
                 if (isHighlight) {
@@ -7720,7 +7720,7 @@ define(
                 }
 
                 var image = style.image;
-                var me = this;
+                var self = this;
 
                 if (!this._imageCache) {
                     this._imageCache = {};
@@ -7733,14 +7733,8 @@ define(
                         image = new Image();
                         image.onload = function () {
                             image.onload = null;
-                            clearTimeout(_refreshTimeout);
-                            _needsRefresh.push(me);
-                            // 防止因为缓存短时间内触发多次onload事件
-                            _refreshTimeout = setTimeout(function () {
-                                refresh && refresh(_needsRefresh);
-                                // 清空needsRefresh
-                                _needsRefresh = [];
-                            }, 10);
+                            self.modSelf();
+                            refreshNextFrame();
                         };
 
                         image.src = src;
@@ -7850,7 +7844,7 @@ define(
 /**
  * Painter绘图模块
  * @module zrender/Painter
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *         errorrik (errorrik@gmail.com)
  *         pissang (https://www.github.com/pissang)
  */
@@ -7940,10 +7934,8 @@ define(
             hoverLayer.dom.style['user-select'] = 'none';
             hoverLayer.dom.style['-webkit-touch-callout'] = 'none';
 
-            var me = this;
-            this.updatePainter = function (shapeList, callback) {
-                me.refreshShapes(shapeList, callback);
-            };
+            // Will be injected by zrender instance
+            this.refreshNextFrame = null;
         };
 
         /**
@@ -8063,7 +8055,7 @@ define(
                     ) {
                         if (config.catchBrushException) {
                             try {
-                                shape.brush(ctx, false, this.updatePainter);
+                                shape.brush(ctx, false, this.refreshNextFrame);
                             }
                             catch (error) {
                                 log(
@@ -8074,7 +8066,7 @@ define(
                             }
                         }
                         else {
-                            shape.brush(ctx, false, this.updatePainter);
+                            shape.brush(ctx, false, this.refreshNextFrame);
                         }
                     }
                 }
@@ -8458,7 +8450,7 @@ define(
                         ) {
                             if (config.catchBrushException) {
                                 try {
-                                    shape.brush(ctx, false, self.updatePainter);
+                                    shape.brush(ctx, false, self.refreshNextFrame);
                                 }
                                 catch (error) {
                                     log(
@@ -8469,7 +8461,7 @@ define(
                                 }
                             }
                             else {
-                                shape.brush(ctx, false, self.updatePainter);
+                                shape.brush(ctx, false, self.refreshNextFrame);
                             }
                         }
                     }
@@ -8531,7 +8523,7 @@ define(
                 // Retina 优化
                 if (config.catchBrushException) {
                     try {
-                        shape.brush(ctx, true, this.updatePainter);
+                        shape.brush(ctx, true, this.refreshNextFrame);
                     }
                     catch (error) {
                         log(
@@ -8540,7 +8532,7 @@ define(
                     }
                 }
                 else {
-                    shape.brush(ctx, true, this.updatePainter);
+                    shape.brush(ctx, true, this.refreshNextFrame);
                 }
                 if (layer.needTransform) {
                     ctx.restore();
@@ -9030,7 +9022,7 @@ define('zrender/Group',['require','./tool/guid','./tool/util','./mixin/Transform
 /**
  * Storage内容仓库模块
  * @module zrender/Storage
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  * @author errorrik (errorrik@gmail.com)
  * @author pissang (https://github.com/pissang/)
  */
@@ -9365,6 +9357,8 @@ define(
                 this._elements = {};
                 this._hoverElements = [];
                 this._roots = [];
+                this._shapeList = [];
+                this._shapeListOffset = 0;
 
                 return;
             }
@@ -9861,7 +9855,6 @@ define(
                         // 重新开始周期
                         // 抛出而不是直接调用事件直到 stage.update 后再统一调用这些事件
                         return 'restart';
-
                     }
                     
                     // 动画完成将这个控制器标识为待删除
@@ -9876,6 +9869,8 @@ define(
                 var time = new Date().getTime();
                 var remainder = (time - this._startTime) % this._life;
                 this._startTime = new Date().getTime() - remainder + this.gap;
+
+                this._needsRemove = false;
             },
             fire : function(eventType, arg) {
                 for (var i = 0, len = this._targetPool.length; i < len; i++) {
@@ -10535,14 +10530,14 @@ define(
 
         /**
          * @exports zrender
-         * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+         * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
          *         pissang (https://www.github.com/pissang)
          */
         var zrender = {};
         /**
          * @type {string}
          */
-        zrender.version = '2.0.5';
+        zrender.version = '2.0.6';
 
         /**
          * 创建zrender实例
@@ -10648,6 +10643,11 @@ define(
                 }
             });
             this.animation.start();
+
+            var self = this;
+            this.painter.refreshNextFrame = function () {
+                self.refreshNextFrame();
+            };
 
             this._needsRefreshNextFrame = false;
         };
@@ -11014,7 +11014,7 @@ define('zrender', ['zrender/zrender'], function (main) { return main; });
 /**
  * zrender: 数学辅助类
  *
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *
  * sin：正弦函数
  * cos：余弦函数
@@ -11070,7 +11070,7 @@ define(
 /**
  * 玫瑰线
  * @module zrender/shape/Rose
- * @author Neil (杨骥, yangji01@baidu.com)
+ * @author Neil (杨骥, 511415343@qq.com)
  * @example
  *     var Rose = require('zrender/shape/Rose');
  *     var shape = new Rose({
@@ -11223,7 +11223,7 @@ define(
 /**
  * 内外旋轮曲线
  * @module zrender/shape/Trochold
- * @author Neil (杨骥, yangji01@baidu.com)
+ * @author Neil (杨骥, 511415343@qq.com)
  * @example
  *     var Trochold = require('zrender/shape/Trochold');
  *     var shape = new Trochold({
@@ -11393,7 +11393,7 @@ define(
 /**
  * 圆形
  * @module zrender/shape/Circle
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  * @example
  *   var Circle = require('zrender/shape/Circle');
  *   var shape = new Circle({
@@ -11507,7 +11507,7 @@ define(
 );
 
 /**
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *         pissang(https://github.com/pissang)
  *         errorrik (errorrik@gmail.com)
  */
@@ -11700,7 +11700,7 @@ define(
 
 /**
  * 扇形
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  * @module zrender/shape/Sector
  * @example
  *     var Sector = require('zrender/shape/Sector');
@@ -11889,7 +11889,7 @@ define(
 /**
  * 圆环
  * @module zrender/shape/Ring
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *
  * @example
  *     var Ring = require('zrender/shape/Ring');
@@ -12004,7 +12004,6 @@ define(
 /**
  * 水滴形状
  * @module zrender/shape/Ellipse
- * @author loutongbing@baidu.com
  * @example
  *   var Ellipse = require('zrender/shape/Ellipse');
  *   var shape = new Ellipse({
@@ -12386,7 +12385,7 @@ define('zrender/shape/util/PathProxy',['require','../../tool/vector'],function (
 });
 /**
  * @module zrender/shape/Heart
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  * @example
  *   var Heart = require('zrender/shape/Heart');
  *   var shape = new Heart({
@@ -12534,7 +12533,7 @@ define(
 /**
  * 水滴形状
  * @module zrender/shape/Droplet
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  * @example
  *   var Droplet = require('zrender/shape/Droplet');
  *   var shape = new Droplet({
@@ -12680,7 +12679,7 @@ define(
 /**
  * 虚线lineTo 
  *
- * author:  Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * author:  Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *          errorrik (errorrik@gmail.com)
  */
 define(
@@ -12731,7 +12730,7 @@ define(
 /**
  * 直线
  * @module zrender/shape/Line
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  * @example
  *   var Line = require('zrender/shape/Line');
  *   var shape = new Line({
@@ -12857,7 +12856,7 @@ define(
 /**
  * n角星（n>3）
  * @module zrender/shape/Star
- * @author sushuang (宿爽, sushuang@baidu.com)
+ * @author sushuang (宿爽, sushuang0322@gmail.com)
  * @example
  *     var Star = require('zrender/shape/Star');
  *     var shape = new Star({
@@ -13022,7 +13021,7 @@ define(
 /**
  * 正多边形
  * @module zrender/shape/Isogon
- * @author sushuang (宿爽, sushuang@baidu.com)
+ * @author sushuang (宿爽, sushuang0322@gmail.com)
  */
 
 /**
@@ -13157,7 +13156,7 @@ define(
 /**
  * 贝塞尔曲线
  * @module zrender/shape/BezierCurve
- * @author Neil (杨骥, yangji01@baidu.com)
+ * @author Neil (杨骥, 511415343@qq.com)
  * @example
  *     var BezierCurve = require('zrender/shape/BezierCurve');
  *     var shape = new BezierCurve({
@@ -13307,7 +13306,7 @@ define(
  * Catmull-Rom spline 插值折线
  * @module zrender/shape/util/smoothSpline
  * @author pissang (https://www.github.com/pissang) 
- *         Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *         Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *         errorrik (errorrik@gmail.com)
  */
 define(
@@ -13381,7 +13380,7 @@ define(
  * 贝塞尔平滑曲线 
  * @module zrender/shape/util/smoothBezier
  * @author pissang (https://www.github.com/pissang) 
- *         Kener (@Kener-林峰, linzhifeng@baidu.com)
+ *         Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *         errorrik (errorrik@gmail.com)
  */
 define(
@@ -13481,7 +13480,7 @@ define(
 /**
  * 多边形
  * @module zrender/shape/Polygon
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  * @example
  *     var Polygon = require('zrender/shape/Polygon');
  *     var shape = new Polygon({
@@ -13756,7 +13755,7 @@ define(
 
 /**
  * 折线
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  * @module zrender/shape/BrokenLine
  * @example
  *     var BrokenLine = require('zrender/shape/BrokenLine');
@@ -13910,7 +13909,7 @@ define(
  * SVG Path
  * @module zrender/shape/Path
  * @see http://www.w3.org/TR/2011/REC-SVG11-20110816/paths.html#PathData
- * @author: CrossDo (chenhuaimu@baidu.com)
+ * @author: Pissang (shenyi.914@gmail.com)
  */
 
 /**

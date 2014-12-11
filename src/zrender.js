@@ -36,14 +36,14 @@ define(
 
         /**
          * @exports zrender
-         * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+         * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
          *         pissang (https://www.github.com/pissang)
          */
         var zrender = {};
         /**
          * @type {string}
          */
-        zrender.version = '2.0.5';
+        zrender.version = '2.0.6';
 
         /**
          * 创建zrender实例
@@ -149,6 +149,11 @@ define(
                 }
             });
             this.animation.start();
+
+            var self = this;
+            this.painter.refreshNextFrame = function () {
+                self.refreshNextFrame();
+            };
 
             this._needsRefreshNextFrame = false;
         };

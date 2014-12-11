@@ -72,7 +72,6 @@ define(
                         // 重新开始周期
                         // 抛出而不是直接调用事件直到 stage.update 后再统一调用这些事件
                         return 'restart';
-
                     }
                     
                     // 动画完成将这个控制器标识为待删除
@@ -87,6 +86,8 @@ define(
                 var time = new Date().getTime();
                 var remainder = (time - this._startTime) % this._life;
                 this._startTime = new Date().getTime() - remainder + this.gap;
+
+                this._needsRemove = false;
             },
             fire : function(eventType, arg) {
                 for (var i = 0, len = this._targetPool.length; i < len; i++) {
