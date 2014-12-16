@@ -1,7 +1,7 @@
 /**
  * 水滴形状
  * @module zrender/shape/Droplet
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  * @example
  *   var Droplet = require('zrender/shape/Droplet');
  *   var shape = new Droplet({

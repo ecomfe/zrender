@@ -1,7 +1,7 @@
 /**
  * 多边形
  * @module zrender/shape/Polygon
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  * @example
  *     var Polygon = require('zrender/shape/Polygon');
  *     var shape = new Polygon({

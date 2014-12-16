@@ -2,7 +2,7 @@
  * SVG Path
  * @module zrender/shape/Path
  * @see http://www.w3.org/TR/2011/REC-SVG11-20110816/paths.html#PathData
- * @author: CrossDo (chenhuaimu@baidu.com)
+ * @author: Pissang (shenyi.914@gmail.com)
  */
 
 /**

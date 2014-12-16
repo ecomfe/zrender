@@ -1,7 +1,6 @@
 /**
  * 颜色辅助模块
  * @module zrender/tool/color
- * @author CrossDo (chenhuaimu@baidu.com)
  */
 define(function(require) {
     var util = require('../tool/util');

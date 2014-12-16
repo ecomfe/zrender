@@ -1,7 +1,7 @@
 /**
  * zrender: 数学辅助类
  *
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *
  * sin：正弦函数
  * cos：余弦函数

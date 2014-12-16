@@ -1,7 +1,7 @@
 /**
  * Painter绘图模块
  * @module zrender/Painter
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *         errorrik (errorrik@gmail.com)
  *         pissang (https://www.github.com/pissang)
  */

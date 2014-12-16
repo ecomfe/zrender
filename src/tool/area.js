@@ -1,7 +1,7 @@
 /**
  * zrender: 图形空间辅助类
  *
- * @author Kener (@Kener-林峰, linzhifeng@baidu.com)
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *         pissang (https://www.github.com/pissang)
  *
  * isInside：是否在区域内部
