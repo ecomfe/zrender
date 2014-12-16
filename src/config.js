@@ -108,7 +108,10 @@ define(function () {
          * 1 : 异常抛出，调试用
          * 2 : 控制台输出，调试用
          */
-        debugMode: 0
+        debugMode: 0,
+
+        // retina 屏幕优化
+        devicePixelRatio: Math.max(window.devicePixelRatio || 1, 1)
     };
     return config;
 });

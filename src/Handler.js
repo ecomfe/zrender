@@ -104,36 +104,34 @@ define(
                             || -event.detail; // Firefox
                 var scale = delta > 0 ? 1.1 : 1 / 1.1;
 
-                var layers = this.painter.getLayers();
-
                 var needsRefresh = false;
-                for (var z in layers) {
-                    if (z !== 'hover') {
-                        var layer = layers[z];
-                        var pos = layer.position;
-                        if (layer.zoomable) {
-                            layer.__zoom = layer.__zoom || 1;
-                            var newZoom = layer.__zoom;
-                            newZoom *= scale;
-                            newZoom = Math.max(
-                                Math.min(layer.maxZoom, newZoom),
-                                layer.minZoom
-                            );
-                            scale = newZoom / layer.__zoom;
-                            layer.__zoom = newZoom;
-                            // Keep the mouse center when scaling
-                            pos[0] -= (this._mouseX - pos[0]) * (scale - 1);
-                            pos[1] -= (this._mouseY - pos[1]) * (scale - 1);
-                            layer.scale[0] *= scale;
-                            layer.scale[1] *= scale;
-                            layer.dirty = true;
-                            needsRefresh = true;
 
-                            // Prevent browser default scroll action 
-                            eventTool.stop(event);
-                        }
+                var mouseX = this._mouseX;
+                var mouseY = this._mouseY;
+                this.painter.eachBuildinLayer(function (layer) {
+                    var pos = layer.position;
+                    if (layer.zoomable) {
+                        layer.__zoom = layer.__zoom || 1;
+                        var newZoom = layer.__zoom;
+                        newZoom *= scale;
+                        newZoom = Math.max(
+                            Math.min(layer.maxZoom, newZoom),
+                            layer.minZoom
+                        );
+                        scale = newZoom / layer.__zoom;
+                        layer.__zoom = newZoom;
+                        // Keep the mouse center when scaling
+                        pos[0] -= (mouseX - pos[0]) * (scale - 1);
+                        pos[1] -= (mouseY - pos[1]) * (scale - 1);
+                        layer.scale[0] *= scale;
+                        layer.scale[1] *= scale;
+                        layer.dirty = true;
+                        needsRefresh = true;
+
+                        // Prevent browser default scroll action 
+                        eventTool.stop(event);
                     }
-                }
+                });
                 if (needsRefresh) {
                     this.painter.refresh();
                 }

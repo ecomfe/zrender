@@ -18,10 +18,6 @@
 
         var Layer = require('./Layer');
 
-        // retina 屏幕优化
-        var devicePixelRatio = window.devicePixelRatio || 1;
-        devicePixelRatio = Math.max(devicePixelRatio, 1);
-        
         // 返回false的方法，用于避免页面被选中
         function returnFalse() {
             return false;
@@ -130,6 +126,23 @@
             return this;
         };
 
+        Painter.prototype._preProcessLayer = function (layer) {
+            layer.unusedCount++;
+            layer.updateTransform();
+        };
+
+        Painter.prototype._postProcessLayer = function (layer) {
+            layer.dirty = false;
+            // 删除过期的层
+            // PENDING
+            // if (layer.unusedCount >= 500) {
+            //     this.delLayer(z);
+            // }
+            if (layer.unusedCount == 1) {
+                layer.clear();
+            }
+        };
+ 
         Painter.prototype._paintList = function (list, paintAll) {
 
             if (typeof(paintAll) == 'undefined') {
@@ -142,12 +155,7 @@
             var currentZLevel;
             var ctx;
 
-            for (var id in this._layers) {
-                if (id !== 'hover') {
-                    this._layers[id].unusedCount++;
-                    this._layers[id].updateTransform();
-                }
-            }
+            this.eachBuildinLayer(this._preProcessLayer);
 
             var invTransform = [];
 
@@ -162,9 +170,17 @@
                         ctx.flush && ctx.flush();
                     }
 
-                    currentLayer = this.getLayer(shape.zlevel);
-                    ctx = currentLayer.ctx;
                     currentZLevel = shape.zlevel;
+                    currentLayer = this.getLayer(currentZLevel);
+
+                    if (!currentLayer.isBuildin) {
+                        log(
+                            'ZLevel ' + currentZLevel
+                            + ' has been used by unkown layer ' + currentLayer.id
+                        );
+                    }
+
+                    ctx = currentLayer.ctx;
 
                     // Reset the count
                     currentLayer.unusedCount = 0;
@@ -247,20 +263,7 @@
                 ctx.flush && ctx.flush();
             }
 
-            for (var id in this._layers) {
-                if (id !== 'hover') {
-                    var layer = this._layers[id];
-                    layer.dirty = false;
-                    // 删除过期的层
-                    // PENDING
-                    // if (layer.unusedCount >= 500) {
-                    //     this.delLayer(id);
-                    // }
-                    if (layer.unusedCount == 1) {
-                        layer.clear();
-                    }
-                }
-            }
+            this.eachBuildinLayer(this._postProcessLayer);
         };
 
         /**
@@ -270,50 +273,69 @@
          */
         Painter.prototype.getLayer = function (zlevel) {
             // Change draw layer
-            var currentLayer = this._layers[zlevel];
-            if (!currentLayer) {
-                var len = this._zlevelList.length;
-                var prevLayer = null;
-                var i = -1;
-                if (len > 0 && zlevel > this._zlevelList[0]) {
-                    for (i = 0; i < len - 1; i++) {
-                        if (
-                            this._zlevelList[i] < zlevel
-                            && this._zlevelList[i + 1] > zlevel
-                        ) {
-                            break;
-                        }
-                    }
-                    prevLayer = this._layers[this._zlevelList[i]];
-                }
-                this._zlevelList.splice(i + 1, 0, zlevel);
-
+            var layer = this._layers[zlevel];
+            if (!layer) {
                 // Create a new layer
-                currentLayer = new Layer(zlevel, this);
-                var prevDom = prevLayer ? prevLayer.dom : this._bgDom;
-                if (prevDom.nextSibling) {
-                    prevDom.parentNode.insertBefore(
-                        currentLayer.dom,
-                        prevDom.nextSibling
-                    );
-                }
-                else {
-                    prevDom.parentNode.appendChild(
-                        currentLayer.dom
-                    );
-                }
-                currentLayer.initContext();
-                
-                this._layers[zlevel] = currentLayer;
+                layer = new Layer(zlevel, this);
+                layer.isBuildin = true;
 
+                layer.initContext();
                 if (this._layerConfig[zlevel]) {
-                    util.merge(currentLayer, this._layerConfig[zlevel], true);
+                    util.merge(layer, this._layerConfig[zlevel], true);
                 }
 
-                currentLayer.updateTransform();
+                layer.updateTransform();
+
+                this.insertLayer(zlevel, layer);
             }
 
-            return currentLayer;
+            return layer;
+        };
+
+        Painter.prototype.insertLayer = function (zlevel, layer) {
+            if (this._layers[zlevel]) {
+                log('ZLevel ' + zlevel + ' has been used already');
+                return;
+            }
+
+            var len = this._zlevelList.length;
+            var prevLayer = null;
+            var i = -1;
+            if (len > 0 && zlevel > this._zlevelList[0]) {
+                for (i = 0; i < len - 1; i++) {
+                    if (
+                        this._zlevelList[i] < zlevel
+                        && this._zlevelList[i + 1] > zlevel
+                    ) {
+                        break;
+                    }
+                }
+                prevLayer = this._layers[this._zlevelList[i]];
+            }
+            this._zlevelList.splice(i + 1, 0, zlevel);
+
+            var prevDom = prevLayer ? prevLayer.dom : this._bgDom;
+            if (prevDom.nextSibling) {
+                prevDom.parentNode.insertBefore(
+                    layer.dom,
+                    prevDom.nextSibling
+                );
+            }
+            else {
+                prevDom.parentNode.appendChild(layer.dom);
+            }
+
+            this._layers[zlevel] = layer;
+        };
+
+        Painter.prototype.eachBuildinLayer = function (cb) {
+            for (var i = 0; i < this._zlevelList.length; i++) {
+                var z = this._zlevelList[i];
+                var layer = this._layers[z];
+                if (layer.isBuildin) {
+                    cb && cb(layer, z);
+                }
+            }
         };
 
         /**
@@ -329,12 +351,11 @@
             var layers = this._layers;
 
             var elCounts = {};
-            for (var z in layers) {
-                if (z !== 'hover') {
-                    elCounts[z] = layers[z].elCount;
-                    layers[z].elCount = 0;
-                }
-            }
+
+            this.eachBuildinLayer(function (layer, z) {
+                elCounts[z] = layer.elCount;
+                layer.elCount = 0;
+            });
 
             for (var i = 0, l = list.length; i < l; i++) {
                 var shape = list[i];
@@ -351,13 +372,11 @@
             }
 
             // 层中的元素数量有发生变化
-            for (var z in layers) {
-                if (z !== 'hover') {
-                    if (elCounts[z] !== layers[z].elCount) {
-                        layers[z].dirty = true;
-                    }
+            this.eachBuildinLayer(function (layer, z) {
+                if (elCounts[z] !== layer.elCount) {
+                    layer.dirty = true;
                 }
-            }
+            });
         };
 
         /**
@@ -390,14 +409,12 @@
          * 清除hover层外所有内容
          */
         Painter.prototype.clear = function () {
-            for (var k in this._layers) {
-                if (k == 'hover') {
-                    continue;
-                }
-                this._layers[k].clear();
-            }
-
+            this.eachBuildinLayer(this._clearLayer);
             return this;
+        };
+
+        Painter.prototype._clearLayer = function (layer) {
+            layer.clear();
         };
 
         /**
@@ -701,7 +718,6 @@
         ) {
             var canvas = document.createElement('canvas');
             var ctx = canvas.getContext('2d');
-            var devicePixelRatio = window.devicePixelRatio || 1;
             
             canvas.style.width = width + 'px';
             canvas.style.height = height + 'px';
@@ -756,7 +772,7 @@
 
             return function (id, e, width, height) {
                 return me._shapeToImage(
-                    id, e, width, height, devicePixelRatio
+                    id, e, width, height, config.devicePixelRatio
                 );
             };
         };

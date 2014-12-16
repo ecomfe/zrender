@@ -7,6 +7,7 @@ define(function (require) {
     var Transformable = require('./mixin/Transformable');
     var util = require('./tool/util');
     var vmlCanvasManager = window['G_vmlCanvasManager'];
+    var config = require('./config');
 
     function returnFalse() {
         return false;
@@ -31,8 +32,8 @@ define(function (require) {
         newDom.style.top = 0;
         newDom.style.width = width + 'px';
         newDom.style.height = height + 'px';
-        newDom.width = width * devicePixelRatio;
-        newDom.height = height * devicePixelRatio;
+        newDom.width = width * config.devicePixelRatio;
+        newDom.height = height * config.devicePixelRatio;
 
         // id不作为索引用，避免可能造成的重名，定义为私有属性
         newDom.setAttribute('data-zr-dom-id', id);
@@ -45,8 +46,10 @@ define(function (require) {
      * @extends module:zrender/mixin/Transformable
      * @param {string} id
      * @param {module:zrender/Painter} painter
+     * @param {string} [type=canvas2d]
      */
-    var Layer = function(id, painter) {
+    var Layer = function(id, painter, type) {
+
         this.id = id;
 
         this.dom = createDom(id, 'canvas', painter);
@@ -110,8 +113,10 @@ define(function (require) {
 
     Layer.prototype.initContext = function () {
         this.ctx = this.dom.getContext('2d');
-        if (devicePixelRatio != 1) { 
-            this.ctx.scale(devicePixelRatio, devicePixelRatio);
+
+        var dpr = config.devicePixelRatio;
+        if (dpr != 1) { 
+            this.ctx.scale(dpr, dpr);
         }
     };
 
@@ -122,8 +127,10 @@ define(function (require) {
         this.domBack = createDom('back-' + this.id, 'canvas', this.painter);
         this.ctxBack = this.domBack.getContext('2d');
 
-        if (devicePixelRatio != 1) { 
-            this.ctxBack.scale(devicePixelRatio, devicePixelRatio);
+        var dpr = config.devicePixelRatio;
+
+        if (dpr != 1) { 
+            this.ctxBack.scale(dpr, dpr);
         }
     };
 
@@ -132,22 +139,24 @@ define(function (require) {
      * @param  {number} height
      */
     Layer.prototype.resize = function (width, height) {
+        var dpr = config.devicePixelRatio;
+
         this.dom.style.width = width + 'px';
         this.dom.style.height = height + 'px';
 
-        this.dom.setAttribute('width', width * devicePixelRatio);
-        this.dom.setAttribute('height', height * devicePixelRatio);
+        this.dom.setAttribute('width', width * dpr);
+        this.dom.setAttribute('height', height * dpr);
 
-        if (devicePixelRatio != 1) { 
-            this.ctx.scale(devicePixelRatio, devicePixelRatio);
+        if (dpr != 1) { 
+            this.ctx.scale(dpr, dpr);
         }
 
         if (this.domBack) {
-            this.domBack.setAttribute('width', width * devicePixelRatio);
-            this.domBack.setAttribute('height', height * devicePixelRatio);
+            this.domBack.setAttribute('width', width * dpr);
+            this.domBack.setAttribute('height', height * dpr);
 
-            if (devicePixelRatio != 1) { 
-                this.ctxBack.scale(devicePixelRatio, devicePixelRatio);
+            if (dpr != 1) { 
+                this.ctxBack.scale(dpr, dpr);
             }
         }
     };
@@ -164,6 +173,8 @@ define(function (require) {
         var haveClearColor = this.clearColor && !vmlCanvasManager;
         var haveMotionBLur = this.motionBlur && !vmlCanvasManager;
         var lastFrameAlpha = this.lastFrameAlpha;
+        
+        var dpr = config.devicePixelRatio;
 
         if (haveMotionBLur) {
             if (!this.domBack) {
@@ -173,26 +184,22 @@ define(function (require) {
             this.ctxBack.globalCompositeOperation = 'copy';
             this.ctxBack.drawImage(
                 dom, 0, 0,
-                width / devicePixelRatio,
-                height / devicePixelRatio
+                width / dpr,
+                height / dpr
             );
         }
 
         if (haveClearColor) {
             ctx.save();
             ctx.fillStyle = this.clearColor;
-            ctx.fillRect(
-                0, 0,
-                width / devicePixelRatio, 
-                height / devicePixelRatio
-            );
+            ctx.fillRect(0, 0, width / dpr, height / dpr);
             ctx.restore();
         }
         else {
             ctx.clearRect(
                 0, 0, 
-                width / devicePixelRatio,
-                height / devicePixelRatio
+                width / dpr,
+                height / dpr
             );
         }
 
@@ -200,11 +207,7 @@ define(function (require) {
             var domBack = this.domBack;
             ctx.save();
             ctx.globalAlpha = lastFrameAlpha;
-            ctx.drawImage(
-                domBack, 0, 0,
-                width / devicePixelRatio,
-                height / devicePixelRatio
-            );
+            ctx.drawImage(domBack, 0, 0, width / dpr, height / dpr);
             ctx.restore();
         }
     };
