@@ -150,8 +150,6 @@ define(
                 if (this.painter.isLoading()) {
                     return;
                 }
-                // 拖拽不触发click事件
-                this._clickThreshold++;
 
                 event = this._zrenderEventFixed(event);
                 this._lastX = this._mouseX;
@@ -197,6 +195,9 @@ define(
                     this.storage.drift(this._draggingTarget.id, dx, dy);
                     this._draggingTarget.modSelf();
                     this.storage.addHover(this._draggingTarget);
+
+                    // 拖拽不触发click事件
+                    this._clickThreshold++;
                 }
                 else if (this._isMouseDown) {
                     // Layer dragging
@@ -309,7 +310,6 @@ define(
                 event = this._zrenderEventFixed(event);
                 this.root.style.cursor = 'default';
                 this._isMouseDown = 0;
-                this._clickThreshold = 0;
                 this._mouseDownTarget = null;
 
                 // 分发config.EVENT.MOUSEUP事件
