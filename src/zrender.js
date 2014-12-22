@@ -452,9 +452,10 @@ define(
          * 
          * @param {string} eventName 事件名称
          * @param {Function} eventHandler 响应函数
+         * @param {Object} [context] 响应函数
          */
-        ZRender.prototype.on = function(eventName, eventHandler) {
-            this.handler.on(eventName, eventHandler);
+        ZRender.prototype.on = function(eventName, eventHandler, context) {
+            this.handler.on(eventName, eventHandler, context);
             return this;
         };
 

@@ -486,9 +486,10 @@ define(
          * 自定义事件绑定
          * @param {string} eventName 事件名称，resize，hover，drag，etc~
          * @param {Function} handler 响应函数
+         * @param {Object} [context] 响应函数
          */
-        Handler.prototype.on = function (eventName, handler) {
-            this.bind(eventName, handler);
+        Handler.prototype.on = function (eventName, handler, context) {
+            this.bind(eventName, handler, context);
             return this;
         };
 

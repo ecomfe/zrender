@@ -46,9 +46,8 @@ define(function (require) {
      * @extends module:zrender/mixin/Transformable
      * @param {string} id
      * @param {module:zrender/Painter} painter
-     * @param {string} [type=canvas2d]
      */
-    var Layer = function(id, painter, type) {
+    var Layer = function(id, painter) {
 
         this.id = id;
 
