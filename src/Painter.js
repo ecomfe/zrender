@@ -26,6 +26,16 @@
         // 什么都不干的空方法
         function doNothing() {}
 
+        function isLayerValid(layer) {
+            if (!layer) {
+                return false;
+            }
+            if (typeof(layer.resize) !== 'function') {
+                return false;
+            }
+            return true;
+        }
+
         /**
          * @alias module:zrender/Painter
          * @constructor
@@ -162,6 +172,7 @@
             for (var i = 0, l = list.length; i < l; i++) {
                 var shape = list[i];
 
+                // Change draw layer
                 if (currentZLevel !== shape.zlevel) {
                     if (currentLayer) {
                         if (currentLayer.needTransform) {
@@ -272,7 +283,6 @@
          * @return {module:zrender/Layer}
          */
         Painter.prototype.getLayer = function (zlevel) {
-            // Change draw layer
             var layer = this._layers[zlevel];
             if (!layer) {
                 // Create a new layer
@@ -295,6 +305,11 @@
         Painter.prototype.insertLayer = function (zlevel, layer) {
             if (this._layers[zlevel]) {
                 log('ZLevel ' + zlevel + ' has been used already');
+                return;
+            }
+            // Check if is a valid layer
+            if (!isLayerValid(layer)) {
+                log("Layer of zlevel " + zlevel + ' is not valid');
                 return;
             }
 
