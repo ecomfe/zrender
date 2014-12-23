@@ -30,9 +30,17 @@
             if (!layer) {
                 return false;
             }
-            if (typeof(layer.resize) !== 'function') {
+            
+            if (layer.isBuildin) {
+                return true;
+            }
+
+            if (typeof(layer.resize) !== 'function'
+                || typeof(layer.refresh) !== 'function'
+            ) {
                 return false;
             }
+
             return true;
         }
 
@@ -128,6 +136,15 @@
         Painter.prototype.refresh = function (callback, paintAll) {
             var list = this.storage.getShapeList(true);
             this._paintList(list, paintAll);
+
+            // Paint custum layers
+            for (var i = 0; i < this._zlevelList.length; i++) {
+                var z = this._zlevelList[i];
+                var layer = this._layers[z];
+                if (!layer.isBuildin && layer.refresh) {
+                    layer.refresh();
+                }
+            }
 
             if (typeof callback == 'function') {
                 callback();
