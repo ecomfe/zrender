@@ -324,7 +324,7 @@ define(
                 this._lastTouchMoment = new Date();
 
                 // 平板补充一次findHover
-                this._mobildFindFixed(event);
+                this._mobileFindFixed(event);
                 this._mousedownHandler(event);
             },
 
@@ -353,7 +353,7 @@ define(
                 
                 var now = new Date();
                 if (now - this._lastTouchMoment < EVENT.touchClickDelay) {
-                    this._mobildFindFixed(event);
+                    this._mobileFindFixed(event);
                     this._clickHandler(event);
                     if (now - this._lastClickMoment < EVENT.touchClickDelay / 2) {
                         this._dblclickHandler(event);
@@ -827,7 +827,7 @@ define(
         ];
 
         // touch有指尖错觉，四向尝试，让touch上的点击更好触发事件
-        Handler.prototype._mobildFindFixed = function (event) {
+        Handler.prototype._mobileFindFixed = function (event) {
             this._lastHover = null;
             this._mouseX = event.zrenderX;
             this._mouseY = event.zrenderY;
