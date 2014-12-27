@@ -775,8 +775,8 @@ define(
                 this.dispatch(eventName, eveObj);
                 // 分发事件到用户自定义层
                 this.painter.eachOtherLayer(function (layer) {
-                    if (typeof(layer[eventName]) == 'function') {
-                        layer[eventName](eveObj);
+                    if (typeof(layer[eventHandler]) == 'function') {
+                        layer[eventHandler](eveObj);
                     }
                     if (layer.dispatch) {
                         layer.dispatch(eventName, eveObj);
