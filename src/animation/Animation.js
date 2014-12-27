@@ -107,9 +107,6 @@ define(
                         deferredClips.push(clip);
                     }
                 }
-                if (this.stage.update) {
-                    this.stage.update();
-                }
 
                 // Remove the finished clip
                 for (var i = 0; i < len;) {
@@ -133,6 +130,10 @@ define(
                 this.onframe(delta);
 
                 this.dispatch('frame', delta);
+
+                if (this.stage.update) {
+                    this.stage.update();
+                }
             },
             /**
              * 开始运行动画
