@@ -200,24 +200,19 @@ define(
                     this._clickThreshold++;
                 }
                 else if (this._isMouseDown) {
-                    // Layer dragging
-                    var layers = this.painter.getLayers();
-
                     var needsRefresh = false;
-                    for (var z in layers) {
-                        if (z !== 'hover') {
-                            var layer = layers[z];
-                            if (layer.panable) {
-                                // PENDING
-                                cursor = 'move';
-                                // Keep the mouse center when scaling
-                                layer.position[0] += dx;
-                                layer.position[1] += dy;
-                                needsRefresh = true;
-                                layer.dirty = true;
-                            }
+                    // Layer dragging
+                    this.painter.eachBuildinLayer(function (layer) {
+                        if (layer.panable) {
+                            // PENDING
+                            cursor = 'move';
+                            // Keep the mouse center when scaling
+                            layer.position[0] += dx;
+                            layer.position[1] += dy;
+                            needsRefresh = true;
+                            layer.dirty = true;
                         }
-                    }
+                    });
                     if (needsRefresh) {
                         this.painter.refresh();
                     }
@@ -773,9 +768,19 @@ define(
             }
             else if (!draggedShape) {
                 // 无hover目标，无拖拽对象，原生事件分发
-                this.dispatch(eventName, {
+                var eveObj = {
                     type: eventName,
                     event: event
+                };
+                this.dispatch(eventName, eveObj);
+                // 分发事件到用户自定义层
+                this.painter.eachOtherLayer(function (layer) {
+                    if (typeof(layer[eventName]) == 'function') {
+                        layer[eventName](eveObj);
+                    }
+                    if (layer.dispatch) {
+                        layer.dispatch(eventName, eveObj);
+                    }
                 });
             }
         };

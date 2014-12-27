@@ -141,7 +141,7 @@
             for (var i = 0; i < this._zlevelList.length; i++) {
                 var z = this._zlevelList[i];
                 var layer = this._layers[z];
-                if (!layer.isBuildin && layer.refresh) {
+                if (! layer.isBuildin && layer.refresh) {
                     layer.refresh();
                 }
             }
@@ -360,12 +360,32 @@
             this._layers[zlevel] = layer;
         };
 
-        Painter.prototype.eachBuildinLayer = function (cb) {
+        // Iterate each layer
+        Painter.prototype.eachLayer = function (cb, context) {
+            for (var i = 0; i < this._zlevelList.length; i++) {
+                var z = this._zlevelList[i];
+                cb.call(context, this._layers[z], z);
+            }
+        };
+
+        // Iterate each buildin layer
+        Painter.prototype.eachBuildinLayer = function (cb, context) {
             for (var i = 0; i < this._zlevelList.length; i++) {
                 var z = this._zlevelList[i];
                 var layer = this._layers[z];
                 if (layer.isBuildin) {
-                    cb && cb(layer, z);
+                    cb.call(context, layer, z);
+                }
+            }
+        };
+
+        // Iterate each other layer except buildin layer
+        Painter.prototype.eachOtherLayer = function (cb, context) {
+            for (var i = 0; i < this._zlevelList.length; i++) {
+                var z = this._zlevelList[i];
+                var layer = this._layers[z];
+                if (! layer.isBuildin) {
+                    cb.call(context, layer, z);
                 }
             }
         };
