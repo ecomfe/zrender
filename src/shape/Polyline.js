@@ -1,10 +1,10 @@
 /**
  * 折线
  * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
- * @module zrender/shape/BrokenLine
+ * @module zrender/shape/Polyline
  * @example
- *     var BrokenLine = require('zrender/shape/BrokenLine');
- *     var shape = new BrokenLine({
+ *     var Polyline = require('zrender/shape/Polyline');
+ *     var shape = new Polyline({
  *         style: {
  *             pointList: [[0, 0], [100, 100], [100, 0]],
  *             smooth: 'bezier',
@@ -15,7 +15,7 @@
  */
 
 /**
- * @typedef {Object} IBrokenLineStyle
+ * @typedef {Object} IPolylineStyle
  * @property {Array.<number>} pointList 顶点坐标数组
  * @property {string} [smooth=''] 是否做平滑插值, 平滑算法可以选择 bezier, spline
  * @property {number} [smoothConstraint] 平滑约束
@@ -45,34 +45,34 @@ define(
         var dashedLineTo = require('./util/dashedLineTo');
 
         /**
-         * @alias module:zrender/shape/BrokenLine
+         * @alias module:zrender/shape/Polyline
          * @constructor
          * @extends module:zrender/shape/Base
          * @param {Object} options
          */
-        var BrokenLine = function(options) {
+        var Polyline = function(options) {
             this.brushTypeOnly = 'stroke';  // 线条只能描边，填充后果自负
             this.textPosition = 'end';
             Base.call(this, options);
             /**
              * 贝赛尔曲线绘制样式
-             * @name module:zrender/shape/BrokenLine#style
-             * @type {module:zrender/shape/BrokenLine~IBrokenLineStyle}
+             * @name module:zrender/shape/Polyline#style
+             * @type {module:zrender/shape/Polyline~IPolylineStyle}
              */
             /**
              * 贝赛尔曲线高亮绘制样式
-             * @name module:zrender/shape/BrokenLine#highlightStyle
-             * @type {module:zrender/shape/BrokenLine~IBrokenLineStyle}
+             * @name module:zrender/shape/Polyline#highlightStyle
+             * @type {module:zrender/shape/Polyline~IPolylineStyle}
              */
         };
 
-        BrokenLine.prototype =  {
-            type: 'broken-line',
+        Polyline.prototype =  {
+            type: 'polyline',
 
             /**
              * 创建多边形路径
              * @param {CanvasRenderingContext2D} ctx
-             * @param {module:zrender/shape/BrokenLine~IBrokenLineStyle} style
+             * @param {module:zrender/shape/Polyline~IPolylineStyle} style
              */
             buildPath : function(ctx, style) {
                 var pointList = style.pointList;
@@ -145,7 +145,7 @@ define(
             }
         };
 
-        require('../tool/util').inherits(BrokenLine, Base);
-        return BrokenLine;
+        require('../tool/util').inherits(Polyline, Base);
+        return Polyline;
     }
 );

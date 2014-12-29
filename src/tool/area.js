@@ -50,7 +50,7 @@ define(
 
             _ctx = _ctx || util.getContext();
 
-            // 未实现或不可用时(excanvas不支持)则数学运算，主要是line，brokenLine，ring
+            // 未实现或不可用时(excanvas不支持)则数学运算，主要是line，polyline，ring
             var _mathReturn = _mathMethod(shape, area, x, y);
             if (typeof _mathReturn != 'undefined') {
                 return _mathReturn;
@@ -117,7 +117,7 @@ define(
                         area.lineWidth, x, y
                     );
                 // 折线
-                case 'broken-line':
+                case 'polyline':
                     return isInsideBrokenLine(
                         area.pointList, area.lineWidth, x, y
                     );
