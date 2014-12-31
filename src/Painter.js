@@ -306,7 +306,6 @@
                 layer = new Layer(zlevel, this);
                 layer.isBuildin = true;
 
-                layer.initContext();
                 if (this._layerConfig[zlevel]) {
                     util.merge(layer, this._layerConfig[zlevel], true);
                 }
@@ -314,6 +313,7 @@
                 layer.updateTransform();
 
                 this.insertLayer(zlevel, layer);
+                layer.initContext();
             }
 
             return layer;
