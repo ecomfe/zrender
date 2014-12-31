@@ -313,6 +313,9 @@
                 layer.updateTransform();
 
                 this.insertLayer(zlevel, layer);
+
+                // Context is created after dom inserted to document
+                // Or excanvas will get 0px clientWidth and clientHeight
                 layer.initContext();
             }
 
