@@ -602,12 +602,16 @@ define(
                                 xEnd = pointList[1][0];
                                 yStart = pointList[0][1];
                                 yEnd = pointList[1][1];
+                                tx = xStart;
+                                ty = yStart;
                                 break;
                             case 'end':
                                 xStart = pointList[length - 2][0];
                                 xEnd = pointList[length - 1][0];
                                 yStart = pointList[length - 2][1];
                                 yEnd = pointList[length - 1][1];
+                                tx = xEnd;
+                                ty = yEnd;
                                 break;
                         }
                     }
@@ -617,34 +621,35 @@ define(
                         yStart = style.yStart || 0;
                         yEnd = style.yEnd || 0;
                     }
-
-                    switch (textPosition) {
-                        case 'start':
-                            al = xStart < xEnd ? 'end' : 'start';
-                            bl = yStart < yEnd ? 'bottom' : 'top';
-                            tx = xStart;
-                            ty = yStart;
-                            break;
-                        case 'end':
-                            al = xStart < xEnd ? 'start' : 'end';
-                            bl = yStart < yEnd ? 'top' : 'bottom';
-                            tx = xEnd;
-                            ty = yEnd;
-                            break;
+                    
+                    var angle = Math.atan((yStart - yEnd) / (xEnd - xStart)) / Math.PI * 180;
+                    if ((xEnd - xStart) < 0) {
+                        angle += 180;
                     }
-                    dd -= 4;
-                    if (xStart != xEnd) {
-                        tx -= (al == 'end' ? dd : -dd);
-                    } 
-                    else {
+                    else if ((yStart - yEnd) < 0) {
+                        angle += 360;
+                    }
+                    
+                    dd = 5;
+                    if (angle >= 30 && angle <= 150) {
                         al = 'center';
+                        bl = 'bottom';
+                        ty -= dd;
                     }
-
-                    if (yStart != yEnd) {
-                        ty -= (bl == 'bottom' ? dd : -dd);
-                    } 
-                    else {
+                    else if (angle > 150 && angle < 210) {
+                        al = 'right';
                         bl = 'middle';
+                        tx -= dd;
+                    }
+                    else if (angle >= 210 && angle <= 330) {
+                        al = 'center';
+                        bl = 'top';
+                        ty += dd;
+                    }
+                    else {
+                        al = 'left';
+                        bl = 'middle';
+                        tx += dd;
                     }
                     break;
                 case 'specific':
