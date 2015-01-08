@@ -835,11 +835,10 @@ define(
             this._event = event;
 
             this._iterateAndFindHover();
-
             for (var i = 0; !this._lastHover && i < MOBILE_TOUCH_OFFSETS.length ; i++) {
                 var offset = MOBILE_TOUCH_OFFSETS[ i ];
                 offset.x && (this._mouseX += offset.x);
-                offset.y && (this._mouseX += offset.y);
+                offset.y && (this._mouseY += offset.y);
 
                 this._iterateAndFindHover();
             }
@@ -940,7 +939,7 @@ define(
                                 ? event.targetTouches[0]
                                 : event.changedTouches[0];
                 if (touch) {
-                    var rBounding = this.root.getBoundingClientRect();
+                    var rBounding = this.painter._domRoot.getBoundingClientRect();
                     // touch事件坐标是全屏的~
                     event.zrenderX = touch.clientX - rBounding.left;
                     event.zrenderY = touch.clientY - rBounding.top;
