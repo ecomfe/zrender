@@ -585,41 +585,36 @@ define(
                     break;
                 case 'start':
                 case 'end':
+                    var pointList = style.pointList
+                                    || [
+                                        [style.xStart || 0, style.yStart || 0],
+                                        [style.xEnd || 0, style.yEnd || 0]
+                                    ];
+                    var length = pointList.length;
+                    if (length < 2) {
+                        // 少于2个点就不画了~
+                        return;
+                    }
                     var xStart;
                     var xEnd;
                     var yStart;
                     var yEnd;
-                    if (typeof style.pointList != 'undefined') {
-                        var pointList = style.pointList;
-                        if (pointList.length < 2) {
-                            // 少于2个点就不画了~
-                            return;
-                        }
-                        var length = pointList.length;
-                        switch (textPosition) {
-                            case 'start':
-                                xStart = pointList[0][0];
-                                xEnd = pointList[1][0];
-                                yStart = pointList[0][1];
-                                yEnd = pointList[1][1];
-                                break;
-                            case 'end':
-                                xStart = pointList[length - 2][0];
-                                xEnd = pointList[length - 1][0];
-                                yStart = pointList[length - 2][1];
-                                yEnd = pointList[length - 1][1];
-                                break;
-                        }
+                    switch (textPosition) {
+                        case 'start':
+                            xStart = pointList[1][0];
+                            xEnd = pointList[0][0];
+                            yStart = pointList[1][1];
+                            yEnd = pointList[0][1];
+                            break;
+                        case 'end':
+                            xStart = pointList[length - 2][0];
+                            xEnd = pointList[length - 1][0];
+                            yStart = pointList[length - 2][1];
+                            yEnd = pointList[length - 1][1];
+                            break;
                     }
-                    else {
-                        xStart = style.xStart || 0;
-                        xEnd = style.xEnd || 0;
-                        yStart = style.yStart || 0;
-                        yEnd = style.yEnd || 0;
-                    }
-                    tx = textPosition == 'start'
-                         ? (ty = yStart, xStart)
-                         : (ty = yEnd, xEnd);
+                    tx = xEnd;
+                    ty = yEnd;
                     
                     var angle = Math.atan((yStart - yEnd) / (xEnd - xStart)) / Math.PI * 180;
                     if ((xEnd - xStart) < 0) {
@@ -628,6 +623,7 @@ define(
                     else if ((yStart - yEnd) < 0) {
                         angle += 360;
                     }
+                    
                     dd = 5;
                     if (angle >= 30 && angle <= 150) {
                         al = 'center';
