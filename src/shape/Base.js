@@ -241,11 +241,6 @@ define(
 
             var style = this.beforeBrush(ctx, isHighlight);
 
-            // Skip brush when object is transparent
-            if (style.opacity === 0) {
-                return;
-            }
-
             ctx.beginPath();
             this.buildPath(ctx, style);
 
