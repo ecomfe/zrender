@@ -223,36 +223,6 @@
                     }
                 }
 
-                // Start group clipping
-                if (shape.__startClip && window['G_vmlCanvasManager']) {
-                    var clipShape = shape.__startClip;
-                    ctx.save();
-                    // Set transform
-                    if (clipShape.needTransform) {
-                        var m = clipShape.transform;
-                        matrix.invert(invTransform, m);
-                        ctx.transform(
-                            m[0], m[1],
-                            m[2], m[3],
-                            m[4], m[5]
-                        );
-                    }
-
-                    ctx.beginPath();
-                    clipShape.buildPath(ctx, clipShape.style);
-                    ctx.clip();
-
-                    // Transform back
-                    if (clipShape.needTransform) {
-                        var m = invTransform;
-                        ctx.transform(
-                            m[0], m[1],
-                            m[2], m[3],
-                            m[4], m[5]
-                        );
-                    }
-                }
-
                 if ((currentLayer.dirty || paintAll) && !shape.invisible) {
                     if (
                         !shape.onbrush
@@ -274,11 +244,6 @@
                             shape.brush(ctx, false, this.refreshNextFrame);
                         }
                     }
-                }
-
-                // Stop group clipping
-                if (shape.__stopClip && window['G_vmlCanvasManager']) {
-                    ctx.restore();
                 }
 
                 shape.__dirty = false;

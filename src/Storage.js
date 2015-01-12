@@ -225,15 +225,15 @@ define(
 
                 if (params) {
                     // 如果第二个参数直接使用 shape
-                    // parent, _storage, __startClip 三个属性会有循环引用
+                    // parent, _storage, __clipShapes 三个属性会有循环引用
                     // 主要为了向 1.x 版本兼容，2.x 版本不建议使用第二个参数
-                    if (params.parent || params._storage || params.__startClip) {
+                    if (params.parent || params._storage || params.__clipShapes) {
                         var target = {};
                         for (var name in params) {
                             if (
-                                name == 'parent'
-                                || name == '_storage'
-                                || name == '__startClip'
+                                name === 'parent'
+                                || name === '_storage'
+                                || name === '__clipShapes'
                             ) {
                                 continue;
                             }

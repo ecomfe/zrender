@@ -188,18 +188,12 @@ define(function (require) {
             );
         }
 
+        ctx.clearRect(0, 0, width / dpr, height / dpr);
         if (haveClearColor) {
             ctx.save();
             ctx.fillStyle = this.clearColor;
             ctx.fillRect(0, 0, width / dpr, height / dpr);
             ctx.restore();
-        }
-        else {
-            ctx.clearRect(
-                0, 0, 
-                width / dpr,
-                height / dpr
-            );
         }
 
         if (haveMotionBLur) {
