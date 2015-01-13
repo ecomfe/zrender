@@ -59,7 +59,7 @@ MVC核心封装实现图形仓库、视图渲染和交互控制：
             style : {...},
             // 图形元素上绑定事件
             onmouseover : function(params) {
-                concole.log('catch you!');
+                console.log('catch you!');
             }
         })
     );
