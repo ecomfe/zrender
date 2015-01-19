@@ -147,7 +147,7 @@ define(
                     );
                 // 多边形
                 case 'path':
-                    return isInsidePath(
+                    return area.pathArray && isInsidePath(
                         area.pathArray, Math.max(area.lineWidth, 5),
                         area.brushType, x, y
                     );
