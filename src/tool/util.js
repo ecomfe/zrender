@@ -33,7 +33,11 @@ define(
                         result[i] = clone(source[i]);
                     }
                 }
-                else if (!BUILTIN_OBJECT[Object.prototype.toString.call(source)]) {
+                else if (
+                    !BUILTIN_OBJECT[Object.prototype.toString.call(source)]
+                    // 是否为 dom 对象
+                    && ! (source.nodeType === 1 && typeof(source.nodeName) === 'string')
+                ) {
                     result = {};
                     for (var key in source) {
                         if (source.hasOwnProperty(key)) {
