@@ -26,7 +26,7 @@
         'zrender/shape/Star',
         'zrender/shape/Isogon',
         'zrender/shape/BezierCurve',
-        'zrender/shape/BrokenLine',
+        'zrender/shape/Polyline',
         'zrender/shape/Path',
         'zrender/shape/Polygon',
         'zrender/loadingEffect/Bar',

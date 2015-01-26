@@ -53,7 +53,7 @@ define(function (require) {
          * @name module:zrender/shape/ShapeBundle#highlightStyle
          * @type {module:zrender/shape/ShapeBundle~IShapeBundleStyle}
          */
-    }
+    };
 
     ShapeBundle.prototype = {
 
