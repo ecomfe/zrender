@@ -118,7 +118,7 @@ define(
                     );
                 // 折线
                 case 'polyline':
-                    return isInsideBrokenLine(
+                    return isInsidePolyline(
                         area.pointList, area.lineWidth, x, y
                     );
                 // 圆环
@@ -365,7 +365,7 @@ define(
                 || (angle + PI2 >= startAngle && angle + PI2 <= endAngle);
         }
 
-        function isInsideBrokenLine(points, lineWidth, x, y) {
+        function isInsidePolyline(points, lineWidth, x, y) {
             var lineWidth = Math.max(lineWidth, 10);
             for (var i = 0, l = points.length - 1; i < l; i++) {
                 var x0 = points[i][0];
@@ -852,7 +852,7 @@ define(
             isInsideCircle: isInsideCircle,
             isInsideLine: isInsideLine,
             isInsideRect: isInsideRect,
-            isInsideBrokenLine: isInsideBrokenLine,
+            isInsidePolyline: isInsidePolyline,
 
             isInsideCubicStroke: isInsideCubicStroke,
             isInsideQuadraticStroke: isInsideQuadraticStroke

@@ -118,14 +118,14 @@
                     zrender: fileLocation,
                     'zrender/shape/Circle': fileLocation,
                     'zrender/shape/Text': fileLocation,
-                    'zrender/shape/BrokenLine': fileLocation
+                    'zrender/shape/Polyline': fileLocation
                 }
             });
         };
 
         require(
-            ['zrender', 'zrender/shape/Circle', 'zrender/shape/Text', 'zrender/shape/BrokenLine'],
-            function(zrender, CircleShape, TextShape, BrokenLineShape) {
+            ['zrender', 'zrender/shape/Circle', 'zrender/shape/Text', 'zrender/shape/Polyline'],
+            function(zrender, CircleShape, TextShape, PolylineShape) {
                 zr = zrender.init(document.getElementById('main'));
                 var width = Math.ceil(zr.getWidth());
                 var height = Math.ceil(zr.getHeight());
@@ -216,8 +216,8 @@
                         }
                     });
                     zr.addShape(pointText);
-                    knife = new BrokenLineShape({
-                        shape : 'brokenLine',
+                    knife = new PolylineShape({
+                        shape : 'polyline',
                         zlevel : 1, // 频繁变动的画笔单独在一层中
                         style : {
                             pointList : [

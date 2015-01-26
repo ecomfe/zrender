@@ -13,7 +13,7 @@ define(function(require) {
     var Polygon = require('zrender/shape/Polygon');
     var Text = require('zrender/shape/Text');
     var ImageShape = require('zrender/shape/Image');
-    var BrokenLine = require('zrender/shape/BrokenLine');
+    var Polyline = require('zrender/shape/Polyline');
     var mat2d = require('zrender/tool/matrix');
     var vec2 = require('zrender/tool/vector');
     var log = require('zrender/tool/log');
@@ -583,7 +583,7 @@ define(function(require) {
             var pointsStr = xmlNode.getAttribute('points');
             if (pointsStr) {
                 var points = parsePoints(pointsStr);
-                return new BrokenLine({
+                return new Polyline({
                     style: {
                         pointList: points
                     }
