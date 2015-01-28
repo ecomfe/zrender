@@ -18,6 +18,12 @@ define(
             '[object CanvasGradient]': 1
         };
 
+        var objToString = Object.prototype.toString;
+
+        function isDom(obj) {
+            return obj && obj.nodeType === 1
+                && typeof(obj.nodeName) == 'string'
+        }
         /**
          * 对一个object进行深度拷贝
          *
@@ -34,9 +40,9 @@ define(
                     }
                 }
                 else if (
-                    !BUILTIN_OBJECT[Object.prototype.toString.call(source)]
+                    !BUILTIN_OBJECT[objToString.call(source)]
                     // 是否为 dom 对象
-                    && ! (source.nodeType === 1 && typeof(source.nodeName) === 'string')
+                    && !isDom(source)
                 ) {
                     result = {};
                     for (var key in source) {
@@ -54,8 +60,11 @@ define(
 
         function mergeItem(target, source, key, overwrite) {
             if (source.hasOwnProperty(key)) {
-                if (typeof target[key] == 'object'
-                    && !BUILTIN_OBJECT[ Object.prototype.toString.call(target[key]) ]
+                var targetProp = target[key];
+                if (typeof targetProp == 'object'
+                    && !BUILTIN_OBJECT[objToString.call(targetProp)]
+                    // 是否为 dom 对象
+                    && !isDom(targetProp)
                 ) {
                     // 如果需要递归覆盖，就递归调用merge
                     merge(
