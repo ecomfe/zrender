@@ -68,68 +68,6 @@ define(
         Polygon.prototype = {
             type: 'polygon',
 
-            brush : function (ctx, isHighlight) {
-                var style = this.style;
-                if (isHighlight) {
-                    // 根据style扩展默认高亮样式
-                    style = this.getHighlightStyle(
-                        style,
-                        this.highlightStyle || {}
-                    );
-                }
-
-                ctx.save();
-                this.setContext(ctx, style);
-    
-                // 设置transform
-                this.setTransform(ctx);
-                
-                // 先fill再stroke
-                var hasPath = false;
-                if (style.brushType == 'fill' 
-                    || style.brushType == 'both'
-                    || typeof style.brushType == 'undefined' // 默认为fill
-                ) {
-                    ctx.beginPath();
-                    if (style.lineType == 'dashed' 
-                        || style.lineType == 'dotted'
-                    ) {
-                        // 特殊处理，虚线围不成path，实线再build一次
-                        this.buildPath(
-                            ctx, 
-                            {
-                                lineType: 'solid',
-                                lineWidth: style.lineWidth,
-                                pointList: style.pointList
-                            }
-                        );
-                        hasPath = false; // 这个path不能用
-                    }
-                    else {
-                        this.buildPath(ctx, style);
-                        hasPath = true; // 这个path能用
-                    }
-                    ctx.closePath();
-                    ctx.fill();
-                }
-
-                if (style.lineWidth > 0 
-                    && (style.brushType == 'stroke' || style.brushType == 'both')
-                ) {
-                    if (!hasPath) {
-                        ctx.beginPath();
-                        this.buildPath(ctx, style);
-                    }
-                    ctx.stroke();
-                }
-    
-                this.drawText(ctx, style, this.style);
-    
-                ctx.restore();
-    
-                return;
-            },
-        
             /**
              * 创建多边形路径
              * @param {CanvasRenderingContext2D} ctx
@@ -216,6 +154,8 @@ define(
                         );
                     }
                 }
+
+                ctx.closePath();
                 return;
             },
 

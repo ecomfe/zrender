@@ -104,36 +104,34 @@ define(
                             || -event.detail; // Firefox
                 var scale = delta > 0 ? 1.1 : 1 / 1.1;
 
-                var layers = this.painter.getLayers();
-
                 var needsRefresh = false;
-                for (var z in layers) {
-                    if (z !== 'hover') {
-                        var layer = layers[z];
-                        var pos = layer.position;
-                        if (layer.zoomable) {
-                            layer.__zoom = layer.__zoom || 1;
-                            var newZoom = layer.__zoom;
-                            newZoom *= scale;
-                            newZoom = Math.max(
-                                Math.min(layer.maxZoom, newZoom),
-                                layer.minZoom
-                            );
-                            scale = newZoom / layer.__zoom;
-                            layer.__zoom = newZoom;
-                            // Keep the mouse center when scaling
-                            pos[0] -= (this._mouseX - pos[0]) * (scale - 1);
-                            pos[1] -= (this._mouseY - pos[1]) * (scale - 1);
-                            layer.scale[0] *= scale;
-                            layer.scale[1] *= scale;
-                            layer.dirty = true;
-                            needsRefresh = true;
 
-                            // Prevent browser default scroll action 
-                            eventTool.stop(event);
-                        }
+                var mouseX = this._mouseX;
+                var mouseY = this._mouseY;
+                this.painter.eachBuildinLayer(function (layer) {
+                    var pos = layer.position;
+                    if (layer.zoomable) {
+                        layer.__zoom = layer.__zoom || 1;
+                        var newZoom = layer.__zoom;
+                        newZoom *= scale;
+                        newZoom = Math.max(
+                            Math.min(layer.maxZoom, newZoom),
+                            layer.minZoom
+                        );
+                        scale = newZoom / layer.__zoom;
+                        layer.__zoom = newZoom;
+                        // Keep the mouse center when scaling
+                        pos[0] -= (mouseX - pos[0]) * (scale - 1);
+                        pos[1] -= (mouseY - pos[1]) * (scale - 1);
+                        layer.scale[0] *= scale;
+                        layer.scale[1] *= scale;
+                        layer.dirty = true;
+                        needsRefresh = true;
+
+                        // Prevent browser default scroll action 
+                        eventTool.stop(event);
                     }
-                }
+                });
                 if (needsRefresh) {
                     this.painter.refresh();
                 }
@@ -152,8 +150,6 @@ define(
                 if (this.painter.isLoading()) {
                     return;
                 }
-                // 拖拽不触发click事件
-                this._clickThreshold++;
 
                 event = this._zrenderEventFixed(event);
                 this._lastX = this._mouseX;
@@ -199,26 +195,24 @@ define(
                     this.storage.drift(this._draggingTarget.id, dx, dy);
                     this._draggingTarget.modSelf();
                     this.storage.addHover(this._draggingTarget);
+
+                    // 拖拽不触发click事件
+                    this._clickThreshold++;
                 }
                 else if (this._isMouseDown) {
-                    // Layer dragging
-                    var layers = this.painter.getLayers();
-
                     var needsRefresh = false;
-                    for (var z in layers) {
-                        if (z !== 'hover') {
-                            var layer = layers[z];
-                            if (layer.panable) {
-                                // PENDING
-                                cursor = 'move';
-                                // Keep the mouse center when scaling
-                                layer.position[0] += dx;
-                                layer.position[1] += dy;
-                                needsRefresh = true;
-                                layer.dirty = true;
-                            }
+                    // Layer dragging
+                    this.painter.eachBuildinLayer(function (layer) {
+                        if (layer.panable) {
+                            // PENDING
+                            cursor = 'move';
+                            // Keep the mouse center when scaling
+                            layer.position[0] += dx;
+                            layer.position[1] += dy;
+                            needsRefresh = true;
+                            layer.dirty = true;
                         }
-                    }
+                    });
                     if (needsRefresh) {
                         this.painter.refresh();
                     }
@@ -311,7 +305,6 @@ define(
                 event = this._zrenderEventFixed(event);
                 this.root.style.cursor = 'default';
                 this._isMouseDown = 0;
-                this._clickThreshold = 0;
                 this._mouseDownTarget = null;
 
                 // 分发config.EVENT.MOUSEUP事件
@@ -331,7 +324,7 @@ define(
                 this._lastTouchMoment = new Date();
 
                 // 平板补充一次findHover
-                this._mobildFindFixed(event);
+                this._mobileFindFixed(event);
                 this._mousedownHandler(event);
             },
 
@@ -360,7 +353,7 @@ define(
                 
                 var now = new Date();
                 if (now - this._lastTouchMoment < EVENT.touchClickDelay) {
-                    this._mobildFindFixed(event);
+                    this._mobileFindFixed(event);
                     this._clickHandler(event);
                     if (now - this._lastClickMoment < EVENT.touchClickDelay / 2) {
                         this._dblclickHandler(event);
@@ -488,9 +481,10 @@ define(
          * 自定义事件绑定
          * @param {string} eventName 事件名称，resize，hover，drag，etc~
          * @param {Function} handler 响应函数
+         * @param {Object} [context] 响应函数
          */
-        Handler.prototype.on = function (eventName, handler) {
-            this.bind(eventName, handler);
+        Handler.prototype.on = function (eventName, handler, context) {
+            this.bind(eventName, handler, context);
             return this;
         };
 
@@ -774,9 +768,19 @@ define(
             }
             else if (!draggedShape) {
                 // 无hover目标，无拖拽对象，原生事件分发
-                this.dispatch(eventName, {
+                var eveObj = {
                     type: eventName,
                     event: event
+                };
+                this.dispatch(eventName, eveObj);
+                // 分发事件到用户自定义层
+                this.painter.eachOtherLayer(function (layer) {
+                    if (typeof(layer[eventHandler]) == 'function') {
+                        layer[eventHandler](eveObj);
+                    }
+                    if (layer.dispatch) {
+                        layer.dispatch(eventName, eveObj);
+                    }
                 });
             }
         };
@@ -823,7 +827,7 @@ define(
         ];
 
         // touch有指尖错觉，四向尝试，让touch上的点击更好触发事件
-        Handler.prototype._mobildFindFixed = function (event) {
+        Handler.prototype._mobileFindFixed = function (event) {
             this._lastHover = null;
             this._mouseX = event.zrenderX;
             this._mouseY = event.zrenderY;
@@ -831,11 +835,10 @@ define(
             this._event = event;
 
             this._iterateAndFindHover();
-
             for (var i = 0; !this._lastHover && i < MOBILE_TOUCH_OFFSETS.length ; i++) {
                 var offset = MOBILE_TOUCH_OFFSETS[ i ];
                 offset.x && (this._mouseX += offset.x);
-                offset.y && (this._mouseX += offset.y);
+                offset.y && (this._mouseY += offset.y);
 
                 this._iterateAndFindHover();
             }
@@ -936,7 +939,7 @@ define(
                                 ? event.targetTouches[0]
                                 : event.changedTouches[0];
                 if (touch) {
-                    var rBounding = this.root.getBoundingClientRect();
+                    var rBounding = this.painter._domRoot.getBoundingClientRect();
                     // touch事件坐标是全屏的~
                     event.zrenderX = touch.clientX - rBounding.left;
                     event.zrenderY = touch.clientY - rBounding.top;

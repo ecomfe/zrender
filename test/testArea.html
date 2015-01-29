@@ -32,7 +32,7 @@
             'zrender/tool/util',
             'zrender/shape/Line',
             'zrender/shape/BezierCurve',
-            'zrender/shape/BrokenLine',
+            'zrender/shape/Polyline',
             'zrender/shape/Ring',
             'zrender/shape/Rectangle',
             'zrender/shape/Sector',
@@ -203,8 +203,8 @@
                     case 'line':
                         return _isInsideLine(area, x, y);
                     //折线----------------------2
-                    case 'broken-line':
-                        return _isInsideBrokenLine(area, x, y);
+                    case 'polyline':
+                        return _isInsidePolyline(area, x, y);
                     //文本----------------------3
                     case 'text':
                         return true;
@@ -271,7 +271,7 @@
                       < (area.lineWidth || 1);
             }
 
-            function _isInsideBrokenLine(area, x, y) {
+            function _isInsidePolyline(area, x, y) {
                 var pointList = area.pointList;
                 var lineArea;
                 var insideCatch = false;

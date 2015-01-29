@@ -176,7 +176,7 @@ zr.render();
                     ['shadowOffsetY', '{number=}', '默认为0，阴影纵向偏移，正值往下，负值往上'],
                     ['text', '{string=}', '默认为null，附加文本'],
                     ['textFont', '{string=}', '默认为null，附加文本文字样式，eg:"bold 18px verdana"'],
-                    ['textPosition', '{string=}', '默认为top，线型默认为end，附加文本位置。inside | left | right | top | bottom | start | end | specific，其中start end为线型（如line，brokenline）特有'],
+                    ['textPosition', '{string=}', '默认为top，线型默认为end，附加文本位置。inside | left | right | top | bottom | start | end | specific，其中start end为线型（如line, polyline）特有'],
                     ['textAlign', '{string=}', '默认根据textPosition自动设置，附加文本水平对齐。start | end | left | right | center'],
                     ['textBaseline', '{string=}', '默认根据textPosition自动设置，附加文本垂直对齐。top | bottom | middle | alphabetic | hanging | ideographic '],
                     ['textX', '{number=}', '当textPosition为specific时有效，指定附件文本横坐标'],
@@ -1341,7 +1341,7 @@ zr.render();
         ]
     },
     {
-        name : 'brokenLine',
+        name : 'polyline',
         plus : true,
         des : 'shape类：折线，属性继承<a href="#shape.base">base</a>，特有样式属性见下',
         content : [
@@ -1354,8 +1354,8 @@ zr.render();
                 ],
                 pre : (function(){
 // 折线
-var BrokenLineShape = require('zrender/shape/BrokenLine');
-zr.addShape(new BrokenLineShape({
+var PolylineShape = require('zrender/shape/Polyline');
+zr.addShape(new PolylineShape({
     style : {
         pointList : [[310, 120], [620, 190], [328, 260], [250, 340], [146, 200]],
         strokeColor : 'rgba(135, 206, 250, 0.8)',   // == color
@@ -1364,7 +1364,7 @@ zr.addShape(new BrokenLineShape({
         lineType : 'dashed',
         lineJoin : 'miter',
         miterLimit : 50,
-        text:'brokenLine',
+        text:'polyline',
         textPosition:'end'
     },
     draggable : true

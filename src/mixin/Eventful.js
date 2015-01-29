@@ -45,7 +45,7 @@ define(function (require) {
      * 绑定事件
      * @param {string} event 事件名
      * @param {Function} handler 事件处理函数
-     * @param {Object} context
+     * @param {Object} [context]
      */
     Eventful.prototype.bind = function (event, handler, context) {
         var _h = this._handlers;

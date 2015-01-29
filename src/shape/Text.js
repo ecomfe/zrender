@@ -21,8 +21,7 @@
  * @property {string} text 文本内容
  * @property {number} [maxWidth=null] 最大宽度限制
  * @property {string} [textFont] 附加文本样式，eg:'bold 18px verdana'
- * @property {string} [textAlign] 默认根据textPosition自动设置，附加文本水平对齐。
- *                                可以是start, end, left, right, center
+ * @property {string} [textAlign] 可以是start, end, left, right, center
  * @property {string} [textBaseline] 默认根据textPosition自动设置，附加文本垂直对齐。
  *                                可以是top, bottom, middle, alphabetic, hanging, ideographic
  * @property {string} [brushType='fill']

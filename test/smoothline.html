@@ -22,10 +22,10 @@
         [
             "zrender",
             "zrender/animation/animation",
-            "zrender/shape/BrokenLine",
+            "zrender/shape/Polyline",
             "zrender/shape/Polygon"
         ], 
-        function(zrender, Animation, BrokenLineShape, PolygonShape){
+        function(zrender, Animation, PolylineShape, PolygonShape){
 
             // 初始化zrender
             var zr = zrender.init( document.getElementById("Main") );
@@ -35,7 +35,7 @@
                 pointList.push([Math.random() * 300 + 100, Math.random() * 300 + 100]);
             }
 
-            var smoothLine = new BrokenLineShape({
+            var smoothLine = new PolylineShape({
                 style : {
                     pointList : pointList,
                     smooth : 'spline',

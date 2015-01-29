@@ -95,7 +95,7 @@ else {
             'zrender/shape/Star': fileLocation,
             'zrender/shape/Isogon': fileLocation,
             'zrender/shape/BezierCurve': fileLocation,
-            'zrender/shape/BrokenLine': fileLocation,
+            'zrender/shape/Polyline': fileLocation,
             'zrender/shape/Path': fileLocation,
             'zrender/shape/Polygon': fileLocation
         }
@@ -121,7 +121,7 @@ require(
         'zrender/shape/Star',
         'zrender/shape/Isogon',
         'zrender/shape/BezierCurve',
-        'zrender/shape/BrokenLine',
+        'zrender/shape/Polyline',
         'zrender/shape/Path',
         'zrender/shape/Polygon'
     ],

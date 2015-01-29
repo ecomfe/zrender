@@ -43,7 +43,7 @@ define(
         /**
          * @type {string}
          */
-        zrender.version = '2.0.6';
+        zrender.version = '2.0.7';
 
         /**
          * 创建zrender实例
@@ -452,9 +452,10 @@ define(
          * 
          * @param {string} eventName 事件名称
          * @param {Function} eventHandler 响应函数
+         * @param {Object} [context] 响应函数
          */
-        ZRender.prototype.on = function(eventName, eventHandler) {
-            this.handler.on(eventName, eventHandler);
+        ZRender.prototype.on = function(eventName, eventHandler, context) {
+            this.handler.on(eventName, eventHandler, context);
             return this;
         };
 

@@ -23,10 +23,10 @@
             "zrender/animation/animation",
             "zrender/shape/Star",
             "zrender/shape/Image",
-            "zrender/shape/BrokenLine",
+            "zrender/shape/Polyline",
             "zrender/tool/color"
         ], 
-        function (zrender, Animation, StarShape, ImageShape, BrokenLineShape, colorTool) {
+        function (zrender, Animation, StarShape, ImageShape, PolylineShape, colorTool) {
             // 初始化zrender
             var zr = zrender.init(document.getElementById("Main"));
 
@@ -80,7 +80,7 @@
                     });
                     points.push(point);
                 }
-                var brokenLine = {
+                var polyline = {
                     zlevel : 0,
                     style : {
                         pointList : points,
@@ -94,7 +94,7 @@
                         opacity: 1
                     }
                 }
-                zr.addShape(new BrokenLineShape(brokenLine));
+                zr.addShape(new PolylineShape(polyline));
 
                 deferred.start('spline');
             }

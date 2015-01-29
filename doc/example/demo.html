@@ -52,7 +52,7 @@
                 <li class="dropdown">
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="icon-download-alt icon-white"></i>Download <b class="caret"></b></a>
                   <ul class="dropdown-menu">
-                    <li><a href="https://github.com/ecomfe/zrender/archive/2.0.6.zip">ZIP (2.0.6)</a></li>
+                    <li><a href="https://github.com/ecomfe/zrender/archive/2.0.7.zip">ZIP (2.0.7)</a></li>
                     <li><a href="https://github.com/ecomfe/zrender/archive/master.zip">ZIP (Latest)</a></li>
                   </ul>
                 </li>
@@ -100,7 +100,7 @@ var HeartShape = require('zrender/shape/Heart');
 var DropletShape = require('zrender/shape/Droplet');
 var PolygonShape = require('zrender/shape/Polygon');
 var RectangleShape = require('zrender/shape/Rectangle');
-var BrokenLineShape = require('zrender/shape/BrokenLine');
+var PolylineShape = require('zrender/shape/Polyline');
 var LineShape = require('zrender/shape/Line');
 var BezierCurveShape = require('zrender/shape/BezierCurve');
 var TextShape = require('zrender/shape/Text');
@@ -282,12 +282,12 @@ zr.addShape(new RectangleShape({
 }));
 
 // 折线
-zr.addShape(new BrokenLineShape({
+zr.addShape(new PolylineShape({
     style : {
         pointList : [[10, 10], [60, 100], [148, 130], [250, 40], [446, 100]],
         strokeColor : color.getColor(colorIdx++),
         lineWidth : 3,
-        text : 'brokenLine'
+        text : 'polyline'
     },
     draggable:true
 }));
