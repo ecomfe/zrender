@@ -1476,6 +1476,13 @@ define(
             '[object CanvasGradient]': 1
         };
 
+        var objToString = Object.prototype.toString;
+
+        function isDom(obj) {
+            return obj && obj.nodeType === 1
+                   && typeof(obj.nodeName) == 'string';
+        }
+
         /**
          * 对一个object进行深度拷贝
          *
@@ -1492,9 +1499,9 @@ define(
                     }
                 }
                 else if (
-                    !BUILTIN_OBJECT[Object.prototype.toString.call(source)]
+                    !BUILTIN_OBJECT[objToString.call(source)]
                     // 是否为 dom 对象
-                    && ! (source.nodeType === 1 && typeof(source.nodeName) === 'string')
+                    && !isDom(source)
                 ) {
                     result = {};
                     for (var key in source) {
@@ -1512,8 +1519,11 @@ define(
 
         function mergeItem(target, source, key, overwrite) {
             if (source.hasOwnProperty(key)) {
-                if (typeof target[key] == 'object'
-                    && !BUILTIN_OBJECT[ Object.prototype.toString.call(target[key]) ]
+                var targetProp = target[key];
+                if (typeof targetProp == 'object'
+                    && !BUILTIN_OBJECT[objToString.call(targetProp)]
+                    // 是否为 dom 对象
+                    && !isDom(targetProp)
                 ) {
                     // 如果需要递归覆盖，就递归调用merge
                     merge(
@@ -4312,7 +4322,7 @@ define(
                     );
                 // 折线
                 case 'polyline':
-                    return isInsideBrokenLine(
+                    return isInsidePolyline(
                         area.pointList, area.lineWidth, x, y
                     );
                 // 圆环
@@ -4559,7 +4569,7 @@ define(
                 || (angle + PI2 >= startAngle && angle + PI2 <= endAngle);
         }
 
-        function isInsideBrokenLine(points, lineWidth, x, y) {
+        function isInsidePolyline(points, lineWidth, x, y) {
             var lineWidth = Math.max(lineWidth, 10);
             for (var i = 0, l = points.length - 1; i < l; i++) {
                 var x0 = points[i][0];
@@ -5046,7 +5056,7 @@ define(
             isInsideCircle: isInsideCircle,
             isInsideLine: isInsideLine,
             isInsideRect: isInsideRect,
-            isInsideBrokenLine: isInsideBrokenLine,
+            isInsidePolyline: isInsidePolyline,
 
             isInsideCubicStroke: isInsideCubicStroke,
             isInsideQuadraticStroke: isInsideQuadraticStroke
@@ -7711,6 +7721,7 @@ define('zrender/Layer',['require','./mixin/Transformable','./tool/util','./confi
         this.dom.style['-webkit-user-select'] = 'none';
         this.dom.style['user-select'] = 'none';
         this.dom.style['-webkit-touch-callout'] = 'none';
+        this.dom.style['-webkit-tap-highlight-color'] = 'rgba(0,0,0,0)';
 
         vmlCanvasManager && vmlCanvasManager.initElement(this.dom);
 
@@ -12520,12 +12531,12 @@ define('zrender/shape/util/PathProxy',['require','../../tool/vector'],function (
  *                                可以是top, bottom, middle, alphabetic, hanging, ideographic
  */
 define(
-    'zrender/shape/Heart',['require','./Base','./util/PathProxy','zrender/tool/area','../tool/util'],function (require) {
+    'zrender/shape/Heart',['require','./Base','./util/PathProxy','../tool/area','../tool/util'],function (require) {
         
         
         var Base = require('./Base');
         var PathProxy = require('./util/PathProxy');
-        var area = require('zrender/tool/area');
+        var area = require('../tool/area');
         
         /**
          * @alias module:zrender/shape/Heart
@@ -12668,12 +12679,12 @@ define(
  *                                可以是top, bottom, middle, alphabetic, hanging, ideographic
  */
 define(
-    'zrender/shape/Droplet',['require','./Base','./util/PathProxy','zrender/tool/area','../tool/util'],function (require) {
+    'zrender/shape/Droplet',['require','./Base','./util/PathProxy','../tool/area','../tool/util'],function (require) {
         
 
         var Base = require('./Base');
         var PathProxy = require('./util/PathProxy');
-        var area = require('zrender/tool/area');
+        var area = require('../tool/area');
 
         /**
          * @alias module:zrender/shape/Droplet
