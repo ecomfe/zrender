@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Index</title>
+    <title>Namespace: EVENT</title>
     
     
     
@@ -2876,112 +2876,899 @@
     </ul>
 </div>
     <div class="main">
-        <h1 class="page-title" data-filename="index.html">Index</h1>
+        <h1 class="page-title" data-filename="module-zrender_config.EVENT.html">Namespace: EVENT</h1>
         
 
 
+
+<section>
+    
+<header>
+    <h2>
+        <span class="ancestors"><a href="module-zrender_config.html">zrender/config</a>.</span>
+    
+    EVENT
+    </h2>
+    
+</header>  
+
+<article>
+    <div class="container-overview">
+    
+    
+    
+        
+        
+        
+<dl class="details">
+    
+        
+    
+    
     
 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+</dl>
 
-    <h3> </h3>
-
-
-
-
-
-
-
-
+        
+        
+    
+    </div>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+        <h3 class="subsection-title">Members</h3>
+        
+        <dl>
+            
+<dt>
+    <div class="nameContainer">
+        <h4 class="name" id=".CLICK">
+            
+            <span class="type-signature static">static</span>module:zrender/config.EVENT.CLICK<span class="type-signature type string">string</span> 
+        </h4>
+    </div>
+    
+    
+</dt>
+<dd>
+    
+    <div class="description">
+        <p>鼠标按钮被（手指）按下，事件对象是：目标图形元素或空</p>
+    </div>
+    
+    
+    
+<dl class="details">
+    
+        
+    
+    
     
 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+</dl>
 
+    
+    
+</dd>
 
+        
+            
+<dt>
+    <div class="nameContainer">
+        <h4 class="name" id=".DBLCLICK">
+            
+            <span class="type-signature static">static</span>module:zrender/config.EVENT.DBLCLICK<span class="type-signature type string">string</span> 
+        </h4>
+    </div>
+    
+    
+</dt>
+<dd>
+    
+    <div class="description">
+        <p>双击事件</p>
+    </div>
+    
+    
+    
+<dl class="details">
+    
+        
+    
+    
+    
 
-    <section>
-        <article class="readme"><h1>ZRender</h1><p>http://ecomfe.github.com/zrender</p>
-<p>一个轻量级的Canvas类库，MVC封装，数据驱动，提供类Dom事件模型，让canvas绘图大不同！</p>
-<h2>Architecture</h2><p>MVC核心封装实现图形仓库、视图渲染和交互控制：</p>
-<ul>
-<li>Stroage(M) : shape数据CURD管理</li>
-<li>Painter(V) : canvase元素生命周期管理，视图渲染，绘画，更新控制</li>
-<li>Handler(C) : 事件交互处理，实现完整dom事件模拟封装</li>
-<li>shape : 图形实体，分而治之的图形策略，可定义扩展</li>
-<li>tool : 绘画扩展相关实用方法，工具及脚手架</li>
-</ul>
-<p><img src="../asset/img/zrender.png" alt="ZRender Architecture"></p>
-<h2>特色</h2><h3>简单</h3><p>无需canvas基础，精简的接口方法，符合AMD标准，易学易用。</p>
-<pre class="prettyprint source"><code>require(
-    ['zrender/zrender'],
-    function(zrender) {
-        // just init to get a zrender Instance
-        var zr = zrender.init(document.getElementById('main'));
-        // zr can be used now!
-        ...
-    }
-);</code></pre><h3>数据驱动</h3><p>利用zrender绘图，你只需做的是定义图形数据，剩下的事情就交给zrender吧~</p>
-<p>哦，对了，差点忘记告诉你，只要在你定义图形数据时设置draggable属性为true，图形拖拽就已经可用了！</p>
-<pre class="prettyprint source"><code>var CircleShape = require('zrender/shape/Circle');
-zr.addShape(
-    new CircleShape({
-        style : {
-            x : 100,
-            y : 100,
-            r : 50,
-            color : 'rgba(220, 20, 60, 0.8)'
-        }
-    })
-);
-zr.render();</code></pre><h3>完整的事件封装</h3><p>用你再熟悉不过的dom事件模型去操作canvas里的图形元素是件很cool的事情~</p>
-<p>你不仅可以响应zrender全局事件，你甚至可以为在特定shape上添加特定事件，后续发生的一切都会按你想的那样去运行~</p>
-<pre class="prettyprint source"><code>var CircleShape = require('zrender/shape/Circle');
-zr.addShape(
-    new CircleShape({
-        style : {...},
-        // 图形元素上绑定事件
-        onmouseover : function(params) {
-            console.log('catch you!');
-        }
-    })
-);
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+</dl>
 
-// 全局事件
-zr.on('click', function(params) {alert('Hello, zrender!')});</code></pre><h3>高效的分层刷新</h3><p>正如css中zlevel的作用一样，你可以定义把不同的shape分别放在不同的层中，这不仅实现了视觉上的上下覆盖，
-更重要的是当图形元素发生变化后的refresh将局限在发生了变化的图形层中，这在你利用zrender做各种动画效果时将十分有用，
-性能自然也更加出色~</p>
-<pre class="prettyprint source"><code>zr.addShape(shapeA);    // shapeA.zlevel = 0; (default) 
-zr.addShape(shapeB);    // shapeB.zlevel = 1;
-zr.render();
+    
+    
+</dd>
 
-zr.modShape(shapeB.id, {color:'red'}); 
-// Don't worry! Is merge!
+        
+            
+<dt>
+    <div class="nameContainer">
+        <h4 class="name" id=".DRAGEND">
+            
+            <span class="type-signature static">static</span>module:zrender/config.EVENT.DRAGEND<span class="type-signature type string">string</span> 
+        </h4>
+    </div>
+    
+    
+</dt>
+<dd>
+    
+    <div class="description">
+        <p>拖拽完毕时触发（在drop之后触发），事件对象是：被拖拽图形元素</p>
+    </div>
+    
+    
+    
+<dl class="details">
+    
+        
+    
+    
+    
 
-zr.refresh();  
-// Just the level 1 canvas has been refresh~</code></pre><h3>丰富的图形选项</h3><p>当前内置多种图形元素（圆形、椭圆、圆环、扇形、矩形、多边形、直线、曲线、心形、水滴、路径、文字、图片。Will be more..），统一且丰富的图形属性充分满足你的个性化需求！</p>
-<pre class="prettyprint source"><code>var CircleShape = require('zrender/shape/Circle');
-var myShape = new CircleShape({
-    zlevel : 1,
-    style : {
-        ... // color | strokeColor | text | textFont | ...
-    },
-    draggable : true
-});</code></pre><h3>强大的动画支持</h3><p>提供promise式的动画接口和常用缓动函数，轻松实现各种动画需求~</p>
-<pre class="prettyprint source"><code>zr.addShape(newShape);
-zr.render();
-zr.animate(newShape.id)
-  .when(1000, { position : [300, 200] })
-  .when(2000, { position : [30, 400] })
-  .start('BounceOut');</code></pre><h3>易于扩展</h3><p>分而治之的图形定义策略允许你扩展自己独有的图形元素，你既可以完整实现三个接口方法（brush、drift、isCover），
-也可以通过base派生后仅实现你所关心的图形细节。</p>
-<pre class="prettyprint source"><code>function MyShape() { ... }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+</dl>
 
-zr.addShape(
-    new MyShape({           // and use it!
-        style : {...},
-        ...
-    })
-);</code></pre></article>
-    </section>
+    
+    
+</dd>
 
+        
+            
+<dt>
+    <div class="nameContainer">
+        <h4 class="name" id=".DRAGENTER">
+            
+            <span class="type-signature static">static</span>module:zrender/config.EVENT.DRAGENTER<span class="type-signature type string">string</span> 
+        </h4>
+    </div>
+    
+    
+</dt>
+<dd>
+    
+    <div class="description">
+        <p>拖拽图形元素进入目标图形元素时触发，事件对象是：目标图形元素</p>
+    </div>
+    
+    
+    
+<dl class="details">
+    
+        
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+</dl>
+
+    
+    
+</dd>
+
+        
+            
+<dt>
+    <div class="nameContainer">
+        <h4 class="name" id=".DRAGLEAVE">
+            
+            <span class="type-signature static">static</span>module:zrender/config.EVENT.DRAGLEAVE<span class="type-signature type string">string</span> 
+        </h4>
+    </div>
+    
+    
+</dt>
+<dd>
+    
+    <div class="description">
+        <p>拖拽图形元素离开目标图形元素时触发，事件对象是：目标图形元素</p>
+    </div>
+    
+    
+    
+<dl class="details">
+    
+        
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+</dl>
+
+    
+    
+</dd>
+
+        
+            
+<dt>
+    <div class="nameContainer">
+        <h4 class="name" id=".DRAGOVER">
+            
+            <span class="type-signature static">static</span>module:zrender/config.EVENT.DRAGOVER<span class="type-signature type string">string</span> 
+        </h4>
+    </div>
+    
+    
+</dt>
+<dd>
+    
+    <div class="description">
+        <p>拖拽图形元素在目标图形元素上移动时触发，事件对象是：目标图形元素</p>
+    </div>
+    
+    
+    
+<dl class="details">
+    
+        
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+</dl>
+
+    
+    
+</dd>
+
+        
+            
+<dt>
+    <div class="nameContainer">
+        <h4 class="name" id=".DRAGSTART">
+            
+            <span class="type-signature static">static</span>module:zrender/config.EVENT.DRAGSTART<span class="type-signature type string">string</span> 
+        </h4>
+    </div>
+    
+    
+</dt>
+<dd>
+    
+    <div class="description">
+        <p>开始拖拽时触发，事件对象是：被拖拽图形元素</p>
+    </div>
+    
+    
+    
+<dl class="details">
+    
+        
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+</dl>
+
+    
+    
+</dd>
+
+        
+            
+<dt>
+    <div class="nameContainer">
+        <h4 class="name" id=".DROP">
+            
+            <span class="type-signature static">static</span>module:zrender/config.EVENT.DROP<span class="type-signature type string">string</span> 
+        </h4>
+    </div>
+    
+    
+</dt>
+<dd>
+    
+    <div class="description">
+        <p>拖拽图形元素放在目标图形元素内时触发，事件对象是：目标图形元素</p>
+    </div>
+    
+    
+    
+<dl class="details">
+    
+        
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+</dl>
+
+    
+    
+</dd>
+
+        
+            
+<dt>
+    <div class="nameContainer">
+        <h4 class="name" id=".GLOBALOUT">
+            
+            <span class="type-signature static">static</span>module:zrender/config.EVENT.GLOBALOUT<span class="type-signature type string">string</span> 
+        </h4>
+    </div>
+    
+    
+</dt>
+<dd>
+    
+    <div class="description">
+        <p>全局离开，MOUSEOUT触发比较频繁，一次离开优化绑定</p>
+    </div>
+    
+    
+    
+<dl class="details">
+    
+        
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+</dl>
+
+    
+    
+</dd>
+
+        
+            
+<dt>
+    <div class="nameContainer">
+        <h4 class="name" id=".MOUSEDOWN">
+            
+            <span class="type-signature static">static</span>module:zrender/config.EVENT.MOUSEDOWN<span class="type-signature type string">string</span> 
+        </h4>
+    </div>
+    
+    
+</dt>
+<dd>
+    
+    <div class="description">
+        <p>鼠标按钮（手指）被按下，事件对象是：目标图形元素或空</p>
+    </div>
+    
+    
+    
+<dl class="details">
+    
+        
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+</dl>
+
+    
+    
+</dd>
+
+        
+            
+<dt>
+    <div class="nameContainer">
+        <h4 class="name" id=".MOUSEMOVE">
+            
+            <span class="type-signature static">static</span>module:zrender/config.EVENT.MOUSEMOVE<span class="type-signature type string">string</span> 
+        </h4>
+    </div>
+    
+    
+</dt>
+<dd>
+    
+    <div class="description">
+        <p>鼠标（手指）被移动，事件对象是：目标图形元素或空</p>
+    </div>
+    
+    
+    
+<dl class="details">
+    
+        
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+</dl>
+
+    
+    
+</dd>
+
+        
+            
+<dt>
+    <div class="nameContainer">
+        <h4 class="name" id=".MOUSEOUT">
+            
+            <span class="type-signature static">static</span>module:zrender/config.EVENT.MOUSEOUT<span class="type-signature type string">string</span> 
+        </h4>
+    </div>
+    
+    
+</dt>
+<dd>
+    
+    <div class="description">
+        <p>鼠标从某图形元素移开，事件对象是：目标图形元素</p>
+    </div>
+    
+    
+    
+<dl class="details">
+    
+        
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+</dl>
+
+    
+    
+</dd>
+
+        
+            
+<dt>
+    <div class="nameContainer">
+        <h4 class="name" id=".MOUSEOVER">
+            
+            <span class="type-signature static">static</span>module:zrender/config.EVENT.MOUSEOVER<span class="type-signature type string">string</span> 
+        </h4>
+    </div>
+    
+    
+</dt>
+<dd>
+    
+    <div class="description">
+        <p>鼠标移到某图形元素之上，事件对象是：目标图形元素</p>
+    </div>
+    
+    
+    
+<dl class="details">
+    
+        
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+</dl>
+
+    
+    
+</dd>
+
+        
+            
+<dt>
+    <div class="nameContainer">
+        <h4 class="name" id=".MOUSEUP">
+            
+            <span class="type-signature static">static</span>module:zrender/config.EVENT.MOUSEUP<span class="type-signature type string">string</span> 
+        </h4>
+    </div>
+    
+    
+</dt>
+<dd>
+    
+    <div class="description">
+        <p>鼠标按键（手指）被松开，事件对象是：目标图形元素或空</p>
+    </div>
+    
+    
+    
+<dl class="details">
+    
+        
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+</dl>
+
+    
+    
+</dd>
+
+        
+            
+<dt>
+    <div class="nameContainer">
+        <h4 class="name" id=".MOUSEWHEEL">
+            
+            <span class="type-signature static">static</span>module:zrender/config.EVENT.MOUSEWHEEL<span class="type-signature type string">string</span> 
+        </h4>
+    </div>
+    
+    
+</dt>
+<dd>
+    
+    <div class="description">
+        <p>鼠标滚轮变化，事件对象是：目标图形元素或空</p>
+    </div>
+    
+    
+    
+<dl class="details">
+    
+        
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+</dl>
+
+    
+    
+</dd>
+
+        
+            
+<dt>
+    <div class="nameContainer">
+        <h4 class="name" id=".RESIZE">
+            
+            <span class="type-signature static">static</span>module:zrender/config.EVENT.RESIZE<span class="type-signature type string">string</span> 
+        </h4>
+    </div>
+    
+    
+</dt>
+<dd>
+    
+    <div class="description">
+        <p>窗口大小变化</p>
+    </div>
+    
+    
+    
+<dl class="details">
+    
+        
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+</dl>
+
+    
+    
+</dd>
+
+        
+            
+<dt>
+    <div class="nameContainer">
+        <h4 class="name" id=".touchClickDelay">
+            
+            <span class="type-signature static">static</span>module:zrender/config.EVENT.touchClickDelay<span class="type-signature type number">number</span> 
+        </h4>
+    </div>
+    
+    
+</dt>
+<dd>
+    
+    <div class="description">
+        <p>touch end - start &lt; delay is click</p>
+    </div>
+    
+    
+    
+<dl class="details">
+    
+        
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+</dl>
+
+    
+    
+</dd>
+
+        </dl>
+    
+    
+    
+    
+    
+    
+    
+</article>
+
+</section>  
 
 
 
