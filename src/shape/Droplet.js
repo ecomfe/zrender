@@ -51,7 +51,7 @@ define(
 
         var Base = require('./Base');
         var PathProxy = require('./util/PathProxy');
-        var area = require('zrender/tool/area');
+        var area = require('../tool/area');
 
         /**
          * @alias module:zrender/shape/Droplet
