@@ -8135,6 +8135,11 @@ define(
              * @type {HTMLElement}
              */
             this.root = root;
+            root.style['-webkit-tap-highlight-color'] = 'transparent';
+            root.style['-webkit-user-select'] = 'none';
+            root.style['user-select'] = 'none';
+            root.style['-webkit-touch-callout'] = 'none';
+
             /**
              * @type {module:zrender/Storage}
              */
