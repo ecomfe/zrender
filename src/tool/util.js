@@ -22,8 +22,9 @@ define(
 
         function isDom(obj) {
             return obj && obj.nodeType === 1
-                && typeof(obj.nodeName) == 'string'
+                   && typeof(obj.nodeName) == 'string';
         }
+
         /**
          * 对一个object进行深度拷贝
          *
