@@ -56,6 +56,7 @@ define(function (require) {
         this.dom.style['-webkit-user-select'] = 'none';
         this.dom.style['user-select'] = 'none';
         this.dom.style['-webkit-touch-callout'] = 'none';
+        this.dom.style['-webkit-tap-highlight-color'] = 'rgba(0,0,0,0)';
 
         vmlCanvasManager && vmlCanvasManager.initElement(this.dom);
 
