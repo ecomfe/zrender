@@ -49,7 +49,7 @@ define(
          * 创建zrender实例
          *
          * @param {HTMLElement} dom 绘图容器
-         * @return {module:zrender~ZRender} ZRender实例
+         * @return {module:zrender/ZRender} ZRender实例
          */
         // 不让外部直接new ZRender实例，为啥？
         // 不为啥，提供全局可控同时减少全局污染和降低命名冲突的风险！
@@ -61,7 +61,7 @@ define(
 
         /**
          * zrender实例销毁
-         * @param {module:zrender~ZRender} zr ZRender对象，不传则销毁全部
+         * @param {module:zrender/ZRender} zr ZRender对象，不传则销毁全部
          */
         // 在_instances里的索引也会删除了
         // 管生就得管死，可以通过zrender.dispose(zr)销毁指定ZRender实例
@@ -83,7 +83,7 @@ define(
         /**
          * 获取zrender实例
          * @param {string} id ZRender对象索引
-         * @return {module:zrender~ZRender}
+         * @return {module:zrender/ZRender}
          */
         zrender.getInstance = function (id) {
             return _instances[id];
@@ -117,11 +117,14 @@ define(
         }
 
         /**
+         * @module zrender/ZRender
+         */
+        /**
          * ZRender接口类，对外可用的所有接口都在这里
          * 非get接口统一返回支持链式调用
          *
          * @constructor
-         * @alias module:zrender~ZRender
+         * @alias module:zrender/ZRender
          * @param {string} id 唯一标识
          * @param {HTMLElement} dom dom对象，不帮你做document.getElementById
          * @return {ZRender} ZRender实例
