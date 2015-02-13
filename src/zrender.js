@@ -109,7 +109,6 @@ define(
                 for (var i = 0, l = animatingElements.length; i < l; i++) {
                     zrInstance.storage.mod(animatingElements[i].id);
                 }
-
                 if (animatingElements.length || zrInstance._needsRefreshNextFrame) {
                     zrInstance.refresh();
                 }

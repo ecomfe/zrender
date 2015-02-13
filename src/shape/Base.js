@@ -435,34 +435,6 @@ define(
         };
 
         /**
-         * 变换鼠标位置到 shape 的局部坐标空间
-         * @method
-         * @param {number} x
-         * @param {number} y
-         * @return {Array.<number>}
-         */
-        Base.prototype.getTansform = (function() {
-            
-            var invTransform = [];
-
-            return function (x, y) {
-                var originPos = [ x, y ];
-                // 对鼠标的坐标也做相同的变换
-                if (this.needTransform && this.transform) {
-                    matrix.invert(invTransform, this.transform);
-
-                    matrix.mulVector(originPos, invTransform, [ x, y, 1 ]);
-
-                    if (x == originPos[0] && y == originPos[1]) {
-                        // 避免外部修改导致的needTransform不准确
-                        this.updateNeedTransform();
-                    }
-                }
-                return originPos;
-            };
-        })();
-
-        /**
          * 构建绘制的Path
          * @param {CanvasRenderingContext2D} ctx
          * @param {module:zrender/shape/Base~IBaseShapeStyle} style
@@ -487,26 +459,29 @@ define(
          * @return {boolean}
          */
         Base.prototype.isCover = function (x, y) {
-            var originPos = this.getTansform(x, y);
+            var originPos = this.transformCoordToLocal(x, y);
             x = originPos[0];
             y = originPos[1];
 
             // 快速预判并保留判断矩形
-            var rect = this.style.__rect;
-            if (!rect) {
-                rect = this.style.__rect = this.getRect(this.style);
-            }
-
-            if (x >= rect.x
-                && x <= (rect.x + rect.width)
-                && y >= rect.y
-                && y <= (rect.y + rect.height)
-            ) {
+            if (this.isCoverRect(x, y)) {
                 // 矩形内
                 return require('../tool/area').isInside(this, this.style, x, y);
             }
             
             return false;
+        };
+
+        Base.prototype.isCoverRect = function (x, y) {
+            // 快速预判并保留判断矩形
+            var rect = this.style.__rect;
+            if (!rect) {
+                rect = this.style.__rect = this.getRect(this.style);
+            }
+            return x >= rect.x
+                && x <= (rect.x + rect.width)
+                && y >= rect.y
+                && y <= (rect.y + rect.height);
         };
 
         /**

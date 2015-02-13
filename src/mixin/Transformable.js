@@ -9,7 +9,9 @@ define(function (require) {
 
     var matrix = require('../tool/matrix');
     var vector = require('../tool/vector');
-    var origin = [ 0, 0 ];
+    var origin = [0, 0];
+
+    var mTranslate = matrix.translate;
 
     var EPSILON = 5e-5;
 
@@ -81,12 +83,8 @@ define(function (require) {
             
             this.updateNeedTransform();
 
-            if (this.parent) {
-                this.needTransform = this.needLocalTransform || this.parent.needTransform;
-            }
-            else {
-                this.needTransform = this.needLocalTransform;
-            }
+            var parentHasTransform = this.parent && this.parent.needTransform;
+            this.needTransform = this.needLocalTransform || parentHasTransform;
             
             if (!this.needTransform) {
                 return;
@@ -96,26 +94,23 @@ define(function (require) {
             matrix.identity(m);
 
             if (this.needLocalTransform) {
+                var scale = this.scale;
                 if (
-                    isNotAroundZero(this.scale[0])
-                 || isNotAroundZero(this.scale[1])
+                    isNotAroundZero(scale[0])
+                 || isNotAroundZero(scale[1])
                 ) {
-                    origin[0] = -this.scale[2] || 0;
-                    origin[1] = -this.scale[3] || 0;
+                    origin[0] = -scale[2] || 0;
+                    origin[1] = -scale[3] || 0;
                     var haveOrigin = isNotAroundZero(origin[0])
                                   || isNotAroundZero(origin[1]);
                     if (haveOrigin) {
-                        matrix.translate(
-                            m, m, origin
-                        );
+                        mTranslate(m, m, origin);
                     }
-                    matrix.scale(m, m, this.scale);
+                    matrix.scale(m, m, scale);
                     if (haveOrigin) {
                         origin[0] = -origin[0];
                         origin[1] = -origin[1];
-                        matrix.translate(
-                            m, m, origin
-                        );
+                        mTranslate(m, m, origin);
                     }
                 }
 
@@ -126,17 +121,13 @@ define(function (require) {
                         var haveOrigin = isNotAroundZero(origin[0])
                                       || isNotAroundZero(origin[1]);
                         if (haveOrigin) {
-                            matrix.translate(
-                                m, m, origin
-                            );
+                            mTranslate(m, m, origin);
                         }
                         matrix.rotate(m, m, this.rotation[0]);
                         if (haveOrigin) {
                             origin[0] = -origin[0];
                             origin[1] = -origin[1];
-                            matrix.translate(
-                                m, m, origin
-                            );
+                            mTranslate(m, m, origin);
                         }
                     }
                 }
@@ -149,22 +140,24 @@ define(function (require) {
                 if (
                     isNotAroundZero(this.position[0]) || isNotAroundZero(this.position[1])
                 ) {
-                    matrix.translate(m, m, this.position);
+                    mTranslate(m, m, this.position);
                 }
             }
 
+            // 应用父节点变换
+            if (parentHasTransform) {
+                if (this.needLocalTransform) {
+                    matrix.mul(m, this.parent.transform, m);
+                }
+                else {
+                    matrix.copy(m, this.parent.transform);
+                }
+            }
             // 保存这个变换矩阵
             this.transform = m;
 
-            // 应用父节点变换
-            if (this.parent && this.parent.needTransform) {
-                if (this.needLocalTransform) {
-                    matrix.mul(this.transform, this.parent.transform, this.transform);
-                }
-                else {
-                    matrix.copy(this.transform, this.parent.transform);
-                }
-            }
+            this.invTransform = this.invTransform || matrix.create();
+            matrix.invert(this.invTransform, m);
         },
         /**
          * 将自己的transform应用到context上
@@ -173,11 +166,7 @@ define(function (require) {
         setTransform: function (ctx) {
             if (this.needTransform) {
                 var m = this.transform;
-                ctx.transform(
-                    m[0], m[1],
-                    m[2], m[3],
-                    m[4], m[5]
-                );
+                ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
             }
         },
         /**
@@ -197,13 +186,14 @@ define(function (require) {
                     return;
                 }
                 vector.normalize(v, v);
+                var scale = this.scale;
                 // Y Axis
                 // TODO Scale origin ?
-                m[2] = v[0] * this.scale[1];
-                m[3] = v[1] * this.scale[1];
+                m[2] = v[0] * scal[1];
+                m[3] = v[1] * scal[1];
                 // X Axis
-                m[0] = v[1] * this.scale[0];
-                m[1] = -v[0] * this.scale[0];
+                m[0] = v[1] * scal[0];
+                m[1] = -v[0] * scal[0];
                 // Position
                 m[4] = this.position[0];
                 m[5] = this.position[1];
@@ -237,6 +227,21 @@ define(function (require) {
             scale[2] = scale[3] = 0;
             rotation[0] = Math.atan2(-m[1] / sy, m[0] / sx);
             rotation[1] = rotation[2] = 0;
+        },
+
+        /**
+         * 变换坐标位置到 shape 的局部坐标空间
+         * @method
+         * @param {number} x
+         * @param {number} y
+         * @return {Array.<number>}
+         */
+        transformCoordToLocal: function (x, y) {
+            var v2 = [x, y];
+            if (this.needTransform && this.invTransform) {
+                matrix.mulVector(v2, this.invTransform, v2);
+            }
+            return v2;
         }
     };
 

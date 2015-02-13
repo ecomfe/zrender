@@ -145,8 +145,10 @@ define(
 
                 function step() {
                     if (self._running) {
-                        self._update();
+                        
                         requestAnimationFrame(step);
+
+                        self._update();
                     }
                 }
 

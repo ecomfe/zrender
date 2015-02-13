@@ -103,10 +103,10 @@ define(function (require) {
             if (style.__rect) {
                 return style.__rect;
             }
-            var minX = Number.MAX_VALUE;
-            var maxX = Number.MIN_VALUE;
-            var minY = Number.MAX_VALUE;
-            var maxY = Number.MIN_VALUE;
+            var minX = Infinity;
+            var maxX = -Infinity;
+            var minY = Infinity;
+            var maxY = -Infinity;
             for (var i = 0; i < style.shapeList.length; i++) {
                 var subShape = style.shapeList[i];
                 // TODO Highlight style ?
@@ -129,20 +129,11 @@ define(function (require) {
         },
 
         isCover: function (x, y) {
-            var originPos = this.getTansform(x, y);
+            var originPos = this.transformCoordToLocal(x, y);
             x = originPos[0];
             y = originPos[1];
-
-            var rect = this.style.__rect;
-            if (!rect) {
-                rect = this.getRect(this.style);
-            }
-
-            if (x >= rect.x
-                && x <= (rect.x + rect.width)
-                && y >= rect.y
-                && y <= (rect.y + rect.height)
-            ) {
+            
+            if (this.isCoverRect(x, y)) {
                 for (var i = 0; i < this.style.shapeList.length; i++) {
                     var subShape = this.style.shapeList[i];
                     if (subShape.isCover(x, y)) {
