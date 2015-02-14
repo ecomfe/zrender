@@ -96,7 +96,7 @@ define(function(require) {
             }
             else {
                 var t1 = -c / b;  //t1, t2, t3, b is not zero
-                if (t1 >=0 && t1 <= 1) {
+                if (t1 >= 0 && t1 <= 1) {
                     roots[n++] = t1;
                 }
             }
@@ -407,6 +407,30 @@ define(function(require) {
     }
 
     /**
+     * 细分二次贝塞尔曲线
+     * @memberOf module:zrender/tool/curve
+     * @param  {[type]} p0 [description]
+     * @param  {[type]} p1 [description]
+     * @param  {[type]} p2 [description]
+     * @return {[type]}    [description]
+     */
+    function quadraticSubdivide(p0, p1, p2, t, out) {
+        var p01 = (p1 - p0) * t + p0;
+        var p12 = (p2 - p1) * t + p1;
+        var p012 = (p12 - p01) * t + p01;
+
+        // Seg0
+        out[0] = p0;
+        out[1] = p01;
+        out[2] = p012;
+
+        // Seg1
+        out[3] = p012;
+        out[4] = p12;
+        out[5] = p2;
+    }
+
+    /**
      * 投射点到二次贝塞尔曲线上，返回投射距离。
      * 投射点有可能会有一个或者多个，这里只返回其中距离最短的一个。
      * @param {number} x0
@@ -506,6 +530,8 @@ define(function(require) {
         quadraticRootAt: quadraticRootAt,
 
         quadraticExtremum: quadraticExtremum,
+
+        quadraticSubdivide: quadraticSubdivide,
 
         quadraticProjectPoint: quadraticProjectPoint
     };
