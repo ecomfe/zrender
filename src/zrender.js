@@ -175,6 +175,7 @@ define(
          */
         ZRender.prototype.addShape = function (shape) {
             this.storage.addRoot(shape);
+            this._needsRefreshNextFrame = true;
             return this;
         };
 
@@ -185,6 +186,7 @@ define(
          */
         ZRender.prototype.addGroup = function(group) {
             this.storage.addRoot(group);
+            this._needsRefreshNextFrame = true;
             return this;
         };
 
@@ -195,6 +197,7 @@ define(
          */
         ZRender.prototype.delShape = function (shapeId) {
             this.storage.delRoot(shapeId);
+            this._needsRefreshNextFrame = true;
             return this;
         };
 
@@ -205,6 +208,7 @@ define(
          */
         ZRender.prototype.delGroup = function (groupId) {
             this.storage.delRoot(groupId);
+            this._needsRefreshNextFrame = true;
             return this;
         };
 
@@ -216,6 +220,7 @@ define(
          */
         ZRender.prototype.modShape = function (shapeId, shape) {
             this.storage.mod(shapeId, shape);
+            this._needsRefreshNextFrame = true;
             return this;
         };
 
@@ -227,6 +232,7 @@ define(
          */
         ZRender.prototype.modGroup = function (groupId, group) {
             this.storage.mod(groupId, group);
+            this._needsRefreshNextFrame = true;
             return this;
         };
 
@@ -247,6 +253,7 @@ define(
          */
         ZRender.prototype.modLayer = function (zLevel, config) {
             this.painter.modLayer(zLevel, config);
+            this._needsRefreshNextFrame = true;
             return this;
         };
 

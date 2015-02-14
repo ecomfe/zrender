@@ -214,11 +214,13 @@ define(
         /**
          * 修改图形(Shape)或者组(Group)
          * 
-         * @param {string} elId 唯一标识
+         * @param {string} el 唯一标识
          * @param {Object} [params] 参数
          */
-        Storage.prototype.mod = function (elId, params) {
-            var el = this._elements[elId];
+        Storage.prototype.mod = function (el, params) {
+            if (typeof (el) === 'string') {
+                el = this._elements[el];
+            }
             if (el) {
 
                 el.modSelf();
