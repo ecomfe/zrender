@@ -459,6 +459,7 @@ define(
 
                 animators.length = 0;
             }
+            return this;
         };
 
         /**
@@ -466,6 +467,8 @@ define(
          */
         ZRender.prototype.clearAnimation = function () {
             this.animation.clear();
+            this.animatingElements.length = 0;
+            return this;
         };
 
         /**
