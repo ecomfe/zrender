@@ -158,6 +158,17 @@ define(
             };
 
             this._needsRefreshNextFrame = false;
+
+            // 修改 storage.delFromMap, 每次删除元素之前删除动画
+            // FIXME 有点ugly
+            var self = this;
+            var storage = this.storage;
+            var oldDelFromMap = storage.delFromMap;
+            storage.delFromMap = function (elId) {
+                var el = storage.get(elId);
+                self.stopAnimation(el);
+                oldDelFromMap.call(storage, elId);
+            };
         };
 
         /**
@@ -170,68 +181,99 @@ define(
 
         /**
          * 添加图形形状到根节点
-         * 
+         * @deprecated Use {@link module:zrender/ZRender.prototype.addElement} instead
          * @param {module:zrender/shape/Base} shape 形状对象，可用属性全集，详见各shape
          */
         ZRender.prototype.addShape = function (shape) {
-            this.storage.addRoot(shape);
-            this._needsRefreshNextFrame = true;
+            this.addElement(shape);
             return this;
         };
 
         /**
          * 添加组到根节点
-         *
+         * @deprecated Use {@link module:zrender/ZRender.prototype.addElement} instead
          * @param {module:zrender/Group} group
          */
         ZRender.prototype.addGroup = function(group) {
-            this.storage.addRoot(group);
-            this._needsRefreshNextFrame = true;
+            this.addElement(group);
             return this;
         };
 
         /**
          * 从根节点删除图形形状
-         * 
+         * @deprecated Use {@link module:zrender/ZRender.prototype.delElement} instead
          * @param {string} shapeId 形状对象唯一标识
          */
         ZRender.prototype.delShape = function (shapeId) {
-            this.storage.delRoot(shapeId);
-            this._needsRefreshNextFrame = true;
+            this.delElement(shapeId);
             return this;
         };
 
         /**
          * 从根节点删除组
-         * 
+         * @deprecated Use {@link module:zrender/ZRender.prototype.delElement} instead
          * @param {string} groupId
          */
         ZRender.prototype.delGroup = function (groupId) {
-            this.storage.delRoot(groupId);
-            this._needsRefreshNextFrame = true;
+            this.delElement(groupId);
             return this;
         };
 
         /**
          * 修改图形形状
-         * 
+         * @deprecated Use {@link module:zrender/ZRender.prototype.modElement} instead
          * @param {string} shapeId 形状对象唯一标识
          * @param {Object} shape 形状对象
          */
         ZRender.prototype.modShape = function (shapeId, shape) {
-            this.storage.mod(shapeId, shape);
-            this._needsRefreshNextFrame = true;
+            this.modElement(shapeId, shape);
             return this;
         };
 
         /**
          * 修改组
-         * 
+         * @deprecated Use {@link module:zrender/ZRender.prototype.modElement} instead
          * @param {string} groupId
          * @param {Object} group
          */
         ZRender.prototype.modGroup = function (groupId, group) {
-            this.storage.mod(groupId, group);
+            this.modElement(groupId, group);
+            return this;
+        };
+
+        /**
+         * 添加元素
+         * @param  {string|module:zrender/Group|module:zrender/shape/Base} el
+         */
+        ZRender.prototype.addElement = function (el) {
+            this.storage.addRoot(el);
+            this._needsRefreshNextFrame = true;
+            return this;
+        };
+
+        /**
+         * 删除元素
+         * @param  {string|module:zrender/Group|module:zrender/shape/Base} el
+         */
+        ZRender.prototype.delElement = function (el) {
+            this.storage.delRoot(el);
+            this._needsRefreshNextFrame = true;
+            return this;
+        };
+
+        /**
+         * 修改元素, 主要标记图形或者组需要在下一帧刷新。
+         * 第二个参数为需要覆盖到元素上的参数，不建议使用。
+         *
+         * @example
+         *     el.style.color = 'red';
+         *     el.position = [10, 10];
+         *     zr.modElement(el);
+         * @param  {string|module:zrender/Group|module:zrender/shape/Base} el
+         * @param {Object} [params]
+         */
+        ZRender.prototype.modElement = function (el, params) {
+            this.storage.mod(el, params);
             this._needsRefreshNextFrame = true;
             return this;
         };
@@ -372,27 +414,50 @@ define(
                 }
 
                 var animatingElements = this.animatingElements;
-                if (typeof el.__aniCount === 'undefined') {
+                if (el.__animators == null) {
                     // 正在进行的动画记数
-                    el.__aniCount = 0;
+                    el.__animators = [];
                 }
-                if (el.__aniCount === 0) {
+                var animators = el.__animators;
+                if (animators.length === 0) {
                     animatingElements.push(el);
                 }
-                el.__aniCount++;
 
-                return this.animation.animate(target, { loop: loop })
+                var animator = this.animation.animate(target, { loop: loop })
                     .done(function () {
-                        el.__aniCount--;
-                        if (el.__aniCount === 0) {
+                        animators.splice(el.__animators.indexOf(animator), 1);
+                        if (animators.length === 0) {
                             // 从animatingElements里移除
                             var idx = util.indexOf(animatingElements, el);
                             animatingElements.splice(idx, 1);
                         }
                     });
+                animators.push(animator);
+
+                return animator;
             }
             else {
                 log('Element not existed');
+            }
+        };
+
+        /**
+         * 停止动画对象的动画
+         * @param  {string|module:zrender/Group|module:zrender/shape/Base} el
+         */
+        ZRender.prototype.stopAnimation = function (el) {
+            if (el.__animators) {
+                var animators = el.__animators;
+                var len = animators.length;
+                for (var i = 0; i < len; i++) {
+                    animators[i].stop();
+                }
+                if (len > 0) {
+                    var animatingElements = this.animatingElements;
+                    animatingElements.splice(animatingElements.indexOf(el), 1);
+                }
+
+                animators.length = 0;
             }
         };
 

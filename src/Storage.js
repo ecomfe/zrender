@@ -214,7 +214,7 @@ define(
         /**
          * 修改图形(Shape)或者组(Group)
          * 
-         * @param {string} el 唯一标识
+         * @param {string|module:zrender/shape/Base|module:zrender/Group} el
          * @param {Object} [params] 参数
          */
         Storage.prototype.mod = function (el, params) {
@@ -323,7 +323,7 @@ define(
 
         /**
          * 删除指定的图形(Shape)或者组(Group)
-         * @param  {string|Array.<string>} [elId] 如果为空清空整个Storage
+         * @param {string|Array.<string>} [elId] 如果为空清空整个Storage
          */
         Storage.prototype.delRoot = function (elId) {
             if (typeof(elId) == 'undefined') {
@@ -396,7 +396,6 @@ define(
 
             return this;
         };
-
 
         /**
          * 清空并且释放Storage
