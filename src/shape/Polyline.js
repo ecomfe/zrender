@@ -17,7 +17,7 @@
 /**
  * @typedef {Object} IPolylineStyle
  * @property {Array.<number>} pointList 顶点坐标数组
- * @property {string} [smooth=''] 是否做平滑插值, 平滑算法可以选择 bezier, spline
+ * @property {string|number} [smooth=''] 是否做平滑插值, 平滑算法可以选择 bezier, spline
  * @property {number} [smoothConstraint] 平滑约束
  * @property {string} [strokeColor='#000000'] 描边颜色
  * @property {string} [lineCape='butt'] 线帽样式，可以是 butt, round, square
@@ -87,6 +87,7 @@ define(
                 );
                 
                 if (style.smooth && style.smooth !== 'spline') {
+                    // TODO Cache control points
                     var controlPoints = smoothBezier(
                         pointList, style.smooth, false, style.smoothConstraint
                     );
@@ -103,7 +104,7 @@ define(
                             cp1[0], cp1[1], cp2[0], cp2[1], p[0], p[1]
                         );
                     }
-                } 
+                }
                 else {
                     if (style.smooth === 'spline') {
                         pointList = smoothSpline(pointList);
