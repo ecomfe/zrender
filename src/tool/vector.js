@@ -26,11 +26,24 @@ define(
             },
 
             /**
-             * 复制一个向量
-             * @return {Vector2} out
-             * @return {Vector2} v
+             * 复制向量数据
+             * @param {Vector2} out
+             * @param {Vector2} v
+             * @return {Vector2}
              */
             copy: function (out, v) {
+                out[0] = v[0];
+                out[1] = v[1];
+                return out;
+            },
+
+            /**
+             * 克隆一个向量
+             * @param {Vector2} v
+             * @return {Vector2}
+             */
+            clone: function (v) {
+                var out = new ArrayCtor(2);
                 out[0] = v[0];
                 out[1] = v[1];
                 return out;

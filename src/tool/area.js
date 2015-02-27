@@ -80,8 +80,6 @@ define(
         }
 
         /**
-         * 用数学方法判断，三个方法中最快，但是支持的shape少
-         *
          * @param {Object} shape : 图形
          * @param {Object} area ：目标区域
          * @param {number} x ： 横坐标

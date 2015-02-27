@@ -54,7 +54,7 @@ define(
                 } 
                 else {
                     if (i === 0 || i === len - 1) {
-                        cps.push(points[i]);
+                        cps.push(vector.clone(points[i]));
                         continue;
                     } 
                     else {
@@ -91,7 +91,7 @@ define(
             }
             
             if (isLoop) {
-                cps.push(cps.shift());
+                cps.push(vector.clone(cps.shift()));
             }
 
             return cps;

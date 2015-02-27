@@ -87,18 +87,18 @@ define(
                 );
                 
                 if (style.smooth && style.smooth !== 'spline') {
-                    // TODO Cache control points
-                    var controlPoints = smoothBezier(
-                        pointList, style.smooth, false, style.smoothConstraint
-                    );
+                    if (! style.controlPointList) {
+                        this.updateControlPoints(style);
+                    }
+                    var controlPointList = style.controlPointList;
 
                     ctx.moveTo(pointList[0][0], pointList[0][1]);
                     var cp1;
                     var cp2;
                     var p;
                     for (var i = 0; i < len - 1; i++) {
-                        cp1 = controlPoints[i * 2];
-                        cp2 = controlPoints[i * 2 + 1];
+                        cp1 = controlPointList[i * 2];
+                        cp2 = controlPointList[i * 2 + 1];
                         p = pointList[i + 1];
                         ctx.bezierCurveTo(
                             cp1[0], cp1[1], cp2[0], cp2[1], p[0], p[1]
@@ -134,6 +134,12 @@ define(
                     }
                 }
                 return;
+            },
+
+            updateControlPoints: function (style) {
+                style.controlPointList = smoothBezier(
+                    style.pointList, style.smooth, false, style.smoothConstraint
+                );
             },
 
             /**
