@@ -313,6 +313,11 @@ define(
          * @param {module:zrender/shape/Shape|module:zrender/Group} el
          */
         Storage.prototype.addRoot = function (el) {
+            // Element has been added
+            if (this._elements[el.id]) {
+                return;
+            }
+
             if (el instanceof Group) {
                 el.addChildrenToStorage(this);
             }
