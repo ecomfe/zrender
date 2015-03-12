@@ -131,7 +131,9 @@ define(function(require) {
     Group.prototype.removeChild = function(child) {
         var idx = util.indexOf(this._children, child);
 
-        this._children.splice(idx, 1);
+        if (idx >= 0) {
+            this._children.splice(idx, 1);
+        }
         child.parent = null;
 
         if (this._storage) {
