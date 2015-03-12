@@ -9036,7 +9036,9 @@ define('zrender/Group',['require','./tool/guid','./tool/util','./mixin/Transform
     Group.prototype.removeChild = function(child) {
         var idx = util.indexOf(this._children, child);
 
-        this._children.splice(idx, 1);
+        if (idx >= 0) {
+            this._children.splice(idx, 1);
+        }
         child.parent = null;
 
         if (this._storage) {
@@ -11041,7 +11043,10 @@ define(
 
                 var animator = this.animation.animate(target, { loop: loop })
                     .done(function () {
-                        animators.splice(el.__animators.indexOf(animator), 1);
+                        var idx = util.indexOf(el.__animators, animator);
+                        if (idx >= 0) {
+                            animators.splice(idx, 1);
+                        }
                         if (animators.length === 0) {
                             // 从animatingElements里移除
                             var idx = util.indexOf(animatingElements, el);
@@ -11070,7 +11075,10 @@ define(
                 }
                 if (len > 0) {
                     var animatingElements = this.animatingElements;
-                    animatingElements.splice(animatingElements.indexOf(el), 1);
+                    var idx = util.indexOf(animatingElements, el);
+                    if (idx >= 0) {
+                        animatingElements.splice(idx, 1);
+                    }
                 }
 
                 animators.length = 0;
