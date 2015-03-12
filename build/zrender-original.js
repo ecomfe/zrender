@@ -2321,11 +2321,24 @@ define(
             },
 
             /**
-             * 复制一个向量
-             * @return {Vector2} out
-             * @return {Vector2} v
+             * 复制向量数据
+             * @param {Vector2} out
+             * @param {Vector2} v
+             * @return {Vector2}
              */
             copy: function (out, v) {
+                out[0] = v[0];
+                out[1] = v[1];
+                return out;
+            },
+
+            /**
+             * 克隆一个向量
+             * @param {Vector2} v
+             * @return {Vector2}
+             */
+            clone: function (v) {
+                var out = new ArrayCtor(2);
                 out[0] = v[0];
                 out[1] = v[1];
                 return out;
@@ -3788,7 +3801,7 @@ define('zrender/tool/curve',['require','./vector'],function(require) {
             }
             else {
                 var t1 = -c / b;  //t1, t2, t3, b is not zero
-                if (t1 >=0 && t1 <= 1) {
+                if (t1 >= 0 && t1 <= 1) {
                     roots[n++] = t1;
                 }
             }
@@ -4099,6 +4112,31 @@ define('zrender/tool/curve',['require','./vector'],function(require) {
     }
 
     /**
+     * 细分二次贝塞尔曲线
+     * @memberOf module:zrender/tool/curve
+     * @param  {number} p0
+     * @param  {number} p1
+     * @param  {number} p2
+     * @param  {number} t
+     * @param  {Array.<number>} out
+     */
+    function quadraticSubdivide(p0, p1, p2, t, out) {
+        var p01 = (p1 - p0) * t + p0;
+        var p12 = (p2 - p1) * t + p1;
+        var p012 = (p12 - p01) * t + p01;
+
+        // Seg0
+        out[0] = p0;
+        out[1] = p01;
+        out[2] = p012;
+
+        // Seg1
+        out[3] = p012;
+        out[4] = p12;
+        out[5] = p2;
+    }
+
+    /**
      * 投射点到二次贝塞尔曲线上，返回投射距离。
      * 投射点有可能会有一个或者多个，这里只返回其中距离最短的一个。
      * @param {number} x0
@@ -4199,6 +4237,8 @@ define('zrender/tool/curve',['require','./vector'],function(require) {
 
         quadraticExtremum: quadraticExtremum,
 
+        quadraticSubdivide: quadraticSubdivide,
+
         quadraticProjectPoint: quadraticProjectPoint
     };
 });
@@ -4284,8 +4324,6 @@ define(
         }
 
         /**
-         * 用数学方法判断，三个方法中最快，但是支持的shape少
-         *
          * @param {Object} shape : 图形
          * @param {Object} area ：目标区域
          * @param {number} x ： 横坐标
@@ -5075,7 +5113,9 @@ define('zrender/mixin/Transformable',['require','../tool/matrix','../tool/vector
 
     var matrix = require('../tool/matrix');
     var vector = require('../tool/vector');
-    var origin = [ 0, 0 ];
+    var origin = [0, 0];
+
+    var mTranslate = matrix.translate;
 
     var EPSILON = 5e-5;
 
@@ -5147,12 +5187,8 @@ define('zrender/mixin/Transformable',['require','../tool/matrix','../tool/vector
             
             this.updateNeedTransform();
 
-            if (this.parent) {
-                this.needTransform = this.needLocalTransform || this.parent.needTransform;
-            }
-            else {
-                this.needTransform = this.needLocalTransform;
-            }
+            var parentHasTransform = this.parent && this.parent.needTransform;
+            this.needTransform = this.needLocalTransform || parentHasTransform;
             
             if (!this.needTransform) {
                 return;
@@ -5162,26 +5198,23 @@ define('zrender/mixin/Transformable',['require','../tool/matrix','../tool/vector
             matrix.identity(m);
 
             if (this.needLocalTransform) {
+                var scale = this.scale;
                 if (
-                    isNotAroundZero(this.scale[0])
-                 || isNotAroundZero(this.scale[1])
+                    isNotAroundZero(scale[0])
+                 || isNotAroundZero(scale[1])
                 ) {
-                    origin[0] = -this.scale[2] || 0;
-                    origin[1] = -this.scale[3] || 0;
+                    origin[0] = -scale[2] || 0;
+                    origin[1] = -scale[3] || 0;
                     var haveOrigin = isNotAroundZero(origin[0])
                                   || isNotAroundZero(origin[1]);
                     if (haveOrigin) {
-                        matrix.translate(
-                            m, m, origin
-                        );
+                        mTranslate(m, m, origin);
                     }
-                    matrix.scale(m, m, this.scale);
+                    matrix.scale(m, m, scale);
                     if (haveOrigin) {
                         origin[0] = -origin[0];
                         origin[1] = -origin[1];
-                        matrix.translate(
-                            m, m, origin
-                        );
+                        mTranslate(m, m, origin);
                     }
                 }
 
@@ -5192,17 +5225,13 @@ define('zrender/mixin/Transformable',['require','../tool/matrix','../tool/vector
                         var haveOrigin = isNotAroundZero(origin[0])
                                       || isNotAroundZero(origin[1]);
                         if (haveOrigin) {
-                            matrix.translate(
-                                m, m, origin
-                            );
+                            mTranslate(m, m, origin);
                         }
                         matrix.rotate(m, m, this.rotation[0]);
                         if (haveOrigin) {
                             origin[0] = -origin[0];
                             origin[1] = -origin[1];
-                            matrix.translate(
-                                m, m, origin
-                            );
+                            mTranslate(m, m, origin);
                         }
                     }
                 }
@@ -5215,22 +5244,24 @@ define('zrender/mixin/Transformable',['require','../tool/matrix','../tool/vector
                 if (
                     isNotAroundZero(this.position[0]) || isNotAroundZero(this.position[1])
                 ) {
-                    matrix.translate(m, m, this.position);
+                    mTranslate(m, m, this.position);
                 }
             }
 
+            // 应用父节点变换
+            if (parentHasTransform) {
+                if (this.needLocalTransform) {
+                    matrix.mul(m, this.parent.transform, m);
+                }
+                else {
+                    matrix.copy(m, this.parent.transform);
+                }
+            }
             // 保存这个变换矩阵
             this.transform = m;
 
-            // 应用父节点变换
-            if (this.parent && this.parent.needTransform) {
-                if (this.needLocalTransform) {
-                    matrix.mul(this.transform, this.parent.transform, this.transform);
-                }
-                else {
-                    matrix.copy(this.transform, this.parent.transform);
-                }
-            }
+            this.invTransform = this.invTransform || matrix.create();
+            matrix.invert(this.invTransform, m);
         },
         /**
          * 将自己的transform应用到context上
@@ -5239,11 +5270,7 @@ define('zrender/mixin/Transformable',['require','../tool/matrix','../tool/vector
         setTransform: function (ctx) {
             if (this.needTransform) {
                 var m = this.transform;
-                ctx.transform(
-                    m[0], m[1],
-                    m[2], m[3],
-                    m[4], m[5]
-                );
+                ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
             }
         },
         /**
@@ -5263,13 +5290,14 @@ define('zrender/mixin/Transformable',['require','../tool/matrix','../tool/vector
                     return;
                 }
                 vector.normalize(v, v);
+                var scale = this.scale;
                 // Y Axis
                 // TODO Scale origin ?
-                m[2] = v[0] * this.scale[1];
-                m[3] = v[1] * this.scale[1];
+                m[2] = v[0] * scale[1];
+                m[3] = v[1] * scale[1];
                 // X Axis
-                m[0] = v[1] * this.scale[0];
-                m[1] = -v[0] * this.scale[0];
+                m[0] = v[1] * scale[0];
+                m[1] = -v[0] * scale[0];
                 // Position
                 m[4] = this.position[0];
                 m[5] = this.position[1];
@@ -5303,6 +5331,21 @@ define('zrender/mixin/Transformable',['require','../tool/matrix','../tool/vector
             scale[2] = scale[3] = 0;
             rotation[0] = Math.atan2(-m[1] / sy, m[0] / sx);
             rotation[1] = rotation[2] = 0;
+        },
+
+        /**
+         * 变换坐标位置到 shape 的局部坐标空间
+         * @method
+         * @param {number} x
+         * @param {number} y
+         * @return {Array.<number>}
+         */
+        transformCoordToLocal: function (x, y) {
+            var v2 = [x, y];
+            if (this.needTransform && this.invTransform) {
+                matrix.mulVector(v2, this.invTransform, v2);
+            }
+            return v2;
         }
     };
 
@@ -6821,34 +6864,6 @@ define(
         };
 
         /**
-         * 变换鼠标位置到 shape 的局部坐标空间
-         * @method
-         * @param {number} x
-         * @param {number} y
-         * @return {Array.<number>}
-         */
-        Base.prototype.getTansform = (function() {
-            
-            var invTransform = [];
-
-            return function (x, y) {
-                var originPos = [ x, y ];
-                // 对鼠标的坐标也做相同的变换
-                if (this.needTransform && this.transform) {
-                    matrix.invert(invTransform, this.transform);
-
-                    matrix.mulVector(originPos, invTransform, [ x, y, 1 ]);
-
-                    if (x == originPos[0] && y == originPos[1]) {
-                        // 避免外部修改导致的needTransform不准确
-                        this.updateNeedTransform();
-                    }
-                }
-                return originPos;
-            };
-        })();
-
-        /**
          * 构建绘制的Path
          * @param {CanvasRenderingContext2D} ctx
          * @param {module:zrender/shape/Base~IBaseShapeStyle} style
@@ -6873,26 +6888,29 @@ define(
          * @return {boolean}
          */
         Base.prototype.isCover = function (x, y) {
-            var originPos = this.getTansform(x, y);
+            var originPos = this.transformCoordToLocal(x, y);
             x = originPos[0];
             y = originPos[1];
 
             // 快速预判并保留判断矩形
-            var rect = this.style.__rect;
-            if (!rect) {
-                rect = this.style.__rect = this.getRect(this.style);
-            }
-
-            if (x >= rect.x
-                && x <= (rect.x + rect.width)
-                && y >= rect.y
-                && y <= (rect.y + rect.height)
-            ) {
+            if (this.isCoverRect(x, y)) {
                 // 矩形内
                 return require('../tool/area').isInside(this, this.style, x, y);
             }
             
             return false;
+        };
+
+        Base.prototype.isCoverRect = function (x, y) {
+            // 快速预判并保留判断矩形
+            var rect = this.style.__rect;
+            if (!rect) {
+                rect = this.style.__rect = this.getRect(this.style);
+            }
+            return x >= rect.x
+                && x <= (rect.x + rect.width)
+                && y >= rect.y
+                && y <= (rect.y + rect.height);
         };
 
         /**
@@ -9330,11 +9348,13 @@ define(
         /**
          * 修改图形(Shape)或者组(Group)
          * 
-         * @param {string} elId 唯一标识
+         * @param {string|module:zrender/shape/Base|module:zrender/Group} el
          * @param {Object} [params] 参数
          */
-        Storage.prototype.mod = function (elId, params) {
-            var el = this._elements[elId];
+        Storage.prototype.mod = function (el, params) {
+            if (typeof (el) === 'string') {
+                el = this._elements[el];
+            }
             if (el) {
 
                 el.modSelf();
@@ -9427,6 +9447,11 @@ define(
          * @param {module:zrender/shape/Shape|module:zrender/Group} el
          */
         Storage.prototype.addRoot = function (el) {
+            // Element has been added
+            if (this._elements[el.id]) {
+                return;
+            }
+
             if (el instanceof Group) {
                 el.addChildrenToStorage(this);
             }
@@ -9437,7 +9462,7 @@ define(
 
         /**
          * 删除指定的图形(Shape)或者组(Group)
-         * @param  {string|Array.<string>} [elId] 如果为空清空整个Storage
+         * @param {string|Array.<string>} [elId] 如果为空清空整个Storage
          */
         Storage.prototype.delRoot = function (elId) {
             if (typeof(elId) == 'undefined') {
@@ -9510,7 +9535,6 @@ define(
 
             return this;
         };
-
 
         /**
          * 清空并且释放Storage
@@ -10128,8 +10152,10 @@ define(
 
                 function step() {
                     if (self._running) {
-                        self._update();
+                        
                         requestAnimationFrame(step);
+
+                        self._update();
                     }
                 }
 
@@ -10633,13 +10659,13 @@ define(
         /**
          * @type {string}
          */
-        zrender.version = '2.0.7';
+        zrender.version = '2.0.8';
 
         /**
          * 创建zrender实例
          *
          * @param {HTMLElement} dom 绘图容器
-         * @return {module:zrender~ZRender} ZRender实例
+         * @return {module:zrender/ZRender} ZRender实例
          */
         // 不让外部直接new ZRender实例，为啥？
         // 不为啥，提供全局可控同时减少全局污染和降低命名冲突的风险！
@@ -10651,7 +10677,7 @@ define(
 
         /**
          * zrender实例销毁
-         * @param {module:zrender~ZRender} zr ZRender对象，不传则销毁全部
+         * @param {module:zrender/ZRender} zr ZRender对象，不传则销毁全部
          */
         // 在_instances里的索引也会删除了
         // 管生就得管死，可以通过zrender.dispose(zr)销毁指定ZRender实例
@@ -10673,7 +10699,7 @@ define(
         /**
          * 获取zrender实例
          * @param {string} id ZRender对象索引
-         * @return {module:zrender~ZRender}
+         * @return {module:zrender/ZRender}
          */
         zrender.getInstance = function (id) {
             return _instances[id];
@@ -10699,7 +10725,6 @@ define(
                 for (var i = 0, l = animatingElements.length; i < l; i++) {
                     zrInstance.storage.mod(animatingElements[i].id);
                 }
-
                 if (animatingElements.length || zrInstance._needsRefreshNextFrame) {
                     zrInstance.refresh();
                 }
@@ -10707,11 +10732,14 @@ define(
         }
 
         /**
+         * @module zrender/ZRender
+         */
+        /**
          * ZRender接口类，对外可用的所有接口都在这里
          * 非get接口统一返回支持链式调用
          *
          * @constructor
-         * @alias module:zrender~ZRender
+         * @alias module:zrender/ZRender
          * @param {string} id 唯一标识
          * @param {HTMLElement} dom dom对象，不帮你做document.getElementById
          * @return {ZRender} ZRender实例
@@ -10746,6 +10774,17 @@ define(
             };
 
             this._needsRefreshNextFrame = false;
+
+            // 修改 storage.delFromMap, 每次删除元素之前删除动画
+            // FIXME 有点ugly
+            var self = this;
+            var storage = this.storage;
+            var oldDelFromMap = storage.delFromMap;
+            storage.delFromMap = function (elId) {
+                var el = storage.get(elId);
+                self.stopAnimation(el);
+                oldDelFromMap.call(storage, elId);
+            };
         };
 
         /**
@@ -10758,63 +10797,100 @@ define(
 
         /**
          * 添加图形形状到根节点
-         * 
+         * @deprecated Use {@link module:zrender/ZRender.prototype.addElement} instead
          * @param {module:zrender/shape/Base} shape 形状对象，可用属性全集，详见各shape
          */
         ZRender.prototype.addShape = function (shape) {
-            this.storage.addRoot(shape);
+            this.addElement(shape);
             return this;
         };
 
         /**
          * 添加组到根节点
-         *
+         * @deprecated Use {@link module:zrender/ZRender.prototype.addElement} instead
          * @param {module:zrender/Group} group
          */
         ZRender.prototype.addGroup = function(group) {
-            this.storage.addRoot(group);
+            this.addElement(group);
             return this;
         };
 
         /**
          * 从根节点删除图形形状
-         * 
+         * @deprecated Use {@link module:zrender/ZRender.prototype.delElement} instead
          * @param {string} shapeId 形状对象唯一标识
          */
         ZRender.prototype.delShape = function (shapeId) {
-            this.storage.delRoot(shapeId);
+            this.delElement(shapeId);
             return this;
         };
 
         /**
          * 从根节点删除组
-         * 
+         * @deprecated Use {@link module:zrender/ZRender.prototype.delElement} instead
          * @param {string} groupId
          */
         ZRender.prototype.delGroup = function (groupId) {
-            this.storage.delRoot(groupId);
+            this.delElement(groupId);
             return this;
         };
 
         /**
          * 修改图形形状
-         * 
+         * @deprecated Use {@link module:zrender/ZRender.prototype.modElement} instead
          * @param {string} shapeId 形状对象唯一标识
          * @param {Object} shape 形状对象
          */
         ZRender.prototype.modShape = function (shapeId, shape) {
-            this.storage.mod(shapeId, shape);
+            this.modElement(shapeId, shape);
             return this;
         };
 
         /**
          * 修改组
-         * 
+         * @deprecated Use {@link module:zrender/ZRender.prototype.modElement} instead
          * @param {string} groupId
          * @param {Object} group
          */
         ZRender.prototype.modGroup = function (groupId, group) {
-            this.storage.mod(groupId, group);
+            this.modElement(groupId, group);
+            return this;
+        };
+
+        /**
+         * 添加元素
+         * @param  {string|module:zrender/Group|module:zrender/shape/Base} el
+         */
+        ZRender.prototype.addElement = function (el) {
+            this.storage.addRoot(el);
+            this._needsRefreshNextFrame = true;
+            return this;
+        };
+
+        /**
+         * 删除元素
+         * @param  {string|module:zrender/Group|module:zrender/shape/Base} el
+         */
+        ZRender.prototype.delElement = function (el) {
+            this.storage.delRoot(el);
+            this._needsRefreshNextFrame = true;
+            return this;
+        };
+
+        /**
+         * 修改元素, 主要标记图形或者组需要在下一帧刷新。
+         * 第二个参数为需要覆盖到元素上的参数，不建议使用。
+         *
+         * @example
+         *     el.style.color = 'red';
+         *     el.position = [10, 10];
+         *     zr.modElement(el);
+         * @param  {string|module:zrender/Group|module:zrender/shape/Base} el
+         * @param {Object} [params]
+         */
+        ZRender.prototype.modElement = function (el, params) {
+            this.storage.mod(el, params);
+            this._needsRefreshNextFrame = true;
             return this;
         };
 
@@ -10835,6 +10911,7 @@ define(
          */
         ZRender.prototype.modLayer = function (zLevel, config) {
             this.painter.modLayer(zLevel, config);
+            this._needsRefreshNextFrame = true;
             return this;
         };
 
@@ -10953,24 +11030,27 @@ define(
                 }
 
                 var animatingElements = this.animatingElements;
-                if (typeof el.__aniCount === 'undefined') {
+                if (el.__animators == null) {
                     // 正在进行的动画记数
-                    el.__aniCount = 0;
+                    el.__animators = [];
                 }
-                if (el.__aniCount === 0) {
+                var animators = el.__animators;
+                if (animators.length === 0) {
                     animatingElements.push(el);
                 }
-                el.__aniCount++;
 
-                return this.animation.animate(target, { loop: loop })
+                var animator = this.animation.animate(target, { loop: loop })
                     .done(function () {
-                        el.__aniCount--;
-                        if (el.__aniCount === 0) {
+                        animators.splice(el.__animators.indexOf(animator), 1);
+                        if (animators.length === 0) {
                             // 从animatingElements里移除
                             var idx = util.indexOf(animatingElements, el);
                             animatingElements.splice(idx, 1);
                         }
                     });
+                animators.push(animator);
+
+                return animator;
             }
             else {
                 log('Element not existed');
@@ -10978,10 +11058,33 @@ define(
         };
 
         /**
+         * 停止动画对象的动画
+         * @param  {string|module:zrender/Group|module:zrender/shape/Base} el
+         */
+        ZRender.prototype.stopAnimation = function (el) {
+            if (el.__animators) {
+                var animators = el.__animators;
+                var len = animators.length;
+                for (var i = 0; i < len; i++) {
+                    animators[i].stop();
+                }
+                if (len > 0) {
+                    var animatingElements = this.animatingElements;
+                    animatingElements.splice(animatingElements.indexOf(el), 1);
+                }
+
+                animators.length = 0;
+            }
+            return this;
+        };
+
+        /**
          * 停止所有动画
          */
         ZRender.prototype.clearAnimation = function () {
             this.animation.clear();
+            this.animatingElements.length = 0;
+            return this;
         };
 
         /**
@@ -11566,6 +11669,8 @@ define(
              * @param {module:zrender/shape/Circle~ICircleStyle} style
              */
             buildPath : function (ctx, style) {
+                // Better stroking in ShapeBundle
+                ctx.moveTo(style.x + style.r, style.y);
                 ctx.arc(style.x, style.y, style.r, 0, Math.PI * 2, true);
                 return;
             },
@@ -12614,16 +12719,11 @@ define(
             },
 
             isCover: function (x, y) {
-                var originPos = this.getTansform(x, y);
+                var originPos = this.transformCoordToLocal(x, y);
                 x = originPos[0];
                 y = originPos[1];
                 
-                var rect = this.getRect(this.style);
-                if (x >= rect.x
-                    && x <= (rect.x + rect.width)
-                    && y >= rect.y
-                    && y <= (rect.y + rect.height)
-                ) {
+                if (this.isCoverRect(x, y)) {
                     return area.isInsidePath(
                         this._pathProxy.pathCommands, this.style.lineWidth, this.style.brushType, x, y
                     );
@@ -12760,16 +12860,11 @@ define(
             },
 
             isCover: function (x, y) {
-                var originPos = this.getTansform(x, y);
+                var originPos = this.transformCoordToLocal(x, y);
                 x = originPos[0];
                 y = originPos[1];
                 
-                var rect = this.getRect(this.style);
-                if (x >= rect.x
-                    && x <= (rect.x + rect.width)
-                    && y >= rect.y
-                    && y <= (rect.y + rect.height)
-                ) {
+                if (this.isCoverRect(x, y)) {
                     return area.isInsidePath(
                         this._pathProxy.pathCommands, this.style.lineWidth, this.style.brushType, x, y
                     );
@@ -13538,7 +13633,7 @@ define(
                 } 
                 else {
                     if (i === 0 || i === len - 1) {
-                        cps.push(points[i]);
+                        cps.push(vector.clone(points[i]));
                         continue;
                     } 
                     else {
@@ -13575,7 +13670,7 @@ define(
             }
             
             if (isLoop) {
-                cps.push(cps.shift());
+                cps.push(vector.clone(cps.shift()));
             }
 
             return cps;
@@ -13818,7 +13913,7 @@ define(
 /**
  * @typedef {Object} IPolylineStyle
  * @property {Array.<number>} pointList 顶点坐标数组
- * @property {string} [smooth=''] 是否做平滑插值, 平滑算法可以选择 bezier, spline
+ * @property {string|number} [smooth=''] 是否做平滑插值, 平滑算法可以选择 bezier, spline
  * @property {number} [smoothConstraint] 平滑约束
  * @property {string} [strokeColor='#000000'] 描边颜色
  * @property {string} [lineCape='butt'] 线帽样式，可以是 butt, round, square
@@ -13888,23 +13983,24 @@ define(
                 );
                 
                 if (style.smooth && style.smooth !== 'spline') {
-                    var controlPoints = smoothBezier(
-                        pointList, style.smooth, false, style.smoothConstraint
-                    );
+                    if (! style.controlPointList) {
+                        this.updateControlPoints(style);
+                    }
+                    var controlPointList = style.controlPointList;
 
                     ctx.moveTo(pointList[0][0], pointList[0][1]);
                     var cp1;
                     var cp2;
                     var p;
                     for (var i = 0; i < len - 1; i++) {
-                        cp1 = controlPoints[i * 2];
-                        cp2 = controlPoints[i * 2 + 1];
+                        cp1 = controlPointList[i * 2];
+                        cp2 = controlPointList[i * 2 + 1];
                         p = pointList[i + 1];
                         ctx.bezierCurveTo(
                             cp1[0], cp1[1], cp2[0], cp2[1], p[0], p[1]
                         );
                     }
-                } 
+                }
                 else {
                     if (style.smooth === 'spline') {
                         pointList = smoothSpline(pointList);
@@ -13934,6 +14030,12 @@ define(
                     }
                 }
                 return;
+            },
+
+            updateControlPoints: function (style) {
+                style.controlPointList = smoothBezier(
+                    style.pointList, style.smooth, false, style.smoothConstraint
+                );
             },
 
             /**
