@@ -189,11 +189,11 @@ define(function (require) {
                 var scale = this.scale;
                 // Y Axis
                 // TODO Scale origin ?
-                m[2] = v[0] * scal[1];
-                m[3] = v[1] * scal[1];
+                m[2] = v[0] * scale[1];
+                m[3] = v[1] * scale[1];
                 // X Axis
-                m[0] = v[1] * scal[0];
-                m[1] = -v[0] * scal[0];
+                m[0] = v[1] * scale[0];
+                m[1] = -v[0] * scale[0];
                 // Position
                 m[4] = this.position[0];
                 m[5] = this.position[1];
