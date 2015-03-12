@@ -409,10 +409,11 @@ define(function(require) {
     /**
      * 细分二次贝塞尔曲线
      * @memberOf module:zrender/tool/curve
-     * @param  {[type]} p0 [description]
-     * @param  {[type]} p1 [description]
-     * @param  {[type]} p2 [description]
-     * @return {[type]}    [description]
+     * @param  {number} p0
+     * @param  {number} p1
+     * @param  {number} p2
+     * @param  {number} t
+     * @param  {Array.<number>} out
      */
     function quadraticSubdivide(p0, p1, p2, t, out) {
         var p01 = (p1 - p0) * t + p0;
