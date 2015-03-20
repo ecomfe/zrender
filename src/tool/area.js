@@ -531,7 +531,7 @@ define(
                     var y_ = curve.quadraticAt(y0, y1, y2, t);
                     for (var i = 0; i < nRoots; i++) {
                         var x_ = curve.quadraticAt(x0, x1, x2, roots[i]);
-                        if (x_ > x) {
+                        if (x_ < x) {
                             continue;
                         }
                         if (roots[i] < t) {
@@ -545,7 +545,7 @@ define(
                 } 
                 else {
                     var x_ = curve.quadraticAt(x0, x1, x2, roots[0]);
-                    if (x_ > x) {
+                    if (x_ < x) {
                         return 0;
                     }
                     return y2 < y0 ? 1 : -1;
