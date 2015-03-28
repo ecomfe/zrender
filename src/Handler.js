@@ -5,7 +5,6 @@
  *         errorrik (errorrik@gmail.com)
  *         pissang (shenyi.914@gmail.com)
  */
-// TODO mouseover 只触发一次
 define(function (require) {
 
     'use strict';
@@ -776,12 +775,12 @@ define(function (require) {
             }
 
             while (el) {
-                el[eventHandler] 
-                && (eventPacket.cancelBubble = el[eventHandler](eventPacket));
+                el[eventHandler]
+                && (eventPacket.cancelBubble = el[eventHandler].call(el, eventPacket));
                 el.trigger(eventName, eventPacket);
 
                 el = el.parent;
-                
+
                 if (eventPacket.cancelBubble) {
                     break;
                 }
@@ -803,7 +802,7 @@ define(function (require) {
                 // 分发事件到用户自定义层
                 this.painter.eachOtherLayer(function (layer) {
                     if (typeof(layer[eventHandler]) == 'function') {
-                        layer[eventHandler](eveObj);
+                        layer[eventHandler].call(layer, eveObj);
                     }
                     if (layer.trigger) {
                         layer.trigger(eventName, eveObj);
@@ -818,7 +817,7 @@ define(function (require) {
          * @method
          */
         _iterateAndFindHover: function() {
-            var list = this.storage.getDisplayableList();
+            var list = this.storage.getDisplayList();
             var currentZLevel;
             var currentLayer;
             var tmp = [0, 0];
@@ -903,11 +902,11 @@ define(function (require) {
 
                     this._lastHover = shape;
 
+                    this._processOverShape(event);
+
                     // 可能出现config.EVENT.DRAGENTER事件
                     this._processDragEnter(event);
                 }
-
-                this._processOverShape(event);
 
                 // 可能出现config.EVENT.DRAGOVER
                 this._processDragOver(event);

@@ -33,9 +33,9 @@ define(function (require) {
 
         this._roots = [];
 
-        this._displayableList = [];
+        this._displayList = [];
 
-        this._displayableListLen = 0;
+        this._displayListLen = 0;
     };
 
     Storage.prototype = {
@@ -45,14 +45,14 @@ define(function (require) {
         /**
          * 返回所有图形的绘制队列
          * @param  {boolean} [update=false] 是否在返回前更新该数组
-         * 详见{@link module:zrender/graphic/Displayable.prototype.updateDisplayableList}
+         * 详见{@link module:zrender/graphic/Displayable.prototype.updateDisplayList}
          * @return {Array.<module:zrender/graphic/Displayable>}
          */
-        getDisplayableList: function (update) {
+        getDisplayList: function (update) {
             if (update) {
-                this.updateDisplayableList();
+                this.updateDisplayList();
             }
-            return this._displayableList;
+            return this._displayList;
         },
 
         /**
@@ -60,19 +60,19 @@ define(function (require) {
          * 每次绘制前都会调用，该方法会先深度优先遍历整个树，更新所有Group和Shape的变换并且把所有可见的Shape保存到数组中，
          * 最后根据绘制的优先级（zlevel > z > 插入顺序）排序得到绘制队列
          */
-        updateDisplayableList: function () {
-            this._displayableListLen = 0;
+        updateDisplayList: function () {
+            this._displayListLen = 0;
             for (var i = 0, len = this._roots.length; i < len; i++) {
                 var root = this._roots[i];
                 this._updateAndAddDisplayable(root);
             }
-            this._displayableList.length = this._displayableListLen;
+            this._displayList.length = this._displayListLen;
 
-            for (var i = 0, len = this._displayableList.length; i < len; i++) {
-                this._displayableList[i].__renderidx = i;
+            for (var i = 0, len = this._displayList.length; i < len; i++) {
+                this._displayList[i].__renderidx = i;
             }
 
-            this._displayableList.sort(shapeCompareFunc);
+            this._displayList.sort(shapeCompareFunc);
         },
 
         _updateAndAddDisplayable: function (el, clipShapes) {
@@ -115,7 +115,7 @@ define(function (require) {
             else {
                 el.__clipShapes = clipShapes;
 
-                this._displayableList[this._displayableListLen++] = el;
+                this._displayList[this._displayListLen++] = el;
             }
         },
 
@@ -224,8 +224,8 @@ define(function (require) {
 
                 this._elements = {};
                 this._roots = [];
-                this._displayableList = [];
-                this._displayableListLen = 0;
+                this._displayList = [];
+                this._displayListLen = 0;
 
                 return;
             }

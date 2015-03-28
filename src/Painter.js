@@ -110,7 +110,7 @@
          * @param {boolean} paintAll 强制绘制所有shape
          */
         refresh: function (callback, paintAll) {
-            var list = this.storage.getDisplayableList(true);
+            var list = this.storage.getDisplayList(true);
             this._paintList(list, paintAll);
 
             // Paint custum layers
@@ -522,10 +522,10 @@
             
             var self = this;
 
-            var displayableList = this.storage.getDisplayableList(true);
+            var displayList = this.storage.getDisplayList(true);
 
-            for (var i = 0; i < displayableList.length; i++) {
-                var shape = displayableList[i];
+            for (var i = 0; i < displayList.length; i++) {
+                var shape = displayList[i];
                 if (!shape.invisible) {
                     if (!shape.onbrush // 没有onbrush
                         // 有onbrush并且调用执行返回false或undefined则继续粉刷

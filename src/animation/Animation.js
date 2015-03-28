@@ -193,30 +193,34 @@ define(function(require) {
 
     util.merge(Animation.prototype, Dispatcher.prototype, true);
 
-    function _defaultGetter(target, key) {
+    function defaultGetter(target, key) {
         return target[key];
     }
 
-    function _defaultSetter(target, key, value) {
+    function defaultSetter(target, key, value) {
         target[key] = value;
     }
 
-    function _interpolateNumber(p0, p1, percent) {
+    function interpolateNumber(p0, p1, percent) {
         return (p1 - p0) * percent + p0;
     }
 
-    function _interpolateArray(p0, p1, percent, out, arrDim) {
+    function interpolateString(p0, p1, percent) {
+        return percent > 0.5 ? p1 : p0;
+    }
+
+    function interpolateArray(p0, p1, percent, out, arrDim) {
         var len = p0.length;
         if (arrDim == 1) {
             for (var i = 0; i < len; i++) {
-                out[i] = _interpolateNumber(p0[i], p1[i], percent); 
+                out[i] = interpolateNumber(p0[i], p1[i], percent); 
             }
         }
         else {
             var len2 = p0[0].length;
             for (var i = 0; i < len; i++) {
                 for (var j = 0; j < len2; j++) {
-                    out[i][j] = _interpolateNumber(
+                    out[i][j] = interpolateNumber(
                         p0[i][j], p1[i][j], percent
                     );
                 }
@@ -224,7 +228,7 @@ define(function(require) {
         }
     }
 
-    function _isArrayLike(data) {
+    function isArrayLike(data) {
         switch (typeof data) {
             case 'undefined':
             case 'string':
@@ -234,13 +238,13 @@ define(function(require) {
         return typeof data.length !== 'undefined';
     }
 
-    function _catmullRomInterpolateArray(
+    function catmullRomInterpolateArray(
         p0, p1, p2, p3, t, t2, t3, out, arrDim
     ) {
         var len = p0.length;
         if (arrDim == 1) {
             for (var i = 0; i < len; i++) {
-                out[i] = _catmullRomInterpolate(
+                out[i] = catmullRomInterpolate(
                     p0[i], p1[i], p2[i], p3[i], t, t2, t3
                 );
             }
@@ -249,7 +253,7 @@ define(function(require) {
             var len2 = p0[0].length;
             for (var i = 0; i < len; i++) {
                 for (var j = 0; j < len2; j++) {
-                    out[i][j] = _catmullRomInterpolate(
+                    out[i][j] = catmullRomInterpolate(
                         p0[i][j], p1[i][j], p2[i][j], p3[i][j],
                         t, t2, t3
                     );
@@ -258,7 +262,7 @@ define(function(require) {
         }
     }
 
-    function _catmullRomInterpolate(p0, p1, p2, p3, t, t2, t3) {
+    function catmullRomInterpolate(p0, p1, p2, p3, t, t2, t3) {
         var v0 = (p2 - p0) * 0.5;
         var v1 = (p3 - p1) * 0.5;
         return (2 * (p1 - p2) + v0 + v1) * t3 
@@ -267,9 +271,9 @@ define(function(require) {
     }
 
     function _cloneValue(value) {
-        if (_isArrayLike(value)) {
+        if (isArrayLike(value)) {
             var len = value.length;
-            if (_isArrayLike(value[0])) {
+            if (isArrayLike(value[0])) {
                 var ret = [];
                 for (var i = 0; i < len; i++) {
                     ret.push(arraySlice.call(value[i]));
@@ -307,8 +311,8 @@ define(function(require) {
 
         this._loop = loop || false;
 
-        this._getter = getter || _defaultGetter;
-        this._setter = setter || _defaultSetter;
+        this._getter = getter || defaultGetter;
+        this._setter = setter || defaultSetter;
 
         this._clipCount = 0;
 
@@ -394,13 +398,14 @@ define(function(require) {
                 }
                 // Guess data type
                 var firstVal = keyframes[0].value;
-                var isValueArray = _isArrayLike(firstVal);
+                var isValueArray = isArrayLike(firstVal);
                 var isValueColor = false;
+                var isValueString = false;
 
                 // For vertices morphing
                 var arrDim = (
                         isValueArray 
-                        && _isArrayLike(firstVal[0])
+                        && isArrayLike(firstVal[0])
                     )
                     ? 2 : 1;
                 // Sort keyframe as ascending
@@ -423,12 +428,15 @@ define(function(require) {
                     // Assume value is a color when it is a string
                     var value = keyframes[i].value;
                     if (typeof(value) == 'string') {
-                        value = color.toArray(value);
-                        if (value.length === 0) {    // Invalid color
+                        if (color.validate(value)) {
+                            value = color.toArray(value);
                             value[0] = value[1] = value[2] = 0;
                             value[3] = 1;
+                            isValueColor = true;   
                         }
-                        isValueColor = true;
+                        else {
+                            isValueString = true;
+                        }
                     }
                     kfValues.push(value);
                 }
@@ -444,7 +452,6 @@ define(function(require) {
                 var p1;
                 var p2;
                 var p3;
-
 
                 if (isValueColor) {
                     var rgba = [ 0, 0, 0, 0 ];
@@ -488,7 +495,7 @@ define(function(require) {
                         p2 = kfValues[i > trackLen - 2 ? trackLen - 1 : i + 1];
                         p3 = kfValues[i > trackLen - 3 ? trackLen - 1 : i + 2];
                         if (isValueArray) {
-                            _catmullRomInterpolateArray(
+                            catmullRomInterpolateArray(
                                 p0, p1, p2, p3, w, w * w, w * w * w,
                                 getter(target, propName),
                                 arrDim
@@ -497,14 +504,18 @@ define(function(require) {
                         else {
                             var value;
                             if (isValueColor) {
-                                value = _catmullRomInterpolateArray(
+                                value = catmullRomInterpolateArray(
                                     p0, p1, p2, p3, w, w * w, w * w * w,
                                     rgba, 1
                                 );
                                 value = rgba2String(rgba);
                             }
+                            else if (isValueString) {
+                                // String is step(0.5)
+                                return interpolateString(p1, p2, w);
+                            }
                             else {
-                                value = _catmullRomInterpolate(
+                                value = catmullRomInterpolate(
                                     p0, p1, p2, p3, w, w * w, w * w * w
                                 );
                             }
@@ -517,7 +528,7 @@ define(function(require) {
                     }
                     else {
                         if (isValueArray) {
-                            _interpolateArray(
+                            interpolateArray(
                                 kfValues[i], kfValues[i + 1], w,
                                 getter(target, propName),
                                 arrDim
@@ -526,14 +537,18 @@ define(function(require) {
                         else {
                             var value;
                             if (isValueColor) {
-                                _interpolateArray(
+                                interpolateArray(
                                     kfValues[i], kfValues[i + 1], w,
                                     rgba, 1
                                 );
                                 value = rgba2String(rgba);
                             }
+                            else if (isValueString) {
+                                // String is step(0.5)
+                                return interpolateString(kfValues[i], kfValues[i + 1], w);
+                            }
                             else {
-                                value = _interpolateNumber(kfValues[i], kfValues[i + 1], w);
+                                value = interpolateNumber(kfValues[i], kfValues[i + 1], w);
                             }
                             setter(
                                 target,

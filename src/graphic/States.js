@@ -17,7 +17,7 @@ define(function (require) {
      * @property {Function} onleave
      * @property {Function} ontransition
      * @property {Array.<IGraphicStateTransition|string>} transition
-     *           Transition object or a string descriptor like '* 0 0 Linear'
+     *           Transition object or a string descriptor like '* 30 0 Linear'
      */
 
     var zrUtil = require('../core/util');
@@ -51,7 +51,7 @@ define(function (require) {
      */
     var TransitionObject = function (opts) {
         if (typeof opts == 'string') {
-            this._fromString(opts);
+            this._fromStr(opts);
         }
         else if (opts) {
             opts.property && (this.property = opts.property);
@@ -96,7 +96,7 @@ define(function (require) {
          */
         delay: 0,
 
-        _fromString: function (str) {
+        _fromStr: function (str) {
             var arr = str.split(/\s+/g);
             this.property = arr[0];
             this.duration = +arr[1];
@@ -113,9 +113,17 @@ define(function (require) {
 
         opts = opts || {};
 
-        this.zr = zr;
-
         this._states = {};
+
+        /**
+         * Target element
+         * @type {zrender/graphic/Displayable|zrender/graphic/Group}
+         */
+        this._el = opts.el;
+
+        this._subStates = [];
+
+        this._transitionAnimators = [];
 
         if (opts.defaultState) {
             this._defaultState = defaultState;
@@ -129,17 +137,7 @@ define(function (require) {
             }
         }
 
-        /**
-         * Target element
-         * @type {zrender/graphic/Displayable|zrender/graphic/Group}
-         */
-        this._el = opts.el || null;
-
-        this._subStates = [];
-
         this.setState(this._defaultState);
-
-        this._transitionAnimators = [];
     };
 
     GraphicStates.prototype = {
@@ -148,9 +146,24 @@ define(function (require) {
 
         /**
          * All other state will be extended from default state
-         * @type {String}
+         * @type {string}
+         * @private
          */
         _defaultState: 'normal',
+
+        /**
+         * Current state
+         * @type {string}
+         * @private
+         */
+        _currentState: '',
+
+        /**
+         * If in transiting
+         * @type {boolean}
+         * @private
+         */
+        _transiting: '',
 
         el: function () {
             return this._el;
@@ -168,9 +181,20 @@ define(function (require) {
                 this._extendFromDefault(state);
             }
             else {
+                var el = this._el;
+                var stateStyle = state.style;
+                if (stateStyle && el) {
+                    var elStyle = el.style;
+                    // Extend el original style to default state
+                    for (var name in elStyle) {
+                        if (elStyle.hasOwnProperty(name)) {
+                            stateStyle[name] = elStyle[name];
+                        }
+                    }
+                }
                 for (var name in this._states) {
                     this._extendFromDefault(this._states[name]);
-                } 
+                }
             }
         },
 
@@ -189,7 +213,9 @@ define(function (require) {
         },
 
         setState: function (name, silent) {
-            if (name === this._currentState) {
+            if (name === this._currentState
+                && !this._transiting
+            ) {
                 return;
             }
 
@@ -248,9 +274,11 @@ define(function (require) {
                             // Not extended from default state in _extendFromDefault method
                             && defaultState.style !== state.style
                         ) {
-                            el.style.extendFrom(state.style);
+                            el.style.extendFrom(state.style, true);
                         }
                     }
+
+                    el.dirty();
                 }
             }
 
@@ -264,7 +292,10 @@ define(function (require) {
         },
 
         transitionState: function (target) {
-            if (target === this._currentState) {
+            if (
+                target === this._currentState
+                && ! this._transiting
+            ) {
                 return;
             }
 
@@ -279,8 +310,8 @@ define(function (require) {
                 var el = self._el;
 
                 if (state.transition && el && el.__zr) {// El can be animated
-                    var transitionCfg = state.transition
-                    var property = state.property;
+                    var transitionCfg = state.transition;
+                    var property = transitionCfg.property;
 
                     var styleAnimated = false;
                     var animatingCount = 0;
@@ -289,6 +320,7 @@ define(function (require) {
                         if (animatingCount === 0) {
                             self.setState(target);
                         }
+                        self._transiting = false;
                     }
                     for (var i = 0; i < property.length; i++) {
                         var propName = property[i];
@@ -301,8 +333,9 @@ define(function (require) {
                         if (propName === 'style') {
                             if (state.style) {
                                 for (var name in state.style) {
-                                    animatingCount++;
-                                    self._animProp(state, name, transitionCfg, true, done);
+                                    animatingCount += self._animProp(
+                                        state, name, transitionCfg, true, done
+                                    );
                                 }
                             }
                             styleAnimated = true;
@@ -311,17 +344,22 @@ define(function (require) {
                         else if (propName.match(styleReg) && ! styleAnimated && state.style) {
                             // remove 'style.' prefix
                             propName = propName.slice(6);
-                            animatingCount++;
-                            self._animProp(state, propName, transitionCfg, true, done);
+                            animatingCount += self._animProp(
+                                state, propName, transitionCfg, true, done
+                            );
                         }
                         else {
-                            animatingCount++;
-                            self._animProp(state, propName, transitionCfg, false, done);
+                            animatingCount += self._animProp(
+                                state, propName, transitionCfg, false, done
+                            );
                         }
                     }
                     // No transition properties
                     if (animatingCount === 0) {
                         self.setState(target);
+                    }
+                    else {
+                        self._transiting = true;
                     }
                 }
                 else {
@@ -345,16 +383,31 @@ define(function (require) {
          */
         _animProp: function (state, property, transitionCfg, inStyle, done) {
             var el = this._el;
+            var stateStyle = state.style;
+            var elStyle = el.style;
             var availableProp = inStyle
                 // Assume state has style here
-                ? state.style.hasOwnProperty(property) && el.style && (property in el.style)
+                ? stateStyle.hasOwnProperty(property) && elStyle && (property in elStyle)
                 : state.hasOwnProperty(property) && (property in el);
             var transitionAnimators = this._transitionAnimators;
             if (availableProp) {
                 var obj = {};
+                if (inStyle) {
+                    if (stateStyle[property] === elStyle[property]) {
+                        return 0;
+                    }
+                    obj[property] = stateStyle[property];
+                }
+                else {
+                    if (stateStyle[property] === elStyle[property]) {
+                        return 0;
+                    }
+                    obj[property] = stateStyle[property];
+                }
+
                 obj[property] = inStyle ? state.style[property] : state[property];
                 var animator = el.animate(inStyle ? 'style' : '')
-                    .when(transitionCfg.duration, property)
+                    .when(transitionCfg.duration, obj)
                     .delay(transitionCfg.dealy)
                     .done(function () {
                         var idx = zrUtil.indexOf(transitionAnimators, 1);
@@ -365,11 +418,10 @@ define(function (require) {
                     })
                     .start(transitionCfg.easing);
                 transitionAnimators.push(animator);
+
+                return 1;
             }
-            else {
-                // Done directly
-                done();
-            }
+            return 0;
         },
 
         _stopTransition: function () {
@@ -378,6 +430,7 @@ define(function (require) {
                 transitionAnimators[i].stop();
             }
             transitionAnimators.length = 0;
+            this._transiting = false;
         },
 
         addSubStates: function (states) {

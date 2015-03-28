@@ -1,58 +1,77 @@
-<script>
-///////////////////////////////////
-// 方案一，在 shape 内部管理状态
-///////////////////////////////////
-var path = new Path({
-    states: {
-        // 默认状态
-        normal: {
-            style: {
-                color: 'white'
-            },
-            position: [0, 0],
-            // Transition 动画配置
-            trasition: {
-                property: '*',
-                duration: 500
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Image</title>
+    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+</head>
+<body>
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
             }
-        },
-        // 鼠标 hover 状态 
-        hover: {
-            style: {
-                color: 'red'
-            },
-            position: [0, 10]
-        },
-        // 自定义状态
-        xxxx: {}
-    },
+        ]
+    });
 
-    // 也可以不通过状态机直接设置 shape 的属性
-    style: {},
-    position: {}
-});
-// 直接设置状态
-path.setState('xxxx');
-// 动画过渡状态
-// 因为动画控制器在 zrender instance 下，可能需要在所有 shape 下挂一个 zrender instance
-path.trasitionState('xxxx');
+    require(["zrender", 'zrender/graphic/Image', 'zrender/graphic/States'], function(zrender, ImageShape, States){
 
-///////////////////////////////////
-// 方案二，外部管理
-///////////////////////////////////
+        // 初始化zrender
+        var zr = zrender.init(document.getElementById("Main"));
 
-var path = new Path({
-    style: {},
-    position: [0, 0]
-});
-var states = new States({
-    el: path,
-    states: {
-        // 设置同上
-        normal: {},
-        hover: {}
-    }
-});
-// 这种方案耦合可能会比较小，但是在 Handler 里处理事件的时候无法直接设置为 hover 状态
-states.setState('hover');
-</script>
+        for( var i = 0; i < 20; i ++){
+            for( var j = 0; j < 20; j++){
+                var image = new ImageShape({
+                    position: [i * 50, j * 50],
+                    scale: [1, 1],
+                    style: {
+                        image: "test.jpeg"
+                    },
+
+                    onmouseover: function () {
+                        this.states.transitionState('hover');
+                    },
+
+                    onmouseout: function () {
+                        this.states.transitionState('normal');
+                    }
+                });
+                zr.addElement(image);
+
+                image.states = new States({
+                    el: image,
+                    states: {
+                        normal: {
+                            style: {
+                                x: 0,
+                                y: 0,
+                                width: 50,
+                                height: 50
+                            },
+                            z: 0,
+                            transition: '* 200 0 Linear'
+                        },
+                        hover: {
+                            style: {
+                                x: -10,
+                                y: -10,
+                                width: 70,
+                                height: 70   
+                            },
+                            z: 1
+                        }   
+                    }
+                });
+            }
+        }
+        zr.render();
+
+
+    })
+    </script>
+    <div id="Main" style="width:1000px;height:600px;"></div>
+</body>
+</html>

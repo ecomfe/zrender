@@ -1039,6 +1039,10 @@ define(function(require) {
         return [ H, S, L ];
     }
 
+    function validate(colorStr) {
+        return colorStr.match(colorRegExp);
+    }
+
     return {
         customPalette : customPalette,
         resetPalette : resetPalette,
@@ -1068,7 +1072,8 @@ define(function(require) {
         toColor : toColor,
         toArray : toArray,
         alpha : alpha,
-        getData : getData
+        getData : getData,
+        validate: validate
     };
 });
 
