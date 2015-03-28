@@ -7,8 +7,8 @@ define(function (require) {
 
     'use strict';
 
-    var matrix = require('../tool/matrix');
-    var vector = require('../tool/vector');
+    var matrix = require('../core/matrix');
+    var vector = require('../core/vector');
     var origin = [0, 0];
 
     var mTranslate = matrix.translate;

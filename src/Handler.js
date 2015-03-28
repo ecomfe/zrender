@@ -12,11 +12,11 @@ define(
         'use strict';
 
         var config = require('./config');
-        var env = require('./tool/env');
-        var eventTool = require('./tool/event');
-        var util = require('./tool/util');
-        var vec2 = require('./tool/vector');
-        var mat2d = require('./tool/matrix');
+        var env = require('./core/env');
+        var eventTool = require('./core/event');
+        var util = require('./core/util');
+        var vec2 = require('./core/vector');
+        var mat2d = require('./core/matrix');
         var EVENT = config.EVENT;
 
         var Eventful = require('./mixin/Eventful');
@@ -147,10 +147,6 @@ define(
              * @param {Event} event
              */
             mousemove: function (event) {
-                if (this.painter.isLoading()) {
-                    return;
-                }
-
                 event = this._zrenderEventFixed(event);
                 this._lastX = this._mouseX;
                 this._lastY = this._mouseY;
@@ -183,8 +179,6 @@ define(
                     }
 
                     this._lastHover = null;
-                    this.storage.delHover();
-                    this.painter.clearHover();
                 }
 
                 // set cursor for root element
@@ -193,8 +187,8 @@ define(
                 // 如果存在拖拽中元素，被拖拽的图形元素最后addHover
                 if (this._draggingTarget) {
                     this.storage.drift(this._draggingTarget.id, dx, dy);
-                    this._draggingTarget.modSelf();
-                    this.storage.addHover(this._draggingTarget);
+                    this._draggingTarget.dirty();
+                    // this.storage.addHover(this._draggingTarget);
 
                     // 拖拽不触发click事件
                     this._clickThreshold++;
@@ -229,8 +223,8 @@ define(
                 // 分发config.EVENT.MOUSEMOVE事件
                 this._dispatchAgency(this._lastHover, EVENT.MOUSEMOVE, event);
 
-                if (this._draggingTarget || this._hasfound || this.storage.hasHoverShape()) {
-                    this.painter.refreshHover();
+                if (this._draggingTarget || this._hasfound) {
+                    // this.painter.refreshHover();
                 }
             },
 
@@ -263,10 +257,7 @@ define(
                 this._processOutShape(event);
                 this._processDrop(event);
                 this._processDragEnd(event);
-                if (!this.painter.isLoading()) {
-                    this.painter.refreshHover();
-                }
-                
+
                 this.dispatch(EVENT.GLOBALOUT, event);
             },
 
@@ -438,7 +429,6 @@ define(
             this._mouseY = 0;
 
             this._findHover = bind3Arg(findHover, this);
-            this._domHover = painter.getDomHover();
             initDomHandler(this);
 
             // 初始化，事件绑定，支持的所有事件都由如下原生事件计算得来
@@ -558,7 +548,6 @@ define(
             }
 
             this.root =
-            this._domHover =
             this.storage =
             this.painter = null;
             
@@ -793,7 +782,7 @@ define(
         Handler.prototype._iterateAndFindHover = (function() {
             var invTransform = mat2d.create();
             return function() {
-                var list = this.storage.getShapeList();
+                var list = this.storage.getDisplayableList();
                 var currentZLevel;
                 var currentLayer;
                 var tmp = [ 0, 0 ];
@@ -866,14 +855,14 @@ define(
             }
 
             var event = this._event;
-            if (shape.isCover(x, y)) {
+            if (shape.contain(x, y)) {
                 if (shape.hoverable) {
-                    this.storage.addHover(shape);
+                    // this.storage.addHover(shape);
                 }
                 // 查找是否在 clipShape 中
                 var p = shape.parent;
                 while (p) {
-                    if (p.clipShape && !p.clipShape.isCover(this._mouseX, this._mouseY))  {
+                    if (p.clipShape && !p.clipShape.contain(this._mouseX, this._mouseY))  {
                         // 已经被祖先 clip 掉了
                         return false;
                     }
@@ -923,7 +912,7 @@ define(
                               || event.srcElement
                               || event.target;
 
-                if (target && target != this._domHover) {
+                if (target) {
                     event.zrenderX = (typeof event.offsetX != 'undefined'
                                         ? event.offsetX
                                         : event.layerX)

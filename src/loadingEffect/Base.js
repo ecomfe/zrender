@@ -7,7 +7,7 @@
 
 define(
     function(require) {
-        var util = require('../tool/util');
+        var util = require('../core/util');
         var TextShape = require('../shape/Text');
         var RectangleShape = require('../shape/Rectangle');
 

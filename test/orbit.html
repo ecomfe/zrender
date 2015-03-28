@@ -21,16 +21,16 @@
         [
             "zrender",
             "zrender/animation/animation",
-            "zrender/shape/Star",
-            "zrender/shape/Image",
-            "zrender/shape/Polyline",
+            "zrender/graphic/shape/Star",
+            "zrender/graphic/Image",
+            "zrender/graphic/shape/Polyline",
             "zrender/tool/color"
         ], 
         function (zrender, Animation, StarShape, ImageShape, PolylineShape, colorTool) {
             // 初始化zrender
             var zr = zrender.init(document.getElementById("Main"));
 
-            var circleShape = new StarShape({
+            var starShape = new StarShape({
                 style : {
                     x : 10,
                     y : 10,
@@ -43,32 +43,32 @@
                     shadowOffsetY : 0
                 }
             });
-            var imageShape = zr.shapeToImage(circleShape, 28, 28);
+            var zImage = zr.pathToImage(starShape, 28, 28);
 
-            var NUMBER = 20;
+            var NUMBER = 500;
 
             for (var i = 0; i < NUMBER; i++) {
-                var circle = new ImageShape({
+                var star = new ImageShape({
                     scale : [1, 1],
                     zlevel : 1,
                     style : {
                         x : 0,
                         y : 0,
-                        image : imageShape.style.image
+                        image : zImage.style.image
                     },
                     draggable : false,
                     hoverable : false,
                 });
 
-                zr.addShape(circle);
-                var deferred = zr.animate(circle.id, "", circle, true);
+                zr.addElement(star);
+                var deferred = zr.animate(star.id, "", star, true);
 
                 var points = [];
                 var point = [
                     Math.random() * zr.getWidth(),
                     Math.random() * zr.getHeight()
                 ];
-                //circle.position = point;
+                //star.position = point;
                 points.push(point);
                 for (var j = 1; j < 10; j++) {
                     var point = [
@@ -80,12 +80,11 @@
                     });
                     points.push(point);
                 }
-                var polyline = {
+                var polyline = new PolylineShape({
                     zlevel : 0,
                     style : {
-                        pointList : points,
+                        points : points,
                         smooth : 'spline',
-                        brushType : 'stroke',
                         strokeColor : colorTool.random(),
                         opacity : 0.2,
                         lineWidth: Math.random() * 5
@@ -93,8 +92,8 @@
                     highlightStyle: {
                         opacity: 1
                     }
-                }
-                zr.addShape(new PolylineShape(polyline));
+                });
+                zr.addElement(polyline);
 
                 deferred.start('spline');
             }
@@ -103,7 +102,6 @@
                 motionBlur : true,
                 lastFrameAlpha : 0.8
             });
-            zr.render();
 
         }
     );

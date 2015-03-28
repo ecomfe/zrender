@@ -17,7 +17,7 @@
         ]
     });
 
-    require(["zrender", 'zrender/shape/Image'], function(zrender, ImageShape){
+    require(["zrender", 'zrender/graphic/Image'], function(zrender, ImageShape){
 
         // 初始化zrender
         var zr = zrender.init( document.getElementById("Main") );
@@ -41,10 +41,10 @@
                         y: -5
                     }
                 });
-                zr.addShape( image );
+                zr.addElement( image );
             }
         }
-        zr.render();
+        zr.refresh();
 
         zr.modLayer(0, {
             panable: true,

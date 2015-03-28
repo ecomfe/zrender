@@ -20,51 +20,51 @@
         [
             "zrender",
             "zrender/animation/animation",
-            'zrender/shape/Circle'
+            'zrender/graphic/shape/Circle'
         ], 
         function(zrender, Animation, CircleShape){
 
             // 初始化zrender
             var zr = zrender.init( document.getElementById("Main") );
             var circle = new CircleShape({
-                position : [100, 100],
-                scale : [1, 1],
-                style : {
-                    x : 0,
-                    y : 0,
-                    r : 50,
-                    brushType : 'fill',
-                    color : 'rgba(33, 222, 10, 0.1)',
-                    lineWidth : 5,
-                    text :'circle',
-                    textPosition :'inside'
+                position: [100, 100],
+                scale: [1, 1],
+                style: {
+                    x: 0,
+                    y: 0,
+                    r: 50,
+                    brushType: 'fill',
+                    color: 'rgba(33, 222, 10, 0.1)',
+                    lineWidth: 5,
+                    text:'circle',
+                    textPosition:'inside'
                 },
-                draggable : true,
-                onmouseover  : function(){
+                draggable: true,
+                onmouseover: function(){
                     zr.animate( circle.id,"style")
                         .when( 1000, {
-                            r : 100
+                            r: 100
                         }).when( 2000, {
-                            r : 50
+                            r: 50
                         })
                         .start();
                 }
             });
-            zr.addShape(circle);
-            zr.render();
+            zr.addElement(circle);
+            zr.refresh();
 
-            var tm1 = zr.animate( circle.id, "", true)
+            var tm1 = zr.animate(circle.id, "", true)
                 .when(1000, {
-                    position : [200, 0]
+                    position: [200, 0]
                 })
                 .when(2000, {
-                    position : [200, 200]
+                    position: [200, 200]
                 })
                 .when(3000, {
-                    position : [0, 200]
+                    position: [0, 200]
                 })
                 .when(4000, {
-                    position : [100, 100]
+                    position: [100, 100]
                 })
                 .start();
 

@@ -3,7 +3,7 @@
  * @module zrender/tool/color
  */
 define(function(require) {
-    var util = require('../tool/util');
+    var util = require('../core/util');
 
     var _ctx;
 

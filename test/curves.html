@@ -28,7 +28,7 @@
     main.style.width = w + 'px';
     main.style.height = h + 'px';
 
-    require(['zrender','zrender/shape/rose','zrender/shape/trochoid'], function(zrender, RoseShape, TrocholdShape){
+    require(['zrender','zrender/graphic/shape/Rose','zrender/graphic/shape/Trochoid'], function(zrender, RoseShape, TrocholdShape){
             var zr = zrender.init( main );
 
             var N = 10;
@@ -41,12 +41,10 @@
             zr.render();
 
             function createShape(i) {
-                var id = require('zrender/tool/guid')();
                 var ShapeClass = ( i % 5 == 0 ) ? TrocholdShape : RoseShape;
                 var r = ( i % 5 == 0 ) ? random(50, 20) : [random(100, 30)];
                 
                 var shape = new ShapeClass({
-                    id : id,
                     position : [random(w), random(h)],
                     style : {
                         x : 0,
@@ -64,8 +62,8 @@
                     hoverable : false,
                     draggable : false
                 });
-                zr.addShape(shape);
-                animate(id, shape.type);
+                zr.addElement(shape);
+                animate(shape.id, shape.type);
             }
 
             function animate(id, shape) {

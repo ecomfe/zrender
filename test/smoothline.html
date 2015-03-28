@@ -22,22 +22,22 @@
         [
             "zrender",
             "zrender/animation/animation",
-            "zrender/shape/Polyline",
-            "zrender/shape/Polygon"
+            "zrender/graphic/shape/Polyline",
+            "zrender/graphic/shape/Polygon"
         ], 
         function(zrender, Animation, PolylineShape, PolygonShape){
 
             // 初始化zrender
             var zr = zrender.init( document.getElementById("Main") );
 
-            var pointList = [];
+            var points = [];
             for (var i = 0; i < 10; i++) {
-                pointList.push([Math.random() * 300 + 100, Math.random() * 300 + 100]);
+                points.push([Math.random() * 300 + 100, Math.random() * 300 + 100]);
             }
 
             var smoothLine = new PolylineShape({
                 style : {
-                    pointList : pointList,
+                    points : points,
                     smooth : 'spline',
                     brushType : 'stroke',
                     color : 'rgba(220, 20, 60, 0.8)',
@@ -49,9 +49,9 @@
 
             var smoothPolygon = new PolygonShape({
                 style : {
-                    pointList : [[50, 50], [200, 10], [100, 200], [50, 150], [50, 50]],
+                    points : [[50, 50], [200, 10], [100, 200], [50, 150], [10, 70]],
                     smooth : 0.5,
-                    smoothConstraint: [[-Infinity, -Infinity], [200, Infinity]],
+                    // smoothConstraint: [[-Infinity, -Infinity], [200, Infinity]],
                     brushType : 'both',
                     color : 'rgba(220, 20, 60, 0.4)',
                     strokeColor : "rgba(220, 20, 60, 1)",
@@ -59,8 +59,8 @@
                     // lineType : 'dotted'
                 }
             });
-            zr.addShape(smoothPolygon);
-            zr.addShape(smoothLine);
+            zr.addElement(smoothPolygon);
+            zr.addElement(smoothLine);
             zr.render(); 
         }
     )

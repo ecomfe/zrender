@@ -5,7 +5,7 @@
 define(function (require) {
 
     var Transformable = require('./mixin/Transformable');
-    var util = require('./tool/util');
+    var util = require('./core/util');
     var vmlCanvasManager = window['G_vmlCanvasManager'];
     var config = require('./config');
 
@@ -26,12 +26,13 @@ define(function (require) {
         var width = painter.getWidth();
         var height = painter.getHeight();
 
+        var newDomStyle = newDom.style;
         // 没append呢，请原谅我这样写，清晰~
-        newDom.style.position = 'absolute';
-        newDom.style.left = 0;
-        newDom.style.top = 0;
-        newDom.style.width = width + 'px';
-        newDom.style.height = height + 'px';
+        newDomStyle.position = 'absolute';
+        newDomStyle.left = 0;
+        newDomStyle.top = 0;
+        newDomStyle.width = width + 'px';
+        newDomStyle.height = height + 'px';
         newDom.width = width * config.devicePixelRatio;
         newDom.height = height * config.devicePixelRatio;
 
@@ -52,11 +53,14 @@ define(function (require) {
         this.id = id;
 
         this.dom = createDom(id, 'canvas', painter);
-        this.dom.onselectstart = returnFalse; // 避免页面选中的尴尬
-        this.dom.style['-webkit-user-select'] = 'none';
-        this.dom.style['user-select'] = 'none';
-        this.dom.style['-webkit-touch-callout'] = 'none';
-        this.dom.style['-webkit-tap-highlight-color'] = 'rgba(0,0,0,0)';
+
+        var dom = this.dom;
+        var domStyle = dom.style;
+        dom.onselectstart = returnFalse; // 避免页面选中的尴尬
+        domStyle['-webkit-user-select'] = 'none';
+        domStyle['user-select'] = 'none';
+        domStyle['-webkit-touch-callout'] = 'none';
+        domStyle['-webkit-tap-highlight-color'] = 'rgba(0,0,0,0)';
 
         vmlCanvasManager && vmlCanvasManager.initElement(this.dom);
 

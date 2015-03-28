@@ -5,23 +5,23 @@ define(function(require) {
 
     var http = require('zrender/tool/http');
 
-    var Circle = require('zrender/shape/Circle');
-    var Ellipse = require('zrender/shape/Ellipse');
-    var Rectangle = require('zrender/shape/Rectangle');
-    var Line = require('zrender/shape/Line');
-    var Path = require('zrender/shape/Path');
-    var Polygon = require('zrender/shape/Polygon');
-    var Text = require('zrender/shape/Text');
-    var ImageShape = require('zrender/shape/Image');
-    var Polyline = require('zrender/shape/Polyline');
-    var mat2d = require('zrender/tool/matrix');
-    var vec2 = require('zrender/tool/vector');
-    var log = require('zrender/tool/log');
-    var guid = require('zrender/tool/guid');
+    var Circle = require('zrender/graphic/shape/Circle');
+    var Ellipse = require('zrender/graphic/shape/Ellipse');
+    var Rectangle = require('zrender/graphic/shape/Rectangle');
+    var Line = require('zrender/graphic/shape/Line');
+    var Path = require('zrender/graphic/shape/Path');
+    var Polygon = require('zrender/graphic/shape/Polygon');
+    var Text = require('zrender/graphic/Text');
+    var ImageShape = require('zrender/graphic/Image');
+    var Group = require('zrender/graphic/Group');
+    var Polyline = require('zrender/graphic/shape/Polyline');
+    var mat2d = require('zrender/core/matrix');
+    var vec2 = require('zrender/core/vector');
+    var log = require('zrender/core/log');
+    var guid = require('zrender/core/guid');
 
-    var Group = require('zrender/Group');
 
-    var util = require('zrender/tool/util');
+    var util = require('zrender/core/util');
 
     function trim(str) {
         return str.replace(/^\s+/, '').replace(/\s+$/, '');
