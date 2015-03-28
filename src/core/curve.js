@@ -5,20 +5,26 @@
  */
 define(function(require) {
 
-    var vector = require('./vector');
-
     'use strict';
+
+    var vec2 = require('./vector');
+    var v2Create = vec2.create;
+    var v2DistSquare = vec2.distSquare;
+    var mathMin = Math.min;
+    var mathMax = Math.max;
+    var mathPow = Math.pow;
+    var mathSqrt = Math.sqrt;
 
     var EPSILON = 1e-4;
 
-    var THREE_SQRT = Math.sqrt(3);
+    var THREE_SQRT = mathSqrt(3);
     var ONE_THIRD = 1 / 3;
 
     // 临时变量
-    var _v0 = vector.create();
-    var _v1 = vector.create();
-    var _v2 = vector.create();
-    // var _v3 = vector.create();
+    var _v0 = v2Create();
+    var _v1 = v2Create();
+    var _v2 = v2Create();
+    // var _v3 = vec2.create();
 
     function isAroundZero(val) {
         return val > -EPSILON && val < EPSILON;
@@ -116,20 +122,20 @@ define(function(require) {
                 }
             }
             else if (disc > 0) {
-                var discSqrt = Math.sqrt(disc);
+                var discSqrt = mathSqrt(disc);
                 var Y1 = A * b + 1.5 * a * (-B + discSqrt);
                 var Y2 = A * b + 1.5 * a * (-B - discSqrt);
                 if (Y1 < 0) {
-                    Y1 = -Math.pow(-Y1, ONE_THIRD);
+                    Y1 = -mathPow(-Y1, ONE_THIRD);
                 }
                 else {
-                    Y1 = Math.pow(Y1, ONE_THIRD);
+                    Y1 = mathPow(Y1, ONE_THIRD);
                 }
                 if (Y2 < 0) {
-                    Y2 = -Math.pow(-Y2, ONE_THIRD);
+                    Y2 = -mathPow(-Y2, ONE_THIRD);
                 }
                 else {
-                    Y2 = Math.pow(Y2, ONE_THIRD);
+                    Y2 = mathPow(Y2, ONE_THIRD);
                 }
                 var t1 = (-b - (Y1 + Y2)) / (3 * a);
                 if (t1 >= 0 && t1 <= 1) {
@@ -137,9 +143,9 @@ define(function(require) {
                 }
             }
             else {
-                var T = (2 * A * b - 3 * a * B) / (2 * Math.sqrt(A * A * A));
+                var T = (2 * A * b - 3 * a * B) / (2 * mathSqrt(A * A * A));
                 var theta = Math.acos(T) / 3;
-                var ASqrt = Math.sqrt(A);
+                var ASqrt = mathSqrt(A);
                 var tmp = Math.cos(theta);
                 
                 var t1 = (-b - 2 * ASqrt * tmp) / (3 * a);
@@ -189,7 +195,7 @@ define(function(require) {
                 extrema[0] = -b / (2 * a);
             }
             else if (disc > 0) {
-                var discSqrt = Math.sqrt(disc);
+                var discSqrt = mathSqrt(disc);
                 var t1 = (-b + discSqrt) / (2 * a);
                 var t2 = (-b - discSqrt) / (2 * a);
                 if (t1 >= 0 && t1 <= 1) {
@@ -258,6 +264,10 @@ define(function(require) {
         var t;
         var interval = 0.005;
         var d = Infinity;
+        var prev;
+        var next;
+        var d1;
+        var d2;
 
         _v0[0] = x;
         _v0[1] = y;
@@ -267,7 +277,7 @@ define(function(require) {
         for (var _t = 0; _t < 1; _t += 0.05) {
             _v1[0] = cubicAt(x0, x1, x2, x3, _t);
             _v1[1] = cubicAt(y0, y1, y2, y3, _t);
-            var d1 = vector.distSquare(_v0, _v1);
+            d1 = v2DistSquare(_v0, _v1);
             if (d1 < d) {
                 t = _t;
                 d = d1;
@@ -280,13 +290,13 @@ define(function(require) {
             if (interval < EPSILON) {
                 break;
             }
-            var prev = t - interval;
-            var next = t + interval;
+            prev = t - interval;
+            next = t + interval;
             // t - interval
             _v1[0] = cubicAt(x0, x1, x2, x3, prev);
             _v1[1] = cubicAt(y0, y1, y2, y3, prev);
 
-            var d1 = vector.distSquare(_v1, _v0);
+            d1 = v2DistSquare(_v1, _v0);
 
             if (prev >= 0 && d1 < d) {
                 t = prev;
@@ -296,7 +306,7 @@ define(function(require) {
                 // t + interval
                 _v2[0] = cubicAt(x0, x1, x2, x3, next);
                 _v2[1] = cubicAt(y0, y1, y2, y3, next);
-                var d2 = vector.distSquare(_v2, _v0);
+                d2 = v2DistSquare(_v2, _v0);
 
                 if (next <= 1 && d2 < d) {
                     t = next;
@@ -313,7 +323,7 @@ define(function(require) {
             out[1] = cubicAt(y0, y1, y2, y3, t);   
         }
         // console.log(interval, i);
-        return Math.sqrt(d);
+        return mathSqrt(d);
     }
 
     /**
@@ -373,7 +383,7 @@ define(function(require) {
                 }
             }
             else if (disc > 0) {
-                var discSqrt = Math.sqrt(disc);
+                var discSqrt = mathSqrt(disc);
                 var t1 = (-b + discSqrt) / (2 * a);
                 var t2 = (-b - discSqrt) / (2 * a);
                 if (t1 >= 0 && t1 <= 1) {
@@ -462,7 +472,7 @@ define(function(require) {
         for (var _t = 0; _t < 1; _t += 0.05) {
             _v1[0] = quadraticAt(x0, x1, x2, _t);
             _v1[1] = quadraticAt(y0, y1, y2, _t);
-            var d1 = vector.distSquare(_v0, _v1);
+            var d1 = v2DistSquare(_v0, _v1);
             if (d1 < d) {
                 t = _t;
                 d = d1;
@@ -481,7 +491,7 @@ define(function(require) {
             _v1[0] = quadraticAt(x0, x1, x2, prev);
             _v1[1] = quadraticAt(y0, y1, y2, prev);
 
-            var d1 = vector.distSquare(_v1, _v0);
+            var d1 = v2DistSquare(_v1, _v0);
 
             if (prev >= 0 && d1 < d) {
                 t = prev;
@@ -491,7 +501,7 @@ define(function(require) {
                 // t + interval
                 _v2[0] = quadraticAt(x0, x1, x2, next);
                 _v2[1] = quadraticAt(y0, y1, y2, next);
-                var d2 = vector.distSquare(_v2, _v0);
+                var d2 = v2DistSquare(_v2, _v0);
                 if (next <= 1 && d2 < d) {
                     t = next;
                     d = d2;
@@ -507,7 +517,7 @@ define(function(require) {
             out[1] = quadraticAt(y0, y1, y2, t);   
         }
         // console.log(interval, i);
-        return Math.sqrt(d);
+        return mathSqrt(d);
     }
 
     return {

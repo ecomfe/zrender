@@ -95,6 +95,8 @@ define(function (require) {
 
             if (this.needLocalTransform) {
                 var scale = this.scale;
+                var rotation = this.rotation;
+                var position = this.position;
                 if (
                     isNotAroundZero(scale[0])
                  || isNotAroundZero(scale[1])
@@ -114,16 +116,16 @@ define(function (require) {
                     }
                 }
 
-                if (this.rotation instanceof Array) {
-                    if (this.rotation[0] !== 0) {
-                        origin[0] = -this.rotation[1] || 0;
-                        origin[1] = -this.rotation[2] || 0;
+                if (rotation instanceof Array) {
+                    if (rotation[0] !== 0) {
+                        origin[0] = -rotation[1] || 0;
+                        origin[1] = -rotation[2] || 0;
                         var haveOrigin = isNotAroundZero(origin[0])
                                       || isNotAroundZero(origin[1]);
                         if (haveOrigin) {
                             mTranslate(m, m, origin);
                         }
-                        matrix.rotate(m, m, this.rotation[0]);
+                        matrix.rotate(m, m, rotation[0]);
                         if (haveOrigin) {
                             origin[0] = -origin[0];
                             origin[1] = -origin[1];
@@ -132,15 +134,15 @@ define(function (require) {
                     }
                 }
                 else {
-                    if (this.rotation !== 0) {
-                        matrix.rotate(m, m, this.rotation);
+                    if (rotation !== 0) {
+                        matrix.rotate(m, m, rotation);
                     }
                 }
 
                 if (
-                    isNotAroundZero(this.position[0]) || isNotAroundZero(this.position[1])
+                    isNotAroundZero(position[0]) || isNotAroundZero(position[1])
                 ) {
-                    mTranslate(m, m, this.position);
+                    mTranslate(m, m, position);
                 }
             }
 

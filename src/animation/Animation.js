@@ -128,7 +128,7 @@ define(function(require) {
 
             this.onframe(delta);
 
-            this.dispatch('frame', delta);
+            this.trigger('frame', delta);
 
             if (this.stage.update) {
                 this.stage.update();

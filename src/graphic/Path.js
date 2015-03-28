@@ -13,6 +13,15 @@ define(function (require) {
     var pathContain = require('../contain/path');
     var rectContain = require('../contain/rect');
 
+    function pathHasFill(style) {
+        var brushType = style.brushType;
+        return brushType == 'both' || brushType == 'fill';
+    }
+
+    function pathHasStroke(style) {
+        var brushType = style.brushType;
+        return brushType == 'both' || brushType == 'stroke';
+    }
     /**
      * @alias module:zrender/graphic/Path
      * @extends module:zrender/graphic/Displayable
@@ -37,8 +46,8 @@ define(function (require) {
             var style = this.style;
 
             var path = this._path;
-            var hasStroke = this._hasStroke();
-            var hasFill = this._hasFill();
+            var hasStroke = pathHasStroke(style);
+            var hasFill = pathHasFill(style);
 
             var lineDash = style.lineDash;
             var lineDashOffset = style.lineDashOffset;
@@ -89,7 +98,7 @@ define(function (require) {
             if (! this._rect) {
                 this._rect = this._path.fastBoundingRect();
             }
-            if (this._hasStroke()) {
+            if (pathHasStroke(this.style)) {
                 var rect = this._rect;
                 var w = this.style.lineWidth;
                 // Consider line width
@@ -103,34 +112,25 @@ define(function (require) {
 
         contain: function (x, y) {
             var localPos = this.transformCoordToLocal(x, y);
+            var rect = this.getRect();
+            var style = this.style;
             x = localPos[0];
             y = localPos[1];
-            var rect = this.getRect();
 
             if (rectContain.contain(rect, x, y)) {
                 var pathData = this._path.data;
-                if (this._hasStroke()) {
+                if (pathHasStroke(style)) {
                     if (pathContain.containStroke(
                         pathData, this.style.lineWidth, x, y
                     )) {
                         return true;
                     }
                 }
-                if (this._hasFill()) {
+                if (pathHasFill(style)) {
                     return pathContain.contain(pathData, x, y);
                 }
             }
             return false;
-        },
-
-        _hasStroke: function () {
-            var brushType = this.style.brushType;
-            return brushType == 'both' || brushType == 'stroke';
-        },
-
-        _hasFill: function () {
-            var brushType = this.style.brushType;
-            return brushType == 'both' || brushType == 'fill';
         }
     };
 

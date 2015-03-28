@@ -158,344 +158,348 @@ define(function(require) {
         }
     };
 
-    /**
-     * 获取实例唯一标识
-     * @return {string}
-     */
-    ZRender.prototype.getId = function () {
-        return this.id;
-    };
+    ZRender.prototype = {
 
-    /**
-     * 添加元素
-     * @param  {string|module:zrender/Group|module:zrender/shape/Base} el
-     */
-    ZRender.prototype.addElement = function (el) {
-        this.storage.addRoot(el);
-        this._needsRefreshNextFrame = true;
-        return this;
-    };
+        constructor: ZRender,
+        /**
+         * 获取实例唯一标识
+         * @return {string}
+         */
+        getId: function () {
+            return this.id;
+        },
 
-    /**
-     * 删除元素
-     * @param  {string|module:zrender/Group|module:zrender/shape/Base} el
-     */
-    ZRender.prototype.delElement = function (el) {
-        this.storage.delRoot(el);
-        this._needsRefreshNextFrame = true;
-        return this;
-    };
+        /**
+         * 添加元素
+         * @param  {string|module:zrender/Group|module:zrender/shape/Base} el
+         */
+        addElement: function (el) {
+            this.storage.addRoot(el);
+            this._needsRefreshNextFrame = true;
+            return this;
+        },
 
-    /**
-     * 修改元素, 主要标记图形或者组需要在下一帧刷新。
-     * 第二个参数为需要覆盖到元素上的参数，不建议使用。
-     *
-     * @example
-     *     el.style.color = 'red';
-     *     el.position = [10, 10];
-     *     zr.modElement(el);
-     * @param  {string|module:zrender/Group|module:zrender/shape/Base} el
-     * @param {Object} [params]
-     */
-    ZRender.prototype.modElement = function (el, params) {
-        this.storage.mod(el, params);
-        this._needsRefreshNextFrame = true;
-        return this;
-    };
+        /**
+         * 删除元素
+         * @param  {string|module:zrender/Group|module:zrender/shape/Base} el
+         */
+        delElement: function (el) {
+            this.storage.delRoot(el);
+            this._needsRefreshNextFrame = true;
+            return this;
+        },
 
-    /**
-     * 修改指定zlevel的绘制配置项
-     * 
-     * @param {string} zLevel
-     * @param {Object} config 配置对象
-     * @param {string} [config.clearColor=0] 每次清空画布的颜色
-     * @param {string} [config.motionBlur=false] 是否开启动态模糊
-     * @param {number} [config.lastFrameAlpha=0.7]
-     *                 在开启动态模糊的时候使用，与上一帧混合的alpha值，值越大尾迹越明显
-     * @param {Array.<number>} [config.position] 层的平移
-     * @param {Array.<number>} [config.rotation] 层的旋转
-     * @param {Array.<number>} [config.scale] 层的缩放
-     * @param {boolean} [config.zoomable=false] 层是否支持鼠标缩放操作
-     * @param {boolean} [config.panable=false] 层是否支持鼠标平移操作
-     */
-    ZRender.prototype.modLayer = function (zLevel, config) {
-        this.painter.modLayer(zLevel, config);
-        this._needsRefreshNextFrame = true;
-        return this;
-    };
+        /**
+         * 修改元素, 主要标记图形或者组需要在下一帧刷新。
+         * 第二个参数为需要覆盖到元素上的参数，不建议使用。
+         *
+         * @example
+         *     el.style.color = 'red';
+         *     el.position = [10, 10];
+         *     zr.modElement(el);
+         * @param  {string|module:zrender/Group|module:zrender/shape/Base} el
+         * @param {Object} [params]
+         */
+        modElement: function (el, params) {
+            this.storage.mod(el, params);
+            this._needsRefreshNextFrame = true;
+            return this;
+        },
 
-    /**
-     * 渲染
-     */
-    ZRender.prototype.render = function () {
-        return this.refresh();
-    };
+        /**
+         * 修改指定zlevel的绘制配置项
+         * 
+         * @param {string} zLevel
+         * @param {Object} config 配置对象
+         * @param {string} [config.clearColor=0] 每次清空画布的颜色
+         * @param {string} [config.motionBlur=false] 是否开启动态模糊
+         * @param {number} [config.lastFrameAlpha=0.7]
+         *                 在开启动态模糊的时候使用，与上一帧混合的alpha值，值越大尾迹越明显
+         * @param {Array.<number>} [config.position] 层的平移
+         * @param {Array.<number>} [config.rotation] 层的旋转
+         * @param {Array.<number>} [config.scale] 层的缩放
+         * @param {boolean} [config.zoomable=false] 层是否支持鼠标缩放操作
+         * @param {boolean} [config.panable=false] 层是否支持鼠标平移操作
+        */
+        modLayer: function (zLevel, config) {
+            this.painter.modLayer(zLevel, config);
+            this._needsRefreshNextFrame = true;
+            return this;
+        },
 
-    /**
-     * 视图更新
-     */
-    ZRender.prototype.refresh = function () {
-        this.painter.refresh();
-        this._needsRefreshNextFrame = false;
-        return this;
-    };
+        /**
+         * 渲染
+         */
+        render: function () {
+            return this.refresh();
+        },
 
-    /**
-     * 标记视图在浏览器下一帧需要绘制
-     */
-    ZRender.prototype.refreshNextFrame = function() {
-        this._needsRefreshNextFrame = true;
-        return this;
-    };
+        /**
+         * 视图更新
+         */
+        refresh: function () {
+            this.painter.refresh();
+            this._needsRefreshNextFrame = false;
+            return this;
+        },
+
+        /**
+         * 标记视图在浏览器下一帧需要绘制
+         */
+        refreshNextFrame: function() {
+            this._needsRefreshNextFrame = true;
+            return this;
+        },
     
-    /**
-     * 绘制高亮层
-     * @param {Function} callback  视图更新后回调函数
-     */
-    ZRender.prototype.refreshHover = function (callback) {
-        this.painter.refreshHover(callback);
-        return this;
-    };
+        /**
+         * 绘制高亮层
+         * @param {Function} callback  视图更新后回调函数
+         */
+        refreshHover: function (callback) {
+            this.painter.refreshHover(callback);
+            return this;
+        },
 
-    /**
-     * 视图更新
-     * 
-     * @param {Array.<module:zrender/shape/Base>} shapeList 需要更新的图形列表
-     * @param {Function} callback  视图更新后回调函数
-     */
-    ZRender.prototype.refreshShapes = function (shapeList, callback) {
-        this.painter.refreshShapes(shapeList, callback);
-        return this;
-    };
+        /**
+         * 视图更新
+         * 
+         * @param {Array.<module:zrender/shape/Base>} shapeList 需要更新的图形列表
+         * @param {Function} callback  视图更新后回调函数
+         */
+        refreshShapes: function (shapeList, callback) {
+            this.painter.refreshShapes(shapeList, callback);
+            return this;
+        },
 
-    /**
-     * 调整视图大小
-     */
-    ZRender.prototype.resize = function() {
-        this.painter.resize();
-        return this;
-    };
+        /**
+         * 调整视图大小
+         */
+        resize: function() {
+            this.painter.resize();
+            return this;
+        },
 
-    /**
-     * 动画
-     * 
-     * @param {string|module:zrender/Group|module:zrender/shape/Base} el 动画对象
-     * @param {string} path 需要添加动画的属性获取路径，可以通过a.b.c来获取深层的属性
-     * @param {boolean} [loop] 动画是否循环
-     * @return {module:zrender/animation/Animation~Animator}
-     * @example:
-     *     zr.animate(circle.id, 'style', false)
-     *         .when(1000, {x: 10} )
-     *         .done(function(){ // Animation done })
-     *         .start()
-     */
-    ZRender.prototype.animate = function (el, path, loop) {
-        if (typeof(el) === 'string') {
-            el = this.storage.get(el);
-        }
-        if (el) {
-            var target;
-            if (path) {
-                var pathSplitted = path.split('.');
-                var prop = el;
-                for (var i = 0, l = pathSplitted.length; i < l; i++) {
-                    if (!prop) {
-                        continue;
+        /**
+         * 动画
+         * 
+         * @param {string|module:zrender/Group|module:zrender/shape/Base} el 动画对象
+         * @param {string} path 需要添加动画的属性获取路径，可以通过a.b.c来获取深层的属性
+         * @param {boolean} [loop] 动画是否循环
+         * @return {module:zrender/animation/Animation~Animator}
+         * @example:
+         *     zr.animate(circle.id, 'style', false)
+         *         .when(1000, {x: 10} )
+         *         .done(function(){ // Animation done })
+         *         .start()
+         */
+        animate: function (el, path, loop) {
+            if (typeof(el) === 'string') {
+                el = this.storage.get(el);
+            }
+            if (el) {
+                var target;
+                if (path) {
+                    var pathSplitted = path.split('.');
+                    var prop = el;
+                    for (var i = 0, l = pathSplitted.length; i < l; i++) {
+                        if (!prop) {
+                            continue;
+                        }
+                        prop = prop[pathSplitted[i]];
                     }
-                    prop = prop[pathSplitted[i]];
+                    if (prop) {
+                        target = prop;
+                    }
                 }
-                if (prop) {
-                    target = prop;
+                else {
+                    target = el;
                 }
+
+                if (!target) {
+                    log(
+                        'Property "'
+                        + path
+                        + '" is not existed in element '
+                        + el.id
+                    );
+                    return;
+                }
+
+                var animatingElements = this.animatingElements;
+                if (el.__animators == null) {
+                    // 正在进行的动画记数
+                    el.__animators = [];
+                }
+                var animators = el.__animators;
+                if (animators.length === 0) {
+                    animatingElements.push(el);
+                }
+
+                var animator = this.animation.animate(target, { loop: loop })
+                    .done(function () {
+                        animators.splice(el.__animators.indexOf(animator), 1);
+                        if (animators.length === 0) {
+                            // 从animatingElements里移除
+                            var idx = util.indexOf(animatingElements, el);
+                            animatingElements.splice(idx, 1);
+                        }
+                    });
+                animators.push(animator);
+
+                return animator;
             }
             else {
-                target = el;
+                log('Element not existed');
             }
+        },
 
-            if (!target) {
-                log(
-                    'Property "'
-                    + path
-                    + '" is not existed in element '
-                    + el.id
-                );
-                return;
+        /**
+         * 停止动画对象的动画
+         * @param  {string|module:zrender/Group|module:zrender/shape/Base} el
+         */
+        stopAnimation: function (el) {
+            if (el.__animators) {
+                var animators = el.__animators;
+                var len = animators.length;
+                for (var i = 0; i < len; i++) {
+                    animators[i].stop();
+                }
+                if (len > 0) {
+                    var animatingElements = this.animatingElements;
+                    animatingElements.splice(animatingElements.indexOf(el), 1);
+                }
+
+                animators.length = 0;
             }
+            return this;
+        },
 
-            var animatingElements = this.animatingElements;
-            if (el.__animators == null) {
-                // 正在进行的动画记数
-                el.__animators = [];
-            }
-            var animators = el.__animators;
-            if (animators.length === 0) {
-                animatingElements.push(el);
-            }
+        /**
+         * 停止所有动画
+         */
+        clearAnimation: function () {
+            this.animation.clear();
+            this.animatingElements.length = 0;
+            return this;
+        },
 
-            var animator = this.animation.animate(target, { loop: loop })
-                .done(function () {
-                    animators.splice(el.__animators.indexOf(animator), 1);
-                    if (animators.length === 0) {
-                        // 从animatingElements里移除
-                        var idx = util.indexOf(animatingElements, el);
-                        animatingElements.splice(idx, 1);
-                    }
-                });
-            animators.push(animator);
+        /**
+         * loading显示
+         * 
+         * @param {Object=} loadingEffect loading效果对象
+         */
+        showLoading: function (loadingEffect) {
+            this.painter.showLoading(loadingEffect);
+            return this;
+        },
 
-            return animator;
-        }
-        else {
-            log('Element not existed');
-        }
-    };
+        /**
+         * loading结束
+         */
+        hideLoading: function () {
+            this.painter.hideLoading();
+            return this;
+        },
 
-    /**
-     * 停止动画对象的动画
-     * @param  {string|module:zrender/Group|module:zrender/shape/Base} el
-     */
-    ZRender.prototype.stopAnimation = function (el) {
-        if (el.__animators) {
-            var animators = el.__animators;
-            var len = animators.length;
-            for (var i = 0; i < len; i++) {
-                animators[i].stop();
-            }
-            if (len > 0) {
-                var animatingElements = this.animatingElements;
-                animatingElements.splice(animatingElements.indexOf(el), 1);
-            }
+        /**
+         * 获取视图宽度
+         */
+        getWidth: function() {
+            return this.painter.getWidth();
+        },
 
-            animators.length = 0;
-        }
-        return this;
-    };
+        /**
+         * 获取视图高度
+         */
+        getHeight: function() {
+            return this.painter.getHeight();
+        },
 
-    /**
-     * 停止所有动画
-     */
-    ZRender.prototype.clearAnimation = function () {
-        this.animation.clear();
-        this.animatingElements.length = 0;
-        return this;
-    };
+        /**
+         * 图像导出
+         * @param {string} type
+         * @param {string} [backgroundColor='#fff'] 背景色
+         * @return {string} 图片的Base64 url
+         */
+        toDataURL: function(type, backgroundColor, args) {
+            return this.painter.toDataURL(type, backgroundColor, args);
+        },
 
-    /**
-     * loading显示
-     * 
-     * @param {Object=} loadingEffect loading效果对象
-     */
-    ZRender.prototype.showLoading = function (loadingEffect) {
-        this.painter.showLoading(loadingEffect);
-        return this;
-    };
+        /**
+         * 将常规shape转成image shape
+         * @param {module:zrender/shape/Base} e
+         * @param {number} width
+         * @param {number} height
+         */
+        pathToImage: function(e, width, height) {
+            var id = guid();
+            return this.painter.pathToImage(id, e, width, height);
+        },
 
-    /**
-     * loading结束
-     */
-    ZRender.prototype.hideLoading = function () {
-        this.painter.hideLoading();
-        return this;
-    };
+        /**
+         * 事件绑定
+         * 
+         * @param {string} eventName 事件名称
+         * @param {Function} eventHandler 响应函数
+         * @param {Object} [context] 响应函数
+         */
+        on: function(eventName, eventHandler, context) {
+            this.handler.on(eventName, eventHandler, context);
+            return this;
+        },
 
-    /**
-     * 获取视图宽度
-     */
-    ZRender.prototype.getWidth = function() {
-        return this.painter.getWidth();
-    };
-
-    /**
-     * 获取视图高度
-     */
-    ZRender.prototype.getHeight = function() {
-        return this.painter.getHeight();
-    };
-
-    /**
-     * 图像导出
-     * @param {string} type
-     * @param {string} [backgroundColor='#fff'] 背景色
-     * @return {string} 图片的Base64 url
-     */
-    ZRender.prototype.toDataURL = function(type, backgroundColor, args) {
-        return this.painter.toDataURL(type, backgroundColor, args);
-    };
-
-    /**
-     * 将常规shape转成image shape
-     * @param {module:zrender/shape/Base} e
-     * @param {number} width
-     * @param {number} height
-     */
-    ZRender.prototype.pathToImage = function(e, width, height) {
-        var id = guid();
-        return this.painter.pathToImage(id, e, width, height);
-    };
-
-    /**
-     * 事件绑定
-     * 
-     * @param {string} eventName 事件名称
-     * @param {Function} eventHandler 响应函数
-     * @param {Object} [context] 响应函数
-     */
-    ZRender.prototype.on = function(eventName, eventHandler, context) {
-        this.handler.on(eventName, eventHandler, context);
-        return this;
-    };
-
-    /**
-     * 事件解绑定，参数为空则解绑所有自定义事件
-     * 
-     * @param {string} eventName 事件名称
-     * @param {Function} eventHandler 响应函数
-     */
-    ZRender.prototype.un = function(eventName, eventHandler) {
-        this.handler.un(eventName, eventHandler);
-        return this;
-    };
+        /**
+         * 事件解绑定，参数为空则解绑所有自定义事件
+         * 
+         * @param {string} eventName 事件名称
+         * @param {Function} eventHandler 响应函数
+         */
+        off: function(eventName, eventHandler) {
+            this.handler.off(eventName, eventHandler);
+            return this;
+        },
     
-    /**
-     * 事件触发
-     * 
-     * @param {string} eventName 事件名称，resize，hover，drag，etc
-     * @param {event=} event event dom事件对象
-     */
-    ZRender.prototype.trigger = function (eventName, event) {
-        this.handler.trigger(eventName, event);
-        return this;
-    };
+        /**
+         * 事件触发
+         * 
+         * @param {string} eventName 事件名称，resize，hover，drag，etc
+         * @param {event=} event event dom事件对象
+         */
+        trigger: function (eventName, event) {
+            this.handler.trigger(eventName, event);
+            return this;
+        },
     
 
-    /**
-     * 清除当前ZRender下所有类图的数据和显示，clear后MVC和已绑定事件均还存在在，ZRender可用
-     */
-    ZRender.prototype.clear = function () {
-        this.storage.delRoot();
-        this.painter.clear();
-        return this;
-    };
+        /**
+         * 清除当前ZRender下所有类图的数据和显示，clear后MVC和已绑定事件均还存在在，ZRender可用
+         */
+        clear: function () {
+            this.storage.delRoot();
+            this.painter.clear();
+            return this;
+        },
 
-    /**
-     * 释放当前ZR实例（删除包括dom，数据、显示和事件绑定），dispose后ZR不可用
-     */
-    ZRender.prototype.dispose = function () {
-        this.animation.stop();
-        
-        this.clear();
-        this.storage.dispose();
-        this.painter.dispose();
-        this.handler.dispose();
+        /**
+         * 释放当前ZR实例（删除包括dom，数据、显示和事件绑定），dispose后ZR不可用
+         */
+        dispose: function () {
+            this.animation.stop();
+            
+            this.clear();
+            this.storage.dispose();
+            this.painter.dispose();
+            this.handler.dispose();
 
-        this.animation = 
-        this.animatingElements = 
-        this.storage = 
-        this.painter = 
-        this.handler = null;
+            this.animation = 
+            this.animatingElements = 
+            this.storage = 
+            this.painter = 
+            this.handler = null;
 
-        // 释放后告诉全局删除对自己的索引，没想到啥好方法
-        zrender.delInstance(this.id);
+            // 释放后告诉全局删除对自己的索引，没想到啥好方法
+            zrender.delInstance(this.id);
+        }
     };
 
     return zrender;

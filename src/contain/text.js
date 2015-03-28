@@ -13,10 +13,10 @@ define(function (require) {
         }
 
         var ctx = util.getContext();
-        ctx.font = textFont;
-
-        textLines = (text + '').split('\n');
+        var textLines = (text + '').split('\n');
         var width = 0;
+
+        ctx.font = textFont;
         for (var i = 0, l = textLines.length; i < l; i++) {
             width =  Math.max(ctx.measureText(textLines[i]).width, width);
         }
@@ -32,7 +32,7 @@ define(function (require) {
     };
 
     function getTextRect(text, textFont, textAlign, textBaseline) {
-        textLineLen = text.split('\n').length;
+        var textLineLen = text.split('\n').length;
 
         var width = getTextWidth(text, textFont);
         // FIXME 高度计算比较粗暴

@@ -1,6 +1,6 @@
 define(function (require) {
 
-    var util = require('./util');
+    var normalizeRadian = require('./util').normalizeRadian;
 
     return {
         /**
@@ -38,11 +38,11 @@ define(function (require) {
             }
             if (anticlockwise) {
                 var tmp = startAngle;
-                startAngle = util.normalizeRadian(endAngle);
-                endAngle = util.normalizeRadian(tmp);
+                startAngle = normalizeRadian(endAngle);
+                endAngle = normalizeRadian(tmp);
             } else {
-                startAngle = util.normalizeRadian(startAngle);
-                endAngle = util.normalizeRadian(endAngle);
+                startAngle = normalizeRadian(startAngle);
+                endAngle = normalizeRadian(endAngle);
             }
             if (startAngle > endAngle) {
                 endAngle += PI2;

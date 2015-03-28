@@ -100,7 +100,7 @@ define(function () {
         },
 
         // 是否异常捕获
-        catchBrushException: false,
+        // catchBrushException: false,
 
         /**
          * debug日志选项：catchBrushException为true下有效

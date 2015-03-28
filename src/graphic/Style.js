@@ -45,51 +45,12 @@ define(function (require) {
         /**
          * @type {number}
          */
-        lineWidth: null,
-
-        /**
-         * @type {number}
-         */
         opacity: null,
-
-        /**
-         * @type {string}
-         */
-        lineCap: null,
-
-        /**
-         * @type {string}
-         */
-        lineJoin: null,
 
         /**
          * @type {Array.<number>}
          */
         lineDash: null,
-
-        // lineDashOffset: null,
-
-        miterLimit: null,
-
-        /**
-         * @type {number}
-         */
-        shadowBlur: null,
-
-        /**
-         * @type {string}
-         */
-        shadowColor: null,
-
-        /**
-         * @type {number}
-         */
-        shadowOffsetX: null,
-
-        /**
-         * @type {number}
-         */
-        shadowOffsetY: null,
 
         // Bounding rect text configuration
         /**
@@ -169,6 +130,10 @@ define(function (require) {
             return newStyle;
         }
     };
+
+    for (var i = 0; i < STYLE_LIST_COMMON.length; i++) {
+        Style.prototype[STYLE_LIST_COMMON[i]] = null;
+    }
 
     return Style;
 });

@@ -208,7 +208,7 @@ define(function (require) {
         for (var i = 0; i < data.length;) {
             var cmd = data[i++];
             // Begin a new subpath
-            if (beginSubpath || cmd === 'M') {
+            if (beginSubpath || cmd === CMD.M) {
                 if (i > 0) {
                     // Close previous subpath
                     if (! isStroke) {
