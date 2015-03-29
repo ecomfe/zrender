@@ -203,10 +203,17 @@ define(function (require) {
          */
         closePath: function () {
             this._pushData(CMD.Z);
-            this._ctx && this._ctx.closePath();
 
-            this._xi = this._x0;
-            this._yi = this._y0;
+            var ctx = this._ctx;
+            var x0 = this._x0;
+            var y0 = this._y0;
+            if (this._ctx) {
+                this._needsDash() && this._dashedLineTo(x0, y0);
+                this._ctx.closePath();
+            }
+
+            this._xi = x0;
+            this._yi = y0;
             return this;
         },
 
@@ -225,7 +232,7 @@ define(function (require) {
             var ctx = this._ctx;
             if (ctx) {
                 if (this._lineDash) {
-                    // ctx.setLineDash && ctx.setLineDash(this._lineDash);
+                    ctx.setLineDash && ctx.setLineDash(this._lineDash);
                     ctx.lineDashOffset = this._dashOffset;
                 }
                 ctx.stroke();
@@ -308,8 +315,8 @@ define(function (require) {
          * @private
          */
         _needsDash: function () {
-            // return this._lineDash && !this._ctx.setLineDash;
-            return this._lineDash;
+            return this._lineDash && !this._ctx.setLineDash;
+            // return this._lineDash;
         },
 
         _dashedLineTo: function (x1, y1) {
