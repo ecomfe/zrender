@@ -64,7 +64,7 @@ define(function (require) {
                 // Setting line dash before build path
                 if (lineDash) {
                     path.setLineDash(lineDash);
-                    path.lineDashOffset = lineDashOffset;
+                    path.setLineDashOffset(lineDashOffset);
                 }
 
                 this.buildPath(path, style);

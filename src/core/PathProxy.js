@@ -10,6 +10,7 @@
 define(function (require) {
 
     var curve = require('./curve');
+    var vec2 = require('./vector');
 
     var CMD = {
         M: 1,
@@ -19,6 +20,13 @@ define(function (require) {
         A: 5,
         Z: 6
     };
+
+    var min = [];
+    var max = [];
+    var v = [];
+    var mathMin = Math.min;
+    var mathMax = Math.max;
+    var mathSqrt = Math.sqrt;
 
     /**
      * @alias module:zrender/core/PathProxy
@@ -32,14 +40,15 @@ define(function (require) {
          */
         this.data = [];
 
-        this._lineDash = null;
-
         this._len = 0;
 
         this._ctx = null;
 
-        this._min = [];
-        this._max = [];
+        this._xi = 0;
+        this._yi = 0;
+
+        this._x0 = 0;
+        this._y0 = 0;
     };
 
     /**
@@ -50,7 +59,13 @@ define(function (require) {
 
         constructor: PathProxy,
 
-        lineDashOffset: 0,
+        _lineDash: null,
+
+        _dashOffset: 0,
+
+        _dashIdx: 0,
+
+        _dashSum: 0,
 
         /**
          * @param  {CanvasRenderingContext2D} ctx
@@ -64,9 +79,11 @@ define(function (require) {
             // Reset
             this._len = 0;
 
-            this._lineDash = null;
+            if (this._lineDash) {
+                this._lineDash = null;
 
-            this.lineDashOffset = 0;
+                this._dashOffset = 0;
+            }
 
             return this;
         },
@@ -79,6 +96,17 @@ define(function (require) {
         moveTo: function (x, y) {
             this._pushData(CMD.M, x, y);
             this._ctx && this._ctx.moveTo(x, y);
+
+            // x0, y0, xi, yi 是记录在 _dashedXXXXTo 方法中使用
+            // xi, yi 记录当前点, x0, y0 在 closePath 的时候回到起始点。
+            // 有可能在 beginPath 之后直接调用 lineTo，这时候 x0, y0 需要
+            // 在 lineTo 方法中记录，这里先不考虑这种情况，dashed line 也只在 IE10- 中不支持
+            this._x0 = x;
+            this._y0 = y;
+
+            this._xi = x;
+            this._yi = y;
+
             return this;
         },
 
@@ -89,7 +117,12 @@ define(function (require) {
          */
         lineTo: function (x, y) {
             this._pushData(CMD.L, x, y);
-            this._ctx && this._ctx.lineTo(x, y);
+            if (this._ctx) {
+                this._needsDash() ? this._dashedLineTo(x, y)
+                    : this._ctx.lineTo(x, y);
+            }
+            this._xi = x;
+            this._yi = y;
             return this;
         },
 
@@ -104,7 +137,12 @@ define(function (require) {
          */
         bezierCurveTo: function (x1, y1, x2, y2, x3, y3) {
             this._pushData(CMD.C, x1, y1, x2, y2, x3, y3);
-            this._ctx && this._ctx.bezierCurveTo(x1, y1, x2, y2, x3, y3);
+            if (this._ctx) {
+                this._needsDash() ? this._dashedBezierTo(x1, y1, x2, y2, x3, y3)
+                    : this._ctx.bezierCurveTo(x1, y1, x2, y2, x3, y3);
+            }
+            this._xi = x3;
+            this._yi = y3;
             return this;
         },
 
@@ -117,7 +155,12 @@ define(function (require) {
          */
         quadraticCurveTo: function (x1, y1, x2, y2) {
             this._pushData(CMD.Q, x1, y1, x2, y2);
-            this._ctx && this._ctx.quadraticCurveTo(x1, y1, x2, y2);
+            if (this._ctx) {
+                this._needsDash() ? this._dashedQuadraticTo(x1, y1, x2, y2)
+                    : this._ctx.quadraticCurveTo(x1, y1, x2, y2);
+            }
+            this._xi = x2;
+            this._yi = y2;
             return this;
         },
 
@@ -135,6 +178,9 @@ define(function (require) {
                 CMD.A, cx, cy, r, r, startAngle, endAngle - startAngle, 0, anticlockwise ? 0 : 1
             );
             this._ctx && this._ctx.arc(cx, cy, r, startAngle, endAngle, anticlockwise);
+
+            this._xi = Math.cos(endAngle) * rx + cx;
+            this._xi = Math.sin(endAngle) * rx + cx;
             return this;
         },
 
@@ -158,6 +204,9 @@ define(function (require) {
         closePath: function () {
             this._pushData(CMD.Z);
             this._ctx && this._ctx.closePath();
+
+            this._xi = this._x0;
+            this._yi = this._y0;
             return this;
         },
 
@@ -173,15 +222,46 @@ define(function (require) {
          * @return {module:zrender/core/PathProxy}
          */
         stroke: function () {
-            this._ctx && this._ctx.stroke();
+            var ctx = this._ctx;
+            if (ctx) {
+                if (this._lineDash) {
+                    ctx.setLineDash && ctx.setLineDash(this._lineDash);
+                    ctx.lineDashOffset = this._dashOffset;
+                }
+                ctx.stroke();
+            }
+
             this.toStatic();
         },
 
         /**
+         * 必须在其它绘制命令前调用
+         * Must be invoked before all other path drawing methods
          * @return {module:zrender/core/PathProxy}
          */
         setLineDash: function (lineDash) {
-            this._lineDash = lineDash;
+            if (lineDash instanceof Array) {
+                this._lineDash = lineDash;
+
+                this._dashIdx = 0;
+
+                var lineDashSum = 0;
+                for (var i = 0; i < lineDash.length; i++) {
+                    lineDashSum += lineDash[i];
+                }
+                this._dashSum = lineDashSum;
+            }
+            return this;
+        },
+
+        /**
+         * 必须在其它绘制命令前调用
+         * Must be invoked before all other path drawing methods
+         * @return {module:zrender/core/PathProxy}
+         */
+        setLineDashOffset: function (offset) {
+            this._dashOffset = offset;
+            return this;
         },
 
         /**
@@ -196,7 +276,7 @@ define(function (require) {
          * 填充 Path 数据。
          * 尽量复用而不申明新的数组。大部分图形重绘的指令数据长度都是不变的。
          */
-        _pushData: function () {
+        _pushData: function (cmd) {
             var data = this.data;
             if (this._len + arguments.length > data.length) {
                 // 因为之前的数组已经转换成静态的 Float32Array
@@ -207,6 +287,8 @@ define(function (require) {
             for (var i = 0; i < arguments.length; i++) {
                 data[this._len++] = arguments[i];
             }
+
+            this._prevCmd = cmd;
         },
 
         _expandData: function () {
@@ -218,6 +300,63 @@ define(function (require) {
                 }
                 this.data = newData;
             }
+        },
+
+        /**
+         * If needs js implemented dashed line
+         * @return {boolean}
+         * @private
+         */
+        _needsDash: function () {
+            return this._lineDash && !this._ctx.setLineDash;
+            // return this._lineDash;
+        },
+
+        _dashedLineTo: function (x1, y1) {
+            var offset = this._dashOffset % this._dashSum;
+            var lineDash = this._lineDash;
+            var ctx = this._ctx;
+
+            var xi = this._xi;
+            var yi = this._yi;
+            var dx = x1 - xi;
+            var dy = y1 - yi;
+            var dist = mathSqrt(dx * dx + dy * dy);
+            var x = xi;
+            var y = yi;
+            var dash;
+            var len = lineDash.length;
+            var idx;
+            dx /= dist;
+            dy /= dist;
+            x -= offset * dx;
+            y -= offset * dy;
+
+            while ((dx >= 0 && x <= x1) || (dx < 0 && x > x1)) {
+                idx = this._dashIdx;
+                dash = lineDash[idx];
+                x += dx * dash;
+                y += dy * dash;
+                this._dashIdx = (idx + 1) % len;
+                // Skip positive offset
+                if ((dx > 0 && x < xi) || (dx < 0 && x > xi)) {
+                    continue;
+                }
+                ctx[idx % 2 ? 'moveTo' : 'lineTo'](
+                    dx >= 0 ? mathMin(x, x1) : mathMax(x, x1),
+                    dy >= 0 ? mathMin(y, y1) : mathMax(y, y1)
+                );
+            }
+            // Offset for next lineTo
+            dx = x - x1;
+            dy = y - y1;
+            this._dashOffset = -mathSqrt(dx * dx + dy * dy);
+        },
+
+        _dashedBezierTo: function (x1, y1, x2, y2, x3, y3) {
+        },
+
+        _dashedQuadraticTo: function (x1, y1, x2, y2) {
         },
 
         /**
@@ -235,10 +374,6 @@ define(function (require) {
         },
 
         fastBoundingRect: function () {
-            var min = this._min;
-            var max = this._max;
-            var mathMin = Math.min;
-            var mathMax = Math.max;
             var data = this.data;
             min[0] = min[1] = Infinity;
             max[0] = max[1] = -Infinity;
@@ -288,6 +423,7 @@ define(function (require) {
 
         /**
          * Rebuild path from current data
+         * Rebuild path will not consider javascript implemented line dash.
          * @param {CanvasRenderingContext} ctx
          */
         rebuildPath: function (ctx) {

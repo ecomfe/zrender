@@ -52,6 +52,11 @@ define(function (require) {
          */
         lineDash: null,
 
+        /**
+         * @type {number}
+         */
+        lineDashOffset: 0,
+
         // Bounding rect text configuration
         /**
          * @type {string}

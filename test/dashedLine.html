@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Smoothline</title>
+    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+</head>
+<body>
+    <div id="Main" style="width:1200px;height:600px;"></div>
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+
+    require(
+        [
+            "zrender",
+            "zrender/graphic/shape/Polyline",
+            "zrender/graphic/shape/Line"
+        ], 
+        function(zrender, PolylineShape, LineShape){
+
+            // 初始化zrender
+            var zr = zrender.init( document.getElementById("Main") );
+
+            var points = [];
+            for (var i = 0; i < 10; i++) {
+                points.push([Math.random() * 800 + 300, Math.random() * 500 + 100]);
+            }
+
+            var polyline = new PolylineShape({
+                style: {
+                    lineDash: [5, 5, 10, 10],
+                    points: points,
+                    strokeColor: "rgba(220, 20, 60, 0.8)",
+                    lineWidth: 1
+                    // lineType: 'dotted'
+                }
+            });
+
+            zr.addElement(polyline);
+
+            polyline.animate('style', true)
+                .when(1000, {
+                    lineDashOffset: 30
+                })
+                .start();
+            
+            var line = new LineShape({
+                style: {
+                    lineDash: [10, 10, 15, 15],
+                    strokeColor: "rgba(220, 20, 60, 0.8)",
+                    // lineDashOffset: 15,
+                    x: 100,
+                    y: 100,
+                    x1: 500,
+                    y1: 500
+                }
+            });
+            zr.addElement(line);
+
+            line.animate('style', true)
+                .when(1000, {
+                    lineDashOffset: 50
+                })
+                .start();
+        }
+    )
+    </script>
+</body>
+</html>
