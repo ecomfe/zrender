@@ -32,12 +32,6 @@ define(function(require) {
     function isNotAroundZero(val) {
         return val > EPSILON || val < -EPSILON;
     }
-    /*
-    function evalCubicCoeff(a, b, c, d, t) {
-        return ((a * t + b) * t + c) * t + d;
-    }
-    */
-
     /** 
      * 计算三次贝塞尔值
      * @memberOf module:zrender/core/curve

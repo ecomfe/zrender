@@ -325,15 +325,15 @@ define(function (require) {
             var lineDash = this._lineDash;
             var ctx = this._ctx;
 
-            var xi = this._xi;
-            var yi = this._yi;
-            var dx = x1 - xi;
-            var dy = y1 - yi;
+            var x0 = this._xi;
+            var y0 = this._yi;
+            var dx = x1 - x0;
+            var dy = y1 - y0;
             var dist = mathSqrt(dx * dx + dy * dy);
-            var x = xi;
-            var y = yi;
+            var x = x0;
+            var y = y0;
             var dash;
-            var len = lineDash.length;
+            var nDash = lineDash.length;
             var idx;
             dx /= dist;
             dy /= dist;
@@ -351,9 +351,9 @@ define(function (require) {
                 dash = lineDash[idx];
                 x += dx * dash;
                 y += dy * dash;
-                this._dashIdx = (idx + 1) % len;
+                this._dashIdx = (idx + 1) % nDash;
                 // Skip positive offset
-                if ((dx > 0 && x < xi) || (dx < 0 && x > xi)) {
+                if ((dx > 0 && x < x0) || (dx < 0 && x > x0)) {
                     continue;
                 }
                 ctx[idx % 2 ? 'moveTo' : 'lineTo'](
@@ -367,10 +367,83 @@ define(function (require) {
             this._dashOffset = -mathSqrt(dx * dx + dy * dy);
         },
 
+        // Not accurate dashed line to
         _dashedBezierTo: function (x1, y1, x2, y2, x3, y3) {
+            var dashSum = this._dashSum;
+            var offset = this._dashOffset;
+            var lineDash = this._lineDash;
+            var ctx = this._ctx;
+
+            var x0 = this._xi;
+            var y0 = this._yi;
+            var t;
+            var dx;
+            var dy;
+            var cubicAt = curve.cubicAt;
+            var bezierLen = 0;
+            var idx = this._dashIdx;
+            var nDash = lineDash.length;
+
+            var x;
+            var y;
+
+            var tmpLen = 0;
+
+            if (offset < 0) {
+                // Convert to positive offset
+                offset = dashSum + offset;
+            }
+            offset %= dashSum;
+            // Bezier approx length
+            for (t = 0; t < 1; t += 0.1) {
+                dx = cubicAt(x0, x1, x2, x3, t + 0.1)
+                    - cubicAt(x0, x1, x2, x3, t)
+                dy = cubicAt(y0, y1, y2, y3, t + 0.1)
+                    - cubicAt(y0, y1, y2, y3, t);
+                bezierLen += mathSqrt(dx * dx + dy * dy);
+            }
+
+            // Find idx after add offset
+            for (; idx < nDash; idx++) {
+                tmpLen += lineDash[idx];
+                if (tmpLen > offset) {
+                    break;
+                }
+            }
+            t = (tmpLen - offset) / bezierLen;
+
+            while (t <= 1) {
+
+                x = cubicAt(x0, x1, x2, x3, t);
+                y = cubicAt(y0, y1, y2, y3, t);
+
+                // Use line to approximate dashed bezier
+                // Bad result if dash is long
+                idx % 2 ? ctx.moveTo(x, y)
+                    : ctx.lineTo(x, y);
+
+                t += lineDash[idx] / bezierLen;
+
+                idx = (idx + 1) % nDash;
+            }
+
+            // Finish the last segment and calculate the new offset
+            ! (idx % 2) && ctx.lineTo(x3, y3);
+            dx = x3 - x;
+            dy = y3 - y;
+            this._dashOffset = -mathSqrt(dx * dx + dy * dy);
         },
 
         _dashedQuadraticTo: function (x1, y1, x2, y2) {
+            // Convert quadratic to cubic using degree elevation
+            var x3 = x2;
+            var y3 = y2;
+            x2 = (x2 + 2 * x1) / 3;
+            y2 = (y2 + 2 * y1) / 3;
+            x1 = (this._xi + 2 * x1) / 3;
+            y1 = (this._yi + 2 * y1) / 3;
+
+            this._dashedBezierTo(x1, y1, x2, y2, x3, y3);
         },
 
         /**

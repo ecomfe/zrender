@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>Smoothline</title>
+    <title>Dashed Line</title>
     <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
 </head>
 <body>
@@ -21,13 +21,15 @@
     require(
         [
             "zrender",
+            'zrender/graphic/shape/Star',
             "zrender/graphic/shape/Polyline",
-            "zrender/graphic/shape/Line"
+            "zrender/graphic/shape/Line",
+            "zrender/graphic/shape/BezierCurve"
         ], 
-        function(zrender, PolylineShape, LineShape){
+        function(zrender, StarShape, PolylineShape, LineShape, BezierCurve){
 
             // 初始化zrender
-            var zr = zrender.init( document.getElementById("Main") );
+            var zr = zrender.init(document.getElementById("Main"));
 
             var points = [];
             for (var i = 0; i < 10; i++) {
@@ -36,11 +38,11 @@
 
             var polyline = new PolylineShape({
                 style: {
-                    lineDash: [5, 5, 10, 10],
+                    lineDash: [10, 10],
                     points: points,
                     strokeColor: "rgba(220, 20, 60, 0.8)",
-                    lineWidth: 1
-                    // lineType: 'dotted'
+                    lineWidth: 1,
+                    smooth: 0.5
                 }
             });
 
@@ -48,15 +50,14 @@
 
             polyline.animate('style', true)
                 .when(1000, {
-                    lineDashOffset: 30
+                    lineDashOffset: 20
                 })
                 .start();
             
             var line = new LineShape({
                 style: {
-                    lineDash: [10, 10, 15, 15],
-                    strokeColor: "rgba(220, 20, 60, 0.8)",
-                    // lineDashOffset: 15,
+                    lineDash: [10, 10],
+                    strokeColor: "rgba(10, 80, 60, 0.8)",
                     x: 100,
                     y: 100,
                     x1: 500,
@@ -67,9 +68,49 @@
 
             line.animate('style', true)
                 .when(1000, {
-                    lineDashOffset: 50
+                    lineDashOffset: -20
                 })
                 .start();
+
+            var star = new StarShape({
+                style: {
+                    lineDash: [20, 10],
+                    brushType: 'stroke',
+                    n: 5,
+                    r: 100,
+                    x: 300,
+                    y: 200   
+                }
+            });
+            zr.addElement(star);
+
+            star.animate('style', true)
+                .when(1000, {
+                    lineDashOffset: 30
+                })
+                .start();
+            
+            var curve = new BezierCurve({
+                style: {
+                    x: 100, y: 100,
+                    x1: 100, y1: 500,
+                    x2: 500, y2: 100,
+                    x3: 500, y3: 500,
+
+                    lineDash: [5, 5],
+
+                    lineDashOffset: 0
+                }
+            });
+
+            zr.addElement(curve);
+
+            curve.animate('style', true)
+                .when(1000, {
+                    lineDashOffset: -10
+                })
+                .start();
+
         }
     )
     </script>
