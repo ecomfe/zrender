@@ -225,7 +225,7 @@ define(function (require) {
             var ctx = this._ctx;
             if (ctx) {
                 if (this._lineDash) {
-                    ctx.setLineDash && ctx.setLineDash(this._lineDash);
+                    // ctx.setLineDash && ctx.setLineDash(this._lineDash);
                     ctx.lineDashOffset = this._dashOffset;
                 }
                 ctx.stroke();
@@ -308,12 +308,13 @@ define(function (require) {
          * @private
          */
         _needsDash: function () {
-            return this._lineDash && !this._ctx.setLineDash;
-            // return this._lineDash;
+            // return this._lineDash && !this._ctx.setLineDash;
+            return this._lineDash;
         },
 
         _dashedLineTo: function (x1, y1) {
-            var offset = this._dashOffset % this._dashSum;
+            var dashSum = this._dashSum;
+            var offset = this._dashOffset;
             var lineDash = this._lineDash;
             var ctx = this._ctx;
 
@@ -329,6 +330,12 @@ define(function (require) {
             var idx;
             dx /= dist;
             dy /= dist;
+
+            if (offset < 0) {
+                // Convert to positive offset
+                offset = dashSum + offset;
+            }
+            offset %= dashSum;
             x -= offset * dx;
             y -= offset * dy;
 
