@@ -163,7 +163,7 @@ define(function(require) {
         /**
          * 清除所有动画片段
          */
-        clear : function () {
+        clear: function () {
             this._clips = [];
         },
         /**
@@ -177,7 +177,7 @@ define(function(require) {
          *         如果指定setter函数，会通过setter函数设置属性值
          * @return {module:zrender/animation/Animation~Animator}
          */
-        animate : function (target, options) {
+        animate: function (target, options) {
             options = options || {};
             var deferred = new Animator(
                 target,
@@ -332,26 +332,27 @@ define(function(require) {
          * @param  {Object} props 关键帧的属性值，key-value表示
          * @return {module:zrender/animation/Animation~Animator}
          */
-        when : function(time /* ms */, props) {
+        when: function(time /* ms */, props) {
+            var tracks = this._tracks;
             for (var propName in props) {
-                if (!this._tracks[propName]) {
-                    this._tracks[propName] = [];
+                if (!tracks[propName]) {
+                    tracks[propName] = [];
                     // If time is 0 
                     //  Then props is given initialize value
                     // Else
                     //  Initialize value from current prop value
                     if (time !== 0) {
-                        this._tracks[propName].push({
-                            time : 0,
-                            value : _cloneValue(
+                        tracks[propName].push({
+                            time: 0,
+                            value: _cloneValue(
                                 this._getter(this._target, propName)
                             )
                         });
                     }
                 }
-                this._tracks[propName].push({
-                    time : parseInt(time, 10),
-                    value : props[propName]
+                tracks[propName].push({
+                    time: parseInt(time, 10),
+                    value: props[propName]
                 });
             }
             return this;
@@ -408,11 +409,11 @@ define(function(require) {
                         && isArrayLike(firstVal[0])
                     )
                     ? 2 : 1;
+                var trackMaxTime;
                 // Sort keyframe as ascending
                 keyframes.sort(function(a, b) {
                     return a.time - b.time;
                 });
-                var trackMaxTime;
                 if (trackLen) {
                     trackMaxTime = keyframes[trackLen - 1].time;
                 }
@@ -564,12 +565,12 @@ define(function(require) {
                 };
 
                 var clip = new Clip({
-                    target : self._target,
-                    life : trackMaxTime,
-                    loop : self._loop,
-                    delay : self._delay,
-                    onframe : onframe,
-                    ondestroy : ondestroy
+                    target: self._target,
+                    life: trackMaxTime,
+                    loop: self._loop,
+                    delay: self._delay,
+                    onframe: onframe,
+                    ondestroy: ondestroy
                 });
 
                 if (easing && easing !== 'spline') {
@@ -588,19 +589,20 @@ define(function(require) {
         /**
          * 停止动画
          */
-        stop : function() {
-            for (var i = 0; i < this._clipList.length; i++) {
-                var clip = this._clipList[i];
+        stop: function() {
+            var clipList = this._clipList;
+            for (var i = 0; i < clipList.length; i++) {
+                var clip = clipList[i];
                 this.animation.remove(clip);
             }
-            this._clipList = [];
+            clipList.length = 0;
         },
         /**
          * 设置动画延迟开始的时间
          * @param  {number} time 单位ms
          * @return {module:zrender/animation/Animation~Animator}
          */
-        delay : function (time) {
+        delay: function (time) {
             this._delay = time;
             return this;
         },
@@ -609,7 +611,7 @@ define(function(require) {
          * @param  {Function} cb
          * @return {module:zrender/animation/Animation~Animator}
          */
-        done : function(cb) {
+        done: function(cb) {
             if (cb) {
                 this._doneList.push(cb);
             }

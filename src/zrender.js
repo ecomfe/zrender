@@ -144,6 +144,7 @@ define(function(require) {
         var self = this;
         var storage = this.storage;
         var oldDelFromMap = storage.delFromMap;
+        var oldAddToMap = storage.addToMap;
         storage.delFromMap = function (elId) {
             var el = storage.get(elId);
             self.stopAnimation(el);
@@ -151,7 +152,6 @@ define(function(require) {
             el.__zr = null;
         };
 
-        var oldAddToMap = storage.addToMap;
         storage.addToMap = function (el) {
             el.__zr = self;
             oldAddToMap.call(storage, el);
