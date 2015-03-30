@@ -225,7 +225,8 @@ define(function (require) {
          * @return {module:zrender/core/PathProxy}
          */
         fill: function () {
-            this._ctx && this._ctx.fill();
+            var ctx = this._ctx;
+            ctx && ctx.fill();
             this.toStatic();
         },
 
@@ -234,14 +235,7 @@ define(function (require) {
          */
         stroke: function () {
             var ctx = this._ctx;
-            if (ctx) {
-                if (this._lineDash) {
-                    ctx.setLineDash && ctx.setLineDash(this._lineDash);
-                    ctx.lineDashOffset = this._dashOffset;
-                }
-                ctx.stroke();
-            }
-
+            ctx && ctx.stroke();
             this.toStatic();
         },
 
@@ -337,8 +331,7 @@ define(function (require) {
          * @private
          */
         _needsDash: function () {
-            return this._lineDash && !this._ctx.setLineDash;
-            // return this._lineDash;
+            return this._lineDash;
         },
 
         _dashedLineTo: function (x1, y1) {

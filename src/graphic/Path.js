@@ -51,18 +51,20 @@ define(function (require) {
 
             var lineDash = style.lineDash;
             var lineDashOffset = style.lineDashOffset;
+
+            var ctxLineDash = !!ctx.setLineDash;
             // Proxy context
             // Rebuild path in following 2 cases
             // 1. Path is dirty
             // 2. Path needs javascript implemented lineDash stroking.
             //    In this case, lineDash information will not be saved in PathProxy
             if (this.__dirty || (
-                lineDash && !ctx.setLineDash && hasStroke
+                lineDash && !ctxLineDash && hasStroke
             )) {
                 path = this._path.beginPath(ctx);
 
                 // Setting line dash before build path
-                if (lineDash) {
+                if (lineDash && !ctxLineDash) {
                     path.setLineDash(lineDash);
                     path.setLineDashOffset(lineDashOffset);
                 }
@@ -72,15 +74,15 @@ define(function (require) {
             else {
                 // Replay path building
                 ctx.beginPath();
-                if (lineDash) {
-                    ctx.setLineDash(lineDash);
-                    ctx.lineDashOffset = lineDashOffset;
-                }
-
                 this._path.rebuildPath(ctx);
             }
 
             hasFill && path.fill();
+
+            if (lineDash && ctxLineDash) {
+                ctx.setLineDash(lineDash);
+                ctx.lineDashOffset = lineDashOffset;
+            }
 
             hasStroke && path.stroke();
 
