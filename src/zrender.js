@@ -326,7 +326,7 @@ define(function(require) {
 
                 var animator = this.animation.animate(target, { loop: loop })
                     .done(function () {
-                        animators.splice(el.__animators.indexOf(animator), 1);
+                        animators.splice(util.indexOf(animators, animator), 1);
                         if (animators.length === 0) {
                             // 从animatingElements里移除
                             var idx = util.indexOf(animatingElements, el);
