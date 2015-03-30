@@ -261,17 +261,6 @@ define(function(require) {
         },
 
         /**
-         * 视图更新
-         * 
-         * @param {Array.<module:zrender/shape/Base>} shapeList 需要更新的图形列表
-         * @param {Function} callback  视图更新后回调函数
-         */
-        refreshShapes: function (shapeList, callback) {
-            this.painter.refreshShapes(shapeList, callback);
-            return this;
-        },
-
-        /**
          * 调整视图大小
          */
         resize: function() {
@@ -380,24 +369,6 @@ define(function(require) {
         clearAnimation: function () {
             this.animation.clear();
             this.animatingElements.length = 0;
-            return this;
-        },
-
-        /**
-         * loading显示
-         * 
-         * @param {Object=} loadingEffect loading效果对象
-         */
-        showLoading: function (loadingEffect) {
-            this.painter.showLoading(loadingEffect);
-            return this;
-        },
-
-        /**
-         * loading结束
-         */
-        hideLoading: function () {
-            this.painter.hideLoading();
             return this;
         },
 

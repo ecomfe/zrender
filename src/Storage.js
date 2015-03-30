@@ -62,17 +62,19 @@ define(function (require) {
          */
         updateDisplayList: function () {
             this._displayListLen = 0;
-            for (var i = 0, len = this._roots.length; i < len; i++) {
-                var root = this._roots[i];
+            var roots = this._roots;
+            var displayList = this._displayList;
+            for (var i = 0, len = roots.length; i < len; i++) {
+                var root = roots[i];
                 this._updateAndAddDisplayable(root);
             }
-            this._displayList.length = this._displayListLen;
+            displayList.length = this._displayListLen;
 
-            for (var i = 0, len = this._displayList.length; i < len; i++) {
-                this._displayList[i].__renderidx = i;
+            for (var i = 0, len = displayList.length; i < len; i++) {
+                displayList[i].__renderidx = i;
             }
 
-            this._displayList.sort(shapeCompareFunc);
+            displayList.sort(shapeCompareFunc);
         },
 
         _updateAndAddDisplayable: function (el, clipShapes) {
@@ -84,23 +86,25 @@ define(function (require) {
             el.updateTransform();
 
             if (el.type == 'group') {
-                
-                if (el.clipShape) {
+                var clipShape = el.clipShape;
+                var children = el._children;
+
+                if (clipShape) {
                     // clipShape 的变换是基于 group 的变换
-                    el.clipShape.parent = el;
-                    el.clipShape.updateTransform();
+                    clipShape.parent = el;
+                    clipShape.updateTransform();
 
                     // PENDING 效率影响
                     if (clipShapes) {
                         clipShapes = clipShapes.slice();
-                        clipShapes.push(el.clipShape);
+                        clipShapes.push(clipShape);
                     } else {
-                        clipShapes = [el.clipShape];
+                        clipShapes = [clipShape];
                     }
                 }
 
-                for (var i = 0; i < el._children.length; i++) {
-                    var child = el._children[i];
+                for (var i = 0; i < children.length; i++) {
+                    var child = children[i];
 
                     // Force to mark as dirty if group is dirty
                     child.__dirty = el.__dirty || child.__dirty;
@@ -123,68 +127,13 @@ define(function (require) {
          * 修改图形(Shape)或者组(Group)
          * 
          * @param {string|module:zrender/graphic/Displayable|module:zrender/graphic/Group} el
-         * @param {Object} [params] 参数
          */
-        mod: function (el, params) {
+        mod: function (el) {
             if (typeof (el) === 'string') {
                 el = this._elements[el];
             }
             if (el) {
-
                 el.dirty();
-
-                if (params) {
-                    // 如果第二个参数直接使用 shape
-                    // parent, __storage, __clipShapes, __zr 四个属性会有循环引用
-                    // 主要为了向 1.x 版本兼容，2.x 版本不建议使用第二个参数
-                    if (params.parent || params.__storage || params.__clipShapes) {
-                        var target = {};
-                        for (var name in params) {
-                            if (
-                                name === 'parent'
-                                || name === '__storage'
-                                || name === '__clipShapes'
-                                || name === '__storage'
-                            ) {
-                                continue;
-                            }
-                            if (params.hasOwnProperty(name)) {
-                                target[name] = params[name];
-                            }
-                        }
-                        util.merge(el, target, true);
-                    }
-                    else {
-                        util.merge(el, params, true);
-                    }
-                }
-            }
-
-            return this;
-        },
-
-        /**
-         * 移动指定的图形(Shape)或者组(Group)的位置
-         * @param {string} elId 形状唯一标识
-         * @param {number} dx
-         * @param {number} dy
-         */
-        drift: function (elId, dx, dy) {
-            var el = this._elements[elId];
-            if (el) {
-                el.needTransform = true;
-                if (el.draggable === 'horizontal') {
-                    dy = 0;
-                }
-                else if (el.draggable === 'vertical') {
-                    dx = 0;
-                }
-                if (!el.ondrift // ondrift
-                    // 有onbrush并且调用执行返回false或undefined则继续
-                    || (el.ondrift && !el.ondrift(dx, dy))
-                ) {
-                    el.drift(dx, dy);
-                }
             }
 
             return this;
@@ -213,7 +162,7 @@ define(function (require) {
          * @param {string|Array.<string>} [elId] 如果为空清空整个Storage
          */
         delRoot: function (elId) {
-            if (typeof(elId) == 'undefined') {
+            if (elId == null) {
                 // 不指定elId清空
                 for (var i = 0; i < this._roots.length; i++) {
                     var root = this._roots[i];
@@ -271,10 +220,10 @@ define(function (require) {
         },
 
         delFromMap: function (elId) {
-            var el = this._elements[elId];
+            var elements = this._elements;
+            var el = elements[elId];
             if (el) {
-                delete this._elements[elId];
-
+                delete elements[elId];
                 if (el instanceof Group) {
                     el.__storage = null;
                 }

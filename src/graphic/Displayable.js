@@ -219,8 +219,19 @@ define(function (require) {
         },
 
         drift: function (dx, dy) {
+            switch (this.draggable) {
+                case 'horizontal':
+                    dy = 0;
+                    break;
+                case 'vertical':
+                    dx = 0;
+                    break;
+            }
+
             this.position[0] += dx;
             this.position[1] += dy;
+
+            this.dirty();
         },
 
         /**

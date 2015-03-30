@@ -253,11 +253,10 @@ define(function (require) {
             var cursor = 'default';
 
             // 如果存在拖拽中元素，被拖拽的图形元素最后addHover
-            if (this._draggingTarget) {
-                this.storage.drift(this._draggingTarget.id, dx, dy);
-                this._draggingTarget.dirty();
-                // this.storage.addHover(this._draggingTarget);
-
+            var draggingTarget = this._draggingTarget;
+            var lastHover = this._lastHover;
+            if (draggingTarget) {
+                draggingTarget.drift(dx, dy);
                 // 拖拽不触发click事件
                 this._clickTimes++;
             }
@@ -280,20 +279,16 @@ define(function (require) {
                 }
             }
 
-            if (this._draggingTarget || (this._hasfound && this._lastHover.draggable)) {
+            if (draggingTarget || (this._hasfound && lastHover.draggable)) {
                 cursor = 'move';
             }
-            else if (this._hasfound && this._lastHover.clickable) {
+            else if (this._hasfound && lastHover.clickable) {
                 cursor = 'pointer';
             }
             this.root.style.cursor = cursor;
 
             // 分发config.EVENT.MOUSEMOVE事件
-            this._dispatchAgency(this._lastHover, EVENT.MOUSEMOVE, event);
-
-            if (this._draggingTarget || this._hasfound) {
-                // this.painter.refreshHover();
-            }
+            this._dispatchAgency(lastHover, EVENT.MOUSEMOVE, event);
         },
 
         /**
@@ -616,9 +611,6 @@ define(function (require) {
                 var _draggingTarget = _lastHover;
                 this._draggingTarget = _draggingTarget;
                 this._isDragging = 1;
-
-                _draggingTarget.invisible = true;
-                this.storage.mod(_draggingTarget.id);
 
                 // 分发config.EVENT.DRAGSTART事件
                 this._dispatchAgency(
