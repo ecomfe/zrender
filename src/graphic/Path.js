@@ -139,6 +139,7 @@ define(function (require) {
      * Extending a path element
      * @param {Object} props
      * @param {string} props.type Path type
+     * @param {Function} props.init Initialize
      * @param {Function} props.buildPath Overwrite buildPath method
      * @param {Object} [props.style] Extended default style
      */
@@ -150,6 +151,8 @@ define(function (require) {
                 // Extend default style
                 this.style.extendFrom(props.style, false);
             }
+
+            props.init && props.init.call(this, opts);
         };
 
         zrUtil.inherits(Sub, Path);
@@ -162,7 +165,7 @@ define(function (require) {
         }
 
         return Sub;
-    }
+    };
 
     zrUtil.inherits(Path, Displayable);
 

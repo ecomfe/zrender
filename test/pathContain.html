@@ -19,32 +19,39 @@
 
     require([
         "zrender",
-        'zrender/shape/Path',
-        'zrender/shape/Line',
-        "zrender/tool/area"
-    ], function(zrender, PathShape, LineShape, area){
+        'zrender/tool/path',
+        'zrender/contain/path'
+    ], function(zrender, pathTool, pathContain) {
 
-        // 初始化zrender
-        var zr = zrender.init( document.getElementById("main") );
-
-        var pathShape = new PathShape({
+        var path = pathTool.createFromString("M142.651,294.796\
+            C12.699,345.559-30.035,425.197,29.129,423.392\
+            c59.164-1.803,101.571,32.148,73.938,83.76\
+            c-27.634,51.605,86.419,41.451,86.419,41.451\
+            l46.896-104.904\
+            // c0,0,93.796-3.459,75.06,20.305\
+            c-62.854,17.879-53.774,130.289,35.85,111.676\
+            c29.873-60.914,73.189-140.439,73.189-140.439\
+            s168.791-265.652-11.947-133.672\
+            c-137.886,109.729-158.628,26.486-137.422-21.996\
+            C292.317,231.084,272.604,244.035,142.651,294.796z\
+                        M600,350 l 50,-25\
+           a25,25 0 0,1 50,-25 l 50,-25\
+           a25,50 0 0,1 50,-25 l 50,-25\
+           a25,75 0 0,1 50,-25 l 50,-25\
+           a25,100 0 0,1 50,-25 l 50,-25",
+        {
             style: {
                 brushType: 'both',
-                lineWidth: 1,
-                path: "M125.21739130434783,99.75209513344055Q872.8115942028985,79.64846535473642,993.3913043478261,103.2280099416848L993.3913043478261,138.81383674977462L125.21739130434783,138.81383674977462Z"
-                // path: 'M142.651,294.796C12.699,345.559-30.035,425.197,29.129,423.392c59.164-1.803,101.571,32.148,73.938,83.76c-27.634,51.605,86.419,41.451,86.419,41.451l46.896-104.904'
+                lineWidth: 10,
+                strokeColor: 'blue'
             }
         });
-
-        zr.addShape(pathShape);
-
-        zr.render();
-
-        console.log(area.isInsidePath(pathShape.style.pathArray, 10, 'fill', 696, 103));
 
         // 随机散落点测试
         var pointsDom = document.getElementById('points');
         var ctx = pointsDom.getContext('2d');
+
+        path.brush(ctx);
 
         var points = [];
 
@@ -56,13 +63,13 @@
         }
         var time = Date.now();
         for (var i = 0; i < points.length; i++) {
-            if (area.isInsidePath(
-                pathShape.style.pathArray, 10, 'stroke', points[i][0], points[i][1]
+            if (pathContain.containStroke(
+                path._path.data, 10, points[i][0], points[i][1]
             )) {
                 points[i][2] = 2;
             }
-            else if (area.isInsidePath(
-                pathShape.style.pathArray, 0, 'fill', points[i][0], points[i][1]
+            else if (pathContain.contain(
+                path._path.data, points[i][0], points[i][1]
             )) {
                 points[i][2] = 1;
             }
@@ -90,12 +97,12 @@
 
         // 原生isPointInPath测试
         var time = Date.now();
-        for (var i = 0; i < 100; i++) {
-            pathShape.buildPath(ctx, pathShape.style);
+        for (var i = 0; i < 1000; i++) {
+            path._path.rebuildPath(ctx);
             ctx.isPointInPath(points[i][0], points[i][1]);
         }
         var cost = Date.now() - time;
-        document.getElementById('log').innerHTML += '<br />原生: ' + Math.round(1000 / cost * 100) + ' ops/sec';
+        document.getElementById('log').innerHTML += '<br />原生: ' + Math.round(1000 / cost * 1000) + ' ops/sec';
 
         document.body.onclick = function(e) {
             console.log(e.offsetX, e.offsetY);

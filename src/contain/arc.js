@@ -1,6 +1,7 @@
 define(function (require) {
 
     var normalizeRadian = require('./util').normalizeRadian;
+    var PI2 = Math.PI * 2;
 
     return {
         /**

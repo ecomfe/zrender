@@ -219,6 +219,12 @@ define(function (require) {
             this.position[1] += dy;
         },
 
+        /**
+         * 创建一个 Animator
+         * @param  {string} path 子属性 path, 例如 'style'
+         * @param  {boolean} [loop=false] 是否循环
+         * @return {module:zrender/animation/Animation~Animator}
+         */
         animate: function (path, loop) {
             if (this.__zr) {
                 return this.__zr.animate(this, path, loop);

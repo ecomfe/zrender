@@ -67,6 +67,10 @@ define(function (require) {
 
         _dashSum: 0,
 
+        getContext: function () {
+            return this._ctx;
+        },
+
         /**
          * @param  {CanvasRenderingContext2D} ctx
          * @return {module:zrender/core/PathProxy}
@@ -94,7 +98,7 @@ define(function (require) {
          * @return {module:zrender/core/PathProxy}
          */
         moveTo: function (x, y) {
-            this._pushData(CMD.M, x, y);
+            this.addData(CMD.M, x, y);
             this._ctx && this._ctx.moveTo(x, y);
 
             // x0, y0, xi, yi 是记录在 _dashedXXXXTo 方法中使用
@@ -116,7 +120,7 @@ define(function (require) {
          * @return {module:zrender/core/PathProxy}
          */
         lineTo: function (x, y) {
-            this._pushData(CMD.L, x, y);
+            this.addData(CMD.L, x, y);
             if (this._ctx) {
                 this._needsDash() ? this._dashedLineTo(x, y)
                     : this._ctx.lineTo(x, y);
@@ -136,7 +140,7 @@ define(function (require) {
          * @return {module:zrender/core/PathProxy}
          */
         bezierCurveTo: function (x1, y1, x2, y2, x3, y3) {
-            this._pushData(CMD.C, x1, y1, x2, y2, x3, y3);
+            this.addData(CMD.C, x1, y1, x2, y2, x3, y3);
             if (this._ctx) {
                 this._needsDash() ? this._dashedBezierTo(x1, y1, x2, y2, x3, y3)
                     : this._ctx.bezierCurveTo(x1, y1, x2, y2, x3, y3);
@@ -154,7 +158,7 @@ define(function (require) {
          * @return {module:zrender/core/PathProxy}
          */
         quadraticCurveTo: function (x1, y1, x2, y2) {
-            this._pushData(CMD.Q, x1, y1, x2, y2);
+            this.addData(CMD.Q, x1, y1, x2, y2);
             if (this._ctx) {
                 this._needsDash() ? this._dashedQuadraticTo(x1, y1, x2, y2)
                     : this._ctx.quadraticCurveTo(x1, y1, x2, y2);
@@ -174,7 +178,7 @@ define(function (require) {
          * @return {module:zrender/core/PathProxy}
          */
         arc: function (cx, cy, r, startAngle, endAngle, anticlockwise) {
-            this._pushData(
+            this.addData(
                 CMD.A, cx, cy, r, r, startAngle, endAngle - startAngle, 0, anticlockwise ? 0 : 1
             );
             this._ctx && this._ctx.arc(cx, cy, r, startAngle, endAngle, anticlockwise);
@@ -202,7 +206,7 @@ define(function (require) {
          * @return {module:zrender/core/PathProxy}
          */
         closePath: function () {
-            this._pushData(CMD.Z);
+            this.addData(CMD.Z);
 
             var ctx = this._ctx;
             var x0 = this._x0;
@@ -280,10 +284,28 @@ define(function (require) {
         },
 
         /**
+         * 直接设置 Path 数据
+         */
+        setData: function (data) {
+
+            var len = data.length;
+
+            if (! (this.data && this.data.length == len)) {
+                this.data = new Float32Array(len);
+            }
+
+            for (var i = 0; i < len; i++) {
+                this.data[i] = data[i];
+            }
+
+            this._len = len;
+        },
+
+        /**
          * 填充 Path 数据。
          * 尽量复用而不申明新的数组。大部分图形重绘的指令数据长度都是不变的。
          */
-        _pushData: function (cmd) {
+        addData: function (cmd) {
             var data = this.data;
             if (this._len + arguments.length > data.length) {
                 // 因为之前的数组已经转换成静态的 Float32Array
@@ -544,7 +566,7 @@ define(function (require) {
                         var r = (rx > ry) ? rx : ry;
                         var scaleX = (rx > ry) ? 1 : rx / ry;
                         var scaleY = (rx > ry) ? ry / rx : 1;
-                        var isEllipse = Math.abs(rx - ry) < 1e-3;
+                        var isEllipse = Math.abs(rx - ry) > 1e-3;
                         if (isEllipse) {
                             ctx.translate(cx, cy);
                             ctx.rotate(psi);

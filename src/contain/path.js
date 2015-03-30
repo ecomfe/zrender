@@ -251,18 +251,20 @@ define(function (require) {
                     break;
                 case CMD.L:
                     if (isStroke) {
-                        if (line.containStroke(xi, yi, data[i++], data[i++], lineWidth, x, y)) {
+                        if (line.containStroke(xi, yi, data[i], data[i + 1], lineWidth, x, y)) {
                             return true;
                         }
                     }
                     else {
-                        w += windingLine(xi, yi, data[i++], data[i++], x, y);
+                        w += windingLine(xi, yi, data[i], data[i + 1], x, y);
                     }
+                    xi = data[i++];
+                    yi = data[i++];
                     break;
                 case CMD.C:
                     if (isStroke) {
                         if (cubic.containStroke(xi, yi,
-                            data[i++], data[i++], data[i++], data[i++], data[i++], data[i++],
+                            data[i++], data[i++], data[i++], data[i++], data[i], data[i + 1],
                             lineWidth, x, y
                         )) {
                             return true;
@@ -271,15 +273,17 @@ define(function (require) {
                     else {
                         w += windingCubic(
                             xi, yi,
-                            data[i++], data[i++], data[i++], data[i++], data[i++], data[i++],
+                            data[i++], data[i++], data[i++], data[i++], data[i], data[i + 1],
                             x, y
                         );
                     }
+                    xi = data[i++];
+                    yi = data[i++];
                     break;
                 case CMD.Q:
                     if (isStroke) {
                         if (quadratic.containStroke(xi, yi,
-                            data[i++], data[i++], data[i++], data[i++],
+                            data[i++], data[i++], data[i], data[i + 1],
                             lineWidth, x, y
                         )) {
                             return true;
@@ -288,10 +292,12 @@ define(function (require) {
                     else {
                         w += windingQuadratic(
                             xi, yi,
-                            data[i++], data[i++], data[i++], data[i++], data[i++], data[i++],
+                            data[i++], data[i++], data[i], data[i + 1],
                             x, y
                         );
                     }
+                    xi = data[i++];
+                    yi = data[i++];
                     break;
                 case CMD.A:
                     // TODO Arc 判断的开销比较大
@@ -343,6 +349,8 @@ define(function (require) {
                             return true;
                         }
                     }
+                    xi = x0;
+                    yi = y0;
                     beginSubpath = true;
                     break;
             }
