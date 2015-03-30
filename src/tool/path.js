@@ -83,12 +83,10 @@ define(function (require) {
         }
 
         // command string
-        var cs = data;
-
-        cs = cs.replace(/-/g, ' -');
-        cs = cs.replace(/  /g, ' ');
-        cs = cs.replace(/ /g, ',');
-        cs = cs.replace(/,,/g, ',');
+        cs = data.replace(/-/g, ' -')
+            .replace(/  /g, ' ')
+            .replace(/ /g, ',')
+            .replace(/,,/g, ',');
         
         var n;
         // create pipes so that we can split the data
@@ -111,7 +109,7 @@ define(function (require) {
             var str = arr[n];
             var c = str.charAt(0);
             var off = 0;
-            var p = str.slice(1).replace(new RegExp('e,-', 'g'), 'e-').split(',');
+            var p = str.slice(1).replace(/e,-/g, 'e-').split(',');
             var cmd;
 
             if (p.length > 0 && p[0] === '') {

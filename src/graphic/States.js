@@ -291,7 +291,7 @@ define(function (require) {
             return this._currentState;
         },
 
-        transitionState: function (target) {
+        transitionState: function (target, done) {
             if (
                 target === this._currentState
                 && ! this._transiting
@@ -319,6 +319,7 @@ define(function (require) {
                         animatingCount--;
                         if (animatingCount === 0) {
                             self.setState(target);
+                            done && done();
                         }
                         self._transiting = false;
                     }
@@ -357,6 +358,7 @@ define(function (require) {
                     // No transition properties
                     if (animatingCount === 0) {
                         self.setState(target);
+                        done && done();
                     }
                     else {
                         self._transiting = true;
@@ -364,6 +366,7 @@ define(function (require) {
                 }
                 else {
                     self.setState(target);
+                    done && done();
                 }
             }
 

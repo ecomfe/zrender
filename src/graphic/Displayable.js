@@ -11,7 +11,8 @@ define(function (require) {
 
     var Style = require('./Style');
 
-    var RectText = require('../mixin/RectText');
+    var RectText = require('./mixin/RectText');
+    var Stateful = require('./mixin/Stateful');
     var Eventful = require('../mixin/Eventful');
     var Transformable = require('../mixin/Transformable');
 
@@ -49,6 +50,9 @@ define(function (require) {
         this._rect = null;
         // Shapes for ascade clipping.
         this.__clipShapes = [];
+
+        // FIXME Stateful must be mixined after style is setted
+        Stateful.call(this, opts);
     };
 
     Displayable.prototype = {
@@ -251,6 +255,7 @@ define(function (require) {
     zrUtil.inherits(Displayable, Eventful);
     zrUtil.inherits(Displayable, Transformable);
     zrUtil.inherits(Displayable, RectText);
+    zrUtil.inherits(Displayable, Stateful);
 
     return Displayable;
 });

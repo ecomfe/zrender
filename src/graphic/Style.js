@@ -92,6 +92,26 @@ define(function (require) {
         textDistance: 5,
 
         /**
+         * @type {number}
+         */
+        shadowBlur: 0,
+
+        /**
+         * @type {number}
+         */
+        shadowOffsetX: 0,
+        
+        /**
+         * @type {number}
+         */
+        shadowOffsetY: 0,
+
+        /**
+         * @type {number}
+         */
+        lineWidth: 0,
+
+        /**
          * @param {CanvasRenderingContext2D} ctx
          */
         bind: function (ctx) {
@@ -136,8 +156,14 @@ define(function (require) {
         }
     };
 
-    for (var i = 0; i < STYLE_LIST_COMMON.length; i++) {
-        Style.prototype[STYLE_LIST_COMMON[i]] = null;
+    var styleProto = Style.prototype;
+    var name;
+    var i;
+    for (i = 0; i < STYLE_LIST_COMMON.length; i++) {
+        name = STYLE_LIST_COMMON[i];
+        if (! (name in styleProto)) {
+            styleProto[name] = null;
+        }
     }
 
     return Style;

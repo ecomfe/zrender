@@ -183,8 +183,8 @@ define(function (require) {
             );
             this._ctx && this._ctx.arc(cx, cy, r, startAngle, endAngle, anticlockwise);
 
-            this._xi = Math.cos(endAngle) * rx + cx;
-            this._xi = Math.sin(endAngle) * rx + cx;
+            this._xi = Math.cos(endAngle) * r + cx;
+            this._xi = Math.sin(endAngle) * r + cx;
             return this;
         },
 

@@ -5,7 +5,7 @@
 
 define(function (require) {
 
-    var textContain = require('../contain/text');
+    var textContain = require('../../contain/text');
 
     var RectText = function () {};
 
