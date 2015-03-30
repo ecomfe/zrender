@@ -28,6 +28,8 @@ define(function (require) {
     var mathMax = Math.max;
     var mathSqrt = Math.sqrt;
 
+    var hasTypedArray = typeof Float32Array != 'undefined';
+
     /**
      * @alias module:zrender/core/PathProxy
      * @constructor
@@ -284,7 +286,7 @@ define(function (require) {
 
             var len = data.length;
 
-            if (! (this.data && this.data.length == len)) {
+            if (! (this.data && this.data.length == len) && hasTypedArray) {
                 this.data = new Float32Array(len);
             }
 
@@ -467,10 +469,8 @@ define(function (require) {
          * @return {[type]} [description]
          */
         toStatic: function () {
-            if (typeof Float32Array != 'undefined' 
-                && (this.data instanceof Array)
-            ) {
-                this.data.length = this._len;
+            this.data.length = this._len;
+            if (hasTypedArray && (this.data instanceof Array)) {
                 this.data = new Float32Array(this.data);
             };
         },
