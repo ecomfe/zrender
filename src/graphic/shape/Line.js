@@ -11,14 +11,17 @@ define(function (require) {
         style: {
             stroke: '#000',
             fill: null,
-            // End point
+            // Start point
             x1: 0,
-            y1: 0
+            y1: 0,
+            // End point
+            x2: 0,
+            y2: 0
         },
 
         buildPath: function (ctx, style) {
-            ctx.moveTo(style.x, style.y);
-            ctx.lineTo(style.x1, style.y1);
+            ctx.moveTo(style.x1, style.y1);
+            ctx.lineTo(style.x2, style.y2);
         }
     });
 });

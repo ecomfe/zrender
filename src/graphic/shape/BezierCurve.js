@@ -18,23 +18,25 @@ define(function (require) {
             x2: 0,
             y2: 0,
             x3: 0,
-            y3: 0
+            y3: 0,
+            x4: 0,
+            y4: 0
         },
 
         buildPath: function (ctx, style) {
-            ctx.moveTo(style.x, style.y);
+            ctx.moveTo(style.x1, style.y1);
 
             if (style.x3 == null || style.y3 == null) {
                 ctx.quadraticCurveTo(
-                    style.x1, style.y1,
-                    style.x2, style.y2
+                    style.x2, style.y2,
+                    style.x3, style.y3
                 );
             }
             else {
                 ctx.bezierCurveTo(
-                    style.x1, style.y1,
                     style.x2, style.y2,
-                    style.x3, style.y3
+                    style.x3, style.y3,
+                    style.x4, style.y4
                 );
             }
         }

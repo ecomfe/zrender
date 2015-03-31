@@ -66,8 +66,8 @@ define(function (require) {
 
                 var width = style.width || image.width;
                 var height = style.height || image.height;
-                var x = style.x;
-                var y = style.y;
+                var x = style.x || 0;
+                var y = style.y || 0;
                 // 图片加载失败
                 if (!image.width || !image.height) {
                     return;

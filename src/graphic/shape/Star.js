@@ -14,10 +14,10 @@ define(function (require) {
         type: 'star',
 
         style: {
+            cx: 0,
+            cy: 0,
             n: 3,
-
             r0: null,
-
             r: 0
         },
 
@@ -28,8 +28,8 @@ define(function (require) {
                 return;
             }
 
-            var x = style.x;
-            var y = style.y;
+            var x = style.cx;
+            var y = style.cy;
             var r = style.r;
             var r0 = style.r0;
 

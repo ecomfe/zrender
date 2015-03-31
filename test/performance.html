@@ -109,6 +109,8 @@
             var result;
             var total;
             var shapeType;
+            var img = new Image();
+            img.src = 'test.jpeg';
 
             function start() {
                 if (isRunning) {
@@ -159,6 +161,12 @@
                             style: {
                                 x: Math.round(Math.random() * width),
                                 y: Math.round(Math.random() * height),
+                                x1: Math.round(Math.random() * width),
+                                y1: Math.round(Math.random() * height),
+                                x2: Math.round(Math.random() * width),
+                                y2: Math.round(Math.random() * height),
+                                cx: Math.round(Math.random() * width),
+                                cy: Math.round(Math.random() * height),
                                 r0: Math.round(Math.random() * 10),
                                 r: shapeType != 'rose'
                                     ? Math.round(Math.random() * 30)
@@ -166,19 +174,15 @@
                                        10 + Math.round(Math.random() * 5),
                                        15 + Math.round(Math.random() * 5)],
                                 n: Math.round(Math.random() * 10 + 2),
-                                a: Math.round(Math.random() * 10),
-                                b: Math.round(Math.random() * 30),
+                                rx: Math.round(Math.random() * 10),
+                                ry: Math.round(Math.random() * 30),
                                 k: Math.round(Math.random() * 10),
                                 lineWidth : 1,
                                 width: Math.round(Math.random() * 100),
                                 height: Math.round(Math.random() * 50),
-                                xStart: Math.round(Math.random() * width),
-                                yStart: Math.round(Math.random() * height),
-                                xEnd: Math.round(Math.random() * width),
-                                yEnd: Math.round(Math.random() * height),
                                 startAngle : Math.round(Math.random() * 30),
                                 endAngle: Math.round(Math.random() * 180) + 30,
-                                image : 'test.jpeg',
+                                image : img,
                                 text : shapeType == 'text' ? 'zrender' : false,
                                 fill: zrColor.random()
                             },

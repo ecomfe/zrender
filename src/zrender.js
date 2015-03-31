@@ -250,15 +250,6 @@ define(function(require) {
             this._needsRefreshNextFrame = true;
             return this;
         },
-    
-        /**
-         * 绘制高亮层
-         * @param {Function} callback  视图更新后回调函数
-         */
-        refreshHover: function (callback) {
-            this.painter.refreshHover(callback);
-            return this;
-        },
 
         /**
          * 调整视图大小

@@ -10,14 +10,17 @@ define(function (require) {
         type: 'heart',
 
         style: {
-            a: 0, b: 0
+            cx: 0,
+            cy: 0,
+            width: 0,
+            height: 0
         },
 
         buildPath: function (ctx, style) {
-            var x = style.x;
-            var y = style.y;
-            var a = style.a;
-            var b = style.b;
+            var x = style.cx;
+            var y = style.cy;
+            var a = style.width;
+            var b = style.height;
             ctx.moveTo(x, y);
             ctx.bezierCurveTo(
                 x + a / 2, y - b * 2 / 3,

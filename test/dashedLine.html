@@ -58,10 +58,10 @@
                 style: {
                     lineDash: [10, 10],
                     stroke: "rgba(10, 80, 60, 0.8)",
-                    x: 100,
-                    y: 100,
-                    x1: 500,
-                    y1: 500
+                    x1: 100,
+                    y1: 100,
+                    x2: 500,
+                    y2: 500
                 }
             });
             zr.addElement(line);
@@ -79,8 +79,8 @@
                     fill: null,
                     n: 5,
                     r: 100,
-                    x: 300,
-                    y: 200   
+                    cx: 300,
+                    cy: 200
                 }
             });
             zr.addElement(star);
@@ -93,10 +93,10 @@
             
             var curve = new BezierCurve({
                 style: {
-                    x: 100, y: 100,
-                    x1: 100, y1: 500,
-                    x2: 500, y2: 100,
-                    x3: 500, y3: 500,
+                    x1: 100, y1: 100,
+                    x2: 100, y2: 500,
+                    x3: 500, y3: 100,
+                    x4: 500, y4: 500,
 
                     lineDash: [5, 5],
 

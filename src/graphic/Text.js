@@ -33,6 +33,12 @@ define(function (require) {
         brush: function (ctx) {
 
             this.beforeBrush(ctx);
+
+            var style = this.style;
+
+            emptyRect.x = style.x || 0;
+            emptyRect.y = style.y || 0;
+
             // FIXME STROKE
             this.drawRectText(ctx, emptyRect, this.getRect());
 
@@ -49,6 +55,8 @@ define(function (require) {
             return this._rect;
         }
     };
+
+    zrUtil.inherits(Text, Displayable);
 
     return Text;
 });

@@ -11,13 +11,15 @@ define(function (require) {
         type: 'circle',
 
         style: {
+            cx: 0,
+            cy: 0,
             r: 0
         },
 
         buildPath : function (ctx, style) {
             // Better stroking in ShapeBundle
-            ctx.moveTo(style.x + style.r, style.y);
-            ctx.arc(style.x, style.y, style.r, 0, Math.PI * 2, true);
+            ctx.moveTo(style.cx + style.r, style.cy);
+            ctx.arc(style.cx, style.cy, style.r, 0, Math.PI * 2, true);
             return;
         }
     });

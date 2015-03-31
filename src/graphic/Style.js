@@ -18,16 +18,6 @@ define(function (require) {
         constructor: Style,
 
         /**
-         * @type {number}
-         */
-        x: 0,
-
-        /**
-         * @type {number}
-         */
-        y: 0,
-
-        /**
          * @type {string}
          */
         fill: '#000000',

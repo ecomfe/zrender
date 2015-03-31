@@ -18,6 +18,8 @@ define(function (require) {
             // r缩写为[1, 2, 3] 相当于 [1, 2, 3, 2]
             r: 0,
 
+            x: 0,
+            y: 0,
             width: 0,
             height: 0
         },

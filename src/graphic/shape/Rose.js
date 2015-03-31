@@ -15,6 +15,8 @@ define(function (require) {
         style: {
             stroke: '#000',
             fill: null,
+            cx: 0,
+            cy: 0,
             r: [],
             k: 0,
             n: 1
@@ -28,8 +30,8 @@ define(function (require) {
             var k = style.k;
             var n = style.n;
 
-            var x0 = style.x;
-            var y0 = style.y;
+            var x0 = style.cx;
+            var y0 = style.cy;
 
             ctx.moveTo(x0, y0);
 

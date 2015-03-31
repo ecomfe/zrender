@@ -14,6 +14,8 @@ define(function (require) {
         style: {
             stroke: '#000',
             fill: null,
+            cx: 0,
+            cy: 0,
             r: 0,
             r0: 0,
             d: 0,

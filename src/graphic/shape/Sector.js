@@ -11,6 +11,10 @@ define(function (require) {
 
         style: {
 
+            cx: 0,
+
+            cy: 0,
+
             r0: 0,
 
             r: 0,
@@ -24,8 +28,8 @@ define(function (require) {
 
         buildPath: function (ctx, style) {
 
-            var x = style.x;   // 圆心x
-            var y = style.y;   // 圆心y
+            var x = style.cx;   // 圆心x
+            var y = style.cy;   // 圆心y
             var r0 = style.r0 || 0;     // 形内半径[0,r)
             var r = style.r;            // 扇形外半径(0,r]
             var startAngle = style.startAngle;

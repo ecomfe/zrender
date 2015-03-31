@@ -11,15 +11,17 @@ define(function (require) {
         type: 'droplet',
 
         style: {
-            a: 0, b: 0
+            cx: 0, cy: 0,
+            width: 0, height: 0
         },
 
         buildPath : function (ctx, style) {
-            var x = style.x;
-            var y = style.y;
-            var a = style.a;
-            var b = style.b;
-            ctx.moveTo(style.x, style.y + style.a);
+            var x = style.cx;
+            var y = style.cy;
+            var a = style.width;
+            var b = style.height;
+
+            ctx.moveTo(x, y + a);
             ctx.bezierCurveTo(
                 x + a,
                 y + a,
