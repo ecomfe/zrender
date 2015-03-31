@@ -40,8 +40,8 @@ define(function (require) {
             }
 
             _h[event].push({
-                h : handler,
-                one : true,
+                h: handler,
+                one: true,
                 ctx: context || this
             });
 
@@ -66,8 +66,8 @@ define(function (require) {
             }
 
             _h[event].push({
-                h : handler,
-                one : false,
+                h: handler,
+                one: false,
                 ctx: context || this
             });
 

@@ -12,7 +12,8 @@ define(function (require) {
         type: 'trochoid',
 
         style: {
-            brushType: 'stroke',
+            stroke: '#000',
+            fill: null,
             r: 0,
             r0: 0,
             d: 0,

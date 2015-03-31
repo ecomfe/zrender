@@ -20,26 +20,23 @@
     require(
         [
             "zrender",
-            "zrender/shape/Polygon"
+            "zrender/graphic/shape/Polygon"
         ], 
         function(zrender, Polygon){
             var zr = zrender.init(document.getElementById('main'));
             var arrow = new Polygon({
                 style: {
-                    pointList: [[-10, 0], [10, 0], [0, 30]]
+                    points: [[-10, 0], [10, 0], [0, 30]]
                 },
                 position: [zr.getWidth() / 2, zr.getHeight() / 2],
             });
             arrow.scale[1] = 1.5;
-            zr.addShape(arrow);
-            zr.render();
-
+            zr.addElement(arrow);
 
             zr.on('mousemove', function(e) {
                 var p = [e.event.clientX, e.event.clientY];
                 arrow.lookAt(p);
-                zr.modShape(arrow.id);
-                zr.refreshNextFrame();
+                arrow.dirty();
             });
         }
     );

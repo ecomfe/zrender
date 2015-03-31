@@ -79,12 +79,16 @@ define(function (require) {
                 ctx.textBaseline = 'top';
             }
 
-            ctx.fillStyle = style.textColor || style.color;
+            var textFill = style.textFill;
+            var textStroke = style.textStroke;
+            textFill && (ctx.fillStyle = textFill);
+            textStroke && (ctx.strokeStyle = textStroke);
             ctx.font = font;
 
             var textLines = text.split('\n');
             for (var i = 0; i < textLines.length; i++) {
-                ctx.fillText(textLines[i], x, y);
+                textFill && ctx.fillText(textLines[i], x, y);
+                textStroke && ctx.strokeText(textLines[i], x, y);
                 y += textRect.lineHeight;
             }
         }

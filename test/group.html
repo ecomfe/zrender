@@ -19,11 +19,10 @@
     require(
         [
             "zrender",
-            "zrender/animation/animation",
-            'zrender/shape/Circle',
-            'zrender/Group'
+            'zrender/graphic/shape/Circle',
+            'zrender/graphic/Group'
         ], 
-        function(zrender, Animation, CircleShape, Group){
+        function(zrender, CircleShape, Group){
 
             // 初始化zrender
             var zr = zrender.init( document.getElementById("Main") );
@@ -32,8 +31,7 @@
                 style : {
                     x : 0,
                     y : 0,
-                    r : 10,
-                    brushType : 'fill'
+                    r : 10
                 },
                 hoverable: false
             });
@@ -43,8 +41,7 @@
                     x : 10,
                     y : 10,
                     r : 10,
-                    color:'red',
-                    brushType : 'fill'
+                    fill:'red'
                 },
                 hoverable: false
             });
@@ -52,12 +49,12 @@
             var group = new Group({
                 position : [100, 100]
             });
-            group.addChild(circle);
-            group.addChild(circle2);
+            group.addElement(circle);
+            group.addElement(circle2);
             
-            zr.addGroup(group);
+            zr.addElement(group);
 
-            var tm1 = zr.animate(group.id, "", true)
+            var tm1 = group.animate("", true)
                 .when(1000, {
                     position : [200, 0]
                 })
@@ -72,7 +69,7 @@
                 })
                 .start();
 
-            var tm2 = zr.animate(circle.id, "", true)
+            var tm2 = circle.animate("", true)
                 .when(100, {
                     position: [20, 0]
                 })
@@ -92,8 +89,6 @@
                 motionBlur : true,
                 lastFrameAlpha : 0.99
             });
-
-            zr.render();
         })
     </script>
     <div id="Main" style="width:600px;height:400px;"></div>

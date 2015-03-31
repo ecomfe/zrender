@@ -9,7 +9,8 @@ define(function (require) {
         type: 'line',
 
         style: {
-            brushType: 'stroke',
+            stroke: '#000',
+            fill: null,
             // End point
             x1: 0,
             y1: 0

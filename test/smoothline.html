@@ -37,31 +37,30 @@
 
             var smoothLine = new PolylineShape({
                 style : {
-                    points : points,
-                    smooth : 'spline',
-                    brushType : 'stroke',
-                    color : 'rgba(220, 20, 60, 0.8)',
-                    strokeColor : "rgba(220, 20, 60, 0.8)",
-                    lineWidth : 2
-                    // lineType : 'dotted'
+                    lineDash: [5, 5, 10, 10],
+                    points: points,
+                    smooth: 'spline',
+                    brushType: 'stroke',
+                    stroke: "rgba(220, 20, 60, 0.8)",
+                    lineWidth: 2
+                    // lineType: 'dotted'
                 }
             });
 
             var smoothPolygon = new PolygonShape({
-                style : {
-                    points : [[50, 50], [200, 10], [100, 200], [50, 150], [10, 70]],
-                    smooth : 0.5,
+                style: {
+                    points: [[50, 50], [200, 10], [100, 200], [50, 150], [10, 70]],
+                    smooth: 0.5,
                     // smoothConstraint: [[-Infinity, -Infinity], [200, Infinity]],
-                    brushType : 'both',
-                    color : 'rgba(220, 20, 60, 0.4)',
-                    strokeColor : "rgba(220, 20, 60, 1)",
-                    lineWidth : 2
+                    brushType: 'both',
+                    fill: 'rgba(220, 20, 60, 0.4)',
+                    stroke: "rgba(220, 20, 60, 1)",
+                    lineWidth: 2
                     // lineType : 'dotted'
                 }
             });
             zr.addElement(smoothPolygon);
             zr.addElement(smoothLine);
-            zr.render(); 
         }
     )
     </script>

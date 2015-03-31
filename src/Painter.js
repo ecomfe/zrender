@@ -11,6 +11,7 @@
     var config = require('./config');
     var util = require('./core/util');
     var log = require('./core/log');
+    var env = require('./core/env');
 
     var Layer = require('./Layer');
 
@@ -625,7 +626,7 @@
         },
 
         _createPathToImageProcessor: function () {
-            if (window['G_vmlCanvasManager']) {
+            if (! env.canvasSupported) {
                 return doNothing;
             }
 

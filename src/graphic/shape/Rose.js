@@ -13,7 +13,8 @@ define(function (require) {
         type: 'rose',
 
         style: {
-            brushType: 'stroke',
+            stroke: '#000',
+            fill: null,
             r: [],
             k: 0,
             n: 1

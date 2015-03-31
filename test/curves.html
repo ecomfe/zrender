@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <title>Curves</title>
-    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+    <script type="text/javascript" src="//requirejs.org/docs/release/2.1.16/minified/require.js"></script>
 </head>
 <body style='background:-webkit-gradient(linear,0 0, 0 100%, color-stop(0,black), color-stop(0.8, rgb(150,150,150)), color-stop(1, rgb(200,200,200)))'>
     <div id="Main" style="width:600px;height:400px;"></div>
@@ -37,8 +37,7 @@
 
             for (var i = 0; i < N ; i ++) {
                 createShape(i);
-            }  
-            zr.render();
+            }
 
             function createShape(i) {
                 var ShapeClass = ( i % 5 == 0 ) ? TrocholdShape : RoseShape;
@@ -56,7 +55,7 @@
                         n : random(5),
                         location : ['in', 'out'][i % 2],
                         lineWidth : 1,
-                        strokeColor :  color.getColor(colorId ++)
+                        stroke:  color.getColor(colorId ++)
                     },
                     rotation : [pi * 2 / random(360), 0, 0],
                     hoverable : false,

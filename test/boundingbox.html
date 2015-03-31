@@ -20,16 +20,13 @@
     });
         
     require(['zrender',
-            'zrender/tool/util',
-            'zrender/tool/computeBoundingBox'], 
-        function(zrender, util, computeBoundingBox){
+            'zrender/core/util',
+            'zrender/core/bbox'], 
+        function(zrender, util, bbox){
             var canvas = document.createElement('canvas')
             document.getElementById("Main").appendChild(canvas);
             canvas.width = 1024;
             canvas.height = 600;
-            if (G_vmlCanvasManager) {
-             G_vmlCanvasManager.initElement(canvas);
-            }
             var ctx = canvas.getContext("2d");
             modifyCtx(ctx, util);
 
@@ -87,7 +84,7 @@
                 }
 
                 ctx.lineTo = function(x, y) {
-                    computeBoundingBox([ctx._current, [x, y]], min, max);
+                    bbox.fromPoints([ctx._current, [x, y]], min, max);
                     updateBoundingBox();                
                     ctx._current[0] = x;
                     ctx._current[1] = y;
@@ -95,7 +92,7 @@
                 }
 
                 ctx.bezierCurveTo = function(x0, y0, x1, y1, x2, y2) {
-                    computeBoundingBox.cubeBezier(
+                    bbox.fromCubic(
                         ctx._current,
                         [x0, y0],
                         [x1, y1],
@@ -109,7 +106,7 @@
                 }
 
                 ctx.quadraticCurveTo = function(x0, y0, x1, y1) {
-                    computeBoundingBox.quadraticBezier(
+                    bbox.fromQuadratic(
                         ctx._current,
                         [x0, y0],
                         [x1, y1],
@@ -122,7 +119,7 @@
                 }
 
                 ctx.arc = function(x, y, radius, startAngle, endAngle, anticlockwise) {
-                    computeBoundingBox.arc(
+                    bbox.fromArc(
                         x, y,
                         radius,
                         startAngle,

@@ -30,17 +30,12 @@ define(function (require) {
         /**
          * @type {string}
          */
-        brushType: 'fill',
+        fill: '#000000',
 
         /**
          * @type {string}
          */
-        color: null,
-
-        /**
-         * @type {string}
-         */
-        strokeColor: null,
+        stroke: null,
 
         /**
          * @type {number}
@@ -66,7 +61,12 @@ define(function (require) {
         /**
          * @type {string}
          */
-        textColor: null,
+        textFill: '#000',
+
+        /**
+         * @type {string}
+         */
+        textStroke: null,
 
         /**
          * 'inside', 'left', 'right', 'top', 'bottom'
@@ -123,8 +123,8 @@ define(function (require) {
                 }
             }
 
-            this.color != null && (ctx.fillStyle = this.color);
-            this.strokeColor != null && (ctx.strokeStyle = this.strokeColor);
+            this.fill != null && (ctx.fillStyle = this.fill);
+            this.stroke != null && (ctx.strokeStyle = this.stroke);
             this.opacity != null && (ctx.globalAlpha = this.opacity);            
         },
 

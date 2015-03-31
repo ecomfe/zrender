@@ -20,11 +20,10 @@
     require(
         [
             "zrender",
-            "zrender/animation/animation",
-            'zrender/shape/Circle',
-            'zrender/Group'
+            'zrender/graphic/shape/Circle',
+            'zrender/graphic/Group'
         ], 
-        function(zrender, Animation, CircleShape, Group){
+        function(zrender, CircleShape, Group){
 
             // 初始化zrender
             var zr = zrender.init( document.getElementById("Main") );
@@ -33,8 +32,7 @@
                 style : {
                     x : 0,
                     y : 0,
-                    r : 100,
-                    brushType : 'fill'
+                    r : 100
                 },
                 clickable: true
             });
@@ -42,37 +40,35 @@
             var g1 = new Group({
                 position : [100, 100]
             });
-            g1.addChild(circle);
+            g1.addElement(circle);
 
             var g2 = new Group();
-            g2.addChild(g1);
+            g2.addElement(g1);
 
             var g3 = new Group();
-            g3.addChild(g2);
+            g3.addElement(g2);
 
             var g4 = new Group();
-            g4.addChild(g3);
+            g4.addElement(g3);
 
-            circle.bind('click', function(e) {
+            circle.on('click', function(e) {
                 console.log('Circle');
             });
-            g1.bind('click', function(e) {
+            g1.on('click', function(e) {
                 console.log('Group 1');
             });
             g2.one('click', function(e) {
                 console.log('Group 2 should be triggered once');
             });
-            g3.bind('click', function(e) {
+            g3.on('click', function(e) {
                 console.log('Group 3');
                 e.cancelBubble = true;
             });
-            g4.bind('click', function(e) {
+            g4.on('click', function(e) {
                 console.log("Group 4 should not be triggered");
             })
 
-            zr.addGroup(g4);
-
-            zr.render();
+            zr.addElement(g4);
         })
     </script>
 </body>

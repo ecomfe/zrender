@@ -12,7 +12,6 @@
  *             x: 100,
  *             y: 100,
  *             r: 20,
- *             brushType: 'fill'
  *         }
  *     }));
  *     zr.addGroup(g);

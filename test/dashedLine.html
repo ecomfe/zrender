@@ -40,7 +40,7 @@
                 style: {
                     lineDash: [10, 10],
                     points: points,
-                    strokeColor: "rgba(220, 20, 60, 0.8)",
+                    stroke: "rgba(220, 20, 60, 0.8)",
                     lineWidth: 1,
                     smooth: 0.5
                 }
@@ -57,7 +57,7 @@
             var line = new LineShape({
                 style: {
                     lineDash: [10, 10],
-                    strokeColor: "rgba(10, 80, 60, 0.8)",
+                    stroke: "rgba(10, 80, 60, 0.8)",
                     x: 100,
                     y: 100,
                     x1: 500,
@@ -75,7 +75,8 @@
             var star = new StarShape({
                 style: {
                     lineDash: [20, 10],
-                    brushType: 'stroke',
+                    stroke: 'black',
+                    fill: null,
                     n: 5,
                     r: 100,
                     x: 300,

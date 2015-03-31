@@ -10,7 +10,9 @@ define(function (require) {
         type: 'polyline',
 
         style: {
-            brushType: 'stroke',
+            stroke: '#000',
+
+            fill: null,
 
             points: null,
 

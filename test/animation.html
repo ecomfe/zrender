@@ -33,8 +33,7 @@
                     x: 0,
                     y: 0,
                     r: 50,
-                    brushType: 'fill',
-                    color: 'rgba(33, 222, 10, 0.1)',
+                    fill: 'rgba(33, 222, 10, 0.1)',
                     lineWidth: 5,
                     text:'circle',
                     textPosition:'inside'
@@ -70,7 +69,7 @@
 
             zr.animate(circle.id, 'style', true)
                 .when(4000, {
-                    color: 'rgba(222, 222, 10, 1)'
+                    fill: 'rgba(222, 222, 10, 1)'
                 })
                 .start();
         })

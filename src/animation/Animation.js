@@ -12,6 +12,7 @@ define(function(require) {
     var color = require('../tool/color');
     var util = require('../core/util');
     var Dispatcher = require('../core/event').Dispatcher;
+    var zrLog = require('../core/log');
 
     var requestAnimationFrame = window.requestAnimationFrame
                                 || window.msRequestAnimationFrame
@@ -335,8 +336,14 @@ define(function(require) {
         when: function(time /* ms */, props) {
             var tracks = this._tracks;
             for (var propName in props) {
-                if (!tracks[propName]) {
+                if (! tracks[propName]) {
                     tracks[propName] = [];
+                    // Invalid value
+                    var value = this._getter(this._target, propName);
+                    if (value == null) {
+                        zrLog('Invalid property ' + propName);
+                        continue;
+                    }
                     // If time is 0 
                     //  Then props is given initialize value
                     // Else
@@ -344,9 +351,7 @@ define(function(require) {
                     if (time !== 0) {
                         tracks[propName].push({
                             time: 0,
-                            value: _cloneValue(
-                                this._getter(this._target, propName)
-                            )
+                            value: _cloneValue(value)
                         });
                     }
                 }
@@ -431,8 +436,6 @@ define(function(require) {
                     if (typeof(value) == 'string') {
                         if (color.validate(value)) {
                             value = color.toArray(value);
-                            value[0] = value[1] = value[2] = 0;
-                            value[3] = 1;
                             isValueColor = true;   
                         }
                         else {

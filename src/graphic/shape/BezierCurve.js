@@ -11,7 +11,8 @@ define(function (require) {
         type: 'bezier-curve',
 
         style: {
-            brushType: 'stroke',
+            stroke: '#000',
+            fill: null,
             x1: 0,
             y1: 0,
             x2: 0,

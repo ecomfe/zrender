@@ -148,11 +148,13 @@ define(function (require) {
 
         clip: function (ctx) {
             // FIXME performance
-            if (this.__clipShapes) {
-                for (var i = 0; i < this.__clipShapes.length; i++) {
-                    var clipShape = this.__clipShapes[i];
+            var clipShapes = this.__clipShapes;
+            if (clipShapes) {
+                for (var i = 0; i < clipShapes.length; i++) {
+                    var clipShape = clipShapes[i];
+                    var m;
                     if (clipShape.needTransform) {
-                        var m = clipShape.transform;
+                        m = clipShape.transform;
                         ctx.transform(
                             m[0], m[1],
                             m[2], m[3],
@@ -164,7 +166,7 @@ define(function (require) {
                     ctx.clip();
                     // Transform back
                     if (clipShape.needTransform) {
-                        var m = clipShape.invTransform;
+                        m = clipShape.invTransform;
                         ctx.transform(
                             m[0], m[1],
                             m[2], m[3],
