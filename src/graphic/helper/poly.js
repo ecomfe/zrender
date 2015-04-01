@@ -8,7 +8,6 @@ define(function (require) {
             var points = style.points;
             var smooth = style.smooth;
             if (points && points.length > 2) {
-                ctx.moveTo(points[0], points[1]);
                 if (smooth && smooth !== 'spline') {
                     var controlPoints = smoothBezier(
                         points, smooth, closePath, style.smoothConstraint

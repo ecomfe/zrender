@@ -30,7 +30,7 @@ define(function (require) {
         /**
          * @type {number}
          */
-        opacity: null,
+        opacity: 1,
 
         /**
          * @type {Array.<number>}
