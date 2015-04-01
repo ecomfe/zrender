@@ -11,19 +11,20 @@ define(function(require) {
     var util = require('./core/util');
     var log = require('./core/log');
     var guid = require('./core/guid');
+    var env = require('./core/env');
 
     var Handler = require('./Handler');
-    var Painter = require('./Painter');
     var Storage = require('./Storage');
     var Animation = require('./animation/Animation');
 
+    var useVML = ! env.canvasSupported;
+    if (useVML) {
+        require('./vml/vml');
+    }
+    var Painter = useVML ? require('./vml/Painter') : require('./Painter');
+
     var _instances = {};    // ZRender实例map索引
 
-    /**
-     * @exports zrender
-     * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
-     *         pissang (https://www.github.com/pissang)
-     */
     var zrender = {};
     /**
      * @type {string}
@@ -119,7 +120,7 @@ define(function(require) {
          * @type {string}
          */
         this.id = id;
-        this.env = require('./core/env');
+        this.env = env;
 
         this.storage = new Storage();
         this.painter = new Painter(dom, this.storage);

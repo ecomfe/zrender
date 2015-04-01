@@ -324,6 +324,18 @@ define(function (require) {
         return path;
     }
 
+    function createPathOptions(str, opts) {
+        var pathProxy = createPathProxyFromString(str);
+
+        opts = opts || {};
+        opts.buildPath = function (path) {
+            path.setData(pathProxy.data);
+            path.rebuildPath(path.getContext());
+        }
+
+        return opts;
+    }
+
     return {
         /**
          * Create a Path object from path string data
@@ -331,14 +343,7 @@ define(function (require) {
          * @param  {Object} opts Other options
          */
         createFromString: function (str, opts) {
-            var pathProxy = createPathProxyFromString(str);
-
-            opts = opts || {};
-            opts.buildPath = function (path) {
-                path.setData(pathProxy.data);
-                path.rebuildPath(path.getContext());
-            }
-            return new Path(opts)
+            return new Path(createPathOptions(str, opts));
         },
 
         /**
@@ -347,14 +352,7 @@ define(function (require) {
          * @param  {Object} opts Other options
          */
         extendFromString: function (str, opts) {
-            var pathProxy = createPathProxyFromString(str);
-
-            opts = opts || {};
-            opts.buildPath = function (path) {
-                path.setData(pathProxy.data);
-                path.rebuildPath(path.getContext());
-            }
-            return Path.extend(opts);
+            return Path.extend(createPathOptions(str, opts));
         }
     };
 });

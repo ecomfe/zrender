@@ -38,7 +38,7 @@ define(function (require) {
             el.addEventListener(name, handler);
         }
         else {
-            el.attachEvent('on' + name, this._clickHandler);
+            el.attachEvent('on' + name, handler);
         }
     }
 
@@ -47,7 +47,7 @@ define(function (require) {
             el.removeEventListener(name, handler);
         }
         else {
-            el.detachEvent('on' + name, this._clickHandler);
+            el.detachEvent('on' + name, handler);
         }
     }
 

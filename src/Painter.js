@@ -15,6 +15,10 @@
 
     var Layer = require('./Layer');
 
+    function parseInt10(val) {
+        return parseInt(val, 10);
+    }
+
     // 返回false的方法，用于避免页面被选中
     function returnFalse() {
         return false;
@@ -98,7 +102,7 @@
 
         this._layerConfig = {};
 
-        this.pathToImage = this._createPathToImageProcessor();
+        this.pathToImage = this._createPathToImage();
     };
 
     Painter.prototype = {
@@ -107,10 +111,9 @@
 
         /**
          * 刷新
-         * @param {Function} callback 刷新结束后的回调函数
          * @param {boolean} paintAll 强制绘制所有shape
          */
-        refresh: function (callback, paintAll) {
+        refresh: function (paintAll) {
             var list = this.storage.getDisplayList(true);
             this._paintList(list, paintAll);
 
@@ -121,10 +124,6 @@
                 if (! layer.isBuildin && layer.refresh) {
                     layer.refresh();
                 }
-            }
-
-            if (typeof callback == 'function') {
-                callback();
             }
 
             return this;
@@ -155,7 +154,6 @@
                         if (currentLayer.needTransform) {
                             ctx.restore();
                         }
-                        ctx.flush && ctx.flush();
                     }
 
                     currentZLevel = shape.zlevel;
@@ -199,7 +197,6 @@
                 if (currentLayer.needTransform) {
                     ctx.restore();
                 }
-                ctx.flush && ctx.flush();
             }
 
             this.eachBuildinLayer(postProcessLayer);
@@ -372,17 +369,6 @@
         },
 
         /**
-         * 设置loading特效
-         * 
-         * @param {Object} loadingEffect loading特效
-         * @return {Painter}
-         */
-        setLoadingEffect: function (loadingEffect) {
-            this._loadingEffect = loadingEffect;
-            return this;
-        },
-
-        /**
          * 清除hover层外所有内容
          */
         clear: function () {
@@ -472,7 +458,7 @@
                     this._layers[id].resize(width, height);
                 }
 
-                this.refresh(null, true);
+                this.refresh(true);
             }
 
             return this;
@@ -509,10 +495,6 @@
          * @return {string} 图片的Base64 url
          */
         toDataURL: function (type, backgroundColor, args) {
-            if (window['G_vmlCanvasManager']) {
-                return null;
-            }
-
             var imageLayer = new Layer('image', this);
             this._domRoot.appendChild(imageLayer.dom);
             imageLayer.initContext();
@@ -562,9 +544,9 @@
             var stl = root.currentStyle
                       || document.defaultView.getComputedStyle(root);
 
-            return ((root.clientWidth || parseInt(stl.width, 10))
-                    - parseInt(stl.paddingLeft, 10) // 请原谅我这比较粗暴
-                    - parseInt(stl.paddingRight, 10)).toFixed(0) - 0;
+            return ((root.clientWidth || parseInt10(stl.width))
+                    - parseInt10(stl.paddingLeft)
+                    - parseInt10(stl.paddingRight)) | 0;
         },
 
         _getHeight: function () {
@@ -572,9 +554,9 @@
             var stl = root.currentStyle
                       || document.defaultView.getComputedStyle(root);
 
-            return ((root.clientHeight || parseInt(stl.height, 10))
-                    - parseInt(stl.paddingTop, 10) // 请原谅我这比较粗暴
-                    - parseInt(stl.paddingBottom, 10)).toFixed(0) - 0;
+            return ((root.clientHeight || parseInt10(stl.height))
+                    - parseInt10(stl.paddingTop)
+                    - parseInt10(stl.paddingBottom)) | 0;
         },
 
         _pathToImage: function (
@@ -625,11 +607,7 @@
             return imgShape;
         },
 
-        _createPathToImageProcessor: function () {
-            if (! env.canvasSupported) {
-                return doNothing;
-            }
-
+        _createPathToImage: function () {
             var me = this;
 
             return function (id, e, width, height) {
