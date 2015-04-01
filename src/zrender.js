@@ -177,7 +177,6 @@ define(function(require) {
         addElement: function (el) {
             this.storage.addRoot(el);
             this._needsRefreshNextFrame = true;
-            return this;
         },
 
         /**
@@ -187,24 +186,6 @@ define(function(require) {
         delElement: function (el) {
             this.storage.delRoot(el);
             this._needsRefreshNextFrame = true;
-            return this;
-        },
-
-        /**
-         * 修改元素, 主要标记图形或者组需要在下一帧刷新。
-         * 第二个参数为需要覆盖到元素上的参数，不建议使用。
-         *
-         * @example
-         *     el.style.color = 'red';
-         *     el.position = [10, 10];
-         *     zr.modElement(el);
-         * @param  {string|module:zrender/Group|module:zrender/shape/Base} el
-         * @param {Object} [params]
-         */
-        modElement: function (el, params) {
-            this.storage.mod(el, params);
-            this._needsRefreshNextFrame = true;
-            return this;
         },
 
         /**
@@ -222,10 +203,9 @@ define(function(require) {
          * @param {boolean} [config.zoomable=false] 层是否支持鼠标缩放操作
          * @param {boolean} [config.panable=false] 层是否支持鼠标平移操作
         */
-        modLayer: function (zLevel, config) {
-            this.painter.modLayer(zLevel, config);
+        configLayer: function (zLevel, config) {
+            this.painter.configLayer(zLevel, config);
             this._needsRefreshNextFrame = true;
-            return this;
         },
 
         /**
@@ -241,7 +221,6 @@ define(function(require) {
         refresh: function () {
             this.painter.refresh();
             this._needsRefreshNextFrame = false;
-            return this;
         },
 
         /**
@@ -249,7 +228,6 @@ define(function(require) {
          */
         refreshNextFrame: function() {
             this._needsRefreshNextFrame = true;
-            return this;
         },
 
         /**
@@ -257,7 +235,6 @@ define(function(require) {
          */
         resize: function() {
             this.painter.resize();
-            return this;
         },
 
         /**
@@ -352,7 +329,6 @@ define(function(require) {
 
                 animators.length = 0;
             }
-            return this;
         },
 
         /**
@@ -361,7 +337,6 @@ define(function(require) {
         clearAnimation: function () {
             this.animation.clear();
             this.animatingElements.length = 0;
-            return this;
         },
 
         /**
@@ -408,7 +383,6 @@ define(function(require) {
          */
         on: function(eventName, eventHandler, context) {
             this.handler.on(eventName, eventHandler, context);
-            return this;
         },
 
         /**
@@ -419,7 +393,6 @@ define(function(require) {
          */
         off: function(eventName, eventHandler) {
             this.handler.off(eventName, eventHandler);
-            return this;
         },
     
         /**
@@ -430,7 +403,6 @@ define(function(require) {
          */
         trigger: function (eventName, event) {
             this.handler.trigger(eventName, event);
-            return this;
         },
     
 
@@ -440,7 +412,6 @@ define(function(require) {
         clear: function () {
             this.storage.delRoot();
             this.painter.clear();
-            return this;
         },
 
         /**

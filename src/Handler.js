@@ -166,44 +166,6 @@ define(function (require) {
         mousewheel: function (event) {
             event = fixEvent(event);
 
-            // http://www.sitepoint.com/html5-javascript-mouse-wheel/
-            // https://developer.mozilla.org/en-US/docs/DOM/DOM_event_reference/mousewheel
-            var delta = event.wheelDelta // Webkit
-                        || -event.detail; // Firefox
-            var scale = delta > 0 ? 1.1 : 1 / 1.1;
-
-            var needsRefresh = false;
-
-            var mouseX = this._mouseX;
-            var mouseY = this._mouseY;
-            this.painter.eachBuildinLayer(function (layer) {
-                var pos = layer.position;
-                if (layer.zoomable) {
-                    layer.__zoom = layer.__zoom || 1;
-                    var newZoom = layer.__zoom;
-                    newZoom *= scale;
-                    newZoom = Math.max(
-                        Math.min(layer.maxZoom, newZoom),
-                        layer.minZoom
-                    );
-                    scale = newZoom / layer.__zoom;
-                    layer.__zoom = newZoom;
-                    // Keep the mouse center when scaling
-                    pos[0] -= (mouseX - pos[0]) * (scale - 1);
-                    pos[1] -= (mouseY - pos[1]) * (scale - 1);
-                    layer.scale[0] *= scale;
-                    layer.scale[1] *= scale;
-                    layer.dirty = true;
-                    needsRefresh = true;
-
-                    // Prevent browser default scroll action 
-                    eventTool.stop(event);
-                }
-            });
-            if (needsRefresh) {
-                this.painter.refresh();
-            }
-
             // 分发config.EVENT.MOUSEWHEEL事件
             this._dispatchAgency(this._lastHover, EVENT.MOUSEWHEEL, event);
             this._mousemoveHandler(event);
@@ -262,18 +224,6 @@ define(function (require) {
             }
             else if (this._isMouseDown) {
                 var needsRefresh = false;
-                // Layer dragging
-                this.painter.eachBuildinLayer(function (layer) {
-                    if (layer.panable) {
-                        // PENDING
-                        cursor = 'move';
-                        // Keep the mouse center when scaling
-                        layer.position[0] += dx;
-                        layer.position[1] += dy;
-                        needsRefresh = true;
-                        layer.dirty = true;
-                    }
-                });
                 if (needsRefresh) {
                     this.painter.refresh();
                 }
@@ -810,23 +760,8 @@ define(function (require) {
          */
         _iterateAndFindHover: function() {
             var list = this.storage.getDisplayList();
-            var currentZLevel;
-            var currentLayer;
-            var tmp = [0, 0];
             for (var i = list.length - 1; i >= 0 ; i--) {
-                var shape = list[i];
-
-                if (currentZLevel !== shape.zlevel) {
-                    currentLayer = this.painter.getLayer(shape.zlevel, currentLayer);
-                    tmp[0] = this._mouseX;
-                    tmp[1] = this._mouseY;
-
-                    if (currentLayer.needTransform) {
-                        vec2.applyTransform(tmp, tmp, currentLayer.invTransform);
-                    }
-                }
-
-                if (this._isHover(shape, tmp[0], tmp[1])) {
+                if (this._isHover(list[i], this._mouseX, this._mouseY)) {
                     break;
                 }
             }

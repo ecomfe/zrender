@@ -46,13 +46,12 @@
     }
 
     function preProcessLayer(layer) {
-        layer.unusedCount++;
-        layer.updateTransform();
+        layer.__unusedCount++;
     }
 
     function postProcessLayer(layer) {
-        layer.dirty = false;
-        if (layer.unusedCount == 1) {
+        layer.__dirty = false;
+        if (layer.__unusedCount == 1) {
             layer.clear();
         }
     }
@@ -150,12 +149,6 @@
 
                 // Change draw layer
                 if (currentZLevel !== shape.zlevel) {
-                    if (currentLayer) {
-                        if (currentLayer.needTransform) {
-                            ctx.restore();
-                        }
-                    }
-
                     currentZLevel = shape.zlevel;
                     currentLayer = this.getLayer(currentZLevel);
 
@@ -169,19 +162,14 @@
                     ctx = currentLayer.ctx;
 
                     // Reset the count
-                    currentLayer.unusedCount = 0;
+                    currentLayer.__unusedCount = 0;
 
-                    if (currentLayer.dirty || paintAll) {
+                    if (currentLayer.__dirty || paintAll) {
                         currentLayer.clear();
-                    }
-
-                    if (currentLayer.needTransform) {
-                        ctx.save();
-                        currentLayer.setTransform(ctx);
                     }
                 }
 
-                if ((currentLayer.dirty || paintAll) && !shape.invisible) {
+                if ((currentLayer.__dirty || paintAll) && !shape.invisible) {
                     if (
                         !shape.onbrush
                         || (shape.onbrush && !shape.onbrush(ctx, false))
@@ -191,12 +179,6 @@
                 }
 
                 shape.__dirty = false;
-            }
-
-            if (currentLayer) {
-                if (currentLayer.needTransform) {
-                    ctx.restore();
-                }
             }
 
             this.eachBuildinLayer(postProcessLayer);
@@ -217,8 +199,6 @@
                 if (this._layerConfig[zlevel]) {
                     util.merge(layer, this._layerConfig[zlevel], true);
                 }
-
-                layer.updateTransform();
 
                 this.insertLayer(zlevel, layer);
 
@@ -353,17 +333,17 @@
                 if (layer) {
                     layer.elCount++;
                     // 已经被标记为需要刷新
-                    if (layer.dirty) {
+                    if (layer.__dirty) {
                         continue;
                     }
-                    layer.dirty = shape.__dirty;
+                    layer.__dirty = shape.__dirty;
                 }
             }
 
             // 层中的元素数量有发生变化
             this.eachBuildinLayer(function (layer, z) {
                 if (elCounts[z] !== layer.elCount) {
-                    layer.dirty = true;
+                    layer.__dirty = true;
                 }
             });
         },
@@ -389,25 +369,21 @@
          * @param {string} [config.motionBlur=false] 是否开启动态模糊
          * @param {number} [config.lastFrameAlpha=0.7]
          *                 在开启动态模糊的时候使用，与上一帧混合的alpha值，值越大尾迹越明显
-         * @param {Array.<number>} [position] 层的平移
-         * @param {Array.<number>} [rotation] 层的旋转
-         * @param {Array.<number>} [scale] 层的缩放
-         * @param {boolean} [zoomable=false] 层是否支持鼠标缩放操作
-         * @param {boolean} [panable=false] 层是否支持鼠标平移操作
          */
-        modLayer: function (zlevel, config) {
+        configLayer: function (zlevel, config) {
             if (config) {
-                if (!this._layerConfig[zlevel]) {
-                    this._layerConfig[zlevel] = config;
+                var layerConfig = this._layerConfig;
+                if (! layerConfig[zlevel]) {
+                    layerConfig[zlevel] = config;
                 }
                 else {
-                    util.merge(this._layerConfig[zlevel], config, true);
+                    util.merge(layerConfig[zlevel], config, true);
                 }
 
                 var layer = this._layers[zlevel];
 
                 if (layer) {
-                    util.merge(layer, this._layerConfig[zlevel], true);
+                    util.merge(layer, layerConfig[zlevel], true);
                 }
             }
         },

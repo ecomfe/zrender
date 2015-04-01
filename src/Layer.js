@@ -4,9 +4,7 @@
  */
 define(function (require) {
 
-    var Transformable = require('./mixin/Transformable');
     var util = require('./core/util');
-    var vmlCanvasManager = window['G_vmlCanvasManager'];
     var config = require('./config');
 
     function returnFalse() {
@@ -62,20 +60,12 @@ define(function (require) {
         domStyle['-webkit-touch-callout'] = 'none';
         domStyle['-webkit-tap-highlight-color'] = 'rgba(0,0,0,0)';
 
-        vmlCanvasManager && vmlCanvasManager.initElement(this.dom);
-
         this.domBack = null;
         this.ctxBack = null;
 
         this.painter = painter;
 
-        this.unusedCount = 0;
-
         this.config = null;
-
-        this.dirty = true;
-
-        this.elCount = 0;
 
         // Configs
         /**
@@ -96,121 +86,112 @@ define(function (require) {
          * @default 0.7
          */
         this.lastFrameAlpha = 0.7;
-        /**
-         * 层是否支持鼠标平移操作
-         * @type {boolean}
-         * @default false
-         */
-        this.zoomable = false;
-        /**
-         * 层是否支持鼠标缩放操作
-         * @type {boolean}
-         * @default false
-         */
-        this.panable = false;
-
-        this.maxZoom = Infinity;
-        this.minZoom = 0;
-
-        Transformable.call(this);
     };
 
-    Layer.prototype.initContext = function () {
-        this.ctx = this.dom.getContext('2d');
+    Layer.prototype = {
 
-        var dpr = config.devicePixelRatio;
-        if (dpr != 1) { 
-            this.ctx.scale(dpr, dpr);
-        }
-    };
+        constructor: Layer,
 
-    Layer.prototype.createBackBuffer = function () {
-        if (vmlCanvasManager) { // IE 8- should not support back buffer
-            return;
-        }
-        this.domBack = createDom('back-' + this.id, 'canvas', this.painter);
-        this.ctxBack = this.domBack.getContext('2d');
+        elCount: 0,
 
-        var dpr = config.devicePixelRatio;
+        __dirty: true,
 
-        if (dpr != 1) { 
-            this.ctxBack.scale(dpr, dpr);
-        }
-    };
+        initContext: function () {
+            this.ctx = this.dom.getContext('2d');
 
-    /**
-     * @param  {number} width
-     * @param  {number} height
-     */
-    Layer.prototype.resize = function (width, height) {
-        var dpr = config.devicePixelRatio;
+            var dpr = config.devicePixelRatio;
+            if (dpr != 1) { 
+                this.ctx.scale(dpr, dpr);
+            }
+        },
 
-        this.dom.style.width = width + 'px';
-        this.dom.style.height = height + 'px';
+        createBackBuffer: function () {
+            this.domBack = createDom('back-' + this.id, 'canvas', this.painter);
+            this.ctxBack = this.domBack.getContext('2d');
 
-        this.dom.setAttribute('width', width * dpr);
-        this.dom.setAttribute('height', height * dpr);
-
-        if (dpr != 1) { 
-            this.ctx.scale(dpr, dpr);
-        }
-
-        if (this.domBack) {
-            this.domBack.setAttribute('width', width * dpr);
-            this.domBack.setAttribute('height', height * dpr);
+            var dpr = config.devicePixelRatio;
 
             if (dpr != 1) { 
                 this.ctxBack.scale(dpr, dpr);
             }
-        }
-    };
+        },
 
-    /**
-     * 清空该层画布
-     */
-    Layer.prototype.clear = function () {
-        var dom = this.dom;
-        var ctx = this.ctx;
-        var width = dom.width;
-        var height = dom.height;
+        /**
+         * @param  {number} width
+         * @param  {number} height
+         */
+        resize: function (width, height) {
+            var dpr = config.devicePixelRatio;
 
-        var haveClearColor = this.clearColor && !vmlCanvasManager;
-        var haveMotionBLur = this.motionBlur && !vmlCanvasManager;
-        var lastFrameAlpha = this.lastFrameAlpha;
-        
-        var dpr = config.devicePixelRatio;
-
-        if (haveMotionBLur) {
-            if (!this.domBack) {
-                this.createBackBuffer();
-            } 
-
-            this.ctxBack.globalCompositeOperation = 'copy';
-            this.ctxBack.drawImage(
-                dom, 0, 0,
-                width / dpr,
-                height / dpr
-            );
-        }
-
-        ctx.clearRect(0, 0, width / dpr, height / dpr);
-        if (haveClearColor) {
-            ctx.save();
-            ctx.fillStyle = this.clearColor;
-            ctx.fillRect(0, 0, width / dpr, height / dpr);
-            ctx.restore();
-        }
-
-        if (haveMotionBLur) {
+            var dom = this.dom;
+            var domStyle = dom.style;
             var domBack = this.domBack;
-            ctx.save();
-            ctx.globalAlpha = lastFrameAlpha;
-            ctx.drawImage(domBack, 0, 0, width / dpr, height / dpr);
-            ctx.restore();
-        }
-    };
 
-    util.merge(Layer.prototype, Transformable.prototype);
+            domStyle.width = width + 'px';
+            domStyle.height = height + 'px';
+
+            dom.width = width * dpr;
+            dom.height = height * dpr;
+
+            if (dpr != 1) { 
+                this.ctx.scale(dpr, dpr);
+            }
+
+            if (domBack) {
+                domBack.width = width * dpr;
+                domBack.height = height * dpr;
+
+                if (dpr != 1) { 
+                    this.ctxBack.scale(dpr, dpr);
+                }
+            }
+        },
+
+        /**
+         * 清空该层画布
+         */
+        clear: function () {
+            var dom = this.dom;
+            var ctx = this.ctx;
+            var width = dom.width;
+            var height = dom.height;
+
+            var haveClearColor = this.clearColor;
+            var haveMotionBLur = this.motionBlur;
+            var lastFrameAlpha = this.lastFrameAlpha;
+            
+            var dpr = config.devicePixelRatio;
+
+            if (haveMotionBLur) {
+                if (!this.domBack) {
+                    this.createBackBuffer();
+                } 
+
+                this.ctxBack.globalCompositeOperation = 'copy';
+                this.ctxBack.drawImage(
+                    dom, 0, 0,
+                    width / dpr,
+                    height / dpr
+                );
+            }
+
+            ctx.clearRect(0, 0, width / dpr, height / dpr);
+            if (haveClearColor) {
+                ctx.save();
+                ctx.fillStyle = this.clearColor;
+                ctx.fillRect(0, 0, width / dpr, height / dpr);
+                ctx.restore();
+            }
+
+            if (haveMotionBLur) {
+                var domBack = this.domBack;
+                ctx.save();
+                ctx.globalAlpha = lastFrameAlpha;
+                ctx.drawImage(domBack, 0, 0, width / dpr, height / dpr);
+                ctx.restore();
+            }
+        }
+    }
 
     return Layer;
 });
