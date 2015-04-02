@@ -51,15 +51,8 @@ define(function (require) {
             if (image) {
                 // 图片已经加载完成
                 if (image.nodeName.toUpperCase() == 'IMG') {
-                    if (window.ActiveXObject) {
-                        if (image.readyState != 'complete') {
-                            return;
-                        }
-                    }
-                    else {
-                        if (!image.complete) {
-                            return;
-                        }
+                    if (! image.complete) {
+                        return;
                     }
                 }
                 // Else is canvas

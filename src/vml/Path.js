@@ -139,7 +139,7 @@ define(function (require) {
         return str.join('');
     }
 
-    // Replace the original path method
+    // Rewrite the original path method
     Path.prototype.brush = function (vmlRoot) {
         var style = this.style;
 

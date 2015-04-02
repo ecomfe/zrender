@@ -61,6 +61,7 @@ define(function (require) {
         constructor: VMLPainter,
 
         refresh: function () {
+
             var list = this.storage.getDisplayList(true);
 
             this._paintList(list);
@@ -68,6 +69,10 @@ define(function (require) {
 
         _paintList: function (list) {
             var vmlRoot = this._vmlRoot;
+            var parent = vmlRoot.parentNode;
+            // Detached from document to avoid page refreshing too many times
+            // PENDING
+            parent.removeChild(vmlRoot);
             for (var i = 0; i < list.length; i++) {
                 var displayable = list[i];
                 if (displayable.__dirty && !displayable.invisible) {
@@ -75,6 +80,7 @@ define(function (require) {
                     displayable.__dirty = false;
                 }
             }
+            parent.appendChild(vmlRoot);
         },
 
         resize: function () {
