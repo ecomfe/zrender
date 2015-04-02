@@ -12,13 +12,12 @@ define(function (require) {
             return textWidthCache[key];
         }
 
-        var ctx = util.getContext();
         var textLines = (text + '').split('\n');
         var width = 0;
 
-        ctx.font = textFont;
         for (var i = 0, l = textLines.length; i < l; i++) {
-            width =  Math.max(ctx.measureText(textLines[i]).width, width);
+            // measureText 可以被覆盖以兼容不支持 Canvas 的环境
+            width =  Math.max(textContain.measureText(textLines[i], textFont).width, width);
         }
 
         if (textWidthCacheCounter > TEXT_CACHE_MAX) {
@@ -77,9 +76,17 @@ define(function (require) {
         return rect;
     };
 
-    return {
+    var textContain = {
         getWidth: getTextWidth,
 
-        getRect: getTextRect
+        getRect: getTextRect,
+
+        measureText: function (text, textFont) {
+            var ctx = util.getContext();
+            ctx.font = textFont;
+            return ctx.measureText(text);
+        }
     };
+
+    return textContain;
 });

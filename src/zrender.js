@@ -19,7 +19,7 @@ define(function(require) {
 
     var useVML = ! env.canvasSupported;
     if (useVML) {
-        require('./vml/vml');
+        require('./vml/graphic');
     }
     var Painter = useVML ? require('./vml/Painter') : require('./Painter');
 

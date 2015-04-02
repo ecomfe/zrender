@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Text</title>
+    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+</head>
+<body>
+    <div id="main" style="width:1000px;height:600px;"></div>
+    
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+
+    require(["zrender", 'zrender/graphic/Text'], function(zrender, ZText){
+        // 初始化zrender
+        var zr = zrender.init( document.getElementById("main") );
+
+        var text = new ZText({
+            position : [50, 50],
+            scale : [1, 1],
+            style : {
+                x : 10,
+                y : 10,
+                text : "test.jpeg",
+                width : 50,
+                height : 50
+            },
+            draggable : true
+        });
+        zr.addElement(text);
+    });
+    </script>
+</body>
+</html>

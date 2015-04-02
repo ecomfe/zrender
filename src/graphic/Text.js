@@ -11,9 +11,6 @@ define(function (require) {
     var zrUtil = require('../core/util');
     var textContain = require('../contain/text');
 
-    var emptyRect = {
-        x: 0, y: 0, width: 0, height: 0
-    };
     /**
      * @alias zrender/graphic/Text
      * @extends module:zrender/graphic/Displayable
@@ -36,11 +33,12 @@ define(function (require) {
 
             var style = this.style;
 
-            emptyRect.x = style.x || 0;
-            emptyRect.y = style.y || 0;
-
-            // FIXME STROKE
-            this.drawRectText(ctx, emptyRect, this.getRect());
+            if (style.text) {
+                this.drawRectText(ctx, {
+                    x: style.x || 0, y: style.y || 0,
+                    width: 0, height: 0
+                }, this.getRect());   
+            }
 
             this.afterBrush(ctx);
         },

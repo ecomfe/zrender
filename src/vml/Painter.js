@@ -23,8 +23,6 @@ define(function (require) {
 
         var vmlRoot = vmlCore.doc.createElement('div');
 
-        root.appendChild(vmlRoot);
-
         var vmlRootStyle = vmlRoot.style;
         vmlRootStyle.cssText = 'display:inline-block;overflow:hidden;position:relative;\
             width:300px;height:150px;';// default size is 300x150 in Gecko and Opera
@@ -54,6 +52,8 @@ define(function (require) {
                 vmlRoot.appendChild(vmlEl);
             }
         }
+
+        this._firstPaint = true;
     };
 
     VMLPainter.prototype = {
@@ -70,17 +70,26 @@ define(function (require) {
         _paintList: function (list) {
             var vmlRoot = this._vmlRoot;
             var parent = vmlRoot.parentNode;
-            // Detached from document to avoid page refreshing too many times
-            // PENDING
-            parent.removeChild(vmlRoot);
             for (var i = 0; i < list.length; i++) {
                 var displayable = list[i];
                 if (displayable.__dirty && !displayable.invisible) {
-                    displayable.brush(vmlRoot);
+                    var vmlEl = displayable.brush(vmlRoot);
+                    // First creation
+                    if (vmlEl && vmlEl.parentNode != vmlRoot) {
+                        vmlRoot.appendChild(vmlEl);
+                    }
                     displayable.__dirty = false;
                 }
             }
-            parent.appendChild(vmlRoot);
+
+            if (this._firstPaint) {
+                // Detached from document at first time 
+                // to avoid page refreshing too many times
+
+                // FIXME 如果每次都先 removeChild 可能会导致一些填充和描边的效果改变
+                this.root.appendChild(vmlRoot);
+                this._firstPaint = false;
+            }
         },
 
         resize: function () {
