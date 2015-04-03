@@ -34,10 +34,10 @@ define(function (require) {
             var style = this.style;
 
             if (style.text) {
-                this.drawRectText(ctx, {
+                return this.drawRectText(ctx, {
                     x: style.x || 0, y: style.y || 0,
                     width: 0, height: 0
-                }, this.getRect());   
+                }, this.getRect());
             }
 
             this.afterBrush(ctx);

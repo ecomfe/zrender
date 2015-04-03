@@ -27,7 +27,7 @@ define(function (require) {
 
     var applyTransform = vec2.applyTransform;
 
-    var commma = ',';
+    var comma = ',';
     var imageTransformPrefix = 'progid:DXImageTransform.Microsoft';
 
     var Z = 10;
@@ -95,7 +95,6 @@ define(function (require) {
         var Q = CMD.Q;
 
         var str = [];
-        var comma = ',';
         for (var i = 0; i < data.length;) {
             var cmd = data[i++];
             var cmdStr = '';
@@ -329,11 +328,11 @@ define(function (require) {
             var maxY = mathMax(p0[1], p1[1], p2[1], p3[1]);
 
             var transformFilter = [];
-            transformFilter.push('M11=', m[0] / scaleX, commma,
-                        'M12=', m[2] / scaleY, commma,
-                        'M21=', m[1] / scaleX, commma,
-                        'M22=', m[3] / scaleY, commma,
-                        'Dx=', round(x + m[4]), commma,
+            transformFilter.push('M11=', m[0] / scaleX, comma,
+                        'M12=', m[2] / scaleY, comma,
+                        'M21=', m[1] / scaleX, comma,
+                        'M22=', m[3] / scaleY, comma,
+                        'Dx=', round(x + m[4]), comma,
                         'Dy=', round(y + m[5]));
 
             vmlElStyle.padding = '0 ' + round(maxX) + 'px ' + round(maxY) + 'px 0';
@@ -488,10 +487,6 @@ define(function (require) {
         }
         else {
             switch (style.textPosition) {
-                case 'inside':
-                    x += halfWidth;
-                    y += halfHeight;
-                    break;
                 case 'left':
                     x -= distance + textWidth;
                     y += halfHeight;
@@ -507,6 +502,10 @@ define(function (require) {
                 case 'bottom':
                     x += halfWidth;
                     y += height + distance;
+                    break;
+                case 'inside':
+                    x += halfWidth;
+                    y += halfHeight;
                     break;
             }
         }
@@ -527,6 +526,7 @@ define(function (require) {
 
             pathEl.textpathok = true;
             textPathEl.on = true;
+            textPathEl.style['v-text-align'] = 'left';
 
             // x, y 已经在前面调整过，textAlign 统一为 left, textBaseline 统一为 top
             textVmlEl.from = '0 0';
@@ -543,33 +543,44 @@ define(function (require) {
             textPathEl = pathEl.nextSibling;
         }
 
+        // VML 默认垂直居中（类似 textBaseline 为 middle
+        y += textRect.height / 2;
         var coords = [x, y];
         var m;
+        var textVmlElStyle = textVmlEl.style;
         if (this.needTransform) {
             m = this.transform;
             vec2.applyTransform(coords, coords, m);
 
-            var on = m[0] != 1 || m[1] || m[3] != 1 || m[2];
-            skewEl.on = on;
+            skewEl.on = true;
 
-            if (on) {
-                skewEl.matrix = m[0].toFixed(3) + comma + m[2].toFixed(3) + comma +
-                m[1].toFixed(3) + comma + m[3].toFixed(3) + ',0,0';
+            skewEl.matrix = m[0].toFixed(3) + comma + m[2].toFixed(3) + comma +
+            m[1].toFixed(3) + comma + m[3].toFixed(3) + ',0,0';
 
-                // Text position
-                skewEl.offset = round(coords[0]) + ',' + round(coords[1]);
-                // Left top point as origin
-                skewEl.origin = '0 0';
-            }
+            // Text position
+            skewEl.offset = round(coords[0] / Z) + ',' + round(coords[1] / Z);
+            // Left top point as origin
+            skewEl.origin = '0 0';
+
+            textVmlElStyle.left = '0px';
+            textVmlElStyle.top = '0px';
         }
         else {
             skewEl.on = false;
+            textVmlElStyle.left = round(x) + 'px';
+            textVmlElStyle.top = round(y) + 'px';
         }
 
         textPathEl.string = encodeHtmlAttribute(text);
         // TODO
         if (style.font) {
-            textPathEl.style.font = style.font;
+            try {
+                textPathEl.style.font = style.font;
+            }
+            // Error font format
+            catch (e) {
+
+            }
         }
 
         return textVmlEl;
@@ -594,7 +605,7 @@ define(function (require) {
             return this.drawRectText(root, {
                 x: style.x || 0, y: style.y || 0,
                 width: 0, height: 0
-            }, this.getRect());   
+            }, this.getRect());
         }
     }
 

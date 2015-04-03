@@ -7,7 +7,7 @@
 </head>
 <body>
     <div id="main" style="width:1000px;height:600px;"></div>
-    
+
     <script type="text/javascript">
     require.config({
         packages: [
@@ -25,15 +25,17 @@
 
         var text = new ZText({
             position : [50, 50],
-            scale : [1, 1],
-            style : {
-                x : 10,
-                y : 10,
-                text : "test.jpeg",
-                width : 50,
-                height : 50
+            rotation: 1,
+            scale: [2, 2],
+            style: {
+                x: 10,
+                y: 10,
+                text: "国国国国\n国国国国\n国国国国",
+                width: 50,
+                height: 50,
+                font: '14px 微软雅黑'
             },
-            draggable : true
+            draggable: true
         });
         zr.addElement(text);
     });
