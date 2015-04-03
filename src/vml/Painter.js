@@ -33,16 +33,21 @@ define(function (require) {
 
         // Modify storage
         var oldDelFromMap = storage.delFromMap;
-        storage.delFromMap = function (el) {
-            oldDelFromMap.call(this, el);
+        var oldAddToMap = storage.addToMap;
+        storage.delFromMap = function (elId) {
+            var el = storage.get(elId);
 
-            var vmlEl = el.__vmlEl;
-            if (vmlEl && vmlEl.parentNode) {
-                vmlRoot.removeChild(vmlEl);
-                el.__vmlEl = null;
+            oldDelFromMap.call(storage, elId);
+
+            if (el) {
+                var vmlEl = el.__vmlEl;
+                if (vmlEl && vmlEl.parentNode) {
+                    vmlRoot.removeChild(vmlEl);
+                    el.__vmlEl = null;
+                }
+
+                el.dispose && el.dispose();
             }
-
-            el.dispose && el.dispose();
         }
 
         storage.addToMap = function (el) {
@@ -51,6 +56,8 @@ define(function (require) {
             if (vmlEl) {
                 vmlRoot.appendChild(vmlEl);
             }
+
+            oldAddToMap.call(storage, el);
         }
 
         this._firstPaint = true;

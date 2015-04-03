@@ -152,17 +152,17 @@ define(function (require) {
                     var cy = data[i++];
                     var rx = data[i++];
                     var ry = data[i++];
-                    var startAngle = d[i++];
-                    var endAngle = d[i++] + startAngle;
+                    var startAngle = data[i++];
+                    var endAngle = data[i++] + startAngle;
                     // FIXME
-                    var psi = d[i++];
-                    var clockwise = d[i++];
+                    var psi = data[i++];
+                    var clockwise = data[i++];
 
                     var x0 = cx + cos(startAngle) * rx;
                     var y0 = cy + sin(startAngle) * ry;
 
                     var x1 = cx + cos(endAngle) * rx;
-                    var y1 = cy + cos(endAngle) * ry;
+                    var y1 = cy + sin(endAngle) * ry;
 
                     var type = clockwise ? ' wa ' : ' at ';
 

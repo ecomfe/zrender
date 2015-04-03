@@ -22,6 +22,7 @@ define(function (require) {
 
         for (i = 0, j = 0; i < data.length;) {
             cmd = data[i++];
+            j = i;
             nPoint = 0;
 
             switch (cmd) {
@@ -44,20 +45,20 @@ define(function (require) {
                     var sx = mathSqrt(m[0] * m[0] + m[1] * m[1]);
                     var sy = mathSqrt(m[2] * m[2] + m[3] * m[3]);
                     var angle = mathAtan2(-m[1] / sy, m[0] / sx);
-                    var clockwise = d[i + 7];
+                    var clockwise = data[i + 7];
                     // cx
-                    d[i++] += x;
+                    data[i++] += x;
                     // cy
-                    d[i++] += y;
+                    data[i++] += y;
                     // Scale rx and ry
                     // FIXME Assume psi is 0 here
-                    d[i++] *= sx;
-                    d[i++] *= sy;
+                    data[i++] *= sx;
+                    data[i++] *= sy;
 
                     // Start angle
-                    d[i++] += angle;
+                    data[i++] += angle;
                     // end angle
-                    d[i++] += angle;
+                    data[i++] += angle;
                     // FIXME psi
                     i += 2;
                     j = i;
