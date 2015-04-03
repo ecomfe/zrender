@@ -86,6 +86,25 @@ define(function (require) {
         }
     }
 
+    function updateFillAndStroke(vmlEl, type, style) {
+        var isFill = type == 'fill';
+        var el = vmlEl.getElementsByTagName(type)[0];
+        if (style[type] != null) {
+            vmlEl[isFill ? 'filled' : 'stroked'] = 'true';
+            if (! el) {
+                el = vmlCore.createNode(type);
+                vmlEl.appendChild(el);
+            }
+            isFill ? updateFillNode(el, style) : updateStrokeNode(el, style);
+        }
+        else {
+            vmlEl[isFill ? 'filled' : 'stroked'] = 'false';
+            if (el) {
+                vmlEl.removeChild(el);
+            }
+        }
+    }
+
     function pathDataToString(data) {
         var M = CMD.M;
         var C = CMD.C;
@@ -211,33 +230,8 @@ define(function (require) {
         return vmlEl;
     };
 
-    Path.prototype._updateFillStroke = function(type, style) {
-        var vmlEl = this.__vmlEl;
-        var isFill = type == 'fill';
-        var key = isFill ? '_vmlFillEl' : '_vmlStrokeEl';
-        var el = this[key];
-        if (style[type] != null) {
-            vmlEl[isFill ? 'filled' : 'stroked'] = 'true';
-            if (! el) {
-                el = vmlCore.createNode(type);
-                vmlEl.appendChild(el);
-
-                this[key] = el;
-            }
-            isFill ? updateFillNode(el, style) : updateStrokeNode(el, style);
-        }
-        else {
-            vmlEl[isFill ? 'filled' : 'stroked'] = 'false';
-            if (el) {
-                vmlEl.removeChild(el);
-                this[key] = null;
-            }
-        }
-    };
-
     Path.prototype.dispose = function () {
-        this._vmlFillEl = null;
-        this._vmlStrokeEl = null;
+        this.disposeRectText();
     }
 
     /***************************************************
@@ -582,6 +576,9 @@ define(function (require) {
 
             }
         }
+        
+        updateFillAndStroke(textVmlEl, 'fill', style);
+        updateFillAndStroke(textVmlEl, 'stroke', style);
 
         return textVmlEl;
     };
@@ -590,14 +587,13 @@ define(function (require) {
         this._textVmlEl = null;
     }
 
-    RectText.prototype.drawRectText = drawRectText;
-
-    RectText.prototype.disposeRectText = disposeRectText;
+    var list = [RectText, Displayable, ZImage, Path, Text];
 
     // In case Displayable has been mixed in RectText
-    Displayable.prototype.drawRectText = drawRectText;
-
-    Displayable.prototype.disposeRectText = disposeRectText;
+    for (var i = 0; i < list.length; i++) {
+        list[i].prototype.drawRectText = drawRectText;
+        list[i].prototype.disposeRectText = disposeRectText;
+    }
 
     Text.prototype.brush = function (root) {
         var style = this.style;
