@@ -452,6 +452,46 @@ define(function (require) {
      * TEXT
      **************************************************/
 
+    var DEFAULT_STYLE_NORMAL = 'normal';
+
+    var fontStyleCache = {};
+    var fontStyleCacheCount = 0;
+    var MAX_FONT_CACHE_SIZE = 100;
+    var fontEl = document.createElement('div');
+    function processFont(fontString) {
+        var fontStyle = fontStyleCache[fontString];
+        if (! fontStyle) {
+            // Clear cache
+            if (fontStyleCacheCount > MAX_FONT_CACHE_SIZE) {
+                fontStyleCacheCount = 0;
+                fontStyleCache = {};
+            }
+
+            var style = fontEl.style;
+            var fontFamily;
+            try {
+                style.font = fontString;
+                fontFamily = style.fontFamily.split(',')[0];
+            }
+            catch (e) {
+            }
+
+            fontStyle = {
+                style: style.fontStyle || DEFAULT_STYLE_NORMAL,
+                variant: style.fontVariant || DEFAULT_STYLE_NORMAL,
+                weight: style.fontWeight || DEFAULT_STYLE_NORMAL,
+                size: style.fontSize || 12,
+                family: fontFamily || 'Microsoft YaHei'
+            };
+
+            fontStyleCache[fontString] = fontStyle;
+            fontStyleCacheCount++;
+        }
+
+        return fontStyle.style + ' ' + fontStyle.variant + ' ' + fontStyle.weight + ' ' +
+        fontStyle.size + "px '" + fontStyle.family + "'";
+    }
+
     var textMeasureEl;
     // Overwrite measure text method
     textContain.measureText = function (text, textFont) {
@@ -465,7 +505,7 @@ define(function (require) {
         }
 
         try {
-            textMeasureEl.style.font = this.font;
+            textMeasureEl.style.font = textFont;
         } catch (ex) {
             // Ignore failures to set to invalid font.
         }
@@ -490,7 +530,9 @@ define(function (require) {
         var textPosition = style.textPosition;
         var distance = style.textDistance;
         var align = style.textAlign;
-        var font = style.textFont;
+        var font = encodeHtmlAttribute(
+            processFont(style.textFont || '')
+        );
         var baseline = style.textBaseline;
 
         textRect = textRect || textContain.getRect(text, font, align, baseline);
@@ -599,13 +641,11 @@ define(function (require) {
 
         textPathEl.string = encodeHtmlAttribute(text);
         // TODO
-        if (style.font) {
-            try {
-                textPathEl.style.font = style.font;
-            }
-            // Error font format
-            catch (e) {}
+        try {
+            textPathEl.style.font = font;
         }
+        // Error font format
+        catch (e) {}
 
         updateFillAndStroke(textVmlEl, 'fill', {
             fill: style.textFill || style.fill,
