@@ -30,16 +30,13 @@ define(function (require) {
     var comma = ',';
     var imageTransformPrefix = 'progid:DXImageTransform.Microsoft';
 
-    var Z = 10;
-    var W = 10;
-    var H = 10;
+    var Z = 21600;
     var Z2 = Z / 2;
 
     function initRootElStyle(el) {
-        el.style.cssText = 'position:absolute;left:0;top:0;width:' + W + 'px;height:' + H + 'px;';
-        // FIXME Why Z2 ?
-        el.coordsize = Z2 * W + ' '  + Z2 * H;
-        el.coordorigin = '0 0';
+        el.style.cssText = 'position:absolute;left:0;top:0;width:1px;height:1px;';
+        el.coordsize = Z + ','  + Z;
+        el.coordorigin = '0,0';
     }
 
     function encodeHtmlAttribute(s) {
@@ -48,6 +45,18 @@ define(function (require) {
 
     function rgb2Str(r, g, b) {
         return 'rgb(' + [r, g, b].join(',') + ')';
+    }
+
+    function append(parent, child) {
+        if (child && parent && child.parentNode !== parent) {
+            parent.appendChild(child);
+        }
+    }
+
+    function remove(parent, child) {
+        if (child && parent && child.parentNode === parent) {
+            parent.removeChild(child);
+        }
     }
 
     /***************************************************
@@ -79,7 +88,7 @@ define(function (require) {
         }
         if (style.lineDash != null) {
             var lineDash = style.lineDash;
-            el.dashstyle = lineDash.join(' ');
+            el.dashstyle = lineDashScaled.join(' ');
         }
         if (style.stroke != null) {
             setColorAndOpacity(el, style.stroke, style.opacity);
@@ -109,7 +118,6 @@ define(function (require) {
         var M = CMD.M;
         var C = CMD.C;
         var L = CMD.L;
-        var Z = CMD.Z;
         var A = CMD.A;
         var Q = CMD.Q;
 
@@ -178,24 +186,23 @@ define(function (require) {
                         round(y1 * Z - Z2), comma
                     );
                     break;
-                case Z:
+                case CMD.Z:
                     str.push(' x ');
             }
         }
-
         return str.join('');
     }
 
     // Rewrite the original path method
-    Path.prototype.brush = function () {
+    Path.prototype.brush = function (vmlRoot) {
         var style = this.style;
 
-        var vmlEl = this.__vmlEl;
+        var vmlEl = this._vmlEl;
         if (! vmlEl) {
             vmlEl = vmlCore.createNode('shape');
             initRootElStyle(vmlEl);
 
-            this.__vmlEl = vmlEl;
+            this._vmlEl = vmlEl;
         }
 
         updateFillAndStroke(vmlEl, 'fill', style);
@@ -221,17 +228,28 @@ define(function (require) {
         path.beginPath();
         this.buildPath(path, style);
 
+        // 再 transformPath 前获取 rect
+        // FIXME 直接再原有的 path 上 transform 会不会有其它情况
+        var rect = this.getRect();
+
         if (needTransform) {
             transformPath(path, this.transform);
         }
 
         vmlEl.path = pathDataToString(path.data);
 
-        return vmlEl;
+        // Append to root
+        append(vmlRoot, vmlEl);
+
+        // Text
+        if (style.text) {
+            this.drawRectText(vmlRoot, rect);
+        }
     };
 
-    Path.prototype.dispose = function () {
-        this.disposeRectText();
+    Path.prototype.dispose = function (vmlRoot) {
+        remove(vmlRoot, this._vmlEl);
+        this.disposeRectText(vmlRoot);
     }
 
     /***************************************************
@@ -286,12 +304,14 @@ define(function (require) {
 
         var hasCrop = sw && sh;
 
-        var vmlEl = this.__vmlEl;
+        var vmlEl = this._vmlEl;
         if (! vmlEl) {
             // FIXME 使用 group 在 left, top 都不是 0 的时候就无法显示了。
             // vmlEl = vmlCore.createNode('group');
             vmlEl = vmlCore.doc.createElement('div');
             initRootElStyle(vmlEl);
+
+            this._vmlEl = vmlEl;
         }
 
         var vmlElStyle = vmlEl.style;
@@ -409,12 +429,23 @@ define(function (require) {
 
         imageELStyle.filter = filterStr;
 
-        return vmlEl;
+        // Append to root
+        append(vmlRoot, vmlEl);
+
+        // Text
+        if (style.text) {
+            this.drawRectText(vmlRoot, this.getRect());
+        }
     };
 
-    ZImage.prototype.dispose = function () {
+    ZImage.prototype.dispose = function (vmlRoot) {
+        remove(vmlRoot, this._vmlEl);
+
+        this._vmlEl = null;
         this._cropEl = null;
         this._imageEl = null;
+
+        this.disposeRectText(vmlRoot);
     };
 
 
@@ -526,9 +557,11 @@ define(function (require) {
             textVmlEl.from = '0 0';
             textVmlEl.to = '1000 0.05';
 
-            textVmlEl.appendChild(skewEl);
-            textVmlEl.appendChild(pathEl);
-            textVmlEl.appendChild(textPathEl);
+            append(textVmlEl, skewEl);
+            append(textVmlEl, pathEl);
+            append(textVmlEl, textPathEl);
+
+            this._textVmlEl = textVmlEl;
         }
         else {
             // 这里是在前面 appendChild 保证顺序的前提下
@@ -552,7 +585,7 @@ define(function (require) {
             m[1].toFixed(3) + comma + m[3].toFixed(3) + ',0,0';
 
             // Text position
-            skewEl.offset = round(coords[0] / Z) + ',' + round(coords[1] / Z);
+            skewEl.offset = round(coords[0]) + ',' + round(coords[1]);
             // Left top point as origin
             skewEl.origin = '0 0';
 
@@ -572,18 +605,24 @@ define(function (require) {
                 textPathEl.style.font = style.font;
             }
             // Error font format
-            catch (e) {
-
-            }
+            catch (e) {}
         }
-        
-        updateFillAndStroke(textVmlEl, 'fill', style);
-        updateFillAndStroke(textVmlEl, 'stroke', style);
 
-        return textVmlEl;
+        updateFillAndStroke(textVmlEl, 'fill', {
+            fill: style.textFill || style.fill,
+            opacity: style.opacity
+        });
+        updateFillAndStroke(textVmlEl, 'stroke', {
+            stroke: style.textStroke || style.stroke,
+            opacity: style.opacity
+        });
+
+        // Attached to root
+        append(vmlRoot, textVmlEl);
     };
 
-    function disposeRectText() {
+    function disposeRectText(vmlRoot) {
+        remove(vmlRoot, this._textVmlEl);
         this._textVmlEl = null;
     }
 
@@ -591,21 +630,22 @@ define(function (require) {
 
     // In case Displayable has been mixed in RectText
     for (var i = 0; i < list.length; i++) {
-        list[i].prototype.drawRectText = drawRectText;
-        list[i].prototype.disposeRectText = disposeRectText;
+        var proto = list[i].prototype;
+        proto.drawRectText = drawRectText;
+        proto.disposeRectText = disposeRectText;
     }
 
     Text.prototype.brush = function (root) {
         var style = this.style;
         if (style.text) {
-            return this.drawRectText(root, {
+            this.drawRectText(root, {
                 x: style.x || 0, y: style.y || 0,
                 width: 0, height: 0
             }, this.getRect());
         }
     }
 
-    Text.prototype.dispose = function () {
-        this.disposeRectText();
+    Text.prototype.dispose = function (vmlRoot) {
+        this.disposeRectText(vmlRoot);
     }
 });

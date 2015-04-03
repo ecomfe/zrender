@@ -25,7 +25,7 @@ define(function (require) {
 
         var vmlRootStyle = vmlRoot.style;
         vmlRootStyle.cssText = 'display:inline-block;overflow:hidden;position:relative;\
-            width:300px;height:150px;';// default size is 300x150 in Gecko and Opera
+            width:300px;height:150px;';
 
         this._vmlRoot = vmlRoot;
 
@@ -40,13 +40,7 @@ define(function (require) {
             oldDelFromMap.call(storage, elId);
 
             if (el) {
-                var vmlEl = el.__vmlEl;
-                if (vmlEl && vmlEl.parentNode) {
-                    vmlRoot.removeChild(vmlEl);
-                    el.__vmlEl = null;
-                }
-
-                el.dispose && el.dispose();
+                el.dispose && el.dispose(vmlRoot);
             }
         }
 
@@ -80,11 +74,7 @@ define(function (require) {
             for (var i = 0; i < list.length; i++) {
                 var displayable = list[i];
                 if (displayable.__dirty && !displayable.invisible) {
-                    var vmlEl = displayable.brush(vmlRoot);
-                    // First creation
-                    if (vmlEl && vmlEl.parentNode != vmlRoot) {
-                        vmlRoot.appendChild(vmlEl);
-                    }
+                    displayable.brush(vmlRoot);
                     displayable.__dirty = false;
                 }
             }
