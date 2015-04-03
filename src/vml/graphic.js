@@ -87,8 +87,7 @@ define(function (require) {
             el.endcap = style.lineCap;
         }
         if (style.lineDash != null) {
-            var lineDash = style.lineDash;
-            el.dashstyle = lineDashScaled.join(' ');
+            el.dashstyle = style.lineDash.join(' ');
         }
         if (style.stroke != null) {
             setColorAndOpacity(el, style.stroke, style.opacity);
@@ -209,7 +208,7 @@ define(function (require) {
         updateFillAndStroke(vmlEl, 'stroke', style);
 
         var needTransform = this.needTransform;
-        var strokeEl = this._vmlStrokeEl;
+        var strokeEl = vmlEl.getElementsByTagName('stroke')[0];
         if (strokeEl) {
             var lineWidth = style.lineWidth;
             // Get the line scale.
