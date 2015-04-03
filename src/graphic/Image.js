@@ -106,11 +106,11 @@ define(function (require) {
                     ctx.drawImage(image, x, y, width, height);
                 }
 
-                // 如果没设置宽和高的话自动根据图片宽高设置 
-                if (!style.width) {
+                // 如果没设置宽和高的话自动根据图片宽高设置
+                if (style.width == null) {
                     style.width = width;
                 }
-                if (!style.height) {
+                if (style.height == null) {
                     style.height = height;
                 }
 

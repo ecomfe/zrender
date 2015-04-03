@@ -33,6 +33,8 @@ define(function (require) {
     var Z = 21600;
     var Z2 = Z / 2;
 
+    var ZLEVEL_BASE = 1000;
+
     function initRootElStyle(el) {
         el.style.cssText = 'position:absolute;left:0;top:0;width:1px;height:1px;';
         el.coordsize = Z + ','  + Z;
@@ -57,6 +59,11 @@ define(function (require) {
         if (child && parent && child.parentNode === parent) {
             parent.removeChild(child);
         }
+    }
+
+    function getZIndex(zlevel, z) {
+        // z 的取值范围为 [0, 1000]
+        return (parseInt(zlevel) || 0) * ZLEVEL_BASE + parseInt(z) || 0;
     }
 
     /***************************************************
@@ -237,6 +244,8 @@ define(function (require) {
 
         vmlEl.path = pathDataToString(path.data);
 
+        vmlEl.style['z-index'] = getZIndex(this.zlevel, this.z);
+
         // Append to root
         append(vmlRoot, vmlEl);
 
@@ -270,21 +279,38 @@ define(function (require) {
         var oh;
 
         if (isImage(image)) {
-            var imageRuntimeStyle = image.runtimeStyle;
-            var oldRuntimeWidth = imageRuntimeStyle.width;
-            var oldRuntimeHeight = imageRuntimeStyle.height;
-            imageRuntimeStyle.width = 'auto';
-            imageRuntimeStyle.height = 'auto';
+            var src = image.src;
+            if (src === this._imageSrc) {
+                ow = this._imageWidth;
+                oh = this._imageHeight;
+            }
+            else {
+                var imageRuntimeStyle = image.runtimeStyle;
+                var oldRuntimeWidth = imageRuntimeStyle.width;
+                var oldRuntimeHeight = imageRuntimeStyle.height;
+                imageRuntimeStyle.width = 'auto';
+                imageRuntimeStyle.height = 'auto';
 
-            // get the original size
-            ow = image.width;
-            oh = image.height;
+                // get the original size
+                ow = image.width;
+                oh = image.height;
 
-            // and remove overides
-            imageRuntimeStyle.width = oldRuntimeWidth;
-            imageRuntimeStyle.height = oldRuntimeHeight;
+                // and remove overides
+                imageRuntimeStyle.width = oldRuntimeWidth;
+                imageRuntimeStyle.height = oldRuntimeHeight;
 
-            image = image.src;
+                // Caching image original width, height and src
+                this._imageSrc = src;
+                this._imageWidth = ow;
+                this._imageHeight = oh;
+            }
+            image = src;
+        }
+        else {
+            if (image === this._imageSrc) {
+                ow = this._imageWidth;
+                oh = this._imageHeight;
+            }
         }
         if (! image) {
             return;
@@ -376,11 +402,19 @@ define(function (require) {
             // Needs know image original width and height
             if (! (ow && oh)) {
                 var tmpImage = new Image();
+                var self = this;
                 tmpImage.onload = function () {
                     tmpImage.onload = null;
+                    ow = tmpImage.width;
+                    oh = tmpImage.height;
                     // Adjust image width and height to fit the ratio destinationSize / sourceSize
-                    imageELStyle.width = round(scaleX * tmpImage.width * dw / sw) + 'px';
-                    imageELStyle.height = round(scaleY * tmpImage.height * dh / sh) + 'px';
+                    imageELStyle.width = round(scaleX * ow * dw / sw) + 'px';
+                    imageELStyle.height = round(scaleY * oh * dh / sh) + 'px';
+
+                    // Caching image original width, height and src
+                    self._imageWidth = ow;
+                    self._imageHeight = oh;
+                    self._imageSrc = image;
                 }
                 tmpImage.src = image;
             }
@@ -427,6 +461,8 @@ define(function (require) {
         filterStr += imageTransformPrefix + '.AlphaImageLoader(src=' + image + ', SizingMethod=scale)';
 
         imageELStyle.filter = filterStr;
+
+        vmlEl.style['z-index'] = getZIndex(this.zlevel, this.z);
 
         // Append to root
         append(vmlRoot, vmlEl);
@@ -653,8 +689,11 @@ define(function (require) {
         });
         updateFillAndStroke(textVmlEl, 'stroke', {
             stroke: style.textStroke || style.stroke,
-            opacity: style.opacity
+            opacity: style.opacity,
+            lineDash: style.lineDash
         });
+
+        textVmlEl.style['z-index'] = getZIndex(this.zlevel, this.z);
 
         // Attached to root
         append(vmlRoot, textVmlEl);
