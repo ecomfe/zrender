@@ -198,8 +198,8 @@ define(function (require) {
             this.__vmlEl = vmlEl;
         }
 
-        this._updateFillStroke('fill', style);
-        this._updateFillStroke('stroke', style);
+        updateFillAndStroke(vmlEl, 'fill', style);
+        updateFillAndStroke(vmlEl, 'stroke', style);
 
         var needTransform = this.needTransform;
         var strokeEl = this._vmlStrokeEl;
