@@ -96,7 +96,7 @@ define(function (require) {
 
         getBoundingRect: function () {
             if (! this._rect) {
-                this._rect = this._path.fastBoundingRect();
+                this._rect = this._path.getBoundingRect();
             }
             if (pathHasStroke(this.style)) {
                 var rect = this._rect;

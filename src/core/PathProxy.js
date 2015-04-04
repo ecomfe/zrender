@@ -11,6 +11,7 @@ define(function (require) {
 
     var curve = require('./curve');
     var vec2 = require('./vector');
+    var bbox = require('./bbox');
 
     var CMD = {
         M: 1,
@@ -23,9 +24,13 @@ define(function (require) {
 
     var min = [];
     var max = [];
+    var min2 = [];
+    var max2 = [];
     var v = [];
     var mathMin = Math.min;
     var mathMax = Math.max;
+    var mathCos = Math.cos;
+    var mathSin = Math.sin;
     var mathSqrt = Math.sqrt;
 
     var hasTypedArray = typeof Float32Array != 'undefined';
@@ -185,8 +190,8 @@ define(function (require) {
             );
             this._ctx && this._ctx.arc(cx, cy, r, startAngle, endAngle, anticlockwise);
 
-            this._xi = Math.cos(endAngle) * r + cx;
-            this._xi = Math.sin(endAngle) * r + cx;
+            this._xi = mathCos(endAngle) * r + cx;
+            this._xi = mathSin(endAngle) * r + cx;
             return this;
         },
 
@@ -475,44 +480,100 @@ define(function (require) {
             };
         },
 
-        fastBoundingRect: function () {
+        /**
+         * @return {Object}
+         */
+        getBoundingRect: function () {
+            min[0] = min[1] = min2[0] = min2[1] = Infinity;
+            max[0] = max[1] = max2[0] = max2[1] = -Infinity;
+
             var data = this.data;
-            min[0] = min[1] = Infinity;
-            max[0] = max[1] = -Infinity;
-            for (var i = 0; i < this._len;) {
+            var xi = 0;
+            var yi = 0;
+            var x0 = 0;
+            var y0 = 0;
+
+            for (var i = 0; i < data.length;) {
                 var cmd = data[i++];
-                var nPoint = 0;
+
+                if (i == 1) {
+                    // 如果第一个命令是 L, C, Q
+                    // 则 previous point 同绘制命令的第一个 point
+                    // 
+                    // 第一个命令为 Arc 的情况下会在后面特殊处理
+                    xi = data[i];
+                    yi = data[i + 1];
+
+                    x0 = xi;
+                    y0 = yi;
+                }
+
                 switch (cmd) {
                     case CMD.M:
-                        nPoint = 1;
+                        // moveTo 命令重新创建一个新的 subpath, 并且更新新的起点
+                        // 在 closePath 的时候使用
+                        x0 = data[i++];
+                        y0 = data[i++];
+                        xi = x0;
+                        yi = y0;
                         break;
                     case CMD.L:
-                        nPoint = 1;
+                        bbox.fromLine(xi, yi, data[i], data[i + 1], min2, max2);
+                        xi = data[i++];
+                        yi = data[i++];
                         break;
                     case CMD.C:
-                        nPoint = 3;
+                        bbox.fromCubic(
+                            xi, yi, data[i++], data[i++], data[i++], data[i++], data[i], data[i + 1],
+                            min2, max2
+                        );
+                        xi = data[i++];
+                        yi = data[i++];
                         break;
                     case CMD.Q:
-                        nPoint = 2;
+                        bbox.fromQuadratic(
+                            xi, yi, data[i++], data[i++], data[i], data[i + 1],
+                            min2, max2
+                        );
+                        xi = data[i++];
+                        yi = data[i++];
                         break;
                     case CMD.A:
-                        var cx = data[i];
-                        var cy = data[i + 1];
-                        var rx = data[i + 2];
-                        var ry = data[i + 3];
-                        min[0] = mathMin(min[0], min[0], cx - rx);
-                        min[1] = mathMin(min[1], min[1], cy - ry);
-                        max[0] = mathMax(max[0], max[0], cx + rx);
-                        max[1] = mathMax(max[1], max[1], cy + ry);
-                        i += 8;
+                        // TODO Arc 判断的开销比较大
+                        var cx = data[i++];
+                        var cy = data[i++];
+                        var rx = data[i++];
+                        var ry = data[i++];
+                        var startAngle = data[i++];
+                        var endAngle = data[i++] + startAngle;
+                        // TODO Arc 旋转
+                        var psi = data[i++];
+                        var anticlockwise = 1 - data[i++];
+
+                        if (i == 1) {
+                            // 直接使用 arc 命令
+                            // 第一个命令起点还未定义
+                            x0 = mathCos(startAngle) * rx + cx;
+                            y0 = mathSin(startAngle) * ry + cy;
+                        }
+
+                        bbox.fromArc(
+                            cx, cy, rx, ry, startAngle, endAngle,
+                            anticlockwise, min2, max2
+                        );
+
+                        xi = mathCos(endAngle) * rx + cx;
+                        yi = mathSin(endAngle) * ry + cy;
+                        break;
+                    case CMD.Z:
+                        xi = x0;
+                        yi = y0;
                         break;
                 }
-                for (var j = 0; j < nPoint; j++) {    
-                    min[0] = mathMin(min[0], min[0], data[i]);
-                    max[0] = mathMax(max[0], max[0], data[i++]);
-                    min[1] = mathMin(min[1], min[1], data[i]);
-                    max[1] = mathMax(max[1], max[1], data[i++]);
-                }
+
+                // Union
+                vec2.min(min, min, min2);
+                vec2.max(max, max, max2);
             }
 
             return {
