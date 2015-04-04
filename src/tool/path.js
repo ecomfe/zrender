@@ -240,7 +240,7 @@ define(function (require) {
                         cpx = p[off++];
                         cpy = p[off++];
                         cmd = CMD.Q;
-                        points.push(cmd, x1, y1, cpx, cpy);
+                        path.addData(cmd, x1, y1, cpx, cpy);
                         break;
                     case 'q':
                         x1 = p[off++] + cpx;
@@ -248,7 +248,7 @@ define(function (require) {
                         cpx += p[off++];
                         cpy += p[off++];
                         cmd = CMD.Q;
-                        points.push(cmd, x1, y1, cpx, cpy);
+                        path.addData(cmd, x1, y1, cpx, cpy);
                         break;
                     case 'T':
                         ctlPtx = cpx;
@@ -262,7 +262,7 @@ define(function (require) {
                         cpx = p[off++];
                         cpy = p[off++];
                         cmd = CMD.Q;
-                        points.push(cmd, ctlPtx, ctlPty, cpx, cpy);
+                        path.addData(cmd, ctlPtx, ctlPty, cpx, cpy);
                         break;
                     case 't':
                         ctlPtx = cpx;
