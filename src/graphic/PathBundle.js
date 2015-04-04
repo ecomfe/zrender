@@ -60,7 +60,7 @@ define(function (require) {
             this.afterBrush(ctx);
         },
 
-        getRect: function () {
+        getBoundingRect: function () {
             if (this.__rect) {
                 return this.__rect;
             }
@@ -73,7 +73,7 @@ define(function (require) {
             for (var i = 0; i < style.pathList.length; i++) {
                 var subShape = style.pathList[i];
                 // TODO Highlight style ?
-                var subRect = subShape.getRect(subShape.style);
+                var subRect = subShape.getBoundingRect(subShape.style);
 
                 var minX = Math.min(subRect.x, minX);
                 var minY = Math.min(subRect.y, minY);

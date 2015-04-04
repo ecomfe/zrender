@@ -236,7 +236,7 @@ define(function (require) {
 
         // 再 transformPath 前获取 rect
         // FIXME 直接再原有的 path 上 transform 会不会有其它情况
-        var rect = this.getRect();
+        var rect = this.getBoundingRect();
 
         if (needTransform) {
             transformPath(path, this.transform);
@@ -469,7 +469,7 @@ define(function (require) {
 
         // Text
         if (style.text) {
-            this.drawRectText(vmlRoot, this.getRect());
+            this.drawRectText(vmlRoot, this.getBoundingRect());
         }
     };
 
@@ -571,7 +571,7 @@ define(function (require) {
         );
         var baseline = style.textBaseline;
 
-        textRect = textRect || textContain.getRect(text, font, align, baseline);
+        textRect = textRect || textContain.getBoundingRect(text, font, align, baseline);
 
         var height = rect.height;
         var width = rect.width;
@@ -719,7 +719,7 @@ define(function (require) {
             this.drawRectText(root, {
                 x: style.x || 0, y: style.y || 0,
                 width: 0, height: 0
-            }, this.getRect());
+            }, this.getBoundingRect());
         }
     }
 

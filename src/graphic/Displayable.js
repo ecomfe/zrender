@@ -181,7 +181,7 @@ define(function (require) {
         brush: function (ctx, state) {},
 
         // Interface
-        getRect: function (style) {},
+        getBoundingRect: function (style) {},
 
         /**
          * 判断坐标 x, y 是否在图形上
@@ -203,7 +203,7 @@ define(function (require) {
          */
         rectContain: function (x, y) {
             var coord = this.transformCoordToLocal(x, y);
-            return rectContain.contain(this.getRect(), coord[0], coord[1]);
+            return rectContain.contain(this.getBoundingRect(), coord[0], coord[1]);
         },
 
         /**

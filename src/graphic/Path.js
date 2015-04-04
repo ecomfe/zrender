@@ -86,7 +86,7 @@ define(function (require) {
 
             // Draw rect text
             if (style.text) {
-                this.drawRectText(ctx, this.getRect());
+                this.drawRectText(ctx, this.getBoundingRect());
             }
 
             this.afterBrush(ctx);
@@ -94,7 +94,7 @@ define(function (require) {
 
         buildPath: function (ctx, style) {},
 
-        getRect: function () {
+        getBoundingRect: function () {
             if (! this._rect) {
                 this._rect = this._path.fastBoundingRect();
             }
@@ -112,7 +112,7 @@ define(function (require) {
 
         contain: function (x, y) {
             var localPos = this.transformCoordToLocal(x, y);
-            var rect = this.getRect();
+            var rect = this.getBoundingRect();
             var style = this.style;
             x = localPos[0];
             y = localPos[1];
@@ -157,9 +157,10 @@ define(function (require) {
 
         zrUtil.inherits(Sub, Path);
 
+        // FIXME 不能 extend position, rotation 等引用对象
         for (var name in props) {
-            // Extending buildPath method and custom properties
-            if (props.hasOwnProperty(name) && name !== 'style') {
+            // Extending prototype values and methods
+            if (name !== 'style') {
                 Sub.prototype[name] = props[name];
             }
         }

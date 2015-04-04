@@ -79,7 +79,7 @@ define(function (require) {
     var textContain = {
         getWidth: getTextWidth,
 
-        getRect: getTextRect,
+        getBoundingRect: getTextRect,
 
         measureText: function (text, textFont) {
             var ctx = util.getContext();

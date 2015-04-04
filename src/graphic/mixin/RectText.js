@@ -33,7 +33,7 @@ define(function (require) {
             var font = style.textFont;
             var baseline = style.textBaseline;
 
-            textRect = textRect || textContain.getRect(text, font, align, baseline);
+            textRect = textRect || textContain.getBoundingRect(text, font, align, baseline);
 
             var height = rect.height;
             var width = rect.width;

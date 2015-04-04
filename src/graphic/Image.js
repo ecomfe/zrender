@@ -115,13 +115,13 @@ define(function (require) {
                 }
 
                 // Draw rect text
-                this.drawRectText(ctx, this.getRect());
+                this.drawRectText(ctx, this.getBoundingRect());
 
                 ctx.restore();
             }
         },
 
-        getRect: function () {
+        getBoundingRect: function () {
             var style = this.style;
             if (! this._rect) {
                 this._rect = {
