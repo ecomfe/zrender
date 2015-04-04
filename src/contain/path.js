@@ -202,52 +202,40 @@ define(function (require) {
         var x0 = 0;
         var y0 = 0;
 
-        var beginSubpath = true;
-        var firstCmd = true;
-
         for (var i = 0; i < data.length;) {
             var cmd = data[i++];
             // Begin a new subpath
-            if (beginSubpath || cmd === CMD.M) {
-                if (i > 0) {
-                    // Close previous subpath
-                    if (! isStroke) {
-                        w += windingLine(xi, yi, x0, y0, x, y);
-                    }
-                    if (w !== 0) {
-                        return true;
-                    }
+            if (cmd === CMD.M && i > 1) {
+                // Close previous subpath
+                if (! isStroke) {
+                    w += windingLine(xi, yi, x0, y0, x, y);
                 }
-                switch (cmd) {
-                    case CMD.M:
-                    case CMD.L:
-                        x0 = data[i];
-                        y0 = data[i + 1];
-                        break;
-                    case CMD.C:
-                        x0 = data[i + 4];
-                        y0 = data[i + 5];
-                        break;
-                    case CMD.Q:
-                        x0 = data[i + 2];
-                        y0 = data[i + 3];
-                        break;
+                // 如果被任何一个 subpath 包含
+                if (w !== 0) {
+                    return true;
                 }
-                beginSubpath = false;
-                if (firstCmd && cmd !== CMD.A) {
-                    // 如果第一个命令不是M, 是lineTo, bezierCurveTo
-                    // 等绘制命令的话，是会从该绘制的起点开始算的
-                    // Arc 会在之后做单独处理所以这里忽略
-                    firstCmd = false;
-                    xi = x0;
-                    yi = y0;
-                }
+            }
+
+            if (i == 1) {
+                // 如果第一个命令是 L, C, Q
+                // 则 previous point 同绘制命令的第一个 point
+                // 
+                // 第一个命令为 Arc 的情况下会在后面特殊处理
+                xi = data[i];
+                yi = data[i + 1];
+
+                x0 = xi;
+                y0 = yi;
             }
 
             switch (cmd) {
                 case CMD.M:
-                    xi = data[i++];
-                    yi = data[i++];
+                    // moveTo 命令重新创建一个新的 subpath, 并且更新新的起点
+                    // 在 closePath 的时候使用
+                    x0 = data[i++];
+                    y0 = data[i++];
+                    xi = x0;
+                    yi = y0;
                     break;
                 case CMD.L:
                     if (isStroke) {
@@ -256,7 +244,8 @@ define(function (require) {
                         }
                     }
                     else {
-                        w += windingLine(xi, yi, data[i], data[i + 1], x, y);
+                        // NOTE 在第一个命令为 L, C, Q 的时候会计算出 NaN
+                        w += windingLine(xi, yi, data[i], data[i + 1], x, y) || 0;
                     }
                     xi = data[i++];
                     yi = data[i++];
@@ -275,7 +264,7 @@ define(function (require) {
                             xi, yi,
                             data[i++], data[i++], data[i++], data[i++], data[i], data[i + 1],
                             x, y
-                        );
+                        ) || 0;
                     }
                     xi = data[i++];
                     yi = data[i++];
@@ -294,7 +283,7 @@ define(function (require) {
                             xi, yi,
                             data[i++], data[i++], data[i], data[i + 1],
                             x, y
-                        );
+                        ) || 0;
                     }
                     xi = data[i++];
                     yi = data[i++];
@@ -313,11 +302,10 @@ define(function (require) {
                     var x1 = Math.cos(theta) * rx + cx;
                     var y1 = Math.sin(theta) * ry + cy;
                     // 不是直接使用 arc 命令
-                    if (!firstCmd) {
+                    if (i > 1) {
                         w += windingLine(xi, yi, x1, y1);
                     }
                     else {
-                        firstCmd = false;
                         // 第一个命令起点还未定义
                         x0 = x1;
                         y0 = y1;
@@ -349,14 +337,21 @@ define(function (require) {
                             return true;
                         }
                     }
+                    else {
+                        // Close a subpath
+                        w += windingLine(xi, yi, x0, y0, x, y);
+                        // 如果被任何一个 subpath 包含
+                        if (w !== 0) {
+                            return true;
+                        }
+                    }
                     xi = x0;
                     yi = y0;
-                    beginSubpath = true;
                     break;
             }
         }
         if (! isStroke) {
-            w += windingLine(xi, yi, x0, y0, x, y);
+            w += windingLine(xi, yi, x0, y0, x, y) || 0;
         }
         return w !== 0;
     }
