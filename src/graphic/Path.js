@@ -67,7 +67,7 @@ define(function (require) {
                     path.setLineDashOffset(lineDashOffset);
                 }
 
-                this.buildPath(path, style);
+                this.buildPath(path, this.shape);
             }
             else {
                 // Replay path building
@@ -92,7 +92,7 @@ define(function (require) {
             this.afterBrush(ctx);
         },
 
-        buildPath: function (ctx, style) {},
+        buildPath: function (ctx, shapeCfg) {},
 
         getBoundingRect: function () {
             if (! this._rect) {
@@ -121,7 +121,7 @@ define(function (require) {
                 var pathData = this._path.data;
                 if (pathHasStroke(style)) {
                     if (pathContain.containStroke(
-                        pathData, this.style.lineWidth, x, y
+                        pathData, style.lineWidth, x, y
                     )) {
                         return true;
                     }
@@ -141,27 +141,43 @@ define(function (require) {
      * @param {string} props.type Path type
      * @param {Function} props.init Initialize
      * @param {Function} props.buildPath Overwrite buildPath method
-     * @param {Object} [props.style] Extended default style
+     * @param {Object} [props.style] Extended default style config
+     * @param {Object} [props.shape] Extended default shape config
      */
-    Path.extend = function (props) {
+    Path.extend = function (defaults) {
         var Sub = function (opts) {
             Path.call(this, opts);
 
-            if (props.style) {
+            if (defaults.style) {
                 // Extend default style
-                this.style.extendFrom(props.style, false);
+                this.style.extendFrom(defaults.style, false);
             }
 
-            props.init && props.init.call(this, opts);
+            // Extend default shape
+            var defaultShape = defaults.shape;
+            if (defaultShape) {
+                this.shape = this.shape || {};
+                var thisShape = this.shape;
+                for (var name in defaultShape) {
+                    if (
+                        ! thisShape.hasOwnProperty(name)
+                        && defaultShape.hasOwnProperty(name)
+                    ) {
+                        thisShape[name] = defaultShape[name];
+                    }
+                }
+            }
+
+            defaults.init && defaults.init.call(this, opts);
         };
 
         zrUtil.inherits(Sub, Path);
 
         // FIXME 不能 extend position, rotation 等引用对象
-        for (var name in props) {
+        for (var name in defaults) {
             // Extending prototype values and methods
-            if (name !== 'style') {
-                Sub.prototype[name] = props[name];
+            if (name !== 'style' && name !== 'shape') {
+                Sub.prototype[name] = defaults[name];
             }
         }
 

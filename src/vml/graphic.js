@@ -232,7 +232,7 @@ define(function (require) {
 
         var path = this._path;
         path.beginPath();
-        this.buildPath(path, style);
+        this.buildPath(path, this.shape);
 
         // 再 transformPath 前获取 rect
         // FIXME 直接再原有的 path 上 transform 会不会有其它情况

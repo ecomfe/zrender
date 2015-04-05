@@ -11,9 +11,7 @@ define(function (require) {
 
         type: 'trochoid',
 
-        style: {
-            stroke: '#000',
-            fill: null,
+        shape: {
             cx: 0,
             cy: 0,
             r: 0,
@@ -22,19 +20,25 @@ define(function (require) {
             location: 'out'
         },
 
-        buildPath: function (ctx, style) {
+        style: {
+            stroke: '#000',
+
+            fill: null
+        },
+
+        buildPath: function (ctx, shape) {
             var x1;
             var y1;
             var x2;
             var y2;
-            var R = style.r;
-            var r = style.r0;
-            var d = style.d;
-            var offsetX = style.x;
-            var offsetY = style.y;
-            var delta = style.location == 'out' ? 1 : -1;
+            var R = shape.r;
+            var r = shape.r0;
+            var d = shape.d;
+            var offsetX = shape.x;
+            var offsetY = shape.y;
+            var delta = shape.location == 'out' ? 1 : -1;
 
-            if (style.location && R <= r) {
+            if (shape.location && R <= r) {
                 return;
             }
 

@@ -10,7 +10,7 @@ define(function (require) {
 
         type: 'rectangle',
 
-        style: {
+        shape: {
             // 左上、右上、右下、左下角的半径依次为r1、r2、r3、r4
             // r缩写为1         相当于 [1, 1, 1, 1]
             // r缩写为[1]       相当于 [1, 1, 1, 1]
@@ -24,12 +24,12 @@ define(function (require) {
             height: 0
         },
 
-        buildPath: function (ctx, style) {
-            var x = style.x;
-            var y = style.y;
-            var width = style.width;
-            var height = style.height;
-            if (!style.r) {
+        buildPath: function (ctx, shape) {
+            var x = shape.x;
+            var y = shape.y;
+            var width = shape.width;
+            var height = shape.height;
+            if (!shape.r) {
                 ctx.moveTo(x, y);
                 ctx.lineTo(x + width, y);
                 ctx.lineTo(x + width, y + height);
@@ -37,7 +37,7 @@ define(function (require) {
                 ctx.lineTo(x, y);
             }
             else {
-                roundRectHelper.buildPath(ctx, style);
+                roundRectHelper.buildPath(ctx, shape);
             }
             ctx.closePath();
             return;

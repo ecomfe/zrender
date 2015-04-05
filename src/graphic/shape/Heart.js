@@ -9,18 +9,18 @@ define(function (require) {
         
         type: 'heart',
 
-        style: {
+        shape: {
             cx: 0,
             cy: 0,
             width: 0,
             height: 0
         },
 
-        buildPath: function (ctx, style) {
-            var x = style.cx;
-            var y = style.cy;
-            var a = style.width;
-            var b = style.height;
+        buildPath: function (ctx, shape) {
+            var x = shape.cx;
+            var y = shape.cy;
+            var a = shape.width;
+            var b = shape.height;
             ctx.moveTo(x, y);
             ctx.bezierCurveTo(
                 x + a / 2, y - b * 2 / 3,

@@ -10,7 +10,7 @@ define(function (require) {
         
         type: 'polygon',
 
-        style: {
+        shape: {
             points: null,
 
             smooth: false,
@@ -18,8 +18,8 @@ define(function (require) {
             smoothConstraint: null
         },
 
-        buildPath: function (ctx, style) {
-            polyHelper.buildPath(ctx, style, true);
+        buildPath: function (ctx, shape) {
+            polyHelper.buildPath(ctx, shape, true);
         }
     });
 });

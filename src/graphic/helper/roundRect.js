@@ -1,12 +1,12 @@
 define(function (require) {
 
     return {
-        buildPath: function (ctx, style) {
-            var x = style.x;
-            var y = style.y;
-            var width = style.width;
-            var height = style.height;
-            var r = style.r;
+        buildPath: function (ctx, shape) {
+            var x = shape.x;
+            var y = shape.y;
+            var width = shape.width;
+            var height = shape.height;
+            var r = shape.r;
             var r1; 
             var r2; 
             var r3; 

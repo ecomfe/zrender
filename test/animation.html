@@ -25,25 +25,35 @@
         function(zrender, Animation, CircleShape){
 
             // 初始化zrender
-            var zr = zrender.init( document.getElementById("Main") );
+            var zr = zrender.init(document.getElementById("Main"));
+            var radiusAnimator = null;
             var circle = new CircleShape({
                 position: [100, 100],
                 scale: [1, 1],
-                style: {
+                shape: {
                     cx: 0,
                     cy: 0,
-                    r: 50,
+                    r: 50
+                },
+                style: {
                     fill: 'rgba(33, 222, 10, 0.1)',
                     lineWidth: 5,
                     text:'circle',
                     textPosition:'inside'
                 },
                 draggable: true,
-                onmouseover: function(){
-                    zr.animate(circle.id,"style")
-                        .when( 1000, {
+                onmouseover: function () {
+                    radiusAnimator && radiusAnimator.stop();
+                    radiusAnimator = circle.animate('shape')
+                        .when(1000, {
                             r: 100
-                        }).when( 2000, {
+                        })
+                        .start();
+                },
+                onmouseout: function () {
+                    radiusAnimator && radiusAnimator.stop();
+                    radiusAnimator = circle.animate('shape')
+                        .when(1000, {
                             r: 50
                         })
                         .start();

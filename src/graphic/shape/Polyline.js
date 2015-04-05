@@ -9,11 +9,7 @@ define(function (require) {
         
         type: 'polyline',
 
-        style: {
-            stroke: '#000',
-
-            fill: null,
-
+        shape: {
             points: null,
 
             smooth: false,
@@ -21,8 +17,14 @@ define(function (require) {
             smoothConstraint: null
         },
 
-        buildPath: function (ctx, style) {
-            polyHelper.buildPath(ctx, style, false);
+        style: {
+            stroke: '#000',
+
+            fill: null
+        },
+
+        buildPath: function (ctx, shape) {
+            polyHelper.buildPath(ctx, shape, false);
         }
     });
 });

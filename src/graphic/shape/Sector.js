@@ -9,7 +9,7 @@ define(function (require) {
         
         type: 'sector',
 
-        style: {
+        shape: {
 
             cx: 0,
 
@@ -26,15 +26,15 @@ define(function (require) {
             clockwise: true
         },
 
-        buildPath: function (ctx, style) {
+        buildPath: function (ctx, shape) {
 
-            var x = style.cx;   // 圆心x
-            var y = style.cy;   // 圆心y
-            var r0 = style.r0 || 0;     // 形内半径[0,r)
-            var r = style.r;            // 扇形外半径(0,r]
-            var startAngle = style.startAngle;
-            var endAngle = style.endAngle;
-            var clockwise = style.clockwise;
+            var x = shape.cx;   // 圆心x
+            var y = shape.cy;   // 圆心y
+            var r0 = shape.r0 || 0;     // 形内半径[0,r)
+            var r = shape.r;            // 扇形外半径(0,r]
+            var startAngle = shape.startAngle;
+            var endAngle = shape.endAngle;
+            var clockwise = shape.clockwise;
 
             var unitX = Math.cos(startAngle);
             var unitY = Math.sin(startAngle);

@@ -4,6 +4,8 @@
 
 define(function (require) {
     
+    var util = require('../core/util');
+
     var STYLE_LIST_COMMON = [
         'lineCap', 'lineJoin', 'miterLimit', 'lineWidth',
         'shadowBlur', 'shadowOffsetX', 'shadowOffsetY', 'shadowColor'
@@ -125,10 +127,11 @@ define(function (require) {
          */
         extendFrom: function (otherStyle, overwrite) {
             if (otherStyle) {
+                var target = this;
                 for (var name in otherStyle) {
                     if (otherStyle.hasOwnProperty(name)) {
-                        if (overwrite || ! this.hasOwnProperty(name)) {
-                            this[name] = otherStyle[name];
+                        if (overwrite || ! target.hasOwnProperty(name)) {
+                            target[name] = otherStyle[name];
                         }
                     }
                 }

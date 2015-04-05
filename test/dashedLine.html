@@ -39,9 +39,11 @@
             var polyline = new PolylineShape({
                 style: {
                     lineDash: [10, 10],
-                    points: points,
                     stroke: "rgba(220, 20, 60, 0.8)",
-                    lineWidth: 1,
+                    lineWidth: 10
+                },
+                shape: {
+                    points: points,
                     smooth: 0.5
                 }
             });
@@ -57,7 +59,9 @@
             var line = new LineShape({
                 style: {
                     lineDash: [10, 10],
-                    stroke: "rgba(10, 80, 60, 0.8)",
+                    stroke: "rgba(10, 80, 60, 0.8)"
+                },
+                shape: {
                     x1: 100,
                     y1: 100,
                     x2: 500,
@@ -76,7 +80,9 @@
                 style: {
                     lineDash: [20, 10],
                     stroke: 'black',
-                    fill: null,
+                    fill: null
+                },
+                shape: {
                     n: 5,
                     r: 100,
                     cx: 300,
@@ -93,14 +99,15 @@
             
             var curve = new BezierCurve({
                 style: {
-                    x1: 100, y1: 100,
-                    x2: 100, y2: 500,
-                    x3: 500, y3: 100,
-                    x4: 500, y4: 500,
-
                     lineDash: [5, 5],
 
                     lineDashOffset: 0
+                },
+                shape: {
+                    x1: 100, y1: 100,
+                    x2: 100, y2: 500,
+                    x3: 500, y3: 100,
+                    x4: 500, y4: 500
                 }
             });
 

@@ -10,16 +10,16 @@ define(function (require) {
         
         type: 'circle',
 
-        style: {
+        shape: {
             cx: 0,
             cy: 0,
             r: 0
         },
 
-        buildPath : function (ctx, style) {
+        buildPath : function (ctx, shape) {
             // Better stroking in ShapeBundle
-            ctx.moveTo(style.cx + style.r, style.cy);
-            ctx.arc(style.cx, style.cy, style.r, 0, Math.PI * 2, true);
+            ctx.moveTo(shape.cx + shape.r, shape.cy);
+            ctx.arc(shape.cx, shape.cy, shape.r, 0, Math.PI * 2, true);
             return;
         }
     });

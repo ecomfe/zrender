@@ -18,8 +18,8 @@
         ]
     });
 
-    var w = window.innerWidth - 16;
-    var h = window.innerHeight - 16;
+    var w = 1280;
+    var h = 800;
     var pi = Math.PI;
     var main = document.getElementById('Main');
 
@@ -31,7 +31,7 @@
     require(['zrender','zrender/graphic/shape/Rose','zrender/graphic/shape/Trochoid'], function(zrender, RoseShape, TrocholdShape){
             var zr = zrender.init( main );
 
-            var N = 10;
+            var N = 5;
             var color = require('zrender/tool/color');
             var colorId = 0;
 
@@ -44,30 +44,32 @@
                 var r = ( i % 5 == 0 ) ? random(50, 20) : [random(100, 30)];
                 
                 var shape = new ShapeClass({
-                    position : [random(w), random(h)],
-                    style : {
-                        cx : 0,
-                        cy : 0,
-                        r : r,
-                        r0 : random(20, 10),
-                        d : random(100),
-                        k : random(10),
-                        n : random(5),
-                        location : ['in', 'out'][i % 2],
-                        lineWidth : 1,
+                    position: [random(w), random(h)],
+                    shape: {
+                        cx: 0,
+                        cy: 0,
+                        r: r,
+                        r0: random(20, 10),
+                        d: random(100),
+                        k: random(10),
+                        n: random(5),
+                        location: ['in', 'out'][i % 2]
+                    },
+                    style: {
+                        lineWidth: 1,
                         stroke:  color.getColor(colorId ++)
                     },
-                    rotation : [pi * 2 / random(360), 0, 0],
-                    hoverable : false,
-                    draggable : false
+                    rotation: [pi * 2 / random(360), 0, 0],
+                    hoverable: false,
+                    draggable: false
                 });
                 zr.addElement(shape);
-                animate(shape.id, shape.type);
+                animate(shape);
             }
 
-            function animate(id, shape) {
+            function animate(shape) {
                 var time = random(1000, 100);
-                var type = shape =='rose' ? random(6) : random(3);
+                var type = shape.type =='rose' ? random(6) : random(3);
                 var easing = [
                     'Linear', 'QuadraticIn', 'QuadraticOut', 'QuadraticInOut', 
                     'CubicIn', 'CubicOut', 'CubicInOut', 'QuarticIn', 'QuarticOut', 
@@ -78,7 +80,7 @@
                     'BackInOut', 'BounceIn', 'BounceOut', 'BounceInOut'
                     ][0]//[random(30)];
 
-                var move = zr.animate(id, '');
+                var move = shape.animate('');
 
                 switch (type) {
                     case 0 :
@@ -97,24 +99,24 @@
                         });
                         break;
                     case 3 : 
-                        move = zr.animate(id, 'style').when(time, {
+                        move = shape.animate('style').when(time, {
                             r : [random(100, 30)]
                         });
                         break;
                     case 4 : 
-                        move = zr.animate(id, 'style').when(time, {
+                        move = shape.animate('style').when(time, {
                             k : random(10)
                         });
                         break;
                     case 5 : 
-                        move = zr.animate(id, 'style').when(time, {
+                        move = shape.animate('style').when(time, {
                             n : random(5)
                         });
                         break;
                 }
 
                 move.done(function() {
-                        animate(id, shape);
+                        animate(shape);
                     })
                     .start(easing);
             }

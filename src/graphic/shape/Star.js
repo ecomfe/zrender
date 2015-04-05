@@ -13,7 +13,7 @@ define(function (require) {
         
         type: 'star',
 
-        style: {
+        shape: {
             cx: 0,
             cy: 0,
             n: 3,
@@ -21,17 +21,17 @@ define(function (require) {
             r: 0
         },
 
-        buildPath: function (ctx, style) {
+        buildPath: function (ctx, shape) {
 
-            var n = style.n;
+            var n = shape.n;
             if (!n || n < 2) {
                 return;
             }
 
-            var x = style.cx;
-            var y = style.cy;
-            var r = style.r;
-            var r0 = style.r0;
+            var x = shape.cx;
+            var y = shape.cy;
+            var r = shape.r;
+            var r0 = shape.r0;
 
             // 如果未指定内部顶点外接圆半径，则自动计算
             if (r0 == null) {

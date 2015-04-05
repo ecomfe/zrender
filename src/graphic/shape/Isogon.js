@@ -14,20 +14,20 @@ define(function (require) {
         
         type: 'isogon',
 
-        style: {
+        shape: {
             x: 0, y: 0,
             r: 0, n: 0
         },
 
-        buildPath: function (ctx, style) {
-            var n = style.n;
+        buildPath: function (ctx, shape) {
+            var n = shape.n;
             if (!n || n < 2) {
                 return;
             }
 
-            var x = style.x;
-            var y = style.y;
-            var r = style.r;
+            var x = shape.x;
+            var y = shape.y;
+            var r = shape.r;
 
             var dStep = 2 * PI / n;
             var deg = -PI / 2;

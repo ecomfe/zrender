@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <title>Look At</title>
-    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+    <script type="text/javascript" src="//requirejs.org/docs/release/2.1.16/minified/require.js"></script>
 </head>
 <body style="margin:0px;height:100%;">
     <div id="main" style="width:100%;height:100%;"></div>
@@ -25,7 +25,7 @@
         function(zrender, Polygon){
             var zr = zrender.init(document.getElementById('main'));
             var arrow = new Polygon({
-                style: {
+                shape: {
                     points: [[-10, 0], [10, 0], [0, 30]]
                 },
                 position: [zr.getWidth() / 2, zr.getHeight() / 2],

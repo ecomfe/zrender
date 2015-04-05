@@ -12,9 +12,7 @@ define(function (require) {
 
         type: 'rose',
 
-        style: {
-            stroke: '#000',
-            fill: null,
+        shape: {
             cx: 0,
             cy: 0,
             r: [],
@@ -22,16 +20,21 @@ define(function (require) {
             n: 1
         },
 
-        buildPath: function (ctx, style) {
+        style: {
+            stroke: '#000',
+            fill: null
+        },
+
+        buildPath: function (ctx, shape) {
             var x;
             var y;
-            var R = style.r;
+            var R = shape.r;
             var r;
-            var k = style.k;
-            var n = style.n;
+            var k = shape.k;
+            var n = shape.n;
 
-            var x0 = style.cx;
-            var y0 = style.cy;
+            var x0 = shape.cx;
+            var y0 = shape.cy;
 
             ctx.moveTo(x0, y0);
 

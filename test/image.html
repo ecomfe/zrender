@@ -18,23 +18,22 @@
     });
 
     require(["zrender", 'zrender/graphic/Image'], function(zrender, ImageShape){
-
         // 初始化zrender
         var zr = zrender.init( document.getElementById("Main") );
 
         for( var i = 0; i < 20; i ++){
             for( var j = 0; j < 20; j++){
                 var image = new ImageShape({
-                    position : [i * 50, j * 50],
-                    scale : [1, 1],
-                    style : {
-                        x : 0,
-                        y : 0,
-                        image : "test.jpeg",
-                        width : 50,
-                        height : 50
+                    position: [i * 50, j * 50],
+                    scale: [1, 1],
+                    style: {
+                        x: 0,
+                        y: 0,
+                        image: "test.jpeg",
+                        width: 50,
+                        height: 50
                     },
-                    draggable : true
+                    draggable: true
                 });
                 zr.addElement( image );
             }

@@ -4,13 +4,13 @@ define(function (require) {
     var smoothBezier = require('./smoothBezier');
 
     return {
-        buildPath: function (ctx, style, closePath) {
-            var points = style.points;
-            var smooth = style.smooth;
+        buildPath: function (ctx, shape, closePath) {
+            var points = shape.points;
+            var smooth = shape.smooth;
             if (points && points.length > 2) {
                 if (smooth && smooth !== 'spline') {
                     var controlPoints = smoothBezier(
-                        points, smooth, closePath, style.smoothConstraint
+                        points, smooth, closePath, shape.smoothConstraint
                     );
 
                     ctx.moveTo(points[0][0], points[0][1]);

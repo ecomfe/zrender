@@ -811,10 +811,11 @@ define(function (require) {
                 if (shape.hoverable) {
                     // this.storage.addHover(shape);
                 }
-                // 查找是否在 clipShape 中
+                // 查找是否在 clipPath 中
                 var p = shape.parent;
                 while (p) {
-                    if (p.clipShape && !p.clipShape.contain(this._mouseX, this._mouseY))  {
+                    if (p.clipPath && !p.clipPath.contain(x, y))  {
+                        console.log(p.clipPath.contain(x, y));
                         // 已经被祖先 clip 掉了
                         return false;
                     }

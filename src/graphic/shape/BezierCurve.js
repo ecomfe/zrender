@@ -10,9 +10,7 @@ define(function (require) {
 
         type: 'bezier-curve',
 
-        style: {
-            stroke: '#000',
-            fill: null,
+        shape: {
             x1: 0,
             y1: 0,
             x2: 0,
@@ -23,20 +21,25 @@ define(function (require) {
             y4: 0
         },
 
-        buildPath: function (ctx, style) {
-            ctx.moveTo(style.x1, style.y1);
+        style: {
+            stroke: '#000',
+            fill: null
+        },
 
-            if (style.x3 == null || style.y3 == null) {
+        buildPath: function (ctx, shape) {
+            ctx.moveTo(shape.x1, shape.y1);
+
+            if (shape.x3 == null || shape.y3 == null) {
                 ctx.quadraticCurveTo(
-                    style.x2, style.y2,
-                    style.x3, style.y3
+                    shape.x2, shape.y2,
+                    shape.x3, shape.y3
                 );
             }
             else {
                 ctx.bezierCurveTo(
-                    style.x2, style.y2,
-                    style.x3, style.y3,
-                    style.x4, style.y4
+                    shape.x2, shape.y2,
+                    shape.x3, shape.y3,
+                    shape.x4, shape.y4
                 );
             }
         }

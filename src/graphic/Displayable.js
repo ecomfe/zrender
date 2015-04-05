@@ -49,7 +49,7 @@ define(function (require) {
 
         this._rect = null;
         // Shapes for ascade clipping.
-        this.__clipShapes = [];
+        this.__clipPaths = [];
 
         // FIXME Stateful must be mixined after style is setted
         Stateful.call(this, opts);
@@ -148,25 +148,27 @@ define(function (require) {
 
         clip: function (ctx) {
             // FIXME performance
-            var clipShapes = this.__clipShapes;
-            if (clipShapes) {
-                for (var i = 0; i < clipShapes.length; i++) {
-                    var clipShape = clipShapes[i];
+            var clipPaths = this.__clipPaths;
+            if (clipPaths) {
+                for (var i = 0; i < clipPaths.length; i++) {
+                    var clipPath = clipPaths[i];
                     var m;
-                    if (clipShape.needTransform) {
-                        m = clipShape.transform;
+                    if (clipPath.needTransform) {
+                        m = clipPath.transform;
                         ctx.transform(
                             m[0], m[1],
                             m[2], m[3],
                             m[4], m[5]
                         );
                     }
-                    ctx.beginPath();
-                    clipShape.buildPath(ctx, clipShape.style);
+                    // FIXME
+                    var path = clipPath._path;
+                    path.beginPath(ctx);
+                    clipPath.buildPath(path, clipPath.shape);
                     ctx.clip();
                     // Transform back
-                    if (clipShape.needTransform) {
-                        m = clipShape.invTransform;
+                    if (clipPath.needTransform) {
+                        m = clipPath.invTransform;
                         ctx.transform(
                             m[0], m[1],
                             m[2], m[3],
@@ -246,6 +248,16 @@ define(function (require) {
             if (this.__zr) {
                 return this.__zr.animate(this, path, loop);
             }
+        },
+
+        /**
+         * 停止所有动画
+         */
+        stopAnimation: function () {
+            if (this.__zr) {
+                this.__zr.stopAnimation(this);
+            }
+            return this;
         },
 
         /**

@@ -33,8 +33,8 @@
         g1.addElement(g2);
         zr.addElement(g1);
 
-        var clipShape = new CircleShape({
-            style: {
+        var circle = new CircleShape({
+            shape: {
                 r: 200,
                 cx: 0,
                 cy: 0
@@ -42,10 +42,10 @@
             position: [200, 200]
         });
 
-        g2.clipShape = clipShape;
+        g2.clipPath = circle;
 
         var clipShape = new RectShape({
-            style: {
+            shape: {
                 width: 500,
                 height: 200,
                 x: -250,
@@ -53,7 +53,7 @@
             },
             position: [200, 120]
         });
-        g1.clipShape = clipShape;
+        g1.clipPath = clipShape;
 
         for( var i = 0; i < 20; i ++){
             for( var j = 0; j < 20; j++){

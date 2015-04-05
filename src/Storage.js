@@ -77,7 +77,7 @@ define(function (require) {
             displayList.sort(shapeCompareFunc);
         },
 
-        _updateAndAddDisplayable: function (el, clipShapes) {
+        _updateAndAddDisplayable: function (el, clipPaths) {
             
             if (el.ignore) {
                 return;
@@ -86,20 +86,20 @@ define(function (require) {
             el.updateTransform();
 
             if (el.type == 'group') {
-                var clipShape = el.clipShape;
+                var clipPath = el.clipPath;
                 var children = el._children;
 
-                if (clipShape) {
-                    // clipShape 的变换是基于 group 的变换
-                    clipShape.parent = el;
-                    clipShape.updateTransform();
+                if (clipPath) {
+                    // clipPath 的变换是基于 group 的变换
+                    clipPath.parent = el;
+                    clipPath.updateTransform();
 
                     // PENDING 效率影响
-                    if (clipShapes) {
-                        clipShapes = clipShapes.slice();
-                        clipShapes.push(clipShape);
+                    if (clipPaths) {
+                        clipPaths = clipPaths.slice();
+                        clipPaths.push(clipPath);
                     } else {
-                        clipShapes = [clipShape];
+                        clipPaths = [clipPath];
                     }
                 }
 
@@ -109,7 +109,7 @@ define(function (require) {
                     // Force to mark as dirty if group is dirty
                     child.__dirty = el.__dirty || child.__dirty;
 
-                    this._updateAndAddDisplayable(child, clipShapes);
+                    this._updateAndAddDisplayable(child, clipPaths);
                 }
 
                 // Mark group clean here
@@ -117,7 +117,7 @@ define(function (require) {
                 
             }
             else {
-                el.__clipShapes = clipShapes;
+                el.__clipPaths = clipPaths;
 
                 this._displayList[this._displayListLen++] = el;
             }

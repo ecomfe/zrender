@@ -28,7 +28,7 @@
             var zr = zrender.init( document.getElementById("Main") );
             var circle = new CircleShape({
                 scale: [1, 1],
-                style: {
+                shape: {
                     cx: 0,
                     cy: 0,
                     r: 10
@@ -37,10 +37,12 @@
             });
             var circle2 = new CircleShape({
                 scale: [1, 1],
-                style: {
+                shape: {
                     cx: 10,
                     cy: 10,
-                    r: 10,
+                    r: 10
+                },
+                style: {
                     fill:'red'
                 },
                 hoverable: false
@@ -84,7 +86,7 @@
                 })
                 .start();
 
-            zr.modLayer(0, {
+            zr.configLayer(0, {
                 // clearColor: 'rgba(255, 255, 255, 0.1)'
                 motionBlur: true,
                 lastFrameAlpha: 0.99
