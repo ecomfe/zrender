@@ -91,11 +91,7 @@ define(function(require) {
 
     function getFrameCallback(zrInstance) {
         return function () {
-            var animatingElements = zrInstance.animatingElements;
-            for (var i = 0, l = animatingElements.length; i < l; i++) {
-                zrInstance.storage.mod(animatingElements[i].id);
-            }
-            if (animatingElements.length || zrInstance._needsRefreshNextFrame) {
+            if (zrInstance._needsRefreshNextFrame) {
                 zrInstance.refresh();
             }
         };
@@ -126,8 +122,6 @@ define(function(require) {
         this.painter = new Painter(dom, this.storage);
         this.handler = new Handler(dom, this.storage, this.painter);
 
-        // 动画控制
-        this.animatingElements = [];
         /**
          * @type {module:zrender/animation/Animation}
          */
@@ -256,9 +250,12 @@ define(function(require) {
             }
             if (el) {
                 var target;
+                var animatingShape = false;
                 if (path) {
                     var pathSplitted = path.split('.');
                     var prop = el;
+                    // If animating shape
+                    animatingShape = pathSplitted[0] === 'shape';
                     for (var i = 0, l = pathSplitted.length; i < l; i++) {
                         if (!prop) {
                             continue;
@@ -283,24 +280,18 @@ define(function(require) {
                     return;
                 }
 
-                var animatingElements = this.animatingElements;
                 if (el.__animators == null) {
                     // 正在进行的动画记数
                     el.__animators = [];
                 }
                 var animators = el.__animators;
-                if (animators.length === 0) {
-                    animatingElements.push(el);
-                }
 
                 var animator = this.animation.animate(target, { loop: loop })
+                    .during(function () {
+                        el.dirty(animatingShape);
+                    })
                     .done(function () {
                         animators.splice(util.indexOf(animators, animator), 1);
-                        if (animators.length === 0) {
-                            // 从animatingElements里移除
-                            var idx = util.indexOf(animatingElements, el);
-                            animatingElements.splice(idx, 1);
-                        }
                     });
                 animators.push(animator);
 
@@ -322,11 +313,6 @@ define(function(require) {
                 for (var i = 0; i < len; i++) {
                     animators[i].stop();
                 }
-                if (len > 0) {
-                    var animatingElements = this.animatingElements;
-                    animatingElements.splice(animatingElements.indexOf(el), 1);
-                }
-
                 animators.length = 0;
             }
         },
@@ -336,7 +322,6 @@ define(function(require) {
          */
         clearAnimation: function () {
             this.animation.clear();
-            this.animatingElements.length = 0;
         },
 
         /**
@@ -426,7 +411,6 @@ define(function(require) {
             this.handler.dispose();
 
             this.animation = 
-            this.animatingElements = 
             this.storage = 
             this.painter = 
             this.handler = null;

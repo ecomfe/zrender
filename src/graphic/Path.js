@@ -38,6 +38,8 @@ define(function (require) {
 
         type: 'path',
 
+        __dirtyPath: true,
+
         brush: function (ctx) {
             this.beforeBrush(ctx);
 
@@ -56,7 +58,7 @@ define(function (require) {
             // 1. Path is dirty
             // 2. Path needs javascript implemented lineDash stroking.
             //    In this case, lineDash information will not be saved in PathProxy
-            if (this.__dirty || (
+            if (this.__dirtyPath || (
                 lineDash && !ctxLineDash && hasStroke
             )) {
                 path = this._path.beginPath(ctx);
@@ -68,6 +70,9 @@ define(function (require) {
                 }
 
                 this.buildPath(path, this.shape);
+
+                // Clear path dirty flag
+                this.__dirtyPath = false;
             }
             else {
                 // Replay path building
@@ -131,6 +136,21 @@ define(function (require) {
                 }
             }
             return false;
+        },
+
+        /**
+         * @param  {boolean} dirtyPath
+         */
+        dirty: function (dirtyPath) {
+            if (arguments.length ===0) {
+                dirtyPath = true;
+            }
+            // Only mark dirty, not mark clean
+            if (dirtyPath) {
+                this.__dirtyPath = dirtyPath;
+            }
+
+            Displayable.prototype.dirty.call(this);
         }
     };
 
