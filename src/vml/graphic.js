@@ -8,7 +8,6 @@ define(function (require) {
     var vec2 = require('../core/vector');
     var CMD = require('../core/PathProxy').CMD;
     var colorTool = require('../tool/color');
-    var transformPath = require('../tool/transformPath');
     var textContain = require('../contain/text');
     var RectText = require('../graphic/mixin/RectText');
     var Displayable = require('../graphic/Displayable');
@@ -120,7 +119,8 @@ define(function (require) {
         }
     }
 
-    function pathDataToString(data) {
+    var points = [[], [], []];
+    function pathDataToString(data, m) {
         var M = CMD.M;
         var C = CMD.C;
         var L = CMD.L;
@@ -128,22 +128,41 @@ define(function (require) {
         var Q = CMD.Q;
 
         var str = [];
-        for (var i = 0; i < data.length;) {
-            var cmd = data[i++];
-            var cmdStr = '';
+        var nPoint;
+        var cmdStr;
+        var cmd;
+        var i;
+        var xi;
+        var yi;
+        for (i = 0; i < data.length;) {
+            cmd = data[i++];
+            cmdStr = '';
+            nPoint = 0;
             switch (cmd) {
                 case M:
-                    str.push(' m ', round(data[i++] * Z - Z2),  comma, round(data[i++] * Z - Z2));
+                    cmdStr = ' m ';
+                    nPoint = 1;
+                    xi = data[i++];
+                    yi = data[i++];
+                    points[0][0] = xi;
+                    points[0][1] = yi;
                     break;
                 case L:
-                    str.push(' l ', round(data[i++] * Z - Z2),  comma, round(data[i++] * Z - Z2));
+                    cmdStr = ' l ';
+                    nPoint = 1;
+                    xi = data[i++];
+                    yi = data[i++];
+                    points[0][0] = xi;
+                    points[0][1] = yi;
                     break;
                 case Q:
                 case C:
-                    var x1 = round(data[i++] * Z - Z2);
-                    var y1 = round(data[i++] * Z - Z2);
-                    var x2 = round(data[i++] * Z - Z2);
-                    var y2 = round(data[i++] * Z - Z2);
+                    cmdStr = ' c ';
+                    nPoint = 3;
+                    var x1 = data[i++];
+                    var y1 = data[i++];
+                    var x2 = data[i++];
+                    var y2 = data[i++];
                     var x3;
                     var y3;
                     if (cmd === Q) {
@@ -152,22 +171,44 @@ define(function (require) {
                         y3 = y2;
                         x2 = (x2 + 2 * x1) / 3;
                         y2 = (y2 + 2 * y1) / 3;
-                        x1 = (this._xi + 2 * x1) / 3;
-                        y1 = (this._yi + 2 * y1) / 3;
+                        x1 = (xi + 2 * x1) / 3;
+                        y1 = (yi + 2 * y1) / 3;
                     }
                     else {
-                        x3 = round(data[i++] * Z - Z2);
-                        y3 = round(data[i++] * Z - Z2);
+                        x3 = data[i++];
+                        y3 = data[i++];
                     }
-                    str.push(' c ', x1, comma, y1, comma, x2, comma, y2, comma, x3, comma, y3);
+                    points[0][0] = x1;
+                    points[0][1] = y1;
+                    points[1][0] = x2;
+                    points[1][1] = y2;
+                    points[2][0] = x3;
+                    points[2][1] = y3;
+
+                    xi = x3;
+                    yi = y3;
                     break;
                 case A:
-                    var cx = data[i++];
-                    var cy = data[i++];
-                    var rx = data[i++];
-                    var ry = data[i++];
-                    var startAngle = data[i++];
-                    var endAngle = data[i++] + startAngle;
+                    var x = 0;
+                    var y = 0;
+                    var sx = 1;
+                    var sy = 1;
+                    var angle = 0;
+                    if (m) {
+                        // Extract SRT from matrix
+                        x = m[4];
+                        y = m[5];
+                        sx = sqrt(m[0] * m[0] + m[1] * m[1]);
+                        sy = sqrt(m[2] * m[2] + m[3] * m[3]);
+                        angle = Math.atan2(-m[1] / sy, m[0] / sx);
+                    }
+
+                    var cx = data[i++] + x;
+                    var cy = data[i++] + y;
+                    var rx = data[i++] * sx;
+                    var ry = data[i++] * sy;
+                    var startAngle = data[i++] + angle;
+                    var endAngle = data[i++] + startAngle + angle;
                     // FIXME
                     var psi = data[i++];
                     var clockwise = data[i++];
@@ -191,9 +232,28 @@ define(function (require) {
                         round(x1 * Z - Z2), comma,
                         round(y1 * Z - Z2), comma
                     );
+
+                    xi = x1;
+                    yi = y1;
                     break;
                 case CMD.Z:
+                    // FIXME Update xi, yi
                     str.push(' x ');
+            }
+
+            if (nPoint > 0) {
+                str.push(cmdStr);
+                for (var k = 0; k < nPoint; k++) {
+                    var p = points[k];
+                    if (m) {
+                        vec2.applyTransform(p, p, m);
+                    }
+                    // 不 round 会非常慢
+                    str.push(
+                        round(p[0] * Z - Z2), comma, round(p[1] * Z - Z2),
+                        k < nPoint - 1 ? comma : ''
+                    );
+                }
             }
         }
         return str.join('');
@@ -231,18 +291,13 @@ define(function (require) {
         }
 
         var path = this._path;
-        path.beginPath();
-        this.buildPath(path, this.shape);
-
-        // 再 transformPath 前获取 rect
-        // FIXME 直接再原有的 path 上 transform 会不会有其它情况
-        var rect = this.getBoundingRect();
-
-        if (needTransform) {
-            transformPath(path, this.transform);
+        if (this.__dirtyPath) {
+            path.beginPath();
+            this.buildPath(path, this.shape);
+            this.__dirtyPath = false;
         }
 
-        vmlEl.path = pathDataToString(path.data);
+        vmlEl.path = pathDataToString(path.data, this.transform);
 
         vmlEl.style['z-index'] = getZIndex(this.zlevel, this.z);
 
@@ -251,7 +306,7 @@ define(function (require) {
 
         // Text
         if (style.text) {
-            this.drawRectText(vmlRoot, rect);
+            this.drawRectText(vmlRoot, this.getBoundingRect());
         }
     };
 
@@ -342,11 +397,14 @@ define(function (require) {
         var vmlElStyle = vmlEl.style;
         var hasRotation = false;
         var m;
-        var scaleX = this.scale[0];
-        var scaleY = this.scale[1];
+        var scaleX = 1;
+        var scaleY = 1;
         if (this.needTransform) {
             m = this.transform;
-            hasRotation = m[0] != scaleX || m[1] || m[3] != scaleY || m[2];
+            scaleX = sqrt(m[0] * m[0] + m[1] * m[1]);
+            scaleY = sqrt(m[2] * m[2] + m[3] * m[3]);
+
+            hasRotation = m[1] || m[2];
         }
         if (hasRotation) {
             // If filters are necessary (rotation exists), create them

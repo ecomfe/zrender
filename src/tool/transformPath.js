@@ -39,7 +39,6 @@ define(function (require) {
                     nPoint = 2;
                     break;
                 case A:
-                    nPoint = 0;
                     var x = m[4];
                     var y = m[5];
                     var sx = mathSqrt(m[0] * m[0] + m[1] * m[1]);
