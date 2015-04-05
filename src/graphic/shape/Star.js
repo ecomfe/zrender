@@ -1,6 +1,6 @@
 /**
  * n角星（n>3）
- * @module zrender/shape/Star
+ * @module zrender/graphic/shape/Star
  */
 
 define(function (require) {

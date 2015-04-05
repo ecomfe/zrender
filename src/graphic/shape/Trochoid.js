@@ -1,6 +1,6 @@
 /**
  * 内外旋轮曲线
- * @module zrender/shape/Trochold
+ * @module zrender/graphic/shape/Trochold
  */
 define(function (require) {
 
@@ -34,8 +34,8 @@ define(function (require) {
             var R = shape.r;
             var r = shape.r0;
             var d = shape.d;
-            var offsetX = shape.x;
-            var offsetY = shape.y;
+            var offsetX = shape.cx;
+            var offsetY = shape.cy;
             var delta = shape.location == 'out' ? 1 : -1;
 
             if (shape.location && R <= r) {

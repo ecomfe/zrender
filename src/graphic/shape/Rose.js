@@ -1,6 +1,6 @@
 /**
  * 玫瑰线
- * @module zrender/shape/Rose
+ * @module zrender/graphic/shape/Rose
  */
 define(function (require) {
 
