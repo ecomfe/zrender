@@ -177,7 +177,7 @@ define(function(require) {
          * 删除元素
          * @param  {string|module:zrender/Group|module:zrender/shape/Base} el
          */
-        delElement: function (el) {
+        removeElement: function (el) {
             this.storage.delRoot(el);
             this._needsRefreshNextFrame = true;
         },

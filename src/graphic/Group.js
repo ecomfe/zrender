@@ -115,13 +115,18 @@ define(function (require) {
             this._children.push(child);
             child.parent = this;
 
-            if (this.__storage && this.__storage !== child.__storage) {
+            var storage = this.__storage;
+            if (storage && storage !== child.__storage) {
                 
-                this.__storage.addToMap(child);
+                storage.addToMap(child);
 
                 if (child instanceof Group) {
-                    child.addChildrenToStorage(this.__storage);
+                    child.addChildrenToStorage(storage);
                 }
+            }
+
+            if (this.__zr) {
+                this.__zr.refreshNextFrame();
             }
         },
 
@@ -130,7 +135,7 @@ define(function (require) {
          * @param {module:zrender/graphic/Group|module:zrender/graphic/Displayable} child
          */
         // TODO Type Check
-        delElement: function (child) {
+        removeElement: function (child) {
             var idx = util.indexOf(this._children, child);
 
             if (idx >= 0) {
@@ -138,13 +143,18 @@ define(function (require) {
             }
             child.parent = null;
 
-            if (this.__storage) {
+            var storage = this.__storage;
+            if (storage) {
                 
-                this.__storage.delFromMap(child.id);
+                storage.delFromMap(child.id);
 
                 if (child instanceof Group) {
-                    child.delChildrenFromStorage(this.__storage);
+                    child.delChildrenFromStorage(storage);
                 }
+            }
+
+            if (this.__zr) {
+                this.__zr.refreshNextFrame();
             }
         },
 

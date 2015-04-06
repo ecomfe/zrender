@@ -208,7 +208,7 @@ define(function (require) {
             this.__dirty = true;
 
             this._rect = null;
-            // PENDING
+
             if (this.__zr) {
                 this.__zr.refreshNextFrame();
             }
