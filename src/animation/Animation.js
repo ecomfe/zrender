@@ -14,6 +14,8 @@ define(function(require) {
     var Dispatcher = require('../core/event').Dispatcher;
     var zrLog = require('../core/log');
 
+    var isArrayLike = util.isArrayLike;
+
     var requestAnimationFrame = window.requestAnimationFrame
                                 || window.msRequestAnimationFrame
                                 || window.mozRequestAnimationFrame
@@ -227,16 +229,6 @@ define(function(require) {
                 }
             }
         }
-    }
-
-    function isArrayLike(data) {
-        switch (typeof data) {
-            case 'undefined':
-            case 'string':
-                return false;
-        }
-        
-        return typeof data.length !== 'undefined';
     }
 
     function catmullRomInterpolateArray(

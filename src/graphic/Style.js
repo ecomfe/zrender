@@ -3,8 +3,6 @@
  */
 
 define(function (require) {
-    
-    var util = require('../core/util');
 
     var STYLE_LIST_COMMON = [
         'lineCap', 'lineJoin', 'miterLimit', 'lineWidth',

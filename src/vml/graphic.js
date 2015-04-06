@@ -32,7 +32,7 @@ define(function (require) {
     var Z = 21600;
     var Z2 = Z / 2;
 
-    var ZLEVEL_BASE = 1000;
+    var ZLEVEL_BASE = 10000;
 
     function initRootElStyle(el) {
         el.style.cssText = 'position:absolute;left:0;top:0;width:1px;height:1px;';

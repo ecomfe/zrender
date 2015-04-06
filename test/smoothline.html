@@ -47,31 +47,34 @@
                 position: [10, 10],
                 style : {
                     lineDash: [5, 5, 10, 10],
-                    points: points,
-                    smooth: 'spline',
-                    brushType: 'stroke',
                     stroke: "rgba(220, 20, 60, 0.8)",
                     lineWidth: 2
+                },
+                shape: {
+                    smooth: 'spline',
+                    points: points
                 }
             });
 
             var smoothPolygon = new PolygonShape({
                 style: {
-                    // points: [[50, 50], [200, 10], [100, 200], [50, 150], [10, 70]],
-                    smooth: 0.5,
                     // smoothConstraint: [[-Infinity, -Infinity], [200, Infinity]],
-                    brushType: 'both',
                     fill: 'rgba(220, 20, 60, 0.4)',
                     stroke: "rgba(220, 20, 60, 1)",
                     lineWidth: 2
                 },
 
+                shape: {
+                    points: [[50, 50], [200, 10], [100, 200], [50, 150], [10, 70]],
+                    smooth: 0.5
+                },
+
                 states: {
-                    normal: { style: {
-                        points: [[50, 50], [200, 10], [100, 200], [50, 150], [10, 70]]
-                    }, transition: '* 500 0 Linear'},
+                    normal: {
+                        transition: '* 500 0 Linear'
+                    },
                     hover: {
-                        style: {
+                        shape: {
                             points: [[30, 30], [200, 10], [100, 200], [30, 150], [10, 70]]
                         }
                     }

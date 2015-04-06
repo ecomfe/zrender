@@ -45,7 +45,7 @@ define(function (require) {
         }
     };
 
-    var transitionProperties = ['position', 'rotation', 'scale', 'style'];
+    var transitionProperties = ['position', 'rotation', 'scale', 'style', 'shape'];
     /**
      * @module zrender/graphic/States~TransitionObject
      */
@@ -125,8 +125,8 @@ define(function (require) {
 
         this._transitionAnimators = [];
 
-        if (opts.defaultState) {
-            this._defaultState = defaultState;
+        if (opts.initialState) {
+            this._initialState = initialState;
         }
 
         var optsStates = opts.states;
@@ -137,7 +137,7 @@ define(function (require) {
             }
         }
 
-        this.setState(this._defaultState);
+        this.setState(this._initialState);
     };
 
     GraphicStates.prototype = {
@@ -145,11 +145,11 @@ define(function (require) {
         constructor: GraphicStates,
 
         /**
-         * All other state will be extended from default state
+         * All other state will be extended from initial state
          * @type {string}
          * @private
          */
-        _defaultState: 'normal',
+        _initialState: 'normal',
 
         /**
          * Current state
@@ -157,13 +157,6 @@ define(function (require) {
          * @private
          */
         _currentState: '',
-
-        /**
-         * If in transiting
-         * @type {boolean}
-         * @private
-         */
-        _transiting: '',
 
         el: function () {
             return this._el;
@@ -176,45 +169,38 @@ define(function (require) {
                 state.transition = new TransitionObject(state.transition);
             }
 
-            // Extend from default state
-            if (name !== this._defaultState) {
-                this._extendFromDefault(state);
+            // Extend from initial state
+            if (name !== this._initialState) {
+                this._extendFromInitial(state);
             }
             else {
                 var el = this._el;
-                var stateStyle = state.style;
-                if (stateStyle && el) {
-                    var elStyle = el.style;
-                    // Extend el original style to default state
-                    for (var name in elStyle) {
-                        if (elStyle.hasOwnProperty(name)) {
-                            stateStyle[name] = elStyle[name];
-                        }
-                    }
+                // setState 的时候自带的 style 和 shape 都会被直接覆盖
+                // 所以这边先把自带的 style 和 shape 扩展到初始状态中
+                zrUtil.merge(state.style, el.style, false, false);
+                if (state.shape) {
+                    zrUtil.merge(state.shape, el.shape, false, true);
                 }
+                else {
+                    state.shape = zrUtil.clone(el.shape, true);
+                }
+
                 for (var name in this._states) {
-                    this._extendFromDefault(this._states[name]);
+                    this._extendFromInitial(this._states[name]);
                 }
             }
         },
 
-        _extendFromDefault: function (state) {
-            var defaultState = this._states[this._defaultState];
-            if (defaultState && state !== defaultState) {
-                for (var name in defaultState) {
-                    if (
-                        defaultState.hasOwnProperty(name)
-                        && ! state.hasOwnProperty(name)
-                    ) {
-                        state[name] = defaultState[name];
-                    }
-                }
+        _extendFromInitial: function (state) {
+            var initialState = this._states[this._initialState];
+            if (initialState && state !== initialState) {
+                zrUtil.merge(state, initialState, false, true);
             }
         },
 
         setState: function (name, silent) {
             if (name === this._currentState
-                && !this._transiting
+                && ! this.transiting()
             ) {
                 return;
             }
@@ -263,19 +249,22 @@ define(function (require) {
 
                     // Style
                     if (state.style) {
-                        var defaultState = this._states[this._defaultState];
+                        var initialState = this._states[this._initialState];
                         el.style = new Style();
-                        if (defaultState) {
-                            el.style.extendFrom(defaultState.style);
+                        if (initialState) {
+                            el.style.extendFrom(initialState.style);
                         }
                         if (
-                            // Not default state
-                            name != this._defaultState
-                            // Not extended from default state in _extendFromDefault method
-                            && defaultState.style !== state.style
+                            // Not initial state
+                            name != this._initialState
+                            // Not copied from initial state in _extendFromInitial method
+                            && initialState.style !== state.style
                         ) {
                             el.style.extendFrom(state.style, true);
                         }
+                    }
+                    if (state.shape) {
+                        el.shape = zrUtil.clone(state.shape, true);
                     }
 
                     el.dirty();
@@ -294,14 +283,17 @@ define(function (require) {
         transitionState: function (target, done) {
             if (
                 target === this._currentState
-                && ! this._transiting
+                && ! this.transiting()
             ) {
                 return;
             }
 
             var state = this._states[target];
-            var styleReg = /$style\./;
+            var styleShapeReg = /$[style|shape]\./;
             var self = this;
+
+            // Animation 去重
+            var propPathMap = {};
 
             if (state) {
 
@@ -321,7 +313,6 @@ define(function (require) {
                             self.setState(target);
                             done && done();
                         }
-                        self._transiting = false;
                     }
                     for (var i = 0; i < property.length; i++) {
                         var propName = property[i];
@@ -330,38 +321,47 @@ define(function (require) {
                             state[propName] = normalizeRotation(state[propName]);
                             el[propName] = normalizeRotation(el[propName]);
                         }
-                        // Animating all the properties in style
-                        if (propName === 'style') {
-                            if (state.style) {
-                                for (var name in state.style) {
+                        // Animating all the properties in style or shape
+                        if (propName === 'style' || propName === 'shape') {
+                            if (state[propName]) {
+                                for (var key in state[propName]) {
+                                    var path = propName + '.' + key;
+                                    if (propPathMap[path]) {
+                                        continue;
+                                    }
+                                    propPathMap[path] = 1;
                                     animatingCount += self._animProp(
-                                        state, name, transitionCfg, true, done
+                                        state, propName, key, transitionCfg, done
                                     );
                                 }
                             }
-                            styleAnimated = true;
-                        }
-                        // Animating particular property in style
-                        else if (propName.match(styleReg) && ! styleAnimated && state.style) {
-                            // remove 'style.' prefix
-                            propName = propName.slice(6);
-                            animatingCount += self._animProp(
-                                state, propName, transitionCfg, true, done
-                            );
                         }
                         else {
-                            animatingCount += self._animProp(
-                                state, propName, transitionCfg, false, done
-                            );
+                            if (propPathMap[propName]) {
+                                continue;
+                            }
+                            propPathMap[propName] = 1;
+                            // Animating particular property in style
+                            if (propName.match(styleShapeReg)) {
+                                // remove 'style.', 'shape.' prefix
+                                var subProp = propName.slice(0, 5);
+                                propName = propName.slice(6);
+                                animatingCount += self._animProp(
+                                    state, subProp, propName, transitionCfg, done
+                                );
+                            }
+                            else {
+                                animatingCount += self._animProp(
+                                    state, '', propName, transitionCfg, done
+                                );
+                            }
+
                         }
                     }
                     // No transition properties
                     if (animatingCount === 0) {
                         self.setState(target);
                         done && done();
-                    }
-                    else {
-                        self._transiting = true;
                     }
                 }
                 else {
@@ -378,38 +378,28 @@ define(function (require) {
         /**
          * Do transition animation of particular property
          * @param {Object} state
-         * @param {string} property
+         * @param {string} subProp
+         * @param {string} key
          * @param {string} transitionCfg
-         * @param {boolean} inStyle
          * @param {Function} done
          * @private
          */
-        _animProp: function (state, property, transitionCfg, inStyle, done) {
+        _animProp: function (state, subProp, key, transitionCfg, done) {
             var el = this._el;
-            var stateStyle = state.style;
-            var elStyle = el.style;
-            var availableProp = inStyle
-                // Assume state has style here
-                ? stateStyle.hasOwnProperty(property) && elStyle && (property in elStyle)
-                : state.hasOwnProperty(property) && (property in el);
+            var stateObj = subProp ? state[subProp] : state;
+            var elObj = subProp ? el[subProp] : el;
+            var availableProp = stateObj && (key in stateObj)
+                && elObj && (key in elObj);
+
             var transitionAnimators = this._transitionAnimators;
             if (availableProp) {
                 var obj = {};
-                if (inStyle) {
-                    if (stateStyle[property] === elStyle[property]) {
-                        return 0;
-                    }
-                    obj[property] = stateStyle[property];
+                if (stateObj[key] === elObj[key]) {
+                    return 0;
                 }
-                else {
-                    if (stateStyle[property] === elStyle[property]) {
-                        return 0;
-                    }
-                    obj[property] = stateStyle[property];
-                }
+                obj[key] = stateObj[key];
 
-                obj[property] = inStyle ? state.style[property] : state[property];
-                var animator = el.animate(inStyle ? 'style' : '')
+                var animator = el.animate(subProp)
                     .when(transitionCfg.duration, obj)
                     .delay(transitionCfg.dealy)
                     .done(function () {
@@ -433,7 +423,10 @@ define(function (require) {
                 transitionAnimators[i].stop();
             }
             transitionAnimators.length = 0;
-            this._transiting = false;
+        },
+
+        transiting: function () {
+            return this._transitionAnimators.length > 0;
         },
 
         addSubStates: function (states) {
