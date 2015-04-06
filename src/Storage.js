@@ -124,22 +124,6 @@ define(function (require) {
         },
 
         /**
-         * 修改图形(Shape)或者组(Group)
-         * 
-         * @param {string|module:zrender/graphic/Displayable|module:zrender/graphic/Group} el
-         */
-        mod: function (el) {
-            if (typeof (el) === 'string') {
-                el = this._elements[el];
-            }
-            if (el) {
-                el.dirty();
-            }
-
-            return this;
-        },
-
-        /**
          * 添加图形(Shape)或者组(Group)到根节点
          * @param {module:zrender/shape/Shape|module:zrender/graphic/Group} el
          */

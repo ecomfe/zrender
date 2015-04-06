@@ -121,7 +121,7 @@ define(function (require) {
 
             // 分发config.EVENT.CLICK事件
             var _lastHover = this._lastHover;
-            if ((_lastHover && _lastHover.clickable)
+            if ((_lastHover)
                 || !_lastHover
             ) {
 
@@ -144,7 +144,7 @@ define(function (require) {
 
             // 分发config.EVENT.DBLCLICK事件
             var _lastHover = this._lastHover;
-            if ((_lastHover && _lastHover.clickable)
+            if ((_lastHover)
                 || !_lastHover
             ) {
 
@@ -232,7 +232,7 @@ define(function (require) {
             if (draggingTarget || (this._hasfound && lastHover.draggable)) {
                 cursor = 'move';
             }
-            else if (this._hasfound && lastHover.clickable) {
+            else if (this._hasfound) {
                 cursor = 'pointer';
             }
             this.root.style.cursor = cursor;
@@ -361,7 +361,7 @@ define(function (require) {
                 this._clickHandler(event);
                 if (now - this._lastClickMoment < EVENT.touchClickDelay / 2) {
                     this._dblclickHandler(event);
-                    if (this._lastHover && this._lastHover.clickable) {
+                    if (this._lastHover) {
                         eventTool.stop(event);// 阻止浏览器默认事件，重要
                     }
                 }
@@ -634,8 +634,7 @@ define(function (require) {
          */
         _processDrop: function (event) {
             if (this._draggingTarget) {
-                this._draggingTarget.invisible = false;
-                this.storage.mod(this._draggingTarget.id);
+                this._draggingTarget.dirty();
                 this.painter.refresh();
 
                 // 分发config.EVENT.DROP事件

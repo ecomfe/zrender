@@ -117,14 +117,6 @@ define(function (require) {
         draggable: false,
 
         /**
-         * 是否可点击
-         * @name module:/zrender/graphic/Displayable#clickable
-         * @type {boolean}
-         * @default false
-         */
-        clickable: false,
-
-        /**
          * 是否可以hover
          * @name module:/zrender/graphic/Displayable#hoverable
          * @type {boolean}
@@ -268,7 +260,7 @@ define(function (require) {
         // TODO, 通过 bind 绑定的事件
         isSilent: function () {
             return !(
-                this.hoverable || this.draggable || this.clickable
+                this.hoverable || this.draggable
                 || this.onmousemove || this.onmouseover || this.onmouseout
                 || this.onmousedown || this.onmouseup || this.onclick
                 || this.ondragenter || this.ondragover || this.ondragleave
