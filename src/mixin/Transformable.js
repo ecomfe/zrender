@@ -244,6 +244,21 @@ define(function (require) {
                 matrix.mulVector(v2, this.invTransform, v2);
             }
             return v2;
+        },
+
+        /**
+         * 变换局部坐标位置到全局坐标空间
+         * @method
+         * @param {number} x
+         * @param {number} y
+         * @return {Array.<number>}
+         */
+        transformCoordToGlobal: function (x, y) {
+            var v2 = [x, y];
+            if (this.needTransform && this.transform) {
+                matrix.mulVector(v2, this.transform, v2);
+            }
+            return v2;
         }
     };
 
