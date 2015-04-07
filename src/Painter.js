@@ -110,7 +110,7 @@
 
         /**
          * 刷新
-         * @param {boolean} paintAll 强制绘制所有shape
+         * @param {boolean} paintAll 强制绘制所有displayable
          */
         refresh: function (paintAll) {
             var list = this.storage.getDisplayList(true);
@@ -145,11 +145,11 @@
             // var invTransform = [];
 
             for (var i = 0, l = list.length; i < l; i++) {
-                var shape = list[i];
+                var el = list[i];
 
                 // Change draw layer
-                if (currentZLevel !== shape.zlevel) {
-                    currentZLevel = shape.zlevel;
+                if (currentZLevel !== el.zlevel) {
+                    currentZLevel = el.zlevel;
                     currentLayer = this.getLayer(currentZLevel);
 
                     if (!currentLayer.isBuildin) {
@@ -169,16 +169,16 @@
                     }
                 }
 
-                if ((currentLayer.__dirty || paintAll) && !shape.invisible) {
+                if ((currentLayer.__dirty || paintAll) && !el.invisible) {
                     if (
-                        !shape.onbrush
-                        || (shape.onbrush && !shape.onbrush(ctx, false))
+                        !el.onbrush
+                        || (el.onbrush && !el.onbrush(ctx, false))
                     ) {
-                        shape.brush(ctx, false);
+                        el.brush(ctx, false);
                     }
                 }
 
-                shape.__dirty = false;
+                el.__dirty = false;
             }
 
             this.eachBuildinLayer(postProcessLayer);
@@ -327,8 +327,8 @@
             });
 
             for (var i = 0, l = list.length; i < l; i++) {
-                var shape = list[i];
-                var zlevel = shape.zlevel;
+                var el = list[i];
+                var zlevel = el.zlevel;
                 var layer = layers[zlevel];
                 if (layer) {
                     layer.elCount++;
@@ -336,7 +336,7 @@
                     if (layer.__dirty) {
                         continue;
                     }
-                    layer.__dirty = shape.__dirty;
+                    layer.__dirty = el.__dirty;
                 }
             }
 
@@ -442,10 +442,10 @@
 
         /**
          * 清除单独的一个层
-         * @param {number} zLevel
+         * @param {number} zlevel
          */
-        clearLayer: function (zLevel) {
-            var layer = this._layers[zLevel];
+        clearLayer: function (zlevel) {
+            var layer = this._layers[zlevel];
             if (layer) {
                 layer.clear();
             }
@@ -484,13 +484,13 @@
             var displayList = this.storage.getDisplayList(true);
 
             for (var i = 0; i < displayList.length; i++) {
-                var shape = displayList[i];
-                if (!shape.invisible) {
-                    if (!shape.onbrush // 没有onbrush
+                var el = displayList[i];
+                if (!el.invisible) {
+                    if (!el.onbrush // 没有onbrush
                         // 有onbrush并且调用执行返回false或undefined则继续粉刷
-                        || (shape.onbrush && !shape.onbrush(ctx, false))
+                        || (el.onbrush && !el.onbrush(ctx, false))
                     ) {
-                        shape.brush(ctx, false);
+                        el.brush(ctx, false);
                     }
                 }
             }
@@ -536,7 +536,7 @@
         },
 
         _pathToImage: function (
-            id, shape, width, height, devicePixelRatio
+            id, path, width, height, devicePixelRatio
         ) {
             var canvas = document.createElement('canvas');
             var ctx = canvas.getContext('2d');
@@ -546,16 +546,16 @@
 
             ctx.clearRect(0, 0, width * devicePixelRatio, height * devicePixelRatio);
 
-            var shapeTransform = {
-                position : shape.position,
-                rotation : shape.rotation,
-                scale : shape.scale
+            var pathTransform = {
+                position : path.position,
+                rotation : path.rotation,
+                scale : path.scale
             };
-            shape.position = [0, 0, 0];
-            shape.rotation = 0;
-            shape.scale = [1, 1];
-            if (shape) {
-                shape.brush(ctx);
+            path.position = [0, 0, 0];
+            path.rotation = 0;
+            path.scale = [1, 1];
+            if (path) {
+                path.brush(ctx);
             }
 
             var ImageShape = require('./graphic/Image');
@@ -568,16 +568,16 @@
                 }
             });
 
-            if (shapeTransform.position != null) {
-                imgShape.position = shape.position = shapeTransform.position;
+            if (pathTransform.position != null) {
+                imgShape.position = path.position = pathTransform.position;
             }
 
-            if (shapeTransform.rotation != null) {
-                imgShape.rotation = shape.rotation = shapeTransform.rotation;
+            if (pathTransform.rotation != null) {
+                imgShape.rotation = path.rotation = pathTransform.rotation;
             }
 
-            if (shapeTransform.scale != null) {
-                imgShape.scale = shape.scale = shapeTransform.scale;
+            if (pathTransform.scale != null) {
+                imgShape.scale = path.scale = pathTransform.scale;
             }
 
             return imgShape;
