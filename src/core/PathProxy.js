@@ -606,7 +606,7 @@ define(function (require) {
                         );
                         break;
                     case CMD.Q:
-                        ctx.bezierCurveTo(d[i++], d[i++], d[i++], d[i++]);
+                        ctx.quadraticCurveTo(d[i++], d[i++], d[i++], d[i++]);
                         break;
                     case CMD.A:
                         var cx = d[i++];
