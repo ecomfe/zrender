@@ -21,13 +21,19 @@ define(function (require) {
 
         this.storage = storage;
 
-        var vmlRoot = vmlCore.doc.createElement('div');
+        var vmlContainer = document.createElement('div');
 
-        var vmlRootStyle = vmlRoot.style;
-        vmlRootStyle.cssText = 'display:inline-block;overflow:hidden;position:relative;\
+        var vmlRoot = document.createElement('div');
+
+        vmlContainer.style.cssText = 'display:inline-block;overflow:hidden;position:relative;\
             width:300px;height:150px;';
 
+        vmlRoot.style.cssText = 'position:absolute;left:0;top:0';
+
+        root.appendChild(vmlContainer);
+
         this._vmlRoot = vmlRoot;
+        this._vmlContainer = vmlContainer;
 
         this.resize();
 
@@ -84,7 +90,7 @@ define(function (require) {
                 // to avoid page refreshing too many times
 
                 // FIXME 如果每次都先 removeChild 可能会导致一些填充和描边的效果改变
-                this.root.appendChild(vmlRoot);
+                this._vmlContainer.appendChild(vmlRoot);
                 this._firstPaint = false;
             }
         },
@@ -97,9 +103,9 @@ define(function (require) {
                 this._width = width;
                 this._height = height;
 
-                var vmlRootStyle = this._vmlRoot.style;
-                vmlRootStyle.width = width + 'px';
-                vmlRootStyle.height = height + 'px';
+                var vmlContainerStyle = this._vmlContainer.style;
+                vmlContainerStyle.width = width + 'px';
+                vmlContainerStyle.height = height + 'px';
             }
         },
 
@@ -107,6 +113,7 @@ define(function (require) {
             this.root.innerHTML = '';
 
             this._vmlRoot =
+            this._vmlContainer =
             this.storage = null;
         },
 
@@ -116,6 +123,10 @@ define(function (require) {
 
         getHeight: function () {
             return this._height;
+        },
+
+        getVMLRoot: function () {
+            return this._vmlRoot;
         },
 
         _getHeight: function () {
