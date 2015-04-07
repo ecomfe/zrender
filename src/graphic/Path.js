@@ -148,9 +148,15 @@ define(function (require) {
             // Only mark dirty, not mark clean
             if (dirtyPath) {
                 this.__dirtyPath = dirtyPath;
+
+                this._rect = null;
             }
 
-            Displayable.prototype.dirty.call(this);
+            this.__dirty = true;
+
+            if (this.__zr) {
+                this.__zr.refreshNextFrame();
+            }
         }
     };
 
