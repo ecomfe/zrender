@@ -229,19 +229,21 @@ define(function (require) {
         },
 
         /**
+         * Context 从外部传入，因为有可能是 rebuildPath 完之后再 fill。
+         * stroke 同样
+         * @param {CanvasRenderingContext2D} ctx
          * @return {module:zrender/core/PathProxy}
          */
-        fill: function () {
-            var ctx = this._ctx;
+        fill: function (ctx) {
             ctx && ctx.fill();
             this.toStatic();
         },
 
         /**
+         * @param {CanvasRenderingContext2D} ctx
          * @return {module:zrender/core/PathProxy}
          */
-        stroke: function () {
-            var ctx = this._ctx;
+        stroke: function (ctx) {
             ctx && ctx.stroke();
             this.toStatic();
         },

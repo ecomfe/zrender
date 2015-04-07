@@ -80,14 +80,14 @@ define(function (require) {
                 this._path.rebuildPath(ctx);
             }
 
-            hasFill && path.fill();
+            hasFill && path.fill(ctx);
 
             if (lineDash && ctxLineDash) {
                 ctx.setLineDash(lineDash);
                 ctx.lineDashOffset = lineDashOffset;
             }
 
-            hasStroke && path.stroke();
+            hasStroke && path.stroke(ctx);
 
             // Draw rect text
             if (style.text) {

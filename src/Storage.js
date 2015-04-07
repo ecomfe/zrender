@@ -107,6 +107,7 @@ define(function (require) {
                     var child = children[i];
 
                     // Force to mark as dirty if group is dirty
+                    // FIXME __dirtyPath ?
                     child.__dirty = el.__dirty || child.__dirty;
 
                     this._updateAndAddDisplayable(child, clipPaths);
