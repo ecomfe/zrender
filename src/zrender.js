@@ -118,9 +118,14 @@ define(function(require) {
         this.id = id;
         this.env = env;
 
-        this.storage = new Storage();
-        this.painter = new Painter(dom, this.storage);
-        this.handler = new Handler(dom, this.storage, this.painter);
+        var storage = new Storage();
+        var painter = new Painter(dom, storage);
+        this.storage = storage;
+        this.painter = painter;
+        // VML 下为了性能可能会直接操作 VMLRoot 的位置
+        // 因此鼠标的相对位置应该是相对于 VMLRoot
+        // PENDING
+        this.handler = new Handler(useVML ? painter.getVMLRoot() : dom, storage, painter);
 
         /**
          * @type {module:zrender/animation/Animation}
