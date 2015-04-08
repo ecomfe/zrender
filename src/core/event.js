@@ -9,38 +9,79 @@ define(function(require) {
 
     var Eventful = require('../mixin/Eventful');
 
+    var isDomLevel2 = !!window.addEventListener;
     /**
-    * 提取鼠标（手指）x坐标
-    * @memberOf module:zrender/core/event
-    * @param  {Event} e 事件.
-    * @return {number} 鼠标（手指）x坐标.
-    */
-    function getX(e) {
-        return e.zrenderX || e.offsetX
-               || e.layerX || e.clientX || 0;
+     * 如果存在第三方嵌入的一些dom触发的事件，或touch事件，需要转换一下事件坐标
+     */
+    function normalizeEvent(el, e) {
+
+        e = e || window.event;
+
+        if (e.zrenderX != null) {
+            return e;
+        }
+
+        var eventType = e.type;
+        var isTouch = eventType && eventType.indexOf('touch') >= 0;
+
+        if (! isTouch) {
+            // https://gist.github.com/electricg/4435259
+            var mouseX = 0;
+            var mouseY = 0;
+
+            if (e.pageX || e.pageY) {
+                mouseX = e.pageX;
+                mouseY = e.pageY;
+            }
+            else {
+                mouseX = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
+                mouseY = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
+            }
+
+            var elLeft = 0;
+            var elTop = 0;
+            while (el.offsetParent) {
+                elLeft += el.offsetLeft;
+                elTop += el.offsetTop;
+
+                el = el.offsetParent;
+            }
+
+
+            e.zrenderX = mouseX - elLeft;
+            e.zrenderY = mouseY - elTop;
+        }
+        else {
+            var touch = eventType != 'touchend'
+                            ? e.targetTouches[0]
+                            : e.changedTouches[0];
+            if (touch) {
+                var rBounding = this.painter._domRoot.getBoundingClientRect();
+                // touch事件坐标是全屏的~
+                e.zrenderX = touch.clientX - rBounding.left;
+                e.zrenderY = touch.clientY - rBounding.top;
+            }
+        }
+
+        return e;
     }
 
-    /**
-    * 提取鼠标y坐标
-    * @memberOf module:zrender/core/event
-    * @param  {Event} e 事件.
-    * @return {number} 鼠标（手指）y坐标.
-    */
-    function getY(e) {
-        return e.zrenderY || e.offsetY
-               || e.layerY || e.clientY || 0;
+    function addEventListener(el, name, handler) {
+        if (isDomLevel2) {
+            el.addEventListener(name, handler);
+        }
+        else {
+            el.attachEvent('on' + name, handler);
+        }
     }
 
-    /**
-    * 提取鼠标滚轮变化
-    * @memberOf module:zrender/core/event
-    * @param  {Event} e 事件.
-    * @return {number} 滚轮变化，正值说明滚轮是向上滚动，如果是负值说明滚轮是向下滚动
-    */
-    function getDelta(e) {
-        return e.zrenderDelta != null && e.zrenderDelta
-               || e.wheelDelta != null && e.wheelDelta
-               || e.detail != null && -e.detail;
+    function removeEventListener(el, name, handler) {
+        if (isDomLevel2) {
+            el.removeEventListener(name, handler);
+        }
+        else {
+            el.detachEvent('on' + name, handler);
+        }
     }
 
     /**
@@ -49,7 +90,7 @@ define(function(require) {
      * @method
      * @param {Event} e : event对象
      */
-    var stop = typeof window.addEventListener === 'function'
+    var stop = isDomLevel2
         ? function (e) {
             e.preventDefault();
             e.stopPropagation();
@@ -61,11 +102,12 @@ define(function(require) {
         };
     
     return {
-        getX : getX,
-        getY : getY,
-        getDelta : getDelta,
-        stop : stop,
+        normalizeEvent: normalizeEvent,
+        addEventListener: addEventListener,
+        removeEventListener: removeEventListener,
+
+        stop: stop,
         // 做向上兼容
-        Dispatcher : Eventful
+        Dispatcher: Eventful
     };
 });

@@ -37,16 +37,16 @@ define(function (require) {
                 return this.drawRectText(ctx, {
                     x: style.x || 0, y: style.y || 0,
                     width: 0, height: 0
-                }, this.getBoudingRect());
+                }, this.getBoundingRect());
             }
 
             this.afterBrush(ctx);
         },
 
-        getBoudingRect: function () {
+        getBoundingRect: function () {
             if (! this._rect) {
                 var style = this.style;
-                this._rect = textContain.getBoudingRect(
+                this._rect = textContain.getBoundingRect(
                     style.text, style.textFont, style.textAlign, style.textBaseline
                 );
             }

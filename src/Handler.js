@@ -32,68 +32,13 @@ define(function (require) {
         { y: -20 }
     ];
 
-    var isDomLevel2 = !!window.addEventListener;
-    function addEventListener(el, name, handler) {
-        if (isDomLevel2) {
-            el.addEventListener(name, handler);
-        }
-        else {
-            el.attachEvent('on' + name, handler);
-        }
-    }
+    var addEventListener = eventTool.addEventListener;
+    var removeEventListener = eventTool.removeEventListener;
+    var normalizeEvent = eventTool.normalizeEvent;
 
-    function removeEventListener(el, name, handler) {
-        if (isDomLevel2) {
-            el.removeEventListener(name, handler);
-        }
-        else {
-            el.detachEvent('on' + name, handler);
-        }
-    }
 
     function proxyEventName(name) {
         return '_' + name + 'Handler';
-    }
-
-    /**
-     * 如果存在第三方嵌入的一些dom触发的事件，或touch事件，需要转换一下事件坐标
-     * 
-     * @inner
-     */
-    function fixEvent(event, isTouch) {
-        if (event.zrenderFixed) {
-            return event;
-        }
-
-        if (!isTouch) {
-            event = event || window.event;
-            // 进入对象优先~
-            var target = event.toElement
-                          || event.relatedTarget
-                          || event.srcElement
-                          || event.target;
-
-            if (target) {
-                event.zrenderX = event.offsetX || event.layerX || 0
-                            + target.offsetLeft;
-                event.zrenderY = event.offsetY || event.layerY || 0
-                            + target.offsetTop;
-            }
-        }
-        else {
-            var touch = event.type != 'touchend'
-                            ? event.targetTouches[0]
-                            : event.changedTouches[0];
-            if (touch) {
-                var rBounding = this.painter._domRoot.getBoundingClientRect();
-                // touch事件坐标是全屏的~
-                event.zrenderX = touch.clientX - rBounding.left;
-                event.zrenderY = touch.clientY - rBounding.top;
-            }
-        }
-
-        event.zrenderFixed = 1;
-        return event;
     }
 
     var domHandlers = {
@@ -117,7 +62,7 @@ define(function (require) {
          * @param {Event} event
          */
         click: function (event) {
-            event = fixEvent(event);
+            event = normalizeEvent(this.root, event);
 
             // 分发config.EVENT.CLICK事件
             var _lastHover = this._lastHover;
@@ -140,7 +85,7 @@ define(function (require) {
          * @param {Event} event
          */
         dblclick: function (event) {
-            event = fixEvent(event);
+            event = normalizeEvent(this.root, event);
 
             // 分发config.EVENT.DBLCLICK事件
             var _lastHover = this._lastHover;
@@ -164,7 +109,7 @@ define(function (require) {
          * @param {Event} event
          */
         mousewheel: function (event) {
-            event = fixEvent(event);
+            event = normalizeEvent(this.root, event);
 
             // 分发config.EVENT.MOUSEWHEEL事件
             this._dispatchAgency(this._lastHover, EVENT.MOUSEWHEEL, event);
@@ -177,11 +122,12 @@ define(function (require) {
          * @param {Event} event
          */
         mousemove: function (event) {
-            event = fixEvent(event);
+            event = normalizeEvent(this.root, event);
+
             this._lastX = this._mouseX;
             this._lastY = this._mouseY;
-            this._mouseX = eventTool.getX(event);
-            this._mouseY = eventTool.getY(event);
+            this._mouseX = event.zrenderX;
+            this._mouseY = event.zrenderY;
             var dx = this._mouseX - this._lastX;
             var dy = this._mouseY - this._lastY;
 
@@ -247,7 +193,7 @@ define(function (require) {
          * @param {Event} event
          */
         mouseout: function (event) {
-            event = fixEvent(event);
+            event = normalizeEvent(this.root, event);
 
             var element = event.toElement || event.relatedTarget;
             if (element != this.root) {
@@ -291,7 +237,7 @@ define(function (require) {
             }
 
             this._lastMouseDownMoment = new Date();
-            event = fixEvent(event);
+            event = normalizeEvent(this.root, event);
             this._isMouseDown = 1;
 
             // 分发config.EVENT.MOUSEDOWN事件
@@ -306,7 +252,8 @@ define(function (require) {
          * @param {Event} event
          */
         mouseup: function (event) {
-            event = fixEvent(event);
+            event = normalizeEvent(this.root, event);
+
             this.root.style.cursor = 'default';
             this._isMouseDown = 0;
             this._mouseDownTarget = null;
@@ -324,7 +271,8 @@ define(function (require) {
          */
         touchstart: function (event) {
             // eventTool.stop(event);// 阻止浏览器默认事件，重要
-            event = fixEvent(event, true);
+            event = normalizeEvent(this.root, event);
+
             this._lastTouchMoment = new Date();
 
             // 平板补充一次findHover
@@ -338,7 +286,8 @@ define(function (require) {
          * @param {Event} event
          */
         touchmove: function (event) {
-            event = fixEvent(event, true);
+            event = normalizeEvent(this.root, event);
+
             this._mousemoveHandler(event);
             if (this._isDragging) {
                 eventTool.stop(event);// 阻止浏览器默认事件，重要
@@ -352,7 +301,8 @@ define(function (require) {
          */
         touchend: function (event) {
             // eventTool.stop(event);// 阻止浏览器默认事件，重要
-            event = fixEvent(event, true);
+            event = normalizeEvent(this.root, event);
+
             this._mouseupHandler(event);
             
             var now = new Date();
