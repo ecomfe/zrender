@@ -18,10 +18,7 @@ define(function(require) {
 
     function Clip(options) {
 
-        this._targetPool = options.target || {};
-        if (!(this._targetPool instanceof Array)) {
-            this._targetPool = [ this._targetPool ];
-        }
+        this._target = options.target;
 
         // 生命周期
         this._life = options.life || 1000;
@@ -47,7 +44,10 @@ define(function(require) {
     }
 
     Clip.prototype = {
-        step : function (time) {
+
+        constructor: Clip,
+
+        step: function (time) {
             var percent = (time - this._startTime) / this._life;
 
             // 还没开始
@@ -83,18 +83,16 @@ define(function(require) {
             
             return null;
         },
-        restart : function() {
+        restart: function() {
             var time = new Date().getTime();
             var remainder = (time - this._startTime) % this._life;
             this._startTime = new Date().getTime() - remainder + this.gap;
 
             this._needsRemove = false;
         },
-        fire : function(eventType, arg) {
-            for (var i = 0, len = this._targetPool.length; i < len; i++) {
-                if (this['on' + eventType]) {
-                    this['on' + eventType](this._targetPool[i], arg);
-                }
+        fire: function(eventType, arg) {
+            if (this['on' + eventType]) {
+                this['on' + eventType](this._target, arg);
             }
         },
         constructor: Clip
