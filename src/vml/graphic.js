@@ -319,9 +319,9 @@ define(function (require) {
      * IMAGE
      **************************************************/
     function isImage(img) {
-        // FIXME img instanceof Image IE8 下会报错
+        // FIXME img instanceof Image 如果 img 是一个字符串的时候，IE8 下会报错
+        return (typeof img === 'object') && img.tagName && img.tagName.toUpperCase() === 'IMG';
         // return img instanceof Image;
-        return (img instanceof Object) && img.tagName && img.tagName.toUpperCase() == 'IMG';
     }
 
     // Rewrite the original path method
@@ -429,8 +429,8 @@ define(function (require) {
                         'M12=', m[2] / scaleY, comma,
                         'M21=', m[1] / scaleX, comma,
                         'M22=', m[3] / scaleY, comma,
-                        'Dx=', round(x + m[4]), comma,
-                        'Dy=', round(y + m[5]));
+                        'Dx=', round(x * scaleX + m[4]), comma,
+                        'Dy=', round(y * scaleY + m[5]));
 
             vmlElStyle.padding = '0 ' + round(maxX) + 'px ' + round(maxY) + 'px 0';
             // FIXME DXImageTransform 在 IE11 的兼容模式下不起作用
@@ -440,8 +440,8 @@ define(function (require) {
         }
         else {
             if (m) {
-                x += m[4];
-                y += m[5];
+                x = x * scaleX + m[4];
+                y = y * scaleY + m[5];
             }
             vmlElStyle.filter = '';
             vmlElStyle.left = round(x) + 'px';
