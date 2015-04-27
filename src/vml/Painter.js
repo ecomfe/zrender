@@ -21,19 +21,19 @@ define(function (require) {
 
         this.storage = storage;
 
-        var vmlContainer = document.createElement('div');
+        var vmlViewport = document.createElement('div');
 
         var vmlRoot = document.createElement('div');
 
-        vmlContainer.style.cssText = 'display:inline-block;overflow:hidden;position:relative;\
+        vmlViewport.style.cssText = 'display:inline-block;overflow:hidden;position:relative;\
             width:300px;height:150px;';
 
         vmlRoot.style.cssText = 'position:absolute;left:0;top:0';
 
-        root.appendChild(vmlContainer);
+        root.appendChild(vmlViewport);
 
         this._vmlRoot = vmlRoot;
-        this._vmlContainer = vmlContainer;
+        this._vmlViewport = vmlViewport;
 
         this.resize();
 
@@ -90,7 +90,7 @@ define(function (require) {
                 // to avoid page refreshing too many times
 
                 // FIXME 如果每次都先 removeChild 可能会导致一些填充和描边的效果改变
-                this._vmlContainer.appendChild(vmlRoot);
+                this._vmlViewport.appendChild(vmlRoot);
                 this._firstPaint = false;
             }
         },
@@ -103,9 +103,9 @@ define(function (require) {
                 this._width = width;
                 this._height = height;
 
-                var vmlContainerStyle = this._vmlContainer.style;
-                vmlContainerStyle.width = width + 'px';
-                vmlContainerStyle.height = height + 'px';
+                var vmlViewportStyle = this._vmlViewport.style;
+                vmlViewportStyle.width = width + 'px';
+                vmlViewportStyle.height = height + 'px';
             }
         },
 
@@ -113,7 +113,7 @@ define(function (require) {
             this.root.innerHTML = '';
 
             this._vmlRoot =
-            this._vmlContainer =
+            this._vmlViewport =
             this.storage = null;
         },
 
