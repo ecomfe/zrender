@@ -299,7 +299,7 @@ define(function (require) {
 
         vmlEl.path = pathDataToString(path.data, this.transform);
 
-        vmlEl.style['z-index'] = getZIndex(this.zlevel, this.z);
+        vmlEl.style.zIndex = getZIndex(this.zlevel, this.z);
 
         // Append to root
         append(vmlRoot, vmlEl);
@@ -520,7 +520,7 @@ define(function (require) {
 
         imageELStyle.filter = filterStr;
 
-        vmlEl.style['z-index'] = getZIndex(this.zlevel, this.z);
+        vmlEl.style.zIndex = getZIndex(this.zlevel, this.z);
 
         // Append to root
         append(vmlRoot, vmlEl);
@@ -686,6 +686,7 @@ define(function (require) {
 
             pathEl.textpathok = true;
             textPathEl.on = true;
+            // FIXME Why here is not cammel case
             textPathEl.style['v-text-align'] = 'left';
 
             // x, y 已经在前面调整过，textAlign 统一为 left, textBaseline 统一为 top
@@ -751,7 +752,7 @@ define(function (require) {
             lineDash: style.lineDash
         });
 
-        textVmlEl.style['z-index'] = getZIndex(this.zlevel, this.z);
+        textVmlEl.style.zIndex = getZIndex(this.zlevel, this.z);
 
         // Attached to root
         append(vmlRoot, textVmlEl);

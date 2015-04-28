@@ -28,7 +28,7 @@ define(function (require) {
         vmlViewport.style.cssText = 'display:inline-block;overflow:hidden;position:relative;\
             width:300px;height:150px;';
 
-        vmlRoot.style.cssText = 'position:absolute;left:0;top:0';
+        vmlRoot.style.cssText = 'position:absolute;left:0;top:0;';
 
         root.appendChild(vmlViewport);
 
