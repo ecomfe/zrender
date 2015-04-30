@@ -103,7 +103,7 @@ define(function (require) {
     function updateFillAndStroke(vmlEl, type, style) {
         var isFill = type == 'fill';
         var el = vmlEl.getElementsByTagName(type)[0];
-        if (style[type] != null) {
+        if (style[type] != null && style[type] !== 'none') {
             vmlEl[isFill ? 'filled' : 'stroked'] = 'true';
             if (! el) {
                 el = vmlCore.createNode(type);

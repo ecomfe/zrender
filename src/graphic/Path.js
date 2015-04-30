@@ -14,11 +14,13 @@ define(function (require) {
     var rectContain = require('../contain/rect');
 
     function pathHasFill(style) {
-        return style.fill != null;
+        var fill = style.fill;
+        return fill != null && fill !== 'none';
     }
 
     function pathHasStroke(style) {
-        return style.stroke != null;
+        var stroke = style.stroke;
+        return stroke != null && stroke !== 'none';
     }
     /**
      * @alias module:zrender/graphic/Path
