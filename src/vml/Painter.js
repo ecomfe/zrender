@@ -12,7 +12,10 @@ define(function (require) {
     function parseInt10(val) {
         return parseInt(val, 10);
     }
-
+    
+    /**
+     * @alias module:zrender/vml/Painter
+     */
     var VMLPainter = function (root, storage) {
 
         vmlCore.initVML();
@@ -46,16 +49,13 @@ define(function (require) {
             oldDelFromMap.call(storage, elId);
 
             if (el) {
-                el.dispose && el.dispose(vmlRoot);
+                el.onRemoveFromStorage && el.onRemoveFromStorage(vmlRoot);
             }
         }
 
         storage.addToMap = function (el) {
             // Displayable already has a vml node
-            var vmlEl = el.__vmlEl;
-            if (vmlEl) {
-                vmlRoot.appendChild(vmlEl);
-            }
+            el.onAddToStorage && el.onAddToStorage(vmlRoot);
 
             oldAddToMap.call(storage, el);
         }
@@ -127,10 +127,6 @@ define(function (require) {
 
         getVMLRoot: function () {
             return this._vmlRoot;
-        },
-
-        _getHeight: function () {
-            return this._height;
         },
 
         _getWidth: function () {

@@ -310,10 +310,16 @@ define(function (require) {
         }
     };
 
-    Path.prototype.dispose = function (vmlRoot) {
+    Path.prototype.onRemoveFromStorage = function (vmlRoot) {
         remove(vmlRoot, this._vmlEl);
-        this.disposeRectText(vmlRoot);
-    }
+        this.removeRectText(vmlRoot);
+    };
+    
+    
+    Path.prototype.onAddToStorage = function (vmlRoot) {
+        append(vmlRoot, this._vmlEl);
+        this.appendRectText(vmlRoot);
+    };
 
     /***************************************************
      * IMAGE
@@ -531,14 +537,19 @@ define(function (require) {
         }
     };
 
-    ZImage.prototype.dispose = function (vmlRoot) {
+    ZImage.prototype.onRemoveFromStorage = function (vmlRoot) {
         remove(vmlRoot, this._vmlEl);
 
         this._vmlEl = null;
         this._cropEl = null;
         this._imageEl = null;
 
-        this.disposeRectText(vmlRoot);
+        this.removeRectText(vmlRoot);
+    };
+    
+    ZImage.prototype.onAddToStorage = function (vmlRoot) {
+        append(vmlRoot, this._vmlEl);
+        this.appendRectText(vmlRoot);
     };
 
 
@@ -758,9 +769,13 @@ define(function (require) {
         append(vmlRoot, textVmlEl);
     };
 
-    function disposeRectText(vmlRoot) {
+    function removeRectText(vmlRoot) {
         remove(vmlRoot, this._textVmlEl);
         this._textVmlEl = null;
+    }
+    
+    function appendRectText(vmlRoot) {
+        append(vmlRoot, this._textVmlEl);
     }
 
     var list = [RectText, Displayable, ZImage, Path, Text];
@@ -769,7 +784,8 @@ define(function (require) {
     for (var i = 0; i < list.length; i++) {
         var proto = list[i].prototype;
         proto.drawRectText = drawRectText;
-        proto.disposeRectText = disposeRectText;
+        proto.removeRectText = removeRectText;
+        proto.appendRectText = appendRectText;
     }
 
     Text.prototype.brush = function (root) {
@@ -780,9 +796,13 @@ define(function (require) {
                 width: 0, height: 0
             }, this.getBoundingRect());
         }
-    }
+    };
 
-    Text.prototype.dispose = function (vmlRoot) {
-        this.disposeRectText(vmlRoot);
-    }
+    Text.prototype.onRemoveFromStorage = function (vmlRoot) {
+        this.removeRectText(vmlRoot);
+    };
+
+    Text.prototype.onAddToStorage = function (vmlRoot) {
+        this.appendRectText(vmlRoot);
+    };
 });
