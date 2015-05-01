@@ -1,5 +1,5 @@
 /**
- * Painter绘图模块
+ * Default canvas painter
  * @module zrender/Painter
  * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *         errorrik (errorrik@gmail.com)
@@ -517,8 +517,7 @@
 
         _getWidth: function () {
             var root = this.root;
-            var stl = root.currentStyle
-                      || document.defaultView.getComputedStyle(root);
+            var stl = document.defaultView.getComputedStyle(root);
 
             return ((root.clientWidth || parseInt10(stl.width))
                     - parseInt10(stl.paddingLeft)
@@ -527,8 +526,7 @@
 
         _getHeight: function () {
             var root = this.root;
-            var stl = root.currentStyle
-                      || document.defaultView.getComputedStyle(root);
+            var stl = document.defaultView.getComputedStyle(root);
 
             return ((root.clientHeight || parseInt10(stl.height))
                     - parseInt10(stl.paddingTop)

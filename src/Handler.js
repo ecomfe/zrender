@@ -334,17 +334,7 @@ define(function (require) {
             return handler.call(context, e);
         };
     }
-    /**function bind2Arg(handler, context) {
-        return function (arg1, arg2) {
-            return handler.call(context, arg1, arg2);
-        };
-    }*/
 
-    function bind3Arg(handler, context) {
-        return function (arg1, arg2, arg3) {
-            return handler.call(context, arg1, arg2, arg3);
-        };
-    }
     /**
      * 为控制类实例初始化dom 事件处理函数
      * 
