@@ -274,7 +274,7 @@ define(function (require) {
         updateFillAndStroke(vmlEl, 'fill', style);
         updateFillAndStroke(vmlEl, 'stroke', style);
 
-        var needTransform = this.needTransform;
+        var needTransform = this.transform != null;
         var strokeEl = vmlEl.getElementsByTagName('stroke')[0];
         if (strokeEl) {
             var lineWidth = style.lineWidth;
@@ -405,7 +405,7 @@ define(function (require) {
         var m;
         var scaleX = 1;
         var scaleY = 1;
-        if (this.needTransform) {
+        if (this.transform) {
             m = this.transform;
             scaleX = sqrt(m[0] * m[0] + m[1] * m[1]);
             scaleY = sqrt(m[2] * m[2] + m[3] * m[3]);
@@ -722,7 +722,7 @@ define(function (require) {
         var coords = [x, y];
         var m;
         var textVmlElStyle = textVmlEl.style;
-        if (this.needTransform) {
+        if (this.transform) {
             m = this.transform;
             vec2.applyTransform(coords, coords, m);
 
