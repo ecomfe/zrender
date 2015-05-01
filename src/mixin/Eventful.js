@@ -75,6 +75,16 @@ define(function (require) {
         },
 
         /**
+         * 是否绑定了事件
+         * @param  {string}  event
+         * @return {boolean}
+         */
+        isSilent: function (event) {
+            var _h = this._handlers;
+            return _h[event] && _h[event].length;
+        },
+
+        /**
          * 解绑事件
          * @param {string} event 事件名
          * @param {Function} [handler] 事件处理函数
