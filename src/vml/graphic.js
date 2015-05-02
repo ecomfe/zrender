@@ -629,8 +629,8 @@ define(function (require) {
             return;
         }
 
-        var x = rect.x;
-        var y = rect.y;
+        var x;
+        var y;
         var textPosition = style.textPosition;
         var distance = style.textDistance;
         var align = style.textAlign;
@@ -641,14 +641,6 @@ define(function (require) {
 
         textRect = textRect || textContain.getBoundingRect(text, font, align, baseline);
 
-        var height = rect.height;
-        var width = rect.width;
-
-        var textWidth = textRect.width;
-        var textHeight = textRect.height;
-
-        var halfWidth = width / 2 - textWidth / 2;
-        var halfHeight = height / 2 - textHeight / 2;
         // Text position represented by coord
         // TODO
         if (textPosition instanceof Array) {
@@ -656,28 +648,11 @@ define(function (require) {
             y = textPosition[1];
         }
         else {
-            switch (style.textPosition) {
-                case 'left':
-                    x -= distance + textWidth;
-                    y += halfHeight;
-                    break;
-                case 'right':
-                    x += width + distance;
-                    y += halfHeight;
-                    break;
-                case 'top':
-                    x += halfWidth;
-                    y -= distance - textHeight;
-                    break;
-                case 'bottom':
-                    x += halfWidth;
-                    y += height + distance;
-                    break;
-                case 'inside':
-                    x += halfWidth;
-                    y += halfHeight;
-                    break;
-            }
+            var newPos = textContain.adjustTextPositionOnRect(
+                style.textPosition, rect, textRect, distance
+            );
+            x = newPos.x;
+            y = newPos.y;
         }
 
         var createNode = vmlCore.createNode;

@@ -7,13 +7,30 @@ define(function (require) {
     var svgCore = require('./core');
     var zrLog = require('../core/log');
     var Path = require('../graphic/Path');
+    var ZImage = require('../graphic/Image');
+    var ZText = require('../graphic/Text');
+
     var svgGraphic = require('./graphic');
     var svgPath = svgGraphic.path;
+    var svgImage = svgGraphic.image;
+    var svgText = svgGraphic.text;
     
     var createElement = svgCore.createElement;
 
     function parseInt10(val) {
         return parseInt(val, 10);
+    }
+
+    function getSVGProxy(el) {
+        if (el instanceof Path) {
+            return svgPath;
+        }
+        else if (el instanceof ZImage) {
+            return svgImage;
+        }
+        else if (el instanceof ZText) {
+            return svgText;
+        }
     }
 
     /**
@@ -45,17 +62,16 @@ define(function (require) {
             var el = storage.get(elId);
 
             oldDelFromMap.call(storage, elId);
-
-            if (el instanceof Path) {
-                svgPath.onRemoveFromStorage(el, svgRoot);
-            }
+            
+            var svgObject = getSVGProxy(el);
+            svgObject && svgObject.onRemoveFromStorage(el, svgRoot);
         }
 
         storage.addToMap = function (el) {
-            // Displayable already has a vml node
-            if (el instanceof Path) {
-                svgPath.onAddToStorage(el, svgRoot);
-            }
+            var svgObject = getSVGProxy(el);
+
+            svgObject && svgObject.onAddToStorage(el, svgRoot);
+
             oldAddToMap.call(storage, el);
         }
     };
@@ -72,13 +88,14 @@ define(function (require) {
         },
 
         _paintList: function (list) {
+
+            var svgRoot = this._svgRoot;
             for (var i = 0; i < list.length; i++) {
                 var displayable = list[i];
                 if (displayable.__dirty && !displayable.invisible) {
-                    if (displayable instanceof Path) {
-                        svgPath.brush(displayable, this._svgRoot);
-                        displayable.__dirty = false;
-                    }
+                    var svgObject = getSVGProxy(displayable);
+                    svgObject && svgObject.brush(displayable, svgRoot);
+                    displayable.__dirty = false;
                 }
             }
         },

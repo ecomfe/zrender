@@ -99,7 +99,7 @@ define(function (require) {
         /**
          * @type {number}
          */
-        lineWidth: 0,
+        lineWidth: 1,
 
         /**
          * @param {CanvasRenderingContext2D} ctx

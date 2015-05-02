@@ -76,16 +76,62 @@ define(function (require) {
         return rect;
     };
 
+    function adjustTextPositionOnRect(textPosition, rect, textRect, distance) {
+
+        var x = rect.x;
+        var y = rect.y;
+
+        var height = rect.height;
+        var width = rect.width;
+
+        var textWidth = textRect.width;
+        var textHeight = textRect.height;
+
+        var halfWidth = width / 2 - textWidth / 2;
+        var halfHeight = height / 2 - textHeight / 2;
+
+        switch (textPosition) {
+            case 'left':
+                x -= distance + textWidth;
+                y += halfHeight;
+                break;
+            case 'right':
+                x += width + distance;
+                y += halfHeight;
+                break;
+            case 'top':
+                x += halfWidth;
+                y -= distance - textHeight;
+                break;
+            case 'bottom':
+                x += halfWidth;
+                y += height + distance;
+                break;
+            case 'inside':
+                x += halfWidth;
+                y += halfHeight;
+                break;
+        }
+
+        return {
+            x: x,
+            y: y
+        };
+    }
+
     var textContain = {
         getWidth: getTextWidth,
 
         getBoundingRect: getTextRect,
+        
+        adjustTextPositionOnRect: adjustTextPositionOnRect,
 
         measureText: function (text, textFont) {
             var ctx = util.getContext();
             ctx.font = textFont;
             return ctx.measureText(text);
-        }
+        },
+
     };
 
     return textContain;
