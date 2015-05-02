@@ -299,8 +299,9 @@ define(function (require) {
                     // TODO Arc 旋转
                     var psi = data[i++];
                     var anticlockwise = 1 - data[i++];
+                    var sign = anticlockwise ? -1 : 1;
                     var x1 = Math.cos(theta) * rx + cx;
-                    var y1 = Math.sin(theta) * ry + cy;
+                    var y1 = sign * Math.sin(theta) * ry + cy;
                     // 不是直接使用 arc 命令
                     if (i > 1) {
                         w += windingLine(xi, yi, x1, y1);
@@ -327,7 +328,7 @@ define(function (require) {
                         );
                     }
                     xi = Math.cos(theta + dTheta) * rx + cx;
-                    yi = Math.sin(theta + dTheta) * ry + cy;
+                    yi = sign * Math.sin(theta + dTheta) * ry + cy;
                     break;
                 case CMD.Z:
                     if (isStroke) {
