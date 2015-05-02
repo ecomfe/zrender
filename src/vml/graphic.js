@@ -315,7 +315,6 @@ define(function (require) {
         this.removeRectText(vmlRoot);
     };
     
-    
     Path.prototype.onAddToStorage = function (vmlRoot) {
         append(vmlRoot, this._vmlEl);
         this.appendRectText(vmlRoot);

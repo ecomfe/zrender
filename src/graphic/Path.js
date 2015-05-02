@@ -22,6 +22,7 @@ define(function (require) {
         var stroke = style.stroke;
         return stroke != null && stroke !== 'none';
     }
+
     /**
      * @alias module:zrender/graphic/Path
      * @extends module:zrender/graphic/Displayable

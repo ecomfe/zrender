@@ -67,6 +67,8 @@ define(function (require) {
         
         constructor: Transformable,
 
+        transform: null,
+
         updateNeedTransform: function () {
             this.needLocalTransform = isNotAroundZero(this.rotation[0])
                 || isNotAroundZero(this.position[0])

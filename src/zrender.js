@@ -1,5 +1,5 @@
 /*!
- * ZRender, a high performance canvas library.
+ * ZRender, a high performance 2d drawing library.
  *  
  * Copyright (c) 2013, Baidu Inc.
  * All rights reserved.
@@ -18,10 +18,17 @@ define(function(require) {
     var Animation = require('./animation/Animation');
 
     var useVML = ! env.canvasSupported;
+
+    var Painter;
+    var SVGPainter;
     if (useVML) {
+        Painter = SVGPainter = require('./vml/Painter');
         require('./vml/graphic');
     }
-    var Painter = useVML ? require('./vml/Painter') : require('./Painter');
+    else {
+        Painter = require('./Painter');
+        SVGPainter = require('./svg/Painter');
+    }
 
     var _instances = {};    // ZRender实例map索引
 
@@ -34,13 +41,13 @@ define(function(require) {
     /**
      * 创建zrender实例
      *
-     * @param {HTMLElement} dom 绘图容器
-     * @return {module:zrender/ZRender} ZRender实例
+     * @param {HTMLElement} dom
+     * @param {Object} opts
+     * @param {string} [opts.renderer='canvas'] 'canvas' or 'svg'
+     * @return {module:zrender/ZRender}
      */
-    // 不让外部直接new ZRender实例，为啥？
-    // 不为啥，提供全局可控同时减少全局污染和降低命名冲突的风险！
-    zrender.init = function(dom) {
-        var zr = new ZRender(guid(), dom);
+    zrender.init = function(dom, opts) {
+        var zr = new ZRender(guid(), dom, opts);
         _instances[zr.id] = zr;
         return zr;
     };
@@ -49,9 +56,6 @@ define(function(require) {
      * zrender实例销毁
      * @param {module:zrender/ZRender} zr ZRender对象，不传则销毁全部
      */
-    // 在_instances里的索引也会删除了
-    // 管生就得管死，可以通过zrender.dispose(zr)销毁指定ZRender实例
-    // 当然也可以直接zr.dispose()自己销毁
     zrender.dispose = function (zr) {
         if (zr) {
             zr.dispose();
@@ -101,16 +105,16 @@ define(function(require) {
      * @module zrender/ZRender
      */
     /**
-     * ZRender接口类，对外可用的所有接口都在这里
-     * 非get接口统一返回支持链式调用
-     *
      * @constructor
      * @alias module:zrender/ZRender
-     * @param {string} id 唯一标识
-     * @param {HTMLElement} dom dom对象，不帮你做document.getElementById
-     * @return {ZRender} ZRender实例
+     * @param {string} id
+     * @param {HTMLDomElement} dom
+     * @param {Object} opts
      */
-    var ZRender = function(id, dom) {
+    var ZRender = function(id, dom, opts) {
+
+        opts = opts || {};
+
         /**
          * 实例 id
          * @type {string}
@@ -119,7 +123,10 @@ define(function(require) {
         this.env = env;
 
         var storage = new Storage();
-        var painter = new Painter(dom, storage);
+        var painter = opts.renderer === 'svg'
+            ? new SVGPainter(dom, storage)
+            : new Painter(dom, storage);
+
         this.storage = storage;
         this.painter = painter;
         // VML 下为了性能可能会直接操作 VMLRoot 的位置
