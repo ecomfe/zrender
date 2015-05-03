@@ -95,6 +95,13 @@ define(function (require) {
     	}
     }
 
+    var ZLEVEL_BASE = 10000;
+
+    function getZIndex(zlevel, z) {
+        // z 的取值范围为 [0, 1000]
+        return (parseInt(zlevel) || 0) * ZLEVEL_BASE + parseInt(z) || 0;
+    }
+
     /***************************************************
      * PATH
      **************************************************/
@@ -196,6 +203,8 @@ define(function (require) {
 		bindStyle(svgEl, style);
 		setTransform(svgEl, el.transform);
 
+        svgEl.style.zIndex = getZIndex(el.zlevel, el.z);
+
 		append(svgRoot, svgEl);
 
         if (style.text) {
@@ -255,6 +264,8 @@ define(function (require) {
 
         setTransform(svgEl, el.transform);
 
+        svgEl.style.zIndex = getZIndex(el.zlevel, el.z);
+
         append(svgRoot, svgEl);
 
         if (style.text) {
@@ -287,14 +298,14 @@ define(function (require) {
             return;
         }
 
-        var textEl = el.__textSvgEl;
-        if (! textEl) {
-            textEl = createElement('text');
-            el.__textSvgEl = textEl;
+        var textSvgEl = el.__textSvgEl;
+        if (! textSvgEl) {
+            textSvgEl = createElement('text');
+            el.__textSvgEl = textSvgEl;
         }
 
-        bindStyle(textEl, style, true);
-        setTransform(textEl, el.transform);
+        bindStyle(textSvgEl, style, true);
+        setTransform(textSvgEl, el.transform);
 
         var x;
         var y;
@@ -322,12 +333,12 @@ define(function (require) {
         }
 
         if (font) {
-            textEl.style.font = font;
+            textSvgEl.style.font = font;
         }
 
         // Make baseline top
-        attr(textEl, 'x', x);
-        attr(textEl, 'y', y);
+        attr(textSvgEl, 'x', x);
+        attr(textSvgEl, 'y', y);
 
         var textLines = text.split('\n');
         var nTextLines = textLines.length;
@@ -340,7 +351,7 @@ define(function (require) {
                 var tspan = tspanList[i];
                 if (! tspan) {
                     tspan = tspanList[i] = createElement('tspan');
-                    append(textEl, tspan);
+                    append(textSvgEl, tspan);
                     attr(tspan, 'alignment-baseline', 'hanging');
                     // attr(tspan, 'text-anchor', 'start');
                 }
@@ -350,7 +361,7 @@ define(function (require) {
             }
             // Remove unsed tspan elements
             for (; i < tspanList.length; i++) {
-                remove(textEl, tspanList[i]);
+                remove(textSvgEl, tspanList[i]);
             }
             tspanList.length = nTextLines;
 
@@ -358,7 +369,9 @@ define(function (require) {
             el.__textFont = font;
         }
 
-        append(svgRoot, textEl);
+        textSvgEl.style.zIndex = getZIndex(el.zlevel, el.z);
+
+        append(svgRoot, textSvgEl);
     };
 
     svgTextRemoveRectText = function (el, svgRoot) {
