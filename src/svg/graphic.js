@@ -139,35 +139,25 @@ define(function (require) {
                     var clockwise = data[i++];
                     var sign = clockwise ? 1 : -1;
 
+                    var dThetaPositive = Math.abs(dTheta);
+                    var isCircle = isAroundZero(dThetaPositive - PI2) || isAroundZero(dThetaPositive % PI2);
+                    var large = dThetaPositive > PI;
+
                     var x0 = round4(cx + rx * mathCos(theta));
                     var y0 = round4(cy + ry * mathSin(theta) * sign);
+
+                    // It will not draw if start point and end point are exactly the same
+                    // We need to shift the end point with a small value
+                    // FIXME A better way to draw circle ?
+                    if (isCircle) {
+                        dTheta = PI2 - 1e-4;
+                        clockwise = false;
+                        sign = -1;
+                    }
+
                     var x = round4(cx + rx * mathCos(theta + dTheta));
                     var y = round4(cy + ry * mathSin(theta + dTheta) * sign);
 
-                    var isCircle = false;
-                    if (! (x0 === x && y0 === y)) {
-                        // Add a line to start point
-                        str.push('L', x0, y0);
-                    }
-                    else {
-                        // Is a circle
-                        if (! isAroundZero(dTheta)) {
-                            // It will not draw if start point and end point are exactly the same
-                            // We need to shift the end point with a exreme small value
-                            // But if the value is not small enough, the precision problem
-                            // will cause the circle drawn in a wrong direction.
-                            x += 1e-8;
-                            y += 1e-8;
-                            isCircle = true;
-                        }
-                    }
-
-                    var large = dTheta > PI;
-                    // Adjust clockwise to make sure center of circle is right
-                    // PENDING Test if the logic is right
-                    if (isCircle) {
-                        clockwise = x < cx;
-                    }
                     // FIXME Ellipse
                     str.push('A',round4(rx), round4(ry), mathRound((psi + theta) * degree), +large, +clockwise, x, y);
 					break;
