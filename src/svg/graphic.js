@@ -144,6 +144,7 @@ define(function (require) {
                     var x = round4(cx + rx * mathCos(theta + dTheta));
                     var y = round4(cy + ry * mathSin(theta + dTheta) * sign);
 
+                    var isCircle = false;
                     if (! (x0 === x && y0 === y)) {
                         // Add a line to start point
                         str.push('L', x0, y0);
@@ -157,13 +158,16 @@ define(function (require) {
                             // will cause the circle drawn in a wrong direction.
                             x += 1e-8;
                             y += 1e-8;
+                            isCircle = true;
                         }
                     }
 
                     var large = dTheta > PI;
                     // Adjust clockwise to make sure center of circle is right
                     // PENDING Test if the logic is right
-                    clockwise = (large && x < cx) || (! large && x > cx);
+                    if (isCircle) {
+                        clockwise = x < cx;
+                    }
                     // FIXME Ellipse
                     str.push('A',round4(rx), round4(ry), mathRound((psi + theta) * degree), +large, +clockwise, x, y);
 					break;
@@ -212,16 +216,16 @@ define(function (require) {
         }
 	};
 
-	svgPath.onRemoveFromStorage = function (el, svgRoot) {
+	svgPath.removeFromCanvas = function (el, svgRoot) {
 		remove(svgRoot, el.__svgEl);
 
-        svgTextOnRemoveFromStorage(el, svgRoot);
+        svgTextOnRemoveFromCanvas(el, svgRoot);
 	};
 
-	svgPath.onAddToStorage = function (el, svgRoot) {
+	svgPath.addToCanvas = function (el, svgRoot) {
 		append(svgRoot, el.__svgEl);
 
-        svgTextOnAddToStorage(el, svgRoot);
+        svgTextAddToCanvas(el, svgRoot);
 	};
 
     /***************************************************
@@ -273,16 +277,16 @@ define(function (require) {
         }
     };
 
-    svgImage.onRemoveFromStorage = function (el, svgRoot) {
+    svgImage.removeFromCanvas = function (el, svgRoot) {
         remove(svgRoot, el.__svgEl);
 
-        svgTextOnRemoveFromStorage(el, svgRoot);
+        svgTextOnRemoveFromCanvas(el, svgRoot);
     };
 
-    svgImage.onAddToStorage = function (el, svgRoot) {
+    svgImage.addToCanvas = function (el, svgRoot) {
         append(svgRoot, el.__svgEl);
 
-        svgTextOnAddToStorage(el, svgRoot);
+        svgTextAddToCanvas(el, svgRoot);
     };
 
     /***************************************************
@@ -378,18 +382,18 @@ define(function (require) {
         remove(svgRoot, el.__textSvgEl);
     };
 
-    svgTextOnAddToStorage = function (el, svgRoot) {
+    svgTextAddToCanvas = function (el, svgRoot) {
         append(svgRoot, el.__textSvgEl);
     };
 
-    svgTextOnRemoveFromStorage = function (el, svgRoot) {
+    svgTextOnRemoveFromCanvas = function (el, svgRoot) {
         remove(svgRoot, el.__textSvgEl);
     };
 
     svgText.drawRectText = svgTextDrawRectText;
     svgText.removeRectText = svgTextRemoveRectText;
-    svgText.onAddToStorage = svgTextOnAddToStorage;
-    svgText.onRemoveFromStorage = svgTextOnRemoveFromStorage;
+    svgText.addToCanvas = svgTextAddToCanvas;
+    svgText.removeFromCanvas = svgTextOnRemoveFromCanvas;
 
     svgText.brush = function (el, svgRoot) {
         var style = el.style;

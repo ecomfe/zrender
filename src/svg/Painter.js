@@ -10,6 +10,8 @@ define(function (require) {
     var ZImage = require('../graphic/Image');
     var ZText = require('../graphic/Text');
 
+    var Group = require('../graphic/Group');
+
     var svgGraphic = require('./graphic');
     var svgPath = svgGraphic.path;
     var svgImage = svgGraphic.image;
@@ -63,17 +65,46 @@ define(function (require) {
 
             oldDelFromMap.call(storage, elId);
             
-            var svgObject = getSVGProxy(el);
-            svgObject && svgObject.onRemoveFromStorage(el, svgRoot);
+            var svgProxy = getSVGProxy(el);
+            svgProxy && svgProxy.removeFromCanvas(el, svgRoot);
         }
 
         storage.addToMap = function (el) {
-            var svgObject = getSVGProxy(el);
-
-            svgObject && svgObject.onAddToStorage(el, svgRoot);
+            var isGroup = el instanceof Group;
+            if (! isGroup) {
+                var svgProxy = getSVGProxy(el);
+                svgProxy && svgProxy.addToCanvas(el, svgRoot);
+            }
 
             oldAddToMap.call(storage, el);
+
+            // Ignore use setter and getter. We need to remove the svg element already on the canvas
+            // when the element is set from non-ignore to ignore
+            var ignore = el.ignore;
+            Object.defineProperty(el, 'ignore', {
+                get: function () {
+                    return ignore;
+                },
+                set: function (val) {
+                    // If element is set from non-ignore to ignore
+                    if (! ignore && val) {
+                        if (isGroup) {
+                            // Remove all svg elements of children from canvas
+                            el.traverse(function (child) {
+                                var svgProxy = getSVGProxy(child);
+                                svgProxy && svgProxy.removeFromCanvas(child, svgRoot);
+                            });
+                        }
+                        else {
+                            svgProxy && svgProxy.removeFromCanvas(el, svgRoot);
+                        }
+                    }
+                    ignore = val;
+                }
+            })
         }
+
+        this._visibleList = [];
     };
 
     SVGPainter.prototype = {
@@ -88,16 +119,27 @@ define(function (require) {
         },
 
         _paintList: function (list) {
-
             var svgRoot = this._svgRoot;
-            for (var i = 0; i < list.length; i++) {
+            var visibleList = this._visibleList;
+            var nVisible = 0;
+            var listLen = list.length;
+
+            for (var i = 0; i < listLen; i++) {
                 var displayable = list[i];
-                if (displayable.__dirty && !displayable.invisible) {
-                    var svgObject = getSVGProxy(displayable);
-                    svgObject && svgObject.brush(displayable, svgRoot);
-                    displayable.__dirty = false;
+                var svgProxy = getSVGProxy(displayable);
+                if (!displayable.invisible) {
+                    if (displayable.__dirty) {
+                        svgProxy && svgProxy.brush(displayable, svgRoot);
+                        displayable.__dirty = false;
+                    }
+                }
+                else {
+                    // Remove existed svg element from canvas
+                    svgProxy && svgProxy.removeFromCanvas(displayable, svgRoot);
                 }
             }
+
+            visibleList.length = listLen;
         },
 
         resize: function () {
