@@ -14,14 +14,18 @@ define(function (require) {
     var mathRound = Math.round;
     var mathSin = Math.sin;
     var mathCos = Math.cos;
-    var degree = 180 / Math.PI;
+    var PI = Math.PI;
+    var PI2 = Math.PI * 2;
+    var degree = 180 / PI;
+
+    var EPSILON = 1e-4;
 
     function round4(val) {
         return mathRound(val * 1e4) / 1e4;
     }
 
     function isAroundZero(val) {
-        return val < 1e-6 && val > -1e-6;
+        return val < EPSILON && val > -EPSILON;
     }
 
     function pathHasFill(style, isText) {
@@ -128,22 +132,33 @@ define(function (require) {
                     var clockwise = data[i++];
                     var sign = clockwise ? 1 : -1;
 
-                    var x0 = cx + rx * mathCos(theta);
-                    var y0 = cy + ry * mathSin(theta) * sign;
-                    var x = cx + rx * mathCos(theta + dTheta);
-                    var y = cy + ry * mathSin(theta + dTheta) * sign;
+                    var x0 = round4(cx + rx * mathCos(theta));
+                    var y0 = round4(cy + ry * mathSin(theta) * sign);
+                    var x = round4(cx + rx * mathCos(theta + dTheta));
+                    var y = round4(cy + ry * mathSin(theta + dTheta) * sign);
 
-                    if (! (isAroundZero(x0 - x) && isAroundZero(y0 - y))) {
+                    if (! (x0 === x && y0 === y)) {
                         // Add a line to start point
                         str.push('L', x0, y0);
                     }
+                    else {
+                        // Is a circle
+                        if (! isAroundZero(dTheta)) {
+                            // It will not draw if start point and end point are exactly the same
+                            // We need to shift the end point with a exreme small value
+                            // But if the value is not small enough, the precision problem
+                            // will cause the circle drawn in a wrong direction.
+                            x += 1e-8;
+                            y += 1e-8;
+                        }
+                    }
 
-                    var large = dTheta > Math.PI;
+                    var large = dTheta > PI;
                     // Adjust clockwise to make sure center of circle is right
                     // PENDING Test if the logic is right
                     clockwise = (large && x < cx) || (! large && x > cx);
                     // FIXME Ellipse
-                    str.push('A',round4(rx), round4(ry), mathRound((psi + theta) * degree), +large, +clockwise, round4(x), round4(y));
+                    str.push('A',round4(rx), round4(ry), mathRound((psi + theta) * degree), +large, +clockwise, x, y);
 					break;
 				case CMD.Z:
 					cmdStr = 'Z';
@@ -276,8 +291,6 @@ define(function (require) {
         if (! textEl) {
             textEl = createElement('text');
             el.__textSvgEl = textEl;
-
-            // attr(textEl, '')
         }
 
         bindStyle(textEl, style, true);
@@ -294,6 +307,7 @@ define(function (require) {
 
         textRect = textRect || textContain.getBoundingRect(text, font, align, baseline);
 
+        var lineHeight = textRect.lineHeight;
         // Text position represented by coord
         if (textPosition instanceof Array) {
             x = textPosition[0];
@@ -310,6 +324,8 @@ define(function (require) {
         if (font) {
             textEl.style.font = font;
         }
+
+        // Make baseline top
         attr(textEl, 'x', x);
         attr(textEl, 'y', y);
 
@@ -323,11 +339,13 @@ define(function (require) {
                 // Using cached tspan elements
                 var tspan = tspanList[i];
                 if (! tspan) {
-                     tspan = tspanList[i] = createElement('tspan');
-                     append(textEl, tspan);
+                    tspan = tspanList[i] = createElement('tspan');
+                    append(textEl, tspan);
+                    attr(tspan, 'alignment-baseline', 'hanging');
+                    // attr(tspan, 'text-anchor', 'start');
                 }
-                attr(tspan, 'x', 0);
-                attr(tspan, 'y', i * textRect.lineHeight);
+                attr(tspan, 'x', x);
+                attr(tspan, 'y', y + i * lineHeight);
                 tspan.innerHTML = textLines[i];
             }
             // Remove unsed tspan elements
