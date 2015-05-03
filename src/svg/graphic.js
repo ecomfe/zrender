@@ -2,15 +2,15 @@
 // 1. shadow
 // 2. Image: sx, sy, sw, sh
 define(function (require) {
-			
-	var svgCore = require('./core');
-	var CMD = require('../core/PathProxy').CMD;
-    var textContain = require('../contain/text');
-	
-	var createElement = svgCore.createElement;
-	var arrayJoin = Array.prototype.join;
 
-	var NONE = 'none';
+    var svgCore = require('./core');
+    var CMD = require('../core/PathProxy').CMD;
+    var textContain = require('../contain/text');
+
+    var createElement = svgCore.createElement;
+    var arrayJoin = Array.prototype.join;
+
+    var NONE = 'none';
     var mathRound = Math.round;
     var mathSin = Math.sin;
     var mathCos = Math.cos;
@@ -38,11 +38,11 @@ define(function (require) {
         return stroke != null && stroke !== NONE;
     }
 
-	function setTransform(svgEl, m) {
-		if (m) {
-			attr(svgEl, 'transform', 'matrix(' + arrayJoin.call(m, ',') + ')');
-		}
-	}
+    function setTransform(svgEl, m) {
+        if (m) {
+            attr(svgEl, 'transform', 'matrix(' + arrayJoin.call(m, ',') + ')');
+        }
+    }
 
     function append(parent, child) {
         if (child && parent && child.parentNode !== parent) {
@@ -57,7 +57,7 @@ define(function (require) {
     }
 
     function attr(el, key, val) {
-    	el.setAttribute(key, val);
+        el.setAttribute(key, val);
     }
 
     function attrXLink(el, key, val) {
@@ -65,70 +65,63 @@ define(function (require) {
     }
 
     function bindStyle(svgEl, style, isText) {
-    	if (pathHasFill(style, isText)) {
-    		attr(svgEl, 'fill', isText ? style.textFill : style.fill);
-    		attr(svgEl, 'fill-opacity', style.opacity);
-    	}
-    	else {
-    		attr(svgEl, 'fill', NONE);
-    	}
-    	if (pathHasStroke(style, isText)) {
-    		attr(svgEl, 'stroke', isText ? style.textStroke : style.stroke);
-    		attr(svgEl, 'stroke-width', style.lineWidth);
-    		attr(svgEl, 'stroke-opacity', style.opacity);
-    		var lineDash = style.lineDash;
-    		if (lineDash) {
+        if (pathHasFill(style, isText)) {
+            attr(svgEl, 'fill', isText ? style.textFill : style.fill);
+            attr(svgEl, 'fill-opacity', style.opacity);
+        }
+        else {
+            attr(svgEl, 'fill', NONE);
+        }
+        if (pathHasStroke(style, isText)) {
+            attr(svgEl, 'stroke', isText ? style.textStroke : style.stroke);
+            attr(svgEl, 'stroke-width', style.lineWidth);
+            attr(svgEl, 'stroke-opacity', style.opacity);
+            var lineDash = style.lineDash;
+            if (lineDash) {
                 attr(svgEl, 'stroke-dasharray', style.lineDash.join(','));
-    		    attr(svgEl, 'stroke-dashoffset', mathRound(style.lineDashOffset || 0));
+                attr(svgEl, 'stroke-dashoffset', mathRound(style.lineDashOffset || 0));
             }
             else {
                 attr(svgEl, 'stroke-dasharray', '');
             }
 
-    		// PENDING
-    		style.lineCap && attr(svgEl, 'stroke-linecap', style.lineCap);
-    		style.lineJoin && attr(svgEl, 'stroke-linejoin', style.lineJoin);
-    		style.miterLimit && attr(svgEl, 'stroke-miterlimit', style.miterLimit);
-    	}
-    	else {
-    		attr(svgEl, 'stroke', NONE);
-    	}
-    }
-
-    var ZLEVEL_BASE = 10000;
-
-    function getZIndex(zlevel, z) {
-        // z 的取值范围为 [0, 1000]
-        return (parseInt(zlevel) || 0) * ZLEVEL_BASE + parseInt(z) || 0;
+            // PENDING
+            style.lineCap && attr(svgEl, 'stroke-linecap', style.lineCap);
+            style.lineJoin && attr(svgEl, 'stroke-linejoin', style.lineJoin);
+            style.miterLimit && attr(svgEl, 'stroke-miterlimit', style.miterLimit);
+        }
+        else {
+            attr(svgEl, 'stroke', NONE);
+        }
     }
 
     /***************************************************
      * PATH
      **************************************************/
-	function pathDataToString(data) {
-		var str = [];
-		for (var i = 0; i < data.length;) {
-			var cmd = data[i++];
-			var cmdStr = '';
-			var nData = 0;
-			switch (cmd) {
-				case CMD.M:
-					cmdStr = 'M';
-					nData = 2;
-					break;
-				case CMD.L:
-					cmdStr = 'L';
-					nData = 2;
-					break;
-				case CMD.Q:
-					cmdStr = 'Q';
-					nData = 4;
-					break;
-				case CMD.C:
-					cmdStr = 'C';
-					nData = 6;
-					break;
-				case CMD.A:
+    function pathDataToString(data) {
+        var str = [];
+        for (var i = 0; i < data.length;) {
+            var cmd = data[i++];
+            var cmdStr = '';
+            var nData = 0;
+            switch (cmd) {
+                case CMD.M:
+                    cmdStr = 'M';
+                    nData = 2;
+                    break;
+                case CMD.L:
+                    cmdStr = 'L';
+                    nData = 2;
+                    break;
+                case CMD.Q:
+                    cmdStr = 'Q';
+                    nData = 4;
+                    break;
+                case CMD.C:
+                    cmdStr = 'C';
+                    nData = 6;
+                    break;
+                case CMD.A:
                     var cx = data[i++];
                     var cy = data[i++];
                     var rx = data[i++];
@@ -160,63 +153,61 @@ define(function (require) {
 
                     // FIXME Ellipse
                     str.push('A',round4(rx), round4(ry), mathRound((psi + theta) * degree), +large, +clockwise, x, y);
-					break;
-				case CMD.Z:
-					cmdStr = 'Z';
-					break;
-			}
-			cmdStr && str.push(cmdStr);
-			for (var j = 0; j < nData; j++) {
+                    break;
+                case CMD.Z:
+                    cmdStr = 'Z';
+                    break;
+            }
+            cmdStr && str.push(cmdStr);
+            for (var j = 0; j < nData; j++) {
                 // PENDING With scale
-				str.push(round4(data[i++]));
-			}
-		}
-		return str.join(' ');
-	}
+                str.push(round4(data[i++]));
+            }
+        }
+        return str.join(' ');
+    }
 
-	var svgPath = {};
+    var svgPath = {};
 
-	svgPath.brush = function (el, svgRoot) {
-		var style = el.style;
+    svgPath.brush = function (el, svgRoot) {
+        var style = el.style;
 
-		var svgEl = el.__svgEl;
-		if (! svgEl) {
-			svgEl = createElement('path');
-			el.__svgEl = svgEl;
-		}
+        var svgEl = el.__svgEl;
+        if (! svgEl) {
+            svgEl = createElement('path');
+            el.__svgEl = svgEl;
+        }
         // FIXME Do not access private property!
-		var path = el._path;
-		if (el.__dirtyPath) {
-			path.beginPath();
-			el.buildPath(path, el.shape);
-			el.__dirtyPath = false;
+        var path = el._path;
+        if (el.__dirtyPath) {
+            path.beginPath();
+            el.buildPath(path, el.shape);
+            el.__dirtyPath = false;
 
-			attr(svgEl, 'd', pathDataToString(path.data));
-		}
+            attr(svgEl, 'd', pathDataToString(path.data));
+        }
 
-		bindStyle(svgEl, style);
-		setTransform(svgEl, el.transform);
+        bindStyle(svgEl, style);
+        setTransform(svgEl, el.transform);
 
-        svgEl.style.zIndex = getZIndex(el.zlevel, el.z);
-
-		append(svgRoot, svgEl);
+        append(svgRoot, svgEl);
 
         if (style.text) {
             svgTextDrawRectText(el, svgRoot, el.getBoundingRect());
         }
-	};
+    };
 
-	svgPath.removeFromCanvas = function (el, svgRoot) {
-		remove(svgRoot, el.__svgEl);
+    svgPath.removeFromCanvas = function (el, svgRoot) {
+        remove(svgRoot, el.__svgEl);
 
         svgTextOnRemoveFromCanvas(el, svgRoot);
-	};
+    };
 
-	svgPath.addToCanvas = function (el, svgRoot) {
-		append(svgRoot, el.__svgEl);
+    svgPath.addToCanvas = function (el, svgRoot, nextSibling) {
+        append(svgRoot, el.__svgEl, nextSibling);
 
         svgTextAddToCanvas(el, svgRoot);
-	};
+    };
 
     /***************************************************
      * IMAGE
@@ -261,8 +252,6 @@ define(function (require) {
 
         setTransform(svgEl, el.transform);
 
-        svgEl.style.zIndex = getZIndex(el.zlevel, el.z);
-
         append(svgRoot, svgEl);
 
         if (style.text) {
@@ -276,8 +265,8 @@ define(function (require) {
         svgTextOnRemoveFromCanvas(el, svgRoot);
     };
 
-    svgImage.addToCanvas = function (el, svgRoot) {
-        append(svgRoot, el.__svgEl);
+    svgImage.addToCanvas = function (el, svgRoot, nextSibling) {
+        append(svgRoot, el.__svgEl, nextSibling);
 
         svgTextAddToCanvas(el, svgRoot);
     };
@@ -366,8 +355,6 @@ define(function (require) {
             el.__textFont = font;
         }
 
-        textSvgEl.style.zIndex = getZIndex(el.zlevel, el.z);
-
         append(svgRoot, textSvgEl);
     };
 
@@ -375,7 +362,7 @@ define(function (require) {
         remove(svgRoot, el.__textSvgEl);
     };
 
-    svgTextAddToCanvas = function (el, svgRoot) {
+    svgTextAddToCanvas = function (el, svgRoot, nextSibling) {
         append(svgRoot, el.__textSvgEl);
     };
 
@@ -398,9 +385,9 @@ define(function (require) {
         }
     };
 
-	return {
-		path: svgPath,
+    return {
+        path: svgPath,
         image: svgImage,
         text: svgText
-	};
+    };
 });
