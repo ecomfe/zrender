@@ -266,6 +266,9 @@ define(function (require) {
         attr(svgEl, 'width', dw);
         attr(svgEl, 'height', dh);
 
+        attr(svgEl, 'x', x);
+        attr(svgEl, 'y', y);
+
         setTransform(svgEl, el.transform);
 
         svgEl.style.zIndex = getZIndex(el.zlevel, el.z);
