@@ -169,7 +169,7 @@ define(function (require) {
 
     var svgPath = {};
 
-    svgPath.brush = function (el, svgRoot) {
+    svgPath.brush = function (el) {
         var style = el.style;
 
         var svgEl = el.__svgEl;
@@ -190,23 +190,9 @@ define(function (require) {
         bindStyle(svgEl, style);
         setTransform(svgEl, el.transform);
 
-        append(svgRoot, svgEl);
-
         if (style.text) {
-            svgTextDrawRectText(el, svgRoot, el.getBoundingRect());
+            svgTextDrawRectText(el, el.getBoundingRect());
         }
-    };
-
-    svgPath.removeFromCanvas = function (el, svgRoot) {
-        remove(svgRoot, el.__svgEl);
-
-        svgTextOnRemoveFromCanvas(el, svgRoot);
-    };
-
-    svgPath.addToCanvas = function (el, svgRoot, nextSibling) {
-        append(svgRoot, el.__svgEl, nextSibling);
-
-        svgTextAddToCanvas(el, svgRoot);
     };
 
     /***************************************************
@@ -214,7 +200,7 @@ define(function (require) {
      **************************************************/
     var svgImage = {}
 
-    svgImage.brush = function (el, svgRoot) {
+    svgImage.brush = function (el) {
         var style = el.style;
         var image = style.image;
 
@@ -252,23 +238,9 @@ define(function (require) {
 
         setTransform(svgEl, el.transform);
 
-        append(svgRoot, svgEl);
-
         if (style.text) {
-            svgTextDrawRectText(el, svgRoot, el.getBoundingRect());
+            svgTextDrawRectText(el, el.getBoundingRect());
         }
-    };
-
-    svgImage.removeFromCanvas = function (el, svgRoot) {
-        remove(svgRoot, el.__svgEl);
-
-        svgTextOnRemoveFromCanvas(el, svgRoot);
-    };
-
-    svgImage.addToCanvas = function (el, svgRoot, nextSibling) {
-        append(svgRoot, el.__svgEl, nextSibling);
-
-        svgTextAddToCanvas(el, svgRoot);
     };
 
     /***************************************************
@@ -276,7 +248,7 @@ define(function (require) {
      **************************************************/
     var svgText = {};
 
-    svgTextDrawRectText = function (el, svgRoot, rect, textRect) {
+    svgTextDrawRectText = function (el, rect, textRect) {
         var style = el.style;
         var text = style.text;
 
@@ -354,31 +326,14 @@ define(function (require) {
             el.__text = text;
             el.__textFont = font;
         }
-
-        append(svgRoot, textSvgEl);
-    };
-
-    svgTextRemoveRectText = function (el, svgRoot) {
-        remove(svgRoot, el.__textSvgEl);
-    };
-
-    svgTextAddToCanvas = function (el, svgRoot, nextSibling) {
-        append(svgRoot, el.__textSvgEl);
-    };
-
-    svgTextOnRemoveFromCanvas = function (el, svgRoot) {
-        remove(svgRoot, el.__textSvgEl);
     };
 
     svgText.drawRectText = svgTextDrawRectText;
-    svgText.removeRectText = svgTextRemoveRectText;
-    svgText.addToCanvas = svgTextAddToCanvas;
-    svgText.removeFromCanvas = svgTextOnRemoveFromCanvas;
 
-    svgText.brush = function (el, svgRoot) {
+    svgText.brush = function (el) {
         var style = el.style;
         if (style.text) {
-            svgTextDrawRectText(el, svgRoot, {
+            svgTextDrawRectText(el, {
                 x: style.x || 0, y: style.y || 0,
                 width: 0, height: 0
             }, el.getBoundingRect());

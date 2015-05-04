@@ -9,8 +9,7 @@ define(function (require) {
     var Path = require('../graphic/Path');
     var ZImage = require('../graphic/Image');
     var ZText = require('../graphic/Text');
-
-    var Group = require('../graphic/Group');
+    var arrayDiff = require('../core/arrayDiff');
 
     var svgGraphic = require('./graphic');
     var svgPath = svgGraphic.path;
@@ -23,7 +22,7 @@ define(function (require) {
         return parseInt(val, 10);
     }
 
-    function getSVGProxy(el) {
+    function getSvgProxy(el) {
         if (el instanceof Path) {
             return svgPath;
         }
@@ -33,6 +32,46 @@ define(function (require) {
         else if (el instanceof ZText) {
             return svgText;
         }
+    }
+
+    function checkParentAvailable(parent, child) {
+        return child && parent && child.parentNode !== parent;
+    }
+
+    function insertAfter(parent, child, prevSibling) {
+        if (checkParentAvailable(parent, child) && prevSibling) {
+            var nextSibling = prevSibling.nextSibling;
+            nextSibling ? parent.insertBefore(child, nextSibling)
+                : parent.appendChild(child);
+        }
+    }
+
+    function prepend(parent, child) {
+        if (checkParentAvailable(parent, child)) {
+            var firstChild = parent.firstChild;
+            firstChild ? parent.insertBefore(child, firstChild)
+                : parent.appendChild(child);
+        }
+    }
+
+    function append(parent, child) {
+        if (checkParentAvailable(parent, child)) {
+            parent.appendChild(child);
+        }
+    }
+
+    function remove(parent, child) {
+        if (child && parent && child.parentNode === parent) {
+            parent.removeChild(child);
+        }
+    }
+
+    function getTextSvgElement(displayable) {
+        return displayable.__textSvgEl;
+    }
+
+    function getSvgElement(displayable) {
+        return displayable.__svgEl;
     }
 
     /**
@@ -56,53 +95,6 @@ define(function (require) {
         viewport.appendChild(svgRoot);
 
         this.resize();
-        
-        // Modify storage
-        var oldDelFromMap = storage.delFromMap;
-        var oldAddToMap = storage.addToMap;
-        storage.delFromMap = function (elId) {
-            var el = storage.get(elId);
-
-            oldDelFromMap.call(storage, elId);
-            
-            var svgProxy = getSVGProxy(el);
-            svgProxy && svgProxy.removeFromCanvas(el, svgRoot);
-        }
-
-        storage.addToMap = function (el) {
-            var isGroup = el instanceof Group;
-            if (! isGroup) {
-                var svgProxy = getSVGProxy(el);
-                svgProxy && svgProxy.addToCanvas(el, svgRoot);
-            }
-
-            oldAddToMap.call(storage, el);
-
-            // Ignore use setter and getter. We need to remove the svg element already on the canvas
-            // when the element is set from non-ignore to ignore
-            var ignore = el.ignore;
-            Object.defineProperty(el, 'ignore', {
-                get: function () {
-                    return ignore;
-                },
-                set: function (val) {
-                    // If element is set from non-ignore to ignore
-                    if (! ignore && val) {
-                        if (isGroup) {
-                            // Remove all svg elements of children from canvas
-                            el.traverse(function (child) {
-                                var svgProxy = getSVGProxy(child);
-                                svgProxy && svgProxy.removeFromCanvas(child, svgRoot);
-                            });
-                        }
-                        else {
-                            svgProxy && svgProxy.removeFromCanvas(el, svgRoot);
-                        }
-                    }
-                    ignore = val;
-                }
-            })
-        }
 
         this._visibleList = [];
     };
@@ -121,25 +113,66 @@ define(function (require) {
         _paintList: function (list) {
             var svgRoot = this._svgRoot;
             var visibleList = this._visibleList;
-            var nVisible = 0;
             var listLen = list.length;
 
-            for (var i = 0; i < listLen; i++) {
+            var newVisibleList = [];
+            var i;
+            for (i = 0; i < listLen; i++) {
                 var displayable = list[i];
-                var svgProxy = getSVGProxy(displayable);
-                if (!displayable.invisible) {
+                var svgProxy = getSvgProxy(displayable);
+                if (! displayable.invisible) {
                     if (displayable.__dirty) {
-                        svgProxy && svgProxy.brush(displayable, svgRoot);
+                        svgProxy && svgProxy.brush(displayable);
                         displayable.__dirty = false;
                     }
-                }
-                else {
-                    // Remove existed svg element from canvas
-                    svgProxy && svgProxy.removeFromCanvas(displayable, svgRoot);
+                    newVisibleList.push(displayable);
                 }
             }
 
-            visibleList.length = listLen;
+            var diff = arrayDiff(visibleList, newVisibleList);
+            var prevSvgElement;
+
+            if (visibleList.length > newVisibleList.length) {
+                console.log(diff);
+            }
+            // First do remove, Incase element moved to the head and do remove after add
+            for (i = 0; i < diff.length; i++) {
+                var item = diff[i];
+                if (item.cmd === '-') {
+                    var displayable = visibleList[item.idx];
+                    var svgElement = getSvgElement(displayable);
+                    var textSvgElement = getTextSvgElement(displayable);
+                    remove(svgRoot, svgElement);
+                    remove(svgRoot, textSvgElement);
+                }
+            }
+            for (i = 0; i < diff.length; i++) {
+                var item = diff[i];
+                switch (item.cmd) {
+                    case '=':
+                        var displayable = visibleList[item.idx];
+                        prevSvgElement = getTextSvgElement(displayable) || getSvgElement(displayable);
+                        break;
+                    case '+':
+                        var displayable = newVisibleList[item.idx];
+                        var svgElement = getSvgElement(displayable);
+                        var textSvgElement = getTextSvgElement(displayable);
+                        prevSvgElement ? insertAfter(svgRoot, svgElement, prevSvgElement)
+                            : prepend(svgRoot, svgElement);
+                        // Insert text
+                        insertAfter(svgRoot, textSvgElement, svgElement);
+                        prevSvgElement = textSvgElement || svgElement;
+                        break;
+                    // case '^':
+                        // var displayable = visibleList[item.idx];
+                        // var svgElement = getSvgElement(displayable);
+                        // prevSvgElement ? insertAfter(svgRoot, svgElement, prevSvgElement)
+                        //     : prepend(svgRoot, svgElement);
+                        // break;
+                }
+            }
+
+            this._visibleList = newVisibleList;
         },
 
         resize: function () {

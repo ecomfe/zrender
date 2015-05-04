@@ -20,7 +20,9 @@
     require(["zrender", 'zrender/graphic/Image'], function(zrender, ImageShape){
 
         // 初始化zrender
-        var zr = zrender.init(document.getElementById("Main"));
+        var zr = zrender.init(document.getElementById("Main"), {
+            renderer: 'svg'
+        });
 
         for( var i = 0; i < 10; i ++){
             for( var j = 0; j < 10; j++){

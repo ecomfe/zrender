@@ -55,7 +55,9 @@ define(function (require) {
                     var val1 = arr1[invN ? (j1 - j) : (j - 1 + j0)];
                     // Because replace is add after remove actually
                     // It has a higher score than removing or adding
-                    var score0 = last + (equal(val0, val1) ? 0 : 2);
+                    // Here give a very large score for us to avoid update
+                    // TODO custom score function
+                    var score0 = last + (equal(val0, val1) ? 0 : 100);
                     // memo[i-1][j] + 1
                     // Remove arr0[i-1]
                     var score1 = memo[j] + 1;
@@ -169,18 +171,21 @@ define(function (require) {
             }
             append(head, '=', i);
         }
+
         for (j = 0; j < lenMin; j++) {
             if (! equal(arr0[len0 - j - 1], arr1[len1 - j - 1])) {
                 break;
             }
         }
 
-        var middle = hirschberg(arr0, arr1, i, len0 - j, i, len1 - j, equal, [], []);
-        for (i = 0; i < middle.length; i++) {
-            head.push(middle[i]);
-        }
-        for (i = j; i < len0; i++) {
-            append(tail, '=', i);
+        if (len0 - j >= i || len1 - j >= i) {
+            var middle = hirschberg(arr0, arr1, i, len0 - j, i, len1 - j, equal, [], []);
+            for (i = 0; i < middle.length; i++) {
+                head.push(middle[i]);
+            }
+            for (i = j; i < len0; i++) {
+                append(tail, '=', i);
+            }
         }
         return head;
     }
