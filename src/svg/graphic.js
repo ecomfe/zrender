@@ -44,18 +44,6 @@ define(function (require) {
         }
     }
 
-    function append(parent, child) {
-        if (child && parent && child.parentNode !== parent) {
-            parent.appendChild(child);
-        }
-    }
-
-    function remove(parent, child) {
-        if (child && parent && child.parentNode === parent) {
-            parent.removeChild(child);
-        }
-    }
-
     function attr(el, key, val) {
         el.setAttribute(key, val);
     }
@@ -309,7 +297,7 @@ define(function (require) {
                 var tspan = tspanList[i];
                 if (! tspan) {
                     tspan = tspanList[i] = createElement('tspan');
-                    append(textSvgEl, tspan);
+                    textSvgEl.appendChild(tspan);
                     attr(tspan, 'alignment-baseline', 'hanging');
                     // attr(tspan, 'text-anchor', 'start');
                 }
@@ -319,7 +307,7 @@ define(function (require) {
             }
             // Remove unsed tspan elements
             for (; i < tspanList.length; i++) {
-                remove(textSvgEl, tspanList[i]);
+                textSvgEl.removeChild(tspanList[i]);
             }
             tspanList.length = nTextLines;
 

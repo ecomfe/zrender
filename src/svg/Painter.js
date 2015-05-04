@@ -132,9 +132,6 @@ define(function (require) {
             var diff = arrayDiff(visibleList, newVisibleList);
             var prevSvgElement;
 
-            if (visibleList.length > newVisibleList.length) {
-                console.log(diff);
-            }
             // First do remove, Incase element moved to the head and do remove after add
             for (i = 0; i < diff.length; i++) {
                 var item = diff[i];

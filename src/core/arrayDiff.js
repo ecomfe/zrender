@@ -6,11 +6,11 @@ define(function (require) {
         return a === b;
     }
 
-    function createItem(cmd, idx, idx1) {
+    function createItem(cmd, idx) {
         var res = {
             // cmd explanation
             // '=': not change
-            // '^': replace with a new item in second array 
+            // '^': replace with a new item in second array. Unused temporary
             // '+': add a new item of second array
             // '-': del item in first array
             cmd: cmd,
@@ -19,14 +19,14 @@ define(function (require) {
             idx: idx
         };
         // Replace need to know both two indices
-        if (cmd === '^') {
-            res.idx1 = idx1;
-        }
+        // if (cmd === '^') {
+        //     res.idx1 = idx1;
+        // }
         return res;
     };
 
-    function append(out, cmd, idx, idx1) {
-        out.push(createItem(cmd, idx, idx1));
+    function append(out, cmd, idx) {
+        out.push(createItem(cmd, idx));
     }
 
     var abs = Math.abs;
@@ -55,9 +55,8 @@ define(function (require) {
                     var val1 = arr1[invN ? (j1 - j) : (j - 1 + j0)];
                     // Because replace is add after remove actually
                     // It has a higher score than removing or adding
-                    // Here give a very large score for us to avoid update
                     // TODO custom score function
-                    var score0 = last + (equal(val0, val1) ? 0 : 100);
+                    var score0 = last + (equal(val0, val1) ? 0 : 2);
                     // memo[i-1][j] + 1
                     // Remove arr0[i-1]
                     var score1 = memo[j] + 1;
@@ -100,13 +99,16 @@ define(function (require) {
                     append(out, '=', i0);
                 }
                 else {
-                    if (j === len1 - 1 && ! matched) {
-                        append(out, '^', i0, j + j0);
-                    }
-                    else {
-                        append(out, '+', j + j0);
-                    }
+                    // if (j === len1 - 1 && ! matched) {
+                    //     append(out, '^', i0, j + j0);
+                    // }
+                    // else {
+                    append(out, '+', j + j0);
+                    // }
                 }
+            }
+            if (! matched) {
+                append(out, '-', i0);
             }
         }
         else if (len1 === 1) {
@@ -118,13 +120,16 @@ define(function (require) {
                     append(out, '=', i + i0);
                 }
                 else {
-                    if (i === len0 - 1 && ! matched) {
-                        append(out, '^', i + i0, j0);
-                    }
-                    else {
-                        append(out, '-', i + i0);
-                    }
+                    // if (i === len0 - 1 && ! matched) {
+                    //     append(out, '^', i + i0, j0);
+                    // }
+                    // else {
+                    append(out, '-', i + i0);
+                    // }
                 }
+            }
+            if (! matched) {
+                append(out, '+', j0);
             }
         }
         else {
