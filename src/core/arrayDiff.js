@@ -6,11 +6,27 @@ define(function (require) {
         return a === b;
     }
 
-    function createItem(cmd, idx) {
-        return {
+    function createItem(cmd, idx, idx1) {
+        var res = {
+            // cmd explanation
+            // '=': not change
+            // '^': replace with a new item in second array 
+            // '+': add a new item of second array
+            // '-': del item in first array
             cmd: cmd,
+            // Value index, use index in the first array
+            // Except '+'. Adding a new item needs value in the second array
             idx: idx
         };
+        // Replace need to know both two indices
+        if (cmd === '^') {
+            res.idx1 = idx1;
+        }
+        return res;
+    };
+
+    function append(out, cmd, idx, idx1) {
+        out.push(createItem(cmd, idx, idx1));
     }
 
     var abs = Math.abs;
@@ -21,8 +37,10 @@ define(function (require) {
         var invN = j0 > j1;
         var m = abs(i1 - i0);
         var n = abs(j1 - j0);
-        for (var i = 0; i <= m; i++) {
-            for (var j = 0; j <= n; j++) {
+        var i;
+        var j;
+        for (i = 0; i <= m; i++) {
+            for (j = 0; j <= n; j++) {
                 if (i === 0) {
                     memo[j] = j;
                 }
@@ -35,7 +53,7 @@ define(function (require) {
                     // Retained or replace
                     var val0 = arr0[invM ? (i1 - i) : (i - 1 + i0)];
                     var val1 = arr1[invN ? (j1 - j) : (j - 1 + j0)];
-                    // Because replace needs two dom operation
+                    // Because replace is add after remove actually
                     // It has a higher score than removing or adding
                     var score0 = last + (equal(val0, val1) ? 0 : 2);
                     // memo[i-1][j] + 1
@@ -62,12 +80,12 @@ define(function (require) {
         var j;
         if (! len0) {
             for (j = 0; j < len1; j++) {
-                out.push(createItem('+', j + j0));
+                append(out, '+', j + j0);
             }
         }
         else if (! len1) {
             for (i = 0; i < len0; i++) {
-                out.push(createItem('-', i + i0));
+                append(out, '-', i + i0);
             }
         }
         else if (len0 === 1) {
@@ -76,14 +94,15 @@ define(function (require) {
             for (j = 0; j < len1; j++) {
                 if (equal(a, arr1[j + j0]) && ! matched) {
                     matched = true;
-                    out.push(createItem('=', j + j0));
+                    // Equal and update use the index in first array
+                    append(out, '=', i0);
                 }
                 else {
                     if (j === len1 - 1 && ! matched) {
-                        out.push(createItem('^', j + j0));
+                        append(out, '^', i0, j + j0);
                     }
                     else {
-                        out.push(createItem('+', j + j0));
+                        append(out, '+', j + j0);
                     }
                 }
             }
@@ -94,14 +113,14 @@ define(function (require) {
             for (i = 0; i < len0; i++) {
                 if (equal(b, arr0[i + i0]) && ! matched) {
                     matched = true;
-                    out.push(createItem('=', i + i0));
+                    append(out, '=', i + i0);
                 }
                 else {
                     if (i === len0 - 1 && ! matched) {
-                        out.push(createItem('^', i + i0));
+                        append(out, '^', i + i0, j0);
                     }
                     else {
-                        out.push(createItem('-', i + i0));
+                        append(out, '-', i + i0);
                     }
                 }
             }
@@ -127,7 +146,7 @@ define(function (require) {
             out = hirschberg(arr0, arr1, i0, imid, j0, jmid, equal, score0, score1);
             var out1 = hirschberg(arr0, arr1, imid, i1, jmid, j1, equal, score0, score1);
             // Concat
-            for (var i = 0; i < out1.length; i++) {
+            for (i = 0; i < out1.length; i++) {
                 out.push(out1[i]);
             }
         }
@@ -135,10 +154,36 @@ define(function (require) {
     }
 
     function arrayDiff(arr0, arr1, equal) {
-        return hirschberg(arr0, arr1, 0, arr0.length, 0, arr1.length, equal || defaultCompareFunc, [], []);
-        // return score(arr0, arr1, 0, arr0.length, 0, arr1.length, equal || defaultCompareFunc, []);
+        equal = equal || defaultCompareFunc;
+        // Remove the common head and tail
+        var i;
+        var j;
+        var len0 = arr0.length;
+        var len1 = arr1.length;
+        var lenMin = Math.min(len0, len1);
+        var head = [];
+        var tail = [];
+        for (i = 0; i < lenMin; i++) {
+            if (! equal(arr0[i], arr1[i])) {
+                break;
+            }
+            append(head, '=', i);
+        }
+        for (j = 0; j < lenMin; j++) {
+            if (! equal(arr0[len0 - j - 1], arr1[len1 - j - 1])) {
+                break;
+            }
+        }
+
+        var middle = hirschberg(arr0, arr1, i, len0 - j, i, len1 - j, equal, [], []);
+        for (i = 0; i < middle.length; i++) {
+            head.push(middle[i]);
+        }
+        for (i = j; i < len0; i++) {
+            append(tail, '=', i);
+        }
+        return head;
     }
 
-    // module.exports = arrayDiff;
     return arrayDiff;
 });
