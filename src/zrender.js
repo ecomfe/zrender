@@ -105,11 +105,7 @@ define(
 
         function getFrameCallback(zrInstance) {
             return function () {
-                var animatingElements = zrInstance.animatingElements;
-                for (var i = 0, l = animatingElements.length; i < l; i++) {
-                    zrInstance.storage.mod(animatingElements[i].id);
-                }
-                if (animatingElements.length || zrInstance._needsRefreshNextFrame) {
+                if (zrInstance._needsRefreshNextFrame) {
                     zrInstance.refresh();
                 }
             };
@@ -140,8 +136,6 @@ define(
             this.painter = new Painter(dom, this.storage);
             this.handler = new Handler(dom, this.storage, this.painter);
 
-            // 动画控制
-            this.animatingElements = [];
             /**
              * @type {module:zrender/animation/Animation}
              */
@@ -381,6 +375,8 @@ define(
          *         .start()
          */
         ZRender.prototype.animate = function (el, path, loop) {
+            var self = this;
+
             if (typeof(el) === 'string') {
                 el = this.storage.get(el);
             }
@@ -413,26 +409,20 @@ define(
                     return;
                 }
 
-                var animatingElements = this.animatingElements;
                 if (el.__animators == null) {
                     // 正在进行的动画记数
                     el.__animators = [];
                 }
                 var animators = el.__animators;
-                if (animators.length === 0) {
-                    animatingElements.push(el);
-                }
 
                 var animator = this.animation.animate(target, { loop: loop })
+                    .during(function () {
+                        self.modShape(el);
+                    })
                     .done(function () {
                         var idx = util.indexOf(el.__animators, animator);
                         if (idx >= 0) {
                             animators.splice(idx, 1);
-                        }
-                        if (animators.length === 0) {
-                            // 从animatingElements里移除
-                            var idx = util.indexOf(animatingElements, el);
-                            animatingElements.splice(idx, 1);
                         }
                     });
                 animators.push(animator);
@@ -455,14 +445,6 @@ define(
                 for (var i = 0; i < len; i++) {
                     animators[i].stop();
                 }
-                if (len > 0) {
-                    var animatingElements = this.animatingElements;
-                    var idx = util.indexOf(animatingElements, el);
-                    if (idx >= 0) {
-                        animatingElements.splice(idx, 1);
-                    }
-                }
-
                 animators.length = 0;
             }
             return this;
@@ -473,7 +455,6 @@ define(
          */
         ZRender.prototype.clearAnimation = function () {
             this.animation.clear();
-            this.animatingElements.length = 0;
             return this;
         };
 
@@ -586,7 +567,6 @@ define(
             this.handler.dispose();
 
             this.animation = 
-            this.animatingElements = 
             this.storage = 
             this.painter = 
             this.handler = null;
