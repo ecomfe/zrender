@@ -890,12 +890,12 @@ define(
 
                     // 可能出现config.EVENT.DRAGENTER事件
                     this._processDragEnter(event);
-
-                    // mouseover 只触发一次
-                    this._processOverShape(event);
-                    // 可能出现config.EVENT.DRAGOVER
-                    this._processDragOver(event);
                 }
+
+                this._processOverShape(event);
+
+                // 可能出现config.EVENT.DRAGOVER
+                this._processDragOver(event);
 
                 this._hasfound = 1;
 
