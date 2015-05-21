@@ -213,6 +213,13 @@ define(
             }
         }
 
+        function bind(func, context) {
+            
+            return function () {
+                func.apply(context, arguments);
+            }
+        }
+
         return {
             inherits: inherits,
             clone: clone,
@@ -221,7 +228,8 @@ define(
             indexOf: indexOf,
             each: each,
             map: map,
-            filter: filter
+            filter: filter,
+            bind: bind
         };
     }
 );
