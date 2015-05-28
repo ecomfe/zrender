@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Array Diff</title>
+    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+</head>
+<body>
+    <script>
+    require.config({
+        packages: [{
+            name: 'zrender',
+            location: '../src',
+            main: 'zrender'
+        }]
+    });
+    require(['zrender/core/arrayDiff'], function (arrayDiff) {
+        console.log(arrayDiff('fabkde', 'abcdef').map(function (a) {return a.cmd}));
+    });
+    </script>
+</body>
+</html>

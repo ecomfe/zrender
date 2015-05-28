@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Animation</title>
+    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+</head>
+<body style="background-color:black; margin:0px;">
+    <div id="Main" style="width:1000px;height:600px;"></div>
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+
+    require(
+        [
+            "zrender",
+            "zrender/animation/animation",
+            "zrender/graphic/shape/Star",
+            "zrender/tool/color"
+        ], 
+        function (zrender, Animation, StarShape, ImageShape, PolylineShape, colorTool) {
+            // 初始化zrender
+            var zr = zrender.init(document.getElementById("Main"), {
+                renderer: 'svg'
+            });
+
+            var NUMBER = 500;
+
+            for (var i = 0; i < NUMBER; i++) {
+                var star = new StarShape({
+                    shape: {
+                        cx: 10,
+                        cy: 10,
+                        r: 8,
+                        n: 5
+                    },
+                    style : {
+                        fill: '#fff'
+                    }
+                });
+
+                zr.addElement(star);
+                var deferred = zr.animate(star.id, "", true);
+
+                var points = [];
+                var point = [
+                    Math.random() * zr.getWidth(),
+                    Math.random() * zr.getHeight()
+                ];
+                //star.position = point;
+                points.push(point);
+                for (var j = 1; j < 10; j++) {
+                    var point = [
+                        Math.random() * zr.getWidth(),
+                        Math.random() * zr.getHeight()
+                    ];
+                    deferred.when(j * 2000, {
+                        position : point
+                    });
+                }
+
+                deferred.start('spline');
+            }
+        }
+    );
+    </script>
+</body>
+</html>

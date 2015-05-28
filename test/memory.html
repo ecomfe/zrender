@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Canvas Test</title>
+    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+    <style>
+        html, body, #main {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="main"></div>
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+
+    require(
+        [
+            "zrender",
+            "zrender/graphic/shape/Rectangle"
+        ], 
+        function(zrender, RectangleShape) {
+
+            for (var i = 0; i < 200; i++) {
+                var dom = document.createElement('div');
+                dom.style.width = '700px';
+                dom.style.height = '400px';
+
+                document.getElementById('main').appendChild(dom);
+
+                var zr = zrender.init(dom, {
+                    // renderer: 'svg'
+                });
+
+                for (var j = 0; j < 50; j++) {
+                    zr.addElement(new RectangleShape({
+                        shape: {
+                            x: j * 14,
+                            width: 10,
+                            height: Math.round(Math.random() * 300)
+                        },
+                        style: {
+                            // fill: '#02f',
+                            fill: '#f20'
+                        }
+                    }));
+                }
+            }
+        }
+    )
+    </script>
+</body>
+</html>

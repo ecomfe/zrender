@@ -1,11 +1,7 @@
 /**
- * zrender: 公共辅助函数
- *
+ * @module zrender/tool/util
  * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
- *
- * clone：深度克隆
- * merge：合并源对象的属性到目标对象
- * getContext：获取一个自由使用的canvas 2D context，使用原生方法，如isPointInPath，measureText等
+ *         Yi Shen(https://github.com/pissang)
  */
 define(
     function(require) {
@@ -33,9 +29,9 @@ define(
 
         /**
          * 对一个object进行深度拷贝
-         *
-         * @param {Any} source 需要进行拷贝的对象
-         * @return {Any} 拷贝后的新对象
+         * @memberOf module:zrender/tool/util
+         * @param {*} source 需要进行拷贝的对象
+         * @return {*} 拷贝后的新对象
          */
         function clone(source) {
             if (typeof source == 'object' && source !== null) {
@@ -89,7 +85,7 @@ define(
 
         /**
          * 合并源对象的属性到目标对象
-         * modify from Tangram
+         * @memberOf module:zrender/tool/util
          * @param {*} target 目标对象
          * @param {*} source 源对象
          * @param {boolean} overwrite 是否覆盖
@@ -126,7 +122,9 @@ define(
         }
 
         /**
-         * 查询数组中元素的index
+         * @memberOf module:zrender/tool/util
+         * @param {Array} array
+         * @param {*} value
          */
         function indexOf(array, value) {
             if (array.indexOf) {
@@ -142,7 +140,7 @@ define(
 
         /**
          * 构造类继承关系
-         * 
+         * @memberOf module:zrender/tool/util
          * @param {Function} clazz 源类
          * @param {Function} baseClazz 基类
          */
@@ -158,6 +156,13 @@ define(
             clazz.constructor = clazz;
         }
 
+        /**
+         * 数组或对象遍历
+         * @memberOf module:zrender/tool/util
+         * @param {Object|Array} obj
+         * @param {Function} cb
+         * @param {*} [context]
+         */
         function each(obj, cb, context) {
             if (!(obj && cb)) {
                 return;
@@ -179,6 +184,14 @@ define(
             }
         }
 
+        /**
+         * 数组映射
+         * @memberOf module:zrender/tool/util
+         * @param {Array} obj
+         * @param {Function} cb
+         * @param {*} [context]
+         * @return {Array}
+         */
         function map(obj, cb, context) {
             if (!(obj && cb)) {
                 return;
@@ -195,6 +208,14 @@ define(
             }
         }
 
+        /**
+         * 数组过滤
+         * @memberOf module:zrender/tool/util
+         * @param {Array} obj
+         * @param {Function} cb
+         * @param {*} [context]
+         * @return {Array}
+         */
         function filter(obj, cb, context) {
             if (!(obj && cb)) {
                 return;

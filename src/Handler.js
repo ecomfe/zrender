@@ -6,6 +6,7 @@
  *
  */
 // TODO mouseover 只触发一次
+// 目前的高亮因为每次都需要 addHover 所以不能只是开始的时候触发一次
 define(
     function (require) {
 

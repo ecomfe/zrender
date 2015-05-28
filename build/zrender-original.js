@@ -1457,16 +1457,18 @@ return G_vmlCanvasManager;
 }); // define
 ;
 /**
- * zrender: 公共辅助函数
- *
+ * @module zrender/tool/util
  * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
- *
- * clone：深度克隆
- * merge：合并源对象的属性到目标对象
- * getContext：获取一个自由使用的canvas 2D context，使用原生方法，如isPointInPath，measureText等
+ *         Yi Shen(https://github.com/pissang)
  */
 define(
     'zrender/tool/util',['require','../dep/excanvas'],function(require) {
+
+        var ArrayProto = Array.prototype;
+        var nativeForEach = ArrayProto.forEach;
+        var nativeMap = ArrayProto.map;
+        var nativeFilter = ArrayProto.filter;
+
         // 用于处理merge时无法遍历Date等对象的问题
         var BUILTIN_OBJECT = {
             '[object Function]': 1,
@@ -1485,9 +1487,9 @@ define(
 
         /**
          * 对一个object进行深度拷贝
-         *
-         * @param {Any} source 需要进行拷贝的对象
-         * @return {Any} 拷贝后的新对象
+         * @memberOf module:zrender/tool/util
+         * @param {*} source 需要进行拷贝的对象
+         * @return {*} 拷贝后的新对象
          */
         function clone(source) {
             if (typeof source == 'object' && source !== null) {
@@ -1541,7 +1543,7 @@ define(
 
         /**
          * 合并源对象的属性到目标对象
-         * modify from Tangram
+         * @memberOf module:zrender/tool/util
          * @param {*} target 目标对象
          * @param {*} source 源对象
          * @param {boolean} overwrite 是否覆盖
@@ -1577,82 +1579,10 @@ define(
             return _ctx;
         }
 
-        var _canvas;
-        var _pixelCtx;
-        var _width;
-        var _height;
-        var _offsetX = 0;
-        var _offsetY = 0;
-
         /**
-         * 获取像素拾取专用的上下文
-         * @return {Object} 上下文
-         */
-        function getPixelContext() {
-            if (!_pixelCtx) {
-                _canvas = document.createElement('canvas');
-                _width = _canvas.width;
-                _height = _canvas.height;
-                _pixelCtx = _canvas.getContext('2d');
-            }
-            return _pixelCtx;
-        }
-
-        /**
-         * 如果坐标处在_canvas外部，改变_canvas的大小
-         * @param {number} x : 横坐标
-         * @param {number} y : 纵坐标
-         * 注意 修改canvas的大小 需要重新设置translate
-         */
-        function adjustCanvasSize(x, y) {
-            // 每次加的长度
-            var _v = 100;
-            var _flag;
-
-            if (x + _offsetX > _width) {
-                _width = x + _offsetX + _v;
-                _canvas.width = _width;
-                _flag = true;
-            }
-
-            if (y + _offsetY > _height) {
-                _height = y + _offsetY + _v;
-                _canvas.height = _height;
-                _flag = true;
-            }
-
-            if (x < -_offsetX) {
-                _offsetX = Math.ceil(-x / _v) * _v;
-                _width += _offsetX;
-                _canvas.width = _width;
-                _flag = true;
-            }
-
-            if (y < -_offsetY) {
-                _offsetY = Math.ceil(-y / _v) * _v;
-                _height += _offsetY;
-                _canvas.height = _height;
-                _flag = true;
-            }
-
-            if (_flag) {
-                _pixelCtx.translate(_offsetX, _offsetY);
-            }
-        }
-
-        /**
-         * 获取像素canvas的偏移量
-         * @return {Object} 偏移量
-         */
-        function getPixelOffset() {
-            return {
-                x : _offsetX,
-                y : _offsetY
-            };
-        }
-
-        /**
-         * 查询数组中元素的index
+         * @memberOf module:zrender/tool/util
+         * @param {Array} array
+         * @param {*} value
          */
         function indexOf(array, value) {
             if (array.indexOf) {
@@ -1668,7 +1598,7 @@ define(
 
         /**
          * 构造类继承关系
-         * 
+         * @memberOf module:zrender/tool/util
          * @param {Function} clazz 源类
          * @param {Function} baseClazz 基类
          */
@@ -1684,15 +1614,101 @@ define(
             clazz.constructor = clazz;
         }
 
+        /**
+         * 数组或对象遍历
+         * @memberOf module:zrender/tool/util
+         * @param {Object|Array} obj
+         * @param {Function} cb
+         * @param {*} [context]
+         */
+        function each(obj, cb, context) {
+            if (!(obj && cb)) {
+                return;
+            }
+            if (obj.forEach && obj.forEach === nativeForEach) {
+                obj.forEach(cb, context);
+            }
+            else if (obj.length === +obj.length) {
+                for (var i = 0, len = obj.length; i < len; i++) {
+                    cb.call(context, obj[i], i, obj);
+                }
+            }
+            else {
+                for (var key in obj) {
+                    if (obj.hasOwnProperty(key)) {
+                        cb.call(context, obj[key], key, obj);
+                    }
+                }
+            }
+        }
+
+        /**
+         * 数组映射
+         * @memberOf module:zrender/tool/util
+         * @param {Array} obj
+         * @param {Function} cb
+         * @param {*} [context]
+         * @return {Array}
+         */
+        function map(obj, cb, context) {
+            if (!(obj && cb)) {
+                return;
+            }
+            if (obj.map && obj.map === nativeMap) {
+                return obj.map(cb, context);
+            }
+            else {
+                var result = [];
+                for (var i = 0, len = obj.length; i < len; i++) {
+                    result.push(cb.call(context, obj[i], i, obj));
+                }
+                return result;
+            }
+        }
+
+        /**
+         * 数组过滤
+         * @memberOf module:zrender/tool/util
+         * @param {Array} obj
+         * @param {Function} cb
+         * @param {*} [context]
+         * @return {Array}
+         */
+        function filter(obj, cb, context) {
+            if (!(obj && cb)) {
+                return;
+            }
+            if (obj.filter && obj.filter === nativeFilter) {
+                return obj.filter(cb, context);
+            }
+            else {
+                var result = [];
+                for (var i = 0, len = obj.length; i < len; i++) {
+                    if (cb.call(context, obj[i], i, obj)) {
+                        result.push(obj[i]);
+                    }
+                }
+                return result;
+            }
+        }
+
+        function bind(func, context) {
+            
+            return function () {
+                func.apply(context, arguments);
+            }
+        }
+
         return {
             inherits: inherits,
-            clone : clone,
-            merge : merge,
-            getContext : getContext,
-            getPixelContext : getPixelContext,
-            getPixelOffset : getPixelOffset,
-            adjustCanvasSize : adjustCanvasSize,
-            indexOf : indexOf
+            clone: clone,
+            merge: merge,
+            getContext: getContext,
+            indexOf: indexOf,
+            each: each,
+            map: map,
+            filter: filter,
+            bind: bind
         };
     }
 );
@@ -2718,26 +2734,6 @@ define(
                 out[4] = (ac * aty - ad * atx) * det;
                 out[5] = (ab * atx - aa * aty) * det;
                 return out;
-            },
-
-            /**
-             * 矩阵左乘向量
-             * @param {Float32Array|Array.<number>} out
-             * @param {Float32Array|Array.<number>} a
-             * @param {Float32Array|Array.<number>} v
-             */
-            mulVector : function(out, a, v) {
-                var aa = a[0];
-                var ac = a[2];
-                var atx = a[4];
-                var ab = a[1];
-                var ad = a[3];
-                var aty = a[5];
-
-                out[0] = v[0] * aa + v[1] * ac + atx;
-                out[1] = v[0] * ab + v[1] * ad + aty;
-
-                return out;
             }
         };
 
@@ -2753,6 +2749,7 @@ define(
  *
  */
 // TODO mouseover 只触发一次
+// 目前的高亮因为每次都需要 addHover 所以不能只是开始的时候触发一次
 define(
     'zrender/Handler',['require','./config','./tool/env','./tool/event','./tool/util','./tool/vector','./tool/matrix','./mixin/Eventful'],function (require) {
 
@@ -4775,7 +4772,7 @@ define(
                     var y_ = curve.quadraticAt(y0, y1, y2, t);
                     for (var i = 0; i < nRoots; i++) {
                         var x_ = curve.quadraticAt(x0, x1, x2, roots[i]);
-                        if (x_ > x) {
+                        if (x_ < x) {
                             continue;
                         }
                         if (roots[i] < t) {
@@ -4789,7 +4786,7 @@ define(
                 } 
                 else {
                     var x_ = curve.quadraticAt(x0, x1, x2, roots[0]);
-                    if (x_ > x) {
+                    if (x_ < x) {
                         return 0;
                     }
                     return y2 < y0 ? 1 : -1;
@@ -5343,7 +5340,7 @@ define('zrender/mixin/Transformable',['require','../tool/matrix','../tool/vector
         transformCoordToLocal: function (x, y) {
             var v2 = [x, y];
             if (this.needTransform && this.invTransform) {
-                matrix.mulVector(v2, this.invTransform, v2);
+                vector.applyTransform(v2, v2, this.invTransform);
             }
             return v2;
         }
@@ -10661,7 +10658,7 @@ define(
         /**
          * @type {string}
          */
-        zrender.version = '2.0.8';
+        zrender.version = '2.0.9';
 
         /**
          * 创建zrender实例
@@ -10723,11 +10720,7 @@ define(
 
         function getFrameCallback(zrInstance) {
             return function () {
-                var animatingElements = zrInstance.animatingElements;
-                for (var i = 0, l = animatingElements.length; i < l; i++) {
-                    zrInstance.storage.mod(animatingElements[i].id);
-                }
-                if (animatingElements.length || zrInstance._needsRefreshNextFrame) {
+                if (zrInstance._needsRefreshNextFrame) {
                     zrInstance.refresh();
                 }
             };
@@ -10758,8 +10751,6 @@ define(
             this.painter = new Painter(dom, this.storage);
             this.handler = new Handler(dom, this.storage, this.painter);
 
-            // 动画控制
-            this.animatingElements = [];
             /**
              * @type {module:zrender/animation/Animation}
              */
@@ -10999,6 +10990,8 @@ define(
          *         .start()
          */
         ZRender.prototype.animate = function (el, path, loop) {
+            var self = this;
+
             if (typeof(el) === 'string') {
                 el = this.storage.get(el);
             }
@@ -11031,26 +11024,20 @@ define(
                     return;
                 }
 
-                var animatingElements = this.animatingElements;
                 if (el.__animators == null) {
                     // 正在进行的动画记数
                     el.__animators = [];
                 }
                 var animators = el.__animators;
-                if (animators.length === 0) {
-                    animatingElements.push(el);
-                }
 
                 var animator = this.animation.animate(target, { loop: loop })
+                    .during(function () {
+                        self.modShape(el);
+                    })
                     .done(function () {
                         var idx = util.indexOf(el.__animators, animator);
                         if (idx >= 0) {
                             animators.splice(idx, 1);
-                        }
-                        if (animators.length === 0) {
-                            // 从animatingElements里移除
-                            var idx = util.indexOf(animatingElements, el);
-                            animatingElements.splice(idx, 1);
                         }
                     });
                 animators.push(animator);
@@ -11073,14 +11060,6 @@ define(
                 for (var i = 0; i < len; i++) {
                     animators[i].stop();
                 }
-                if (len > 0) {
-                    var animatingElements = this.animatingElements;
-                    var idx = util.indexOf(animatingElements, el);
-                    if (idx >= 0) {
-                        animatingElements.splice(idx, 1);
-                    }
-                }
-
                 animators.length = 0;
             }
             return this;
@@ -11091,7 +11070,6 @@ define(
          */
         ZRender.prototype.clearAnimation = function () {
             this.animation.clear();
-            this.animatingElements.length = 0;
             return this;
         };
 
@@ -11204,7 +11182,6 @@ define(
             this.handler.dispose();
 
             this.animation = 
-            this.animatingElements = 
             this.storage = 
             this.painter = 
             this.handler = null;
