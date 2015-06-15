@@ -175,22 +175,22 @@ define(
 
             el.updateTransform();
 
+            if (el.clipShape) {
+                // clipShape 的变换是基于 group 的变换
+                el.clipShape.parent = el;
+                el.clipShape.updateTransform();
+
+                // PENDING 效率影响
+                if (clipShapes) {
+                    clipShapes = clipShapes.slice();
+                    clipShapes.push(el.clipShape);
+                } else {
+                    clipShapes = [el.clipShape];
+                }
+            }
+
             if (el.type == 'group') {
                 
-                if (el.clipShape) {
-                    // clipShape 的变换是基于 group 的变换
-                    el.clipShape.parent = el;
-                    el.clipShape.updateTransform();
-
-                    // PENDING 效率影响
-                    if (clipShapes) {
-                        clipShapes = clipShapes.slice();
-                        clipShapes.push(el.clipShape);
-                    } else {
-                        clipShapes = [el.clipShape];
-                    }
-                }
-
                 for (var i = 0; i < el._children.length; i++) {
                     var child = el._children[i];
 
