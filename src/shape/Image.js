@@ -90,7 +90,9 @@ define(
                         image = this._imageCache[src];
                     } else {
                         image = new Image();
+                        image.isLoaded = false;
                         image.onload = function () {
+                            image.isLoaded = true;
                             image.onload = null;
                             self.modSelf();
                             refreshNextFrame();
@@ -100,7 +102,7 @@ define(
                         this._imageCache[src] = image;
                     }
                 }
-                if (image) {
+                if (image && image.isLoaded) {
                     // 图片已经加载完成
                     if (image.nodeName.toUpperCase() == 'IMG') {
                         //IE11有ActiveXObject, 但是没有readyState
