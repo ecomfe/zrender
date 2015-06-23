@@ -103,7 +103,8 @@ define(
                 if (image) {
                     // 图片已经加载完成
                     if (image.nodeName.toUpperCase() == 'IMG') {
-                        if (window.ActiveXObject) {
+                        //IE11有ActiveXObject, 但是没有readyState
+                        if (window.ActiveXObject && image.readyState !== undefined) {
                             if (image.readyState != 'complete') {
                                 return;
                             }
@@ -119,10 +120,12 @@ define(
                     var height = style.height || image.height;
                     var x = style.x;
                     var y = style.y;
+                    // 如果使用的svg图片, IE11下就算加载成功image.width, image.height也都是为0
+                    // 此处如不注释, 会导致IE11下svg图片无法使用
                     // 图片加载失败
-                    if (!image.width || !image.height) {
-                        return;
-                    }
+                    // if (!image.width || !image.height) {
+                    //     return;
+                    // }
 
                     ctx.save();
 
