@@ -58,6 +58,8 @@ define(function (require) {
         this.dom.style['-webkit-touch-callout'] = 'none';
         this.dom.style['-webkit-tap-highlight-color'] = 'rgba(0,0,0,0)';
 
+        this.dom.className = config.elementClassName;
+
         vmlCanvasManager && vmlCanvasManager.initElement(this.dom);
 
         this.domBack = null;

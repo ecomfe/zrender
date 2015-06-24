@@ -99,6 +99,8 @@ define(function () {
             touchClickDelay : 300
         },
 
+        elementClassName: 'zr-element',
+
         // 是否异常捕获
         catchBrushException: false,
 

@@ -99,6 +99,7 @@
                 '-webkit-touch-callout:none;'
             ].join('');
             this._bgDom.setAttribute('data-zr-dom-id', 'bg');
+            this._bgDom.className = config.elementClassName;
 
             domRoot.appendChild(this._bgDom);
             this._bgDom.onselectstart = returnFalse;

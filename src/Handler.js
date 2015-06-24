@@ -28,6 +28,22 @@ define(
             'touchstart', 'touchend', 'touchmove'
         ];
 
+        var isZRenderElement = function (event) {
+            // 暂时忽略 IE8-
+            if (window.G_vmlCanvasManager) {
+                return true;
+            }
+
+            event = event || window.event;
+            // 进入对象优先~
+            var target = event.toElement
+                          || event.relatedTarget
+                          || event.srcElement
+                          || event.target;
+
+            return target && target.className.match(config.elementClassName)
+        };
+
         var domHandlers = {
             /**
              * 窗口大小改变响应函数
@@ -49,6 +65,10 @@ define(
              * @param {Event} event
              */
             click: function (event) {
+                if (! isZRenderElement(event)) {
+                    return;
+                }
+
                 event = this._zrenderEventFixed(event);
 
                 // 分发config.EVENT.CLICK事件
@@ -72,6 +92,10 @@ define(
              * @param {Event} event
              */
             dblclick: function (event) {
+                if (! isZRenderElement(event)) {
+                    return;
+                }
+
                 event = event || window.event;
                 event = this._zrenderEventFixed(event);
 
@@ -97,6 +121,10 @@ define(
              * @param {Event} event
              */
             mousewheel: function (event) {
+                if (! isZRenderElement(event)) {
+                    return;
+                }
+
                 event = this._zrenderEventFixed(event);
 
                 // http://www.sitepoint.com/html5-javascript-mouse-wheel/
@@ -148,6 +176,10 @@ define(
              * @param {Event} event
              */
             mousemove: function (event) {
+                if (! isZRenderElement(event)) {
+                    return;
+                }
+
                 if (this.painter.isLoading()) {
                     return;
                 }
@@ -241,6 +273,10 @@ define(
              * @param {Event} event
              */
             mouseout: function (event) {
+                if (! isZRenderElement(event)) {
+                    return;
+                }
+
                 event = this._zrenderEventFixed(event);
 
                 var element = event.toElement || event.relatedTarget;
@@ -277,6 +313,10 @@ define(
              * @param {Event} event
              */
             mousedown: function (event) {
+                if (! isZRenderElement(event)) {
+                    return;
+                }
+
                 // 重置 clickThreshold
                 this._clickThreshold = 0;
 
@@ -303,6 +343,10 @@ define(
              * @param {Event} event
              */
             mouseup: function (event) {
+                if (! isZRenderElement(event)) {
+                    return;
+                }
+
                 event = this._zrenderEventFixed(event);
                 this.root.style.cursor = 'default';
                 this._isMouseDown = 0;
@@ -320,6 +364,10 @@ define(
              * @param {Event} event
              */
             touchstart: function (event) {
+                if (! isZRenderElement(event)) {
+                    return;
+                }
+
                 // eventTool.stop(event);// 阻止浏览器默认事件，重要
                 event = this._zrenderEventFixed(event, true);
                 this._lastTouchMoment = new Date();
@@ -335,6 +383,10 @@ define(
              * @param {Event} event
              */
             touchmove: function (event) {
+                if (! isZRenderElement(event)) {
+                    return;
+                }
+
                 event = this._zrenderEventFixed(event, true);
                 this._mousemoveHandler(event);
                 if (this._isDragging) {
@@ -348,6 +400,10 @@ define(
              * @param {Event} event
              */
             touchend: function (event) {
+                if (! isZRenderElement(event)) {
+                    return;
+                }
+
                 // eventTool.stop(event);// 阻止浏览器默认事件，重要
                 event = this._zrenderEventFixed(event, true);
                 this._mouseupHandler(event);
