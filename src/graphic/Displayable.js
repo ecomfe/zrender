@@ -85,7 +85,7 @@ define(function (require) {
         /**
          * 图形是否忽略，为true时忽略图形的绘制以及事件触发
          * If ignore drawing and events of the displayable object
-         * @name module:/zrender/graphic/ignore#__zr
+         * @name module:/zrender/graphic/Displayable#ignore
          * @type {boolean}
          * @default false
          */
@@ -94,7 +94,7 @@ define(function (require) {
         /**
          * 图形是否可见，为true时不绘制图形，但是仍能触发鼠标事件
          * If ignore drawing of the displayable object. Mouse event will still be triggered
-         * @name module:/zrender/graphic/invisible#__zr
+         * @name module:/zrender/graphic/Displayable#invisible
          * @type {boolean}
          * @default false
          */
@@ -175,7 +175,7 @@ define(function (require) {
         brush: function (ctx, state) {},
 
         // Interface
-        getBoundingRect: function (style) {},
+        getBoundingRect: function () {},
 
         /**
          * 判断坐标 x, y 是否在图形上

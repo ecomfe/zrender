@@ -11,21 +11,12 @@
     var config = require('./config');
     var util = require('./core/util');
     var log = require('./core/log');
-    var env = require('./core/env');
 
     var Layer = require('./Layer');
 
     function parseInt10(val) {
         return parseInt(val, 10);
     }
-
-    // 返回false的方法，用于避免页面被选中
-    function returnFalse() {
-        return false;
-    }
-
-    // 什么都不干的空方法
-    function doNothing() {}
 
     function isLayerValid(layer) {
         if (!layer) {
@@ -478,8 +469,6 @@
             var ctx = imageLayer.ctx;
             imageLayer.clearColor = backgroundColor || '#fff';
             imageLayer.clear();
-            
-            var self = this;
 
             var displayList = this.storage.getDisplayList(true);
 
