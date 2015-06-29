@@ -1814,6 +1814,8 @@ define('zrender/config',[],function () {
             touchClickDelay : 300
         },
 
+        elementClassName: 'zr-element',
+
         // 是否异常捕获
         catchBrushException: false,
 
@@ -2771,6 +2773,22 @@ define(
             'touchstart', 'touchend', 'touchmove'
         ];
 
+        var isZRenderElement = function (event) {
+            // 暂时忽略 IE8-
+            if (window.G_vmlCanvasManager) {
+                return true;
+            }
+
+            event = event || window.event;
+            // 进入对象优先~
+            var target = event.toElement
+                          || event.relatedTarget
+                          || event.srcElement
+                          || event.target;
+
+            return target && target.className.match(config.elementClassName)
+        };
+
         var domHandlers = {
             /**
              * 窗口大小改变响应函数
@@ -2792,6 +2810,10 @@ define(
              * @param {Event} event
              */
             click: function (event) {
+                if (! isZRenderElement(event)) {
+                    return;
+                }
+
                 event = this._zrenderEventFixed(event);
 
                 // 分发config.EVENT.CLICK事件
@@ -2815,6 +2837,10 @@ define(
              * @param {Event} event
              */
             dblclick: function (event) {
+                if (! isZRenderElement(event)) {
+                    return;
+                }
+
                 event = event || window.event;
                 event = this._zrenderEventFixed(event);
 
@@ -2840,6 +2866,10 @@ define(
              * @param {Event} event
              */
             mousewheel: function (event) {
+                if (! isZRenderElement(event)) {
+                    return;
+                }
+
                 event = this._zrenderEventFixed(event);
 
                 // http://www.sitepoint.com/html5-javascript-mouse-wheel/
@@ -2891,6 +2921,10 @@ define(
              * @param {Event} event
              */
             mousemove: function (event) {
+                if (! isZRenderElement(event)) {
+                    return;
+                }
+
                 if (this.painter.isLoading()) {
                     return;
                 }
@@ -2984,6 +3018,10 @@ define(
              * @param {Event} event
              */
             mouseout: function (event) {
+                if (! isZRenderElement(event)) {
+                    return;
+                }
+
                 event = this._zrenderEventFixed(event);
 
                 var element = event.toElement || event.relatedTarget;
@@ -3020,6 +3058,10 @@ define(
              * @param {Event} event
              */
             mousedown: function (event) {
+                if (! isZRenderElement(event)) {
+                    return;
+                }
+
                 // 重置 clickThreshold
                 this._clickThreshold = 0;
 
@@ -3046,6 +3088,10 @@ define(
              * @param {Event} event
              */
             mouseup: function (event) {
+                if (! isZRenderElement(event)) {
+                    return;
+                }
+
                 event = this._zrenderEventFixed(event);
                 this.root.style.cursor = 'default';
                 this._isMouseDown = 0;
@@ -3063,6 +3109,10 @@ define(
              * @param {Event} event
              */
             touchstart: function (event) {
+                if (! isZRenderElement(event)) {
+                    return;
+                }
+
                 // eventTool.stop(event);// 阻止浏览器默认事件，重要
                 event = this._zrenderEventFixed(event, true);
                 this._lastTouchMoment = new Date();
@@ -3078,6 +3128,10 @@ define(
              * @param {Event} event
              */
             touchmove: function (event) {
+                if (! isZRenderElement(event)) {
+                    return;
+                }
+
                 event = this._zrenderEventFixed(event, true);
                 this._mousemoveHandler(event);
                 if (this._isDragging) {
@@ -3091,6 +3145,10 @@ define(
              * @param {Event} event
              */
             touchend: function (event) {
+                if (! isZRenderElement(event)) {
+                    return;
+                }
+
                 // eventTool.stop(event);// 阻止浏览器默认事件，重要
                 event = this._zrenderEventFixed(event, true);
                 this._mouseupHandler(event);
@@ -7738,6 +7796,8 @@ define('zrender/Layer',['require','./mixin/Transformable','./tool/util','./confi
         this.dom.style['-webkit-touch-callout'] = 'none';
         this.dom.style['-webkit-tap-highlight-color'] = 'rgba(0,0,0,0)';
 
+        this.dom.className = config.elementClassName;
+
         vmlCanvasManager && vmlCanvasManager.initElement(this.dom);
 
         this.domBack = null;
@@ -8193,6 +8253,7 @@ define(
                 '-webkit-touch-callout:none;'
             ].join('');
             this._bgDom.setAttribute('data-zr-dom-id', 'bg');
+            this._bgDom.className = config.elementClassName;
 
             domRoot.appendChild(this._bgDom);
             this._bgDom.onselectstart = returnFalse;
@@ -9308,22 +9369,22 @@ define(
 
             el.updateTransform();
 
+            if (el.clipShape) {
+                // clipShape 的变换是基于 group 的变换
+                el.clipShape.parent = el;
+                el.clipShape.updateTransform();
+
+                // PENDING 效率影响
+                if (clipShapes) {
+                    clipShapes = clipShapes.slice();
+                    clipShapes.push(el.clipShape);
+                } else {
+                    clipShapes = [el.clipShape];
+                }
+            }
+
             if (el.type == 'group') {
                 
-                if (el.clipShape) {
-                    // clipShape 的变换是基于 group 的变换
-                    el.clipShape.parent = el;
-                    el.clipShape.updateTransform();
-
-                    // PENDING 效率影响
-                    if (clipShapes) {
-                        clipShapes = clipShapes.slice();
-                        clipShapes.push(el.clipShape);
-                    } else {
-                        clipShapes = [el.clipShape];
-                    }
-                }
-
                 for (var i = 0; i < el._children.length; i++) {
                     var child = el._children[i];
 
@@ -10658,7 +10719,7 @@ define(
         /**
          * @type {string}
          */
-        zrender.version = '2.0.9';
+        zrender.version = '2.1.0';
 
         /**
          * 创建zrender实例
