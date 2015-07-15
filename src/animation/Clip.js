@@ -76,7 +76,7 @@ define(
                     
                     // 动画完成将这个控制器标识为待删除
                     // 在Animation.update中进行批量删除
-                    this._needsRemove = true;
+                    this.__needsRemove = true;
                     return 'destroy';
                 }
                 
@@ -87,7 +87,7 @@ define(
                 var remainder = (time - this._startTime) % this._life;
                 this._startTime = new Date().getTime() - remainder + this.gap;
 
-                this._needsRemove = false;
+                this.__needsRemove = false;
             },
             fire : function(eventType, arg) {
                 for (var i = 0, len = this._targetPool.length; i < len; i++) {
