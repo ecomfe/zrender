@@ -2780,6 +2780,7 @@ define(
             }
 
             event = event || window.event;
+
             // 进入对象优先~
             var target = event.toElement
                           || event.relatedTarget
@@ -2809,8 +2810,8 @@ define(
              * @inner
              * @param {Event} event
              */
-            click: function (event) {
-                if (! isZRenderElement(event)) {
+            click: function (event, manually) {
+                if (! isZRenderElement(event) && ! manually) {
                     return;
                 }
 
@@ -2836,8 +2837,8 @@ define(
              * @inner
              * @param {Event} event
              */
-            dblclick: function (event) {
-                if (! isZRenderElement(event)) {
+            dblclick: function (event, manually) {
+                if (! isZRenderElement(event) && ! manually) {
                     return;
                 }
 
@@ -2865,8 +2866,8 @@ define(
              * @inner
              * @param {Event} event
              */
-            mousewheel: function (event) {
-                if (! isZRenderElement(event)) {
+            mousewheel: function (event, manually) {
+                if (! isZRenderElement(event) && ! manually) {
                     return;
                 }
 
@@ -2920,8 +2921,8 @@ define(
              * @inner
              * @param {Event} event
              */
-            mousemove: function (event) {
-                if (! isZRenderElement(event)) {
+            mousemove: function (event, manually) {
+                if (! isZRenderElement(event) && ! manually) {
                     return;
                 }
 
@@ -3017,8 +3018,8 @@ define(
              * @inner
              * @param {Event} event
              */
-            mouseout: function (event) {
-                if (! isZRenderElement(event)) {
+            mouseout: function (event, manually) {
+                if (! isZRenderElement(event) && ! manually) {
                     return;
                 }
 
@@ -3057,8 +3058,8 @@ define(
              * @inner
              * @param {Event} event
              */
-            mousedown: function (event) {
-                if (! isZRenderElement(event)) {
+            mousedown: function (event, manually) {
+                if (! isZRenderElement(event) && ! manually) {
                     return;
                 }
 
@@ -3087,8 +3088,8 @@ define(
              * @inner
              * @param {Event} event
              */
-            mouseup: function (event) {
-                if (! isZRenderElement(event)) {
+            mouseup: function (event, manually) {
+                if (! isZRenderElement(event) && ! manually) {
                     return;
                 }
 
@@ -3108,8 +3109,8 @@ define(
              * @inner
              * @param {Event} event
              */
-            touchstart: function (event) {
-                if (! isZRenderElement(event)) {
+            touchstart: function (event, manually) {
+                if (! isZRenderElement(event) && ! manually) {
                     return;
                 }
 
@@ -3127,8 +3128,8 @@ define(
              * @inner
              * @param {Event} event
              */
-            touchmove: function (event) {
-                if (! isZRenderElement(event)) {
+            touchmove: function (event, manually) {
+                if (! isZRenderElement(event) && ! manually) {
                     return;
                 }
 
@@ -3144,8 +3145,8 @@ define(
              * @inner
              * @param {Event} event
              */
-            touchend: function (event) {
-                if (! isZRenderElement(event)) {
+            touchend: function (event, manually) {
+                if (! isZRenderElement(event) && ! manually) {
                     return;
                 }
 
@@ -3177,16 +3178,16 @@ define(
          * @param {Object} context 运行时this环境
          * @return {Function}
          */
-        function bind1Arg(handler, context) {
-            return function (e) {
-                return handler.call(context, e);
-            };
-        }
-        /**function bind2Arg(handler, context) {
+        // function bind1Arg(handler, context) {
+        //     return function (e) {
+        //         return handler.call(context, e);
+        //     };
+        // }
+        function bind2Arg(handler, context) {
             return function (arg1, arg2) {
                 return handler.call(context, arg1, arg2);
             };
-        }*/
+        }
 
         function bind3Arg(handler, context) {
             return function (arg1, arg2, arg3) {
@@ -3203,7 +3204,7 @@ define(
             var len = domHandlerNames.length;
             while (len--) {
                 var name = domHandlerNames[len];
-                instance['_' + name + 'Handler'] = bind1Arg(domHandlers[name], instance);
+                instance['_' + name + 'Handler'] = bind2Arg(domHandlers[name], instance);
             }
         }
 
@@ -3315,7 +3316,7 @@ define(
                 case EVENT.MOUSEDOWN:
                 case EVENT.MOUSEUP:
                 case EVENT.MOUSEOUT:
-                    this['_' + eventName + 'Handler'](eventArgs);
+                    this['_' + eventName + 'Handler'](eventArgs, true);
                     break;
             }
         };
@@ -10038,7 +10039,7 @@ define(
                     
                     // 动画完成将这个控制器标识为待删除
                     // 在Animation.update中进行批量删除
-                    this._needsRemove = true;
+                    this.__needsRemove = true;
                     return 'destroy';
                 }
                 
@@ -10049,7 +10050,7 @@ define(
                 var remainder = (time - this._startTime) % this._life;
                 this._startTime = new Date().getTime() - remainder + this.gap;
 
-                this._needsRemove = false;
+                this.__needsRemove = false;
             },
             fire : function(eventType, arg) {
                 for (var i = 0, len = this._targetPool.length; i < len; i++) {
@@ -10150,9 +10151,16 @@ define(
              * @param {module:zrender/animation/Clip} clip
              */
             remove: function(clip) {
-                var idx = util.indexOf(this._clips, clip);
-                if (idx >= 0) {
-                    this._clips.splice(idx, 1);
+                if (clip.__inStep) {
+                    // 如果是在 step 中，不能直接移除
+                    // 需要标记为 needsRemove 然后在所有 clip step 完成后移除
+                    clip.__needsRemove = true;
+                }
+                else {
+                    var idx = util.indexOf(this._clips, clip);
+                    if (idx >= 0) {
+                        this._clips.splice(idx, 1);
+                    }
                 }
             },
             _update: function() {
@@ -10166,7 +10174,9 @@ define(
                 var deferredClips = [];
                 for (var i = 0; i < len; i++) {
                     var clip = clips[i];
+                    clip.__inStep = true;
                     var e = clip.step(time);
+                    clip.__inStep = false;
                     // Throw out the events need to be called after
                     // stage.update, like destroy
                     if (e) {
@@ -10177,7 +10187,7 @@ define(
 
                 // Remove the finished clip
                 for (var i = 0; i < len;) {
-                    if (clips[i]._needsRemove) {
+                    if (clips[i].__needsRemove) {
                         clips[i] = clips[len - 1];
                         clips.pop();
                         len--;
@@ -10719,7 +10729,7 @@ define(
         /**
          * @type {string}
          */
-        zrender.version = '2.1.0';
+        zrender.version = '2.1.1';
 
         /**
          * 创建zrender实例
