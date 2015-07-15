@@ -35,6 +35,7 @@ define(
             }
 
             event = event || window.event;
+
             // 进入对象优先~
             var target = event.toElement
                           || event.relatedTarget
@@ -64,8 +65,8 @@ define(
              * @inner
              * @param {Event} event
              */
-            click: function (event) {
-                if (! isZRenderElement(event)) {
+            click: function (event, manually) {
+                if (! isZRenderElement(event) && ! manually) {
                     return;
                 }
 
@@ -91,8 +92,8 @@ define(
              * @inner
              * @param {Event} event
              */
-            dblclick: function (event) {
-                if (! isZRenderElement(event)) {
+            dblclick: function (event, manually) {
+                if (! isZRenderElement(event) && ! manually) {
                     return;
                 }
 
@@ -120,8 +121,8 @@ define(
              * @inner
              * @param {Event} event
              */
-            mousewheel: function (event) {
-                if (! isZRenderElement(event)) {
+            mousewheel: function (event, manually) {
+                if (! isZRenderElement(event) && ! manually) {
                     return;
                 }
 
@@ -175,8 +176,8 @@ define(
              * @inner
              * @param {Event} event
              */
-            mousemove: function (event) {
-                if (! isZRenderElement(event)) {
+            mousemove: function (event, manually) {
+                if (! isZRenderElement(event) && ! manually) {
                     return;
                 }
 
@@ -272,8 +273,8 @@ define(
              * @inner
              * @param {Event} event
              */
-            mouseout: function (event) {
-                if (! isZRenderElement(event)) {
+            mouseout: function (event, manually) {
+                if (! isZRenderElement(event) && ! manually) {
                     return;
                 }
 
@@ -312,8 +313,8 @@ define(
              * @inner
              * @param {Event} event
              */
-            mousedown: function (event) {
-                if (! isZRenderElement(event)) {
+            mousedown: function (event, manually) {
+                if (! isZRenderElement(event) && ! manually) {
                     return;
                 }
 
@@ -342,8 +343,8 @@ define(
              * @inner
              * @param {Event} event
              */
-            mouseup: function (event) {
-                if (! isZRenderElement(event)) {
+            mouseup: function (event, manually) {
+                if (! isZRenderElement(event) && ! manually) {
                     return;
                 }
 
@@ -363,8 +364,8 @@ define(
              * @inner
              * @param {Event} event
              */
-            touchstart: function (event) {
-                if (! isZRenderElement(event)) {
+            touchstart: function (event, manually) {
+                if (! isZRenderElement(event) && ! manually) {
                     return;
                 }
 
@@ -382,8 +383,8 @@ define(
              * @inner
              * @param {Event} event
              */
-            touchmove: function (event) {
-                if (! isZRenderElement(event)) {
+            touchmove: function (event, manually) {
+                if (! isZRenderElement(event) && ! manually) {
                     return;
                 }
 
@@ -399,8 +400,8 @@ define(
              * @inner
              * @param {Event} event
              */
-            touchend: function (event) {
-                if (! isZRenderElement(event)) {
+            touchend: function (event, manually) {
+                if (! isZRenderElement(event) && ! manually) {
                     return;
                 }
 
@@ -432,16 +433,16 @@ define(
          * @param {Object} context 运行时this环境
          * @return {Function}
          */
-        function bind1Arg(handler, context) {
-            return function (e) {
-                return handler.call(context, e);
-            };
-        }
-        /**function bind2Arg(handler, context) {
+        // function bind1Arg(handler, context) {
+        //     return function (e) {
+        //         return handler.call(context, e);
+        //     };
+        // }
+        function bind2Arg(handler, context) {
             return function (arg1, arg2) {
                 return handler.call(context, arg1, arg2);
             };
-        }*/
+        }
 
         function bind3Arg(handler, context) {
             return function (arg1, arg2, arg3) {
@@ -458,7 +459,7 @@ define(
             var len = domHandlerNames.length;
             while (len--) {
                 var name = domHandlerNames[len];
-                instance['_' + name + 'Handler'] = bind1Arg(domHandlers[name], instance);
+                instance['_' + name + 'Handler'] = bind2Arg(domHandlers[name], instance);
             }
         }
 
@@ -570,7 +571,7 @@ define(
                 case EVENT.MOUSEDOWN:
                 case EVENT.MOUSEUP:
                 case EVENT.MOUSEOUT:
-                    this['_' + eventName + 'Handler'](eventArgs);
+                    this['_' + eventName + 'Handler'](eventArgs, true);
                     break;
             }
         };
