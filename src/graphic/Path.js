@@ -165,7 +165,7 @@ define(function (require) {
 
     /**
      * 扩展一个 Path element, 比如星形，圆等。
-     * Extending a path element
+     * Extend a path element
      * @param {Object} props
      * @param {string} props.type Path type
      * @param {Function} props.init Initialize
