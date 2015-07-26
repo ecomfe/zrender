@@ -33,11 +33,11 @@
 
 // AMD by kener.linfeng@gmail.com
 // Optimized by https://github.com/pissang
-// 
+//
 // NOTES http://jsperf.com/dom-attr-read-perf/2
 // http://jsperf.com/arr-vs-obj-in-ie
 define(function(require) {
-    
+
 // Only add this code if we do not already have a canvas implementation
 if (!document.createElement('canvas').getContext) {
 
@@ -106,7 +106,7 @@ if (!document.createElement('canvas').getContext) {
 
   function addNamespace(doc, prefix, urn) {
     if (!doc.namespaces[prefix]) {
-      // NOTES, It will not work proply if add '#default#VML' 
+      // NOTES, It will not work proply if add '#default#VML'
       // When using appendChild to add dom
       // doc.namespaces.add(prefix, urn, '#default#VML');
       doc.namespaces.add(prefix, urn);
@@ -611,14 +611,14 @@ if (!document.createElement('canvas').getContext) {
     o1.fillStyle = o2.fillStyle;
 
     o1.globalAlpha = o2.globalAlpha;
-    
+
     // PENDING When shape changed from not stroked to stroked
     if (o2.stroked) {
       o1.strokeStyle = o2.strokeStyle;
       o1.lineCap = o2.lineCap;
       o1.lineJoin = o2.lineJoin;
       o1.lineWidth = o2.lineWidth;
-      o1.miterlimit = o2.miterlimit; 
+      o1.miterlimit = o2.miterlimit;
     }
 
     o1.x = o2.x;
@@ -678,7 +678,7 @@ if (!document.createElement('canvas').getContext) {
 
     if (o2.skewed) {
       o1.skewM = o2.skewM;
-      o1.padding = o2.padding; 
+      o1.padding = o2.padding;
     }
 
     if (o2.cropped) {
@@ -810,7 +810,7 @@ if (!document.createElement('canvas').getContext) {
         rootEl_.filled = 'true';
         if (!this.fillEl_) {
           this.fillEl_ = createVMLElement('fill');
-          // PENDING 
+          // PENDING
           // Set default attribute ?
         }
         rootEl_.appendChild(this.fillEl_);
@@ -830,12 +830,12 @@ if (!document.createElement('canvas').getContext) {
     var fillStyle = attr_.fillStyle;
 
     if (
-      fillStyle !== attrPrev_.fillStyle || 
+      fillStyle !== attrPrev_.fillStyle ||
       attr_.globalAlpha !== attrPrev_.globalAlpha
     ) {
       // TODO Canvas gradient and pattern still not be optimized
       // There problem when canvas gradient add color stop dynamically
-      // 
+      //
       // Text fill doesn't support Gradient or Pattern
       if ((fillStyle instanceof CanvasGradient_) && attr_.min) {
         // TODO: Gradients transformed with the transformation matrix.
@@ -949,7 +949,7 @@ if (!document.createElement('canvas').getContext) {
       if (attr_.stroked) {
         if (!this.strokeEl_) {
           this.strokeEl_ = createVMLElement('stroke');
-          // PENDING 
+          // PENDING
           // Set default attribute ?
         }
         rootEl_.stroked = 'true';
@@ -1090,7 +1090,7 @@ if (!document.createElement('canvas').getContext) {
       attr_.strokeStyle = ctx.strokeStyle;
     } else {
       attr_.fillStyle = ctx.fillStyle;
-      attr_.globalAlpha = ctx.globalAlpha; 
+      attr_.globalAlpha = ctx.globalAlpha;
     }
     // TODO It is strange that flush after the rootEl has been appended to document
     // SkewOffset like '10, 10'(which one item is not zero) will cause the shape disappeared.
@@ -1180,13 +1180,13 @@ if (!document.createElement('canvas').getContext) {
       this.skewEl_.matrix = attr_.skewM + ',0,0';
     }
 
-    if (attr_.offX !== attrPrev_.offX || 
+    if (attr_.offX !== attrPrev_.offX ||
       attr_.offY !== attrPrev_.offY
     ) {
       var skewOffset = mr(attr_.offX / Z) + ',' + mr(attr_.offY / Z);
       this.skewEl_.offset = skewOffset;
     }
-    
+
     if (attr_.stroked) {
       this.doStroke_();
     } else {
@@ -1509,7 +1509,7 @@ if (!document.createElement('canvas').getContext) {
     // http://louisremi.com/2009/03/30/changes-in-vml-for-ie8-or-what-feature-can-the-ie-dev-team-break-for-you-today/
     // It is no longer possible to create a VML element outside of the DOM
     // this.fragment_ = document.createDocumentFragment();
-    
+
     // Keep current drawed dom. So we can merge fill and stroke in one shape dom
     this.currentVirtualDom_ = null;
 
@@ -1545,7 +1545,7 @@ if (!document.createElement('canvas').getContext) {
 
     var overlayEl = el.cloneNode(false);
     // Use a non transparent background.
-    overlayEl.style.backgroundColor = '#fff'; //red, I don't know why, it work! 
+    overlayEl.style.backgroundColor = '#fff'; //red, I don't know why, it work!
     overlayEl.style.filter = 'alpha(opacity=0)';
     canvasElement.appendChild(overlayEl);
 
@@ -1578,7 +1578,7 @@ if (!document.createElement('canvas').getContext) {
     //   ghost_.removeChild(ghost_.firstChild);
     // }
     // NOTES: removeChild in IE8 will not set the parentNode to null
-    // 
+    //
     // TODO Remove ghost element before change the attributes of children each frame is even more slow
     // if (ghost_.parentNode === this.element_) {
     //   this.element_.removeChild(ghost_);
@@ -1792,7 +1792,7 @@ if (!document.createElement('canvas').getContext) {
     var args = Array.prototype.slice.call(arguments);
     args.unshift(this);
     var el = vDom.getElement.apply(vDom, args);
-    
+
     vDom.attachTo(this.ghost_);
 
     this.currentVirtualDom_ = null;
@@ -2001,7 +2001,7 @@ if (!document.createElement('canvas').getContext) {
   };
 
   contextPrototype.setTransform = function(m11, m12, m21, m22, dx, dy) {
-    
+
     var m = [
       [m11, m12, 0],
       [m21, m22, 0],
@@ -2017,7 +2017,7 @@ if (!document.createElement('canvas').getContext) {
    * it yet.
    */
   contextPrototype.drawText_ = function(text, x, y, maxWidth, stroke) {
-    
+
     var vDom = this.textVDomList_[this.nTextVEl_];
     if (!vDom) {
       vDom = new TextVirtualDom_();
@@ -2026,9 +2026,9 @@ if (!document.createElement('canvas').getContext) {
     this.nTextVEl_++;
 
     var el = vDom.getElement(this, text, x, y, maxWidth, stroke);
-    
+
     vDom.attachTo(this.ghost_);
-    
+
     this.currentVirtualDom_ = null;
   };
 
@@ -2156,7 +2156,7 @@ if (!document.createElement('canvas').getContext) {
 
 } // if
 else { // make the canvas test simple by kener.linfeng@gmail.com
-    G_vmlCanvasManager = false;
+    G_vmlCanvasManager = void 0;
 }
 return G_vmlCanvasManager;
 }); // define

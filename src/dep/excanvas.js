@@ -33,7 +33,7 @@
 
 // AMD by kener.linfeng@gmail.com
 define(function(require) {
-    
+
 // Only add this code if we do not already have a canvas implementation
 if (!document.createElement('canvas').getContext) {
 
@@ -601,7 +601,7 @@ if (!document.createElement('canvas').getContext) {
 
     var overlayEl = el.cloneNode(false);
     // Use a non transparent background.
-    overlayEl.style.backgroundColor = '#fff'; //red, I don't know why, it work! 
+    overlayEl.style.backgroundColor = '#fff'; //red, I don't know why, it work!
     overlayEl.style.filter = 'alpha(opacity=0)';
     canvasElement.appendChild(overlayEl);
 
@@ -828,7 +828,7 @@ if (!document.createElement('canvas').getContext) {
     var H = 10;
 
     var scaleX = scaleY = 1;
-    
+
     // For some reason that I've now forgotten, using divs didn't work
     vmlStr.push(' <g_vml_:group',
                 ' coordsize="', Z * W, ',', Z * H, '"',
@@ -882,25 +882,25 @@ if (!document.createElement('canvas').getContext) {
                   ' filter:progid:DxImageTransform.Microsoft.Matrix(Dx=',
                   -sx * dw / sw * scaleX, ',Dy=', -sy * dh / sh * scaleY, ');">');
     }
-    
-      
+
+
     // Apply scales to width and height
     vmlStr.push('<div style="width:', Math.round(scaleX * w * dw / sw), 'px;',
                 ' height:', Math.round(scaleY * h * dh / sh), 'px;',
                 ' filter:');
-   
+
     // If there is a globalAlpha, apply it to image
     if(this.globalAlpha < 1) {
       vmlStr.push(' progid:DXImageTransform.Microsoft.Alpha(opacity=' + (this.globalAlpha * 100) + ')');
     }
-    
+
     vmlStr.push(' progid:DXImageTransform.Microsoft.AlphaImageLoader(src=', image.src, ',sizingMethod=scale)">');
-    
-    // Close the crop div if necessary            
+
+    // Close the crop div if necessary
     if (sx || sy) vmlStr.push('</div>');
-    
+
     vmlStr.push('</div></div>');
-    
+
     this.element_.insertAdjacentHTML('BeforeEnd', vmlStr.join(''));
   };
 
@@ -1344,7 +1344,7 @@ if (!document.createElement('canvas').getContext) {
     } catch (ex) {
         // Ignore failures to set to invalid font.
     }
-    
+
     // Don't use innerHTML or innerText because they allow markup/whitespace.
     this.textMeasureEl_.appendChild(doc.createTextNode(text));
     return {width: this.textMeasureEl_.offsetWidth};
@@ -1450,7 +1450,7 @@ if (!document.createElement('canvas').getContext) {
 
 } // if
 else { // make the canvas test simple by kener.linfeng@gmail.com
-    G_vmlCanvasManager = false;
+    G_vmlCanvasManager = void 0;
 }
 return G_vmlCanvasManager;
 }); // define

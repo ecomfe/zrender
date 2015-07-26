@@ -33,7 +33,7 @@
 
 // AMD by kener.linfeng@gmail.com
 define(function(require) {
-    
+
 // Only add this code if we do not already have a canvas implementation
 if (!document.createElement('canvas').getContext) {
 
@@ -619,7 +619,7 @@ if (!document.createElement('canvas').getContext) {
 
     var overlayEl = el.cloneNode(false);
     // Use a non transparent background.
-    overlayEl.style.backgroundColor = '#fff'; //red, I don't know why, it work! 
+    overlayEl.style.backgroundColor = '#fff'; //red, I don't know why, it work!
     overlayEl.style.filter = 'alpha(opacity=0)';
     canvasElement.appendChild(overlayEl);
 
@@ -630,7 +630,7 @@ if (!document.createElement('canvas').getContext) {
     this.y_ = 0;
     this.lineScale_ = 1;
 
-    this.html_ = ''; 
+    this.html_ = '';
   }
 
   var contextPrototype = CanvasRenderingContext2D_.prototype;
@@ -857,7 +857,7 @@ if (!document.createElement('canvas').getContext) {
 
     var skewed = m_[1] || m_[2];
     var cropped = sx || sy;
-    
+
     var scaleX = this.scaleX_;
     var scaleY = this.scaleY_;
 
@@ -1256,7 +1256,7 @@ if (!document.createElement('canvas').getContext) {
   };
 
   contextPrototype.setTransform = function(m11, m12, m21, m22, dx, dy) {
-    
+
     var m = [
       [m11, m12, 0],
       [m21, m22, 0],
@@ -1483,7 +1483,7 @@ if (!document.createElement('canvas').getContext) {
 
 } // if
 else { // make the canvas test simple by kener.linfeng@gmail.com
-    G_vmlCanvasManager = false;
+    G_vmlCanvasManager = void 0;
 }
 return G_vmlCanvasManager;
 }); // define
