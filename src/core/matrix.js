@@ -14,7 +14,7 @@ define(function () {
         create : function() {
             var out = new ArrayCtor(6);
             matrix.identity(out);
-            
+
             return out;
         },
         /**
@@ -121,7 +121,7 @@ define(function () {
          * @param {Float32Array|Array.<number>} a
          */
         invert : function(out, a) {
-        
+
             var aa = a[0];
             var ac = a[2];
             var atx = a[4];
@@ -141,26 +141,6 @@ define(function () {
             out[3] = aa * det;
             out[4] = (ac * aty - ad * atx) * det;
             out[5] = (ab * atx - aa * aty) * det;
-            return out;
-        },
-
-        /**
-         * 矩阵左乘向量
-         * @param {Float32Array|Array.<number>} out
-         * @param {Float32Array|Array.<number>} a
-         * @param {Float32Array|Array.<number>} v
-         */
-        mulVector : function(out, a, v) {
-            var aa = a[0];
-            var ac = a[2];
-            var atx = a[4];
-            var ab = a[1];
-            var ad = a[3];
-            var aty = a[5];
-
-            out[0] = v[0] * aa + v[1] * ac + atx;
-            out[1] = v[0] * ab + v[1] * ad + aty;
-
             return out;
         }
     };

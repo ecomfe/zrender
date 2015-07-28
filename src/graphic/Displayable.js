@@ -25,15 +25,12 @@ define(function (require) {
      */
     var Displayable = function (opts) {
 
-        Eventful.call(this, opts);
-        Transformable.call(this, opts);
-
         opts = opts || {};
 
         // Extend properties
         for (var name in opts) {
             if (
-                opts.hasOwnProperty(name) && 
+                opts.hasOwnProperty(name) &&
                 name !== 'style'
             ) {
                 this[name] = opts[name];
@@ -51,12 +48,15 @@ define(function (require) {
         // Shapes for ascade clipping.
         this.__clipPaths = [];
 
+        Transformable.call(this, opts);
+        Eventful.call(this, opts);
+
         // FIXME Stateful must be mixined after style is setted
         Stateful.call(this, opts);
     };
 
     Displayable.prototype = {
-        
+
         constructor: Displayable,
 
         /**

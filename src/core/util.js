@@ -17,6 +17,11 @@ define(function(require) {
                && typeof(obj.nodeName) == 'string';
     }
 
+    var arrayProto = Array.prototype;
+    var nativeForEach = arrayProto.forEach;
+    var nativeFilter = arrayProto.filter;
+    var nativeMap = arrayProto.map;
+
     /**
      * @param {*} source
      * @param {boolean} [deep=false]
@@ -54,7 +59,7 @@ define(function(require) {
      * @param {*} target
      * @param {*} source
      * @param {boolean} [overwrite=false]
-     * @param {boolean} [deep=true] 
+     * @param {boolean} [deep=true]
      */
     function merge(target, source, overwrite, deep) {
         if (typeof deep === 'undefined') {
@@ -87,7 +92,7 @@ define(function(require) {
                 }
             }
         }
-        
+
         return target;
     }
 
@@ -117,7 +122,7 @@ define(function(require) {
 
     /**
      * 构造类继承关系
-     * 
+     *
      * @param {Function} clazz 源类
      * @param {Function} baseClazz 基类
      */

@@ -28,30 +28,37 @@ define(function (require) {
      */
     var Transformable = function () {
 
-        if (!this.position) {
+        if (! this.position) {
             /**
              * 平移
              * @type {Array.<number>}
              * @default [0, 0]
              */
-            this.position = [ 0, 0 ];
+            this.position = [0, 0];
         }
-        if (typeof(this.rotation) == 'undefined') {
+        if (this.rotation == null) {
             /**
-             * 旋转，可以通过数组二三项指定旋转的原点
+             * 旋转
              * @type {Array.<number>}
-             * @default [0, 0, 0]
+             * @default 0
              */
-            this.rotation = [ 0, 0, 0 ];
+            this.rotation = 0;
         }
-        if (!this.scale) {
+        if (! this.scale) {
             /**
-             * 缩放，可以通过数组三四项指定缩放的原点
+             * 缩放
              * @type {Array.<number>}
-             * @default [1, 1, 0, 0]
+             * @default [1, 1]
              */
-            this.scale = [ 1, 1, 0, 0 ];
+            this.scale = [1, 1];
         }
+        /**
+         * 旋转和缩放的原点
+         * @type {Array.<number>}
+         * @default null
+         */
+        this.origin = this.origin || null;
+
 
         this.needLocalTransform = false;
 
@@ -64,13 +71,13 @@ define(function (require) {
     };
 
     Transformable.prototype = {
-        
+
         constructor: Transformable,
 
         transform: null,
 
         updateNeedTransform: function () {
-            this.needLocalTransform = isNotAroundZero(this.rotation[0])
+            this.needLocalTransform = isNotAroundZero(this.rotation)
                 || isNotAroundZero(this.position[0])
                 || isNotAroundZero(this.position[1])
                 || isNotAroundZero(this.scale[0] - 1)
@@ -82,12 +89,14 @@ define(function (require) {
          * 如果有坐标变换, 则从position, rotation, scale以及父节点的transform计算出自身的transform矩阵
          */
         updateTransform: function () {
-            
+
             this.updateNeedTransform();
 
-            var parentHasTransform = this.parent && this.parent.needTransform;
-            this.needTransform = this.needLocalTransform || parentHasTransform;
-            
+            var parent = this.parent;
+            var parentHasTransform = parent && parent.needTransform;
+            var needLocalTransform = this.needLocalTransform;
+            this.needTransform = needLocalTransform || parentHasTransform;
+
             if (!this.needTransform) {
                 return;
             }
@@ -95,66 +104,44 @@ define(function (require) {
             var m = this.transform || matrix.create();
             matrix.identity(m);
 
-            if (this.needLocalTransform) {
+            var origin = this.origin;
+            if (origin && isAroundZero(origin[0]) && isAroundZero(origin[1])) {
+                origin = null;
+            }
+
+            if (needLocalTransform) {
                 var scale = this.scale;
                 var rotation = this.rotation;
                 var position = this.position;
-                if (
-                    isNotAroundZero(scale[0])
-                 || isNotAroundZero(scale[1])
-                ) {
-                    origin[0] = -scale[2] || 0;
-                    origin[1] = -scale[3] || 0;
-                    var haveOrigin = isNotAroundZero(origin[0])
-                                  || isNotAroundZero(origin[1]);
-                    if (haveOrigin) {
-                        mTranslate(m, m, origin);
-                    }
+                if (origin) {
+                    mTranslate(m, m, origin);
+                }
+                if (isNotAroundZero(scale[0]) || isNotAroundZero(scale[1])) {
                     matrix.scale(m, m, scale);
-                    if (haveOrigin) {
-                        origin[0] = -origin[0];
-                        origin[1] = -origin[1];
-                        mTranslate(m, m, origin);
-                    }
+                }
+                if (rotation) {
+                    matrix.rotate(m, m, rotation);
+                }
+                if (origin) {
+                    origin[0] = -origin[0];
+                    origin[1] = -origin[1];
+                    mTranslate(m, m, origin);
+                    origin[0] = -origin[0];
+                    origin[1] = -origin[1];
                 }
 
-                if (rotation instanceof Array) {
-                    if (rotation[0] !== 0) {
-                        origin[0] = -rotation[1] || 0;
-                        origin[1] = -rotation[2] || 0;
-                        var haveOrigin = isNotAroundZero(origin[0])
-                                      || isNotAroundZero(origin[1]);
-                        if (haveOrigin) {
-                            mTranslate(m, m, origin);
-                        }
-                        matrix.rotate(m, m, rotation[0]);
-                        if (haveOrigin) {
-                            origin[0] = -origin[0];
-                            origin[1] = -origin[1];
-                            mTranslate(m, m, origin);
-                        }
-                    }
-                }
-                else {
-                    if (rotation !== 0) {
-                        matrix.rotate(m, m, rotation);
-                    }
-                }
-
-                if (
-                    isNotAroundZero(position[0]) || isNotAroundZero(position[1])
-                ) {
+                if (isNotAroundZero(position[0]) || isNotAroundZero(position[1])) {
                     mTranslate(m, m, position);
                 }
             }
 
             // 应用父节点变换
             if (parentHasTransform) {
-                if (this.needLocalTransform) {
-                    matrix.mul(m, this.parent.transform, m);
+                if (needLocalTransform) {
+                    matrix.mul(m, parent.transform, m);
                 }
                 else {
-                    matrix.copy(m, this.parent.transform);
+                    matrix.copy(m, parent.transform);
                 }
             }
             // 保存这个变换矩阵
@@ -216,7 +203,6 @@ define(function (require) {
             var sx = m[0] * m[0] + m[1] * m[1];
             var position = this.position;
             var scale = this.scale;
-            var rotation = this.rotation;
             if (isNotAroundZero(sx - 1)) {
                 sx = Math.sqrt(sx);
             }
@@ -228,9 +214,7 @@ define(function (require) {
             position[1] = m[5];
             scale[0] = sx;
             scale[1] = sy;
-            scale[2] = scale[3] = 0;
-            rotation[0] = Math.atan2(-m[1] / sy, m[0] / sx);
-            rotation[1] = rotation[2] = 0;
+            this.rotation = Math.atan2(-m[1] / sy, m[0] / sx);
         },
 
         /**
@@ -242,8 +226,9 @@ define(function (require) {
          */
         transformCoordToLocal: function (x, y) {
             var v2 = [x, y];
-            if (this.needTransform && this.invTransform) {
-                matrix.mulVector(v2, this.invTransform, v2);
+            var invTransform = this.invTransform;
+            if (this.needTransform && invTransform) {
+                vector.applyTransform(v2, v2, invTransform);
             }
             return v2;
         },
@@ -257,8 +242,9 @@ define(function (require) {
          */
         transformCoordToGlobal: function (x, y) {
             var v2 = [x, y];
-            if (this.needTransform && this.transform) {
-                matrix.mulVector(v2, this.transform, v2);
+            var transform = this.transform;
+            if (this.needTransform && transform) {
+                vector.applyTransform(v2, v2, transform);
             }
             return v2;
         }

@@ -21,29 +21,8 @@ define(function (require) {
      */
 
     var zrUtil = require('../core/util');
-    var zrLog = require('../core/log');
     var Style = require('./Style');
-
-    var vecCopy = function (v1, v2) {
-        for (var i = 0; i < v2.length; v2++) {
-            v1[i] = v2[i];
-        }
-    };
-
-    var normalizeRotation = function (rot) {
-        if (typeof(rot) == 'number') {
-            return [rot, 0, 0];
-        }
-        else if (rot instanceof Array) {
-            if (rot.length < 3) {
-                rot[1] = rot[2] = 0;
-            }
-            return rot;
-        }
-        else {
-            return [0, 0, 0];
-        }
-    };
+    var vec2Copy = require('../core/vector').copy;
 
     var transitionProperties = ['position', 'rotation', 'scale', 'style', 'shape'];
     /**
@@ -70,7 +49,7 @@ define(function (require) {
     TransitionObject.prototype = {
 
         constructor: TransitionObject,
-        
+
         /**
          * List of all transition properties. Splitted by comma. Must not have spaces in the string.
          * e.g. 'position,style.color'. '*' will match all the valid properties.
@@ -126,7 +105,7 @@ define(function (require) {
         this._transitionAnimators = [];
 
         if (opts.initialState) {
-            this._initialState = initialState;
+            this._initialState = opts.initialState;
         }
 
         var optsStates = opts.states;
@@ -216,7 +195,7 @@ define(function (require) {
                         prevState.onleave && prevState.onleave.call(this);
                     }
 
-                    state.onenter && state.onenter.call(this);   
+                    state.onenter && state.onenter.call(this);
                 }
 
                 this._currentState = name;
@@ -233,18 +212,10 @@ define(function (require) {
                     }
 
                     // SRT
-                    state.position && vecCopy(el.position, state.position);
-                    state.scale && vecCopy(el.scale, state.scale);
-
-                    var stateRotation = state.rotation;
-                    if (stateRotation != null) {
-                        state.rotation = normalizeRotation(state.rotation);
-                        if (typeof el.rotation == 'number') {
-                            el.rotation = stateRotation;
-                        }
-                        else {
-                            vecCopy(el.rotation, state.rotation);
-                        }
+                    state.position && vec2Copy(el.position, state.position);
+                    state.scale && vec2Copy(el.scale, state.scale);
+                    if (state.rotation != null) {
+                        el.rotation = state.rotation;
                     }
 
                     // Style
@@ -305,9 +276,8 @@ define(function (require) {
                     var transitionCfg = state.transition;
                     var property = transitionCfg.property;
 
-                    var styleAnimated = false;
                     var animatingCount = 0;
-                    var done = function () {
+                    var animationDone = function () {
                         animatingCount--;
                         if (animatingCount === 0) {
                             self.setState(target);
@@ -317,10 +287,6 @@ define(function (require) {
                     for (var i = 0; i < property.length; i++) {
                         var propName = property[i];
 
-                        if (propName === 'rotation' && ('rotation' in state)) {
-                            state[propName] = normalizeRotation(state[propName]);
-                            el[propName] = normalizeRotation(el[propName]);
-                        }
                         // Animating all the properties in style or shape
                         if (propName === 'style' || propName === 'shape') {
                             if (state[propName]) {
@@ -331,7 +297,7 @@ define(function (require) {
                                     }
                                     propPathMap[path] = 1;
                                     animatingCount += self._animProp(
-                                        state, propName, key, transitionCfg, done
+                                        state, propName, key, transitionCfg, animationDone
                                     );
                                 }
                             }
@@ -347,12 +313,12 @@ define(function (require) {
                                 var subProp = propName.slice(0, 5);
                                 propName = propName.slice(6);
                                 animatingCount += self._animProp(
-                                    state, subProp, propName, transitionCfg, done
+                                    state, subProp, propName, transitionCfg, animationDone
                                 );
                             }
                             else {
                                 animatingCount += self._animProp(
-                                    state, '', propName, transitionCfg, done
+                                    state, '', propName, transitionCfg, animationDone
                                 );
                             }
 
@@ -370,8 +336,9 @@ define(function (require) {
                 }
             }
 
-            for (var i = 0; i < self._subStates.length; i++) {
-                self._subStates.transitionState(target);
+            var subStates = self._subStates;
+            for (var i = 0; i < subStates.length; i++) {
+                subStates.transitionState(target);
             }
         },
 
