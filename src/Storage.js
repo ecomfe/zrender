@@ -11,7 +11,7 @@ define(function (require) {
 
     var util = require('./core/util');
 
-    var Group = require('./graphic/Group');
+    var Group = require('./container/Group');
 
     function shapeCompareFunc(a, b) {
         if (a.zlevel == b.zlevel) {
@@ -126,7 +126,7 @@ define(function (require) {
 
         /**
          * 添加图形(Shape)或者组(Group)到根节点
-         * @param {module:zrender/shape/Shape|module:zrender/graphic/Group} el
+         * @param {module:zrender/shape/Shape|module:zrender/container/Group} el
          */
         addRoot: function (el) {
             // Element has been added

@@ -96,7 +96,7 @@ define(function (require) {
 
         /**
          * Target element
-         * @type {zrender/graphic/Displayable|zrender/graphic/Group}
+         * @type {zrender/graphic/Displayable|zrender/container/Group}
          */
         this._el = opts.el;
 

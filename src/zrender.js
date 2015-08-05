@@ -1,9 +1,9 @@
 /*!
  * ZRender, a high performance 2d drawing library.
- *  
+ *
  * Copyright (c) 2013, Baidu Inc.
  * All rights reserved.
- * 
+ *
  * LICENSE
  * https://github.com/ecomfe/zrender/blob/master/LICENSE.txt
  */
@@ -178,7 +178,7 @@ define(function(require) {
 
         /**
          * 添加元素
-         * @param  {string|module:zrender/Group|module:zrender/shape/Base} el
+         * @param  {string|module:zrender/container/Group|module:zrender/shape/Base} el
          */
         addElement: function (el) {
             this.storage.addRoot(el);
@@ -187,7 +187,7 @@ define(function(require) {
 
         /**
          * 删除元素
-         * @param  {string|module:zrender/Group|module:zrender/shape/Base} el
+         * @param  {string|module:zrender/container/Group|module:zrender/shape/Base} el
          */
         removeElement: function (el) {
             this.storage.delRoot(el);
@@ -196,7 +196,7 @@ define(function(require) {
 
         /**
          * 修改指定zlevel的绘制配置项
-         * 
+         *
          * @param {string} zLevel
          * @param {Object} config 配置对象
          * @param {string} [config.clearColor=0] 每次清空画布的颜色
@@ -245,8 +245,8 @@ define(function(require) {
 
         /**
          * 动画
-         * 
-         * @param {string|module:zrender/Group|module:zrender/shape/Base} el 动画对象
+         *
+         * @param {string|module:zrender/container/Group|module:zrender/shape/Base} el 动画对象
          * @param {string} path 需要添加动画的属性获取路径，可以通过a.b.c来获取深层的属性
          * @param {boolean} [loop] 动画是否循环
          * @return {module:zrender/animation/Animation~Animator}
@@ -316,7 +316,7 @@ define(function(require) {
 
         /**
          * 停止动画对象的动画
-         * @param  {string|module:zrender/Group|module:zrender/shape/Base} el
+         * @param  {string|module:zrender/container/Group|module:zrender/shape/Base} el
          */
         stopAnimation: function (el) {
             if (el.__animators) {
@@ -373,7 +373,7 @@ define(function(require) {
 
         /**
          * 事件绑定
-         * 
+         *
          * @param {string} eventName 事件名称
          * @param {Function} eventHandler 响应函数
          * @param {Object} [context] 响应函数
@@ -384,24 +384,24 @@ define(function(require) {
 
         /**
          * 事件解绑定，参数为空则解绑所有自定义事件
-         * 
+         *
          * @param {string} eventName 事件名称
          * @param {Function} eventHandler 响应函数
          */
         off: function(eventName, eventHandler) {
             this.handler.off(eventName, eventHandler);
         },
-    
+
         /**
          * 事件触发
-         * 
+         *
          * @param {string} eventName 事件名称，resize，hover，drag，etc
          * @param {event=} event event dom事件对象
          */
         trigger: function (eventName, event) {
             this.handler.trigger(eventName, event);
         },
-    
+
 
         /**
          * 清除当前ZRender下所有类图的数据和显示，clear后MVC和已绑定事件均还存在在，ZRender可用
@@ -416,15 +416,15 @@ define(function(require) {
          */
         dispose: function () {
             this.animation.stop();
-            
+
             this.clear();
             this.storage.dispose();
             this.painter.dispose();
             this.handler.dispose();
 
-            this.animation = 
-            this.storage = 
-            this.painter = 
+            this.animation =
+            this.storage =
+            this.painter =
             this.handler = null;
 
             // 释放后告诉全局删除对自己的索引，没想到啥好方法
