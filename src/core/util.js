@@ -232,6 +232,14 @@ define(function(require) {
         }
     }
 
+    function any() {
+
+    }
+
+    function findWhere() {
+
+    }
+
     return {
         inherits: inherits,
         clone: clone,

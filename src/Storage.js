@@ -78,12 +78,12 @@ define(function (require) {
         },
 
         _updateAndAddDisplayable: function (el, clipPaths) {
-            
+
             if (el.ignore) {
                 return;
             }
 
-            el.updateTransform();
+            el.update();
 
             if (el.type == 'group') {
                 var clipPath = el.clipPath;
@@ -115,7 +115,7 @@ define(function (require) {
 
                 // Mark group clean here
                 el.__dirty = false;
-                
+
             }
             else {
                 el.__clipPaths = clipPaths;
@@ -221,8 +221,8 @@ define(function (require) {
          * 清空并且释放Storage
          */
         dispose: function () {
-            this._elements = 
-            this._renderList = 
+            this._elements =
+            this._renderList =
             this._roots = null;
         }
     };

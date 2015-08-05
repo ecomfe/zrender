@@ -1,5 +1,10 @@
 // Hirschberg's algorithm
 // http://en.wikipedia.org/wiki/Hirschberg%27s_algorithm
+
+/**
+ * @module zrender/core/arrayDiff
+ * @author Yi Shen
+ */
 define(function (require) {
 
     function defaultCompareFunc(a, b) {

@@ -266,6 +266,10 @@ define(function (require) {
                 || this.ondragenter || this.ondragover || this.ondragleave
                 || this.ondrop
             );
+        },
+
+        update: function () {
+            this.updateTransform();
         }
     };
 

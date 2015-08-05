@@ -20,8 +20,8 @@
         [
             "zrender",
             'zrender/graphic/shape/Circle',
-            'zrender/graphic/Group'
-        ], 
+            'zrender/container/Group'
+        ],
         function(zrender, CircleShape, Group){
 
             // 初始化zrender
@@ -53,7 +53,7 @@
             });
             group.addElement(circle);
             group.addElement(circle2);
-            
+
             zr.addElement(group);
 
             var tm1 = group.animate("", true)

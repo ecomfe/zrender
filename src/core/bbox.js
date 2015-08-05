@@ -1,7 +1,5 @@
 /**
- * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
- *         pissang(https://github.com/pissang)
- *         errorrik (errorrik@gmail.com)
+ * @author Yi Shen(https://github.com/pissang)
  */
 define(function (require) {
 
@@ -36,7 +34,7 @@ define(function (require) {
         var top = p[1];
         var bottom = p[1];
         var i;
-        
+
         for (i = 1; i < points.length; i++) {
             p = points[i];
             if (p[0] < left) {
@@ -138,11 +136,11 @@ define(function (require) {
         var quadraticExtremum = curve.quadraticExtremum;
         var quadraticAt = curve.quadraticAt;
         // Find extremities, where derivative in x dim or y dim is zero
-        var tx = 
+        var tx =
             mathMax(
                 mathMin(quadraticExtremum(x0, x1, x2), 1), 0
             );
-        var ty = 
+        var ty =
             mathMax(
                 mathMin(quadraticExtremum(y0, y1, y2), 1), 0
             );
@@ -193,7 +191,7 @@ define(function (require) {
 
         vec2Min(min, start, end);
         vec2Max(max, start, end);
-        
+
         // Thresh to [0, Math.PI * 2]
         startAngle = startAngle % (PI2);
         if (startAngle < 0) {

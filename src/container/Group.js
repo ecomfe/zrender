@@ -104,7 +104,7 @@ define(function (require) {
             if (child == this) {
                 return;
             }
-            
+
             if (child.parent == this) {
                 return;
             }
@@ -117,7 +117,7 @@ define(function (require) {
 
             var storage = this.__storage;
             if (storage && storage !== child.__storage) {
-                
+
                 storage.addToMap(child);
 
                 if (child instanceof Group) {
@@ -145,7 +145,7 @@ define(function (require) {
 
             var storage = this.__storage;
             if (storage) {
-                
+
                 storage.delFromMap(child.id);
 
                 if (child instanceof Group) {
@@ -260,6 +260,10 @@ define(function (require) {
                 this.__zr.stopAnimation(this);
             }
             return this;
+        },
+
+        update: function () {
+            this.updateTransform();
         }
     };
 

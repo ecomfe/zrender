@@ -1,11 +1,9 @@
 /**
  * Path 代理，可以在`buildPath`中用于替代`ctx`, 会保存每个path操作的命令到pathCommands属性中
  * 可以用于 isInsidePath 判断以及获取boundingRect
- * 
- * @module zrender/core/PathProxy
- * @author pissang (http://www.github.com/pissang)
  *
- * TODO lineDash
+ * @module zrender/core/PathProxy
+ * @author Yi Shen (http://www.github.com/pissang)
  */
 define(function (require) {
 
@@ -279,7 +277,7 @@ define(function (require) {
         },
 
         /**
-         * 
+         *
          * @return {boolean}
          */
         len: function () {
@@ -501,7 +499,7 @@ define(function (require) {
                 if (i == 1) {
                     // 如果第一个命令是 L, C, Q
                     // 则 previous point 同绘制命令的第一个 point
-                    // 
+                    //
                     // 第一个命令为 Arc 的情况下会在后面特殊处理
                     xi = data[i];
                     yi = data[i + 1];
