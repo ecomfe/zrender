@@ -242,6 +242,11 @@ define(function (require) {
             }
         },
 
+        // TODO
+        animateTo: function () {
+
+        },
+
         /**
          * 停止所有动画
          */
@@ -270,6 +275,26 @@ define(function (require) {
 
         update: function () {
             this.updateTransform();
+        },
+
+        __attrKV: function (key, value) {
+            if (key !== 'style') {
+                this[key] = value;
+            }
+        },
+
+        attr: function (key, value) {
+            if (typeof key === 'string') {
+                this.__attrKV(key, value);
+            }
+            else if (Object(key) === key) {
+                for (var name in key) {
+                    this.__attrKV(name, key[name]);
+                }
+            }
+            this.__zr.refreshNextFrame();
+
+            return this;
         }
     };
 

@@ -1,4 +1,5 @@
 // http://www.w3.org/TR/NOTE-VML
+// TODO Use proxy like svg instead of overwrite brush methods
 define(function (require) {
 
     if (require('../core/env').canvasSupported) {
@@ -222,7 +223,7 @@ define(function (require) {
                     var type = clockwise ? ' wa ' : ' at ';
 
                     str.push(
-                        type, 
+                        type,
                         round((cx - rx) * Z - Z2), comma,
                         round((cy - ry) * Z - Z2), comma,
                         round((cx + rx) * Z - Z2), comma,
@@ -284,7 +285,7 @@ define(function (require) {
             // for width.
             if (needTransform) {
                 var m = this.transform;
-                var det = m[0] * m[3] - m[1] * m[2];   
+                var det = m[0] * m[3] - m[1] * m[2];
                 lineWidth *= sqrt(abs(det));
             }
             strokeEl.weight = lineWidth + 'px';
@@ -314,7 +315,7 @@ define(function (require) {
         remove(vmlRoot, this._vmlEl);
         this.removeRectText(vmlRoot);
     };
-    
+
     Path.prototype.onAddToStorage = function (vmlRoot) {
         append(vmlRoot, this._vmlEl);
         this.appendRectText(vmlRoot);
@@ -441,7 +442,7 @@ define(function (require) {
             // FIXME DXImageTransform 在 IE11 的兼容模式下不起作用
             vmlElStyle.filter = imageTransformPrefix + '.Matrix('
                 + transformFilter.join('') + ', SizingMethod=clip)';
-            
+
         }
         else {
             if (m) {
@@ -545,7 +546,7 @@ define(function (require) {
 
         this.removeRectText(vmlRoot);
     };
-    
+
     ZImage.prototype.onAddToStorage = function (vmlRoot) {
         append(vmlRoot, this._vmlEl);
         this.appendRectText(vmlRoot);
@@ -747,7 +748,7 @@ define(function (require) {
         remove(vmlRoot, this._textVmlEl);
         this._textVmlEl = null;
     }
-    
+
     function appendRectText(vmlRoot) {
         append(vmlRoot, this._textVmlEl);
     }

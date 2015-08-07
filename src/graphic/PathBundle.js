@@ -18,9 +18,8 @@ define(function (require) {
 
     return require('./Path').extend({
 
-        type: 'path-bundle',
+        type: 'path-bundle'
 
-        
     })
     var PathBundle = function (opts) {
         Displayable.call(this, opts);
@@ -75,10 +74,10 @@ define(function (require) {
                 // TODO Highlight style ?
                 var subRect = subShape.getBoundingRect(subShape.style);
 
-                var minX = Math.min(subRect.x, minX);
-                var minY = Math.min(subRect.y, minY);
-                var maxX = Math.max(subRect.x + subRect.width, maxX);
-                var maxY = Math.max(subRect.y + subRect.height, maxY);
+                minX = Math.min(subRect.x, minX);
+                minY = Math.min(subRect.y, minY);
+                maxX = Math.max(subRect.x + subRect.width, maxX);
+                maxY = Math.max(subRect.y + subRect.height, maxY);
             }
 
             style.__rect = {
@@ -95,4 +94,4 @@ define(function (require) {
 
     require('../core/util').inherits(PathBundle, Base);
     return PathBundle;
-}); 
+});

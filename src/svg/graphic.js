@@ -236,7 +236,7 @@ define(function (require) {
      **************************************************/
     var svgText = {};
 
-    svgTextDrawRectText = function (el, rect, textRect) {
+    var svgTextDrawRectText = function (el, rect, textRect) {
         var style = el.style;
         var text = style.text;
 

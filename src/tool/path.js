@@ -2,6 +2,7 @@ define(function (require) {
 
     var Path = require('../graphic/Path');
     var PathProxy = require('../core/PathProxy');
+    var transformPath = require('../core/transformPath');
 
     // command chars
     var cc = [
@@ -83,11 +84,11 @@ define(function (require) {
         }
 
         // command string
-        cs = data.replace(/-/g, ' -')
+        var cs = data.replace(/-/g, ' -')
             .replace(/  /g, ' ')
             .replace(/ /g, ',')
             .replace(/,,/g, ',');
-        
+
         var n;
         // create pipes so that we can split the data
         for (n = 0; n < cc.length; n++) {
@@ -329,8 +330,13 @@ define(function (require) {
 
         opts = opts || {};
         opts.buildPath = function (path) {
+            // PENDING Reference to the same array
             path.setData(pathProxy.data);
             path.rebuildPath(path.getContext());
+        };
+
+        opts.applyTransform = function (m) {
+            transformPath(pathProxy, m);
         }
 
         return opts;

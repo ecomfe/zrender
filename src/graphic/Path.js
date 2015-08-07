@@ -160,6 +160,14 @@ define(function (require) {
             if (this.__zr) {
                 this.__zr.refreshNextFrame();
             }
+        },
+
+        // Overwrite __attrKV
+        __attrKV: function (key, value) {
+            Displayable.prototype._attrKV.call(this, key, value);
+            if (key === 'shape') {
+                this.__dirtyPath = true;
+            }
         }
     };
 

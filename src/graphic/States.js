@@ -345,16 +345,16 @@ define(function (require) {
         /**
          * Do transition animation of particular property
          * @param {Object} state
-         * @param {string} subProp
+         * @param {string} subPropKey
          * @param {string} key
          * @param {string} transitionCfg
          * @param {Function} done
          * @private
          */
-        _animProp: function (state, subProp, key, transitionCfg, done) {
+        _animProp: function (state, subPropKey, key, transitionCfg, done) {
             var el = this._el;
-            var stateObj = subProp ? state[subProp] : state;
-            var elObj = subProp ? el[subProp] : el;
+            var stateObj = subPropKey ? state[subPropKey] : state;
+            var elObj = subPropKey ? el[subPropKey] : el;
             var availableProp = stateObj && (key in stateObj)
                 && elObj && (key in elObj);
 
@@ -366,7 +366,7 @@ define(function (require) {
                 }
                 obj[key] = stateObj[key];
 
-                var animator = el.animate(subProp)
+                var animator = el.animate(subPropKey)
                     .when(transitionCfg.duration, obj)
                     .delay(transitionCfg.dealy)
                     .done(function () {

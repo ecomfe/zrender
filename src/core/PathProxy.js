@@ -216,9 +216,9 @@ define(function (require) {
             var ctx = this._ctx;
             var x0 = this._x0;
             var y0 = this._y0;
-            if (this._ctx) {
+            if (ctx) {
                 this._needsDash() && this._dashedLineTo(x0, y0);
-                this._ctx.closePath();
+                ctx.closePath();
             }
 
             this._xi = x0;

@@ -1,11 +1,11 @@
 /**
  * 动画主类, 调度和管理所有动画控制器
- * 
+ *
  * @module zrender/animation/Animation
  * @author pissang(https://github.com/pissang)
  */
 define(function(require) {
-        
+
     'use strict';
 
     var Clip = require('./Clip');
@@ -30,8 +30,8 @@ define(function(require) {
      * @typedef {Object} IZRenderStage
      * @property {Function} update
      */
-    
-    /** 
+
+    /**
      * @alias module:zrender/animation/Animation
      * @constructor
      * @param {Object} [options]
@@ -147,7 +147,7 @@ define(function(require) {
 
             function step() {
                 if (self._running) {
-                    
+
                     requestAnimationFrame(step);
 
                     self._update();
@@ -185,7 +185,7 @@ define(function(require) {
             var deferred = new Animator(
                 target,
                 options.loop,
-                options.getter, 
+                options.getter,
                 options.setter
             );
             deferred.animation = this;
@@ -216,7 +216,7 @@ define(function(require) {
         var len = p0.length;
         if (arrDim == 1) {
             for (var i = 0; i < len; i++) {
-                out[i] = interpolateNumber(p0[i], p1[i], percent); 
+                out[i] = interpolateNumber(p0[i], p1[i], percent);
             }
         }
         else {
@@ -258,7 +258,7 @@ define(function(require) {
     function catmullRomInterpolate(p0, p1, p2, p3, t, t2, t3) {
         var v0 = (p2 - p0) * 0.5;
         var v1 = (p3 - p1) * 0.5;
-        return (2 * (p1 - p2) + v0 + v1) * t3 
+        return (2 * (p1 - p2) + v0 + v1) * t3
                 + (-3 * (p1 - p2) - 2 * v0 - v1) * t2
                 + v0 * t + p1;
     }
@@ -336,7 +336,7 @@ define(function(require) {
                         zrLog('Invalid property ' + propName);
                         continue;
                     }
-                    // If time is 0 
+                    // If time is 0
                     //  Then props is given initialize value
                     // Else
                     //  Initialize value from current prop value
@@ -365,7 +365,7 @@ define(function(require) {
         },
         /**
          * 开始执行动画
-         * @param  {string|Function} easing 
+         * @param  {string|Function} easing
          *         动画缓动函数，详见{@link module:zrender/animation/easing}
          * @return {module:zrender/animation/Animation~Animator}
          */
@@ -402,7 +402,7 @@ define(function(require) {
 
                 // For vertices morphing
                 var arrDim = (
-                        isValueArray 
+                        isValueArray
                         && isArrayLike(firstVal[0])
                     )
                     ? 2 : 1;
@@ -428,7 +428,7 @@ define(function(require) {
                     if (typeof(value) == 'string') {
                         if (color.validate(value)) {
                             value = color.toArray(value);
-                            isValueColor = true;   
+                            isValueColor = true;
                         }
                         else {
                             isValueString = true;
@@ -437,7 +437,7 @@ define(function(require) {
                     kfValues.push(value);
                 }
 
-                // Cache the key of last frame to speed up when 
+                // Cache the key of last frame to speed up when
                 // animation playback is sequency
                 var cacheKey = 0;
                 var cachePercent = 0;

@@ -7,7 +7,6 @@ define(function (require) {
     var mathSqrt = Math.sqrt;
     var mathAtan2 = Math.atan2;
     function transformPath(path, m) {
-        var len = path.len();
         var data = path.data;
         var cmd;
         var nPoint;
