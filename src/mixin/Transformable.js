@@ -26,9 +26,9 @@ define(function (require) {
      * @alias module:zrender/mixin/Transformable
      * @constructor
      */
-    var Transformable = function () {
-
-        if (! this.position) {
+    var Transformable = function (opts) {
+        // If there are no given position, rotation, scale
+        if (! opts.position) {
             /**
              * 平移
              * @type {Array.<number>}
@@ -36,7 +36,7 @@ define(function (require) {
              */
             this.position = [0, 0];
         }
-        if (this.rotation == null) {
+        if (opts.rotation == null) {
             /**
              * 旋转
              * @type {Array.<number>}
@@ -44,7 +44,7 @@ define(function (require) {
              */
             this.rotation = 0;
         }
-        if (! this.scale) {
+        if (! opts.scale) {
             /**
              * 缩放
              * @type {Array.<number>}

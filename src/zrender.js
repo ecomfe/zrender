@@ -149,7 +149,6 @@ define(function(require) {
         // 修改 storage.delFromMap, 每次删除元素之前删除动画
         // FIXME 有点ugly
         var self = this;
-        var storage = this.storage;
         var oldDelFromMap = storage.delFromMap;
         var oldAddToMap = storage.addToMap;
         storage.delFromMap = function (elId) {
@@ -178,7 +177,7 @@ define(function(require) {
 
         /**
          * 添加元素
-         * @param  {string|module:zrender/container/Group|module:zrender/shape/Base} el
+         * @param  {string|module:zrender/Element} el
          */
         addElement: function (el) {
             this.storage.addRoot(el);
@@ -187,7 +186,7 @@ define(function(require) {
 
         /**
          * 删除元素
-         * @param  {string|module:zrender/container/Group|module:zrender/shape/Base} el
+         * @param  {string|module:zrender/Element} el
          */
         removeElement: function (el) {
             this.storage.delRoot(el);
@@ -203,11 +202,6 @@ define(function(require) {
          * @param {string} [config.motionBlur=false] 是否开启动态模糊
          * @param {number} [config.lastFrameAlpha=0.7]
          *                 在开启动态模糊的时候使用，与上一帧混合的alpha值，值越大尾迹越明显
-         * @param {Array.<number>} [config.position] 层的平移
-         * @param {Array.<number>} [config.rotation] 层的旋转
-         * @param {Array.<number>} [config.scale] 层的缩放
-         * @param {boolean} [config.zoomable=false] 层是否支持鼠标缩放操作
-         * @param {boolean} [config.panable=false] 层是否支持鼠标平移操作
         */
         configLayer: function (zLevel, config) {
             this.painter.configLayer(zLevel, config);
@@ -246,7 +240,7 @@ define(function(require) {
         /**
          * 动画
          *
-         * @param {string|module:zrender/container/Group|module:zrender/shape/Base} el 动画对象
+         * @param {string|module:zrender/Element} el 动画对象
          * @param {string} path 需要添加动画的属性获取路径，可以通过a.b.c来获取深层的属性
          * @param {boolean} [loop] 动画是否循环
          * @return {module:zrender/animation/Animation~Animator}
@@ -316,7 +310,7 @@ define(function(require) {
 
         /**
          * 停止动画对象的动画
-         * @param  {string|module:zrender/container/Group|module:zrender/shape/Base} el
+         * @param  {string|module:zrender/Element} el
          */
         stopAnimation: function (el) {
             if (el.__animators) {

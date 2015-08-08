@@ -126,7 +126,7 @@ define(function (require) {
 
         /**
          * 添加图形(Shape)或者组(Group)到根节点
-         * @param {module:zrender/shape/Shape|module:zrender/container/Group} el
+         * @param {module:zrender/Element} el
          */
         addRoot: function (el) {
             // Element has been added

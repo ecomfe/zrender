@@ -307,7 +307,7 @@ define(function (require) {
                                 continue;
                             }
                             propPathMap[propName] = 1;
-                            // Animating particular property in style
+                            // Animating particular property in style or style
                             if (propName.match(styleShapeReg)) {
                                 // remove 'style.', 'shape.' prefix
                                 var subProp = propName.slice(0, 5);

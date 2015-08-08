@@ -25,17 +25,19 @@
             "zrender/graphic/Image",
             "zrender/graphic/shape/Polyline",
             "zrender/tool/color"
-        ], 
+        ],
         function (zrender, Animation, StarShape, ImageShape, PolylineShape, colorTool) {
             // 初始化zrender
             var zr = zrender.init(document.getElementById("Main"));
 
             var starShape = new StarShape({
-                style : {
-                    cx: 10,
-                    cy: 10,
+                shape: {
+                    x: 10,
+                    y: 10,
                     r: 8,
-                    n: 5,
+                    n: 5
+                },
+                style : {
                     stroke: 'rgb(52,179,242)',
                     fill: '#fff',
                     shadowBlur: 10,
@@ -45,7 +47,7 @@
             });
             var zImage = zr.pathToImage(starShape, 28, 28);
 
-            var NUMBER = 500;
+            var NUMBER = 100;
 
             for (var i = 0; i < NUMBER; i++) {
                 var star = new ImageShape({
@@ -61,7 +63,7 @@
                 });
 
                 zr.addElement(star);
-                var deferred = zr.animate(star.id, "", star, true);
+                var animator = star.animate("", true);
 
                 var points = [];
                 var point = [
@@ -75,18 +77,20 @@
                         Math.random() * zr.getWidth(),
                         Math.random() * zr.getHeight()
                     ];
-                    deferred.when(j * 2000, {
+                    animator.when(j * 2000, {
                         position : point
                     });
                     points.push(point);
                 }
                 var polyline = new PolylineShape({
                     zlevel : 0,
+                    shape: {
+                        smooth: 'spline',
+                        points: points
+                    },
                     style : {
-                        points : points,
-                        smooth : 'spline',
-                        stroke : colorTool.random(),
-                        opacity : 0.2,
+                        stroke: colorTool.random(),
+                        opacity: 0.2,
                         lineWidth: Math.random() * 5
                     },
                     highlightStyle: {
@@ -95,12 +99,12 @@
                 });
                 zr.addElement(polyline);
 
-                deferred.start('spline');
+                animator.start('spline');
             }
             zr.configLayer(1, {
-                // clearColor : 'rgba(255, 255, 255, 0.1)'
-                motionBlur : true,
-                lastFrameAlpha : 0.8
+                // clearColor: 'rgba(255, 255, 255, 0.1)'
+                motionBlur: true,
+                lastFrameAlpha: 0.8
             });
 
             console.profile('render');

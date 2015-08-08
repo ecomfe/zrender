@@ -22,7 +22,7 @@
         if (!layer) {
             return false;
         }
-        
+
         if (layer.isBuildin) {
             return true;
         }
@@ -307,7 +307,7 @@
         },
 
         _updateLayerStatus: function (list) {
-            
+
             var layers = this._layers;
 
             var elCounts = {};
@@ -353,7 +353,7 @@
 
         /**
          * 修改指定zlevel的绘制参数
-         * 
+         *
          * @param {string} zlevel
          * @param {Object} config 配置对象
          * @param {string} [config.clearColor=0] 每次清空画布的颜色
@@ -384,20 +384,16 @@
          * @param {number} zlevel 层所在的zlevel
          */
         delLayer: function (zlevel) {
-            var layer = this._layers[zlevel];
+            var layers = this._layers;
+            var zlevelList = this._zlevelList;
+            var layer = layers[zlevel];
             if (!layer) {
                 return;
             }
-            // Save config
-            this.modLayer(zlevel, {
-                position: layer.position,
-                rotation: layer.rotation,
-                scale: layer.scale
-            });
             layer.dom.parentNode.removeChild(layer.dom);
-            delete this._layers[zlevel];
+            delete layers[zlevel];
 
-            this._zlevelList.splice(util.indexOf(this._zlevelList, zlevel), 1);
+            zlevelList.splice(util.indexOf(zlevelList, zlevel), 1);
         },
 
         /**
@@ -451,7 +447,7 @@
             this.root =
             this.storage =
 
-            this._domRoot = 
+            this._domRoot =
             this._layers = null;
         },
 
@@ -465,7 +461,7 @@
             var imageLayer = new Layer('image', this);
             this._domRoot.appendChild(imageLayer.dom);
             imageLayer.initContext();
-            
+
             var ctx = imageLayer.ctx;
             imageLayer.clearColor = backgroundColor || '#fff';
             imageLayer.clear();
@@ -484,7 +480,7 @@
                 }
             }
 
-            var image = imageLayer.dom.toDataURL(type, args); 
+            var image = imageLayer.dom.toDataURL(type, args);
             ctx = null;
             this._domRoot.removeChild(imageLayer.dom);
             return image;

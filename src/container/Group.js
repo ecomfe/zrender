@@ -18,11 +18,9 @@
  */
 define(function (require) {
 
-    var guid = require('../core/guid');
-    var util = require('../core/util');
+    var zrUtil = require('../core/util');
 
-    var Transformable = require('../mixin/Transformable');
-    var Eventful = require('../mixin/Eventful');
+    var Element = require('../Element');
 
     /**
      * @alias module:zrender/graphic/Group
@@ -30,18 +28,14 @@ define(function (require) {
      * @extends module:zrender/mixin/Transformable
      * @extends module:zrender/mixin/Eventful
      */
-    var Group = function (options) {
+    var Group = function (opts) {
 
-        options = options || {};
+        opts = opts || {};
 
-        /**
-         * Group id
-         * @type {string}
-         */
-        this.id = options.id || guid();
+        Element.call(this, opts);
 
-        for (var key in options) {
-            this[key] = options[key];
+        for (var key in opts) {
+            this[key] = opts[key];
         }
 
         /**
@@ -57,10 +51,6 @@ define(function (require) {
         this.__storage = null;
 
         this.__dirty = true;
-
-        // Mixin
-        Transformable.call(this);
-        Eventful.call(this);
     };
 
     Group.prototype = {
@@ -71,16 +61,10 @@ define(function (require) {
          * @type {string}
          */
         type: 'group',
-        /**
-         * 是否忽略该 Group 及其所有子节点
-         * @type {boolean}
-         * @default false
-         */
-        ignore: false,
 
         /**
          * 复制并返回一份新的包含所有儿子节点的数组
-         * @return {Array.<module:zrender/graphic/Group|module:zrender/graphic/Displayable>}
+         * @return {Array.<module:zrender/Element>}
          */
         children: function () {
             return this._children.slice();
@@ -89,15 +73,15 @@ define(function (require) {
         /**
          * 获取指定 index 的儿子节点
          * @param  {number} idx
-         * @return {module:zrender/graphic/Group|module:zrender/graphic/Displayable}
+         * @return {module:zrender/Element}
          */
         childAt: function (idx) {
             return this._children[idx];
         },
 
         /**
-         * 添加子节点，可以是Shape或者Group
-         * @param {module:zrender/graphic/Group|module:zrender/graphic/Displayable} child
+         * 添加子节点
+         * @param {module:zrender/Element} child
          */
         // TODO Type Check
         addElement: function (child) {
@@ -132,7 +116,7 @@ define(function (require) {
 
         /**
          * 移除子节点
-         * @param {module:zrender/graphic/Group|module:zrender/graphic/Displayable} child
+         * @param {module:zrender/Element} child
          */
         // TODO Type Check
         removeElement: function (child) {
@@ -267,8 +251,7 @@ define(function (require) {
         }
     };
 
-    util.merge(Group.prototype, Transformable.prototype, true);
-    util.merge(Group.prototype, Eventful.prototype, true);
+    zrUtil.inherits(Group, Element);
 
     return Group;
 });

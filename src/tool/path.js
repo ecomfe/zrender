@@ -2,7 +2,7 @@ define(function (require) {
 
     var Path = require('../graphic/Path');
     var PathProxy = require('../core/PathProxy');
-    var transformPath = require('../core/transformPath');
+    var transformPath = require('./transformPath');
 
     // command chars
     var cc = [

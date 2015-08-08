@@ -6,26 +6,26 @@
 
 define(function (require) {
 
-    var guid = require('../core/guid');
     var zrUtil = require('../core/util');
 
     var Style = require('./Style');
 
+    var Element = require('../Element');
     var RectText = require('./mixin/RectText');
     var Stateful = require('./mixin/Stateful');
-    var Eventful = require('../mixin/Eventful');
-    var Transformable = require('../mixin/Transformable');
 
     var rectContain = require('../contain/rect');
 
     /**
      * @alias module:zrender/graphic/Displayable
-     * @extends module:zrender/mixin/Transformable
-     * @extends module:zrender/mixin/Eventful
+     * @extends module:zrender/Element
+     * @extends module:zrender/graphic/mixin/Stateful
      */
     var Displayable = function (opts) {
 
         opts = opts || {};
+
+        Element.call(this, opts);
 
         // Extend properties
         for (var name in opts) {
@@ -37,19 +37,14 @@ define(function (require) {
             }
         }
 
-        this.id = opts.id || guid();
-
         /**
          * @type {module:zrender/graphic/Style}
          */
         this.style = new Style(opts.style);
 
         this._rect = null;
-        // Shapes for ascade clipping.
+        // Shapes for cascade clipping.
         this.__clipPaths = [];
-
-        Transformable.call(this, opts);
-        Eventful.call(this, opts);
 
         // FIXME Stateful must be mixined after style is setted
         Stateful.call(this, opts);
@@ -59,11 +54,6 @@ define(function (require) {
 
         constructor: Displayable,
 
-        /**
-         * 图形类型
-         * Graphic element type
-         * @type {string}
-         */
         type: 'displayable',
 
         /**
@@ -73,23 +63,6 @@ define(function (require) {
          * @type {boolean}
          */
         __dirty: true,
-
-        /**
-         * ZRender 实例对象，会在 displayable 添加到 zrender 实例中后自动赋值
-         * ZRender instance will be assigned when displayable is associated with zrender
-         * @name module:/zrender/graphic/Displayable#__zr
-         * @type {module:zrender/ZRender}
-         */
-        __zr: null,
-
-        /**
-         * 图形是否忽略，为true时忽略图形的绘制以及事件触发
-         * If ignore drawing and events of the displayable object
-         * @name module:/zrender/graphic/Displayable#ignore
-         * @type {boolean}
-         * @default false
-         */
-        ignore: false,
 
         /**
          * 图形是否可见，为true时不绘制图形，但是仍能触发鼠标事件
@@ -171,8 +144,12 @@ define(function (require) {
             }
         },
 
+        /**
+         * 图形绘制方法
+         * @param {Canvas2DRenderingContext} ctx
+         */
         // Interface
-        brush: function (ctx, state) {},
+        brush: function (ctx) {},
 
         // Interface
         getBoundingRect: function () {},
@@ -231,33 +208,6 @@ define(function (require) {
         },
 
         /**
-         * 创建一个 Animator
-         * @param  {string} path 子属性 path, 例如 'style'
-         * @param  {boolean} [loop=false] 是否循环
-         * @return {module:zrender/animation/Animation~Animator}
-         */
-        animate: function (path, loop) {
-            if (this.__zr) {
-                return this.__zr.animate(this, path, loop);
-            }
-        },
-
-        // TODO
-        animateTo: function () {
-
-        },
-
-        /**
-         * 停止所有动画
-         */
-        stopAnimation: function () {
-            if (this.__zr) {
-                this.__zr.stopAnimation(this);
-            }
-            return this;
-        },
-
-        /**
          * 图形是否会触发事件
          * If displayable object binded any event
          * @return {boolean}
@@ -298,10 +248,12 @@ define(function (require) {
         }
     };
 
-    zrUtil.inherits(Displayable, Eventful);
-    zrUtil.inherits(Displayable, Transformable);
-    zrUtil.inherits(Displayable, RectText);
-    zrUtil.inherits(Displayable, Stateful);
+    zrUtil.inherits(Displayable, Element);
+
+    zrUtil.merge(Displayable.prototype, RectText.prototype, true);
+    zrUtil.merge(Displayable.prototype, Stateful.prototype, true);
+
+    Displayable.prototype.constructor = Displayable;
 
     return Displayable;
 });

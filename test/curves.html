@@ -31,7 +31,7 @@
     require(['zrender','zrender/graphic/shape/Rose','zrender/graphic/shape/Trochoid'], function(zrender, RoseShape, TrocholdShape){
             var zr = zrender.init( main );
 
-            var N = 5;
+            var N = 10;
             var color = require('zrender/tool/color');
             var colorId = 0;
 
@@ -42,7 +42,7 @@
             function createShape(i) {
                 var ShapeClass = ( i % 5 == 0 ) ? TrocholdShape : RoseShape;
                 var r = ( i % 5 == 0 ) ? random(50, 20) : [random(100, 30)];
-                
+
                 var shape = new ShapeClass({
                     position: [random(w), random(h)],
                     shape: {
@@ -59,7 +59,7 @@
                         lineWidth: 1,
                         stroke:  color.getColor(colorId ++)
                     },
-                    rotation: [pi * 2 / random(360), 0, 0],
+                    rotation: pi * 2 / random(360),
                     hoverable: false,
                     draggable: false
                 });
@@ -71,12 +71,12 @@
                 var time = random(1000, 100);
                 var type = shape.type =='rose' ? random(6) : random(3);
                 var easing = [
-                    'Linear', 'QuadraticIn', 'QuadraticOut', 'QuadraticInOut', 
-                    'CubicIn', 'CubicOut', 'CubicInOut', 'QuarticIn', 'QuarticOut', 
-                    'QuarticInOut', 'QuinticIn', 'QuinticOut', 'QuinticInOut',  'SinusoidalIn', 
-                    'SinusoidalOut', 'SinusoidalInOut', 'ExponentialIn', 'ExponentialOut', 
-                    'ExponentialInOut', 'CircularIn', 'CircularOut', 'CircularInOut', 
-                    'ElasticIn', 'ElasticOut', 'ElasticInOut', 'BackIn', 'BackOut', 
+                    'Linear', 'QuadraticIn', 'QuadraticOut', 'QuadraticInOut',
+                    'CubicIn', 'CubicOut', 'CubicInOut', 'QuarticIn', 'QuarticOut',
+                    'QuarticInOut', 'QuinticIn', 'QuinticOut', 'QuinticInOut',  'SinusoidalIn',
+                    'SinusoidalOut', 'SinusoidalInOut', 'ExponentialIn', 'ExponentialOut',
+                    'ExponentialInOut', 'CircularIn', 'CircularOut', 'CircularInOut',
+                    'ElasticIn', 'ElasticOut', 'ElasticInOut', 'BackIn', 'BackOut',
                     'BackInOut', 'BounceIn', 'BounceOut', 'BounceInOut'
                     ][0]//[random(30)];
 
@@ -95,21 +95,21 @@
                         break;
                     case 2 :
                         move.when(time, {
-                            rotation : [pi * 2 * random(10, 1), 0, 0]
+                            rotation : pi * 2 * random(10, 1)
                         });
                         break;
-                    case 3 : 
-                        move = shape.animate('style').when(time, {
+                    case 3 :
+                        move = shape.animate('shape').when(time, {
                             r : [random(100, 30)]
                         });
                         break;
-                    case 4 : 
-                        move = shape.animate('style').when(time, {
+                    case 4 :
+                        move = shape.animate('shape').when(time, {
                             k : random(10)
                         });
                         break;
-                    case 5 : 
-                        move = shape.animate('style').when(time, {
+                    case 5 :
+                        move = shape.animate('shape').when(time, {
                             n : random(5)
                         });
                         break;
@@ -127,6 +127,6 @@
             return Math.floor(Math.random() * (max - min)) % (max - min) + min;
         }
     </script>
-    
+
 </body>
 </html>
