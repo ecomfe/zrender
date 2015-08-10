@@ -162,6 +162,14 @@ define(function (require) {
             }
         },
 
+        /**
+         * Alias for animate('shape')
+         * @param {boolean} loop
+         */
+        animateShape: function (loop) {
+            return this.animate('shape', loop);
+        },
+
         // Overwrite __attrKV
         __attrKV: function (key, value) {
             Displayable.prototype._attrKV.call(this, key, value);

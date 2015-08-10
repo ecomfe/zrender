@@ -21,7 +21,7 @@
             "zrender",
             "zrender/animation/animation",
             'zrender/graphic/shape/Circle'
-        ], 
+        ],
         function(zrender, Animation, CircleShape){
 
             // 初始化zrender
@@ -76,7 +76,7 @@
                 })
                 .start();
 
-            zr.animate(circle.id, 'style', true)
+            circle.animateStyle(true)
                 .when(4000, {
                     fill: 'rgba(222, 222, 10, 1)'
                 })

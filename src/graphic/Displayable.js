@@ -227,6 +227,14 @@ define(function (require) {
             this.updateTransform();
         },
 
+        /**
+         * Alias for animate('style')
+         * @param {boolean} loop
+         */
+        animateStyle: function (loop) {
+            return this.animate('style', loop);
+        },
+
         __attrKV: function (key, value) {
             if (key !== 'style') {
                 this[key] = value;

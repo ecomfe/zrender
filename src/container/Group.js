@@ -120,7 +120,7 @@ define(function (require) {
          */
         // TODO Type Check
         removeElement: function (child) {
-            var idx = util.indexOf(this._children, child);
+            var idx = zrUtil.indexOf(this._children, child);
 
             if (idx >= 0) {
                 this._children.splice(idx, 1);
