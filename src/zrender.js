@@ -179,7 +179,7 @@ define(function(require) {
          * 添加元素
          * @param  {string|module:zrender/Element} el
          */
-        addElement: function (el) {
+        add: function (el) {
             this.storage.addRoot(el);
             this._needsRefreshNextFrame = true;
         },
@@ -188,7 +188,7 @@ define(function(require) {
          * 删除元素
          * @param  {string|module:zrender/Element} el
          */
-        removeElement: function (el) {
+        removes: function (el) {
             this.storage.delRoot(el);
             this._needsRefreshNextFrame = true;
         },

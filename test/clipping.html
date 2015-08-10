@@ -30,8 +30,8 @@
 
         var g1 = new Group();
         var g2 = new Group();
-        g1.addElement(g2);
-        zr.addElement(g1);
+        g1.add(g2);
+        zr.add(g1);
 
         var circle = new CircleShape({
             shape: {
@@ -69,7 +69,7 @@
                     },
                     draggable: true
                 });
-                g2.addElement(image);
+                g2.add(image);
             }
         }
 

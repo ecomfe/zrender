@@ -39,16 +39,16 @@
             var g1 = new Group({
                 position: [100, 100]
             });
-            g1.addElement(circle);
+            g1.add(circle);
 
             var g2 = new Group();
-            g2.addElement(g1);
+            g2.add(g1);
 
             var g3 = new Group();
-            g3.addElement(g2);
+            g3.add(g2);
 
             var g4 = new Group();
-            g4.addElement(g3);
+            g4.add(g3);
 
             circle.on('click', function(e) {
                 console.log('Circle');
@@ -67,7 +67,7 @@
                 console.log("Group 4 should not be triggered");
             })
 
-            zr.addElement(g4);
+            zr.add(g4);
         })
     </script>
 </body>

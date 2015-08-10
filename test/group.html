@@ -51,10 +51,10 @@
             var group = new Group({
                 position: [100, 100]
             });
-            group.addElement(circle);
-            group.addElement(circle2);
+            group.add(circle);
+            group.add(circle2);
 
-            zr.addElement(group);
+            zr.add(group);
 
             var tm1 = group.animate("", true)
                 .when(1000, {

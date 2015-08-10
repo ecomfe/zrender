@@ -39,7 +39,7 @@
         ]
     });
 
-    
+
     require(
         [
             "zrender",
@@ -55,7 +55,7 @@
             'zrender/graphic/Image',
             'zrender/graphic/shape/Star',
             'zrender/graphic/shape/Isogon'
-        ], 
+        ],
         function(
             zrender,
             CircleShape,
@@ -126,7 +126,7 @@
                 shapeType = document.getElementById('shape').value;
                 setTimeout(run,50);
             }
-            
+
             var sList = [
                 'circle','sector','ring','ellipse','rectangle',
                 'text','heart','droplet','line','image','star','isogon'
@@ -157,7 +157,7 @@
                     zr.clear();
                     for (var i = 0; i < n; i++) {
                         var ShapeClass = ShapeClasses[shapeType];
-                        zr.addElement(new ShapeClass({
+                        zr.add(new ShapeClass({
                             style: {
                                 x: Math.round(Math.random() * width),
                                 y: Math.round(Math.random() * height),

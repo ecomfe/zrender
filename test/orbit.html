@@ -62,7 +62,7 @@
                     hoverable : false,
                 });
 
-                zr.addElement(star);
+                zr.add(star);
                 var animator = star.animate("", true);
 
                 var points = [];
@@ -97,7 +97,7 @@
                         opacity: 1
                     }
                 });
-                zr.addElement(polyline);
+                zr.add(polyline);
 
                 animator.start('spline');
             }

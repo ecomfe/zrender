@@ -25,7 +25,7 @@
             "zrender/graphic/shape/Polyline",
             "zrender/graphic/shape/Line",
             "zrender/graphic/shape/BezierCurve"
-        ], 
+        ],
         function(zrender, StarShape, PolylineShape, LineShape, BezierCurve){
 
             // 初始化zrender
@@ -48,14 +48,14 @@
                 }
             });
 
-            zr.addElement(polyline);
+            zr.add(polyline);
 
             polyline.animate('style', true)
                 .when(1000, {
                     lineDashOffset: 20
                 })
                 .start();
-            
+
             var line = new LineShape({
                 style: {
                     lineDash: [10, 10],
@@ -68,7 +68,7 @@
                     y2: 500
                 }
             });
-            zr.addElement(line);
+            zr.add(line);
 
             line.animate('style', true)
                 .when(1000, {
@@ -89,14 +89,14 @@
                     cy: 200
                 }
             });
-            zr.addElement(star);
+            zr.add(star);
 
             star.animate('style', true)
                 .when(1000, {
                     lineDashOffset: 30
                 })
                 .start();
-            
+
             var curve = new BezierCurve({
                 style: {
                     lineDash: [5, 5],
@@ -111,7 +111,7 @@
                 }
             });
 
-            zr.addElement(curve);
+            zr.add(curve);
 
             curve.animate('style', true)
                 .when(1000, {

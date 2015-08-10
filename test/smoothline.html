@@ -32,7 +32,7 @@
             "zrender/animation/animation",
             "zrender/graphic/shape/Polyline",
             "zrender/graphic/shape/Polygon"
-        ], 
+        ],
         function(zrender, Animation, PolylineShape, PolygonShape){
 
             // 初始化zrender
@@ -88,8 +88,8 @@
                     smoothPolygon.transitionState('normal');
                 }
             });
-            zr.addElement(smoothPolygon);
-            zr.addElement(smoothLine);
+            zr.add(smoothPolygon);
+            zr.add(smoothLine);
         }
     )
     </script>

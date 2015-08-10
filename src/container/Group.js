@@ -84,7 +84,7 @@ define(function (require) {
          * @param {module:zrender/Element} child
          */
         // TODO Type Check
-        addElement: function (child) {
+        add: function (child) {
             if (child == this) {
                 return;
             }
@@ -119,7 +119,7 @@ define(function (require) {
          * @param {module:zrender/Element} child
          */
         // TODO Type Check
-        removeElement: function (child) {
+        remove: function (child) {
             var idx = zrUtil.indexOf(this._children, child);
 
             if (idx >= 0) {
