@@ -21,7 +21,7 @@
         [
             "zrender",
             "zrender/graphic/shape/Polygon"
-        ], 
+        ],
         function(zrender, Polygon){
             var zr = zrender.init(document.getElementById('main'));
             var arrow = new Polygon({
@@ -31,7 +31,7 @@
                 position: [zr.getWidth() / 2, zr.getHeight() / 2],
             });
             arrow.scale[1] = 1.5;
-            zr.addElement(arrow);
+            zr.add(arrow);
 
             zr.on('mousemove', function(e) {
                 var p = [e.event.clientX, e.event.clientY];

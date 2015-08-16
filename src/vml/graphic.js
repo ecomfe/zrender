@@ -291,7 +291,7 @@ define(function (require) {
             strokeEl.weight = lineWidth + 'px';
         }
 
-        var path = this._path;
+        var path = this.path;
         if (this.__dirtyPath) {
             path.beginPath();
             this.buildPath(path, this.shape);

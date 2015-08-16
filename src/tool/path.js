@@ -330,14 +330,20 @@ define(function (require) {
 
         opts = opts || {};
         opts.buildPath = function (path) {
-            // PENDING Reference to the same array
-            path.setData(pathProxy.data);
+            // First build
+            if (pathProxy) {
+                path.setData(pathProxy.data);
+                pathProxy = null;
+            }
             path.rebuildPath(path.getContext());
         };
 
         opts.applyTransform = function (m) {
-            transformPath(pathProxy, m);
-        }
+            if (this.__dirty) {
+                this.buildPath(this.path, this.shape);
+            }
+            transformPath(this.path, m);
+        };
 
         return opts;
     }
@@ -359,6 +365,34 @@ define(function (require) {
          */
         extendFromString: function (str, opts) {
             return Path.extend(createPathOptions(str, opts));
+        },
+
+        /**
+         * Merge multiple paths
+         *
+         * TODO Apply transform
+         */
+        mergePath: function (pathEls, opts) {
+            var pathList = [];
+            var len = pathEls.length;
+            var pathEl;
+            var i;
+            for (i = 0; i < len; i++) {
+                pathEl = pathEls[i];
+                if (pathEl.__dirty) {
+                    pathEl.buildPath(pathEl.path, pathEl.shape);
+                }
+                pathList.push(pathEl.path);
+            }
+
+            var pathBundle = new Path(opts);
+            pathBundle.buildPath = function (path) {
+                for (var i = 0; i < len; i++) {
+                    pathList[i].rebuildPath(path.getContext());
+                }
+            }
+
+            return pathBundle;
         }
     };
 });

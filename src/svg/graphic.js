@@ -165,8 +165,7 @@ define(function (require) {
             svgEl = createElement('path');
             el.__svgEl = svgEl;
         }
-        // FIXME Do not access private property!
-        var path = el._path;
+        var path = el.path;
         if (el.__dirtyPath) {
             path.beginPath();
             el.buildPath(path, el.shape);

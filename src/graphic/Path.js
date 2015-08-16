@@ -32,7 +32,11 @@ define(function (require) {
     var Path = function (opts) {
         Displayable.call(this, opts);
 
-        this._path = new PathProxy();
+        /**
+         * @type {module:zrender/core/PathProxy}
+         * @readOnly
+         */
+        this.path = new PathProxy();
     };
 
     Path.prototype = {
@@ -48,7 +52,7 @@ define(function (require) {
 
             var style = this.style;
 
-            var path = this._path;
+            var path = this.path;
             var hasStroke = pathHasStroke(style);
             var hasFill = pathHasFill(style);
 
@@ -64,7 +68,7 @@ define(function (require) {
             if (this.__dirtyPath || (
                 lineDash && !ctxLineDash && hasStroke
             )) {
-                path = this._path.beginPath(ctx);
+                path = this.path.beginPath(ctx);
 
                 // Setting line dash before build path
                 if (lineDash && !ctxLineDash) {
@@ -80,7 +84,7 @@ define(function (require) {
             else {
                 // Replay path building
                 ctx.beginPath();
-                this._path.rebuildPath(ctx);
+                this.path.rebuildPath(ctx);
             }
 
             hasFill && path.fill(ctx);
@@ -104,7 +108,7 @@ define(function (require) {
 
         getBoundingRect: function () {
             if (! this._rect) {
-                this._rect = this._path.getBoundingRect();
+                this._rect = this.path.getBoundingRect();
             }
             if (pathHasStroke(this.style)) {
                 var rect = this._rect;
@@ -126,7 +130,7 @@ define(function (require) {
             y = localPos[1];
 
             if (rectContain.contain(rect, x, y)) {
-                var pathData = this._path.data;
+                var pathData = this.path.data;
                 if (pathHasStroke(style)) {
                     if (pathContain.containStroke(
                         pathData, style.lineWidth, x, y

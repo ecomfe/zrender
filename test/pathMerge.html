@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Path Merge</title>
+    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+</head>
+<body>
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+
+    require(["zrender", 'zrender/graphic/shape/Line', 'zrender/tool/path'], function(zrender, LineShape, pathTool){
+
+        // 初始化zrender
+        var zr = zrender.init(document.getElementById("main"));
+
+        var lineList = [];
+        for (var i = 0; i < 300; i ++) {
+            var line = new LineShape({
+                shape: {
+                    x1: 0,
+                    y1: i * 3,
+                    x2: 1000,
+                    y2: i * 3
+                }
+            });
+            lineList.push(line);
+        }
+        zr.add(pathTool.mergePath(lineList, {
+            style: {
+                stroke: 'black',
+                fill: 'none'
+            }
+        }));
+    })
+    </script>
+    <div id="main" style="width:1000px;height:800px;"></div>
+</body>
+</html>

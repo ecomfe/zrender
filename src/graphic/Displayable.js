@@ -126,8 +126,7 @@ define(function (require) {
                             m[4], m[5]
                         );
                     }
-                    // FIXME
-                    var path = clipPath._path;
+                    var path = clipPath.path;
                     path.beginPath(ctx);
                     clipPath.buildPath(path, clipPath.shape);
                     ctx.clip();
