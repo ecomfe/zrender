@@ -145,17 +145,21 @@ define(function (require) {
         /**
          * 移除所有子节点
          */
-        clearChildren: function () {
-            for (var i = 0; i < this._children.length; i++) {
-                var child = this._children[i];
-                if (this.__storage) {
-                    this.__storage.delFromMap(child.id);
+        clear: function () {
+            var children = this._children;
+            var storage = this.__storage;
+            var child;
+            var i;
+            for (i = 0; i < children.length; i++) {
+                child = children[i];
+                if (storage) {
+                    storage.delFromMap(child.id);
                     if (child instanceof Group) {
-                        child.delChildrenFromStorage(this.__storage);
+                        child.delChildrenFromStorage(storage);
                     }
                 }
             }
-            this._children.length = 0;
+            children.length = 0;
         },
 
         /**

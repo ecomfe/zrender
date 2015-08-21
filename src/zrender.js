@@ -188,7 +188,7 @@ define(function(require) {
          * 删除元素
          * @param  {string|module:zrender/Element} el
          */
-        removes: function (el) {
+        remove: function (el) {
             this.storage.delRoot(el);
             this._needsRefreshNextFrame = true;
         },

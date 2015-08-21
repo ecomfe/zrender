@@ -44,7 +44,7 @@ define(function(require) {
                 result = {};
                 for (var key in source) {
                     if (source.hasOwnProperty(key)) {
-                        result[key] = deep ? clone(source[key], deep) : source[i];
+                        result[key] = deep ? clone(source[key], deep) : source[key];
                     }
                 }
             }
@@ -228,7 +228,7 @@ define(function(require) {
 
     function bind(func, context) {
         return function () {
-            func.apply(context, arguments);
+            return func.apply(context, arguments);
         }
     }
 

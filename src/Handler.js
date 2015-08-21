@@ -4,6 +4,8 @@
  * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *         errorrik (errorrik@gmail.com)
  *         pissang (shenyi.914@gmail.com)
+ *
+ * 删除图形的时候去除 draggingTarget 和 lastHover
  */
 define(function (require) {
 
@@ -51,7 +53,7 @@ define(function (require) {
             event = event || window.event;
             this._lastHover = null;
             this._isMouseDown = 0;
-            
+
             // 分发config.EVENT.RESIZE事件，global
             this.trigger(EVENT.RESIZE, event);
         },
@@ -78,7 +80,7 @@ define(function (require) {
 
             this._mousemoveHandler(event);
         },
-        
+
         /**
          * 双击响应函数
          * @inner
@@ -101,7 +103,7 @@ define(function (require) {
 
             this._mousemoveHandler(event);
         },
-        
+
 
         /**
          * 鼠标滚轮响应函数
@@ -304,7 +306,7 @@ define(function (require) {
             event = normalizeEvent(this.root, event);
 
             this._mouseupHandler(event);
-            
+
             var now = new Date();
             if (now - this._lastTouchMoment < EVENT.touchClickDelay) {
                 this._mobileFindFixed(event);
@@ -323,7 +325,7 @@ define(function (require) {
 
     /**
      * bind一个参数的function
-     * 
+     *
      * @inner
      * @param {Function} handler 要bind的function
      * @param {Object} context 运行时this环境
@@ -337,7 +339,7 @@ define(function (require) {
 
     /**
      * 为控制类实例初始化dom 事件处理函数
-     * 
+     *
      * @inner
      * @param {module:zrender/Handler} instance 控制类实例
      */
@@ -376,9 +378,9 @@ define(function (require) {
         // this._lastTouchMoment;
         // this._lastDownButton;
 
-        this._lastX = 
-        this._lastY = 
-        this._mouseX = 
+        this._lastX =
+        this._lastY =
+        this._mouseX =
         this._mouseY = 0;
 
         initDomHandler(this);
@@ -472,13 +474,13 @@ define(function (require) {
             this.root =
             this.storage =
             this.painter = null;
-            
+
             this.un();
         },
 
         /**
          * 拖拽开始
-         * 
+         *
          * @private
          * @param {Object} event 事件对象
          */
@@ -492,7 +494,7 @@ define(function (require) {
                 && this._mouseDownTarget == _lastHover
             ) {
                 // 拖拽点击生效时长阀门，某些场景需要降低拖拽敏感度
-                if (_lastHover.dragEnableTime && 
+                if (_lastHover.dragEnableTime &&
                     new Date() - this._lastMouseDownMoment < _lastHover.dragEnableTime
                 ) {
                     return;
@@ -514,7 +516,7 @@ define(function (require) {
 
         /**
          * 拖拽进入目标元素
-         * 
+         *
          * @private
          * @param {Object} event 事件对象
          */
@@ -532,7 +534,7 @@ define(function (require) {
 
         /**
          * 拖拽在目标元素上移动
-         * 
+         *
          * @private
          * @param {Object} event 事件对象
          */
@@ -550,7 +552,7 @@ define(function (require) {
 
         /**
          * 拖拽离开目标元素
-         * 
+         *
          * @private
          * @param {Object} event 事件对象
          */
@@ -568,7 +570,7 @@ define(function (require) {
 
         /**
          * 拖拽在目标元素上完成
-         * 
+         *
          * @private
          * @param {Object} event 事件对象
          */
@@ -589,7 +591,7 @@ define(function (require) {
 
         /**
          * 拖拽结束
-         * 
+         *
          * @private
          * @param {Object} event 事件对象
          */
@@ -611,7 +613,7 @@ define(function (require) {
 
         /**
          * 鼠标在某个图形元素上移动
-         * 
+         *
          * @private
          * @param {Object} event 事件对象
          */
@@ -622,7 +624,7 @@ define(function (require) {
 
         /**
          * 鼠标离开某个图形元素
-         * 
+         *
          * @private
          * @param {Object} event 事件对象
          */
@@ -633,7 +635,7 @@ define(function (require) {
 
         /**
          * 事件分发代理
-         * 
+         *
          * @private
          * @param {Object} targetShape 目标图形元素
          * @param {string} eventName 事件名称
@@ -731,7 +733,7 @@ define(function (require) {
 
         /**
          * 迭代函数，查找hover到的图形元素并即时做些事件分发
-         * 
+         *
          * @inner
          * @param {Object} shape 图形元素
          * @param {number} x
