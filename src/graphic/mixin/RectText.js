@@ -10,7 +10,7 @@ define(function (require) {
     var RectText = function () {};
 
     RectText.prototype = {
-        
+
         constructor: RectText,
 
         /**
@@ -37,8 +37,8 @@ define(function (require) {
 
             // Text position represented by coord
             if (textPosition instanceof Array) {
-                x = textPosition[0];
-                y = textPosition[1];
+                x = rect.x + textPosition[0];
+                y = rect.y + textPosition[1];
 
                 ctx.textAlign = align;
                 ctx.textBaseline = baseline;

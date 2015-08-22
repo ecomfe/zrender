@@ -10,6 +10,7 @@ define(function (require) {
     var curve = require('./curve');
     var vec2 = require('./vector');
     var bbox = require('./bbox');
+    var BoundingRect = require('./BoundingRect');
 
     var CMD = {
         M: 1,
@@ -481,7 +482,7 @@ define(function (require) {
         },
 
         /**
-         * @return {Object}
+         * @return {module:zrender/core/BoundingRect}
          */
         getBoundingRect: function () {
             min[0] = min[1] = min2[0] = min2[1] = Infinity;
@@ -576,12 +577,9 @@ define(function (require) {
                 vec2.max(max, max, max2);
             }
 
-            return {
-                x: min[0],
-                y: min[1],
-                width: max[0] - min[0],
-                height: max[1] - min[1]
-            };
+            return new BoundingRect(
+                min[0], min[1], max[0] - min[0], max[1] - min[1]
+            );
         },
 
         /**

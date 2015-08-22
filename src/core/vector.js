@@ -271,6 +271,6 @@ define(function () {
     vector.lengthSquare = vector.lenSquare;
     vector.dist = vector.distance;
     vector.distSquare = vector.distanceSquare;
-    
+
     return vector;
 });

@@ -6,6 +6,7 @@
 define(function (require) {
 
     var Displayable = require('./Displayable');
+    var BoundingRect = require('../core/BoundingRect');
     var zrUtil = require('../core/util');
     var roundRectHelper = require('./helper/roundRect');
 
@@ -124,12 +125,9 @@ define(function (require) {
         getBoundingRect: function () {
             var style = this.style;
             if (! this._rect) {
-                this._rect = {
-                    x: style.x,
-                    y: style.y,
-                    width: style.width || 0,
-                    height: style.height || 0
-                };
+                this._rect = new BoundingRect(
+                    style.x, style.y, style.width || 0, style.height || 0
+                );
             }
             return this._rect;
         }

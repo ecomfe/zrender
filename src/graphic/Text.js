@@ -6,7 +6,7 @@
  */
 
 define(function (require) {
-    
+
     var Displayable = require('./Displayable');
     var zrUtil = require('../core/util');
     var textContain = require('../contain/text');
@@ -32,9 +32,10 @@ define(function (require) {
             this.beforeBrush(ctx);
 
             var style = this.style;
+            style.textPosition = [0, 0];
 
             if (style.text) {
-                return this.drawRectText(ctx, {
+                this.drawRectText(ctx, {
                     x: style.x || 0, y: style.y || 0,
                     width: 0, height: 0
                 }, this.getBoundingRect());

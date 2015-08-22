@@ -1,6 +1,6 @@
 // http://www.w3.org/TR/SVG/
 define(function(require) {
-    
+
     'use strict';
 
     var http = require('zrender/tool/http');
@@ -13,7 +13,7 @@ define(function(require) {
     var Polygon = require('zrender/graphic/shape/Polygon');
     var Text = require('zrender/graphic/Text');
     var ImageShape = require('zrender/graphic/Image');
-    var Group = require('zrender/graphic/Group');
+    var Group = require('zrender/container/Group');
     var Polyline = require('zrender/graphic/shape/Polyline');
     var mat2d = require('zrender/core/matrix');
     var vec2 = require('zrender/core/vector');

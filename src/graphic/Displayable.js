@@ -150,6 +150,10 @@ define(function (require) {
         // Interface
         brush: function (ctx) {},
 
+        /**
+         * 获取最小包围盒
+         * @return {module:zrender/core/BoundingRect}
+         */
         // Interface
         getBoundingRect: function () {},
 

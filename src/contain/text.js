@@ -5,6 +5,7 @@ define(function (require) {
     var TEXT_CACHE_MAX = 5000;
 
     var util = require('../core/util');
+    var BoundingRect = require('../core/BoundingRect');
 
     function getTextWidth(text, textFont) {
         var key = text + ':' + textFont;
@@ -38,15 +39,9 @@ define(function (require) {
         var lineHeight = getTextWidth('国', textFont);
         var height = textLineLen * lineHeight;
 
-        var rect = {
-            x: 0,
-            y: 0,
-            width: width,
-            height: height,
-
-            // Text has a special line height property
-            lineHeight: lineHeight
-        };
+        var rect = new BoundingRect(0, 0, width, height)
+        // Text has a special line height property
+        rect.lineHeight = lineHeight;
 
         switch (textBaseline) {
             case 'bottom':
@@ -123,7 +118,7 @@ define(function (require) {
         getWidth: getTextWidth,
 
         getBoundingRect: getTextRect,
-        
+
         adjustTextPositionOnRect: adjustTextPositionOnRect,
 
         measureText: function (text, textFont) {

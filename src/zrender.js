@@ -209,13 +209,6 @@ define(function(require) {
         },
 
         /**
-         * 渲染
-         */
-        render: function () {
-            return this.refresh();
-        },
-
-        /**
          * 视图更新
          */
         refresh: function () {

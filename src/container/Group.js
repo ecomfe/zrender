@@ -19,8 +19,8 @@
 define(function (require) {
 
     var zrUtil = require('../core/util');
-
     var Element = require('../Element');
+    var BoundingRect = require('../core/BoundingRect');
 
     /**
      * @alias module:zrender/graphic/Group
@@ -222,7 +222,6 @@ define(function (require) {
 
         dirty: function () {
             this.__dirty = true;
-            // PENDING
             if (this.__zr) {
                 this.__zr.refreshNextFrame();
             }
@@ -248,6 +247,21 @@ define(function (require) {
                 this.__zr.stopAnimation(this);
             }
             return this;
+        },
+
+        /**
+         * @return {module:zrender/core/BoundingRect}
+         */
+        getBoundingRect: function () {
+            // TODO Caching
+            // TODO Transform
+            // var rect = new BoundingRect(-Infinity, -Infinity, Infinity, Infinity);
+            // var children = this._children;
+            // for (var i = 0; i < children.length; i++) {
+            //     var child = children[i];
+            //     rect.union(child.getBoundingRect());
+            // }
+            // return rect;
         },
 
         update: function () {
