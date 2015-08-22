@@ -77,6 +77,16 @@ define(function(require) {
          */
         clone: function () {
             return new BoundingRect(this.x, this.y, this.width, this.height);
+        },
+
+        /**
+         * Copy from
+         */
+        copy: function (rect) {
+            this.x = rect.x;
+            this.y = rect.y;
+            this.width = rect.width;
+            this.height = rect.height;
         }
     };
 

@@ -108,6 +108,9 @@ define(function (require) {
 
         getBoundingRect: function () {
             if (! this._rect) {
+                if (this.__dirtyPath) {
+                    this.buildPath(this.path, this.shape);
+                }
                 this._rect = this.path.getBoundingRect();
             }
             if (pathHasStroke(this.style)) {
