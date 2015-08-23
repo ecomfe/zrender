@@ -216,15 +216,15 @@ define(function (require) {
          * @return {boolean}
          */
         // TODO, 通过 bind 绑定的事件
-        isSilent: function () {
-            return !(
-                this.hoverable || this.draggable
-                || this.onmousemove || this.onmouseover || this.onmouseout
-                || this.onmousedown || this.onmouseup || this.onclick
-                || this.ondragenter || this.ondragover || this.ondragleave
-                || this.ondrop
-            );
-        },
+        // isSilent: function () {
+        //     return !(
+        //         this.hoverable || this.draggable
+        //         || this.onmousemove || this.onmouseover || this.onmouseout
+        //         || this.onmousedown || this.onmouseup || this.onclick
+        //         || this.ondragenter || this.ondragover || this.ondragleave
+        //         || this.ondrop
+        //     );
+        // },
 
         update: function () {
             this.updateTransform();

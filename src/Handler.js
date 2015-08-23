@@ -742,7 +742,8 @@ define(function (require) {
         _isHover: function(shape, x, y) {
             if (
                 (this._draggingTarget && this._draggingTarget == shape) // 迭代到当前拖拽的图形上
-                || shape.isSilent() // 打酱油的路过，啥都不响应的shape~
+                // PENDING
+                // || shape.isSilent() // 打酱油的路过，啥都不响应的shape~
             ) {
                 return false;
             }
