@@ -11,7 +11,7 @@ define(function (require) {
         return a === b;
     }
 
-    function createItem(cmd, idx) {
+    function createItem(cmd, idx, idx1) {
         var res = {
             // cmd explanation
             // '=': not change
@@ -27,11 +27,15 @@ define(function (require) {
         // if (cmd === '^') {
         //     res.idx1 = idx1;
         // }
+
+        if (cmd === '=') {
+            res.idx1 = idx1;
+        }
         return res;
     };
 
-    function append(out, cmd, idx) {
-        out.push(createItem(cmd, idx));
+    function append(out, cmd, idx, idx1) {
+        out.push(createItem(cmd, idx, idx1));
     }
 
     var abs = Math.abs;
@@ -122,7 +126,7 @@ define(function (require) {
             for (i = 0; i < len0; i++) {
                 if (equal(b, arr0[i + i0]) && ! matched) {
                     matched = true;
-                    append(out, '=', i + i0);
+                    append(out, '=', i + i0, j0);
                 }
                 else {
                     // if (i === len0 - 1 && ! matched) {
@@ -174,12 +178,11 @@ define(function (require) {
         var len1 = arr1.length;
         var lenMin = Math.min(len0, len1);
         var head = [];
-        var tail = [];
         for (i = 0; i < lenMin; i++) {
             if (! equal(arr0[i], arr1[i])) {
                 break;
             }
-            append(head, '=', i);
+            append(head, '=', i, i);
         }
 
         for (j = 0; j < lenMin; j++) {
@@ -193,8 +196,8 @@ define(function (require) {
             for (i = 0; i < middle.length; i++) {
                 head.push(middle[i]);
             }
-            for (i = j; i < len0; i++) {
-                append(tail, '=', i);
+            for (i = 0; i < j; i++) {
+                append(head, '=', len0 - j + i, len1 - j + i);
             }
         }
         return head;

@@ -15,7 +15,7 @@ define(function (require) {
     var svgPath = svgGraphic.path;
     var svgImage = svgGraphic.image;
     var svgText = svgGraphic.text;
-    
+
     var createElement = svgCore.createElement;
 
     function parseInt10(val) {
@@ -82,7 +82,7 @@ define(function (require) {
         this.root = root;
 
         this.storage = storage;
-        
+
         var svgRoot = createElement('svg');
 
         var viewport = document.createElement('div');
@@ -132,7 +132,7 @@ define(function (require) {
             var diff = arrayDiff(visibleList, newVisibleList);
             var prevSvgElement;
 
-            // First do remove, Incase element moved to the head and do remove after add
+            // First do remove, in case element moved to the head and do remove after add
             for (i = 0; i < diff.length; i++) {
                 var item = diff[i];
                 if (item.cmd === '-') {
@@ -175,11 +175,11 @@ define(function (require) {
         resize: function () {
             var width = this._getWidth();
             var height = this._getHeight();
-            
+
             if (this._width !== width && this._height !== height) {
                 this._width = width;
                 this._height = height;
-                
+
                 var viewportStyle = this._viewport.style;
                 viewportStyle.width = width + 'px';
                 viewportStyle.height = height + 'px';
@@ -190,24 +190,24 @@ define(function (require) {
                 svgRoot.setAttribute('height', height);
             }
         },
-        
+
         getWidth: function () {
             return this._getWidth();
         },
-        
+
         getHeight: function () {
-            return this._getHeight();  
+            return this._getHeight();
         },
-        
+
         _getWidth: function () {
             var root = this.root;
             var stl = document.defaultView.getComputedStyle(root);
-            
+
             return ((root.clientWidth || parseInt10(stl.width))
                     - parseInt10(stl.paddingLeft)
                     - parseInt10(stl.paddingRight)) | 0;
         },
-        
+
         _getHeight: function () {
             var root = this.root;
             var stl = document.defaultView.getComputedStyle(root);
@@ -216,12 +216,12 @@ define(function (require) {
                     - parseInt10(stl.paddingTop)
                     - parseInt10(stl.paddingBottom)) | 0;
         },
-        
+
         dispose: function () {
             this.root.innerHTML = '';
-            
-            this._svgRoot = 
-            this._viewport = 
+
+            this._svgRoot =
+            this._viewport =
             this.storage = null;
         }
     }
