@@ -60,10 +60,35 @@ define(function(require) {
             }
         },
 
+        /**
+         * @example
+         *  rect.animateTo({
+         *      shape: {
+         *          width: 100
+         *      }
+         *  }, 1000, 'Linear');
+         *
+         *  rect.animateTo({
+         *      shape: {
+         *          width: 100
+         *      }
+         *  }, 1000, function () {});
+         *
+         */
         // TODO
-        animateTo: function (target, time, easing, cb) {
+        // animateTo: function (target, time, easing, cb) {
+        //     for (var name in target) {
+        //         this.animateProperty(name, time)
+        //     }
+        // },
 
-        },
+        // /**
+        //  * @protected
+        //  */
+        // animateProperty: function (propName, value, time, easing, cb) {
+        //     this.animate().when(time, {
+        //     })
+        // },
 
         /**
          * 停止所有动画
@@ -72,6 +97,27 @@ define(function(require) {
             if (this.__zr) {
                 this.__zr.stopAnimation(this);
             }
+            return this;
+        },
+
+        /**
+         * @protected
+         */
+        attrKV: function (key, value) {
+            this[key] = value;
+        },
+
+        attr: function (key, value) {
+            if (typeof key === 'string') {
+                this.attrKV(key, value);
+            }
+            else if (Object(key) === key) {
+                for (var name in key) {
+                    this.attrKV(name, key[name]);
+                }
+            }
+            this.__zr.refreshNextFrame();
+
             return this;
         }
     };

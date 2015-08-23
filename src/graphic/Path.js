@@ -177,8 +177,8 @@ define(function (require) {
             return this.animate('shape', loop);
         },
 
-        // Overwrite __attrKV
-        __attrKV: function (key, value) {
+        // Overwrite attrKV
+        attrKV: function (key, value) {
             Displayable.prototype._attrKV.call(this, key, value);
             if (key === 'shape') {
                 this.__dirtyPath = true;

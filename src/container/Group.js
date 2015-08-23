@@ -158,6 +158,7 @@ define(function (require) {
                         child.delChildrenFromStorage(storage);
                     }
                 }
+                child.parent = null;
             }
             children.length = 0;
         },

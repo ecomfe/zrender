@@ -12,7 +12,7 @@ define(function (require) {
 
     var Element = require('../Element');
     var RectText = require('./mixin/RectText');
-    var Stateful = require('./mixin/Stateful');
+    // var Stateful = require('./mixin/Stateful');
 
     var rectContain = require('../contain/rect');
 
@@ -47,7 +47,7 @@ define(function (require) {
         this.__clipPaths = [];
 
         // FIXME Stateful must be mixined after style is setted
-        Stateful.call(this, opts);
+        // Stateful.call(this, opts);
     };
 
     Displayable.prototype = {
@@ -238,31 +238,17 @@ define(function (require) {
             return this.animate('style', loop);
         },
 
-        __attrKV: function (key, value) {
+        attrKV: function (key, value) {
             if (key !== 'style') {
                 this[key] = value;
             }
-        },
-
-        attr: function (key, value) {
-            if (typeof key === 'string') {
-                this.__attrKV(key, value);
-            }
-            else if (Object(key) === key) {
-                for (var name in key) {
-                    this.__attrKV(name, key[name]);
-                }
-            }
-            this.__zr.refreshNextFrame();
-
-            return this;
         }
     };
 
     zrUtil.inherits(Displayable, Element);
 
     zrUtil.merge(Displayable.prototype, RectText.prototype, true);
-    zrUtil.merge(Displayable.prototype, Stateful.prototype, true);
+    // zrUtil.merge(Displayable.prototype, Stateful.prototype, true);
 
     Displayable.prototype.constructor = Displayable;
 
