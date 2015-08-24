@@ -266,8 +266,8 @@ define(function (require) {
         var lineHeight = textRect.lineHeight;
         // Text position represented by coord
         if (textPosition instanceof Array) {
-            x = textPosition[0];
-            y = textPosition[1];
+            x = rect.x + textPosition[0];
+            y = rect.y + textPosition[1];
         }
         else {
             var newPos = textContain.adjustTextPositionOnRect(
@@ -320,6 +320,8 @@ define(function (require) {
     svgText.brush = function (el) {
         var style = el.style;
         if (style.text) {
+            // 强制设置 textPosition
+            style.textPosition = [0, 0];
             svgTextDrawRectText(el, {
                 x: style.x || 0, y: style.y || 0,
                 width: 0, height: 0

@@ -156,6 +156,15 @@ define(function (require) {
                         var textSvgElement = getTextSvgElement(displayable);
                         prevSvgElement ? insertAfter(svgRoot, svgElement, prevSvgElement)
                             : prepend(svgRoot, svgElement);
+                        if (svgElement) {
+                            insertAfter(svgRoot, textSvgElement, svgElement);
+                        }
+                        else if (prevSvgElement) {
+                            insertAfter(svgRoot, textSvgElement, prevSvgElement);
+                        }
+                        else {
+                            prepend(svgRoot, textSvgElement);
+                        }
                         // Insert text
                         insertAfter(svgRoot, textSvgElement, svgElement);
                         prevSvgElement = textSvgElement || svgElement;
