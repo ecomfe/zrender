@@ -41,7 +41,7 @@ define(function(require) {
         this.onframe = options.onframe;
         this.ondestroy = options.ondestroy;
         this.onrestart = options.onrestart;
-    }
+    };
 
     Clip.prototype = {
 
@@ -74,13 +74,13 @@ define(function(require) {
                     // 抛出而不是直接调用事件直到 stage.update 后再统一调用这些事件
                     return 'restart';
                 }
-                
+
                 // 动画完成将这个控制器标识为待删除
                 // 在Animation.update中进行批量删除
                 this._needsRemove = true;
                 return 'destroy';
             }
-            
+
             return null;
         },
         restart: function() {
@@ -94,8 +94,7 @@ define(function(require) {
             if (this['on' + eventType]) {
                 this['on' + eventType](this._target, arg);
             }
-        },
-        constructor: Clip
+        }
     };
 
     return Clip;

@@ -72,6 +72,21 @@ define(function(require) {
             }
         }),
 
+        intersect: function (b) {
+            var a = this;
+            var ax0 = a.x;
+            var ax1 = a.x + a.width;
+            var ay0 = a.y;
+            var ay1 = a.y + a.height;
+
+            var bx0 = b.x;
+            var bx1 = b.x + b.width;
+            var by0 = b.y;
+            var by1 = b.y + b.height;
+
+            return ! (ax1 < bx0 || bx1 < ax0 || ay1 < by0 || by1 < ay0);
+        },
+
         /**
          * @return {module:echarts/core/BoundingRect}
          */
@@ -80,7 +95,7 @@ define(function(require) {
         },
 
         /**
-         * Copy from
+         * Copy from another rect
          */
         copy: function (rect) {
             this.x = rect.x;
