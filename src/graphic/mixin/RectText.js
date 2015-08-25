@@ -21,7 +21,7 @@ define(function (require) {
          */
         drawRectText: function (ctx, rect, textRect) {
             var style = this.style;
-            var text = this.style.text;
+            var text = this.style.text + '';
             if (! text) {
                 return;
             }

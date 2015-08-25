@@ -47,9 +47,12 @@ define(function (require) {
         getBoundingRect: function () {
             if (! this._rect) {
                 var style = this.style;
-                this._rect = textContain.getBoundingRect(
-                    style.text, style.textFont, style.textAlign, style.textBaseline
+                var rect = textContain.getBoundingRect(
+                    style.text + '', style.textFont, style.textAlign, style.textBaseline
                 );
+                rect.x += style.x;
+                rect.y += style.y;
+                this._rect = rect;
             }
             return this._rect;
         }
