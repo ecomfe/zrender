@@ -387,9 +387,12 @@ define(function (require) {
 
             var pathBundle = new Path(opts);
             pathBundle.buildPath = function (path) {
-                for (var i = 0; i < len; i++) {
-                    pathList[i].rebuildPath(path.getContext());
+                // First build
+                if (pathList) {
+                    path.appendPath(pathList);
+                    pathList = null;
                 }
+                path.rebuildPath(path.getContext());
             }
 
             return pathBundle;

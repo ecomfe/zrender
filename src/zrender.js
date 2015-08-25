@@ -148,6 +148,8 @@ define(function(require) {
 
         // 修改 storage.delFromMap, 每次删除元素之前删除动画
         // FIXME 有点ugly
+        // TODO delFromMap 的时候只是暂停动画，addToMap 的时候能够继续动画
+        // TODO element 还没被加入 zrender 的时候也能设置动画
         var self = this;
         var oldDelFromMap = storage.delFromMap;
         var oldAddToMap = storage.addToMap;

@@ -25,7 +25,6 @@ define(function (require) {
     var max = [];
     var min2 = [];
     var max2 = [];
-    var v = [];
     var mathMin = Math.min;
     var mathMax = Math.max;
     var mathCos = Math.cos;
@@ -301,6 +300,32 @@ define(function (require) {
             }
 
             this._len = len;
+        },
+
+        /**
+         * 添加子路径
+         * @param {module:zrender/core/PathProxy|Array.<module:zrender/core/PathProxy>} path
+         */
+        appendPath: function (path) {
+            if (!(path instanceof Array)) {
+                path = [path];
+            }
+            var len = path.length;
+            var appendSize = 0;
+            var offset = this._len;
+            for (var i = 0; i < len; i++) {
+                appendSize += path[i].len();
+            }
+            if (hasTypedArray && (this.data instanceof Float32Array)) {
+                this.data = new Float32Array(offset + appendSize);
+            }
+            for (var i = 0; i < len; i++) {
+                var appendPathData = path[i].data;
+                for (var k = 0; k < appendPathData.length; k++) {
+                    this.data[offset++] = appendPathData[k];
+                }
+            }
+            this._len = offset;
         },
 
         /**
