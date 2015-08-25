@@ -275,6 +275,8 @@ define(function (require) {
             );
             x = newPos.x;
             y = newPos.y;
+
+            align = 'left';
         }
 
         if (font) {
@@ -287,6 +289,14 @@ define(function (require) {
 
         var textLines = text.split('\n');
         var nTextLines = textLines.length;
+        var textAnchor = align;
+        // PENDING
+        if (textAnchor === 'left')  {
+            textAnchor = 'start';
+        }
+        else if (textAnchor === 'right') {
+            textAnchor = 'end';
+        }
         // Font may affect position of each tspan elements
         if (el.__text !== text || el.__textFont !== font) {
             var tspanList = el.__tspanList || [];
@@ -298,7 +308,7 @@ define(function (require) {
                     tspan = tspanList[i] = createElement('tspan');
                     textSvgEl.appendChild(tspan);
                     attr(tspan, 'alignment-baseline', 'hanging');
-                    // attr(tspan, 'text-anchor', 'start');
+                    attr(tspan, 'text-anchor', textAnchor);
                 }
                 attr(tspan, 'x', x);
                 attr(tspan, 'y', y + i * lineHeight);

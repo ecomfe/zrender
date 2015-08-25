@@ -335,7 +335,11 @@ define(function (require) {
                 path.setData(pathProxy.data);
                 pathProxy = null;
             }
-            path.rebuildPath(path.getContext());
+            // Svg and vml renderer don't have context
+            var ctx = path.getContext();
+            if (ctx) {
+                path.rebuildPath(ctx);
+            }
         };
 
         opts.applyTransform = function (m) {
@@ -392,7 +396,11 @@ define(function (require) {
                     path.appendPath(pathList);
                     pathList = null;
                 }
-                path.rebuildPath(path.getContext());
+                // Svg and vml renderer don't have context
+                var ctx = path.getContext();
+                if (ctx) {
+                    path.rebuildPath(ctx);
+                }
             }
 
             return pathBundle;
