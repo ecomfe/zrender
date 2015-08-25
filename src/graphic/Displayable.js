@@ -97,12 +97,12 @@ define(function (require) {
         draggable: false,
 
         /**
-         * 是否可以hover
+         * 是否相应鼠标事件
          * @name module:/zrender/graphic/Displayable#hoverable
          * @type {boolean}
          * @default true
          */
-        hoverable: true,
+        silent: false,
 
         beforeBrush: function (ctx) {
             ctx.save();
