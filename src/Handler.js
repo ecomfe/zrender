@@ -939,10 +939,12 @@ define(
                 }
 
                 if (this._lastHover != shape) {
-                    this._processOutShape(event);
-
-                    // 可能出现config.EVENT.DRAGLEAVE事件
-                    this._processDragLeave(event);
+                    // 有可能在 hover 的时候删除 lastHover 这个图形，也会进入这个分支
+                    if (this._lastHover && this.storage.get(this._lastHover.id)) {
+                        this._processOutShape(event);
+                        // 可能出现config.EVENT.DRAGLEAVE事件
+                        this._processDragLeave(event);
+                    }
 
                     this._lastHover = shape;
 
