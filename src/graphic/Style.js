@@ -90,7 +90,7 @@ define(function (require) {
          * @type {number}
          */
         shadowOffsetX: 0,
-        
+
         /**
          * @type {number}
          */
@@ -115,7 +115,7 @@ define(function (require) {
 
             this.fill != null && (ctx.fillStyle = this.fill);
             this.stroke != null && (ctx.strokeStyle = this.stroke);
-            this.opacity != null && (ctx.globalAlpha = this.opacity);            
+            this.opacity != null && (ctx.globalAlpha = this.opacity);
         },
 
         /**
@@ -134,6 +134,14 @@ define(function (require) {
                     }
                 }
             }
+        },
+
+        /**
+         * Batch setting style with a given object
+         * @param {Object} obj
+         */
+        set: function (obj) {
+            this.extendFrom(obj, true);
         },
 
         /**
