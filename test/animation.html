@@ -81,6 +81,15 @@
                     fill: 'rgba(222, 222, 10, 1)'
                 })
                 .start();
+
+            circle.animateShape()
+                .when(100000, {
+                    r: 50
+                })
+                .done(function () {
+                    console.log('Ignore animation if properties are equal')
+                })
+                .start();
         })
     </script>
     <div id="Main" style="width:600px;height:400px;"></div>

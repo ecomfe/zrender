@@ -1,3 +1,6 @@
+/**
+ * @module echarts/animation/Animator
+ */
 define(function (require) {
 
     var Clip = require('./Clip');
@@ -175,6 +178,19 @@ define(function (require) {
             this._onframeList.push(callback);
             return this;
         },
+
+        _doneCallback: function () {
+            // Clear all tracks
+            this._tracks = {};
+            // Clear all clips
+            this._clipList.length = 0;
+
+            var doneList = this._doneList;
+            var len = doneList.length;
+            for (var i = 0; i < len; i++) {
+                doneList[i].call(this);
+            }
+        },
         /**
          * 开始执行动画
          * @param  {string|Function} easing
@@ -187,17 +203,12 @@ define(function (require) {
             var setter = this._setter;
             var getter = this._getter;
             var useSpline = easing === 'spline';
+            var clipCount = 0;
 
-            var ondestroy = function() {
-                self._clipCount--;
-                if (self._clipCount === 0) {
-                    // Clear all tracks
-                    self._tracks = {};
-
-                    var len = self._doneList.length;
-                    for (var i = 0; i < len; i++) {
-                        self._doneList[i].call(self);
-                    }
+            var oneTrackDone = function() {
+                clipCount--;
+                if (! clipCount) {
+                    self._doneCallback();
                 }
             };
 
@@ -211,6 +222,7 @@ define(function (require) {
                 var isValueArray = isArrayLike(firstVal);
                 var isValueColor = false;
                 var isValueString = false;
+                var i;
 
                 // For vertices morphing
                 var arrDim = (
@@ -223,20 +235,26 @@ define(function (require) {
                 keyframes.sort(function(a, b) {
                     return a.time - b.time;
                 });
-                if (trackLen) {
-                    trackMaxTime = keyframes[trackLen - 1].time;
-                }
-                else {
-                    return;
-                }
+
+                trackMaxTime = keyframes[trackLen - 1].time;
                 // Percents of each keyframe
                 var kfPercents = [];
                 // Value of each keyframe
                 var kfValues = [];
-                for (var i = 0; i < trackLen; i++) {
+                var prevValue = keyframes[0].value;
+                var isAllValueEqual = true;
+                for (i = 0; i < trackLen; i++) {
                     kfPercents.push(keyframes[i].time / trackMaxTime);
                     // Assume value is a color when it is a string
                     var value = keyframes[i].value;
+
+                    // Check if value is equal
+                    if (value !== prevValue) {
+                        isAllValueEqual = false;
+                    }
+                    prevValue = value;
+
+                    // Try converting a string to a color array
                     if (typeof(value) == 'string') {
                         if (color.validate(value)) {
                             value = color.toArray(value);
@@ -248,13 +266,15 @@ define(function (require) {
                     }
                     kfValues.push(value);
                 }
+                if (isAllValueEqual) {
+                    return;
+                }
 
                 // Cache the key of last frame to speed up when
                 // animation playback is sequency
                 var cacheKey = 0;
                 var cachePercent = 0;
                 var start;
-                var i;
                 var w;
                 var p0;
                 var p1;
@@ -377,24 +397,31 @@ define(function (require) {
                     loop: self._loop,
                     delay: self._delay,
                     onframe: onframe,
-                    ondestroy: ondestroy
+                    ondestroy: oneTrackDone
                 });
 
                 if (easing && easing !== 'spline') {
                     clip.easing = easing;
                 }
-                self._clipList.push(clip);
-                self._clipCount++;
 
-                // If start after added to animation
-                if (self.animation) {
-                    self.animation.addClip(clip);
-                }
-
+                return clip;
             };
 
             for (var propName in this._tracks) {
-                createTrackClip(this._tracks[propName], propName);
+                var clip = createTrackClip(this._tracks[propName], propName);
+                if (clip) {
+                    this._clipList.push(clip);
+                    clipCount++;
+
+                    // If start after added to animation
+                    if (this.animation) {
+                        this.animation.addClip(clip);
+                    }
+                }
+            }
+
+            if (! clipCount) {
+                this._doneCallback();
             }
             return this;
         },
