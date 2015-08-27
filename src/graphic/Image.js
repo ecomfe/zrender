@@ -116,7 +116,9 @@ define(function (require) {
                 }
 
                 // Draw rect text
-                this.drawRectText(ctx, this.getBoundingRect());
+                if (style.text) {
+                    this.drawRectText(ctx, this.getBoundingRect());
+                }
 
                 ctx.restore();
             }

@@ -756,7 +756,6 @@ define(function (require) {
                 var p = shape.parent;
                 while (p) {
                     if (p.clipPath && !p.clipPath.contain(x, y))  {
-                        console.log(p.clipPath.contain(x, y));
                         // 已经被祖先 clip 掉了
                         return false;
                     }

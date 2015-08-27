@@ -167,6 +167,11 @@ define(function (require) {
             if (this.__zr) {
                 this.__zr.refreshNextFrame();
             }
+
+            // Used as a clipping path
+            if (this.__clipTarget) {
+                this.__clipTarget.dirty();
+            }
         },
 
         /**

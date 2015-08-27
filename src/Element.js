@@ -80,19 +80,25 @@ define(function(require) {
                     this.attrKV(name, key[name]);
                 }
             }
-            this.__zr.refreshNextFrame();
+            this.dirty();
 
             return this;
         },
 
         setClipPath: function (clipPath) {
             this.clipPath = clipPath;
-            clipPath
+            clipPath.__zr = this.__zr;
+            clipPath.__clipTarget = this;
+
+            this.dirty();
         },
 
         unsetClipPath: function () {
             this.clipPath.__zr = null;
+            this.clipPath.__clipTarget = null;
             this.clipPath = null;
+
+            this.dirty();
         }
     };
 

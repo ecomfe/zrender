@@ -36,7 +36,7 @@ define(function(require) {
     /**
      * @type {string}
      */
-    zrender.version = '2.0.8';
+    zrender.version = '3.0.0';
 
     /**
      * 创建zrender实例
@@ -101,6 +101,28 @@ define(function(require) {
         };
     }
 
+    function removeElFromZr(el, zr) {
+        el.__zr = null;
+
+        // 移除动画
+        var animators = el.animators;
+        if (animators) {
+            for (var i = 0; i < animators.length; i++) {
+                zr.animation.removeAnimator(animators[i]);
+            }
+        }
+    }
+
+    function addElToZr(el, zr) {
+        el.__zr = zr;
+        // 添加动画
+        var animators = el.animators;
+        if (animators) {
+            for (var i = 0; i < animators.length; i++) {
+                zr.animation.addAnimator(animators[i]);
+            }
+        }
+    }
     /**
      * @module zrender/ZRender
      */
@@ -151,30 +173,20 @@ define(function(require) {
         var self = this;
         var oldDelFromMap = storage.delFromMap;
         var oldAddToMap = storage.addToMap;
+
         storage.delFromMap = function (elId) {
             var el = storage.get(elId);
             oldDelFromMap.call(storage, elId);
-            el.__zr = null;
 
-            // 移除动画
-            var animators = el.animators;
-            if (animators) {
-                for (var i = 0; i < animators.length; i++) {
-                    this.animation.removeAnimator(animators[i]);
-                }
-            }
+            removeElFromZr(el, self);
+            el.clipPath && removeElFromZr(el.clipPath, self);
         };
 
         storage.addToMap = function (el) {
-            el.__zr = self;
             oldAddToMap.call(storage, el);
-            // 添加动画
-            var animators = el.animators;
-            if (animators) {
-                for (var i = 0; i < animators.length; i++) {
-                    this.animation.addAnimator(animators[i]);
-                }
-            }
+
+            addElToZr(el, self);
+            el.clipPath && addElToZr(el.clipPath, self);
         }
     };
 
