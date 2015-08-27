@@ -21,7 +21,9 @@
 
     require(["zrender", 'zrender/graphic/Text'], function(zrender, ZText){
         // 初始化zrender
-        var zr = zrender.init( document.getElementById("main") );
+        var zr = zrender.init(document.getElementById("main"), {
+            renderer: 'svg'
+        });
 
         var text = new ZText({
             // position : [50, 50],
@@ -33,7 +35,7 @@
                 text: "国国国国\n国国国国\n国国国国",
                 width: 50,
                 height: 50,
-                font: '14px 微软雅黑'
+                textFont: '18px 微软雅黑'
             },
             draggable: true
         });

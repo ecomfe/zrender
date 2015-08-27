@@ -38,14 +38,6 @@ define(function (require) {
             this[key] = opts[key];
         }
 
-        /**
-         * 用于裁剪的图形(shape)，所有 Group 内的图形在绘制时都会被这个图形裁剪
-         * 该图形会继承Group的变换
-         * @type {module:zrender/graphic/Displayable}
-         * @see http://www.w3.org/TR/2dcontext/#clipping-region
-         */
-        this.clipShape = null;
-
         this._children = [];
 
         this.__storage = null;

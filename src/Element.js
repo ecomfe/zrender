@@ -1,6 +1,4 @@
 /**
- * 画布元素基类
- * Base class of all displayable graphic objects
  * @module zrender/Element
  */
 define(function(require) {
@@ -9,12 +7,21 @@ define(function(require) {
     var guid = require('./core/guid');
     var Eventful = require('./mixin/Eventful');
     var Transformable = require('./mixin/Transformable');
+    var Animatable = require('./mixin/Animatable');
     var zrUtil = require('./core/util');
 
+    /**
+     * @alias module:zrender/Element
+     * @constructor
+     * @extends {module:zrender/mixin/Animatable}
+     * @extends {module:zrender/mixin/Transformable}
+     * @extends {module:zrender/mixin/Eventful}
+     */
     var Element = function (opts) {
 
         Transformable.call(this, opts);
         Eventful.call(this, opts);
+        Animatable.call(this, opts);
 
         /**
          * 画布元素ID
@@ -49,56 +56,13 @@ define(function(require) {
         ignore: false,
 
         /**
-         * 创建一个 Animator
-         * @param  {string} path 子属性 path, 例如 'style'
-         * @param  {boolean} [loop=false] 是否循环
-         * @return {module:zrender/animation/Animation~Animator}
+         * 用于裁剪的路径(shape)，所有 Group 内的路径在绘制时都会被这个路径裁剪
+         * 该路径会继承被裁减对象的变换
+         * @type {module:zrender/graphic/Path}
+         * @see http://www.w3.org/TR/2dcontext/#clipping-region
+         * @readOnly
          */
-        animate: function (path, loop) {
-            if (this.__zr) {
-                return this.__zr.animate(this, path, loop);
-            }
-        },
-
-        /**
-         * @example
-         *  rect.animateTo({
-         *      shape: {
-         *          width: 100
-         *      }
-         *  }, 1000, 'Linear');
-         *
-         *  rect.animateTo({
-         *      shape: {
-         *          width: 100
-         *      }
-         *  }, 1000, function () {});
-         *
-         */
-        // TODO
-        // animateTo: function (target, time, easing, cb) {
-        //     for (var name in target) {
-        //         this.animateProperty(name, time)
-        //     }
-        // },
-
-        // /**
-        //  * @protected
-        //  */
-        // animateProperty: function (propName, value, time, easing, cb) {
-        //     this.animate().when(time, {
-        //     })
-        // },
-
-        /**
-         * 停止所有动画
-         */
-        stopAnimation: function () {
-            if (this.__zr) {
-                this.__zr.stopAnimation(this);
-            }
-            return this;
-        },
+        clipPath: null,
 
         /**
          * @protected
@@ -119,11 +83,22 @@ define(function(require) {
             this.__zr.refreshNextFrame();
 
             return this;
+        },
+
+        setClipPath: function (clipPath) {
+            this.clipPath = clipPath;
+            clipPath
+        },
+
+        unsetClipPath: function () {
+            this.clipPath.__zr = null;
+            this.clipPath = null;
         }
     };
 
-    zrUtil.inherits(Element, Transformable);
-    zrUtil.inherits(Element, Eventful);
+    zrUtil.merge(Element.prototype, Animatable.prototype, true);
+    zrUtil.merge(Element.prototype, Transformable.prototype, true);
+    zrUtil.merge(Element.prototype, Eventful.prototype, true);
 
     return Element;
 });

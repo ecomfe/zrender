@@ -148,21 +148,33 @@ define(function(require) {
 
         // 修改 storage.delFromMap, 每次删除元素之前删除动画
         // FIXME 有点ugly
-        // TODO delFromMap 的时候只是暂停动画，addToMap 的时候能够继续动画
-        // TODO element 还没被加入 zrender 的时候也能设置动画
         var self = this;
         var oldDelFromMap = storage.delFromMap;
         var oldAddToMap = storage.addToMap;
         storage.delFromMap = function (elId) {
             var el = storage.get(elId);
-            self.stopAnimation(el);
             oldDelFromMap.call(storage, elId);
             el.__zr = null;
+
+            // 移除动画
+            var animators = el.animators;
+            if (animators) {
+                for (var i = 0; i < animators.length; i++) {
+                    this.animation.removeAnimator(animators[i]);
+                }
+            }
         };
 
         storage.addToMap = function (el) {
             el.__zr = self;
             oldAddToMap.call(storage, el);
+            // 添加动画
+            var animators = el.animators;
+            if (animators) {
+                for (var i = 0; i < animators.length; i++) {
+                    this.animation.addAnimator(animators[i]);
+                }
+            }
         }
     };
 
@@ -230,92 +242,6 @@ define(function(require) {
          */
         resize: function() {
             this.painter.resize();
-        },
-
-        /**
-         * 动画
-         *
-         * @param {string|module:zrender/Element} el 动画对象
-         * @param {string} path 需要添加动画的属性获取路径，可以通过a.b.c来获取深层的属性
-         * @param {boolean} [loop] 动画是否循环
-         * @return {module:zrender/animation/Animation~Animator}
-         * @example:
-         *     zr.animate(circle.id, 'style', false)
-         *         .when(1000, {x: 10} )
-         *         .done(function(){ // Animation done })
-         *         .start()
-         */
-        animate: function (el, path, loop) {
-            if (typeof(el) === 'string') {
-                el = this.storage.get(el);
-            }
-            if (el) {
-                var target;
-                var animatingShape = false;
-                if (path) {
-                    var pathSplitted = path.split('.');
-                    var prop = el;
-                    // If animating shape
-                    animatingShape = pathSplitted[0] === 'shape';
-                    for (var i = 0, l = pathSplitted.length; i < l; i++) {
-                        if (!prop) {
-                            continue;
-                        }
-                        prop = prop[pathSplitted[i]];
-                    }
-                    if (prop) {
-                        target = prop;
-                    }
-                }
-                else {
-                    target = el;
-                }
-
-                if (!target) {
-                    log(
-                        'Property "'
-                        + path
-                        + '" is not existed in element '
-                        + el.id
-                    );
-                    return;
-                }
-
-                if (el.__animators == null) {
-                    // 正在进行的动画记数
-                    el.__animators = [];
-                }
-                var animators = el.__animators;
-
-                var animator = this.animation.animate(target, { loop: loop })
-                    .during(function () {
-                        el.dirty(animatingShape);
-                    })
-                    .done(function () {
-                        animators.splice(util.indexOf(animators, animator), 1);
-                    });
-                animators.push(animator);
-
-                return animator;
-            }
-            else {
-                log('Element not existed');
-            }
-        },
-
-        /**
-         * 停止动画对象的动画
-         * @param  {string|module:zrender/Element} el
-         */
-        stopAnimation: function (el) {
-            if (el.__animators) {
-                var animators = el.__animators;
-                var len = animators.length;
-                for (var i = 0; i < len; i++) {
-                    animators[i].stop();
-                }
-                animators.length = 0;
-            }
         },
 
         /**

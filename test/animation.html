@@ -44,7 +44,7 @@
                 draggable: true,
                 onmouseover: function () {
                     radiusAnimator && radiusAnimator.stop();
-                    radiusAnimator = circle.animate('shape')
+                    radiusAnimator = circle.animateShape()
                         .when(1000, {
                             r: 100
                         })
@@ -52,7 +52,7 @@
                 },
                 onmouseout: function () {
                     radiusAnimator && radiusAnimator.stop();
-                    radiusAnimator = circle.animate('shape')
+                    radiusAnimator = circle.animateShape()
                         .when(1000, {
                             r: 50
                         })
@@ -61,7 +61,7 @@
             });
             zr.add(circle);
 
-            zr.animate(circle.id, "", true)
+            circle.animate("", true)
                 .when(1000, {
                     position: [200, 0]
                 })
