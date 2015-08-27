@@ -8,8 +8,6 @@
  * https://github.com/ecomfe/zrender/blob/master/LICENSE.txt
  */
 define(function(require) {
-    var util = require('./core/util');
-    var log = require('./core/log');
     var guid = require('./core/guid');
     var env = require('./core/env');
 
@@ -101,28 +99,6 @@ define(function(require) {
         };
     }
 
-    function removeElFromZr(el, zr) {
-        el.__zr = null;
-
-        // 移除动画
-        var animators = el.animators;
-        if (animators) {
-            for (var i = 0; i < animators.length; i++) {
-                zr.animation.removeAnimator(animators[i]);
-            }
-        }
-    }
-
-    function addElToZr(el, zr) {
-        el.__zr = zr;
-        // 添加动画
-        var animators = el.animators;
-        if (animators) {
-            for (var i = 0; i < animators.length; i++) {
-                zr.animation.addAnimator(animators[i]);
-            }
-        }
-    }
     /**
      * @module zrender/ZRender
      */
@@ -178,15 +154,13 @@ define(function(require) {
             var el = storage.get(elId);
             oldDelFromMap.call(storage, elId);
 
-            removeElFromZr(el, self);
-            el.clipPath && removeElFromZr(el.clipPath, self);
+            el.removeSelfFromZr(self);
         };
 
         storage.addToMap = function (el) {
             oldAddToMap.call(storage, el);
 
-            addElToZr(el, self);
-            el.clipPath && addElToZr(el.clipPath, self);
+            el.addSelfToZr(self);
         }
     };
 

@@ -85,20 +85,75 @@ define(function(require) {
             return this;
         },
 
+        /**
+         * @param {module:zrender/graphic/Path} clipPath
+         */
         setClipPath: function (clipPath) {
+            var zr = this.__zr;
+            if (zr) {
+                clipPath.addSelfToZr(zr);
+            }
+
             this.clipPath = clipPath;
-            clipPath.__zr = this.__zr;
+            clipPath.__zr = zr;
             clipPath.__clipTarget = this;
 
             this.dirty();
         },
 
+        /**
+         */
         unsetClipPath: function () {
-            this.clipPath.__zr = null;
-            this.clipPath.__clipTarget = null;
+            var clipPath = this.clipPath;
+            if (clipPath.__zr) {
+                clipPath.removeSelfFromZr(clipPath.__zr);
+            }
+
+            clipPath.__zr = null;
+            clipPath.__clipTarget = null;
             this.clipPath = null;
 
             this.dirty();
+        },
+
+        /**
+         * Add self from zrender instance.
+         * Not recursively because it will be invoked when element added to storage.
+         * @param {module:zrender/ZRender} zr
+         */
+        addSelfToZr: function (zr) {
+            this.__zr = zr;
+            // 添加动画
+            var animators = this.animators;
+            if (animators) {
+                for (var i = 0; i < animators.length; i++) {
+                    zr.animation.addAnimator(animators[i]);
+                }
+            }
+
+            if (this.clipPath) {
+                this.clipPath.addSelfToZr(zr);
+            }
+        },
+
+        /**
+         * Remove self from zrender instance.
+         * Not recursively because it will be invoked when element added to storage.
+         * @param {module:zrender/ZRender} zr
+         */
+        removeSelfFromZr: function (zr) {
+            this.__zr = null;
+            // 移除动画
+            var animators = this.animators;
+            if (animators) {
+                for (var i = 0; i < animators.length; i++) {
+                    zr.animation.removeAnimator(animators[i]);
+                }
+            }
+
+            if (this.clipPath) {
+                this.clipPath.removeSelfFromZr(zr);
+            }
         }
     };
 
