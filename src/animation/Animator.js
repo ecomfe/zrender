@@ -78,7 +78,7 @@ define(function (require) {
                 + v0 * t + p1;
     }
 
-    function _cloneValue(value) {
+    function cloneValue(value) {
         if (isArrayLike(value)) {
             var len = value.length;
             if (isArrayLike(value[0])) {
@@ -88,13 +88,11 @@ define(function (require) {
                 }
                 return ret;
             }
-            else {
-                return arraySlice.call(value);
-            }
+
+            return arraySlice.call(value);
         }
-        else {
-            return value;
-        }
+
+        return value;
     }
 
     function rgba2String(rgba) {
@@ -158,7 +156,7 @@ define(function (require) {
                     if (time !== 0) {
                         tracks[propName].push({
                             time: 0,
-                            value: _cloneValue(value)
+                            value: cloneValue(value)
                         });
                     }
                 }
