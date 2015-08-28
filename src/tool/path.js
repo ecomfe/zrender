@@ -325,16 +325,13 @@ define(function (require) {
         return path;
     }
 
+    // TODO Optimize double memory cost problem
     function createPathOptions(str, opts) {
         var pathProxy = createPathProxyFromString(str);
 
         opts = opts || {};
         opts.buildPath = function (path) {
-            // First build
-            if (pathProxy) {
-                path.setData(pathProxy.data);
-                pathProxy = null;
-            }
+            path.setData(pathProxy.data);
             // Svg and vml renderer don't have context
             var ctx = path.getContext();
             if (ctx) {
@@ -373,9 +370,10 @@ define(function (require) {
 
         /**
          * Merge multiple paths
-         *
-         * TODO Apply transform
          */
+        // TODO Apply transform
+        // TODO stroke dash
+        // TODO Optimize double memory cost problem
         mergePath: function (pathEls, opts) {
             var pathList = [];
             var len = pathEls.length;
@@ -391,11 +389,7 @@ define(function (require) {
 
             var pathBundle = new Path(opts);
             pathBundle.buildPath = function (path) {
-                // First build
-                if (pathList) {
-                    path.appendPath(pathList);
-                    pathList = null;
-                }
+                path.appendPath(pathList);
                 // Svg and vml renderer don't have context
                 var ctx = path.getContext();
                 if (ctx) {
