@@ -20,6 +20,7 @@ define(function(require) {
     var arrayProto = Array.prototype;
     var nativeForEach = arrayProto.forEach;
     var nativeFilter = arrayProto.filter;
+    var nativeSlice = arrayProto.slice;
     var nativeMap = arrayProto.map;
 
     /**
@@ -227,8 +228,16 @@ define(function(require) {
     }
 
     function bind(func, context) {
+        var args = nativeSlice.call(arguments, 2);
         return function () {
-            return func.apply(context, arguments);
+            return func.apply(context, args.concat(nativeSlice.call(arguments)));
+        };
+    }
+
+    function curry(func) {
+        var args = nativeSlice.call(arguments, 2);
+        return function () {
+            return func.apply(this, args.concat(nativeSlice.call(arguments)));
         };
     }
 
@@ -254,6 +263,7 @@ define(function(require) {
         map: map,
         filter: filter,
         bind: bind,
+        curry: curry,
         isArray: isArray,
         isObject: isObject
     };

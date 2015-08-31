@@ -75,9 +75,11 @@ define(function(require) {
             if (typeof key === 'string') {
                 this.attrKV(key, value);
             }
-            else if (Object(key) === key) {
+            else if (zrUtil.isObject(key)) {
                 for (var name in key) {
-                    this.attrKV(name, key[name]);
+                    if (key.hasOwnProperty(name)) {
+                        this.attrKV(name, key[name]);
+                    }
                 }
             }
             this.dirty();
