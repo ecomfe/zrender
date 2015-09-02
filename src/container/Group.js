@@ -221,28 +221,6 @@ define(function (require) {
         },
 
         /**
-         * 创建一个 Animator
-         * @param  {string} path 子属性 path
-         * @param  {boolean} [loop=false] 是否循环
-         * @return {module:zrender/animation/Animation~Animator}
-         */
-        animate: function (path, loop) {
-            if (this.__zr) {
-                return this.__zr.animate(this, path, loop);
-            }
-        },
-
-        /**
-         * 停止所有动画
-         */
-        stopAnimation: function () {
-            if (this.__zr) {
-                this.__zr.stopAnimation(this);
-            }
-            return this;
-        },
-
-        /**
          * @return {module:zrender/core/BoundingRect}
          */
         getBoundingRect: function () {
