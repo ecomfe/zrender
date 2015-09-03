@@ -101,6 +101,106 @@ define(function(require) {
                 animators[i].stop();
             }
             animators.length = 0;
+        },
+
+        /**
+         * @param {Object} target
+         * @param {number} [time=500] Time in ms
+         * @param {string} [easing='linear']
+         * @param {number} [delay=0]
+         * @param {Function} [callback]
+         *
+         * @example
+         *  // Animate position
+         *  el.animateTo({
+         *      position: [10, 10]
+         *  }, function () { // done })
+         *
+         *  // Animate shape, style and position in 100ms, delayed 100ms, with cubicOut easing
+         *  el.animateTo({
+         *      shape: {
+         *          width: 500
+         *      },
+         *      style: {
+         *          fill: 'red'
+         *      }
+         *      position: [10, 10]
+         *  }, 100, 100, 'cubicOut', function () { // done })
+         */
+         // TODO Return animation key
+        animateTo: function (target, time, delay, easing, callback) {
+            // animateTo(target, time, easing, callback);
+            if (typeof delay === 'string') {
+                callback = easing;
+                easing = delay;
+                delay = 0;
+            }
+            // animateTo(target, time, delay, callback);
+            else if (typeof easing === 'function') {
+                callback = easing;
+                easing = 'linear';
+                delay = 0;
+            }
+            // animateTo(target, time, callback);
+            else if (typeof delay === 'function') {
+                callback = delay;
+            }
+            // animateTo(target, callback)
+            else if (typeof time === 'function') {
+                callback = time;
+                time = 500;
+            }
+            // animateTo(target)
+            else if (! time) {
+                time = 500;
+            }
+            // Stop all previous animations
+            this.stopAnimation();
+            this._animateToShallow('', target, time, delay, easing, callback);
+
+            var animators = this.animators;
+            var len = animators.length;
+            if (len > 0) {
+                animators[len - 1].done(callback);
+            }
+            else {
+                callback && callback();
+            }
+            for (var i = 0; i < len; i++) {
+                animators[i].start(easing);
+            }
+        },
+
+        /**
+         * @param {string} path
+         * @param {Object} target
+         * @param {number} time
+         * @param {number} delay
+         * @private
+         */
+        _animateToShallow: function (path, target, time, delay) {
+            var objShallow = {};
+            var propertyCount = 0;
+            for (var name in target) {
+                if (util.isObject(target[name])) {
+                    this._animateToShallow(
+                        path ? path + '.' + name : name,
+                        target[name],
+                        time,
+                        delay
+                    );
+                }
+                else {
+                    objShallow[name] = target[name];
+                    propertyCount++;
+                }
+            }
+
+            if (propertyCount > 0) {
+                this.animate(path, false)
+                    .when(time, objShallow)
+                    .delay(delay || 0)
+            }
         }
     }
 

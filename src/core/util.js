@@ -12,11 +12,6 @@ define(function(require) {
 
     var objToString = Object.prototype.toString;
 
-    function isDom(obj) {
-        return obj && obj.nodeType === 1
-               && typeof(obj.nodeName) == 'string';
-    }
-
     var arrayProto = Array.prototype;
     var nativeForEach = arrayProto.forEach;
     var nativeFilter = arrayProto.filter;
@@ -74,8 +69,9 @@ define(function(require) {
                 var targetProp = target[key];
                 if (deep
                     && typeof targetProp == 'object'
-                    && ! BUILTIN_OBJECT[objToString.call(targetProp)]
-                    // 是否为 dom 对象
+                    // 非内置对象
+                    && ! isBuildInObject(targetProp)
+                    // 非 dom 对象
                     && ! isDom(targetProp)
                 ) {
                     // 如果需要递归覆盖，就递归调用merge
@@ -252,6 +248,15 @@ define(function(require) {
         return type === 'function' || (!!value && type == 'object');
     }
 
+    function isBuildInObject(value) {
+        return !!BUILTIN_OBJECT[objToString.call(value)];
+    }
+
+    function isDom(value) {
+        return value && value.nodeType === 1
+               && typeof(value.nodeName) == 'string';
+    }
+
     return {
         inherits: inherits,
         clone: clone,
@@ -265,6 +270,8 @@ define(function(require) {
         bind: bind,
         curry: curry,
         isArray: isArray,
-        isObject: isObject
+        isObject: isObject,
+        isBuildInObject: isBuildInObject,
+        isDom: isDom
     };
 });

@@ -152,9 +152,10 @@ define(function(require) {
 
         storage.delFromMap = function (elId) {
             var el = storage.get(elId);
+
             oldDelFromMap.call(storage, elId);
 
-            el.removeSelfFromZr(self);
+            el && el.removeSelfFromZr(self);
         };
 
         storage.addToMap = function (el) {
