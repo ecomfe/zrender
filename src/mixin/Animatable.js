@@ -158,16 +158,23 @@ define(function(require) {
             this.stopAnimation();
             this._animateToShallow('', target, time, delay, easing, callback);
 
-            var animators = this.animators;
-            var len = animators.length;
-            if (len > 0) {
-                animators[len - 1].done(callback);
+            // Animators may be removed immediately after start
+            // if there is nothing to animate
+            var animators = this.animators.slice();
+            var count = animators.length;
+            for (var i = 0; i < animators.length; i++) {
+                animators[i]
+                    .done(function () {
+                        count--;
+                        if (count === 0) {
+                            callback && callback();
+                        }
+                    })
+                    .start(easing);
             }
-            else {
+            // No animators
+            if (count === 0) {
                 callback && callback();
-            }
-            for (var i = 0; i < len; i++) {
-                animators[i].start(easing);
             }
         },
 

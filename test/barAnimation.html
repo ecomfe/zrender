@@ -66,12 +66,12 @@
                     });
                     zr.add(barShape);
 
-                    barShape.animateShape()
-                        .when(500, {
+                    barShape.animateTo({
+                        shape: {
                             height: h,
                             y: height - h
-                        })
-                        .start('linear');
+                        }
+                    }, 500);
                 }
             }
         });
