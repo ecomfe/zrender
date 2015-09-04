@@ -162,14 +162,16 @@ define(function(require) {
             // if there is nothing to animate
             var animators = this.animators.slice();
             var count = animators.length;
+
+            function done() {
+                count--;
+                if (!count) {
+                    callback && callback();
+                }
+            }
             for (var i = 0; i < animators.length; i++) {
                 animators[i]
-                    .done(function () {
-                        count--;
-                        if (count === 0) {
-                            callback && callback();
-                        }
-                    })
+                    .done(done)
                     .start(easing);
             }
             // No animators
