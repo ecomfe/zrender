@@ -158,7 +158,6 @@ define(function (require) {
             // Only mark dirty, not mark clean
             if (dirtyPath) {
                 this.__dirtyPath = dirtyPath;
-
                 this._rect = null;
             }
 
@@ -188,6 +187,7 @@ define(function (require) {
             // Is a shape
             if (key === 'shape' && this.shape) {
                 this.__dirtyPath = true;
+                this._rect = null;
             }
         }
     };
