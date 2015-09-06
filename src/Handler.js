@@ -42,7 +42,11 @@ define(
                           || event.srcElement
                           || event.target;
 
-            return target && target.className.match(config.elementClassName)
+            try {
+                return target.className.match(config.elementClassName);
+            } catch (ex) {
+                return false;
+            }
         };
 
         var domHandlers = {
