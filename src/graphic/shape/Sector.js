@@ -6,7 +6,7 @@
 define(function (require) {
 
     return require('../Path').extend({
-        
+
         type: 'sector',
 
         shape: {
@@ -21,7 +21,7 @@ define(function (require) {
 
             startAngle: 0,
 
-            endAngle: 0,
+            endAngle: Math.PI * 2,
 
             clockwise: true
         },
