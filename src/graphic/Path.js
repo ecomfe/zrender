@@ -183,7 +183,7 @@ define(function (require) {
 
         // Overwrite attrKV
         attrKV: function (key, value) {
-            Displayable.prototype._attrKV.call(this, key, value);
+            Displayable.prototype.attrKV.call(this, key, value);
             // Is a shape
             if (key === 'shape' && this.shape) {
                 this.__dirtyPath = true;

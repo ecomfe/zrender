@@ -93,6 +93,19 @@ define(function(require) {
         return target;
     }
 
+    /**
+     * @param {*} target
+     * @param {*...} sources
+     * @return {*} target
+     */
+    function mergeAll(target) {
+        var result = target;
+        for (var i = 1, len = arguments.length; i < len; i++) {
+            result = merge(result, arguments[i]);
+        }
+        return result;
+    }
+
     var _ctx;
 
     function getContext() {
@@ -231,7 +244,7 @@ define(function(require) {
     }
 
     function curry(func) {
-        var args = nativeSlice.call(arguments, 2);
+        var args = nativeSlice.call(arguments, 1);
         return function () {
             return func.apply(this, args.concat(nativeSlice.call(arguments)));
         };
@@ -261,6 +274,7 @@ define(function(require) {
         inherits: inherits,
         clone: clone,
         merge: merge,
+        mergeAll: mergeAll,
         getContext: getContext,
         indexOf: indexOf,
         isArrayLike: isArrayLike,

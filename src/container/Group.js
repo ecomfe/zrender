@@ -104,6 +104,8 @@ define(function (require) {
             if (this.__zr) {
                 this.__zr.refreshNextFrame();
             }
+
+            return this;
         },
 
         /**
@@ -132,6 +134,8 @@ define(function (require) {
             if (this.__zr) {
                 this.__zr.refreshNextFrame();
             }
+
+            return this;
         },
 
         /**
@@ -153,6 +157,8 @@ define(function (require) {
                 child.parent = null;
             }
             children.length = 0;
+
+            return this;
         },
 
         /**
@@ -170,6 +176,7 @@ define(function (require) {
                     cb(child);
                 }
             }
+            return this;
         },
 
         /**
@@ -191,6 +198,7 @@ define(function (require) {
                     child.traverse(cb, context);
                 }
             }
+            return this;
         },
 
         addChildrenToStorage: function (storage) {
@@ -218,6 +226,7 @@ define(function (require) {
             if (this.__zr) {
                 this.__zr.refreshNextFrame();
             }
+            return this;
         },
 
         /**
@@ -247,6 +256,7 @@ define(function (require) {
 
         update: function () {
             this.updateTransform();
+            return this;
         }
     };
 
