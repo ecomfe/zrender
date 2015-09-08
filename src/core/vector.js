@@ -223,13 +223,11 @@ define(function () {
          * @param {number} t
          */
         lerp: function (out, v1, v2, t) {
-            // var ax = v1[0];
-            // var ay = v1[1];
             out[0] = v1[0] + t * (v2[0] - v1[0]);
             out[1] = v1[1] + t * (v2[1] - v1[1]);
             return out;
         },
-        
+
         /**
          * 矩阵左乘向量
          * @param {Vector2} out

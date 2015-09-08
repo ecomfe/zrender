@@ -220,7 +220,6 @@ define(function (require) {
                 var isValueArray = isArrayLike(firstVal);
                 var isValueColor = false;
                 var isValueString = false;
-                var i;
 
                 // For vertices morphing
                 var arrDim = (
@@ -241,7 +240,7 @@ define(function (require) {
                 var kfValues = [];
                 var prevValue = keyframes[0].value;
                 var isAllValueEqual = true;
-                for (i = 0; i < trackLen; i++) {
+                for (var i = 0; i < trackLen; i++) {
                     kfPercents.push(keyframes[i].time / trackMaxTime);
                     // Assume value is a color when it is a string
                     var value = keyframes[i].value;
@@ -290,7 +289,7 @@ define(function (require) {
                     if (percent < cachePercent) {
                         // Start from next key
                         start = Math.min(cacheKey + 1, trackLen - 1);
-                        for (i = start; i >= 0; i--) {
+                        for (var i = start; i >= 0; i--) {
                             if (kfPercents[i] <= percent) {
                                 break;
                             }
@@ -298,7 +297,7 @@ define(function (require) {
                         i = Math.min(i, trackLen - 2);
                     }
                     else {
-                        for (i = cacheKey; i < trackLen; i++) {
+                        for (var i = cacheKey; i < trackLen; i++) {
                             if (kfPercents[i] > percent) {
                                 break;
                             }
@@ -383,10 +382,6 @@ define(function (require) {
                             );
                         }
                     }
-
-                    for (i = 0; i < self._onframeList.length; i++) {
-                        self._onframeList[i](target, percent);
-                    }
                 };
 
                 var clip = new Clip({
@@ -405,6 +400,7 @@ define(function (require) {
                 return clip;
             };
 
+            var lastClip;
             for (var propName in this._tracks) {
                 var clip = createTrackClip(this._tracks[propName], propName);
                 if (clip) {
@@ -415,10 +411,24 @@ define(function (require) {
                     if (this.animation) {
                         this.animation.addClip(clip);
                     }
+
+                    lastClip = clip;
                 }
             }
 
-            if (! clipCount) {
+            // Add during callback on the last clip
+            if (lastClip) {
+                var oldOnFrame = lastClip.onframe;
+                lastClip.onframe = function (target, percent) {
+                    oldOnFrame(target, percent);
+
+                    for (var i = 0; i < self._onframeList.length; i++) {
+                        self._onframeList[i](target, percent);
+                    }
+                }
+            }
+
+            if (!clipCount) {
                 this._doneCallback();
             }
             return this;
