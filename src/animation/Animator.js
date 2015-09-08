@@ -438,7 +438,7 @@ define(function (require) {
          */
         stop: function() {
             var clipList = this._clipList;
-            var animation = animation;
+            var animation = this.animation;
             for (var i = 0; i < clipList.length; i++) {
                 var clip = clipList[i];
                 animation && animation.removeClip(clip);
