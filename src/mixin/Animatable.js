@@ -144,6 +144,7 @@ define(function(require) {
             // animateTo(target, time, callback);
             else if (typeof delay === 'function') {
                 callback = delay;
+                delay = 0;
             }
             // animateTo(target, callback)
             else if (typeof time === 'function') {

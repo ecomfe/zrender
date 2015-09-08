@@ -85,23 +85,24 @@ define(function (require) {
 
             el.update();
 
+            var clipPath = el.clipPath;
+            if (clipPath) {
+                // clipPath 的变换是基于 group 的变换
+                clipPath.parent = el;
+                clipPath.updateTransform();
+
+                // FIXME 效率影响
+                if (clipPaths) {
+                    clipPaths = clipPaths.slice();
+                    clipPaths.push(clipPath);
+                } else {
+                    clipPaths = [clipPath];
+                }
+            }
+
             if (el.type == 'group') {
-                var clipPath = el.clipPath;
                 var children = el._children;
 
-                if (clipPath) {
-                    // clipPath 的变换是基于 group 的变换
-                    clipPath.parent = el;
-                    clipPath.updateTransform();
-
-                    // PENDING 效率影响
-                    if (clipPaths) {
-                        clipPaths = clipPaths.slice();
-                        clipPaths.push(clipPath);
-                    } else {
-                        clipPaths = [clipPath];
-                    }
-                }
 
                 for (var i = 0; i < children.length; i++) {
                     var child = children[i];

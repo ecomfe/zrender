@@ -105,17 +105,19 @@ define(function(require) {
 
         /**
          */
-        unsetClipPath: function () {
+        removeClipPath: function () {
             var clipPath = this.clipPath;
-            if (clipPath.__zr) {
-                clipPath.removeSelfFromZr(clipPath.__zr);
+            if (clipPath) {
+                if (clipPath.__zr) {
+                    clipPath.removeSelfFromZr(clipPath.__zr);
+                }
+
+                clipPath.__zr = null;
+                clipPath.__clipTarget = null;
+                this.clipPath = null;
+
+                this.dirty();
             }
-
-            clipPath.__zr = null;
-            clipPath.__clipTarget = null;
-            this.clipPath = null;
-
-            this.dirty();
         },
 
         /**
