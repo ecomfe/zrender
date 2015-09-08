@@ -47,7 +47,7 @@
             });
             var zImage = zr.pathToImage(starShape, 28, 28);
 
-            var NUMBER = 100;
+            var NUMBER = 1000;
 
             for (var i = 0; i < NUMBER; i++) {
                 var star = new ImageShape({
@@ -108,7 +108,7 @@
             });
 
             console.profile('render');
-            zr.render();
+            zr.refresh();
             console.profileEnd('render');
         }
     );

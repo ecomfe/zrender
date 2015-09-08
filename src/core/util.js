@@ -106,6 +106,33 @@ define(function(require) {
         return result;
     }
 
+    /**
+     * @param {*} target
+     * @param {*} source
+     */
+    function extend(target, source) {
+        for (var key in source) {
+            if (source.hasOwnProperty(key)) {
+                target[key] = source[key];
+            }
+        }
+        return target;
+    }
+
+    /**
+     * @param {*} target
+     * @param {*} source
+     */
+    function defaults(target, source) {
+        for (var key in source) {
+            if (source.hasOwnProperty(key) && target[key] == null) {
+                target[key] = source[key];
+            }
+        }
+        return target;
+    }
+
+
     var _ctx;
 
     function getContext() {
@@ -275,6 +302,8 @@ define(function(require) {
         clone: clone,
         merge: merge,
         mergeAll: mergeAll,
+        extend: extend,
+        defaults: defaults,
         getContext: getContext,
         indexOf: indexOf,
         isArrayLike: isArrayLike,
