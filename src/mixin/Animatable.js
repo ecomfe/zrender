@@ -192,7 +192,7 @@ define(function(require) {
             var objShallow = {};
             var propertyCount = 0;
             for (var name in target) {
-                if (util.isObject(target[name])) {
+                if (util.isObject(target[name]) && !util.isArrayLike(target[name])) {
                     this._animateToShallow(
                         path ? path + '.' + name : name,
                         target[name],
