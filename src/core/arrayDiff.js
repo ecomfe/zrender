@@ -60,8 +60,8 @@ define(function (require) {
                 else {
                     // memo[i-1][j-1] + same(arr0[i-1], arr1[j-1]) ? 0 : 1
                     // Retained or replace
-                    var val0 = arr0[invM ? (i1 - i) : (i - 1 + i0)];
-                    var val1 = arr1[invN ? (j1 - j) : (j - 1 + j0)];
+                    var val0 = arr0[invM ? (i0 - i) : (i - 1 + i0)];
+                    var val1 = arr1[invN ? (j0 - j) : (j - 1 + j0)];
                     // Because replace is add after remove actually
                     // It has a higher score than removing or adding
                     // TODO custom score function
@@ -105,7 +105,7 @@ define(function (require) {
                 if (equal(a, arr1[j + j0]) && ! matched) {
                     matched = true;
                     // Equal and update use the index in first array
-                    append(out, '=', i0);
+                    append(out, '=', i0, j + j0);
                 }
                 else {
                     // if (j === len1 - 1 && ! matched) {
