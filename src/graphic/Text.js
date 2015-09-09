@@ -32,13 +32,29 @@ define(function (require) {
             this.beforeBrush(ctx);
 
             var style = this.style;
-            style.textPosition = [0, 0];
+            var x = style.x || 0;
+            var y = style.y || 0;
+            var text = style.text;
+            var textFill = style.fill;
+            var textStroke = style.stroke;
 
-            if (style.text) {
-                this.drawRectText(ctx, {
-                    x: style.x || 0, y: style.y || 0,
-                    width: 0, height: 0
-                }, this.getBoundingRect());
+            if (! text) {
+                return;
+            }
+            textFill && (ctx.fillStyle = textFill);
+            textStroke && (ctx.strokeStyle = textStroke);
+
+            ctx.font = style.textFont;
+            ctx.textAlign = style.textAlign;
+            ctx.textBaseline = style.textBaseline;
+
+            var lineHeight = textContain.measureText('国', ctx.font);
+
+            var textLines = text.split('\n');
+            for (var i = 0; i < textLines.length; i++) {
+                textFill && ctx.fillText(textLines[i], x, y);
+                textStroke && ctx.strokeText(textLines[i], x, y);
+                y += lineHeight;
             }
 
             this.afterBrush(ctx);
