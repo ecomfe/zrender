@@ -14,8 +14,6 @@ define(function (require) {
     var RectText = require('./mixin/RectText');
     // var Stateful = require('./mixin/Stateful');
 
-    var rectContain = require('../contain/rect');
-
     /**
      * @alias module:zrender/graphic/Displayable
      * @extends module:zrender/Element
@@ -184,7 +182,8 @@ define(function (require) {
          */
         rectContain: function (x, y) {
             var coord = this.transformCoordToLocal(x, y);
-            return rectContain.contain(this.getBoundingRect(), coord[0], coord[1]);
+            var rect = this.getBoundingRect();
+            return rect.contain(coord[0], coord[1]);
         },
 
         /**

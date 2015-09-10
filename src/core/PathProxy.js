@@ -5,6 +5,8 @@
  * @module zrender/core/PathProxy
  * @author Yi Shen (http://www.github.com/pissang)
  */
+
+ // TODO getTotalLength, getPointAtLength
 define(function (require) {
 
     var curve = require('./curve');

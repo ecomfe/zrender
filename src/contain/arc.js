@@ -25,11 +25,12 @@ define(function (require) {
             if (lineWidth === 0) {
                 return false;
             }
-            var _l = Math.max(lineWidth, 5);
+            var _l = lineWidth;
 
             x -= cx;
             y -= cy;
             var d = Math.sqrt(x * x + y * y);
+
             if ((d - _l > r) || (d + _l < r)) {
                 return false;
             }
@@ -48,7 +49,7 @@ define(function (require) {
             if (startAngle > endAngle) {
                 endAngle += PI2;
             }
-            
+
             var angle = Math.atan2(y, x);
             if (angle < 0) {
                 angle += PI2;

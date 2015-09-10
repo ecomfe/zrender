@@ -14,7 +14,7 @@ define({
         if (lineWidth === 0) {
             return false;
         }
-        var _l = Math.max(lineWidth, 5);
+        var _l = lineWidth;
         var _a = 0;
         var _b = x0;
         // Quick reject

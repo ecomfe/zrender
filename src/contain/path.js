@@ -72,19 +72,19 @@ define(function (require) {
                     // 分成三段单调函数
                     if (t < extrema[0]) {
                         w += y0_ < y0 ? 1 : -1;
-                    } 
+                    }
                     else if (t < extrema[1]) {
                         w += y1_ < y0_ ? 1 : -1;
-                    } 
+                    }
                     else {
                         w += y3 < y1_ ? 1 : -1;
                     }
-                } 
+                }
                 else {
                     // 分成两段单调函数
                     if (t < extrema[0]) {
                         w += y0_ < y0 ? 1 : -1;
-                    } 
+                    }
                     else {
                         w += y3 < y0_ ? 1 : -1;
                     }
@@ -105,7 +105,7 @@ define(function (require) {
         var nRoots = curve.quadraticRootAt(y0, y1, y2, y, roots);
         if (nRoots === 0) {
             return 0;
-        } 
+        }
         else {
             var t = curve.quadraticExtremum(y0, y1, y2);
             if (t >=0 && t <= 1) {
@@ -118,13 +118,13 @@ define(function (require) {
                     }
                     if (roots[i] < t) {
                         w += y_ < y0 ? 1 : -1;
-                    } 
+                    }
                     else {
                         w += y2 < y_ ? 1 : -1;
                     }
                 }
                 return w;
-            } 
+            }
             else {
                 var x_ = curve.quadraticAt(x0, x1, x2, roots[0]);
                 if (x_ > x) {
@@ -134,7 +134,7 @@ define(function (require) {
             }
         }
     }
-    
+
     // TODO
     // Arc 旋转
     function windingArc(
@@ -163,10 +163,10 @@ define(function (require) {
         if (anticlockwise) {
             var tmp = startAngle;
             startAngle = normalizeRadian(endAngle);
-            endAngle = normalizeRadian(tmp);   
+            endAngle = normalizeRadian(tmp);
         } else {
             startAngle = normalizeRadian(startAngle);
-            endAngle = normalizeRadian(endAngle);   
+            endAngle = normalizeRadian(endAngle);
         }
         if (startAngle > endAngle) {
             endAngle += PI2;
@@ -219,7 +219,7 @@ define(function (require) {
             if (i == 1) {
                 // 如果第一个命令是 L, C, Q
                 // 则 previous point 同绘制命令的第一个 point
-                // 
+                //
                 // 第一个命令为 Arc 的情况下会在后面特殊处理
                 xi = data[i];
                 yi = data[i + 1];

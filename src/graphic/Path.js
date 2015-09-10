@@ -11,7 +11,6 @@ define(function (require) {
     var zrUtil = require('../core/util');
     var PathProxy = require('../core/PathProxy');
     var pathContain = require('../contain/path');
-    var rectContain = require('../contain/rect');
 
     function pathHasFill(style) {
         var fill = style.fill;
@@ -21,6 +20,13 @@ define(function (require) {
     function pathHasStroke(style) {
         var stroke = style.stroke;
         return stroke != null && stroke !== 'none';
+    }
+
+    var abs = Math.abs;
+    function getLineScale(m) {
+        return m && abs(m[0] - 1) > 1e-10 && abs(m[3] - 1) > 1e-10
+            ? Math.sqrt(abs(m[0] * m[3] - m[2] * m[1]))
+            : 1;
     }
 
     /**
@@ -112,15 +118,18 @@ define(function (require) {
                     this.buildPath(this.path, this.shape);
                 }
                 this._rect = this.path.getBoundingRect();
-            }
-            if (pathHasStroke(this.style)) {
-                var rect = this._rect;
-                var w = this.style.lineWidth;
-                // Consider line width
-                rect.width += w;
-                rect.height += w;
-                rect.x -= w / 2;
-                rect.y -= w / 2;
+
+                if (pathHasStroke(this.style)) {
+                    var rect = this._rect;
+                    // FIXME Must after updateTransform
+                    var w = this.style.lineWidth;
+
+                    // Consider line width
+                    rect.width += w;
+                    rect.height += w;
+                    rect.x -= w / 2;
+                    rect.y -= w / 2;
+                }
             }
             return this._rect;
         },
@@ -132,11 +141,14 @@ define(function (require) {
             x = localPos[0];
             y = localPos[1];
 
-            if (rectContain.contain(rect, x, y)) {
+            if (rect.contain(x, y)) {
                 var pathData = this.path.data;
                 if (pathHasStroke(style)) {
+                    var lineWidth = style.lineWidth;
+                    var lineScale = getLineScale(this.transform);
+                    lineWidth = Math.max(lineWidth * lineScale, 5) / lineScale;
                     if (pathContain.containStroke(
-                        pathData, style.lineWidth, x, y
+                        pathData, lineWidth, x, y
                     )) {
                         return true;
                     }

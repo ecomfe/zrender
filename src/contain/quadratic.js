@@ -1,5 +1,5 @@
 define(function (require) {
-    
+
     var curve = require('../core/curve');
 
     return {
@@ -20,7 +20,7 @@ define(function (require) {
             if (lineWidth === 0) {
                 return false;
             }
-            var _l = Math.max(lineWidth, 5);
+            var _l = lineWidth;
             // Quick reject
             if (
                 (y > y0 + _l && y > y1 + _l && y > y2 + _l)

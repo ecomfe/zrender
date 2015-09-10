@@ -87,6 +87,14 @@ define(function(require) {
             return ! (ax1 < bx0 || bx1 < ax0 || ay1 < by0 || by1 < ay0);
         },
 
+        contain: function (x, y) {
+            var rect = this;
+            return x >= rect.x
+                && x <= (rect.x + rect.width)
+                && y >= rect.y
+                && y <= (rect.y + rect.height);
+        },
+
         /**
          * @return {module:echarts/core/BoundingRect}
          */

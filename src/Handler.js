@@ -15,7 +15,6 @@ define(function (require) {
     var env = require('./core/env');
     var eventTool = require('./core/event');
     var util = require('./core/util');
-    var vec2 = require('./core/vector');
     var EVENT = config.EVENT;
 
     var Eventful = require('./mixin/Eventful');
