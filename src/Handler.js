@@ -647,7 +647,9 @@ define(function (require) {
                 type: eventName,
                 event: event,
                 target: targetShape,
-                cancelBubble: false
+                cancelBubble: false,
+                offsetX: event.zrenderX,
+                offsetY: event.zrenderY
             };
 
             var el = targetShape;
