@@ -175,9 +175,7 @@ define(function (require) {
 
             this.__dirty = true;
 
-            if (this.__zr) {
-                this.__zr.refreshNextFrame();
-            }
+            this.__zr && this.__zr.refresh();
 
             // Used as a clipping path
             if (this.__clipTarget) {

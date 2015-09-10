@@ -71,6 +71,25 @@ define(function(require) {
             this[key] = value;
         },
 
+        /**
+         * Hide the element
+         */
+        hide: function () {
+            this.ignore = true;
+            this.__zr && this.__zr.refresh();
+        },
+
+        /**
+         * Show the element
+         */
+        show: function () {
+            this.ignore = false;
+            this.__zr && this.__zr.refresh();
+        },
+
+        /**
+         * @
+         */
         attr: function (key, value) {
             if (typeof key === 'string') {
                 this.attrKV(key, value);

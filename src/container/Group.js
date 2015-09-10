@@ -101,9 +101,7 @@ define(function (require) {
                 }
             }
 
-            if (this.__zr) {
-                this.__zr.refreshNextFrame();
-            }
+            this.__zr && this.__zr.refresh();
 
             return this;
         },
@@ -131,9 +129,7 @@ define(function (require) {
                 }
             }
 
-            if (this.__zr) {
-                this.__zr.refreshNextFrame();
-            }
+            this.__zr && this.__zr.refresh();
 
             return this;
         },
@@ -223,9 +219,7 @@ define(function (require) {
 
         dirty: function () {
             this.__dirty = true;
-            if (this.__zr) {
-                this.__zr.refreshNextFrame();
-            }
+            this.__zr && this.__zr.refresh();
             return this;
         },
 

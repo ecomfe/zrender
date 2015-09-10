@@ -195,9 +195,7 @@ define(function (require) {
 
             this._rect = null;
 
-            if (this.__zr) {
-                this.__zr.refreshNextFrame();
-            }
+            this.__zr && this.__zr.refresh();
         },
 
         drift: function (dx, dy) {

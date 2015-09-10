@@ -93,8 +93,8 @@ define(function(require) {
 
     function getFrameCallback(zrInstance) {
         return function () {
-            if (zrInstance._needsRefreshNextFrame) {
-                zrInstance.refresh();
+            if (zrInstance._needsRefresh) {
+                zrInstance.refreshImmediately();
             }
         };
     }
@@ -142,7 +142,7 @@ define(function(require) {
         });
         this.animation.start();
 
-        this._needsRefreshNextFrame = false;
+        this._needsRefresh = false;
 
         // 修改 storage.delFromMap, 每次删除元素之前删除动画
         // FIXME 有点ugly
@@ -182,7 +182,7 @@ define(function(require) {
          */
         add: function (el) {
             this.storage.addRoot(el);
-            this._needsRefreshNextFrame = true;
+            this._needsRefresh = true;
         },
 
         /**
@@ -191,7 +191,7 @@ define(function(require) {
          */
         remove: function (el) {
             this.storage.delRoot(el);
-            this._needsRefreshNextFrame = true;
+            this._needsRefresh = true;
         },
 
         /**
@@ -206,22 +206,22 @@ define(function(require) {
         */
         configLayer: function (zLevel, config) {
             this.painter.configLayer(zLevel, config);
-            this._needsRefreshNextFrame = true;
+            this._needsRefresh = true;
         },
 
         /**
          * 视图更新
          */
-        refresh: function () {
+        refreshImmediately: function () {
             this.painter.refresh();
-            this._needsRefreshNextFrame = false;
+            this._needsRefresh = false;
         },
 
         /**
          * 标记视图在浏览器下一帧需要绘制
          */
-        refreshNextFrame: function() {
-            this._needsRefreshNextFrame = true;
+        refresh: function() {
+            this._needsRefresh = true;
         },
 
         /**
