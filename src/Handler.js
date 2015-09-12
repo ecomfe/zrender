@@ -680,8 +680,11 @@ define(function (require) {
                 // 无hover目标，无拖拽对象，原生事件分发
                 var eveObj = {
                     type: eventName,
-                    event: event
+                    event: event,
+                    offsetX: event.zrenderX,
+                    offsetY: event.zrenderY
                 };
+
                 this.trigger(eventName, eveObj);
                 // 分发事件到用户自定义层
                 this.painter.eachOtherLayer(function (layer) {

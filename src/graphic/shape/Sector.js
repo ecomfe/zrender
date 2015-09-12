@@ -3,6 +3,7 @@
  * @module zrender/graphic/shape/Sector
  */
 
+// FIXME clockwise seems wrong
 define(function (require) {
 
     return require('../Path').extend({
