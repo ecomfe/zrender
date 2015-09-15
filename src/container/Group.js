@@ -137,7 +137,7 @@ define(function (require) {
         /**
          * 移除所有子节点
          */
-        clear: function () {
+        removeAll: function () {
             var children = this._children;
             var storage = this.__storage;
             var child;
