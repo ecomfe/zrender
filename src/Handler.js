@@ -74,6 +74,7 @@ define(function (require) {
 
             this._hovered = hovered;
 
+            this.root.style.cursor = hovered ? hovered.cursor : 'default';
             // Mouse out on previous hovered element
             if (lastHovered && hovered !== lastHovered && lastHovered.__zr) {
                 this._dispatch(lastHovered, EVENT.MOUSEOUT, event);
@@ -239,10 +240,10 @@ define(function (require) {
          * @param {string} eventName 事件名称，resize，hover，drag，etc~
          * @param {event=} eventArgs event dom事件对象
          */
-        // dispatch: function (eventName, eventArgs) {
-        //     var handler = this[proxyEventName(eventName)];
-        //     handler && handler(eventArgs);
-        // },
+        dispatch: function (eventName, eventArgs) {
+            var handler = this[proxyEventName(eventName)];
+            handler && handler(eventArgs);
+        },
 
         /**
          * 释放，解绑所有事件

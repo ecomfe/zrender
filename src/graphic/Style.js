@@ -127,10 +127,10 @@ define(function (require) {
             if (otherStyle) {
                 var target = this;
                 for (var name in otherStyle) {
-                    if (otherStyle.hasOwnProperty(name)) {
-                        if (overwrite || ! target.hasOwnProperty(name)) {
-                            target[name] = otherStyle[name];
-                        }
+                    if (otherStyle.hasOwnProperty(name)
+                        && (overwrite || ! target.hasOwnProperty(name))
+                    ) {
+                        target[name] = otherStyle[name];
                     }
                 }
             }

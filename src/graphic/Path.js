@@ -19,7 +19,7 @@ define(function (require) {
 
     function pathHasStroke(style) {
         var stroke = style.stroke;
-        return stroke != null && stroke !== 'none';
+        return stroke != null && stroke !== 'none' && style.lineWidth > 0;
     }
 
     var abs = Math.abs;
@@ -199,6 +199,22 @@ define(function (require) {
                 this.__dirtyPath = true;
                 this._rect = null;
             }
+        },
+        /**
+         * @param {Object|string} key
+         * @param {*} value
+         */
+        setShape: function (key, value) {
+            var shape = this.shape;
+            if (zrUtil.isObject(key)) {
+                for (var name in key) {
+                    shape[name] = key[name];
+                }
+            }
+            else {
+                shape[key] = value;
+            }
+            this.dirty(true);
         }
     };
 

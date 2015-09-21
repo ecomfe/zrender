@@ -70,9 +70,9 @@ define(function(require) {
                 if (deep
                     && typeof targetProp == 'object'
                     // 非内置对象
-                    && ! isBuildInObject(targetProp)
+                    && !isBuildInObject(targetProp)
                     // 非 dom 对象
-                    && ! isDom(targetProp)
+                    && !isDom(targetProp)
                 ) {
                     // 如果需要递归覆盖，就递归调用merge
                     merge(

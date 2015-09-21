@@ -103,12 +103,11 @@ define(function (require) {
         silent: false,
 
         /**
-         * Mouse cursor
+         * Mouse cursor when hovered
          * @name module:/zrender/graphic/Displayable#cursor
          * @type {string}
-         * @default 'default'
          */
-        cursor: 'default',
+        cursor: 'pointer',
 
         beforeBrush: function (ctx) {
             ctx.save();
@@ -254,6 +253,18 @@ define(function (require) {
             if (key !== 'style') {
                 this[key] = value;
             }
+            else {
+                this.style.set(value);
+            }
+        },
+
+        /**
+         * @param {Object|string} key
+         * @param {*} value
+         */
+        setStyle: function (key, value) {
+            this.style.set(key, value);
+            this.dirty();
         }
     };
 
