@@ -102,6 +102,14 @@ define(function (require) {
          */
         silent: false,
 
+        /**
+         * Mouse cursor
+         * @name module:/zrender/graphic/Displayable#cursor
+         * @type {string}
+         * @default 'default'
+         */
+        cursor: 'default',
+
         beforeBrush: function (ctx) {
             ctx.save();
 

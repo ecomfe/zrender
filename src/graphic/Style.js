@@ -138,10 +138,16 @@ define(function (require) {
 
         /**
          * Batch setting style with a given object
-         * @param {Object} obj
+         * @param {Object|string} obj
+         * @param {*} [obj]
          */
-        set: function (obj) {
-            this.extendFrom(obj, true);
+        set: function (obj, value) {
+            if (typeof obj === 'string') {
+                this[obj] = value;
+            }
+            else {
+                this.extendFrom(obj, true);
+            }
         },
 
         /**

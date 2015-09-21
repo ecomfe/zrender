@@ -58,15 +58,21 @@ define(function () {
              * 全局离开，MOUSEOUT触发比较频繁，一次离开优化绑定
              * @type {string}
              */
-            GLOBALOUT : 'globalout',    // 
+            GLOBALOUT : 'globalout',    //
 
             // 一次成功元素拖拽的行为事件过程是：
             // dragstart > dragenter > dragover [> dragleave] > drop > dragend
+
             /**
              * 开始拖拽时触发，事件对象是：被拖拽图形元素
              * @type {string}
              */
             DRAGSTART : 'dragstart',
+            /**
+             * 拖拽中触发，事件对象是：被拖拽图形元素
+             * @type {string}
+             */
+            DRAG : 'drag',
             /**
              * 拖拽完毕时触发（在drop之后触发），事件对象是：被拖拽图形元素
              * @type {string}
@@ -81,7 +87,7 @@ define(function () {
              * 拖拽图形元素在目标图形元素上移动时触发，事件对象是：目标图形元素
              * @type {string}
              */
-            DRAGOVER : 'dragover',
+            // DRAGOVER : 'dragover',
             /**
              * 拖拽图形元素离开目标图形元素时触发，事件对象是：目标图形元素
              * @type {string}

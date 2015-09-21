@@ -20,32 +20,51 @@
     require([
         "zrender",
         'zrender/tool/path',
+        'zrender/graphic/shape/Circle',
         'zrender/contain/path'
-    ], function(zrender, pathTool, pathContain) {
+    ], function(zrender, pathTool, Circle, pathContain) {
 
-        var path = pathTool.createFromString("M142.651,294.796\
-            C12.699,345.559-30.035,425.197,29.129,423.392\
-            c59.164-1.803,101.571,32.148,73.938,83.76\
-            c-27.634,51.605,86.419,41.451,86.419,41.451\
-            l46.896-104.904\
-            // c0,0,93.796-3.459,75.06,20.305\
-            c-62.854,17.879-53.774,130.289,35.85,111.676\
-            c29.873-60.914,73.189-140.439,73.189-140.439\
-            s168.791-265.652-11.947-133.672\
-            c-137.886,109.729-158.628,26.486-137.422-21.996\
-            C292.317,231.084,272.604,244.035,142.651,294.796z\
-                        M600,350 l 50,-25\
-           a25,25 0 0,1 50,-25 l 50,-25\
-           a25,50 0 0,1 50,-25 l 50,-25\
-           a25,75 0 0,1 50,-25 l 50,-25\
-           a25,100 0 0,1 50,-25 l 50,-25",
-        {
+        // var path = pathTool.createFromString("M142.651,294.796\
+        //     C12.699,345.559-30.035,425.197,29.129,423.392\
+        //     c59.164-1.803,101.571,32.148,73.938,83.76\
+        //     c-27.634,51.605,86.419,41.451,86.419,41.451\
+        //     l46.896-104.904\
+        //     // c0,0,93.796-3.459,75.06,20.305\
+        //     c-62.854,17.879-53.774,130.289,35.85,111.676\
+        //     c29.873-60.914,73.189-140.439,73.189-140.439\
+        //     s168.791-265.652-11.947-133.672\
+        //     c-137.886,109.729-158.628,26.486-137.422-21.996\
+        //     C292.317,231.084,272.604,244.035,142.651,294.796z\
+        //                 M600,350 l 50,-25\
+        //    a25,25 0 0,1 50,-25 l 50,-25\
+        //    a25,50 0 0,1 50,-25 l 50,-25\
+        //    a25,75 0 0,1 50,-25 l 50,-25\
+        //    a25,100 0 0,1 50,-25 l 50,-25",
+        // {
+        //     style: {
+        //         brushType: 'both',
+        //         lineWidth: 10,
+        //         strokeColor: 'blue'
+        //     }
+        // });
+        var path = new Circle({
+            shape: {
+                r: 10,
+                cx: 0,
+                cy: 0
+            },
             style: {
-                brushType: 'both',
-                lineWidth: 10,
-                strokeColor: 'blue'
-            }
+                fill: null,
+                fill: 'red',
+                // stroke: 'blue',
+                lineWidth: 0.3
+            },
+            scale: [10, 10],
+            position: [100, 100]
         });
+        path.updateTransform();
+
+        path.contain(194, 190);
 
         // 随机散落点测试
         var pointsDom = document.getElementById('points');
@@ -63,20 +82,28 @@
         }
         var time = Date.now();
         for (var i = 0; i < points.length; i++) {
-            if (pathContain.containStroke(
-                path._path.data, 10, points[i][0], points[i][1]
-            )) {
-                points[i][2] = 2;
-            }
-            else if (pathContain.contain(
-                path._path.data, points[i][0], points[i][1]
-            )) {
+            // if (pathContain.containStroke(
+            //     path.path.data, 10, points[i][0], points[i][1]
+            // )) {
+            //     points[i][2] = 2;
+            // }
+            // else if (pathContain.contain(
+            //     path.path.data, points[i][0], points[i][1]
+            // )) {
+            //     points[i][2] = 1;
+            // }
+            // else {
+            //     points[i][2] = 0;
+            // }
+            if (path.contain(points[i][0], points[i][1])) {
+                // console.log(points[i][0], points[i][1]);
                 points[i][2] = 1;
             }
             else {
                 points[i][2] = 0;
             }
         }
+
         var cost = Date.now() - time;
 
         for (var i = 0; i < points.length; i++) {
@@ -98,7 +125,7 @@
         // 原生isPointInPath测试
         var time = Date.now();
         for (var i = 0; i < 1000; i++) {
-            path._path.rebuildPath(ctx);
+            path.path.rebuildPath(ctx);
             ctx.isPointInPath(points[i][0], points[i][1]);
         }
         var cost = Date.now() - time;

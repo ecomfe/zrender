@@ -114,11 +114,14 @@ define(function(require) {
         opts = opts || {};
 
         /**
+         * @type {HTMLDomElement}
+         */
+        this.dom = dom;
+        /**
          * 实例 id
          * @type {string}
          */
         this.id = id;
-        this.env = env;
 
         var storage = new Storage();
         var painter = opts.renderer === 'svg'
@@ -229,6 +232,7 @@ define(function(require) {
          */
         resize: function() {
             this.painter.resize();
+            this.handler.resize();
         },
 
         /**
