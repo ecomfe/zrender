@@ -253,8 +253,9 @@ define(function (require) {
 
                     // Try converting a string to a color array
                     if (typeof(value) == 'string') {
-                        if (color.validate(value)) {
-                            value = color.toArray(value);
+                        var colorArray = color.parse(value);
+                        if (colorArray) {
+                            value = colorArray;
                             isValueColor = true;
                         }
                         else {
