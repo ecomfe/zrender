@@ -12,11 +12,17 @@ define(function (require) {
 
     var PI2 = Math.PI * 2;
 
+    var EPSILON = 1e-4;
+
+    function isAroundEqual(a, b) {
+        return Math.abs(a - b) < EPSILON;
+    }
+
     function windingLine(x0, y0, x1, y1, x, y) {
         if ((y > y0 && y > y1) || (y < y0 && y < y1)) {
             return 0;
         }
-        if (y1 == y0) {
+        if (y1 === y0) {
             return 0;
         }
         var dir = y1 < y0 ? 1 : -1;
@@ -207,7 +213,7 @@ define(function (require) {
             // Begin a new subpath
             if (cmd === CMD.M && i > 1) {
                 // Close previous subpath
-                if (! isStroke) {
+                if (!isStroke) {
                     w += windingLine(xi, yi, x0, y0, x, y);
                 }
                 // 如果被任何一个 subpath 包含
@@ -351,7 +357,7 @@ define(function (require) {
                     break;
             }
         }
-        if (! isStroke) {
+        if (!isStroke && !isAroundEqual(yi, y0)) {
             w += windingLine(xi, yi, x0, y0, x, y) || 0;
         }
         return w !== 0;
