@@ -52,40 +52,39 @@ define(function(require) {
     }
 
     /**
-     * @param {*} target
-     * @param {*} source
+     * @param {Object=} target
+     * @param {Object=} source
      * @param {boolean} [overwrite=false]
-     * @param {boolean} [deep=true]
      */
-    function merge(target, source, overwrite, deep) {
-        if (typeof deep === 'undefined') {
-            deep = true;
-        }
-        if (! target) {
+    function merge(target, source, overwrite) {
+        if (!target) { // Might be null/undefined
             return;
         }
+        if (!source) { // Might be null/undefined
+            return target;
+        }
+
         for (var key in source) {
             if (source.hasOwnProperty(key)) {
                 var targetProp = target[key];
-                if (deep
-                    && typeof targetProp == 'object'
-                    // 非内置对象
-                    && !isBuildInObject(targetProp)
-                    // 非 dom 对象
+                var sourceProp = source[key];
+
+                if (isObject(sourceProp)
+                    && isObject(targetProp)
+                    && !isArray(sourceProp)
+                    && !isArray(targetProp)
+                    && !isDom(sourceProp)
                     && !isDom(targetProp)
+                    && !isBuildInObject(sourceProp)
+                    && !isBuildInObject(targetProp)
                 ) {
                     // 如果需要递归覆盖，就递归调用merge
-                    merge(
-                        target[key],
-                        source[key],
-                        overwrite,
-                        deep
-                    );
+                    merge(targetProp, sourceProp, overwrite);
                 }
                 else if (overwrite || !(key in target)) {
                     // 否则只处理overwrite为true，或者在目标对象中没有此属性的情况
                     // NOTE，在 target[key] 不存在的时候也是直接覆盖
-                    target[key] = source[key];
+                    target[key] = clone(source[key]);
                 }
             }
         }
@@ -94,14 +93,14 @@ define(function(require) {
     }
 
     /**
-     * @param {*} target
-     * @param {*...} sources
+     * @param {Array} targetAndSources The first item is target, and the rests are source.
+     * @param {boolean} [overwrite=false]
      * @return {*} target
      */
-    function mergeAll(target) {
-        var result = target;
-        for (var i = 1, len = arguments.length; i < len; i++) {
-            result = merge(result, arguments[i]);
+    function mergeAll(targetAndSources, overwrite) {
+        var result = targetAndSources[0];
+        for (var i = 1, len = targetAndSources.length; i < len; i++) {
+            result = merge(result, targetAndSources[i], overwrite);
         }
         return result;
     }
@@ -172,7 +171,8 @@ define(function(require) {
         for (var prop in clazzPrototype) {
             clazz.prototype[prop] = clazzPrototype[prop];
         }
-        clazz.constructor = clazz;
+        clazz.prototype.constructor = clazz;
+        clazz.superClass = baseClazz;
     }
 
     function isArrayLike(data) {
@@ -315,6 +315,7 @@ define(function(require) {
         isArray: isArray,
         isObject: isObject,
         isBuildInObject: isBuildInObject,
-        isDom: isDom
+        isDom: isDom,
+        noop: function () {}
     };
 });
