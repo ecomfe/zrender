@@ -544,6 +544,10 @@ define(function (require) {
                         y0 = data[i++];
                         xi = x0;
                         yi = y0;
+                        min2[0] = x0;
+                        min2[1] = y0;
+                        max2[0] = x0;
+                        max2[1] = y0;
                         break;
                     case CMD.L:
                         bbox.fromLine(xi, yi, data[i], data[i + 1], min2, max2);
@@ -602,6 +606,11 @@ define(function (require) {
                 // Union
                 vec2.min(min, min, min2);
                 vec2.max(max, max, max2);
+            }
+
+            // No data
+            if (i === 0) {
+                min[0] = min[1] = max[0] = max[1] = 0;
             }
 
             return new BoundingRect(
