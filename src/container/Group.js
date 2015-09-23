@@ -224,9 +224,10 @@ define(function (require) {
         },
 
         /**
+         * @param {boolean} updateChildTransform
          * @return {module:zrender/core/BoundingRect}
          */
-        getBoundingRect: function () {
+        getBoundingRect: function (updateChildTransform) {
             // TODO Caching
             // TODO Transform
             var rect = new BoundingRect(Infinity, Infinity, -Infinity, -Infinity);
@@ -234,7 +235,8 @@ define(function (require) {
             var children = this._children;
             for (var i = 0; i < children.length; i++) {
                 var child = children[i];
-                var childRect = child.getBoundingRect();
+                var childRect = child.getBoundingRect(updateChildTransform);
+                updateChildTransform && child.updateTransform();
                 var transform = child.transform;
                 if (transform) {
                     tmpRect.copy(childRect);
