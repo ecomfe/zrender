@@ -231,13 +231,14 @@ define(function (require) {
         getBoundingRect: function () {
             // TODO Caching
             // TODO Transform
-            var rect = new BoundingRect(Infinity, Infinity, -Infinity, -Infinity);
+            var rect;
             var tmpRect = new BoundingRect(0, 0, 0, 0);
             var children = this._children;
             for (var i = 0; i < children.length; i++) {
                 var child = children[i];
                 var childRect = child.getBoundingRect();
                 var transform = child.getLocalTransform(tmpMat);
+                rect = rect || childRect.clone();
                 if (transform) {
                     tmpRect.copy(childRect);
                     tmpRect.applyTransform(transform);
@@ -247,7 +248,7 @@ define(function (require) {
                     rect.union(childRect);
                 }
             }
-            return rect;
+            return rect || new BoundingRect(0, 0, 0, 0);
         },
 
         update: function () {

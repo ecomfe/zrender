@@ -36,17 +36,19 @@ define(function(require) {
          * @param {module:echarts/core/BoundingRect} boundingRect
          */
         union: function (boundingRect) {
-            this.x = Math.min(boundingRect.x, this.x);
-            this.y = Math.min(boundingRect.y, this.y);
+            var x = Math.min(boundingRect.x, this.x);
+            var y = Math.min(boundingRect.y, this.y);
 
             this.width = Math.max(
                     boundingRect.x + boundingRect.width,
                     this.x + this.width
-                ) - this.x;
+                ) - x;
             this.height = Math.max(
                     boundingRect.y + boundingRect.height,
                     this.y + this.height
-                ) - this.y;
+                ) - y;
+            this.x = x;
+            this.y = y;
         },
 
         /**

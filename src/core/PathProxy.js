@@ -512,8 +512,8 @@ define(function (require) {
          * @return {module:zrender/core/BoundingRect}
          */
         getBoundingRect: function () {
-            min[0] = min[1] = min2[0] = min2[1] = Infinity;
-            max[0] = max[1] = max2[0] = max2[1] = -Infinity;
+            min[0] = min[1] = min2[0] = min2[1] = Number.MAX_VALUE;
+            max[0] = max[1] = max2[0] = max2[1] = -Number.MAX_VALUE;
 
             var data = this.data;
             var xi = 0;
