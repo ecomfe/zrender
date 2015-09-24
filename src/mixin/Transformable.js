@@ -9,7 +9,7 @@ define(function (require) {
 
     var matrix = require('../core/matrix');
     var vector = require('../core/vector');
-    var origin = [0, 0];
+    var mIdentity = matrix.identity;
 
     var mTranslate = matrix.translate;
 
@@ -59,9 +59,6 @@ define(function (require) {
          */
         this.origin = this.origin || null;
 
-
-        this.needLocalTransform = false;
-
         /**
          * 是否有坐标变换
          * @type {boolean}
@@ -76,8 +73,8 @@ define(function (require) {
 
         transform: null,
 
-        updateNeedTransform: function () {
-            this.needLocalTransform = isNotAroundZero(this.rotation)
+        needLocalTransform: function () {
+            return isNotAroundZero(this.rotation)
                 || isNotAroundZero(this.position[0])
                 || isNotAroundZero(this.position[1])
                 || isNotAroundZero(this.scale[0] - 1)
@@ -90,11 +87,9 @@ define(function (require) {
          */
         updateTransform: function () {
 
-            this.updateNeedTransform();
-
             var parent = this.parent;
             var parentHasTransform = parent && parent.needTransform;
-            var needLocalTransform = this.needLocalTransform;
+            var needLocalTransform = this.needLocalTransform();
             this.needTransform = needLocalTransform || parentHasTransform;
 
             if (!this.needTransform) {
@@ -102,37 +97,12 @@ define(function (require) {
             }
 
             var m = this.transform || matrix.create();
-            matrix.identity(m);
-
-            var origin = this.origin;
-            if (origin && isAroundZero(origin[0]) && isAroundZero(origin[1])) {
-                origin = null;
-            }
 
             if (needLocalTransform) {
-                var scale = this.scale;
-                var rotation = this.rotation;
-                var position = this.position;
-                if (origin) {
-                    mTranslate(m, m, origin);
-                }
-                if (isNotAroundZero(scale[0]) || isNotAroundZero(scale[1])) {
-                    matrix.scale(m, m, scale);
-                }
-                if (rotation) {
-                    matrix.rotate(m, m, rotation);
-                }
-                if (origin) {
-                    origin[0] = -origin[0];
-                    origin[1] = -origin[1];
-                    mTranslate(m, m, origin);
-                    origin[0] = -origin[0];
-                    origin[1] = -origin[1];
-                }
-
-                if (isNotAroundZero(position[0]) || isNotAroundZero(position[1])) {
-                    mTranslate(m, m, position);
-                }
+                this.getLocalTransform(m);
+            }
+            else {
+                mIdentity(m);
             }
 
             // 应用父节点变换
@@ -149,6 +119,42 @@ define(function (require) {
 
             this.invTransform = this.invTransform || matrix.create();
             matrix.invert(this.invTransform, m);
+        },
+
+        getLocalTransform: function (m) {
+            m = m || [];
+            mIdentity(m);
+
+            var origin = this.origin;
+            if (origin && isAroundZero(origin[0]) && isAroundZero(origin[1])) {
+                origin = null;
+            }
+
+            var scale = this.scale;
+            var rotation = this.rotation;
+            var position = this.position;
+            if (origin) {
+                mTranslate(m, m, origin);
+            }
+            if (isNotAroundZero(scale[0]) || isNotAroundZero(scale[1])) {
+                matrix.scale(m, m, scale);
+            }
+            if (rotation) {
+                matrix.rotate(m, m, rotation);
+            }
+            if (origin) {
+                origin[0] = -origin[0];
+                origin[1] = -origin[1];
+                mTranslate(m, m, origin);
+                origin[0] = -origin[0];
+                origin[1] = -origin[1];
+            }
+
+            if (isNotAroundZero(position[0]) || isNotAroundZero(position[1])) {
+                mTranslate(m, m, position);
+            }
+
+            return m;
         },
         /**
          * 将自己的transform应用到context上

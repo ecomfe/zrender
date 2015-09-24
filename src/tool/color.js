@@ -227,7 +227,7 @@ define(function(require) {
      * @return {string}
      * @memberOf module:zrender/util/color
      */
-    function brightness(color, level) {
+    function lift(color, level) {
         var colorArr = parse(color);
         if (colorArr) {
             for (var i = 0; i < 3; i++) {
@@ -243,10 +243,24 @@ define(function(require) {
         }
     };
 
+    /**
+     * @param {string} color
+     * @return {string}
+     * @memberOf module:zrender/util/color
+     */
+    function toHex(color, level) {
+        var colorArr = parse(color);
+        if (colorArr) {
+            return ((1 << 24) + (colorArr[0] << 16) + (colorArr[1] << 8) + (+colorArr[2])).toString(16).slice(1);
+        }
+    };
+
     return {
         parse: parse,
 
-        brightness: brightness
-    }
+        lift: lift,
+
+        toHex: toHex
+    };
 });
 

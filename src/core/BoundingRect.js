@@ -36,17 +36,19 @@ define(function(require) {
          * @param {module:echarts/core/BoundingRect} boundingRect
          */
         union: function (boundingRect) {
-            this.x = Math.min(boundingRect.x, this.x);
-            this.y = Math.min(boundingRect.y, this.y);
+            var x = Math.min(boundingRect.x, this.x);
+            var y = Math.min(boundingRect.y, this.y);
 
             this.width = Math.max(
                     boundingRect.x + boundingRect.width,
                     this.x + this.width
-                ) - this.x;
+                ) - x;
             this.height = Math.max(
                     boundingRect.y + boundingRect.height,
                     this.y + this.height
-                ) - this.y;
+                ) - y;
+            this.x = x;
+            this.y = y;
         },
 
         /**
@@ -62,15 +64,15 @@ define(function(require) {
                 max[0] = this.x + this.width;
                 max[1] = this.y + this.height;
 
-                vec2.applyTransform(min, m);
-                vec2.applyTransform(max, m);
+                vec2.applyTransform(min, min, m);
+                vec2.applyTransform(max, max, m);
 
                 this.x = min[0];
                 this.y = min[1];
                 this.width = max[0] - min[0];
                 this.height = max[1] - min[1];
             }
-        }),
+        })(),
 
         intersect: function (b) {
             var a = this;
