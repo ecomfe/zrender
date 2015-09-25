@@ -74,7 +74,10 @@ define(function (require) {
                     var score2 = memo[j - 1] + 1;
 
                     last = memo[j];
-                    memo[j] = Math.min(score0, score1, score2);
+                    memo[j] = score0 < score1 ? score0 : score1;
+                    score2 < memo[j] && (memo[j] = score2);
+                    // Math min of three parameters seems slow
+                    // memo[j] = Math.min(score0, score1, score2);
                 }
             }
         }
