@@ -77,15 +77,12 @@ define(function (require) {
          * 添加子节点
          * @param {module:zrender/Element} child
          */
-        // TODO Type Check
         add: function (child) {
-            if (child == this) {
+            // Validate
+            if (!child || child === this || child.parent === this) {
                 return;
             }
 
-            if (child.parent == this) {
-                return;
-            }
             if (child.parent) {
                 child.parent.removeChild(child);
             }
@@ -112,16 +109,19 @@ define(function (require) {
          * 移除子节点
          * @param {module:zrender/Element} child
          */
-        // TODO Type Check
         remove: function (child) {
-            var idx = zrUtil.indexOf(this._children, child);
+            var zr = this.__zr;
+            var storage = this.__storage;
+            var children = this._children;
 
-            if (idx >= 0) {
-                this._children.splice(idx, 1);
+            var idx = zrUtil.indexOf(children, child);
+            if (idx < 0) {
+                return;
             }
+            children.splice(idx, 1);
+
             child.parent = null;
 
-            var storage = this.__storage;
             if (storage) {
 
                 storage.delFromMap(child.id);
@@ -131,7 +131,7 @@ define(function (require) {
                 }
             }
 
-            this.__zr && this.__zr.refresh();
+            zr && zr.refresh();
 
             return this;
         },
