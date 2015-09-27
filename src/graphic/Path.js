@@ -104,6 +104,7 @@ define(function (require) {
 
             // Draw rect text
             if (style.text) {
+                // var rect = this.getBoundingRect();
                 this.drawRectText(ctx, this.getBoundingRect());
             }
 
@@ -113,11 +114,13 @@ define(function (require) {
         buildPath: function (ctx, shapeCfg) {},
 
         getBoundingRect: function () {
-            if (! this._rect) {
+            if (!this._rect) {
+                var path = this.path;
                 if (this.__dirtyPath) {
-                    this.buildPath(this.path, this.shape);
+                    path.beginPath();
+                    this.buildPath(path, this.shape);
                 }
-                this._rect = this.path.getBoundingRect();
+                this._rect = path.getBoundingRect();
 
                 if (pathHasStroke(this.style)) {
                     var rect = this._rect;
