@@ -85,6 +85,11 @@ define(function(require) {
         return i < 0 ? 0 : i > 255 ? 255 : i;
     }
 
+    function clampCssAngle(i) {  // Clamp to integer 0 .. 360.
+        i = Math.round(i);  // Seems to be what Chrome does (vs truncation).
+        return i < 0 ? 0 : i > 360 ? 360 : i;
+    }
+
     function clampCssFloat(f) {  // Clamp to float 0.0 .. 1.0.
         return f < 0 ? 0 : f > 1 ? 1 : f;
     }
@@ -197,25 +202,13 @@ define(function(require) {
                     if (params.length !== 4) {
                         return;
                     }
-                    alpha = parseCssFloat(params.pop()); // jshint ignore:line
-                // Fall through.
+                    params[3] = parseCssFloat(params[3]);
+                    return hsla2rgba(params);
                 case 'hsl':
                     if (params.length !== 3) {
                         return;
                     }
-                    var h = (((parseFloat(params[0]) % 360) + 360) % 360) / 360;  // 0 .. 1
-                    // NOTE(deanm): According to the CSS spec s/l should only be
-                    // percentages, but we don't bother and let float or percentage.
-                    var s = parseCssFloat(params[1]);
-                    var l = parseCssFloat(params[2]);
-                    var m2 = l <= 0.5 ? l * (s + 1) : l + s - l * s;
-                    var m1 = l * 2 - m2;
-                    return [
-                        clampCssByte(cssHueToRgb(m1, m2, h + 1 / 3) * 255),
-                        clampCssByte(cssHueToRgb(m1, m2, h) * 255),
-                        clampCssByte(cssHueToRgb(m1, m2, h - 1 / 3) * 255),
-                        alpha
-                    ];
+                    return hsla2rgba(params);
                 default:
                     return;
             }
@@ -225,9 +218,34 @@ define(function(require) {
     }
 
     /**
+     * @param {Array.<number>} hsla
+     * @return {Array.<number>} rgba
+     */
+    function hsla2rgba(hsla) {
+        var h = (((parseFloat(hsla[0]) % 360) + 360) % 360) / 360;  // 0 .. 1
+        // NOTE(deanm): According to the CSS spec s/l should only be
+        // percentages, but we don't bother and let float or percentage.
+        var s = parseCssFloat(hsla[1]);
+        var l = parseCssFloat(hsla[2]);
+        var m2 = l <= 0.5 ? l * (s + 1) : l + s - l * s;
+        var m1 = l * 2 - m2;
+
+        var rgba = [
+            clampCssByte(cssHueToRgb(m1, m2, h + 1 / 3) * 255),
+            clampCssByte(cssHueToRgb(m1, m2, h) * 255),
+            clampCssByte(cssHueToRgb(m1, m2, h - 1 / 3) * 255)
+        ];
+
+        if (hsla.length === 4) {
+            rgba[3] = hsla[3];
+        }
+
+        return rgba;
+    }
+
+    /**
      * @param {Array.<number>} rgba
      * @return {Array.<number>} hsla
-     * @memberOf module:zrender/util/color
      */
     function rgba2hsla(rgba) {
         if (!rgba) {
@@ -282,7 +300,7 @@ define(function(require) {
             }
         }
 
-        var hsla = [H * 360, S * 100, L * 100];
+        var hsla = [H * 360, S, L];
 
         if (rgba[3] != null) {
             hsla.push(rgba[3]);
@@ -356,10 +374,45 @@ define(function(require) {
     }
 
     /**
+     * @param {string} color
+     * @param {number=} h 0 ~ 360, ignore when null.
+     * @param {number=} s 0 ~ 1, ignore when null.
+     * @param {number=} l 0 ~ 1, ignore when null.
+     * @return {string} Color string in rgba format.
+     * @memberOf module:zrender/util/color
+     */
+    function modifyHSL(color, h, s, l) {
+        color = parse(color);
+
+        if (color) {
+            color = rgba2hsla(color);
+            h != null && (color[0] = clampCssAngle(h));
+            s != null && (color[1] = parseCssFloat(s));
+            l != null && (color[2] = parseCssFloat(l));
+
+            return stringify(hsla2rgba(color), 'rgba');
+        }
+    }
+
+    /**
+     * @param {string} color
+     * @param {number=} alpha 0 ~ 1
+     * @return {string} Color string in rgba format.
+     * @memberOf module:zrender/util/color
+     */
+    function modifyAlpha(color, alpha) {
+        color = parse(color);
+
+        if (color && alpha != null) {
+            color[3] = clampCssFloat(alpha);
+            return stringify(color, 'rgba');
+        }
+    }
+
+    /**
      * @param {Array.<string>} colors Color list.
      * @param {string} type 'rgba', 'hsva', ...
      * @return {string} Result color.
-     * @memberOf module:zrender/util/color
      */
     function stringify(arrColor, type) {
         return type + '(' + arrColor.join(',') + ')';
@@ -367,11 +420,11 @@ define(function(require) {
 
     return {
         parse: parse,
-        stringify: stringify,
         lift: lift,
         toHex: toHex,
         mapToColor: mapToColor,
-        rgba2hsla: rgba2hsla
+        modifyHSL: modifyHSL,
+        modifyAlpha: modifyAlpha
     };
 });
 
