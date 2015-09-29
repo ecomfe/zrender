@@ -166,7 +166,7 @@ define(function (require) {
     var i;
     for (i = 0; i < STYLE_LIST_COMMON.length; i++) {
         name = STYLE_LIST_COMMON[i];
-        if (! (name in styleProto)) {
+        if (!(name in styleProto)) {
             styleProto[name] = null;
         }
     }

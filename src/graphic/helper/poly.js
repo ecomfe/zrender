@@ -15,7 +15,7 @@ define(function (require) {
 
                     ctx.moveTo(points[0][0], points[0][1]);
                     var len = points.length;
-                    if (! closePath) {
+                    if (!closePath) {
                         len--;
                     }
                     for (var i = 0; i < len; i++) {

@@ -236,6 +236,10 @@ define(function (require) {
             var children = this._children;
             for (var i = 0; i < children.length; i++) {
                 var child = children[i];
+                if (child.ignore || child.invisible) {
+                    continue;
+                }
+
                 var childRect = child.getBoundingRect();
                 var transform = child.getLocalTransform(tmpMat);
                 rect = rect || childRect.clone();
