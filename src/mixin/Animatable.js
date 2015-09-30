@@ -157,7 +157,7 @@ define(function(require) {
             }
             // Stop all previous animations
             this.stopAnimation();
-            this._animateToShallow('', target, time, delay, easing, callback);
+            this._animateToShallow('', this, target, time, delay, easing, callback);
 
             // Animators may be removed immediately after start
             // if there is nothing to animate
@@ -183,26 +183,30 @@ define(function(require) {
 
         /**
          * @param {string} path
+         * @param {Object} source
          * @param {Object} target
          * @param {number} time
          * @param {number} delay
          * @private
          */
-        _animateToShallow: function (path, target, time, delay) {
+        _animateToShallow: function (path, source, target, time, delay) {
             var objShallow = {};
             var propertyCount = 0;
             for (var name in target) {
-                if (util.isObject(target[name]) && !util.isArrayLike(target[name])) {
-                    this._animateToShallow(
-                        path ? path + '.' + name : name,
-                        target[name],
-                        time,
-                        delay
-                    );
-                }
-                else {
-                    objShallow[name] = target[name];
-                    propertyCount++;
+                if (source[name] != null) {
+                    if (util.isObject(target[name]) && !util.isArrayLike(target[name])) {
+                        this._animateToShallow(
+                            path ? path + '.' + name : name,
+                            source[name],
+                            target[name],
+                            time,
+                            delay
+                        );
+                    }
+                    else {
+                        objShallow[name] = target[name];
+                        propertyCount++;
+                    }
                 }
             }
 

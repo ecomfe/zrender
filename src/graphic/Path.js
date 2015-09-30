@@ -1,8 +1,6 @@
 /**
  * Path element
  * @module zrender/graphic/Path
- *
- * TODO adjustRect for resize and centering
  */
 
 define(function (require) {
@@ -11,6 +9,8 @@ define(function (require) {
     var zrUtil = require('../core/util');
     var PathProxy = require('../core/PathProxy');
     var pathContain = require('../contain/path');
+
+    var Gradient = require('./Gradient');
 
     function pathHasFill(style) {
         var fill = style.fill;
@@ -66,6 +66,16 @@ define(function (require) {
             var lineDashOffset = style.lineDashOffset;
 
             var ctxLineDash = !!ctx.setLineDash;
+
+            if (this.__dirtyPath) {
+                // Update gradient because bounding rect may changed
+                if (hasFill && style.fill instanceof Gradient) {
+                    style.fill.updateCanvasGradient(this, ctx);
+                }
+                if (hasStroke && style.stroke instanceof Gradient) {
+                    style.stroke.updateCanvasGradient(this, ctx);
+                }
+            }
             // Proxy context
             // Rebuild path in following 2 cases
             // 1. Path is dirty

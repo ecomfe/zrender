@@ -10,7 +10,6 @@ define(function (require) {
         this.on(EVENT.MOUSEMOVE, this._drag, this);
         this.on(EVENT.MOUSEUP, this._dragEnd, this);
         this.on(EVENT.GLOBALOUT, this._dragEnd, this);
-
         // this._dropTarget = null;
         // this._draggingTarget = null;
 

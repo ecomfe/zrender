@@ -2,19 +2,19 @@
  * Group是一个容器，可以插入子节点，Group的变换也会被应用到子节点上
  * @module zrender/graphic/Group
  * @example
- *     var Group = require('zrender/graphic/Group');
+ *     var Group = require('zrender/container/Group');
  *     var Circle = require('zrender/graphic/shape/Circle');
  *     var g = new Group();
  *     g.position[0] = 100;
  *     g.position[1] = 100;
- *     g.addChild(new Circle({
+ *     g.add(new Circle({
  *         style: {
  *             x: 100,
  *             y: 100,
  *             r: 20,
  *         }
  *     }));
- *     zr.addGroup(g);
+ *     zr.add(g);
  */
 define(function (require) {
 
@@ -74,23 +74,50 @@ define(function (require) {
         },
 
         /**
-         * 添加子节点
+         * 添加子节点到最后
          * @param {module:zrender/Element} child
          */
         add: function (child) {
-            // Validate
-            if (!child || child === this || child.parent === this) {
-                return;
+            if (child && child !== this && child.parent !== this) {
+
+                this._children.push(child);
+
+                this._doAdd(child);
             }
 
+            return this;
+        },
+
+        /**
+         * 添加子节点在 nextSibling 之前
+         * @param {module:zrender/Element} child
+         * @param {module:zrender/Element} nextSibling
+         */
+        addBefore: function (child, nextSibling) {
+            if (child && child !== this && child.parent !== this
+                && nextSibling && nextSibling.parent === this) {
+
+                var children = this._children;
+                var idx = children.indexOf(nextSibling);
+
+                if (idx >= 0) {
+                    children.splice(idx, 0, child);
+                    this._doAdd(child);
+                }
+            }
+
+            return this;
+        },
+
+        _doAdd: function (child) {
             if (child.parent) {
                 child.parent.removeChild(child);
             }
 
-            this._children.push(child);
             child.parent = this;
 
             var storage = this.__storage;
+            var zr = this.__zr;
             if (storage && storage !== child.__storage) {
 
                 storage.addToMap(child);
@@ -100,9 +127,7 @@ define(function (require) {
                 }
             }
 
-            this.__zr && this.__zr.refresh();
-
-            return this;
+            zr && zr.refresh();
         },
 
         /**
@@ -116,7 +141,7 @@ define(function (require) {
 
             var idx = zrUtil.indexOf(children, child);
             if (idx < 0) {
-                return;
+                return this;
             }
             children.splice(idx, 1);
 
@@ -166,8 +191,9 @@ define(function (require) {
          */
         eachChild: function (cb, context) {
             var haveContext = !!context;
-            for (var i = 0; i < this._children.length; i++) {
-                var child = this._children[i];
+            var children = this._children;
+            for (var i = 0; i < children.length; i++) {
+                var child = children[i];
                 if (haveContext) {
                     cb.call(context, child);
                 } else {

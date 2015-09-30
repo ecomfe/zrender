@@ -113,8 +113,16 @@ define(function (require) {
                 }
             }
 
-            this.fill != null && (ctx.fillStyle = this.fill);
-            this.stroke != null && (ctx.strokeStyle = this.stroke);
+            var fill = this.fill;
+            var stroke = this.stroke;
+            if (fill != null) {
+                 // Use canvas gradient if has
+                ctx.fillStyle = fill.canvasGradient ? fill.canvasGradient : fill
+            }
+            if (stroke != null) {
+                 // Use canvas gradient if has
+                ctx.strokeStyle = stroke.canvasGradient ? stroke.canvasGradient : stroke
+            }
             this.opacity != null && (ctx.globalAlpha = this.opacity);
         },
 

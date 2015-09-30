@@ -79,6 +79,13 @@ define(function (require) {
         z: 0,
 
         /**
+         * @name module:/zrender/graphic/Displayable#z
+         * @type {number}
+         * @default 0
+         */
+        z2: 0,
+
+        /**
          * z层level，决定绘画在哪层canvas中
          * @name module:/zrender/graphic/Displayable#zlevel
          * @type {number}

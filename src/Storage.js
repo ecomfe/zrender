@@ -14,9 +14,12 @@ define(function (require) {
     var Group = require('./container/Group');
 
     function shapeCompareFunc(a, b) {
-        if (a.zlevel == b.zlevel) {
-            if (a.z == b.z) {
-                return a.__renderidx - b.__renderidx;
+        if (a.zlevel === b.zlevel) {
+            if (a.z === b.z) {
+                if (a.z2 === b.z2) {
+                    return a.__renderidx - b.__renderidx;
+                }
+                return a.z2 - b.z2;
             }
             return a.z - b.z;
         }
