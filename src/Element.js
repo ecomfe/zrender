@@ -115,6 +115,11 @@ define(function(require) {
                 clipPath.addSelfToZr(zr);
             }
 
+            // Remove previous clip path
+            if (this.clipPath && this.clipPath !== clipPath) {
+                this.removeClipPath();
+            }
+
             this.clipPath = clipPath;
             clipPath.__zr = zr;
             clipPath.__clipTarget = this;
