@@ -136,9 +136,7 @@ define(function (require) {
             if (origin) {
                 mTranslate(m, m, origin);
             }
-            if (isNotAroundZero(scale[0]) || isNotAroundZero(scale[1])) {
-                matrix.scale(m, m, scale);
-            }
+            matrix.scale(m, m, scale);
             if (rotation) {
                 matrix.rotate(m, m, rotation);
             }
