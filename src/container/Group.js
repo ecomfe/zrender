@@ -190,15 +190,10 @@ define(function (require) {
          * @param  {}   context
          */
         eachChild: function (cb, context) {
-            var haveContext = !!context;
             var children = this._children;
             for (var i = 0; i < children.length; i++) {
                 var child = children[i];
-                if (haveContext) {
-                    cb.call(context, child);
-                } else {
-                    cb(child);
-                }
+                cb.call(context || this, child);
             }
             return this;
         },
@@ -209,14 +204,9 @@ define(function (require) {
          * @param  {}   context
          */
         traverse: function (cb, context) {
-            var haveContext = !!context;
             for (var i = 0; i < this._children.length; i++) {
                 var child = this._children[i];
-                if (haveContext) {
-                    cb.call(context, child);
-                } else {
-                    cb(child);
-                }
+                cb.call(context || this, child);
 
                 if (child.type === 'group') {
                     child.traverse(cb, context);
