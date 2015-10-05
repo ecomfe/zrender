@@ -1,6 +1,6 @@
 /**
  * 矩形
- * @module zrender/graphic/shape/Rectangle
+ * @module zrender/graphic/shape/Rect
  */
 
 define(function (require) {
@@ -8,7 +8,7 @@ define(function (require) {
 
     return require('../Path').extend({
 
-        type: 'rectangle',
+        type: 'rect',
 
         shape: {
             // 左上、右上、右下、左下角的半径依次为r1、r2、r3、r4

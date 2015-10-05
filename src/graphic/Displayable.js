@@ -121,9 +121,9 @@ define(function (require) {
 
             this.clip(ctx);
 
-            this.setTransform(ctx);
-
             this.style.bind(ctx);
+
+            this.setTransform(ctx);
         },
 
         afterBrush: function (ctx) {
