@@ -121,15 +121,19 @@ define(function (require) {
 
             this.clip(ctx);
 
-            this.style.bind(ctx);
-
             this.setTransform(ctx);
+
+            this.style.bind(ctx);
         },
 
         afterBrush: function (ctx) {
             ctx.restore();
         },
 
+        /**
+         * @param {Canvas2DRenderingContext} ctx
+         * @protected
+         */
         clip: function (ctx) {
             // FIXME performance
             var clipPaths = this.__clipPaths;

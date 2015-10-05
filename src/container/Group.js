@@ -193,7 +193,7 @@ define(function (require) {
             var children = this._children;
             for (var i = 0; i < children.length; i++) {
                 var child = children[i];
-                cb.call(context || this, child);
+                cb.call(context, child);
             }
             return this;
         },
@@ -206,7 +206,7 @@ define(function (require) {
         traverse: function (cb, context) {
             for (var i = 0; i < this._children.length; i++) {
                 var child = this._children[i];
-                cb.call(context || this, child);
+                cb.call(context, child);
 
                 if (child.type === 'group') {
                     child.traverse(cb, context);
