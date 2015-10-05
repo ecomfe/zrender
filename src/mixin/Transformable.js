@@ -148,9 +148,7 @@ define(function (require) {
                 origin[1] = -origin[1];
             }
 
-            if (isNotAroundZero(position[0]) || isNotAroundZero(position[1])) {
-                mTranslate(m, m, position);
-            }
+            mTranslate(m, m, position);
 
             return m;
         },
