@@ -272,6 +272,7 @@ define(function (require) {
         setStyle: function (key, value) {
             this.style.set(key, value);
             this.dirty();
+            return this;
         }
     };
 

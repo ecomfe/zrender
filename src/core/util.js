@@ -281,6 +281,10 @@ define(function(require) {
         return objToString.call(value) === '[object Array]';
     }
 
+    function isString(value) {
+        return objToString.call(value) === '[object String]';
+    }
+
     function isObject(value) {
         // Avoid a V8 JIT bug in Chrome 19-20.
         // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
@@ -313,6 +317,7 @@ define(function(require) {
         bind: bind,
         curry: curry,
         isArray: isArray,
+        isString: isString,
         isObject: isObject,
         isBuildInObject: isBuildInObject,
         isDom: isDom,

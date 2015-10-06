@@ -228,6 +228,7 @@ define(function (require) {
                 shape[key] = value;
             }
             this.dirty(true);
+            return this;
         }
     };
 
