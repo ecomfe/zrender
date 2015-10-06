@@ -96,7 +96,7 @@ define(function (require) {
                 break;
             case 'top':
                 x += halfWidth;
-                y -= distance - textHeight;
+                y -= distance + textHeight;
                 break;
             case 'bottom':
                 x += halfWidth;

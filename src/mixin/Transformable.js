@@ -11,8 +11,6 @@ define(function (require) {
     var vector = require('../core/vector');
     var mIdentity = matrix.identity;
 
-    var mTranslate = matrix.translate;
-
     var EPSILON = 5e-5;
 
     function isAroundZero(val) {
@@ -126,33 +124,27 @@ define(function (require) {
             mIdentity(m);
 
             var origin = this.origin;
-            if (origin && isAroundZero(origin[0]) && isAroundZero(origin[1])) {
-                origin = null;
-            }
 
             var scale = this.scale;
             var rotation = this.rotation;
             var position = this.position;
             if (origin) {
-                mTranslate(m, m, origin);
+                // Translate to origin
+                m[4] += origin[0];
+                m[5] += origin[1];
             }
-            if (isNotAroundZero(scale[0]) || isNotAroundZero(scale[1])) {
-                matrix.scale(m, m, scale);
-            }
+            matrix.scale(m, m, scale);
             if (rotation) {
                 matrix.rotate(m, m, rotation);
             }
             if (origin) {
-                origin[0] = -origin[0];
-                origin[1] = -origin[1];
-                mTranslate(m, m, origin);
-                origin[0] = -origin[0];
-                origin[1] = -origin[1];
+                // Translate back from origin
+                m[4] -= origin[0];
+                m[5] -= origin[1];
             }
 
-            if (isNotAroundZero(position[0]) || isNotAroundZero(position[1])) {
-                mTranslate(m, m, position);
-            }
+            m[4] += position[0];
+            m[5] += position[1];
 
             return m;
         },

@@ -42,6 +42,26 @@ define(function (require) {
          */
         lineDashOffset: 0,
 
+        /**
+         * @type {number}
+         */
+        shadowBlur: 0,
+
+        /**
+         * @type {number}
+         */
+        shadowOffsetX: 0,
+
+        /**
+         * @type {number}
+         */
+        shadowOffsetY: 0,
+
+        /**
+         * @type {number}
+         */
+        lineWidth: 1,
+
         // Bounding rect text configuration
         /**
          * @type {string}
@@ -84,22 +104,17 @@ define(function (require) {
         /**
          * @type {number}
          */
-        shadowBlur: 0,
+        textShadowBlur: 0,
 
         /**
          * @type {number}
          */
-        shadowOffsetX: 0,
+        textShadowOffsetX: 0,
 
         /**
          * @type {number}
          */
-        shadowOffsetY: 0,
-
-        /**
-         * @type {number}
-         */
-        lineWidth: 1,
+        textShadowOffsetY: 0,
 
         /**
          * @param {CanvasRenderingContext2D} ctx

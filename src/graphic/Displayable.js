@@ -130,6 +130,10 @@ define(function (require) {
             ctx.restore();
         },
 
+        /**
+         * @param {Canvas2DRenderingContext} ctx
+         * @protected
+         */
         clip: function (ctx) {
             // FIXME performance
             var clipPaths = this.__clipPaths;

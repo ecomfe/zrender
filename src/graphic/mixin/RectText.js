@@ -60,6 +60,12 @@ define(function (require) {
             textStroke && (ctx.strokeStyle = textStroke);
             ctx.font = font;
 
+            // Text shadow
+            ctx.shadowColor = style.textShadowColor;
+            ctx.shadowBlur = style.textShadowBlur;
+            ctx.shadowOffsetX = style.textShadowOffsetX;
+            ctx.shadowOffsetY = style.textShadowOffsetY;
+
             var textLines = text.split('\n');
             for (var i = 0; i < textLines.length; i++) {
                 textFill && ctx.fillText(textLines[i], x, y);
