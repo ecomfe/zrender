@@ -7,7 +7,7 @@ define(function (require) {
         buildPath: function (ctx, shape, closePath) {
             var points = shape.points;
             var smooth = shape.smooth;
-            if (points && points.length > 2) {
+            if (points && points.length >= 2) {
                 if (smooth && smooth !== 'spline') {
                     var controlPoints = smoothBezier(
                         points, smooth, closePath, shape.smoothConstraint
