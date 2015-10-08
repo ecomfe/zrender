@@ -54,18 +54,10 @@ define(function (require) {
         __dirtyPath: true,
 
         brush: function (ctx) {
-            this.beforeBrush(ctx);
-
             var style = this.style;
-
             var path = this.path;
             var hasStroke = pathHasStroke(style);
             var hasFill = pathHasFill(style);
-
-            var lineDash = style.lineDash;
-            var lineDashOffset = style.lineDashOffset;
-
-            var ctxLineDash = !!ctx.setLineDash;
 
             if (this.__dirtyPath) {
                 // Update gradient because bounding rect may changed
@@ -76,6 +68,14 @@ define(function (require) {
                     style.stroke.updateCanvasGradient(this, ctx);
                 }
             }
+
+            this.beforeBrush(ctx);
+
+            var lineDash = style.lineDash;
+            var lineDashOffset = style.lineDashOffset;
+
+            var ctxLineDash = !!ctx.setLineDash;
+
             // Proxy context
             // Rebuild path in following 2 cases
             // 1. Path is dirty

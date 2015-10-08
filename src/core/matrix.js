@@ -51,12 +51,21 @@ define(function () {
          * @param {Float32Array|Array.<number>} m2
          */
         mul : function (out, m1, m2) {
-            out[0] = m1[0] * m2[0] + m1[2] * m2[1];
-            out[1] = m1[1] * m2[0] + m1[3] * m2[1];
-            out[2] = m1[0] * m2[2] + m1[2] * m2[3];
-            out[3] = m1[1] * m2[2] + m1[3] * m2[3];
-            out[4] = m1[0] * m2[4] + m1[2] * m2[5] + m1[4];
-            out[5] = m1[1] * m2[4] + m1[3] * m2[5] + m1[5];
+            // Consider matrix.mul(m, m2, m);
+            // where out is the same as m2.
+            // So use temp variable to escape error.
+            var out0 = m1[0] * m2[0] + m1[2] * m2[1];
+            var out1 = m1[1] * m2[0] + m1[3] * m2[1];
+            var out2 = m1[0] * m2[2] + m1[2] * m2[3];
+            var out3 = m1[1] * m2[2] + m1[3] * m2[3];
+            var out4 = m1[0] * m2[4] + m1[2] * m2[5] + m1[4];
+            var out5 = m1[1] * m2[4] + m1[3] * m2[5] + m1[5];
+            out[0] = out0;
+            out[1] = out1;
+            out[2] = out2;
+            out[3] = out3;
+            out[4] = out4;
+            out[5] = out5;
             return out;
         },
         /**

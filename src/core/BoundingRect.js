@@ -67,10 +67,10 @@ define(function(require) {
                 vec2.applyTransform(min, min, m);
                 vec2.applyTransform(max, max, m);
 
-                this.x = min[0];
-                this.y = min[1];
-                this.width = max[0] - min[0];
-                this.height = max[1] - min[1];
+                this.x = Math.min(min[0], max[0]);
+                this.y = Math.min(min[1], max[1]);
+                this.width = Math.abs(max[0] - min[0]);
+                this.height = Math.abs(max[1] - min[1]);
             }
         })(),
 

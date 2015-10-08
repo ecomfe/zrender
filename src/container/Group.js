@@ -258,13 +258,14 @@ define(function (require) {
 
                 var childRect = child.getBoundingRect();
                 var transform = child.getLocalTransform(tmpMat);
-                rect = rect || childRect.clone();
                 if (transform) {
                     tmpRect.copy(childRect);
                     tmpRect.applyTransform(transform);
+                    rect = rect || tmpRect.clone();
                     rect.union(tmpRect);
                 }
                 else {
+                    rect = rect || childRect.clone();
                     rect.union(childRect);
                 }
             }

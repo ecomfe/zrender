@@ -23,7 +23,7 @@ define(function(require) {
         this.y2 = y2 == null ? 0 : y2;
 
         Gradient.call(this, colorStops);
-    }
+    };
 
     LinearGradient.prototype = {
 
@@ -48,6 +48,7 @@ define(function(require) {
 
             this.canvasGradient = canvasGradient;
         }
+
     };
 
     zrUtil.inherits(LinearGradient, Gradient);
