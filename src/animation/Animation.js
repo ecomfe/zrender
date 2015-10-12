@@ -4,6 +4,9 @@
  * @module zrender/animation/Animation
  * @author pissang(https://github.com/pissang)
  */
+// TODO Additive animation
+// http://iosoteric.com/additive-animations-animatewithduration-in-ios-8/
+// https://developer.apple.com/videos/wwdc2014/#236
 define(function(require) {
 
     'use strict';
@@ -213,7 +216,7 @@ define(function(require) {
         },
     };
 
-    util.merge(Animation.prototype, Dispatcher.prototype, true);
+    util.mixin(Animation, Dispatcher);
 
     return Animation;
 });

@@ -175,6 +175,20 @@ define(function(require) {
         clazz.superClass = baseClazz;
     }
 
+    /**
+     * @param {Object|Function} target
+     * @param {Object|Function} sorce
+     */
+    function mixin(target, source) {
+        target = 'prototype' in target ? target.prototype : target;
+        source = 'prototype' in source ? source.prototype : source;
+
+        defaults(target, source);
+    };
+
+    /**
+     * @param {Array|TypedArray} data
+     */
     function isArrayLike(data) {
         if (! data) {
             return;
@@ -303,6 +317,7 @@ define(function(require) {
 
     return {
         inherits: inherits,
+        mixin: mixin,
         clone: clone,
         merge: merge,
         mergeAll: mergeAll,

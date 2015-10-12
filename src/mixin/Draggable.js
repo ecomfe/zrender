@@ -1,4 +1,5 @@
 // TODO Draggable for group
+// FIXME Draggable on element which has parent rotation or scale
 define(function (require) {
 
     var config = require('../config');

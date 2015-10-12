@@ -185,9 +185,9 @@ define(function(require) {
         }
     };
 
-    zrUtil.merge(Element.prototype, Animatable.prototype, true);
-    zrUtil.merge(Element.prototype, Transformable.prototype, true);
-    zrUtil.merge(Element.prototype, Eventful.prototype, true);
+    zrUtil.mixin(Element, Animatable);
+    zrUtil.mixin(Element, Transformable);
+    zrUtil.mixin(Element, Eventful);
 
     return Element;
 });

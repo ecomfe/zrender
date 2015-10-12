@@ -136,7 +136,9 @@ define(function (require) {
                     var rect = this._rect;
                     // FIXME Must after updateTransform
                     var w = this.style.lineWidth;
-
+                    // PENDING, Min line width is needed when line is horizontal or vertical
+                    var lineScale = getLineScale(this.transform);
+                    w = Math.max(w * lineScale, 5) / lineScale;
                     // Consider line width
                     rect.width += w;
                     rect.height += w;

@@ -282,10 +282,8 @@ define(function (require) {
 
     zrUtil.inherits(Displayable, Element);
 
-    zrUtil.merge(Displayable.prototype, RectText.prototype, true);
-    // zrUtil.merge(Displayable.prototype, Stateful.prototype, true);
-
-    Displayable.prototype.constructor = Displayable;
+    zrUtil.mixin(Displayable, RectText);
+    // zrUtil.mixin(Displayable, Stateful);
 
     return Displayable;
 });

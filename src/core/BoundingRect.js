@@ -74,6 +74,10 @@ define(function(require) {
             }
         })(),
 
+        /**
+         * @param {module:echarts/core/BoundingRect} b
+         * @return {boolean}
+         */
         intersect: function (b) {
             var a = this;
             var ax0 = a.x;

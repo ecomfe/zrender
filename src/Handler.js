@@ -372,8 +372,8 @@ define(function (require) {
         return false;
     }
 
-    util.merge(Handler.prototype, Eventful.prototype, true);
-    util.merge(Handler.prototype, Draggable.prototype, true);
+    util.mixin(Handler, Eventful);
+    util.mixin(Handler, Draggable);
 
     return Handler;
 });

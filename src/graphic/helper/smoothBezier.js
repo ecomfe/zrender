@@ -1,7 +1,7 @@
 /**
- * 贝塞尔平滑曲线 
+ * 贝塞尔平滑曲线
  * @module zrender/shape/util/smoothBezier
- * @author pissang (https://www.github.com/pissang) 
+ * @author pissang (https://www.github.com/pissang)
  *         Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *         errorrik (errorrik@gmail.com)
  */
@@ -49,18 +49,16 @@ define(function (require) {
 
         for (var i = 0, len = points.length; i < len; i++) {
             var point = points[i];
-            var prevPoint;
-            var nextPoint;
 
             if (isLoop) {
                 prevPoint = points[i ? i - 1 : len - 1];
                 nextPoint = points[(i + 1) % len];
-            } 
+            }
             else {
                 if (i === 0 || i === len - 1) {
                     cps.push(vec2.clone(points[i]));
                     continue;
-                } 
+                }
                 else {
                     prevPoint = points[i - 1];
                     nextPoint = points[i + 1];
