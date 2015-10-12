@@ -244,12 +244,12 @@ define(function (require) {
         /**
          * @return {module:zrender/core/BoundingRect}
          */
-        getBoundingRect: function () {
+        getBoundingRect: function (includeChildren) {
             // TODO Caching
             // TODO Transform
             var rect;
             var tmpRect = new BoundingRect(0, 0, 0, 0);
-            var children = this._children;
+            var children = includeChildren || this._children;
             for (var i = 0; i < children.length; i++) {
                 var child = children[i];
                 if (child.ignore || child.invisible) {

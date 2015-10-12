@@ -38,23 +38,22 @@ define(function (require) {
             var textFill = style.fill;
             var textStroke = style.stroke;
 
-            if (! text) {
-                return;
-            }
-            textFill && (ctx.fillStyle = textFill);
-            textStroke && (ctx.strokeStyle = textStroke);
+            if (text) {
+                textFill && (ctx.fillStyle = textFill);
+                textStroke && (ctx.strokeStyle = textStroke);
 
-            ctx.font = style.textFont;
-            ctx.textAlign = style.textAlign;
-            ctx.textBaseline = style.textBaseline;
+                ctx.font = style.textFont;
+                ctx.textAlign = style.textAlign;
+                ctx.textBaseline = style.textBaseline;
 
-            var lineHeight = textContain.measureText('国', ctx.font);
+                var lineHeight = textContain.measureText('国', ctx.font);
 
-            var textLines = text.split('\n');
-            for (var i = 0; i < textLines.length; i++) {
-                textFill && ctx.fillText(textLines[i], x, y);
-                textStroke && ctx.strokeText(textLines[i], x, y);
-                y += lineHeight;
+                var textLines = text.split('\n');
+                for (var i = 0; i < textLines.length; i++) {
+                    textFill && ctx.fillText(textLines[i], x, y);
+                    textStroke && ctx.strokeText(textLines[i], x, y);
+                    y += lineHeight;
+                }
             }
 
             this.afterBrush(ctx);
