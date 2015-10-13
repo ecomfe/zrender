@@ -10,26 +10,14 @@ define(function (require) {
     var normalizeRadian = require('./util').normalizeRadian;
     var curve = require('../core/curve');
 
+    var windingLine = require('./windingLine');
+
     var PI2 = Math.PI * 2;
 
     var EPSILON = 1e-4;
 
     function isAroundEqual(a, b) {
         return Math.abs(a - b) < EPSILON;
-    }
-
-    function windingLine(x0, y0, x1, y1, x, y) {
-        if ((y > y0 && y > y1) || (y < y0 && y < y1)) {
-            return 0;
-        }
-        if (y1 === y0) {
-            return 0;
-        }
-        var dir = y1 < y0 ? 1 : -1;
-        var t = (y - y0) / (y1 - y0);
-        var x_ = t * (x1 - x0) + x0;
-
-        return x_ > x ? dir : 0;
     }
 
     // 临时数组
