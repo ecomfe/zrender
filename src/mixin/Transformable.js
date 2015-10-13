@@ -25,8 +25,9 @@ define(function (require) {
      * @constructor
      */
     var Transformable = function (opts) {
+        opts = opts || {};
         // If there are no given position, rotation, scale
-        if (! opts.position) {
+        if (!opts.position) {
             /**
              * 平移
              * @type {Array.<number>}
@@ -42,7 +43,7 @@ define(function (require) {
              */
             this.rotation = 0;
         }
-        if (! opts.scale) {
+        if (!opts.scale) {
             /**
              * 缩放
              * @type {Array.<number>}
@@ -187,7 +188,9 @@ define(function (require) {
                 m[4] = this.position[0];
                 m[5] = this.position[1];
 
+                // PENDING
                 this.decomposeTransform();
+                this.updateTransform();
             };
         })(),
         /**

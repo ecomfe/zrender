@@ -5,6 +5,7 @@ define(function(require) {
     'use strict';
 
     var vec2 = require('zrender/core/vector');
+    var matrix = require('zrender/core/matrix');
 
     /**
      * @alias module:echarts/core/BoundingRect
@@ -73,6 +74,21 @@ define(function(require) {
                 this.height = Math.abs(max[1] - min[1]);
             }
         })(),
+
+        calculateTransform: function (b) {
+            var a = this;
+            var sx = b.width / a.width;
+            var sy = b.height / a.height;
+
+            var m = matrix.create();
+
+            // 矩阵右乘
+            matrix.translate(m, m, [-a.x, -a.y]);
+            matrix.scale(m, m, [sx, sy]);
+            matrix.translate(m, m, [b.x, b.y]);
+
+            return m;
+        },
 
         /**
          * @param {module:echarts/core/BoundingRect} b
