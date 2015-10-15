@@ -345,32 +345,77 @@ define(function(require) {
     /**
      * @param {number} normalizedValue A float between 0 and 1.
      * @param {Array.<string>} colors Color list.
-     * @return {string} Result color.
+     * @param {boolean=} fullOutput Default false.
+     * @return {(string|Object)} Result color. If fullOutput,
+     *                           return {color: ..., leftIndex: ..., rightIndex: ..., value: ...},
      * @memberOf module:zrender/util/color
      */
-    function mapToColor(normalizedValue, colors) {
+    function mapToColor(normalizedValue, colors, fullOutput) {
         if (!(colors && colors.length)
             || !(normalizedValue >= 0 && normalizedValue <= 1)
         ) {
             return;
         }
 
-        normalizedValue *= colors.length - 1;
-        var startIndex = Math.floor(normalizedValue);
-        var endIndex = Math.ceil(normalizedValue);
-        var startColor = parse(colors[startIndex]);
-        var endColor = parse(colors[endIndex]);
-        var dv = normalizedValue - startIndex;
+        var value = normalizedValue * (colors.length - 1);
+        var leftIndex = Math.floor(value);
+        var rightIndex = Math.ceil(value);
+        var leftColor = parse(colors[leftIndex]);
+        var rightColor = parse(colors[rightIndex]);
+        var dv = value - leftIndex;
 
-        return stringify(
+        var color = stringify(
             [
-                clampCssByte(startColor[0] + (endColor[0] - startColor[0]) * dv),
-                clampCssByte(startColor[1] + (endColor[1] - startColor[1]) * dv),
-                clampCssByte(startColor[2] + (endColor[2] - startColor[2]) * dv),
-                clampCssFloat(startColor[3] + (endColor[3] - startColor[3]) * dv)
+                clampCssByte(leftColor[0] + (rightColor[0] - leftColor[0]) * dv),
+                clampCssByte(leftColor[1] + (rightColor[1] - leftColor[1]) * dv),
+                clampCssByte(leftColor[2] + (rightColor[2] - leftColor[2]) * dv),
+                clampCssFloat(leftColor[3] + (rightColor[3] - leftColor[3]) * dv)
             ],
             'rgba'
         );
+
+        return fullOutput
+            ? {
+                color: color,
+                leftIndex: leftIndex,
+                rightIndex: rightIndex,
+                value: value
+            }
+            : color;
+    }
+
+    /**
+     * @param {Array<number>} interval  Array length === 2,
+     *                                  each item is normalized value ([0, 1]).
+     * @param {Array.<string>} colors Color list.
+     * @return {Array.<Object>} colors corresponding to the interval,
+     *                          each item is {color: 'xxx', offset: ...}
+     *                          where offset is between 0 and 1.
+     * @memberOf module:zrender/util/color
+     */
+    function mapIntervalToColor(interval, colors) {
+        if (interval.length !== 2 || interval[1] < interval[0]) {
+            return;
+        }
+
+        var info0 = mapToColor(interval[0], colors, true);
+        var info1 = mapToColor(interval[1], colors, true);
+
+        var result = [{color: info0.color, offset: 0}];
+
+        var during = info1.value - info0.value;
+        var start = Math.max(info0.value, info0.rightIndex);
+        var end = Math.min(info1.value, info1.leftIndex);
+
+        for (var i = start; during > 0 && i <= end; i++) {
+            result.push({
+                color: colors[i],
+                offset: (i - info0.value) / during
+            });
+        }
+        result.push({color: info1.color, offset: 1});
+
+        return result;
     }
 
     /**
@@ -423,6 +468,7 @@ define(function(require) {
         lift: lift,
         toHex: toHex,
         mapToColor: mapToColor,
+        mapIntervalToColor: mapIntervalToColor,
         modifyHSL: modifyHSL,
         modifyAlpha: modifyAlpha
     };
