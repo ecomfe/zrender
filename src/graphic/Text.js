@@ -65,8 +65,8 @@ define(function (require) {
                 var rect = textContain.getBoundingRect(
                     style.text + '', style.textFont, style.textAlign, style.textBaseline
                 );
-                rect.x += style.x;
-                rect.y += style.y;
+                rect.x += style.x || 0;
+                rect.y += style.y || 0;
                 this._rect = rect;
             }
             return this._rect;

@@ -34,15 +34,16 @@ define(function (require) {
         },
 
         _drag: function (e) {
-            var x = e.offsetX;
-            var y = e.offsetY;
-            var dx = x - this._x;
-            var dy = y - this._y;
-            this._x = x;
-            this._y = y;
-
             var draggingTarget = this._draggingTarget;
             if (draggingTarget) {
+                var x = e.offsetX;
+                var y = e.offsetY;
+
+                var dx = x - this._x;
+                var dy = y - this._y;
+                this._x = x;
+                this._y = y;
+
                 draggingTarget.drift(dx, dy);
                 this._dispatch(draggingTarget, EVENT.DRAG, e.event);
 

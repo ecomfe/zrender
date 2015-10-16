@@ -125,6 +125,9 @@ define(function (require) {
 
             // 平板补充一次findHover
             // this._mobileFindFixed(event);
+            // Trigger mousemove and mousedown
+            this._mousemoveHandler(event);
+
             this._mousedownHandler(event);
         },
 
@@ -151,7 +154,7 @@ define(function (require) {
             this._mouseupHandler(event);
 
             if (+new Date() - this._lastTouchMoment < EVENT.touchClickDelay) {
-                this._mobileFindFixed(event);
+                // this._mobileFindFixed(event);
                 this._clickHandler(event);
             }
         }
@@ -352,7 +355,6 @@ define(function (require) {
     };
 
     function isHover(displayable, x, y) {
-
         if (displayable.contain(x, y)) {
             if (displayable.hoverable) {
                 // this.storage.addHover(displayable);
@@ -365,7 +367,6 @@ define(function (require) {
                 }
                 p = p.parent;
             }
-
             return true;
         }
 

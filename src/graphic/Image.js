@@ -128,7 +128,7 @@ define(function (require) {
             var style = this.style;
             if (! this._rect) {
                 this._rect = new BoundingRect(
-                    style.x, style.y, style.width || 0, style.height || 0
+                    style.x || 0, style.y || 0, style.width || 0, style.height || 0
                 );
             }
             return this._rect;

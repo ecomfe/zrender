@@ -24,7 +24,7 @@ define(function(require) {
         var eventType = e.type;
         var isTouch = eventType && eventType.indexOf('touch') >= 0;
 
-        if (! isTouch) {
+        if (!isTouch) {
             // https://gist.github.com/electricg/4435259
             var mouseX = 0;
             var mouseY = 0;
@@ -56,7 +56,7 @@ define(function(require) {
                             ? e.targetTouches[0]
                             : e.changedTouches[0];
             if (touch) {
-                var rBounding = this.painter._domRoot.getBoundingClientRect();
+                var rBounding = el.getBoundingClientRect();
                 // touch事件坐标是全屏的~
                 e.zrenderX = touch.clientX - rBounding.left;
                 e.zrenderY = touch.clientY - rBounding.top;
@@ -100,7 +100,7 @@ define(function(require) {
             e.returnValue = false;
             e.cancelBubble = true;
         };
-    
+
     return {
         normalizeEvent: normalizeEvent,
         addEventListener: addEventListener,
