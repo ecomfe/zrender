@@ -36,6 +36,7 @@ define(function (require) {
         _drag: function (e) {
             var draggingTarget = this._draggingTarget;
             if (draggingTarget) {
+
                 var x = e.offsetX;
                 var y = e.offsetY;
 

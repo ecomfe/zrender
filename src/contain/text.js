@@ -106,6 +106,22 @@ define(function (require) {
                 x += halfWidth;
                 y += halfHeight;
                 break;
+            case 'insideLeft':
+                x += distance;
+                y += halfHeight;
+                break;
+            case 'insideRight':
+                x += width - textWidth - distance;
+                y += halfHeight;
+                break;
+            case 'insideTop':
+                x += halfWidth;
+                y += distance;
+                break;
+            case 'insideBottom':
+                x += halfWidth;
+                y += height - textHeight - distance;
+                break;
         }
 
         return {
