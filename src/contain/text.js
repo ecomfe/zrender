@@ -122,6 +122,23 @@ define(function (require) {
                 x += halfWidth;
                 y += height - textHeight - distance;
                 break;
+            case 'insideTopLeft':
+                x += distance;
+                y += distance;
+                break;
+            case 'insideTopRight':
+                x += width - textWidth - distance;
+                y += distance;
+                break;
+            case 'insideBottomLeft':
+                x += distance;
+                y += height - textHeight - distance;
+                break;
+            case 'insideBottomRight':
+                x += width - textWidth - distance;
+                y += height - textHeight - distance;
+                break;
+
         }
 
         return {
