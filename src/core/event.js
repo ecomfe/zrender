@@ -17,7 +17,7 @@ define(function(require) {
 
         e = e || window.event;
 
-        if (e.zrenderX != null) {
+        if (e.zrX != null) {
             return e;
         }
 
@@ -48,8 +48,8 @@ define(function(require) {
             }
 
 
-            e.zrenderX = mouseX - elLeft;
-            e.zrenderY = mouseY - elTop;
+            e.zrX = mouseX - elLeft;
+            e.zrY = mouseY - elTop;
         }
         else {
             var touch = eventType != 'touchend'
@@ -58,9 +58,10 @@ define(function(require) {
             if (touch) {
                 var rBounding = el.getBoundingClientRect();
                 // touch事件坐标是全屏的~
-                e.zrenderX = touch.clientX - rBounding.left;
-                e.zrenderY = touch.clientY - rBounding.top;
+                e.zrX = touch.clientX - rBounding.left;
+                e.zrY = touch.clientY - rBounding.top;
             }
+            e.zrDelta = (e.wheelDelta) ? e.wheelDelta / 120 : -(e.detail || 0) / 3;
         }
 
         return e;

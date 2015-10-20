@@ -50,8 +50,9 @@ define(function (require) {
             event: event,
             target: target,
             cancelBubble: false,
-            offsetX: event.zrenderX,
-            offsetY: event.zrenderY
+            offsetX: event.zrX,
+            offsetY: event.zrY,
+            wheelDelta: event.zrDelta
         };
     }
 
@@ -64,8 +65,8 @@ define(function (require) {
         mousemove: function (event) {
             event = normalizeEvent(this.root, event);
 
-            var x = event.zrenderX;
-            var y = event.zrenderY;
+            var x = event.zrX;
+            var y = event.zrY;
 
             this._hasfound = false;
 
@@ -331,8 +332,8 @@ define(function (require) {
 
         // touch有指尖错觉，四向尝试，让touch上的点击更好触发事件
         // _mobileFindFixed: function (event) {
-        //     var x = event.zrenderX;
-        //     var y = event.zrenderY;
+        //     var x = event.zrX;
+        //     var y = event.zrY;
 
         //     this._hovered = null;
 
@@ -348,8 +349,8 @@ define(function (require) {
         //     }
 
         //     if (this._hovered) {
-        //         event.zrenderX = x;
-        //         event.zrenderY = y;
+        //         event.zrX = x;
+        //         event.zrY = y;
         //     }
         // }
     };

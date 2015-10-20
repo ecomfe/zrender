@@ -68,7 +68,20 @@ define(function(require) {
          * @protected
          */
         attrKV: function (key, value) {
-            this[key] = value;
+            if (key === 'position' || key === 'scale' || key === 'origin') {
+                // Copy the array
+                if (value) {
+                    var target = this[key];
+                    if (!target) {
+                        target = this[key] = [];
+                    }
+                    target[0] = value[0];
+                    target[1] = value[1];
+                }
+            }
+            else {
+                this[key] = value;
+            }
         },
 
         /**

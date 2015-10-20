@@ -7,6 +7,8 @@
 define(function (require) {
 
     var arrySlice = Array.prototype.slice;
+    var zrUtil = require('../core/util');
+    var indexOf = zrUtil.indexOf;
 
     /**
      * 事件分发器
@@ -23,7 +25,7 @@ define(function (require) {
 
         /**
          * 单次触发绑定，trigger后销毁
-         * 
+         *
          * @param {string} event 事件名
          * @param {Function} handler 响应函数
          * @param {Object} context
@@ -37,6 +39,10 @@ define(function (require) {
 
             if (!_h[event]) {
                 _h[event] = [];
+            }
+
+            if (indexOf(_h[event], event) >= 0) {
+                return this;
             }
 
             _h[event].push({
@@ -121,7 +127,7 @@ define(function (require) {
 
         /**
          * 事件分发
-         * 
+         *
          * @param {string} type 事件类型
          */
         trigger: function (type) {
@@ -132,7 +138,7 @@ define(function (require) {
                 if (argLen > 3) {
                     args = arrySlice.call(args, 1);
                 }
-                
+
                 var _h = this._handlers[type];
                 var len = _h.length;
                 for (var i = 0; i < len;) {
@@ -152,7 +158,7 @@ define(function (require) {
                             _h[i]['h'].apply(_h[i]['ctx'], args);
                             break;
                     }
-                    
+
                     if (_h[i]['one']) {
                         _h.splice(i, 1);
                         len--;
@@ -199,7 +205,7 @@ define(function (require) {
                             _h[i]['h'].apply(ctx, args);
                             break;
                     }
-                    
+
                     if (_h[i]['one']) {
                         _h.splice(i, 1);
                         len--;
@@ -280,6 +286,6 @@ define(function (require) {
      * @type {Function}
      * @default null
      */
-    
+
     return Eventful;
 });
