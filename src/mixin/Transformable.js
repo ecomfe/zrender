@@ -131,8 +131,8 @@ define(function (require) {
             var position = this.position;
             if (origin) {
                 // Translate to origin
-                m[4] += origin[0];
-                m[5] += origin[1];
+                m[4] -= origin[0];
+                m[5] -= origin[1];
             }
             matrix.scale(m, m, scale);
             if (rotation) {
@@ -140,8 +140,8 @@ define(function (require) {
             }
             if (origin) {
                 // Translate back from origin
-                m[4] -= origin[0];
-                m[5] -= origin[1];
+                m[4] += origin[0];
+                m[5] += origin[1];
             }
 
             m[4] += position[0];

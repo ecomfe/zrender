@@ -50,6 +50,7 @@ define(function(require) {
 
             e.zrX = mouseX - elLeft;
             e.zrY = mouseY - elTop;
+            e.zrDelta = (e.wheelDelta) ? e.wheelDelta / 120 : -(e.detail || 0) / 3;
         }
         else {
             var touch = eventType != 'touchend'
@@ -61,7 +62,6 @@ define(function(require) {
                 e.zrX = touch.clientX - rBounding.left;
                 e.zrY = touch.clientY - rBounding.top;
             }
-            e.zrDelta = (e.wheelDelta) ? e.wheelDelta / 120 : -(e.detail || 0) / 3;
         }
 
         return e;
