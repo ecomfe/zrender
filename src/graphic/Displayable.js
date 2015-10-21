@@ -262,7 +262,7 @@ define(function (require) {
 
         attrKV: function (key, value) {
             if (key !== 'style') {
-                this[key] = value;
+                Element.prototype.attrKV.call(this, key, value);
             }
             else {
                 this.style.set(value);

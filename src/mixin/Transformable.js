@@ -202,12 +202,12 @@ define(function (require) {
             }
             var m = this.transform;
             var sx = m[0] * m[0] + m[1] * m[1];
+            var sy = m[2] * m[2] + m[3] * m[3];
             var position = this.position;
             var scale = this.scale;
             if (isNotAroundZero(sx - 1)) {
                 sx = Math.sqrt(sx);
             }
-            var sy = m[2] * m[2] + m[3] * m[3];
             if (isNotAroundZero(sy - 1)) {
                 sy = Math.sqrt(sy);
             }
