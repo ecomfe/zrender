@@ -32,7 +32,7 @@ define(function (require) {
     };
 
     function getTextRect(text, textFont, textAlign, textBaseline) {
-        var textLineLen = text.split('\n').length;
+        var textLineLen = ((text || '') + '').split('\n').length;
 
         var width = getTextWidth(text, textFont);
         // FIXME 高度计算比较粗暴
@@ -138,7 +138,6 @@ define(function (require) {
                 x += width - textWidth - distance;
                 y += height - textHeight - distance;
                 break;
-
         }
 
         return {

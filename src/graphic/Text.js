@@ -34,11 +34,14 @@ define(function (require) {
             var style = this.style;
             var x = style.x || 0;
             var y = style.y || 0;
-            var text = style.text + '';
+            var text = style.text;
             var textFill = style.fill;
             var textStroke = style.stroke;
 
             if (text) {
+                // Convert to string
+                text += '';
+
                 textFill && (ctx.fillStyle = textFill);
                 textStroke && (ctx.strokeStyle = textStroke);
 
