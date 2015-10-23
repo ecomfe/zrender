@@ -111,7 +111,7 @@ define(function (require) {
 
         _doAdd: function (child) {
             if (child.parent) {
-                child.parent.removeChild(child);
+                child.parent.remove(child);
             }
 
             child.parent = this;
