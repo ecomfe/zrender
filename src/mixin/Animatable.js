@@ -20,7 +20,7 @@ define(function(require) {
          * @readOnly
          */
         this.animators = [];
-    }
+    };
 
     Animatable.prototype = {
 
@@ -163,21 +163,23 @@ define(function(require) {
             // if there is nothing to animate
             var animators = this.animators.slice();
             var count = animators.length;
-
             function done() {
                 count--;
                 if (!count) {
                     callback && callback();
                 }
             }
+
+            // No animators. This should be done before animators[i].done(done),
+            // because 'done' may be executed immediately if no need to animate.
+            if (!count) {
+                callback && callback();
+            }
+
             for (var i = 0; i < animators.length; i++) {
                 animators[i]
                     .done(done)
                     .start(easing);
-            }
-            // No animators
-            if (count === 0) {
-                callback && callback();
             }
         },
 
@@ -213,10 +215,10 @@ define(function(require) {
             if (propertyCount > 0) {
                 this.animate(path, false)
                     .when(time, objShallow)
-                    .delay(delay || 0)
+                    .delay(delay || 0);
             }
         }
-    }
+    };
 
     return Animatable;
 });
