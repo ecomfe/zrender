@@ -105,9 +105,16 @@ define(function (require) {
          * 是否相应鼠标事件
          * @name module:/zrender/graphic/Displayable#hoverable
          * @type {boolean}
-         * @default true
+         * @default false
          */
         silent: false,
+
+        /**
+         * If enable culling
+         * @type {boolean}
+         * @default false
+         */
+        culling: false,
 
         /**
          * Mouse cursor when hovered

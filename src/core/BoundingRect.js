@@ -7,6 +7,10 @@ define(function(require) {
     var vec2 = require('zrender/core/vector');
     var matrix = require('zrender/core/matrix');
 
+    var v2ApplyTransform = vec2.applyTransform;
+    var mathMin = Math.min;
+    var mathAbs = Math.abs;
+    var mathMax = Math.max;
     /**
      * @alias module:echarts/core/BoundingRect
      */
@@ -34,18 +38,18 @@ define(function(require) {
         constructor: BoundingRect,
 
         /**
-         * @param {module:echarts/core/BoundingRect} boundingRect
+         * @param {module:echarts/core/BoundingRect} other
          */
-        union: function (boundingRect) {
-            var x = Math.min(boundingRect.x, this.x);
-            var y = Math.min(boundingRect.y, this.y);
+        union: function (other) {
+            var x = mathMin(other.x, this.x);
+            var y = mathMin(other.y, this.y);
 
-            this.width = Math.max(
-                    boundingRect.x + boundingRect.width,
+            this.width = mathMax(
+                    other.x + other.width,
                     this.x + this.width
                 ) - x;
-            this.height = Math.max(
-                    boundingRect.y + boundingRect.height,
+            this.height = mathMax(
+                    other.y + other.height,
                     this.y + this.height
                 ) - y;
             this.x = x;
@@ -65,13 +69,13 @@ define(function(require) {
                 max[0] = this.x + this.width;
                 max[1] = this.y + this.height;
 
-                vec2.applyTransform(min, min, m);
-                vec2.applyTransform(max, max, m);
+                v2ApplyTransform(min, min, m);
+                v2ApplyTransform(max, max, m);
 
-                this.x = Math.min(min[0], max[0]);
-                this.y = Math.min(min[1], max[1]);
-                this.width = Math.abs(max[0] - min[0]);
-                this.height = Math.abs(max[1] - min[1]);
+                this.x = mathMin(min[0], max[0]);
+                this.y = mathMin(min[1], max[1]);
+                this.width = mathAbs(max[0] - min[0]);
+                this.height = mathAbs(max[1] - min[1]);
             }
         })(),
 
@@ -127,11 +131,11 @@ define(function(require) {
         /**
          * Copy from another rect
          */
-        copy: function (rect) {
-            this.x = rect.x;
-            this.y = rect.y;
-            this.width = rect.width;
-            this.height = rect.height;
+        copy: function (other) {
+            this.x = other.x;
+            this.y = other.y;
+            this.width = other.width;
+            this.height = other.height;
         }
     };
 

@@ -22,8 +22,6 @@ define(function (require) {
     var Element = require('../Element');
     var BoundingRect = require('../core/BoundingRect');
 
-    var tmpMat = [];
-
     /**
      * @alias module:zrender/graphic/Group
      * @constructor
@@ -247,9 +245,11 @@ define(function (require) {
         getBoundingRect: function (includeChildren) {
             // TODO Caching
             // TODO Transform
-            var rect;
+            var rect = null;
             var tmpRect = new BoundingRect(0, 0, 0, 0);
             var children = includeChildren || this._children;
+            var tmpMat = [];
+
             for (var i = 0; i < children.length; i++) {
                 var child = children[i];
                 if (child.ignore || child.invisible) {
@@ -269,7 +269,7 @@ define(function (require) {
                     rect.union(childRect);
                 }
             }
-            return rect || new BoundingRect(0, 0, 0, 0);
+            return rect || tmpRect;
         },
 
         update: function () {

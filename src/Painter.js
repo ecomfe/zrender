@@ -11,6 +11,7 @@
     var config = require('./config');
     var util = require('./core/util');
     var log = require('./core/log');
+    var BoundingRect = require('./core/BoundingRect');
 
     var Layer = require('./Layer');
 
@@ -45,6 +46,18 @@
         if (layer.__unusedCount == 1) {
             layer.clear();
         }
+    }
+
+    var tmpRect = new BoundingRect(0, 0, 0, 0);
+    var viewRect = new BoundingRect(0, 0, 0, 0);
+    function isDisplayableCulled(el, width, height) {
+        tmpRect.copy(el.getBoundingRect());
+        if (el.transform) {
+            tmpRect.applyTransform(el.transform);
+        }
+        viewRect.width = width;
+        viewRect.height = height;
+        return !tmpRect.intersect(viewRect);
     }
 
     /**
@@ -101,7 +114,7 @@
 
         /**
          * 刷新
-         * @param {boolean} paintAll 强制绘制所有displayable
+         * @param {boolean} [paintAll=false] 强制绘制所有displayable
          */
         refresh: function (paintAll) {
             var list = this.storage.getDisplayList(true);
@@ -121,7 +134,7 @@
 
         _paintList: function (list, paintAll) {
 
-            if (typeof(paintAll) == 'undefined') {
+            if (paintAll == null) {
                 paintAll = false;
             }
 
@@ -130,6 +143,9 @@
             var currentLayer;
             var currentZLevel;
             var ctx;
+
+            var viewWidth = this._width;
+            var viewHeight = this._height;
 
             this.eachBuildinLayer(preProcessLayer);
 
@@ -160,13 +176,11 @@
                     }
                 }
 
-                if ((currentLayer.__dirty || paintAll) && !el.invisible) {
-                    if (
-                        !el.onbrush
-                        || (el.onbrush && !el.onbrush(ctx, false))
-                    ) {
-                        el.brush(ctx, false);
-                    }
+                if (
+                    (currentLayer.__dirty || paintAll) && !el.invisible
+                    && !(el.culling && isDisplayableCulled(el, viewWidth, viewHeight))
+                ) {
+                    el.brush(ctx, false);
                 }
 
                 el.__dirty = false;

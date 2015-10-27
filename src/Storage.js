@@ -106,7 +106,6 @@ define(function (require) {
             if (el.type == 'group') {
                 var children = el._children;
 
-
                 for (var i = 0; i < children.length; i++) {
                     var child = children[i];
 
