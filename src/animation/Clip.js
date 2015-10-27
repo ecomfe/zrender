@@ -14,7 +14,7 @@
  */
 define(function(require) {
 
-    var Easing = require('./easing');
+    var easingFuncs = require('./easing');
 
     function Clip(options) {
 
@@ -25,14 +25,11 @@ define(function(require) {
         // 延时
         this._delay = options.delay || 0;
         // 开始时间
-        this._startTime = new Date().getTime() + this._delay;// 单位毫秒
-
-        // 结束时间
-        this._endTime = this._startTime + this._life * 1000;
+        // this._startTime = new Date().getTime() + this._delay;// 单位毫秒
+        this._initialized = false;
 
         // 是否循环
-        this.loop = typeof options.loop == 'undefined'
-                    ? false : options.loop;
+        this.loop = options.loop == null ? false : options.loop;
 
         this.gap = options.gap || 0;
 
@@ -48,6 +45,13 @@ define(function(require) {
         constructor: Clip,
 
         step: function (time) {
+            // Set startTime on first step, or _startTime may has milleseconds different between clips
+            // PENDING
+            if (!this._initialized) {
+                this._startTime = new Date().getTime() + this._delay;
+                this._initialized = true;
+            }
+
             var percent = (time - this._startTime) / this._life;
 
             // 还没开始
@@ -57,9 +61,8 @@ define(function(require) {
 
             percent = Math.min(percent, 1);
 
-            var easingFunc = typeof this.easing == 'string'
-                             ? Easing[this.easing]
-                             : this.easing;
+            var easing = this.easing;
+            var easingFunc = typeof easing == 'string' ? easingFuncs[easing] : easing;
             var schedule = typeof easingFunc === 'function'
                 ? easingFunc(percent)
                 : percent;
@@ -83,6 +86,7 @@ define(function(require) {
 
             return null;
         },
+
         restart: function() {
             var time = new Date().getTime();
             var remainder = (time - this._startTime) % this._life;
@@ -90,9 +94,11 @@ define(function(require) {
 
             this._needsRemove = false;
         },
+
         fire: function(eventType, arg) {
-            if (this['on' + eventType]) {
-                this['on' + eventType](this._target, arg);
+            eventType = 'on' + eventType;
+            if (this[eventType]) {
+                this[eventType](this._target, arg);
             }
         }
     };

@@ -161,7 +161,7 @@ define(function (require) {
                     }
                 }
                 tracks[propName].push({
-                    time: parseInt(time, 10),
+                    time: time,
                     value: props[propName]
                 });
             }
@@ -205,7 +205,7 @@ define(function (require) {
 
             var oneTrackDone = function() {
                 clipCount--;
-                if (! clipCount) {
+                if (!clipCount) {
                     self._doneCallback();
                 }
             };
