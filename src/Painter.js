@@ -60,6 +60,41 @@
         return !tmpRect.intersect(viewRect);
     }
 
+    function isClipPathChanged(clipPaths, prevClipPaths) {
+        return !(clipPaths && prevClipPaths
+                    && clipPaths.length === 1 && prevClipPaths.length === 1
+                    && clipPaths[0] === prevClipPaths[0])
+                || (!clipPaths && !prevClipPaths)
+    }
+
+    function doClip(clipPaths, ctx) {
+        for (var i = 0; i < clipPaths.length; i++) {
+            var clipPath = clipPaths[i];
+            var m;
+            if (clipPath.needTransform) {
+                m = clipPath.transform;
+                ctx.transform(
+                    m[0], m[1],
+                    m[2], m[3],
+                    m[4], m[5]
+                );
+            }
+            var path = clipPath.path;
+            path.beginPath(ctx);
+            clipPath.buildPath(path, clipPath.shape);
+            ctx.clip();
+            // Transform back
+            if (clipPath.needTransform) {
+                m = clipPath.invTransform;
+                ctx.transform(
+                    m[0], m[1],
+                    m[2], m[3],
+                    m[4], m[5]
+                );
+            }
+        }
+    }
+
     /**
      * @alias module:zrender/Painter
      * @constructor
@@ -150,6 +185,7 @@
             this.eachBuildinLayer(preProcessLayer);
 
             // var invTransform = [];
+            var prevElClipPaths = null;
 
             for (var i = 0, l = list.length; i < l; i++) {
                 var el = list[i];
@@ -180,10 +216,30 @@
                     (currentLayer.__dirty || paintAll) && !el.invisible
                     && !(el.culling && isDisplayableCulled(el, viewWidth, viewHeight))
                 ) {
+                    var clipPaths = el.__clipPaths;
+
+                    // Optimize when clipping on group with several elements
+                    if (isClipPathChanged(clipPaths, prevElClipPaths)) {
+                        // If has previous clipping state, restore from it
+                        if (prevElClipPaths) {
+                            ctx.restore();
+                        }
+                        // New clipping state
+                        if (clipPaths) {
+                            ctx.save();
+                            doClip(clipPaths, ctx);
+                        }
+                        prevElClipPaths = clipPaths;
+                    }
                     el.brush(ctx, false);
                 }
 
                 el.__dirty = false;
+            }
+
+            // If still has clipping state
+            if (prevElClipPaths) {
+                ctx.restore();
             }
 
             this.eachBuildinLayer(postProcessLayer);

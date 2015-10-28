@@ -69,8 +69,6 @@ define(function (require) {
 
                 ctx.save();
 
-                this.clip(ctx);
-
                 style.bind(ctx);
 
                 // 设置transform
@@ -78,6 +76,7 @@ define(function (require) {
 
                 if (style.r) {
                     // Border radius clipping
+                    // FIXME
                     ctx.beginPath();
                     roundRectHelper.buildPath(ctx, style);
                     ctx.clip();

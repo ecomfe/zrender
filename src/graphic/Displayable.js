@@ -126,8 +126,6 @@ define(function (require) {
         beforeBrush: function (ctx) {
             ctx.save();
 
-            this.clip(ctx);
-
             this.style.bind(ctx);
 
             this.setTransform(ctx);
@@ -135,42 +133,6 @@ define(function (require) {
 
         afterBrush: function (ctx) {
             ctx.restore();
-        },
-
-        /**
-         * @param {Canvas2DRenderingContext} ctx
-         * @protected
-         */
-        clip: function (ctx) {
-            // FIXME performance
-            var clipPaths = this.__clipPaths;
-            if (clipPaths) {
-                for (var i = 0; i < clipPaths.length; i++) {
-                    var clipPath = clipPaths[i];
-                    var m;
-                    if (clipPath.needTransform) {
-                        m = clipPath.transform;
-                        ctx.transform(
-                            m[0], m[1],
-                            m[2], m[3],
-                            m[4], m[5]
-                        );
-                    }
-                    var path = clipPath.path;
-                    path.beginPath(ctx);
-                    clipPath.buildPath(path, clipPath.shape);
-                    ctx.clip();
-                    // Transform back
-                    if (clipPath.needTransform) {
-                        m = clipPath.invTransform;
-                        ctx.transform(
-                            m[0], m[1],
-                            m[2], m[3],
-                            m[4], m[5]
-                        );
-                    }
-                }
-            }
         },
 
         /**
