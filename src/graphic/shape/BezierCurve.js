@@ -15,10 +15,10 @@ define(function (require) {
             y1: 0,
             x2: 0,
             y2: 0,
-            x3: 0,
-            y3: 0
-            // x4: 0,
-            // y4: 0
+            cpx1: 0,
+            cpy1: 0
+            // cpx2: 0,
+            // cpy2: 0
         },
 
         style: {
@@ -29,17 +29,17 @@ define(function (require) {
         buildPath: function (ctx, shape) {
             ctx.moveTo(shape.x1, shape.y1);
 
-            if (shape.x4 == null || shape.y4 == null) {
+            if (shape.cpx2 == null || shape.cpy2 == null) {
                 ctx.quadraticCurveTo(
-                    shape.x2, shape.y2,
-                    shape.x3, shape.y3
+                    shape.cpx1, shape.cpy1,
+                    shape.x2, shape.y2
                 );
             }
             else {
                 ctx.bezierCurveTo(
-                    shape.x2, shape.y2,
-                    shape.x3, shape.y3,
-                    shape.x4, shape.y4
+                    shape.cpx1, shape.cpy1,
+                    shape.cpx2, shape.cpy2,
+                    shape.x2, shape.y2
                 );
             }
         }

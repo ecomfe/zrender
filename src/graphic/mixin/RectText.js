@@ -6,8 +6,15 @@
 define(function (require) {
 
     var textContain = require('../../contain/text');
+    var BoundingRect = require('../../core/BoundingRect');
+
+    var tmpRect = new BoundingRect();
 
     var RectText = function () {};
+
+    function setTransform(ctx, m) {
+        ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
+    }
 
     RectText.prototype = {
 
@@ -16,12 +23,12 @@ define(function (require) {
         /**
          * Draw text in a rect with specified position.
          * @param  {CanvasRenderingContext} ctx
-         * @param  {Object} rect Wrapping rect
+         * @param  {Object} rect Displayable rect
          * @return {Object} textRect Alternative precalculated text bounding rect
          */
         drawRectText: function (ctx, rect, textRect) {
             var style = this.style;
-            var text = this.style.text;
+            var text = style.text;
             if (!text) {
                 return;
             }
@@ -36,6 +43,17 @@ define(function (require) {
             var baseline = style.textBaseline;
 
             textRect = textRect || textContain.getBoundingRect(text, font, align, baseline);
+
+            // Transform rect to view space
+            var transform = this.transform;
+            var invTransform = this.invTransform;
+            if (transform) {
+                tmpRect.copy(rect);
+                tmpRect.applyTransform(transform);
+                rect = tmpRect;
+                // Transform back
+                setTransform(ctx, invTransform);
+            }
 
             // Text position represented by coord
             if (textPosition instanceof Array) {
@@ -74,6 +92,9 @@ define(function (require) {
                 textStroke && ctx.strokeText(textLines[i], x, y);
                 y += textRect.lineHeight;
             }
+
+            // Transform again
+            transform && setTransform(ctx, transform);
         }
     };
 
