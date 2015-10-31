@@ -63,6 +63,7 @@ define(function (require) {
         lineWidth: 1,
 
         // Bounding rect text configuration
+        // Not affected by element transform
         /**
          * @type {string}
          */
@@ -132,11 +133,11 @@ define(function (require) {
             var stroke = this.stroke;
             if (fill != null) {
                  // Use canvas gradient if has
-                ctx.fillStyle = fill.canvasGradient ? fill.canvasGradient : fill
+                ctx.fillStyle = fill.canvasGradient ? fill.canvasGradient : fill;
             }
             if (stroke != null) {
                  // Use canvas gradient if has
-                ctx.strokeStyle = stroke.canvasGradient ? stroke.canvasGradient : stroke
+                ctx.strokeStyle = stroke.canvasGradient ? stroke.canvasGradient : stroke;
             }
             this.opacity != null && (ctx.globalAlpha = this.opacity);
         },

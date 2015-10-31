@@ -17,6 +17,7 @@ define(function(require) {
     var nativeFilter = arrayProto.filter;
     var nativeSlice = arrayProto.slice;
     var nativeMap = arrayProto.map;
+    var nativeReduce = arrayProto.reduce;
 
     /**
      * @param {*} source
@@ -252,6 +253,29 @@ define(function(require) {
     }
 
     /**
+     * @memberOf module:zrender/tool/util
+     * @param {Array} obj
+     * @param {Function} cb
+     * @param {Object} [memo]
+     * @param {*} [context]
+     * @return {Array}
+     */
+    function reduce(obj, cb, memo, context) {
+        if (!(obj && cb)) {
+            return;
+        }
+        if (obj.reduce && obj.reduce === nativeReduce) {
+            return obj.reduce(cb, memo, context);
+        }
+        else {
+            for (var i = 0, len = obj.length; i < len; i++) {
+                memo = cb.call(context, memo, obj[i], i, obj);
+            }
+            return memo;
+        }
+    }
+
+    /**
      * 数组过滤
      * @memberOf module:zrender/tool/util
      * @param {Array} obj
@@ -332,6 +356,7 @@ define(function(require) {
         isArrayLike: isArrayLike,
         each: each,
         map: map,
+        reduce: reduce,
         filter: filter,
         bind: bind,
         curry: curry,

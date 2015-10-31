@@ -24,6 +24,10 @@ define(function (require) {
 
     var abs = Math.abs;
     function getLineScale(m) {
+        // Get the line scale.
+        // Determinant of `m` means how much the area is enlarged by the
+        // transformation. So its square root can be used as a scale factor
+        // for width.
         return m && abs(m[0] - 1) > 1e-10 && abs(m[3] - 1) > 1e-10
             ? Math.sqrt(abs(m[0] * m[3] - m[2] * m[1]))
             : 1;
