@@ -184,7 +184,7 @@ define(function(require) {
         source = 'prototype' in source ? source.prototype : source;
 
         defaults(target, source);
-    };
+    }
 
     /**
      * @param {Array|TypedArray} data
@@ -295,6 +295,10 @@ define(function(require) {
         return objToString.call(value) === '[object Array]';
     }
 
+    function isFunction(value) {
+        return typeof value === 'function';
+    }
+
     function isString(value) {
         return objToString.call(value) === '[object String]';
     }
@@ -334,6 +338,7 @@ define(function(require) {
         isArray: isArray,
         isString: isString,
         isObject: isObject,
+        isFunction: isFunction,
         isBuildInObject: isBuildInObject,
         isDom: isDom,
         noop: function () {}

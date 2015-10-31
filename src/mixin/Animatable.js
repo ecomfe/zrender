@@ -7,6 +7,9 @@ define(function(require) {
 
     var Animator = require('../animation/Animator');
     var util = require('../core/util');
+    var isString = util.isString;
+    var isFunction = util.isFunction;
+    var isObject = util.isObject;
     var log = require('../core/log');
 
     /**
@@ -101,6 +104,8 @@ define(function(require) {
                 animators[i].stop();
             }
             animators.length = 0;
+
+            return this;
         },
 
         /**
@@ -130,24 +135,24 @@ define(function(require) {
          // TODO Return animation key
         animateTo: function (target, time, delay, easing, callback) {
             // animateTo(target, time, easing, callback);
-            if (typeof delay === 'string') {
+            if (isString(delay)) {
                 callback = easing;
                 easing = delay;
                 delay = 0;
             }
             // animateTo(target, time, delay, callback);
-            else if (typeof easing === 'function') {
+            else if (isFunction(easing)) {
                 callback = easing;
                 easing = 'linear';
                 delay = 0;
             }
             // animateTo(target, time, callback);
-            else if (typeof delay === 'function') {
+            else if (isFunction(delay)) {
                 callback = delay;
                 delay = 0;
             }
             // animateTo(target, callback)
-            else if (typeof time === 'function') {
+            else if (isFunction(time)) {
                 callback = time;
                 time = 500;
             }
@@ -157,7 +162,7 @@ define(function(require) {
             }
             // Stop all previous animations
             this.stopAnimation();
-            this._animateToShallow('', this, target, time, delay, easing, callback);
+            this.animateToShallow('', this, target, time, delay, easing, callback);
 
             // Animators may be removed immediately after start
             // if there is nothing to animate
@@ -170,7 +175,7 @@ define(function(require) {
                 }
             }
 
-            // No animators. This should be done before animators[i].done(done),
+            // No animators. This should be checked before animators[i].start(),
             // because 'done' may be executed immediately if no need to animate.
             if (!count) {
                 callback && callback();
@@ -184,20 +189,55 @@ define(function(require) {
         },
 
         /**
-         * @param {string} path
-         * @param {Object} source
+         * @param {string} [path='']
+         * @param {Object} [source=this]
          * @param {Object} target
-         * @param {number} time
-         * @param {number} delay
-         * @private
+         * @param {number} [time=500]
+         * @param {number} [delay=0]
+         *
+         * @example
+         *  // Animate position
+         *  el.animateToShallow({
+         *      position: [10, 10]
+         *  })
+         *
+         *  // Animate shape, style and position in 100ms, delayed 100ms
+         *  el.animateToShallow({
+         *      shape: {
+         *          width: 500
+         *      },
+         *      style: {
+         *          fill: 'red'
+         *      }
+         *      position: [10, 10]
+         *  }, 100, 100)
          */
-        _animateToShallow: function (path, source, target, time, delay) {
+        animateToShallow: function (path, source, target, time, delay) {
+            if (!isString(path)) {
+                // animateToShallow(source, target, ...)
+                if (isObject(source)) {
+                    delay = time;
+                    time = target;
+                    target = source;
+                    source = path;
+                    path = '';
+                }
+                // animateToShallow(target, ...)
+                else {
+                    delay = target;
+                    time = source;
+                    target = path;
+                    source = this;
+                    path = '';
+                }
+            }
+
             var objShallow = {};
             var propertyCount = 0;
             for (var name in target) {
                 if (source[name] != null) {
-                    if (util.isObject(target[name]) && !util.isArrayLike(target[name])) {
-                        this._animateToShallow(
+                    if (isObject(target[name]) && !util.isArrayLike(target[name])) {
+                        this.animateToShallow(
                             path ? path + '.' + name : name,
                             source[name],
                             target[name],
@@ -214,9 +254,11 @@ define(function(require) {
 
             if (propertyCount > 0) {
                 this.animate(path, false)
-                    .when(time, objShallow)
+                    .when(time == null ? 500 : time, objShallow)
                     .delay(delay || 0);
             }
+
+            return this;
         }
     };
 

@@ -95,7 +95,7 @@ define(function(require) {
         },
 
         /**
-         * @param {module:echarts/core/BoundingRect} b
+         * @param {(module:echarts/core/BoundingRect|Object)} b
          * @return {boolean}
          */
         intersect: function (b) {
