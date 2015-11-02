@@ -17,7 +17,7 @@ define(function (require) {
     /**
      * @alias module:zrender/graphic/Displayable
      * @extends module:zrender/Element
-     * @extends module:zrender/graphic/mixin/Stateful
+     * @extends module:zrender/graphic/mixin/RectText
      */
     var Displayable = function (opts) {
 
