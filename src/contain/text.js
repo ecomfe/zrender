@@ -29,7 +29,7 @@ define(function (require) {
         textWidthCache[key] = width;
 
         return width;
-    };
+    }
 
     function getTextRect(text, textFont, textAlign, textBaseline) {
         var textLineLen = ((text || '') + '').split('\n').length;
@@ -39,7 +39,7 @@ define(function (require) {
         var lineHeight = getTextWidth('国', textFont);
         var height = textLineLen * lineHeight;
 
-        var rect = new BoundingRect(0, 0, width, height)
+        var rect = new BoundingRect(0, 0, width, height);
         // Text has a special line height property
         rect.lineHeight = lineHeight;
 
@@ -53,7 +53,7 @@ define(function (require) {
                 break;
             // case 'hanging':
             // case 'top':
-        };
+        }
 
         // FIXME Right to left language
         switch (textAlign) {
@@ -69,7 +69,7 @@ define(function (require) {
         }
 
         return rect;
-    };
+    }
 
     function adjustTextPositionOnRect(textPosition, rect, textRect, distance) {
 
@@ -146,18 +146,98 @@ define(function (require) {
         };
     }
 
+    /**
+     * Show ellipsis if overflow.
+     *
+     * @param  {string} text
+     * @param  {string} textFont
+     * @param  {string} containerWidth
+     * @param  {Object} [options]
+     * @param  {number} [options.ellipsis='...']
+     * @param  {number} [options.maxIterations=3]
+     * @param  {number} [options.minCharacters=3]
+     * @return {string}
+     */
+    function textEllipsis(text, textFont, containerWidth, options) {
+        if (!containerWidth) {
+            return '';
+        }
+
+        options = util.defaults({
+            ellipsis: '...',
+            minCharacters: 3,
+            maxIterations: 3,
+            cnCharWidth: getTextWidth('国', textFont),
+            // FIXME
+            // 未考虑非等宽字体
+            ascCharWidth: getTextWidth('a', textFont)
+        }, options, true);
+
+        containerWidth -= getTextWidth(options.ellipsis);
+
+        var textLines = (text + '').split('\n');
+
+        for (var i = 0, len = textLines.length; i < len; i++) {
+            textLines[i] = textLineTruncate(
+                textLines[i], textFont, containerWidth, options
+            );
+        }
+
+        return textLines.join('\n');
+    }
+
+    function textLineTruncate(text, textFont, containerWidth, options) {
+        // FIXME
+        // 粗糙得写的，尚未考虑性能和各种语言、字体的效果。
+        for (var i = 0;; i++) {
+            var lineWidth = getTextWidth(text, textFont);
+
+            if (lineWidth < containerWidth || i >= options.maxIterations) {
+                text += options.ellipsis;
+                break;
+            }
+
+            var subLength = i === 0
+                ? estimateLength(text, containerWidth, options)
+                : text.length * containerWidth / lineWidth;
+
+            if (subLength < options.minCharacters) {
+                text = '';
+                break;
+            }
+
+            text = text.substr(0, subLength);
+        }
+
+        return text;
+    }
+
+    function estimateLength(text, containerWidth, options) {
+        var width = 0;
+        var i = 0;
+        for (var len = text.length; i < len && width < containerWidth; i++) {
+            var charCode = text.charCodeAt(i);
+            width += (0 <= charCode && charCode <= 127)
+                ? options.ascCharWidth : options.cnCharWidth;
+        }
+        return i;
+    }
+
     var textContain = {
+
         getWidth: getTextWidth,
 
         getBoundingRect: getTextRect,
 
         adjustTextPositionOnRect: adjustTextPositionOnRect,
 
+        ellipsis: textEllipsis,
+
         measureText: function (text, textFont) {
             var ctx = util.getContext();
             ctx.font = textFont;
             return ctx.measureText(text);
-        },
+        }
 
     };
 

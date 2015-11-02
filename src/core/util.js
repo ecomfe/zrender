@@ -122,10 +122,13 @@ define(function(require) {
     /**
      * @param {*} target
      * @param {*} source
+     * @param {boolen} [overlay=false]
      */
-    function defaults(target, source) {
+    function defaults(target, source, overlay) {
         for (var key in source) {
-            if (source.hasOwnProperty(key) && target[key] == null) {
+            if (source.hasOwnProperty(key)
+                && (overlay ? source[key] != null : target[key] == null)
+            ) {
                 target[key] = source[key];
             }
         }
