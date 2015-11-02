@@ -199,7 +199,7 @@ define(function (require) {
 
             var subLength = i === 0
                 ? estimateLength(text, containerWidth, options)
-                : text.length * containerWidth / lineWidth;
+                : Math.floor(text.length * containerWidth / lineWidth);
 
             if (subLength < options.minCharacters) {
                 text = '';

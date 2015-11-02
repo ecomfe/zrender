@@ -162,7 +162,7 @@ define(function(require) {
             }
             // Stop all previous animations
             this.stopAnimation();
-            this.animateToShallow('', this, target, time, delay, easing, callback);
+            this._animateToShallow('', this, target, time, delay, easing, callback);
 
             // Animators may be removed immediately after start
             // if there is nothing to animate
@@ -189,6 +189,7 @@ define(function(require) {
         },
 
         /**
+         * @private
          * @param {string} [path='']
          * @param {Object} [source=this]
          * @param {Object} target
@@ -197,12 +198,12 @@ define(function(require) {
          *
          * @example
          *  // Animate position
-         *  el.animateToShallow({
+         *  el._animateToShallow({
          *      position: [10, 10]
          *  })
          *
          *  // Animate shape, style and position in 100ms, delayed 100ms
-         *  el.animateToShallow({
+         *  el._animateToShallow({
          *      shape: {
          *          width: 500
          *      },
@@ -212,9 +213,9 @@ define(function(require) {
          *      position: [10, 10]
          *  }, 100, 100)
          */
-        animateToShallow: function (path, source, target, time, delay) {
+        _animateToShallow: function (path, source, target, time, delay) {
             if (!isString(path)) {
-                // animateToShallow(source, target, ...)
+                // this._animateToShallow(source, target, ...)
                 if (isObject(source)) {
                     delay = time;
                     time = target;
@@ -222,7 +223,7 @@ define(function(require) {
                     source = path;
                     path = '';
                 }
-                // animateToShallow(target, ...)
+                // this._animateToShallow(target, ...)
                 else {
                     delay = target;
                     time = source;
@@ -237,7 +238,7 @@ define(function(require) {
             for (var name in target) {
                 if (source[name] != null) {
                     if (isObject(target[name]) && !util.isArrayLike(target[name])) {
-                        this.animateToShallow(
+                        this._animateToShallow(
                             path ? path + '.' + name : name,
                             source[name],
                             target[name],
