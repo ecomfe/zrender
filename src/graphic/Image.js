@@ -18,7 +18,7 @@ define(function (require) {
      */
     var ZImage = function (opts) {
         Displayable.call(this, opts);
-    }
+    };
 
     ZImage.prototype = {
 

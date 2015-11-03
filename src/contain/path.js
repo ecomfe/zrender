@@ -142,7 +142,7 @@ define(function (require) {
         roots[0] = -tmp;
         roots[1] = tmp;
 
-        if (Math.abs(startAngle - endAngle) >= PI2) {
+        if (Math.abs(startAngle - endAngle) % PI2 < 1e-4) {
             // Is a circle
             startAngle = 0;
             endAngle = PI2;

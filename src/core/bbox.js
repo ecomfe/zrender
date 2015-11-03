@@ -166,7 +166,7 @@ define(function (require) {
         var vec2Min = vec2.min;
         var vec2Max = vec2.max;
 
-        if (Math.abs(startAngle - endAngle) >= PI2) {
+        if (Math.abs(startAngle - endAngle) % PI2 < 1e-4) {
             // Is a circle
             min[0] = x - rx;
             min[1] = y - ry;
@@ -196,7 +196,8 @@ define(function (require) {
 
         if (startAngle > endAngle && !anticlockwise) {
             endAngle += PI2;
-        } else if (startAngle < endAngle && anticlockwise) {
+        }
+        else if (startAngle < endAngle && anticlockwise) {
             startAngle += PI2;
         }
         if (anticlockwise) {
