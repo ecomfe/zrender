@@ -37,18 +37,10 @@ define(function (require) {
 
         for (i = 1; i < points.length; i++) {
             p = points[i];
-            if (p[0] < left) {
-                left = p[0];
-            }
-            if (p[0] > right) {
-                right = p[0];
-            }
-            if (p[1] < top) {
-                top = p[1];
-            }
-            if (p[1] > bottom) {
-                bottom = p[1];
-            }
+            left = mathMin(left, p[0]);
+            right = mathMax(right, p[0]);
+            top = mathMin(top, p[1]);
+            bottom = mathMax(bottom, p[1]);
         }
 
         min[0] = left;
@@ -152,7 +144,7 @@ define(function (require) {
         min[1] = mathMin(y0, y2, y);
         max[0] = mathMax(x0, x2, x);
         max[1] = mathMax(y0, y2, y);
-    }
+    };
 
     /**
      * 从圆弧中计算出最小包围盒，写入`min`和`max`中
@@ -174,7 +166,7 @@ define(function (require) {
         var vec2Min = vec2.min;
         var vec2Max = vec2.max;
 
-        if (Math.abs(startAngle - endAngle) >= PI2) {
+        if (Math.abs(startAngle - endAngle) % PI2 < 1e-4) {
             // Is a circle
             min[0] = x - rx;
             min[1] = y - ry;
@@ -204,7 +196,8 @@ define(function (require) {
 
         if (startAngle > endAngle && !anticlockwise) {
             endAngle += PI2;
-        } else if (startAngle < endAngle && anticlockwise) {
+        }
+        else if (startAngle < endAngle && anticlockwise) {
             startAngle += PI2;
         }
         if (anticlockwise) {

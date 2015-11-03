@@ -82,8 +82,10 @@ define(function(require) {
                 el.dirty(animatingShape);
             })
             .done(function () {
+                // FIXME Animator will not be removed if use `Animator#stop` to stop animation
                 animators.splice(util.indexOf(animators, animator), 1);
             });
+            
             animators.push(animator);
 
             // If animate after added to the zrender

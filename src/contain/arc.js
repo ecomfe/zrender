@@ -34,7 +34,7 @@ define(function (require) {
             if ((d - _l > r) || (d + _l < r)) {
                 return false;
             }
-            if (Math.abs(startAngle - endAngle) >= PI2) {
+            if (Math.abs(startAngle - endAngle) % PI2 < 1e-4) {
                 // Is a circle
                 return true;
             }

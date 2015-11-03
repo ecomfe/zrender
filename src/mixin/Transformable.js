@@ -211,6 +211,12 @@ define(function (require) {
             if (isNotAroundZero(sy - 1)) {
                 sy = Math.sqrt(sy);
             }
+            if (m[0] < 0) {
+                sx = -sx;
+            }
+            if (m[3] < 0) {
+                sy = -sy;
+            }
             position[0] = m[4];
             position[1] = m[5];
             scale[0] = sx;
