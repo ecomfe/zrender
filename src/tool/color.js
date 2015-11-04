@@ -95,14 +95,14 @@ define(function(require) {
     }
 
     function parseCssInt(str) {  // int or percentage.
-        if (str[str.length - 1] === '%') {
+        if (str.charAt(str.length - 1) === '%') {
             return clampCssByte(parseFloat(str) / 100 * 255);
         }
         return clampCssByte(parseInt(str, 10));
     }
 
     function parseCssFloat(str) {  // float or percentage.
-        if (str[str.length - 1] === '%') {
+        if (str.charAt(str.length - 1) === '%') {
             return clampCssFloat(parseFloat(str) / 100);
         }
         return clampCssFloat(parseFloat(str));
@@ -128,6 +128,10 @@ define(function(require) {
         return m1;
     }
 
+    function lerp(a, b, p) {
+        return a + (b - a) * p;
+    }
+
     /**
      * @param {string} colorStr
      * @return {Array.<number>}
@@ -147,7 +151,7 @@ define(function(require) {
         }
 
         // #abc and #abc123 syntax.
-        if (str[0] === '#') {
+        if (str.charAt(0) === '#') {
             if (str.length === 4) {
                 var iv = parseInt(str.substr(1), 16);  // TODO(deanm): Stricter parsing.
                 if (!(iv >= 0 && iv <= 0xfff)) {
@@ -175,7 +179,6 @@ define(function(require) {
 
             return;
         }
-
         var op = str.indexOf('('), ep = str.indexOf(')');
         if (op !== -1 && ep + 1 === str.length) {
             var fname = str.substr(0, op);
@@ -366,10 +369,10 @@ define(function(require) {
 
         var color = stringify(
             [
-                clampCssByte(leftColor[0] + (rightColor[0] - leftColor[0]) * dv),
-                clampCssByte(leftColor[1] + (rightColor[1] - leftColor[1]) * dv),
-                clampCssByte(leftColor[2] + (rightColor[2] - leftColor[2]) * dv),
-                clampCssFloat(leftColor[3] + (rightColor[3] - leftColor[3]) * dv)
+                clampCssByte(lerp(leftColor[0], rightColor[0], dv)),
+                clampCssByte(lerp(leftColor[1], rightColor[1], dv)),
+                clampCssByte(lerp(leftColor[2], rightColor[2], dv)),
+                clampCssFloat(lerp(leftColor[3], rightColor[3], dv))
             ],
             'rgba'
         );

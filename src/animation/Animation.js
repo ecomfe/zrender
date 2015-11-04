@@ -213,7 +213,7 @@ define(function(require) {
             );
 
             return animator;
-        },
+        }
     };
 
     util.mixin(Animation, Dispatcher);

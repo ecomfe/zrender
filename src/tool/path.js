@@ -395,7 +395,7 @@ define(function (require) {
                 if (ctx) {
                     path.rebuildPath(ctx);
                 }
-            }
+            };
 
             return pathBundle;
         }

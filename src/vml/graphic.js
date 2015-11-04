@@ -71,9 +71,11 @@ define(function (require) {
      **************************************************/
 
     function setColorAndOpacity (el, color, opacity) {
-        color = colorTool.toArray(color);
-        el.color = rgb2Str(color[0], color[1], color[2]);
-        el.opacity = opacity * color[3];
+        var colorArr = colorTool.parse(color);
+        if (colorArr) {
+            el.color = rgb2Str(colorArr[0], colorArr[1], colorArr[2]);
+            el.opacity = opacity * colorArr[3];
+        }
     }
 
     function updateFillNode(el, style) {
@@ -479,7 +481,7 @@ define(function (require) {
                     self._imageWidth = ow;
                     self._imageHeight = oh;
                     self._imageSrc = image;
-                }
+                };
                 tmpImage.src = image;
             }
             else {
