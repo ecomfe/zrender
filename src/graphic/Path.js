@@ -212,11 +212,16 @@ define(function (require) {
 
         // Overwrite attrKV
         attrKV: function (key, value) {
-            Displayable.prototype.attrKV.call(this, key, value);
-            // Is a shape
-            if (key === 'shape' && this.shape) {
+            // FIXME
+            if (key === 'shape') {
+                this.__dirty = true;
                 this.__dirtyPath = true;
                 this._rect = null;
+                // Extend shape
+                this.shape = zrUtil.extend(this.shape || {}, value);
+            }
+            else {
+                Displayable.prototype.attrKV.call(this, key, value);
             }
         },
         /**
