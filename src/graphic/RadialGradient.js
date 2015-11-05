@@ -20,11 +20,13 @@ define(function(require) {
         this.r = r == null ? 0.5 : r;
 
         Gradient.call(this, colorStops);
-    }
+    };
 
     RadialGradient.prototype = {
 
         constructor: RadialGradient,
+
+        type: 'radial',
 
         updateCanvasGradient: function (shape, ctx) {
             var rect = shape.getBoundingRect();
