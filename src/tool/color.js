@@ -141,7 +141,8 @@ define(function(require) {
         if (!colorStr) {
             return;
         }
-
+        // colorStr may be not string
+        colorStr = colorStr + '';
         // Remove all whitespace, not compliant, but should just be more accepting.
         var str = colorStr.replace(/ /g, '').toLowerCase();
 

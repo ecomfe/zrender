@@ -65,14 +65,14 @@ define(function (require) {
 
     function getZIndex(zlevel, z) {
         // z 的取值范围为 [0, 1000]
-        return (parseInt(zlevel) || 0) * ZLEVEL_BASE + parseInt(z) || 0;
+        return (parseFloat(zlevel) || 0) * ZLEVEL_BASE + parseFloat(z) || 0;
     }
 
     /***************************************************
      * PATH
      **************************************************/
 
-    function setColorAndOpacity (el, color, opacity) {
+    function setColorAndOpacity(el, color, opacity) {
         var colorArr = colorTool.parse(color);
         if (colorArr) {
             el.color = rgb2Str(colorArr[0], colorArr[1], colorArr[2]);
@@ -96,9 +96,7 @@ define(function (require) {
             if (fill instanceof Gradient) {
                 var gradientType;
                 var angle = 0;
-                var focus = {
-                    x: 0, y: 0
-                };
+                var focus = [0, 0];
                 // additional offset
                 var shift = 0;
                 // scale factor for offset
@@ -135,11 +133,11 @@ define(function (require) {
                     var rect = zrEl.getBoundingRect();
                     var width = rect.width;
                     var height = rect.height;
-                    focus = {
+                    focus = [
                         // Percent in bounding rect
-                        x: (p0[0] - rect.x) / width,
-                        y: (p0[1] - rect.y) / height
-                    };
+                        (p0[0] - rect.x) / width,
+                        (p0[1] - rect.y) / height
+                    ];
                     if (transform) {
                         applyTransform(p0, p0, transform);
                     }
@@ -171,21 +169,28 @@ define(function (require) {
                     }
                 }
 
-                var color1 = colorAndAlphaList[0][0];
-                var color2 = colorAndAlphaList[1][0];
-                var opacity1 = colorAndAlphaList[0][1] * style.opacity;
-                var opacity2 = colorAndAlphaList[1][1] * style.opacity;
+                if (length >= 2) {
+                    var color1 = colorAndAlphaList[0][0];
+                    var color2 = colorAndAlphaList[1][0];
+                    var opacity1 = colorAndAlphaList[0][1] * style.opacity;
+                    var opacity2 = colorAndAlphaList[1][1] * style.opacity;
 
-                el.type = gradientType;
-                el.focus = '100%';
-                el.color = color1;
-                el.color2 = color2;
-                el.colors = colors.join(',');
-                // When colors attribute is used, the meanings of opacity and o:opacity2
-                // are reversed.
-                el.opacity = opacity2;
-                // FIXME g_o_:opacity ?
-                el.opacity2 = opacity1;
+                    el.type = gradientType;
+                    el.method = 'none';
+                    el.focus = '100%';
+                    el.angle = angle;
+                    el.color = color1;
+                    el.color2 = color2;
+                    el.colors = colors.join(',');
+                    // When colors attribute is used, the meanings of opacity and o:opacity2
+                    // are reversed.
+                    el.opacity = opacity2;
+                    // FIXME g_o_:opacity ?
+                    el.opacity2 = opacity1;
+                }
+                if (gradientType === 'radial') {
+                    el.focusposition = focus.join(',');
+                }
             }
             else {
                 // FIXME Change from Gradient fill to color fill
@@ -217,17 +222,20 @@ define(function (require) {
         var el = vmlEl.getElementsByTagName(type)[0];
         if (style[type] != null && style[type] !== 'none') {
             vmlEl[isFill ? 'filled' : 'stroked'] = 'true';
-            if (! el) {
-                el = vmlCore.createNode(type);
-                vmlEl.appendChild(el);
+            // FIXME Remove before updating, or set `colors` will throw error
+            if (style[type] instanceof Gradient) {
+                remove(vmlEl, el);
             }
+            if (!el) {
+                el = vmlCore.createNode(type);
+            }
+
             isFill ? updateFillNode(el, style, zrEl) : updateStrokeNode(el, style);
+            append(vmlEl, el);
         }
         else {
             vmlEl[isFill ? 'filled' : 'stroked'] = 'false';
-            if (el) {
-                vmlEl.removeChild(el);
-            }
+            remove(vmlEl, el);
         }
     }
 
@@ -376,7 +384,7 @@ define(function (require) {
         var style = this.style;
 
         var vmlEl = this._vmlEl;
-        if (! vmlEl) {
+        if (!vmlEl) {
             vmlEl = vmlCore.createNode('shape');
             initRootElStyle(vmlEl);
 
@@ -484,7 +492,7 @@ define(function (require) {
                 oh = this._imageHeight;
             }
         }
-        if (! image) {
+        if (!image) {
             return;
         }
 
@@ -674,9 +682,10 @@ define(function (require) {
     var fontStyleCacheCount = 0;
     var MAX_FONT_CACHE_SIZE = 100;
     var fontEl = document.createElement('div');
-    function processFont(fontString) {
+
+    function getFontStyle(fontString) {
         var fontStyle = fontStyleCache[fontString];
-        if (! fontStyle) {
+        if (!fontStyle) {
             // Clear cache
             if (fontStyleCacheCount > MAX_FONT_CACHE_SIZE) {
                 fontStyleCacheCount = 0;
@@ -703,16 +712,14 @@ define(function (require) {
             fontStyleCache[fontString] = fontStyle;
             fontStyleCacheCount++;
         }
-
-        return fontStyle.style + ' ' + fontStyle.variant + ' ' + fontStyle.weight + ' ' +
-        fontStyle.size + "px '" + fontStyle.family + "'";
+        return fontStyle;
     }
 
     var textMeasureEl;
     // Overwrite measure text method
     textContain.measureText = function (text, textFont) {
         var doc = vmlCore.doc;
-        if (! textMeasureEl) {
+        if (!textMeasureEl) {
             textMeasureEl = doc.createElement('div');
             textMeasureEl.style.cssText = 'position:absolute;top:-20000px;left:0;\
                 padding:0;margin:0;border:none;white-space:pre;';
@@ -733,38 +740,84 @@ define(function (require) {
         };
     };
 
-    var drawRectText = function (vmlRoot, rect, textRect) {
+    var drawRectText = function (vmlRoot, rect, textRect, fromTextEl) {
 
         var style = this.style;
-        var text = this.style.text;
-        if (! text) {
+        var text = style.text;
+        if (!text) {
             return;
         }
 
         var x;
         var y;
-        var textPosition = style.textPosition;
-        var distance = style.textDistance;
         var align = style.textAlign;
+        var fontStyle = getFontStyle(style.textFont);
         var font = encodeHtmlAttribute(
-            processFont(style.textFont || '')
+            fontStyle.style + ' ' + fontStyle.variant + ' ' + fontStyle.weight + ' '
+            + fontStyle.size + 'px "' + fontStyle.family + '"'
         );
         var baseline = style.textBaseline;
 
         textRect = textRect || textContain.getBoundingRect(text, font, align, baseline);
 
-        // Text position represented by coord
-        // TODO
-        if (textPosition instanceof Array) {
-            x = textPosition[0];
-            y = textPosition[1];
+        if (!fromTextEl) {
+            var textPosition = style.textPosition;
+            var distance = style.textDistance;
+            // Text position represented by coord
+            if (textPosition instanceof Array) {
+                x = rect.x + textPosition[0];
+                y = rect.y + textPosition[1];
+            }
+            else {
+                var newPos = textContain.adjustTextPositionOnRect(
+                    textPosition, rect, textRect, distance
+                );
+                x = newPos.x;
+                y = newPos.y;
+                // x, y 已经在前面调整过，textAlign 统一为 left, textBaseline 统一为 top
+                align = 'left';
+                baseline = 'top';
+            }
         }
         else {
-            var newPos = textContain.adjustTextPositionOnRect(
-                style.textPosition, rect, textRect, distance
-            );
-            x = newPos.x;
-            y = newPos.y;
+            x = rect.x;
+            y = rect.y;
+        }
+        // fontStyle.size may has `px`
+        var fontSize = parseFloat(fontStyle.size);
+        // 1.75 is an arbitrary number, as there is no info about the text baseline
+        switch (baseline) {
+            case 'hanging':
+            case 'top':
+                y += fontSize / 1.75;
+                break;
+            case 'middle':
+                break;
+            default:
+            // case null:
+            // case 'alphabetic':
+            // case 'ideographic':
+            // case 'bottom':
+                y -= fontSize / 2.25;
+                break;
+        }
+        switch (align) {
+            case 'left':
+                break;
+            case 'center':
+                x -= textRect.width / 2;
+                break;
+            case 'right':
+                x -= textRect.width;
+                break;
+            // case 'end':
+                // align = elementStyle.direction == 'ltr' ? 'right' : 'left';
+                // break;
+            // case 'start':
+                // align = elementStyle.direction == 'rtl' ? 'right' : 'left';
+                // break;
+            // default:
+            //     align = 'left';
         }
 
         var createNode = vmlCore.createNode;
@@ -773,20 +826,21 @@ define(function (require) {
         var pathEl;
         var textPathEl;
         var skewEl;
-        if (! textVmlEl) {
+        if (!textVmlEl) {
             textVmlEl = createNode('line');
             pathEl = createNode('path');
             textPathEl = createNode('textpath');
             skewEl = createNode('skew');
 
+            // FIXME Why here is not cammel case
+            // Align 'center' seems wrong
+            textPathEl.style['v-text-align'] = 'left';
+
             initRootElStyle(textVmlEl);
 
             pathEl.textpathok = true;
             textPathEl.on = true;
-            // FIXME Why here is not cammel case
-            textPathEl.style['v-text-align'] = 'left';
 
-            // x, y 已经在前面调整过，textAlign 统一为 left, textBaseline 统一为 top
             textVmlEl.from = '0 0';
             textVmlEl.to = '1000 0.05';
 
@@ -803,13 +857,10 @@ define(function (require) {
             textPathEl = pathEl.nextSibling;
         }
 
-        // VML 默认垂直居中（类似 textBaseline 为 middle
-        y += textRect.height / 2;
         var coords = [x, y];
-        var m;
+        var m = this.transform;
         var textVmlElStyle = textVmlEl.style;
-        if (this.transform) {
-            m = this.transform;
+        if (m) {
             applyTransform(coords, coords, m);
 
             skewEl.on = true;
@@ -880,7 +931,7 @@ define(function (require) {
             this.drawRectText(root, {
                 x: style.x || 0, y: style.y || 0,
                 width: 0, height: 0
-            }, this.getBoundingRect());
+            }, this.getBoundingRect(), true);
         }
     };
 
