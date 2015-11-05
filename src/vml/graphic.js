@@ -330,7 +330,8 @@ define(function (require) {
                     var startAngle = data[i++] + angle;
                     var endAngle = data[i++] + startAngle + angle;
                     // FIXME
-                    var psi = data[i++];
+                    // var psi = data[i++];
+                    i++;
                     var clockwise = data[i++];
 
                     var x0 = cx + cos(startAngle) * rx;
@@ -350,7 +351,7 @@ define(function (require) {
                         round(x0 * Z - Z2), comma,
                         round(y0 * Z - Z2), comma,
                         round(x1 * Z - Z2), comma,
-                        round(y1 * Z - Z2), comma
+                        round(y1 * Z - Z2)
                     );
 
                     xi = x1;
