@@ -16,6 +16,8 @@ define(function (require) {
     var Text = require('../graphic/Text');
     var Path = require('../graphic/Path');
 
+    var Gradient = require('../graphic/Gradient');
+
     var vmlCore = require('./core');
 
     var round = Math.round;
@@ -78,10 +80,117 @@ define(function (require) {
         }
     }
 
-    function updateFillNode(el, style) {
+    function getColorAndAlpha(color) {
+        var colorArr = colorTool.parse(color);
+        return [
+            rgb2Str(colorArr[0], colorArr[1], colorArr[2]),
+            colorArr[3]
+        ];
+    }
+
+    function updateFillNode(el, style, zrEl) {
         // TODO Gradient and pattern
-        if (style.fill != null) {
-            setColorAndOpacity(el, style.fill, style.opacity);
+        var fill = style.fill;
+        if (fill != null) {
+            // Modified from excanvas
+            if (fill instanceof Gradient) {
+                var gradientType;
+                var angle = 0;
+                var focus = {
+                    x: 0, y: 0
+                };
+                // additional offset
+                var shift = 0;
+                // scale factor for offset
+                var expansion = 1;
+                if (fill.type === 'linear') {
+                    gradientType = 'gradient';
+                    var transform = zrEl.transform;
+                    var p0 = [fill.x, fill.y];
+                    var p1 = [fill.x2, fill.y2];
+                    if (transform) {
+                        applyTransform(p0, p0, transform);
+                        applyTransform(p1, p1, transform);
+                    }
+                    var dx = p1[0] - p0[0];
+                    var dy = p1[1] - p0[1];
+                    angle = Math.atan2(dx, dy) * 180 / Math.PI;
+
+                    // The angle should be a non-negative number.
+                    if (angle < 0) {
+                        angle += 360;
+                    }
+
+                    // Very small angles produce an unexpected result because they are
+                    // converted to a scientific notation string.
+                    if (angle < 1e-6) {
+                        angle = 0;
+                    }
+                }
+                else {
+                    gradientType = 'gradientradial';
+                    var p0 = [fill.x, fill.y];
+                    var transform = zrEl.transform;
+                    var scale = zrEl.scale;
+                    var rect = zrEl.getBoundingRect();
+                    var width = rect.width;
+                    var height = rect.height;
+                    focus = {
+                        // Percent in bounding rect
+                        x: (p0[0] - rect.x) / width,
+                        y: (p0[1] - rect.y) / height
+                    };
+                    if (transform) {
+                        applyTransform(p0, p0, transform);
+                    }
+
+                    width  /= scale[0] * Z;
+                    height /= scale[1] * Z;
+                    var dimension = mathMax(width, height);
+                    shift = 2 * 0 / dimension;
+                    expansion = 2 * fill.r / dimension - shift;
+                }
+
+                // We need to sort the color stops in ascending order by offset,
+                // otherwise IE won't interpret it correctly.
+                var stops = fill.colorStops.slice();
+                stops.sort(function(cs1, cs2) {
+                    return cs1.offset - cs2.offset;
+                });
+
+                var length = stops.length;
+                // Color and alpha list of first and last stop
+                var colorAndAlphaList = [];
+                var colors = [];
+                for (var i = 0; i < length; i++) {
+                    var stop = stops[i];
+                    var colorAndAlpha = getColorAndAlpha(stop.color);
+                    colors.push(stop.offset * expansion + shift + ' ' + colorAndAlpha[0]);
+                    if (i === 0 || i === length - 1) {
+                        colorAndAlphaList.push(colorAndAlpha);
+                    }
+                }
+
+                var color1 = colorAndAlphaList[0][0];
+                var color2 = colorAndAlphaList[1][0];
+                var opacity1 = colorAndAlphaList[0][1] * style.opacity;
+                var opacity2 = colorAndAlphaList[1][1] * style.opacity;
+
+                el.type = gradientType;
+                el.focus = '100%';
+                el.color = color1;
+                el.color2 = color2;
+                el.colors = colors.join(',');
+                // When colors attribute is used, the meanings of opacity and o:opacity2
+                // are reversed.
+                el.opacity = opacity2;
+                // FIXME g_o_:opacity ?
+                el.opacity2 = opacity1;
+            }
+            else {
+                // FIXME Change from Gradient fill to color fill
+                setColorAndOpacity(el, fill, style.opacity);
+            }
         }
     }
 
@@ -98,12 +207,12 @@ define(function (require) {
         if (style.lineDash != null) {
             el.dashstyle = style.lineDash.join(' ');
         }
-        if (style.stroke != null) {
+        if (style.stroke != null && !(style.stroke instanceof Gradient)) {
             setColorAndOpacity(el, style.stroke, style.opacity);
         }
     }
 
-    function updateFillAndStroke(vmlEl, type, style) {
+    function updateFillAndStroke(vmlEl, type, style, zrEl) {
         var isFill = type == 'fill';
         var el = vmlEl.getElementsByTagName(type)[0];
         if (style[type] != null && style[type] !== 'none') {
@@ -112,7 +221,7 @@ define(function (require) {
                 el = vmlCore.createNode(type);
                 vmlEl.appendChild(el);
             }
-            isFill ? updateFillNode(el, style) : updateStrokeNode(el, style);
+            isFill ? updateFillNode(el, style, zrEl) : updateStrokeNode(el, style);
         }
         else {
             vmlEl[isFill ? 'filled' : 'stroked'] = 'false';
@@ -249,7 +358,7 @@ define(function (require) {
                 for (var k = 0; k < nPoint; k++) {
                     var p = points[k];
                     if (m) {
-                        vec2.applyTransform(p, p, m);
+                        applyTransform(p, p, m);
                     }
                     // 不 round 会非常慢
                     str.push(
@@ -274,8 +383,8 @@ define(function (require) {
             this._vmlEl = vmlEl;
         }
 
-        updateFillAndStroke(vmlEl, 'fill', style);
-        updateFillAndStroke(vmlEl, 'stroke', style);
+        updateFillAndStroke(vmlEl, 'fill', style, this);
+        updateFillAndStroke(vmlEl, 'stroke', style, this);
 
         var needTransform = this.transform != null;
         var strokeEl = vmlEl.getElementsByTagName('stroke')[0];
@@ -701,7 +810,7 @@ define(function (require) {
         var textVmlElStyle = textVmlEl.style;
         if (this.transform) {
             m = this.transform;
-            vec2.applyTransform(coords, coords, m);
+            applyTransform(coords, coords, m);
 
             skewEl.on = true;
 
@@ -733,12 +842,12 @@ define(function (require) {
         updateFillAndStroke(textVmlEl, 'fill', {
             fill: style.textFill || style.fill,
             opacity: style.opacity
-        });
+        }, this);
         updateFillAndStroke(textVmlEl, 'stroke', {
             stroke: style.textStroke || style.stroke,
             opacity: style.opacity,
             lineDash: style.lineDash
-        });
+        }, this);
 
         textVmlEl.style.zIndex = getZIndex(this.zlevel, this.z);
 

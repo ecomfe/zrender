@@ -29,6 +29,8 @@ define(function(require) {
 
         constructor: LinearGradient,
 
+        type: 'linear',
+
         updateCanvasGradient: function (shape, ctx) {
             var rect = shape.getBoundingRect();
             // var size =

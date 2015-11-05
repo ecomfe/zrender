@@ -12,7 +12,7 @@ define(function (require) {
     function parseInt10(val) {
         return parseInt(val, 10);
     }
-    
+
     /**
      * @alias module:zrender/vml/Painter
      */
@@ -28,8 +28,7 @@ define(function (require) {
 
         var vmlRoot = document.createElement('div');
 
-        vmlViewport.style.cssText = 'display:inline-block;overflow:hidden;position:relative;\
-            width:300px;height:150px;';
+        vmlViewport.style.cssText = 'display:inline-block;overflow:hidden;position:relative;width:300px;height:150px;';
 
         vmlRoot.style.cssText = 'position:absolute;left:0;top:0;';
 
@@ -51,7 +50,7 @@ define(function (require) {
             if (el) {
                 el.onRemoveFromStorage && el.onRemoveFromStorage(vmlRoot);
             }
-        }
+        };
 
         storage.addToMap = function (el) {
             // Displayable already has a vml node
@@ -76,7 +75,6 @@ define(function (require) {
 
         _paintList: function (list) {
             var vmlRoot = this._vmlRoot;
-            var parent = vmlRoot.parentNode;
             for (var i = 0; i < list.length; i++) {
                 var displayable = list[i];
                 if (displayable.__dirty && !displayable.invisible) {
@@ -86,7 +84,7 @@ define(function (require) {
             }
 
             if (this._firstPaint) {
-                // Detached from document at first time 
+                // Detached from document at first time
                 // to avoid page refreshing too many times
 
                 // FIXME 如果每次都先 removeChild 可能会导致一些填充和描边的效果改变
