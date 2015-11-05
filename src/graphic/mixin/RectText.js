@@ -12,6 +12,16 @@ define(function (require) {
 
     var RectText = function () {};
 
+    function parsePercent(value, maxValue) {
+        if (typeof value === 'string') {
+            if (value.lastIndexOf('%') >= 0) {
+                return parseFloat(value) / 100 * maxValue;
+            }
+            return parseFloat(value);
+        }
+        return value;
+    }
+
     function setTransform(ctx, m) {
         ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
     }
@@ -57,8 +67,9 @@ define(function (require) {
 
             // Text position represented by coord
             if (textPosition instanceof Array) {
-                x = rect.x + textPosition[0];
-                y = rect.y + textPosition[1];
+                // Percent
+                x = rect.x + parsePercent(textPosition[0], rect.width);
+                y = rect.y + parsePercent(textPosition[1], rect.height);
 
                 ctx.textAlign = align;
                 ctx.textBaseline = baseline;
