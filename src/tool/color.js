@@ -95,14 +95,14 @@ define(function(require) {
     }
 
     function parseCssInt(str) {  // int or percentage.
-        if (str.charAt(str.length - 1) === '%') {
+        if (str.length && str.charAt(str.length - 1) === '%') {
             return clampCssByte(parseFloat(str) / 100 * 255);
         }
         return clampCssByte(parseInt(str, 10));
     }
 
     function parseCssFloat(str) {  // float or percentage.
-        if (str.charAt(str.length - 1) === '%') {
+        if (str.length && str.charAt(str.length - 1) === '%') {
             return clampCssFloat(parseFloat(str) / 100);
         }
         return clampCssFloat(parseFloat(str));
