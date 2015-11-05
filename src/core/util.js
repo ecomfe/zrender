@@ -85,7 +85,7 @@ define(function(require) {
                 else if (overwrite || !(key in target)) {
                     // 否则只处理overwrite为true，或者在目标对象中没有此属性的情况
                     // NOTE，在 target[key] 不存在的时候也是直接覆盖
-                    target[key] = clone(source[key]);
+                    target[key] = clone(source[key], true);
                 }
             }
         }
