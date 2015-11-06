@@ -74,6 +74,10 @@ define(function (require) {
 
     function setColorAndOpacity(el, color, opacity) {
         var colorArr = colorTool.parse(color);
+        opacity = +opacity;
+        if (isNaN(opacity)) {
+            opacity = 1;
+        }
         if (colorArr) {
             el.color = rgb2Str(colorArr[0], colorArr[1], colorArr[2]);
             el.opacity = opacity * colorArr[3];
