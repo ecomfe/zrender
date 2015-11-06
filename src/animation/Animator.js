@@ -19,14 +19,33 @@ define(function (require) {
         target[key] = value;
     }
 
+    /**
+     * @param  {number} p0
+     * @param  {number} p1
+     * @param  {number} percent
+     * @return {number}
+     */
     function interpolateNumber(p0, p1, percent) {
         return (p1 - p0) * percent + p0;
     }
 
+    /**
+     * @param  {string} p0
+     * @param  {string} p1
+     * @param  {number} percent
+     * @return {string}
+     */
     function interpolateString(p0, p1, percent) {
         return percent > 0.5 ? p1 : p0;
     }
 
+    /**
+     * @param  {Array} p0
+     * @param  {Array} p1
+     * @param  {number} percent
+     * @param  {Array} out
+     * @param  {number} arrDim
+     */
     function interpolateArray(p0, p1, percent, out, arrDim) {
         var len = p0.length;
         if (arrDim == 1) {
@@ -44,6 +63,40 @@ define(function (require) {
                 }
             }
         }
+    }
+
+    /**
+     * @param  {Array} arr0
+     * @param  {Array} arr1
+     * @param  {number} arrDim
+     * @return {boolean}
+     */
+    function isArraySame(arr0, arr1, arrDim) {
+        if (arr0 === arr1) {
+            return true;
+        }
+        var len = arr0.length;
+        if (len !== arr1.length) {
+            return false;
+        }
+        if (arrDim == 1) {
+            for (var i = 0; i < len; i++) {
+                if (arr0[0] !== arr1[1]) {
+                    return false;
+                }
+            }
+        }
+        else {
+            var len2 = arr0[0].length;
+            for (var i = 0; i < len; i++) {
+                for (var j = 0; j < len2; j++) {
+                    if (arr0[i][j] !== arr1[i][j]) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     function catmullRomInterpolateArray(
@@ -101,6 +154,203 @@ define(function (require) {
         rgba[2] = Math.floor(rgba[2]);
 
         return 'rgba(' + rgba.join(',') + ')';
+    }
+
+    function createTrackClip (animator, easing, oneTrackDone, keyframes, propName) {
+        var getter = animator._getter;
+        var setter = animator._setter;
+        var useSpline = easing === 'spline';
+
+        var trackLen = keyframes.length;
+        if (!trackLen) {
+            return;
+        }
+        // Guess data type
+        var firstVal = keyframes[0].value;
+        var isValueArray = isArrayLike(firstVal);
+        var isValueColor = false;
+        var isValueString = false;
+
+        // For vertices morphing
+        var arrDim = (
+                isValueArray
+                && isArrayLike(firstVal[0])
+            )
+            ? 2 : 1;
+        var trackMaxTime;
+        // Sort keyframe as ascending
+        keyframes.sort(function(a, b) {
+            return a.time - b.time;
+        });
+
+        trackMaxTime = keyframes[trackLen - 1].time;
+        // Percents of each keyframe
+        var kfPercents = [];
+        // Value of each keyframe
+        var kfValues = [];
+        var prevValue = keyframes[0].value;
+        var isAllValueEqual = true;
+        for (var i = 0; i < trackLen; i++) {
+            kfPercents.push(keyframes[i].time / trackMaxTime);
+            // Assume value is a color when it is a string
+            var value = keyframes[i].value;
+
+            // Check if value is equal, deep check if value is array
+            if ((isValueArray && !isArraySame(value, prevValue, arrDim))
+                || (!isValueArray && value !== prevValue)) {
+                isAllValueEqual = false;
+            }
+            prevValue = value;
+
+            // Try converting a string to a color array
+            if (typeof value == 'string') {
+                var colorArray = color.parse(value);
+                if (colorArray) {
+                    value = colorArray;
+                    isValueColor = true;
+                }
+                else {
+                    isValueString = true;
+                }
+            }
+            kfValues.push(value);
+        }
+        if (isAllValueEqual) {
+            return;
+        }
+
+        // Cache the key of last frame to speed up when
+        // animation playback is sequency
+        var lastFrame = 0;
+        var lastFramePercent = 0;
+        var start;
+        var w;
+        var p0;
+        var p1;
+        var p2;
+        var p3;
+
+        if (isValueColor) {
+            var rgba = [0, 0, 0, 0];
+        }
+
+        var onframe = function (target, percent) {
+            // Find the range keyframes
+            // kf1-----kf2---------current--------kf3
+            // find kf2 and kf3 and do interpolation
+            var frame;
+            if (percent < lastFramePercent) {
+                // Start from next key
+                start = Math.min(lastFrame + 1, trackLen - 1);
+                for (frame = start; frame >= 0; frame--) {
+                    if (kfPercents[frame] <= percent) {
+                        break;
+                    }
+                }
+                frame = Math.min(frame, trackLen - 2);
+            }
+            else {
+                for (frame = lastFrame; frame < trackLen; frame++) {
+                    if (kfPercents[frame] > percent) {
+                        break;
+                    }
+                }
+                frame = Math.min(frame - 1, trackLen - 2);
+            }
+            lastFrame = frame;
+            lastFramePercent = percent;
+
+            var range = (kfPercents[frame + 1] - kfPercents[frame]);
+            if (range === 0) {
+                return;
+            }
+            else {
+                w = (percent - kfPercents[frame]) / range;
+            }
+            if (useSpline) {
+                p1 = kfValues[frame];
+                p0 = kfValues[frame === 0 ? frame : frame - 1];
+                p2 = kfValues[frame > trackLen - 2 ? trackLen - 1 : frame + 1];
+                p3 = kfValues[frame > trackLen - 3 ? trackLen - 1 : frame + 2];
+                if (isValueArray) {
+                    catmullRomInterpolateArray(
+                        p0, p1, p2, p3, w, w * w, w * w * w,
+                        getter(target, propName),
+                        arrDim
+                    );
+                }
+                else {
+                    var value;
+                    if (isValueColor) {
+                        value = catmullRomInterpolateArray(
+                            p0, p1, p2, p3, w, w * w, w * w * w,
+                            rgba, 1
+                        );
+                        value = rgba2String(rgba);
+                    }
+                    else if (isValueString) {
+                        // String is step(0.5)
+                        return interpolateString(p1, p2, w);
+                    }
+                    else {
+                        value = catmullRomInterpolate(
+                            p0, p1, p2, p3, w, w * w, w * w * w
+                        );
+                    }
+                    setter(
+                        target,
+                        propName,
+                        value
+                    );
+                }
+            }
+            else {
+                if (isValueArray) {
+                    interpolateArray(
+                        kfValues[frame], kfValues[frame + 1], w,
+                        getter(target, propName),
+                        arrDim
+                    );
+                }
+                else {
+                    var value;
+                    if (isValueColor) {
+                        interpolateArray(
+                            kfValues[frame], kfValues[frame + 1], w,
+                            rgba, 1
+                        );
+                        value = rgba2String(rgba);
+                    }
+                    else if (isValueString) {
+                        // String is step(0.5)
+                        return interpolateString(kfValues[frame], kfValues[frame + 1], w);
+                    }
+                    else {
+                        value = interpolateNumber(kfValues[frame], kfValues[frame + 1], w);
+                    }
+                    setter(
+                        target,
+                        propName,
+                        value
+                    );
+                }
+            }
+        };
+
+        var clip = new Clip({
+            target: animator._target,
+            life: trackMaxTime,
+            loop: animator._loop,
+            delay: animator._delay,
+            onframe: onframe,
+            ondestroy: oneTrackDone
+        });
+
+        if (easing && easing !== 'spline') {
+            clip.easing = easing;
+        }
+
+        return clip;
     }
 
     /**
@@ -198,9 +448,6 @@ define(function (require) {
         start: function (easing) {
 
             var self = this;
-            var setter = this._setter;
-            var getter = this._getter;
-            var useSpline = easing === 'spline';
             var clipCount = 0;
 
             var oneTrackDone = function() {
@@ -210,200 +457,12 @@ define(function (require) {
                 }
             };
 
-            var createTrackClip = function (keyframes, propName) {
-                var trackLen = keyframes.length;
-                if (!trackLen) {
-                    return;
-                }
-                // Guess data type
-                var firstVal = keyframes[0].value;
-                var isValueArray = isArrayLike(firstVal);
-                var isValueColor = false;
-                var isValueString = false;
-
-                // For vertices morphing
-                var arrDim = (
-                        isValueArray
-                        && isArrayLike(firstVal[0])
-                    )
-                    ? 2 : 1;
-                var trackMaxTime;
-                // Sort keyframe as ascending
-                keyframes.sort(function(a, b) {
-                    return a.time - b.time;
-                });
-
-                trackMaxTime = keyframes[trackLen - 1].time;
-                // Percents of each keyframe
-                var kfPercents = [];
-                // Value of each keyframe
-                var kfValues = [];
-                var prevValue = keyframes[0].value;
-                var isAllValueEqual = true;
-                for (var i = 0; i < trackLen; i++) {
-                    kfPercents.push(keyframes[i].time / trackMaxTime);
-                    // Assume value is a color when it is a string
-                    var value = keyframes[i].value;
-
-                    // Check if value is equal
-                    if (value !== prevValue) {
-                        isAllValueEqual = false;
-                    }
-                    prevValue = value;
-
-                    // Try converting a string to a color array
-                    if (typeof(value) == 'string') {
-                        var colorArray = color.parse(value);
-                        if (colorArray) {
-                            value = colorArray;
-                            isValueColor = true;
-                        }
-                        else {
-                            isValueString = true;
-                        }
-                    }
-                    kfValues.push(value);
-                }
-                if (isAllValueEqual) {
-                    return;
-                }
-
-                // Cache the key of last frame to speed up when
-                // animation playback is sequency
-                var cacheKey = 0;
-                var cachePercent = 0;
-                var start;
-                var w;
-                var p0;
-                var p1;
-                var p2;
-                var p3;
-
-                if (isValueColor) {
-                    var rgba = [ 0, 0, 0, 0 ];
-                }
-
-                var onframe = function (target, percent) {
-                    // Find the range keyframes
-                    // kf1-----kf2---------current--------kf3
-                    // find kf2 and kf3 and do interpolation
-                    if (percent < cachePercent) {
-                        // Start from next key
-                        start = Math.min(cacheKey + 1, trackLen - 1);
-                        for (var i = start; i >= 0; i--) {
-                            if (kfPercents[i] <= percent) {
-                                break;
-                            }
-                        }
-                        i = Math.min(i, trackLen - 2);
-                    }
-                    else {
-                        for (var i = cacheKey; i < trackLen; i++) {
-                            if (kfPercents[i] > percent) {
-                                break;
-                            }
-                        }
-                        i = Math.min(i - 1, trackLen - 2);
-                    }
-                    cacheKey = i;
-                    cachePercent = percent;
-
-                    var range = (kfPercents[i + 1] - kfPercents[i]);
-                    if (range === 0) {
-                        return;
-                    }
-                    else {
-                        w = (percent - kfPercents[i]) / range;
-                    }
-                    if (useSpline) {
-                        p1 = kfValues[i];
-                        p0 = kfValues[i === 0 ? i : i - 1];
-                        p2 = kfValues[i > trackLen - 2 ? trackLen - 1 : i + 1];
-                        p3 = kfValues[i > trackLen - 3 ? trackLen - 1 : i + 2];
-                        if (isValueArray) {
-                            catmullRomInterpolateArray(
-                                p0, p1, p2, p3, w, w * w, w * w * w,
-                                getter(target, propName),
-                                arrDim
-                            );
-                        }
-                        else {
-                            var value;
-                            if (isValueColor) {
-                                value = catmullRomInterpolateArray(
-                                    p0, p1, p2, p3, w, w * w, w * w * w,
-                                    rgba, 1
-                                );
-                                value = rgba2String(rgba);
-                            }
-                            else if (isValueString) {
-                                // String is step(0.5)
-                                return interpolateString(p1, p2, w);
-                            }
-                            else {
-                                value = catmullRomInterpolate(
-                                    p0, p1, p2, p3, w, w * w, w * w * w
-                                );
-                            }
-                            setter(
-                                target,
-                                propName,
-                                value
-                            );
-                        }
-                    }
-                    else {
-                        if (isValueArray) {
-                            interpolateArray(
-                                kfValues[i], kfValues[i + 1], w,
-                                getter(target, propName),
-                                arrDim
-                            );
-                        }
-                        else {
-                            var value;
-                            if (isValueColor) {
-                                interpolateArray(
-                                    kfValues[i], kfValues[i + 1], w,
-                                    rgba, 1
-                                );
-                                value = rgba2String(rgba);
-                            }
-                            else if (isValueString) {
-                                // String is step(0.5)
-                                return interpolateString(kfValues[i], kfValues[i + 1], w);
-                            }
-                            else {
-                                value = interpolateNumber(kfValues[i], kfValues[i + 1], w);
-                            }
-                            setter(
-                                target,
-                                propName,
-                                value
-                            );
-                        }
-                    }
-                };
-
-                var clip = new Clip({
-                    target: self._target,
-                    life: trackMaxTime,
-                    loop: self._loop,
-                    delay: self._delay,
-                    onframe: onframe,
-                    ondestroy: oneTrackDone
-                });
-
-                if (easing && easing !== 'spline') {
-                    clip.easing = easing;
-                }
-
-                return clip;
-            };
-
             var lastClip;
             for (var propName in this._tracks) {
-                var clip = createTrackClip(this._tracks[propName], propName);
+                var clip = createTrackClip(
+                    this, easing, oneTrackDone,
+                    this._tracks[propName], propName
+                );
                 if (clip) {
                     this._clipList.push(clip);
                     clipCount++;
