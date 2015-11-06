@@ -101,11 +101,14 @@ define(function (require) {
                 var shift = 0;
                 // scale factor for offset
                 var expansion = 1;
+                var rect = zrEl.getBoundingRect();
+                var rectWidth = rect.width;
+                var rectHeight = rect.height;
                 if (fill.type === 'linear') {
                     gradientType = 'gradient';
                     var transform = zrEl.transform;
-                    var p0 = [fill.x, fill.y];
-                    var p1 = [fill.x2, fill.y2];
+                    var p0 = [fill.x * rectWidth, fill.y * rectHeight];
+                    var p1 = [fill.x2 * rectWidth, fill.y2 * rectHeight];
                     if (transform) {
                         applyTransform(p0, p0, transform);
                         applyTransform(p1, p1, transform);
@@ -113,7 +116,6 @@ define(function (require) {
                     var dx = p1[0] - p0[0];
                     var dy = p1[1] - p0[1];
                     angle = Math.atan2(dx, dy) * 180 / Math.PI;
-
                     // The angle should be a non-negative number.
                     if (angle < 0) {
                         angle += 360;
@@ -127,12 +129,11 @@ define(function (require) {
                 }
                 else {
                     gradientType = 'gradientradial';
-                    var p0 = [fill.x, fill.y];
+                    var p0 = [fill.x * rectWidth, fill.y * rectHeight];
                     var transform = zrEl.transform;
                     var scale = zrEl.scale;
-                    var rect = zrEl.getBoundingRect();
-                    var width = rect.width;
-                    var height = rect.height;
+                    var width = rectWidth;
+                    var height = rectHeight;
                     focus = [
                         // Percent in bounding rect
                         (p0[0] - rect.x) / width,
@@ -142,7 +143,7 @@ define(function (require) {
                         applyTransform(p0, p0, transform);
                     }
 
-                    width  /= scale[0] * Z;
+                    width /= scale[0] * Z;
                     height /= scale[1] * Z;
                     var dimension = mathMax(width, height);
                     shift = 2 * 0 / dimension;
@@ -395,7 +396,8 @@ define(function (require) {
         updateFillAndStroke(vmlEl, 'fill', style, this);
         updateFillAndStroke(vmlEl, 'stroke', style, this);
 
-        var needTransform = this.transform != null;
+        var m = this.transform;
+        var needTransform = m != null;
         var strokeEl = vmlEl.getElementsByTagName('stroke')[0];
         if (strokeEl) {
             var lineWidth = style.lineWidth;
@@ -404,7 +406,6 @@ define(function (require) {
             // transformation. So its square root can be used as a scale factor
             // for width.
             if (needTransform) {
-                var m = this.transform;
                 var det = m[0] * m[3] - m[1] * m[2];
                 lineWidth *= sqrt(abs(det));
             }
