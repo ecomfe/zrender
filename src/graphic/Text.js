@@ -45,7 +45,7 @@ define(function (require) {
                 textFill && (ctx.fillStyle = textFill);
                 textStroke && (ctx.strokeStyle = textStroke);
 
-                ctx.font = style.textFont;
+                ctx.font = style.textFont || style.font;
                 ctx.textAlign = style.textAlign;
                 ctx.textBaseline = style.textBaseline;
 

@@ -711,7 +711,7 @@ define(function (require) {
                 style: style.fontStyle || DEFAULT_STYLE_NORMAL,
                 variant: style.fontVariant || DEFAULT_STYLE_NORMAL,
                 weight: style.fontWeight || DEFAULT_STYLE_NORMAL,
-                size: style.fontSize || 12,
+                size: parseFloat(style.fontSize || 12) | 0,
                 family: fontFamily || 'Microsoft YaHei'
             };
 
@@ -758,10 +758,9 @@ define(function (require) {
         var y;
         var align = style.textAlign;
         var fontStyle = getFontStyle(style.textFont);
-        var font = encodeHtmlAttribute(
-            fontStyle.style + ' ' + fontStyle.variant + ' ' + fontStyle.weight + ' '
-            + fontStyle.size + 'px "' + fontStyle.family + '"'
-        );
+        // FIXME encodeHtmlAttribute ?
+        var font = fontStyle.style + ' ' + fontStyle.variant + ' ' + fontStyle.weight + ' '
+            + fontStyle.size + 'px "' + fontStyle.family + '"';
         var baseline = style.textBaseline;
 
         textRect = textRect || textContain.getBoundingRect(text, font, align, baseline);
@@ -789,8 +788,7 @@ define(function (require) {
             x = rect.x;
             y = rect.y;
         }
-        // fontStyle.size may has `px`
-        var fontSize = parseFloat(fontStyle.size);
+        var fontSize = fontStyle.size;
         // 1.75 is an arbitrary number, as there is no info about the text baseline
         switch (baseline) {
             case 'hanging':

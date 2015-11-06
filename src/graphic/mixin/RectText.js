@@ -49,7 +49,7 @@ define(function (require) {
             var textPosition = style.textPosition;
             var distance = style.textDistance;
             var align = style.textAlign;
-            var font = style.textFont;
+            var font = style.textFont || style.font;
             var baseline = style.textBaseline;
 
             textRect = textRect || textContain.getBoundingRect(text, font, align, baseline);
