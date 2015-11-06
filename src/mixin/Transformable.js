@@ -82,11 +82,13 @@ define(function (require) {
             var parentHasTransform = parent && parent.transform;
             var needLocalTransform = this.needLocalTransform();
 
+            var m = this.transform;
             if (!(needLocalTransform || parentHasTransform)) {
+                m && mIdentity(m);
                 return;
             }
 
-            var m = this.transform || matrix.create();
+            m = m || matrix.create();
 
             if (needLocalTransform) {
                 this.getLocalTransform(m);
@@ -155,35 +157,35 @@ define(function (require) {
          * @param  {Array.<number>|Float32Array} target
          * @method
          */
-        lookAt: (function () {
-            var v = vector.create();
-            return function(target) {
-                if (!this.transform) {
-                    this.transform = matrix.create();
-                }
-                var m = this.transform;
-                vector.sub(v, target, this.position);
-                if (isAroundZero(v[0]) && isAroundZero(v[1])) {
-                    return;
-                }
-                vector.normalize(v, v);
-                var scale = this.scale;
-                // Y Axis
-                // TODO Scale origin ?
-                m[2] = v[0] * scale[1];
-                m[3] = v[1] * scale[1];
-                // X Axis
-                m[0] = v[1] * scale[0];
-                m[1] = -v[0] * scale[0];
-                // Position
-                m[4] = this.position[0];
-                m[5] = this.position[1];
+        // lookAt: (function () {
+        //     var v = vector.create();
+        //     return function(target) {
+        //         if (!this.transform) {
+        //             this.transform = matrix.create();
+        //         }
+        //         var m = this.transform;
+        //         vector.sub(v, target, this.position);
+        //         if (isAroundZero(v[0]) && isAroundZero(v[1])) {
+        //             return;
+        //         }
+        //         vector.normalize(v, v);
+        //         var scale = this.scale;
+        //         // Y Axis
+        //         // TODO Scale origin ?
+        //         m[2] = v[0] * scale[1];
+        //         m[3] = v[1] * scale[1];
+        //         // X Axis
+        //         m[0] = v[1] * scale[0];
+        //         m[1] = -v[0] * scale[0];
+        //         // Position
+        //         m[4] = this.position[0];
+        //         m[5] = this.position[1];
 
-                // PENDING
-                this.decomposeTransform();
-                this.updateTransform();
-            };
-        })(),
+        //         // PENDING
+        //         this.decomposeTransform();
+        //         this.updateTransform();
+        //     };
+        // })(),
         /**
          * 分解`transform`矩阵到`position`, `rotation`, `scale`
          */
