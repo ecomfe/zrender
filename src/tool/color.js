@@ -464,6 +464,9 @@ define(function(require) {
      * @return {string} Result color.
      */
     function stringify(arrColor, type) {
+        if (type === 'rgb' || type === 'hsv' || type === 'hsl') {
+            arrColor = arrColor.slice(0, 3);
+        }
         return type + '(' + arrColor.join(',') + ')';
     }
 
@@ -474,7 +477,8 @@ define(function(require) {
         mapToColor: mapToColor,
         mapIntervalToColor: mapIntervalToColor,
         modifyHSL: modifyHSL,
-        modifyAlpha: modifyAlpha
+        modifyAlpha: modifyAlpha,
+        stringify: stringify
     };
 });
 

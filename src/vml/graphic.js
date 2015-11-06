@@ -871,7 +871,7 @@ define(function (require) {
             m[1].toFixed(3) + comma + m[3].toFixed(3) + ',0,0';
 
             // Text position
-            skewEl.offset = round(coords[0]) + ',' + round(coords[1]);
+            skewEl.offset = (round(coords[0]) || 0) + ',' + (round(coords[1]) || 0);
             // Left top point as origin
             skewEl.origin = '0 0';
 
@@ -893,11 +893,11 @@ define(function (require) {
         catch (e) {}
 
         updateFillAndStroke(textVmlEl, 'fill', {
-            fill: style.textFill || style.fill,
+            fill: fromTextEl ? style.fill : style.textFill,
             opacity: style.opacity
         }, this);
         updateFillAndStroke(textVmlEl, 'stroke', {
-            stroke: style.textStroke || style.stroke,
+            stroke: fromTextEl ? style.stroke : style.textStroke,
             opacity: style.opacity,
             lineDash: style.lineDash
         }, this);
