@@ -64,14 +64,14 @@
         return !(clipPaths && prevClipPaths
                     && clipPaths.length === 1 && prevClipPaths.length === 1
                     && clipPaths[0] === prevClipPaths[0])
-                || (!clipPaths && !prevClipPaths)
+                || (!clipPaths && !prevClipPaths);
     }
 
     function doClip(clipPaths, ctx) {
         for (var i = 0; i < clipPaths.length; i++) {
             var clipPath = clipPaths[i];
             var m;
-            if (clipPath.needTransform) {
+            if (clipPath.transform) {
                 m = clipPath.transform;
                 ctx.transform(
                     m[0], m[1],
@@ -84,7 +84,7 @@
             clipPath.buildPath(path, clipPath.shape);
             ctx.clip();
             // Transform back
-            if (clipPath.needTransform) {
+            if (clipPath.transform) {
                 m = clipPath.invTransform;
                 ctx.transform(
                     m[0], m[1],

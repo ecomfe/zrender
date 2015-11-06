@@ -57,13 +57,6 @@ define(function (require) {
          * @default null
          */
         this.origin = this.origin || null;
-
-        /**
-         * 是否有坐标变换
-         * @type {boolean}
-         * @readOnly
-         */
-        this.needTransform = false;
     };
 
     Transformable.prototype = {
@@ -81,17 +74,15 @@ define(function (require) {
         },
 
         /**
-         * 判断是否需要有坐标变换，更新needTransform属性。
+         * 判断是否需要有坐标变换
          * 如果有坐标变换, 则从position, rotation, scale以及父节点的transform计算出自身的transform矩阵
          */
         updateTransform: function () {
-
             var parent = this.parent;
-            var parentHasTransform = parent && parent.needTransform;
+            var parentHasTransform = parent && parent.transform;
             var needLocalTransform = this.needLocalTransform();
-            this.needTransform = needLocalTransform || parentHasTransform;
 
-            if (!this.needTransform) {
+            if (!(needLocalTransform || parentHasTransform)) {
                 return;
             }
 
@@ -154,8 +145,8 @@ define(function (require) {
          * @param {Context2D} ctx
          */
         setTransform: function (ctx) {
-            if (this.needTransform) {
-                var m = this.transform;
+            var m = this.transform;
+            if (m) {
                 ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
             }
         },
@@ -234,7 +225,7 @@ define(function (require) {
         transformCoordToLocal: function (x, y) {
             var v2 = [x, y];
             var invTransform = this.invTransform;
-            if (this.needTransform && invTransform) {
+            if (invTransform) {
                 vector.applyTransform(v2, v2, invTransform);
             }
             return v2;
@@ -250,7 +241,7 @@ define(function (require) {
         transformCoordToGlobal: function (x, y) {
             var v2 = [x, y];
             var transform = this.transform;
-            if (this.needTransform && transform) {
+            if (transform) {
                 vector.applyTransform(v2, v2, transform);
             }
             return v2;

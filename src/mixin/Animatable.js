@@ -85,7 +85,7 @@ define(function(require) {
                 // FIXME Animator will not be removed if use `Animator#stop` to stop animation
                 animators.splice(util.indexOf(animators, animator), 1);
             });
-            
+
             animators.push(animator);
 
             // If animate after added to the zrender
@@ -159,7 +159,7 @@ define(function(require) {
                 time = 500;
             }
             // animateTo(target)
-            else if (! time) {
+            else if (!time) {
                 time = 500;
             }
             // Stop all previous animations
