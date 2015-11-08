@@ -15,7 +15,7 @@ define(function(require) {
     var Storage = require('./Storage');
     var Animation = require('./animation/Animation');
 
-    var useVML = ! env.canvasSupported;
+    var useVML = !env.canvasSupported;
 
     var Painter;
     var SVGPainter;
@@ -25,7 +25,7 @@ define(function(require) {
     }
     else {
         Painter = require('./Painter');
-        SVGPainter = require('./svg/Painter');
+        // SVGPainter = require('./svg/Painter');
     }
 
     var _instances = {};    // ZRender实例map索引
@@ -125,8 +125,8 @@ define(function(require) {
 
         var storage = new Storage();
         var painter = opts.renderer === 'svg'
-            ? new SVGPainter(dom, storage)
-            : new Painter(dom, storage);
+            ? new SVGPainter(dom, storage, opts)
+            : new Painter(dom, storage, opts);
 
         this.storage = storage;
         this.painter = painter;
@@ -165,7 +165,7 @@ define(function(require) {
             oldAddToMap.call(storage, el);
 
             el.addSelfToZr(self);
-        }
+        };
     };
 
     ZRender.prototype = {
@@ -216,8 +216,10 @@ define(function(require) {
          * 视图更新
          */
         refreshImmediately: function () {
-            this.painter.refresh();
+            // Clear needsRefresh ahead to avoid something wrong happens in refresh
+            // Or it will cause zrender refreshes again and again.
             this._needsRefresh = false;
+            this.painter.refresh();
         },
 
         /**

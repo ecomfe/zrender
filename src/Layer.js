@@ -13,7 +13,7 @@ define(function (require) {
 
     /**
      * 创建dom
-     * 
+     *
      * @inner
      * @param {string} id dom id 待用
      * @param {string} type dom type，such as canvas, div etc.
@@ -47,12 +47,17 @@ define(function (require) {
      * @param {module:zrender/Painter} painter
      */
     var Layer = function(id, painter) {
-
+        var dom;
+        if (typeof id === 'string') {
+            dom = createDom(id, 'canvas', painter);
+        }
+        else if (util.isDom(id)) {
+            dom = id;
+            id = dom.id;
+        }
         this.id = id;
+        this.dom = dom;
 
-        this.dom = createDom(id, 'canvas', painter);
-
-        var dom = this.dom;
         var domStyle = dom.style;
         dom.onselectstart = returnFalse; // 避免页面选中的尴尬
         domStyle['-webkit-user-select'] = 'none';
@@ -100,7 +105,7 @@ define(function (require) {
             this.ctx = this.dom.getContext('2d');
 
             var dpr = config.devicePixelRatio;
-            if (dpr != 1) { 
+            if (dpr != 1) {
                 this.ctx.scale(dpr, dpr);
             }
         },
@@ -111,7 +116,7 @@ define(function (require) {
 
             var dpr = config.devicePixelRatio;
 
-            if (dpr != 1) { 
+            if (dpr != 1) {
                 this.ctxBack.scale(dpr, dpr);
             }
         },
@@ -133,7 +138,7 @@ define(function (require) {
             dom.width = width * dpr;
             dom.height = height * dpr;
 
-            if (dpr != 1) { 
+            if (dpr != 1) {
                 this.ctx.scale(dpr, dpr);
             }
 
@@ -141,7 +146,7 @@ define(function (require) {
                 domBack.width = width * dpr;
                 domBack.height = height * dpr;
 
-                if (dpr != 1) { 
+                if (dpr != 1) {
                     this.ctxBack.scale(dpr, dpr);
                 }
             }
@@ -159,13 +164,13 @@ define(function (require) {
             var haveClearColor = this.clearColor;
             var haveMotionBLur = this.motionBlur;
             var lastFrameAlpha = this.lastFrameAlpha;
-            
+
             var dpr = config.devicePixelRatio;
 
             if (haveMotionBLur) {
                 if (!this.domBack) {
                     this.createBackBuffer();
-                } 
+                }
 
                 this.ctxBack.globalCompositeOperation = 'copy';
                 this.ctxBack.drawImage(
@@ -191,7 +196,7 @@ define(function (require) {
                 ctx.restore();
             }
         }
-    }
+    };
 
     return Layer;
 });

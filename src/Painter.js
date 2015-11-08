@@ -100,8 +100,20 @@
      * @constructor
      * @param {HTMLElement} root 绘图容器
      * @param {module:zrender/Storage} storage
+     * @param {Ojbect} opts
      */
     var Painter = function (root, storage) {
+        var singleCanvas = root.nodeName.toUpperCase() === 'CANVAS';
+        /**
+         * @type {boolean}
+         * @private
+         */
+        this._singleCanvas = singleCanvas;
+        /**
+         * @type {Object}
+         * @private
+         */
+        this._opts = {};
         /**
          * 绘图容器
          * @type {HTMLElement}
@@ -120,23 +132,43 @@
         this.storage = storage;
 
         root.innerHTML = '';
-        this._width = this._getWidth(); // 宽，缓存记录
-        this._height = this._getHeight(); // 高，缓存记录
 
-        var domRoot = document.createElement('div');
-        this._domRoot = domRoot;
-        var domRootStyle = domRoot.style;
+        var width = this._getWidth();
+        var height = this._getHeight();
+        this._width = width;
+        this._height = height;
 
-        // domRoot.onselectstart = returnFalse; // 避免页面选中的尴尬
-        domRootStyle.position = 'relative';
-        domRootStyle.overflow = 'hidden';
-        domRootStyle.width = this._width + 'px';
-        domRootStyle.height = this._height + 'px';
-        root.appendChild(domRoot);
+        if (!singleCanvas) {
+            var domRoot = document.createElement('div');
+            this._domRoot = domRoot;
+            var domRootStyle = domRoot.style;
 
-        this._layers = {};
+            // domRoot.onselectstart = returnFalse; // 避免页面选中的尴尬
+            domRootStyle.position = 'relative';
+            domRootStyle.overflow = 'hidden';
+            domRootStyle.width = this._width + 'px';
+            domRootStyle.height = this._height + 'px';
+            root.appendChild(domRoot);
 
-        this._zlevelList = [];
+            /**
+             * @type {Object.<key, module:zrender/Layer>}
+             * @private
+             */
+            this._layers = {};
+            /**
+             * @type {Array.<number>}
+             * @private
+             */
+            this._zlevelList = [];
+        }
+        else {
+            // Create layer if only one given canvas
+            var mainLayer = new Layer(root, this);
+            mainLayer.initContext();
+            mainLayer.resize(width, height);
+            this._layers = { 0: mainLayer };
+            this._zlevelList = [0];
+        }
 
         this._layerConfig = {};
 
@@ -159,7 +191,7 @@
             for (var i = 0; i < this._zlevelList.length; i++) {
                 var z = this._zlevelList[i];
                 var layer = this._layers[z];
-                if (! layer.isBuildin && layer.refresh) {
+                if (!layer.isBuildin && layer.refresh) {
                     layer.refresh();
                 }
             }
@@ -251,10 +283,14 @@
          * @return {module:zrender/Layer}
          */
         getLayer: function (zlevel) {
+            if (this._singleCanvas) {
+                return this._layers[0];
+            }
+
             var layer = this._layers[zlevel];
             if (!layer) {
                 // Create a new layer
-                layer = new Layer(zlevel, this);
+                layer = new Layer('zr_' + zlevel, this);
                 layer.isBuildin = true;
 
                 if (this._layerConfig[zlevel]) {
@@ -528,6 +564,10 @@
          * @return {string} 图片的Base64 url
          */
         toDataURL: function (type, backgroundColor, args) {
+            if (this._singleCanvas) {
+                return this._layers[0].toDataURL(type, args);
+            }
+
             var imageLayer = new Layer('image', this);
             this._domRoot.appendChild(imageLayer.dom);
             imageLayer.initContext();
