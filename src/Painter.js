@@ -165,6 +165,7 @@
             // Create layer if only one given canvas
             var mainLayer = new Layer(root, this);
             mainLayer.initContext();
+            // FIXME Use canvas width and height
             mainLayer.resize(width, height);
             this._layers = { 0: mainLayer };
             this._zlevelList = [0];
@@ -523,7 +524,6 @@
                 domRoot.style.height = height + 'px';
 
                 for (var id in this._layers) {
-
                     this._layers[id].resize(width, height);
                 }
 
@@ -614,18 +614,19 @@
             var root = this.root;
             var stl = document.defaultView.getComputedStyle(root);
 
-            return ((root.clientWidth || parseInt10(stl.width))
-                    - parseInt10(stl.paddingLeft)
-                    - parseInt10(stl.paddingRight)) | 0;
+            // FIXME Better way to get the width and height when element has not been append to the document
+            return ((root.clientWidth || parseInt10(stl.width) || parseInt10(root.style.width))
+                    - (parseInt10(stl.paddingLeft) || 0)
+                    - (parseInt10(stl.paddingRight) || 0)) | 0;
         },
 
         _getHeight: function () {
             var root = this.root;
             var stl = document.defaultView.getComputedStyle(root);
 
-            return ((root.clientHeight || parseInt10(stl.height))
-                    - parseInt10(stl.paddingTop)
-                    - parseInt10(stl.paddingBottom)) | 0;
+            return ((root.clientHeight || parseInt10(stl.height) || parseInt10(root.style.height))
+                    - (parseInt10(stl.paddingTop) || 0)
+                    - (parseInt10(stl.paddingBottom) || 0)) | 0;
         },
 
         _pathToImage: function (
