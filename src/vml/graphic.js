@@ -35,7 +35,8 @@ define(function (require) {
     var Z = 21600;
     var Z2 = Z / 2;
 
-    var ZLEVEL_BASE = 10000;
+    var ZLEVEL_BASE = 100000;
+    var Z_BASE = 1000;
 
     function initRootElStyle(el) {
         el.style.cssText = 'position:absolute;left:0;top:0;width:1px;height:1px;';
@@ -63,9 +64,9 @@ define(function (require) {
         }
     }
 
-    function getZIndex(zlevel, z) {
+    function getZIndex(zlevel, z, z2) {
         // z 的取值范围为 [0, 1000]
-        return (parseFloat(zlevel) || 0) * ZLEVEL_BASE + parseFloat(z) || 0;
+        return (parseFloat(zlevel) || 0) * ZLEVEL_BASE + (parseFloat(z) || 0) * z + z2;
     }
 
     /***************************************************
@@ -425,7 +426,7 @@ define(function (require) {
 
         vmlEl.path = pathDataToString(path.data, this.transform);
 
-        vmlEl.style.zIndex = getZIndex(this.zlevel, this.z);
+        vmlEl.style.zIndex = getZIndex(this.zlevel, this.z, this.z2);
 
         // Append to root
         append(vmlRoot, vmlEl);
@@ -651,7 +652,7 @@ define(function (require) {
 
         imageELStyle.filter = filterStr;
 
-        vmlEl.style.zIndex = getZIndex(this.zlevel, this.z);
+        vmlEl.style.zIndex = getZIndex(this.zlevel, this.z, this.z2);
 
         // Append to root
         append(vmlRoot, vmlEl);
@@ -904,7 +905,7 @@ define(function (require) {
             lineDash: style.lineDash
         }, this);
 
-        textVmlEl.style.zIndex = getZIndex(this.zlevel, this.z);
+        textVmlEl.style.zIndex = getZIndex(this.zlevel, this.z, this.z2);
 
         // Attached to root
         append(vmlRoot, textVmlEl);
