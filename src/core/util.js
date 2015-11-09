@@ -1,6 +1,7 @@
 /**
  */
 define(function(require) {
+    var Gradient = require('../graphic/Gradient');
     // 用于处理merge时无法遍历Date等对象的问题
     var BUILTIN_OBJECT = {
         '[object Function]': 1,
@@ -34,7 +35,7 @@ define(function(require) {
                 }
             }
             else if (
-                !BUILTIN_OBJECT[objToString.call(source)]
+                !isBuildInObject(source)
                 // 是否为 dom 对象
                 && !isDom(source)
             ) {
@@ -338,7 +339,8 @@ define(function(require) {
     }
 
     function isBuildInObject(value) {
-        return !!BUILTIN_OBJECT[objToString.call(value)];
+        return !!BUILTIN_OBJECT[objToString.call(value)]
+            || (value instanceof Gradient);
     }
 
     function isDom(value) {

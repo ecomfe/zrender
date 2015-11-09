@@ -65,10 +65,10 @@ define(function (require) {
 
             if (this.__dirtyPath) {
                 // Update gradient because bounding rect may changed
-                if (hasFill && style.fill instanceof Gradient) {
+                if (hasFill && (style.fill instanceof Gradient)) {
                     style.fill.updateCanvasGradient(this, ctx);
                 }
-                if (hasStroke && style.stroke instanceof Gradient) {
+                if (hasStroke && (style.stroke instanceof Gradient)) {
                     style.stroke.updateCanvasGradient(this, ctx);
                 }
             }
