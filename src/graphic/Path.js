@@ -39,7 +39,7 @@ define(function (require) {
      * @constructor
      * @param {Object} opts
      */
-    var Path = function (opts) {
+    function Path(opts) {
         Displayable.call(this, opts);
 
         /**
@@ -47,7 +47,7 @@ define(function (require) {
          * @readOnly
          */
         this.path = new PathProxy();
-    };
+    }
 
     Path.prototype = {
 
@@ -217,11 +217,7 @@ define(function (require) {
         attrKV: function (key, value) {
             // FIXME
             if (key === 'shape') {
-                this.__dirty = true;
-                this.__dirtyPath = true;
-                this._rect = null;
-                // Extend shape
-                this.shape = zrUtil.extend(this.shape || {}, value);
+                this.setShape(value);
             }
             else {
                 Displayable.prototype.attrKV.call(this, key, value);
@@ -232,7 +228,7 @@ define(function (require) {
          * @param {*} value
          */
         setShape: function (key, value) {
-            var shape = this.shape;
+            var shape = this.shape || (this.shape = {});
             if (zrUtil.isObject(key)) {
                 for (var name in key) {
                     shape[name] = key[name];

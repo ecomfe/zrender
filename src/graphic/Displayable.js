@@ -19,7 +19,7 @@ define(function (require) {
      * @extends module:zrender/Element
      * @extends module:zrender/graphic/mixin/RectText
      */
-    var Displayable = function (opts) {
+    function Displayable(opts) {
 
         opts = opts || {};
 

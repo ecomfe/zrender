@@ -16,7 +16,7 @@ define(function (require) {
     /**
      * @alias module:zrender/vml/Painter
      */
-    var VMLPainter = function (root, storage) {
+    function VMLPainter(root, storage) {
 
         vmlCore.initVML();
 
@@ -60,7 +60,7 @@ define(function (require) {
         };
 
         this._firstPaint = true;
-    };
+    }
 
     VMLPainter.prototype = {
 
@@ -146,13 +146,13 @@ define(function (require) {
                     - parseInt10(stl.paddingTop)
                     - parseInt10(stl.paddingBottom)) | 0;
         }
-    }
+    };
 
     // Not supported methods
     function createMethodNotSupport(method) {
         return function () {
-            zrLog('In IE8.0 VML mode painter not support method "' + method + '"')
-        }
+            zrLog('In IE8.0 VML mode painter not support method "' + method + '"');
+        };
     }
 
     var notSupportedMethods = [
