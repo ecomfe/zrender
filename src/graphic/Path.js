@@ -58,6 +58,8 @@ define(function (require) {
         __dirtyPath: true,
 
         brush: function (ctx) {
+            ctx.save();
+
             var style = this.style;
             var path = this.path;
             var hasStroke = pathHasStroke(style);
@@ -73,7 +75,8 @@ define(function (require) {
                 }
             }
 
-            this.beforeBrush(ctx);
+            this.style.bind(ctx);
+            this.setTransform(ctx);
 
             var lineDash = style.lineDash;
             var lineDashOffset = style.lineDashOffset;
@@ -122,7 +125,7 @@ define(function (require) {
                 this.drawRectText(ctx, this.getBoundingRect());
             }
 
-            this.afterBrush(ctx);
+            ctx.restore();
         },
 
         buildPath: function (ctx, shapeCfg) {},

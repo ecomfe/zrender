@@ -28,8 +28,10 @@ define(function (require) {
         type: 'text',
 
         brush: function (ctx) {
+            ctx.save();
 
-            this.beforeBrush(ctx);
+            this.style.bind(ctx);
+            this.setTransform(ctx);
 
             var style = this.style;
             var x = style.x || 0;
@@ -59,7 +61,7 @@ define(function (require) {
                 }
             }
 
-            this.afterBrush(ctx);
+            ctx.restore();
         },
 
         getBoundingRect: function () {

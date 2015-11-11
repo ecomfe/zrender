@@ -49,7 +49,7 @@
 
             var firstAngle = Math.atan2(points[0][1] - cy, points[0][0] - cx);
             if (firstAngle < 0) {
-                firstAngle = Math.PI - firstAngle;
+                firstAngle += Math.PI * 2;
             }
             var unitAngle = Math.PI * 2 / points.length;
             var circlePoints = points.map(function (pt, idx) {

@@ -123,17 +123,9 @@ define(function (require) {
          */
         cursor: 'pointer',
 
-        beforeBrush: function (ctx) {
-            ctx.save();
+        beforeBrush: function (ctx) {},
 
-            this.style.bind(ctx);
-
-            this.setTransform(ctx);
-        },
-
-        afterBrush: function (ctx) {
-            ctx.restore();
-        },
+        afterBrush: function (ctx) {},
 
         /**
          * 图形绘制方法

@@ -57,7 +57,7 @@ define(function (require) {
             el.onAddToStorage && el.onAddToStorage(vmlRoot);
 
             oldAddToMap.call(storage, el);
-        }
+        };
 
         this._firstPaint = true;
     };
@@ -76,11 +76,13 @@ define(function (require) {
         _paintList: function (list) {
             var vmlRoot = this._vmlRoot;
             for (var i = 0; i < list.length; i++) {
-                var displayable = list[i];
-                if (displayable.__dirty && !displayable.invisible) {
-                    displayable.brush(vmlRoot);
-                    displayable.__dirty = false;
+                var el = list[i];
+                if (el.__dirty && !el.invisible) {
+                    el.beforeBrush && el.beforeBrush();
+                    el.brush(vmlRoot);
+                    el.afterBrush && el.afterBrush();
                 }
+                el.__dirty = false;
             }
 
             if (this._firstPaint) {

@@ -101,7 +101,8 @@ define(function(require) {
         },
 
         /**
-         * @
+         * @param {string|Object} key
+         * @param {*} value
          */
         attr: function (key, value) {
             if (typeof key === 'string') {
