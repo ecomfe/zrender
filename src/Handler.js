@@ -26,7 +26,7 @@ define(function (require) {
 
     var touchHandlerNames = [
         'touchstart', 'touchend', 'touchmove'
-    ]
+    ];
 
     // touch指尖错觉的尝试偏移量配置
     // var MOBILE_TOUCH_OFFSETS = [
@@ -111,6 +111,10 @@ define(function (require) {
             }
 
             this._dispatch(this._hovered, EVENT.MOUSEOUT, event);
+
+            this.trigger(EVENT.GLOBALOUT, {
+                event: event
+            });
         },
 
         /**
