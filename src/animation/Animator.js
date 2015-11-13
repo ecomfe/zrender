@@ -81,7 +81,7 @@ define(function (require) {
         }
         if (arrDim == 1) {
             for (var i = 0; i < len; i++) {
-                if (arr0[0] !== arr1[1]) {
+                if (arr0[i] !== arr1[i]) {
                     return false;
                 }
             }
@@ -196,8 +196,8 @@ define(function (require) {
             var value = keyframes[i].value;
 
             // Check if value is equal, deep check if value is array
-            if ((isValueArray && !isArraySame(value, prevValue, arrDim))
-                || (!isValueArray && value !== prevValue)) {
+            if (!((isValueArray && isArraySame(value, prevValue, arrDim))
+                || (!isValueArray && value === prevValue))) {
                 isAllValueEqual = false;
             }
             prevValue = value;
