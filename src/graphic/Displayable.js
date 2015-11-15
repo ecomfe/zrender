@@ -208,11 +208,6 @@ define(function (require) {
         //         || this.ondrop
         //     );
         // },
-
-        update: function () {
-            this.updateTransform();
-        },
-
         /**
          * Alias for animate('style')
          * @param {boolean} loop

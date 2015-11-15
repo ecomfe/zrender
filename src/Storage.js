@@ -86,7 +86,11 @@ define(function (require) {
                 return;
             }
 
+            el.beforeUpdate();
+
             el.update();
+
+            el.afterUpdate();
 
             var clipPath = el.clipPath;
             if (clipPath) {

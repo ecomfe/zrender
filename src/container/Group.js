@@ -270,11 +270,6 @@ define(function (require) {
                 }
             }
             return rect || tmpRect;
-        },
-
-        update: function () {
-            this.updateTransform();
-            return this;
         }
     };
 

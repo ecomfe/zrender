@@ -65,6 +65,21 @@ define(function(require) {
         clipPath: null,
 
         /**
+         * Hook before update
+         */
+        beforeUpdate: function () {},
+        /**
+         * Hook after update
+         */
+        afterUpdate: function () {},
+        /**
+         * Update each frame
+         */
+        update: function () {
+            this.updateTransform();
+        },
+
+        /**
          * @protected
          */
         attrKV: function (key, value) {
