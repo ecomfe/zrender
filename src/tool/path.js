@@ -3,6 +3,7 @@ define(function (require) {
     var Path = require('../graphic/Path');
     var PathProxy = require('../core/PathProxy');
     var transformPath = require('./transformPath');
+    var matrix = require('../core/matrix');
 
     // command chars
     var cc = [
@@ -328,10 +329,11 @@ define(function (require) {
     // TODO Optimize double memory cost problem
     function createPathOptions(str, opts) {
         var pathProxy = createPathProxyFromString(str);
-
+        var transform;
         opts = opts || {};
         opts.buildPath = function (path) {
             path.setData(pathProxy.data);
+            transform && transformPath(path, transform);
             // Svg and vml renderer don't have context
             var ctx = path.getContext();
             if (ctx) {
@@ -340,10 +342,10 @@ define(function (require) {
         };
 
         opts.applyTransform = function (m) {
-            if (this.__dirty) {
-                this.buildPath(this.path, this.shape);
+            if (!transform) {
+                transform = matrix.create();
             }
-            transformPath(this.path, m);
+            matrix.mul(transform, m, transform);
         };
 
         return opts;

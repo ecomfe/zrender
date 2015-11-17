@@ -228,16 +228,19 @@ define(function (require) {
          * @param {*} value
          */
         setShape: function (key, value) {
-            var shape = this.shape || (this.shape = {});
-            if (zrUtil.isObject(key)) {
-                for (var name in key) {
-                    shape[name] = key[name];
+            var shape = this.shape;
+            // Path from string may not have shape
+            if (shape) {
+                if (zrUtil.isObject(key)) {
+                    for (var name in key) {
+                        shape[name] = key[name];
+                    }
                 }
+                else {
+                    shape[key] = value;
+                }
+                this.dirty(true);
             }
-            else {
-                shape[key] = value;
-            }
-            this.dirty(true);
             return this;
         }
     };

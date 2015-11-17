@@ -145,7 +145,11 @@ define(function(require) {
         });
         this.animation.start();
 
-        this._needsRefresh = false;
+        /**
+         * @type {boolean}
+         * @private
+         */
+        this._needsRefresh;
 
         // 修改 storage.delFromMap, 每次删除元素之前删除动画
         // FIXME 有点ugly
@@ -220,6 +224,10 @@ define(function(require) {
             // Or it will cause zrender refreshes again and again.
             this._needsRefresh = false;
             this.painter.refresh();
+            /**
+             * Avoid trigger zr.refresh in Element#beforeUpdate hook
+             */
+            this._needsRefresh = false;
         },
 
         /**

@@ -102,7 +102,8 @@ define(function (require) {
                 if (clipPaths) {
                     clipPaths = clipPaths.slice();
                     clipPaths.push(clipPath);
-                } else {
+                }
+                else {
                     clipPaths = [clipPath];
                 }
             }
