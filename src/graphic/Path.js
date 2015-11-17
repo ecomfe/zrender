@@ -136,9 +136,10 @@ define(function (require) {
                     // FIXME Must after updateTransform
                     var w = style.lineWidth;
                     // PENDING, Min line width is needed when line is horizontal or vertical
-                    var lineScale = style.strokeNoScale ? 1 : this.getLineScale();
+                    var lineScale = style.strokeNoScale ? this.getLineScale() : 1;
                     w = Math.max(w * lineScale, 5) / lineScale;
                     // Consider line width
+                    // FIXME lineScale ?
                     rect.width += w;
                     rect.height += w;
                     rect.x -= w / 2;
@@ -159,10 +160,10 @@ define(function (require) {
                 var pathData = this.path.data;
                 if (pathHasStroke(style)) {
                     var lineWidth = style.lineWidth;
-                    var lineScale = style.strokeNoScale ? 1 : this.getLineScale();
+                    var lineScale = style.strokeNoScale ? this.getLineScale() : 1;
                     lineWidth = Math.max(lineWidth * lineScale, 5) / lineScale;
                     if (pathContain.containStroke(
-                        pathData, lineWidth, x, y
+                        pathData, lineWidth / lineScale, x, y
                     )) {
                         return true;
                     }
