@@ -23,15 +23,6 @@ define(function (require) {
     }
 
     var abs = Math.abs;
-    function getLineScale(m) {
-        // Get the line scale.
-        // Determinant of `m` means how much the area is enlarged by the
-        // transformation. So its square root can be used as a scale factor
-        // for width.
-        return m && abs(m[0] - 1) > 1e-10 && abs(m[3] - 1) > 1e-10
-            ? Math.sqrt(abs(m[0] * m[3] - m[2] * m[1]))
-            : 1;
-    }
 
     /**
      * @alias module:zrender/graphic/Path
@@ -75,7 +66,7 @@ define(function (require) {
                 }
             }
 
-            this.style.bind(ctx);
+            this.style.bind(ctx, this);
             this.setTransform(ctx);
 
             var lineDash = style.lineDash;
@@ -133,18 +124,19 @@ define(function (require) {
         getBoundingRect: function () {
             if (!this._rect) {
                 var path = this.path;
+                var style = this.style;
                 if (this.__dirtyPath) {
                     path.beginPath();
                     this.buildPath(path, this.shape);
                 }
                 this._rect = path.getBoundingRect();
 
-                if (pathHasStroke(this.style)) {
+                if (pathHasStroke(style)) {
                     var rect = this._rect;
                     // FIXME Must after updateTransform
-                    var w = this.style.lineWidth;
+                    var w = style.lineWidth;
                     // PENDING, Min line width is needed when line is horizontal or vertical
-                    var lineScale = getLineScale(this.transform);
+                    var lineScale = style.strokeNoScale ? 1 : this.getLineScale();
                     w = Math.max(w * lineScale, 5) / lineScale;
                     // Consider line width
                     rect.width += w;
@@ -167,7 +159,7 @@ define(function (require) {
                 var pathData = this.path.data;
                 if (pathHasStroke(style)) {
                     var lineWidth = style.lineWidth;
-                    var lineScale = getLineScale(this.transform);
+                    var lineScale = style.strokeNoScale ? 1 : this.getLineScale();
                     lineWidth = Math.max(lineWidth * lineScale, 5) / lineScale;
                     if (pathContain.containStroke(
                         pathData, lineWidth, x, y
@@ -242,6 +234,17 @@ define(function (require) {
                 this.dirty(true);
             }
             return this;
+        },
+
+        getLineScale: function () {
+            var m = this.transform;
+            // Get the line scale.
+            // Determinant of `m` means how much the area is enlarged by the
+            // transformation. So its square root can be used as a scale factor
+            // for width.
+            return m && abs(m[0] - 1) > 1e-10 && abs(m[3] - 1) > 1e-10
+                ? Math.sqrt(abs(m[0] * m[3] - m[2] * m[1]))
+                : 1;
         }
     };
 

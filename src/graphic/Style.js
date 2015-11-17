@@ -5,7 +5,7 @@
 define(function (require) {
 
     var STYLE_LIST_COMMON = [
-        'lineCap', 'lineJoin', 'miterLimit', 'lineWidth',
+        'lineCap', 'lineJoin', 'miterLimit',
         'shadowBlur', 'shadowOffsetX', 'shadowOffsetY', 'shadowColor'
     ];
 
@@ -61,6 +61,12 @@ define(function (require) {
          * @type {number}
          */
         lineWidth: 1,
+
+        /**
+         * If stroke ignore scale
+         * @type {Boolean}
+         */
+        strokeNoScale: false,
 
         // Bounding rect text configuration
         // Not affected by element transform
@@ -120,7 +126,9 @@ define(function (require) {
         /**
          * @param {CanvasRenderingContext2D} ctx
          */
-        bind: function (ctx) {
+        bind: function (ctx, el) {
+            var fill = this.fill;
+            var stroke = this.stroke;
             for (var i = 0; i < STYLE_LIST_COMMON.length; i++) {
                 var styleName = STYLE_LIST_COMMON[i];
 
@@ -128,9 +136,12 @@ define(function (require) {
                     ctx[styleName] = this[styleName];
                 }
             }
-
-            var fill = this.fill;
-            var stroke = this.stroke;
+            if (stroke != null) {
+                var lineWidth = this.lineWidth;
+                ctx.lineWidth = lineWidth / (
+                    (this.strokeNoScale && el && el.getLineScale) ? el.getLineScale() : 1
+                );
+            }
             if (fill != null) {
                  // Use canvas gradient if has
                 ctx.fillStyle = fill.canvasGradient ? fill.canvasGradient : fill;
