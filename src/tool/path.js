@@ -80,7 +80,7 @@ define(function (require) {
     }
 
     function createPathProxyFromString(data) {
-        if (! data) {
+        if (!data) {
             return [];
         }
 

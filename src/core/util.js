@@ -348,6 +348,20 @@ define(function(require) {
                && typeof(value.nodeName) == 'string';
     }
 
+    /**
+     * If value1 is not null, then return value1, otherwise judget rest of values.
+     * @param  {*...} values
+     * @return {*} Final value
+     */
+
+    function retrieve(values) {
+        for (var i = 0, len = arguments.length; i < len; i++) {
+            if (arguments[i] != null) {
+                return arguments[i];
+            }
+        }
+    }
+
     return {
         inherits: inherits,
         mixin: mixin,
@@ -371,6 +385,7 @@ define(function(require) {
         isFunction: isFunction,
         isBuildInObject: isBuildInObject,
         isDom: isDom,
+        retrieve: retrieve,
         noop: function () {}
     };
 });
