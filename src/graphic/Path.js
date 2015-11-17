@@ -139,11 +139,13 @@ define(function (require) {
                     var lineScale = style.strokeNoScale ? this.getLineScale() : 1;
                     w = Math.max(w * lineScale, 5) / lineScale;
                     // Consider line width
-                    // FIXME lineScale ?
-                    rect.width += w;
-                    rect.height += w;
-                    rect.x -= w / 2;
-                    rect.y -= w / 2;
+                    // Line scale can't be 0;
+                    if (lineScale > 1e-10) {
+                        rect.width += w / lineScale;
+                        rect.height += w / lineScale;
+                        rect.x -= w / lineScale / 2;
+                        rect.y -= w / lineScale / 2;
+                    }
                 }
             }
             return this._rect;
@@ -161,6 +163,10 @@ define(function (require) {
                 if (pathHasStroke(style)) {
                     var lineWidth = style.lineWidth;
                     var lineScale = style.strokeNoScale ? this.getLineScale() : 1;
+                    // Line scale can't be 0;
+                    if (lineScale < 1e-10) {
+                        return false;
+                    }
                     lineWidth = Math.max(lineWidth * lineScale, 5) / lineScale;
                     if (pathContain.containStroke(
                         pathData, lineWidth / lineScale, x, y
