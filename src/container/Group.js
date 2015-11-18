@@ -55,7 +55,6 @@ define(function (require) {
         type: 'group',
 
         /**
-         * 复制并返回一份新的包含所有儿子节点的数组
          * @return {Array.<module:zrender/Element>}
          */
         children: function () {
@@ -69,6 +68,13 @@ define(function (require) {
          */
         childAt: function (idx) {
             return this._children[idx];
+        },
+
+        /**
+         * @return {number}
+         */
+        childCount: function () {
+            return this._children.length;
         },
 
         /**
