@@ -28,7 +28,7 @@ define(function(require) {
         // SVGPainter = require('./svg/Painter');
     }
 
-    var _instances = {};    // ZRender实例map索引
+    var instances = {};    // ZRender实例map索引
 
     var zrender = {};
     /**
@@ -37,32 +37,31 @@ define(function(require) {
     zrender.version = '3.0.0';
 
     /**
-     * 创建zrender实例
-     *
      * @param {HTMLElement} dom
      * @param {Object} opts
      * @param {string} [opts.renderer='canvas'] 'canvas' or 'svg'
+     * @param {number} [opts.devicePixelRatio]
      * @return {module:zrender/ZRender}
      */
     zrender.init = function(dom, opts) {
         var zr = new ZRender(guid(), dom, opts);
-        _instances[zr.id] = zr;
+        instances[zr.id] = zr;
         return zr;
     };
 
     /**
-     * zrender实例销毁
-     * @param {module:zrender/ZRender} zr ZRender对象，不传则销毁全部
+     * Dispose zrender instance
+     * @param {module:zrender/ZRender} zr
      */
     zrender.dispose = function (zr) {
         if (zr) {
             zr.dispose();
         }
         else {
-            for (var key in _instances) {
-                _instances[key].dispose();
+            for (var key in instances) {
+                instances[key].dispose();
             }
-            _instances = {};
+            instances = {};
         }
 
         return zrender;
@@ -74,29 +73,11 @@ define(function(require) {
      * @return {module:zrender/ZRender}
      */
     zrender.getInstance = function (id) {
-        return _instances[id];
+        return instances[id];
     };
 
-    /**
-     * 删除zrender实例，ZRender实例dispose时会调用，
-     * 删除后getInstance则返回undefined
-     * ps: 仅是删除，删除的实例不代表已经dispose了~~
-     *     这是一个摆脱全局zrender.dispose()自动销毁的后门，
-     *     take care of yourself~
-     *
-     * @param {string} id ZRender对象索引
-     */
-    zrender.delInstance = function (id) {
-        delete _instances[id];
-        return zrender;
-    };
-
-    function getFrameCallback(zrInstance) {
-        return function () {
-            if (zrInstance._needsRefresh) {
-                zrInstance.refreshImmediately();
-            }
-        };
+    function delInstance(id) {
+        delete instances[id];
     }
 
     /**
@@ -108,6 +89,8 @@ define(function(require) {
      * @param {string} id
      * @param {HTMLDomElement} dom
      * @param {Object} opts
+     * @param {string} [opts.renderer='canvas'] 'canvas' or 'svg'
+     * @param {number} [opts.devicePixelRatio]
      */
     var ZRender = function(id, dom, opts) {
 
@@ -117,12 +100,13 @@ define(function(require) {
          * @type {HTMLDomElement}
          */
         this.dom = dom;
+
         /**
-         * 实例 id
          * @type {string}
          */
         this.id = id;
 
+        var self = this;
         var storage = new Storage();
         var painter = opts.renderer === 'svg'
             ? new SVGPainter(dom, storage, opts)
@@ -133,14 +117,18 @@ define(function(require) {
         // VML 下为了性能可能会直接操作 VMLRoot 的位置
         // 因此鼠标的相对位置应该是相对于 VMLRoot
         // PENDING
-        this.handler = new Handler(useVML ? painter.getVMLRoot() : dom, storage, painter);
+        this.handler = new Handler(dom, storage, painter);
 
         /**
          * @type {module:zrender/animation/Animation}
          */
         this.animation = new Animation({
             stage: {
-                update: getFrameCallback(this)
+                update: function () {
+                    if (self._needsRefresh) {
+                        self.refreshImmediately();
+                    }
+                }
             }
         });
         this.animation.start();
@@ -153,7 +141,6 @@ define(function(require) {
 
         // 修改 storage.delFromMap, 每次删除元素之前删除动画
         // FIXME 有点ugly
-        var self = this;
         var oldDelFromMap = storage.delFromMap;
         var oldAddToMap = storage.addToMap;
 
@@ -343,8 +330,7 @@ define(function(require) {
             this.painter =
             this.handler = null;
 
-            // 释放后告诉全局删除对自己的索引，没想到啥好方法
-            zrender.delInstance(this.id);
+            delInstance(this.id);
         }
     };
 

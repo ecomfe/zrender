@@ -7,6 +7,7 @@ define(function (require) {
     }
 
     var vec2 = require('../core/vector');
+    var BoundingRect = require('../core/BoundingRect');
     var CMD = require('../core/PathProxy').CMD;
     var colorTool = require('../tool/color');
     var textContain = require('../contain/text');
@@ -66,7 +67,7 @@ define(function (require) {
 
     function getZIndex(zlevel, z, z2) {
         // z 的取值范围为 [0, 1000]
-        return (parseFloat(zlevel) || 0) * ZLEVEL_BASE + (parseFloat(z) || 0) * z + z2;
+        return (parseFloat(zlevel) || 0) * ZLEVEL_BASE + (parseFloat(z) || 0) * Z_BASE + z2;
     }
 
     /***************************************************
@@ -94,7 +95,7 @@ define(function (require) {
     }
 
     function updateFillNode(el, style, zrEl) {
-        // TODO Gradient and pattern
+        // TODO pattern
         var fill = style.fill;
         if (fill != null) {
             // Modified from excanvas
@@ -329,10 +330,10 @@ define(function (require) {
                         angle = Math.atan2(-m[1] / sy, m[0] / sx);
                     }
 
-                    var cx = data[i++] + x;
-                    var cy = data[i++] + y;
-                    var rx = data[i++] * sx;
-                    var ry = data[i++] * sy;
+                    var cx = data[i++];
+                    var cy = data[i++];
+                    var rx = data[i++];
+                    var ry = data[i++];
                     var startAngle = data[i++] + angle;
                     var endAngle = data[i++] + startAngle + angle;
                     // FIXME
@@ -350,14 +351,14 @@ define(function (require) {
 
                     str.push(
                         type,
-                        round((cx - rx) * Z - Z2), comma,
-                        round((cy - ry) * Z - Z2), comma,
-                        round((cx + rx) * Z - Z2), comma,
-                        round((cy + ry) * Z - Z2), comma,
-                        round(x0 * Z - Z2), comma,
-                        round(y0 * Z - Z2), comma,
-                        round(x1 * Z - Z2), comma,
-                        round(y1 * Z - Z2)
+                        round(((cx - rx) * sx + x) * Z - Z2), comma,
+                        round(((cy - ry) * sy + y) * Z - Z2), comma,
+                        round(((cx + rx) * sx + x) * Z - Z2), comma,
+                        round(((cy + ry) * sy + y) * Z - Z2), comma,
+                        round((x0 * sx + x) * Z - Z2), comma,
+                        round((y0 * sy + y) * Z - Z2), comma,
+                        round((x1 * sx + x) * Z - Z2), comma,
+                        round((y1 * sy + y) * Z - Z2)
                     );
 
                     xi = x1;
@@ -410,7 +411,7 @@ define(function (require) {
             // Determinant of this.m_ means how much the area is enlarged by the
             // transformation. So its square root can be used as a scale factor
             // for width.
-            if (needTransform) {
+            if (needTransform && !style.strokeNoScale) {
                 var det = m[0] * m[3] - m[1] * m[2];
                 lineWidth *= sqrt(abs(det));
             }
@@ -517,7 +518,7 @@ define(function (require) {
         var hasCrop = sw && sh;
 
         var vmlEl = this._vmlEl;
-        if (! vmlEl) {
+        if (!vmlEl) {
             // FIXME 使用 group 在 left, top 都不是 0 的时候就无法显示了。
             // vmlEl = vmlCore.createNode('group');
             vmlEl = vmlCore.doc.createElement('div');
@@ -747,7 +748,9 @@ define(function (require) {
         };
     };
 
-    var drawRectText = function (vmlRoot, rect, textRect, fromTextEl) {
+    var tmpRect = new BoundingRect();
+
+    function drawRectText(vmlRoot, rect, textRect, fromTextEl) {
 
         var style = this.style;
         var text = style.text;
@@ -766,6 +769,14 @@ define(function (require) {
 
         textRect = textRect || textContain.getBoundingRect(text, font, align, baseline);
 
+        // Transform rect to view space
+        var m = this.transform;
+        // Ignore transform for text in other element
+        if (m && !fromTextEl) {
+            tmpRect.copy(rect);
+            tmpRect.applyTransform(m);
+            rect = tmpRect;
+        }
         if (!fromTextEl) {
             var textPosition = style.textPosition;
             var distance = style.textDistance;
@@ -863,9 +874,9 @@ define(function (require) {
         }
 
         var coords = [x, y];
-        var m = this.transform;
         var textVmlElStyle = textVmlEl.style;
-        if (m) {
+        // Ignore transform for text in other element
+        if (m && fromTextEl) {
             applyTransform(coords, coords, m);
 
             skewEl.on = true;
@@ -909,7 +920,7 @@ define(function (require) {
 
         // Attached to root
         append(vmlRoot, textVmlEl);
-    };
+    }
 
     function removeRectText(vmlRoot) {
         remove(vmlRoot, this._textVmlEl);

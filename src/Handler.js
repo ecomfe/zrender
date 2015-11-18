@@ -9,13 +9,10 @@ define(function (require) {
 
     'use strict';
 
-    var config = require('./config');
     var env = require('./core/env');
     var eventTool = require('./core/event');
     var util = require('./core/util');
     var Draggable = require('./mixin/Draggable');
-
-    var EVENT = config.EVENT;
 
     var Eventful = require('./mixin/Eventful');
 
@@ -27,6 +24,8 @@ define(function (require) {
     var touchHandlerNames = [
         'touchstart', 'touchend', 'touchmove'
     ];
+
+    var TOUCH_CLICK_DELAY = 300;
 
     // touch指尖错觉的尝试偏移量配置
     // var MOBILE_TOUCH_OFFSETS = [
@@ -78,15 +77,15 @@ define(function (require) {
             this.root.style.cursor = hovered ? hovered.cursor : 'default';
             // Mouse out on previous hovered element
             if (lastHovered && hovered !== lastHovered && lastHovered.__zr) {
-                this._dispatch(lastHovered, EVENT.MOUSEOUT, event);
+                this._dispatch(lastHovered, 'mouseout', event);
             }
 
             // Mouse moving on one element
-            this._dispatch(hovered, EVENT.MOUSEMOVE, event);
+            this._dispatch(hovered, 'mousemove', event);
 
             // Mouse over on a new element
             if (hovered && hovered !== lastHovered) {
-                this._dispatch(hovered, EVENT.MOUSEOVER, event);
+                this._dispatch(hovered, 'mouseover', event);
             }
         },
 
@@ -110,9 +109,9 @@ define(function (require) {
                 }
             }
 
-            this._dispatch(this._hovered, EVENT.MOUSEOUT, event);
+            this._dispatch(this._hovered, 'mouseout', event);
 
-            this.trigger(EVENT.GLOBALOUT, {
+            this.trigger('globalout', {
                 event: event
             });
         },
@@ -158,7 +157,7 @@ define(function (require) {
 
             this._mouseupHandler(event);
 
-            if (+new Date() - this._lastTouchMoment < EVENT.touchClickDelay) {
+            if (+new Date() - this._lastTouchMoment < TOUCH_CLICK_DELAY) {
                 // this._mobileFindFixed(event);
                 this._clickHandler(event);
             }
@@ -197,18 +196,28 @@ define(function (require) {
      * @param {module:zrender/Painter} painter Painter实例
      */
     var Handler = function(root, storage, painter) {
-        // 添加事件分发器特性
         Eventful.call(this);
 
         this.root = root;
         this.storage = storage;
         this.painter = painter;
 
-        // 各种事件标识的私有变量
-        // this._hovered = null;
-        // this._lastTouchMoment;
-        // this._lastX =
-        // this._lastY = 0;
+        /**
+         * @private
+         */
+        this._hovered;
+        /**
+         * @private
+         */
+        this._lastTouchMoment;
+        /**
+         * @private
+         */
+        this._lastX;
+        /**
+         * @private
+         */
+        this._lastY;
 
         initDomHandler(this);
 
@@ -244,9 +253,9 @@ define(function (require) {
         },
 
         /**
-         * 事件触发
-         * @param {string} eventName 事件名称，resize，hover，drag，etc~
-         * @param {event=} eventArgs event dom事件对象
+         * Dispatch event
+         * @param {string} eventName
+         * @param {event=} eventArgs
          */
         dispatch: function (eventName, eventArgs) {
             var handler = this[proxyEventName(eventName)];
@@ -254,7 +263,7 @@ define(function (require) {
         },
 
         /**
-         * 释放，解绑所有事件
+         * Dispose
          */
         dispose: function () {
             var root = this.root;
@@ -278,15 +287,15 @@ define(function (require) {
          * 事件分发代理
          *
          * @private
-         * @param {Object} targetShape 目标图形元素
+         * @param {Object} targetEl 目标图形元素
          * @param {string} eventName 事件名称
          * @param {Object} event 事件对象
          */
-        _dispatch: function (targetShape, eventName, event) {
+        _dispatch: function (targetEl, eventName, event) {
             var eventHandler = 'on' + eventName;
-            var eventPacket = makeEventPacket(eventName, targetShape, event);
+            var eventPacket = makeEventPacket(eventName, targetEl, event);
 
-            var el = targetShape;
+            var el = targetEl;
 
             while (el) {
                 el[eventHandler]
@@ -333,30 +342,6 @@ define(function (require) {
                 }
             }
         }
-
-        // touch有指尖错觉，四向尝试，让touch上的点击更好触发事件
-        // _mobileFindFixed: function (event) {
-        //     var x = event.zrX;
-        //     var y = event.zrY;
-
-        //     this._hovered = null;
-
-        //     this._event = event;
-
-        //     this._findHover(x, y);
-        //     for (var i = 0; !this._hovered && i < MOBILE_TOUCH_OFFSETS.length ; i++) {
-        //         var offset = MOBILE_TOUCH_OFFSETS[ i ];
-        //         offset.x && (x += offset.x);
-        //         offset.y && (y += offset.y);
-
-        //         this._findHover(x, y);
-        //     }
-
-        //     if (this._hovered) {
-        //         event.zrX = x;
-        //         event.zrY = y;
-        //     }
-        // }
     };
 
     function isHover(displayable, x, y) {

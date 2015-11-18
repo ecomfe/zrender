@@ -125,10 +125,6 @@ define(function (require) {
             return this._height;
         },
 
-        getVMLRoot: function () {
-            return this._vmlRoot;
-        },
-
         _getWidth: function () {
             var root = this.root;
             var stl = root.currentStyle;

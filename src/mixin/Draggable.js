@@ -1,16 +1,12 @@
 // TODO Draggable for group
 // FIXME Draggable on element which has parent rotation or scale
 define(function (require) {
-
-    var config = require('../config');
-    var EVENT = config.EVENT;
-
     function Draggable() {
 
-        this.on(EVENT.MOUSEDOWN, this._dragStart, this);
-        this.on(EVENT.MOUSEMOVE, this._drag, this);
-        this.on(EVENT.MOUSEUP, this._dragEnd, this);
-        this.on(EVENT.GLOBALOUT, this._dragEnd, this);
+        this.on('mousedown', this._dragStart, this);
+        this.on('mousemove', this._drag, this);
+        this.on('mouseup', this._dragEnd, this);
+        this.on('globalout', this._dragEnd, this);
         // this._dropTarget = null;
         // this._draggingTarget = null;
 
@@ -29,7 +25,7 @@ define(function (require) {
                 this._x = e.offsetX;
                 this._y = e.offsetY;
 
-                this._dispatch(draggingTarget, EVENT.DRAGSTART, e.event);
+                this._dispatch(draggingTarget, 'dragstart', e.event);
             }
         },
 
@@ -46,7 +42,7 @@ define(function (require) {
                 this._y = y;
 
                 draggingTarget.drift(dx, dy);
-                this._dispatch(draggingTarget, EVENT.DRAG, e.event);
+                this._dispatch(draggingTarget, 'drag', e.event);
 
                 var dropTarget = this._findHover(x, y, draggingTarget);
                 var lastDropTarget = this._dropTarget;
@@ -54,20 +50,20 @@ define(function (require) {
 
                 if (draggingTarget !== dropTarget) {
                     if (lastDropTarget && dropTarget !== lastDropTarget) {
-                        this._dispatch(lastDropTarget, EVENT.DRAGLEAVE, e.event);
+                        this._dispatch(lastDropTarget, 'dragleave', e.event);
                     }
                     if (dropTarget && dropTarget !== lastDropTarget) {
-                        this._dispatch(dropTarget, EVENT.DRAGENTER, e.event);
+                        this._dispatch(dropTarget, 'dragenter', e.event);
                     }
                 }
             }
         },
 
         _dragEnd: function (e) {
-            this._dispatch(this._draggingTarget, EVENT.DRAGEND, e.event);
+            this._dispatch(this._draggingTarget, 'dragend', e.event);
 
             if (this._dropTarget) {
-                this._dispatch(this._dropTarget, EVENT.DROP, e.event);
+                this._dispatch(this._dropTarget, 'drop', e.event);
             }
 
             this._draggingTarget = null;
