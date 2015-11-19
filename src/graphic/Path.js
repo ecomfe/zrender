@@ -137,7 +137,7 @@ define(function (require) {
                     var w = style.lineWidth;
                     // PENDING, Min line width is needed when line is horizontal or vertical
                     var lineScale = style.strokeNoScale ? this.getLineScale() : 1;
-                    w = Math.max(w * lineScale, 5) / lineScale;
+                    w = Math.max(w, 5);
                     // Consider line width
                     // Line scale can't be 0;
                     if (lineScale > 1e-10) {
@@ -167,7 +167,7 @@ define(function (require) {
                     if (lineScale < 1e-10) {
                         return false;
                     }
-                    lineWidth = Math.max(lineWidth * lineScale, 5) / lineScale;
+                    lineWidth = Math.max(lineWidth, 5);
                     if (pathContain.containStroke(
                         pathData, lineWidth / lineScale, x, y
                     )) {

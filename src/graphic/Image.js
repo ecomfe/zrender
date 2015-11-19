@@ -31,6 +31,7 @@ define(function (require) {
             var image = style.image;
             var self = this;
 
+            // FIXME Case create many images with src
             if (!this._imageCache) {
                 this._imageCache = {};
             }

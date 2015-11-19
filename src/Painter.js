@@ -61,10 +61,14 @@
     }
 
     function isClipPathChanged(clipPaths, prevClipPaths) {
-        return !(clipPaths && prevClipPaths
-                    && clipPaths.length === 1 && prevClipPaths.length === 1
-                    && clipPaths[0] === prevClipPaths[0])
-                || (!clipPaths && !prevClipPaths);
+        if (!clipPaths || !prevClipPaths || (clipPaths.length !== prevClipPaths.length)) {
+            return true;
+        }
+        for (var i = 0; i < clipPaths.length; i++) {
+            if (clipPaths[i] !== prevClipPaths[i]) {
+                return true;
+            }
+        }
     }
 
     function doClip(clipPaths, ctx) {
