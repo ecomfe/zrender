@@ -117,7 +117,7 @@ define(function(require) {
         // VML 下为了性能可能会直接操作 VMLRoot 的位置
         // 因此鼠标的相对位置应该是相对于 VMLRoot
         // PENDING
-        this.handler = new Handler(dom, storage, painter);
+        this.handler = new Handler(painter.getViewportRoot(), storage, painter);
 
         /**
          * @type {module:zrender/animation/Animation}

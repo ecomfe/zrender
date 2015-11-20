@@ -66,6 +66,16 @@ define(function (require) {
 
         constructor: VMLPainter,
 
+        /**
+         * @return {HTMLDivElement}
+         */
+        getViewportRoot: function () {
+            return this._vmlViewport;
+        },
+
+        /**
+         * 刷新
+         */
         refresh: function () {
 
             var list = this.storage.getDisplayList(true);

@@ -185,6 +185,12 @@
         constructor: Painter,
 
         /**
+         * @return {HTMLDivElement}
+         */
+        getViewportRoot: function () {
+            return this._domRoot;
+        },
+        /**
          * 刷新
          * @param {boolean} [paintAll=false] 强制绘制所有displayable
          */
