@@ -45,6 +45,7 @@ define(function(require) {
             var target;
             var animatingShape = false;
             var el = this;
+            var zr = this.__zr;
             if (path) {
                 var pathSplitted = path.split('.');
                 var prop = el;
@@ -89,8 +90,8 @@ define(function(require) {
             animators.push(animator);
 
             // If animate after added to the zrender
-            if (this.__zr) {
-                this.__zr.animation.addAnimator(animator);
+            if (zr) {
+                zr.animation.addAnimator(animator);
             }
 
             return animator;
@@ -182,7 +183,8 @@ define(function(require) {
             if (!count) {
                 callback && callback();
             }
-
+            // Start after all animators created
+            // Incase any animator is done immediately when all animation properties are not changed
             for (var i = 0; i < animators.length; i++) {
                 animators[i]
                     .done(done)
@@ -192,8 +194,8 @@ define(function(require) {
 
         /**
          * @private
-         * @param {string} [path='']
-         * @param {Object} [source=this]
+         * @param {string} path=''
+         * @param {Object} source=this
          * @param {Object} target
          * @param {number} [time=500]
          * @param {number} [delay=0]
@@ -216,25 +218,6 @@ define(function(require) {
          *  }, 100, 100)
          */
         _animateToShallow: function (path, source, target, time, delay) {
-            if (!isString(path)) {
-                // this._animateToShallow(source, target, ...)
-                if (isObject(source)) {
-                    delay = time;
-                    time = target;
-                    target = source;
-                    source = path;
-                    path = '';
-                }
-                // this._animateToShallow(target, ...)
-                else {
-                    delay = target;
-                    time = source;
-                    target = path;
-                    source = this;
-                    path = '';
-                }
-            }
-
             var objShallow = {};
             var propertyCount = 0;
             for (var name in target) {
@@ -251,6 +234,19 @@ define(function(require) {
                     else {
                         objShallow[name] = target[name];
                         propertyCount++;
+                    }
+                }
+                else if (target[name] != null) {
+                    // Attr directly if not has property
+                    // FIXME, if some property not needed for element ?
+                    if (!path) {
+                        this.attr(name, target[name]);
+                    }
+                    else {  // Shape or style
+                        var props = {};
+                        props[path] = {};
+                        props[path][name] = target[name];
+                        this.attr(props);
                     }
                 }
             }

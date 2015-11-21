@@ -5,7 +5,6 @@ define(function (require) {
 
     var Clip = require('./Clip');
     var color = require('../tool/color');
-    var zrLog = require('../core/log');
     var util = require('../core/util');
     var isArrayLike = util.isArrayLike;
 
@@ -65,6 +64,28 @@ define(function (require) {
         }
     }
 
+    function fillArr(arr0, arr1, arrDim) {
+        var arr0Len = arr0.length;
+        var arr1Len = arr1.length;
+        if (arr0Len === arr1Len) {
+            return;
+        }
+        // FIXME Not work for TypedArray
+        var isPreviousLarger = arr0Len > arr1Len;
+        if (isPreviousLarger) {
+            // Cut the previous
+            arr0.length = arr1Len;
+        }
+        else {
+            // Fill the previous
+            for (var i = arr0Len; i < arr1Len; i++) {
+                arr0.push(
+                    arrDim === 1 ? arr1[i] : arraySlice.call(arr1[i])
+                );
+            }
+        }
+    }
+
     /**
      * @param  {Array} arr0
      * @param  {Array} arr1
@@ -79,7 +100,7 @@ define(function (require) {
         if (len !== arr1.length) {
             return false;
         }
-        if (arrDim == 1) {
+        if (arrDim === 1) {
             for (var i = 0; i < len; i++) {
                 if (arr0[i] !== arr1[i]) {
                     return false;
@@ -99,6 +120,18 @@ define(function (require) {
         return true;
     }
 
+    /**
+     * Catmull Rom interpolate array
+     * @param  {Array} p0
+     * @param  {Array} p1
+     * @param  {Array} p2
+     * @param  {Array} p3
+     * @param  {number} t
+     * @param  {number} t2
+     * @param  {number} t3
+     * @param  {Array} out
+     * @param  {number} arrDim
+     */
     function catmullRomInterpolateArray(
         p0, p1, p2, p3, t, t2, t3, out, arrDim
     ) {
@@ -123,6 +156,17 @@ define(function (require) {
         }
     }
 
+    /**
+     * Catmull Rom interpolate number
+     * @param  {number} p0
+     * @param  {number} p1
+     * @param  {number} p2
+     * @param  {number} p3
+     * @param  {number} t
+     * @param  {number} t2
+     * @param  {number} t3
+     * @return {number}
+     */
     function catmullRomInterpolate(p0, p1, p2, p3, t, t2, t3) {
         var v0 = (p2 - p0) * 0.5;
         var v1 = (p3 - p1) * 0.5;
@@ -217,6 +261,15 @@ define(function (require) {
         }
         if (isAllValueEqual) {
             return;
+        }
+
+        if (isValueArray) {
+            var lastValue = kfValues[trackLen - 1];
+            // Polyfill array
+            for (var i = 0; i < trackLen - 1; i++) {
+                fillArr(kfValues[i], lastValue, arrDim);
+            }
+            fillArr(getter(animator._target, propName), lastValue, arrDim);
         }
 
         // Cache the key of last frame to speed up when
@@ -391,12 +444,12 @@ define(function (require) {
         when: function(time /* ms */, props) {
             var tracks = this._tracks;
             for (var propName in props) {
-                if (! tracks[propName]) {
+                if (!tracks[propName]) {
                     tracks[propName] = [];
                     // Invalid value
                     var value = this._getter(this._target, propName);
                     if (value == null) {
-                        zrLog('Invalid property ' + propName);
+                        // zrLog('Invalid property ' + propName);
                         continue;
                     }
                     // If time is 0
@@ -485,7 +538,7 @@ define(function (require) {
                     for (var i = 0; i < self._onframeList.length; i++) {
                         self._onframeList[i](target, percent);
                     }
-                }
+                };
             }
 
             if (!clipCount) {
