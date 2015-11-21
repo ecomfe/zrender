@@ -548,12 +548,17 @@ define(function (require) {
         },
         /**
          * 停止动画
+         * @param {boolean} forwardToLast If move to last frame before stop
          */
-        stop: function() {
+        stop: function (forwardToLast) {
             var clipList = this._clipList;
             var animation = this.animation;
             for (var i = 0; i < clipList.length; i++) {
                 var clip = clipList[i];
+                if (forwardToLast) {
+                    // Move to last frame before stop
+                    clip.onframe(this._target, 1);
+                }
                 animation && animation.removeClip(clip);
             }
             clipList.length = 0;

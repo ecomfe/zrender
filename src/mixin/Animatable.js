@@ -99,12 +99,13 @@ define(function(require) {
 
         /**
          * 停止动画
+         * @param {boolean} forwardToLast If move to last frame before stop
          */
-        stopAnimation: function () {
+        stopAnimation: function (forwardToLast) {
             var animators = this.animators;
             var len = animators.length;
             for (var i = 0; i < len; i++) {
-                animators[i].stop();
+                animators[i].stop(forwardToLast);
             }
             animators.length = 0;
 
