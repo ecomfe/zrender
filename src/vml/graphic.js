@@ -786,14 +786,13 @@ define(function (require) {
                 y = rect.y + textPosition[1];
             }
             else {
-                var newPos = textContain.adjustTextPositionOnRect(
+                var res = textContain.adjustTextPositionOnRect(
                     textPosition, rect, textRect, distance
                 );
-                x = newPos.x;
-                y = newPos.y;
-                // x, y 已经在前面调整过，textAlign 统一为 left, textBaseline 统一为 top
-                align = 'left';
-                baseline = 'top';
+                x = res.x;
+                y = res.y;
+                align = res.textAlign;
+                baseline = res.textBaseline;
             }
         }
         else {

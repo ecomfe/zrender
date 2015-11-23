@@ -79,70 +79,84 @@ define(function (require) {
         var height = rect.height;
         var width = rect.width;
 
-        var textWidth = textRect.width;
         var textHeight = textRect.height;
 
-        var halfWidth = width / 2 - textWidth / 2;
         var halfHeight = height / 2 - textHeight / 2;
+
+        var textAlign = 'left';
 
         switch (textPosition) {
             case 'left':
-                x -= distance + textWidth;
+                x -= distance;
                 y += halfHeight;
+                textAlign = 'right';
                 break;
             case 'right':
-                x += width + distance;
+                x += distance;
                 y += halfHeight;
+                textAlign = 'left';
                 break;
             case 'top':
-                x += halfWidth;
+                x += width / 2;
                 y -= distance + textHeight;
+                textAlign = 'center';
                 break;
             case 'bottom':
-                x += halfWidth;
+                x += width / 2;
                 y += height + distance;
+                textAlign = 'center';
                 break;
             case 'inside':
-                x += halfWidth;
+                x += width / 2;
                 y += halfHeight;
+                textAlign = 'center';
                 break;
             case 'insideLeft':
                 x += distance;
                 y += halfHeight;
+                textAlign = 'left';
                 break;
             case 'insideRight':
-                x += width - textWidth - distance;
+                x += width - distance;
                 y += halfHeight;
+                textAlign = 'right';
                 break;
             case 'insideTop':
-                x += halfWidth;
+                x += width / 2;
                 y += distance;
+                textAlign = 'center';
                 break;
             case 'insideBottom':
-                x += halfWidth;
+                x += width / 2;
                 y += height - textHeight - distance;
+                textAlign = 'center';
                 break;
             case 'insideTopLeft':
                 x += distance;
                 y += distance;
+                textAlign = 'left';
                 break;
             case 'insideTopRight':
-                x += width - textWidth - distance;
+                x += width - distance;
                 y += distance;
+                textAlign = 'right';
                 break;
             case 'insideBottomLeft':
                 x += distance;
                 y += height - textHeight - distance;
                 break;
             case 'insideBottomRight':
-                x += width - textWidth - distance;
+                x += width - distance;
                 y += height - textHeight - distance;
+                textAlign = 'right';
                 break;
         }
 
         return {
             x: x,
-            y: y
+            y: y,
+            textAlign: textAlign,
+            textBaseline: 'top'
         };
     }
 

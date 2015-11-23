@@ -75,14 +75,14 @@ define(function (require) {
                 ctx.textBaseline = baseline;
             }
             else {
-                var newPos = textContain.adjustTextPositionOnRect(
+                var res = textContain.adjustTextPositionOnRect(
                     textPosition, rect, textRect, distance
                 );
-                x = newPos.x;
-                y = newPos.y;
+                x = res.x;
+                y = res.y;
                 // Draw text
-                ctx.textAlign = 'left';
-                ctx.textBaseline = 'top';
+                ctx.textAlign = res.textAlign;
+                ctx.textBaseline = res.textBaseline;
             }
 
             var textFill = style.textFill;
