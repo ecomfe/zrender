@@ -12,6 +12,8 @@ define(function (require) {
 
     var windingLine = require('./windingLine');
 
+    var containStroke = line.containStroke;
+
     var PI2 = Math.PI * 2;
 
     var EPSILON = 1e-4;
@@ -234,7 +236,7 @@ define(function (require) {
                     break;
                 case CMD.L:
                     if (isStroke) {
-                        if (line.containStroke(xi, yi, data[i], data[i + 1], lineWidth, x, y)) {
+                        if (containStroke(xi, yi, data[i], data[i + 1], lineWidth, x, y)) {
                             return true;
                         }
                     }
@@ -298,7 +300,7 @@ define(function (require) {
                     var y1 = Math.sin(theta) * ry + cy;
                     // 不是直接使用 arc 命令
                     if (i > 1) {
-                        w += windingLine(xi, yi, x1, y1);
+                        w += windingLine(xi, yi, x1, y1, x, y);
                     }
                     else {
                         // 第一个命令起点还未定义
@@ -324,9 +326,31 @@ define(function (require) {
                     xi = Math.cos(theta + dTheta) * rx + cx;
                     yi = Math.sin(theta + dTheta) * ry + cy;
                     break;
+                case CMD.R:
+                    x0 = xi = data[i++];
+                    y0 = yi = data[i++];
+                    var width = data[i++];
+                    var height = data[i++];
+                    var x1 = x0 + width;
+                    var y1 = y0 + height;
+                    if (isStroke) {
+                        if (containStroke(x0, y0, x1, y0, lineWidth, x, y)
+                          || containStroke(x1, y0, x1, y1, lineWidth, x, y)
+                          || containStroke(x1, y1, x0, y1, lineWidth, x, y)
+                          || containStroke(x0, y1, x1, y1, lineWidth, x, y)
+                        ) {
+                            return true;
+                        }
+                    }
+                    else {
+                        // FIXME Clockwise ?
+                        w += windingLine(x1, y0, x1, y1, x, y);
+                        w += windingLine(x0, y1, x0, y0, x, y);
+                    }
+                    break;
                 case CMD.Z:
                     if (isStroke) {
-                        if (line.containStroke(
+                        if (containStroke(
                             xi, yi, x0, y0, lineWidth, x, y
                         )) {
                             return true;

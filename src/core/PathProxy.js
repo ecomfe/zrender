@@ -20,7 +20,9 @@ define(function (require) {
         C: 3,
         Q: 4,
         A: 5,
-        Z: 6
+        Z: 6,
+        // Rect
+        R: 7
     };
 
     var min = [];
@@ -206,6 +208,7 @@ define(function (require) {
         // TODO
         rect: function (x, y, w, h) {
             this._ctx && this._ctx.rect(x, y, w, h);
+            this.addData(CMD.R, x, y, w, h);
             return this;
         },
 
@@ -447,7 +450,7 @@ define(function (require) {
             // Bezier approx length
             for (t = 0; t < 1; t += 0.1) {
                 dx = cubicAt(x0, x1, x2, x3, t + 0.1)
-                    - cubicAt(x0, x1, x2, x3, t)
+                    - cubicAt(x0, x1, x2, x3, t);
                 dy = cubicAt(y0, y1, y2, y3, t + 0.1)
                     - cubicAt(y0, y1, y2, y3, t);
                 bezierLen += mathSqrt(dx * dx + dy * dy);
@@ -478,7 +481,7 @@ define(function (require) {
             }
 
             // Finish the last segment and calculate the new offset
-            ! (idx % 2) && ctx.lineTo(x3, y3);
+            (idx % 2 !== 0) && ctx.lineTo(x3, y3);
             dx = x3 - x;
             dy = y3 - y;
             this._dashOffset = -mathSqrt(dx * dx + dy * dy);
@@ -505,7 +508,7 @@ define(function (require) {
             this.data.length = this._len;
             if (hasTypedArray && (this.data instanceof Array)) {
                 this.data = new Float32Array(this.data);
-            };
+            }
         },
 
         /**
@@ -597,6 +600,14 @@ define(function (require) {
                         xi = mathCos(endAngle) * rx + cx;
                         yi = mathSin(endAngle) * ry + cy;
                         break;
+                    case CMD.R:
+                        x0 = xi = data[i++];
+                        y0 = yi = data[i++];
+                        var width = data[i++];
+                        var height = data[i++];
+                        // Use fromLine
+                        bbox.fromLine(x0, y0, x0 + width, y0 + height, min2, max2);
+                        break;
                     case CMD.Z:
                         xi = x0;
                         yi = y0;
@@ -667,6 +678,9 @@ define(function (require) {
                         else {
                             ctx.arc(cx, cy, r, theta, theta + dTheta, 1 - fs);
                         }
+                        break;
+                    case CMD.R:
+                        ctx.rect(d[i++], d[i++], d[i++], d[i++]);
                         break;
                     case CMD.Z:
                         ctx.closePath();

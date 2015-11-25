@@ -2,6 +2,7 @@ define(function (require) {
 
     var CMD = require('../core/PathProxy').CMD;
     var vec2 = require('../core/vector');
+    var v2ApplyTransform = vec2.applyTransform;
 
     var points = [[], [], []];
     var mathSqrt = Math.sqrt;
@@ -15,7 +16,7 @@ define(function (require) {
         var M = CMD.M;
         var C = CMD.C;
         var L = CMD.L;
-        var Z = CMD.Z;
+        var R = CMD.R;
         var A = CMD.A;
         var Q = CMD.Q;
 
@@ -61,6 +62,19 @@ define(function (require) {
                     i += 2;
                     j = i;
                     break;
+                case R:
+                    // x0, y0
+                    p[0] = data[i++];
+                    p[1] = data[i++];
+                    v2ApplyTransform(p, p, m);
+                    data[j++] = p[0];
+                    data[j++] = p[1];
+                    // x1, y1
+                    p[0] += data[i++];
+                    p[1] += data[i++];
+                    v2ApplyTransform(p, p, m);
+                    data[j++] = p[0];
+                    data[j++] = p[1];
             }
 
             for (k = 0; k < nPoint; k++) {
@@ -68,7 +82,7 @@ define(function (require) {
                 p[0] = data[i++];
                 p[1] = data[i++];
 
-                vec2.applyTransform(p, p, m);
+                v2ApplyTransform(p, p, m);
                 // Write back
                 data[j++] = p[0];
                 data[j++] = p[1];

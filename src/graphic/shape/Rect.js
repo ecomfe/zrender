@@ -30,11 +30,7 @@ define(function (require) {
             var width = shape.width;
             var height = shape.height;
             if (!shape.r) {
-                ctx.moveTo(x, y);
-                ctx.lineTo(x + width, y);
-                ctx.lineTo(x + width, y + height);
-                ctx.lineTo(x, y + height);
-                ctx.lineTo(x, y);
+                ctx.rect(x, y, width, height);
             }
             else {
                 roundRectHelper.buildPath(ctx, shape);

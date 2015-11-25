@@ -227,7 +227,8 @@ define(function (require) {
     function updateFillAndStroke(vmlEl, type, style, zrEl) {
         var isFill = type == 'fill';
         var el = vmlEl.getElementsByTagName(type)[0];
-        if (style[type] != null && style[type] !== 'none') {
+        // Stroke must have lineWidth
+        if (style[type] != null && style[type] !== 'none' && (isFill || (!isFill && style.lineWidth))) {
             vmlEl[isFill ? 'filled' : 'stroked'] = 'true';
             // FIXME Remove before updating, or set `colors` will throw error
             if (style[type] instanceof Gradient) {
@@ -364,6 +365,36 @@ define(function (require) {
                     xi = x1;
                     yi = y1;
                     break;
+                case CMD.R:
+                    var p0 = points[0];
+                    var p1 = points[1];
+                    // x0, y0
+                    p0[0] = data[i++];
+                    p0[1] = data[i++];
+                    // x1, y1
+                    p1[0] = p0[0] + data[i++];
+                    p1[1] = p0[1] + data[i++];
+
+                    if (m) {
+                        applyTransform(p0, p0, m);
+                        applyTransform(p1, p1, m);
+                    }
+
+                    p0[0] = round(p0[0] * Z - Z2);
+                    p1[0] = round(p1[0] * Z - Z2);
+                    p0[1] = round(p0[1] * Z - Z2);
+                    p1[1] = round(p1[1] * Z - Z2);
+                    str.push(
+                        // x0, y0
+                        ' m ', p0[0], comma, p0[1],
+                        // x1, y0
+                        ' l ', p1[0], comma, p0[1],
+                        // x1, y1
+                        ' l ', p1[0], comma, p1[1],
+                        // x0, y1
+                        ' l ', p0[0], comma, p1[1]
+                    );
+                    break;
                 case CMD.Z:
                     // FIXME Update xi, yi
                     str.push(' x ');
@@ -373,9 +404,8 @@ define(function (require) {
                 str.push(cmdStr);
                 for (var k = 0; k < nPoint; k++) {
                     var p = points[k];
-                    if (m) {
-                        applyTransform(p, p, m);
-                    }
+
+                    m && applyTransform(p, p, m);
                     // 不 round 会非常慢
                     str.push(
                         round(p[0] * Z - Z2), comma, round(p[1] * Z - Z2),

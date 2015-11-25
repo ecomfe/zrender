@@ -92,7 +92,7 @@ define(function (require) {
                 textAlign = 'right';
                 break;
             case 'right':
-                x += distance;
+                x += distance + width;
                 y += halfHeight;
                 textAlign = 'left';
                 break;
