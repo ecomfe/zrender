@@ -305,6 +305,31 @@ define(function(require) {
         }
     }
 
+    /**
+     * 数组项查找
+     * @memberOf module:zrender/tool/util
+     * @param {Array} obj
+     * @param {Function} cb
+     * @param {*} [context]
+     * @return {Array}
+     */
+    function find(obj, cb, context) {
+        if (!(obj && cb)) {
+            return;
+        }
+        for (var i = 0, len = obj.length; i < len; i++) {
+            if (cb.call(context, obj[i], i, obj)) {
+                return obj[i];
+            }
+        }
+    }
+
+    /**
+     * @memberOf module:zrender/tool/util
+     * @param {Function} func
+     * @param {*} context
+     * @return {Function}
+     */
     function bind(func, context) {
         var args = nativeSlice.call(arguments, 2);
         return function () {
@@ -312,6 +337,12 @@ define(function(require) {
         };
     }
 
+    /**
+     * @memberOf module:zrender/tool/util
+     * @param {Function} func
+     * @param {...}
+     * @return {Function}
+     */
     function curry(func) {
         var args = nativeSlice.call(arguments, 1);
         return function () {
@@ -319,18 +350,38 @@ define(function(require) {
         };
     }
 
+    /**
+     * @memberOf module:zrender/tool/util
+     * @param {*} value
+     * @return {boolean}
+     */
     function isArray(value) {
         return objToString.call(value) === '[object Array]';
     }
 
+    /**
+     * @memberOf module:zrender/tool/util
+     * @param {*} value
+     * @return {boolean}
+     */
     function isFunction(value) {
         return typeof value === 'function';
     }
 
+    /**
+     * @memberOf module:zrender/tool/util
+     * @param {*} value
+     * @return {boolean}
+     */
     function isString(value) {
         return objToString.call(value) === '[object String]';
     }
 
+    /**
+     * @memberOf module:zrender/tool/util
+     * @param {*} value
+     * @return {boolean}
+     */
     function isObject(value) {
         // Avoid a V8 JIT bug in Chrome 19-20.
         // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
@@ -338,11 +389,21 @@ define(function(require) {
         return type === 'function' || (!!value && type == 'object');
     }
 
+    /**
+     * @memberOf module:zrender/tool/util
+     * @param {*} value
+     * @return {boolean}
+     */
     function isBuildInObject(value) {
         return !!BUILTIN_OBJECT[objToString.call(value)]
             || (value instanceof Gradient);
     }
 
+    /**
+     * @memberOf module:zrender/tool/util
+     * @param {*} value
+     * @return {boolean}
+     */
     function isDom(value) {
         return value && value.nodeType === 1
                && typeof(value.nodeName) == 'string';
@@ -353,7 +414,6 @@ define(function(require) {
      * @param  {*...} values
      * @return {*} Final value
      */
-
     function retrieve(values) {
         for (var i = 0, len = arguments.length; i < len; i++) {
             if (arguments[i] != null) {
@@ -372,6 +432,7 @@ define(function(require) {
         defaults: defaults,
         getContext: getContext,
         indexOf: indexOf,
+        find: find,
         isArrayLike: isArrayLike,
         each: each,
         map: map,
