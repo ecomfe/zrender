@@ -71,6 +71,20 @@ define(function (require) {
         },
 
         /**
+         * 获取指定名字的儿子节点
+         * @param  {string} name
+         * @return {module:zrender/Element}
+         */
+        childOfName: function (name) {
+            var children = this._children;
+            for (var i = 0; i < children.length; i++) {
+                if (children[i].name === name) {
+                    return children[i];
+                }
+             }
+        },
+
+        /**
          * @return {number}
          */
         childCount: function () {
