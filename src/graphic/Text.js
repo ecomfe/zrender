@@ -28,11 +28,6 @@ define(function (require) {
         type: 'text',
 
         brush: function (ctx) {
-            ctx.save();
-
-            this.style.bind(ctx);
-            this.setTransform(ctx);
-
             var style = this.style;
             var x = style.x || 0;
             var y = style.y || 0;
@@ -41,6 +36,11 @@ define(function (require) {
             var textStroke = style.stroke;
 
             if (text) {
+                ctx.save();
+
+                this.style.bind(ctx);
+                this.setTransform(ctx);
+
                 // Convert to string
                 text += '';
 
@@ -59,9 +59,9 @@ define(function (require) {
                     textStroke && ctx.strokeText(textLines[i], x, y);
                     y += lineHeight;
                 }
-            }
 
-            ctx.restore();
+                ctx.restore();
+            }
         },
 
         getBoundingRect: function () {

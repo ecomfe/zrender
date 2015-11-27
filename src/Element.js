@@ -38,6 +38,14 @@ define(function(require) {
          * @type {string}
          */
         type: 'element',
+
+        /**
+         * 元素名字
+         * Element name
+         * @type {string}
+         */
+        name: '',
+
         /**
          * ZRender 实例对象，会在 element 添加到 zrender 实例中后自动赋值
          * ZRender instance will be assigned when element is associated with zrender
