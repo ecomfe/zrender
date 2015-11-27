@@ -10,8 +10,6 @@ define(function(require) {
     var vec2 = require('./vector');
     var v2Create = vec2.create;
     var v2DistSquare = vec2.distSquare;
-    var mathMin = Math.min;
-    var mathMax = Math.max;
     var mathPow = Math.pow;
     var mathSqrt = Math.sqrt;
 
@@ -32,7 +30,7 @@ define(function(require) {
     function isNotAroundZero(val) {
         return val > EPSILON || val < -EPSILON;
     }
-    /** 
+    /**
      * 计算三次贝塞尔值
      * @memberOf module:zrender/core/curve
      * @param  {number} p0
@@ -48,7 +46,7 @@ define(function(require) {
              + t * t * (t * p3 + 3 * onet * p2);
     }
 
-    /** 
+    /**
      * 计算三次贝塞尔导数值
      * @memberOf module:zrender/core/curve
      * @param  {number} p0
@@ -141,7 +139,7 @@ define(function(require) {
                 var theta = Math.acos(T) / 3;
                 var ASqrt = mathSqrt(A);
                 var tmp = Math.cos(theta);
-                
+
                 var t1 = (-b - 2 * ASqrt * tmp) / (3 * a);
                 var t2 = (-b + ASqrt * (tmp + THREE_SQRT * Math.sin(theta))) / (3 * a);
                 var t3 = (-b + ASqrt * (tmp - THREE_SQRT * Math.sin(theta))) / (3 * a);
@@ -314,7 +312,7 @@ define(function(require) {
         // t
         if (out) {
             out[0] = cubicAt(x0, x1, x2, x3, t);
-            out[1] = cubicAt(y0, y1, y2, y3, t);   
+            out[1] = cubicAt(y0, y1, y2, y3, t);
         }
         // console.log(interval, i);
         return mathSqrt(d);
@@ -402,7 +400,7 @@ define(function(require) {
     function quadraticExtremum(p0, p1, p2) {
         var divider = p0 + p2 - 2 * p1;
         if (divider === 0) {
-            // p1 is center of p0 and p2 
+            // p1 is center of p0 and p2
             return 0.5;
         }
         else {
@@ -508,7 +506,7 @@ define(function(require) {
         // t
         if (out) {
             out[0] = quadraticAt(x0, x1, x2, t);
-            out[1] = quadraticAt(y0, y1, y2, t);   
+            out[1] = quadraticAt(y0, y1, y2, t);
         }
         // console.log(interval, i);
         return mathSqrt(d);
