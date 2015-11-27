@@ -256,7 +256,12 @@
                 }
 
                 if (
-                    (currentLayer.__dirty || paintAll) && !el.invisible
+                    (currentLayer.__dirty || paintAll)
+                    // Ignore invisible element
+                    && !el.invisible
+                    // Ignore transparent element
+                    && el.style.opacity !== 0
+                    // Ignore culled element
                     && !(el.culling && isDisplayableCulled(el, viewWidth, viewHeight))
                 ) {
                     var clipPaths = el.__clipPaths;
