@@ -7,6 +7,7 @@
  * LICENSE
  * https://github.com/ecomfe/zrender/blob/master/LICENSE.txt
  */
+// Global defines
 define(function(require) {
     var guid = require('./core/guid');
     var env = require('./core/env');
@@ -17,16 +18,9 @@ define(function(require) {
 
     var useVML = !env.canvasSupported;
 
-    var Painter;
-    var SVGPainter;
-    if (useVML) {
-        Painter = SVGPainter = require('./vml/Painter');
-        require('./vml/graphic');
-    }
-    else {
-        Painter = require('./Painter');
-        // SVGPainter = require('./svg/Painter');
-    }
+    var painterCtors = {
+        canvas: require('./Painter')
+    };
 
     var instances = {};    // ZRender实例map索引
 
@@ -76,6 +70,10 @@ define(function(require) {
         return instances[id];
     };
 
+    zrender.registerPainter = function (name, Ctor) {
+        painterCtors[name] = Ctor;
+    };
+
     function delInstance(id) {
         delete instances[id];
     }
@@ -108,9 +106,18 @@ define(function(require) {
 
         var self = this;
         var storage = new Storage();
-        var painter = opts.renderer === 'svg'
-            ? new SVGPainter(dom, storage, opts)
-            : new Painter(dom, storage, opts);
+
+        var renderer = opts.renderer;
+        if (useVML) {
+            renderer = 'vml';
+        }
+        else if (!renderer) {
+            renderer = 'canvas';
+        }
+        if (!painterCtors[renderer]) {
+            renderer = 'canvas';
+        }
+        var painter = new painterCtors[renderer](dom, storage, opts);
 
         this.storage = storage;
         this.painter = painter;

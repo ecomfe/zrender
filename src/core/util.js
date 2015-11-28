@@ -150,12 +150,14 @@ define(function(require) {
      * 查询数组中元素的index
      */
     function indexOf(array, value) {
-        if (array.indexOf) {
-            return array.indexOf(value);
-        }
-        for (var i = 0, len = array.length; i < len; i++) {
-            if (array[i] === value) {
-                return i;
+        if (array) {
+            if (array.indexOf) {
+                return array.indexOf(value);
+            }
+            for (var i = 0, len = array.length; i < len; i++) {
+                if (array[i] === value) {
+                    return i;
+                }
             }
         }
         return -1;

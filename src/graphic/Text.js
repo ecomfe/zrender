@@ -65,7 +65,7 @@ define(function (require) {
         },
 
         getBoundingRect: function () {
-            if (! this._rect) {
+            if (!this._rect) {
                 var style = this.style;
                 var rect = textContain.getBoundingRect(
                     style.text + '', style.textFont, style.textAlign, style.textBaseline
