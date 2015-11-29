@@ -6,6 +6,17 @@
  * @desc thanks zepto.
  */
 define(function() {
+
+    if (typeof navigator === 'undefined') {
+        // In node
+        return {
+            browser: {},
+            os: {},
+            node: true,
+            // Assume canvas is supported
+            canvasSupported: true
+        }
+    }
     // Zepto.js
     // (c) 2010-2013 Thomas Fuchs
     // Zepto.js may be freely distributed under the MIT license.
@@ -70,6 +81,7 @@ define(function() {
         return {
             browser: browser,
             os: os,
+            node: false,
             // 原生canvas支持，改极端点了
             // canvasSupported : !(browser.ie && parseFloat(browser.version) < 9)
             canvasSupported : document.createElement('canvas').getContext ? true : false

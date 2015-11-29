@@ -1,4 +1,9 @@
 define(function () {
+    var dpr = 1;
+    // If in browser environment
+    if (typeof window !== 'undefined') {
+        dpr = Math.max(window.devicePixelRatio || 1, 1);
+    }
     /**
      * config默认配置项
      * @exports zrender/config
@@ -14,7 +19,7 @@ define(function () {
         debugMode: 0,
 
         // retina 屏幕优化
-        devicePixelRatio: Math.max(window.devicePixelRatio || 1, 1)
+        devicePixelRatio: dpr
     };
     return config;
 });

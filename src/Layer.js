@@ -51,7 +51,8 @@ define(function (require) {
         if (typeof id === 'string') {
             dom = createDom(id, 'canvas', painter);
         }
-        else if (util.isDom(id)) {
+        // Not using isDom because in node it will return false
+        else if (util.isObject(id)) {
             dom = id;
             id = dom.id;
         }
@@ -59,11 +60,13 @@ define(function (require) {
         this.dom = dom;
 
         var domStyle = dom.style;
-        dom.onselectstart = returnFalse; // 避免页面选中的尴尬
-        domStyle['-webkit-user-select'] = 'none';
-        domStyle['user-select'] = 'none';
-        domStyle['-webkit-touch-callout'] = 'none';
-        domStyle['-webkit-tap-highlight-color'] = 'rgba(0,0,0,0)';
+        if (domStyle) { // Not in node
+            dom.onselectstart = returnFalse; // 避免页面选中的尴尬
+            domStyle['-webkit-user-select'] = 'none';
+            domStyle['user-select'] = 'none';
+            domStyle['-webkit-touch-callout'] = 'none';
+            domStyle['-webkit-tap-highlight-color'] = 'rgba(0,0,0,0)';
+        }
 
         this.domBack = null;
         this.ctxBack = null;

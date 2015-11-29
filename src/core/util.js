@@ -136,12 +136,16 @@ define(function(require) {
         return target;
     }
 
-
+    function createCanvas() {
+        return document.createElement('canvas');
+    }
+    // FIXME
     var _ctx;
-
     function getContext() {
         if (!_ctx) {
-            _ctx = document.createElement('canvas').getContext('2d');
+            // Use util.createCanvas instead of createCanvas
+            // because createCanvas may be overwritten in different environment
+            _ctx = util.createCanvas().getContext('2d');
         }
         return _ctx;
     }
@@ -424,7 +428,7 @@ define(function(require) {
         }
     }
 
-    return {
+    var util = {
         inherits: inherits,
         mixin: mixin,
         clone: clone,
@@ -433,6 +437,7 @@ define(function(require) {
         extend: extend,
         defaults: defaults,
         getContext: getContext,
+        createCanvas: createCanvas,
         indexOf: indexOf,
         find: find,
         isArrayLike: isArrayLike,
@@ -451,4 +456,5 @@ define(function(require) {
         retrieve: retrieve,
         noop: function () {}
     };
+    return util;
 });

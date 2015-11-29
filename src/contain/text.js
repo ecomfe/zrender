@@ -252,7 +252,6 @@ define(function (require) {
             ctx.font = textFont;
             return ctx.measureText(text);
         }
-
     };
 
     return textContain;

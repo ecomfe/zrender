@@ -9,7 +9,7 @@ define(function(require) {
 
     var Eventful = require('../mixin/Eventful');
 
-    var isDomLevel2 = !!window.addEventListener;
+    var isDomLevel2 = (typeof window !== 'undefined') && !!window.addEventListener;
     /**
      * 如果存在第三方嵌入的一些dom触发的事件，或touch事件，需要转换一下事件坐标
      */

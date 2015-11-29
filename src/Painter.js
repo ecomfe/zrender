@@ -107,7 +107,8 @@
      * @param {Ojbect} opts
      */
     var Painter = function (root, storage) {
-        var singleCanvas = root.nodeName.toUpperCase() === 'CANVAS';
+        var singleCanvas = !root.nodeName // In node ?
+            || root.nodeName.toUpperCase() === 'CANVAS';
         /**
          * @type {boolean}
          * @private
@@ -125,24 +126,28 @@
         this.root = root;
 
         var rootStyle = root.style;
-        rootStyle['-webkit-tap-highlight-color'] = 'transparent';
-        rootStyle['-webkit-user-select'] = 'none';
-        rootStyle['user-select'] = 'none';
-        rootStyle['-webkit-touch-callout'] = 'none';
+
+        // In node environment using node-canvas
+        if (rootStyle) {
+            rootStyle['-webkit-tap-highlight-color'] = 'transparent';
+            rootStyle['-webkit-user-select'] = 'none';
+            rootStyle['user-select'] = 'none';
+            rootStyle['-webkit-touch-callout'] = 'none';
+
+            root.innerHTML = '';
+        }
 
         /**
          * @type {module:zrender/Storage}
          */
         this.storage = storage;
 
-        root.innerHTML = '';
-
-        var width = this._getWidth();
-        var height = this._getHeight();
-        this._width = width;
-        this._height = height;
-
         if (!singleCanvas) {
+            var width = this._getWidth();
+            var height = this._getHeight();
+            this._width = width;
+            this._height = height;
+
             var domRoot = document.createElement('div');
             this._domRoot = domRoot;
             var domRootStyle = domRoot.style;
@@ -166,12 +171,20 @@
             this._zlevelList = [];
         }
         else {
+            // Use canvas width and height directly
+            var width = root.width;
+            var height = root.height;
+            this._width = width;
+            this._height = height;
+
             // Create layer if only one given canvas
             var mainLayer = new Layer(root, this);
             mainLayer.initContext();
             // FIXME Use canvas width and height
-            mainLayer.resize(width, height);
-            this._layers = { 0: mainLayer };
+            // mainLayer.resize(width, height);
+            this._layers = {
+                0: mainLayer
+            };
             this._zlevelList = [0];
         }
 
@@ -188,7 +201,7 @@
          * @return {HTMLDivElement}
          */
         getViewportRoot: function () {
-            return this._domRoot;
+            return this._singleCanvas ? this._layers[0].dom : this._domRoot;
         },
         /**
          * 刷新
@@ -196,11 +209,13 @@
          */
         refresh: function (paintAll) {
             var list = this.storage.getDisplayList(true);
+            var zlevelList = this._zlevelList;
+
             this._paintList(list, paintAll);
 
             // Paint custum layers
-            for (var i = 0; i < this._zlevelList.length; i++) {
-                var z = this._zlevelList[i];
+            for (var i = 0; i < zlevelList.length; i++) {
+                var z = zlevelList[i];
                 var layer = this._layers[z];
                 if (!layer.isBuildin && layer.refresh) {
                     layer.refresh();
@@ -235,7 +250,8 @@
 
                 // Change draw layer
                 if (currentZLevel !== el.zlevel) {
-                    currentZLevel = el.zlevel;
+                    // Only 0 zlevel if only has one canvas
+                    currentZLevel = this._singleCanvas ? 0 :el.zlevel;
                     currentLayer = this.getLayer(currentZLevel);
 
                     if (!currentLayer.isBuildin) {
@@ -524,20 +540,18 @@
         /**
          * 区域大小变化后重绘
          */
-        resize: function () {
+        resize: function (width, height) {
             var domRoot = this._domRoot;
+            // FIXME Why ?
             domRoot.style.display = 'none';
 
-            var width = this._getWidth();
-            var height = this._getHeight();
+            width = width || this._getWidth();
+            height = height || this._getHeight();
 
             domRoot.style.display = '';
 
             // 优化没有实际改变的resize
             if (this._width != width || height != this._height) {
-                this._width = width;
-                this._height = height;
-
                 domRoot.style.width = width + 'px';
                 domRoot.style.height = height + 'px';
 
@@ -547,6 +561,9 @@
 
                 this.refresh(true);
             }
+
+            this._width = width;
+            this._height = height;
 
             return this;
         },

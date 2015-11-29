@@ -124,7 +124,9 @@ define(function(require) {
         // VML 下为了性能可能会直接操作 VMLRoot 的位置
         // 因此鼠标的相对位置应该是相对于 VMLRoot
         // PENDING
-        this.handler = new Handler(painter.getViewportRoot(), storage, painter);
+        if (!env.node) {
+            this.handler = new Handler(painter.getViewportRoot(), storage, painter);
+        }
 
         /**
          * @type {module:zrender/animation/Animation}
@@ -236,7 +238,7 @@ define(function(require) {
          */
         resize: function() {
             this.painter.resize();
-            this.handler.resize();
+            this.handler && this.handler.resize();
         },
 
         /**
@@ -289,7 +291,7 @@ define(function(require) {
          * @param {Object} [context] 响应函数
          */
         on: function(eventName, eventHandler, context) {
-            this.handler.on(eventName, eventHandler, context);
+            this.handler && this.handler.on(eventName, eventHandler, context);
         },
 
         /**
@@ -299,7 +301,7 @@ define(function(require) {
          * @param {Function} eventHandler 响应函数
          */
         off: function(eventName, eventHandler) {
-            this.handler.off(eventName, eventHandler);
+            this.handler && this.handler.off(eventName, eventHandler);
         },
 
         /**
@@ -309,7 +311,7 @@ define(function(require) {
          * @param {event=} event event dom事件对象
          */
         trigger: function (eventName, event) {
-            this.handler.trigger(eventName, event);
+            this.handler && this.handler.trigger(eventName, event);
         },
 
 
@@ -330,7 +332,7 @@ define(function(require) {
             this.clear();
             this.storage.dispose();
             this.painter.dispose();
-            this.handler.dispose();
+            this.handler && this.handler.dispose();
 
             this.animation =
             this.storage =

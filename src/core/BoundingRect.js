@@ -76,7 +76,7 @@ define(function(require) {
                 this.y = mathMin(min[1], max[1]);
                 this.width = mathAbs(max[0] - min[0]);
                 this.height = mathAbs(max[1] - min[1]);
-            }
+            };
         })(),
 
         calculateTransform: function (b) {
