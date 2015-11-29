@@ -13,6 +13,7 @@ define(function (require) {
     var eventTool = require('./core/event');
     var util = require('./core/util');
     var Draggable = require('./mixin/Draggable');
+    var GestureMgr = require('./core/GestureMgr');
 
     var Eventful = require('./mixin/Eventful');
 
@@ -51,6 +52,10 @@ define(function (require) {
             cancelBubble: false,
             offsetX: event.zrX,
             offsetY: event.zrY,
+            gestureEvent: event.gestureEvent,
+            pinchX: event.pinchX,
+            pinchY: event.pinchY,
+            pinchScale: event.pinchScale,
             wheelDelta: event.zrDelta
         };
     }
@@ -66,8 +71,6 @@ define(function (require) {
 
             var x = event.zrX;
             var y = event.zrY;
-
-            this._hasfound = false;
 
             var hovered = this._findHover(x, y, null);
             var lastHovered = this._hovered;
@@ -122,10 +125,14 @@ define(function (require) {
          * @param {Event} event
          */
         touchstart: function (event) {
-            // eventTool.stop(event);// 阻止浏览器默认事件，重要
+            // FIXME
+            // 移动端可能需要default行为，例如静态图表时。
+            eventTool.stop(event);// 阻止浏览器默认事件，重要
             event = normalizeEvent(this.root, event);
 
             this._lastTouchMoment = new Date();
+
+            processGesture(this, event, 'start');
 
             // 平板补充一次findHover
             // this._mobileFindFixed(event);
@@ -141,8 +148,14 @@ define(function (require) {
          * @param {Event} event
          */
         touchmove: function (event) {
+            eventTool.stop(event);// 阻止浏览器默认事件，重要
             event = normalizeEvent(this.root, event);
 
+            processGesture(this, event, 'change');
+
+            // Mouse move should always be triggered no matter whether
+            // there is gestrue event, because mouse move and pinch may
+            // be used at the same time.
             this._mousemoveHandler(event);
         },
 
@@ -152,11 +165,15 @@ define(function (require) {
          * @param {Event} event
          */
         touchend: function (event) {
-            // eventTool.stop(event);// 阻止浏览器默认事件，重要
+            eventTool.stop(event);// 阻止浏览器默认事件，重要
             event = normalizeEvent(this.root, event);
+
+            processGesture(this, event, 'end');
 
             this._mouseupHandler(event);
 
+            // click event should always be triggered no matter whether
+            // there is gestrue event. System click can not be prevented.
             if (+new Date() - this._lastTouchMoment < TOUCH_CLICK_DELAY) {
                 // this._mobileFindFixed(event);
                 this._clickHandler(event);
@@ -171,6 +188,27 @@ define(function (require) {
             this._dispatch(this._hovered, name, event);
         };
     });
+
+    function processGesture(zrHandler, event, stage) {
+        var gestureMgr = zrHandler._gestureMgr;
+
+        stage === 'start' && gestureMgr.clear();
+
+        var gestureInfo = gestureMgr.recognize(
+            event,
+            zrHandler._findHover(event.zrX, event.zrY, null)
+        );
+
+        stage === 'end' && gestureMgr.clear();
+
+        if (gestureInfo) {
+            eventTool.stop(event);
+            var type = gestureInfo.type;
+            event.gestureEvent = type;
+
+            zrHandler._dispatch(gestureInfo.target, type, gestureInfo.event);
+        }
+    }
 
     /**
      * 为控制类实例初始化dom 事件处理函数
@@ -218,6 +256,10 @@ define(function (require) {
          * @private
          */
         this._lastY;
+        /**
+         * @private
+         */
+        this._gestureMgr = new GestureMgr();
 
         initDomHandler(this);
 

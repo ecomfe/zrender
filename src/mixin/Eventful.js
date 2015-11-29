@@ -16,7 +16,7 @@ define(function (require) {
      * @constructor
      */
     var Eventful = function () {
-        this._handlers = {};
+        this._$handlers = {};
     };
 
     Eventful.prototype = {
@@ -31,7 +31,7 @@ define(function (require) {
          * @param {Object} context
          */
         one: function (event, handler, context) {
-            var _h = this._handlers;
+            var _h = this._$handlers;
 
             if (!handler || !event) {
                 return this;
@@ -61,7 +61,7 @@ define(function (require) {
          * @param {Object} [context]
          */
         on: function (event, handler, context) {
-            var _h = this._handlers;
+            var _h = this._$handlers;
 
             if (!handler || !event) {
                 return this;
@@ -86,7 +86,7 @@ define(function (require) {
          * @return {boolean}
          */
         isSilent: function (event) {
-            var _h = this._handlers;
+            var _h = this._$handlers;
             return _h[event] && _h[event].length;
         },
 
@@ -96,10 +96,10 @@ define(function (require) {
          * @param {Function} [handler] 事件处理函数
          */
         off: function (event, handler) {
-            var _h = this._handlers;
+            var _h = this._$handlers;
 
             if (!event) {
-                this._handlers = {};
+                this._$handlers = {};
                 return this;
             }
 
@@ -131,7 +131,7 @@ define(function (require) {
          * @param {string} type 事件类型
          */
         trigger: function (type) {
-            if (this._handlers[type]) {
+            if (this._$handlers[type]) {
                 var args = arguments;
                 var argLen = args.length;
 
@@ -139,7 +139,7 @@ define(function (require) {
                     args = arrySlice.call(args, 1);
                 }
 
-                var _h = this._handlers[type];
+                var _h = this._$handlers[type];
                 var len = _h.length;
                 for (var i = 0; i < len;) {
                     // Optimize advise from backbone
@@ -177,7 +177,7 @@ define(function (require) {
          * @param {string} type 事件类型
          */
         triggerWithContext: function (type) {
-            if (this._handlers[type]) {
+            if (this._$handlers[type]) {
                 var args = arguments;
                 var argLen = args.length;
 
@@ -186,7 +186,7 @@ define(function (require) {
                 }
                 var ctx = args[args.length - 1];
 
-                var _h = this._handlers[type];
+                var _h = this._$handlers[type];
                 var len = _h.length;
                 for (var i = 0; i < len;) {
                     // Optimize advise from backbone
