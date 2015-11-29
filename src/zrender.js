@@ -109,12 +109,12 @@ define(function(require) {
 
         var renderer = opts.renderer;
         if (useVML) {
+            if (!painterCtors.vml) {
+                throw new Error('You need to require \'zrender/vml/vml\' to support IE8');
+            }
             renderer = 'vml';
         }
-        else if (!renderer) {
-            renderer = 'canvas';
-        }
-        if (!painterCtors[renderer]) {
+        else if (!renderer || !painterCtors[renderer]) {
             renderer = 'canvas';
         }
         var painter = new painterCtors[renderer](dom, storage, opts);
