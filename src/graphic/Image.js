@@ -10,6 +10,8 @@ define(function (require) {
     var zrUtil = require('../core/util');
     var roundRectHelper = require('./helper/roundRect');
 
+    var LRU = require('../core/LRU');
+    var globalImageCache = new LRU(50);
     /**
      * @alias zrender/graphic/Image
      * @extends module:zrender/graphic/Displayable
@@ -28,32 +30,51 @@ define(function (require) {
 
         brush: function (ctx) {
             var style = this.style;
-            var image = style.image;
-            var self = this;
-
-            // FIXME Case create many images with src
-            if (!this._imageCache) {
-                this._imageCache = {};
+            var src = style.image;
+            var image;
+            // style.image is an HTMLImageElement or HTMLCanvasElement
+            if (zrUtil.isDom(src)) {
+                image = src;
             }
-            if (typeof(image) === 'string') {
-                var src = image;
-                if (this._imageCache[src]) {
-                    image = this._imageCache[src];
-                } else {
+            // style.image is a url string
+            else {
+                image = this._image;
+            }
+            // FIXME Case create many images with src
+            if (!image && src) {
+                // Try get from global image cache
+                var cachedImgObj = globalImageCache.get(src);
+                if (!cachedImgObj) {
+                    // Create a new image
                     image = new Image();
                     image.onload = function () {
                         image.onload = null;
-                        self.dirty();
+                        for (var i = 0; i < cachedImgObj.pending.length; i++) {
+                            cachedImgObj.pending[i].dirty();
+                        }
                     };
-
+                    cachedImgObj = {
+                        image: image,
+                        pending: [this]
+                    };
                     image.src = src;
-                    this._imageCache[src] = image;
+                    globalImageCache.put(src, cachedImgObj);
+                    this._image = image;
+                }
+                else {
+                    image = cachedImgObj.image;
+                    this._image = image;
+                    // Image is not complete finish, add to pending list
+                    if (!image.width || !image.height || !image.complete) {
+                        cachedImgObj.pending.push(this);
+                        return;
+                    }
                 }
             }
-            if (image) {
+            else if (image) {
                 // 图片已经加载完成
                 if (image.nodeName.toUpperCase() == 'IMG') {
-                    if (! image.complete) {
+                    if (!image.complete) {
                         return;
                     }
                 }
