@@ -88,6 +88,12 @@ define(function(require) {
         },
 
         /**
+         * @param  {Function} cb
+         * @param  {}   context
+         */
+        traverse: function (cb, context) {},
+
+        /**
          * @protected
          */
         attrKV: function (key, value) {

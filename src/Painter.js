@@ -277,6 +277,9 @@
                     && !el.invisible
                     // Ignore transparent element
                     && el.style.opacity !== 0
+                    // Ignore scale 0 element, in some environment like node-canvas
+                    // Draw a scale 0 element can cause all following draw wrong
+                    && el.scale[0] && el.scale[1]
                     // Ignore culled element
                     && !(el.culling && isDisplayableCulled(el, viewWidth, viewHeight))
                 ) {

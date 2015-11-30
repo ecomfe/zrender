@@ -153,6 +153,14 @@ define(function (require) {
         },
 
         /**
+         * @param  {Function} cb
+         * @param  {}   context
+         */
+        traverse: function (cb, context) {
+            cb.call(context, this);
+        },
+
+        /**
          * 判断坐标 x, y 是否在图形的包围盒上
          * If bounding rect of element contain coord x, y
          * @param  {number} x
