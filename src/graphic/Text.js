@@ -51,7 +51,7 @@ define(function (require) {
                 ctx.textAlign = style.textAlign;
                 ctx.textBaseline = style.textBaseline;
 
-                var lineHeight = textContain.measureText('国', ctx.font);
+                var lineHeight = textContain.measureText('国', ctx.font).width;
 
                 var textLines = text.split('\n');
                 for (var i = 0; i < textLines.length; i++) {

@@ -79,6 +79,11 @@ define(function(require) {
             };
         })(),
 
+        /**
+         * Calculate matrix of transforming from self to target rect
+         * @param  {module:zrender/core/BoundingRect} b
+         * @return {Array.<number>}
+         */
         calculateTransform: function (b) {
             var a = this;
             var sx = b.width / a.width;
