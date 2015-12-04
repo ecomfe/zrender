@@ -126,29 +126,33 @@ define(function (require) {
         getBoundingRect: function () {
             if (!this._rect) {
                 var path = this.path;
-                var style = this.style;
                 if (this.__dirtyPath) {
                     path.beginPath();
                     this.buildPath(path, this.shape);
                 }
                 this._rect = path.getBoundingRect();
-
-                if (pathHasStroke(style)) {
-                    var rect = this._rect;
-                    // FIXME Must after updateTransform
-                    var w = style.lineWidth;
-                    // PENDING, Min line width is needed when line is horizontal or vertical
-                    var lineScale = style.strokeNoScale ? this.getLineScale() : 1;
-                    w = Math.max(w, this.strokeContainThreshold);
-                    // Consider line width
-                    // Line scale can't be 0;
-                    if (lineScale > 1e-10) {
-                        rect.width += w / lineScale;
-                        rect.height += w / lineScale;
-                        rect.x -= w / lineScale / 2;
-                        rect.y -= w / lineScale / 2;
-                    }
+            }
+            // Scale and lineWidth may change
+            var style = this.style;
+            if (pathHasStroke(style) && this.__dirty) {
+                var rect = this._rect;
+                var rectWithStroke = this._rectWithStroke
+                    || (this._rectWithStroke = rect.clone());
+                rectWithStroke.copy(rect);
+                // FIXME Must after updateTransform
+                var w = style.lineWidth;
+                // PENDING, Min line width is needed when line is horizontal or vertical
+                var lineScale = style.strokeNoScale ? this.getLineScale() : 1;
+                w = Math.max(w, this.strokeContainThreshold);
+                // Consider line width
+                // Line scale can't be 0;
+                if (lineScale > 1e-10) {
+                    rectWithStroke.width += w / lineScale;
+                    rectWithStroke.height += w / lineScale;
+                    rectWithStroke.x -= w / lineScale / 2;
+                    rectWithStroke.y -= w / lineScale / 2;
                 }
+                return rectWithStroke;
             }
             return this._rect;
         },

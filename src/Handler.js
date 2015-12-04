@@ -80,15 +80,15 @@ define(function (require) {
             this.root.style.cursor = hovered ? hovered.cursor : 'default';
             // Mouse out on previous hovered element
             if (lastHovered && hovered !== lastHovered && lastHovered.__zr) {
-                this._dispatch(lastHovered, 'mouseout', event);
+                this._dispatchProxy(lastHovered, 'mouseout', event);
             }
 
             // Mouse moving on one element
-            this._dispatch(hovered, 'mousemove', event);
+            this._dispatchProxy(hovered, 'mousemove', event);
 
             // Mouse over on a new element
             if (hovered && hovered !== lastHovered) {
-                this._dispatch(hovered, 'mouseover', event);
+                this._dispatchProxy(hovered, 'mouseover', event);
             }
         },
 
@@ -112,7 +112,7 @@ define(function (require) {
                 }
             }
 
-            this._dispatch(this._hovered, 'mouseout', event);
+            this._dispatchProxy(this._hovered, 'mouseout', event);
 
             this.trigger('globalout', {
                 event: event
@@ -185,7 +185,7 @@ define(function (require) {
     util.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick'], function (name) {
         domHandlers[name] = function (event) {
             event = normalizeEvent(this.root, event);
-            this._dispatch(this._hovered, name, event);
+            this._dispatchProxy(this._hovered, name, event);
         };
     });
 
@@ -206,7 +206,7 @@ define(function (require) {
             var type = gestureInfo.type;
             event.gestureEvent = type;
 
-            zrHandler._dispatch(gestureInfo.target, type, gestureInfo.event);
+            zrHandler._dispatchProxy(gestureInfo.target, type, gestureInfo.event);
         }
     }
 
@@ -333,7 +333,7 @@ define(function (require) {
          * @param {string} eventName 事件名称
          * @param {Object} event 事件对象
          */
-        _dispatch: function (targetEl, eventName, event) {
+        _dispatchProxy: function (targetEl, eventName, event) {
             var eventHandler = 'on' + eventName;
             var eventPacket = makeEventPacket(eventName, targetEl, event);
 

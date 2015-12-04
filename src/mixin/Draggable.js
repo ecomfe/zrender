@@ -25,7 +25,7 @@ define(function (require) {
                 this._x = e.offsetX;
                 this._y = e.offsetY;
 
-                this._dispatch(draggingTarget, 'dragstart', e.event);
+                this._dispatchProxy(draggingTarget, 'dragstart', e.event);
             }
         },
 
@@ -42,7 +42,7 @@ define(function (require) {
                 this._y = y;
 
                 draggingTarget.drift(dx, dy);
-                this._dispatch(draggingTarget, 'drag', e.event);
+                this._dispatchProxy(draggingTarget, 'drag', e.event);
 
                 var dropTarget = this._findHover(x, y, draggingTarget);
                 var lastDropTarget = this._dropTarget;
@@ -50,20 +50,20 @@ define(function (require) {
 
                 if (draggingTarget !== dropTarget) {
                     if (lastDropTarget && dropTarget !== lastDropTarget) {
-                        this._dispatch(lastDropTarget, 'dragleave', e.event);
+                        this._dispatchProxy(lastDropTarget, 'dragleave', e.event);
                     }
                     if (dropTarget && dropTarget !== lastDropTarget) {
-                        this._dispatch(dropTarget, 'dragenter', e.event);
+                        this._dispatchProxy(dropTarget, 'dragenter', e.event);
                     }
                 }
             }
         },
 
         _dragEnd: function (e) {
-            this._dispatch(this._draggingTarget, 'dragend', e.event);
+            this._dispatchProxy(this._draggingTarget, 'dragend', e.event);
 
             if (this._dropTarget) {
-                this._dispatch(this._dropTarget, 'drop', e.event);
+                this._dispatchProxy(this._dropTarget, 'drop', e.event);
             }
 
             this._draggingTarget = null;
