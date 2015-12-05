@@ -4,8 +4,8 @@
 define(function(require) {
     'use strict';
 
-    var vec2 = require('zrender/core/vector');
-    var matrix = require('zrender/core/matrix');
+    var vec2 = require('./vector');
+    var matrix = require('./matrix');
 
     var v2ApplyTransform = vec2.applyTransform;
     var mathMin = Math.min;
