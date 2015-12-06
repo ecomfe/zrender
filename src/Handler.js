@@ -185,7 +185,10 @@ define(function (require) {
     util.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick'], function (name) {
         domHandlers[name] = function (event) {
             event = normalizeEvent(this.root, event);
-            this._dispatchProxy(this._hovered, name, event);
+
+            // Find hover again to avoid click event is dispatched manually. Or click is triggered without mouseover
+            var hovered = this._hovered || this._findHover(event.zrX, event.zrY, null);
+            this._dispatchProxy(hovered, name, event);
         };
     });
 
