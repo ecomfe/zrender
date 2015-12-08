@@ -68,7 +68,7 @@ define(function (require) {
                 }
             }
 
-            this.style.bind(ctx, this);
+            style.bind(ctx, this);
             this.setTransform(ctx);
 
             var lineDash = style.lineDash;
@@ -124,18 +124,22 @@ define(function (require) {
         buildPath: function (ctx, shapeCfg) {},
 
         getBoundingRect: function () {
-            if (!this._rect) {
+            var rect = this._rect;
+            var style = this.style;
+            if (!rect) {
                 var path = this.path;
                 if (this.__dirtyPath) {
                     path.beginPath();
                     this.buildPath(path, this.shape);
                 }
-                this._rect = path.getBoundingRect();
+                rect = path.getBoundingRect();
             }
-            // Scale and lineWidth may change
-            var style = this.style;
-            if (pathHasStroke(style) && this.__dirty) {
-                var rect = this._rect;
+            /**
+             * Needs update rect with stroke lineWidth when
+             * 1. Element changes scale or lineWidth
+             * 2. First create rect
+             */
+            if (pathHasStroke(style) && (this.__dirty || !this._rect)) {
                 var rectWithStroke = this._rectWithStroke
                     || (this._rectWithStroke = rect.clone());
                 rectWithStroke.copy(rect);
@@ -154,7 +158,8 @@ define(function (require) {
                 }
                 return rectWithStroke;
             }
-            return this._rect;
+            this._rect = rect;
+            return rect;
         },
 
         contain: function (x, y) {
