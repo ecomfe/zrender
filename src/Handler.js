@@ -205,7 +205,7 @@ define(function (require) {
         stage === 'end' && gestureMgr.clear();
 
         if (gestureInfo) {
-            eventTool.stop(event);
+            // eventTool.stop(event);
             var type = gestureInfo.type;
             event.gestureEvent = type;
 
