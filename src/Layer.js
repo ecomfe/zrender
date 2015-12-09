@@ -157,15 +157,16 @@ define(function (require) {
 
         /**
          * 清空该层画布
+         * @param {boolean} clearAll Clear all with out motion blur
          */
-        clear: function () {
+        clear: function (clearAll) {
             var dom = this.dom;
             var ctx = this.ctx;
             var width = dom.width;
             var height = dom.height;
 
             var haveClearColor = this.clearColor;
-            var haveMotionBLur = this.motionBlur;
+            var haveMotionBLur = this.motionBlur && !clearAll;
             var lastFrameAlpha = this.lastFrameAlpha;
 
             var dpr = config.devicePixelRatio;

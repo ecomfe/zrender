@@ -247,11 +247,11 @@
 
             for (var i = 0, l = list.length; i < l; i++) {
                 var el = list[i];
-
+                var elZLevel = this._singleCanvas ? 0 : el.zlevel;
                 // Change draw layer
-                if (currentZLevel !== el.zlevel) {
+                if (currentZLevel !== elZLevel) {
                     // Only 0 zlevel if only has one canvas
-                    currentZLevel = this._singleCanvas ? 0 :el.zlevel;
+                    currentZLevel = elZLevel;
                     currentLayer = this.getLayer(currentZLevel);
 
                     if (!currentLayer.isBuildin) {
@@ -463,7 +463,7 @@
 
             for (var i = 0, l = list.length; i < l; i++) {
                 var el = list[i];
-                var zlevel = el.zlevel;
+                var zlevel = this._singleCanvas ? 0 : el.zlevel;
                 var layer = layers[zlevel];
                 if (layer) {
                     layer.elCount++;

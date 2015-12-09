@@ -13,9 +13,6 @@ define(function (require) {
 
     var EPSILON = 5e-5;
 
-    function isAroundZero(val) {
-        return val > -EPSILON && val < EPSILON;
-    }
     function isNotAroundZero(val) {
         return val > EPSILON || val < -EPSILON;
     }
