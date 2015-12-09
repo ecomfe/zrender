@@ -127,7 +127,7 @@ define(function (require) {
         touchstart: function (event) {
             // FIXME
             // 移动端可能需要default行为，例如静态图表时。
-            eventTool.stop(event);// 阻止浏览器默认事件，重要
+            // eventTool.stop(event);// 阻止浏览器默认事件，重要
             event = normalizeEvent(this.root, event);
 
             this._lastTouchMoment = new Date();
@@ -148,7 +148,7 @@ define(function (require) {
          * @param {Event} event
          */
         touchmove: function (event) {
-            eventTool.stop(event);// 阻止浏览器默认事件，重要
+            // eventTool.stop(event);// 阻止浏览器默认事件，重要
             event = normalizeEvent(this.root, event);
 
             processGesture(this, event, 'change');
@@ -165,7 +165,7 @@ define(function (require) {
          * @param {Event} event
          */
         touchend: function (event) {
-            eventTool.stop(event);// 阻止浏览器默认事件，重要
+            // eventTool.stop(event);// 阻止浏览器默认事件，重要
             event = normalizeEvent(this.root, event);
 
             processGesture(this, event, 'end');
