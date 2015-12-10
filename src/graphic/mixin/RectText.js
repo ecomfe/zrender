@@ -39,11 +39,11 @@ define(function (require) {
         drawRectText: function (ctx, rect, textRect) {
             var style = this.style;
             var text = style.text;
+            // Convert to string
+            text != null && (text += '');
             if (!text) {
                 return;
             }
-            // Convert to string
-            text += '';
             var x;
             var y;
             var textPosition = style.textPosition;

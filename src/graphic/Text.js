@@ -31,18 +31,19 @@ define(function (require) {
             var style = this.style;
             var x = style.x || 0;
             var y = style.y || 0;
+            // Convert to string
             var text = style.text;
             var textFill = style.fill;
             var textStroke = style.stroke;
+
+            // Convert to string
+            text != null && (text += '');
 
             if (text) {
                 ctx.save();
 
                 this.style.bind(ctx);
                 this.setTransform(ctx);
-
-                // Convert to string
-                text += '';
 
                 textFill && (ctx.fillStyle = textFill);
                 textStroke && (ctx.strokeStyle = textStroke);

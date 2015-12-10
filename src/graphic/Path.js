@@ -113,7 +113,7 @@ define(function (require) {
             hasStroke && path.stroke(ctx);
 
             // Draw rect text
-            if (style.text) {
+            if (style.text != null) {
                 // var rect = this.getBoundingRect();
                 this.drawRectText(ctx, this.getBoundingRect());
             }
