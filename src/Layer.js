@@ -123,10 +123,10 @@ define(function (require) {
         },
 
         createBackBuffer: function () {
-            this.domBack = createDom('back-' + this.id, 'canvas', this.painter);
-            this.ctxBack = this.domBack.getContext('2d');
-
             var dpr = this.dpr;
+
+            this.domBack = createDom('back-' + this.id, 'canvas', this.painter, dpr);
+            this.ctxBack = this.domBack.getContext('2d');
 
             if (dpr != 1) {
                 this.ctxBack.scale(dpr, dpr);

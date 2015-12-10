@@ -511,7 +511,7 @@
         configLayer: function (zlevel, config) {
             if (config) {
                 var layerConfig = this._layerConfig;
-                if (! layerConfig[zlevel]) {
+                if (!layerConfig[zlevel]) {
                     layerConfig[zlevel] = config;
                 }
                 else {
