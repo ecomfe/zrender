@@ -185,22 +185,6 @@ define(function (require) {
             this.__zr && this.__zr.refresh();
         },
 
-        drift: function (dx, dy) {
-            switch (this.draggable) {
-                case 'horizontal':
-                    dy = 0;
-                    break;
-                case 'vertical':
-                    dx = 0;
-                    break;
-            }
-
-            this.position[0] += dx;
-            this.position[1] += dy;
-
-            this.dirty();
-        },
-
         /**
          * 图形是否会触发事件
          * If displayable object binded any event
