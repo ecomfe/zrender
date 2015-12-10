@@ -106,19 +106,21 @@
      * @param {module:zrender/Storage} storage
      * @param {Ojbect} opts
      */
-    var Painter = function (root, storage) {
+    var Painter = function (root, storage, opts) {
         var singleCanvas = !root.nodeName // In node ?
             || root.nodeName.toUpperCase() === 'CANVAS';
+
+        opts = opts || {};
+
+        /**
+         * @type {number}
+         */
+        this.dpr = opts.devicePixelRatio || config.devicePixelRatio;
         /**
          * @type {boolean}
          * @private
          */
         this._singleCanvas = singleCanvas;
-        /**
-         * @type {Object}
-         * @private
-         */
-        this._opts = {};
         /**
          * 绘图容器
          * @type {HTMLElement}
@@ -178,7 +180,8 @@
             this._height = height;
 
             // Create layer if only one given canvas
-            var mainLayer = new Layer(root, this);
+            // Device pixel ratio is fixed to 1 because given canvas has its specified width and height
+            var mainLayer = new Layer(root, this, 1);
             mainLayer.initContext();
             // FIXME Use canvas width and height
             // mainLayer.resize(width, height);
@@ -328,7 +331,7 @@
             var layer = this._layers[zlevel];
             if (!layer) {
                 // Create a new layer
-                layer = new Layer('zr_' + zlevel, this);
+                layer = new Layer('zr_' + zlevel, this, this.dpr);
                 layer.isBuildin = true;
 
                 if (this._layerConfig[zlevel]) {
@@ -606,7 +609,7 @@
                 return this._layers[0].toDataURL(type, args);
             }
 
-            var imageLayer = new Layer('image', this);
+            var imageLayer = new Layer('image', this, this.dpr);
             this._domRoot.appendChild(imageLayer.dom);
             imageLayer.initContext();
 
@@ -667,16 +670,14 @@
                     - (parseInt10(stl.paddingBottom) || 0)) | 0;
         },
 
-        _pathToImage: function (
-            id, path, width, height, devicePixelRatio
-        ) {
+        _pathToImage: function (id, path, width, height, dpr) {
             var canvas = document.createElement('canvas');
             var ctx = canvas.getContext('2d');
 
-            canvas.width = width * devicePixelRatio;
-            canvas.height = height * devicePixelRatio;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
 
-            ctx.clearRect(0, 0, width * devicePixelRatio, height * devicePixelRatio);
+            ctx.clearRect(0, 0, width * dpr, height * dpr);
 
             var pathTransform = {
                 position : path.position,
@@ -720,7 +721,7 @@
 
             return function (id, e, width, height) {
                 return me._pathToImage(
-                    id, e, width, height, config.devicePixelRatio
+                    id, e, width, height, me.dpr
                 );
             };
         }

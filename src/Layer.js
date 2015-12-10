@@ -18,8 +18,9 @@ define(function (require) {
      * @param {string} id dom id 待用
      * @param {string} type dom type，such as canvas, div etc.
      * @param {Painter} painter painter instance
+     * @param {number} number
      */
-    function createDom(id, type, painter) {
+    function createDom(id, type, painter, dpr) {
         var newDom = document.createElement(type);
         var width = painter.getWidth();
         var height = painter.getHeight();
@@ -31,8 +32,8 @@ define(function (require) {
         newDomStyle.top = 0;
         newDomStyle.width = width + 'px';
         newDomStyle.height = height + 'px';
-        newDom.width = width * config.devicePixelRatio;
-        newDom.height = height * config.devicePixelRatio;
+        newDom.width = width * dpr;
+        newDom.height = height * dpr;
 
         // id不作为索引用，避免可能造成的重名，定义为私有属性
         newDom.setAttribute('data-zr-dom-id', id);
@@ -45,11 +46,13 @@ define(function (require) {
      * @extends module:zrender/mixin/Transformable
      * @param {string} id
      * @param {module:zrender/Painter} painter
+     * @param {number} [dpr]
      */
-    var Layer = function(id, painter) {
+    var Layer = function(id, painter, dpr) {
         var dom;
+        dpr = dpr || config.devicePixelRatio;
         if (typeof id === 'string') {
-            dom = createDom(id, 'canvas', painter);
+            dom = createDom(id, 'canvas', painter, dpr);
         }
         // Not using isDom because in node it will return false
         else if (util.isObject(id)) {
@@ -94,6 +97,12 @@ define(function (require) {
          * @default 0.7
          */
         this.lastFrameAlpha = 0.7;
+
+        /**
+         * Layer dpr
+         * @type {number}
+         */
+        this.dpr = dpr;
     };
 
     Layer.prototype = {
@@ -107,7 +116,7 @@ define(function (require) {
         initContext: function () {
             this.ctx = this.dom.getContext('2d');
 
-            var dpr = config.devicePixelRatio;
+            var dpr = this.dpr;
             if (dpr != 1) {
                 this.ctx.scale(dpr, dpr);
             }
@@ -117,7 +126,7 @@ define(function (require) {
             this.domBack = createDom('back-' + this.id, 'canvas', this.painter);
             this.ctxBack = this.domBack.getContext('2d');
 
-            var dpr = config.devicePixelRatio;
+            var dpr = this.dpr;
 
             if (dpr != 1) {
                 this.ctxBack.scale(dpr, dpr);
@@ -129,7 +138,7 @@ define(function (require) {
          * @param  {number} height
          */
         resize: function (width, height) {
-            var dpr = config.devicePixelRatio;
+            var dpr = this.dpr;
 
             var dom = this.dom;
             var domStyle = dom.style;
@@ -169,7 +178,7 @@ define(function (require) {
             var haveMotionBLur = this.motionBlur && !clearAll;
             var lastFrameAlpha = this.lastFrameAlpha;
 
-            var dpr = config.devicePixelRatio;
+            var dpr = this.dpr;
 
             if (haveMotionBLur) {
                 if (!this.domBack) {
