@@ -189,12 +189,13 @@ define(function(require) {
     /**
      * @param {Object|Function} target
      * @param {Object|Function} sorce
+     * @param {boolean} overlay
      */
-    function mixin(target, source) {
+    function mixin(target, source, overlay) {
         target = 'prototype' in target ? target.prototype : target;
         source = 'prototype' in source ? source.prototype : source;
 
-        defaults(target, source);
+        defaults(target, source, overlay);
     }
 
     /**
