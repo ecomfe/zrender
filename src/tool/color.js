@@ -347,6 +347,32 @@ define(function(require) {
     }
 
     /**
+     * Map value to color. Faster than mapToColor methods because color is represented by rgba array
+     * @param {number} normalizedValue A float between 0 and 1.
+     * @param {Array.<Array.<number>>} colors List of rgba color array
+     * @param {Array.<number>} [out] Mapped gba color array
+     * @return {Array.<number>}
+     */
+    function fastMapToColor(normalizedValue, colors, out) {
+        if (!(colors && colors.length)
+            || !(normalizedValue >= 0 && normalizedValue <= 1)
+        ) {
+            return;
+        }
+        out = out || [0, 0, 0, 0];
+        var value = normalizedValue * (colors.length - 1);
+        var leftIndex = Math.floor(value);
+        var rightIndex = Math.ceil(value);
+        var leftColor = parse(colors[leftIndex]);
+        var rightColor = parse(colors[rightIndex]);
+        var dv = value - leftIndex;
+        out[0] = clampCssByte(lerp(leftColor[0], rightColor[0], dv));
+        out[1] = clampCssByte(lerp(leftColor[1], rightColor[1], dv));
+        out[2] = clampCssByte(lerp(leftColor[2], rightColor[2], dv));
+        out[3] = clampCssByte(lerp(leftColor[3], rightColor[3], dv));
+        return out;
+    }
+    /**
      * @param {number} normalizedValue A float between 0 and 1.
      * @param {Array.<string>} colors Color list.
      * @param {boolean=} fullOutput Default false.
@@ -474,6 +500,7 @@ define(function(require) {
         parse: parse,
         lift: lift,
         toHex: toHex,
+        fastMapToColor: fastMapToColor,
         mapToColor: mapToColor,
         mapIntervalToColor: mapIntervalToColor,
         modifyHSL: modifyHSL,

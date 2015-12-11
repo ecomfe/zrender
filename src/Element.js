@@ -73,6 +73,32 @@ define(function(require) {
         clipPath: null,
 
         /**
+         * Drift element
+         * @param  {number} dx dx on the global space
+         * @param  {number} dy dy on the global space
+         */
+        drift: function (dx, dy) {
+            switch (this.draggable) {
+                case 'horizontal':
+                    dy = 0;
+                    break;
+                case 'vertical':
+                    dx = 0;
+                    break;
+            }
+
+            var m = this.transform;
+            if (!m) {
+                m = this.transform = [1, 0, 0, 1, 0, 0];
+            }
+            m[4] += dx;
+            m[5] += dy;
+
+            this.decomposeTransform();
+            this.dirty();
+        },
+
+        /**
          * Hook before update
          */
         beforeUpdate: function () {},
