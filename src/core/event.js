@@ -10,6 +10,11 @@ define(function(require) {
     var Eventful = require('../mixin/Eventful');
 
     var isDomLevel2 = (typeof window !== 'undefined') && !!window.addEventListener;
+
+    function getBoundingClientRect(el) {
+        // BlackBerry 5, iOS 3 (original iPhone) don't have getBoundingRect
+        return el.getBoundingClientRect ? el.getBoundingClientRect() : { left: 0, top: 0};
+    }
     /**
      * 如果存在第三方嵌入的一些dom触发的事件，或touch事件，需要转换一下事件坐标
      */
@@ -38,18 +43,11 @@ define(function(require) {
                 mouseY = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
             }
 
-            var elLeft = 0;
-            var elTop = 0;
-            while (el.offsetParent) {
-                elLeft += el.offsetLeft;
-                elTop += el.offsetTop;
-
-                el = el.offsetParent;
-            }
-
-
-            e.zrX = mouseX - elLeft;
-            e.zrY = mouseY - elTop;
+            var box = getBoundingClientRect(el);
+            var top = box.top + (window.pageYOffset || el.scrollTop) - (el.clientTop || 0);
+            var left = box.left + (window.pageXOffset || el.scrollLeft) - (el.clientLeft || 0);
+            e.zrX = mouseX - left;
+            e.zrY = mouseY - top;
             e.zrDelta = (e.wheelDelta) ? e.wheelDelta / 120 : -(e.detail || 0) / 3;
         }
         else {
@@ -57,7 +55,7 @@ define(function(require) {
                             ? e.targetTouches[0]
                             : e.changedTouches[0];
             if (touch) {
-                var rBounding = el.getBoundingClientRect();
+                var rBounding = getBoundingClientRect(el);
                 // touch事件坐标是全屏的~
                 e.zrX = touch.clientX - rBounding.left;
                 e.zrY = touch.clientY - rBounding.top;
