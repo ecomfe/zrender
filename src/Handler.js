@@ -359,7 +359,8 @@ define(function (require) {
                 // 冒泡到顶级 zrender 对象
                 this.trigger(eventName, eventPacket);
                 // 分发事件到用户自定义层
-                this.painter.eachOtherLayer(function (layer) {
+                // 用户有可能在全局 click 事件中 dispose，所以需要判断下 painter 是否存在
+                this.painter && this.painter.eachOtherLayer(function (layer) {
                     if (typeof(layer[eventHandler]) == 'function') {
                         layer[eventHandler].call(layer, eventPacket);
                     }
