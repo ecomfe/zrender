@@ -429,6 +429,17 @@ define(function(require) {
         }
     }
 
+    /**
+     * @memberOf module:zrender/tool/util
+     * @param {Array} arr
+     * @param {number} startIndex
+     * @param {number} endIndex
+     * @return {Array}
+     */
+    function slice() {
+        return Function.call.apply(nativeSlice, arguments);
+    }
+
     var util = {
         inherits: inherits,
         mixin: mixin,
@@ -440,6 +451,7 @@ define(function(require) {
         getContext: getContext,
         createCanvas: createCanvas,
         indexOf: indexOf,
+        slice: slice,
         find: find,
         isArrayLike: isArrayLike,
         each: each,

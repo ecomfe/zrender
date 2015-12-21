@@ -187,7 +187,7 @@ define(function (require) {
             event = normalizeEvent(this.root, event);
 
             // Find hover again to avoid click event is dispatched manually. Or click is triggered without mouseover
-            var hovered = this._hovered || this._findHover(event.zrX, event.zrY, null);
+            var hovered = this._findHover(event.zrX, event.zrY, null);
             this._dispatchProxy(hovered, name, event);
         };
     });
