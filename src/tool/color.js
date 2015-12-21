@@ -363,8 +363,8 @@ define(function(require) {
         var value = normalizedValue * (colors.length - 1);
         var leftIndex = Math.floor(value);
         var rightIndex = Math.ceil(value);
-        var leftColor = parse(colors[leftIndex]);
-        var rightColor = parse(colors[rightIndex]);
+        var leftColor = colors[leftIndex];
+        var rightColor = colors[rightIndex];
         var dv = value - leftIndex;
         out[0] = clampCssByte(lerp(leftColor[0], rightColor[0], dv));
         out[1] = clampCssByte(lerp(leftColor[1], rightColor[1], dv));

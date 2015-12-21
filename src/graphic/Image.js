@@ -32,13 +32,13 @@ define(function (require) {
             var style = this.style;
             var src = style.image;
             var image;
-            // style.image is an HTMLImageElement or HTMLCanvasElement
-            if (zrUtil.isDom(src)) {
-                image = src;
-            }
             // style.image is a url string
-            else {
+            if (typeof src === 'string') {
                 image = this._image;
+            }
+            // style.image is an HTMLImageElement or HTMLCanvasElement or Canvas
+            else {
+                image = src;
             }
             // FIXME Case create many images with src
             if (!image && src) {
@@ -73,11 +73,11 @@ define(function (require) {
             }
             else if (image) {
                 // 图片已经加载完成
-                if (image.nodeName.toUpperCase() == 'IMG') {
-                    if (!image.complete) {
-                        return;
-                    }
-                }
+                // if (image.nodeName.toUpperCase() == 'IMG') {
+                //     if (!image.complete) {
+                //         return;
+                //     }
+                // }
                 // Else is canvas
 
                 var width = style.width || image.width;
