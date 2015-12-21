@@ -60,18 +60,20 @@ define(function (require) {
                     image.src = src;
                     globalImageCache.put(src, cachedImgObj);
                     this._image = image;
+                    return;
                 }
                 else {
                     image = cachedImgObj.image;
                     this._image = image;
                     // Image is not complete finish, add to pending list
-                    if (!image.width || !image.height || !image.complete) {
+                    if (!image.width || !image.height) {
                         cachedImgObj.pending.push(this);
                         return;
                     }
                 }
             }
-            else if (image) {
+
+            if (image) {
                 // 图片已经加载完成
                 // if (image.nodeName.toUpperCase() == 'IMG') {
                 //     if (!image.complete) {

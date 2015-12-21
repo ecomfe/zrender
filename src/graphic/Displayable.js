@@ -103,7 +103,7 @@ define(function (require) {
 
         /**
          * 是否相应鼠标事件
-         * @name module:/zrender/graphic/Displayable#hoverable
+         * @name module:/zrender/graphic/Displayable#silent
          * @type {boolean}
          * @default false
          */
@@ -122,6 +122,13 @@ define(function (require) {
          * @type {string}
          */
         cursor: 'pointer',
+
+        /**
+         * If hover area is bounding rect
+         * @name module:/zrender/graphic/Displayable#rectHover
+         * @type {string}
+         */
+        rectHover: false,
 
         beforeBrush: function (ctx) {},
 
