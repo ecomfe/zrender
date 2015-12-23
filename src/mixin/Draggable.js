@@ -22,6 +22,7 @@ define(function (require) {
             var draggingTarget = e.target;
             if (draggingTarget && draggingTarget.draggable) {
                 this._draggingTarget = draggingTarget;
+                draggingTarget.dragging = true;
                 this._x = e.offsetX;
                 this._y = e.offsetY;
 
@@ -41,7 +42,7 @@ define(function (require) {
                 this._x = x;
                 this._y = y;
 
-                draggingTarget.drift(dx, dy);
+                draggingTarget.drift(dx, dy, e);
                 this._dispatchProxy(draggingTarget, 'drag', e.event);
 
                 var dropTarget = this._findHover(x, y, draggingTarget);
@@ -60,7 +61,13 @@ define(function (require) {
         },
 
         _dragEnd: function (e) {
-            this._dispatchProxy(this._draggingTarget, 'dragend', e.event);
+            var draggingTarget = this._draggingTarget;
+
+            if (draggingTarget) {
+                draggingTarget.dragging = false;
+            }
+
+            this._dispatchProxy(draggingTarget, 'dragend', e.event);
 
             if (this._dropTarget) {
                 this._dispatchProxy(this._dropTarget, 'drop', e.event);
@@ -69,6 +76,7 @@ define(function (require) {
             this._draggingTarget = null;
             this._dropTarget = null;
         }
+
     };
 
     return Draggable;

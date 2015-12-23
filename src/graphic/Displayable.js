@@ -102,6 +102,14 @@ define(function (require) {
         draggable: false,
 
         /**
+         * 是否正在拖拽
+         * @name module:/zrender/graphic/Displayable#draggable
+         * @type {boolean}
+         * @default false
+         */
+        dragging: false,
+
+        /**
          * 是否相应鼠标事件
          * @name module:/zrender/graphic/Displayable#silent
          * @type {boolean}
