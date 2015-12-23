@@ -64,6 +64,12 @@ define(function(require) {
             var min = [];
             var max = [];
             return function (m) {
+                // In case usage like this
+                // el.getBoundingRect().applyTransform(el.transform)
+                // And element has no transform
+                if (!m) {
+                    return;
+                }
                 min[0] = this.x;
                 min[1] = this.y;
                 max[0] = this.x + this.width;
