@@ -599,22 +599,23 @@
         },
 
         /**
-         * 图像导出
-         * @param {string} type
-         * @param {string} [backgroundColor='#fff'] 背景色
-         * @return {string} 图片的Base64 url
+         * Get canvas which has all thing rendered
+         * @param {Object} opts
+         * @param {string} [opts.backgroundColor]
          */
-        toDataURL: function (type, backgroundColor, args) {
+        getRenderedCanvas: function (opts) {
+            opts = opts || {};
             if (this._singleCanvas) {
-                return this._layers[0].toDataURL(type, args);
+                return this._layers[0].dom;
             }
 
-            var imageLayer = new Layer('image', this, this.dpr);
-            this._domRoot.appendChild(imageLayer.dom);
+            var imageLayer = new Layer(
+                'image', this, opts.devicePixelRatio || this.dpr
+            );
             imageLayer.initContext();
 
             var ctx = imageLayer.ctx;
-            imageLayer.clearColor = backgroundColor || '#fff';
+            imageLayer.clearColor = opts.backgroundColor;
             imageLayer.clear();
 
             var displayList = this.storage.getDisplayList(true);
@@ -622,21 +623,15 @@
             for (var i = 0; i < displayList.length; i++) {
                 var el = displayList[i];
                 if (!el.invisible) {
-                    if (!el.onbrush // 没有onbrush
-                        // 有onbrush并且调用执行返回false或undefined则继续粉刷
-                        || (el.onbrush && !el.onbrush(ctx, false))
-                    ) {
-                        el.brush(ctx, false);
-                    }
+                    el.beforeBrush && el.beforeBrush(ctx);
+                    // TODO Check image cross origin
+                    el.brush(ctx, false);
+                    el.afterBrush && el.afterBrush(ctx);
                 }
             }
 
-            var image = imageLayer.dom.toDataURL(type, args);
-            ctx = null;
-            this._domRoot.removeChild(imageLayer.dom);
-            return image;
+            return imageLayer.dom;
         },
-
         /**
          * 获取绘图区域宽度
          */
