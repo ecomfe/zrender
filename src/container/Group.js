@@ -211,7 +211,7 @@ define(function (require) {
             var children = this._children;
             for (var i = 0; i < children.length; i++) {
                 var child = children[i];
-                cb.call(context, child);
+                cb.call(context, child, i);
             }
             return this;
         },
