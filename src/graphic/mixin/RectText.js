@@ -70,9 +70,8 @@ define(function (require) {
                 // Percent
                 x = rect.x + parsePercent(textPosition[0], rect.width);
                 y = rect.y + parsePercent(textPosition[1], rect.height);
-
-                ctx.textAlign = align;
-                ctx.textBaseline = baseline;
+                align = align || 'left';
+                baseline = baseline || 'top';
             }
             else {
                 var res = textContain.adjustTextPositionOnRect(
@@ -80,10 +79,13 @@ define(function (require) {
                 );
                 x = res.x;
                 y = res.y;
-                // Draw text
-                ctx.textAlign = res.textAlign;
-                ctx.textBaseline = res.textBaseline;
+                // Default align and baseline when has textPosition
+                align = align || res.textAlign;
+                baseline = baseline || res.textBaseline;
             }
+
+            ctx.textAlign = align;
+            ctx.textBaseline = baseline;
 
             var textFill = style.textFill;
             var textStroke = style.textStroke;

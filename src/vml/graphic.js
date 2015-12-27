@@ -814,6 +814,9 @@ define(function (require) {
             if (textPosition instanceof Array) {
                 x = rect.x + textPosition[0];
                 y = rect.y + textPosition[1];
+
+                align = align || 'left';
+                baseline = baseline || 'top';
             }
             else {
                 var res = textContain.adjustTextPositionOnRect(
@@ -821,8 +824,10 @@ define(function (require) {
                 );
                 x = res.x;
                 y = res.y;
-                align = res.textAlign;
-                baseline = res.textBaseline;
+
+                // Default align and baseline when has textPosition
+                align = align || res.textAlign;
+                baseline = baseline || res.textBaseline;
             }
         }
         else {
