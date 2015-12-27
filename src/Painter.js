@@ -609,9 +609,7 @@
                 return this._layers[0].dom;
             }
 
-            var imageLayer = new Layer(
-                'image', this, opts.devicePixelRatio || this.dpr
-            );
+            var imageLayer = new Layer('image', this, opts.pixelRatio || this.dpr);
             imageLayer.initContext();
 
             var ctx = imageLayer.ctx;
