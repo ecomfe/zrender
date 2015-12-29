@@ -201,11 +201,19 @@
         constructor: Painter,
 
         /**
+         * If painter use a single canvas
+         * @return {boolean}
+         */
+        isSingleCanvas: function () {
+            return this._singleCanvas;
+        },
+        /**
          * @return {HTMLDivElement}
          */
         getViewportRoot: function () {
             return this._singleCanvas ? this._layers[0].dom : this._domRoot;
         },
+
         /**
          * 刷新
          * @param {boolean} [paintAll=false] 强制绘制所有displayable
