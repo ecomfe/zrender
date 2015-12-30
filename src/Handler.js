@@ -77,7 +77,7 @@ define(function (require) {
 
             this._hovered = hovered;
 
-            this.root.style.cursor = hovered ? hovered.cursor : 'default';
+            this.root.style.cursor = hovered ? hovered.cursor : this._defaultCursorStyle;
             // Mouse out on previous hovered element
             if (lastHovered && hovered !== lastHovered && lastHovered.__zr) {
                 this._dispatchProxy(lastHovered, 'mouseout', event);
@@ -262,6 +262,10 @@ define(function (require) {
         /**
          * @private
          */
+        this._defaultCursorStyle = 'default'
+        /**
+         * @private
+         */
         this._gestureMgr = new GestureMgr();
 
         initDomHandler(this);
@@ -326,6 +330,14 @@ define(function (require) {
             this.root =
             this.storage =
             this.painter = null;
+        },
+
+        /**
+         * 设置默认的cursor style
+         * @param {string} cursorStyle 例如 crosshair
+         */
+        setDefaultCursorStyle: function (cursorStyle) {
+            this._defaultCursorStyle = cursorStyle;
         },
 
         /**

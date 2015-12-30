@@ -284,6 +284,14 @@ define(function(require) {
         },
 
         /**
+         * 设置默认的cursor style
+         * @param {string} cursorStyle 例如 crosshair
+         */
+        setDefaultCursorStyle: function (cursorStyle) {
+            this.handler.setDefaultCursorStyle(cursorStyle);
+        },
+
+        /**
          * 事件绑定
          *
          * @param {string} eventName 事件名称

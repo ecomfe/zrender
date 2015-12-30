@@ -440,6 +440,16 @@ define(function(require) {
         return Function.call.apply(nativeSlice, arguments);
     }
 
+    /**
+     * @param {boolean} condition
+     * @param {string} message
+     */
+    function assert(condition, message) {
+        if (!condition) {
+            throw new Error(message);
+        }
+    }
+
     var util = {
         inherits: inherits,
         mixin: mixin,
@@ -467,6 +477,7 @@ define(function(require) {
         isBuildInObject: isBuildInObject,
         isDom: isDom,
         retrieve: retrieve,
+        assert: assert,
         noop: function () {}
     };
     return util;
