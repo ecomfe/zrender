@@ -22,16 +22,15 @@ define(function(require) {
 
     /**
      * @param {*} source
-     * @param {boolean} [deep=false]
      * @return {*} 拷贝后的新对象
      */
-    function clone(source, deep) {
+    function clone(source) {
         if (typeof source == 'object' && source !== null) {
             var result = source;
             if (source instanceof Array) {
                 result = [];
                 for (var i = 0, len = source.length; i < len; i++) {
-                    result[i] = deep ? clone(source[i], deep) : source[i];
+                    result[i] = clone(source[i]);
                 }
             }
             else if (
@@ -42,7 +41,7 @@ define(function(require) {
                 result = {};
                 for (var key in source) {
                     if (source.hasOwnProperty(key)) {
-                        result[key] = deep ? clone(source[key], deep) : source[key];
+                        result[key] = clone(source[key]);
                     }
                 }
             }

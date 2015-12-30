@@ -201,11 +201,19 @@
         constructor: Painter,
 
         /**
+         * If painter use a single canvas
+         * @return {boolean}
+         */
+        isSingleCanvas: function () {
+            return this._singleCanvas;
+        },
+        /**
          * @return {HTMLDivElement}
          */
         getViewportRoot: function () {
             return this._singleCanvas ? this._layers[0].dom : this._domRoot;
         },
+
         /**
          * 刷新
          * @param {boolean} [paintAll=false] 强制绘制所有displayable
@@ -609,9 +617,7 @@
                 return this._layers[0].dom;
             }
 
-            var imageLayer = new Layer(
-                'image', this, opts.devicePixelRatio || this.dpr
-            );
+            var imageLayer = new Layer('image', this, opts.pixelRatio || this.dpr);
             imageLayer.initContext();
 
             var ctx = imageLayer.ctx;
