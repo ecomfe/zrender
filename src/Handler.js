@@ -274,10 +274,6 @@ define(
              * @param {Event} event
              */
             mouseout: function (event, manually) {
-                if (! isZRenderElement(event) && ! manually) {
-                    return;
-                }
-
                 event = this._zrenderEventFixed(event);
 
                 var element = event.toElement || event.relatedTarget;
