@@ -1,7 +1,7 @@
 /**
  * Catmull-Rom spline 插值折线
  * @module zrender/shape/util/smoothSpline
- * @author pissang (https://www.github.com/pissang) 
+ * @author pissang (https://www.github.com/pissang)
  *         Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *         errorrik (errorrik@gmail.com)
  */
@@ -14,7 +14,7 @@ define(function (require) {
     function interpolate(p0, p1, p2, p3, t, t2, t3) {
         var v0 = (p2 - p0) * 0.5;
         var v1 = (p3 - p1) * 0.5;
-        return (2 * (p1 - p2) + v0 + v1) * t3 
+        return (2 * (p1 - p2) + v0 + v1) * t3
                 + (-3 * (p1 - p2) - 2 * v0 - v1) * t2
                 + v0 * t + p1;
     }
@@ -22,7 +22,7 @@ define(function (require) {
     /**
      * @alias module:zrender/shape/util/smoothSpline
      * @param {Array} points 线段顶点数组
-     * @param {boolean} isLoop 
+     * @param {boolean} isLoop
      * @return {Array}
      */
     return function (points, isLoop) {
@@ -33,8 +33,8 @@ define(function (require) {
         for (var i = 1; i < len; i++) {
             distance += vec2.distance(points[i - 1], points[i]);
         }
-        
-        var segs = distance / 5;
+
+        var segs = distance / 2;
         segs = segs < len ? len : segs;
         for (var i = 0; i < segs; i++) {
             var pos = i / (segs - 1) * (isLoop ? len : len - 1);

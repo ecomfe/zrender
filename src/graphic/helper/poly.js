@@ -15,10 +15,7 @@ define(function (require) {
 
                     ctx.moveTo(points[0][0], points[0][1]);
                     var len = points.length;
-                    if (!closePath) {
-                        len--;
-                    }
-                    for (var i = 0; i < len; i++) {
+                    for (var i = 0; i < (closePath ? len : len - 1); i++) {
                         var cp1 = controlPoints[i * 2];
                         var cp2 = controlPoints[i * 2 + 1];
                         var p = points[(i + 1) % len];
