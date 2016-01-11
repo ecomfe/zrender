@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Smoothline</title>
+    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+    <!--
+    <script type="text/javascript" src="https://getfirebug.com/firebug-lite.js">
+    {
+        startInNewWindow: true,
+        startOpened: true
+    }
+    </script>
+-->
+</head>
+<body>
+    <div id="Main" style="width:1000px;height:900px;"></div>
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+
+    require(
+        [
+            "zrender",
+            "zrender/animation/animation",
+            "zrender/graphic/shape/Polyline",
+            "zrender/graphic/shape/Polygon"
+        ],
+        function(zrender, Animation, PolylineShape, PolygonShape){
+
+            // 初始化zrender
+            var zr = zrender.init(document.getElementById("Main"));
+
+            var points = [];
+            for (var i = 0; i < 10; i++) {
+                points.push([Math.random() * 300 + 100, Math.random() * 300 + 100]);
+            }
+
+            var smoothLine = new PolylineShape({
+                position: [10, 10],
+                style : {
+                    lineDash: [5, 5, 10, 10],
+                    stroke: "rgba(220, 20, 60, 0.8)",
+                    lineWidth: 2
+                },
+                shape: {
+                    smooth: 'spline',
+                    points: points
+                }
+            });
+
+            var smoothPolygon = new PolygonShape({
+                style: {
+                    // smoothConstraint: [[-Infinity, -Infinity], [200, Infinity]],
+                    fill: 'rgba(220, 20, 60, 0.4)',
+                    stroke: "rgba(220, 20, 60, 1)",
+                    lineWidth: 2
+                },
+
+                shape: {
+                    points: [[50, 50], [200, 10], [100, 200], [50, 150], [10, 70]],
+                    smooth: 0.5
+                },
+
+                states: {
+                    normal: {
+                        transition: '* 500 0 Linear'
+                    },
+                    hover: {
+                        shape: {
+                            points: [[30, 30], [200, 10], [100, 200], [30, 150], [10, 70]]
+                        }
+                    }
+                },
+
+                onmouseover: function () {
+                    smoothPolygon.transitionState('hover');
+                },
+
+                onmouseout: function () {
+                    smoothPolygon.transitionState('normal');
+                }
+            });
+            zr.add(smoothPolygon);
+            zr.add(smoothLine);
+        }
+    )
+    </script>
+</body>
+</html>

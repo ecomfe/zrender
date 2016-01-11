@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Text</title>
+    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+</head>
+<body>
+    <div id="main" style="width:1000px;height:600px;"></div>
+
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+
+    require(["zrender", 'zrender/graphic/Text'], function(zrender, ZText){
+        // 初始化zrender
+        var zr = zrender.init(document.getElementById("main"), {
+            renderer: 'svg'
+        });
+
+        var text = new ZText({
+            // position : [50, 50],
+            // rotation: 1,
+            // scale: [2, 2],
+            style: {
+                x: 10,
+                y: 10,
+                text: "国国国国\n国国国国\n国国国国",
+                width: 50,
+                height: 50,
+                textFont: '18px 微软雅黑'
+            },
+            draggable: true
+        });
+        zr.add(text);
+    });
+    </script>
+</body>
+</html>

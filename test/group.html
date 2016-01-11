@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Group</title>
+    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+</head>
+<body>
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+    require(
+        [
+            "zrender",
+            'zrender/graphic/shape/Circle',
+            'zrender/container/Group'
+        ],
+        function(zrender, CircleShape, Group){
+
+            // 初始化zrender
+            var zr = zrender.init( document.getElementById("Main") );
+            var circle = new CircleShape({
+                scale: [1, 1],
+                shape: {
+                    cx: 0,
+                    cy: 0,
+                    r: 10
+                },
+                hoverable: false
+            });
+            var circle2 = new CircleShape({
+                scale: [1, 1],
+                shape: {
+                    cx: 10,
+                    cy: 10,
+                    r: 10
+                },
+                style: {
+                    fill:'red'
+                },
+                hoverable: false
+            });
+
+            var group = new Group({
+                position: [100, 100]
+            });
+            group.add(circle);
+            group.add(circle2);
+
+            zr.add(group);
+
+            var tm1 = group.animate("", true)
+                .when(1000, {
+                    position: [200, 0]
+                })
+                .when(2000, {
+                    position: [200, 200]
+                })
+                .when(3000, {
+                    position: [0, 200]
+                })
+                .when(4000, {
+                    position: [100, 100]
+                })
+                .start();
+
+            var tm2 = circle.animate("", true)
+                .when(100, {
+                    position: [20, 0]
+                })
+                .when(200, {
+                    position: [0, 0]
+                })
+                .when(300, {
+                    position: [-20, 0]
+                })
+                .when(400, {
+                    position: [0, 0]
+                })
+                .start();
+
+            zr.configLayer(0, {
+                // clearColor: 'rgba(255, 255, 255, 0.1)'
+                motionBlur: true,
+                lastFrameAlpha: 0.99
+            });
+        })
+    </script>
+    <div id="Main" style="width:600px;height:400px;"></div>
+</body>
+</html>

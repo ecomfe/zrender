@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>裁剪测试</title>
+    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+</head>
+<body>
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+
+    require([
+        "zrender",
+        'zrender/graphic/Image',
+        'zrender/container/Group',
+        'zrender/graphic/shape/Circle',
+        'zrender/graphic/shape/Rect'
+    ], function(zrender, ImageShape, Group, CircleShape, RectShape){
+
+        // 初始化zrender
+        var zr = zrender.init( document.getElementById("Main") );
+
+        var g1 = new Group();
+        var g2 = new Group();
+        g1.add(g2);
+        zr.add(g1);
+
+        var circle = new CircleShape({
+            shape: {
+                r: 0,
+                cx: 0,
+                cy: 0
+            },
+            position: [200, 200]
+        });
+
+        g2.setClipPath(circle);
+
+        var rect = new RectShape({
+            shape: {
+                width: 500,
+                height: 200,
+                x: -250,
+                y: -20
+            },
+            position: [200, 120]
+        });
+        g1.setClipPath(rect);
+
+        for (var i = 0; i < 20; i++) {
+            for( var j = 0; j < 20; j++){
+                var image = new ImageShape({
+                    position: [i * 50, j * 50],
+                    scale: [1, 1],
+                    style: {
+                        x: 0,
+                        y: 0,
+                        image: "test.jpeg",
+                        width: 50,
+                        height: 50
+                    },
+                    draggable: true
+                });
+                g2.add(image);
+            }
+        }
+
+        circle.animateShape()
+            .when(1000, {
+                r: 200
+            })
+            .start();
+    });
+    </script>
+    <div id="Main" style="width:1000px;height:600px;"></div>
+</body>
+</html>

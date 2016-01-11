@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Animation</title>
+    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+</head>
+<body style="background-color:black; margin:0px;">
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+
+    require(
+        [
+            "zrender",
+            "zrender/animation/animation",
+            "zrender/graphic/shape/Star",
+            "zrender/graphic/Image",
+            "zrender/graphic/shape/Polyline",
+            "zrender/tool/color"
+        ],
+        function (zrender, Animation, StarShape, ImageShape, PolylineShape, colorTool) {
+            // 初始化zrender
+            var zr = zrender.init(document.getElementById("main"));
+
+            var starShape = new StarShape({
+                shape: {
+                    x: 10,
+                    y: 10,
+                    r: 8,
+                    n: 5
+                },
+                style : {
+                    stroke: 'rgb(52,179,242)',
+                    fill: '#fff',
+                    shadowBlur: 10,
+                    shadowOffsetX: 0,
+                    shadowOffsetY: 0
+                }
+            });
+            var zImage = zr.pathToImage(starShape, 28, 28);
+
+            var NUMBER = 1000;
+
+            for (var i = 0; i < NUMBER; i++) {
+                var star = new ImageShape({
+                    scale : [1, 1],
+                    zlevel : 1,
+                    style : {
+                        x : 0,
+                        y : 0,
+                        image : zImage.style.image
+                    },
+                    draggable : false,
+                    hoverable : false,
+                });
+
+                zr.add(star);
+                var animator = star.animate("", true);
+
+                var points = [];
+                var point = [
+                    Math.random() * zr.getWidth(),
+                    Math.random() * zr.getHeight()
+                ];
+                //star.position = point;
+                points.push(point);
+                for (var j = 1; j < 10; j++) {
+                    var point = [
+                        Math.random() * zr.getWidth(),
+                        Math.random() * zr.getHeight()
+                    ];
+                    animator.when(j * 2000, {
+                        position : point
+                    });
+                    points.push(point);
+                }
+                var polyline = new PolylineShape({
+                    zlevel : 0,
+                    shape: {
+                        smooth: 'spline',
+                        points: points
+                    },
+                    style : {
+                        stroke: colorTool.random(),
+                        opacity: 0.2,
+                        lineWidth: Math.random() * 5
+                    },
+                    highlightStyle: {
+                        opacity: 1
+                    }
+                });
+                zr.add(polyline);
+
+                animator.start('spline');
+            }
+            zr.configLayer(1, {
+                // clearColor: 'rgba(255, 255, 255, 0.1)'
+                motionBlur: true,
+                lastFrameAlpha: 0.8
+            });
+
+            console.profile('render');
+            zr.refresh();
+            console.profileEnd('render');
+        }
+    );
+    </script>
+    <div id="main" style="width:1000px;height:600px;"></div>
+</body>
+</html>

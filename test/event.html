@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Event</title>
+    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+</head>
+<body>
+    <div id="main" style="width:1000px;height:500px;"></div>
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+    require(
+        [
+            "zrender",
+            'zrender/graphic/shape/Circle',
+            'zrender/container/Group'
+        ],
+        function(zrender, CircleShape, Group){
+
+            // 初始化zrender
+            var zr = zrender.init(document.getElementById("main"));
+            var circle1 = new CircleShape({
+                shape: {
+                    cx: 20,
+                    cy: 20,
+                    r: 30
+                },
+                style: {
+                    fill: 'blue'
+                },
+                draggable: true
+            });
+
+            var circle2 = new CircleShape({
+                shape: {
+                    cx: 300,
+                    cy: 300,
+                    r: 100
+                }
+            });
+
+            circle1.on('mouseover', function () {
+                zr.dom.style.cursor = 'move';
+            });
+            circle1.on('mouseout', function () {
+                zr.dom.style.cursor = 'default';
+            });
+
+            circle2.on('dragenter', function () {
+                this.setStyle('fill', 'red');
+            }).on('dragleave', function () {
+                this.setStyle('fill', 'black');
+            }).on('drop', function () {
+                this.setStyle('fill', 'green');
+            })
+
+            zr.add(circle2);
+            zr.add(circle1);
+        })
+    </script>
+</body>
+</html>

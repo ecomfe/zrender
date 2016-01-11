@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Animation</title>
+    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+</head>
+<body>
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+    require(
+        [
+            'zrender',
+            'zrender/animation/animation',
+            'zrender/graphic/shape/Polygon'
+        ],
+        function(zrender, Animation, PolygonShape){
+
+            // 初始化zrender
+            var zr = zrender.init(document.getElementById('main'));
+
+            var polygon = new PolygonShape({
+                position: [100, 100],
+                scale: [1, 1],
+                style: {
+                    fill: 'red'
+                }
+            });
+
+            setInterval(function () {
+                var len = Math.round(Math.random() * 100);
+                var points = [];
+                var r = (Math.random() * 100);
+                for (var i = 0; i <= len; i++) {
+                    var phi = i / len * Math.PI * 2;
+                    var x = Math.cos(phi) * r + 300;
+                    var y = Math.sin(phi) * r + 200;
+                    points.push([x, y]);
+                }
+                polygon.animateTo({
+                    shape: {
+                        points: points
+                    }
+                }, 500, 'cubicOut');
+            }, 1000);
+            zr.add(polygon);
+        });
+    </script>
+    <div id="main" style="width:600px;height:400px;"></div>
+</body>
+</html>

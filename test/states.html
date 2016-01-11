@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Image</title>
+    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+</head>
+<body>
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+
+    require(["zrender", 'zrender/graphic/Image'], function(zrender, ImageShape){
+
+        // 初始化zrender
+        var zr = zrender.init(document.getElementById("Main"), {
+            renderer: 'svg'
+        });
+
+        for( var i = 0; i < 10; i ++){
+            for( var j = 0; j < 10; j++){
+                var image = new ImageShape({
+                    position: [i * 70, j * 70],
+                    scale: [1, 1],
+                    style: {
+                        x: 0,
+                        y: 0,
+                        image: "test.jpeg",
+                        shadowColor: 'black'
+                    },
+                    states: {
+                        normal: {
+                            style: {
+                                width: 50,
+                                height: 50,
+                                shadowBlur: 0
+                            },
+                            z: 0,
+                            transition: '* 200 0 Linear'
+                        },
+                        hover: {
+                            style: {
+                                x: -10,
+                                y: -10,
+                                width: 70,
+                                height: 70,
+                                shadowBlur: 10
+                            },
+                            z: 1
+                        }
+                    },
+
+                    onmouseover: function () {
+                        this.transitionState('hover');
+                    },
+
+                    onmouseout: function () {
+                        this.transitionState('normal');
+                    }
+                });
+
+                zr.add(image);
+            }
+        }
+        zr.render();
+
+
+    })
+    </script>
+    <div id="Main" style="width:1000px;height:600px;"></div>
+</body>
+</html>

@@ -1,2 +1,2 @@
 src/dep/*
-src/tool/env.js
+src/core/env.js

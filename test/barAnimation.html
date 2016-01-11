@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Animation</title>
+    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+</head>
+<body>
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+    require(
+        [
+            "zrender",
+            "zrender/animation/animation",
+            'zrender/graphic/shape/Rect'
+        ],
+        function(zrender, Animation, RectShape) {
+
+            var N = 50;
+            for (var k = 0; k < 50; k++) {
+                var div = document.createElement('div');
+                var width = 600;
+                var height = 300;
+                div.style.width = width + 'px';
+                div.style.height = height + 'px';
+                document.body.appendChild(div);
+                // 初始化zrender
+                var zr = zrender.init(div, {
+                    renderer: 'canvas'
+                });
+
+                for (var i = 0; i < N; i++) {
+                    var h = height * Math.random();
+                    var barShape = new RectShape({
+                        shape: {
+                            x: i * width / N,
+                            y: height,
+                            width: width / N,
+                            height: 0
+                        },
+                        style: {
+                            fill: 'rgb(0, 0, 180)'
+                        },
+                        onmouseover: function () {
+                            this.animateStyle()
+                                .when(200, {
+                                    fill: 'rgb(180, 0, 0)'
+                                })
+                                .start();
+                        },
+                        onmouseout: function () {
+                            this.animateStyle()
+                                .when(200, {
+                                    fill: 'rgb(0, 0, 180)'
+                                })
+                                .start();
+                        }
+                    });
+                    zr.add(barShape);
+
+                    barShape.animateTo({
+                        shape: {
+                            height: h,
+                            y: height - h
+                        }
+                    }, 500);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

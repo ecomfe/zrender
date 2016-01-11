@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Animation</title>
+    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+</head>
+<body>
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+    require(
+        [
+            "zrender",
+            "zrender/animation/animation",
+            'zrender/graphic/shape/Circle'
+        ],
+        function(zrender, Animation, CircleShape){
+
+            // 初始化zrender
+            var zr = zrender.init(document.getElementById("Main"));
+            var radiusAnimator = null;
+            var circle = new CircleShape({
+                position: [100, 100],
+                scale: [1, 1],
+                shape: {
+                    cx: 0,
+                    cy: 0,
+                    r: 50
+                },
+                style: {
+                    fill: 'rgba(33, 222, 10, 0.1)',
+                    lineWidth: 5,
+                    text:'circle',
+                    textPosition:'inside'
+                },
+                draggable: true,
+                onmouseover: function () {
+                    radiusAnimator && radiusAnimator.stop();
+                    radiusAnimator = circle.animateShape()
+                        .when(1000, {
+                            r: 100
+                        })
+                        .start();
+                },
+                onmouseout: function () {
+                    radiusAnimator && radiusAnimator.stop();
+                    radiusAnimator = circle.animateShape()
+                        .when(1000, {
+                            r: 50
+                        })
+                        .start();
+                }
+            });
+            zr.add(circle);
+
+            circle.animate("", true)
+                .when(1000, {
+                    position: [200, 0]
+                })
+                .when(2000, {
+                    position: [200, 200]
+                })
+                .when(3000, {
+                    position: [0, 200]
+                })
+                .when(4000, {
+                    position: [100, 100]
+                })
+                .start();
+
+            circle.animateStyle(true)
+                .when(4000, {
+                    fill: 'rgba(222, 222, 10, 1)'
+                })
+                .start();
+
+            circle.animateShape()
+                .when(100000, {
+                    r: 50
+                })
+                .done(function () {
+                    console.log('Ignore animation if properties are equal')
+                })
+                .start();
+        })
+    </script>
+    <div id="Main" style="width:600px;height:400px;"></div>
+</body>
+</html>

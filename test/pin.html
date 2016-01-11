@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Event</title>
+    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+</head>
+<body>
+    <div id="main" style="width:1000px;height:500px;"></div>
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+    require(
+        [
+            "zrender",
+            'zrender/graphic/Path'
+        ],
+        function(zrender, Path){
+
+            // 初始化zrender
+            var zr = zrender.init(document.getElementById('main'));
+            var Pin = Path.extend({
+                type: 'pin',
+                shape: {
+                    // x, y on the cusp
+                    x: 0,
+                    y: 0,
+                    width: 0,
+                    height: 0
+                },
+                buildPath: function (path, shape) {
+                    var x = shape.x;
+                    var y = shape.y;
+                    var w = shape.width / 5 * 3;
+                    // Height must be larger than width
+                    var h = Math.max(w, shape.height);
+                    var r = w / 2;
+
+                    // Dist on y with tangent point and circle center
+                    var dy = r * r / (h - r);
+                    var cy = y - h + r + dy;
+                    var angle = Math.asin(dy / r);
+                    // Dist on x with tangent point and circle center
+                    var dx = Math.cos(angle) * r;
+
+                    var tanX = Math.sin(angle);
+                    var tanY = Math.cos(angle);
+
+                    path.arc(
+                        x, cy, r,
+                        Math.PI - angle,
+                        Math.PI * 2 + angle
+                    );
+
+                    var cpLen = r * 0.6;
+                    var cpLen2 = r * 0.7;
+                    path.bezierCurveTo(
+                        x + dx - tanX * cpLen, cy + dy + tanY * cpLen,
+                        x, y - cpLen2,
+                        x, y
+                    );
+                    path.bezierCurveTo(
+                        x, y - cpLen2,
+                        x - dx + tanX * cpLen, cy + dy + tanY * cpLen,
+                        x - dx, cy + dy
+                    );
+                    path.closePath();
+                }
+            });
+
+            var pin = new Pin({
+                shape: {
+                    x: 100,
+                    y: 100,
+                    width: 20,
+                    height: 40
+                },
+                scale: [2, 2]
+            });
+            zr.add(pin);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Image</title>
+    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+</head>
+<body>
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+
+    require(['zrender', 'zrender/graphic/shape/BezierCurve'], function(zrender, BezierCurveShape){
+        // 初始化zrender
+        var zr = zrender.init(document.getElementById('main'));
+
+        var curve = new BezierCurveShape({
+            position: [0, 0],
+            scale: [1, 1],
+            shape: {
+                x1: 0,
+                y1: 100,
+                cpx1: 0,
+                cpy1: 0,
+                cpx2: 0,
+                cpy2: 0,
+                x2: 100,
+                y2: 0
+            },
+            draggable: true
+        });
+
+        zr.add(curve);
+
+        curve.animateTo({
+            shape: {
+                percent: 0
+            }
+        });
+    });
+    </script>
+    <div id="main" style="width:1000px;height:600px;"></div>
+</body>
+</html>
