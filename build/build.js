@@ -1,7 +1,7 @@
-{
+({
     // appDir: './',
     baseUrl: '../src',
-    // optimize: 'none',
+    optimize: 'none',
     name: 'zrender',
     packages: [
         {
@@ -19,7 +19,7 @@
         'zrender/graphic/shape/Sector',
         'zrender/graphic/shape/Ring',
         'zrender/graphic/shape/Ellipse',
-        'zrender/graphic/shape/Rectangle',
+        'zrender/graphic/shape/Rect',
         'zrender/graphic/shape/Heart',
         'zrender/graphic/shape/Droplet',
         'zrender/graphic/shape/Line',
@@ -27,7 +27,9 @@
         'zrender/graphic/shape/Isogon',
         'zrender/graphic/shape/BezierCurve',
         'zrender/graphic/shape/Polyline',
-        'zrender/graphic/shape/Polygon'
+        'zrender/graphic/shape/Polygon',
+        'zrender/container/Group',
+        'zrender/vml/vml'
     ],
     out: 'zrender.js'
-}
+})
