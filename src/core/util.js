@@ -53,16 +53,15 @@ define(function(require) {
     }
 
     /**
-     * @param {Object=} target
-     * @param {Object=} source
+     * @param {*} target
+     * @param {*} source
      * @param {boolean} [overwrite=false]
      */
     function merge(target, source, overwrite) {
-        if (!target) { // Might be null/undefined
-            return;
-        }
-        if (!source) { // Might be null/undefined
-            return target;
+        // We should escapse that source is string
+        // and enter for ... in ...
+        if (!isObject(source) || !isObject(target)) {
+            return overwrite ? clone(source) : target;
         }
 
         for (var key in source) {
