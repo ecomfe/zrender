@@ -34,7 +34,7 @@
 
             var x = shape.cx;
             var y = shape.cy;
-            var r = shape.r;
+            var r = Math.max(shape.r, 0);
             var startAngle = shape.startAngle;
             var endAngle = shape.endAngle;
             var clockwise = shape.clockwise;

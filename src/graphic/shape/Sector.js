@@ -29,10 +29,10 @@ define(function (require) {
 
         buildPath: function (ctx, shape) {
 
-            var x = shape.cx;   // 圆心x
-            var y = shape.cy;   // 圆心y
-            var r0 = shape.r0 || 0;     // 形内半径[0,r)
-            var r = shape.r;            // 扇形外半径(0,r]
+            var x = shape.cx;
+            var y = shape.cy;
+            var r0 = Math.max(shape.r0 || 0, 0);
+            var r = Math.max(shape.r, 0);
             var startAngle = shape.startAngle;
             var endAngle = shape.endAngle;
             var clockwise = shape.clockwise;
