@@ -28,7 +28,7 @@ define(function(require) {
     /**
      * @type {string}
      */
-    zrender.version = '3.0.0';
+    zrender.version = '3.0.1';
 
     /**
      * @param {HTMLElement} dom

@@ -1,0 +1,33 @@
+{
+    "name": "zrender",
+    "version": "3.0.1",
+    "description": "A lightweight canvas library.",
+    "keywords": [
+        "canvas",
+        "2d"
+    ],
+    "author": [{
+        "name": "Kenner",
+        "email": "kener.linfeng@gmail.com"
+    }, {
+        "name": "Yi Shen",
+        "url": "https://github.com/pissang"
+    }, {
+        "name": "Shuang Su",
+        "url": "https://github.com/100pah"
+    }],
+    "contributors": [{
+        "name": "erik",
+        "email": "errorrik@gmail.com"
+    }],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/ecomfe/zrender.git"
+    },
+    "license": "BSD",
+    "main": "build/zrender.min.js",
+    "files": [
+        "build",
+        "src"
+    ]
+}

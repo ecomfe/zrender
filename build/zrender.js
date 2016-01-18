@@ -188,16 +188,15 @@ define('zrender/core/util',['require','../graphic/Gradient'],function(require) {
     }
 
     /**
-     * @param {Object=} target
-     * @param {Object=} source
+     * @param {*} target
+     * @param {*} source
      * @param {boolean} [overwrite=false]
      */
     function merge(target, source, overwrite) {
-        if (!target) { // Might be null/undefined
-            return;
-        }
-        if (!source) { // Might be null/undefined
-            return target;
+        // We should escapse that source is string
+        // and enter for ... in ...
+        if (!isObject(source) || !isObject(target)) {
+            return overwrite ? clone(source) : target;
         }
 
         for (var key in source) {
@@ -7603,7 +7602,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
     /**
      * @type {string}
      */
-    zrender.version = '3.0.0';
+    zrender.version = '3.0.1';
 
     /**
      * @param {HTMLElement} dom
@@ -8725,7 +8724,10 @@ define('zrender/core/bbox',['require','./vector','./curve'],function (require) {
         var vec2Min = vec2.min;
         var vec2Max = vec2.max;
 
-        if (Math.abs(startAngle - endAngle) % PI2 < 1e-4) {
+        var diff = Math.abs(startAngle - endAngle);
+
+
+        if (diff % PI2 < 1e-4 && diff > 1e-4) {
             // Is a circle
             min[0] = x - rx;
             min[1] = y - ry;
@@ -9836,7 +9838,11 @@ define('zrender/contain/path',['require','../core/PathProxy','./line','./cubic',
         roots[0] = -tmp;
         roots[1] = tmp;
 
-        if (Math.abs(startAngle - endAngle) % PI2 < 1e-4) {
+        var diff = Math.abs(startAngle - endAngle);
+        if (diff < 1e-4) {
+            return 0;
+        }
+        if (diff % PI2 < 1e-4) {
             // Is a circle
             startAngle = 0;
             endAngle = PI2;
@@ -10594,10 +10600,10 @@ define('zrender/graphic/shape/Sector',['require','../Path'],function (require) {
 
         buildPath: function (ctx, shape) {
 
-            var x = shape.cx;   // 圆心x
-            var y = shape.cy;   // 圆心y
-            var r0 = shape.r0 || 0;     // 形内半径[0,r)
-            var r = shape.r;            // 扇形外半径(0,r]
+            var x = shape.cx;
+            var y = shape.cy;
+            var r0 = Math.max(shape.r0 || 0, 0);
+            var r = Math.max(shape.r, 0);
             var startAngle = shape.startAngle;
             var endAngle = shape.endAngle;
             var clockwise = shape.clockwise;
