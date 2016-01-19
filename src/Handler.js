@@ -270,7 +270,9 @@ define(function (require) {
 
         initDomHandler(this);
 
-        if (env.os.tablet || env.os.phone) {
+        // @see #2350, some windows tablet (like lenovo X240) enable touch but can
+        // use IE10, which not supports touch events.
+        if (env.touchEventsSupported) {
             // mobile支持
             // mobile的click/move/up/down自己模拟
             util.each(touchHandlerNames, function (name) {

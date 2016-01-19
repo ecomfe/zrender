@@ -15,7 +15,7 @@ define(function() {
             node: true,
             // Assume canvas is supported
             canvasSupported: true
-        }
+        };
     }
     // Zepto.js
     // (c) 2010-2013 Thomas Fuchs
@@ -84,7 +84,10 @@ define(function() {
             node: false,
             // 原生canvas支持，改极端点了
             // canvasSupported : !(browser.ie && parseFloat(browser.version) < 9)
-            canvasSupported : document.createElement('canvas').getContext ? true : false
+            canvasSupported : document.createElement('canvas').getContext ? true : false,
+            // @see <http://stackoverflow.com/questions/4817029/whats-the-best-way-to-detect-a-touch-screen-device-using-javascript>
+            touchEventsSupported: 'ontouchstart' in window  // works on most browsers
+                || navigator.maxTouchPoints                 // works on IE10/11 and Surface
         };
     }
 
