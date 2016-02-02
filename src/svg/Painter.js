@@ -103,6 +103,10 @@ define(function (require) {
 
         constructor: SVGPainter,
 
+        getViewportRoot: function () {
+            return this._viewport;
+        },
+
         refresh: function () {
 
             var list = this.storage.getDisplayList(true);

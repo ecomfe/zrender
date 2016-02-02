@@ -239,7 +239,7 @@ define(function (require) {
         var style = el.style;
         var text = style.text;
 
-        if (! text) {
+        if (!text) {
             return;
         }
 
