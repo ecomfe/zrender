@@ -22,8 +22,8 @@ define(function() {
     // Zepto.js may be freely distributed under the MIT license.
 
     function detect(ua) {
-        var os = this.os = {};
-        var browser = this.browser = {};
+        var os = {};
+        var browser = {};
         var webkit = ua.match(/Web[kK]it[\/]{0,1}([\d.]+)/);
         var android = ua.match(/(Android);?[\s\/]+([\d.]+)?/);
         var ipad = ua.match(/(iPad).*OS\s([\d_]+)/);
