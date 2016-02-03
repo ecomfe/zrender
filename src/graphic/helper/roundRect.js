@@ -7,11 +7,21 @@ define(function (require) {
             var width = shape.width;
             var height = shape.height;
             var r = shape.r;
-            var r1; 
-            var r2; 
-            var r3; 
+            var r1;
+            var r2;
+            var r3;
             var r4;
-              
+
+            // Convert width and height to positive for better borderRadius
+            if (width < 0) {
+                x = x + width;
+                width = -width;
+            }
+            if (height < 0) {
+                y = y + height;
+                height = -height;
+            }
+
             if (typeof r === 'number') {
                 r1 = r2 = r3 = r4 = r;
             }
@@ -38,7 +48,7 @@ define(function (require) {
             else {
                 r1 = r2 = r3 = r4 = 0;
             }
-            
+
             var total;
             if (r1 + r2 > width) {
                 total = r1 + r2;
@@ -77,4 +87,4 @@ define(function (require) {
             r1 !== 0 && ctx.quadraticCurveTo(x, y, x + r1, y);
         }
     }
-}); 
+});
