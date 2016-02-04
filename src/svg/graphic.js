@@ -297,6 +297,9 @@ define(function (require) {
         else if (textAnchor === 'right') {
             textAnchor = 'end';
         }
+        else if (textAnchor === 'center') {
+            textAnchor = 'middle';
+        }
         // Font may affect position of each tspan elements
         if (el.__text !== text || el.__textFont !== font) {
             var tspanList = el.__tspanList || [];
@@ -312,7 +315,7 @@ define(function (require) {
                 }
                 attr(tspan, 'x', x);
                 attr(tspan, 'y', y + i * lineHeight);
-                tspan.innerHTML = textLines[i];
+                tspan.appendChild(document.createTextNode(textLines[i]));
             }
             // Remove unsed tspan elements
             for (; i < tspanList.length; i++) {
