@@ -39,10 +39,12 @@ define(function() {
         var playbook = ua.match(/PlayBook/);
         var chrome = ua.match(/Chrome\/([\d.]+)/) || ua.match(/CriOS\/([\d.]+)/);
         var firefox = ua.match(/Firefox\/([\d.]+)/);
-        var ie = ua.match(/MSIE ([\d.]+)/);
         var safari = webkit && ua.match(/Mobile\//) && !chrome;
         var webview = ua.match(/(iPhone|iPod|iPad).*AppleWebKit(?!.*Safari)/) && !chrome;
-        var ie = ua.match(/MSIE\s([\d.]+)/);
+        var ie = ua.match(/MSIE\s([\d.]+)/)
+            // IE 11 Trident/7.0; rv:11.0
+            || ua.match(/Trident\/.+?rv:(([\d.]+))/);
+        var edge = ua.match(/Edge\/([\d.]+)/); // IE 12 and 12+
 
         // Todo: clean this up with a better OS/browser seperation:
         // - discern (more) between multiple browsers on android
@@ -71,6 +73,7 @@ define(function() {
         if (safari && (ua.match(/Safari/) || !!os.ios)) browser.safari = true;
         if (webview) browser.webview = true;
         if (ie) browser.ie = true, browser.version = ie[1];
+        if (edge) browser.edge = true, browser.version = edge[1];
 
         os.tablet = !!(ipad || playbook || (android && !ua.match(/Mobile/)) ||
             (firefox && ua.match(/Tablet/)) || (ie && !ua.match(/Phone/) && ua.match(/Touch/)));
@@ -86,8 +89,15 @@ define(function() {
             // canvasSupported : !(browser.ie && parseFloat(browser.version) < 9)
             canvasSupported : document.createElement('canvas').getContext ? true : false,
             // @see <http://stackoverflow.com/questions/4817029/whats-the-best-way-to-detect-a-touch-screen-device-using-javascript>
-            touchEventsSupported: 'ontouchstart' in window  // works on most browsers
-                || navigator.maxTouchPoints                 // works on IE10/11 and Surface
+            // works on most browsers
+            // IE10/11 does not support touch event, and MS Edge supports them but not by
+            // default, so we dont check navigator.maxTouchPoints for them here.
+            touchEventsSupported: 'ontouchstart' in window && !browser.ie && !browser.edge,
+            // <http://caniuse.com/#search=pointer%20event>.
+            pointerEventsSupported: 'onpointerdown' in window
+                // Firefox supports pointer but not by default,
+                // only MS browsers are reliable on pointer events currently.
+                && (browser.edge || (browser.ie && browser.version >= 10))
         };
     }
 

@@ -17,13 +17,19 @@ define(function (require) {
 
     var Eventful = require('./mixin/Eventful');
 
-    var domHandlerNames = [
-        'click', 'dblclick',
-        'mousewheel', 'mousemove', 'mouseout', 'mouseup', 'mousedown'
+    var mouseHandlerNames = [
+        'click', 'dblclick', 'mousewheel', 'mouseout'
     ];
+    !usePointerEvent() && mouseHandlerNames.push(
+        'mouseup', 'mousedown', 'mousemove'
+    );
 
     var touchHandlerNames = [
         'touchstart', 'touchend', 'touchmove'
+    ];
+
+    var pointerHandlerNames = [
+        'pointerdown', 'pointerup', 'pointermove'
     ];
 
     var TOUCH_CLICK_DELAY = 300;
@@ -39,10 +45,6 @@ define(function (require) {
     var addEventListener = eventTool.addEventListener;
     var removeEventListener = eventTool.removeEventListener;
     var normalizeEvent = eventTool.normalizeEvent;
-
-    function proxyEventName(name) {
-        return '_' + name + 'Handler';
-    }
 
     function makeEventPacket(eveType, target, event) {
         return {
@@ -137,9 +139,11 @@ define(function (require) {
             // 平板补充一次findHover
             // this._mobileFindFixed(event);
             // Trigger mousemove and mousedown
-            this._mousemoveHandler(event);
+            domHandlers.mousemove.call(this, event);
 
-            this._mousedownHandler(event);
+            domHandlers.mousedown.call(this, event);
+
+            setTouchTimer(this);
         },
 
         /**
@@ -156,7 +160,9 @@ define(function (require) {
             // Mouse move should always be triggered no matter whether
             // there is gestrue event, because mouse move and pinch may
             // be used at the same time.
-            this._mousemoveHandler(event);
+            domHandlers.mousemove.call(this, event);
+
+            setTouchTimer(this);
         },
 
         /**
@@ -170,14 +176,16 @@ define(function (require) {
 
             processGesture(this, event, 'end');
 
-            this._mouseupHandler(event);
+            domHandlers.mouseup.call(this, event);
 
             // click event should always be triggered no matter whether
             // there is gestrue event. System click can not be prevented.
             if (+new Date() - this._lastTouchMoment < TOUCH_CLICK_DELAY) {
                 // this._mobileFindFixed(event);
-                this._clickHandler(event);
+                domHandlers.click.call(this, event);
             }
+
+            setTouchTimer(this);
         }
     };
 
@@ -185,12 +193,19 @@ define(function (require) {
     util.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick'], function (name) {
         domHandlers[name] = function (event) {
             event = normalizeEvent(this.root, event);
-
             // Find hover again to avoid click event is dispatched manually. Or click is triggered without mouseover
             var hovered = this._findHover(event.zrX, event.zrY, null);
             this._dispatchProxy(hovered, name, event);
         };
     });
+
+    // Pointer event handlers
+    // util.each(['pointerdown', 'pointermove', 'pointerup'], function (name) {
+    //     domHandlers[name] = function (event) {
+    //         var mouseName = name.replace('pointer', 'mouse');
+    //         domHandlers[mouseName].call(this, event);
+    //     };
+    // });
 
     function processGesture(zrHandler, event, stage) {
         var gestureMgr = zrHandler._gestureMgr;
@@ -220,11 +235,24 @@ define(function (require) {
      * @param {module:zrender/Handler} instance 控制类实例
      */
     function initDomHandler(instance) {
-        var handlerNames = domHandlerNames.concat(touchHandlerNames);
-        var len = handlerNames.length;
-        while (len--) {
-            var name = handlerNames[len];
-            instance[proxyEventName(name)] = util.bind(domHandlers[name], instance);
+        var handlerNames = touchHandlerNames.concat(pointerHandlerNames);
+        for (var i = 0; i < handlerNames.length; i++) {
+            var name = handlerNames[i];
+            instance._handlers[name] = util.bind(domHandlers[name], instance);
+        }
+
+        for (var i = 0; i < mouseHandlerNames.length; i++) {
+            var name = mouseHandlerNames[i];
+            instance._handlers[name] = makeMouseHandler(domHandlers[name], instance);
+        }
+
+        function makeMouseHandler(fn, instance) {
+            return function () {
+                if (instance._touching) {
+                    return;
+                }
+                return fn.apply(instance, arguments);
+            };
         }
     }
 
@@ -232,9 +260,9 @@ define(function (require) {
      * @alias module:zrender/Handler
      * @constructor
      * @extends module:zrender/mixin/Eventful
-     * @param {HTMLElement} root 绘图区域
-     * @param {module:zrender/Storage} storage Storage实例
-     * @param {module:zrender/Painter} painter Painter实例
+     * @param {HTMLElement} root Main HTML element for painting.
+     * @param {module:zrender/Storage} storage Storage instance.
+     * @param {module:zrender/Painter} painter Painter instance.
      */
     var Handler = function(root, storage, painter) {
         Eventful.call(this);
@@ -245,51 +273,84 @@ define(function (require) {
 
         /**
          * @private
+         * @type {boolean}
          */
         this._hovered;
+
         /**
          * @private
+         * @type {Date}
          */
         this._lastTouchMoment;
+
         /**
          * @private
+         * @type {number}
          */
         this._lastX;
+
         /**
          * @private
+         * @type {number}
          */
         this._lastY;
+
         /**
          * @private
+         * @type {string}
          */
-        this._defaultCursorStyle = 'default'
+        this._defaultCursorStyle = 'default';
+
         /**
          * @private
+         * @type {module:zrender/core/GestureMgr}
          */
         this._gestureMgr = new GestureMgr();
 
+        /**
+         * @private
+         * @type {Array.<Function>}
+         */
+        this._handlers = [];
+
+        /**
+         * @private
+         * @type {boolean}
+         */
+        this._touching = false;
+
+        /**
+         * @private
+         * @type {number}
+         */
+        this._touchTimer;
+
         initDomHandler(this);
 
-        // @see #2350, some windows tablet (like lenovo X240) enable touch but can
-        // use IE10, which not supports touch events.
-        if (env.touchEventsSupported) {
-            // mobile支持
-            // mobile的click/move/up/down自己模拟
-            util.each(touchHandlerNames, function (name) {
-                addEventListener(root, name, this[proxyEventName(name)]);
-            }, this);
+        if (usePointerEvent()) {
+            mountHandlers(pointerHandlerNames, this);
+        }
+        else if (useTouchEvent()) {
+            mountHandlers(touchHandlerNames, this);
 
-            addEventListener(root, 'mouseout', this._mouseoutHandler);
+            // Handler of 'mouseout' event is needed in touch mode, which will be mounted below.
+            // addEventListener(root, 'mouseout', this._mouseoutHandler);
         }
-        else {
-            util.each(domHandlerNames, function (name) {
-                addEventListener(root, name, this[proxyEventName(name)]);
-            }, this);
-            // Firefox
-            addEventListener(root, 'DOMMouseScroll', this._mousewheelHandler);
-        }
+
+        // Considering some devices that both enable touch and mouse event (like MS Surface
+        // and lenovo X240, @see #2350), we make mouse event be always listened, otherwise
+        // mouse event can not be handle in those devices.
+        mountHandlers(mouseHandlerNames, this);
+        // Firefox
+        addEventListener(root, 'DOMMouseScroll', this._mousewheelHandler);
 
         Draggable.call(this);
+
+        function mountHandlers(handlerNames, instance) {
+            util.each(handlerNames, function (name) {
+                addEventListener(root, name, instance._handlers[name]);
+            }, instance);
+        }
     };
 
     Handler.prototype = {
@@ -309,8 +370,8 @@ define(function (require) {
          * @param {event=} eventArgs
          */
         dispatch: function (eventName, eventArgs) {
-            var handler = this[proxyEventName(eventName)];
-            handler && handler(eventArgs);
+            var handler = this._handlers[eventName];
+            handler && handler.call(this, eventArgs);
         },
 
         /**
@@ -319,11 +380,11 @@ define(function (require) {
         dispose: function () {
             var root = this.root;
 
-            var handlerNames = domHandlerNames.concat(touchHandlerNames);
+            var handlerNames = mouseHandlerNames.concat(touchHandlerNames);
 
             for (var i = 0; i < handlerNames.length; i++) {
                 var name = handlerNames[i];
-                removeEventListener(root, name, this[proxyEventName(name)]);
+                removeEventListener(root, name, this._handlers[name]);
             }
 
             // Firefox
@@ -418,6 +479,41 @@ define(function (require) {
         }
 
         return false;
+    }
+
+    /**
+     * Prevent mouse event from being dispatched after Touch Events action
+     * @see <https://github.com/deltakosh/handjs/blob/master/src/hand.base.js>
+     * 1. Mobile browsers dispatch mouse events 300ms after touchend.
+     * 2. Chrome for Android dispatch mousedown for long-touch about 650ms
+     * Result: Blocking Mouse Events for 700ms.
+     */
+    function setTouchTimer(instance) {
+        instance._touching = true;
+        clearTimeout(instance._touchTimer);
+        instance._touchTimer = setTimeout(function () {
+            instance._touching = false;
+        }, 700);
+    }
+
+    /**
+     * Althought MS Surface support screen touch, IE10/11 do not support
+     * touch event and MS Edge supported them but not by default (but chrome
+     * and firefox do). Thus we use Pointer event on MS browsers to handle touch.
+     */
+    function usePointerEvent() {
+        // TODO
+        // pointermove event dont trigger when using finger.
+        // We may figger it out latter.
+        return false;
+        // return env.pointerEventsSupported
+            // In no-touch device we dont use pointer but just traditional way for
+            // avoiding problem.
+            // && window.navigator.maxTouchPoints;
+    }
+
+    function useTouchEvent() {
+        return env.touchEventsSupported;
     }
 
     util.mixin(Handler, Eventful);
