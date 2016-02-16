@@ -341,14 +341,12 @@ define(function (require) {
         // and lenovo X240, @see #2350), we make mouse event be always listened, otherwise
         // mouse event can not be handle in those devices.
         mountHandlers(mouseHandlerNames, this);
-        // Firefox
-        addEventListener(root, 'DOMMouseScroll', this._mousewheelHandler);
 
         Draggable.call(this);
 
         function mountHandlers(handlerNames, instance) {
             util.each(handlerNames, function (name) {
-                addEventListener(root, name, instance._handlers[name]);
+                addEventListener(root, eventNameFix(name), instance._handlers[name]);
             }, instance);
         }
     };
@@ -384,11 +382,8 @@ define(function (require) {
 
             for (var i = 0; i < handlerNames.length; i++) {
                 var name = handlerNames[i];
-                removeEventListener(root, name, this._handlers[name]);
+                removeEventListener(root, eventNameFix(name), this._handlers[name]);
             }
-
-            // Firefox
-            removeEventListener(root, 'DOMMouseScroll', this._mousewheelHandler);
 
             this.root =
             this.storage =
@@ -514,6 +509,10 @@ define(function (require) {
 
     function useTouchEvent() {
         return env.touchEventsSupported;
+    }
+
+    function eventNameFix(name) {
+        return (name === 'mousewheel' && env.firefox) ? 'DOMMouseScroll' : name;
     }
 
     util.mixin(Handler, Eventful);
