@@ -121,9 +121,6 @@ define(function(require) {
 
         this.storage = storage;
         this.painter = painter;
-        // VML 下为了性能可能会直接操作 VMLRoot 的位置
-        // 因此鼠标的相对位置应该是相对于 VMLRoot
-        // PENDING
         if (!env.node) {
             this.handler = new Handler(painter.getViewportRoot(), storage, painter);
         }
@@ -274,7 +271,7 @@ define(function(require) {
 
         /**
          * 将常规shape转成image shape
-         * @param {module:zrender/shape/Base} e
+         * @param {module:zrender/graphic/Path} e
          * @param {number} width
          * @param {number} height
          */

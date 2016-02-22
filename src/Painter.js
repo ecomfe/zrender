@@ -681,9 +681,9 @@
             ctx.clearRect(0, 0, width * dpr, height * dpr);
 
             var pathTransform = {
-                position : path.position,
-                rotation : path.rotation,
-                scale : path.scale
+                position: path.position,
+                rotation: path.rotation,
+                scale: path.scale
             };
             path.position = [0, 0, 0];
             path.rotation = 0;
@@ -694,11 +694,11 @@
 
             var ImageShape = require('./graphic/Image');
             var imgShape = new ImageShape({
-                id : id,
-                style : {
-                    x : 0,
-                    y : 0,
-                    image : canvas
+                id: id,
+                style: {
+                    x: 0,
+                    y: 0,
+                    image: canvas
                 }
             });
 

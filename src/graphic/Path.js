@@ -147,7 +147,11 @@ define(function (require) {
                 var w = style.lineWidth;
                 // PENDING, Min line width is needed when line is horizontal or vertical
                 var lineScale = style.strokeNoScale ? this.getLineScale() : 1;
-                w = Math.max(w, this.strokeContainThreshold);
+
+                // Only add extra hover lineWidth when there are no fill
+                if (!pathHasFill(style)) {
+                    w = Math.max(w, this.strokeContainThreshold);
+                }
                 // Consider line width
                 // Line scale can't be 0;
                 if (lineScale > 1e-10) {
@@ -175,14 +179,16 @@ define(function (require) {
                     var lineWidth = style.lineWidth;
                     var lineScale = style.strokeNoScale ? this.getLineScale() : 1;
                     // Line scale can't be 0;
-                    if (lineScale < 1e-10) {
-                        return false;
-                    }
-                    lineWidth = Math.max(lineWidth, this.strokeContainThreshold);
-                    if (pathContain.containStroke(
-                        pathData, lineWidth / lineScale, x, y
-                    )) {
-                        return true;
+                    if (lineScale > 1e-10) {
+                        // Only add extra hover lineWidth when there are no fill
+                        if (!pathHasFill(style)) {
+                            lineWidth = Math.max(lineWidth, this.strokeContainThreshold);
+                        }
+                        if (pathContain.containStroke(
+                            pathData, lineWidth / lineScale, x, y
+                        )) {
+                            return true;
+                        }
                     }
                 }
                 if (pathHasFill(style)) {
