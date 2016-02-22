@@ -1,9 +1,6 @@
-define(function (require) {
-    
-    if (require('../core/env').canvasSupported) {
-        return;
-    }
+define(function (require, exports, module) {
 
+if (!require('../core/env').canvasSupported) {
     var urn = 'urn:schemas-microsoft-com:vml';
 
     var createNode;
@@ -25,7 +22,7 @@ define(function (require) {
     }
 
     // From raphael
-    function initVML() {
+    var initVML = function () {
         if (vmlInited) {
             return;
         }
@@ -37,13 +34,15 @@ define(function (require) {
         }
         else {
             // http://msdn.microsoft.com/en-us/library/ms531194%28VS.85%29.aspx
-            styleSheets[0].addRule('.zrvml', 'behavior:url(#default#VML)')
+            styleSheets[0].addRule('.zrvml', 'behavior:url(#default#VML)');
         }
-    }
+    };
 
-    return {
+    // Not useing return to avoid error when converting to CommonJS module
+    module.exports = {
         doc: doc,
         initVML: initVML,
         createNode: createNode
     };
+}
 });

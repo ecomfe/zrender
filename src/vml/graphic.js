@@ -2,10 +2,7 @@
 // TODO Use proxy like svg instead of overwrite brush methods
 define(function (require) {
 
-    if (require('../core/env').canvasSupported) {
-        return;
-    }
-
+if (!require('../core/env').canvasSupported) {
     var vec2 = require('../core/vector');
     var BoundingRect = require('../core/BoundingRect');
     var CMD = require('../core/PathProxy').CMD;
@@ -39,42 +36,42 @@ define(function (require) {
     var ZLEVEL_BASE = 100000;
     var Z_BASE = 1000;
 
-    function initRootElStyle(el) {
+    var initRootElStyle = function (el) {
         el.style.cssText = 'position:absolute;left:0;top:0;width:1px;height:1px;';
         el.coordsize = Z + ','  + Z;
         el.coordorigin = '0,0';
-    }
+    };
 
-    function encodeHtmlAttribute(s) {
+    var encodeHtmlAttribute = function (s) {
         return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-    }
+    };
 
-    function rgb2Str(r, g, b) {
+    var rgb2Str = function (r, g, b) {
         return 'rgb(' + [r, g, b].join(',') + ')';
-    }
+    };
 
-    function append(parent, child) {
+    var append = function (parent, child) {
         if (child && parent && child.parentNode !== parent) {
             parent.appendChild(child);
         }
-    }
+    };
 
-    function remove(parent, child) {
+    var remove = function (parent, child) {
         if (child && parent && child.parentNode === parent) {
             parent.removeChild(child);
         }
-    }
+    };
 
-    function getZIndex(zlevel, z, z2) {
+    var getZIndex = function (zlevel, z, z2) {
         // z 的取值范围为 [0, 1000]
         return (parseFloat(zlevel) || 0) * ZLEVEL_BASE + (parseFloat(z) || 0) * Z_BASE + z2;
-    }
+    };
 
     /***************************************************
      * PATH
      **************************************************/
 
-    function setColorAndOpacity(el, color, opacity) {
+    var setColorAndOpacity = function (el, color, opacity) {
         var colorArr = colorTool.parse(color);
         opacity = +opacity;
         if (isNaN(opacity)) {
@@ -84,17 +81,17 @@ define(function (require) {
             el.color = rgb2Str(colorArr[0], colorArr[1], colorArr[2]);
             el.opacity = opacity * colorArr[3];
         }
-    }
+    };
 
-    function getColorAndAlpha(color) {
+    var getColorAndAlpha = function (color) {
         var colorArr = colorTool.parse(color);
         return [
             rgb2Str(colorArr[0], colorArr[1], colorArr[2]),
             colorArr[3]
         ];
-    }
+    };
 
-    function updateFillNode(el, style, zrEl) {
+    var updateFillNode = function (el, style, zrEl) {
         // TODO pattern
         var fill = style.fill;
         if (fill != null) {
@@ -204,9 +201,9 @@ define(function (require) {
                 setColorAndOpacity(el, fill, style.opacity);
             }
         }
-    }
+    };
 
-    function updateStrokeNode(el, style) {
+    var updateStrokeNode = function (el, style) {
         if (style.lineJoin != null) {
             el.joinstyle = style.lineJoin;
         }
@@ -222,9 +219,9 @@ define(function (require) {
         if (style.stroke != null && !(style.stroke instanceof Gradient)) {
             setColorAndOpacity(el, style.stroke, style.opacity);
         }
-    }
+    };
 
-    function updateFillAndStroke(vmlEl, type, style, zrEl) {
+    var updateFillAndStroke = function (vmlEl, type, style, zrEl) {
         var isFill = type == 'fill';
         var el = vmlEl.getElementsByTagName(type)[0];
         // Stroke must have lineWidth
@@ -245,10 +242,10 @@ define(function (require) {
             vmlEl[isFill ? 'filled' : 'stroked'] = 'false';
             remove(vmlEl, el);
         }
-    }
+    };
 
     var points = [[], [], []];
-    function pathDataToString(data, m) {
+    var pathDataToString = function (data, m) {
         var M = CMD.M;
         var C = CMD.C;
         var L = CMD.L;
@@ -481,11 +478,11 @@ define(function (require) {
     /***************************************************
      * IMAGE
      **************************************************/
-    function isImage(img) {
+    var isImage = function (img) {
         // FIXME img instanceof Image 如果 img 是一个字符串的时候，IE8 下会报错
         return (typeof img === 'object') && img.tagName && img.tagName.toUpperCase() === 'IMG';
         // return img instanceof Image;
-    }
+    };
 
     // Rewrite the original path method
     ZImage.prototype.brush = function (vmlRoot) {
@@ -721,7 +718,7 @@ define(function (require) {
     var MAX_FONT_CACHE_SIZE = 100;
     var fontEl = document.createElement('div');
 
-    function getFontStyle(fontString) {
+    var getFontStyle = function (fontString) {
         var fontStyle = fontStyleCache[fontString];
         if (!fontStyle) {
             // Clear cache
@@ -751,7 +748,7 @@ define(function (require) {
             fontStyleCacheCount++;
         }
         return fontStyle;
-    }
+    };
 
     var textMeasureEl;
     // Overwrite measure text method
@@ -780,7 +777,7 @@ define(function (require) {
 
     var tmpRect = new BoundingRect();
 
-    function drawRectText(vmlRoot, rect, textRect, fromTextEl) {
+    var drawRectText = function (vmlRoot, rect, textRect, fromTextEl) {
 
         var style = this.style;
         var text = style.text;
@@ -954,16 +951,16 @@ define(function (require) {
 
         // Attached to root
         append(vmlRoot, textVmlEl);
-    }
+    };
 
-    function removeRectText(vmlRoot) {
+    var removeRectText = function (vmlRoot) {
         remove(vmlRoot, this._textVmlEl);
         this._textVmlEl = null;
-    }
+    };
 
-    function appendRectText(vmlRoot) {
+    var appendRectText = function (vmlRoot) {
         append(vmlRoot, this._textVmlEl);
-    }
+    };
 
     var list = [RectText, Displayable, ZImage, Path, Text];
 
@@ -992,4 +989,5 @@ define(function (require) {
     Text.prototype.onAddToStorage = function (vmlRoot) {
         this.appendRectText(vmlRoot);
     };
+}
 });

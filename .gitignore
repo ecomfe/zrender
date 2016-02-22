@@ -1,5 +1,5 @@
 #################
-## Eclipse 
+## Eclipse
 #################
 
 *.pydevproject
@@ -161,3 +161,7 @@ pip-log.txt
 
 # Mac crap
 .DS_Store
+
+
+/lib
+node_modules

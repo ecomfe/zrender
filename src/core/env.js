@@ -5,11 +5,11 @@
  * @author firede[firede@firede.us]
  * @desc thanks zepto.
  */
-define(function() {
-
+define(function () {
+    var env = {};
     if (typeof navigator === 'undefined') {
         // In node
-        return {
+        env = {
             browser: {},
             os: {},
             node: true,
@@ -17,6 +17,12 @@ define(function() {
             canvasSupported: true
         };
     }
+    else {
+        env = detect(navigator.userAgent);
+    }
+
+    return env;
+
     // Zepto.js
     // (c) 2010-2013 Thomas Fuchs
     // Zepto.js may be freely distributed under the MIT license.
@@ -100,6 +106,4 @@ define(function() {
                 && (browser.edge || (browser.ie && browser.version >= 10))
         };
     }
-
-    return detect(navigator.userAgent);
 });
