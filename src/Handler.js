@@ -502,8 +502,8 @@ define(function (require) {
         // We may figger it out latter.
         return false;
         // return env.pointerEventsSupported
-            // In no-touch device we dont use pointer but just traditional way for
-            // avoiding problem.
+            // In no-touch device we dont use pointer evnets but just
+            // use mouse event for avoiding problems.
             // && window.navigator.maxTouchPoints;
     }
 
