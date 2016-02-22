@@ -22,25 +22,31 @@ define(
  * @author firede[firede@firede.us]
  * @desc thanks zepto.
  */
-define('zrender/core/env',[],function() {
-
+define('zrender/core/env',[],function () {
+    var env = {};
     if (typeof navigator === 'undefined') {
         // In node
-        return {
+        env = {
             browser: {},
             os: {},
             node: true,
             // Assume canvas is supported
             canvasSupported: true
-        }
+        };
     }
+    else {
+        env = detect(navigator.userAgent);
+    }
+
+    return env;
+
     // Zepto.js
     // (c) 2010-2013 Thomas Fuchs
     // Zepto.js may be freely distributed under the MIT license.
 
     function detect(ua) {
-        var os = this.os = {};
-        var browser = this.browser = {};
+        var os = {};
+        var browser = {};
         var webkit = ua.match(/Web[kK]it[\/]{0,1}([\d.]+)/);
         var android = ua.match(/(Android);?[\s\/]+([\d.]+)?/);
         var ipad = ua.match(/(iPad).*OS\s([\d_]+)/);
@@ -56,10 +62,12 @@ define('zrender/core/env',[],function() {
         var playbook = ua.match(/PlayBook/);
         var chrome = ua.match(/Chrome\/([\d.]+)/) || ua.match(/CriOS\/([\d.]+)/);
         var firefox = ua.match(/Firefox\/([\d.]+)/);
-        var ie = ua.match(/MSIE ([\d.]+)/);
         var safari = webkit && ua.match(/Mobile\//) && !chrome;
         var webview = ua.match(/(iPhone|iPod|iPad).*AppleWebKit(?!.*Safari)/) && !chrome;
-        var ie = ua.match(/MSIE\s([\d.]+)/);
+        var ie = ua.match(/MSIE\s([\d.]+)/)
+            // IE 11 Trident/7.0; rv:11.0
+            || ua.match(/Trident\/.+?rv:(([\d.]+))/);
+        var edge = ua.match(/Edge\/([\d.]+)/); // IE 12 and 12+
 
         // Todo: clean this up with a better OS/browser seperation:
         // - discern (more) between multiple browsers on android
@@ -88,6 +96,7 @@ define('zrender/core/env',[],function() {
         if (safari && (ua.match(/Safari/) || !!os.ios)) browser.safari = true;
         if (webview) browser.webview = true;
         if (ie) browser.ie = true, browser.version = ie[1];
+        if (edge) browser.edge = true, browser.version = edge[1];
 
         os.tablet = !!(ipad || playbook || (android && !ua.match(/Mobile/)) ||
             (firefox && ua.match(/Tablet/)) || (ie && !ua.match(/Phone/) && ua.match(/Touch/)));
@@ -101,11 +110,19 @@ define('zrender/core/env',[],function() {
             node: false,
             // 原生canvas支持，改极端点了
             // canvasSupported : !(browser.ie && parseFloat(browser.version) < 9)
-            canvasSupported : document.createElement('canvas').getContext ? true : false
+            canvasSupported : document.createElement('canvas').getContext ? true : false,
+            // @see <http://stackoverflow.com/questions/4817029/whats-the-best-way-to-detect-a-touch-screen-device-using-javascript>
+            // works on most browsers
+            // IE10/11 does not support touch event, and MS Edge supports them but not by
+            // default, so we dont check navigator.maxTouchPoints for them here.
+            touchEventsSupported: 'ontouchstart' in window && !browser.ie && !browser.edge,
+            // <http://caniuse.com/#search=pointer%20event>.
+            pointerEventsSupported: 'onpointerdown' in window
+                // Firefox supports pointer but not by default,
+                // only MS browsers are reliable on pointer events currently.
+                && (browser.edge || (browser.ie && browser.version >= 10))
         };
     }
-
-    return detect(navigator.userAgent);
 });
 define('zrender/graphic/Gradient',['require'],function (require) {
 
@@ -1242,13 +1259,19 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
 
     var Eventful = require('./mixin/Eventful');
 
-    var domHandlerNames = [
-        'click', 'dblclick',
-        'mousewheel', 'mousemove', 'mouseout', 'mouseup', 'mousedown'
+    var mouseHandlerNames = [
+        'click', 'dblclick', 'mousewheel', 'mouseout'
     ];
+    !usePointerEvent() && mouseHandlerNames.push(
+        'mouseup', 'mousedown', 'mousemove'
+    );
 
     var touchHandlerNames = [
         'touchstart', 'touchend', 'touchmove'
+    ];
+
+    var pointerHandlerNames = [
+        'pointerdown', 'pointerup', 'pointermove'
     ];
 
     var TOUCH_CLICK_DELAY = 300;
@@ -1264,10 +1287,6 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
     var addEventListener = eventTool.addEventListener;
     var removeEventListener = eventTool.removeEventListener;
     var normalizeEvent = eventTool.normalizeEvent;
-
-    function proxyEventName(name) {
-        return '_' + name + 'Handler';
-    }
 
     function makeEventPacket(eveType, target, event) {
         return {
@@ -1362,9 +1381,11 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
             // 平板补充一次findHover
             // this._mobileFindFixed(event);
             // Trigger mousemove and mousedown
-            this._mousemoveHandler(event);
+            domHandlers.mousemove.call(this, event);
 
-            this._mousedownHandler(event);
+            domHandlers.mousedown.call(this, event);
+
+            setTouchTimer(this);
         },
 
         /**
@@ -1381,7 +1402,9 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
             // Mouse move should always be triggered no matter whether
             // there is gestrue event, because mouse move and pinch may
             // be used at the same time.
-            this._mousemoveHandler(event);
+            domHandlers.mousemove.call(this, event);
+
+            setTouchTimer(this);
         },
 
         /**
@@ -1395,14 +1418,16 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
 
             processGesture(this, event, 'end');
 
-            this._mouseupHandler(event);
+            domHandlers.mouseup.call(this, event);
 
             // click event should always be triggered no matter whether
             // there is gestrue event. System click can not be prevented.
             if (+new Date() - this._lastTouchMoment < TOUCH_CLICK_DELAY) {
                 // this._mobileFindFixed(event);
-                this._clickHandler(event);
+                domHandlers.click.call(this, event);
             }
+
+            setTouchTimer(this);
         }
     };
 
@@ -1410,12 +1435,19 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
     util.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick'], function (name) {
         domHandlers[name] = function (event) {
             event = normalizeEvent(this.root, event);
-
             // Find hover again to avoid click event is dispatched manually. Or click is triggered without mouseover
             var hovered = this._findHover(event.zrX, event.zrY, null);
             this._dispatchProxy(hovered, name, event);
         };
     });
+
+    // Pointer event handlers
+    // util.each(['pointerdown', 'pointermove', 'pointerup'], function (name) {
+    //     domHandlers[name] = function (event) {
+    //         var mouseName = name.replace('pointer', 'mouse');
+    //         domHandlers[mouseName].call(this, event);
+    //     };
+    // });
 
     function processGesture(zrHandler, event, stage) {
         var gestureMgr = zrHandler._gestureMgr;
@@ -1445,11 +1477,24 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
      * @param {module:zrender/Handler} instance 控制类实例
      */
     function initDomHandler(instance) {
-        var handlerNames = domHandlerNames.concat(touchHandlerNames);
-        var len = handlerNames.length;
-        while (len--) {
-            var name = handlerNames[len];
-            instance[proxyEventName(name)] = util.bind(domHandlers[name], instance);
+        var handlerNames = touchHandlerNames.concat(pointerHandlerNames);
+        for (var i = 0; i < handlerNames.length; i++) {
+            var name = handlerNames[i];
+            instance._handlers[name] = util.bind(domHandlers[name], instance);
+        }
+
+        for (var i = 0; i < mouseHandlerNames.length; i++) {
+            var name = mouseHandlerNames[i];
+            instance._handlers[name] = makeMouseHandler(domHandlers[name], instance);
+        }
+
+        function makeMouseHandler(fn, instance) {
+            return function () {
+                if (instance._touching) {
+                    return;
+                }
+                return fn.apply(instance, arguments);
+            };
         }
     }
 
@@ -1457,9 +1502,9 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
      * @alias module:zrender/Handler
      * @constructor
      * @extends module:zrender/mixin/Eventful
-     * @param {HTMLElement} root 绘图区域
-     * @param {module:zrender/Storage} storage Storage实例
-     * @param {module:zrender/Painter} painter Painter实例
+     * @param {HTMLElement} root Main HTML element for painting.
+     * @param {module:zrender/Storage} storage Storage instance.
+     * @param {module:zrender/Painter} painter Painter instance.
      */
     var Handler = function(root, storage, painter) {
         Eventful.call(this);
@@ -1470,49 +1515,82 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
 
         /**
          * @private
+         * @type {boolean}
          */
         this._hovered;
+
         /**
          * @private
+         * @type {Date}
          */
         this._lastTouchMoment;
+
         /**
          * @private
+         * @type {number}
          */
         this._lastX;
+
         /**
          * @private
+         * @type {number}
          */
         this._lastY;
+
         /**
          * @private
+         * @type {string}
          */
-        this._defaultCursorStyle = 'default'
+        this._defaultCursorStyle = 'default';
+
         /**
          * @private
+         * @type {module:zrender/core/GestureMgr}
          */
         this._gestureMgr = new GestureMgr();
 
+        /**
+         * @private
+         * @type {Array.<Function>}
+         */
+        this._handlers = [];
+
+        /**
+         * @private
+         * @type {boolean}
+         */
+        this._touching = false;
+
+        /**
+         * @private
+         * @type {number}
+         */
+        this._touchTimer;
+
         initDomHandler(this);
 
-        if (env.os.tablet || env.os.phone) {
-            // mobile支持
-            // mobile的click/move/up/down自己模拟
-            util.each(touchHandlerNames, function (name) {
-                addEventListener(root, name, this[proxyEventName(name)]);
-            }, this);
+        if (usePointerEvent()) {
+            mountHandlers(pointerHandlerNames, this);
+        }
+        else if (useTouchEvent()) {
+            mountHandlers(touchHandlerNames, this);
 
-            addEventListener(root, 'mouseout', this._mouseoutHandler);
+            // Handler of 'mouseout' event is needed in touch mode, which will be mounted below.
+            // addEventListener(root, 'mouseout', this._mouseoutHandler);
         }
-        else {
-            util.each(domHandlerNames, function (name) {
-                addEventListener(root, name, this[proxyEventName(name)]);
-            }, this);
-            // Firefox
-            addEventListener(root, 'DOMMouseScroll', this._mousewheelHandler);
-        }
+
+        // Considering some devices that both enable touch and mouse event (like MS Surface
+        // and lenovo X240, @see #2350), we make mouse event be always listened, otherwise
+        // mouse event can not be handle in those devices.
+        mountHandlers(mouseHandlerNames, this);
 
         Draggable.call(this);
+
+        function mountHandlers(handlerNames, instance) {
+            util.each(handlerNames, function (name) {
+                addEventListener(root, eventNameFix(name), instance._handlers[name]);
+            }, instance);
+        }
     };
 
     Handler.prototype = {
@@ -1532,8 +1610,8 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
          * @param {event=} eventArgs
          */
         dispatch: function (eventName, eventArgs) {
-            var handler = this[proxyEventName(eventName)];
-            handler && handler(eventArgs);
+            var handler = this._handlers[eventName];
+            handler && handler.call(this, eventArgs);
         },
 
         /**
@@ -1542,15 +1620,12 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
         dispose: function () {
             var root = this.root;
 
-            var handlerNames = domHandlerNames.concat(touchHandlerNames);
+            var handlerNames = mouseHandlerNames.concat(touchHandlerNames);
 
             for (var i = 0; i < handlerNames.length; i++) {
                 var name = handlerNames[i];
-                removeEventListener(root, name, this[proxyEventName(name)]);
+                removeEventListener(root, eventNameFix(name), this._handlers[name]);
             }
-
-            // Firefox
-            removeEventListener(root, 'DOMMouseScroll', this._mousewheelHandler);
 
             this.root =
             this.storage =
@@ -1643,12 +1718,50 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
         return false;
     }
 
+    /**
+     * Prevent mouse event from being dispatched after Touch Events action
+     * @see <https://github.com/deltakosh/handjs/blob/master/src/hand.base.js>
+     * 1. Mobile browsers dispatch mouse events 300ms after touchend.
+     * 2. Chrome for Android dispatch mousedown for long-touch about 650ms
+     * Result: Blocking Mouse Events for 700ms.
+     */
+    function setTouchTimer(instance) {
+        instance._touching = true;
+        clearTimeout(instance._touchTimer);
+        instance._touchTimer = setTimeout(function () {
+            instance._touching = false;
+        }, 700);
+    }
+
+    /**
+     * Althought MS Surface support screen touch, IE10/11 do not support
+     * touch event and MS Edge supported them but not by default (but chrome
+     * and firefox do). Thus we use Pointer event on MS browsers to handle touch.
+     */
+    function usePointerEvent() {
+        // TODO
+        // pointermove event dont trigger when using finger.
+        // We may figger it out latter.
+        return false;
+        // return env.pointerEventsSupported
+            // In no-touch device we dont use pointer but just traditional way for
+            // avoiding problem.
+            // && window.navigator.maxTouchPoints;
+    }
+
+    function useTouchEvent() {
+        return env.touchEventsSupported;
+    }
+
+    function eventNameFix(name) {
+        return (name === 'mousewheel' && env.firefox) ? 'DOMMouseScroll' : name;
+    }
+
     util.mixin(Handler, Eventful);
     util.mixin(Handler, Draggable);
 
     return Handler;
 });
-
 define('zrender/core/matrix',[],function () {
     var ArrayCtor = typeof Float32Array === 'undefined'
         ? Array
@@ -6434,11 +6547,21 @@ define('zrender/graphic/helper/roundRect',['require'],function (require) {
             var width = shape.width;
             var height = shape.height;
             var r = shape.r;
-            var r1; 
-            var r2; 
-            var r3; 
+            var r1;
+            var r2;
+            var r3;
             var r4;
-              
+
+            // Convert width and height to positive for better borderRadius
+            if (width < 0) {
+                x = x + width;
+                width = -width;
+            }
+            if (height < 0) {
+                y = y + height;
+                height = -height;
+            }
+
             if (typeof r === 'number') {
                 r1 = r2 = r3 = r4 = r;
             }
@@ -6465,7 +6588,7 @@ define('zrender/graphic/helper/roundRect',['require'],function (require) {
             else {
                 r1 = r2 = r3 = r4 = 0;
             }
-            
+
             var total;
             if (r1 + r2 > width) {
                 total = r1 + r2;
@@ -6504,7 +6627,7 @@ define('zrender/graphic/helper/roundRect',['require'],function (require) {
             r1 !== 0 && ctx.quadraticCurveTo(x, y, x + r1, y);
         }
     }
-}); 
+});
 // Simple LRU cache use doubly linked list
 // @module zrender/core/LRU
 define('zrender/core/LRU',['require'],function(require) {
@@ -7522,9 +7645,9 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
             ctx.clearRect(0, 0, width * dpr, height * dpr);
 
             var pathTransform = {
-                position : path.position,
-                rotation : path.rotation,
-                scale : path.scale
+                position: path.position,
+                rotation: path.rotation,
+                scale: path.scale
             };
             path.position = [0, 0, 0];
             path.rotation = 0;
@@ -7535,11 +7658,11 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
 
             var ImageShape = require('./graphic/Image');
             var imgShape = new ImageShape({
-                id : id,
-                style : {
-                    x : 0,
-                    y : 0,
-                    image : canvas
+                id: id,
+                style: {
+                    x: 0,
+                    y: 0,
+                    image: canvas
                 }
             });
 
@@ -7602,7 +7725,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
     /**
      * @type {string}
      */
-    zrender.version = '3.0.1';
+    zrender.version = '3.0.2';
 
     /**
      * @param {HTMLElement} dom
@@ -7695,9 +7818,6 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
 
         this.storage = storage;
         this.painter = painter;
-        // VML 下为了性能可能会直接操作 VMLRoot 的位置
-        // 因此鼠标的相对位置应该是相对于 VMLRoot
-        // PENDING
         if (!env.node) {
             this.handler = new Handler(painter.getViewportRoot(), storage, painter);
         }
@@ -7848,7 +7968,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
 
         /**
          * 将常规shape转成image shape
-         * @param {module:zrender/shape/Base} e
+         * @param {module:zrender/graphic/Path} e
          * @param {number} width
          * @param {number} height
          */
@@ -10232,7 +10352,11 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
                 var w = style.lineWidth;
                 // PENDING, Min line width is needed when line is horizontal or vertical
                 var lineScale = style.strokeNoScale ? this.getLineScale() : 1;
-                w = Math.max(w, this.strokeContainThreshold);
+
+                // Only add extra hover lineWidth when there are no fill
+                if (!pathHasFill(style)) {
+                    w = Math.max(w, this.strokeContainThreshold);
+                }
                 // Consider line width
                 // Line scale can't be 0;
                 if (lineScale > 1e-10) {
@@ -10260,14 +10384,16 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
                     var lineWidth = style.lineWidth;
                     var lineScale = style.strokeNoScale ? this.getLineScale() : 1;
                     // Line scale can't be 0;
-                    if (lineScale < 1e-10) {
-                        return false;
-                    }
-                    lineWidth = Math.max(lineWidth, this.strokeContainThreshold);
-                    if (pathContain.containStroke(
-                        pathData, lineWidth / lineScale, x, y
-                    )) {
-                        return true;
+                    if (lineScale > 1e-10) {
+                        // Only add extra hover lineWidth when there are no fill
+                        if (!pathHasFill(style)) {
+                            lineWidth = Math.max(lineWidth, this.strokeContainThreshold);
+                        }
+                        if (pathContain.containStroke(
+                            pathData, lineWidth / lineScale, x, y
+                        )) {
+                            return true;
+                        }
                     }
                 }
                 if (pathHasFill(style)) {
@@ -11382,12 +11508,9 @@ define('zrender/graphic/shape/Polygon',['require','../helper/poly','../Path'],fu
         }
     });
 });
-define('zrender/vml/core',['require','../core/env'],function (require) {
-    
-    if (require('../core/env').canvasSupported) {
-        return;
-    }
+define('zrender/vml/core',['require','exports','module','../core/env'],function (require, exports, module) {
 
+if (!require('../core/env').canvasSupported) {
     var urn = 'urn:schemas-microsoft-com:vml';
 
     var createNode;
@@ -11409,7 +11532,7 @@ define('zrender/vml/core',['require','../core/env'],function (require) {
     }
 
     // From raphael
-    function initVML() {
+    var initVML = function () {
         if (vmlInited) {
             return;
         }
@@ -11421,24 +11544,23 @@ define('zrender/vml/core',['require','../core/env'],function (require) {
         }
         else {
             // http://msdn.microsoft.com/en-us/library/ms531194%28VS.85%29.aspx
-            styleSheets[0].addRule('.zrvml', 'behavior:url(#default#VML)')
+            styleSheets[0].addRule('.zrvml', 'behavior:url(#default#VML)');
         }
-    }
+    };
 
-    return {
+    // Not useing return to avoid error when converting to CommonJS module
+    module.exports = {
         doc: doc,
         initVML: initVML,
         createNode: createNode
     };
+}
 });
 // http://www.w3.org/TR/NOTE-VML
 // TODO Use proxy like svg instead of overwrite brush methods
 define('zrender/vml/graphic',['require','../core/env','../core/vector','../core/BoundingRect','../core/PathProxy','../tool/color','../contain/text','../graphic/mixin/RectText','../graphic/Displayable','../graphic/Image','../graphic/Text','../graphic/Path','../graphic/Gradient','./core'],function (require) {
 
-    if (require('../core/env').canvasSupported) {
-        return;
-    }
-
+if (!require('../core/env').canvasSupported) {
     var vec2 = require('../core/vector');
     var BoundingRect = require('../core/BoundingRect');
     var CMD = require('../core/PathProxy').CMD;
@@ -11472,42 +11594,42 @@ define('zrender/vml/graphic',['require','../core/env','../core/vector','../core/
     var ZLEVEL_BASE = 100000;
     var Z_BASE = 1000;
 
-    function initRootElStyle(el) {
+    var initRootElStyle = function (el) {
         el.style.cssText = 'position:absolute;left:0;top:0;width:1px;height:1px;';
         el.coordsize = Z + ','  + Z;
         el.coordorigin = '0,0';
-    }
+    };
 
-    function encodeHtmlAttribute(s) {
+    var encodeHtmlAttribute = function (s) {
         return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-    }
+    };
 
-    function rgb2Str(r, g, b) {
+    var rgb2Str = function (r, g, b) {
         return 'rgb(' + [r, g, b].join(',') + ')';
-    }
+    };
 
-    function append(parent, child) {
+    var append = function (parent, child) {
         if (child && parent && child.parentNode !== parent) {
             parent.appendChild(child);
         }
-    }
+    };
 
-    function remove(parent, child) {
+    var remove = function (parent, child) {
         if (child && parent && child.parentNode === parent) {
             parent.removeChild(child);
         }
-    }
+    };
 
-    function getZIndex(zlevel, z, z2) {
+    var getZIndex = function (zlevel, z, z2) {
         // z 的取值范围为 [0, 1000]
         return (parseFloat(zlevel) || 0) * ZLEVEL_BASE + (parseFloat(z) || 0) * Z_BASE + z2;
-    }
+    };
 
     /***************************************************
      * PATH
      **************************************************/
 
-    function setColorAndOpacity(el, color, opacity) {
+    var setColorAndOpacity = function (el, color, opacity) {
         var colorArr = colorTool.parse(color);
         opacity = +opacity;
         if (isNaN(opacity)) {
@@ -11517,17 +11639,17 @@ define('zrender/vml/graphic',['require','../core/env','../core/vector','../core/
             el.color = rgb2Str(colorArr[0], colorArr[1], colorArr[2]);
             el.opacity = opacity * colorArr[3];
         }
-    }
+    };
 
-    function getColorAndAlpha(color) {
+    var getColorAndAlpha = function (color) {
         var colorArr = colorTool.parse(color);
         return [
             rgb2Str(colorArr[0], colorArr[1], colorArr[2]),
             colorArr[3]
         ];
-    }
+    };
 
-    function updateFillNode(el, style, zrEl) {
+    var updateFillNode = function (el, style, zrEl) {
         // TODO pattern
         var fill = style.fill;
         if (fill != null) {
@@ -11637,9 +11759,9 @@ define('zrender/vml/graphic',['require','../core/env','../core/vector','../core/
                 setColorAndOpacity(el, fill, style.opacity);
             }
         }
-    }
+    };
 
-    function updateStrokeNode(el, style) {
+    var updateStrokeNode = function (el, style) {
         if (style.lineJoin != null) {
             el.joinstyle = style.lineJoin;
         }
@@ -11655,9 +11777,9 @@ define('zrender/vml/graphic',['require','../core/env','../core/vector','../core/
         if (style.stroke != null && !(style.stroke instanceof Gradient)) {
             setColorAndOpacity(el, style.stroke, style.opacity);
         }
-    }
+    };
 
-    function updateFillAndStroke(vmlEl, type, style, zrEl) {
+    var updateFillAndStroke = function (vmlEl, type, style, zrEl) {
         var isFill = type == 'fill';
         var el = vmlEl.getElementsByTagName(type)[0];
         // Stroke must have lineWidth
@@ -11678,10 +11800,10 @@ define('zrender/vml/graphic',['require','../core/env','../core/vector','../core/
             vmlEl[isFill ? 'filled' : 'stroked'] = 'false';
             remove(vmlEl, el);
         }
-    }
+    };
 
     var points = [[], [], []];
-    function pathDataToString(data, m) {
+    var pathDataToString = function (data, m) {
         var M = CMD.M;
         var C = CMD.C;
         var L = CMD.L;
@@ -11914,11 +12036,11 @@ define('zrender/vml/graphic',['require','../core/env','../core/vector','../core/
     /***************************************************
      * IMAGE
      **************************************************/
-    function isImage(img) {
+    var isImage = function (img) {
         // FIXME img instanceof Image 如果 img 是一个字符串的时候，IE8 下会报错
         return (typeof img === 'object') && img.tagName && img.tagName.toUpperCase() === 'IMG';
         // return img instanceof Image;
-    }
+    };
 
     // Rewrite the original path method
     ZImage.prototype.brush = function (vmlRoot) {
@@ -12154,7 +12276,7 @@ define('zrender/vml/graphic',['require','../core/env','../core/vector','../core/
     var MAX_FONT_CACHE_SIZE = 100;
     var fontEl = document.createElement('div');
 
-    function getFontStyle(fontString) {
+    var getFontStyle = function (fontString) {
         var fontStyle = fontStyleCache[fontString];
         if (!fontStyle) {
             // Clear cache
@@ -12184,7 +12306,7 @@ define('zrender/vml/graphic',['require','../core/env','../core/vector','../core/
             fontStyleCacheCount++;
         }
         return fontStyle;
-    }
+    };
 
     var textMeasureEl;
     // Overwrite measure text method
@@ -12213,7 +12335,7 @@ define('zrender/vml/graphic',['require','../core/env','../core/vector','../core/
 
     var tmpRect = new BoundingRect();
 
-    function drawRectText(vmlRoot, rect, textRect, fromTextEl) {
+    var drawRectText = function (vmlRoot, rect, textRect, fromTextEl) {
 
         var style = this.style;
         var text = style.text;
@@ -12387,16 +12509,16 @@ define('zrender/vml/graphic',['require','../core/env','../core/vector','../core/
 
         // Attached to root
         append(vmlRoot, textVmlEl);
-    }
+    };
 
-    function removeRectText(vmlRoot) {
+    var removeRectText = function (vmlRoot) {
         remove(vmlRoot, this._textVmlEl);
         this._textVmlEl = null;
-    }
+    };
 
-    function appendRectText(vmlRoot) {
+    var appendRectText = function (vmlRoot) {
         append(vmlRoot, this._textVmlEl);
-    }
+    };
 
     var list = [RectText, Displayable, ZImage, Path, Text];
 
@@ -12425,6 +12547,7 @@ define('zrender/vml/graphic',['require','../core/env','../core/vector','../core/
     Text.prototype.onAddToStorage = function (vmlRoot) {
         this.appendRectText(vmlRoot);
     };
+}
 });
 /**
  * VML Painter.
