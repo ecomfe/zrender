@@ -30,24 +30,11 @@ define(function(require) {
         var isTouch = eventType && eventType.indexOf('touch') >= 0;
 
         if (!isTouch) {
-            // https://gist.github.com/electricg/4435259
-            var mouseX = 0;
-            var mouseY = 0;
-
-            if (e.pageX || e.pageY) {
-                mouseX = e.pageX;
-                mouseY = e.pageY;
-            }
-            else {
-                mouseX = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
-                mouseY = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
-            }
-
             var box = getBoundingClientRect(el);
-            var top = box.top + (window.pageYOffset || el.scrollTop) - (el.clientTop || 0);
-            var left = box.left + (window.pageXOffset || el.scrollLeft) - (el.clientLeft || 0);
-            e.zrX = mouseX - left;
-            e.zrY = mouseY - top;
+            var top = box.top;
+            var left = box.left;
+            e.zrX = e.clientX - box.left;
+            e.zrY = e.clientY - box.top;
             e.zrDelta = (e.wheelDelta) ? e.wheelDelta / 120 : -(e.detail || 0) / 3;
         }
         else {
