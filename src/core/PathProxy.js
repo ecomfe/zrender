@@ -8,6 +8,7 @@
 
  // TODO getTotalLength, getPointAtLength
 define(function (require) {
+    'use strict';
 
     var curve = require('./curve');
     var vec2 = require('./vector');
@@ -354,7 +355,7 @@ define(function (require) {
 
         _expandData: function () {
             // Only if data is Float32Array
-            if (! (this.data instanceof Array)) {
+            if (!(this.data instanceof Array)) {
                 var newData = [];
                 for (var i = 0; i < this._len; i++) {
                     newData[i] = this.data[i];
@@ -502,12 +503,14 @@ define(function (require) {
         /**
          * 转成静态的 Float32Array 减少堆内存占用
          * Convert dynamic array to static Float32Array
-         * @return {[type]} [description]
          */
         toStatic: function () {
-            this.data.length = this._len;
-            if (hasTypedArray && (this.data instanceof Array)) {
-                this.data = new Float32Array(this.data);
+            var data = this.data;
+            if (data instanceof Array) {
+                data.length = this._len;
+                if (hasTypedArray) {
+                    this.data = new Float32Array(data);
+                }
             }
         },
 
