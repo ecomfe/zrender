@@ -844,10 +844,11 @@ if (!require('../core/env').canvasSupported) {
 
         var fontSize = fontStyle.size;
         // 1.75 is an arbitrary number, as there is no info about the text baseline
+        var lineCount = (text + '').split('\n').length; // not precise.
         switch (baseline) {
             case 'hanging':
             case 'top':
-                y += fontSize / 1.75;
+                y += (fontSize / 1.75) * lineCount;
                 break;
             case 'middle':
                 break;
