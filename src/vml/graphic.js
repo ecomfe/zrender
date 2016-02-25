@@ -67,6 +67,16 @@ if (!require('../core/env').canvasSupported) {
         return (parseFloat(zlevel) || 0) * ZLEVEL_BASE + (parseFloat(z) || 0) * Z_BASE + z2;
     };
 
+    var parsePercent = function (value, maxValue) {
+        if (typeof value === 'string') {
+            if (value.lastIndexOf('%') >= 0) {
+                return parseFloat(value) / 100 * maxValue;
+            }
+            return parseFloat(value);
+        }
+        return value;
+    };
+
     /***************************************************
      * PATH
      **************************************************/
@@ -412,7 +422,7 @@ if (!require('../core/env').canvasSupported) {
             }
         }
         return str.join('');
-    }
+    };
 
     // Rewrite the original path method
     Path.prototype.brush = function (vmlRoot) {
@@ -756,9 +766,8 @@ if (!require('../core/env').canvasSupported) {
         var doc = vmlCore.doc;
         if (!textMeasureEl) {
             textMeasureEl = doc.createElement('div');
-            textMeasureEl.style.cssText = 'position:absolute;top:-20000px;left:0;\
-                padding:0;margin:0;border:none;white-space:pre;';
-
+            textMeasureEl.style.cssText = 'position:absolute;top:-20000px;left:0;'
+                + 'padding:0;margin:0;border:none;white-space:pre;';
             vmlCore.doc.body.appendChild(textMeasureEl);
         }
 
@@ -804,13 +813,14 @@ if (!require('../core/env').canvasSupported) {
             tmpRect.applyTransform(m);
             rect = tmpRect;
         }
+
         if (!fromTextEl) {
             var textPosition = style.textPosition;
             var distance = style.textDistance;
             // Text position represented by coord
             if (textPosition instanceof Array) {
-                x = rect.x + textPosition[0];
-                y = rect.y + textPosition[1];
+                x = rect.x + parsePercent(textPosition[0], rect.width);
+                y = rect.y + parsePercent(textPosition[1], rect.height);
 
                 align = align || 'left';
                 baseline = baseline || 'top';
@@ -831,6 +841,7 @@ if (!require('../core/env').canvasSupported) {
             x = rect.x;
             y = rect.y;
         }
+
         var fontSize = fontStyle.size;
         // 1.75 is an arbitrary number, as there is no info about the text baseline
         switch (baseline) {
