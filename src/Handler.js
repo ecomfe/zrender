@@ -74,7 +74,7 @@ define(function (require) {
             var x = event.zrX;
             var y = event.zrY;
 
-            var hovered = this._findHover(x, y, null);
+            var hovered = this.findHover(x, y, null);
             var lastHovered = this._hovered;
 
             this._hovered = hovered;
@@ -194,7 +194,7 @@ define(function (require) {
         domHandlers[name] = function (event) {
             event = normalizeEvent(this.root, event);
             // Find hover again to avoid click event is dispatched manually. Or click is triggered without mouseover
-            var hovered = this._findHover(event.zrX, event.zrY, null);
+            var hovered = this.findHover(event.zrX, event.zrY, null);
             this._dispatchProxy(hovered, name, event);
         };
     });
@@ -214,7 +214,7 @@ define(function (require) {
 
         var gestureInfo = gestureMgr.recognize(
             event,
-            zrHandler._findHover(event.zrX, event.zrY, null)
+            zrHandler.findHover(event.zrX, event.zrY, null)
         );
 
         stage === 'end' && gestureMgr.clear();
@@ -448,7 +448,7 @@ define(function (require) {
          * @param {module:zrender/graphic/Displayable} exclude
          * @method
          */
-        _findHover: function(x, y, exclude) {
+        findHover: function(x, y, exclude) {
             var list = this.storage.getDisplayList();
             for (var i = list.length - 1; i >= 0 ; i--) {
                 if (!list[i].silent

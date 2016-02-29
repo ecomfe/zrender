@@ -45,7 +45,7 @@ define(function (require) {
                 draggingTarget.drift(dx, dy, e);
                 this._dispatchProxy(draggingTarget, 'drag', e.event);
 
-                var dropTarget = this._findHover(x, y, draggingTarget);
+                var dropTarget = this.findHover(x, y, draggingTarget);
                 var lastDropTarget = this._dropTarget;
                 this._dropTarget = dropTarget;
 
