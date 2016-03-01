@@ -283,7 +283,7 @@ define(function (require) {
                             self.setState(target);
                             done && done();
                         }
-                    }
+                    };
                     for (var i = 0; i < property.length; i++) {
                         var propName = property[i];
 
@@ -406,7 +406,7 @@ define(function (require) {
                 this._subStates.splice(states, 1);
             }
         }
-    }
+    };
 
     return GraphicStates;
 });

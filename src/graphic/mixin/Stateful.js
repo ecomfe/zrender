@@ -11,7 +11,7 @@ define(function (require) {
         if (opts.states) {
             this.initStates(opts.states);
         }
-    }
+    };
 
     Stateful.prototype = {
 
@@ -33,7 +33,7 @@ define(function (require) {
         transitionState: function (name, done) {
             this._states && this._states.transitionState(name, done);
         }
-    }
+    };
 
     return Stateful;
 });

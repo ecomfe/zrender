@@ -11,7 +11,7 @@ define(function (require) {
     var cos = Math.cos;
 
     return require('../Path').extend({
-        
+
         type: 'isogon',
 
         shape: {
@@ -35,7 +35,7 @@ define(function (require) {
             ctx.moveTo(x + r * cos(deg), y + r * sin(deg));
             for (var i = 0, end = n - 1; i < end; i++) {
                 deg += dStep;
-                ctx.lineTo(x + r * cos(deg), y + r * sin(deg))
+                ctx.lineTo(x + r * cos(deg), y + r * sin(deg));
             }
 
             ctx.closePath();

@@ -98,7 +98,6 @@ define(function (require) {
 
         // create array
         var arr = cs.split('|');
-        var ca = [];
         // init context point
         var cpx = 0;
         var cpy = 0;

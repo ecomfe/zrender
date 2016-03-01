@@ -46,7 +46,7 @@ define(function (require) {
 
         // FIXME Stateful must be mixined after style is setted
         // Stateful.call(this, opts);
-    };
+    }
 
     Displayable.prototype = {
 

@@ -38,5 +38,5 @@ define(function (require) {
                 closePath && ctx.closePath();
             }
         }
-    }
+    };
 });

@@ -38,7 +38,7 @@ define(function(require) {
         this.onframe = options.onframe;
         this.ondestroy = options.ondestroy;
         this.onrestart = options.onrestart;
-    };
+    }
 
     Clip.prototype = {
 

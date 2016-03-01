@@ -86,5 +86,5 @@ define(function (require) {
             ctx.lineTo(x, y + r1);
             r1 !== 0 && ctx.quadraticCurveTo(x, y, x + r1, y);
         }
-    }
+    };
 });

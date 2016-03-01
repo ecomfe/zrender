@@ -11,7 +11,10 @@ define(function (require) {
         var data = path.data;
         var cmd;
         var nPoint;
-        var i, j, k;
+        var i;
+        var j;
+        var k;
+        var p;
 
         var M = CMD.M;
         var C = CMD.C;
@@ -44,7 +47,6 @@ define(function (require) {
                     var sx = mathSqrt(m[0] * m[0] + m[1] * m[1]);
                     var sy = mathSqrt(m[2] * m[2] + m[3] * m[3]);
                     var angle = mathAtan2(-m[1] / sy, m[0] / sx);
-                    var clockwise = data[i + 7];
                     // cx
                     data[i++] += x;
                     // cy

@@ -31,8 +31,6 @@ define(function(require) {
 
         if (!isTouch) {
             var box = getBoundingClientRect(el);
-            var top = box.top;
-            var left = box.left;
             e.zrX = e.clientX - box.left;
             e.zrY = e.clientY - box.top;
             e.zrDelta = (e.wheelDelta) ? e.wheelDelta / 120 : -(e.detail || 0) / 3;

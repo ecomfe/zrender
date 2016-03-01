@@ -32,7 +32,7 @@ define(function (require) {
             res.idx1 = idx1;
         }
         return res;
-    };
+    }
 
     function append(out, cmd, idx, idx1) {
         out.push(createItem(cmd, idx, idx1));
