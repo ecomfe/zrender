@@ -957,24 +957,9 @@ define('zrender/core/event',['require','../mixin/Eventful'],function(require) {
         var isTouch = eventType && eventType.indexOf('touch') >= 0;
 
         if (!isTouch) {
-            // https://gist.github.com/electricg/4435259
-            var mouseX = 0;
-            var mouseY = 0;
-
-            if (e.pageX || e.pageY) {
-                mouseX = e.pageX;
-                mouseY = e.pageY;
-            }
-            else {
-                mouseX = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
-                mouseY = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
-            }
-
             var box = getBoundingClientRect(el);
-            var top = box.top + (window.pageYOffset || el.scrollTop) - (el.clientTop || 0);
-            var left = box.left + (window.pageXOffset || el.scrollLeft) - (el.clientLeft || 0);
-            e.zrX = mouseX - left;
-            e.zrY = mouseY - top;
+            e.zrX = e.clientX - box.left;
+            e.zrY = e.clientY - box.top;
             e.zrDelta = (e.wheelDelta) ? e.wheelDelta / 120 : -(e.detail || 0) / 3;
         }
         else {
@@ -1085,7 +1070,7 @@ define('zrender/mixin/Draggable',['require'],function (require) {
                 draggingTarget.drift(dx, dy, e);
                 this._dispatchProxy(draggingTarget, 'drag', e.event);
 
-                var dropTarget = this._findHover(x, y, draggingTarget);
+                var dropTarget = this.findHover(x, y, draggingTarget);
                 var lastDropTarget = this._dropTarget;
                 this._dropTarget = dropTarget;
 
@@ -1316,7 +1301,7 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
             var x = event.zrX;
             var y = event.zrY;
 
-            var hovered = this._findHover(x, y, null);
+            var hovered = this.findHover(x, y, null);
             var lastHovered = this._hovered;
 
             this._hovered = hovered;
@@ -1436,7 +1421,7 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
         domHandlers[name] = function (event) {
             event = normalizeEvent(this.root, event);
             // Find hover again to avoid click event is dispatched manually. Or click is triggered without mouseover
-            var hovered = this._findHover(event.zrX, event.zrY, null);
+            var hovered = this.findHover(event.zrX, event.zrY, null);
             this._dispatchProxy(hovered, name, event);
         };
     });
@@ -1456,7 +1441,7 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
 
         var gestureInfo = gestureMgr.recognize(
             event,
-            zrHandler._findHover(event.zrX, event.zrY, null)
+            zrHandler.findHover(event.zrX, event.zrY, null)
         );
 
         stage === 'end' && gestureMgr.clear();
@@ -1690,7 +1675,7 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
          * @param {module:zrender/graphic/Displayable} exclude
          * @method
          */
-        _findHover: function(x, y, exclude) {
+        findHover: function(x, y, exclude) {
             var list = this.storage.getDisplayList();
             for (var i = list.length - 1; i >= 0 ; i--) {
                 if (!list[i].silent
@@ -1744,8 +1729,8 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
         // We may figger it out latter.
         return false;
         // return env.pointerEventsSupported
-            // In no-touch device we dont use pointer but just traditional way for
-            // avoiding problem.
+            // In no-touch device we dont use pointer evnets but just
+            // use mouse event for avoiding problems.
             // && window.navigator.maxTouchPoints;
     }
 
@@ -2759,7 +2744,7 @@ define('zrender/animation/easing',[],function () {
             }
             return easing.bounceOut(k * 2 - 1) * 0.5 + 0.5;
         }
-    }
+    };
 
     return easing;
 });
@@ -2805,7 +2790,7 @@ define('zrender/animation/Clip',['require','./easing'],function(require) {
         this.onframe = options.onframe;
         this.ondestroy = options.ondestroy;
         this.onrestart = options.onrestart;
-    };
+    }
 
     Clip.prototype = {
 
@@ -6334,7 +6319,7 @@ define('zrender/graphic/Displayable',['require','../core/util','./Style','../Ele
 
         // FIXME Stateful must be mixined after style is setted
         // Stateful.call(this, opts);
-    };
+    }
 
     Displayable.prototype = {
 
@@ -6626,7 +6611,7 @@ define('zrender/graphic/helper/roundRect',['require'],function (require) {
             ctx.lineTo(x, y + r1);
             r1 !== 0 && ctx.quadraticCurveTo(x, y, x + r1, y);
         }
-    }
+    };
 });
 // Simple LRU cache use doubly linked list
 // @module zrender/core/LRU
@@ -7725,7 +7710,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
     /**
      * @type {string}
      */
-    zrender.version = '3.0.2';
+    zrender.version = '3.0.3';
 
     /**
      * @param {HTMLElement} dom
@@ -8913,6 +8898,7 @@ define('zrender/core/bbox',['require','./vector','./curve'],function (require) {
 
  // TODO getTotalLength, getPointAtLength
 define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./BoundingRect'],function (require) {
+    
 
     var curve = require('./curve');
     var vec2 = require('./vector');
@@ -9259,7 +9245,7 @@ define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./Boun
 
         _expandData: function () {
             // Only if data is Float32Array
-            if (! (this.data instanceof Array)) {
+            if (!(this.data instanceof Array)) {
                 var newData = [];
                 for (var i = 0; i < this._len; i++) {
                     newData[i] = this.data[i];
@@ -9407,12 +9393,14 @@ define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./Boun
         /**
          * 转成静态的 Float32Array 减少堆内存占用
          * Convert dynamic array to static Float32Array
-         * @return {[type]} [description]
          */
         toStatic: function () {
-            this.data.length = this._len;
-            if (hasTypedArray && (this.data instanceof Array)) {
-                this.data = new Float32Array(this.data);
+            var data = this.data;
+            if (data instanceof Array) {
+                data.length = this._len;
+                if (hasTypedArray) {
+                    this.data = new Float32Array(data);
+                }
             }
         },
 
@@ -11084,7 +11072,7 @@ define('zrender/graphic/shape/Isogon',['require','../Path'],function (require) {
     var cos = Math.cos;
 
     return require('../Path').extend({
-        
+
         type: 'isogon',
 
         shape: {
@@ -11108,7 +11096,7 @@ define('zrender/graphic/shape/Isogon',['require','../Path'],function (require) {
             ctx.moveTo(x + r * cos(deg), y + r * sin(deg));
             for (var i = 0, end = n - 1; i < end; i++) {
                 deg += dStep;
-                ctx.lineTo(x + r * cos(deg), y + r * sin(deg))
+                ctx.lineTo(x + r * cos(deg), y + r * sin(deg));
             }
 
             ctx.closePath();
@@ -11451,7 +11439,7 @@ define('zrender/graphic/helper/poly',['require','./smoothSpline','./smoothBezier
                 closePath && ctx.closePath();
             }
         }
-    }
+    };
 });
 /**
  * @module zrender/graphic/shape/Polyline
@@ -11623,6 +11611,16 @@ if (!require('../core/env').canvasSupported) {
     var getZIndex = function (zlevel, z, z2) {
         // z 的取值范围为 [0, 1000]
         return (parseFloat(zlevel) || 0) * ZLEVEL_BASE + (parseFloat(z) || 0) * Z_BASE + z2;
+    };
+
+    var parsePercent = function (value, maxValue) {
+        if (typeof value === 'string') {
+            if (value.lastIndexOf('%') >= 0) {
+                return parseFloat(value) / 100 * maxValue;
+            }
+            return parseFloat(value);
+        }
+        return value;
     };
 
     /***************************************************
@@ -11970,7 +11968,7 @@ if (!require('../core/env').canvasSupported) {
             }
         }
         return str.join('');
-    }
+    };
 
     // Rewrite the original path method
     Path.prototype.brush = function (vmlRoot) {
@@ -12314,9 +12312,8 @@ if (!require('../core/env').canvasSupported) {
         var doc = vmlCore.doc;
         if (!textMeasureEl) {
             textMeasureEl = doc.createElement('div');
-            textMeasureEl.style.cssText = 'position:absolute;top:-20000px;left:0;\
-                padding:0;margin:0;border:none;white-space:pre;';
-
+            textMeasureEl.style.cssText = 'position:absolute;top:-20000px;left:0;'
+                + 'padding:0;margin:0;border:none;white-space:pre;';
             vmlCore.doc.body.appendChild(textMeasureEl);
         }
 
@@ -12362,13 +12359,14 @@ if (!require('../core/env').canvasSupported) {
             tmpRect.applyTransform(m);
             rect = tmpRect;
         }
+
         if (!fromTextEl) {
             var textPosition = style.textPosition;
             var distance = style.textDistance;
             // Text position represented by coord
             if (textPosition instanceof Array) {
-                x = rect.x + textPosition[0];
-                y = rect.y + textPosition[1];
+                x = rect.x + parsePercent(textPosition[0], rect.width);
+                y = rect.y + parsePercent(textPosition[1], rect.height);
 
                 align = align || 'left';
                 baseline = baseline || 'top';
@@ -12389,12 +12387,14 @@ if (!require('../core/env').canvasSupported) {
             x = rect.x;
             y = rect.y;
         }
+
         var fontSize = fontStyle.size;
         // 1.75 is an arbitrary number, as there is no info about the text baseline
+        var lineCount = (text + '').split('\n').length; // not precise.
         switch (baseline) {
             case 'hanging':
             case 'top':
-                y += fontSize / 1.75;
+                y += (fontSize / 1.75) * lineCount;
                 break;
             case 'middle':
                 break;
