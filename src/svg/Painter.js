@@ -124,7 +124,7 @@ define(function (require) {
             for (i = 0; i < listLen; i++) {
                 var displayable = list[i];
                 var svgProxy = getSvgProxy(displayable);
-                if (! displayable.invisible) {
+                if (!displayable.invisible) {
                     if (displayable.__dirty) {
                         svgProxy && svgProxy.brush(displayable);
                         displayable.__dirty = false;

@@ -78,7 +78,7 @@ define(function (require) {
          */
         refresh: function () {
 
-            var list = this.storage.getDisplayList(true);
+            var list = this.storage.getDisplayList(true, true);
 
             this._paintList(list);
         },
@@ -87,10 +87,23 @@ define(function (require) {
             var vmlRoot = this._vmlRoot;
             for (var i = 0; i < list.length; i++) {
                 var el = list[i];
-                if (el.__dirty && !el.invisible) {
-                    el.beforeBrush && el.beforeBrush();
-                    el.brush(vmlRoot);
-                    el.afterBrush && el.afterBrush();
+                if (el.invisible || el.ignore) {
+                    if (!el.__alreadyNotVisible) {
+                        el.onRemoveFromStorage(vmlRoot);
+                    }
+                    // Set as already invisible
+                    el.__alreadyNotVisible = true;
+                }
+                else {
+                    if (el.__alreadyNotVisible) {
+                        el.onAddToStorage(vmlRoot);
+                    }
+                    el.__alreadyNotVisible = false;
+                    if (el.__dirty) {
+                        el.beforeBrush && el.beforeBrush();
+                        el.brush(vmlRoot);
+                        el.afterBrush && el.afterBrush();
+                    }
                 }
                 el.__dirty = false;
             }

@@ -453,6 +453,8 @@ define(function (require) {
             for (var i = list.length - 1; i >= 0 ; i--) {
                 if (!list[i].silent
                  && list[i] !== exclude
+                 // getDisplayList may include ignored item in VML mode
+                 && !list[i].ignore
                  && isHover(list[i], x, y)) {
                     return list[i];
                 }

@@ -47,13 +47,16 @@ define(function (require) {
 
         /**
          * 返回所有图形的绘制队列
-         * @param  {boolean} [update=false] 是否在返回前更新该数组
+         * @param {boolean} [update=false] 是否在返回前更新该数组
+         * @param {boolean} [includeIgnore=false] 是否包含 ignore 的数组, 在 update 为 true 的时候有效
+         *
          * 详见{@link module:zrender/graphic/Displayable.prototype.updateDisplayList}
          * @return {Array.<module:zrender/graphic/Displayable>}
          */
-        getDisplayList: function (update) {
+        getDisplayList: function (update, includeIgnore) {
+            includeIgnore = includeIgnore || false;
             if (update) {
-                this.updateDisplayList();
+                this.updateDisplayList(includeIgnore);
             }
             return this._displayList;
         },
@@ -62,14 +65,14 @@ define(function (require) {
          * 更新图形的绘制队列。
          * 每次绘制前都会调用，该方法会先深度优先遍历整个树，更新所有Group和Shape的变换并且把所有可见的Shape保存到数组中，
          * 最后根据绘制的优先级（zlevel > z > 插入顺序）排序得到绘制队列
+         * @param {boolean} [includeIgnore=false] 是否包含 ignore 的数组
          */
-        updateDisplayList: function () {
+        updateDisplayList: function (includeIgnore) {
             this._displayListLen = 0;
             var roots = this._roots;
             var displayList = this._displayList;
             for (var i = 0, len = roots.length; i < len; i++) {
-                var root = roots[i];
-                this._updateAndAddDisplayable(root);
+                this._updateAndAddDisplayable(roots[i], null, includeIgnore);
             }
             displayList.length = this._displayListLen;
 
@@ -80,9 +83,9 @@ define(function (require) {
             displayList.sort(shapeCompareFunc);
         },
 
-        _updateAndAddDisplayable: function (el, clipPaths) {
+        _updateAndAddDisplayable: function (el, clipPaths, includeIgnore) {
 
-            if (el.ignore) {
+            if (el.ignore && !includeIgnore) {
                 return;
             }
 
@@ -118,7 +121,7 @@ define(function (require) {
                     // FIXME __dirtyPath ?
                     child.__dirty = el.__dirty || child.__dirty;
 
-                    this._updateAndAddDisplayable(child, clipPaths);
+                    this._updateAndAddDisplayable(child, clipPaths, includeIgnore);
                 }
 
                 // Mark group clean here
