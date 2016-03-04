@@ -514,7 +514,7 @@ define(function (require) {
     }
 
     function eventNameFix(name) {
-        return (name === 'mousewheel' && env.firefox) ? 'DOMMouseScroll' : name;
+        return (name === 'mousewheel' && env.browser.firefox) ? 'DOMMouseScroll' : name;
     }
 
     util.mixin(Handler, Eventful);
