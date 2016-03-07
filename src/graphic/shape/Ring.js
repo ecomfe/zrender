@@ -19,6 +19,7 @@ define(function (require) {
             var x = shape.cx;
             var y = shape.cy;
             var PI2 = Math.PI * 2;
+            ctx.moveTo(x + shape.r, y);
             ctx.arc(x, y, shape.r, 0, PI2, false);
             ctx.moveTo(x + shape.r0, y);
             ctx.arc(x, y, shape.r0, 0, PI2, true);
