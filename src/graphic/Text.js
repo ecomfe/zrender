@@ -50,8 +50,26 @@ define(function (require) {
 
                 ctx.font = style.textFont || style.font;
                 ctx.textAlign = style.textAlign;
-                ctx.textBaseline = style.textBaseline;
 
+                if (style.textVerticalAlign) {
+                    var rect = textContain.getBoundingRect(
+                        text, ctx.font, style.textAlign, 'top'
+                    );
+                    // Ignore textBaseline
+                    ctx.textBaseline = 'top';
+                    switch (style.textVerticalAlign) {
+                        case 'middle':
+                            y -= rect.height / 2;
+                            break;
+                        case 'bottom':
+                            y -= rect.height;
+                            break;
+                        // 'top'
+                    }
+                }
+                else {
+                    ctx.textBaseline = style.textBaseline;
+                }
                 var lineHeight = textContain.measureText('国', ctx.font).width;
 
                 var textLines = text.split('\n');
@@ -69,7 +87,7 @@ define(function (require) {
             if (!this._rect) {
                 var style = this.style;
                 var rect = textContain.getBoundingRect(
-                    style.text + '', style.textFont, style.textAlign, style.textBaseline
+                    style.text + '', style.textFont || style.font, style.textAlign, style.textBaseline
                 );
                 rect.x += style.x || 0;
                 rect.y += style.y || 0;

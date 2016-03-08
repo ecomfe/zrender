@@ -104,6 +104,11 @@ define(function (require) {
         textAlign: null,
 
         /**
+         * @type {string}
+         */
+        textVerticalAlign: null,
+
+        /**
          * @type {number}
          */
         textDistance: 5,

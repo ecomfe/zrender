@@ -51,6 +51,7 @@ define(function (require) {
             var align = style.textAlign;
             var font = style.textFont || style.font;
             var baseline = style.textBaseline;
+            var verticalAlign = style.textVerticalAlign;
 
             textRect = textRect || textContain.getBoundingRect(text, font, align, baseline);
 
@@ -85,7 +86,22 @@ define(function (require) {
             }
 
             ctx.textAlign = align;
-            ctx.textBaseline = baseline;
+            if (verticalAlign) {
+                switch (verticalAlign) {
+                    case 'middle':
+                        y -= textRect.height / 2;
+                        break;
+                    case 'bottom':
+                        y -= textRect.height;
+                        break;
+                    // 'top'
+                }
+                // Ignore baseline
+                ctx.textBaseline = 'top';
+            }
+            else {
+                ctx.textBaseline = baseline;
+            }
 
             var textFill = style.textFill;
             var textStroke = style.textStroke;

@@ -802,6 +802,7 @@ if (!require('../core/env').canvasSupported) {
         var font = fontStyle.style + ' ' + fontStyle.variant + ' ' + fontStyle.weight + ' '
             + fontStyle.size + 'px "' + fontStyle.family + '"';
         var baseline = style.textBaseline;
+        var verticalAlign = style.textVerticalAlign;
 
         textRect = textRect || textContain.getBoundingRect(text, font, align, baseline);
 
@@ -841,14 +842,26 @@ if (!require('../core/env').canvasSupported) {
             x = rect.x;
             y = rect.y;
         }
+        if (verticalAlign) {
+            switch (verticalAlign) {
+                case 'middle':
+                    y -= textRect.height / 2;
+                    break;
+                case 'bottom':
+                    y -= textRect.height;
+                    break;
+                // 'top'
+            }
+            // Ignore baseline
+            baseline = 'top';
+        }
 
         var fontSize = fontStyle.size;
         // 1.75 is an arbitrary number, as there is no info about the text baseline
-        var lineCount = (text + '').split('\n').length; // not precise.
         switch (baseline) {
             case 'hanging':
             case 'top':
-                y += (fontSize / 1.75) * lineCount;
+                y += fontSize / 1.75;
                 break;
             case 'middle':
                 break;
