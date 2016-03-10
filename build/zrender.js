@@ -7736,7 +7736,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
     /**
      * @type {string}
      */
-    zrender.version = '3.0.3';
+    zrender.version = '3.0.4';
 
     /**
      * @param {HTMLElement} dom
