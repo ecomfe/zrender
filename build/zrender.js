@@ -1680,6 +1680,8 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
             for (var i = list.length - 1; i >= 0 ; i--) {
                 if (!list[i].silent
                  && list[i] !== exclude
+                 // getDisplayList may include ignored item in VML mode
+                 && !list[i].ignore
                  && isHover(list[i], x, y)) {
                     return list[i];
                 }
@@ -1739,7 +1741,7 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
     }
 
     function eventNameFix(name) {
-        return (name === 'mousewheel' && env.firefox) ? 'DOMMouseScroll' : name;
+        return (name === 'mousewheel' && env.browser.firefox) ? 'DOMMouseScroll' : name;
     }
 
     util.mixin(Handler, Eventful);
@@ -5058,13 +5060,16 @@ define('zrender/Storage',['require','./core/util','./container/Group'],function 
 
         /**
          * 返回所有图形的绘制队列
-         * @param  {boolean} [update=false] 是否在返回前更新该数组
+         * @param {boolean} [update=false] 是否在返回前更新该数组
+         * @param {boolean} [includeIgnore=false] 是否包含 ignore 的数组, 在 update 为 true 的时候有效
+         *
          * 详见{@link module:zrender/graphic/Displayable.prototype.updateDisplayList}
          * @return {Array.<module:zrender/graphic/Displayable>}
          */
-        getDisplayList: function (update) {
+        getDisplayList: function (update, includeIgnore) {
+            includeIgnore = includeIgnore || false;
             if (update) {
-                this.updateDisplayList();
+                this.updateDisplayList(includeIgnore);
             }
             return this._displayList;
         },
@@ -5073,14 +5078,14 @@ define('zrender/Storage',['require','./core/util','./container/Group'],function 
          * 更新图形的绘制队列。
          * 每次绘制前都会调用，该方法会先深度优先遍历整个树，更新所有Group和Shape的变换并且把所有可见的Shape保存到数组中，
          * 最后根据绘制的优先级（zlevel > z > 插入顺序）排序得到绘制队列
+         * @param {boolean} [includeIgnore=false] 是否包含 ignore 的数组
          */
-        updateDisplayList: function () {
+        updateDisplayList: function (includeIgnore) {
             this._displayListLen = 0;
             var roots = this._roots;
             var displayList = this._displayList;
             for (var i = 0, len = roots.length; i < len; i++) {
-                var root = roots[i];
-                this._updateAndAddDisplayable(root);
+                this._updateAndAddDisplayable(roots[i], null, includeIgnore);
             }
             displayList.length = this._displayListLen;
 
@@ -5091,9 +5096,9 @@ define('zrender/Storage',['require','./core/util','./container/Group'],function 
             displayList.sort(shapeCompareFunc);
         },
 
-        _updateAndAddDisplayable: function (el, clipPaths) {
+        _updateAndAddDisplayable: function (el, clipPaths, includeIgnore) {
 
-            if (el.ignore) {
+            if (el.ignore && !includeIgnore) {
                 return;
             }
 
@@ -5129,7 +5134,7 @@ define('zrender/Storage',['require','./core/util','./container/Group'],function 
                     // FIXME __dirtyPath ?
                     child.__dirty = el.__dirty || child.__dirty;
 
-                    this._updateAndAddDisplayable(child, clipPaths);
+                    this._updateAndAddDisplayable(child, clipPaths, includeIgnore);
                 }
 
                 // Mark group clean here
@@ -5794,6 +5799,11 @@ define('zrender/graphic/Style',['require'],function (require) {
         textAlign: null,
 
         /**
+         * @type {string}
+         */
+        textVerticalAlign: null,
+
+        /**
          * @type {number}
          */
         textDistance: 5,
@@ -6209,6 +6219,7 @@ define('zrender/graphic/mixin/RectText',['require','../../contain/text','../../c
             var align = style.textAlign;
             var font = style.textFont || style.font;
             var baseline = style.textBaseline;
+            var verticalAlign = style.textVerticalAlign;
 
             textRect = textRect || textContain.getBoundingRect(text, font, align, baseline);
 
@@ -6243,7 +6254,22 @@ define('zrender/graphic/mixin/RectText',['require','../../contain/text','../../c
             }
 
             ctx.textAlign = align;
-            ctx.textBaseline = baseline;
+            if (verticalAlign) {
+                switch (verticalAlign) {
+                    case 'middle':
+                        y -= textRect.height / 2;
+                        break;
+                    case 'bottom':
+                        y -= textRect.height;
+                        break;
+                    // 'top'
+                }
+                // Ignore baseline
+                ctx.textBaseline = 'top';
+            }
+            else {
+                ctx.textBaseline = baseline;
+            }
 
             var textFill = style.textFill;
             var textStroke = style.textStroke;
@@ -8087,8 +8113,26 @@ define('zrender/graphic/Text',['require','./Displayable','../core/util','../cont
 
                 ctx.font = style.textFont || style.font;
                 ctx.textAlign = style.textAlign;
-                ctx.textBaseline = style.textBaseline;
 
+                if (style.textVerticalAlign) {
+                    var rect = textContain.getBoundingRect(
+                        text, ctx.font, style.textAlign, 'top'
+                    );
+                    // Ignore textBaseline
+                    ctx.textBaseline = 'top';
+                    switch (style.textVerticalAlign) {
+                        case 'middle':
+                            y -= rect.height / 2;
+                            break;
+                        case 'bottom':
+                            y -= rect.height;
+                            break;
+                        // 'top'
+                    }
+                }
+                else {
+                    ctx.textBaseline = style.textBaseline;
+                }
                 var lineHeight = textContain.measureText('国', ctx.font).width;
 
                 var textLines = text.split('\n');
@@ -8106,7 +8150,7 @@ define('zrender/graphic/Text',['require','./Displayable','../core/util','../cont
             if (!this._rect) {
                 var style = this.style;
                 var rect = textContain.getBoundingRect(
-                    style.text + '', style.textFont, style.textAlign, style.textBaseline
+                    style.text + '', style.textFont || style.font, style.textAlign, style.textBaseline
                 );
                 rect.x += style.x || 0;
                 rect.y += style.y || 0;
@@ -10766,6 +10810,7 @@ define('zrender/graphic/shape/Ring',['require','../Path'],function (require) {
             var x = shape.cx;
             var y = shape.cy;
             var PI2 = Math.PI * 2;
+            ctx.moveTo(x + shape.r, y);
             ctx.arc(x, y, shape.r, 0, PI2, false);
             ctx.moveTo(x + shape.r0, y);
             ctx.arc(x, y, shape.r0, 0, PI2, true);
@@ -12348,6 +12393,7 @@ if (!require('../core/env').canvasSupported) {
         var font = fontStyle.style + ' ' + fontStyle.variant + ' ' + fontStyle.weight + ' '
             + fontStyle.size + 'px "' + fontStyle.family + '"';
         var baseline = style.textBaseline;
+        var verticalAlign = style.textVerticalAlign;
 
         textRect = textRect || textContain.getBoundingRect(text, font, align, baseline);
 
@@ -12387,14 +12433,26 @@ if (!require('../core/env').canvasSupported) {
             x = rect.x;
             y = rect.y;
         }
+        if (verticalAlign) {
+            switch (verticalAlign) {
+                case 'middle':
+                    y -= textRect.height / 2;
+                    break;
+                case 'bottom':
+                    y -= textRect.height;
+                    break;
+                // 'top'
+            }
+            // Ignore baseline
+            baseline = 'top';
+        }
 
         var fontSize = fontStyle.size;
         // 1.75 is an arbitrary number, as there is no info about the text baseline
-        var lineCount = (text + '').split('\n').length; // not precise.
         switch (baseline) {
             case 'hanging':
             case 'top':
-                y += (fontSize / 1.75) * lineCount;
+                y += fontSize / 1.75;
                 break;
             case 'middle':
                 break;
@@ -12629,7 +12687,7 @@ define('zrender/vml/Painter',['require','../core/log','./core'],function (requir
          */
         refresh: function () {
 
-            var list = this.storage.getDisplayList(true);
+            var list = this.storage.getDisplayList(true, true);
 
             this._paintList(list);
         },
@@ -12638,10 +12696,23 @@ define('zrender/vml/Painter',['require','../core/log','./core'],function (requir
             var vmlRoot = this._vmlRoot;
             for (var i = 0; i < list.length; i++) {
                 var el = list[i];
-                if (el.__dirty && !el.invisible) {
-                    el.beforeBrush && el.beforeBrush();
-                    el.brush(vmlRoot);
-                    el.afterBrush && el.afterBrush();
+                if (el.invisible || el.ignore) {
+                    if (!el.__alreadyNotVisible) {
+                        el.onRemoveFromStorage(vmlRoot);
+                    }
+                    // Set as already invisible
+                    el.__alreadyNotVisible = true;
+                }
+                else {
+                    if (el.__alreadyNotVisible) {
+                        el.onAddToStorage(vmlRoot);
+                    }
+                    el.__alreadyNotVisible = false;
+                    if (el.__dirty) {
+                        el.beforeBrush && el.beforeBrush();
+                        el.brush(vmlRoot);
+                        el.afterBrush && el.afterBrush();
+                    }
                 }
                 el.__dirty = false;
             }
