@@ -104,12 +104,12 @@ define(function (require) {
         }
         else {
             var t = curve.quadraticExtremum(y0, y1, y2);
-            if (t >=0 && t <= 1) {
+            if (t >= 0 && t <= 1) {
                 var w = 0;
                 var y_ = curve.quadraticAt(y0, y1, y2, t);
                 for (var i = 0; i < nRoots; i++) {
                     var x_ = curve.quadraticAt(x0, x1, x2, roots[i]);
-                    if (x_ > x) {
+                    if (x_ < x) {   // Quick reject
                         continue;
                     }
                     if (roots[i] < t) {
@@ -123,7 +123,7 @@ define(function (require) {
             }
             else {
                 var x_ = curve.quadraticAt(x0, x1, x2, roots[0]);
-                if (x_ > x) {
+                if (x_ < x) {   // Quick reject
                     return 0;
                 }
                 return y2 < y0 ? 1 : -1;

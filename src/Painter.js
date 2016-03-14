@@ -309,7 +309,6 @@
                         }
                         prevElClipPaths = clipPaths;
                     }
-                    // TODO Use events ?
                     el.beforeBrush && el.beforeBrush(ctx);
                     el.brush(ctx, false);
                     el.afterBrush && el.afterBrush(ctx);
