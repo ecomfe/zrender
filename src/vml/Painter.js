@@ -48,13 +48,13 @@ define(function (require) {
             oldDelFromMap.call(storage, elId);
 
             if (el) {
-                el.onRemoveFromStorage && el.onRemoveFromStorage(vmlRoot);
+                el.onRemove && el.onRemove(vmlRoot);
             }
         };
 
         storage.addToMap = function (el) {
             // Displayable already has a vml node
-            el.onAddToStorage && el.onAddToStorage(vmlRoot);
+            el.onAdd && el.onAdd(vmlRoot);
 
             oldAddToMap.call(storage, el);
         };
@@ -89,19 +89,19 @@ define(function (require) {
                 var el = list[i];
                 if (el.invisible || el.ignore) {
                     if (!el.__alreadyNotVisible) {
-                        el.onRemoveFromStorage(vmlRoot);
+                        el.onRemove(vmlRoot);
                     }
                     // Set as already invisible
                     el.__alreadyNotVisible = true;
                 }
                 else {
                     if (el.__alreadyNotVisible) {
-                        el.onAddToStorage(vmlRoot);
+                        el.onAdd(vmlRoot);
                     }
                     el.__alreadyNotVisible = false;
                     if (el.__dirty) {
                         el.beforeBrush && el.beforeBrush();
-                        el.brush(vmlRoot);
+                        (el.brushVML || el.brush)(vmlRoot);
                         el.afterBrush && el.afterBrush();
                     }
                 }

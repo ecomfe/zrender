@@ -18,9 +18,9 @@ define(function (require) {
      * @constructor
      * @param {Object} opts
      */
-    var ZImage = function (opts) {
+    function ZImage(opts) {
         Displayable.call(this, opts);
-    };
+    }
 
     ZImage.prototype = {
 

@@ -425,7 +425,7 @@ if (!require('../core/env').canvasSupported) {
     };
 
     // Rewrite the original path method
-    Path.prototype.brush = function (vmlRoot) {
+    Path.prototype.brushVML = function (vmlRoot) {
         var style = this.style;
 
         var vmlEl = this._vmlEl;
@@ -475,12 +475,12 @@ if (!require('../core/env').canvasSupported) {
         }
     };
 
-    Path.prototype.onRemoveFromStorage = function (vmlRoot) {
+    Path.prototype.onRemove = function (vmlRoot) {
         remove(vmlRoot, this._vmlEl);
         this.removeRectText(vmlRoot);
     };
 
-    Path.prototype.onAddToStorage = function (vmlRoot) {
+    Path.prototype.onAdd = function (vmlRoot) {
         append(vmlRoot, this._vmlEl);
         this.appendRectText(vmlRoot);
     };
@@ -495,7 +495,7 @@ if (!require('../core/env').canvasSupported) {
     };
 
     // Rewrite the original path method
-    ZImage.prototype.brush = function (vmlRoot) {
+    ZImage.prototype.brushVML = function (vmlRoot) {
         var style = this.style;
         var image = style.image;
 
@@ -701,7 +701,7 @@ if (!require('../core/env').canvasSupported) {
         }
     };
 
-    ZImage.prototype.onRemoveFromStorage = function (vmlRoot) {
+    ZImage.prototype.onRemove = function (vmlRoot) {
         remove(vmlRoot, this._vmlEl);
 
         this._vmlEl = null;
@@ -711,7 +711,7 @@ if (!require('../core/env').canvasSupported) {
         this.removeRectText(vmlRoot);
     };
 
-    ZImage.prototype.onAddToStorage = function (vmlRoot) {
+    ZImage.prototype.onAdd = function (vmlRoot) {
         append(vmlRoot, this._vmlEl);
         this.appendRectText(vmlRoot);
     };
@@ -997,7 +997,7 @@ if (!require('../core/env').canvasSupported) {
         proto.appendRectText = appendRectText;
     }
 
-    Text.prototype.brush = function (root) {
+    Text.prototype.brushVML = function (root) {
         var style = this.style;
         if (style.text) {
             this.drawRectText(root, {
@@ -1007,11 +1007,11 @@ if (!require('../core/env').canvasSupported) {
         }
     };
 
-    Text.prototype.onRemoveFromStorage = function (vmlRoot) {
+    Text.prototype.onRemove = function (vmlRoot) {
         this.removeRectText(vmlRoot);
     };
 
-    Text.prototype.onAddToStorage = function (vmlRoot) {
+    Text.prototype.onAdd = function (vmlRoot) {
         this.appendRectText(vmlRoot);
     };
 }

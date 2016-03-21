@@ -239,6 +239,7 @@ define(function (require) {
                 Displayable.prototype.attrKV.call(this, key, value);
             }
         },
+
         /**
          * @param {Object|string} key
          * @param {*} value

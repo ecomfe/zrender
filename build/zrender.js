@@ -6829,9 +6829,9 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
      * @constructor
      * @param {Object} opts
      */
-    var ZImage = function (opts) {
+    function ZImage(opts) {
         Displayable.call(this, opts);
-    };
+    }
 
     ZImage.prototype = {
 
@@ -7284,7 +7284,6 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
                         }
                         prevElClipPaths = clipPaths;
                     }
-                    // TODO Use events ?
                     el.beforeBrush && el.beforeBrush(ctx);
                     el.brush(ctx, false);
                     el.afterBrush && el.afterBrush(ctx);
@@ -7736,7 +7735,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
     /**
      * @type {string}
      */
-    zrender.version = '3.0.4';
+    zrender.version = '3.0.5';
 
     /**
      * @param {HTMLElement} dom
@@ -9950,12 +9949,12 @@ define('zrender/contain/path',['require','../core/PathProxy','./line','./cubic',
         }
         else {
             var t = curve.quadraticExtremum(y0, y1, y2);
-            if (t >=0 && t <= 1) {
+            if (t >= 0 && t <= 1) {
                 var w = 0;
                 var y_ = curve.quadraticAt(y0, y1, y2, t);
                 for (var i = 0; i < nRoots; i++) {
                     var x_ = curve.quadraticAt(x0, x1, x2, roots[i]);
-                    if (x_ > x) {
+                    if (x_ < x) {   // Quick reject
                         continue;
                     }
                     if (roots[i] < t) {
@@ -9969,7 +9968,7 @@ define('zrender/contain/path',['require','../core/PathProxy','./line','./cubic',
             }
             else {
                 var x_ = curve.quadraticAt(x0, x1, x2, roots[0]);
-                if (x_ > x) {
+                if (x_ < x) {   // Quick reject
                     return 0;
                 }
                 return y2 < y0 ? 1 : -1;
@@ -10476,6 +10475,7 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
                 Displayable.prototype.attrKV.call(this, key, value);
             }
         },
+
         /**
          * @param {Object|string} key
          * @param {*} value
@@ -12016,7 +12016,7 @@ if (!require('../core/env').canvasSupported) {
     };
 
     // Rewrite the original path method
-    Path.prototype.brush = function (vmlRoot) {
+    Path.prototype.brushVML = function (vmlRoot) {
         var style = this.style;
 
         var vmlEl = this._vmlEl;
@@ -12066,12 +12066,12 @@ if (!require('../core/env').canvasSupported) {
         }
     };
 
-    Path.prototype.onRemoveFromStorage = function (vmlRoot) {
+    Path.prototype.onRemove = function (vmlRoot) {
         remove(vmlRoot, this._vmlEl);
         this.removeRectText(vmlRoot);
     };
 
-    Path.prototype.onAddToStorage = function (vmlRoot) {
+    Path.prototype.onAdd = function (vmlRoot) {
         append(vmlRoot, this._vmlEl);
         this.appendRectText(vmlRoot);
     };
@@ -12086,7 +12086,7 @@ if (!require('../core/env').canvasSupported) {
     };
 
     // Rewrite the original path method
-    ZImage.prototype.brush = function (vmlRoot) {
+    ZImage.prototype.brushVML = function (vmlRoot) {
         var style = this.style;
         var image = style.image;
 
@@ -12292,7 +12292,7 @@ if (!require('../core/env').canvasSupported) {
         }
     };
 
-    ZImage.prototype.onRemoveFromStorage = function (vmlRoot) {
+    ZImage.prototype.onRemove = function (vmlRoot) {
         remove(vmlRoot, this._vmlEl);
 
         this._vmlEl = null;
@@ -12302,7 +12302,7 @@ if (!require('../core/env').canvasSupported) {
         this.removeRectText(vmlRoot);
     };
 
-    ZImage.prototype.onAddToStorage = function (vmlRoot) {
+    ZImage.prototype.onAdd = function (vmlRoot) {
         append(vmlRoot, this._vmlEl);
         this.appendRectText(vmlRoot);
     };
@@ -12588,7 +12588,7 @@ if (!require('../core/env').canvasSupported) {
         proto.appendRectText = appendRectText;
     }
 
-    Text.prototype.brush = function (root) {
+    Text.prototype.brushVML = function (root) {
         var style = this.style;
         if (style.text) {
             this.drawRectText(root, {
@@ -12598,11 +12598,11 @@ if (!require('../core/env').canvasSupported) {
         }
     };
 
-    Text.prototype.onRemoveFromStorage = function (vmlRoot) {
+    Text.prototype.onRemove = function (vmlRoot) {
         this.removeRectText(vmlRoot);
     };
 
-    Text.prototype.onAddToStorage = function (vmlRoot) {
+    Text.prototype.onAdd = function (vmlRoot) {
         this.appendRectText(vmlRoot);
     };
 }
@@ -12657,13 +12657,13 @@ define('zrender/vml/Painter',['require','../core/log','./core'],function (requir
             oldDelFromMap.call(storage, elId);
 
             if (el) {
-                el.onRemoveFromStorage && el.onRemoveFromStorage(vmlRoot);
+                el.onRemove && el.onRemove(vmlRoot);
             }
         };
 
         storage.addToMap = function (el) {
             // Displayable already has a vml node
-            el.onAddToStorage && el.onAddToStorage(vmlRoot);
+            el.onAdd && el.onAdd(vmlRoot);
 
             oldAddToMap.call(storage, el);
         };
@@ -12698,19 +12698,19 @@ define('zrender/vml/Painter',['require','../core/log','./core'],function (requir
                 var el = list[i];
                 if (el.invisible || el.ignore) {
                     if (!el.__alreadyNotVisible) {
-                        el.onRemoveFromStorage(vmlRoot);
+                        el.onRemove(vmlRoot);
                     }
                     // Set as already invisible
                     el.__alreadyNotVisible = true;
                 }
                 else {
                     if (el.__alreadyNotVisible) {
-                        el.onAddToStorage(vmlRoot);
+                        el.onAdd(vmlRoot);
                     }
                     el.__alreadyNotVisible = false;
                     if (el.__dirty) {
                         el.beforeBrush && el.beforeBrush();
-                        el.brush(vmlRoot);
+                        (el.brushVML || el.brush)(vmlRoot);
                         el.afterBrush && el.afterBrush();
                     }
                 }
