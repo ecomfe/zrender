@@ -13,7 +13,8 @@ define(function(require) {
     var mathPow = Math.pow;
     var mathSqrt = Math.sqrt;
 
-    var EPSILON = 1e-4;
+    var EPSILON = 1e-8;
+    var EPSILON_NUMERIC = 1e-4;
 
     var THREE_SQRT = mathSqrt(3);
     var ONE_THIRD = 1 / 3;
@@ -279,7 +280,7 @@ define(function(require) {
 
         // At most 32 iteration
         for (var i = 0; i < 32; i++) {
-            if (interval < EPSILON) {
+            if (interval < EPSILON_NUMERIC) {
                 break;
             }
             prev = t - interval;
@@ -474,7 +475,7 @@ define(function(require) {
 
         // At most 32 iteration
         for (var i = 0; i < 32; i++) {
-            if (interval < EPSILON) {
+            if (interval < EPSILON_NUMERIC) {
                 break;
             }
             var prev = t - interval;
