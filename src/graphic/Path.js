@@ -134,6 +134,8 @@ define(function (require) {
                 }
                 rect = path.getBoundingRect();
             }
+            this._rect = rect;
+
             /**
              * Needs update rect with stroke lineWidth when
              * 1. Element changes scale or lineWidth
@@ -160,9 +162,10 @@ define(function (require) {
                     rectWithStroke.x -= w / lineScale / 2;
                     rectWithStroke.y -= w / lineScale / 2;
                 }
+
                 return rectWithStroke;
             }
-            this._rect = rect;
+
             return rect;
         },
 

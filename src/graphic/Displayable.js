@@ -238,7 +238,7 @@ define(function (require) {
          */
         setStyle: function (key, value) {
             this.style.set(key, value);
-            this.dirty();
+            this.dirty(false);
             return this;
         }
     };
