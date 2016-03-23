@@ -65,6 +65,8 @@ define(function (require) {
         max[1] = mathMax(y0, y1);
     };
 
+    var xDim = [];
+    var yDim = [];
     /**
      * 从三阶贝塞尔曲线(p0, p1, p2, p3)中计算出最小包围盒，写入`min`和`max`中
      * @memberOf module:zrender/core/bbox
@@ -82,34 +84,36 @@ define(function (require) {
     bbox.fromCubic = function(
         x0, y0, x1, y1, x2, y2, x3, y3, min, max
     ) {
-        var xDim = [];
-        var yDim = [];
         var cubicExtrema = curve.cubicExtrema;
         var cubicAt = curve.cubicAt;
-        var left, right, top, bottom;
         var i;
         var n = cubicExtrema(x0, x1, x2, x3, xDim);
+        min[0] = Infinity;
+        min[1] = Infinity;
+        max[0] = -Infinity;
+        max[1] = -Infinity;
 
         for (i = 0; i < n; i++) {
-            xDim[i] = cubicAt(x0, x1, x2, x3, xDim[i]);
+            var x = cubicAt(x0, x1, x2, x3, xDim[i]);
+            min[0] = mathMin(x, min[0]);
+            max[0] = mathMax(x, max[0]);
         }
         n = cubicExtrema(y0, y1, y2, y3, yDim);
         for (i = 0; i < n; i++) {
-            yDim[i] = cubicAt(y0, y1, y2, y3, yDim[i]);
+            var y = cubicAt(y0, y1, y2, y3, yDim[i]);
+            min[1] = mathMin(y, min[1]);
+            max[1] = mathMax(y, max[1]);
         }
 
-        xDim.push(x0, x3);
-        yDim.push(y0, y3);
+        min[0] = mathMin(x0, min[0]);
+        max[0] = mathMax(x0, max[0]);
+        min[0] = mathMin(x3, min[0]);
+        max[0] = mathMax(x3, max[0]);
 
-        left = mathMin.apply(null, xDim);
-        right = mathMax.apply(null, xDim);
-        top = mathMin.apply(null, yDim);
-        bottom = mathMax.apply(null, yDim);
-
-        min[0] = left;
-        min[1] = top;
-        max[0] = right;
-        max[1] = bottom;
+        min[1] = mathMin(y0, min[1]);
+        max[1] = mathMax(y0, max[1]);
+        min[1] = mathMin(y3, min[1]);
+        max[1] = mathMax(y3, max[1]);
     };
 
     /**
