@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <title>Image</title>
-    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+    <script type="text/javascript" src="esl.js"></script>
 </head>
 <body>
     <script type="text/javascript">
@@ -21,15 +21,15 @@
         // 初始化zrender
         var zr = zrender.init( document.getElementById("Main") );
 
-        for( var i = 0; i < 20; i ++){
-            for( var j = 0; j < 20; j++){
+        for( var i = 0; i < 200; i ++){
+            for( var j = 0; j < 200; j++){
                 var image = new ImageShape({
                     position: [i * 50, j * 50],
                     scale: [1, 1],
                     style: {
                         x: 0,
                         y: 0,
-                        image: "test.jpeg",
+                        image: 'test.jpeg',
                         width: 50,
                         height: 50
                     },
@@ -38,8 +38,6 @@
                 zr.add( image );
             }
         }
-
-
     })
     </script>
     <div id="Main" style="width:1000px;height:600px;"></div>

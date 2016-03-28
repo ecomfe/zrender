@@ -3,10 +3,10 @@
 <head>
     <meta charset="utf-8" />
     <title>Text</title>
-    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+    <script type="text/javascript" src="./esl.js"></script>
 </head>
-<body>
-    <div id="main" style="width:1000px;height:600px;"></div>
+<body style="margin:0">
+    <div id="main" style="width:1000px;height:600px;margin:0;"></div>
 
     <script type="text/javascript">
     require.config({
@@ -30,12 +30,14 @@
             // rotation: 1,
             // scale: [2, 2],
             style: {
-                x: 10,
-                y: 10,
-                text: "国国国国\n国国国国\n国国国国",
+                x: 0,
+                y: 0,
+                text: '国国国国\n国国国国\n国国国国',
                 width: 50,
                 height: 50,
-                textFont: '18px 微软雅黑'
+                fill: '#c0f',
+                textFont: '18px Microsoft Yahei',
+                textBaseline: 'top'
             },
             draggable: true
         });

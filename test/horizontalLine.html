@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Event</title>
+    <script type="text/javascript" src="esl.js"></script>
+</head>
+<body>
+    <div id="main" style="width:1000px;height:500px;"></div>
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+    require(
+        [
+            'zrender',
+            'zrender/graphic/shape/Line',
+            'zrender/container/Group'
+        ],
+        function(zrender, LineShape, Group){
+
+            // 初始化zrender
+            var zr = zrender.init(document.getElementById('main'));
+            var line = new LineShape({
+                shape: {
+                    x1: 30,
+                    y1: 50,
+                    x2: 100,
+                    y2: 50
+                }
+            });
+            zr.add(line);
+        });
+    </script>
+</body>
+</html>

@@ -17,60 +17,58 @@
         ]
     });
 
-    require(["zrender", 'zrender/graphic/Image'], function(zrender, ImageShape){
+    require(["zrender", 'zrender/graphic/Image', 'zrender/graphic/States'], function(zrender, ImageShape, States){
 
         // 初始化zrender
         var zr = zrender.init(document.getElementById("Main"), {
-            renderer: 'svg'
+            renderer: 'canvas'
         });
 
-        for( var i = 0; i < 10; i ++){
-            for( var j = 0; j < 10; j++){
+        for( var i = 0; i < 10; i ++) {
+            for( var j = 0; j < 10; j++) {
                 var image = new ImageShape({
                     position: [i * 70, j * 70],
                     scale: [1, 1],
                     style: {
                         x: 0,
                         y: 0,
-                        image: "test.jpeg",
-                        shadowColor: 'black'
+                        image: "test.jpeg"
                     },
-                    states: {
-                        normal: {
-                            style: {
-                                width: 50,
-                                height: 50,
-                                shadowBlur: 0
-                            },
-                            z: 0,
-                            transition: '* 200 0 Linear'
-                        },
-                        hover: {
-                            style: {
-                                x: -10,
-                                y: -10,
-                                width: 70,
-                                height: 70,
-                                shadowBlur: 10
-                            },
-                            z: 1
-                        }
-                    },
-
                     onmouseover: function () {
-                        this.transitionState('hover');
+                        this.states.transitionState('hover');
                     },
 
                     onmouseout: function () {
-                        this.transitionState('normal');
+                        this.states.transitionState('normal');
                     }
                 });
 
+                image.states = new States({
+                    el: image,
+                    normal: {
+                        style: {
+                            shadowColor: 'black',
+                            width: 50,
+                            height: 50,
+                            shadowBlur: 0
+                        },
+                        z: 0,
+                        transition: '* 200 0 Linear'
+                    },
+                    hover: {
+                        style: {
+                            x: -10,
+                            y: -10,
+                            width: 70,
+                            height: 70,
+                            shadowBlur: 10
+                        },
+                        z: 1
+                    }
+                })
                 zr.add(image);
             }
         }
-        zr.render();
-
 
     })
     </script>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <title>裁剪测试</title>
-    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+    <script type="text/javascript" src="esl.js"></script>
 </head>
 <body>
     <script type="text/javascript">
@@ -47,23 +47,23 @@
         var rect = new RectShape({
             shape: {
                 width: 500,
-                height: 200,
+                height: 300,
                 x: -250,
                 y: -20
             },
-            position: [200, 120]
+            position: [200, 150]
         });
         g1.setClipPath(rect);
 
-        for (var i = 0; i < 20; i++) {
-            for( var j = 0; j < 20; j++){
+        for (var i = 0; i < 50; i++) {
+            for( var j = 0; j < 50; j++){
                 var image = new ImageShape({
                     position: [i * 50, j * 50],
                     scale: [1, 1],
                     style: {
                         x: 0,
                         y: 0,
-                        image: "test.jpeg",
+                        image: 'test.jpeg',
                         width: 50,
                         height: 50
                     },
@@ -75,7 +75,7 @@
 
         circle.animateShape()
             .when(1000, {
-                r: 200
+                r: 300
             })
             .start();
     });

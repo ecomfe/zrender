@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <title>包围盒计算测试</title>
-    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+    <script type="text/javascript" src="esl.js"></script>
 </head>
 <body>
     <div id="Main"></div>
@@ -32,7 +32,7 @@
         path.bezierCurveTo(100, 0, -100, 100, 100, 100);
         path.quadraticCurveTo(400, 10, 200, 200);
 
-        path.arc(200, 200, 50, 1, 3, true);
+        path.arc(200, 200, 50, 1, 10, true);
         path.stroke(ctx);
 
         var bb = path.getBoundingRect();

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <title>Animation</title>
-    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+    <script type="text/javascript" src="esl.js"></script>
 </head>
 <body>
     <script type="text/javascript">
@@ -18,15 +18,23 @@
     });
     require(
         [
-            "zrender",
-            "zrender/animation/animation",
-            'zrender/graphic/shape/Circle'
+            'zrender',
+            'zrender/animation/animation',
+            'zrender/graphic/shape/Circle',
+            'zrender/graphic/Gradient',
+            'zrender/graphic/RadialGradient',
+            'zrender/graphic/LinearGradient'
         ],
-        function(zrender, Animation, CircleShape){
+        function(zrender, Animation, CircleShape, Gradient, RadialGradient, LinearGradient){
 
             // 初始化zrender
             var zr = zrender.init(document.getElementById("Main"));
             var radiusAnimator = null;
+
+            var gradient = new LinearGradient();
+            gradient.addColorStop(0, 'red');
+            gradient.addColorStop(1, 'black');
+
             var circle = new CircleShape({
                 position: [100, 100],
                 scale: [1, 1],
@@ -36,32 +44,40 @@
                     r: 50
                 },
                 style: {
-                    fill: 'rgba(33, 222, 10, 0.1)',
+                    fill: gradient,
                     lineWidth: 5,
                     text:'circle',
                     textPosition:'inside'
-                },
-                draggable: true,
-                onmouseover: function () {
-                    radiusAnimator && radiusAnimator.stop();
-                    radiusAnimator = circle.animateShape()
-                        .when(1000, {
-                            r: 100
-                        })
-                        .start();
-                },
-                onmouseout: function () {
-                    radiusAnimator && radiusAnimator.stop();
-                    radiusAnimator = circle.animateShape()
-                        .when(1000, {
-                            r: 50
-                        })
-                        .start();
                 }
+                // onmouseover: function () {
+                //     radiusAnimator && radiusAnimator.stop();
+                //     radiusAnimator = circle.animateShape()
+                //         .when(1000, {
+                //             r: 100
+                //         })
+                //         .start();
+                // },
+                // onmouseout: function () {
+                //     radiusAnimator && radiusAnimator.stop();
+                //     radiusAnimator = circle.animateShape()
+                //         .when(1000, {
+                //             r: 50
+                //         })
+                //         .start();
+                // }
             });
             zr.add(circle);
 
-            circle.animate("", true)
+            // setTimeout(function () {
+            //     circle.attr('position', [30, 100]);
+            // }, 50);
+
+            circle.animate('')
+                .when(200, {
+                    position: [200, 0]
+                })
+                .start();
+            circle.animate('', true)
                 .when(1000, {
                     position: [200, 0]
                 })
@@ -76,20 +92,20 @@
                 })
                 .start();
 
-            circle.animateStyle(true)
-                .when(4000, {
-                    fill: 'rgba(222, 222, 10, 1)'
-                })
-                .start();
+            // circle.animateStyle(true)
+            //     .when(4000, {
+            //         fill: 'rgba(222, 222, 10, 1)'
+            //     })
+            //     .start();
 
-            circle.animateShape()
-                .when(100000, {
-                    r: 50
-                })
-                .done(function () {
-                    console.log('Ignore animation if properties are equal')
-                })
-                .start();
+            // circle.animateShape()
+            //     .when(100000, {
+            //         r: 50
+            //     })
+            //     .done(function () {
+            //         console.log('Ignore animation if properties are equal')
+            //     })
+            //     .start();
         })
     </script>
     <div id="Main" style="width:600px;height:400px;"></div>
