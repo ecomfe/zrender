@@ -86,9 +86,19 @@ define(function (require) {
         getBoundingRect: function () {
             if (!this._rect) {
                 var style = this.style;
+                var textVerticalAlign = style.textVerticalAlign;
                 var rect = textContain.getBoundingRect(
-                    style.text + '', style.textFont || style.font, style.textAlign, style.textBaseline
+                    style.text + '', style.textFont || style.font, style.textAlign,
+                    textVerticalAlign ? 'top' : style.textBaseline
                 );
+                switch (textVerticalAlign) {
+                    case 'middle':
+                        rect.y -= rect.height / 2;
+                        break;
+                    case 'bottom':
+                        rect.y -= rect.height;
+                        break;
+                }
                 rect.x += style.x || 0;
                 rect.y += style.y || 0;
                 this._rect = rect;
