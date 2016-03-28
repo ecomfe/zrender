@@ -126,7 +126,8 @@ define(function (require) {
         getBoundingRect: function () {
             var rect = this._rect;
             var style = this.style;
-            if (!rect) {
+            var needsUpdateRect = !rect;
+            if (needsUpdateRect) {
                 var path = this.path;
                 if (this.__dirtyPath) {
                     path.beginPath();
@@ -136,33 +137,35 @@ define(function (require) {
             }
             this._rect = rect;
 
-            /**
-             * Needs update rect with stroke lineWidth when
-             * 1. Element changes scale or lineWidth
-             * 2. First create rect
-             */
-            if (pathHasStroke(style) && (this.__dirty || !this._rect)) {
-                var rectWithStroke = this._rectWithStroke
-                    || (this._rectWithStroke = rect.clone());
-                rectWithStroke.copy(rect);
-                // FIXME Must after updateTransform
-                var w = style.lineWidth;
-                // PENDING, Min line width is needed when line is horizontal or vertical
-                var lineScale = style.strokeNoScale ? this.getLineScale() : 1;
+            if (pathHasStroke(style)) {
+                // Needs update rect with stroke lineWidth when
+                // 1. Element changes scale or lineWidth
+                // 2. Shape is changed
+                var rectWithStroke = this._rectWithStroke;
+                if (this.__dirty || needsUpdateRect) {
+                    var rectWithStroke = this._rectWithStroke
+                        || (this._rectWithStroke = rect.clone());
+                    rectWithStroke.copy(rect);
+                    // FIXME Must after updateTransform
+                    var w = style.lineWidth;
+                    // PENDING, Min line width is needed when line is horizontal or vertical
+                    var lineScale = style.strokeNoScale ? this.getLineScale() : 1;
 
-                // Only add extra hover lineWidth when there are no fill
-                if (!pathHasFill(style)) {
-                    w = Math.max(w, this.strokeContainThreshold);
-                }
-                // Consider line width
-                // Line scale can't be 0;
-                if (lineScale > 1e-10) {
-                    rectWithStroke.width += w / lineScale;
-                    rectWithStroke.height += w / lineScale;
-                    rectWithStroke.x -= w / lineScale / 2;
-                    rectWithStroke.y -= w / lineScale / 2;
+                    // Only add extra hover lineWidth when there are no fill
+                    if (!pathHasFill(style)) {
+                        w = Math.max(w, this.strokeContainThreshold);
+                    }
+                    // Consider line width
+                    // Line scale can't be 0;
+                    if (lineScale > 1e-10) {
+                        rectWithStroke.width += w / lineScale;
+                        rectWithStroke.height += w / lineScale;
+                        rectWithStroke.x -= w / lineScale / 2;
+                        rectWithStroke.y -= w / lineScale / 2;
+                    }
                 }
 
+                // Return rect with stroke
                 return rectWithStroke;
             }
 
