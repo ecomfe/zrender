@@ -101,7 +101,7 @@ define(function (require) {
                     el.__alreadyNotVisible = false;
                     if (el.__dirty) {
                         el.beforeBrush && el.beforeBrush();
-                        (el.brushVML || el.brush)(vmlRoot);
+                        (el.brushVML || el.brush).call(el, vmlRoot);
                         el.afterBrush && el.afterBrush();
                     }
                 }
