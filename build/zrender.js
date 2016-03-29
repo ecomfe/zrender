@@ -6537,7 +6537,7 @@ define('zrender/graphic/Displayable',['require','../core/util','./Style','../Ele
          */
         setStyle: function (key, value) {
             this.style.set(key, value);
-            this.dirty();
+            this.dirty(false);
             return this;
         }
     };
@@ -7735,7 +7735,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
     /**
      * @type {string}
      */
-    zrender.version = '3.0.5';
+    zrender.version = '3.0.6';
 
     /**
      * @param {HTMLElement} dom
@@ -8148,9 +8148,19 @@ define('zrender/graphic/Text',['require','./Displayable','../core/util','../cont
         getBoundingRect: function () {
             if (!this._rect) {
                 var style = this.style;
+                var textVerticalAlign = style.textVerticalAlign;
                 var rect = textContain.getBoundingRect(
-                    style.text + '', style.textFont || style.font, style.textAlign, style.textBaseline
+                    style.text + '', style.textFont || style.font, style.textAlign,
+                    textVerticalAlign ? 'top' : style.textBaseline
                 );
+                switch (textVerticalAlign) {
+                    case 'middle':
+                        rect.y -= rect.height / 2;
+                        break;
+                    case 'bottom':
+                        rect.y -= rect.height;
+                        break;
+                }
                 rect.x += style.x || 0;
                 rect.y += style.y || 0;
                 this._rect = rect;
@@ -8178,7 +8188,8 @@ define('zrender/core/curve',['require','./vector'],function(require) {
     var mathPow = Math.pow;
     var mathSqrt = Math.sqrt;
 
-    var EPSILON = 1e-4;
+    var EPSILON = 1e-8;
+    var EPSILON_NUMERIC = 1e-4;
 
     var THREE_SQRT = mathSqrt(3);
     var ONE_THIRD = 1 / 3;
@@ -8444,7 +8455,7 @@ define('zrender/core/curve',['require','./vector'],function(require) {
 
         // At most 32 iteration
         for (var i = 0; i < 32; i++) {
-            if (interval < EPSILON) {
+            if (interval < EPSILON_NUMERIC) {
                 break;
             }
             prev = t - interval;
@@ -8639,7 +8650,7 @@ define('zrender/core/curve',['require','./vector'],function(require) {
 
         // At most 32 iteration
         for (var i = 0; i < 32; i++) {
-            if (interval < EPSILON) {
+            if (interval < EPSILON_NUMERIC) {
                 break;
             }
             var prev = t - interval;
@@ -8771,6 +8782,8 @@ define('zrender/core/bbox',['require','./vector','./curve'],function (require) {
         max[1] = mathMax(y0, y1);
     };
 
+    var xDim = [];
+    var yDim = [];
     /**
      * 从三阶贝塞尔曲线(p0, p1, p2, p3)中计算出最小包围盒，写入`min`和`max`中
      * @memberOf module:zrender/core/bbox
@@ -8788,34 +8801,36 @@ define('zrender/core/bbox',['require','./vector','./curve'],function (require) {
     bbox.fromCubic = function(
         x0, y0, x1, y1, x2, y2, x3, y3, min, max
     ) {
-        var xDim = [];
-        var yDim = [];
         var cubicExtrema = curve.cubicExtrema;
         var cubicAt = curve.cubicAt;
-        var left, right, top, bottom;
         var i;
         var n = cubicExtrema(x0, x1, x2, x3, xDim);
+        min[0] = Infinity;
+        min[1] = Infinity;
+        max[0] = -Infinity;
+        max[1] = -Infinity;
 
         for (i = 0; i < n; i++) {
-            xDim[i] = cubicAt(x0, x1, x2, x3, xDim[i]);
+            var x = cubicAt(x0, x1, x2, x3, xDim[i]);
+            min[0] = mathMin(x, min[0]);
+            max[0] = mathMax(x, max[0]);
         }
         n = cubicExtrema(y0, y1, y2, y3, yDim);
         for (i = 0; i < n; i++) {
-            yDim[i] = cubicAt(y0, y1, y2, y3, yDim[i]);
+            var y = cubicAt(y0, y1, y2, y3, yDim[i]);
+            min[1] = mathMin(y, min[1]);
+            max[1] = mathMax(y, max[1]);
         }
 
-        xDim.push(x0, x3);
-        yDim.push(y0, y3);
+        min[0] = mathMin(x0, min[0]);
+        max[0] = mathMax(x0, max[0]);
+        min[0] = mathMin(x3, min[0]);
+        max[0] = mathMax(x3, max[0]);
 
-        left = mathMin.apply(null, xDim);
-        right = mathMax.apply(null, xDim);
-        top = mathMin.apply(null, yDim);
-        bottom = mathMax.apply(null, yDim);
-
-        min[0] = left;
-        min[1] = top;
-        max[0] = right;
-        max[1] = bottom;
+        min[1] = mathMin(y0, min[1]);
+        max[1] = mathMax(y0, max[1]);
+        min[1] = mathMin(y3, min[1]);
+        max[1] = mathMax(y3, max[1]);
     };
 
     /**
@@ -10362,7 +10377,8 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
         getBoundingRect: function () {
             var rect = this._rect;
             var style = this.style;
-            if (!rect) {
+            var needsUpdateRect = !rect;
+            if (needsUpdateRect) {
                 var path = this.path;
                 if (this.__dirtyPath) {
                     path.beginPath();
@@ -10370,35 +10386,40 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
                 }
                 rect = path.getBoundingRect();
             }
-            /**
-             * Needs update rect with stroke lineWidth when
-             * 1. Element changes scale or lineWidth
-             * 2. First create rect
-             */
-            if (pathHasStroke(style) && (this.__dirty || !this._rect)) {
-                var rectWithStroke = this._rectWithStroke
-                    || (this._rectWithStroke = rect.clone());
-                rectWithStroke.copy(rect);
-                // FIXME Must after updateTransform
-                var w = style.lineWidth;
-                // PENDING, Min line width is needed when line is horizontal or vertical
-                var lineScale = style.strokeNoScale ? this.getLineScale() : 1;
+            this._rect = rect;
 
-                // Only add extra hover lineWidth when there are no fill
-                if (!pathHasFill(style)) {
-                    w = Math.max(w, this.strokeContainThreshold);
+            if (pathHasStroke(style)) {
+                // Needs update rect with stroke lineWidth when
+                // 1. Element changes scale or lineWidth
+                // 2. Shape is changed
+                var rectWithStroke = this._rectWithStroke;
+                if (this.__dirty || needsUpdateRect) {
+                    var rectWithStroke = this._rectWithStroke
+                        || (this._rectWithStroke = rect.clone());
+                    rectWithStroke.copy(rect);
+                    // FIXME Must after updateTransform
+                    var w = style.lineWidth;
+                    // PENDING, Min line width is needed when line is horizontal or vertical
+                    var lineScale = style.strokeNoScale ? this.getLineScale() : 1;
+
+                    // Only add extra hover lineWidth when there are no fill
+                    if (!pathHasFill(style)) {
+                        w = Math.max(w, this.strokeContainThreshold);
+                    }
+                    // Consider line width
+                    // Line scale can't be 0;
+                    if (lineScale > 1e-10) {
+                        rectWithStroke.width += w / lineScale;
+                        rectWithStroke.height += w / lineScale;
+                        rectWithStroke.x -= w / lineScale / 2;
+                        rectWithStroke.y -= w / lineScale / 2;
+                    }
                 }
-                // Consider line width
-                // Line scale can't be 0;
-                if (lineScale > 1e-10) {
-                    rectWithStroke.width += w / lineScale;
-                    rectWithStroke.height += w / lineScale;
-                    rectWithStroke.x -= w / lineScale / 2;
-                    rectWithStroke.y -= w / lineScale / 2;
-                }
+
+                // Return rect with stroke
                 return rectWithStroke;
             }
-            this._rect = rect;
+
             return rect;
         },
 
