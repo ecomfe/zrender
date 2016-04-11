@@ -1,4 +1,5 @@
 /**
+ * @module zrender/core/util
  */
 define(function(require) {
     var Gradient = require('../graphic/Gradient');
@@ -53,6 +54,7 @@ define(function(require) {
     }
 
     /**
+     * @memberOf module:zrender/core/util
      * @param {*} target
      * @param {*} source
      * @param {boolean} [overwrite=false]
@@ -108,6 +110,7 @@ define(function(require) {
     /**
      * @param {*} target
      * @param {*} source
+     * @memberOf module:zrender/core/util
      */
     function extend(target, source) {
         for (var key in source) {
@@ -122,6 +125,7 @@ define(function(require) {
      * @param {*} target
      * @param {*} source
      * @param {boolen} [overlay=false]
+     * @memberOf module:zrender/core/util
      */
     function defaults(target, source, overlay) {
         for (var key in source) {
@@ -150,6 +154,7 @@ define(function(require) {
 
     /**
      * 查询数组中元素的index
+     * @memberOf module:zrender/core/util
      */
     function indexOf(array, value) {
         if (array) {
@@ -168,6 +173,7 @@ define(function(require) {
     /**
      * 构造类继承关系
      *
+     * @memberOf module:zrender/core/util
      * @param {Function} clazz 源类
      * @param {Function} baseClazz 基类
      */
@@ -185,6 +191,7 @@ define(function(require) {
     }
 
     /**
+     * @memberOf module:zrender/core/util
      * @param {Object|Function} target
      * @param {Object|Function} sorce
      * @param {boolean} overlay
@@ -211,7 +218,7 @@ define(function(require) {
 
     /**
      * 数组或对象遍历
-     * @memberOf module:zrender/tool/util
+     * @memberOf module:zrender/core/util
      * @param {Object|Array} obj
      * @param {Function} cb
      * @param {*} [context]
@@ -239,7 +246,7 @@ define(function(require) {
 
     /**
      * 数组映射
-     * @memberOf module:zrender/tool/util
+     * @memberOf module:zrender/core/util
      * @param {Array} obj
      * @param {Function} cb
      * @param {*} [context]
@@ -262,7 +269,7 @@ define(function(require) {
     }
 
     /**
-     * @memberOf module:zrender/tool/util
+     * @memberOf module:zrender/core/util
      * @param {Array} obj
      * @param {Function} cb
      * @param {Object} [memo]
@@ -286,7 +293,7 @@ define(function(require) {
 
     /**
      * 数组过滤
-     * @memberOf module:zrender/tool/util
+     * @memberOf module:zrender/core/util
      * @param {Array} obj
      * @param {Function} cb
      * @param {*} [context]
@@ -312,7 +319,7 @@ define(function(require) {
 
     /**
      * 数组项查找
-     * @memberOf module:zrender/tool/util
+     * @memberOf module:zrender/core/util
      * @param {Array} obj
      * @param {Function} cb
      * @param {*} [context]
@@ -330,7 +337,7 @@ define(function(require) {
     }
 
     /**
-     * @memberOf module:zrender/tool/util
+     * @memberOf module:zrender/core/util
      * @param {Function} func
      * @param {*} context
      * @return {Function}
@@ -343,9 +350,8 @@ define(function(require) {
     }
 
     /**
-     * @memberOf module:zrender/tool/util
+     * @memberOf module:zrender/core/util
      * @param {Function} func
-     * @param {...}
      * @return {Function}
      */
     function curry(func) {
@@ -356,7 +362,7 @@ define(function(require) {
     }
 
     /**
-     * @memberOf module:zrender/tool/util
+     * @memberOf module:zrender/core/util
      * @param {*} value
      * @return {boolean}
      */
@@ -365,7 +371,7 @@ define(function(require) {
     }
 
     /**
-     * @memberOf module:zrender/tool/util
+     * @memberOf module:zrender/core/util
      * @param {*} value
      * @return {boolean}
      */
@@ -374,7 +380,7 @@ define(function(require) {
     }
 
     /**
-     * @memberOf module:zrender/tool/util
+     * @memberOf module:zrender/core/util
      * @param {*} value
      * @return {boolean}
      */
@@ -383,7 +389,7 @@ define(function(require) {
     }
 
     /**
-     * @memberOf module:zrender/tool/util
+     * @memberOf module:zrender/core/util
      * @param {*} value
      * @return {boolean}
      */
@@ -395,7 +401,7 @@ define(function(require) {
     }
 
     /**
-     * @memberOf module:zrender/tool/util
+     * @memberOf module:zrender/core/util
      * @param {*} value
      * @return {boolean}
      */
@@ -405,7 +411,7 @@ define(function(require) {
     }
 
     /**
-     * @memberOf module:zrender/tool/util
+     * @memberOf module:zrender/core/util
      * @param {*} value
      * @return {boolean}
      */
@@ -416,7 +422,7 @@ define(function(require) {
 
     /**
      * If value1 is not null, then return value1, otherwise judget rest of values.
-     * @param  {*...} values
+     * @memberOf module:zrender/core/util
      * @return {*} Final value
      */
     function retrieve(values) {
@@ -428,7 +434,7 @@ define(function(require) {
     }
 
     /**
-     * @memberOf module:zrender/tool/util
+     * @memberOf module:zrender/core/util
      * @param {Array} arr
      * @param {number} startIndex
      * @param {number} endIndex
@@ -439,6 +445,7 @@ define(function(require) {
     }
 
     /**
+     * @memberOf module:zrender/core/util
      * @param {boolean} condition
      * @param {string} message
      */

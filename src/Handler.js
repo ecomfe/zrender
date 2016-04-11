@@ -1,5 +1,5 @@
 /**
- * Handler控制模块
+ * Handler
  * @module zrender/Handler
  * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *         errorrik (errorrik@gmail.com)
