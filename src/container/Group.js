@@ -55,6 +55,14 @@ define(function (require) {
         type: 'group',
 
         /**
+         * 所有子孙元素是否响应鼠标事件
+         * @name module:/zrender/container/Group#silent
+         * @type {boolean}
+         * @default false
+         */
+        silent: false,
+
+        /**
          * @return {Array.<module:zrender/Element>}
          */
         children: function () {

@@ -464,13 +464,13 @@ define(function (require) {
 
     function isHover(displayable, x, y) {
         if (displayable[displayable.rectHover ? 'rectContain' : 'contain'](x, y)) {
-            var p = displayable.parent;
-            while (p) {
-                if (p.clipPath && !p.clipPath.contain(x, y))  {
-                    // Clipped by parents
+            var el = displayable;
+            while (el) {
+                // If ancestor is silent or clipped by ancestor
+                if (el.silent || (el.clipPath && !el.clipPath.contain(x, y)))  {
                     return false;
                 }
-                p = p.parent;
+                el = el.parent;
             }
             return true;
         }
