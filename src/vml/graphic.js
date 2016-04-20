@@ -464,6 +464,7 @@ if (!require('../core/env').canvasSupported) {
         if (this.__dirtyPath) {
             path.beginPath();
             this.buildPath(path, this.shape);
+            path.toStatic();
             this.__dirtyPath = false;
         }
 
