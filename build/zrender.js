@@ -1698,13 +1698,13 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
 
     function isHover(displayable, x, y) {
         if (displayable[displayable.rectHover ? 'rectContain' : 'contain'](x, y)) {
-            var p = displayable.parent;
-            while (p) {
-                if (p.clipPath && !p.clipPath.contain(x, y))  {
-                    // Clipped by parents
+            var el = displayable;
+            while (el) {
+                // If ancestor is silent or clipped by ancestor
+                if (el.silent || (el.clipPath && !el.clipPath.contain(x, y)))  {
                     return false;
                 }
-                p = p.parent;
+                el = el.parent;
             }
             return true;
         }
@@ -4776,6 +4776,14 @@ define('zrender/container/Group',['require','../core/util','../Element','../core
         type: 'group',
 
         /**
+         * 所有子孙元素是否响应鼠标事件
+         * @name module:/zrender/container/Group#silent
+         * @type {boolean}
+         * @default false
+         */
+        silent: false,
+
+        /**
          * @return {Array.<module:zrender/Element>}
          */
         children: function () {
@@ -7742,7 +7750,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
     /**
      * @type {string}
      */
-    zrender.version = '3.0.7';
+    zrender.version = '3.0.8';
 
     /**
      * Initializing a zrender instance
@@ -12083,6 +12091,7 @@ if (!require('../core/env').canvasSupported) {
         if (this.__dirtyPath) {
             path.beginPath();
             this.buildPath(path, this.shape);
+            path.toStatic();
             this.__dirtyPath = false;
         }
 
