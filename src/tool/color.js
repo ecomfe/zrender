@@ -415,40 +415,6 @@ define(function(require) {
     }
 
     /**
-     * @param {Array<number>} interval  Array length === 2,
-     *                                  each item is normalized value ([0, 1]).
-     * @param {Array.<string>} colors Color list.
-     * @return {Array.<Object>} colors corresponding to the interval,
-     *                          each item is {color: 'xxx', offset: ...}
-     *                          where offset is between 0 and 1.
-     * @memberOf module:zrender/util/color
-     */
-    function mapIntervalToColor(interval, colors) {
-        if (interval.length !== 2 || interval[1] < interval[0]) {
-            return;
-        }
-
-        var info0 = mapToColor(interval[0], colors, true);
-        var info1 = mapToColor(interval[1], colors, true);
-
-        var result = [{color: info0.color, offset: 0}];
-
-        var during = info1.value - info0.value;
-        var start = Math.max(info0.value, info0.rightIndex);
-        var end = Math.min(info1.value, info1.leftIndex);
-
-        for (var i = start; during > 0 && i <= end; i++) {
-            result.push({
-                color: colors[i],
-                offset: (i - info0.value) / during
-            });
-        }
-        result.push({color: info1.color, offset: 1});
-
-        return result;
-    }
-
-    /**
      * @param {string} color
      * @param {number=} h 0 ~ 360, ignore when null.
      * @param {number=} s 0 ~ 1, ignore when null.
@@ -502,7 +468,6 @@ define(function(require) {
         toHex: toHex,
         fastMapToColor: fastMapToColor,
         mapToColor: mapToColor,
-        mapIntervalToColor: mapIntervalToColor,
         modifyHSL: modifyHSL,
         modifyAlpha: modifyAlpha,
         stringify: stringify
