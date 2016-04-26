@@ -34,14 +34,6 @@ define(function (require) {
 
     var TOUCH_CLICK_DELAY = 300;
 
-    // touch指尖错觉的尝试偏移量配置
-    // var MOBILE_TOUCH_OFFSETS = [
-    //     { x: 10 },
-    //     { x: -20 },
-    //     { x: 10, y: 10 },
-    //     { y: -20 }
-    // ];
-
     var addEventListener = eventTool.addEventListener;
     var removeEventListener = eventTool.removeEventListener;
     var normalizeEvent = eventTool.normalizeEvent;
@@ -195,6 +187,21 @@ define(function (require) {
             event = normalizeEvent(this.root, event);
             // Find hover again to avoid click event is dispatched manually. Or click is triggered without mouseover
             var hovered = this.findHover(event.zrX, event.zrY, null);
+
+            if (name === 'mousedown') {
+                this._downel = hovered;
+                // In case click triggered before mouseup
+                this._upel = hovered;
+            }
+            else if (name === 'mosueup') {
+                this._upel = hovered;
+            }
+            else if (name === 'click') {
+                if (this._downel !== this._upel) {
+                    return;
+                }
+            }
+
             this._dispatchProxy(hovered, name, event);
         };
     });
