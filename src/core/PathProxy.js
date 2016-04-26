@@ -144,11 +144,13 @@ define(function (require) {
          * @return {module:zrender/core/PathProxy}
          */
         lineTo: function (x, y) {
+            var exceedUnit = mathAbs(x - this._xi) > this._ux
+                || mathAbs(y - this._yi) > this._uy
+                // Force draw the first segment
+                || this._len === 0;
+
             this.addData(CMD.L, x, y);
 
-            // FIXME Only one line
-            var exceedUnit = mathAbs(x - this._xi) > this._ux
-                || mathAbs(y - this._yi) > this._uy;
             if (this._ctx && exceedUnit) {
                 this._needsDash() ? this._dashedLineTo(x, y)
                     : this._ctx.lineTo(x, y);
@@ -157,6 +159,7 @@ define(function (require) {
                 this._xi = x;
                 this._yi = y;
             }
+
             return this;
         },
 
