@@ -76,6 +76,10 @@ define(function (require) {
 
             var ctxLineDash = !!ctx.setLineDash;
 
+            // Update path sx, sy
+            var scale = this.getGlobalScale();
+            path.setScale(scale[0], scale[1]);
+
             // Proxy context
             // Rebuild path in following 2 cases
             // 1. Path is dirty

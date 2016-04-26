@@ -187,6 +187,25 @@ define(function (require) {
     };
 
     /**
+     * Get global scale
+     * @return {Array.<number>}
+     */
+    transformableProto.getGlobalScale = function () {
+        var m = this.transform;
+        if (!m) {
+            return [1, 1];
+        }
+        var sx = Math.sqrt(m[0] * m[0] + m[1] * m[1]);
+        var sy = Math.sqrt(m[2] * m[2] + m[3] * m[3]);
+        if (m[0] < 0) {
+            sx = -sx;
+        }
+        if (m[3] < 0) {
+            sy = -sy;
+        }
+        return [sx, sy];
+    };
+    /**
      * 变换坐标位置到 shape 的局部坐标空间
      * @method
      * @param {number} x

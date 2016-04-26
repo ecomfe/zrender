@@ -14,6 +14,7 @@ define(function (require) {
     var vec2 = require('./vector');
     var bbox = require('./bbox');
     var BoundingRect = require('./BoundingRect');
+    var dpr = require('../config').devicePixelRatio;
 
     var CMD = {
         M: 1,
@@ -35,6 +36,7 @@ define(function (require) {
     var mathCos = Math.cos;
     var mathSin = Math.sin;
     var mathSqrt = Math.sqrt;
+    var mathAbs = Math.abs;
 
     var hasTypedArray = typeof Float32Array != 'undefined';
 
@@ -59,6 +61,10 @@ define(function (require) {
 
         this._x0 = 0;
         this._y0 = 0;
+
+        // Unit x, Unit y. Provide for avoiding drawing that too short line segment
+        this._ux = 0;
+        this._uy = 0;
     };
 
     /**
@@ -76,6 +82,14 @@ define(function (require) {
         _dashIdx: 0,
 
         _dashSum: 0,
+
+        /**
+         * @readOnly
+         */
+        setScale: function (sx, sy) {
+            this._ux = mathAbs(1 / dpr / sx) || 0;
+            this._uy = mathAbs(1 / dpr / sy) || 0;
+        },
 
         getContext: function () {
             return this._ctx;
@@ -131,12 +145,18 @@ define(function (require) {
          */
         lineTo: function (x, y) {
             this.addData(CMD.L, x, y);
-            if (this._ctx) {
+
+            // FIXME Only one line
+            var exceedUnit = mathAbs(x - this._xi) > this._ux
+                || mathAbs(y - this._yi) > this._uy;
+            if (this._ctx && exceedUnit) {
                 this._needsDash() ? this._dashedLineTo(x, y)
                     : this._ctx.lineTo(x, y);
             }
-            this._xi = x;
-            this._yi = y;
+            if (exceedUnit) {
+                this._xi = x;
+                this._yi = y;
+            }
             return this;
         },
 
@@ -639,22 +659,53 @@ define(function (require) {
          */
         rebuildPath: function (ctx) {
             var d = this.data;
-            for (var i = 0; i < this._len;) {
+            var x0, y0;
+            var xi, yi;
+            var x, y;
+            var ux = this._ux;
+            var uy = this._uy;
+            var len = this._len;
+            for (var i = 0; i < len;) {
                 var cmd = d[i++];
+
+                if (i == 1) {
+                    // 如果第一个命令是 L, C, Q
+                    // 则 previous point 同绘制命令的第一个 point
+                    //
+                    // 第一个命令为 Arc 的情况下会在后面特殊处理
+                    xi = d[i];
+                    yi = d[i + 1];
+
+                    x0 = xi;
+                    y0 = yi;
+                }
                 switch (cmd) {
                     case CMD.M:
-                        ctx.moveTo(d[i++], d[i++]);
+                        x0 = xi = d[i++];
+                        y0 = yi = d[i++];
+                        ctx.moveTo(xi, yi);
                         break;
                     case CMD.L:
-                        ctx.lineTo(d[i++], d[i++]);
+                        x = d[i++];
+                        y = d[i++];
+                        // Not draw too small seg between
+                        if (mathAbs(x - xi) > ux || mathAbs(y - yi) > uy || i === len - 1) {
+                            ctx.lineTo(x, y);
+                            xi = x;
+                            yi = y;
+                        }
                         break;
                     case CMD.C:
                         ctx.bezierCurveTo(
                             d[i++], d[i++], d[i++], d[i++], d[i++], d[i++]
                         );
+                        xi = d[i - 2];
+                        yi = d[i - 1];
                         break;
                     case CMD.Q:
                         ctx.quadraticCurveTo(d[i++], d[i++], d[i++], d[i++]);
+                        xi = d[i - 2];
+                        yi = d[i - 1];
                         break;
                     case CMD.A:
                         var cx = d[i++];
@@ -669,24 +720,38 @@ define(function (require) {
                         var scaleX = (rx > ry) ? 1 : rx / ry;
                         var scaleY = (rx > ry) ? ry / rx : 1;
                         var isEllipse = Math.abs(rx - ry) > 1e-3;
+                        var endAngle = theta + dTheta;
                         if (isEllipse) {
                             ctx.translate(cx, cy);
                             ctx.rotate(psi);
                             ctx.scale(scaleX, scaleY);
-                            ctx.arc(0, 0, r, theta, theta + dTheta, 1 - fs);
+                            ctx.arc(0, 0, r, theta, endAngle, 1 - fs);
                             ctx.scale(1 / scaleX, 1 / scaleY);
                             ctx.rotate(-psi);
                             ctx.translate(-cx, -cy);
                         }
                         else {
-                            ctx.arc(cx, cy, r, theta, theta + dTheta, 1 - fs);
+                            ctx.arc(cx, cy, r, theta, endAngle, 1 - fs);
                         }
+
+                        if (i == 1) {
+                            // 直接使用 arc 命令
+                            // 第一个命令起点还未定义
+                            x0 = mathCos(theta) * rx + cx;
+                            y0 = mathSin(theta) * ry + cy;
+                        }
+                        xi = mathCos(endAngle) * rx + cx;
+                        yi = mathSin(endAngle) * ry + cy;
                         break;
                     case CMD.R:
+                        x0 = xi = d[i];
+                        y0 = yi = d[i + 1];
                         ctx.rect(d[i++], d[i++], d[i++], d[i++]);
                         break;
                     case CMD.Z:
                         ctx.closePath();
+                        xi = x0;
+                        yi = y0;
                 }
             }
         }
