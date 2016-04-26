@@ -127,9 +127,9 @@ define(function (require) {
          * @param {Event} event
          */
         touchstart: function (event) {
-            // FIXME
-            // 移动端可能需要default行为，例如静态图表时。
-            // eventTool.stop(event);// 阻止浏览器默认事件，重要
+            // Default mouse behaviour should not be disabled here.
+            // For example, page may needs to be slided.
+            // eventTool.stop(event);
             event = normalizeEvent(this.root, event);
 
             this._lastTouchMoment = new Date();
