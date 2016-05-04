@@ -240,6 +240,16 @@ define(function (require) {
             this.style.set(key, value);
             this.dirty(false);
             return this;
+        },
+
+        /**
+         * Use given style object
+         * @param  {Object} obj
+         */
+        useStyle: function (obj) {
+            this.style = new Style(obj);
+            this.dirty(false);
+            return this;
         }
     };
 
