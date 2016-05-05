@@ -6,12 +6,32 @@ define(function (require) {
     'use strict';
 
     var curveTool = require('../../core/curve');
+    var vec2 = require('../../core/vector');
     var quadraticSubdivide = curveTool.quadraticSubdivide;
     var cubicSubdivide = curveTool.cubicSubdivide;
     var quadraticAt = curveTool.quadraticAt;
     var cubicAt = curveTool.cubicAt;
+    var quadraticDerivativeAt = curveTool.quadraticDerivativeAt;
+    var cubicDerivativeAt = curveTool.cubicDerivativeAt;
 
     var out = [];
+
+    function someVectorAt(shape, t, isTangent) {
+        var cpx2 = shape.cpx2;
+        var cpy2 = shape.cpy2;
+        if (cpx2 === null || cpy2 === null) {
+            return [
+                (isTangent ? cubicDerivativeAt : cubicAt)(shape.x1, shape.cpx1, shape.cpx2, shape.x2, t),
+                (isTangent ? cubicDerivativeAt : cubicAt)(shape.y1, shape.cpy1, shape.cpy2, shape.y2, t)
+            ];
+        }
+        else {
+            return [
+                (isTangent ? quadraticDerivativeAt : quadraticAt)(shape.x1, shape.cpx1, shape.x2, t),
+                (isTangent ? quadraticDerivativeAt : quadraticAt)(shape.y1, shape.cpy1, shape.y2, t)
+            ];
+        }
+    }
     return require('../Path').extend({
 
         type: 'bezier-curve',
@@ -95,25 +115,21 @@ define(function (require) {
 
         /**
          * Get point at percent
-         * @param  {number} percent
+         * @param  {number} t
          * @return {Array.<number>}
          */
-        pointAt: function (p) {
-            var shape = this.shape;
-            var cpx2 = shape.cpx2;
-            var cpy2 = shape.cpy2;
-            if (cpx2 === null || cpy2 === null) {
-                return [
-                    quadraticAt(shape.x1, shape.cpx1, shape.x2, p),
-                    quadraticAt(shape.y1, shape.cpy1, shape.y2, p)
-                ];
-            }
-            else {
-                return [
-                    cubicAt(shape.x1, shape.cpx1, shape.cpx1, shape.x2, p),
-                    cubicAt(shape.y1, shape.cpy1, shape.cpy1, shape.y2, p)
-                ];
-            }
+        pointAt: function (t) {
+            return someVectorAt(this.shape, t, false);
+        },
+
+        /**
+         * Get tangent at percent
+         * @param  {number} t
+         * @return {Array.<number>}
+         */
+        tangentAt: function (t) {
+            var p = someVectorAt(this.shape, t, true);
+            return vec2.normalize(p, p);
         }
     });
 });
