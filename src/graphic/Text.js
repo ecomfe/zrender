@@ -3,6 +3,8 @@
  * @module zrender/graphic/Text
  *
  * TODO Wrapping
+ *
+ * Text not support gradient
  */
 
 define(function (require) {

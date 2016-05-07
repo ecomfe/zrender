@@ -147,13 +147,13 @@ define(function (require) {
                     (this.strokeNoScale && el && el.getLineScale) ? el.getLineScale() : 1
                 );
             }
-            if (fill != null) {
-                 // Use canvas gradient if has
-                ctx.fillStyle = fill.canvasGradient ? fill.canvasGradient : fill;
+            // Gradient will be created and set in Path#brush. So ignore it here
+            if (fill != null && fill !== 'none' && !fill.colorStops) {
+                ctx.fillStyle = fill;
             }
-            if (stroke != null) {
+            if (stroke != null && stroke !== 'none' && !stroke.colorStops) {
                  // Use canvas gradient if has
-                ctx.strokeStyle = stroke.canvasGradient ? stroke.canvasGradient : stroke;
+                ctx.strokeStyle = stroke;
             }
             this.opacity != null && (ctx.globalAlpha = this.opacity);
         },
@@ -198,6 +198,44 @@ define(function (require) {
             var newStyle = new this.constructor();
             newStyle.extendFrom(this, true);
             return newStyle;
+        },
+
+        createLinearGradient: function (ctx, obj, rect) {
+            // var size =
+            var x = obj.x * rect.width + rect.x;
+            var x2 = obj.x2 * rect.width + rect.x;
+            var y = obj.y * rect.height + rect.y;
+            var y2 = obj.y2 * rect.height + rect.y;
+
+            var canvasGradient = ctx.createLinearGradient(x, y, x2, y2);
+
+            return canvasGradient;
+        },
+
+        createRadialGradient: function (ctx, obj, rect) {
+            var width = rect.width;
+            var height = rect.height;
+            var min = Math.min(width, height);
+
+            var x = obj.x * width + rect.x;
+            var y = obj.y * height + rect.y;
+            var r = obj.r * min;
+
+            var canvasGradient = ctx.createRadialGradient(x, y, 0, x, y, r);
+
+            return canvasGradient;
+        },
+
+        getGradient: function (ctx, obj, rect) {
+            var method = obj.type === 'radial' ? 'createRadialGradient' : 'createLinearGradient';
+            var canvasGradient = this[method](ctx, obj, rect);
+            var colorStops = obj.colorStops;
+            for (var i = 0; i < colorStops.length; i++) {
+                canvasGradient.addColorStop(
+                    colorStops[i].offset, colorStops[i].color
+                );
+            }
+            return canvasGradient;
         }
     };
 

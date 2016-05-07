@@ -57,19 +57,29 @@ define(function (require) {
             var path = this.path;
             var hasStroke = pathHasStroke(style);
             var hasFill = pathHasFill(style);
-
-            if (this.__dirtyPath) {
-                // Update gradient because bounding rect may changed
-                if (hasFill && (style.fill instanceof Gradient)) {
-                    style.fill.updateCanvasGradient(this, ctx);
-                }
-                if (hasStroke && (style.stroke instanceof Gradient)) {
-                    style.stroke.updateCanvasGradient(this, ctx);
-                }
-            }
+            var hasFillGradient = hasFill && !!(style.fill.colorStops);
+            var hasStrokeGradient = hasStroke && !!(style.stroke.colorStops);
 
             style.bind(ctx, this);
             this.setTransform(ctx);
+
+            if (this.__dirtyPath) {
+                var rect = this.getBoundingRect();
+                // Update gradient because bounding rect may changed
+                if (hasFillGradient) {
+                    this._fillGradient = style.getGradient(ctx, style.fill, rect);
+                }
+                if (hasStrokeGradient) {
+                    this._strokeGradient = style.getGradient(ctx, style.stroke, rect);
+                }
+            }
+            // Use the gradient
+            if (hasFillGradient) {
+                ctx.fillStyle = this._fillGradient;
+            }
+            if (hasStrokeGradient) {
+                ctx.strokeStyle = this._strokeGradient;
+            }
 
             var lineDash = style.lineDash;
             var lineDashOffset = style.lineDashOffset;

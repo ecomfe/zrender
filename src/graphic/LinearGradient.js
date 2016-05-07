@@ -29,28 +29,7 @@ define(function(require) {
 
         constructor: LinearGradient,
 
-        type: 'linear',
-
-        updateCanvasGradient: function (shape, ctx) {
-            var rect = shape.getBoundingRect();
-            // var size =
-            var x = this.x * rect.width + rect.x;
-            var x2 = this.x2 * rect.width + rect.x;
-            var y = this.y * rect.height + rect.y;
-            var y2 = this.y2 * rect.height + rect.y;
-
-            var canvasGradient = ctx.createLinearGradient(x, y, x2, y2);
-
-            var colorStops = this.colorStops;
-            for (var i = 0; i < colorStops.length; i++) {
-                canvasGradient.addColorStop(
-                    colorStops[i].offset, colorStops[i].color
-                );
-            }
-
-            this.canvasGradient = canvasGradient;
-        }
-
+        type: 'linear'
     };
 
     zrUtil.inherits(LinearGradient, Gradient);

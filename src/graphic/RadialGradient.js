@@ -26,31 +26,7 @@ define(function(require) {
 
         constructor: RadialGradient,
 
-        type: 'radial',
-
-        updateCanvasGradient: function (shape, ctx) {
-            var rect = shape.getBoundingRect();
-
-            var width = rect.width;
-            var height = rect.height;
-            var min = Math.min(width, height);
-            // var max = Math.max(width, height);
-
-            var x = this.x * width + rect.x;
-            var y = this.y * height + rect.y;
-            var r = this.r * min;
-
-            var canvasGradient = ctx.createRadialGradient(x, y, 0, x, y, r);
-
-            var colorStops = this.colorStops;
-            for (var i = 0; i < colorStops.length; i++) {
-                canvasGradient.addColorStop(
-                    colorStops[i].offset, colorStops[i].color
-                );
-            }
-
-            this.canvasGradient = canvasGradient;
-        }
+        type: 'radial'
     };
 
     zrUtil.inherits(RadialGradient, Gradient);
