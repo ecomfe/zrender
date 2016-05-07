@@ -357,7 +357,7 @@ if (!require('../core/env').canvasSupported) {
 
                     var type = clockwise ? ' wa ' : ' at ';
                     // IE won't render arches drawn counter clockwise if x0 == x1.
-                    if (Math.abs(x0 - x1) < 1e-10 && clockwise) {
+                    if (Math.abs(x0 - x1) < 1e-10 && Math.abs(endAngle - startAngle) > 1e-2 && clockwise) {
                         // Offset x0 by 1/80 of a pixel. Use something
                         // that can be represented in binary
                         x0 += 270 / Z;
