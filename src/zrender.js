@@ -265,9 +265,11 @@ define(function(require) {
          * @param {string} [backgroundColor='#fff']
          * @return {string} Base64 URL
          */
-        toDataURL: function(type, backgroundColor, args) {
-            return this.painter.toDataURL(type, backgroundColor, args);
-        },
+        // toDataURL: function(type, backgroundColor) {
+        //     return this.painter.getRenderedCanvas({
+        //         backgroundColor: backgroundColor
+        //     }).toDataURL(type);
+        // },
 
         /**
          * Converting a path to image.
