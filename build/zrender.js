@@ -1268,14 +1268,6 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
 
     var TOUCH_CLICK_DELAY = 300;
 
-    // touch指尖错觉的尝试偏移量配置
-    // var MOBILE_TOUCH_OFFSETS = [
-    //     { x: 10 },
-    //     { x: -20 },
-    //     { x: 10, y: 10 },
-    //     { y: -20 }
-    // ];
-
     var addEventListener = eventTool.addEventListener;
     var removeEventListener = eventTool.removeEventListener;
     var normalizeEvent = eventTool.normalizeEvent;
@@ -1361,9 +1353,9 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
          * @param {Event} event
          */
         touchstart: function (event) {
-            // FIXME
-            // 移动端可能需要default行为，例如静态图表时。
-            // eventTool.stop(event);// 阻止浏览器默认事件，重要
+            // Default mouse behaviour should not be disabled here.
+            // For example, page may needs to be slided.
+            // eventTool.stop(event);
             event = normalizeEvent(this.root, event);
 
             this._lastTouchMoment = new Date();
@@ -1429,6 +1421,21 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
             event = normalizeEvent(this.root, event);
             // Find hover again to avoid click event is dispatched manually. Or click is triggered without mouseover
             var hovered = this.findHover(event.zrX, event.zrY, null);
+
+            if (name === 'mousedown') {
+                this._downel = hovered;
+                // In case click triggered before mouseup
+                this._upel = hovered;
+            }
+            else if (name === 'mosueup') {
+                this._upel = hovered;
+            }
+            else if (name === 'click') {
+                if (this._downel !== this._upel) {
+                    return;
+                }
+            }
+
             this._dispatchProxy(hovered, name, event);
         };
     });
@@ -2379,6 +2386,25 @@ define('zrender/mixin/Transformable',['require','../core/matrix','../core/vector
     };
 
     /**
+     * Get global scale
+     * @return {Array.<number>}
+     */
+    transformableProto.getGlobalScale = function () {
+        var m = this.transform;
+        if (!m) {
+            return [1, 1];
+        }
+        var sx = Math.sqrt(m[0] * m[0] + m[1] * m[1]);
+        var sy = Math.sqrt(m[2] * m[2] + m[3] * m[3]);
+        if (m[0] < 0) {
+            sx = -sx;
+        }
+        if (m[3] < 0) {
+            sy = -sy;
+        }
+        return [sx, sy];
+    };
+    /**
      * 变换坐标位置到 shape 的局部坐标空间
      * @method
      * @param {number} x
@@ -3284,40 +3310,6 @@ define('zrender/tool/color',['require'],function(require) {
     }
 
     /**
-     * @param {Array<number>} interval  Array length === 2,
-     *                                  each item is normalized value ([0, 1]).
-     * @param {Array.<string>} colors Color list.
-     * @return {Array.<Object>} colors corresponding to the interval,
-     *                          each item is {color: 'xxx', offset: ...}
-     *                          where offset is between 0 and 1.
-     * @memberOf module:zrender/util/color
-     */
-    function mapIntervalToColor(interval, colors) {
-        if (interval.length !== 2 || interval[1] < interval[0]) {
-            return;
-        }
-
-        var info0 = mapToColor(interval[0], colors, true);
-        var info1 = mapToColor(interval[1], colors, true);
-
-        var result = [{color: info0.color, offset: 0}];
-
-        var during = info1.value - info0.value;
-        var start = Math.max(info0.value, info0.rightIndex);
-        var end = Math.min(info1.value, info1.leftIndex);
-
-        for (var i = start; during > 0 && i <= end; i++) {
-            result.push({
-                color: colors[i],
-                offset: (i - info0.value) / during
-            });
-        }
-        result.push({color: info1.color, offset: 1});
-
-        return result;
-    }
-
-    /**
      * @param {string} color
      * @param {number=} h 0 ~ 360, ignore when null.
      * @param {number=} s 0 ~ 1, ignore when null.
@@ -3371,7 +3363,6 @@ define('zrender/tool/color',['require'],function(require) {
         toHex: toHex,
         fastMapToColor: fastMapToColor,
         mapToColor: mapToColor,
-        mapIntervalToColor: mapIntervalToColor,
         modifyHSL: modifyHSL,
         modifyAlpha: modifyAlpha,
         stringify: stringify
@@ -5857,13 +5848,13 @@ define('zrender/graphic/Style',['require'],function (require) {
                     (this.strokeNoScale && el && el.getLineScale) ? el.getLineScale() : 1
                 );
             }
-            if (fill != null) {
-                 // Use canvas gradient if has
-                ctx.fillStyle = fill.canvasGradient ? fill.canvasGradient : fill;
+            // Gradient will be created and set in Path#brush. So ignore it here
+            if (fill != null && fill !== 'none' && !fill.colorStops) {
+                ctx.fillStyle = fill;
             }
-            if (stroke != null) {
+            if (stroke != null && stroke !== 'none' && !stroke.colorStops) {
                  // Use canvas gradient if has
-                ctx.strokeStyle = stroke.canvasGradient ? stroke.canvasGradient : stroke;
+                ctx.strokeStyle = stroke;
             }
             this.opacity != null && (ctx.globalAlpha = this.opacity);
         },
@@ -5908,6 +5899,44 @@ define('zrender/graphic/Style',['require'],function (require) {
             var newStyle = new this.constructor();
             newStyle.extendFrom(this, true);
             return newStyle;
+        },
+
+        createLinearGradient: function (ctx, obj, rect) {
+            // var size =
+            var x = obj.x * rect.width + rect.x;
+            var x2 = obj.x2 * rect.width + rect.x;
+            var y = obj.y * rect.height + rect.y;
+            var y2 = obj.y2 * rect.height + rect.y;
+
+            var canvasGradient = ctx.createLinearGradient(x, y, x2, y2);
+
+            return canvasGradient;
+        },
+
+        createRadialGradient: function (ctx, obj, rect) {
+            var width = rect.width;
+            var height = rect.height;
+            var min = Math.min(width, height);
+
+            var x = obj.x * width + rect.x;
+            var y = obj.y * height + rect.y;
+            var r = obj.r * min;
+
+            var canvasGradient = ctx.createRadialGradient(x, y, 0, x, y, r);
+
+            return canvasGradient;
+        },
+
+        getGradient: function (ctx, obj, rect) {
+            var method = obj.type === 'radial' ? 'createRadialGradient' : 'createLinearGradient';
+            var canvasGradient = this[method](ctx, obj, rect);
+            var colorStops = obj.colorStops;
+            for (var i = 0; i < colorStops.length; i++) {
+                canvasGradient.addColorStop(
+                    colorStops[i].offset, colorStops[i].color
+                );
+            }
+            return canvasGradient;
         }
     };
 
@@ -6552,6 +6581,16 @@ define('zrender/graphic/Displayable',['require','../core/util','./Style','../Ele
          */
         setStyle: function (key, value) {
             this.style.set(key, value);
+            this.dirty(false);
+            return this;
+        },
+
+        /**
+         * Use given style object
+         * @param  {Object} obj
+         */
+        useStyle: function (obj) {
+            this.style = new Style(obj);
             this.dirty(false);
             return this;
         }
@@ -7750,7 +7789,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
     /**
      * @type {string}
      */
-    zrender.version = '3.0.8';
+    zrender.version = '3.0.9';
 
     /**
      * Initializing a zrender instance
@@ -7987,9 +8026,11 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
          * @param {string} [backgroundColor='#fff']
          * @return {string} Base64 URL
          */
-        toDataURL: function(type, backgroundColor, args) {
-            return this.painter.toDataURL(type, backgroundColor, args);
-        },
+        // toDataURL: function(type, backgroundColor) {
+        //     return this.painter.getRenderedCanvas({
+        //         backgroundColor: backgroundColor
+        //     }).toDataURL(type);
+        // },
 
         /**
          * Converting a path to image.
@@ -8080,6 +8121,8 @@ define('zrender', ['zrender/zrender'], function (main) { return main; });
  * @module zrender/graphic/Text
  *
  * TODO Wrapping
+ *
+ * Text not support gradient
  */
 
 define('zrender/graphic/Text',['require','./Displayable','../core/util','../contain/text'],function (require) {
@@ -8970,13 +9013,14 @@ define('zrender/core/bbox',['require','./vector','./curve'],function (require) {
  */
 
  // TODO getTotalLength, getPointAtLength
-define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./BoundingRect'],function (require) {
+define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./BoundingRect','../config'],function (require) {
     
 
     var curve = require('./curve');
     var vec2 = require('./vector');
     var bbox = require('./bbox');
     var BoundingRect = require('./BoundingRect');
+    var dpr = require('../config').devicePixelRatio;
 
     var CMD = {
         M: 1,
@@ -8998,6 +9042,7 @@ define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./Boun
     var mathCos = Math.cos;
     var mathSin = Math.sin;
     var mathSqrt = Math.sqrt;
+    var mathAbs = Math.abs;
 
     var hasTypedArray = typeof Float32Array != 'undefined';
 
@@ -9022,6 +9067,10 @@ define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./Boun
 
         this._x0 = 0;
         this._y0 = 0;
+
+        // Unit x, Unit y. Provide for avoiding drawing that too short line segment
+        this._ux = 0;
+        this._uy = 0;
     };
 
     /**
@@ -9039,6 +9088,14 @@ define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./Boun
         _dashIdx: 0,
 
         _dashSum: 0,
+
+        /**
+         * @readOnly
+         */
+        setScale: function (sx, sy) {
+            this._ux = mathAbs(1 / dpr / sx) || 0;
+            this._uy = mathAbs(1 / dpr / sy) || 0;
+        },
 
         getContext: function () {
             return this._ctx;
@@ -9093,13 +9150,22 @@ define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./Boun
          * @return {module:zrender/core/PathProxy}
          */
         lineTo: function (x, y) {
+            var exceedUnit = mathAbs(x - this._xi) > this._ux
+                || mathAbs(y - this._yi) > this._uy
+                // Force draw the first segment
+                || this._len === 0;
+
             this.addData(CMD.L, x, y);
-            if (this._ctx) {
+
+            if (this._ctx && exceedUnit) {
                 this._needsDash() ? this._dashedLineTo(x, y)
                     : this._ctx.lineTo(x, y);
             }
-            this._xi = x;
-            this._yi = y;
+            if (exceedUnit) {
+                this._xi = x;
+                this._yi = y;
+            }
+
             return this;
         },
 
@@ -9602,22 +9668,53 @@ define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./Boun
          */
         rebuildPath: function (ctx) {
             var d = this.data;
-            for (var i = 0; i < this._len;) {
+            var x0, y0;
+            var xi, yi;
+            var x, y;
+            var ux = this._ux;
+            var uy = this._uy;
+            var len = this._len;
+            for (var i = 0; i < len;) {
                 var cmd = d[i++];
+
+                if (i == 1) {
+                    // 如果第一个命令是 L, C, Q
+                    // 则 previous point 同绘制命令的第一个 point
+                    //
+                    // 第一个命令为 Arc 的情况下会在后面特殊处理
+                    xi = d[i];
+                    yi = d[i + 1];
+
+                    x0 = xi;
+                    y0 = yi;
+                }
                 switch (cmd) {
                     case CMD.M:
-                        ctx.moveTo(d[i++], d[i++]);
+                        x0 = xi = d[i++];
+                        y0 = yi = d[i++];
+                        ctx.moveTo(xi, yi);
                         break;
                     case CMD.L:
-                        ctx.lineTo(d[i++], d[i++]);
+                        x = d[i++];
+                        y = d[i++];
+                        // Not draw too small seg between
+                        if (mathAbs(x - xi) > ux || mathAbs(y - yi) > uy || i === len - 1) {
+                            ctx.lineTo(x, y);
+                            xi = x;
+                            yi = y;
+                        }
                         break;
                     case CMD.C:
                         ctx.bezierCurveTo(
                             d[i++], d[i++], d[i++], d[i++], d[i++], d[i++]
                         );
+                        xi = d[i - 2];
+                        yi = d[i - 1];
                         break;
                     case CMD.Q:
                         ctx.quadraticCurveTo(d[i++], d[i++], d[i++], d[i++]);
+                        xi = d[i - 2];
+                        yi = d[i - 1];
                         break;
                     case CMD.A:
                         var cx = d[i++];
@@ -9632,24 +9729,38 @@ define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./Boun
                         var scaleX = (rx > ry) ? 1 : rx / ry;
                         var scaleY = (rx > ry) ? ry / rx : 1;
                         var isEllipse = Math.abs(rx - ry) > 1e-3;
+                        var endAngle = theta + dTheta;
                         if (isEllipse) {
                             ctx.translate(cx, cy);
                             ctx.rotate(psi);
                             ctx.scale(scaleX, scaleY);
-                            ctx.arc(0, 0, r, theta, theta + dTheta, 1 - fs);
+                            ctx.arc(0, 0, r, theta, endAngle, 1 - fs);
                             ctx.scale(1 / scaleX, 1 / scaleY);
                             ctx.rotate(-psi);
                             ctx.translate(-cx, -cy);
                         }
                         else {
-                            ctx.arc(cx, cy, r, theta, theta + dTheta, 1 - fs);
+                            ctx.arc(cx, cy, r, theta, endAngle, 1 - fs);
                         }
+
+                        if (i == 1) {
+                            // 直接使用 arc 命令
+                            // 第一个命令起点还未定义
+                            x0 = mathCos(theta) * rx + cx;
+                            y0 = mathSin(theta) * ry + cy;
+                        }
+                        xi = mathCos(endAngle) * rx + cx;
+                        yi = mathSin(endAngle) * ry + cy;
                         break;
                     case CMD.R:
+                        x0 = xi = d[i];
+                        y0 = yi = d[i + 1];
                         ctx.rect(d[i++], d[i++], d[i++], d[i++]);
                         break;
                     case CMD.Z:
                         ctx.closePath();
+                        xi = x0;
+                        yi = y0;
                 }
             }
         }
@@ -10323,24 +10434,38 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
             var path = this.path;
             var hasStroke = pathHasStroke(style);
             var hasFill = pathHasFill(style);
-
-            if (this.__dirtyPath) {
-                // Update gradient because bounding rect may changed
-                if (hasFill && (style.fill instanceof Gradient)) {
-                    style.fill.updateCanvasGradient(this, ctx);
-                }
-                if (hasStroke && (style.stroke instanceof Gradient)) {
-                    style.stroke.updateCanvasGradient(this, ctx);
-                }
-            }
+            var hasFillGradient = hasFill && !!(style.fill.colorStops);
+            var hasStrokeGradient = hasStroke && !!(style.stroke.colorStops);
 
             style.bind(ctx, this);
             this.setTransform(ctx);
+
+            if (this.__dirtyPath) {
+                var rect = this.getBoundingRect();
+                // Update gradient because bounding rect may changed
+                if (hasFillGradient) {
+                    this._fillGradient = style.getGradient(ctx, style.fill, rect);
+                }
+                if (hasStrokeGradient) {
+                    this._strokeGradient = style.getGradient(ctx, style.stroke, rect);
+                }
+            }
+            // Use the gradient
+            if (hasFillGradient) {
+                ctx.fillStyle = this._fillGradient;
+            }
+            if (hasStrokeGradient) {
+                ctx.strokeStyle = this._strokeGradient;
+            }
 
             var lineDash = style.lineDash;
             var lineDashOffset = style.lineDashOffset;
 
             var ctxLineDash = !!ctx.setLineDash;
+
+            // Update path sx, sy
+            var scale = this.getGlobalScale();
+            path.setScale(scale[0], scale[1]);
 
             // Proxy context
             // Rebuild path in following 2 cases
@@ -10407,10 +10532,8 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
                 // Needs update rect with stroke lineWidth when
                 // 1. Element changes scale or lineWidth
                 // 2. Shape is changed
-                var rectWithStroke = this._rectWithStroke;
+                var rectWithStroke = this._rectWithStroke || (this._rectWithStroke = rect.clone());
                 if (this.__dirty || needsUpdateRect) {
-                    var rectWithStroke = this._rectWithStroke
-                        || (this._rectWithStroke = rect.clone());
                     rectWithStroke.copy(rect);
                     // FIXME Must after updateTransform
                     var w = style.lineWidth;
@@ -11191,16 +11314,36 @@ define('zrender/graphic/shape/Isogon',['require','../Path'],function (require) {
  * 贝塞尔曲线
  * @module zrender/shape/BezierCurve
  */
-define('zrender/graphic/shape/BezierCurve',['require','../../core/curve','../Path'],function (require) {
+define('zrender/graphic/shape/BezierCurve',['require','../../core/curve','../../core/vector','../Path'],function (require) {
     
 
     var curveTool = require('../../core/curve');
+    var vec2 = require('../../core/vector');
     var quadraticSubdivide = curveTool.quadraticSubdivide;
     var cubicSubdivide = curveTool.cubicSubdivide;
     var quadraticAt = curveTool.quadraticAt;
     var cubicAt = curveTool.cubicAt;
+    var quadraticDerivativeAt = curveTool.quadraticDerivativeAt;
+    var cubicDerivativeAt = curveTool.cubicDerivativeAt;
 
     var out = [];
+
+    function someVectorAt(shape, t, isTangent) {
+        var cpx2 = shape.cpx2;
+        var cpy2 = shape.cpy2;
+        if (cpx2 === null || cpy2 === null) {
+            return [
+                (isTangent ? cubicDerivativeAt : cubicAt)(shape.x1, shape.cpx1, shape.cpx2, shape.x2, t),
+                (isTangent ? cubicDerivativeAt : cubicAt)(shape.y1, shape.cpy1, shape.cpy2, shape.y2, t)
+            ];
+        }
+        else {
+            return [
+                (isTangent ? quadraticDerivativeAt : quadraticAt)(shape.x1, shape.cpx1, shape.x2, t),
+                (isTangent ? quadraticDerivativeAt : quadraticAt)(shape.y1, shape.cpy1, shape.y2, t)
+            ];
+        }
+    }
     return require('../Path').extend({
 
         type: 'bezier-curve',
@@ -11284,25 +11427,21 @@ define('zrender/graphic/shape/BezierCurve',['require','../../core/curve','../Pat
 
         /**
          * Get point at percent
-         * @param  {number} percent
+         * @param  {number} t
          * @return {Array.<number>}
          */
-        pointAt: function (p) {
-            var shape = this.shape;
-            var cpx2 = shape.cpx2;
-            var cpy2 = shape.cpy2;
-            if (cpx2 === null || cpy2 === null) {
-                return [
-                    quadraticAt(shape.x1, shape.cpx1, shape.x2, p),
-                    quadraticAt(shape.y1, shape.cpy1, shape.y2, p)
-                ];
-            }
-            else {
-                return [
-                    cubicAt(shape.x1, shape.cpx1, shape.cpx1, shape.x2, p),
-                    cubicAt(shape.y1, shape.cpy1, shape.cpy1, shape.y2, p)
-                ];
-            }
+        pointAt: function (t) {
+            return someVectorAt(this.shape, t, false);
+        },
+
+        /**
+         * Get tangent at percent
+         * @param  {number} t
+         * @return {Array.<number>}
+         */
+        tangentAt: function (t) {
+            var p = someVectorAt(this.shape, t, true);
+            return vec2.normalize(p, p);
         }
     });
 });
@@ -11984,7 +12123,7 @@ if (!require('../core/env').canvasSupported) {
 
                     var type = clockwise ? ' wa ' : ' at ';
                     // IE won't render arches drawn counter clockwise if x0 == x1.
-                    if (Math.abs(x0 - x1) < 1e-10 && clockwise) {
+                    if (Math.abs(x0 - x1) < 1e-10 && Math.abs(endAngle - startAngle) > 1e-2 && clockwise) {
                         // Offset x0 by 1/80 of a pixel. Use something
                         // that can be represented in binary
                         x0 += 270 / Z;
@@ -12105,6 +12244,9 @@ if (!require('../core/env').canvasSupported) {
         // Text
         if (style.text) {
             this.drawRectText(vmlRoot, this.getBoundingRect());
+        }
+        else {
+            this.removeRectText(vmlRoot);
         }
     };
 
@@ -12254,7 +12396,7 @@ if (!require('../core/env').canvasSupported) {
         var imageEl = this._imageEl;
         var cropEl = this._cropEl;
 
-        if (! imageEl) {
+        if (!imageEl) {
             imageEl = vmlCore.doc.createElement('div');
             this._imageEl = imageEl;
         }
@@ -12630,13 +12772,16 @@ if (!require('../core/env').canvasSupported) {
         proto.appendRectText = appendRectText;
     }
 
-    Text.prototype.brushVML = function (root) {
+    Text.prototype.brushVML = function (vmlRoot) {
         var style = this.style;
         if (style.text) {
-            this.drawRectText(root, {
+            this.drawRectText(vmlRoot, {
                 x: style.x || 0, y: style.y || 0,
                 width: 0, height: 0
             }, this.getBoundingRect(), true);
+        }
+        else {
+            this.removeRectText(vmlRoot);
         }
     };
 
