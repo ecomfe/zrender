@@ -155,10 +155,8 @@ define(function (require) {
                 // Needs update rect with stroke lineWidth when
                 // 1. Element changes scale or lineWidth
                 // 2. Shape is changed
-                var rectWithStroke = this._rectWithStroke;
+                var rectWithStroke = this._rectWithStroke || (this._rectWithStroke = rect.clone());
                 if (this.__dirty || needsUpdateRect) {
-                    var rectWithStroke = this._rectWithStroke
-                        || (this._rectWithStroke = rect.clone());
                     rectWithStroke.copy(rect);
                     // FIXME Must after updateTransform
                     var w = style.lineWidth;
