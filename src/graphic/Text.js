@@ -66,6 +66,8 @@ define(function (require) {
                         case 'bottom':
                             y -= rect.height - rect.lineHeight / 2;
                             break;
+                        default:
+                            y += rect.lineHeight / 2;
                         // 'top'
                     }
                 }

@@ -82,7 +82,8 @@ define(function (require) {
                         case 'bottom':
                             y -= textRect.height - textRect.lineHeight / 2;
                             break;
-                        // 'top'
+                        default:
+                            y += textRect.lineHeight / 2;
                     }
                     // Force bseline to be middle
                     baseline = 'middle';
