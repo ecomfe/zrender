@@ -58,13 +58,13 @@ define(function (require) {
                         text, ctx.font, style.textAlign, 'top'
                     );
                     // Ignore textBaseline
-                    ctx.textBaseline = 'top';
+                    ctx.textBaseline = 'middle';
                     switch (style.textVerticalAlign) {
                         case 'middle':
-                            y -= rect.height / 2;
+                            y -= rect.height / 2 - rect.lineHeight / 2;
                             break;
                         case 'bottom':
-                            y -= rect.height;
+                            y -= rect.height - rect.lineHeight / 2;
                             break;
                         // 'top'
                     }

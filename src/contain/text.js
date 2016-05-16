@@ -18,7 +18,7 @@ define(function (require) {
 
         for (var i = 0, l = textLines.length; i < l; i++) {
             // measureText 可以被覆盖以兼容不支持 Canvas 的环境
-            width =  Math.max(textContain.measureText(textLines[i], textFont).width, width);
+            width = Math.max(textContain.measureText(textLines[i], textFont).width, width);
         }
 
         if (textWidthCacheCounter > TEXT_CACHE_MAX) {
