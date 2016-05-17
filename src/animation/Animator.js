@@ -64,24 +64,41 @@ define(function (require) {
         }
     }
 
+    // arr0 is source array, arr1 is target array.
+    // Do some preprocess to avoid error happened when interpolating from arr0 to arr1
     function fillArr(arr0, arr1, arrDim) {
         var arr0Len = arr0.length;
         var arr1Len = arr1.length;
-        if (arr0Len === arr1Len) {
-            return;
+        if (arr0Len !== arr1Len) {
+            // FIXME Not work for TypedArray
+            var isPreviousLarger = arr0Len > arr1Len;
+            if (isPreviousLarger) {
+                // Cut the previous
+                arr0.length = arr1Len;
+            }
+            else {
+                // Fill the previous
+                for (var i = arr0Len; i < arr1Len; i++) {
+                    arr0.push(
+                        arrDim === 1 ? arr1[i] : arraySlice.call(arr1[i])
+                    );
+                }
+            }
         }
-        // FIXME Not work for TypedArray
-        var isPreviousLarger = arr0Len > arr1Len;
-        if (isPreviousLarger) {
-            // Cut the previous
-            arr0.length = arr1Len;
-        }
-        else {
-            // Fill the previous
-            for (var i = arr0Len; i < arr1Len; i++) {
-                arr0.push(
-                    arrDim === 1 ? arr1[i] : arraySlice.call(arr1[i])
-                );
+        // Handling NaN value
+        var len2 = arr0[0] && arr0[0].length;
+        for (var i = 0; i < arr0.length; i++) {
+            if (arrDim === 1) {
+                if (isNaN(arr0[i])) {
+                    arr0[i] = arr1[i];
+                }
+            }
+            else {
+                for (var j = 0; j < len2; j++) {
+                    if (isNaN(arr0[i][j])) {
+                        arr0[i][j] = arr1[i][j];
+                    }
+                }
             }
         }
     }
@@ -263,14 +280,19 @@ define(function (require) {
             return;
         }
 
-        if (isValueArray) {
-            var lastValue = kfValues[trackLen - 1];
-            // Polyfill array
-            for (var i = 0; i < trackLen - 1; i++) {
+        var lastValue = kfValues[trackLen - 1];
+        // Polyfill array and NaN value
+        for (var i = 0; i < trackLen - 1; i++) {
+            if (isValueArray) {
                 fillArr(kfValues[i], lastValue, arrDim);
             }
-            fillArr(getter(animator._target, propName), lastValue, arrDim);
+            else {
+                if (isNaN(kfValues[i]) && !isNaN(lastValue) && !isValueString && !isValueColor) {
+                    kfValues[i] = lastValue;
+                }
+            }
         }
+        isValueArray && fillArr(getter(animator._target, propName), lastValue, arrDim);
 
         // Cache the key of last frame to speed up when
         // animation playback is sequency

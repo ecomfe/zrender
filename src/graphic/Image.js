@@ -32,6 +32,7 @@ define(function (require) {
             var style = this.style;
             var src = style.image;
             var image;
+
             // style.image is a url string
             if (typeof src === 'string') {
                 image = this._image;

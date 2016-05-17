@@ -68,7 +68,6 @@ define(function (require) {
                             break;
                         default:
                             y += rect.lineHeight / 2;
-                        // 'top'
                     }
                 }
                 else {
