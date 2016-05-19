@@ -3436,24 +3436,41 @@ define('zrender/animation/Animator',['require','./Clip','../tool/color','../core
         }
     }
 
+    // arr0 is source array, arr1 is target array.
+    // Do some preprocess to avoid error happened when interpolating from arr0 to arr1
     function fillArr(arr0, arr1, arrDim) {
         var arr0Len = arr0.length;
         var arr1Len = arr1.length;
-        if (arr0Len === arr1Len) {
-            return;
+        if (arr0Len !== arr1Len) {
+            // FIXME Not work for TypedArray
+            var isPreviousLarger = arr0Len > arr1Len;
+            if (isPreviousLarger) {
+                // Cut the previous
+                arr0.length = arr1Len;
+            }
+            else {
+                // Fill the previous
+                for (var i = arr0Len; i < arr1Len; i++) {
+                    arr0.push(
+                        arrDim === 1 ? arr1[i] : arraySlice.call(arr1[i])
+                    );
+                }
+            }
         }
-        // FIXME Not work for TypedArray
-        var isPreviousLarger = arr0Len > arr1Len;
-        if (isPreviousLarger) {
-            // Cut the previous
-            arr0.length = arr1Len;
-        }
-        else {
-            // Fill the previous
-            for (var i = arr0Len; i < arr1Len; i++) {
-                arr0.push(
-                    arrDim === 1 ? arr1[i] : arraySlice.call(arr1[i])
-                );
+        // Handling NaN value
+        var len2 = arr0[0] && arr0[0].length;
+        for (var i = 0; i < arr0.length; i++) {
+            if (arrDim === 1) {
+                if (isNaN(arr0[i])) {
+                    arr0[i] = arr1[i];
+                }
+            }
+            else {
+                for (var j = 0; j < len2; j++) {
+                    if (isNaN(arr0[i][j])) {
+                        arr0[i][j] = arr1[i][j];
+                    }
+                }
             }
         }
     }
@@ -3635,14 +3652,19 @@ define('zrender/animation/Animator',['require','./Clip','../tool/color','../core
             return;
         }
 
-        if (isValueArray) {
-            var lastValue = kfValues[trackLen - 1];
-            // Polyfill array
-            for (var i = 0; i < trackLen - 1; i++) {
+        var lastValue = kfValues[trackLen - 1];
+        // Polyfill array and NaN value
+        for (var i = 0; i < trackLen - 1; i++) {
+            if (isValueArray) {
                 fillArr(kfValues[i], lastValue, arrDim);
             }
-            fillArr(getter(animator._target, propName), lastValue, arrDim);
+            else {
+                if (isNaN(kfValues[i]) && !isNaN(lastValue) && !isValueString && !isValueColor) {
+                    kfValues[i] = lastValue;
+                }
+            }
         }
+        isValueArray && fillArr(getter(animator._target, propName), lastValue, arrDim);
 
         // Cache the key of last frame to speed up when
         // animation playback is sequency
@@ -5972,7 +5994,7 @@ define('zrender/contain/text',['require','../core/util','../core/BoundingRect'],
 
         for (var i = 0, l = textLines.length; i < l; i++) {
             // measureText 可以被覆盖以兼容不支持 Canvas 的环境
-            width =  Math.max(textContain.measureText(textLines[i], textFont).width, width);
+            width = Math.max(textContain.measureText(textLines[i], textFont).width, width);
         }
 
         if (textWidthCacheCounter > TEXT_CACHE_MAX) {
@@ -6285,6 +6307,21 @@ define('zrender/graphic/mixin/RectText',['require','../../contain/text','../../c
                 y = rect.y + parsePercent(textPosition[1], rect.height);
                 align = align || 'left';
                 baseline = baseline || 'top';
+
+                if (verticalAlign) {
+                    switch (verticalAlign) {
+                        case 'middle':
+                            y -= textRect.height / 2 - textRect.lineHeight / 2;
+                            break;
+                        case 'bottom':
+                            y -= textRect.height - textRect.lineHeight / 2;
+                            break;
+                        default:
+                            y += textRect.lineHeight / 2;
+                    }
+                    // Force bseline to be middle
+                    baseline = 'middle';
+                }
             }
             else {
                 var res = textContain.adjustTextPositionOnRect(
@@ -6298,22 +6335,7 @@ define('zrender/graphic/mixin/RectText',['require','../../contain/text','../../c
             }
 
             ctx.textAlign = align;
-            if (verticalAlign) {
-                switch (verticalAlign) {
-                    case 'middle':
-                        y -= textRect.height / 2;
-                        break;
-                    case 'bottom':
-                        y -= textRect.height;
-                        break;
-                    // 'top'
-                }
-                // Ignore baseline
-                ctx.textBaseline = 'top';
-            }
-            else {
-                ctx.textBaseline = baseline;
-            }
+            ctx.textBaseline = baseline;
 
             var textFill = style.textFill;
             var textStroke = style.textStroke;
@@ -6897,6 +6919,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
             var style = this.style;
             var src = style.image;
             var image;
+
             // style.image is a url string
             if (typeof src === 'string') {
                 image = this._image;
@@ -7789,7 +7812,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
     /**
      * @type {string}
      */
-    zrender.version = '3.0.9';
+    zrender.version = '3.1.0';
 
     /**
      * Initializing a zrender instance
@@ -8176,15 +8199,16 @@ define('zrender/graphic/Text',['require','./Displayable','../core/util','../cont
                         text, ctx.font, style.textAlign, 'top'
                     );
                     // Ignore textBaseline
-                    ctx.textBaseline = 'top';
+                    ctx.textBaseline = 'middle';
                     switch (style.textVerticalAlign) {
                         case 'middle':
-                            y -= rect.height / 2;
+                            y -= rect.height / 2 - rect.lineHeight / 2;
                             break;
                         case 'bottom':
-                            y -= rect.height;
+                            y -= rect.height - rect.lineHeight / 2;
                             break;
-                        // 'top'
+                        default:
+                            y += rect.lineHeight / 2;
                     }
                 }
                 else {
@@ -12122,11 +12146,32 @@ if (!require('../core/env').canvasSupported) {
                     var y1 = cy + sin(endAngle) * ry;
 
                     var type = clockwise ? ' wa ' : ' at ';
-                    // IE won't render arches drawn counter clockwise if x0 == x1.
-                    if (Math.abs(x0 - x1) < 1e-10 && Math.abs(endAngle - startAngle) > 1e-2 && clockwise) {
-                        // Offset x0 by 1/80 of a pixel. Use something
-                        // that can be represented in binary
-                        x0 += 270 / Z;
+                    if (Math.abs(x0 - x1) < 1e-10) {
+                        // IE won't render arches drawn counter clockwise if x0 == x1.
+                        if (Math.abs(endAngle - startAngle) > 1e-2) {
+                            // Offset x0 by 1/80 of a pixel. Use something
+                            // that can be represented in binary
+                            if (clockwise) {
+                                x0 += 270 / Z;
+                            }
+                        }
+                        else {
+                            // Avoid case draw full circle
+                            if (Math.abs(y0 - cy) < 1e-10) {
+                                if ((clockwise && x0 < cx) || (!clockwise && x0 > cx)) {
+                                    y1 -= 270 / Z;
+                                }
+                                else {
+                                    y1 += 270 / Z;
+                                }
+                            }
+                            else if ((clockwise && y0 < cy) || (!clockwise && y0 > cy)) {
+                                x1 += 270 / Z;
+                            }
+                            else {
+                                x1 -= 270 / Z;
+                            }
+                        }
                     }
                     str.push(
                         type,
@@ -12192,6 +12237,7 @@ if (!require('../core/env').canvasSupported) {
                 }
             }
         }
+
         return str.join('');
     };
 
