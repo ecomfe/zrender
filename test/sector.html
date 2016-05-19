@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <script type="text/javascript" src="esl.js"></script>
+</head>
+<body>
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+
+    require(['zrender', 'zrender/graphic/shape/Sector', 'zrender/vml/vml'], function(zrender, SectorShape){
+        // 初始化zrender
+        var zr = zrender.init(document.getElementById('main'));
+
+        zr.add(new SectorShape({
+            position: [100, 100],
+            scale: [1, 1],
+            style: {
+                stroke: 'black'
+            },
+            shape: {
+                startAngle: -Math.PI / 2,
+                endAngle: -Math.PI / 2,
+                r0: 50,
+                r: 100
+            }
+        }));
+
+        zr.add(new SectorShape({
+            position: [100, 100],
+            scale: [1, 1],
+            style: {
+                stroke: 'black'
+            },
+            shape: {
+                startAngle: 0,
+                endAngle: 0,
+                r0: 50,
+                r: 100
+            }
+        }));
+
+        zr.add(new SectorShape({
+            position: [100, 100],
+            scale: [1, 1],
+            style: {
+                stroke: 'black'
+            },
+            shape: {
+                startAngle: Math.PI / 2,
+                endAngle: Math.PI / 2,
+                r0: 50,
+                r: 100
+            }
+        }));
+
+        zr.add(new SectorShape({
+            position: [100, 100],
+            scale: [1, 1],
+            style: {
+                stroke: 'black'
+            },
+            shape: {
+                startAngle: Math.PI,
+                endAngle: Math.PI,
+                r0: 50,
+                r: 100
+            }
+        }));
+    });
+    </script>
+    <div id="main" style="width:1000px;height:600px;"></div>
+</body>
+</html>

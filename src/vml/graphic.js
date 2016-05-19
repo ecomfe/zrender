@@ -356,11 +356,32 @@ if (!require('../core/env').canvasSupported) {
                     var y1 = cy + sin(endAngle) * ry;
 
                     var type = clockwise ? ' wa ' : ' at ';
-                    // IE won't render arches drawn counter clockwise if x0 == x1.
-                    if (Math.abs(x0 - x1) < 1e-10 && Math.abs(endAngle - startAngle) > 1e-2 && clockwise) {
-                        // Offset x0 by 1/80 of a pixel. Use something
-                        // that can be represented in binary
-                        x0 += 270 / Z;
+                    if (Math.abs(x0 - x1) < 1e-10) {
+                        // IE won't render arches drawn counter clockwise if x0 == x1.
+                        if (Math.abs(endAngle - startAngle) > 1e-2) {
+                            // Offset x0 by 1/80 of a pixel. Use something
+                            // that can be represented in binary
+                            if (clockwise) {
+                                x0 += 270 / Z;
+                            }
+                        }
+                        else {
+                            // Avoid case draw full circle
+                            if (Math.abs(y0 - cy) < 1e-10) {
+                                if ((clockwise && x0 < cx) || (!clockwise && x0 > cx)) {
+                                    y1 -= 270 / Z;
+                                }
+                                else {
+                                    y1 += 270 / Z;
+                                }
+                            }
+                            else if ((clockwise && y0 < cy) || (!clockwise && y0 > cy)) {
+                                x1 += 270 / Z;
+                            }
+                            else {
+                                x1 -= 270 / Z;
+                            }
+                        }
                     }
                     str.push(
                         type,
@@ -426,6 +447,7 @@ if (!require('../core/env').canvasSupported) {
                 }
             }
         }
+
         return str.join('');
     };
 
