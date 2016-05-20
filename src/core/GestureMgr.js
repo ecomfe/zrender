@@ -5,6 +5,8 @@ define(function(require) {
 
     'use strict';
 
+    var eventUtil = require('./event');
+
     var GestureMgr = function () {
 
         /**
@@ -18,8 +20,8 @@ define(function(require) {
 
         constructor: GestureMgr,
 
-        recognize: function (event, target) {
-            this._doTrack(event, target);
+        recognize: function (event, target, root) {
+            this._doTrack(event, target, root);
             return this._recognize(event);
         },
 
@@ -28,7 +30,7 @@ define(function(require) {
             return this;
         },
 
-        _doTrack: function (event, target) {
+        _doTrack: function (event, target, root) {
             var touches = event.touches;
 
             if (!touches) {
@@ -44,7 +46,8 @@ define(function(require) {
 
             for (var i = 0, len = touches.length; i < len; i++) {
                 var touch = touches[i];
-                trackItem.points.push([touch.clientX, touch.clientY]);
+                var pos = eventUtil.clientToLocal(root, touch);
+                trackItem.points.push([pos.zrX, pos.zrY]);
                 trackItem.touches.push(touch);
             }
 

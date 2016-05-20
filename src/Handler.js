@@ -221,7 +221,8 @@ define(function (require) {
 
         var gestureInfo = gestureMgr.recognize(
             event,
-            zrHandler.findHover(event.zrX, event.zrY, null)
+            zrHandler.findHover(event.zrX, event.zrY, null),
+            zrHandler.root
         );
 
         stage === 'end' && gestureMgr.clear();
