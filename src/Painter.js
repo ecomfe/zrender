@@ -15,6 +15,9 @@
 
     var Layer = require('./Layer');
 
+    var requestAnimationFrame = require('./animation/requestAnimationFrame');
+
+
     function parseInt10(val) {
         return parseInt(val, 10);
     }
@@ -219,7 +222,11 @@
          * @param {boolean} [paintAll=false] 强制绘制所有displayable
          */
         refresh: function (paintAll) {
+
+            this._clearProgressive();
+
             var list = this.storage.getDisplayList(true);
+
             var zlevelList = this._zlevelList;
 
             this._paintList(list, paintAll);
@@ -233,7 +240,43 @@
                 }
             }
 
+            this._startProgessive();
+
             return this;
+        },
+
+        _startProgessive: function () {
+            var self = this;
+
+            if (!self._furtherProgressive) {
+                return;
+            }
+
+            var token = self._progressiveToken = Math.random();
+
+            self._progressive++;
+            requestAnimationFrame(step);
+
+            function step() {
+                if (token === self._progressiveToken) {
+                    var list = self.storage.getDisplayList();
+                    self._doPaintList(list);
+
+                    if (self._furtherProgressive) {
+                        self._progressive++;
+                        requestAnimationFrame(step);
+                    }
+                    else {
+                        self._progressiveToken = -1;
+                    }
+                }
+            }
+        },
+
+        _clearProgressive: function () {
+            this._progressiveToken = -1;
+            this._progressive = 0;
+            this._progressiveLayer && this._progressiveLayer.clear();
         },
 
         _paintList: function (list, paintAll) {
@@ -244,21 +287,30 @@
 
             this._updateLayerStatus(list);
 
+            this.eachBuildinLayer(preProcessLayer);
+
+            this._doPaintList(list, paintAll);
+
+            this.eachBuildinLayer(postProcessLayer);
+        },
+
+        _doPaintList: function (list, paintAll) {
             var currentLayer;
             var currentZLevel;
             var ctx;
 
-            var viewWidth = this._width;
-            var viewHeight = this._height;
-
-            this.eachBuildinLayer(preProcessLayer);
-
             // var invTransform = [];
-            var prevElClipPaths = null;
+            var scope = {prevElClipPaths: null};
+
+            this._furtherProgressive = false;
+            var inProgressive = false;
+            var progressiveDone = false;
+            var progressiveLayer = this._progressiveLayer;
 
             for (var i = 0, l = list.length; i < l; i++) {
                 var el = list[i];
                 var elZLevel = this._singleCanvas ? 0 : el.zlevel;
+
                 // Change draw layer
                 if (currentZLevel !== elZLevel) {
                     // Only 0 zlevel if only has one canvas
@@ -282,47 +334,82 @@
                     }
                 }
 
-                if (
-                    (currentLayer.__dirty || paintAll)
-                    // Ignore invisible element
-                    && !el.invisible
-                    // Ignore transparent element
-                    && el.style.opacity !== 0
-                    // Ignore scale 0 element, in some environment like node-canvas
-                    // Draw a scale 0 element can cause all following draw wrong
-                    && el.scale[0] && el.scale[1]
-                    // Ignore culled element
-                    && !(el.culling && isDisplayableCulled(el, viewWidth, viewHeight))
-                ) {
-                    var clipPaths = el.__clipPaths;
-
-                    // Optimize when clipping on group with several elements
-                    if (isClipPathChanged(clipPaths, prevElClipPaths)) {
-                        // If has previous clipping state, restore from it
-                        if (prevElClipPaths) {
-                            ctx.restore();
-                        }
-                        // New clipping state
-                        if (clipPaths) {
-                            ctx.save();
-                            doClip(clipPaths, ctx);
-                        }
-                        prevElClipPaths = clipPaths;
-                    }
-                    el.beforeBrush && el.beforeBrush(ctx);
-                    el.brush(ctx, false);
-                    el.afterBrush && el.afterBrush(ctx);
+                if (el.progressive > this._progressive) {
+                    this._furtherProgressive = true;
                 }
 
-                el.__dirty = false;
+                if (el.progressive >= 0 && el.progressive === this._progressive) {
+
+                    if (!progressiveLayer) {
+                        progressiveLayer = this._progressiveLayer = new Layer(
+                            'progressive', this, this.dpr
+                        );
+                        progressiveLayer.initContext();
+                    }
+
+                    inProgressive = true;
+                    this._doPaintEl(list[i], progressiveLayer, paintAll, scope);
+                }
+
+                if (!progressiveDone // Safe guard
+                    && inProgressive
+                    // In case that some user set el.progressive as null/undefined.
+                    && (!(el.progressive >= 0) || i === l - 1) // jshint ignore:line
+                ) {
+                    // FIXME
+                    // other higer layers should not rendered to.
+                    ctx.drawImage(progressiveLayer.dom, 0, 0, this._width, this._height);
+                    progressiveDone = true;
+                    inProgressive = false;
+                }
+
+                if (!(el.progressive >= 0)) { // jshint ignore:line
+                    this._doPaintEl(list[i], currentLayer, paintAll, scope);
+                }
             }
 
             // If still has clipping state
-            if (prevElClipPaths) {
+            if (scope.prevElClipPaths) {
                 ctx.restore();
             }
+        },
 
-            this.eachBuildinLayer(postProcessLayer);
+        _doPaintEl: function (el, currentLayer, paintAll, scope) {
+            var ctx = currentLayer.ctx;
+
+            if (
+                (currentLayer.__dirty || paintAll)
+                // Ignore invisible element
+                && !el.invisible
+                // Ignore transparent element
+                && el.style.opacity !== 0
+                // Ignore scale 0 element, in some environment like node-canvas
+                // Draw a scale 0 element can cause all following draw wrong
+                && el.scale[0] && el.scale[1]
+                // Ignore culled element
+                && !(el.culling && isDisplayableCulled(el, this._width, this._height))
+            ) {
+                var clipPaths = el.__clipPaths;
+
+                // Optimize when clipping on group with several elements
+                if (isClipPathChanged(clipPaths, scope.prevElClipPaths)) {
+                    // If has previous clipping state, restore from it
+                    if (scope.prevElClipPaths) {
+                        ctx.restore();
+                    }
+                    // New clipping state
+                    if (clipPaths) {
+                        ctx.save();
+                        doClip(clipPaths, ctx);
+                    }
+                    scope.prevElClipPaths = clipPaths;
+                }
+                el.beforeBrush && el.beforeBrush(ctx);
+                el.brush(ctx, false);
+                el.afterBrush && el.afterBrush(ctx);
+            }
+
+            el.__dirty = false;
         },
 
         /**

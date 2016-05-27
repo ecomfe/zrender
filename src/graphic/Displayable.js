@@ -138,6 +138,8 @@ define(function (require) {
          */
         rectHover: false,
 
+        progressive: -1,
+
         beforeBrush: function (ctx) {},
 
         afterBrush: function (ctx) {},
