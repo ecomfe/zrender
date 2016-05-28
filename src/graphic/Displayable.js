@@ -138,6 +138,11 @@ define(function (require) {
          */
         rectHover: false,
 
+        /**
+         * Render the element progressively when the value >= 0,
+         * usefull for large data.
+         * @type {number}
+         */
         progressive: -1,
 
         beforeBrush: function (ctx) {},

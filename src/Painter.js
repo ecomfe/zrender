@@ -252,6 +252,8 @@
                 return;
             }
 
+            // Use a token to stop progress steps triggered by
+            // previous zr.refresh calling.
             var token = self._progressiveToken = Math.random();
 
             self._progressive++;
@@ -259,8 +261,8 @@
 
             function step() {
                 if (token === self._progressiveToken) {
-                    var list = self.storage.getDisplayList();
-                    self._doPaintList(list);
+
+                    self._doPaintList(self.storage.getDisplayList());
 
                     if (self._furtherProgressive) {
                         self._progressive++;
@@ -303,9 +305,7 @@
             var scope = {prevElClipPaths: null};
 
             this._furtherProgressive = false;
-            var inProgressive = false;
             var progressiveDone = false;
-            var progressiveLayer = this._progressiveLayer;
 
             for (var i = 0, l = list.length; i < l; i++) {
                 var el = list[i];
@@ -334,37 +334,47 @@
                     }
                 }
 
-                if (el.progressive > this._progressive) {
-                    this._furtherProgressive = true;
-                }
+                var elProgressive = el.progressive;
+                // Currently "progressive" works on the promise that all the elements
+                // with el.progressive >= 0 are adjacent to each other.
+                // progressiveDone is used as a performance guard, avoiding drawImage
+                // being called repeadedly.
+                if (!progressiveDone && elProgressive >= 0) {
 
-                if (el.progressive >= 0 && el.progressive === this._progressive) {
-
-                    if (!progressiveLayer) {
-                        progressiveLayer = this._progressiveLayer = new Layer(
-                            'progressive', this, this.dpr
-                        );
-                        progressiveLayer.initContext();
+                    if (elProgressive > this._progressive) {
+                        this._furtherProgressive = true;
                     }
 
-                    inProgressive = true;
-                    this._doPaintEl(list[i], progressiveLayer, paintAll, scope);
-                }
+                    var progressiveLayer = this._progressiveLayer;
 
-                if (!progressiveDone // Safe guard
-                    && inProgressive
-                    // In case that some user set el.progressive as null/undefined.
-                    && (!(el.progressive >= 0) || i === l - 1) // jshint ignore:line
-                ) {
-                    // FIXME
-                    // other higer layers should not rendered to.
-                    ctx.drawImage(progressiveLayer.dom, 0, 0, this._width, this._height);
-                    progressiveDone = true;
-                    inProgressive = false;
-                }
+                    if (elProgressive === this._progressive) {
+                        // Do not create progressiveLayer unless required.
+                        if (!progressiveLayer) {
+                            progressiveLayer = this._progressiveLayer = new Layer(
+                                'progressive', this, this.dpr
+                            );
+                            progressiveLayer.initContext();
+                        }
 
-                if (!(el.progressive >= 0)) { // jshint ignore:line
-                    this._doPaintEl(list[i], currentLayer, paintAll, scope);
+                        this._doPaintEl(el, progressiveLayer, paintAll, scope);
+                    }
+
+                    var nextEl = list[i + 1];
+                    // Considering el.progressive might be set as null or undefined
+                    // or other thing by some user, !(... >= ...) is used.
+                    if (progressiveLayer
+                        && (!nextEl || !(nextEl.progressive >= 0)) // jshint ignore:line
+                    ) {
+                        // FIXME
+                        // We dont handle the case that "progressive" are set on
+                        // elements that has different el.zLevel.
+                        ctx.drawImage(progressiveLayer.dom, 0, 0, this._width, this._height);
+                        currentLayer.__dirty = true;
+                        progressiveDone = true;
+                    }
+                }
+                else {
+                    this._doPaintEl(el, currentLayer, paintAll, scope);
                 }
             }
 
@@ -392,17 +402,21 @@
                 var clipPaths = el.__clipPaths;
 
                 // Optimize when clipping on group with several elements
-                if (isClipPathChanged(clipPaths, scope.prevElClipPaths)) {
+                if (scope.prevClipLayer !== currentLayer
+                    || isClipPathChanged(clipPaths, scope.prevElClipPaths)
+                ) {
                     // If has previous clipping state, restore from it
                     if (scope.prevElClipPaths) {
-                        ctx.restore();
+                        scope.prevClipLayer.ctx.restore();
+                        scope.prevClipLayer = scope.prevElClipPaths = null;
                     }
                     // New clipping state
                     if (clipPaths) {
                         ctx.save();
                         doClip(clipPaths, ctx);
+                        scope.prevClipLayer = currentLayer;
+                        scope.prevElClipPaths = clipPaths;
                     }
-                    scope.prevElClipPaths = clipPaths;
                 }
                 el.beforeBrush && el.beforeBrush(ctx);
                 el.brush(ctx, false);
