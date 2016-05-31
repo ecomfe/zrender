@@ -17,6 +17,7 @@
 
     var requestAnimationFrame = require('./animation/requestAnimationFrame');
 
+    var MAX_PROGRESSIVE_LAYER_NUMBER = 5;
 
     function parseInt10(val) {
         return parseInt(val, 10);
@@ -197,6 +198,9 @@
         this._layerConfig = {};
 
         this.pathToImage = this._createPathToImage();
+
+        // Layers for progressive rendering
+        this._progressiveLayers = [];
     };
 
     Painter.prototype = {
@@ -223,8 +227,6 @@
          */
         refresh: function (paintAll) {
 
-            this._clearProgressive();
-
             var list = this.storage.getDisplayList(true);
 
             var zlevelList = this._zlevelList;
@@ -240,7 +242,9 @@
                 }
             }
 
-            this._startProgessive();
+            if (this._progressiveLayers.length) {
+                this._startProgessive();
+            }
 
             return this;
         },
@@ -256,7 +260,7 @@
             // previous zr.refresh calling.
             var token = self._progressiveToken = Math.random();
 
-            self._progressive++;
+            self._progress++;
             requestAnimationFrame(step);
 
             function step() {
@@ -265,7 +269,7 @@
                     self._doPaintList(self.storage.getDisplayList());
 
                     if (self._furtherProgressive) {
-                        self._progressive++;
+                        self._progress++;
                         requestAnimationFrame(step);
                     }
                     else {
@@ -277,8 +281,10 @@
 
         _clearProgressive: function () {
             this._progressiveToken = -1;
-            this._progressive = 0;
-            this._progressiveLayer && this._progressiveLayer.clear();
+            this._progress = 0;
+            util.each(this._progressiveLayers, function (layer) {
+                layer.__dirty && layer.clear();
+            });
         },
 
         _paintList: function (list, paintAll) {
@@ -288,6 +294,8 @@
             }
 
             this._updateLayerStatus(list);
+
+            this._clearProgressive();
 
             this.eachBuildinLayer(preProcessLayer);
 
@@ -302,10 +310,18 @@
             var ctx;
 
             // var invTransform = [];
-            var scope = {prevElClipPaths: null};
+            var scope = { prevElClipPaths: null };
 
-            this._furtherProgressive = false;
-            var progressiveDone = false;
+            var progressiveLayerIdx = 0;
+            var currentProgressiveLayer;
+
+            var width = this._width;
+            var height = this._height;
+            var layerProgress;
+            var frame = this._progress;
+            function flushProgressiveLayer(layer) {
+                ctx.drawImage(layer.dom, 0, 0, width, height);
+            }
 
             for (var i = 0, l = list.length; i < l; i++) {
                 var el = list[i];
@@ -334,61 +350,70 @@
                     }
                 }
 
-                var elProgressive = el.progressive;
-                // Currently "progressive" works on the promise that all the elements
-                // with el.progressive >= 0 are adjacent to each other.
-                // progressiveDone is used as a performance guard, avoiding drawImage
-                // being called repeadedly.
-                if (!progressiveDone && elProgressive >= 0) {
+                var elProgress = el.progressive;
 
-                    if (elProgressive > this._progressive) {
-                        this._furtherProgressive = true;
-                    }
+                if (elProgress >= 0) {
+                    // Progressive layer changed
+                    if (!currentProgressiveLayer) {
+                        currentProgressiveLayer = this._progressiveLayers[
+                            Math.min(progressiveLayerIdx++, MAX_PROGRESSIVE_LAYER_NUMBER - 1)
+                        ];
 
-                    var progressiveLayer = this._progressiveLayer;
-
-                    if (elProgressive === this._progressive) {
-                        // Do not create progressiveLayer unless required.
-                        if (!progressiveLayer) {
-                            progressiveLayer = this._progressiveLayer = new Layer(
-                                'progressive', this, this.dpr
-                            );
-                            progressiveLayer.initContext();
+                        if (currentProgressiveLayer
+                            && (currentProgressiveLayer.__progress > currentProgressiveLayer.__maxProgress)
+                        ) {
+                            // All progressive element are not dirty, flush directly
+                            flushProgressiveLayer(currentProgressiveLayer);
+                            // Quick jump all progressive elements
+                            i = currentProgressiveLayer.__nextIdxNotProg - 1;
+                            continue;
                         }
 
-                        this._doPaintEl(el, progressiveLayer, paintAll, scope);
+                        layerProgress = currentProgressiveLayer.__progress;
+
+                        if (!currentProgressiveLayer.__dirty) {
+                            // Keep rendering
+                            frame = layerProgress;
+                        }
                     }
 
-                    var nextEl = list[i + 1];
-                    // Considering el.progressive might be set as null or undefined
-                    // or other thing by some user, !(... >= ...) is used.
-                    if (progressiveLayer
-                        && (!nextEl || !(nextEl.progressive >= 0)) // jshint ignore:line
-                    ) {
-                        // FIXME
-                        // We dont handle the case that "progressive" are set on
-                        // elements that has different el.zLevel.
-                        ctx.drawImage(progressiveLayer.dom, 0, 0, this._width, this._height);
-                        currentLayer.__dirty = true;
-                        progressiveDone = true;
+                    if (elProgress === frame) {
+                        this._doPaintEl(el, currentProgressiveLayer, true, scope);
+                        currentProgressiveLayer.__progress = frame + 1;
                     }
                 }
                 else {
+                    if (currentProgressiveLayer) {
+                        flushProgressiveLayer(currentProgressiveLayer);
+                        currentProgressiveLayer = null;
+                    }
                     this._doPaintEl(el, currentLayer, paintAll, scope);
                 }
+
+                el.__dirty = false;
             }
 
+            if (currentProgressiveLayer) {
+                flushProgressiveLayer(currentProgressiveLayer);
+            }
             // If still has clipping state
             if (scope.prevElClipPaths) {
                 ctx.restore();
             }
+
+            this._furtherProgressive = false;
+            util.each(this._progressiveLayers, function (layer) {
+                if (layer.__maxProgress >= layer.__progress) {
+                    this._furtherProgressive = true;
+                }
+            }, this);
         },
 
-        _doPaintEl: function (el, currentLayer, paintAll, scope) {
+        _doPaintEl: function (el, currentLayer, forcePaint, scope) {
             var ctx = currentLayer.ctx;
 
             if (
-                (currentLayer.__dirty || paintAll)
+                (currentLayer.__dirty || forcePaint)
                 // Ignore invisible element
                 && !el.invisible
                 // Ignore transparent element
@@ -422,8 +447,6 @@
                 el.brush(ctx, false);
                 el.afterBrush && el.afterBrush(ctx);
             }
-
-            el.__dirty = false;
         },
 
         /**
@@ -564,32 +587,78 @@
         _updateLayerStatus: function (list) {
 
             var layers = this._layers;
+            var progressiveLayers = this._progressiveLayers;
 
-            var elCounts = {};
+            var elCountsLastFrame = {};
+            var progressiveElCountsLastFrame = {};
 
             this.eachBuildinLayer(function (layer, z) {
-                elCounts[z] = layer.elCount;
+                elCountsLastFrame[z] = layer.elCount;
                 layer.elCount = 0;
             });
 
+            util.each(progressiveLayers, function (layer, idx) {
+                layer.elCount = 0;
+                layer.__dirty = false;
+                progressiveElCountsLastFrame[idx] = layer.elCount;
+            });
+
+            var progressiveLayerCount = 0;
+            var currentProgressiveLayer;
             for (var i = 0, l = list.length; i < l; i++) {
                 var el = list[i];
                 var zlevel = this._singleCanvas ? 0 : el.zlevel;
                 var layer = layers[zlevel];
                 if (layer) {
                     layer.elCount++;
-                    // 已经被标记为需要刷新
-                    if (layer.__dirty) {
-                        continue;
-                    }
-                    layer.__dirty = el.__dirty;
+                    layer.__dirty = layer.__dirty || el.__dirty;
                 }
+                // Update progressive
+                if (el.progressive >= 0) {
+                    if (!currentProgressiveLayer) {
+                        var idx = Math.min(progressiveLayerCount, MAX_PROGRESSIVE_LAYER_NUMBER - 1);
+                        currentProgressiveLayer = progressiveLayers[idx];
+                        if (!currentProgressiveLayer) {
+                            currentProgressiveLayer = progressiveLayers[idx] = new Layer(
+                                'progressive', this, this.dpr
+                            );
+                            currentProgressiveLayer.initContext();
+                        }
+                        currentProgressiveLayer.__maxProgress = 0;
+                    }
+                    currentProgressiveLayer.__dirty = currentProgressiveLayer.__dirty || el.__dirty;
+                    currentProgressiveLayer.elCount++;
+
+                    currentProgressiveLayer.__maxProgress = Math.max(
+                        currentProgressiveLayer.__maxProgress, el.progressive
+                    );
+                }
+                else if (currentProgressiveLayer) {
+                    currentProgressiveLayer.__nextIdxNotProg = i;
+                    progressiveLayerCount++;
+                    currentProgressiveLayer = null;
+                }
+            }
+
+            if (currentProgressiveLayer) {
+                progressiveLayerCount++;
+                currentProgressiveLayer.__nextIdxNotProg = i;
             }
 
             // 层中的元素数量有发生变化
             this.eachBuildinLayer(function (layer, z) {
-                if (elCounts[z] !== layer.elCount) {
+                if (elCountsLastFrame[z] !== layer.elCount) {
                     layer.__dirty = true;
+                }
+            });
+
+            progressiveLayers.length = Math.min(progressiveLayerCount, MAX_PROGRESSIVE_LAYER_NUMBER);
+            util.each(progressiveLayers, function (layer, idx) {
+                if (progressiveElCountsLastFrame[idx] !== layer.elCount) {
+                    el.__dirty = true;
+                }
+                if (layer.__dirty) {
+                    layer.__progress = 0;
                 }
             });
         },
@@ -720,20 +789,15 @@
             var imageLayer = new Layer('image', this, opts.pixelRatio || this.dpr);
             imageLayer.initContext();
 
-            var ctx = imageLayer.ctx;
             imageLayer.clearColor = opts.backgroundColor;
             imageLayer.clear();
 
             var displayList = this.storage.getDisplayList(true);
 
+            var scope = {};
             for (var i = 0; i < displayList.length; i++) {
                 var el = displayList[i];
-                if (!el.invisible) {
-                    el.beforeBrush && el.beforeBrush(ctx);
-                    // TODO Check image cross origin
-                    el.brush(ctx, false);
-                    el.afterBrush && el.afterBrush(ctx);
-                }
+                this._doPaintEl(el, imageLayer, true, scope);
             }
 
             return imageLayer.dom;
