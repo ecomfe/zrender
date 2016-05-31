@@ -351,12 +351,12 @@
                     }
                 }
 
-                var elProgress = el.progressive;
+                var elFrame = el.__frame;
 
                 if (!(currentLayer.__dirty || paintAll)) {
                     continue;
                 }
-                if (elProgress >= 0) {
+                if (elFrame >= 0) {
                     // Progressive layer changed
                     if (!currentProgressiveLayer) {
                         currentProgressiveLayer = this._progressiveLayers[
@@ -382,7 +382,7 @@
                         }
                     }
 
-                    if (elProgress === frame) {
+                    if (elFrame === frame) {
                         this._doPaintEl(el, currentProgressiveLayer, true, scope);
                         currentProgressiveLayer.__progress = frame + 1;
                     }
@@ -611,16 +611,25 @@
 
             var progressiveLayerCount = 0;
             var currentProgressiveLayer;
+            var lastProgressiveKey;
+            var frameCount = 0;
             for (var i = 0, l = list.length; i < l; i++) {
                 var el = list[i];
                 var zlevel = this._singleCanvas ? 0 : el.zlevel;
                 var layer = layers[zlevel];
+                var elProgress = el.progressive;
                 if (layer) {
                     layer.elCount++;
                     layer.__dirty = layer.__dirty || el.__dirty;
                 }
                 // Update progressive
-                if (el.progressive >= 0) {
+                if (elProgress >= 0) {
+                    // Fix wrong progressive sequence problem.
+                    if (lastProgressiveKey !== elProgress) {
+                        lastProgressiveKey = elProgress;
+                        frameCount++;
+                    }
+                    var elFrame = el.__frame = frameCount - 1;
                     if (!currentProgressiveLayer) {
                         var idx = Math.min(progressiveLayerCount, MAX_PROGRESSIVE_LAYER_NUMBER - 1);
                         currentProgressiveLayer = progressiveLayers[idx];
@@ -636,7 +645,7 @@
                     currentProgressiveLayer.elCount++;
 
                     currentProgressiveLayer.__maxProgress = Math.max(
-                        currentProgressiveLayer.__maxProgress, el.progressive
+                        currentProgressiveLayer.__maxProgress, elFrame
                     );
                 }
                 else if (currentProgressiveLayer) {
