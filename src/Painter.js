@@ -274,6 +274,8 @@
                     }
                     else {
                         self._progressiveToken = -1;
+                        // All finished
+                        self.eachBuildinLayer(postProcessLayer);
                     }
                 }
             }
@@ -320,6 +322,8 @@
             var layerProgress;
             var frame = this._progress;
             function flushProgressiveLayer(layer) {
+                // Avoid layer not clear in next progressive frame
+                currentLayer.__dirty = true;
                 ctx.drawImage(layer.dom, 0, 0, width, height);
             }
 
