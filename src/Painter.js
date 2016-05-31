@@ -46,7 +46,6 @@
     }
 
     function postProcessLayer(layer) {
-        layer.__dirty = false;
         if (layer.__unusedCount == 1) {
             layer.clear();
         }
@@ -274,8 +273,6 @@
                     }
                     else {
                         self._progressiveToken = -1;
-                        // All finished
-                        self.eachBuildinLayer(postProcessLayer);
                     }
                 }
             }
@@ -356,6 +353,9 @@
 
                 var elProgress = el.progressive;
 
+                if (!(currentLayer.__dirty || paintAll)) {
+                    continue;
+                }
                 if (elProgress >= 0) {
                     // Progressive layer changed
                     if (!currentProgressiveLayer) {
@@ -370,6 +370,7 @@
                             flushProgressiveLayer(currentProgressiveLayer);
                             // Quick jump all progressive elements
                             i = currentProgressiveLayer.__nextIdxNotProg - 1;
+                            currentProgressiveLayer = null;
                             continue;
                         }
 
@@ -599,6 +600,7 @@
             this.eachBuildinLayer(function (layer, z) {
                 elCountsLastFrame[z] = layer.elCount;
                 layer.elCount = 0;
+                layer.__dirty = false;
             });
 
             util.each(progressiveLayers, function (layer, idx) {
