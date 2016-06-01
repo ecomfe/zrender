@@ -733,8 +733,6 @@
                                 'progressive', this, this.dpr
                             );
                             currentProgressiveLayer.initContext();
-                            document.body.appendChild(currentProgressiveLayer.dom);
-                            currentProgressiveLayer.dom.style.position = 'static';
                         }
                         currentProgressiveLayer.__maxProgress = 0;
                     }
