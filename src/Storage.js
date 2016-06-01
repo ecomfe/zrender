@@ -16,9 +16,11 @@ define(function (require) {
     function shapeCompareFunc(a, b) {
         if (a.zlevel === b.zlevel) {
             if (a.z === b.z) {
-                // if (a.z2 === b.z2) {
-                //     return a.__renderidx - b.__renderidx;
-                // }
+                if (a.z2 === b.z2) {
+                    // FIXME Slow has renderidx compare
+                    // http://stackoverflow.com/questions/20883421/sorting-in-javascript-should-every-compare-function-have-a-return-0-statement
+                    return a.__renderidx - b.__renderidx;
+                }
                 return a.z2 - b.z2;
             }
             return a.z - b.z;
@@ -76,9 +78,9 @@ define(function (require) {
             }
             displayList.length = this._displayListLen;
 
-            // for (var i = 0, len = displayList.length; i < len; i++) {
-            //     displayList[i].__renderidx = i;
-            // }
+            for (var i = 0, len = displayList.length; i < len; i++) {
+                displayList[i].__renderidx = i;
+            }
 
             displayList.sort(shapeCompareFunc);
         },

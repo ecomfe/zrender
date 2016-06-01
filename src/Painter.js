@@ -17,6 +17,8 @@
 
     var requestAnimationFrame = require('./animation/requestAnimationFrame');
 
+    // PENDIGN
+    // Layer exceeds MAX_PROGRESSIVE_LAYER_NUMBER may have some problem when flush directly second time.
     var MAX_PROGRESSIVE_LAYER_NUMBER = 5;
 
     function parseInt10(val) {
@@ -102,6 +104,18 @@
         }
     }
 
+    function createRoot(width, height) {
+        var domRoot = document.createElement('div');
+        var domRootStyle = domRoot.style;
+
+        // domRoot.onselectstart = returnFalse; // 避免页面选中的尴尬
+        domRootStyle.position = 'relative';
+        domRootStyle.overflow = 'hidden';
+        domRootStyle.width = width + 'px';
+        domRootStyle.height = height + 'px';
+        return domRoot;
+    }
+
     /**
      * @alias module:zrender/Painter
      * @constructor
@@ -110,6 +124,7 @@
      * @param {Ojbect} opts
      */
     var Painter = function (root, storage, opts) {
+        // In node environment using node-canvas
         var singleCanvas = !root.nodeName // In node ?
             || root.nodeName.toUpperCase() === 'CANVAS';
 
@@ -132,11 +147,10 @@
 
         var rootStyle = root.style;
 
-        // In node environment using node-canvas
         if (rootStyle) {
             rootStyle['-webkit-tap-highlight-color'] = 'transparent';
-            rootStyle['-webkit-user-select'] = 'none';
-            rootStyle['user-select'] = 'none';
+            rootStyle['-webkit-user-select'] =
+            rootStyle['user-select'] =
             rootStyle['-webkit-touch-callout'] = 'none';
 
             root.innerHTML = '';
@@ -147,33 +161,32 @@
          */
         this.storage = storage;
 
+        /**
+         * @type {Array.<number>}
+         * @private
+         */
+        var zlevelList = this._zlevelList = [];
+
+        /**
+         * @type {Object.<string, module:zrender/Layer>}
+         * @private
+         */
+        var layers = this._layers = {};
+
+        /**
+         * @type {Object.<string, Object>}
+         * @type {private}
+         */
+        this._layerConfig = {};
+
         if (!singleCanvas) {
-            var width = this._getWidth();
-            var height = this._getHeight();
-            this._width = width;
-            this._height = height;
+            this._width = this._getWidth();
+            this._height = this._getHeight();
 
-            var domRoot = document.createElement('div');
-            this._domRoot = domRoot;
-            var domRootStyle = domRoot.style;
-
-            // domRoot.onselectstart = returnFalse; // 避免页面选中的尴尬
-            domRootStyle.position = 'relative';
-            domRootStyle.overflow = 'hidden';
-            domRootStyle.width = this._width + 'px';
-            domRootStyle.height = this._height + 'px';
+            var domRoot = this._domRoot = createRoot(
+                this._width, this._height
+            );
             root.appendChild(domRoot);
-
-            /**
-             * @type {Object.<key, module:zrender/Layer>}
-             * @private
-             */
-            this._layers = {};
-            /**
-             * @type {Array.<number>}
-             * @private
-             */
-            this._zlevelList = [];
         }
         else {
             // Use canvas width and height directly
@@ -188,18 +201,22 @@
             mainLayer.initContext();
             // FIXME Use canvas width and height
             // mainLayer.resize(width, height);
-            this._layers = {
-                0: mainLayer
-            };
-            this._zlevelList = [0];
+            layers[0] = mainLayer;
+            zlevelList.push(0);
         }
-
-        this._layerConfig = {};
 
         this.pathToImage = this._createPathToImage();
 
         // Layers for progressive rendering
         this._progressiveLayers = [];
+
+        /**
+         * @type {module:zrender/Layer}
+         * @private
+         */
+        this._hoverlayer;
+
+        this._hoverElements = [];
     };
 
     Painter.prototype = {
@@ -241,11 +258,86 @@
                 }
             }
 
+            this.refreshHover();
+
             if (this._progressiveLayers.length) {
                 this._startProgessive();
             }
 
             return this;
+        },
+
+        addHover: function (el, hoverStyle) {
+            if (el.__hoverMir) {
+                return;
+            }
+            var elMirror = new el.constructor({
+                style: el.style,
+                shape: el.shape
+            });
+            elMirror.__from = el;
+            el.__hoverMir = elMirror;
+            elMirror.setStyle(hoverStyle);
+            this._hoverElements.push(elMirror);
+        },
+
+        removeHover: function (el) {
+            var elMirror = el.__hoverMir;
+            var hoverElements = this._hoverElements;
+            var idx = util.indexOf(hoverElements, elMirror);
+            if (idx >= 0) {
+                hoverElements.splice(idx, 1);
+            }
+            el.__hoverMir = null;
+        },
+
+        clearHover: function (el) {
+            var hoverElements = this._hoverElements;
+            for (var i = 0; i < hoverElements.length; i++) {
+                var from = hoverElements[i].__from;
+                if (from) {
+                    from.__hoverMir = null;
+                }
+            }
+            hoverElements.length = 0;
+        },
+
+        refreshHover: function () {
+            var hoverElements = this._hoverElements;
+            var len = hoverElements.length;
+            var hoverLayer = this._hoverlayer;
+            hoverLayer && hoverLayer.clear();
+
+            if (!len) {
+                return;
+            }
+            // Use a extream large zlevel
+            // FIXME?
+            if (!hoverLayer) {
+                hoverLayer = this._hoverlayer = this.getLayer(1e5);
+            }
+
+            var scope = {};
+            for (var i = 0; i < len;) {
+                var el = hoverElements[i];
+                var originalEl = el.__from;
+                // Original el is removed
+                // PENDING
+                if (!(originalEl && originalEl.__zr)) {
+                    hoverElements.splice(i, 1);
+                    originalEl.__hoverMir = null;
+                    len--;
+                    continue;
+                }
+                i++;
+
+                // Use transform
+                // FIXME style and shape ?
+                el.transform = originalEl.transform;
+                el.__clipPaths = originalEl.__clipPaths;
+                // el.
+                this._doPaintEl(el, hoverLayer, true, scope);
+            }
         },
 
         _startProgessive: function () {
@@ -257,7 +349,7 @@
 
             // Use a token to stop progress steps triggered by
             // previous zr.refresh calling.
-            var token = self._progressiveToken = Math.random();
+            var token = self._progressiveToken = +new Date();
 
             self._progress++;
             requestAnimationFrame(step);
@@ -366,11 +458,11 @@
                         if (currentProgressiveLayer
                             && (currentProgressiveLayer.__progress > currentProgressiveLayer.__maxProgress)
                         ) {
-                            // All progressive element are not dirty, flush directly
-                            flushProgressiveLayer(currentProgressiveLayer);
+                            // flushProgressiveLayer(currentProgressiveLayer);
                             // Quick jump all progressive elements
+                            // All progressive element are not dirty, jump over and flush directly
                             i = currentProgressiveLayer.__nextIdxNotProg - 1;
-                            currentProgressiveLayer = null;
+                            // currentProgressiveLayer = null;
                             continue;
                         }
 
@@ -380,12 +472,15 @@
                             // Keep rendering
                             frame = layerProgress;
                         }
-                    }
 
-                    if (elFrame === frame) {
-                        this._doPaintEl(el, currentProgressiveLayer, true, scope);
                         currentProgressiveLayer.__progress = frame + 1;
                     }
+
+                    // console.log(elFrame, frame);
+                    if (elFrame === frame) {
+                        this._doPaintEl(el, currentProgressiveLayer, true, scope);
+                    }
+
                 }
                 else {
                     if (currentProgressiveLayer) {
@@ -604,9 +699,9 @@
             });
 
             util.each(progressiveLayers, function (layer, idx) {
+                progressiveElCountsLastFrame[idx] = layer.elCount;
                 layer.elCount = 0;
                 layer.__dirty = false;
-                progressiveElCountsLastFrame[idx] = layer.elCount;
             });
 
             var progressiveLayerCount = 0;
@@ -638,6 +733,8 @@
                                 'progressive', this, this.dpr
                             );
                             currentProgressiveLayer.initContext();
+                            document.body.appendChild(currentProgressiveLayer.dom);
+                            currentProgressiveLayer.dom.style.position = 'static';
                         }
                         currentProgressiveLayer.__maxProgress = 0;
                     }
