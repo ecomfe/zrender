@@ -648,10 +648,14 @@
                         currentProgressiveLayer.__maxProgress, elFrame
                     );
                 }
-                else if (currentProgressiveLayer) {
-                    currentProgressiveLayer.__nextIdxNotProg = i;
-                    progressiveLayerCount++;
-                    currentProgressiveLayer = null;
+                else {
+                    el.__frame = -1;
+
+                    if (currentProgressiveLayer) {
+                        currentProgressiveLayer.__nextIdxNotProg = i;
+                        progressiveLayerCount++;
+                        currentProgressiveLayer = null;
+                    }
                 }
             }
 
