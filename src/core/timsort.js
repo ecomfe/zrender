@@ -1,3 +1,4 @@
+// https://github.com/mziccard/node-timsort
 define(function () {
     var DEFAULT_MIN_MERGE = 32;
 
@@ -59,9 +60,10 @@ define(function () {
 
             var left = lo;
             var right = start;
+            var mid;
 
             while (left < right) {
-                var mid = left + right >>> 1;
+                mid = left + right >>> 1;
 
                 if (compare(pivot, array[mid]) < 0) {
                     right = mid;

@@ -212,9 +212,9 @@ define(function (require) {
                     w += windingLine(xi, yi, x0, y0, x, y);
                 }
                 // 如果被任何一个 subpath 包含
-                if (w !== 0) {
-                    return true;
-                }
+                // if (w !== 0) {
+                //     return true;
+                // }
             }
 
             if (i == 1) {
@@ -364,9 +364,10 @@ define(function (require) {
                         // Close a subpath
                         w += windingLine(xi, yi, x0, y0, x, y);
                         // 如果被任何一个 subpath 包含
-                        if (w !== 0) {
-                            return true;
-                        }
+                        // FIXME subpaths may overlap
+                        // if (w !== 0) {
+                        //     return true;
+                        // }
                     }
                     xi = x0;
                     yi = y0;
