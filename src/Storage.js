@@ -10,9 +10,12 @@ define(function (require) {
     'use strict';
 
     var util = require('./core/util');
+    var env = require('./core/env');
 
     var Group = require('./container/Group');
 
+    // Use timsort because in most case elements are partially sorted
+    // https://jsfiddle.net/pissang/jr4x7mdm/8/
     var timsort = require('./core/timsort');
 
     function shapeCompareFunc(a, b) {
@@ -85,7 +88,7 @@ define(function (require) {
             // }
 
             // displayList.sort(shapeCompareFunc);
-            timsort(displayList, shapeCompareFunc);
+            env.canvasSupported && timsort(displayList, shapeCompareFunc);
         },
 
         _updateAndAddDisplayable: function (el, clipPaths, includeIgnore) {
