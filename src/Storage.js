@@ -53,6 +53,16 @@ define(function (require) {
         constructor: Storage,
 
         /**
+         * @param  {Function} cb
+         *
+         */
+        traverse: function (cb, context) {
+            for (var i = 0; i < this._roots.length; i++) {
+                this._roots[i].traverse(cb, context);
+            }
+        },
+
+        /**
          * 返回所有图形的绘制队列
          * @param {boolean} [update=false] 是否在返回前更新该数组
          * @param {boolean} [includeIgnore=false] 是否包含 ignore 的数组, 在 update 为 true 的时候有效
