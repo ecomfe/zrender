@@ -97,13 +97,15 @@ define(function (require) {
                 return;
             }
 
+            el.beforeUpdate();
+
             if (el.__dirty) {
-                el.beforeUpdate();
 
                 el.update();
 
-                el.afterUpdate();
             }
+
+            el.afterUpdate();
 
             var clipPath = el.clipPath;
             if (clipPath) {
