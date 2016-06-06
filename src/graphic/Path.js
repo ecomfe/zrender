@@ -220,7 +220,7 @@ define(function (require) {
          * @param  {boolean} dirtyPath
          */
         dirty: function (dirtyPath) {
-            if (arguments.length ===0) {
+            if (dirtyPath == null) {
                 dirtyPath = true;
             }
             // Only mark dirty, not mark clean

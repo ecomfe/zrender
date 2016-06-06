@@ -355,7 +355,8 @@
             requestAnimationFrame(step);
 
             function step() {
-                if (token === self._progressiveToken) {
+                // In case refreshed or disposed
+                if (token === self._progressiveToken && self.storage) {
 
                     self._doPaintList(self.storage.getDisplayList());
 
