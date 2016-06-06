@@ -2,14 +2,15 @@
  * @module zrender/core/util
  */
 define(function(require) {
-    var Gradient = require('../graphic/Gradient');
+
     // 用于处理merge时无法遍历Date等对象的问题
     var BUILTIN_OBJECT = {
         '[object Function]': 1,
         '[object RegExp]': 1,
         '[object Date]': 1,
         '[object Error]': 1,
-        '[object CanvasGradient]': 1
+        '[object CanvasGradient]': 1,
+        '[object CanvasPattern]': 1
     };
 
     var objToString = Object.prototype.toString;
@@ -406,8 +407,7 @@ define(function(require) {
      * @return {boolean}
      */
     function isBuildInObject(value) {
-        return !!BUILTIN_OBJECT[objToString.call(value)]
-            || (value instanceof Gradient);
+        return !!BUILTIN_OBJECT[objToString.call(value)];
     }
 
     /**

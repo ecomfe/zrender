@@ -456,10 +456,11 @@ define(function(require) {
      * @return {string} Result color.
      */
     function stringify(arrColor, type) {
-        if (type === 'rgb' || type === 'hsv' || type === 'hsl') {
-            arrColor = arrColor.slice(0, 3);
+        var colorStr = arrColor[0] + ',' + arrColor[1] + ',' + arrColor[2];
+        if (type === 'rgba' || type === 'hsva' || type === 'hsla') {
+            colorStr += ',' + arrColor[3];
         }
-        return type + '(' + arrColor.join(',') + ')';
+        return type + '(' + colorStr + ')';
     }
 
     return {
