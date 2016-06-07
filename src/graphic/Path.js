@@ -10,7 +10,8 @@ define(function (require) {
     var PathProxy = require('../core/PathProxy');
     var pathContain = require('../contain/path');
 
-    var Gradient = require('./Gradient');
+    var Pattern = require('./Pattern');
+    var getCanvasPattern = Pattern.prototype.getCanvasPattern;
 
     function pathHasFill(style) {
         var fill = style.fill;
@@ -57,28 +58,38 @@ define(function (require) {
             var path = this.path;
             var hasStroke = pathHasStroke(style);
             var hasFill = pathHasFill(style);
-            var hasFillGradient = hasFill && !!(style.fill.colorStops);
-            var hasStrokeGradient = hasStroke && !!(style.stroke.colorStops);
+            var fill = style.fill;
+            var stroke = style.stroke;
+            var hasFillGradient = hasFill && !!(fill.colorStops);
+            var hasStrokeGradient = hasStroke && !!(stroke.colorStops);
+            var hasFillPattern = hasFill && !!(fill.image);
+            var hasStrokePattern = hasStroke && !!(stroke.image);
 
             style.bind(ctx, this);
             this.setTransform(ctx);
 
-            if (this.__dirtyPath) {
+            if (this.__dirty) {
                 var rect = this.getBoundingRect();
                 // Update gradient because bounding rect may changed
                 if (hasFillGradient) {
-                    this._fillGradient = style.getGradient(ctx, style.fill, rect);
+                    this._fillGradient = style.getGradient(ctx, fill, rect);
                 }
                 if (hasStrokeGradient) {
-                    this._strokeGradient = style.getGradient(ctx, style.stroke, rect);
+                    this._strokeGradient = style.getGradient(ctx, stroke, rect);
                 }
             }
-            // Use the gradient
+            // Use the gradient or pattern
             if (hasFillGradient) {
                 ctx.fillStyle = this._fillGradient;
             }
+            else if (hasFillPattern) {
+                ctx.fillStyle = getCanvasPattern.call(fill, ctx);
+            }
             if (hasStrokeGradient) {
                 ctx.strokeStyle = this._strokeGradient;
+            }
+            else if (hasStrokePattern) {
+                ctx.strokeStyle = getCanvasPattern.call(stroke, ctx);
             }
 
             var lineDash = style.lineDash;
