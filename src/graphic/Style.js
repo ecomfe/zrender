@@ -5,9 +5,12 @@
 define(function (require) {
 
     var STYLE_LIST_COMMON = [
-        'lineCap', 'lineJoin', 'miterLimit',
-        'shadowBlur', 'shadowOffsetX', 'shadowOffsetY', 'shadowColor'
+        'shadowBlur', 'shadowOffsetX', 'shadowOffsetY', 'shadowColor',
+        'lineCap', 'lineJoin', 'miterLimit'
     ];
+
+    var SHADOW_PROPS = STYLE_LIST_COMMON.slice(0, 4);
+    var LINE_PROPS = STYLE_LIST_COMMON.slice(4);
 
     var Style = function (opts) {
         this.extendFrom(opts);
@@ -128,34 +131,41 @@ define(function (require) {
          */
         textShadowOffsetY: 0,
 
+        _bindProps: function (ctx, propNames) {
+            for (var i = 0; i < propNames.length; i++) {
+                var styleName = propNames[i];
+                if (this[styleName] != null) {
+                    ctx[styleName] = this[styleName];
+                }
+            }
+        },
+
         /**
          * @param {CanvasRenderingContext2D} ctx
          */
         bind: function (ctx, el) {
             var fill = this.fill;
             var stroke = this.stroke;
-            for (var i = 0; i < STYLE_LIST_COMMON.length; i++) {
-                var styleName = STYLE_LIST_COMMON[i];
+            var hasFill = fill != null && fill !== 'none';
+            var hasStroke = stroke != null && stroke !== 'none';
+            if (hasStroke) {
+                this._bindProps(ctx, LINE_PROPS);
 
-                if (this[styleName] != null) {
-                    ctx[styleName] = this[styleName];
-                }
-            }
-            if (stroke != null) {
                 var lineWidth = this.lineWidth;
                 ctx.lineWidth = lineWidth / (
                     (this.strokeNoScale && el && el.getLineScale) ? el.getLineScale() : 1
                 );
-            }
-            // Gradient will be created and set in Path#brush. So ignore it here
-            if (fill != null && fill !== 'none' && !fill.colorStops) {
-                ctx.fillStyle = fill;
-            }
-            if (stroke != null && stroke !== 'none' && !stroke.colorStops) {
-                 // Use canvas gradient if has
+
                 ctx.strokeStyle = stroke;
             }
-            this.opacity != null && (ctx.globalAlpha = this.opacity);
+            if (hasFill) {
+                ctx.fillStyle = fill;
+            }
+
+            if (this.shadowBlur) {
+                this._bindProps(ctx, SHADOW_PROPS);
+            }
+            ctx.globalAlpha = this.opacity;
         },
 
         /**
