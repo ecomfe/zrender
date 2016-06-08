@@ -126,7 +126,7 @@ define(function (require) {
             else if (prevEl && prevEl.style.lineDash && ctxLineDash) {
                 // PENDING
                 // Remove lineDash
-                ctx.setLineDash(null);
+                ctx.setLineDash([]);
             }
 
             hasStroke && path.stroke(ctx);
