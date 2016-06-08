@@ -106,7 +106,7 @@ define(function (require) {
                     path.setLineDashOffset(lineDashOffset);
                 }
 
-                this.buildPath(path, this.shape);
+                this.buildPath(path, this.shape, false);
 
                 // Clear path dirty flag
                 this.__dirtyPath = false;
@@ -140,7 +140,9 @@ define(function (require) {
             }
         },
 
-        buildPath: function (ctx, shapeCfg) {},
+        // When bundling path, some shape may decide if use moveTo to begin a new subpath or closePath
+        // Like in circle
+        buildPath: function (ctx, shapeCfg, inBundle) {},
 
         getBoundingRect: function () {
             var rect = this._rect;
@@ -150,7 +152,7 @@ define(function (require) {
                 var path = this.path;
                 if (this.__dirtyPath) {
                     path.beginPath();
-                    this.buildPath(path, this.shape);
+                    this.buildPath(path, this.shape, false);
                 }
                 rect = path.getBoundingRect();
             }

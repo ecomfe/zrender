@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Animation</title>
+    <script type="text/javascript" src="esl.js"></script>
+</head>
+<body style="background-color:black; margin:0px;">
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+
+    require(
+        [
+            'zrender',
+            'zrender/graphic/shape/Circle'
+        ],
+        function (zrender, CircleShape) {
+            // 初始化zrender
+            var zr = zrender.init(document.getElementById('main'));
+
+            var NUMBER = 2000;
+
+            for (var i = 0; i < NUMBER; i++) {
+                var circleShape = new CircleShape({
+                    shape: {
+                        cx: 10,
+                        cy: 10,
+                        r: 5 + Math.random() * 10
+                    },
+                    style: {
+                        // stroke: 'red',
+                        fill: 'white'
+                    }
+                });
+
+                zr.add(circleShape);
+                var animator = circleShape.animate('', true);
+
+                var points = [];
+                var point = [
+                    Math.random() * zr.getWidth(),
+                    Math.random() * zr.getHeight()
+                ];
+                //star.position = point;
+                points.push(point);
+                for (var j = 1; j < 10; j++) {
+                    var point = [
+                        Math.random() * zr.getWidth(),
+                        Math.random() * zr.getHeight()
+                    ];
+                    animator.when(j * 2000, {
+                        position : point
+                    });
+                    points.push(point);
+                }
+
+                animator.start('spline');
+            }
+        }
+    );
+    </script>
+    <div id="main" style="width:1000px;height:600px;"></div>
+</body>
+</html>

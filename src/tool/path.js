@@ -378,12 +378,10 @@ define(function (require) {
         mergePath: function (pathEls, opts) {
             var pathList = [];
             var len = pathEls.length;
-            var pathEl;
-            var i;
-            for (i = 0; i < len; i++) {
-                pathEl = pathEls[i];
+            for (var i = 0; i < len; i++) {
+                var pathEl = pathEls[i];
                 if (pathEl.__dirty) {
-                    pathEl.buildPath(pathEl.path, pathEl.shape);
+                    pathEl.buildPath(pathEl.path, pathEl.shape, true);
                 }
                 pathList.push(pathEl.path);
             }

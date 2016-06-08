@@ -35,7 +35,7 @@ define(function (require) {
         buildPath: function (ctx, shape) {
             var paths = shape.paths || [];
             for (var i = 0; i < paths.length; i++) {
-                paths[i].buildPath(ctx, paths[i].shape);
+                paths[i].buildPath(ctx, paths[i].shape, true);
             }
         },
 
