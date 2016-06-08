@@ -13,16 +13,6 @@ define(function (require) {
     var Pattern = require('./Pattern');
     var getCanvasPattern = Pattern.prototype.getCanvasPattern;
 
-    function pathHasFill(style) {
-        var fill = style.fill;
-        return fill != null && fill !== 'none';
-    }
-
-    function pathHasStroke(style) {
-        var stroke = style.stroke;
-        return stroke != null && stroke !== 'none' && style.lineWidth > 0;
-    }
-
     var abs = Math.abs;
 
     /**
@@ -51,13 +41,11 @@ define(function (require) {
 
         strokeContainThreshold: 5,
 
-        brush: function (ctx) {
-            ctx.save();
-
+        brush: function (ctx, prevEl) {
             var style = this.style;
             var path = this.path;
-            var hasStroke = pathHasStroke(style);
-            var hasFill = pathHasFill(style);
+            var hasStroke = style.hasStroke();
+            var hasFill = style.hasFill();
             var fill = style.fill;
             var stroke = style.stroke;
             var hasFillGradient = hasFill && !!(fill.colorStops);
@@ -65,7 +53,7 @@ define(function (require) {
             var hasFillPattern = hasFill && !!(fill.image);
             var hasStrokePattern = hasStroke && !!(stroke.image);
 
-            style.bind(ctx, this);
+            style.bind(ctx, this, prevEl);
             this.setTransform(ctx);
 
             if (this.__dirty) {
@@ -80,6 +68,7 @@ define(function (require) {
             }
             // Use the gradient or pattern
             if (hasFillGradient) {
+                // PENDING If may have affect the state
                 ctx.fillStyle = this._fillGradient;
             }
             else if (hasFillPattern) {
@@ -134,16 +123,21 @@ define(function (require) {
                 ctx.setLineDash(lineDash);
                 ctx.lineDashOffset = lineDashOffset;
             }
+            else if (prevEl && prevEl.style.lineDash && ctxLineDash) {
+                // PENDING
+                // Remove lineDash
+                ctx.setLineDash(null);
+            }
 
             hasStroke && path.stroke(ctx);
 
+            this.restoreTransform(ctx);
+
             // Draw rect text
-            if (style.text != null) {
+            if (style.text || style.text === 0) {
                 // var rect = this.getBoundingRect();
                 this.drawRectText(ctx, this.getBoundingRect());
             }
-
-            ctx.restore();
         },
 
         buildPath: function (ctx, shapeCfg) {},
@@ -162,7 +156,7 @@ define(function (require) {
             }
             this._rect = rect;
 
-            if (pathHasStroke(style)) {
+            if (style.hasStroke()) {
                 // Needs update rect with stroke lineWidth when
                 // 1. Element changes scale or lineWidth
                 // 2. Shape is changed
@@ -175,7 +169,7 @@ define(function (require) {
                     var lineScale = style.strokeNoScale ? this.getLineScale() : 1;
 
                     // Only add extra hover lineWidth when there are no fill
-                    if (!pathHasFill(style)) {
+                    if (!style.hasFill()) {
                         w = Math.max(w, this.strokeContainThreshold);
                     }
                     // Consider line width
@@ -204,13 +198,13 @@ define(function (require) {
 
             if (rect.contain(x, y)) {
                 var pathData = this.path.data;
-                if (pathHasStroke(style)) {
+                if (style.hasStroke()) {
                     var lineWidth = style.lineWidth;
                     var lineScale = style.strokeNoScale ? this.getLineScale() : 1;
                     // Line scale can't be 0;
                     if (lineScale > 1e-10) {
                         // Only add extra hover lineWidth when there are no fill
-                        if (!pathHasFill(style)) {
+                        if (!style.hasFill()) {
                             lineWidth = Math.max(lineWidth, this.strokeContainThreshold);
                         }
                         if (pathContain.containStroke(
@@ -220,7 +214,7 @@ define(function (require) {
                         }
                     }
                 }
-                if (pathHasFill(style)) {
+                if (style.hasFill()) {
                     return pathContain.contain(pathData, x, y);
                 }
             }

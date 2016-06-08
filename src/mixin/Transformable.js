@@ -147,6 +147,13 @@ define(function (require) {
         }
     };
 
+    transformableProto.restoreTransform = function (ctx) {
+        var m = this.invTransform;
+        if (m) {
+            ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
+        }
+    }
+
     var tmpTransform = [];
 
     /**

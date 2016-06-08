@@ -154,7 +154,7 @@ define(function (require) {
          * @param {Canvas2DRenderingContext} ctx
          */
         // Interface
-        brush: function (ctx) {},
+        brush: function (ctx, prevEl) {},
 
         /**
          * 获取最小包围盒

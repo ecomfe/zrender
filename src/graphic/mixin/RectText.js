@@ -44,6 +44,10 @@ define(function (require) {
             if (!text) {
                 return;
             }
+
+            // FIXME
+            ctx.save();
+
             var x;
             var y;
             var textPosition = style.textPosition;
@@ -57,13 +61,10 @@ define(function (require) {
 
             // Transform rect to view space
             var transform = this.transform;
-            var invTransform = this.invTransform;
             if (transform) {
                 tmpRect.copy(rect);
                 tmpRect.applyTransform(transform);
                 rect = tmpRect;
-                // Transform back
-                setTransform(ctx, invTransform);
             }
 
             // Text position represented by coord
@@ -122,8 +123,7 @@ define(function (require) {
                 y += textRect.lineHeight;
             }
 
-            // Transform again
-            transform && setTransform(ctx, transform);
+            ctx.restore();
         }
     };
 

@@ -318,6 +318,7 @@
             }
 
             var scope = {};
+            hoverLayer.ctx.save();
             for (var i = 0; i < len;) {
                 var el = hoverElements[i];
                 var originalEl = el.__from;
@@ -334,10 +335,12 @@
                 // Use transform
                 // FIXME style and shape ?
                 el.transform = originalEl.transform;
+                el.invTransform = originalEl.invTransform;
                 el.__clipPaths = originalEl.__clipPaths;
                 // el.
                 this._doPaintEl(el, hoverLayer, true, scope);
             }
+            hoverLayer.ctx.restore();
         },
 
         _startProgessive: function () {
@@ -402,7 +405,7 @@
             var ctx;
 
             // var invTransform = [];
-            var scope = { prevElClipPaths: null };
+            var scope;
 
             var progressiveLayerIdx = 0;
             var currentProgressiveLayer;
@@ -415,6 +418,8 @@
                 // Avoid layer not clear in next progressive frame
                 currentLayer.__dirty = true;
                 ctx.drawImage(layer.dom, 0, 0, width, height);
+
+                currentLayer.ctx.restore();
             }
 
             for (var i = 0, l = list.length; i < l; i++) {
@@ -423,6 +428,13 @@
 
                 // Change draw layer
                 if (currentZLevel !== elZLevel) {
+                    if (ctx) {
+                        ctx.restore();
+                    }
+
+                    // Reset scope
+                    scope = { prevElClipPaths: null };
+
                     // Only 0 zlevel if only has one canvas
                     currentZLevel = elZLevel;
                     currentLayer = this.getLayer(currentZLevel);
@@ -435,6 +447,7 @@
                     }
 
                     ctx = currentLayer.ctx;
+                    ctx.save();
 
                     // Reset the count
                     currentLayer.__unusedCount = 0;
@@ -455,6 +468,8 @@
                         currentProgressiveLayer = this._progressiveLayers[
                             Math.min(progressiveLayerIdx++, MAX_PROGRESSIVE_LAYER_NUMBER - 1)
                         ];
+
+                        currentProgressiveLayer.ctx.save();
 
                         if (currentProgressiveLayer
                             && (currentProgressiveLayer.__progress > currentProgressiveLayer.__maxProgress)
@@ -497,10 +512,13 @@
             if (currentProgressiveLayer) {
                 flushProgressiveLayer(currentProgressiveLayer);
             }
+
+            // Restore the lastLayer ctx
+            ctx && ctx.restore();
             // If still has clipping state
-            if (scope.prevElClipPaths) {
-                ctx.restore();
-            }
+            // if (scope.prevElClipPaths) {
+            //     ctx.restore();
+            // }
 
             this._furtherProgressive = false;
             util.each(this._progressiveLayers, function (layer) {
@@ -535,6 +553,9 @@
                     if (scope.prevElClipPaths) {
                         scope.prevClipLayer.ctx.restore();
                         scope.prevClipLayer = scope.prevElClipPaths = null;
+
+                        // Reset prevEl since context has been restored
+                        scope.prevEl = null;
                     }
                     // New clipping state
                     if (clipPaths) {
@@ -545,7 +566,10 @@
                     }
                 }
                 el.beforeBrush && el.beforeBrush(ctx);
-                el.brush(ctx, false);
+
+                el.brush(ctx, scope.prevEl || null);
+                scope.prevEl = el;
+
                 el.afterBrush && el.afterBrush(ctx);
             }
         },

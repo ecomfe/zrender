@@ -28,10 +28,13 @@ define(function (require) {
 
         type: 'image',
 
-        brush: function (ctx) {
+        brush: function (ctx, prevEl) {
             var style = this.style;
             var src = style.image;
             var image;
+
+            // Must bind each time
+            style.bind(ctx, prevEl);
 
             // style.image is a url string
             if (typeof src === 'string') {
@@ -92,10 +95,6 @@ define(function (require) {
                     return;
                 }
 
-                ctx.save();
-
-                style.bind(ctx);
-
                 // 设置transform
                 this.setTransform(ctx);
 
@@ -139,12 +138,13 @@ define(function (require) {
                     style.height = height;
                 }
 
+                this.restoreTransform(ctx);
+
                 // Draw rect text
                 if (style.text != null) {
                     this.drawRectText(ctx, this.getBoundingRect());
                 }
 
-                ctx.restore();
             }
         },
 
