@@ -95,7 +95,7 @@ define(function(require) {
             m[5] += dy;
 
             this.decomposeTransform();
-            this.dirty();
+            this.dirty(false);
         },
 
         /**
@@ -170,7 +170,8 @@ define(function(require) {
                     }
                 }
             }
-            this.dirty();
+
+            this.dirty(false);
 
             return this;
         },
@@ -193,7 +194,7 @@ define(function(require) {
             clipPath.__zr = zr;
             clipPath.__clipTarget = this;
 
-            this.dirty();
+            this.dirty(false);
         },
 
         /**
@@ -209,7 +210,7 @@ define(function(require) {
                 clipPath.__clipTarget = null;
                 this.clipPath = null;
 
-                this.dirty();
+                this.dirty(false);
             }
         },
 

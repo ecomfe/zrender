@@ -259,6 +259,8 @@ define(function (require) {
             // FIXME
             if (key === 'shape') {
                 this.setShape(value);
+                this.__dirtyPath = true;
+                this._rect = null;
             }
             else {
                 Displayable.prototype.attrKV.call(this, key, value);
