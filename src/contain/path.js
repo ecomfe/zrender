@@ -50,6 +50,10 @@ define(function (require) {
             var y0_, y1_;
             for (var i = 0; i < nRoots; i++) {
                 var t = roots[i];
+                // Remove one endpoint.
+                if (t === 1) {
+                    continue;
+                }
                 var x_ = curve.cubicAt(x0, x1, x2, x3, t);
                 if (x_ < x) { // Quick reject
                     continue;
@@ -108,6 +112,11 @@ define(function (require) {
                 var w = 0;
                 var y_ = curve.quadraticAt(y0, y1, y2, t);
                 for (var i = 0; i < nRoots; i++) {
+                    // Remove one endpoint.
+                    if (roots[i] === 1) {
+                        continue;
+                    }
+
                     var x_ = curve.quadraticAt(x0, x1, x2, roots[i]);
                     if (x_ < x) {   // Quick reject
                         continue;
@@ -122,6 +131,11 @@ define(function (require) {
                 return w;
             }
             else {
+                // Remove one endpoint.
+                if (roots[0] === 1) {
+                    return 0;
+                }
+
                 var x_ = curve.quadraticAt(x0, x1, x2, roots[0]);
                 if (x_ < x) {   // Quick reject
                     return 0;
