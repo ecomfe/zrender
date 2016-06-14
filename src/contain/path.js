@@ -341,7 +341,7 @@ define(function (require) {
                         if (containStroke(x0, y0, x1, y0, lineWidth, x, y)
                           || containStroke(x1, y0, x1, y1, lineWidth, x, y)
                           || containStroke(x1, y1, x0, y1, lineWidth, x, y)
-                          || containStroke(x0, y1, x1, y1, lineWidth, x, y)
+                          || containStroke(x0, y1, x0, y0, lineWidth, x, y)
                         ) {
                             return true;
                         }
