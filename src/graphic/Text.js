@@ -39,8 +39,10 @@ define(function (require) {
             // Convert to string
             text != null && (text += '');
 
+            // Always bind style
+            style.bind(ctx, prevEl);
+
             if (text) {
-                style.bind(ctx, prevEl);
 
                 this.setTransform(ctx);
 
@@ -67,8 +69,10 @@ define(function (require) {
                 }
 
                 ctx.font = style.textFont || style.font;
-                ctx.textAlign = style.textAlign;
-                ctx.textBaseline = textBaseline;
+                // Use canvas default left textAlign. Giving invalid value will cause state not change
+                ctx.textAlign = style.textAlign || 'left';
+                // Use canvas default alphabetic baseline
+                ctx.textBaseline = textBaseline || 'alphabetic';
 
                 var lineHeight = textContain.measureText('国', ctx.font).width;
 

@@ -101,8 +101,10 @@ define(function (require) {
                 baseline = baseline || res.textBaseline;
             }
 
-            ctx.textAlign = align;
-            ctx.textBaseline = baseline;
+            // Use canvas default left textAlign. Giving invalid value will cause state not change
+            ctx.textAlign = align || 'left';
+            // Use canvas default alphabetic baseline
+            ctx.textBaseline = baseline || 'alphabetic';
 
             var textFill = style.textFill;
             var textStroke = style.textStroke;
