@@ -131,15 +131,6 @@ define(function (require) {
          */
         textShadowOffsetY: 0,
 
-        // _bindProps: function (ctx, propNames) {
-        //     for (var i = 0; i < propNames.length; i++) {
-        //         var styleName = propNames[i];
-        //         if (this[styleName] != null) {
-        //             ctx[styleName] = this[styleName];
-        //         }
-        //     }
-        // },
-
         /**
          * @param {CanvasRenderingContext2D} ctx
          */
@@ -148,11 +139,6 @@ define(function (require) {
             var prevStyle = prevEl && prevEl.style;
             var firstDraw = !prevStyle;
 
-            // var fill = this.fill;
-            // var stroke = this.stroke;
-            // var hasFill = fill != null && fill !== 'none';
-            // var hasStroke = stroke != null && stroke !== 'none';
-
             for (var i = 0; i < STYLE_COMMON_PROPS.length; i++) {
                 var styleName = STYLE_COMMON_PROPS[i];
                 if (firstDraw || style[styleName] !== prevStyle[styleName]) {
@@ -160,19 +146,6 @@ define(function (require) {
                 }
             }
 
-            // if (hasStroke) {
-            //     this._bindProps(ctx, LINE_PROPS);
-
-            //     var lineWidth = this.lineWidth;
-            //     ctx.lineWidth = lineWidth / (
-            //         (this.strokeNoScale && el && el.getLineScale) ? el.getLineScale() : 1
-            //     );
-
-            //     ctx.strokeStyle = stroke;
-            // }
-            // if (hasFill) {
-            //     ctx.fillStyle = fill;
-            // }
             if ((firstDraw || style.fill !== prevStyle.fill)) {
                 ctx.fillStyle = style.fill;
             }

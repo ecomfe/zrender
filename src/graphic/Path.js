@@ -123,13 +123,14 @@ define(function (require) {
                 ctx.setLineDash(lineDash);
                 ctx.lineDashOffset = lineDashOffset;
             }
-            else if (prevEl && prevEl.style.lineDash && ctxLineDash) {
+
+            hasStroke && path.stroke(ctx);
+
+            if (lineDash && ctxLineDash) {
                 // PENDING
                 // Remove lineDash
                 ctx.setLineDash([]);
             }
-
-            hasStroke && path.stroke(ctx);
 
             this.restoreTransform(ctx);
 
