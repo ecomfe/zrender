@@ -5,8 +5,8 @@
 define(function (require) {
 
     var STYLE_COMMON_PROPS = [
-        'shadowBlur', 'shadowOffsetX', 'shadowOffsetY', 'shadowColor',
-        'lineCap', 'lineJoin', 'miterLimit'
+        ['shadowBlur', 0], ['shadowOffsetX', 0], ['shadowOffsetY', 0], ['shadowColor', '#000'],
+        ['lineCap', 'butt'], ['lineJoin', 'miter'], ['miterLimit', 10]
     ];
 
     // var SHADOW_PROPS = STYLE_COMMON_PROPS.slice(0, 4);
@@ -140,9 +140,10 @@ define(function (require) {
             var firstDraw = !prevStyle;
 
             for (var i = 0; i < STYLE_COMMON_PROPS.length; i++) {
-                var styleName = STYLE_COMMON_PROPS[i];
+                var prop = STYLE_COMMON_PROPS[i];
+                var styleName = prop[0];
                 if (firstDraw || style[styleName] !== prevStyle[styleName]) {
-                    ctx[styleName] = style[styleName];
+                    ctx[styleName] = style[styleName] || prop[1];
                 }
             }
 
@@ -153,7 +154,7 @@ define(function (require) {
                 ctx.strokeStyle = style.stroke;
             }
             if ((firstDraw || style.opacity !== prevStyle.opacity)) {
-                ctx.globalAlpha = style.opacity;
+                ctx.globalAlpha = style.opacity == null ? 1 : style.opacity;
             }
             if (this.hasStroke()) {
                 var lineWidth = style.lineWidth;
@@ -255,12 +256,10 @@ define(function (require) {
     };
 
     var styleProto = Style.prototype;
-    var name;
-    var i;
-    for (i = 0; i < STYLE_COMMON_PROPS.length; i++) {
-        name = STYLE_COMMON_PROPS[i];
-        if (!(name in styleProto)) {
-            styleProto[name] = null;
+    for (var i = 0; i < STYLE_COMMON_PROPS.length; i++) {
+        var prop = STYLE_COMMON_PROPS[i];
+        if (!(prop[0] in styleProto)) {
+            styleProto[prop[0]] = prop[1];
         }
     }
 
