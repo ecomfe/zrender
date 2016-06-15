@@ -147,7 +147,7 @@ define(function (require) {
             var exceedUnit = mathAbs(x - this._xi) > this._ux
                 || mathAbs(y - this._yi) > this._uy
                 // Force draw the first segment
-                || this._len === 0;
+                || this._len < 5;
 
             this.addData(CMD.L, x, y);
 
