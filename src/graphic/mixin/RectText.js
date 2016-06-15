@@ -113,10 +113,12 @@ define(function (require) {
             ctx.font = font;
 
             // Text shadow
-            ctx.shadowColor = style.textShadowColor;
-            ctx.shadowBlur = style.textShadowBlur;
-            ctx.shadowOffsetX = style.textShadowOffsetX;
-            ctx.shadowOffsetY = style.textShadowOffsetY;
+            if (style.textShadowBlur > 0) {
+                ctx.shadowColor = style.textShadowColor;
+                ctx.shadowBlur = style.textShadowBlur;
+                ctx.shadowOffsetX = style.textShadowOffsetX;
+                ctx.shadowOffsetY = style.textShadowOffsetY;
+            }
 
             var textLines = text.split('\n');
             for (var i = 0; i < textLines.length; i++) {
