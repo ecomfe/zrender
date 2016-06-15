@@ -9,10 +9,9 @@ define(function () {
         var dir = y1 < y0 ? 1 : -1;
         var t = (y - y0) / (y1 - y0);
 
-        // Remove one endpoint.
-        // Avoid winding error when intersection point is the connect point of polygon
-        if (t === 1) {
-            return 0;
+        // Avoid winding error when intersection point is the connect point of two line of polygon
+        if (t === 1 || t === 0) {
+            dir = y1 < y0 ? 0.5 : -0.5;
         }
 
         var x_ = t * (x1 - x0) + x0;
