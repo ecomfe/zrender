@@ -113,9 +113,10 @@ define(function (require) {
             ctx.font = font;
 
             // Text shadow
+            // Always set shadowBlur
+            ctx.shadowBlur = style.textShadowBlur || 0;
             if (style.textShadowBlur > 0) {
                 ctx.shadowColor = style.textShadowColor;
-                ctx.shadowBlur = style.textShadowBlur;
                 ctx.shadowOffsetX = style.textShadowOffsetX;
                 ctx.shadowOffsetY = style.textShadowOffsetY;
             }
