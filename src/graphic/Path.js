@@ -117,28 +117,21 @@ define(function (require) {
                 this.path.rebuildPath(ctx);
             }
 
+            hasFill && path.fill(ctx);
+
             if (lineDash && ctxLineDash) {
                 ctx.setLineDash(lineDash);
                 ctx.lineDashOffset = lineDashOffset;
             }
-            if (hasFill) {
-                // Half stroke may be covered by fill
-                ctx.lineWidth *= 2;
-            }
 
             hasStroke && path.stroke(ctx);
 
-            if (hasFill) {
-                ctx.lineWidth /= 2;
-            }
             if (lineDash && ctxLineDash) {
                 // PENDING
                 // Remove lineDash
                 ctx.setLineDash([]);
             }
 
-            // Fill after stroke to make the shadow right
-            hasFill && path.fill(ctx);
 
             this.restoreTransform(ctx);
 
