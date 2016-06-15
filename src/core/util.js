@@ -10,7 +10,9 @@ define(function(require) {
         '[object Date]': 1,
         '[object Error]': 1,
         '[object CanvasGradient]': 1,
-        '[object CanvasPattern]': 1
+        '[object CanvasPattern]': 1,
+        // In node-canvas Image can be Canvas.Image
+        '[object Image]': 1
     };
 
     var objToString = Object.prototype.toString;
