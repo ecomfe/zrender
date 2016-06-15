@@ -153,7 +153,7 @@ define(function (require) {
                 ctx.strokeStyle = style.stroke;
             }
             if ((firstDraw || style.opacity !== prevStyle.opacity)) {
-                ctx.globalAlpha = this.opacity;
+                ctx.globalAlpha = style.opacity;
             }
             if (this.hasStroke()) {
                 var lineWidth = style.lineWidth;

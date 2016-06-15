@@ -3,6 +3,7 @@ define(function () {
         if ((y > y0 && y > y1) || (y < y0 && y < y1)) {
             return 0;
         }
+        // Ignore horizontal line
         if (y1 === y0) {
             return 0;
         }
