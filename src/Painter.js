@@ -19,6 +19,8 @@
 
     // PENDIGN
     // Layer exceeds MAX_PROGRESSIVE_LAYER_NUMBER may have some problem when flush directly second time.
+    //
+    // Maximum progressive layer. When exceeding this number. All elements will be drawed in the last layer.
     var MAX_PROGRESSIVE_LAYER_NUMBER = 5;
 
     function parseInt10(val) {
@@ -436,8 +438,14 @@
                         ctx.restore();
                     }
 
+                    // Must change another progressive layer
+                    if (currentProgressiveLayer) {
+                        flushProgressiveLayer(currentProgressiveLayer);
+                        currentProgressiveLayer = null;
+                    }
+
                     // Reset scope
-                    scope = { prevElClipPaths: null };
+                    scope = {};
 
                     // Only 0 zlevel if only has one canvas
                     currentZLevel = elZLevel;
@@ -482,7 +490,7 @@
                             // flushProgressiveLayer(currentProgressiveLayer);
                             // Quick jump all progressive elements
                             // All progressive element are not dirty, jump over and flush directly
-                            i = currentProgressiveLayer.__nextIdxNotProg - 1;
+                            i = currentProgressiveLayer.__nextIdx - 1;
                             // currentProgressiveLayer = null;
                             continue;
                         }
@@ -737,6 +745,7 @@
             var currentProgressiveLayer;
             var lastProgressiveKey;
             var frameCount = 0;
+            var prevZlevel;
             for (var i = 0, l = list.length; i < l; i++) {
                 var el = list[i];
                 var zlevel = this._singleCanvas ? 0 : el.zlevel;
@@ -746,7 +755,16 @@
                     layer.elCount++;
                     layer.__dirty = layer.__dirty || el.__dirty;
                 }
-                // Update progressive
+
+                /////// Update progressive
+                // Must change another layer
+                if (prevZlevel !== zlevel) {
+                    if (currentProgressiveLayer) {
+                        currentProgressiveLayer.__nextIdx = i;
+                        progressiveLayerCount++;
+                        currentProgressiveLayer = null;
+                    }
+                }
                 if (elProgress >= 0) {
                     // Fix wrong progressive sequence problem.
                     if (lastProgressiveKey !== elProgress) {
@@ -762,10 +780,6 @@
                                 'progressive', this, this.dpr
                             );
                             currentProgressiveLayer.initContext();
-
-                            currentProgressiveLayer.idx = progressiveLayerCount;
-                            document.body.appendChild(currentProgressiveLayer.dom);
-                            currentProgressiveLayer.dom.style.position = 'static';
                         }
                         currentProgressiveLayer.__maxProgress = 0;
                     }
@@ -780,7 +794,7 @@
                     el.__frame = -1;
 
                     if (currentProgressiveLayer) {
-                        currentProgressiveLayer.__nextIdxNotProg = i;
+                        currentProgressiveLayer.__nextIdx = i;
                         progressiveLayerCount++;
                         currentProgressiveLayer = null;
                     }
@@ -789,12 +803,8 @@
 
             if (currentProgressiveLayer) {
                 progressiveLayerCount++;
-                currentProgressiveLayer.__nextIdxNotProg = i;
+                currentProgressiveLayer.__nextIdx = i;
             }
-
-            this._progressiveLayers.forEach(function (layer) {
-                console.log(layer._commands);
-            });
 
             // 层中的元素数量有发生变化
             this.eachBuildinLayer(function (layer, z) {
