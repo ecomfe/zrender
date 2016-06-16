@@ -415,9 +415,13 @@
             var layerProgress;
             var frame = this._progress;
             function flushProgressiveLayer(layer) {
-                // Avoid layer not clear in next progressive frame
+                ctx.save();
+                ctx.globalAlpha = 1;
+                ctx.shadowBlur = 0;
+                // Avoid layer don't clear in next progressive frame
                 currentLayer.__dirty = true;
                 ctx.drawImage(layer.dom, 0, 0, width, height);
+                ctx.restore();
 
                 currentLayer.ctx.restore();
             }
@@ -470,6 +474,7 @@
                         ];
 
                         currentProgressiveLayer.ctx.save();
+                        currentProgressiveLayer.renderScope = {};
 
                         if (currentProgressiveLayer
                             && (currentProgressiveLayer.__progress > currentProgressiveLayer.__maxProgress)
@@ -492,11 +497,9 @@
                         currentProgressiveLayer.__progress = frame + 1;
                     }
 
-                    // console.log(elFrame, frame);
                     if (elFrame === frame) {
-                        this._doPaintEl(el, currentProgressiveLayer, true, scope);
+                        this._doPaintEl(el, currentProgressiveLayer, true, currentProgressiveLayer.renderScope);
                     }
-
                 }
                 else {
                     if (currentProgressiveLayer) {
@@ -543,6 +546,7 @@
                 // Ignore culled element
                 && !(el.culling && isDisplayableCulled(el, this._width, this._height))
             ) {
+
                 var clipPaths = el.__clipPaths;
 
                 // Optimize when clipping on group with several elements
@@ -758,6 +762,10 @@
                                 'progressive', this, this.dpr
                             );
                             currentProgressiveLayer.initContext();
+
+                            currentProgressiveLayer.idx = progressiveLayerCount;
+                            document.body.appendChild(currentProgressiveLayer.dom);
+                            currentProgressiveLayer.dom.style.position = 'static';
                         }
                         currentProgressiveLayer.__maxProgress = 0;
                     }
@@ -783,6 +791,10 @@
                 progressiveLayerCount++;
                 currentProgressiveLayer.__nextIdxNotProg = i;
             }
+
+            this._progressiveLayers.forEach(function (layer) {
+                console.log(layer._commands);
+            });
 
             // 层中的元素数量有发生变化
             this.eachBuildinLayer(function (layer, z) {
