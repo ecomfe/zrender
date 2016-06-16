@@ -47,6 +47,7 @@ define(function (require) {
                 this.setTransform(ctx);
 
                 var textBaseline;
+                var textAlign = style.textAlign;
                 if (style.textVerticalAlign) {
                     var rect = textContain.getBoundingRect(
                         text, ctx.font, style.textAlign, 'top'
@@ -69,10 +70,16 @@ define(function (require) {
                 }
 
                 ctx.font = style.textFont || style.font;
+                ctx.textAlign = textAlign || 'left';
                 // Use canvas default left textAlign. Giving invalid value will cause state not change
-                ctx.textAlign = style.textAlign || 'left';
-                // Use canvas default alphabetic baseline
+                if (ctx.textAlign !== textAlign) {
+                    ctx.textAlign = 'left';
+                }
                 ctx.textBaseline = textBaseline || 'alphabetic';
+                // Use canvas default alphabetic baseline
+                if (ctx.textBaseline !== textBaseline) {
+                    ctx.textBaseline = 'alphabetic';
+                }
 
                 var lineHeight = textContain.measureText('国', ctx.font).width;
 

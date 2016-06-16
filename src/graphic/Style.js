@@ -1,7 +1,6 @@
 /**
  * @module zrender/graphic/Style
  */
-
 define(function (require) {
 
     var STYLE_COMMON_PROPS = [
@@ -142,7 +141,9 @@ define(function (require) {
             for (var i = 0; i < STYLE_COMMON_PROPS.length; i++) {
                 var prop = STYLE_COMMON_PROPS[i];
                 var styleName = prop[0];
+
                 if (firstDraw || style[styleName] !== prevStyle[styleName]) {
+                    // FIXME Invalid property value will cause style leak from previous element.
                     ctx[styleName] = style[styleName] || prop[1];
                 }
             }
