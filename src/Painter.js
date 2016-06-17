@@ -68,6 +68,10 @@
     }
 
     function isClipPathChanged(clipPaths, prevClipPaths) {
+        if (clipPaths == prevClipPaths) { // Can both be null or undefined
+            return false;
+        }
+
         if (!clipPaths || !prevClipPaths || (clipPaths.length !== prevClipPaths.length)) {
             return true;
         }

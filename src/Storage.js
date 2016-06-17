@@ -133,7 +133,7 @@ define(function (require) {
                 }
             }
 
-            if (el.type == 'group') {
+            if (el.isGroup) {
                 var children = el._children;
 
                 for (var i = 0; i < children.length; i++) {
@@ -141,7 +141,9 @@ define(function (require) {
 
                     // Force to mark as dirty if group is dirty
                     // FIXME __dirtyPath ?
-                    child.__dirty = el.__dirty || child.__dirty;
+                    if (el.__dirty) {
+                        child.__dirty = true;
+                    }
 
                     this._updateAndAddDisplayable(child, clipPaths, includeIgnore);
                 }

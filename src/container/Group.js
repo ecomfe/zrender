@@ -49,6 +49,8 @@ define(function (require) {
 
         constructor: Group,
 
+        isGroup: true,
+
         /**
          * @type {string}
          */
