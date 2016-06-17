@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Progressive</title>
+    <script type="text/javascript" src="esl.js"></script>
+</head>
+<body>
+    <style>
+        html, body, #main {
+            width: 100%;
+            height: 100%;
+            background: red;
+        }
+    </style>
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+
+    require(['zrender', 'zrender/graphic/shape/BezierCurve'], function(zrender, BezierCurveShape){
+        // 初始化zrender
+        var zr = zrender.init(document.getElementById('main'));
+
+        var x1 = Math.random() * 2;
+        var y1 = Math.random() * zr.getHeight();
+        var cpx1 = Math.random() * zr.getWidth();
+        var cpy1 = Math.random() * zr.getHeight();
+        var x2 = Math.random() * zr.getWidth();
+        var y2 = Math.random() * zr.getHeight();
+        for (var i = 0; i < 10000; i++) {
+            x1 += (Math.random() - 0.5) * 10;
+            y1 += (Math.random() - 0.5) * 10;
+            cpx1 += (Math.random() - 0.5) * 10;
+            cpy1 += (Math.random() - 0.5) * 10;
+            x2 += (Math.random() - 0.5) * 10;
+            y2 += (Math.random() - 0.5) * 10;
+            var checkpoint = !(i % 2000);
+            var checkpointIdx = Math.round(i / 2000);
+            var el;
+            zr.add(el = new BezierCurveShape({
+                shape: {
+                    x1: x1,
+                    y1: y1,
+                    cpx1: cpx1,
+                    cpy1: cpy1,
+                    x2: x2,
+                    y2: y2
+                },
+                style: {
+                    lineWidth: 0.5,
+                    opacity: 0.1,
+                    stroke: 'rgb(' + [
+                        Math.round(255 * checkpointIdx / 5),
+                        Math.round(255 * checkpointIdx / 5),
+                        Math.round(255 * checkpointIdx / 5)
+                    ].join(',') + ')'
+                },
+                progressive: checkpoint ? -1 : Math.floor(i / 1000)
+            }));
+
+            el.on('mouseover', function () {
+                zr.addHover(this, {
+                    stroke: 'yellow',
+                    lineWidth: 10,
+                    opacity: 1
+                });
+                zr.refresh();
+            });
+            el.on('mouseout', function () {
+                zr.removeHover(this);
+            });
+        }
+    });
+    </script>
+    <div id="main"></div>
+</body>
+</html>
