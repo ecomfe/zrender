@@ -12,6 +12,7 @@
     var util = require('./core/util');
     var log = require('./core/log');
     var BoundingRect = require('./core/BoundingRect');
+    var timsort = require('./core/timsort');
 
     var Layer = require('./Layer');
 
@@ -317,6 +318,8 @@
             if (!len) {
                 return;
             }
+            timsort(hoverElements, this.storage.displayableSortFunc);
+
             // Use a extream large zlevel
             // FIXME?
             if (!hoverLayer) {
@@ -340,11 +343,13 @@
 
                 // Use transform
                 // FIXME style and shape ?
-                el.transform = originalEl.transform;
-                el.invTransform = originalEl.invTransform;
-                el.__clipPaths = originalEl.__clipPaths;
-                // el.
-                this._doPaintEl(el, hoverLayer, true, scope);
+                if (!originalEl.invisible) {
+                    el.transform = originalEl.transform;
+                    el.invTransform = originalEl.invTransform;
+                    el.__clipPaths = originalEl.__clipPaths;
+                    // el.
+                    this._doPaintEl(el, hoverLayer, true, scope);
+                }
             }
             hoverLayer.ctx.restore();
         },
