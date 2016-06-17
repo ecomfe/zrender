@@ -438,12 +438,6 @@
                         ctx.restore();
                     }
 
-                    // Must change another progressive layer
-                    if (currentProgressiveLayer) {
-                        flushProgressiveLayer(currentProgressiveLayer);
-                        currentProgressiveLayer = null;
-                    }
-
                     // Reset scope
                     scope = {};
 
@@ -490,7 +484,7 @@
                             // flushProgressiveLayer(currentProgressiveLayer);
                             // Quick jump all progressive elements
                             // All progressive element are not dirty, jump over and flush directly
-                            i = currentProgressiveLayer.__nextIdx - 1;
+                            i = currentProgressiveLayer.__nextIdxNotProg - 1;
                             // currentProgressiveLayer = null;
                             continue;
                         }
@@ -745,7 +739,6 @@
             var currentProgressiveLayer;
             var lastProgressiveKey;
             var frameCount = 0;
-            var prevZlevel;
             for (var i = 0, l = list.length; i < l; i++) {
                 var el = list[i];
                 var zlevel = this._singleCanvas ? 0 : el.zlevel;
@@ -757,14 +750,6 @@
                 }
 
                 /////// Update progressive
-                // Must change another layer
-                if (prevZlevel !== zlevel) {
-                    if (currentProgressiveLayer) {
-                        currentProgressiveLayer.__nextIdx = i;
-                        progressiveLayerCount++;
-                        currentProgressiveLayer = null;
-                    }
-                }
                 if (elProgress >= 0) {
                     // Fix wrong progressive sequence problem.
                     if (lastProgressiveKey !== elProgress) {
@@ -789,12 +774,17 @@
                     currentProgressiveLayer.__maxProgress = Math.max(
                         currentProgressiveLayer.__maxProgress, elFrame
                     );
+
+                    if (currentProgressiveLayer.__maxProgress >= currentProgressiveLayer.__progress) {
+                        // Should keep rendering this  layer because progressive rendering is not finished yet
+                        layer.__dirty = true;
+                    }
                 }
                 else {
                     el.__frame = -1;
 
                     if (currentProgressiveLayer) {
-                        currentProgressiveLayer.__nextIdx = i;
+                        currentProgressiveLayer.__nextIdxNotProg = i;
                         progressiveLayerCount++;
                         currentProgressiveLayer = null;
                     }
@@ -803,7 +793,7 @@
 
             if (currentProgressiveLayer) {
                 progressiveLayerCount++;
-                currentProgressiveLayer.__nextIdx = i;
+                currentProgressiveLayer.__nextIdxNotProg = i;
             }
 
             // 层中的元素数量有发生变化
