@@ -19,14 +19,15 @@ define(function(require) {
 
         this.r = r == null ? 0.5 : r;
 
+        // Can be cloned
+        this.type = 'radial';
+
         Gradient.call(this, colorStops);
     };
 
     RadialGradient.prototype = {
 
-        constructor: RadialGradient,
-
-        type: 'radial'
+        constructor: RadialGradient
     };
 
     zrUtil.inherits(RadialGradient, Gradient);

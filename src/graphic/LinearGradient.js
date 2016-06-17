@@ -22,14 +22,15 @@ define(function(require) {
 
         this.y2 = y2 == null ? 0 : y2;
 
+        // Can be cloned
+        this.type = 'linear';
+
         Gradient.call(this, colorStops);
     };
 
     LinearGradient.prototype = {
 
-        constructor: LinearGradient,
-
-        type: 'linear'
+        constructor: LinearGradient
     };
 
     zrUtil.inherits(LinearGradient, Gradient);

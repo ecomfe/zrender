@@ -259,7 +259,9 @@ define(function (require) {
             this._elements =
             this._renderList =
             this._roots = null;
-        }
+        },
+
+        displayableSortFunc: shapeCompareFunc
     };
 
     return Storage;

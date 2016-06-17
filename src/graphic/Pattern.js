@@ -3,9 +3,10 @@ define(function (require) {
     var Pattern = function (image, repeat) {
         this.image = image;
         this.repeat = repeat;
-    };
 
-    Pattern.prototype.type = 'pattern';
+        // Can be cloned
+        this.type = 'pattern';
+    };
 
     Pattern.prototype.getCanvasPattern = function (ctx) {
 
