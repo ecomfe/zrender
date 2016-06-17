@@ -340,7 +340,7 @@ define(function(require) {
          * @param {string} cursorStyle 例如 crosshair
          */
         setDefaultCursorStyle: function (cursorStyle) {
-            this.handler.setDefaultCursorStyle(cursorStyle);
+            this.handler && this.handler.setDefaultCursorStyle(cursorStyle);
         },
 
         /**
