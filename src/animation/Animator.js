@@ -316,12 +316,14 @@ define(function (require) {
             var frame;
             if (percent < lastFramePercent) {
                 // Start from next key
+                // PENDING start from lastFrame ?
                 start = Math.min(lastFrame + 1, trackLen - 1);
                 for (frame = start; frame >= 0; frame--) {
                     if (kfPercents[frame] <= percent) {
                         break;
                     }
                 }
+                // PENDING really need to do this ?
                 frame = Math.min(frame, trackLen - 2);
             }
             else {

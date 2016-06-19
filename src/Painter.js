@@ -441,6 +441,15 @@
                 var el = list[i];
                 var elZLevel = this._singleCanvas ? 0 : el.zlevel;
 
+                var elFrame = el.__frame;
+
+                // Flush at current context
+                // PENDING
+                if (elFrame < 0 && currentProgressiveLayer) {
+                    flushProgressiveLayer(currentProgressiveLayer);
+                    currentProgressiveLayer = null;
+                }
+
                 // Change draw layer
                 if (currentZLevel !== elZLevel) {
                     if (ctx) {
@@ -471,8 +480,6 @@
                         currentLayer.clear();
                     }
                 }
-
-                var elFrame = el.__frame;
 
                 if (!(currentLayer.__dirty || paintAll)) {
                     continue;
@@ -513,10 +520,6 @@
                     }
                 }
                 else {
-                    if (currentProgressiveLayer) {
-                        flushProgressiveLayer(currentProgressiveLayer);
-                        currentProgressiveLayer = null;
-                    }
                     this._doPaintEl(el, currentLayer, paintAll, scope);
                 }
 
