@@ -148,6 +148,10 @@ define(function (require) {
             return this._height;
         },
 
+        clear: function () {
+            this.root.removeChild(this.vmlViewport);
+        },
+
         _getWidth: function () {
             var root = this.root;
             var stl = root.currentStyle;
