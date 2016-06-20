@@ -131,6 +131,12 @@ define(function (require) {
         textShadowOffsetY: 0,
 
         /**
+         * @type {string}
+         * https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/globalCompositeOperation
+         */
+        blend: null,
+
+        /**
          * @param {CanvasRenderingContext2D} ctx
          */
         bind: function (ctx, el, prevEl) {
@@ -156,6 +162,9 @@ define(function (require) {
             }
             if ((firstDraw || style.opacity !== prevStyle.opacity)) {
                 ctx.globalAlpha = style.opacity == null ? 1 : style.opacity;
+            }
+            if ((firstDraw || style.blend !== prevStyle.blend)) {
+                ctx.globalCompositeOperation = style.blend || 'source-over';
             }
             if (this.hasStroke()) {
                 var lineWidth = style.lineWidth;
