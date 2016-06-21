@@ -228,10 +228,17 @@ define(function (require) {
 
         createLinearGradient: function (ctx, obj, rect) {
             // var size =
-            var x = obj.x * rect.width + rect.x;
-            var x2 = obj.x2 * rect.width + rect.x;
-            var y = obj.y * rect.height + rect.y;
-            var y2 = obj.y2 * rect.height + rect.y;
+            var x = obj.x;
+            var x2 = obj.x2;
+            var y = obj.y;
+            var y2 = obj.y2;
+
+            if (!obj.global) {
+                x = x * rect.width + rect.x;
+                x2 = x2 * rect.width + rect.x;
+                y = y * rect.height + rect.y;
+                y2 = y2 * rect.height + rect.y;
+            }
 
             var canvasGradient = ctx.createLinearGradient(x, y, x2, y2);
 
@@ -243,9 +250,15 @@ define(function (require) {
             var height = rect.height;
             var min = Math.min(width, height);
 
-            var x = obj.x * width + rect.x;
-            var y = obj.y * height + rect.y;
-            var r = obj.r * min;
+            var x = obj.x;
+            var y = obj.y;
+            var r = obj.r;
+            if (!obj.global) {
+                x = x * width + rect.x;
+                y = y * height + rect.y;
+                r = r * min;
+            }
+
 
             var canvasGradient = ctx.createRadialGradient(x, y, 0, x, y, r);
 

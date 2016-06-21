@@ -11,8 +11,9 @@ define(function(require) {
      * @param {number} [y=0.5]
      * @param {number} [r=0.5]
      * @param {Array.<Object>} [colorStops]
+     * @param {boolean} [globalCoord=false]
      */
-    var RadialGradient = function (x, y, r, colorStops) {
+    var RadialGradient = function (x, y, r, colorStops, globalCoord) {
         this.x = x == null ? 0.5 : x;
 
         this.y = y == null ? 0.5 : y;
@@ -21,6 +22,9 @@ define(function(require) {
 
         // Can be cloned
         this.type = 'radial';
+
+        // If use global coord
+        this.global = globalCoord || false;
 
         Gradient.call(this, colorStops);
     };
