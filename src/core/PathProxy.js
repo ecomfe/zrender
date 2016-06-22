@@ -423,14 +423,15 @@ define(function (require) {
             x -= offset * dx;
             y -= offset * dy;
 
-            while ((dx >= 0 && x <= x1) || (dx < 0 && x > x1)) {
+            while ((dx > 0 && x <= x1) || (dx < 0 && x >= x1)
+            || (dx == 0 && ((dy > 0 && y <= y1) || (dy < 0 && y >= y1)))) {
                 idx = this._dashIdx;
                 dash = lineDash[idx];
                 x += dx * dash;
                 y += dy * dash;
                 this._dashIdx = (idx + 1) % nDash;
                 // Skip positive offset
-                if ((dx > 0 && x < x0) || (dx < 0 && x > x0)) {
+                if ((dx > 0 && x < x0) || (dx < 0 && x > x0) || (dy > 0 && y < y0) || (dy < 0 && y > y0)) {
                     continue;
                 }
                 ctx[idx % 2 ? 'moveTo' : 'lineTo'](
