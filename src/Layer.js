@@ -6,6 +6,7 @@ define(function (require) {
 
     var util = require('./core/util');
     var config = require('./config');
+    var Style = require('./graphic/Style');
 
     function returnFalse() {
         return false;
@@ -174,7 +175,7 @@ define(function (require) {
             var width = dom.width;
             var height = dom.height;
 
-            var haveClearColor = this.clearColor;
+            var clearColor = this.clearColor;
             var haveMotionBLur = this.motionBlur && !clearAll;
             var lastFrameAlpha = this.lastFrameAlpha;
 
@@ -194,9 +195,21 @@ define(function (require) {
             }
 
             ctx.clearRect(0, 0, width / dpr, height / dpr);
-            if (haveClearColor) {
+            if (clearColor) {
+                var clearColorGradient;
+                if (clearColor.colorStops) {
+                    // Cache canvas gradient
+                    clearColorGradient = clearColor.__canvasGradient || Style.getGradient(ctx, clearColor, {
+                        x: 0,
+                        y: 0,
+                        width: width / dpr,
+                        height: height / dpr
+                    });
+
+                    clearColor.__canvasGradient = clearColorGradient;
+                }
                 ctx.save();
-                ctx.fillStyle = this.clearColor;
+                ctx.fillStyle = clearColorGradient || clearColor;
                 ctx.fillRect(0, 0, width / dpr, height / dpr);
                 ctx.restore();
             }
