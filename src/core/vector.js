@@ -19,8 +19,14 @@ define(function () {
          */
         create: function (x, y) {
             var out = new ArrayCtor(2);
-            out[0] = x || 0;
-            out[1] = y || 0;
+            if (x == null) {
+                x = 0;
+            }
+            if (y == null) {
+                y = 0;
+            }
+            out[0] = x;
+            out[1] = y;
             return out;
         },
 
