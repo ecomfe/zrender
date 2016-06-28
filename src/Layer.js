@@ -7,6 +7,7 @@ define(function (require) {
     var util = require('./core/util');
     var config = require('./config');
     var Style = require('./graphic/Style');
+    var Pattern = require('./graphic/Pattern');
 
     function returnFalse() {
         return false;
@@ -196,20 +197,25 @@ define(function (require) {
 
             ctx.clearRect(0, 0, width / dpr, height / dpr);
             if (clearColor) {
-                var clearColorGradient;
+                var clearColorGradientOrPattern;
+                // Gradient
                 if (clearColor.colorStops) {
                     // Cache canvas gradient
-                    clearColorGradient = clearColor.__canvasGradient || Style.getGradient(ctx, clearColor, {
+                    clearColorGradientOrPattern = clearColor.__canvasGradient || Style.getGradient(ctx, clearColor, {
                         x: 0,
                         y: 0,
                         width: width / dpr,
                         height: height / dpr
                     });
 
-                    clearColor.__canvasGradient = clearColorGradient;
+                    clearColor.__canvasGradient = clearColorGradientOrPattern;
+                }
+                // Pattern
+                else if (clearColor.image) {
+                    clearColorGradientOrPattern = Pattern.prototype.getCanvasPattern.call(clearColor, ctx);
                 }
                 ctx.save();
-                ctx.fillStyle = clearColorGradient || clearColor;
+                ctx.fillStyle = clearColorGradientOrPattern || clearColor;
                 ctx.fillRect(0, 0, width / dpr, height / dpr);
                 ctx.restore();
             }
