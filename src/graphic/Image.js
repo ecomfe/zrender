@@ -34,7 +34,7 @@ define(function (require) {
             var image;
 
             // Must bind each time
-            style.bind(ctx, prevEl);
+            style.bind(ctx, this, prevEl);
 
             // style.image is a url string
             if (typeof src === 'string') {

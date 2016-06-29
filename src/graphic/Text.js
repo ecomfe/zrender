@@ -40,7 +40,7 @@ define(function (require) {
             text != null && (text += '');
 
             // Always bind style
-            style.bind(ctx, prevEl);
+            style.bind(ctx, this, prevEl);
 
             if (text) {
 
