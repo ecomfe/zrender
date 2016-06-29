@@ -24,6 +24,7 @@ define(function (require) {
                 // if (a.z2 === b.z2) {
                 //     // FIXME Slow has renderidx compare
                 //     // http://stackoverflow.com/questions/20883421/sorting-in-javascript-should-every-compare-function-have-a-return-0-statement
+                //     // https://github.com/v8/v8/blob/47cce544a31ed5577ffe2963f67acb4144ee0232/src/js/array.js#L1012
                 //     return a.__renderidx - b.__renderidx;
                 // }
                 return a.z2 - b.z2;
