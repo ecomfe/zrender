@@ -214,15 +214,15 @@ if (!require('../core/env').canvasSupported) {
     };
 
     var updateStrokeNode = function (el, style) {
-        if (style.lineJoin != null) {
-            el.joinstyle = style.lineJoin;
-        }
-        if (style.miterLimit != null) {
-            el.miterlimit = style.miterLimit * Z;
-        }
-        if (style.lineCap != null) {
-            el.endcap = style.lineCap;
-        }
+        // if (style.lineJoin != null) {
+        //     el.joinstyle = style.lineJoin;
+        // }
+        // if (style.miterLimit != null) {
+        //     el.miterlimit = style.miterLimit * Z;
+        // }
+        // if (style.lineCap != null) {
+        //     el.endcap = style.lineCap;
+        // }
         if (style.lineDash != null) {
             el.dashstyle = style.lineDash.join(' ');
         }
@@ -832,6 +832,7 @@ if (!require('../core/env').canvasSupported) {
         // FIXME encodeHtmlAttribute ?
         var font = fontStyle.style + ' ' + fontStyle.variant + ' ' + fontStyle.weight + ' '
             + fontStyle.size + 'px "' + fontStyle.family + '"';
+        console.log(font);
         var baseline = style.textBaseline;
         var verticalAlign = style.textVerticalAlign;
 
