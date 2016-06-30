@@ -13876,7 +13876,7 @@ if (!require('../core/env').canvasSupported) {
         // FIXME encodeHtmlAttribute ?
         var font = fontStyle.style + ' ' + fontStyle.variant + ' ' + fontStyle.weight + ' '
             + fontStyle.size + 'px "' + fontStyle.family + '"';
-        console.log(font);
+
         var baseline = style.textBaseline;
         var verticalAlign = style.textVerticalAlign;
 
