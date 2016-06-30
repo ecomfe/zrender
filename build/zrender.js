@@ -5,15 +5,13 @@
  * @author errorrik (errorrik@gmail.com)
  */
 
-define(
-    'zrender/core/guid',[],function() {
-        var idStart = 0x0907;
+define('zrender/core/guid',[],function() {
+    var idStart = 0x0907;
 
-        return function () {
-            return 'zr_' + (idStart++);
-        };
-    }
-);
+    return function () {
+        return idStart++;
+    };
+});
 
 /**
  * echarts设备环境识别
@@ -47,23 +45,23 @@ define('zrender/core/env',[],function () {
     function detect(ua) {
         var os = {};
         var browser = {};
-        var webkit = ua.match(/Web[kK]it[\/]{0,1}([\d.]+)/);
-        var android = ua.match(/(Android);?[\s\/]+([\d.]+)?/);
-        var ipad = ua.match(/(iPad).*OS\s([\d_]+)/);
-        var ipod = ua.match(/(iPod)(.*OS\s([\d_]+))?/);
-        var iphone = !ipad && ua.match(/(iPhone\sOS)\s([\d_]+)/);
-        var webos = ua.match(/(webOS|hpwOS)[\s\/]([\d.]+)/);
-        var touchpad = webos && ua.match(/TouchPad/);
-        var kindle = ua.match(/Kindle\/([\d.]+)/);
-        var silk = ua.match(/Silk\/([\d._]+)/);
-        var blackberry = ua.match(/(BlackBerry).*Version\/([\d.]+)/);
-        var bb10 = ua.match(/(BB10).*Version\/([\d.]+)/);
-        var rimtabletos = ua.match(/(RIM\sTablet\sOS)\s([\d.]+)/);
-        var playbook = ua.match(/PlayBook/);
-        var chrome = ua.match(/Chrome\/([\d.]+)/) || ua.match(/CriOS\/([\d.]+)/);
-        var firefox = ua.match(/Firefox\/([\d.]+)/);
-        var safari = webkit && ua.match(/Mobile\//) && !chrome;
-        var webview = ua.match(/(iPhone|iPod|iPad).*AppleWebKit(?!.*Safari)/) && !chrome;
+        // var webkit = ua.match(/Web[kK]it[\/]{0,1}([\d.]+)/);
+        // var android = ua.match(/(Android);?[\s\/]+([\d.]+)?/);
+        // var ipad = ua.match(/(iPad).*OS\s([\d_]+)/);
+        // var ipod = ua.match(/(iPod)(.*OS\s([\d_]+))?/);
+        // var iphone = !ipad && ua.match(/(iPhone\sOS)\s([\d_]+)/);
+        // var webos = ua.match(/(webOS|hpwOS)[\s\/]([\d.]+)/);
+        // var touchpad = webos && ua.match(/TouchPad/);
+        // var kindle = ua.match(/Kindle\/([\d.]+)/);
+        // var silk = ua.match(/Silk\/([\d._]+)/);
+        // var blackberry = ua.match(/(BlackBerry).*Version\/([\d.]+)/);
+        // var bb10 = ua.match(/(BB10).*Version\/([\d.]+)/);
+        // var rimtabletos = ua.match(/(RIM\sTablet\sOS)\s([\d.]+)/);
+        // var playbook = ua.match(/PlayBook/);
+        // var chrome = ua.match(/Chrome\/([\d.]+)/) || ua.match(/CriOS\/([\d.]+)/);
+        // var firefox = ua.match(/Firefox\/([\d.]+)/);
+        // var safari = webkit && ua.match(/Mobile\//) && !chrome;
+        // var webview = ua.match(/(iPhone|iPod|iPad).*AppleWebKit(?!.*Safari)/) && !chrome;
         var ie = ua.match(/MSIE\s([\d.]+)/)
             // IE 11 Trident/7.0; rv:11.0
             || ua.match(/Trident\/.+?rv:(([\d.]+))/);
@@ -75,34 +73,42 @@ define('zrender/core/env',[],function () {
         // - Firefox on Android doesn't specify the Android version
         // - possibly devide in os, device and browser hashes
 
-        if (browser.webkit = !!webkit) browser.version = webkit[1];
+        // if (browser.webkit = !!webkit) browser.version = webkit[1];
 
-        if (android) os.android = true, os.version = android[2];
-        if (iphone && !ipod) os.ios = os.iphone = true, os.version = iphone[2].replace(/_/g, '.');
-        if (ipad) os.ios = os.ipad = true, os.version = ipad[2].replace(/_/g, '.');
-        if (ipod) os.ios = os.ipod = true, os.version = ipod[3] ? ipod[3].replace(/_/g, '.') : null;
-        if (webos) os.webos = true, os.version = webos[2];
-        if (touchpad) os.touchpad = true;
-        if (blackberry) os.blackberry = true, os.version = blackberry[2];
-        if (bb10) os.bb10 = true, os.version = bb10[2];
-        if (rimtabletos) os.rimtabletos = true, os.version = rimtabletos[2];
-        if (playbook) browser.playbook = true;
-        if (kindle) os.kindle = true, os.version = kindle[1];
-        if (silk) browser.silk = true, browser.version = silk[1];
-        if (!silk && os.android && ua.match(/Kindle Fire/)) browser.silk = true;
-        if (chrome) browser.chrome = true, browser.version = chrome[1];
-        if (firefox) browser.firefox = true, browser.version = firefox[1];
-        if (ie) browser.ie = true, browser.version = ie[1];
-        if (safari && (ua.match(/Safari/) || !!os.ios)) browser.safari = true;
-        if (webview) browser.webview = true;
-        if (ie) browser.ie = true, browser.version = ie[1];
-        if (edge) browser.edge = true, browser.version = edge[1];
+        // if (android) os.android = true, os.version = android[2];
+        // if (iphone && !ipod) os.ios = os.iphone = true, os.version = iphone[2].replace(/_/g, '.');
+        // if (ipad) os.ios = os.ipad = true, os.version = ipad[2].replace(/_/g, '.');
+        // if (ipod) os.ios = os.ipod = true, os.version = ipod[3] ? ipod[3].replace(/_/g, '.') : null;
+        // if (webos) os.webos = true, os.version = webos[2];
+        // if (touchpad) os.touchpad = true;
+        // if (blackberry) os.blackberry = true, os.version = blackberry[2];
+        // if (bb10) os.bb10 = true, os.version = bb10[2];
+        // if (rimtabletos) os.rimtabletos = true, os.version = rimtabletos[2];
+        // if (playbook) browser.playbook = true;
+        // if (kindle) os.kindle = true, os.version = kindle[1];
+        // if (silk) browser.silk = true, browser.version = silk[1];
+        // if (!silk && os.android && ua.match(/Kindle Fire/)) browser.silk = true;
+        // if (chrome) browser.chrome = true, browser.version = chrome[1];
+        // if (firefox) browser.firefox = true, browser.version = firefox[1];
+        // if (safari && (ua.match(/Safari/) || !!os.ios)) browser.safari = true;
+        // if (webview) browser.webview = true;
+        if (ie) {
+            browser.ie = true; browser.version = ie[1];
+        }
+        if (ie) {
+            browser.ie = true;
+            browser.version = ie[1];
+        }
+        if (edge) {
+            browser.edge = true;
+            browser.version = edge[1];
+        }
 
-        os.tablet = !!(ipad || playbook || (android && !ua.match(/Mobile/)) ||
-            (firefox && ua.match(/Tablet/)) || (ie && !ua.match(/Phone/) && ua.match(/Touch/)));
-        os.phone  = !!(!os.tablet && !os.ipod && (android || iphone || webos || blackberry || bb10 ||
-            (chrome && ua.match(/Android/)) || (chrome && ua.match(/CriOS\/([\d.]+)/)) ||
-            (firefox && ua.match(/Mobile/)) || (ie && ua.match(/Touch/))));
+        // os.tablet = !!(ipad || playbook || (android && !ua.match(/Mobile/)) ||
+        //     (firefox && ua.match(/Tablet/)) || (ie && !ua.match(/Phone/) && ua.match(/Touch/)));
+        // os.phone  = !!(!os.tablet && !os.ipod && (android || iphone || webos ||
+        //     (chrome && ua.match(/Android/)) || (chrome && ua.match(/CriOS\/([\d.]+)/)) ||
+        //     (firefox && ua.match(/Mobile/)) || (ie && ua.match(/Touch/))));
 
         return {
             browser: browser,
@@ -124,44 +130,421 @@ define('zrender/core/env',[],function () {
         };
     }
 });
-define('zrender/graphic/Gradient',['require'],function (require) {
+/**
+ * 事件扩展
+ * @module zrender/mixin/Eventful
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
+ *         pissang (https://www.github.com/pissang)
+ */
+define('zrender/mixin/Eventful',['require'],function (require) {
+
+    var arrySlice = Array.prototype.slice;
 
     /**
-     * @param {Array.<Object>} colorStops
+     * 事件分发器
+     * @alias module:zrender/mixin/Eventful
+     * @constructor
      */
-    var Gradient = function (colorStops) {
-
-        this.colorStops = colorStops || [];
+    var Eventful = function () {
+        this._$handlers = {};
     };
 
-    Gradient.prototype = {
+    Eventful.prototype = {
 
-        constructor: Gradient,
+        constructor: Eventful,
 
-        addColorStop: function (offset, color) {
-            this.colorStops.push({
+        /**
+         * 单次触发绑定，trigger后销毁
+         *
+         * @param {string} event 事件名
+         * @param {Function} handler 响应函数
+         * @param {Object} context
+         */
+        one: function (event, handler, context) {
+            var _h = this._$handlers;
 
-                offset: offset,
+            if (!handler || !event) {
+                return this;
+            }
 
-                color: color
+            if (!_h[event]) {
+                _h[event] = [];
+            }
+
+            for (var i = 0; i < _h[event].length; i++) {
+                if (_h[event][i].h === handler) {
+                    return this;
+                }
+            }
+
+            _h[event].push({
+                h: handler,
+                one: true,
+                ctx: context || this
             });
+
+            return this;
+        },
+
+        /**
+         * 绑定事件
+         * @param {string} event 事件名
+         * @param {Function} handler 事件处理函数
+         * @param {Object} [context]
+         */
+        on: function (event, handler, context) {
+            var _h = this._$handlers;
+
+            if (!handler || !event) {
+                return this;
+            }
+
+            if (!_h[event]) {
+                _h[event] = [];
+            }
+
+            for (var i = 0; i < _h[event].length; i++) {
+                if (_h[event][i].h === handler) {
+                    return this;
+                }
+            }
+
+            _h[event].push({
+                h: handler,
+                one: false,
+                ctx: context || this
+            });
+
+            return this;
+        },
+
+        /**
+         * 是否绑定了事件
+         * @param  {string}  event
+         * @return {boolean}
+         */
+        isSilent: function (event) {
+            var _h = this._$handlers;
+            return _h[event] && _h[event].length;
+        },
+
+        /**
+         * 解绑事件
+         * @param {string} event 事件名
+         * @param {Function} [handler] 事件处理函数
+         */
+        off: function (event, handler) {
+            var _h = this._$handlers;
+
+            if (!event) {
+                this._$handlers = {};
+                return this;
+            }
+
+            if (handler) {
+                if (_h[event]) {
+                    var newList = [];
+                    for (var i = 0, l = _h[event].length; i < l; i++) {
+                        if (_h[event][i]['h'] != handler) {
+                            newList.push(_h[event][i]);
+                        }
+                    }
+                    _h[event] = newList;
+                }
+
+                if (_h[event] && _h[event].length === 0) {
+                    delete _h[event];
+                }
+            }
+            else {
+                delete _h[event];
+            }
+
+            return this;
+        },
+
+        /**
+         * 事件分发
+         *
+         * @param {string} type 事件类型
+         */
+        trigger: function (type) {
+            if (this._$handlers[type]) {
+                var args = arguments;
+                var argLen = args.length;
+
+                if (argLen > 3) {
+                    args = arrySlice.call(args, 1);
+                }
+
+                var _h = this._$handlers[type];
+                var len = _h.length;
+                for (var i = 0; i < len;) {
+                    // Optimize advise from backbone
+                    switch (argLen) {
+                        case 1:
+                            _h[i]['h'].call(_h[i]['ctx']);
+                            break;
+                        case 2:
+                            _h[i]['h'].call(_h[i]['ctx'], args[1]);
+                            break;
+                        case 3:
+                            _h[i]['h'].call(_h[i]['ctx'], args[1], args[2]);
+                            break;
+                        default:
+                            // have more than 2 given arguments
+                            _h[i]['h'].apply(_h[i]['ctx'], args);
+                            break;
+                    }
+
+                    if (_h[i]['one']) {
+                        _h.splice(i, 1);
+                        len--;
+                    }
+                    else {
+                        i++;
+                    }
+                }
+            }
+
+            return this;
+        },
+
+        /**
+         * 带有context的事件分发, 最后一个参数是事件回调的context
+         * @param {string} type 事件类型
+         */
+        triggerWithContext: function (type) {
+            if (this._$handlers[type]) {
+                var args = arguments;
+                var argLen = args.length;
+
+                if (argLen > 4) {
+                    args = arrySlice.call(args, 1, args.length - 1);
+                }
+                var ctx = args[args.length - 1];
+
+                var _h = this._$handlers[type];
+                var len = _h.length;
+                for (var i = 0; i < len;) {
+                    // Optimize advise from backbone
+                    switch (argLen) {
+                        case 1:
+                            _h[i]['h'].call(ctx);
+                            break;
+                        case 2:
+                            _h[i]['h'].call(ctx, args[1]);
+                            break;
+                        case 3:
+                            _h[i]['h'].call(ctx, args[1], args[2]);
+                            break;
+                        default:
+                            // have more than 2 given arguments
+                            _h[i]['h'].apply(ctx, args);
+                            break;
+                    }
+
+                    if (_h[i]['one']) {
+                        _h.splice(i, 1);
+                        len--;
+                    }
+                    else {
+                        i++;
+                    }
+                }
+            }
+
+            return this;
         }
     };
 
-    return Gradient;
+    // 对象可以通过 onxxxx 绑定事件
+    /**
+     * @event module:zrender/mixin/Eventful#onclick
+     * @type {Function}
+     * @default null
+     */
+    /**
+     * @event module:zrender/mixin/Eventful#onmouseover
+     * @type {Function}
+     * @default null
+     */
+    /**
+     * @event module:zrender/mixin/Eventful#onmouseout
+     * @type {Function}
+     * @default null
+     */
+    /**
+     * @event module:zrender/mixin/Eventful#onmousemove
+     * @type {Function}
+     * @default null
+     */
+    /**
+     * @event module:zrender/mixin/Eventful#onmousewheel
+     * @type {Function}
+     * @default null
+     */
+    /**
+     * @event module:zrender/mixin/Eventful#onmousedown
+     * @type {Function}
+     * @default null
+     */
+    /**
+     * @event module:zrender/mixin/Eventful#onmouseup
+     * @type {Function}
+     * @default null
+     */
+    /**
+     * @event module:zrender/mixin/Eventful#ondragstart
+     * @type {Function}
+     * @default null
+     */
+    /**
+     * @event module:zrender/mixin/Eventful#ondragend
+     * @type {Function}
+     * @default null
+     */
+    /**
+     * @event module:zrender/mixin/Eventful#ondragenter
+     * @type {Function}
+     * @default null
+     */
+    /**
+     * @event module:zrender/mixin/Eventful#ondragleave
+     * @type {Function}
+     * @default null
+     */
+    /**
+     * @event module:zrender/mixin/Eventful#ondragover
+     * @type {Function}
+     * @default null
+     */
+    /**
+     * @event module:zrender/mixin/Eventful#ondrop
+     * @type {Function}
+     * @default null
+     */
+
+    return Eventful;
 });
+
+/**
+ * 事件辅助类
+ * @module zrender/core/event
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
+ */
+define('zrender/core/event',['require','../mixin/Eventful'],function(require) {
+
+    
+
+    var Eventful = require('../mixin/Eventful');
+
+    var isDomLevel2 = (typeof window !== 'undefined') && !!window.addEventListener;
+
+    function getBoundingClientRect(el) {
+        // BlackBerry 5, iOS 3 (original iPhone) don't have getBoundingRect
+        return el.getBoundingClientRect ? el.getBoundingClientRect() : {left: 0, top: 0};
+    }
+
+    function clientToLocal(el, e, out) {
+        // clientX/clientY is according to view port.
+        var box = getBoundingClientRect(el);
+        out = out || {};
+        out.zrX = e.clientX - box.left;
+        out.zrY = e.clientY - box.top;
+        return out;
+    }
+
+    /**
+     * 如果存在第三方嵌入的一些dom触发的事件，或touch事件，需要转换一下事件坐标
+     */
+    function normalizeEvent(el, e) {
+
+        e = e || window.event;
+
+        if (e.zrX != null) {
+            return e;
+        }
+
+        var eventType = e.type;
+        var isTouch = eventType && eventType.indexOf('touch') >= 0;
+
+        if (!isTouch) {
+            clientToLocal(el, e, e);
+            e.zrDelta = (e.wheelDelta) ? e.wheelDelta / 120 : -(e.detail || 0) / 3;
+        }
+        else {
+            var touch = eventType != 'touchend'
+                ? e.targetTouches[0]
+                : e.changedTouches[0];
+            touch && clientToLocal(el, touch, e);
+        }
+
+        return e;
+    }
+
+    function addEventListener(el, name, handler) {
+        if (isDomLevel2) {
+            el.addEventListener(name, handler);
+        }
+        else {
+            el.attachEvent('on' + name, handler);
+        }
+    }
+
+    function removeEventListener(el, name, handler) {
+        if (isDomLevel2) {
+            el.removeEventListener(name, handler);
+        }
+        else {
+            el.detachEvent('on' + name, handler);
+        }
+    }
+
+    /**
+     * 停止冒泡和阻止默认行为
+     * @memberOf module:zrender/core/event
+     * @method
+     * @param {Event} e : event对象
+     */
+    var stop = isDomLevel2
+        ? function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.cancelBubble = true;
+        }
+        : function (e) {
+            e.returnValue = false;
+            e.cancelBubble = true;
+        };
+
+    return {
+        clientToLocal: clientToLocal,
+        normalizeEvent: normalizeEvent,
+        addEventListener: addEventListener,
+        removeEventListener: removeEventListener,
+
+        stop: stop,
+        // 做向上兼容
+        Dispatcher: Eventful
+    };
+});
+
 /**
  * @module zrender/core/util
  */
-define('zrender/core/util',['require','../graphic/Gradient'],function(require) {
-    var Gradient = require('../graphic/Gradient');
+define('zrender/core/util',['require'],function(require) {
+
     // 用于处理merge时无法遍历Date等对象的问题
     var BUILTIN_OBJECT = {
         '[object Function]': 1,
         '[object RegExp]': 1,
         '[object Date]': 1,
         '[object Error]': 1,
-        '[object CanvasGradient]': 1
+        '[object CanvasGradient]': 1,
+        '[object CanvasPattern]': 1,
+        // In node-canvas Image can be Canvas.Image
+        '[object Image]': 1
     };
 
     var objToString = Object.prototype.toString;
@@ -558,8 +941,7 @@ define('zrender/core/util',['require','../graphic/Gradient'],function(require) {
      * @return {boolean}
      */
     function isBuildInObject(value) {
-        return !!BUILTIN_OBJECT[objToString.call(value)]
-            || (value instanceof Gradient);
+        return !!BUILTIN_OBJECT[objToString.call(value)];
     }
 
     /**
@@ -638,396 +1020,6 @@ define('zrender/core/util',['require','../graphic/Gradient'],function(require) {
         noop: function () {}
     };
     return util;
-});
-
-/**
- * 事件扩展
- * @module zrender/mixin/Eventful
- * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
- *         pissang (https://www.github.com/pissang)
- */
-define('zrender/mixin/Eventful',['require','../core/util'],function (require) {
-
-    var arrySlice = Array.prototype.slice;
-    var zrUtil = require('../core/util');
-    var indexOf = zrUtil.indexOf;
-
-    /**
-     * 事件分发器
-     * @alias module:zrender/mixin/Eventful
-     * @constructor
-     */
-    var Eventful = function () {
-        this._$handlers = {};
-    };
-
-    Eventful.prototype = {
-
-        constructor: Eventful,
-
-        /**
-         * 单次触发绑定，trigger后销毁
-         *
-         * @param {string} event 事件名
-         * @param {Function} handler 响应函数
-         * @param {Object} context
-         */
-        one: function (event, handler, context) {
-            var _h = this._$handlers;
-
-            if (!handler || !event) {
-                return this;
-            }
-
-            if (!_h[event]) {
-                _h[event] = [];
-            }
-
-            if (indexOf(_h[event], event) >= 0) {
-                return this;
-            }
-
-            _h[event].push({
-                h: handler,
-                one: true,
-                ctx: context || this
-            });
-
-            return this;
-        },
-
-        /**
-         * 绑定事件
-         * @param {string} event 事件名
-         * @param {Function} handler 事件处理函数
-         * @param {Object} [context]
-         */
-        on: function (event, handler, context) {
-            var _h = this._$handlers;
-
-            if (!handler || !event) {
-                return this;
-            }
-
-            if (!_h[event]) {
-                _h[event] = [];
-            }
-
-            _h[event].push({
-                h: handler,
-                one: false,
-                ctx: context || this
-            });
-
-            return this;
-        },
-
-        /**
-         * 是否绑定了事件
-         * @param  {string}  event
-         * @return {boolean}
-         */
-        isSilent: function (event) {
-            var _h = this._$handlers;
-            return _h[event] && _h[event].length;
-        },
-
-        /**
-         * 解绑事件
-         * @param {string} event 事件名
-         * @param {Function} [handler] 事件处理函数
-         */
-        off: function (event, handler) {
-            var _h = this._$handlers;
-
-            if (!event) {
-                this._$handlers = {};
-                return this;
-            }
-
-            if (handler) {
-                if (_h[event]) {
-                    var newList = [];
-                    for (var i = 0, l = _h[event].length; i < l; i++) {
-                        if (_h[event][i]['h'] != handler) {
-                            newList.push(_h[event][i]);
-                        }
-                    }
-                    _h[event] = newList;
-                }
-
-                if (_h[event] && _h[event].length === 0) {
-                    delete _h[event];
-                }
-            }
-            else {
-                delete _h[event];
-            }
-
-            return this;
-        },
-
-        /**
-         * 事件分发
-         *
-         * @param {string} type 事件类型
-         */
-        trigger: function (type) {
-            if (this._$handlers[type]) {
-                var args = arguments;
-                var argLen = args.length;
-
-                if (argLen > 3) {
-                    args = arrySlice.call(args, 1);
-                }
-
-                var _h = this._$handlers[type];
-                var len = _h.length;
-                for (var i = 0; i < len;) {
-                    // Optimize advise from backbone
-                    switch (argLen) {
-                        case 1:
-                            _h[i]['h'].call(_h[i]['ctx']);
-                            break;
-                        case 2:
-                            _h[i]['h'].call(_h[i]['ctx'], args[1]);
-                            break;
-                        case 3:
-                            _h[i]['h'].call(_h[i]['ctx'], args[1], args[2]);
-                            break;
-                        default:
-                            // have more than 2 given arguments
-                            _h[i]['h'].apply(_h[i]['ctx'], args);
-                            break;
-                    }
-
-                    if (_h[i]['one']) {
-                        _h.splice(i, 1);
-                        len--;
-                    }
-                    else {
-                        i++;
-                    }
-                }
-            }
-
-            return this;
-        },
-
-        /**
-         * 带有context的事件分发, 最后一个参数是事件回调的context
-         * @param {string} type 事件类型
-         */
-        triggerWithContext: function (type) {
-            if (this._$handlers[type]) {
-                var args = arguments;
-                var argLen = args.length;
-
-                if (argLen > 4) {
-                    args = arrySlice.call(args, 1, args.length - 1);
-                }
-                var ctx = args[args.length - 1];
-
-                var _h = this._$handlers[type];
-                var len = _h.length;
-                for (var i = 0; i < len;) {
-                    // Optimize advise from backbone
-                    switch (argLen) {
-                        case 1:
-                            _h[i]['h'].call(ctx);
-                            break;
-                        case 2:
-                            _h[i]['h'].call(ctx, args[1]);
-                            break;
-                        case 3:
-                            _h[i]['h'].call(ctx, args[1], args[2]);
-                            break;
-                        default:
-                            // have more than 2 given arguments
-                            _h[i]['h'].apply(ctx, args);
-                            break;
-                    }
-
-                    if (_h[i]['one']) {
-                        _h.splice(i, 1);
-                        len--;
-                    }
-                    else {
-                        i++;
-                    }
-                }
-            }
-
-            return this;
-        }
-    };
-
-    // 对象可以通过 onxxxx 绑定事件
-    /**
-     * @event module:zrender/mixin/Eventful#onclick
-     * @type {Function}
-     * @default null
-     */
-    /**
-     * @event module:zrender/mixin/Eventful#onmouseover
-     * @type {Function}
-     * @default null
-     */
-    /**
-     * @event module:zrender/mixin/Eventful#onmouseout
-     * @type {Function}
-     * @default null
-     */
-    /**
-     * @event module:zrender/mixin/Eventful#onmousemove
-     * @type {Function}
-     * @default null
-     */
-    /**
-     * @event module:zrender/mixin/Eventful#onmousewheel
-     * @type {Function}
-     * @default null
-     */
-    /**
-     * @event module:zrender/mixin/Eventful#onmousedown
-     * @type {Function}
-     * @default null
-     */
-    /**
-     * @event module:zrender/mixin/Eventful#onmouseup
-     * @type {Function}
-     * @default null
-     */
-    /**
-     * @event module:zrender/mixin/Eventful#ondragstart
-     * @type {Function}
-     * @default null
-     */
-    /**
-     * @event module:zrender/mixin/Eventful#ondragend
-     * @type {Function}
-     * @default null
-     */
-    /**
-     * @event module:zrender/mixin/Eventful#ondragenter
-     * @type {Function}
-     * @default null
-     */
-    /**
-     * @event module:zrender/mixin/Eventful#ondragleave
-     * @type {Function}
-     * @default null
-     */
-    /**
-     * @event module:zrender/mixin/Eventful#ondragover
-     * @type {Function}
-     * @default null
-     */
-    /**
-     * @event module:zrender/mixin/Eventful#ondrop
-     * @type {Function}
-     * @default null
-     */
-
-    return Eventful;
-});
-
-/**
- * 事件辅助类
- * @module zrender/core/event
- * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
- */
-define('zrender/core/event',['require','../mixin/Eventful'],function(require) {
-
-    
-
-    var Eventful = require('../mixin/Eventful');
-
-    var isDomLevel2 = (typeof window !== 'undefined') && !!window.addEventListener;
-
-    function getBoundingClientRect(el) {
-        // BlackBerry 5, iOS 3 (original iPhone) don't have getBoundingRect
-        return el.getBoundingClientRect ? el.getBoundingClientRect() : { left: 0, top: 0};
-    }
-    /**
-     * 如果存在第三方嵌入的一些dom触发的事件，或touch事件，需要转换一下事件坐标
-     */
-    function normalizeEvent(el, e) {
-
-        e = e || window.event;
-
-        if (e.zrX != null) {
-            return e;
-        }
-
-        var eventType = e.type;
-        var isTouch = eventType && eventType.indexOf('touch') >= 0;
-
-        if (!isTouch) {
-            var box = getBoundingClientRect(el);
-            e.zrX = e.clientX - box.left;
-            e.zrY = e.clientY - box.top;
-            e.zrDelta = (e.wheelDelta) ? e.wheelDelta / 120 : -(e.detail || 0) / 3;
-        }
-        else {
-            var touch = eventType != 'touchend'
-                            ? e.targetTouches[0]
-                            : e.changedTouches[0];
-            if (touch) {
-                var rBounding = getBoundingClientRect(el);
-                // touch事件坐标是全屏的~
-                e.zrX = touch.clientX - rBounding.left;
-                e.zrY = touch.clientY - rBounding.top;
-            }
-        }
-
-        return e;
-    }
-
-    function addEventListener(el, name, handler) {
-        if (isDomLevel2) {
-            el.addEventListener(name, handler);
-        }
-        else {
-            el.attachEvent('on' + name, handler);
-        }
-    }
-
-    function removeEventListener(el, name, handler) {
-        if (isDomLevel2) {
-            el.removeEventListener(name, handler);
-        }
-        else {
-            el.detachEvent('on' + name, handler);
-        }
-    }
-
-    /**
-     * 停止冒泡和阻止默认行为
-     * @memberOf module:zrender/core/event
-     * @method
-     * @param {Event} e : event对象
-     */
-    var stop = isDomLevel2
-        ? function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            e.cancelBubble = true;
-        }
-        : function (e) {
-            e.returnValue = false;
-            e.cancelBubble = true;
-        };
-
-    return {
-        normalizeEvent: normalizeEvent,
-        addEventListener: addEventListener,
-        removeEventListener: removeEventListener,
-
-        stop: stop,
-        // 做向上兼容
-        Dispatcher: Eventful
-    };
 });
 
 // TODO Draggable for group
@@ -1116,9 +1108,11 @@ define('zrender/mixin/Draggable',['require'],function (require) {
 /**
  * Only implements needed gestures for mobile.
  */
-define('zrender/core/GestureMgr',['require'],function(require) {
+define('zrender/core/GestureMgr',['require','./event'],function(require) {
 
     
+
+    var eventUtil = require('./event');
 
     var GestureMgr = function () {
 
@@ -1133,8 +1127,8 @@ define('zrender/core/GestureMgr',['require'],function(require) {
 
         constructor: GestureMgr,
 
-        recognize: function (event, target) {
-            this._doTrack(event, target);
+        recognize: function (event, target, root) {
+            this._doTrack(event, target, root);
             return this._recognize(event);
         },
 
@@ -1143,7 +1137,7 @@ define('zrender/core/GestureMgr',['require'],function(require) {
             return this;
         },
 
-        _doTrack: function (event, target) {
+        _doTrack: function (event, target, root) {
             var touches = event.touches;
 
             if (!touches) {
@@ -1159,7 +1153,8 @@ define('zrender/core/GestureMgr',['require'],function(require) {
 
             for (var i = 0, len = touches.length; i < len; i++) {
                 var touch = touches[i];
-                trackItem.points.push([touch.clientX, touch.clientY]);
+                var pos = eventUtil.clientToLocal(root, touch);
+                trackItem.points.push([pos.zrX, pos.zrY]);
                 trackItem.touches.push(touch);
             }
 
@@ -1305,7 +1300,7 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
 
             this._hovered = hovered;
 
-            this.root.style.cursor = hovered ? hovered.cursor : this._defaultCursorStyle;
+            this.root.style.cursor = hovered ? hovered.cursor : 'default';
             // Mouse out on previous hovered element
             if (lastHovered && hovered !== lastHovered && lastHovered.__zr) {
                 this._dispatchProxy(lastHovered, 'mouseout', event);
@@ -1455,7 +1450,8 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
 
         var gestureInfo = gestureMgr.recognize(
             event,
-            zrHandler.findHover(event.zrX, event.zrY, null)
+            zrHandler.findHover(event.zrX, event.zrY, null),
+            zrHandler.root
         );
 
         stage === 'end' && gestureMgr.clear();
@@ -1535,12 +1531,6 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
          * @type {number}
          */
         this._lastY;
-
-        /**
-         * @private
-         * @type {string}
-         */
-        this._defaultCursorStyle = 'default';
 
         /**
          * @private
@@ -1633,10 +1623,10 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
 
         /**
          * 设置默认的cursor style
-         * @param {string} cursorStyle 例如 crosshair
+         * @param {string} [cursorStyle='default'] 例如 crosshair
          */
-        setDefaultCursorStyle: function (cursorStyle) {
-            this._defaultCursorStyle = cursorStyle;
+        setCursorStyle: function (cursorStyle) {
+            this.root.style.cursor = cursorStyle || 'default';
         },
 
         /**
@@ -1943,8 +1933,14 @@ define('zrender/core/vector',[],function () {
          */
         create: function (x, y) {
             var out = new ArrayCtor(2);
-            out[0] = x || 0;
-            out[1] = y || 0;
+            if (x == null) {
+                x = 0;
+            }
+            if (y == null) {
+                y = 0;
+            }
+            out[0] = x;
+            out[1] = y;
             return out;
         },
 
@@ -2345,6 +2341,13 @@ define('zrender/mixin/Transformable',['require','../core/matrix','../core/vector
             ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
         }
     };
+
+    transformableProto.restoreTransform = function (ctx) {
+        var m = this.invTransform;
+        if (m) {
+            ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
+        }
+    }
 
     var tmpTransform = [];
 
@@ -3351,10 +3354,11 @@ define('zrender/tool/color',['require'],function(require) {
      * @return {string} Result color.
      */
     function stringify(arrColor, type) {
-        if (type === 'rgb' || type === 'hsv' || type === 'hsl') {
-            arrColor = arrColor.slice(0, 3);
+        var colorStr = arrColor[0] + ',' + arrColor[1] + ',' + arrColor[2];
+        if (type === 'rgba' || type === 'hsva' || type === 'hsla') {
+            colorStr += ',' + arrColor[3];
         }
-        return type + '(' + arrColor.join(',') + ')';
+        return type + '(' + colorStr + ')';
     }
 
     return {
@@ -3688,12 +3692,14 @@ define('zrender/animation/Animator',['require','./Clip','../tool/color','../core
             var frame;
             if (percent < lastFramePercent) {
                 // Start from next key
+                // PENDING start from lastFrame ?
                 start = Math.min(lastFrame + 1, trackLen - 1);
                 for (frame = start; frame >= 0; frame--) {
                     if (kfPercents[frame] <= percent) {
                         break;
                     }
                 }
+                // PENDING really need to do this ?
                 frame = Math.min(frame, trackLen - 2);
             }
             else {
@@ -4413,7 +4419,7 @@ define('zrender/Element',['require','./core/guid','./mixin/Eventful','./mixin/Tr
             m[5] += dy;
 
             this.decomposeTransform();
-            this.dirty();
+            this.dirty(false);
         },
 
         /**
@@ -4488,7 +4494,8 @@ define('zrender/Element',['require','./core/guid','./mixin/Eventful','./mixin/Tr
                     }
                 }
             }
-            this.dirty();
+
+            this.dirty(false);
 
             return this;
         },
@@ -4511,7 +4518,7 @@ define('zrender/Element',['require','./core/guid','./mixin/Eventful','./mixin/Tr
             clipPath.__zr = zr;
             clipPath.__clipTarget = this;
 
-            this.dirty();
+            this.dirty(false);
         },
 
         /**
@@ -4527,7 +4534,7 @@ define('zrender/Element',['require','./core/guid','./mixin/Eventful','./mixin/Tr
                 clipPath.__clipTarget = null;
                 this.clipPath = null;
 
-                this.dirty();
+                this.dirty(false);
             }
         },
 
@@ -4782,6 +4789,8 @@ define('zrender/container/Group',['require','../core/util','../Element','../core
     Group.prototype = {
 
         constructor: Group,
+
+        isGroup: true,
 
         /**
          * @type {string}
@@ -5039,6 +5048,682 @@ define('zrender/container/Group',['require','../core/util','../Element','../core
 
     return Group;
 });
+// https://github.com/mziccard/node-timsort
+define('zrender/core/timsort',[],function () {
+    var DEFAULT_MIN_MERGE = 32;
+
+    var DEFAULT_MIN_GALLOPING = 7;
+
+    var DEFAULT_TMP_STORAGE_LENGTH = 256;
+
+    function minRunLength(n) {
+        var r = 0;
+
+        while (n >= DEFAULT_MIN_MERGE) {
+            r |= n & 1;
+            n >>= 1;
+        }
+
+        return n + r;
+    }
+
+    function makeAscendingRun(array, lo, hi, compare) {
+        var runHi = lo + 1;
+
+        if (runHi === hi) {
+            return 1;
+        }
+
+        if (compare(array[runHi++], array[lo]) < 0) {
+            while (runHi < hi && compare(array[runHi], array[runHi - 1]) < 0) {
+                runHi++;
+            }
+
+            reverseRun(array, lo, runHi);
+        }
+        else {
+            while (runHi < hi && compare(array[runHi], array[runHi - 1]) >= 0) {
+                runHi++;
+            }
+        }
+
+        return runHi - lo;
+    }
+
+    function reverseRun(array, lo, hi) {
+        hi--;
+
+        while (lo < hi) {
+            var t = array[lo];
+            array[lo++] = array[hi];
+            array[hi--] = t;
+        }
+    }
+
+    function binaryInsertionSort(array, lo, hi, start, compare) {
+        if (start === lo) {
+            start++;
+        }
+
+        for (; start < hi; start++) {
+            var pivot = array[start];
+
+            var left = lo;
+            var right = start;
+            var mid;
+
+            while (left < right) {
+                mid = left + right >>> 1;
+
+                if (compare(pivot, array[mid]) < 0) {
+                    right = mid;
+                }
+                else {
+                    left = mid + 1;
+                }
+            }
+
+            var n = start - left;
+
+            switch (n) {
+                case 3:
+                    array[left + 3] = array[left + 2];
+
+                case 2:
+                    array[left + 2] = array[left + 1];
+
+                case 1:
+                    array[left + 1] = array[left];
+                    break;
+                default:
+                    while (n > 0) {
+                        array[left + n] = array[left + n - 1];
+                        n--;
+                    }
+            }
+
+            array[left] = pivot;
+        }
+    }
+
+    function gallopLeft(value, array, start, length, hint, compare) {
+        var lastOffset = 0;
+        var maxOffset = 0;
+        var offset = 1;
+
+        if (compare(value, array[start + hint]) > 0) {
+            maxOffset = length - hint;
+
+            while (offset < maxOffset && compare(value, array[start + hint + offset]) > 0) {
+                lastOffset = offset;
+                offset = (offset << 1) + 1;
+
+                if (offset <= 0) {
+                    offset = maxOffset;
+                }
+            }
+
+            if (offset > maxOffset) {
+                offset = maxOffset;
+            }
+
+            lastOffset += hint;
+            offset += hint;
+        }
+        else {
+            maxOffset = hint + 1;
+            while (offset < maxOffset && compare(value, array[start + hint - offset]) <= 0) {
+                lastOffset = offset;
+                offset = (offset << 1) + 1;
+
+                if (offset <= 0) {
+                    offset = maxOffset;
+                }
+            }
+            if (offset > maxOffset) {
+                offset = maxOffset;
+            }
+
+            var tmp = lastOffset;
+            lastOffset = hint - offset;
+            offset = hint - tmp;
+        }
+
+        lastOffset++;
+        while (lastOffset < offset) {
+            var m = lastOffset + (offset - lastOffset >>> 1);
+
+            if (compare(value, array[start + m]) > 0) {
+                lastOffset = m + 1;
+            }
+            else {
+                offset = m;
+            }
+        }
+        return offset;
+    }
+
+    function gallopRight(value, array, start, length, hint, compare) {
+        var lastOffset = 0;
+        var maxOffset = 0;
+        var offset = 1;
+
+        if (compare(value, array[start + hint]) < 0) {
+            maxOffset = hint + 1;
+
+            while (offset < maxOffset && compare(value, array[start + hint - offset]) < 0) {
+                lastOffset = offset;
+                offset = (offset << 1) + 1;
+
+                if (offset <= 0) {
+                    offset = maxOffset;
+                }
+            }
+
+            if (offset > maxOffset) {
+                offset = maxOffset;
+            }
+
+            var tmp = lastOffset;
+            lastOffset = hint - offset;
+            offset = hint - tmp;
+        }
+        else {
+            maxOffset = length - hint;
+
+            while (offset < maxOffset && compare(value, array[start + hint + offset]) >= 0) {
+                lastOffset = offset;
+                offset = (offset << 1) + 1;
+
+                if (offset <= 0) {
+                    offset = maxOffset;
+                }
+            }
+
+            if (offset > maxOffset) {
+                offset = maxOffset;
+            }
+
+            lastOffset += hint;
+            offset += hint;
+        }
+
+        lastOffset++;
+
+        while (lastOffset < offset) {
+            var m = lastOffset + (offset - lastOffset >>> 1);
+
+            if (compare(value, array[start + m]) < 0) {
+                offset = m;
+            }
+            else {
+                lastOffset = m + 1;
+            }
+        }
+
+        return offset;
+    }
+
+    function TimSort(array, compare) {
+        var minGallop = DEFAULT_MIN_GALLOPING;
+        var length = 0;
+        var tmpStorageLength = DEFAULT_TMP_STORAGE_LENGTH;
+        var stackLength = 0;
+        var runStart;
+        var runLength;
+        var stackSize = 0;
+
+        length = array.length;
+
+        if (length < 2 * DEFAULT_TMP_STORAGE_LENGTH) {
+            tmpStorageLength = length >>> 1;
+        }
+
+        var tmp = [];
+
+        stackLength = length < 120 ? 5 : length < 1542 ? 10 : length < 119151 ? 19 : 40;
+
+        runStart = [];
+        runLength = [];
+
+        function pushRun(_runStart, _runLength) {
+            runStart[stackSize] = _runStart;
+            runLength[stackSize] = _runLength;
+            stackSize += 1;
+        }
+
+        function mergeRuns() {
+            while (stackSize > 1) {
+                var n = stackSize - 2;
+
+                if (n >= 1 && runLength[n - 1] <= runLength[n] + runLength[n + 1] || n >= 2 && runLength[n - 2] <= runLength[n] + runLength[n - 1]) {
+                    if (runLength[n - 1] < runLength[n + 1]) {
+                        n--;
+                    }
+                }
+                else if (runLength[n] > runLength[n + 1]) {
+                    break;
+                }
+                mergeAt(n);
+            }
+        }
+
+        function forceMergeRuns() {
+            while (stackSize > 1) {
+                var n = stackSize - 2;
+
+                if (n > 0 && runLength[n - 1] < runLength[n + 1]) {
+                    n--;
+                }
+
+                mergeAt(n);
+            }
+        }
+
+        function mergeAt(i) {
+            var start1 = runStart[i];
+            var length1 = runLength[i];
+            var start2 = runStart[i + 1];
+            var length2 = runLength[i + 1];
+
+            runLength[i] = length1 + length2;
+
+            if (i === stackSize - 3) {
+                runStart[i + 1] = runStart[i + 2];
+                runLength[i + 1] = runLength[i + 2];
+            }
+
+            stackSize--;
+
+            var k = gallopRight(array[start2], array, start1, length1, 0, compare);
+            start1 += k;
+            length1 -= k;
+
+            if (length1 === 0) {
+                return;
+            }
+
+            length2 = gallopLeft(array[start1 + length1 - 1], array, start2, length2, length2 - 1, compare);
+
+            if (length2 === 0) {
+                return;
+            }
+
+            if (length1 <= length2) {
+                mergeLow(start1, length1, start2, length2);
+            }
+            else {
+                mergeHigh(start1, length1, start2, length2);
+            }
+        }
+
+        function mergeLow(start1, length1, start2, length2) {
+            var i = 0;
+
+            for (i = 0; i < length1; i++) {
+                tmp[i] = array[start1 + i];
+            }
+
+            var cursor1 = 0;
+            var cursor2 = start2;
+            var dest = start1;
+
+            array[dest++] = array[cursor2++];
+
+            if (--length2 === 0) {
+                for (i = 0; i < length1; i++) {
+                    array[dest + i] = tmp[cursor1 + i];
+                }
+                return;
+            }
+
+            if (length1 === 1) {
+                for (i = 0; i < length2; i++) {
+                    array[dest + i] = array[cursor2 + i];
+                }
+                array[dest + length2] = tmp[cursor1];
+                return;
+            }
+
+            var _minGallop = minGallop;
+            var count1, count2, exit;
+
+            while (1) {
+                count1 = 0;
+                count2 = 0;
+                exit = false;
+
+                do {
+                    if (compare(array[cursor2], tmp[cursor1]) < 0) {
+                        array[dest++] = array[cursor2++];
+                        count2++;
+                        count1 = 0;
+
+                        if (--length2 === 0) {
+                            exit = true;
+                            break;
+                        }
+                    }
+                    else {
+                        array[dest++] = tmp[cursor1++];
+                        count1++;
+                        count2 = 0;
+                        if (--length1 === 1) {
+                            exit = true;
+                            break;
+                        }
+                    }
+                } while ((count1 | count2) < _minGallop);
+
+                if (exit) {
+                    break;
+                }
+
+                do {
+                    count1 = gallopRight(array[cursor2], tmp, cursor1, length1, 0, compare);
+
+                    if (count1 !== 0) {
+                        for (i = 0; i < count1; i++) {
+                            array[dest + i] = tmp[cursor1 + i];
+                        }
+
+                        dest += count1;
+                        cursor1 += count1;
+                        length1 -= count1;
+                        if (length1 <= 1) {
+                            exit = true;
+                            break;
+                        }
+                    }
+
+                    array[dest++] = array[cursor2++];
+
+                    if (--length2 === 0) {
+                        exit = true;
+                        break;
+                    }
+
+                    count2 = gallopLeft(tmp[cursor1], array, cursor2, length2, 0, compare);
+
+                    if (count2 !== 0) {
+                        for (i = 0; i < count2; i++) {
+                            array[dest + i] = array[cursor2 + i];
+                        }
+
+                        dest += count2;
+                        cursor2 += count2;
+                        length2 -= count2;
+
+                        if (length2 === 0) {
+                            exit = true;
+                            break;
+                        }
+                    }
+                    array[dest++] = tmp[cursor1++];
+
+                    if (--length1 === 1) {
+                        exit = true;
+                        break;
+                    }
+
+                    _minGallop--;
+                } while (count1 >= DEFAULT_MIN_GALLOPING || count2 >= DEFAULT_MIN_GALLOPING);
+
+                if (exit) {
+                    break;
+                }
+
+                if (_minGallop < 0) {
+                    _minGallop = 0;
+                }
+
+                _minGallop += 2;
+            }
+
+            minGallop = _minGallop;
+
+            minGallop < 1 && (minGallop = 1);
+
+            if (length1 === 1) {
+                for (i = 0; i < length2; i++) {
+                    array[dest + i] = array[cursor2 + i];
+                }
+                array[dest + length2] = tmp[cursor1];
+            }
+            else if (length1 === 0) {
+                throw new Error();
+                // throw new Error('mergeLow preconditions were not respected');
+            }
+            else {
+                for (i = 0; i < length1; i++) {
+                    array[dest + i] = tmp[cursor1 + i];
+                }
+            }
+        }
+
+        function mergeHigh (start1, length1, start2, length2) {
+            var i = 0;
+
+            for (i = 0; i < length2; i++) {
+                tmp[i] = array[start2 + i];
+            }
+
+            var cursor1 = start1 + length1 - 1;
+            var cursor2 = length2 - 1;
+            var dest = start2 + length2 - 1;
+            var customCursor = 0;
+            var customDest = 0;
+
+            array[dest--] = array[cursor1--];
+
+            if (--length1 === 0) {
+                customCursor = dest - (length2 - 1);
+
+                for (i = 0; i < length2; i++) {
+                    array[customCursor + i] = tmp[i];
+                }
+
+                return;
+            }
+
+            if (length2 === 1) {
+                dest -= length1;
+                cursor1 -= length1;
+                customDest = dest + 1;
+                customCursor = cursor1 + 1;
+
+                for (i = length1 - 1; i >= 0; i--) {
+                    array[customDest + i] = array[customCursor + i];
+                }
+
+                array[dest] = tmp[cursor2];
+                return;
+            }
+
+            var _minGallop = minGallop;
+
+            while (true) {
+                var count1 = 0;
+                var count2 = 0;
+                var exit = false;
+
+                do {
+                    if (compare(tmp[cursor2], array[cursor1]) < 0) {
+                        array[dest--] = array[cursor1--];
+                        count1++;
+                        count2 = 0;
+                        if (--length1 === 0) {
+                            exit = true;
+                            break;
+                        }
+                    }
+                    else {
+                        array[dest--] = tmp[cursor2--];
+                        count2++;
+                        count1 = 0;
+                        if (--length2 === 1) {
+                            exit = true;
+                            break;
+                        }
+                    }
+                } while ((count1 | count2) < _minGallop);
+
+                if (exit) {
+                    break;
+                }
+
+                do {
+                    count1 = length1 - gallopRight(tmp[cursor2], array, start1, length1, length1 - 1, compare);
+
+                    if (count1 !== 0) {
+                        dest -= count1;
+                        cursor1 -= count1;
+                        length1 -= count1;
+                        customDest = dest + 1;
+                        customCursor = cursor1 + 1;
+
+                        for (i = count1 - 1; i >= 0; i--) {
+                            array[customDest + i] = array[customCursor + i];
+                        }
+
+                        if (length1 === 0) {
+                            exit = true;
+                            break;
+                        }
+                    }
+
+                    array[dest--] = tmp[cursor2--];
+
+                    if (--length2 === 1) {
+                        exit = true;
+                        break;
+                    }
+
+                    count2 = length2 - gallopLeft(array[cursor1], tmp, 0, length2, length2 - 1, compare);
+
+                    if (count2 !== 0) {
+                        dest -= count2;
+                        cursor2 -= count2;
+                        length2 -= count2;
+                        customDest = dest + 1;
+                        customCursor = cursor2 + 1;
+
+                        for (i = 0; i < count2; i++) {
+                            array[customDest + i] = tmp[customCursor + i];
+                        }
+
+                        if (length2 <= 1) {
+                            exit = true;
+                            break;
+                        }
+                    }
+
+                    array[dest--] = array[cursor1--];
+
+                    if (--length1 === 0) {
+                        exit = true;
+                        break;
+                    }
+
+                    _minGallop--;
+                } while (count1 >= DEFAULT_MIN_GALLOPING || count2 >= DEFAULT_MIN_GALLOPING);
+
+                if (exit) {
+                    break;
+                }
+
+                if (_minGallop < 0) {
+                    _minGallop = 0;
+                }
+
+                _minGallop += 2;
+            }
+
+            minGallop = _minGallop;
+
+            if (minGallop < 1) {
+                minGallop = 1;
+            }
+
+            if (length2 === 1) {
+                dest -= length1;
+                cursor1 -= length1;
+                customDest = dest + 1;
+                customCursor = cursor1 + 1;
+
+                for (i = length1 - 1; i >= 0; i--) {
+                    array[customDest + i] = array[customCursor + i];
+                }
+
+                array[dest] = tmp[cursor2];
+            }
+            else if (length2 === 0) {
+                throw new Error();
+                // throw new Error('mergeHigh preconditions were not respected');
+            }
+            else {
+                customCursor = dest - (length2 - 1);
+                for (i = 0; i < length2; i++) {
+                    array[customCursor + i] = tmp[i];
+                }
+            }
+        }
+
+        this.mergeRuns = mergeRuns;
+        this.forceMergeRuns = forceMergeRuns;
+        this.pushRun = pushRun;
+    }
+
+    function sort(array, compare, lo, hi) {
+        if (!lo) {
+            lo = 0;
+        }
+        if (!hi) {
+            hi = array.length;
+        }
+
+        var remaining = hi - lo;
+
+        if (remaining < 2) {
+            return;
+        }
+
+        var runLength = 0;
+
+        if (remaining < DEFAULT_MIN_MERGE) {
+            runLength = makeAscendingRun(array, lo, hi, compare);
+            binaryInsertionSort(array, lo, hi, lo + runLength, compare);
+            return;
+        }
+
+        var ts = new TimSort(array, compare);
+
+        var minRun = minRunLength(remaining);
+
+        do {
+            runLength = makeAscendingRun(array, lo, hi, compare);
+            if (runLength < minRun) {
+                var force = remaining;
+                if (force > minRun) {
+                    force = minRun;
+                }
+
+                binaryInsertionSort(array, lo, lo + force, lo + runLength, compare);
+                runLength = force;
+            }
+
+            ts.pushRun(lo, runLength);
+            ts.mergeRuns();
+
+            remaining -= runLength;
+            lo += runLength;
+        } while (remaining !== 0);
+
+        ts.forceMergeRuns();
+    }
+
+    return sort;
+});
 /**
  * Storage内容仓库模块
  * @module zrender/Storage
@@ -5046,20 +5731,28 @@ define('zrender/container/Group',['require','../core/util','../Element','../core
  * @author errorrik (errorrik@gmail.com)
  * @author pissang (https://github.com/pissang/)
  */
-define('zrender/Storage',['require','./core/util','./container/Group'],function (require) {
+define('zrender/Storage',['require','./core/util','./core/env','./container/Group','./core/timsort'],function (require) {
 
     
 
     var util = require('./core/util');
+    var env = require('./core/env');
 
     var Group = require('./container/Group');
+
+    // Use timsort because in most case elements are partially sorted
+    // https://jsfiddle.net/pissang/jr4x7mdm/8/
+    var timsort = require('./core/timsort');
 
     function shapeCompareFunc(a, b) {
         if (a.zlevel === b.zlevel) {
             if (a.z === b.z) {
-                if (a.z2 === b.z2) {
-                    return a.__renderidx - b.__renderidx;
-                }
+                // if (a.z2 === b.z2) {
+                //     // FIXME Slow has renderidx compare
+                //     // http://stackoverflow.com/questions/20883421/sorting-in-javascript-should-every-compare-function-have-a-return-0-statement
+                //     // https://github.com/v8/v8/blob/47cce544a31ed5577ffe2963f67acb4144ee0232/src/js/array.js#L1012
+                //     return a.__renderidx - b.__renderidx;
+                // }
                 return a.z2 - b.z2;
             }
             return a.z - b.z;
@@ -5085,6 +5778,16 @@ define('zrender/Storage',['require','./core/util','./container/Group'],function 
     Storage.prototype = {
 
         constructor: Storage,
+
+        /**
+         * @param  {Function} cb
+         *
+         */
+        traverse: function (cb, context) {
+            for (var i = 0; i < this._roots.length; i++) {
+                this._roots[i].traverse(cb, context);
+            }
+        },
 
         /**
          * 返回所有图形的绘制队列
@@ -5117,11 +5820,12 @@ define('zrender/Storage',['require','./core/util','./container/Group'],function 
             }
             displayList.length = this._displayListLen;
 
-            for (var i = 0, len = displayList.length; i < len; i++) {
-                displayList[i].__renderidx = i;
-            }
+            // for (var i = 0, len = displayList.length; i < len; i++) {
+            //     displayList[i].__renderidx = i;
+            // }
 
-            displayList.sort(shapeCompareFunc);
+            // displayList.sort(shapeCompareFunc);
+            env.canvasSupported && timsort(displayList, shapeCompareFunc);
         },
 
         _updateAndAddDisplayable: function (el, clipPaths, includeIgnore) {
@@ -5132,7 +5836,11 @@ define('zrender/Storage',['require','./core/util','./container/Group'],function 
 
             el.beforeUpdate();
 
-            el.update();
+            if (el.__dirty) {
+
+                el.update();
+
+            }
 
             el.afterUpdate();
 
@@ -5152,7 +5860,7 @@ define('zrender/Storage',['require','./core/util','./container/Group'],function 
                 }
             }
 
-            if (el.type == 'group') {
+            if (el.isGroup) {
                 var children = el._children;
 
                 for (var i = 0; i < children.length; i++) {
@@ -5160,7 +5868,9 @@ define('zrender/Storage',['require','./core/util','./container/Group'],function 
 
                     // Force to mark as dirty if group is dirty
                     // FIXME __dirtyPath ?
-                    child.__dirty = el.__dirty || child.__dirty;
+                    if (el.__dirty) {
+                        child.__dirty = true;
+                    }
 
                     this._updateAndAddDisplayable(child, clipPaths, includeIgnore);
                 }
@@ -5276,10 +5986,24 @@ define('zrender/Storage',['require','./core/util','./container/Group'],function 
             this._elements =
             this._renderList =
             this._roots = null;
-        }
+        },
+
+        displayableSortFunc: shapeCompareFunc
     };
 
     return Storage;
+});
+
+define('zrender/animation/requestAnimationFrame',['require'],function(require) {
+
+    return (typeof window !== 'undefined' &&
+                                    (window.requestAnimationFrame
+                                    || window.msRequestAnimationFrame
+                                    || window.mozRequestAnimationFrame
+                                    || window.webkitRequestAnimationFrame))
+                                || function (func) {
+                                    setTimeout(func, 16);
+                                };
 });
 
 /**
@@ -5291,21 +6015,14 @@ define('zrender/Storage',['require','./core/util','./container/Group'],function 
 // TODO Additive animation
 // http://iosoteric.com/additive-animations-animatewithduration-in-ios-8/
 // https://developer.apple.com/videos/wwdc2014/#236
-define('zrender/animation/Animation',['require','../core/util','../core/event','./Animator'],function(require) {
+define('zrender/animation/Animation',['require','../core/util','../core/event','./requestAnimationFrame','./Animator'],function(require) {
 
     
 
     var util = require('../core/util');
     var Dispatcher = require('../core/event').Dispatcher;
 
-    var requestAnimationFrame = (typeof window !== 'undefined' &&
-                                    (window.requestAnimationFrame
-                                    || window.msRequestAnimationFrame
-                                    || window.mozRequestAnimationFrame
-                                    || window.webkitRequestAnimationFrame))
-                                || function (func) {
-                                    setTimeout(func, 16);
-                                };
+    var requestAnimationFrame = require('./requestAnimationFrame');
 
     var Animator = require('./Animator');
     /**
@@ -5507,13 +6224,327 @@ define('zrender/animation/Animation',['require','../core/util','../core/event','
 });
 
 /**
+ * @module zrender/graphic/Style
+ */
+define('zrender/graphic/Style',['require'],function (require) {
+
+    var STYLE_COMMON_PROPS = [
+        ['shadowBlur', 0], ['shadowOffsetX', 0], ['shadowOffsetY', 0], ['shadowColor', '#000'],
+        ['lineCap', 'butt'], ['lineJoin', 'miter'], ['miterLimit', 10]
+    ];
+
+    // var SHADOW_PROPS = STYLE_COMMON_PROPS.slice(0, 4);
+    // var LINE_PROPS = STYLE_COMMON_PROPS.slice(4);
+
+    var Style = function (opts) {
+        this.extendFrom(opts);
+    };
+
+    function createLinearGradient(ctx, obj, rect) {
+        // var size =
+        var x = obj.x;
+        var x2 = obj.x2;
+        var y = obj.y;
+        var y2 = obj.y2;
+
+        if (!obj.global) {
+            x = x * rect.width + rect.x;
+            x2 = x2 * rect.width + rect.x;
+            y = y * rect.height + rect.y;
+            y2 = y2 * rect.height + rect.y;
+        }
+
+        var canvasGradient = ctx.createLinearGradient(x, y, x2, y2);
+
+        return canvasGradient;
+    }
+
+    function createRadialGradient(ctx, obj, rect) {
+        var width = rect.width;
+        var height = rect.height;
+        var min = Math.min(width, height);
+
+        var x = obj.x;
+        var y = obj.y;
+        var r = obj.r;
+        if (!obj.global) {
+            x = x * width + rect.x;
+            y = y * height + rect.y;
+            r = r * min;
+        }
+
+        var canvasGradient = ctx.createRadialGradient(x, y, 0, x, y, r);
+
+        return canvasGradient;
+    }
+
+
+    Style.prototype = {
+
+        constructor: Style,
+
+        /**
+         * @type {string}
+         */
+        fill: '#000000',
+
+        /**
+         * @type {string}
+         */
+        stroke: null,
+
+        /**
+         * @type {number}
+         */
+        opacity: 1,
+
+        /**
+         * @type {Array.<number>}
+         */
+        lineDash: null,
+
+        /**
+         * @type {number}
+         */
+        lineDashOffset: 0,
+
+        /**
+         * @type {number}
+         */
+        shadowBlur: 0,
+
+        /**
+         * @type {number}
+         */
+        shadowOffsetX: 0,
+
+        /**
+         * @type {number}
+         */
+        shadowOffsetY: 0,
+
+        /**
+         * @type {number}
+         */
+        lineWidth: 1,
+
+        /**
+         * If stroke ignore scale
+         * @type {Boolean}
+         */
+        strokeNoScale: false,
+
+        // Bounding rect text configuration
+        // Not affected by element transform
+        /**
+         * @type {string}
+         */
+        text: null,
+
+        /**
+         * @type {string}
+         */
+        textFill: '#000',
+
+        /**
+         * @type {string}
+         */
+        textStroke: null,
+
+        /**
+         * 'inside', 'left', 'right', 'top', 'bottom'
+         * [x, y]
+         * @type {string|Array.<number>}
+         * @default 'inside'
+         */
+        textPosition: 'inside',
+
+        /**
+         * @type {string}
+         */
+        textBaseline: null,
+
+        /**
+         * @type {string}
+         */
+        textAlign: null,
+
+        /**
+         * @type {string}
+         */
+        textVerticalAlign: null,
+
+        /**
+         * @type {number}
+         */
+        textDistance: 5,
+
+        /**
+         * @type {number}
+         */
+        textShadowBlur: 0,
+
+        /**
+         * @type {number}
+         */
+        textShadowOffsetX: 0,
+
+        /**
+         * @type {number}
+         */
+        textShadowOffsetY: 0,
+
+        /**
+         * @type {string}
+         * https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/globalCompositeOperation
+         */
+        blend: null,
+
+        /**
+         * @param {CanvasRenderingContext2D} ctx
+         */
+        bind: function (ctx, el, prevEl) {
+            var style = this;
+            var prevStyle = prevEl && prevEl.style;
+            var firstDraw = !prevStyle;
+
+            for (var i = 0; i < STYLE_COMMON_PROPS.length; i++) {
+                var prop = STYLE_COMMON_PROPS[i];
+                var styleName = prop[0];
+
+                if (firstDraw || style[styleName] !== prevStyle[styleName]) {
+                    // FIXME Invalid property value will cause style leak from previous element.
+                    ctx[styleName] = style[styleName] || prop[1];
+                }
+            }
+
+            if ((firstDraw || style.fill !== prevStyle.fill)) {
+                ctx.fillStyle = style.fill;
+            }
+            if ((firstDraw || style.stroke !== prevStyle.stroke)) {
+                ctx.strokeStyle = style.stroke;
+            }
+            if ((firstDraw || style.opacity !== prevStyle.opacity)) {
+                ctx.globalAlpha = style.opacity == null ? 1 : style.opacity;
+            }
+
+            if ((firstDraw || style.blend !== prevStyle.blend)) {
+                ctx.globalCompositeOperation = style.blend || 'source-over';
+            }
+            if (this.hasStroke()) {
+                var lineWidth = style.lineWidth;
+                ctx.lineWidth = lineWidth / (
+                    (this.strokeNoScale && el && el.getLineScale) ? el.getLineScale() : 1
+                );
+            }
+        },
+
+        hasFill: function () {
+            var fill = this.fill;
+            return fill != null && fill !== 'none';
+        },
+
+        hasStroke: function () {
+            var stroke = this.stroke;
+            return stroke != null && stroke !== 'none' && this.lineWidth > 0;
+        },
+
+        /**
+         * Extend from other style
+         * @param {zrender/graphic/Style} otherStyle
+         * @param {boolean} overwrite
+         */
+        extendFrom: function (otherStyle, overwrite) {
+            if (otherStyle) {
+                var target = this;
+                for (var name in otherStyle) {
+                    if (otherStyle.hasOwnProperty(name)
+                        && (overwrite || ! target.hasOwnProperty(name))
+                    ) {
+                        target[name] = otherStyle[name];
+                    }
+                }
+            }
+        },
+
+        /**
+         * Batch setting style with a given object
+         * @param {Object|string} obj
+         * @param {*} [obj]
+         */
+        set: function (obj, value) {
+            if (typeof obj === 'string') {
+                this[obj] = value;
+            }
+            else {
+                this.extendFrom(obj, true);
+            }
+        },
+
+        /**
+         * Clone
+         * @return {zrender/graphic/Style} [description]
+         */
+        clone: function () {
+            var newStyle = new this.constructor();
+            newStyle.extendFrom(this, true);
+            return newStyle;
+        },
+
+        getGradient: function (ctx, obj, rect) {
+            var method = obj.type === 'radial' ? createRadialGradient : createLinearGradient;
+            var canvasGradient = method(ctx, obj, rect);
+            var colorStops = obj.colorStops;
+            for (var i = 0; i < colorStops.length; i++) {
+                canvasGradient.addColorStop(
+                    colorStops[i].offset, colorStops[i].color
+                );
+            }
+            return canvasGradient;
+        }
+    };
+
+    var styleProto = Style.prototype;
+    for (var i = 0; i < STYLE_COMMON_PROPS.length; i++) {
+        var prop = STYLE_COMMON_PROPS[i];
+        if (!(prop[0] in styleProto)) {
+            styleProto[prop[0]] = prop[1];
+        }
+    }
+
+    // Provide for others
+    Style.getGradient = styleProto.getGradient;
+
+    return Style;
+});
+define('zrender/graphic/Pattern',['require'],function (require) {
+
+    var Pattern = function (image, repeat) {
+        this.image = image;
+        this.repeat = repeat;
+
+        // Can be cloned
+        this.type = 'pattern';
+    };
+
+    Pattern.prototype.getCanvasPattern = function (ctx) {
+
+        return this._canvasPattern
+            || (this._canvasPattern = ctx.createPattern(this.image, this.repeat));
+    };
+
+    return Pattern;
+});
+/**
  * @module zrender/Layer
  * @author pissang(https://www.github.com/pissang)
  */
-define('zrender/Layer',['require','./core/util','./config'],function (require) {
+define('zrender/Layer',['require','./core/util','./config','./graphic/Style','./graphic/Pattern'],function (require) {
 
     var util = require('./core/util');
     var config = require('./config');
+    var Style = require('./graphic/Style');
+    var Pattern = require('./graphic/Pattern');
 
     function returnFalse() {
         return false;
@@ -5682,7 +6713,7 @@ define('zrender/Layer',['require','./core/util','./config'],function (require) {
             var width = dom.width;
             var height = dom.height;
 
-            var haveClearColor = this.clearColor;
+            var clearColor = this.clearColor;
             var haveMotionBLur = this.motionBlur && !clearAll;
             var lastFrameAlpha = this.lastFrameAlpha;
 
@@ -5702,9 +6733,26 @@ define('zrender/Layer',['require','./core/util','./config'],function (require) {
             }
 
             ctx.clearRect(0, 0, width / dpr, height / dpr);
-            if (haveClearColor) {
+            if (clearColor) {
+                var clearColorGradientOrPattern;
+                // Gradient
+                if (clearColor.colorStops) {
+                    // Cache canvas gradient
+                    clearColorGradientOrPattern = clearColor.__canvasGradient || Style.getGradient(ctx, clearColor, {
+                        x: 0,
+                        y: 0,
+                        width: width / dpr,
+                        height: height / dpr
+                    });
+
+                    clearColor.__canvasGradient = clearColorGradientOrPattern;
+                }
+                // Pattern
+                else if (clearColor.image) {
+                    clearColorGradientOrPattern = Pattern.prototype.getCanvasPattern.call(clearColor, ctx);
+                }
                 ctx.save();
-                ctx.fillStyle = this.clearColor;
+                ctx.fillStyle = clearColorGradientOrPattern || clearColor;
                 ctx.fillRect(0, 0, width / dpr, height / dpr);
                 ctx.restore();
             }
@@ -5720,259 +6768,6 @@ define('zrender/Layer',['require','./core/util','./config'],function (require) {
     };
 
     return Layer;
-});
-/**
- * @module zrender/graphic/Style
- */
-
-define('zrender/graphic/Style',['require'],function (require) {
-
-    var STYLE_LIST_COMMON = [
-        'lineCap', 'lineJoin', 'miterLimit',
-        'shadowBlur', 'shadowOffsetX', 'shadowOffsetY', 'shadowColor'
-    ];
-
-    var Style = function (opts) {
-        this.extendFrom(opts);
-    };
-
-    Style.prototype = {
-
-        constructor: Style,
-
-        /**
-         * @type {string}
-         */
-        fill: '#000000',
-
-        /**
-         * @type {string}
-         */
-        stroke: null,
-
-        /**
-         * @type {number}
-         */
-        opacity: 1,
-
-        /**
-         * @type {Array.<number>}
-         */
-        lineDash: null,
-
-        /**
-         * @type {number}
-         */
-        lineDashOffset: 0,
-
-        /**
-         * @type {number}
-         */
-        shadowBlur: 0,
-
-        /**
-         * @type {number}
-         */
-        shadowOffsetX: 0,
-
-        /**
-         * @type {number}
-         */
-        shadowOffsetY: 0,
-
-        /**
-         * @type {number}
-         */
-        lineWidth: 1,
-
-        /**
-         * If stroke ignore scale
-         * @type {Boolean}
-         */
-        strokeNoScale: false,
-
-        // Bounding rect text configuration
-        // Not affected by element transform
-        /**
-         * @type {string}
-         */
-        text: null,
-
-        /**
-         * @type {string}
-         */
-        textFill: '#000',
-
-        /**
-         * @type {string}
-         */
-        textStroke: null,
-
-        /**
-         * 'inside', 'left', 'right', 'top', 'bottom'
-         * [x, y]
-         * @type {string|Array.<number>}
-         * @default 'inside'
-         */
-        textPosition: 'inside',
-
-        /**
-         * @type {string}
-         */
-        textBaseline: null,
-
-        /**
-         * @type {string}
-         */
-        textAlign: null,
-
-        /**
-         * @type {string}
-         */
-        textVerticalAlign: null,
-
-        /**
-         * @type {number}
-         */
-        textDistance: 5,
-
-        /**
-         * @type {number}
-         */
-        textShadowBlur: 0,
-
-        /**
-         * @type {number}
-         */
-        textShadowOffsetX: 0,
-
-        /**
-         * @type {number}
-         */
-        textShadowOffsetY: 0,
-
-        /**
-         * @param {CanvasRenderingContext2D} ctx
-         */
-        bind: function (ctx, el) {
-            var fill = this.fill;
-            var stroke = this.stroke;
-            for (var i = 0; i < STYLE_LIST_COMMON.length; i++) {
-                var styleName = STYLE_LIST_COMMON[i];
-
-                if (this[styleName] != null) {
-                    ctx[styleName] = this[styleName];
-                }
-            }
-            if (stroke != null) {
-                var lineWidth = this.lineWidth;
-                ctx.lineWidth = lineWidth / (
-                    (this.strokeNoScale && el && el.getLineScale) ? el.getLineScale() : 1
-                );
-            }
-            // Gradient will be created and set in Path#brush. So ignore it here
-            if (fill != null && fill !== 'none' && !fill.colorStops) {
-                ctx.fillStyle = fill;
-            }
-            if (stroke != null && stroke !== 'none' && !stroke.colorStops) {
-                 // Use canvas gradient if has
-                ctx.strokeStyle = stroke;
-            }
-            this.opacity != null && (ctx.globalAlpha = this.opacity);
-        },
-
-        /**
-         * Extend from other style
-         * @param {zrender/graphic/Style} otherStyle
-         * @param {boolean} overwrite
-         */
-        extendFrom: function (otherStyle, overwrite) {
-            if (otherStyle) {
-                var target = this;
-                for (var name in otherStyle) {
-                    if (otherStyle.hasOwnProperty(name)
-                        && (overwrite || ! target.hasOwnProperty(name))
-                    ) {
-                        target[name] = otherStyle[name];
-                    }
-                }
-            }
-        },
-
-        /**
-         * Batch setting style with a given object
-         * @param {Object|string} obj
-         * @param {*} [obj]
-         */
-        set: function (obj, value) {
-            if (typeof obj === 'string') {
-                this[obj] = value;
-            }
-            else {
-                this.extendFrom(obj, true);
-            }
-        },
-
-        /**
-         * Clone
-         * @return {zrender/graphic/Style} [description]
-         */
-        clone: function () {
-            var newStyle = new this.constructor();
-            newStyle.extendFrom(this, true);
-            return newStyle;
-        },
-
-        createLinearGradient: function (ctx, obj, rect) {
-            // var size =
-            var x = obj.x * rect.width + rect.x;
-            var x2 = obj.x2 * rect.width + rect.x;
-            var y = obj.y * rect.height + rect.y;
-            var y2 = obj.y2 * rect.height + rect.y;
-
-            var canvasGradient = ctx.createLinearGradient(x, y, x2, y2);
-
-            return canvasGradient;
-        },
-
-        createRadialGradient: function (ctx, obj, rect) {
-            var width = rect.width;
-            var height = rect.height;
-            var min = Math.min(width, height);
-
-            var x = obj.x * width + rect.x;
-            var y = obj.y * height + rect.y;
-            var r = obj.r * min;
-
-            var canvasGradient = ctx.createRadialGradient(x, y, 0, x, y, r);
-
-            return canvasGradient;
-        },
-
-        getGradient: function (ctx, obj, rect) {
-            var method = obj.type === 'radial' ? 'createRadialGradient' : 'createLinearGradient';
-            var canvasGradient = this[method](ctx, obj, rect);
-            var colorStops = obj.colorStops;
-            for (var i = 0; i < colorStops.length; i++) {
-                canvasGradient.addColorStop(
-                    colorStops[i].offset, colorStops[i].color
-                );
-            }
-            return canvasGradient;
-        }
-    };
-
-    var styleProto = Style.prototype;
-    var name;
-    var i;
-    for (i = 0; i < STYLE_LIST_COMMON.length; i++) {
-        name = STYLE_LIST_COMMON[i];
-        if (!(name in styleProto)) {
-            styleProto[name] = null;
-        }
-    }
-
-    return Style;
 });
 define('zrender/contain/text',['require','../core/util','../core/BoundingRect'],function (require) {
 
@@ -6278,6 +7073,10 @@ define('zrender/graphic/mixin/RectText',['require','../../contain/text','../../c
             if (!text) {
                 return;
             }
+
+            // FIXME
+            ctx.save();
+
             var x;
             var y;
             var textPosition = style.textPosition;
@@ -6291,13 +7090,10 @@ define('zrender/graphic/mixin/RectText',['require','../../contain/text','../../c
 
             // Transform rect to view space
             var transform = this.transform;
-            var invTransform = this.invTransform;
             if (transform) {
                 tmpRect.copy(rect);
                 tmpRect.applyTransform(transform);
                 rect = tmpRect;
-                // Transform back
-                setTransform(ctx, invTransform);
             }
 
             // Text position represented by coord
@@ -6334,8 +7130,10 @@ define('zrender/graphic/mixin/RectText',['require','../../contain/text','../../c
                 baseline = baseline || res.textBaseline;
             }
 
-            ctx.textAlign = align;
-            ctx.textBaseline = baseline;
+            // Use canvas default left textAlign. Giving invalid value will cause state not change
+            ctx.textAlign = align || 'left';
+            // Use canvas default alphabetic baseline
+            ctx.textBaseline = baseline || 'alphabetic';
 
             var textFill = style.textFill;
             var textStroke = style.textStroke;
@@ -6344,8 +7142,9 @@ define('zrender/graphic/mixin/RectText',['require','../../contain/text','../../c
             ctx.font = font;
 
             // Text shadow
-            ctx.shadowColor = style.textShadowColor;
+            // Always set shadowBlur and shadowOffset to avoid leak from displayable
             ctx.shadowBlur = style.textShadowBlur;
+            ctx.shadowColor = style.textShadowColor || 'transparent';
             ctx.shadowOffsetX = style.textShadowOffsetX;
             ctx.shadowOffsetY = style.textShadowOffsetY;
 
@@ -6356,8 +7155,7 @@ define('zrender/graphic/mixin/RectText',['require','../../contain/text','../../c
                 y += textRect.lineHeight;
             }
 
-            // Transform again
-            transform && setTransform(ctx, transform);
+            ctx.restore();
         }
     };
 
@@ -6503,6 +7301,13 @@ define('zrender/graphic/Displayable',['require','../core/util','./Style','../Ele
          */
         rectHover: false,
 
+        /**
+         * Render the element progressively when the value >= 0,
+         * usefull for large data.
+         * @type {number}
+         */
+        progressive: -1,
+
         beforeBrush: function (ctx) {},
 
         afterBrush: function (ctx) {},
@@ -6512,7 +7317,7 @@ define('zrender/graphic/Displayable',['require','../core/util','./Style','../Ele
          * @param {Canvas2DRenderingContext} ctx
          */
         // Interface
-        brush: function (ctx) {},
+        brush: function (ctx, prevEl) {},
 
         /**
          * 获取最小包围盒
@@ -6915,10 +7720,13 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
 
         type: 'image',
 
-        brush: function (ctx) {
+        brush: function (ctx, prevEl) {
             var style = this.style;
             var src = style.image;
             var image;
+
+            // Must bind each time
+            style.bind(ctx, this, prevEl);
 
             // style.image is a url string
             if (typeof src === 'string') {
@@ -6979,10 +7787,6 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
                     return;
                 }
 
-                ctx.save();
-
-                style.bind(ctx);
-
                 // 设置transform
                 this.setTransform(ctx);
 
@@ -7026,12 +7830,13 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
                     style.height = height;
                 }
 
+                this.restoreTransform(ctx);
+
                 // Draw rect text
                 if (style.text != null) {
                     this.drawRectText(ctx, this.getBoundingRect());
                 }
 
-                ctx.restore();
             }
         },
 
@@ -7057,15 +7862,24 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
  *         errorrik (errorrik@gmail.com)
  *         pissang (https://www.github.com/pissang)
  */
- define('zrender/Painter',['require','./config','./core/util','./core/log','./core/BoundingRect','./Layer','./graphic/Image'],function (require) {
+ define('zrender/Painter',['require','./config','./core/util','./core/log','./core/BoundingRect','./core/timsort','./Layer','./animation/requestAnimationFrame','./graphic/Image'],function (require) {
     
 
     var config = require('./config');
     var util = require('./core/util');
     var log = require('./core/log');
     var BoundingRect = require('./core/BoundingRect');
+    var timsort = require('./core/timsort');
 
     var Layer = require('./Layer');
+
+    var requestAnimationFrame = require('./animation/requestAnimationFrame');
+
+    // PENDIGN
+    // Layer exceeds MAX_PROGRESSIVE_LAYER_NUMBER may have some problem when flush directly second time.
+    //
+    // Maximum progressive layer. When exceeding this number. All elements will be drawed in the last layer.
+    var MAX_PROGRESSIVE_LAYER_NUMBER = 5;
 
     function parseInt10(val) {
         return parseInt(val, 10);
@@ -7094,7 +7908,6 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
     }
 
     function postProcessLayer(layer) {
-        layer.__dirty = false;
         if (layer.__unusedCount == 1) {
             layer.clear();
         }
@@ -7113,6 +7926,10 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
     }
 
     function isClipPathChanged(clipPaths, prevClipPaths) {
+        if (clipPaths == prevClipPaths) { // Can both be null or undefined
+            return false;
+        }
+
         if (!clipPaths || !prevClipPaths || (clipPaths.length !== prevClipPaths.length)) {
             return true;
         }
@@ -7151,6 +7968,18 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
         }
     }
 
+    function createRoot(width, height) {
+        var domRoot = document.createElement('div');
+        var domRootStyle = domRoot.style;
+
+        // domRoot.onselectstart = returnFalse; // 避免页面选中的尴尬
+        domRootStyle.position = 'relative';
+        domRootStyle.overflow = 'hidden';
+        domRootStyle.width = width + 'px';
+        domRootStyle.height = height + 'px';
+        return domRoot;
+    }
+
     /**
      * @alias module:zrender/Painter
      * @constructor
@@ -7159,6 +7988,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
      * @param {Ojbect} opts
      */
     var Painter = function (root, storage, opts) {
+        // In node environment using node-canvas
         var singleCanvas = !root.nodeName // In node ?
             || root.nodeName.toUpperCase() === 'CANVAS';
 
@@ -7181,11 +8011,10 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
 
         var rootStyle = root.style;
 
-        // In node environment using node-canvas
         if (rootStyle) {
             rootStyle['-webkit-tap-highlight-color'] = 'transparent';
-            rootStyle['-webkit-user-select'] = 'none';
-            rootStyle['user-select'] = 'none';
+            rootStyle['-webkit-user-select'] =
+            rootStyle['user-select'] =
             rootStyle['-webkit-touch-callout'] = 'none';
 
             root.innerHTML = '';
@@ -7196,33 +8025,32 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
          */
         this.storage = storage;
 
+        /**
+         * @type {Array.<number>}
+         * @private
+         */
+        var zlevelList = this._zlevelList = [];
+
+        /**
+         * @type {Object.<string, module:zrender/Layer>}
+         * @private
+         */
+        var layers = this._layers = {};
+
+        /**
+         * @type {Object.<string, Object>}
+         * @type {private}
+         */
+        this._layerConfig = {};
+
         if (!singleCanvas) {
-            var width = this._getWidth();
-            var height = this._getHeight();
-            this._width = width;
-            this._height = height;
+            this._width = this._getWidth();
+            this._height = this._getHeight();
 
-            var domRoot = document.createElement('div');
-            this._domRoot = domRoot;
-            var domRootStyle = domRoot.style;
-
-            // domRoot.onselectstart = returnFalse; // 避免页面选中的尴尬
-            domRootStyle.position = 'relative';
-            domRootStyle.overflow = 'hidden';
-            domRootStyle.width = this._width + 'px';
-            domRootStyle.height = this._height + 'px';
+            var domRoot = this._domRoot = createRoot(
+                this._width, this._height
+            );
             root.appendChild(domRoot);
-
-            /**
-             * @type {Object.<key, module:zrender/Layer>}
-             * @private
-             */
-            this._layers = {};
-            /**
-             * @type {Array.<number>}
-             * @private
-             */
-            this._zlevelList = [];
         }
         else {
             // Use canvas width and height directly
@@ -7237,15 +8065,22 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
             mainLayer.initContext();
             // FIXME Use canvas width and height
             // mainLayer.resize(width, height);
-            this._layers = {
-                0: mainLayer
-            };
-            this._zlevelList = [0];
+            layers[0] = mainLayer;
+            zlevelList.push(0);
         }
 
-        this._layerConfig = {};
-
         this.pathToImage = this._createPathToImage();
+
+        // Layers for progressive rendering
+        this._progressiveLayers = [];
+
+        /**
+         * @type {module:zrender/Layer}
+         * @private
+         */
+        this._hoverlayer;
+
+        this._hoverElements = [];
     };
 
     Painter.prototype = {
@@ -7271,7 +8106,9 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
          * @param {boolean} [paintAll=false] 强制绘制所有displayable
          */
         refresh: function (paintAll) {
+
             var list = this.storage.getDisplayList(true);
+
             var zlevelList = this._zlevelList;
 
             this._paintList(list, paintAll);
@@ -7285,7 +8122,132 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
                 }
             }
 
+            this.refreshHover();
+
+            if (this._progressiveLayers.length) {
+                this._startProgessive();
+            }
+
             return this;
+        },
+
+        addHover: function (el, hoverStyle) {
+            if (el.__hoverMir) {
+                return;
+            }
+            var elMirror = new el.constructor({
+                style: el.style,
+                shape: el.shape
+            });
+            elMirror.__from = el;
+            el.__hoverMir = elMirror;
+            elMirror.setStyle(hoverStyle);
+            this._hoverElements.push(elMirror);
+        },
+
+        removeHover: function (el) {
+            var elMirror = el.__hoverMir;
+            var hoverElements = this._hoverElements;
+            var idx = util.indexOf(hoverElements, elMirror);
+            if (idx >= 0) {
+                hoverElements.splice(idx, 1);
+            }
+            el.__hoverMir = null;
+        },
+
+        clearHover: function (el) {
+            var hoverElements = this._hoverElements;
+            for (var i = 0; i < hoverElements.length; i++) {
+                var from = hoverElements[i].__from;
+                if (from) {
+                    from.__hoverMir = null;
+                }
+            }
+            hoverElements.length = 0;
+        },
+
+        refreshHover: function () {
+            var hoverElements = this._hoverElements;
+            var len = hoverElements.length;
+            var hoverLayer = this._hoverlayer;
+            hoverLayer && hoverLayer.clear();
+
+            if (!len) {
+                return;
+            }
+            timsort(hoverElements, this.storage.displayableSortFunc);
+
+            // Use a extream large zlevel
+            // FIXME?
+            if (!hoverLayer) {
+                hoverLayer = this._hoverlayer = this.getLayer(1e5);
+            }
+
+            var scope = {};
+            hoverLayer.ctx.save();
+            for (var i = 0; i < len;) {
+                var el = hoverElements[i];
+                var originalEl = el.__from;
+                // Original el is removed
+                // PENDING
+                if (!(originalEl && originalEl.__zr)) {
+                    hoverElements.splice(i, 1);
+                    originalEl.__hoverMir = null;
+                    len--;
+                    continue;
+                }
+                i++;
+
+                // Use transform
+                // FIXME style and shape ?
+                if (!originalEl.invisible) {
+                    el.transform = originalEl.transform;
+                    el.invTransform = originalEl.invTransform;
+                    el.__clipPaths = originalEl.__clipPaths;
+                    // el.
+                    this._doPaintEl(el, hoverLayer, true, scope);
+                }
+            }
+            hoverLayer.ctx.restore();
+        },
+
+        _startProgessive: function () {
+            var self = this;
+
+            if (!self._furtherProgressive) {
+                return;
+            }
+
+            // Use a token to stop progress steps triggered by
+            // previous zr.refresh calling.
+            var token = self._progressiveToken = +new Date();
+
+            self._progress++;
+            requestAnimationFrame(step);
+
+            function step() {
+                // In case refreshed or disposed
+                if (token === self._progressiveToken && self.storage) {
+
+                    self._doPaintList(self.storage.getDisplayList());
+
+                    if (self._furtherProgressive) {
+                        self._progress++;
+                        requestAnimationFrame(step);
+                    }
+                    else {
+                        self._progressiveToken = -1;
+                    }
+                }
+            }
+        },
+
+        _clearProgressive: function () {
+            this._progressiveToken = -1;
+            this._progress = 0;
+            util.each(this._progressiveLayers, function (layer) {
+                layer.__dirty && layer.clear();
+            });
         },
 
         _paintList: function (list, paintAll) {
@@ -7296,23 +8258,64 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
 
             this._updateLayerStatus(list);
 
+            this._clearProgressive();
+
+            this.eachBuildinLayer(preProcessLayer);
+
+            this._doPaintList(list, paintAll);
+
+            this.eachBuildinLayer(postProcessLayer);
+        },
+
+        _doPaintList: function (list, paintAll) {
             var currentLayer;
             var currentZLevel;
             var ctx;
 
-            var viewWidth = this._width;
-            var viewHeight = this._height;
-
-            this.eachBuildinLayer(preProcessLayer);
-
             // var invTransform = [];
-            var prevElClipPaths = null;
+            var scope;
+
+            var progressiveLayerIdx = 0;
+            var currentProgressiveLayer;
+
+            var width = this._width;
+            var height = this._height;
+            var layerProgress;
+            var frame = this._progress;
+            function flushProgressiveLayer(layer) {
+                ctx.save();
+                ctx.globalAlpha = 1;
+                ctx.shadowBlur = 0;
+                // Avoid layer don't clear in next progressive frame
+                currentLayer.__dirty = true;
+                ctx.drawImage(layer.dom, 0, 0, width, height);
+                ctx.restore();
+
+                currentLayer.ctx.restore();
+            }
 
             for (var i = 0, l = list.length; i < l; i++) {
                 var el = list[i];
                 var elZLevel = this._singleCanvas ? 0 : el.zlevel;
+
+                var elFrame = el.__frame;
+
+                // Flush at current context
+                // PENDING
+                if (elFrame < 0 && currentProgressiveLayer) {
+                    flushProgressiveLayer(currentProgressiveLayer);
+                    currentProgressiveLayer = null;
+                }
+
                 // Change draw layer
                 if (currentZLevel !== elZLevel) {
+                    if (ctx) {
+                        ctx.restore();
+                    }
+
+                    // Reset scope
+                    scope = {};
+
                     // Only 0 zlevel if only has one canvas
                     currentZLevel = elZLevel;
                     currentLayer = this.getLayer(currentZLevel);
@@ -7325,6 +8328,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
                     }
 
                     ctx = currentLayer.ctx;
+                    ctx.save();
 
                     // Reset the count
                     currentLayer.__unusedCount = 0;
@@ -7334,47 +8338,115 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
                     }
                 }
 
-                if (
-                    (currentLayer.__dirty || paintAll)
-                    // Ignore invisible element
-                    && !el.invisible
-                    // Ignore transparent element
-                    && el.style.opacity !== 0
-                    // Ignore scale 0 element, in some environment like node-canvas
-                    // Draw a scale 0 element can cause all following draw wrong
-                    && el.scale[0] && el.scale[1]
-                    // Ignore culled element
-                    && !(el.culling && isDisplayableCulled(el, viewWidth, viewHeight))
-                ) {
-                    var clipPaths = el.__clipPaths;
+                if (!(currentLayer.__dirty || paintAll)) {
+                    continue;
+                }
+                if (elFrame >= 0) {
+                    // Progressive layer changed
+                    if (!currentProgressiveLayer) {
+                        currentProgressiveLayer = this._progressiveLayers[
+                            Math.min(progressiveLayerIdx++, MAX_PROGRESSIVE_LAYER_NUMBER - 1)
+                        ];
 
-                    // Optimize when clipping on group with several elements
-                    if (isClipPathChanged(clipPaths, prevElClipPaths)) {
-                        // If has previous clipping state, restore from it
-                        if (prevElClipPaths) {
-                            ctx.restore();
+                        currentProgressiveLayer.ctx.save();
+                        currentProgressiveLayer.renderScope = {};
+
+                        if (currentProgressiveLayer
+                            && (currentProgressiveLayer.__progress > currentProgressiveLayer.__maxProgress)
+                        ) {
+                            // flushProgressiveLayer(currentProgressiveLayer);
+                            // Quick jump all progressive elements
+                            // All progressive element are not dirty, jump over and flush directly
+                            i = currentProgressiveLayer.__nextIdxNotProg - 1;
+                            // currentProgressiveLayer = null;
+                            continue;
                         }
-                        // New clipping state
-                        if (clipPaths) {
-                            ctx.save();
-                            doClip(clipPaths, ctx);
+
+                        layerProgress = currentProgressiveLayer.__progress;
+
+                        if (!currentProgressiveLayer.__dirty) {
+                            // Keep rendering
+                            frame = layerProgress;
                         }
-                        prevElClipPaths = clipPaths;
+
+                        currentProgressiveLayer.__progress = frame + 1;
                     }
-                    el.beforeBrush && el.beforeBrush(ctx);
-                    el.brush(ctx, false);
-                    el.afterBrush && el.afterBrush(ctx);
+
+                    if (elFrame === frame) {
+                        this._doPaintEl(el, currentProgressiveLayer, true, currentProgressiveLayer.renderScope);
+                    }
+                }
+                else {
+                    this._doPaintEl(el, currentLayer, paintAll, scope);
                 }
 
                 el.__dirty = false;
             }
 
-            // If still has clipping state
-            if (prevElClipPaths) {
-                ctx.restore();
+            if (currentProgressiveLayer) {
+                flushProgressiveLayer(currentProgressiveLayer);
             }
 
-            this.eachBuildinLayer(postProcessLayer);
+            // Restore the lastLayer ctx
+            ctx && ctx.restore();
+            // If still has clipping state
+            // if (scope.prevElClipPaths) {
+            //     ctx.restore();
+            // }
+
+            this._furtherProgressive = false;
+            util.each(this._progressiveLayers, function (layer) {
+                if (layer.__maxProgress >= layer.__progress) {
+                    this._furtherProgressive = true;
+                }
+            }, this);
+        },
+
+        _doPaintEl: function (el, currentLayer, forcePaint, scope) {
+            var ctx = currentLayer.ctx;
+
+            if (
+                (currentLayer.__dirty || forcePaint)
+                // Ignore invisible element
+                && !el.invisible
+                // Ignore transparent element
+                && el.style.opacity !== 0
+                // Ignore scale 0 element, in some environment like node-canvas
+                // Draw a scale 0 element can cause all following draw wrong
+                && el.scale[0] && el.scale[1]
+                // Ignore culled element
+                && !(el.culling && isDisplayableCulled(el, this._width, this._height))
+            ) {
+
+                var clipPaths = el.__clipPaths;
+
+                // Optimize when clipping on group with several elements
+                if (scope.prevClipLayer !== currentLayer
+                    || isClipPathChanged(clipPaths, scope.prevElClipPaths)
+                ) {
+                    // If has previous clipping state, restore from it
+                    if (scope.prevElClipPaths) {
+                        scope.prevClipLayer.ctx.restore();
+                        scope.prevClipLayer = scope.prevElClipPaths = null;
+
+                        // Reset prevEl since context has been restored
+                        scope.prevEl = null;
+                    }
+                    // New clipping state
+                    if (clipPaths) {
+                        ctx.save();
+                        doClip(clipPaths, ctx);
+                        scope.prevClipLayer = currentLayer;
+                        scope.prevElClipPaths = clipPaths;
+                    }
+                }
+                el.beforeBrush && el.beforeBrush(ctx);
+
+                el.brush(ctx, scope.prevEl || null);
+                scope.prevEl = el;
+
+                el.afterBrush && el.afterBrush(ctx);
+            }
         },
 
         /**
@@ -7515,32 +8587,98 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
         _updateLayerStatus: function (list) {
 
             var layers = this._layers;
+            var progressiveLayers = this._progressiveLayers;
 
-            var elCounts = {};
+            var elCountsLastFrame = {};
+            var progressiveElCountsLastFrame = {};
 
             this.eachBuildinLayer(function (layer, z) {
-                elCounts[z] = layer.elCount;
+                elCountsLastFrame[z] = layer.elCount;
                 layer.elCount = 0;
+                layer.__dirty = false;
             });
 
+            util.each(progressiveLayers, function (layer, idx) {
+                progressiveElCountsLastFrame[idx] = layer.elCount;
+                layer.elCount = 0;
+                layer.__dirty = false;
+            });
+
+            var progressiveLayerCount = 0;
+            var currentProgressiveLayer;
+            var lastProgressiveKey;
+            var frameCount = 0;
             for (var i = 0, l = list.length; i < l; i++) {
                 var el = list[i];
                 var zlevel = this._singleCanvas ? 0 : el.zlevel;
                 var layer = layers[zlevel];
+                var elProgress = el.progressive;
                 if (layer) {
                     layer.elCount++;
-                    // 已经被标记为需要刷新
-                    if (layer.__dirty) {
-                        continue;
-                    }
-                    layer.__dirty = el.__dirty;
+                    layer.__dirty = layer.__dirty || el.__dirty;
                 }
+
+                /////// Update progressive
+                if (elProgress >= 0) {
+                    // Fix wrong progressive sequence problem.
+                    if (lastProgressiveKey !== elProgress) {
+                        lastProgressiveKey = elProgress;
+                        frameCount++;
+                    }
+                    var elFrame = el.__frame = frameCount - 1;
+                    if (!currentProgressiveLayer) {
+                        var idx = Math.min(progressiveLayerCount, MAX_PROGRESSIVE_LAYER_NUMBER - 1);
+                        currentProgressiveLayer = progressiveLayers[idx];
+                        if (!currentProgressiveLayer) {
+                            currentProgressiveLayer = progressiveLayers[idx] = new Layer(
+                                'progressive', this, this.dpr
+                            );
+                            currentProgressiveLayer.initContext();
+                        }
+                        currentProgressiveLayer.__maxProgress = 0;
+                    }
+                    currentProgressiveLayer.__dirty = currentProgressiveLayer.__dirty || el.__dirty;
+                    currentProgressiveLayer.elCount++;
+
+                    currentProgressiveLayer.__maxProgress = Math.max(
+                        currentProgressiveLayer.__maxProgress, elFrame
+                    );
+
+                    if (currentProgressiveLayer.__maxProgress >= currentProgressiveLayer.__progress) {
+                        // Should keep rendering this  layer because progressive rendering is not finished yet
+                        layer.__dirty = true;
+                    }
+                }
+                else {
+                    el.__frame = -1;
+
+                    if (currentProgressiveLayer) {
+                        currentProgressiveLayer.__nextIdxNotProg = i;
+                        progressiveLayerCount++;
+                        currentProgressiveLayer = null;
+                    }
+                }
+            }
+
+            if (currentProgressiveLayer) {
+                progressiveLayerCount++;
+                currentProgressiveLayer.__nextIdxNotProg = i;
             }
 
             // 层中的元素数量有发生变化
             this.eachBuildinLayer(function (layer, z) {
-                if (elCounts[z] !== layer.elCount) {
+                if (elCountsLastFrame[z] !== layer.elCount) {
                     layer.__dirty = true;
+                }
+            });
+
+            progressiveLayers.length = Math.min(progressiveLayerCount, MAX_PROGRESSIVE_LAYER_NUMBER);
+            util.each(progressiveLayers, function (layer, idx) {
+                if (progressiveElCountsLastFrame[idx] !== layer.elCount) {
+                    el.__dirty = true;
+                }
+                if (layer.__dirty) {
+                    layer.__progress = 0;
                 }
             });
         },
@@ -7671,20 +8809,15 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
             var imageLayer = new Layer('image', this, opts.pixelRatio || this.dpr);
             imageLayer.initContext();
 
-            var ctx = imageLayer.ctx;
             imageLayer.clearColor = opts.backgroundColor;
             imageLayer.clear();
 
             var displayList = this.storage.getDisplayList(true);
 
+            var scope = {};
             for (var i = 0; i < displayList.length; i++) {
                 var el = displayList[i];
-                if (!el.invisible) {
-                    el.beforeBrush && el.beforeBrush(ctx);
-                    // TODO Check image cross origin
-                    el.brush(ctx, false);
-                    el.afterBrush && el.afterBrush(ctx);
-                }
+                this._doPaintEl(el, imageLayer, true, scope);
             }
 
             return imageLayer.dom;
@@ -7812,7 +8945,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
     /**
      * @type {string}
      */
-    zrender.version = '3.1.0';
+    zrender.version = '3.1.1';
 
     /**
      * Initializing a zrender instance
@@ -7919,6 +9052,9 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
                     if (self._needsRefresh) {
                         self.refreshImmediately();
                     }
+                    if (self._needsRefreshHover) {
+                        self.refreshHoverImmediately();
+                    }
                 }
             }
         });
@@ -7963,7 +9099,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
 
         /**
          * 添加元素
-         * @param  {string|module:zrender/Element} el
+         * @param  {module:zrender/Element} el
          */
         add: function (el) {
             this.storage.addRoot(el);
@@ -7972,7 +9108,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
 
         /**
          * 删除元素
-         * @param  {string|module:zrender/Element} el
+         * @param  {module:zrender/Element} el
          */
         remove: function (el) {
             this.storage.delRoot(el);
@@ -8011,6 +9147,55 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
          */
         refresh: function() {
             this._needsRefresh = true;
+        },
+
+        /**
+         * Add element to hover layer
+         * @param  {module:zrender/Element} el
+         * @param {Object} style
+         */
+        addHover: function (el, style) {
+            if (this.painter.addHover) {
+                this.painter.addHover(el, style);
+                this.refreshHover();
+            }
+        },
+
+        /**
+         * Add element from hover layer
+         * @param  {module:zrender/Element} el
+         */
+        removeHover: function (el) {
+            if (this.painter.removeHover) {
+                this.painter.removeHover(el);
+                this.refreshHover();
+            }
+        },
+
+        /**
+         * Clear all hover elements in hover layer
+         * @param  {module:zrender/Element} el
+         */
+        clearHover: function () {
+            if (this.painter.clearHover) {
+                this.painter.clearHover();
+                this.refreshHover();
+            }
+        },
+
+        /**
+         * Refresh hover in next frame
+         */
+        refreshHover: function () {
+            this._needsRefreshHover = true;
+        },
+
+        /**
+         * Refresh hover immediately
+         */
+        refreshHoverImmediately: function () {
+            this._needsRefreshHover = false;
+            this.painter.refreshHover && this.painter.refreshHover();
         },
 
         /**
@@ -8069,10 +9254,10 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
 
         /**
          * Set default cursor
-         * @param {string} cursorStyle 例如 crosshair
+         * @param {string} [cursorStyle='default'] 例如 crosshair
          */
-        setDefaultCursorStyle: function (cursorStyle) {
-            this.handler.setDefaultCursorStyle(cursorStyle);
+        setCursorStyle: function (cursorStyle) {
+            this.handler && this.handler.setCursorStyle(cursorStyle);
         },
 
         /**
@@ -8170,36 +9355,31 @@ define('zrender/graphic/Text',['require','./Displayable','../core/util','../cont
 
         type: 'text',
 
-        brush: function (ctx) {
+        brush: function (ctx, prevEl) {
             var style = this.style;
             var x = style.x || 0;
             var y = style.y || 0;
             // Convert to string
             var text = style.text;
-            var textFill = style.fill;
-            var textStroke = style.stroke;
 
             // Convert to string
             text != null && (text += '');
 
-            if (text) {
-                ctx.save();
+            // Always bind style
+            style.bind(ctx, this, prevEl);
 
-                this.style.bind(ctx);
+            if (text) {
+
                 this.setTransform(ctx);
 
-                textFill && (ctx.fillStyle = textFill);
-                textStroke && (ctx.strokeStyle = textStroke);
-
-                ctx.font = style.textFont || style.font;
-                ctx.textAlign = style.textAlign;
-
+                var textBaseline;
+                var textAlign = style.textAlign;
                 if (style.textVerticalAlign) {
                     var rect = textContain.getBoundingRect(
                         text, ctx.font, style.textAlign, 'top'
                     );
                     // Ignore textBaseline
-                    ctx.textBaseline = 'middle';
+                    textBaseline = 'middle';
                     switch (style.textVerticalAlign) {
                         case 'middle':
                             y -= rect.height / 2 - rect.lineHeight / 2;
@@ -8212,18 +9392,31 @@ define('zrender/graphic/Text',['require','./Displayable','../core/util','../cont
                     }
                 }
                 else {
-                    ctx.textBaseline = style.textBaseline;
+                    textBaseline = style.textBaseline;
                 }
+
+                ctx.font = style.textFont || style.font;
+                ctx.textAlign = textAlign || 'left';
+                // Use canvas default left textAlign. Giving invalid value will cause state not change
+                if (ctx.textAlign !== textAlign) {
+                    ctx.textAlign = 'left';
+                }
+                ctx.textBaseline = textBaseline || 'alphabetic';
+                // Use canvas default alphabetic baseline
+                if (ctx.textBaseline !== textBaseline) {
+                    ctx.textBaseline = 'alphabetic';
+                }
+
                 var lineHeight = textContain.measureText('国', ctx.font).width;
 
                 var textLines = text.split('\n');
                 for (var i = 0; i < textLines.length; i++) {
-                    textFill && ctx.fillText(textLines[i], x, y);
-                    textStroke && ctx.strokeText(textLines[i], x, y);
+                    style.hasFill() && ctx.fillText(textLines[i], x, y);
+                    style.hasStroke() && ctx.strokeText(textLines[i], x, y);
                     y += lineHeight;
                 }
 
-                ctx.restore();
+                this.restoreTransform(ctx);
             }
         },
 
@@ -9177,7 +10370,7 @@ define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./Boun
             var exceedUnit = mathAbs(x - this._xi) > this._ux
                 || mathAbs(y - this._yi) > this._uy
                 // Force draw the first segment
-                || this._len === 0;
+                || this._len < 5;
 
             this.addData(CMD.L, x, y);
 
@@ -9453,14 +10646,15 @@ define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./Boun
             x -= offset * dx;
             y -= offset * dy;
 
-            while ((dx >= 0 && x <= x1) || (dx < 0 && x > x1)) {
+            while ((dx > 0 && x <= x1) || (dx < 0 && x >= x1)
+            || (dx == 0 && ((dy > 0 && y <= y1) || (dy < 0 && y >= y1)))) {
                 idx = this._dashIdx;
                 dash = lineDash[idx];
                 x += dx * dash;
                 y += dy * dash;
                 this._dashIdx = (idx + 1) % nDash;
                 // Skip positive offset
-                if ((dx > 0 && x < x0) || (dx < 0 && x > x0)) {
+                if ((dx > 0 && x < x0) || (dx < 0 && x > x0) || (dy > 0 && y < y0) || (dy < 0 && y > y0)) {
                     continue;
                 }
                 ctx[idx % 2 ? 'moveTo' : 'lineTo'](
@@ -9998,11 +11192,18 @@ define('zrender/contain/windingLine',[],function () {
         if ((y > y0 && y > y1) || (y < y0 && y < y1)) {
             return 0;
         }
+        // Ignore horizontal line
         if (y1 === y0) {
             return 0;
         }
         var dir = y1 < y0 ? 1 : -1;
         var t = (y - y0) / (y1 - y0);
+
+        // Avoid winding error when intersection point is the connect point of two line of polygon
+        if (t === 1 || t === 0) {
+            dir = y1 < y0 ? 0.5 : -0.5;
+        }
+
         var x_ = t * (x1 - x0) + x0;
 
         return x_ > x ? dir : 0;
@@ -10060,6 +11261,10 @@ define('zrender/contain/path',['require','../core/PathProxy','./line','./cubic',
             var y0_, y1_;
             for (var i = 0; i < nRoots; i++) {
                 var t = roots[i];
+
+                // Avoid winding error when intersection point is the connect point of two line of polygon
+                var unit = (t === 0 || t === 1) ? 0.5 : 1;
+
                 var x_ = curve.cubicAt(x0, x1, x2, x3, t);
                 if (x_ < x) { // Quick reject
                     continue;
@@ -10077,22 +11282,22 @@ define('zrender/contain/path',['require','../core/PathProxy','./line','./cubic',
                 if (nExtrema == 2) {
                     // 分成三段单调函数
                     if (t < extrema[0]) {
-                        w += y0_ < y0 ? 1 : -1;
+                        w += y0_ < y0 ? unit : -unit;
                     }
                     else if (t < extrema[1]) {
-                        w += y1_ < y0_ ? 1 : -1;
+                        w += y1_ < y0_ ? unit : -unit;
                     }
                     else {
-                        w += y3 < y1_ ? 1 : -1;
+                        w += y3 < y1_ ? unit : -unit;
                     }
                 }
                 else {
                     // 分成两段单调函数
                     if (t < extrema[0]) {
-                        w += y0_ < y0 ? 1 : -1;
+                        w += y0_ < y0 ? unit : -unit;
                     }
                     else {
-                        w += y3 < y0_ ? 1 : -1;
+                        w += y3 < y0_ ? unit : -unit;
                     }
                 }
             }
@@ -10118,25 +11323,31 @@ define('zrender/contain/path',['require','../core/PathProxy','./line','./cubic',
                 var w = 0;
                 var y_ = curve.quadraticAt(y0, y1, y2, t);
                 for (var i = 0; i < nRoots; i++) {
+                    // Remove one endpoint.
+                    var unit = (roots[i] === 0 || roots[i] === 1) ? 0.5 : 1;
+
                     var x_ = curve.quadraticAt(x0, x1, x2, roots[i]);
                     if (x_ < x) {   // Quick reject
                         continue;
                     }
                     if (roots[i] < t) {
-                        w += y_ < y0 ? 1 : -1;
+                        w += y_ < y0 ? unit : -unit;
                     }
                     else {
-                        w += y2 < y_ ? 1 : -1;
+                        w += y2 < y_ ? unit : -unit;
                     }
                 }
                 return w;
             }
             else {
+                // Remove one endpoint.
+                var unit = (roots[0] === 0 || roots[0] === 1) ? 0.5 : 1;
+
                 var x_ = curve.quadraticAt(x0, x1, x2, roots[0]);
                 if (x_ < x) {   // Quick reject
                     return 0;
                 }
-                return y2 < y0 ? 1 : -1;
+                return y2 < y0 ? unit : -unit;
             }
         }
     }
@@ -10222,9 +11433,9 @@ define('zrender/contain/path',['require','../core/PathProxy','./line','./cubic',
                     w += windingLine(xi, yi, x0, y0, x, y);
                 }
                 // 如果被任何一个 subpath 包含
-                if (w !== 0) {
-                    return true;
-                }
+                // if (w !== 0) {
+                //     return true;
+                // }
             }
 
             if (i == 1) {
@@ -10351,7 +11562,7 @@ define('zrender/contain/path',['require','../core/PathProxy','./line','./cubic',
                         if (containStroke(x0, y0, x1, y0, lineWidth, x, y)
                           || containStroke(x1, y0, x1, y1, lineWidth, x, y)
                           || containStroke(x1, y1, x0, y1, lineWidth, x, y)
-                          || containStroke(x0, y1, x1, y1, lineWidth, x, y)
+                          || containStroke(x0, y1, x0, y0, lineWidth, x, y)
                         ) {
                             return true;
                         }
@@ -10374,9 +11585,10 @@ define('zrender/contain/path',['require','../core/PathProxy','./line','./cubic',
                         // Close a subpath
                         w += windingLine(xi, yi, x0, y0, x, y);
                         // 如果被任何一个 subpath 包含
-                        if (w !== 0) {
-                            return true;
-                        }
+                        // FIXME subpaths may overlap
+                        // if (w !== 0) {
+                        //     return true;
+                        // }
                     }
                     xi = x0;
                     yi = y0;
@@ -10404,24 +11616,15 @@ define('zrender/contain/path',['require','../core/PathProxy','./line','./cubic',
  * @module zrender/graphic/Path
  */
 
-define('zrender/graphic/Path',['require','./Displayable','../core/util','../core/PathProxy','../contain/path','./Gradient'],function (require) {
+define('zrender/graphic/Path',['require','./Displayable','../core/util','../core/PathProxy','../contain/path','./Pattern'],function (require) {
 
     var Displayable = require('./Displayable');
     var zrUtil = require('../core/util');
     var PathProxy = require('../core/PathProxy');
     var pathContain = require('../contain/path');
 
-    var Gradient = require('./Gradient');
-
-    function pathHasFill(style) {
-        var fill = style.fill;
-        return fill != null && fill !== 'none';
-    }
-
-    function pathHasStroke(style) {
-        var stroke = style.stroke;
-        return stroke != null && stroke !== 'none' && style.lineWidth > 0;
-    }
+    var Pattern = require('./Pattern');
+    var getCanvasPattern = Pattern.prototype.getCanvasPattern;
 
     var abs = Math.abs;
 
@@ -10451,35 +11654,44 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
 
         strokeContainThreshold: 5,
 
-        brush: function (ctx) {
-            ctx.save();
-
+        brush: function (ctx, prevEl) {
             var style = this.style;
             var path = this.path;
-            var hasStroke = pathHasStroke(style);
-            var hasFill = pathHasFill(style);
-            var hasFillGradient = hasFill && !!(style.fill.colorStops);
-            var hasStrokeGradient = hasStroke && !!(style.stroke.colorStops);
+            var hasStroke = style.hasStroke();
+            var hasFill = style.hasFill();
+            var fill = style.fill;
+            var stroke = style.stroke;
+            var hasFillGradient = hasFill && !!(fill.colorStops);
+            var hasStrokeGradient = hasStroke && !!(stroke.colorStops);
+            var hasFillPattern = hasFill && !!(fill.image);
+            var hasStrokePattern = hasStroke && !!(stroke.image);
 
-            style.bind(ctx, this);
+            style.bind(ctx, this, prevEl);
             this.setTransform(ctx);
 
-            if (this.__dirtyPath) {
+            if (this.__dirty) {
                 var rect = this.getBoundingRect();
                 // Update gradient because bounding rect may changed
                 if (hasFillGradient) {
-                    this._fillGradient = style.getGradient(ctx, style.fill, rect);
+                    this._fillGradient = style.getGradient(ctx, fill, rect);
                 }
                 if (hasStrokeGradient) {
-                    this._strokeGradient = style.getGradient(ctx, style.stroke, rect);
+                    this._strokeGradient = style.getGradient(ctx, stroke, rect);
                 }
             }
-            // Use the gradient
+            // Use the gradient or pattern
             if (hasFillGradient) {
+                // PENDING If may have affect the state
                 ctx.fillStyle = this._fillGradient;
+            }
+            else if (hasFillPattern) {
+                ctx.fillStyle = getCanvasPattern.call(fill, ctx);
             }
             if (hasStrokeGradient) {
                 ctx.strokeStyle = this._strokeGradient;
+            }
+            else if (hasStrokePattern) {
+                ctx.strokeStyle = getCanvasPattern.call(stroke, ctx);
             }
 
             var lineDash = style.lineDash;
@@ -10507,7 +11719,7 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
                     path.setLineDashOffset(lineDashOffset);
                 }
 
-                this.buildPath(path, this.shape);
+                this.buildPath(path, this.shape, false);
 
                 // Clear path dirty flag
                 this.__dirtyPath = false;
@@ -10527,16 +11739,25 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
 
             hasStroke && path.stroke(ctx);
 
+            if (lineDash && ctxLineDash) {
+                // PENDING
+                // Remove lineDash
+                ctx.setLineDash([]);
+            }
+
+
+            this.restoreTransform(ctx);
+
             // Draw rect text
-            if (style.text != null) {
+            if (style.text || style.text === 0) {
                 // var rect = this.getBoundingRect();
                 this.drawRectText(ctx, this.getBoundingRect());
             }
-
-            ctx.restore();
         },
 
-        buildPath: function (ctx, shapeCfg) {},
+        // When bundling path, some shape may decide if use moveTo to begin a new subpath or closePath
+        // Like in circle
+        buildPath: function (ctx, shapeCfg, inBundle) {},
 
         getBoundingRect: function () {
             var rect = this._rect;
@@ -10546,13 +11767,13 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
                 var path = this.path;
                 if (this.__dirtyPath) {
                     path.beginPath();
-                    this.buildPath(path, this.shape);
+                    this.buildPath(path, this.shape, false);
                 }
                 rect = path.getBoundingRect();
             }
             this._rect = rect;
 
-            if (pathHasStroke(style)) {
+            if (style.hasStroke()) {
                 // Needs update rect with stroke lineWidth when
                 // 1. Element changes scale or lineWidth
                 // 2. Shape is changed
@@ -10565,7 +11786,7 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
                     var lineScale = style.strokeNoScale ? this.getLineScale() : 1;
 
                     // Only add extra hover lineWidth when there are no fill
-                    if (!pathHasFill(style)) {
+                    if (!style.hasFill()) {
                         w = Math.max(w, this.strokeContainThreshold);
                     }
                     // Consider line width
@@ -10594,13 +11815,13 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
 
             if (rect.contain(x, y)) {
                 var pathData = this.path.data;
-                if (pathHasStroke(style)) {
+                if (style.hasStroke()) {
                     var lineWidth = style.lineWidth;
                     var lineScale = style.strokeNoScale ? this.getLineScale() : 1;
                     // Line scale can't be 0;
                     if (lineScale > 1e-10) {
                         // Only add extra hover lineWidth when there are no fill
-                        if (!pathHasFill(style)) {
+                        if (!style.hasFill()) {
                             lineWidth = Math.max(lineWidth, this.strokeContainThreshold);
                         }
                         if (pathContain.containStroke(
@@ -10610,7 +11831,7 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
                         }
                     }
                 }
-                if (pathHasFill(style)) {
+                if (style.hasFill()) {
                     return pathContain.contain(pathData, x, y);
                 }
             }
@@ -10621,7 +11842,7 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
          * @param  {boolean} dirtyPath
          */
         dirty: function (dirtyPath) {
-            if (arguments.length ===0) {
+            if (dirtyPath == null) {
                 dirtyPath = true;
             }
             // Only mark dirty, not mark clean
@@ -10653,6 +11874,8 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
             // FIXME
             if (key === 'shape') {
                 this.setShape(value);
+                this.__dirtyPath = true;
+                this._rect = null;
             }
             else {
                 Displayable.prototype.attrKV.call(this, key, value);
@@ -10892,7 +12115,7 @@ define('zrender/graphic/shape/Circle',['require','../Path'],function (require) {
     
 
     return require('../Path').extend({
-        
+
         type: 'circle',
 
         shape: {
@@ -10901,11 +12124,16 @@ define('zrender/graphic/shape/Circle',['require','../Path'],function (require) {
             r: 0
         },
 
-        buildPath : function (ctx, shape) {
+
+        buildPath : function (ctx, shape, inBundle) {
             // Better stroking in ShapeBundle
-            ctx.moveTo(shape.cx + shape.r, shape.cy);
+            // Always do it may have performence issue ( fill may be 2x more cost)
+            if (inBundle) {
+                ctx.moveTo(shape.cx + shape.r, shape.cy);
+            }
+            // Better stroking in ShapeBundle
+            // ctx.moveTo(shape.cx + shape.r, shape.cy);
             ctx.arc(shape.cx, shape.cy, shape.r, 0, Math.PI * 2, true);
-            return;
         }
     });
 });
@@ -11740,6 +12968,32 @@ define('zrender/graphic/shape/Polygon',['require','../helper/poly','../Path'],fu
         }
     });
 });
+define('zrender/graphic/Gradient',['require'],function (require) {
+
+    /**
+     * @param {Array.<Object>} colorStops
+     */
+    var Gradient = function (colorStops) {
+
+        this.colorStops = colorStops || [];
+    };
+
+    Gradient.prototype = {
+
+        constructor: Gradient,
+
+        addColorStop: function (offset, color) {
+            this.colorStops.push({
+
+                offset: offset,
+
+                color: color
+            });
+        }
+    };
+
+    return Gradient;
+});
 define('zrender/vml/core',['require','exports','module','../core/env'],function (require, exports, module) {
 
 if (!require('../core/env').canvasSupported) {
@@ -12004,15 +13258,15 @@ if (!require('../core/env').canvasSupported) {
     };
 
     var updateStrokeNode = function (el, style) {
-        if (style.lineJoin != null) {
-            el.joinstyle = style.lineJoin;
-        }
-        if (style.miterLimit != null) {
-            el.miterlimit = style.miterLimit * Z;
-        }
-        if (style.lineCap != null) {
-            el.endcap = style.lineCap;
-        }
+        // if (style.lineJoin != null) {
+        //     el.joinstyle = style.lineJoin;
+        // }
+        // if (style.miterLimit != null) {
+        //     el.miterlimit = style.miterLimit * Z;
+        // }
+        // if (style.lineCap != null) {
+        //     el.endcap = style.lineCap;
+        // }
         if (style.lineDash != null) {
             el.dashstyle = style.lineDash.join(' ');
         }
@@ -12622,6 +13876,7 @@ if (!require('../core/env').canvasSupported) {
         // FIXME encodeHtmlAttribute ?
         var font = fontStyle.style + ' ' + fontStyle.variant + ' ' + fontStyle.weight + ' '
             + fontStyle.size + 'px "' + fontStyle.family + '"';
+        console.log(font);
         var baseline = style.textBaseline;
         var verticalAlign = style.textVerticalAlign;
 
@@ -12988,6 +14243,10 @@ define('zrender/vml/Painter',['require','../core/log','./core'],function (requir
 
         getHeight: function () {
             return this._height;
+        },
+
+        clear: function () {
+            this.root.removeChild(this.vmlViewport);
         },
 
         _getWidth: function () {
