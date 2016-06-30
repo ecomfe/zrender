@@ -202,6 +202,7 @@ define(function (require) {
             if ((firstDraw || style.opacity !== prevStyle.opacity)) {
                 ctx.globalAlpha = style.opacity == null ? 1 : style.opacity;
             }
+
             if ((firstDraw || style.blend !== prevStyle.blend)) {
                 ctx.globalCompositeOperation = style.blend || 'source-over';
             }

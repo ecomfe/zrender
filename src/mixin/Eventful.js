@@ -7,8 +7,6 @@
 define(function (require) {
 
     var arrySlice = Array.prototype.slice;
-    var zrUtil = require('../core/util');
-    var indexOf = zrUtil.indexOf;
 
     /**
      * 事件分发器
@@ -41,8 +39,10 @@ define(function (require) {
                 _h[event] = [];
             }
 
-            if (indexOf(_h[event], event) >= 0) {
-                return this;
+            for (var i = 0; i < _h[event].length; i++) {
+                if (_h[event][i].h === handler) {
+                    return this;
+                }
             }
 
             _h[event].push({
@@ -69,6 +69,12 @@ define(function (require) {
 
             if (!_h[event]) {
                 _h[event] = [];
+            }
+
+            for (var i = 0; i < _h[event].length; i++) {
+                if (_h[event][i].h === handler) {
+                    return this;
+                }
             }
 
             _h[event].push({
