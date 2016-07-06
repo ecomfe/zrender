@@ -44,7 +44,7 @@ define(function () {
         // var rimtabletos = ua.match(/(RIM\sTablet\sOS)\s([\d.]+)/);
         // var playbook = ua.match(/PlayBook/);
         // var chrome = ua.match(/Chrome\/([\d.]+)/) || ua.match(/CriOS\/([\d.]+)/);
-        // var firefox = ua.match(/Firefox\/([\d.]+)/);
+        var firefox = ua.match(/Firefox\/([\d.]+)/);
         // var safari = webkit && ua.match(/Mobile\//) && !chrome;
         // var webview = ua.match(/(iPhone|iPod|iPad).*AppleWebKit(?!.*Safari)/) && !chrome;
         var ie = ua.match(/MSIE\s([\d.]+)/)
@@ -74,7 +74,7 @@ define(function () {
         // if (silk) browser.silk = true, browser.version = silk[1];
         // if (!silk && os.android && ua.match(/Kindle Fire/)) browser.silk = true;
         // if (chrome) browser.chrome = true, browser.version = chrome[1];
-        // if (firefox) browser.firefox = true, browser.version = firefox[1];
+        if (firefox) browser.firefox = true, browser.version = firefox[1];
         // if (safari && (ua.match(/Safari/) || !!os.ios)) browser.safari = true;
         // if (webview) browser.webview = true;
         if (ie) {
