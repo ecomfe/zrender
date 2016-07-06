@@ -15,6 +15,7 @@ define(function(require) {
     var Handler = require('./Handler');
     var Storage = require('./Storage');
     var Animation = require('./animation/Animation');
+    var HandlerProxy = require('./dom/HandlerProxy');
 
     var useVML = !env.canvasSupported;
 
@@ -122,9 +123,9 @@ define(function(require) {
 
         this.storage = storage;
         this.painter = painter;
-        if (!env.node) {
-            this.handler = new Handler(painter.getViewportRoot(), storage, painter);
-        }
+
+        var handerProxy = !env.node ? new HandlerProxy(painter.getViewportRoot()) : null;
+        this.handler = new Handler(storage, painter, handerProxy);
 
         /**
          * @type {module:zrender/animation/Animation}
@@ -287,7 +288,7 @@ define(function(require) {
          */
         resize: function() {
             this.painter.resize();
-            this.handler && this.handler.resize();
+            this.handler.resize();
         },
 
         /**
@@ -340,7 +341,7 @@ define(function(require) {
          * @param {string} [cursorStyle='default'] 例如 crosshair
          */
         setCursorStyle: function (cursorStyle) {
-            this.handler && this.handler.setCursorStyle(cursorStyle);
+            this.handler.setCursorStyle(cursorStyle);
         },
 
         /**
@@ -351,7 +352,7 @@ define(function(require) {
          * @param {Object} [context] Context object
          */
         on: function(eventName, eventHandler, context) {
-            this.handler && this.handler.on(eventName, eventHandler, context);
+            this.handler.on(eventName, eventHandler, context);
         },
 
         /**
@@ -360,7 +361,7 @@ define(function(require) {
          * @param {Function} [eventHandler] Handler function
          */
         off: function(eventName, eventHandler) {
-            this.handler && this.handler.off(eventName, eventHandler);
+            this.handler.off(eventName, eventHandler);
         },
 
         /**
@@ -370,7 +371,7 @@ define(function(require) {
          * @param {event=} event Event object
          */
         trigger: function (eventName, event) {
-            this.handler && this.handler.trigger(eventName, event);
+            this.handler.trigger(eventName, event);
         },
 
 
@@ -391,7 +392,7 @@ define(function(require) {
             this.clear();
             this.storage.dispose();
             this.painter.dispose();
-            this.handler && this.handler.dispose();
+            this.handler.dispose();
 
             this.animation =
             this.storage =

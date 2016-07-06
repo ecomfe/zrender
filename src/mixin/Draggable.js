@@ -26,7 +26,7 @@ define(function (require) {
                 this._x = e.offsetX;
                 this._y = e.offsetY;
 
-                this._dispatchProxy(draggingTarget, 'dragstart', e.event);
+                this.dispatchToElement(draggingTarget, 'dragstart', e.event);
             }
         },
 
@@ -43,7 +43,7 @@ define(function (require) {
                 this._y = y;
 
                 draggingTarget.drift(dx, dy, e);
-                this._dispatchProxy(draggingTarget, 'drag', e.event);
+                this.dispatchToElement(draggingTarget, 'drag', e.event);
 
                 var dropTarget = this.findHover(x, y, draggingTarget);
                 var lastDropTarget = this._dropTarget;
@@ -51,10 +51,10 @@ define(function (require) {
 
                 if (draggingTarget !== dropTarget) {
                     if (lastDropTarget && dropTarget !== lastDropTarget) {
-                        this._dispatchProxy(lastDropTarget, 'dragleave', e.event);
+                        this.dispatchToElement(lastDropTarget, 'dragleave', e.event);
                     }
                     if (dropTarget && dropTarget !== lastDropTarget) {
-                        this._dispatchProxy(dropTarget, 'dragenter', e.event);
+                        this.dispatchToElement(dropTarget, 'dragenter', e.event);
                     }
                 }
             }
@@ -67,10 +67,10 @@ define(function (require) {
                 draggingTarget.dragging = false;
             }
 
-            this._dispatchProxy(draggingTarget, 'dragend', e.event);
+            this.dispatchToElement(draggingTarget, 'dragend', e.event);
 
             if (this._dropTarget) {
-                this._dispatchProxy(this._dropTarget, 'drop', e.event);
+                this.dispatchToElement(this._dropTarget, 'drop', e.event);
             }
 
             this._draggingTarget = null;
