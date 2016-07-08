@@ -8,7 +8,6 @@ define(function (require) {
     var Displayable = require('./Displayable');
     var BoundingRect = require('../core/BoundingRect');
     var zrUtil = require('../core/util');
-    var roundRectHelper = require('./helper/roundRect');
 
     var LRU = require('../core/LRU');
     var globalImageCache = new LRU(50);
@@ -98,13 +97,6 @@ define(function (require) {
                 // 设置transform
                 this.setTransform(ctx);
 
-                if (style.r) {
-                    // Border radius clipping
-                    // FIXME
-                    ctx.beginPath();
-                    roundRectHelper.buildPath(ctx, style);
-                    ctx.clip();
-                }
 
                 if (style.sWidth && style.sHeight) {
                     var sx = style.sx || 0;

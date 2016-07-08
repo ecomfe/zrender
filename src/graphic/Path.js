@@ -174,7 +174,7 @@ define(function (require) {
 
                     // Only add extra hover lineWidth when there are no fill
                     if (!style.hasFill()) {
-                        w = Math.max(w, this.strokeContainThreshold);
+                        w = Math.max(w, this.strokeContainThreshold || 4);
                     }
                     // Consider line width
                     // Line scale can't be 0;
