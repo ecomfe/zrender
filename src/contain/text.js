@@ -164,21 +164,21 @@ define(function (require) {
      * Show ellipsis if overflow.
      *
      * @param  {string} text
-     * @param  {string} textFont
      * @param  {string} containerWidth
+     * @param  {string} textFont
      * @param  {Object} [options]
      * @param  {number} [options.ellipsis='...']
      * @param  {number} [options.maxIterations=3]
      * @param  {number} [options.minCharacters=3]
      * @return {string}
      */
-    function textEllipsis(text, textFont, containerWidth, options) {
+    function truncateText(text, containerWidth, textFont, ellipsis, options) {
         if (!containerWidth) {
             return '';
         }
 
         options = util.defaults({
-            ellipsis: '...',
+            ellipsis: ellipsis || '...',
             minCharacters: 3,
             maxIterations: 3,
             cnCharWidth: getTextWidth('国', textFont),
@@ -245,7 +245,7 @@ define(function (require) {
 
         adjustTextPositionOnRect: adjustTextPositionOnRect,
 
-        ellipsis: textEllipsis,
+        truncateText: truncateText,
 
         measureText: function (text, textFont) {
             var ctx = util.getContext();
