@@ -166,8 +166,8 @@ define(function (require) {
      * @param  {string} text
      * @param  {string} containerWidth
      * @param  {string} textFont
+     * @param  {number} [ellipsis='...']
      * @param  {Object} [options]
-     * @param  {number} [options.ellipsis='...']
      * @param  {number} [options.maxIterations=3]
      * @param  {number} [options.minCharacters=3]
      * @return {string}
@@ -177,9 +177,11 @@ define(function (require) {
             return '';
         }
 
+        ellipsis = ellipsis == null ? '...' : ellipsis;
+
         options = util.defaults({
-            ellipsis: ellipsis || '...',
-            minCharacters: 3,
+            ellipsis: ellipsis,
+            minCharacters: -1,
             maxIterations: 3,
             cnCharWidth: getTextWidth('国', textFont),
             // FIXME
@@ -187,7 +189,7 @@ define(function (require) {
             ascCharWidth: getTextWidth('a', textFont)
         }, options, true);
 
-        containerWidth -= getTextWidth(options.ellipsis);
+        containerWidth -= getTextWidth(ellipsis);
 
         var textLines = (text + '').split('\n');
 
