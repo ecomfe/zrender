@@ -48,9 +48,10 @@ define(function (require) {
 
                 var textBaseline;
                 var textAlign = style.textAlign;
+                var font = style.textFont || style.font;
                 if (style.textVerticalAlign) {
                     var rect = textContain.getBoundingRect(
-                        text, ctx.font, style.textAlign, 'top'
+                        text, font, style.textAlign, 'top'
                     );
                     // Ignore textBaseline
                     textBaseline = 'middle';
@@ -69,7 +70,7 @@ define(function (require) {
                     textBaseline = style.textBaseline;
                 }
 
-                ctx.font = style.textFont || style.font;
+                ctx.font = font;
                 ctx.textAlign = textAlign || 'left';
                 // Use canvas default left textAlign. Giving invalid value will cause state not change
                 if (ctx.textAlign !== textAlign) {
