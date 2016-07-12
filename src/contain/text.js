@@ -6,6 +6,7 @@ define(function (require) {
 
     var util = require('../core/util');
     var BoundingRect = require('../core/BoundingRect');
+    var retrieve = util.retrieve;
 
     function getTextWidth(text, textFont) {
         var key = text + ':' + textFont;
@@ -169,7 +170,9 @@ define(function (require) {
      * @param  {number} [ellipsis='...']
      * @param  {Object} [options]
      * @param  {number} [options.maxIterations=3]
-     * @param  {number} [options.minCharacters=3]
+     * @param  {number} [options.minChar=0] If truncate result are less
+     *                  then minChar, ellipsis will not show, which is
+     *                  better for user hint in some cases.
      * @return {string}
      */
     function truncateText(text, containerWidth, textFont, ellipsis, options) {
@@ -177,64 +180,71 @@ define(function (require) {
             return '';
         }
 
-        ellipsis = ellipsis == null ? '...' : ellipsis;
+        options = options || {};
 
-        options = util.defaults({
-            ellipsis: ellipsis,
-            minCharacters: -1,
-            maxIterations: 3,
-            cnCharWidth: getTextWidth('国', textFont),
-            // FIXME
-            // 未考虑非等宽字体
-            ascCharWidth: getTextWidth('a', textFont)
-        }, options, true);
+        ellipsis = retrieve(ellipsis, '...');
+        var maxIterations = retrieve(options.maxIterations, 2);
+        var minChar = retrieve(options.minChar, 0);
+        // FIXME
+        // Other languages?
+        var cnCharWidth = getTextWidth('国', textFont);
+        // FIXME
+        // Consider proportional font?
+        var ascCharWidth = getTextWidth('a', textFont);
 
-        containerWidth -= getTextWidth(ellipsis);
+        // Example 1: minChar: 3, text: 'asdfzxcv', truncate result: 'asdf', but not: 'a...'.
+        // Example 2: minChar: 3, text: '维度', truncate result: '维', but not: '...'.
+        var contentWidth = containerWidth = Math.max(0, containerWidth - 1); // Reserve some gap.
+        for (var i = 0; i < minChar && contentWidth >= ascCharWidth; i++) {
+            contentWidth -= ascCharWidth;
+        }
+
+        var ellipsisWidth = getTextWidth(ellipsis);
+        if (ellipsisWidth > contentWidth) {
+            ellipsis = '';
+            ellipsisWidth = 0;
+        }
+
+        contentWidth = containerWidth - ellipsisWidth;
 
         var textLines = (text + '').split('\n');
 
         for (var i = 0, len = textLines.length; i < len; i++) {
-            textLines[i] = textLineTruncate(
-                textLines[i], textFont, containerWidth, options
-            );
+            var textLine = textLines[i];
+            var lineWidth = getTextWidth(textLine, textFont);
+
+            if (lineWidth <= containerWidth) {
+                continue;
+            }
+
+            for (var j = 0;; j++) {
+                if (lineWidth <= contentWidth || j >= maxIterations) {
+                    textLine += ellipsis;
+                    break;
+                }
+
+                subLength = j === 0
+                    ? estimateLength(textLine, contentWidth, ascCharWidth, cnCharWidth)
+                    : lineWidth > 0
+                    ? Math.floor(textLine.length * contentWidth / lineWidth)
+                    : 0;
+
+                textLine = textLine.substr(0, subLength);
+                lineWidth = getTextWidth(textLine, textFont);
+            }
+
+            textLines[i] = textLine;
         }
 
         return textLines.join('\n');
     }
 
-    function textLineTruncate(text, textFont, containerWidth, options) {
-        // FIXME
-        // 粗糙得写的，尚未考虑性能和各种语言、字体的效果。
-        for (var i = 0;; i++) {
-            var lineWidth = getTextWidth(text, textFont);
-
-            if (lineWidth < containerWidth || i >= options.maxIterations) {
-                text += options.ellipsis;
-                break;
-            }
-
-            var subLength = i === 0
-                ? estimateLength(text, containerWidth, options)
-                : Math.floor(text.length * containerWidth / lineWidth);
-
-            if (subLength < options.minCharacters) {
-                text = '';
-                break;
-            }
-
-            text = text.substr(0, subLength);
-        }
-
-        return text;
-    }
-
-    function estimateLength(text, containerWidth, options) {
+    function estimateLength(text, contentWidth, ascCharWidth, cnCharWidth) {
         var width = 0;
         var i = 0;
-        for (var len = text.length; i < len && width < containerWidth; i++) {
+        for (var len = text.length; i < len && width < contentWidth; i++) {
             var charCode = text.charCodeAt(i);
-            width += (0 <= charCode && charCode <= 127)
-                ? options.ascCharWidth : options.cnCharWidth;
+            width += (0 <= charCode && charCode <= 127) ? ascCharWidth : cnCharWidth;
         }
         return i;
     }
