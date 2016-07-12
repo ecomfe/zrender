@@ -59,7 +59,7 @@ define('zrender/core/env',[],function () {
         // var rimtabletos = ua.match(/(RIM\sTablet\sOS)\s([\d.]+)/);
         // var playbook = ua.match(/PlayBook/);
         // var chrome = ua.match(/Chrome\/([\d.]+)/) || ua.match(/CriOS\/([\d.]+)/);
-        // var firefox = ua.match(/Firefox\/([\d.]+)/);
+        var firefox = ua.match(/Firefox\/([\d.]+)/);
         // var safari = webkit && ua.match(/Mobile\//) && !chrome;
         // var webview = ua.match(/(iPhone|iPod|iPad).*AppleWebKit(?!.*Safari)/) && !chrome;
         var ie = ua.match(/MSIE\s([\d.]+)/)
@@ -89,7 +89,7 @@ define('zrender/core/env',[],function () {
         // if (silk) browser.silk = true, browser.version = silk[1];
         // if (!silk && os.android && ua.match(/Kindle Fire/)) browser.silk = true;
         // if (chrome) browser.chrome = true, browser.version = chrome[1];
-        // if (firefox) browser.firefox = true, browser.version = firefox[1];
+        if (firefox) browser.firefox = true, browser.version = firefox[1];
         // if (safari && (ua.match(/Safari/) || !!os.ios)) browser.safari = true;
         // if (webview) browser.webview = true;
         if (ie) {
@@ -130,406 +130,6 @@ define('zrender/core/env',[],function () {
         };
     }
 });
-/**
- * 事件扩展
- * @module zrender/mixin/Eventful
- * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
- *         pissang (https://www.github.com/pissang)
- */
-define('zrender/mixin/Eventful',['require'],function (require) {
-
-    var arrySlice = Array.prototype.slice;
-
-    /**
-     * 事件分发器
-     * @alias module:zrender/mixin/Eventful
-     * @constructor
-     */
-    var Eventful = function () {
-        this._$handlers = {};
-    };
-
-    Eventful.prototype = {
-
-        constructor: Eventful,
-
-        /**
-         * 单次触发绑定，trigger后销毁
-         *
-         * @param {string} event 事件名
-         * @param {Function} handler 响应函数
-         * @param {Object} context
-         */
-        one: function (event, handler, context) {
-            var _h = this._$handlers;
-
-            if (!handler || !event) {
-                return this;
-            }
-
-            if (!_h[event]) {
-                _h[event] = [];
-            }
-
-            for (var i = 0; i < _h[event].length; i++) {
-                if (_h[event][i].h === handler) {
-                    return this;
-                }
-            }
-
-            _h[event].push({
-                h: handler,
-                one: true,
-                ctx: context || this
-            });
-
-            return this;
-        },
-
-        /**
-         * 绑定事件
-         * @param {string} event 事件名
-         * @param {Function} handler 事件处理函数
-         * @param {Object} [context]
-         */
-        on: function (event, handler, context) {
-            var _h = this._$handlers;
-
-            if (!handler || !event) {
-                return this;
-            }
-
-            if (!_h[event]) {
-                _h[event] = [];
-            }
-
-            for (var i = 0; i < _h[event].length; i++) {
-                if (_h[event][i].h === handler) {
-                    return this;
-                }
-            }
-
-            _h[event].push({
-                h: handler,
-                one: false,
-                ctx: context || this
-            });
-
-            return this;
-        },
-
-        /**
-         * 是否绑定了事件
-         * @param  {string}  event
-         * @return {boolean}
-         */
-        isSilent: function (event) {
-            var _h = this._$handlers;
-            return _h[event] && _h[event].length;
-        },
-
-        /**
-         * 解绑事件
-         * @param {string} event 事件名
-         * @param {Function} [handler] 事件处理函数
-         */
-        off: function (event, handler) {
-            var _h = this._$handlers;
-
-            if (!event) {
-                this._$handlers = {};
-                return this;
-            }
-
-            if (handler) {
-                if (_h[event]) {
-                    var newList = [];
-                    for (var i = 0, l = _h[event].length; i < l; i++) {
-                        if (_h[event][i]['h'] != handler) {
-                            newList.push(_h[event][i]);
-                        }
-                    }
-                    _h[event] = newList;
-                }
-
-                if (_h[event] && _h[event].length === 0) {
-                    delete _h[event];
-                }
-            }
-            else {
-                delete _h[event];
-            }
-
-            return this;
-        },
-
-        /**
-         * 事件分发
-         *
-         * @param {string} type 事件类型
-         */
-        trigger: function (type) {
-            if (this._$handlers[type]) {
-                var args = arguments;
-                var argLen = args.length;
-
-                if (argLen > 3) {
-                    args = arrySlice.call(args, 1);
-                }
-
-                var _h = this._$handlers[type];
-                var len = _h.length;
-                for (var i = 0; i < len;) {
-                    // Optimize advise from backbone
-                    switch (argLen) {
-                        case 1:
-                            _h[i]['h'].call(_h[i]['ctx']);
-                            break;
-                        case 2:
-                            _h[i]['h'].call(_h[i]['ctx'], args[1]);
-                            break;
-                        case 3:
-                            _h[i]['h'].call(_h[i]['ctx'], args[1], args[2]);
-                            break;
-                        default:
-                            // have more than 2 given arguments
-                            _h[i]['h'].apply(_h[i]['ctx'], args);
-                            break;
-                    }
-
-                    if (_h[i]['one']) {
-                        _h.splice(i, 1);
-                        len--;
-                    }
-                    else {
-                        i++;
-                    }
-                }
-            }
-
-            return this;
-        },
-
-        /**
-         * 带有context的事件分发, 最后一个参数是事件回调的context
-         * @param {string} type 事件类型
-         */
-        triggerWithContext: function (type) {
-            if (this._$handlers[type]) {
-                var args = arguments;
-                var argLen = args.length;
-
-                if (argLen > 4) {
-                    args = arrySlice.call(args, 1, args.length - 1);
-                }
-                var ctx = args[args.length - 1];
-
-                var _h = this._$handlers[type];
-                var len = _h.length;
-                for (var i = 0; i < len;) {
-                    // Optimize advise from backbone
-                    switch (argLen) {
-                        case 1:
-                            _h[i]['h'].call(ctx);
-                            break;
-                        case 2:
-                            _h[i]['h'].call(ctx, args[1]);
-                            break;
-                        case 3:
-                            _h[i]['h'].call(ctx, args[1], args[2]);
-                            break;
-                        default:
-                            // have more than 2 given arguments
-                            _h[i]['h'].apply(ctx, args);
-                            break;
-                    }
-
-                    if (_h[i]['one']) {
-                        _h.splice(i, 1);
-                        len--;
-                    }
-                    else {
-                        i++;
-                    }
-                }
-            }
-
-            return this;
-        }
-    };
-
-    // 对象可以通过 onxxxx 绑定事件
-    /**
-     * @event module:zrender/mixin/Eventful#onclick
-     * @type {Function}
-     * @default null
-     */
-    /**
-     * @event module:zrender/mixin/Eventful#onmouseover
-     * @type {Function}
-     * @default null
-     */
-    /**
-     * @event module:zrender/mixin/Eventful#onmouseout
-     * @type {Function}
-     * @default null
-     */
-    /**
-     * @event module:zrender/mixin/Eventful#onmousemove
-     * @type {Function}
-     * @default null
-     */
-    /**
-     * @event module:zrender/mixin/Eventful#onmousewheel
-     * @type {Function}
-     * @default null
-     */
-    /**
-     * @event module:zrender/mixin/Eventful#onmousedown
-     * @type {Function}
-     * @default null
-     */
-    /**
-     * @event module:zrender/mixin/Eventful#onmouseup
-     * @type {Function}
-     * @default null
-     */
-    /**
-     * @event module:zrender/mixin/Eventful#ondragstart
-     * @type {Function}
-     * @default null
-     */
-    /**
-     * @event module:zrender/mixin/Eventful#ondragend
-     * @type {Function}
-     * @default null
-     */
-    /**
-     * @event module:zrender/mixin/Eventful#ondragenter
-     * @type {Function}
-     * @default null
-     */
-    /**
-     * @event module:zrender/mixin/Eventful#ondragleave
-     * @type {Function}
-     * @default null
-     */
-    /**
-     * @event module:zrender/mixin/Eventful#ondragover
-     * @type {Function}
-     * @default null
-     */
-    /**
-     * @event module:zrender/mixin/Eventful#ondrop
-     * @type {Function}
-     * @default null
-     */
-
-    return Eventful;
-});
-
-/**
- * 事件辅助类
- * @module zrender/core/event
- * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
- */
-define('zrender/core/event',['require','../mixin/Eventful'],function(require) {
-
-    
-
-    var Eventful = require('../mixin/Eventful');
-
-    var isDomLevel2 = (typeof window !== 'undefined') && !!window.addEventListener;
-
-    function getBoundingClientRect(el) {
-        // BlackBerry 5, iOS 3 (original iPhone) don't have getBoundingRect
-        return el.getBoundingClientRect ? el.getBoundingClientRect() : {left: 0, top: 0};
-    }
-
-    function clientToLocal(el, e, out) {
-        // clientX/clientY is according to view port.
-        var box = getBoundingClientRect(el);
-        out = out || {};
-        out.zrX = e.clientX - box.left;
-        out.zrY = e.clientY - box.top;
-        return out;
-    }
-
-    /**
-     * 如果存在第三方嵌入的一些dom触发的事件，或touch事件，需要转换一下事件坐标
-     */
-    function normalizeEvent(el, e) {
-
-        e = e || window.event;
-
-        if (e.zrX != null) {
-            return e;
-        }
-
-        var eventType = e.type;
-        var isTouch = eventType && eventType.indexOf('touch') >= 0;
-
-        if (!isTouch) {
-            clientToLocal(el, e, e);
-            e.zrDelta = (e.wheelDelta) ? e.wheelDelta / 120 : -(e.detail || 0) / 3;
-        }
-        else {
-            var touch = eventType != 'touchend'
-                ? e.targetTouches[0]
-                : e.changedTouches[0];
-            touch && clientToLocal(el, touch, e);
-        }
-
-        return e;
-    }
-
-    function addEventListener(el, name, handler) {
-        if (isDomLevel2) {
-            el.addEventListener(name, handler);
-        }
-        else {
-            el.attachEvent('on' + name, handler);
-        }
-    }
-
-    function removeEventListener(el, name, handler) {
-        if (isDomLevel2) {
-            el.removeEventListener(name, handler);
-        }
-        else {
-            el.detachEvent('on' + name, handler);
-        }
-    }
-
-    /**
-     * 停止冒泡和阻止默认行为
-     * @memberOf module:zrender/core/event
-     * @method
-     * @param {Event} e : event对象
-     */
-    var stop = isDomLevel2
-        ? function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            e.cancelBubble = true;
-        }
-        : function (e) {
-            e.returnValue = false;
-            e.cancelBubble = true;
-        };
-
-    return {
-        clientToLocal: clientToLocal,
-        normalizeEvent: normalizeEvent,
-        addEventListener: addEventListener,
-        removeEventListener: removeEventListener,
-
-        stop: stop,
-        // 做向上兼容
-        Dispatcher: Eventful
-    };
-});
-
 /**
  * @module zrender/core/util
  */
@@ -1050,7 +650,7 @@ define('zrender/mixin/Draggable',['require'],function (require) {
                 this._x = e.offsetX;
                 this._y = e.offsetY;
 
-                this._dispatchProxy(draggingTarget, 'dragstart', e.event);
+                this.dispatchToElement(draggingTarget, 'dragstart', e.event);
             }
         },
 
@@ -1067,7 +667,7 @@ define('zrender/mixin/Draggable',['require'],function (require) {
                 this._y = y;
 
                 draggingTarget.drift(dx, dy, e);
-                this._dispatchProxy(draggingTarget, 'drag', e.event);
+                this.dispatchToElement(draggingTarget, 'drag', e.event);
 
                 var dropTarget = this.findHover(x, y, draggingTarget);
                 var lastDropTarget = this._dropTarget;
@@ -1075,10 +675,10 @@ define('zrender/mixin/Draggable',['require'],function (require) {
 
                 if (draggingTarget !== dropTarget) {
                     if (lastDropTarget && dropTarget !== lastDropTarget) {
-                        this._dispatchProxy(lastDropTarget, 'dragleave', e.event);
+                        this.dispatchToElement(lastDropTarget, 'dragleave', e.event);
                     }
                     if (dropTarget && dropTarget !== lastDropTarget) {
-                        this._dispatchProxy(dropTarget, 'dragenter', e.event);
+                        this.dispatchToElement(dropTarget, 'dragenter', e.event);
                     }
                 }
             }
@@ -1091,10 +691,10 @@ define('zrender/mixin/Draggable',['require'],function (require) {
                 draggingTarget.dragging = false;
             }
 
-            this._dispatchProxy(draggingTarget, 'dragend', e.event);
+            this.dispatchToElement(draggingTarget, 'dragend', e.event);
 
             if (this._dropTarget) {
-                this._dispatchProxy(this._dropTarget, 'drop', e.event);
+                this.dispatchToElement(this._dropTarget, 'drop', e.event);
             }
 
             this._draggingTarget = null;
@@ -1106,125 +706,301 @@ define('zrender/mixin/Draggable',['require'],function (require) {
     return Draggable;
 });
 /**
- * Only implements needed gestures for mobile.
+ * 事件扩展
+ * @module zrender/mixin/Eventful
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
+ *         pissang (https://www.github.com/pissang)
  */
-define('zrender/core/GestureMgr',['require','./event'],function(require) {
+define('zrender/mixin/Eventful',['require'],function (require) {
 
-    
+    var arrySlice = Array.prototype.slice;
 
-    var eventUtil = require('./event');
-
-    var GestureMgr = function () {
-
-        /**
-         * @private
-         * @type {Array.<Object>}
-         */
-        this._track = [];
+    /**
+     * 事件分发器
+     * @alias module:zrender/mixin/Eventful
+     * @constructor
+     */
+    var Eventful = function () {
+        this._$handlers = {};
     };
 
-    GestureMgr.prototype = {
+    Eventful.prototype = {
 
-        constructor: GestureMgr,
+        constructor: Eventful,
 
-        recognize: function (event, target, root) {
-            this._doTrack(event, target, root);
-            return this._recognize(event);
-        },
+        /**
+         * 单次触发绑定，trigger后销毁
+         *
+         * @param {string} event 事件名
+         * @param {Function} handler 响应函数
+         * @param {Object} context
+         */
+        one: function (event, handler, context) {
+            var _h = this._$handlers;
 
-        clear: function () {
-            this._track.length = 0;
+            if (!handler || !event) {
+                return this;
+            }
+
+            if (!_h[event]) {
+                _h[event] = [];
+            }
+
+            for (var i = 0; i < _h[event].length; i++) {
+                if (_h[event][i].h === handler) {
+                    return this;
+                }
+            }
+
+            _h[event].push({
+                h: handler,
+                one: true,
+                ctx: context || this
+            });
+
             return this;
         },
 
-        _doTrack: function (event, target, root) {
-            var touches = event.touches;
+        /**
+         * 绑定事件
+         * @param {string} event 事件名
+         * @param {Function} handler 事件处理函数
+         * @param {Object} [context]
+         */
+        on: function (event, handler, context) {
+            var _h = this._$handlers;
 
-            if (!touches) {
-                return;
+            if (!handler || !event) {
+                return this;
             }
 
-            var trackItem = {
-                points: [],
-                touches: [],
-                target: target,
-                event: event
-            };
-
-            for (var i = 0, len = touches.length; i < len; i++) {
-                var touch = touches[i];
-                var pos = eventUtil.clientToLocal(root, touch);
-                trackItem.points.push([pos.zrX, pos.zrY]);
-                trackItem.touches.push(touch);
+            if (!_h[event]) {
+                _h[event] = [];
             }
 
-            this._track.push(trackItem);
+            for (var i = 0; i < _h[event].length; i++) {
+                if (_h[event][i].h === handler) {
+                    return this;
+                }
+            }
+
+            _h[event].push({
+                h: handler,
+                one: false,
+                ctx: context || this
+            });
+
+            return this;
         },
 
-        _recognize: function (event) {
-            for (var eventName in recognizers) {
-                if (recognizers.hasOwnProperty(eventName)) {
-                    var gestureInfo = recognizers[eventName](this._track, event);
-                    if (gestureInfo) {
-                        return gestureInfo;
+        /**
+         * 是否绑定了事件
+         * @param  {string}  event
+         * @return {boolean}
+         */
+        isSilent: function (event) {
+            var _h = this._$handlers;
+            return _h[event] && _h[event].length;
+        },
+
+        /**
+         * 解绑事件
+         * @param {string} event 事件名
+         * @param {Function} [handler] 事件处理函数
+         */
+        off: function (event, handler) {
+            var _h = this._$handlers;
+
+            if (!event) {
+                this._$handlers = {};
+                return this;
+            }
+
+            if (handler) {
+                if (_h[event]) {
+                    var newList = [];
+                    for (var i = 0, l = _h[event].length; i < l; i++) {
+                        if (_h[event][i]['h'] != handler) {
+                            newList.push(_h[event][i]);
+                        }
+                    }
+                    _h[event] = newList;
+                }
+
+                if (_h[event] && _h[event].length === 0) {
+                    delete _h[event];
+                }
+            }
+            else {
+                delete _h[event];
+            }
+
+            return this;
+        },
+
+        /**
+         * 事件分发
+         *
+         * @param {string} type 事件类型
+         */
+        trigger: function (type) {
+            if (this._$handlers[type]) {
+                var args = arguments;
+                var argLen = args.length;
+
+                if (argLen > 3) {
+                    args = arrySlice.call(args, 1);
+                }
+
+                var _h = this._$handlers[type];
+                var len = _h.length;
+                for (var i = 0; i < len;) {
+                    // Optimize advise from backbone
+                    switch (argLen) {
+                        case 1:
+                            _h[i]['h'].call(_h[i]['ctx']);
+                            break;
+                        case 2:
+                            _h[i]['h'].call(_h[i]['ctx'], args[1]);
+                            break;
+                        case 3:
+                            _h[i]['h'].call(_h[i]['ctx'], args[1], args[2]);
+                            break;
+                        default:
+                            // have more than 2 given arguments
+                            _h[i]['h'].apply(_h[i]['ctx'], args);
+                            break;
+                    }
+
+                    if (_h[i]['one']) {
+                        _h.splice(i, 1);
+                        len--;
+                    }
+                    else {
+                        i++;
                     }
                 }
             }
+
+            return this;
+        },
+
+        /**
+         * 带有context的事件分发, 最后一个参数是事件回调的context
+         * @param {string} type 事件类型
+         */
+        triggerWithContext: function (type) {
+            if (this._$handlers[type]) {
+                var args = arguments;
+                var argLen = args.length;
+
+                if (argLen > 4) {
+                    args = arrySlice.call(args, 1, args.length - 1);
+                }
+                var ctx = args[args.length - 1];
+
+                var _h = this._$handlers[type];
+                var len = _h.length;
+                for (var i = 0; i < len;) {
+                    // Optimize advise from backbone
+                    switch (argLen) {
+                        case 1:
+                            _h[i]['h'].call(ctx);
+                            break;
+                        case 2:
+                            _h[i]['h'].call(ctx, args[1]);
+                            break;
+                        case 3:
+                            _h[i]['h'].call(ctx, args[1], args[2]);
+                            break;
+                        default:
+                            // have more than 2 given arguments
+                            _h[i]['h'].apply(ctx, args);
+                            break;
+                    }
+
+                    if (_h[i]['one']) {
+                        _h.splice(i, 1);
+                        len--;
+                    }
+                    else {
+                        i++;
+                    }
+                }
+            }
+
+            return this;
         }
     };
 
-    function dist(pointPair) {
-        var dx = pointPair[1][0] - pointPair[0][0];
-        var dy = pointPair[1][1] - pointPair[0][1];
+    // 对象可以通过 onxxxx 绑定事件
+    /**
+     * @event module:zrender/mixin/Eventful#onclick
+     * @type {Function}
+     * @default null
+     */
+    /**
+     * @event module:zrender/mixin/Eventful#onmouseover
+     * @type {Function}
+     * @default null
+     */
+    /**
+     * @event module:zrender/mixin/Eventful#onmouseout
+     * @type {Function}
+     * @default null
+     */
+    /**
+     * @event module:zrender/mixin/Eventful#onmousemove
+     * @type {Function}
+     * @default null
+     */
+    /**
+     * @event module:zrender/mixin/Eventful#onmousewheel
+     * @type {Function}
+     * @default null
+     */
+    /**
+     * @event module:zrender/mixin/Eventful#onmousedown
+     * @type {Function}
+     * @default null
+     */
+    /**
+     * @event module:zrender/mixin/Eventful#onmouseup
+     * @type {Function}
+     * @default null
+     */
+    /**
+     * @event module:zrender/mixin/Eventful#ondragstart
+     * @type {Function}
+     * @default null
+     */
+    /**
+     * @event module:zrender/mixin/Eventful#ondragend
+     * @type {Function}
+     * @default null
+     */
+    /**
+     * @event module:zrender/mixin/Eventful#ondragenter
+     * @type {Function}
+     * @default null
+     */
+    /**
+     * @event module:zrender/mixin/Eventful#ondragleave
+     * @type {Function}
+     * @default null
+     */
+    /**
+     * @event module:zrender/mixin/Eventful#ondragover
+     * @type {Function}
+     * @default null
+     */
+    /**
+     * @event module:zrender/mixin/Eventful#ondrop
+     * @type {Function}
+     * @default null
+     */
 
-        return Math.sqrt(dx * dx + dy * dy);
-    }
-
-    function center(pointPair) {
-        return [
-            (pointPair[0][0] + pointPair[1][0]) / 2,
-            (pointPair[0][1] + pointPair[1][1]) / 2
-        ];
-    }
-
-    var recognizers = {
-
-        pinch: function (track, event) {
-            var trackLen = track.length;
-
-            if (!trackLen) {
-                return;
-            }
-
-            var pinchEnd = (track[trackLen - 1] || {}).points;
-            var pinchPre = (track[trackLen - 2] || {}).points || pinchEnd;
-
-            if (pinchPre
-                && pinchPre.length > 1
-                && pinchEnd
-                && pinchEnd.length > 1
-            ) {
-                var pinchScale = dist(pinchEnd) / dist(pinchPre);
-                !isFinite(pinchScale) && (pinchScale = 1);
-
-                event.pinchScale = pinchScale;
-
-                var pinchCenter = center(pinchEnd);
-                event.pinchX = pinchCenter[0];
-                event.pinchY = pinchCenter[1];
-
-                return {
-                    type: 'pinch',
-                    target: track[0].target,
-                    event: event
-                };
-            }
-        }
-
-        // Only pinch currently.
-    };
-
-    return GestureMgr;
+    return Eventful;
 });
 
 /**
@@ -1234,38 +1010,14 @@ define('zrender/core/GestureMgr',['require','./event'],function(require) {
  *         errorrik (errorrik@gmail.com)
  *         pissang (shenyi.914@gmail.com)
  */
-define('zrender/Handler',['require','./core/env','./core/event','./core/util','./mixin/Draggable','./core/GestureMgr','./mixin/Eventful'],function (require) {
+define('zrender/Handler',['require','./core/util','./mixin/Draggable','./mixin/Eventful'],function (require) {
 
     
 
-    var env = require('./core/env');
-    var eventTool = require('./core/event');
     var util = require('./core/util');
     var Draggable = require('./mixin/Draggable');
-    var GestureMgr = require('./core/GestureMgr');
 
     var Eventful = require('./mixin/Eventful');
-
-    var mouseHandlerNames = [
-        'click', 'dblclick', 'mousewheel', 'mouseout'
-    ];
-    !usePointerEvent() && mouseHandlerNames.push(
-        'mouseup', 'mousedown', 'mousemove'
-    );
-
-    var touchHandlerNames = [
-        'touchstart', 'touchend', 'touchmove'
-    ];
-
-    var pointerHandlerNames = [
-        'pointerdown', 'pointerup', 'pointermove'
-    ];
-
-    var TOUCH_CLICK_DELAY = 300;
-
-    var addEventListener = eventTool.addEventListener;
-    var removeEventListener = eventTool.removeEventListener;
-    var normalizeEvent = eventTool.normalizeEvent;
 
     function makeEventPacket(eveType, target, event) {
         return {
@@ -1283,216 +1035,13 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
         };
     }
 
-    var domHandlers = {
-        /**
-         * Mouse move handler
-         * @inner
-         * @param {Event} event
-         */
-        mousemove: function (event) {
-            event = normalizeEvent(this.root, event);
+    function EmptyProxy () {}
+    EmptyProxy.prototype.dispose = function () {};
 
-            var x = event.zrX;
-            var y = event.zrY;
-
-            var hovered = this.findHover(x, y, null);
-            var lastHovered = this._hovered;
-
-            this._hovered = hovered;
-
-            this.root.style.cursor = hovered ? hovered.cursor : 'default';
-            // Mouse out on previous hovered element
-            if (lastHovered && hovered !== lastHovered && lastHovered.__zr) {
-                this._dispatchProxy(lastHovered, 'mouseout', event);
-            }
-
-            // Mouse moving on one element
-            this._dispatchProxy(hovered, 'mousemove', event);
-
-            // Mouse over on a new element
-            if (hovered && hovered !== lastHovered) {
-                this._dispatchProxy(hovered, 'mouseover', event);
-            }
-        },
-
-        /**
-         * Mouse out handler
-         * @inner
-         * @param {Event} event
-         */
-        mouseout: function (event) {
-            event = normalizeEvent(this.root, event);
-
-            var element = event.toElement || event.relatedTarget;
-            if (element != this.root) {
-                while (element && element.nodeType != 9) {
-                    // 忽略包含在root中的dom引起的mouseOut
-                    if (element === this.root) {
-                        return;
-                    }
-
-                    element = element.parentNode;
-                }
-            }
-
-            this._dispatchProxy(this._hovered, 'mouseout', event);
-
-            this.trigger('globalout', {
-                event: event
-            });
-        },
-
-        /**
-         * Touch开始响应函数
-         * @inner
-         * @param {Event} event
-         */
-        touchstart: function (event) {
-            // Default mouse behaviour should not be disabled here.
-            // For example, page may needs to be slided.
-            // eventTool.stop(event);
-            event = normalizeEvent(this.root, event);
-
-            this._lastTouchMoment = new Date();
-
-            processGesture(this, event, 'start');
-
-            // 平板补充一次findHover
-            // this._mobileFindFixed(event);
-            // Trigger mousemove and mousedown
-            domHandlers.mousemove.call(this, event);
-
-            domHandlers.mousedown.call(this, event);
-
-            setTouchTimer(this);
-        },
-
-        /**
-         * Touch移动响应函数
-         * @inner
-         * @param {Event} event
-         */
-        touchmove: function (event) {
-            // eventTool.stop(event);// 阻止浏览器默认事件，重要
-            event = normalizeEvent(this.root, event);
-
-            processGesture(this, event, 'change');
-
-            // Mouse move should always be triggered no matter whether
-            // there is gestrue event, because mouse move and pinch may
-            // be used at the same time.
-            domHandlers.mousemove.call(this, event);
-
-            setTouchTimer(this);
-        },
-
-        /**
-         * Touch结束响应函数
-         * @inner
-         * @param {Event} event
-         */
-        touchend: function (event) {
-            // eventTool.stop(event);// 阻止浏览器默认事件，重要
-            event = normalizeEvent(this.root, event);
-
-            processGesture(this, event, 'end');
-
-            domHandlers.mouseup.call(this, event);
-
-            // click event should always be triggered no matter whether
-            // there is gestrue event. System click can not be prevented.
-            if (+new Date() - this._lastTouchMoment < TOUCH_CLICK_DELAY) {
-                // this._mobileFindFixed(event);
-                domHandlers.click.call(this, event);
-            }
-
-            setTouchTimer(this);
-        }
-    };
-
-    // Common handlers
-    util.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick'], function (name) {
-        domHandlers[name] = function (event) {
-            event = normalizeEvent(this.root, event);
-            // Find hover again to avoid click event is dispatched manually. Or click is triggered without mouseover
-            var hovered = this.findHover(event.zrX, event.zrY, null);
-
-            if (name === 'mousedown') {
-                this._downel = hovered;
-                // In case click triggered before mouseup
-                this._upel = hovered;
-            }
-            else if (name === 'mosueup') {
-                this._upel = hovered;
-            }
-            else if (name === 'click') {
-                if (this._downel !== this._upel) {
-                    return;
-                }
-            }
-
-            this._dispatchProxy(hovered, name, event);
-        };
-    });
-
-    // Pointer event handlers
-    // util.each(['pointerdown', 'pointermove', 'pointerup'], function (name) {
-    //     domHandlers[name] = function (event) {
-    //         var mouseName = name.replace('pointer', 'mouse');
-    //         domHandlers[mouseName].call(this, event);
-    //     };
-    // });
-
-    function processGesture(zrHandler, event, stage) {
-        var gestureMgr = zrHandler._gestureMgr;
-
-        stage === 'start' && gestureMgr.clear();
-
-        var gestureInfo = gestureMgr.recognize(
-            event,
-            zrHandler.findHover(event.zrX, event.zrY, null),
-            zrHandler.root
-        );
-
-        stage === 'end' && gestureMgr.clear();
-
-        if (gestureInfo) {
-            // eventTool.stop(event);
-            var type = gestureInfo.type;
-            event.gestureEvent = type;
-
-            zrHandler._dispatchProxy(gestureInfo.target, type, gestureInfo.event);
-        }
-    }
-
-    /**
-     * 为控制类实例初始化dom 事件处理函数
-     *
-     * @inner
-     * @param {module:zrender/Handler} instance 控制类实例
-     */
-    function initDomHandler(instance) {
-        var handlerNames = touchHandlerNames.concat(pointerHandlerNames);
-        for (var i = 0; i < handlerNames.length; i++) {
-            var name = handlerNames[i];
-            instance._handlers[name] = util.bind(domHandlers[name], instance);
-        }
-
-        for (var i = 0; i < mouseHandlerNames.length; i++) {
-            var name = mouseHandlerNames[i];
-            instance._handlers[name] = makeMouseHandler(domHandlers[name], instance);
-        }
-
-        function makeMouseHandler(fn, instance) {
-            return function () {
-                if (instance._touching) {
-                    return;
-                }
-                return fn.apply(instance, arguments);
-            };
-        }
-    }
-
+    var handlerNames = [
+        'click', 'dblclick', 'mousewheel', 'mouseout',
+        'mouseup', 'mousedown', 'mousemove'
+    ];
     /**
      * @alias module:zrender/Handler
      * @constructor
@@ -1501,12 +1050,21 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
      * @param {module:zrender/Storage} storage Storage instance.
      * @param {module:zrender/Painter} painter Painter instance.
      */
-    var Handler = function(root, storage, painter) {
+    var Handler = function(storage, painter, proxy) {
         Eventful.call(this);
 
-        this.root = root;
         this.storage = storage;
+
         this.painter = painter;
+
+        proxy = proxy || new EmptyProxy();
+        /**
+         * Proxy of event. can be Dom, WebGLSurface, etc.
+         */
+        this.proxy = proxy;
+
+        // Attach handler
+        proxy.handler = this;
 
         /**
          * @private
@@ -1532,59 +1090,51 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
          */
         this._lastY;
 
-        /**
-         * @private
-         * @type {module:zrender/core/GestureMgr}
-         */
-        this._gestureMgr = new GestureMgr();
-
-        /**
-         * @private
-         * @type {Array.<Function>}
-         */
-        this._handlers = [];
-
-        /**
-         * @private
-         * @type {boolean}
-         */
-        this._touching = false;
-
-        /**
-         * @private
-         * @type {number}
-         */
-        this._touchTimer;
-
-        initDomHandler(this);
-
-        if (usePointerEvent()) {
-            mountHandlers(pointerHandlerNames, this);
-        }
-        else if (useTouchEvent()) {
-            mountHandlers(touchHandlerNames, this);
-
-            // Handler of 'mouseout' event is needed in touch mode, which will be mounted below.
-            // addEventListener(root, 'mouseout', this._mouseoutHandler);
-        }
-
-        // Considering some devices that both enable touch and mouse event (like MS Surface
-        // and lenovo X240, @see #2350), we make mouse event be always listened, otherwise
-        // mouse event can not be handle in those devices.
-        mountHandlers(mouseHandlerNames, this);
 
         Draggable.call(this);
 
-        function mountHandlers(handlerNames, instance) {
-            util.each(handlerNames, function (name) {
-                addEventListener(root, eventNameFix(name), instance._handlers[name]);
-            }, instance);
-        }
+        util.each(handlerNames, function (name) {
+            proxy.on && proxy.on(name, this[name], this);
+        }, this);
     };
 
     Handler.prototype = {
 
         constructor: Handler,
+
+        mousemove: function (event) {
+            var x = event.zrX;
+            var y = event.zrY;
+
+            var hovered = this.findHover(x, y, null);
+            var lastHovered = this._hovered;
+            var proxy = this.proxy;
+
+            this._hovered = hovered;
+
+            proxy.setCursor && proxy.setCursor(hovered ? hovered.cursor : 'default');
+
+            // Mouse out on previous hovered element
+            if (lastHovered && hovered !== lastHovered && lastHovered.__zr) {
+                this.dispatchToElement(lastHovered, 'mouseout', event);
+            }
+
+            // Mouse moving on one element
+            this.dispatchToElement(hovered, 'mousemove', event);
+
+            // Mouse over on a new element
+            if (hovered && hovered !== lastHovered) {
+                this.dispatchToElement(hovered, 'mouseover', event);
+            }
+        },
+
+        mouseout: function (event) {
+            this.dispatchToElement(this._hovered, 'mouseout', event);
+
+            this.trigger('globalout', {
+                event: event
+            });
+        },
 
         /**
          * Resize
@@ -1599,7 +1149,7 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
          * @param {event=} eventArgs
          */
         dispatch: function (eventName, eventArgs) {
-            var handler = this._handlers[eventName];
+            var handler = this[eventName];
             handler && handler.call(this, eventArgs);
         },
 
@@ -1607,17 +1157,11 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
          * Dispose
          */
         dispose: function () {
-            var root = this.root;
 
-            var handlerNames = mouseHandlerNames.concat(touchHandlerNames);
+            this.proxy.dispose();
 
-            for (var i = 0; i < handlerNames.length; i++) {
-                var name = handlerNames[i];
-                removeEventListener(root, eventNameFix(name), this._handlers[name]);
-            }
-
-            this.root =
             this.storage =
+            this.proxy =
             this.painter = null;
         },
 
@@ -1626,7 +1170,8 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
          * @param {string} [cursorStyle='default'] 例如 crosshair
          */
         setCursorStyle: function (cursorStyle) {
-            this.root.style.cursor = cursorStyle || 'default';
+            var proxy = this.proxy;
+            proxy.setCursor && proxy.setCursor(cursorStyle);
         },
 
         /**
@@ -1637,7 +1182,7 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
          * @param {string} eventName 事件名称
          * @param {Object} event 事件对象
          */
-        _dispatchProxy: function (targetEl, eventName, event) {
+        dispatchToElement: function (targetEl, eventName, event) {
             var eventHandler = 'on' + eventName;
             var eventPacket = makeEventPacket(eventName, targetEl, event);
 
@@ -1693,6 +1238,30 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
         }
     };
 
+    // Common handlers
+    util.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick'], function (name) {
+        Handler.prototype[name] = function (event) {
+            // Find hover again to avoid click event is dispatched manually. Or click is triggered without mouseover
+            var hovered = this.findHover(event.zrX, event.zrY, null);
+
+            if (name === 'mousedown') {
+                this._downel = hovered;
+                // In case click triggered before mouseup
+                this._upel = hovered;
+            }
+            else if (name === 'mosueup') {
+                this._upel = hovered;
+            }
+            else if (name === 'click') {
+                if (this._downel !== this._upel) {
+                    return;
+                }
+            }
+
+            this.dispatchToElement(hovered, name, event);
+        };
+    });
+
     function isHover(displayable, x, y) {
         if (displayable[displayable.rectHover ? 'rectContain' : 'contain'](x, y)) {
             var el = displayable;
@@ -1707,45 +1276,6 @@ define('zrender/Handler',['require','./core/env','./core/event','./core/util','.
         }
 
         return false;
-    }
-
-    /**
-     * Prevent mouse event from being dispatched after Touch Events action
-     * @see <https://github.com/deltakosh/handjs/blob/master/src/hand.base.js>
-     * 1. Mobile browsers dispatch mouse events 300ms after touchend.
-     * 2. Chrome for Android dispatch mousedown for long-touch about 650ms
-     * Result: Blocking Mouse Events for 700ms.
-     */
-    function setTouchTimer(instance) {
-        instance._touching = true;
-        clearTimeout(instance._touchTimer);
-        instance._touchTimer = setTimeout(function () {
-            instance._touching = false;
-        }, 700);
-    }
-
-    /**
-     * Althought MS Surface support screen touch, IE10/11 do not support
-     * touch event and MS Edge supported them but not by default (but chrome
-     * and firefox do). Thus we use Pointer event on MS browsers to handle touch.
-     */
-    function usePointerEvent() {
-        // TODO
-        // pointermove event dont trigger when using finger.
-        // We may figger it out latter.
-        return false;
-        // return env.pointerEventsSupported
-            // In no-touch device we dont use pointer evnets but just
-            // use mouse event for avoiding problems.
-            // && window.navigator.maxTouchPoints;
-    }
-
-    function useTouchEvent() {
-        return env.touchEventsSupported;
-    }
-
-    function eventNameFix(name) {
-        return (name === 'mousewheel' && env.browser.firefox) ? 'DOMMouseScroll' : name;
     }
 
     util.mixin(Handler, Eventful);
@@ -5994,6 +5524,108 @@ define('zrender/Storage',['require','./core/util','./core/env','./container/Grou
     return Storage;
 });
 
+/**
+ * 事件辅助类
+ * @module zrender/core/event
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
+ */
+define('zrender/core/event',['require','../mixin/Eventful'],function(require) {
+
+    
+
+    var Eventful = require('../mixin/Eventful');
+
+    var isDomLevel2 = (typeof window !== 'undefined') && !!window.addEventListener;
+
+    function getBoundingClientRect(el) {
+        // BlackBerry 5, iOS 3 (original iPhone) don't have getBoundingRect
+        return el.getBoundingClientRect ? el.getBoundingClientRect() : {left: 0, top: 0};
+    }
+
+    function clientToLocal(el, e, out) {
+        // clientX/clientY is according to view port.
+        var box = getBoundingClientRect(el);
+        out = out || {};
+        out.zrX = e.clientX - box.left;
+        out.zrY = e.clientY - box.top;
+        return out;
+    }
+
+    /**
+     * 如果存在第三方嵌入的一些dom触发的事件，或touch事件，需要转换一下事件坐标
+     */
+    function normalizeEvent(el, e) {
+
+        e = e || window.event;
+
+        if (e.zrX != null) {
+            return e;
+        }
+
+        var eventType = e.type;
+        var isTouch = eventType && eventType.indexOf('touch') >= 0;
+
+        if (!isTouch) {
+            clientToLocal(el, e, e);
+            e.zrDelta = (e.wheelDelta) ? e.wheelDelta / 120 : -(e.detail || 0) / 3;
+        }
+        else {
+            var touch = eventType != 'touchend'
+                ? e.targetTouches[0]
+                : e.changedTouches[0];
+            touch && clientToLocal(el, touch, e);
+        }
+
+        return e;
+    }
+
+    function addEventListener(el, name, handler) {
+        if (isDomLevel2) {
+            el.addEventListener(name, handler);
+        }
+        else {
+            el.attachEvent('on' + name, handler);
+        }
+    }
+
+    function removeEventListener(el, name, handler) {
+        if (isDomLevel2) {
+            el.removeEventListener(name, handler);
+        }
+        else {
+            el.detachEvent('on' + name, handler);
+        }
+    }
+
+    /**
+     * 停止冒泡和阻止默认行为
+     * @memberOf module:zrender/core/event
+     * @method
+     * @param {Event} e : event对象
+     */
+    var stop = isDomLevel2
+        ? function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.cancelBubble = true;
+        }
+        : function (e) {
+            e.returnValue = false;
+            e.cancelBubble = true;
+        };
+
+    return {
+        clientToLocal: clientToLocal,
+        normalizeEvent: normalizeEvent,
+        addEventListener: addEventListener,
+        removeEventListener: removeEventListener,
+
+        stop: stop,
+        // 做向上兼容
+        Dispatcher: Eventful
+    };
+});
+
 define('zrender/animation/requestAnimationFrame',['require'],function(require) {
 
     return (typeof window !== 'undefined' &&
@@ -6223,6 +5855,398 @@ define('zrender/animation/Animation',['require','../core/util','../core/event','
     return Animation;
 });
 
+/**
+ * Only implements needed gestures for mobile.
+ */
+define('zrender/core/GestureMgr',['require','./event'],function(require) {
+
+    
+
+    var eventUtil = require('./event');
+
+    var GestureMgr = function () {
+
+        /**
+         * @private
+         * @type {Array.<Object>}
+         */
+        this._track = [];
+    };
+
+    GestureMgr.prototype = {
+
+        constructor: GestureMgr,
+
+        recognize: function (event, target, root) {
+            this._doTrack(event, target, root);
+            return this._recognize(event);
+        },
+
+        clear: function () {
+            this._track.length = 0;
+            return this;
+        },
+
+        _doTrack: function (event, target, root) {
+            var touches = event.touches;
+
+            if (!touches) {
+                return;
+            }
+
+            var trackItem = {
+                points: [],
+                touches: [],
+                target: target,
+                event: event
+            };
+
+            for (var i = 0, len = touches.length; i < len; i++) {
+                var touch = touches[i];
+                var pos = eventUtil.clientToLocal(root, touch);
+                trackItem.points.push([pos.zrX, pos.zrY]);
+                trackItem.touches.push(touch);
+            }
+
+            this._track.push(trackItem);
+        },
+
+        _recognize: function (event) {
+            for (var eventName in recognizers) {
+                if (recognizers.hasOwnProperty(eventName)) {
+                    var gestureInfo = recognizers[eventName](this._track, event);
+                    if (gestureInfo) {
+                        return gestureInfo;
+                    }
+                }
+            }
+        }
+    };
+
+    function dist(pointPair) {
+        var dx = pointPair[1][0] - pointPair[0][0];
+        var dy = pointPair[1][1] - pointPair[0][1];
+
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function center(pointPair) {
+        return [
+            (pointPair[0][0] + pointPair[1][0]) / 2,
+            (pointPair[0][1] + pointPair[1][1]) / 2
+        ];
+    }
+
+    var recognizers = {
+
+        pinch: function (track, event) {
+            var trackLen = track.length;
+
+            if (!trackLen) {
+                return;
+            }
+
+            var pinchEnd = (track[trackLen - 1] || {}).points;
+            var pinchPre = (track[trackLen - 2] || {}).points || pinchEnd;
+
+            if (pinchPre
+                && pinchPre.length > 1
+                && pinchEnd
+                && pinchEnd.length > 1
+            ) {
+                var pinchScale = dist(pinchEnd) / dist(pinchPre);
+                !isFinite(pinchScale) && (pinchScale = 1);
+
+                event.pinchScale = pinchScale;
+
+                var pinchCenter = center(pinchEnd);
+                event.pinchX = pinchCenter[0];
+                event.pinchY = pinchCenter[1];
+
+                return {
+                    type: 'pinch',
+                    target: track[0].target,
+                    event: event
+                };
+            }
+        }
+
+        // Only pinch currently.
+    };
+
+    return GestureMgr;
+});
+
+define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../mixin/Eventful','../core/env','../core/GestureMgr'],function (require) {
+
+    var eventTool = require('../core/event');
+    var zrUtil = require('../core/util');
+    var Eventful = require('../mixin/Eventful');
+    var env = require('../core/env');
+    var GestureMgr = require('../core/GestureMgr');
+
+    var addEventListener = eventTool.addEventListener;
+    var removeEventListener = eventTool.removeEventListener;
+    var normalizeEvent = eventTool.normalizeEvent;
+
+    var TOUCH_CLICK_DELAY = 300;
+
+    var mouseHandlerNames = [
+        'click', 'dblclick', 'mousewheel', 'mouseout',
+        'mouseup', 'mousedown', 'mousemove'
+    ];
+
+    var touchHandlerNames = [
+        'touchstart', 'touchend', 'touchmove'
+    ];
+
+    function eventNameFix(name) {
+        return (name === 'mousewheel' && env.browser.firefox) ? 'DOMMouseScroll' : name;
+    }
+
+    function processGesture(proxy, event, stage) {
+        var gestureMgr = proxy._gestureMgr;
+
+        stage === 'start' && gestureMgr.clear();
+
+        var gestureInfo = gestureMgr.recognize(
+            event,
+            proxy.handler.findHover(event.zrX, event.zrY, null),
+            proxy.dom
+        );
+
+        stage === 'end' && gestureMgr.clear();
+
+        if (gestureInfo) {
+            // eventTool.stop(event);
+            var type = gestureInfo.type;
+            event.gestureEvent = type;
+
+            proxy.handler.dispatchToElement(gestureInfo.target, type, gestureInfo.event);
+        }
+    }
+
+    /**
+     * Prevent mouse event from being dispatched after Touch Events action
+     * @see <https://github.com/deltakosh/handjs/blob/master/src/hand.base.js>
+     * 1. Mobile browsers dispatch mouse events 300ms after touchend.
+     * 2. Chrome for Android dispatch mousedown for long-touch about 650ms
+     * Result: Blocking Mouse Events for 700ms.
+     */
+    function setTouchTimer(instance) {
+        instance._touching = true;
+        clearTimeout(instance._touchTimer);
+        instance._touchTimer = setTimeout(function () {
+            instance._touching = false;
+        }, 700);
+    }
+
+    function useTouchEvent() {
+        return env.touchEventsSupported;
+    }
+
+    var domHandlers = {
+        /**
+         * Mouse move handler
+         * @inner
+         * @param {Event} event
+         */
+        mousemove: function (event) {
+            event = normalizeEvent(this.dom, event);
+
+            this.trigger('mousemove', event);
+        },
+
+        /**
+         * Mouse out handler
+         * @inner
+         * @param {Event} event
+         */
+        mouseout: function (event) {
+            event = normalizeEvent(this.dom, event);
+
+            var element = event.toElement || event.relatedTarget;
+            if (element != this.dom) {
+                while (element && element.nodeType != 9) {
+                    // 忽略包含在root中的dom引起的mouseOut
+                    if (element === this.dom) {
+                        return;
+                    }
+
+                    element = element.parentNode;
+                }
+            }
+
+            this.trigger('mouseout', event);
+        },
+
+        /**
+         * Touch开始响应函数
+         * @inner
+         * @param {Event} event
+         */
+        touchstart: function (event) {
+            // Default mouse behaviour should not be disabled here.
+            // For example, page may needs to be slided.
+
+            event = normalizeEvent(this.dom, event);
+
+            this._lastTouchMoment = new Date();
+
+            processGesture(this, event, 'start');
+
+            // 平板补充一次findHover
+            // this._mobileFindFixed(event);
+            // Trigger mousemove and mousedown
+            domHandlers.mousemove.call(this, event);
+
+            domHandlers.mousedown.call(this, event);
+
+            setTouchTimer(this);
+        },
+
+        /**
+         * Touch移动响应函数
+         * @inner
+         * @param {Event} event
+         */
+        touchmove: function (event) {
+
+            event = normalizeEvent(this.dom, event);
+
+            processGesture(this, event, 'change');
+
+            // Mouse move should always be triggered no matter whether
+            // there is gestrue event, because mouse move and pinch may
+            // be used at the same time.
+            domHandlers.mousemove.call(this, event);
+
+            setTouchTimer(this);
+        },
+
+        /**
+         * Touch结束响应函数
+         * @inner
+         * @param {Event} event
+         */
+        touchend: function (event) {
+
+            event = normalizeEvent(this.dom, event);
+
+            processGesture(this, event, 'end');
+
+            domHandlers.mouseup.call(this, event);
+
+            // click event should always be triggered no matter whether
+            // there is gestrue event. System click can not be prevented.
+            if (+new Date() - this._lastTouchMoment < TOUCH_CLICK_DELAY) {
+                domHandlers.click.call(this, event);
+            }
+
+            setTouchTimer(this);
+        }
+    };
+
+    // Common handlers
+    zrUtil.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick'], function (name) {
+        domHandlers[name] = function (event) {
+            event = normalizeEvent(this.dom, event);
+            this.trigger(name, event);
+        };
+    });
+
+    /**
+     * 为控制类实例初始化dom 事件处理函数
+     *
+     * @inner
+     * @param {module:zrender/Handler} instance 控制类实例
+     */
+    function initDomHandler(instance) {
+        for (var i = 0; i < touchHandlerNames.length; i++) {
+            var name = touchHandlerNames[i];
+            instance._handlers[name] = zrUtil.bind(domHandlers[name], instance);
+        }
+
+        for (var i = 0; i < mouseHandlerNames.length; i++) {
+            var name = mouseHandlerNames[i];
+            instance._handlers[name] = makeMouseHandler(domHandlers[name], instance);
+        }
+
+        function makeMouseHandler(fn, instance) {
+            return function () {
+                if (instance._touching) {
+                    return;
+                }
+                return fn.apply(instance, arguments);
+            };
+        }
+    }
+
+
+    function HandlerDomProxy(dom) {
+        Eventful.call(this);
+
+        this.dom = dom;
+
+        /**
+         * @private
+         * @type {boolean}
+         */
+        this._touching = false;
+
+        /**
+         * @private
+         * @type {number}
+         */
+        this._touchTimer;
+
+        /**
+         * @private
+         * @type {module:zrender/core/GestureMgr}
+         */
+        this._gestureMgr = new GestureMgr();
+
+        this._handlers = {};
+
+        initDomHandler(this);
+
+        if (useTouchEvent()) {
+            mountHandlers(touchHandlerNames, this);
+
+            // Handler of 'mouseout' event is needed in touch mode, which will be mounted below.
+            // addEventListener(root, 'mouseout', this._mouseoutHandler);
+        }
+
+        // Considering some devices that both enable touch and mouse event (like MS Surface
+        // and lenovo X240, @see #2350), we make mouse event be always listened, otherwise
+        // mouse event can not be handle in those devices.
+        mountHandlers(mouseHandlerNames, this);
+
+        function mountHandlers(handlerNames, instance) {
+            zrUtil.each(handlerNames, function (name) {
+                addEventListener(dom, eventNameFix(name), instance._handlers[name]);
+            }, instance);
+        }
+    }
+
+    var handlerDomProxyProto = HandlerDomProxy.prototype;
+    handlerDomProxyProto.dispose = function () {
+        var handlerNames = mouseHandlerNames.concat(touchHandlerNames);
+
+        for (var i = 0; i < handlerNames.length; i++) {
+            var name = handlerNames[i];
+            removeEventListener(this.dom, eventNameFix(name), this._handlers[name]);
+        }
+    };
+
+    handlerDomProxyProto.setCursor = function (cursorStyle) {
+        this.dom.style.cursor = cursorStyle || 'default';
+    };
+
+    zrUtil.mixin(HandlerDomProxy, Eventful);
+
+    return HandlerDomProxy;
+});
 /**
  * @module zrender/graphic/Style
  */
@@ -6777,6 +6801,7 @@ define('zrender/contain/text',['require','../core/util','../core/BoundingRect'],
 
     var util = require('../core/util');
     var BoundingRect = require('../core/BoundingRect');
+    var retrieve = util.retrieve;
 
     function getTextWidth(text, textFont) {
         var key = text + ':' + textFont;
@@ -6935,75 +6960,92 @@ define('zrender/contain/text',['require','../core/util','../core/BoundingRect'],
      * Show ellipsis if overflow.
      *
      * @param  {string} text
-     * @param  {string} textFont
      * @param  {string} containerWidth
+     * @param  {string} textFont
+     * @param  {number} [ellipsis='...']
      * @param  {Object} [options]
-     * @param  {number} [options.ellipsis='...']
      * @param  {number} [options.maxIterations=3]
-     * @param  {number} [options.minCharacters=3]
+     * @param  {number} [options.minChar=0] If truncate result are less
+     *                  then minChar, ellipsis will not show, which is
+     *                  better for user hint in some cases.
+     * @param  {number} [options.placeholder=''] When all truncated, use the placeholder.
      * @return {string}
      */
-    function textEllipsis(text, textFont, containerWidth, options) {
+    function truncateText(text, containerWidth, textFont, ellipsis, options) {
         if (!containerWidth) {
             return '';
         }
 
-        options = util.defaults({
-            ellipsis: '...',
-            minCharacters: 3,
-            maxIterations: 3,
-            cnCharWidth: getTextWidth('国', textFont),
-            // FIXME
-            // 未考虑非等宽字体
-            ascCharWidth: getTextWidth('a', textFont)
-        }, options, true);
+        options = options || {};
 
-        containerWidth -= getTextWidth(options.ellipsis);
+        ellipsis = retrieve(ellipsis, '...');
+        var maxIterations = retrieve(options.maxIterations, 2);
+        var minChar = retrieve(options.minChar, 0);
+        // FIXME
+        // Other languages?
+        var cnCharWidth = getTextWidth('国', textFont);
+        // FIXME
+        // Consider proportional font?
+        var ascCharWidth = getTextWidth('a', textFont);
+        var placeholder = retrieve(options.placeholder, '');
+
+        // Example 1: minChar: 3, text: 'asdfzxcv', truncate result: 'asdf', but not: 'a...'.
+        // Example 2: minChar: 3, text: '维度', truncate result: '维', but not: '...'.
+        var contentWidth = containerWidth = Math.max(0, containerWidth - 1); // Reserve some gap.
+        for (var i = 0; i < minChar && contentWidth >= ascCharWidth; i++) {
+            contentWidth -= ascCharWidth;
+        }
+
+        var ellipsisWidth = getTextWidth(ellipsis);
+        if (ellipsisWidth > contentWidth) {
+            ellipsis = '';
+            ellipsisWidth = 0;
+        }
+
+        contentWidth = containerWidth - ellipsisWidth;
 
         var textLines = (text + '').split('\n');
 
         for (var i = 0, len = textLines.length; i < len; i++) {
-            textLines[i] = textLineTruncate(
-                textLines[i], textFont, containerWidth, options
-            );
+            var textLine = textLines[i];
+            var lineWidth = getTextWidth(textLine, textFont);
+
+            if (lineWidth <= containerWidth) {
+                continue;
+            }
+
+            for (var j = 0;; j++) {
+                if (lineWidth <= contentWidth || j >= maxIterations) {
+                    textLine += ellipsis;
+                    break;
+                }
+
+                var subLength = j === 0
+                    ? estimateLength(textLine, contentWidth, ascCharWidth, cnCharWidth)
+                    : lineWidth > 0
+                    ? Math.floor(textLine.length * contentWidth / lineWidth)
+                    : 0;
+
+                textLine = textLine.substr(0, subLength);
+                lineWidth = getTextWidth(textLine, textFont);
+            }
+
+            if (textLine === '') {
+                textLine = placeholder;
+            }
+
+            textLines[i] = textLine;
         }
 
         return textLines.join('\n');
     }
 
-    function textLineTruncate(text, textFont, containerWidth, options) {
-        // FIXME
-        // 粗糙得写的，尚未考虑性能和各种语言、字体的效果。
-        for (var i = 0;; i++) {
-            var lineWidth = getTextWidth(text, textFont);
-
-            if (lineWidth < containerWidth || i >= options.maxIterations) {
-                text += options.ellipsis;
-                break;
-            }
-
-            var subLength = i === 0
-                ? estimateLength(text, containerWidth, options)
-                : Math.floor(text.length * containerWidth / lineWidth);
-
-            if (subLength < options.minCharacters) {
-                text = '';
-                break;
-            }
-
-            text = text.substr(0, subLength);
-        }
-
-        return text;
-    }
-
-    function estimateLength(text, containerWidth, options) {
+    function estimateLength(text, contentWidth, ascCharWidth, cnCharWidth) {
         var width = 0;
         var i = 0;
-        for (var len = text.length; i < len && width < containerWidth; i++) {
+        for (var len = text.length; i < len && width < contentWidth; i++) {
             var charCode = text.charCodeAt(i);
-            width += (0 <= charCode && charCode <= 127)
-                ? options.ascCharWidth : options.cnCharWidth;
+            width += (0 <= charCode && charCode <= 127) ? ascCharWidth : cnCharWidth;
         }
         return i;
     }
@@ -7016,11 +7058,11 @@ define('zrender/contain/text',['require','../core/util','../core/BoundingRect'],
 
         adjustTextPositionOnRect: adjustTextPositionOnRect,
 
-        ellipsis: textEllipsis,
+        truncateText: truncateText,
 
         measureText: function (text, textFont) {
             var ctx = util.getContext();
-            ctx.font = textFont;
+            ctx.font = textFont || '12px sans-serif';
             return ctx.measureText(text);
         }
     };
@@ -7430,96 +7472,6 @@ define('zrender/graphic/Displayable',['require','../core/util','./Style','../Ele
 
     return Displayable;
 });
-define('zrender/graphic/helper/roundRect',['require'],function (require) {
-
-    return {
-        buildPath: function (ctx, shape) {
-            var x = shape.x;
-            var y = shape.y;
-            var width = shape.width;
-            var height = shape.height;
-            var r = shape.r;
-            var r1;
-            var r2;
-            var r3;
-            var r4;
-
-            // Convert width and height to positive for better borderRadius
-            if (width < 0) {
-                x = x + width;
-                width = -width;
-            }
-            if (height < 0) {
-                y = y + height;
-                height = -height;
-            }
-
-            if (typeof r === 'number') {
-                r1 = r2 = r3 = r4 = r;
-            }
-            else if (r instanceof Array) {
-                if (r.length === 1) {
-                    r1 = r2 = r3 = r4 = r[0];
-                }
-                else if (r.length === 2) {
-                    r1 = r3 = r[0];
-                    r2 = r4 = r[1];
-                }
-                else if (r.length === 3) {
-                    r1 = r[0];
-                    r2 = r4 = r[1];
-                    r3 = r[2];
-                }
-                else {
-                    r1 = r[0];
-                    r2 = r[1];
-                    r3 = r[2];
-                    r4 = r[3];
-                }
-            }
-            else {
-                r1 = r2 = r3 = r4 = 0;
-            }
-
-            var total;
-            if (r1 + r2 > width) {
-                total = r1 + r2;
-                r1 *= width / total;
-                r2 *= width / total;
-            }
-            if (r3 + r4 > width) {
-                total = r3 + r4;
-                r3 *= width / total;
-                r4 *= width / total;
-            }
-            if (r2 + r3 > height) {
-                total = r2 + r3;
-                r2 *= height / total;
-                r3 *= height / total;
-            }
-            if (r1 + r4 > height) {
-                total = r1 + r4;
-                r1 *= height / total;
-                r4 *= height / total;
-            }
-            ctx.moveTo(x + r1, y);
-            ctx.lineTo(x + width - r2, y);
-            r2 !== 0 && ctx.quadraticCurveTo(
-                x + width, y, x + width, y + r2
-            );
-            ctx.lineTo(x + width, y + height - r3);
-            r3 !== 0 && ctx.quadraticCurveTo(
-                x + width, y + height, x + width - r3, y + height
-            );
-            ctx.lineTo(x + r4, y + height);
-            r4 !== 0 && ctx.quadraticCurveTo(
-                x, y + height, x, y + height - r4
-            );
-            ctx.lineTo(x, y + r1);
-            r1 !== 0 && ctx.quadraticCurveTo(x, y, x + r1, y);
-        }
-    };
-});
 // Simple LRU cache use doubly linked list
 // @module zrender/core/LRU
 define('zrender/core/LRU',['require'],function(require) {
@@ -7695,12 +7647,11 @@ define('zrender/core/LRU',['require'],function(require) {
  * @module zrender/graphic/Image
  */
 
-define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect','../core/util','./helper/roundRect','../core/LRU'],function (require) {
+define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect','../core/util','../core/LRU'],function (require) {
 
     var Displayable = require('./Displayable');
     var BoundingRect = require('../core/BoundingRect');
     var zrUtil = require('../core/util');
-    var roundRectHelper = require('./helper/roundRect');
 
     var LRU = require('../core/LRU');
     var globalImageCache = new LRU(50);
@@ -7790,13 +7741,6 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
                 // 设置transform
                 this.setTransform(ctx);
 
-                if (style.r) {
-                    // Border radius clipping
-                    // FIXME
-                    ctx.beginPath();
-                    roundRectHelper.buildPath(ctx, style);
-                    ctx.clip();
-                }
 
                 if (style.sWidth && style.sHeight) {
                     var sx = style.sx || 0;
@@ -8925,13 +8869,14 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
  * https://github.com/ecomfe/zrender/blob/master/LICENSE.txt
  */
 // Global defines
-define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./Storage','./animation/Animation','./Painter'],function(require) {
+define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./Storage','./animation/Animation','./dom/HandlerProxy','./Painter'],function(require) {
     var guid = require('./core/guid');
     var env = require('./core/env');
 
     var Handler = require('./Handler');
     var Storage = require('./Storage');
     var Animation = require('./animation/Animation');
+    var HandlerProxy = require('./dom/HandlerProxy');
 
     var useVML = !env.canvasSupported;
 
@@ -8945,7 +8890,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
     /**
      * @type {string}
      */
-    zrender.version = '3.1.1';
+    zrender.version = '3.1.2';
 
     /**
      * Initializing a zrender instance
@@ -9039,9 +8984,9 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
 
         this.storage = storage;
         this.painter = painter;
-        if (!env.node) {
-            this.handler = new Handler(painter.getViewportRoot(), storage, painter);
-        }
+
+        var handerProxy = !env.node ? new HandlerProxy(painter.getViewportRoot()) : null;
+        this.handler = new Handler(storage, painter, handerProxy);
 
         /**
          * @type {module:zrender/animation/Animation}
@@ -9204,7 +9149,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
          */
         resize: function() {
             this.painter.resize();
-            this.handler && this.handler.resize();
+            this.handler.resize();
         },
 
         /**
@@ -9257,7 +9202,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
          * @param {string} [cursorStyle='default'] 例如 crosshair
          */
         setCursorStyle: function (cursorStyle) {
-            this.handler && this.handler.setCursorStyle(cursorStyle);
+            this.handler.setCursorStyle(cursorStyle);
         },
 
         /**
@@ -9268,7 +9213,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
          * @param {Object} [context] Context object
          */
         on: function(eventName, eventHandler, context) {
-            this.handler && this.handler.on(eventName, eventHandler, context);
+            this.handler.on(eventName, eventHandler, context);
         },
 
         /**
@@ -9277,7 +9222,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
          * @param {Function} [eventHandler] Handler function
          */
         off: function(eventName, eventHandler) {
-            this.handler && this.handler.off(eventName, eventHandler);
+            this.handler.off(eventName, eventHandler);
         },
 
         /**
@@ -9287,7 +9232,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
          * @param {event=} event Event object
          */
         trigger: function (eventName, event) {
-            this.handler && this.handler.trigger(eventName, event);
+            this.handler.trigger(eventName, event);
         },
 
 
@@ -9308,7 +9253,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
             this.clear();
             this.storage.dispose();
             this.painter.dispose();
-            this.handler && this.handler.dispose();
+            this.handler.dispose();
 
             this.animation =
             this.storage =
@@ -9374,9 +9319,10 @@ define('zrender/graphic/Text',['require','./Displayable','../core/util','../cont
 
                 var textBaseline;
                 var textAlign = style.textAlign;
+                var font = style.textFont || style.font;
                 if (style.textVerticalAlign) {
                     var rect = textContain.getBoundingRect(
-                        text, ctx.font, style.textAlign, 'top'
+                        text, font, style.textAlign, 'top'
                     );
                     // Ignore textBaseline
                     textBaseline = 'middle';
@@ -9395,7 +9341,7 @@ define('zrender/graphic/Text',['require','./Displayable','../core/util','../cont
                     textBaseline = style.textBaseline;
                 }
 
-                ctx.font = style.textFont || style.font;
+                ctx.font = font;
                 ctx.textAlign = textAlign || 'left';
                 // Use canvas default left textAlign. Giving invalid value will cause state not change
                 if (ctx.textAlign !== textAlign) {
@@ -11787,7 +11733,7 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
 
                     // Only add extra hover lineWidth when there are no fill
                     if (!style.hasFill()) {
-                        w = Math.max(w, this.strokeContainThreshold);
+                        w = Math.max(w, this.strokeContainThreshold || 4);
                     }
                     // Consider line width
                     // Line scale can't be 0;
@@ -12265,6 +12211,96 @@ define('zrender/graphic/shape/Ellipse',['require','../Path'],function (require) 
     });
 });
 
+define('zrender/graphic/helper/roundRect',['require'],function (require) {
+
+    return {
+        buildPath: function (ctx, shape) {
+            var x = shape.x;
+            var y = shape.y;
+            var width = shape.width;
+            var height = shape.height;
+            var r = shape.r;
+            var r1;
+            var r2;
+            var r3;
+            var r4;
+
+            // Convert width and height to positive for better borderRadius
+            if (width < 0) {
+                x = x + width;
+                width = -width;
+            }
+            if (height < 0) {
+                y = y + height;
+                height = -height;
+            }
+
+            if (typeof r === 'number') {
+                r1 = r2 = r3 = r4 = r;
+            }
+            else if (r instanceof Array) {
+                if (r.length === 1) {
+                    r1 = r2 = r3 = r4 = r[0];
+                }
+                else if (r.length === 2) {
+                    r1 = r3 = r[0];
+                    r2 = r4 = r[1];
+                }
+                else if (r.length === 3) {
+                    r1 = r[0];
+                    r2 = r4 = r[1];
+                    r3 = r[2];
+                }
+                else {
+                    r1 = r[0];
+                    r2 = r[1];
+                    r3 = r[2];
+                    r4 = r[3];
+                }
+            }
+            else {
+                r1 = r2 = r3 = r4 = 0;
+            }
+
+            var total;
+            if (r1 + r2 > width) {
+                total = r1 + r2;
+                r1 *= width / total;
+                r2 *= width / total;
+            }
+            if (r3 + r4 > width) {
+                total = r3 + r4;
+                r3 *= width / total;
+                r4 *= width / total;
+            }
+            if (r2 + r3 > height) {
+                total = r2 + r3;
+                r2 *= height / total;
+                r3 *= height / total;
+            }
+            if (r1 + r4 > height) {
+                total = r1 + r4;
+                r1 *= height / total;
+                r4 *= height / total;
+            }
+            ctx.moveTo(x + r1, y);
+            ctx.lineTo(x + width - r2, y);
+            r2 !== 0 && ctx.quadraticCurveTo(
+                x + width, y, x + width, y + r2
+            );
+            ctx.lineTo(x + width, y + height - r3);
+            r3 !== 0 && ctx.quadraticCurveTo(
+                x + width, y + height, x + width - r3, y + height
+            );
+            ctx.lineTo(x + r4, y + height);
+            r4 !== 0 && ctx.quadraticCurveTo(
+                x, y + height, x, y + height - r4
+            );
+            ctx.lineTo(x, y + r1);
+            r1 !== 0 && ctx.quadraticCurveTo(x, y, x + r1, y);
+        }
+    };
+});
 /**
  * 矩形
  * @module zrender/graphic/shape/Rect
