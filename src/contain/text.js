@@ -173,6 +173,7 @@ define(function (require) {
      * @param  {number} [options.minChar=0] If truncate result are less
      *                  then minChar, ellipsis will not show, which is
      *                  better for user hint in some cases.
+     * @param  {number} [options.placeholder=''] When all truncated, use the placeholder.
      * @return {string}
      */
     function truncateText(text, containerWidth, textFont, ellipsis, options) {
@@ -191,6 +192,7 @@ define(function (require) {
         // FIXME
         // Consider proportional font?
         var ascCharWidth = getTextWidth('a', textFont);
+        var placeholder = retrieve(options.placeholder, '');
 
         // Example 1: minChar: 3, text: 'asdfzxcv', truncate result: 'asdf', but not: 'a...'.
         // Example 2: minChar: 3, text: '维度', truncate result: '维', but not: '...'.
@@ -223,7 +225,7 @@ define(function (require) {
                     break;
                 }
 
-                subLength = j === 0
+                var subLength = j === 0
                     ? estimateLength(textLine, contentWidth, ascCharWidth, cnCharWidth)
                     : lineWidth > 0
                     ? Math.floor(textLine.length * contentWidth / lineWidth)
@@ -231,6 +233,10 @@ define(function (require) {
 
                 textLine = textLine.substr(0, subLength);
                 lineWidth = getTextWidth(textLine, textFont);
+            }
+
+            if (textLine === '') {
+                textLine = placeholder;
             }
 
             textLines[i] = textLine;
