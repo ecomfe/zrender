@@ -267,7 +267,7 @@ define(function (require) {
 
         measureText: function (text, textFont) {
             var ctx = util.getContext();
-            ctx.font = textFont;
+            ctx.font = textFont || '12px sans-serif';
             return ctx.measureText(text);
         }
     };
