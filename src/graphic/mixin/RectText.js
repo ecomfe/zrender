@@ -61,10 +61,15 @@ define(function (require) {
 
             // Transform rect to view space
             var transform = this.transform;
-            if (transform) {
-                tmpRect.copy(rect);
-                tmpRect.applyTransform(transform);
-                rect = tmpRect;
+            if (!style.textTransform) {
+                if (transform) {
+                    tmpRect.copy(rect);
+                    tmpRect.applyTransform(transform);
+                    rect = tmpRect;
+                }
+            }
+            else {
+                this.setTransform(ctx);
             }
 
             // Text position represented by coord

@@ -170,6 +170,12 @@ define(function (require) {
         textShadowOffsetY: 0,
 
         /**
+         * If transform text
+         * @type {boolean}
+         */
+        textTransform: false,
+
+        /**
          * @type {string}
          * https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/globalCompositeOperation
          */
