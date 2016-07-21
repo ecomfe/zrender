@@ -484,6 +484,7 @@
                 if (!(currentLayer.__dirty || paintAll)) {
                     continue;
                 }
+
                 if (elFrame >= 0) {
                     // Progressive layer changed
                     if (!currentProgressiveLayer) {
@@ -547,7 +548,7 @@
 
         _doPaintEl: function (el, currentLayer, forcePaint, scope) {
             var ctx = currentLayer.ctx;
-
+            var m = el.transform;
             if (
                 (currentLayer.__dirty || forcePaint)
                 // Ignore invisible element
@@ -556,7 +557,8 @@
                 && el.style.opacity !== 0
                 // Ignore scale 0 element, in some environment like node-canvas
                 // Draw a scale 0 element can cause all following draw wrong
-                && el.scale[0] && el.scale[1]
+                // And setTransform with scale 0 will cause set back transform failed.
+                && !(m && !m[0] && !m[3])
                 // Ignore culled element
                 && !(el.culling && isDisplayableCulled(el, this._width, this._height))
             ) {

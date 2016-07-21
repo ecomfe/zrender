@@ -197,6 +197,7 @@ define(function(require) {
          *         如果指定setter函数，会通过setter函数设置属性值
          * @return {module:zrender/animation/Animation~Animator}
          */
+        // TODO Gap
         animate: function (target, options) {
             options = options || {};
             var animator = new Animator(
