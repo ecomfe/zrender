@@ -314,7 +314,11 @@ define(function (require) {
             // kf1-----kf2---------current--------kf3
             // find kf2 and kf3 and do interpolation
             var frame;
-            if (percent < lastFramePercent) {
+            // In the easing function like elasticOut, percent may less than 0
+            if (percent < 0) {
+                frame = 0;
+            }
+            else if (percent < lastFramePercent) {
                 // Start from next key
                 // PENDING start from lastFrame ?
                 start = Math.min(lastFrame + 1, trackLen - 1);
