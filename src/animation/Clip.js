@@ -44,15 +44,15 @@ define(function(require) {
 
         constructor: Clip,
 
-        step: function (time) {
+        step: function (globalTime) {
             // Set startTime on first step, or _startTime may has milleseconds different between clips
             // PENDING
             if (!this._initialized) {
-                this._startTime = new Date().getTime() + this._delay;
+                this._startTime = globalTime + this._delay;
                 this._initialized = true;
             }
 
-            var percent = (time - this._startTime) / this._life;
+            var percent = (globalTime - this._startTime) / this._life;
 
             // 还没开始
             if (percent < 0) {
@@ -72,7 +72,7 @@ define(function(require) {
             // 结束
             if (percent == 1) {
                 if (this.loop) {
-                    this.restart();
+                    this.restart (globalTime);
                     // 重新开始周期
                     // 抛出而不是直接调用事件直到 stage.update 后再统一调用这些事件
                     return 'restart';
@@ -87,10 +87,9 @@ define(function(require) {
             return null;
         },
 
-        restart: function() {
-            var time = new Date().getTime();
-            var remainder = (time - this._startTime) % this._life;
-            this._startTime = new Date().getTime() - remainder + this.gap;
+        restart: function (globalTime) {
+            var remainder = (globalTime - this._startTime) % this._life;
+            this._startTime = globalTime - remainder + this.gap;
 
             this._needsRemove = false;
         },
