@@ -70,7 +70,8 @@ define(function (require) {
                     textBaseline = style.textBaseline;
                 }
 
-                ctx.font = font;
+                // TODO Invalid font
+                ctx.font = font || '12px sans-serif';
                 ctx.textAlign = textAlign || 'left';
                 // Use canvas default left textAlign. Giving invalid value will cause state not change
                 if (ctx.textAlign !== textAlign) {

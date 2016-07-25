@@ -115,7 +115,9 @@ define(function (require) {
             var textStroke = style.textStroke;
             textFill && (ctx.fillStyle = textFill);
             textStroke && (ctx.strokeStyle = textStroke);
-            ctx.font = font;
+
+            // TODO Invalid font
+            ctx.font = font || '12px sans-serif';
 
             // Text shadow
             // Always set shadowBlur and shadowOffset to avoid leak from displayable
