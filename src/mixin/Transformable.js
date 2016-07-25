@@ -142,16 +142,19 @@ define(function (require) {
      */
     transformableProto.setTransform = function (ctx) {
         var m = this.transform;
+        var dpr = ctx.dpr || 1;
         if (m) {
-            ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
+            ctx.setTransform(dpr * m[0], dpr * m[1], dpr * m[2], dpr * m[3], dpr * m[4], dpr * m[5]);
+        }
+        else {
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         }
     };
 
     transformableProto.restoreTransform = function (ctx) {
-        var m = this.invTransform;
-        if (m) {
-            ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
-        }
+        var m = this.transform;
+        var dpr = ctx.dpr || 1;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
     var tmpTransform = [];

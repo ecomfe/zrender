@@ -118,10 +118,7 @@ define(function (require) {
         initContext: function () {
             this.ctx = this.dom.getContext('2d');
 
-            var dpr = this.dpr;
-            if (dpr != 1) {
-                this.ctx.scale(dpr, dpr);
-            }
+            this.ctx.dpr = this.dpr;
         },
 
         createBackBuffer: function () {
@@ -151,10 +148,6 @@ define(function (require) {
 
             dom.width = width * dpr;
             dom.height = height * dpr;
-
-            if (dpr != 1) {
-                this.ctx.scale(dpr, dpr);
-            }
 
             if (domBack) {
                 domBack.width = width * dpr;
@@ -195,7 +188,7 @@ define(function (require) {
                 );
             }
 
-            ctx.clearRect(0, 0, width / dpr, height / dpr);
+            ctx.clearRect(0, 0, width, height);
             if (clearColor) {
                 var clearColorGradientOrPattern;
                 // Gradient
@@ -204,8 +197,8 @@ define(function (require) {
                     clearColorGradientOrPattern = clearColor.__canvasGradient || Style.getGradient(ctx, clearColor, {
                         x: 0,
                         y: 0,
-                        width: width / dpr,
-                        height: height / dpr
+                        width: width,
+                        height: height
                     });
 
                     clearColor.__canvasGradient = clearColorGradientOrPattern;
@@ -216,7 +209,7 @@ define(function (require) {
                 }
                 ctx.save();
                 ctx.fillStyle = clearColorGradientOrPattern || clearColor;
-                ctx.fillRect(0, 0, width / dpr, height / dpr);
+                ctx.fillRect(0, 0, width, height);
                 ctx.restore();
             }
 
@@ -224,7 +217,7 @@ define(function (require) {
                 var domBack = this.domBack;
                 ctx.save();
                 ctx.globalAlpha = lastFrameAlpha;
-                ctx.drawImage(domBack, 0, 0, width / dpr, height / dpr);
+                ctx.drawImage(domBack, 0, 0, width, height);
                 ctx.restore();
             }
         }

@@ -86,28 +86,14 @@
     function doClip(clipPaths, ctx) {
         for (var i = 0; i < clipPaths.length; i++) {
             var clipPath = clipPaths[i];
-            var m;
-            if (clipPath.transform) {
-                m = clipPath.transform;
-                ctx.transform(
-                    m[0], m[1],
-                    m[2], m[3],
-                    m[4], m[5]
-                );
-            }
             var path = clipPath.path;
+
+            clipPath.setTransform(ctx);
             path.beginPath(ctx);
             clipPath.buildPath(path, clipPath.shape);
             ctx.clip();
             // Transform back
-            if (clipPath.transform) {
-                m = clipPath.invTransform;
-                ctx.transform(
-                    m[0], m[1],
-                    m[2], m[3],
-                    m[4], m[5]
-                );
-            }
+            clipPath.restoreTransform(ctx);
         }
     }
 
@@ -426,15 +412,15 @@
             var layerProgress;
             var frame = this._progress;
             function flushProgressiveLayer(layer) {
+                var dpr = ctx.dpr || 1;
                 ctx.save();
                 ctx.globalAlpha = 1;
                 ctx.shadowBlur = 0;
                 // Avoid layer don't clear in next progressive frame
                 currentLayer.__dirty = true;
-                ctx.drawImage(layer.dom, 0, 0, width, height);
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.drawImage(layer.dom, 0, 0, width * dpr, height * dpr);
                 ctx.restore();
-
-                currentLayer.ctx.restore();
             }
 
             for (var i = 0, l = list.length; i < l; i++) {

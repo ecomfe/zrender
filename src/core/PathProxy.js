@@ -100,9 +100,12 @@ define(function (require) {
          * @return {module:zrender/core/PathProxy}
          */
         beginPath: function (ctx) {
+
             this._ctx = ctx;
 
             ctx && ctx.beginPath();
+
+            ctx && (this.dpr = ctx.dpr);
 
             // Reset
             this._len = 0;
