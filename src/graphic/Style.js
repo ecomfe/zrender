@@ -150,30 +150,41 @@ define(function (require) {
         textVerticalAlign: null,
 
         /**
+         * Only useful in Path and Image element
          * @type {number}
          */
         textDistance: 5,
 
         /**
+         * Only useful in Path and Image element
          * @type {number}
          */
         textShadowBlur: 0,
 
         /**
+         * Only useful in Path and Image element
          * @type {number}
          */
         textShadowOffsetX: 0,
 
         /**
+         * Only useful in Path and Image element
          * @type {number}
          */
         textShadowOffsetY: 0,
 
         /**
          * If transform text
+         * Only useful in Path and Image element
          * @type {boolean}
          */
         textTransform: false,
+
+        /**
+         * Text rotate around position of Path or Image
+         * Only useful in Path and Image element and textTransform is false.
+         */
+        textRotation: 0,
 
         /**
          * @type {string}

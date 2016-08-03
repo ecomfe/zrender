@@ -123,6 +123,13 @@ define(function (require) {
             ctx.shadowOffsetY = style.textShadowOffsetY;
 
             var textLines = text.split('\n');
+
+            if (style.textRotation) {
+                transform && ctx.translate(transform[4], transform[5]);
+                ctx.rotate(style.textRotation);
+                transform && ctx.translate(-transform[4], -transform[5]);
+            }
+
             for (var i = 0; i < textLines.length; i++) {
                 textFill && ctx.fillText(textLines[i], x, y);
                 textStroke && ctx.strokeText(textLines[i], x, y);
