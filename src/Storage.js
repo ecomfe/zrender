@@ -229,7 +229,7 @@ define(function (require) {
             if (el instanceof Group) {
                 el.__storage = this;
             }
-            el.dirty();
+            el.dirty(false);
 
             this._elements[el.id] = el;
 
