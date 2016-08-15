@@ -345,6 +345,7 @@ define(function (require) {
                 transform = matrix.create();
             }
             matrix.mul(transform, m, transform);
+            this.dirty(true);
         };
 
         return opts;
