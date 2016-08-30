@@ -168,7 +168,7 @@
 
         /**
          * @type {Object.<string, Object>}
-         * @type {private}
+         * @private
          */
         this._layerConfig = {};
 
