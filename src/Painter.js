@@ -892,6 +892,9 @@
                 for (var id in this._layers) {
                     this._layers[id].resize(width, height);
                 }
+                util.each(this._progressiveLayers, function (layer) {
+                    layer.resize(width, height);
+                });
 
                 this.refresh(true);
             }
