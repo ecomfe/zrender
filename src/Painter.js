@@ -890,7 +890,9 @@
                 domRoot.style.height = height + 'px';
 
                 for (var id in this._layers) {
-                    this._layers[id].resize(width, height);
+                    if (this._layers.hasOwnProperty(id)) {
+                        this._layers[id].resize(width, height);
+                    }
                 }
                 util.each(this._progressiveLayers, function (layer) {
                     layer.resize(width, height);

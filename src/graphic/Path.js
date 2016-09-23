@@ -279,7 +279,9 @@ define(function (require) {
             if (shape) {
                 if (zrUtil.isObject(key)) {
                     for (var name in key) {
-                        shape[name] = key[name];
+                        if (key.hasOwnProperty(name)) {
+                            shape[name] = key[name];
+                        }
                     }
                 }
                 else {

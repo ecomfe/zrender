@@ -472,6 +472,10 @@ define(function (require) {
         when: function(time /* ms */, props) {
             var tracks = this._tracks;
             for (var propName in props) {
+                if (!props.hasOwnProperty(propName)) {
+                    continue;
+                }
+
                 if (!tracks[propName]) {
                     tracks[propName] = [];
                     // Invalid value
@@ -540,6 +544,9 @@ define(function (require) {
 
             var lastClip;
             for (var propName in this._tracks) {
+                if (!this._tracks.hasOwnProperty(propName)) {
+                    continue;
+                }
                 var clip = createTrackClip(
                     this, easing, oneTrackDone,
                     this._tracks[propName], propName

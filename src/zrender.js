@@ -55,7 +55,9 @@ define(function(require) {
         }
         else {
             for (var key in instances) {
-                instances[key].dispose();
+                if (instances.hasOwnProperty(key)) {
+                    instances[key].dispose();
+                }
             }
             instances = {};
         }

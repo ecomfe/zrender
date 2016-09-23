@@ -35,7 +35,9 @@ define(function (require) {
         Element.call(this, opts);
 
         for (var key in opts) {
-            this[key] = opts[key];
+            if (opts.hasOwnProperty(key)) {
+                this[key] = opts[key];
+            }
         }
 
         this._children = [];
