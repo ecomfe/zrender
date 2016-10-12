@@ -127,7 +127,7 @@ define(function(require) {
         this.painter = painter;
 
         var handerProxy = !env.node ? new HandlerProxy(painter.getViewportRoot()) : null;
-        this.handler = new Handler(storage, painter, handerProxy);
+        this.handler = new Handler(storage, painter, handerProxy, painter.root);
 
         /**
          * @type {module:zrender/animation/Animation}

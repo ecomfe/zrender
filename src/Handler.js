@@ -41,18 +41,22 @@ define(function (require) {
      * @alias module:zrender/Handler
      * @constructor
      * @extends module:zrender/mixin/Eventful
-     * @param {HTMLElement} root Main HTML element for painting.
      * @param {module:zrender/Storage} storage Storage instance.
      * @param {module:zrender/Painter} painter Painter instance.
+     * @param {module:zrender/dom/HandlerProxy} proxy HandlerProxy instance.
+     * @param {HTMLElement} painterRoot painter.root (not painter.getViewportRoot()).
      */
-    var Handler = function(storage, painter, proxy) {
+    var Handler = function(storage, painter, proxy, painterRoot) {
         Eventful.call(this);
 
         this.storage = storage;
 
         this.painter = painter;
 
+        this.painterRoot = painterRoot;
+
         proxy = proxy || new EmptyProxy();
+
         /**
          * Proxy of event. can be Dom, WebGLSurface, etc.
          */
@@ -126,9 +130,21 @@ define(function (require) {
         mouseout: function (event) {
             this.dispatchToElement(this._hovered, 'mouseout', event);
 
-            this.trigger('globalout', {
-                event: event
-            });
+            // There might be some doms created by upper layer application
+            // at the same level of painter.getViewportRoot() (e.g., tooltip
+            // dom created by echarts), where 'globalout' event should not
+            // be triggered when mouse enters these doms. (But 'mouseout'
+            // should be triggered at the original hovered element as usual).
+            var element = event.toElement || event.relatedTarget;
+            var innerDom;
+            do {
+                element = element && element.parentNode;
+            }
+            while (element && element.nodeType != 9 && !(
+                innerDom = element === this.painterRoot
+            ));
+
+            !innerDom && this.trigger('globalout', {event: event});
         },
 
         /**
