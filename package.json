@@ -27,6 +27,6 @@
   "scripts": {
     "prepublish": "node build/amd2common.bundle.js"
   },
-  "license": "BSD",
+  "license": "BSD-2-Clause",
   "main": "lib/zrender.js"
 }
