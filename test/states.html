@@ -45,25 +45,27 @@
 
                 image.states = new States({
                     el: image,
-                    normal: {
-                        style: {
-                            shadowColor: 'black',
-                            width: 50,
-                            height: 50,
-                            shadowBlur: 0
+                    states: {
+                        normal: {
+                            style: {
+                                shadowColor: 'black',
+                                width: 50,
+                                height: 50,
+                                shadowBlur: 0
+                            },
+                            z: 0,
+                            transition: '* 200 0 Linear'
                         },
-                        z: 0,
-                        transition: '* 200 0 Linear'
-                    },
-                    hover: {
-                        style: {
-                            x: -10,
-                            y: -10,
-                            width: 70,
-                            height: 70,
-                            shadowBlur: 10
-                        },
-                        z: 1
+                        hover: {
+                            style: {
+                                x: -10,
+                                y: -10,
+                                width: 70,
+                                height: 70,
+                                shadowBlur: 10
+                            },
+                            z: 1
+                        }   
                     }
                 })
                 zr.add(image);
