@@ -99,13 +99,18 @@
 
     function createRoot(width, height) {
         var domRoot = document.createElement('div');
-        var domRootStyle = domRoot.style;
 
         // domRoot.onselectstart = returnFalse; // 避免页面选中的尴尬
-        domRootStyle.position = 'relative';
-        domRootStyle.overflow = 'hidden';
-        domRootStyle.width = width + 'px';
-        domRootStyle.height = height + 'px';
+        domRoot.style.cssText = [
+            'position:relative',
+            'overflow:hidden',
+            'width:' + width + 'px',
+            'height:' + height + 'px',
+            'padding:0',
+            'margin:0',
+            'border-width:0'
+        ].join(';') + ';';
+
         return domRoot;
     }
 

@@ -71,6 +71,9 @@ define(function (require) {
             domStyle['user-select'] = 'none';
             domStyle['-webkit-touch-callout'] = 'none';
             domStyle['-webkit-tap-highlight-color'] = 'rgba(0,0,0,0)';
+            domStyle['padding'] = 0;
+            domStyle['margin'] = 0;
+            domStyle['border-width'] = 0;
         }
 
         this.domBack = null;
