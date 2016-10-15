@@ -8,6 +8,7 @@ define(function(require) {
     'use strict';
 
     var Eventful = require('../mixin/Eventful');
+    var env = require('./env');
 
     var isDomLevel2 = (typeof window !== 'undefined') && !!window.addEventListener;
 
@@ -17,11 +18,36 @@ define(function(require) {
     }
 
     function clientToLocal(el, e, out) {
-        // clientX/clientY is according to view port.
-        var box = getBoundingClientRect(el);
-        out = out || {};
-        out.zrX = e.clientX - box.left;
-        out.zrY = e.clientY - box.top;
+        // According to the W3C Working Draft, offsetX and offsetY should be relative
+        // to the padding edge of the target element. The only browser using this convention
+        // is IE. Webkit uses the border edge, Opera uses the content edge, and FireFox does
+        // not support the properties.
+        // (see http://www.jacklmoore.com/notes/mouse-position/)
+        // In this case, padding edge equals to border edge.
+
+        if (env.browser.firefox && e.layerX != null && e.layerX !== e.offsetX) {
+            // Caution: In FireFox, layerX/layerY Mouse position relative to the closest positioned
+            // ancestor element, so we should make sure el is positioned (e.g., not position:static).
+            // BTW1, Webkit don't return the same results as FF in non-simple cases (like add
+            // zoom-factor, overflow / opacity layers, transforms ...)
+            // BTW2, (ev.offsetY || ev.pageY - $(ev.target).offset().top) is not correct in preserve-3d.
+            // <https://bugs.jquery.com/ticket/8523#comment:14>
+            // BTW3, In ff, offsetX/offsetY is always 0.
+            out.zrX = e.layerX;
+            out.zrY = e.layerY;
+        }
+        else if (e.offsetX != null) { // For IE6+, chrome, safari, opera. (When will ff support offsetX?)
+            out.zrX = e.offsetX;
+            out.zrY = e.offsetY;
+        }
+        else { // For some other device, e.g., IOS safari.
+            // This well-known method below does not support css transform.
+            var box = getBoundingClientRect(el);
+            out = out || {};
+            out.zrX = e.clientX - box.left;
+            out.zrY = e.clientY - box.top;
+        }
+
         return out;
     }
 
