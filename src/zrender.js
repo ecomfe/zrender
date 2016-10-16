@@ -26,6 +26,7 @@ define(function(require) {
     var instances = {};    // ZRender实例map索引
 
     var zrender = {};
+
     /**
      * @type {string}
      */
@@ -37,6 +38,8 @@ define(function(require) {
      * @param {Object} opts
      * @param {string} [opts.renderer='canvas'] 'canvas' or 'svg'
      * @param {number} [opts.devicePixelRatio]
+     * @param {number|string} [opts.width] Can be 'auto' (the same as null/undefined)
+     * @param {number|string} [opts.height] Can be 'auto' (the same as null/undefined)
      * @return {module:zrender/ZRender}
      */
     zrender.init = function(dom, opts) {
@@ -93,6 +96,8 @@ define(function(require) {
      * @param {Object} opts
      * @param {string} [opts.renderer='canvas'] 'canvas' or 'svg'
      * @param {number} [opts.devicePixelRatio]
+     * @param {number} [opts.width] Can be 'auto' (the same as null/undefined)
+     * @param {number} [opts.height] Can be 'auto' (the same as null/undefined)
      */
     var ZRender = function(id, dom, opts) {
 
@@ -287,9 +292,13 @@ define(function(require) {
         /**
          * Resize the canvas.
          * Should be invoked when container size is changed
+         * @param {Object} [opts]
+         * @param {number|string} [opts.width] Can be 'auto' (the same as null/undefined)
+         * @param {number|string} [opts.height] Can be 'auto' (the same as null/undefined)
          */
-        resize: function() {
-            this.painter.resize();
+        resize: function(opts) {
+            opts = opts || {};
+            this.painter.resize(opts.width, opts.height);
             this.handler.resize();
         },
 

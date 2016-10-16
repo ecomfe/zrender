@@ -126,7 +126,7 @@
         var singleCanvas = !root.nodeName // In node ?
             || root.nodeName.toUpperCase() === 'CANVAS';
 
-        opts = opts || {};
+        this._opts = opts = util.extend({}, opts || {});
 
         /**
          * @type {number}
@@ -178,8 +178,8 @@
         this._layerConfig = {};
 
         if (!singleCanvas) {
-            this._width = this._getWidth();
-            this._height = this._getHeight();
+            this._width = this._getSize(0);
+            this._height = this._getSize(1);
 
             var domRoot = this._domRoot = createRoot(
                 this._width, this._height
@@ -884,8 +884,13 @@
             // FIXME Why ?
             domRoot.style.display = 'none';
 
-            width = width || this._getWidth();
-            height = height || this._getHeight();
+            // Save input w/h
+            var opts = this._opts;
+            width != null && (opts.width = width);
+            height != null && (opts.height = height);
+
+            width = this._getSize(0);
+            height = this._getSize(1);
 
             domRoot.style.display = '';
 
@@ -977,23 +982,25 @@
             return this._height;
         },
 
-        _getWidth: function () {
+        _getSize: function (whIdx) {
+            var opts = this._opts;
+            var wh = ['width', 'height'][whIdx];
+            var cwh = ['clientWidth', 'clientHeight'][whIdx];
+            var plt = ['paddingLeft', 'paddingTop'][whIdx];
+            var prb = ['paddingRight', 'paddingBottom'][whIdx];
+
+            if (opts[wh] != null && opts[wh] !== 'auto') {
+                return parseFloat(opts[wh]);
+            }
+
             var root = this.root;
             var stl = document.defaultView.getComputedStyle(root);
 
-            // FIXME Better way to get the width and height when element has not been append to the document
-            return ((root.clientWidth || parseInt10(stl.width) || parseInt10(root.style.width))
-                    - (parseInt10(stl.paddingLeft) || 0)
-                    - (parseInt10(stl.paddingRight) || 0)) | 0;
-        },
-
-        _getHeight: function () {
-            var root = this.root;
-            var stl = document.defaultView.getComputedStyle(root);
-
-            return ((root.clientHeight || parseInt10(stl.height) || parseInt10(root.style.height))
-                    - (parseInt10(stl.paddingTop) || 0)
-                    - (parseInt10(stl.paddingBottom) || 0)) | 0;
+            return (
+                (root[cwh] || parseInt10(stl[wh]) || parseInt10(root.style[wh]))
+                - (parseInt10(stl[plt]) || 0)
+                - (parseInt10(stl[prb]) || 0)
+            ) | 0;
         },
 
         _pathToImage: function (id, path, width, height, dpr) {
