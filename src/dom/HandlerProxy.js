@@ -14,7 +14,7 @@ define(function (require) {
 
     var mouseHandlerNames = [
         'click', 'dblclick', 'mousewheel', 'mouseout',
-        'mouseup', 'mousedown', 'mousemove'
+        'mouseup', 'mousedown', 'mousemove', 'contextmenu'
     ];
 
     var touchHandlerNames = [
@@ -169,7 +169,7 @@ define(function (require) {
     };
 
     // Common handlers
-    zrUtil.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick'], function (name) {
+    zrUtil.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick', 'contextmenu'], function (name) {
         domHandlers[name] = function (event) {
             event = normalizeEvent(this.dom, event);
             this.trigger(name, event);

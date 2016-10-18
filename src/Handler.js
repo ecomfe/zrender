@@ -35,7 +35,7 @@ define(function (require) {
 
     var handlerNames = [
         'click', 'dblclick', 'mousewheel', 'mouseout',
-        'mouseup', 'mousedown', 'mousemove'
+        'mouseup', 'mousedown', 'mousemove', 'contextmenu'
     ];
     /**
      * @alias module:zrender/Handler
@@ -250,7 +250,7 @@ define(function (require) {
     };
 
     // Common handlers
-    util.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick'], function (name) {
+    util.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick', 'contextmenu'], function (name) {
         Handler.prototype[name] = function (event) {
             // Find hover again to avoid click event is dispatched manually. Or click is triggered without mouseover
             var hovered = this.findHover(event.zrX, event.zrY, null);
