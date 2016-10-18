@@ -23,32 +23,45 @@ define(function(require) {
         // is IE. Webkit uses the border edge, Opera uses the content edge, and FireFox does
         // not support the properties.
         // (see http://www.jacklmoore.com/notes/mouse-position/)
-        // In this case, padding edge equals to border edge.
+        // In zr painter.dom, padding edge equals to border edge.
 
-        if (env.browser.firefox && e.layerX != null && e.layerX !== e.offsetX) {
-            // Caution: In FireFox, layerX/layerY Mouse position relative to the closest positioned
-            // ancestor element, so we should make sure el is positioned (e.g., not position:static).
-            // BTW1, Webkit don't return the same results as FF in non-simple cases (like add
-            // zoom-factor, overflow / opacity layers, transforms ...)
-            // BTW2, (ev.offsetY || ev.pageY - $(ev.target).offset().top) is not correct in preserve-3d.
-            // <https://bugs.jquery.com/ticket/8523#comment:14>
-            // BTW3, In ff, offsetX/offsetY is always 0.
+        // FIXME
+        // When mousemove event triggered on ec tooltip, target is not zr painter.dom, and
+        // offsetX/Y is relative to e.target, where the calculation of zrX/Y via offsetX/Y
+        // is too complex. So css-transfrom dont support in this case temporarily.
+        if (el !== e.target) {
+            defaultGetZrXY(el, e, out);
+        }
+        // Caution: In FireFox, layerX/layerY Mouse position relative to the closest positioned
+        // ancestor element, so we should make sure el is positioned (e.g., not position:static).
+        // BTW1, Webkit don't return the same results as FF in non-simple cases (like add
+        // zoom-factor, overflow / opacity layers, transforms ...)
+        // BTW2, (ev.offsetY || ev.pageY - $(ev.target).offset().top) is not correct in preserve-3d.
+        // <https://bugs.jquery.com/ticket/8523#comment:14>
+        // BTW3, In ff, offsetX/offsetY is always 0.
+        else if (env.browser.firefox && e.layerX != null && e.layerX !== e.offsetX) {
             out.zrX = e.layerX;
             out.zrY = e.layerY;
         }
-        else if (e.offsetX != null) { // For IE6+, chrome, safari, opera. (When will ff support offsetX?)
+        // For IE6+, chrome, safari, opera. (When will ff support offsetX?)
+        else if (e.offsetX != null) {
             out.zrX = e.offsetX;
             out.zrY = e.offsetY;
         }
-        else { // For some other device, e.g., IOS safari.
-            // This well-known method below does not support css transform.
-            var box = getBoundingClientRect(el);
-            out = out || {};
-            out.zrX = e.clientX - box.left;
-            out.zrY = e.clientY - box.top;
+        // For some other device, e.g., IOS safari.
+        else {
+            defaultGetZrXY(el, e, out);
         }
 
         return out;
+    }
+
+    function defaultGetZrXY(el, e, out) {
+        // This well-known method below does not support css transform.
+        var box = getBoundingClientRect(el);
+        out = out || {};
+        out.zrX = e.clientX - box.left;
+        out.zrY = e.clientY - box.top;
     }
 
     /**
