@@ -77,13 +77,12 @@ define(function () {
         if (firefox) browser.firefox = true, browser.version = firefox[1];
         // if (safari && (ua.match(/Safari/) || !!os.ios)) browser.safari = true;
         // if (webview) browser.webview = true;
-        if (ie) {
-            browser.ie = true; browser.version = ie[1];
-        }
+        
         if (ie) {
             browser.ie = true;
             browser.version = ie[1];
         }
+        
         if (edge) {
             browser.edge = true;
             browser.version = edge[1];
