@@ -149,7 +149,9 @@ define(function (require) {
         },
 
         clear: function () {
-            this.root.removeChild(this.vmlViewport);
+            if (this._vmlViewport) {
+                this.root.removeChild(this._vmlViewport);
+            }
         },
 
         _getWidth: function () {
