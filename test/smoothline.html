@@ -31,9 +31,10 @@
             "zrender",
             "zrender/animation/animation",
             "zrender/graphic/shape/Polyline",
-            "zrender/graphic/shape/Polygon"
+            "zrender/graphic/shape/Polygon",
+            "zrender/graphic/States"
         ],
-        function(zrender, Animation, PolylineShape, PolygonShape){
+        function(zrender, Animation, PolylineShape, PolygonShape, States){
 
             // 初始化zrender
             var zr = zrender.init(document.getElementById("Main"));
@@ -69,23 +70,25 @@
                     smooth: 0.5
                 },
 
+                onmouseover: function () {
+                    smoothPolygon.states.transitionState('hover');
+                },
+
+                onmouseout: function () {
+                    smoothPolygon.states.transitionState('normal');
+                }
+            });
+            smoothPolygon.states = new States({
+                el: smoothPolygon,
                 states: {
                     normal: {
-                        transition: '* 500 0 Linear'
+                         transition: '* 500 0 Linear'
                     },
                     hover: {
                         shape: {
                             points: [[30, 30], [200, 10], [100, 200], [30, 150], [10, 70]]
                         }
                     }
-                },
-
-                onmouseover: function () {
-                    smoothPolygon.transitionState('hover');
-                },
-
-                onmouseout: function () {
-                    smoothPolygon.transitionState('normal');
                 }
             });
             zr.add(smoothPolygon);
