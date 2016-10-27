@@ -118,11 +118,11 @@ define(function (require) {
             }
         },
 
-        resize: function () {
-            var width = this._getWidth();
-            var height = this._getHeight();
+        resize: function (width, height) {
+            var width = width == null ? this._getWidth() : width;
+            var height = height == null ? this._getHeight() : height;
 
-            if (this._width != width && this._height != height) {
+            if (this._width != width || this._height != height) {
                 this._width = width;
                 this._height = height;
 
@@ -149,7 +149,9 @@ define(function (require) {
         },
 
         clear: function () {
-            this.root.removeChild(this.vmlViewport);
+            if (this._vmlViewport) {
+                this.root.removeChild(this._vmlViewport);
+            }
         },
 
         _getWidth: function () {
