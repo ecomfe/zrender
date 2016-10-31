@@ -15,6 +15,16 @@ define(function(require) {
      * @alias module:echarts/core/BoundingRect
      */
     function BoundingRect(x, y, width, height) {
+
+        if (width < 0) {
+            x = x + width;
+            width = -width;
+        }
+        if (height < 0) {
+            y = y + height;
+            height = -height;
+        }
+
         /**
          * @type {number}
          */
@@ -110,6 +120,11 @@ define(function(require) {
          * @return {boolean}
          */
         intersect: function (b) {
+            if (!(b instanceof BoundingRect)) {
+                // Normalize negative width/height.
+                b = BoundingRect.create(b);
+            }
+
             var a = this;
             var ax0 = a.x;
             var ax1 = a.x + a.width;
@@ -147,7 +162,28 @@ define(function(require) {
             this.y = other.y;
             this.width = other.width;
             this.height = other.height;
+        },
+
+        plain: function () {
+            return {
+                x: this.x,
+                y: this.y,
+                width: this.width,
+                height: this.height
+            };
         }
+    };
+
+    /**
+     * @param {Object|module:zrender/core/BoundingRect} rect
+     * @param {number} rect.x
+     * @param {number} rect.y
+     * @param {number} rect.width
+     * @param {number} rect.height
+     * @return {module:zrender/core/BoundingRect}
+     */
+    BoundingRect.create = function (rect) {
+        return new BoundingRect(rect.x, rect.y, rect.width, rect.height);
     };
 
     return BoundingRect;
