@@ -29,7 +29,8 @@ define(function(require) {
         // When mousemove event triggered on ec tooltip, target is not zr painter.dom, and
         // offsetX/Y is relative to e.target, where the calculation of zrX/Y via offsetX/Y
         // is too complex. So css-transfrom dont support in this case temporarily.
-        if (el !== e.target) {
+
+        if (!e.currentTarget || el !== e.currentTarget) {
             defaultGetZrXY(el, e, out);
         }
         // Caution: In FireFox, layerX/layerY Mouse position relative to the closest positioned

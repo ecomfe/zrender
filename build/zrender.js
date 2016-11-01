@@ -92,13 +92,12 @@ define('zrender/core/env',[],function () {
         if (firefox) browser.firefox = true, browser.version = firefox[1];
         // if (safari && (ua.match(/Safari/) || !!os.ios)) browser.safari = true;
         // if (webview) browser.webview = true;
-        if (ie) {
-            browser.ie = true; browser.version = ie[1];
-        }
+        
         if (ie) {
             browser.ie = true;
             browser.version = ie[1];
         }
+        
         if (edge) {
             browser.edge = true;
             browser.version = edge[1];
@@ -1040,24 +1039,28 @@ define('zrender/Handler',['require','./core/util','./mixin/Draggable','./mixin/E
 
     var handlerNames = [
         'click', 'dblclick', 'mousewheel', 'mouseout',
-        'mouseup', 'mousedown', 'mousemove'
+        'mouseup', 'mousedown', 'mousemove', 'contextmenu'
     ];
     /**
      * @alias module:zrender/Handler
      * @constructor
      * @extends module:zrender/mixin/Eventful
-     * @param {HTMLElement} root Main HTML element for painting.
      * @param {module:zrender/Storage} storage Storage instance.
      * @param {module:zrender/Painter} painter Painter instance.
+     * @param {module:zrender/dom/HandlerProxy} proxy HandlerProxy instance.
+     * @param {HTMLElement} painterRoot painter.root (not painter.getViewportRoot()).
      */
-    var Handler = function(storage, painter, proxy) {
+    var Handler = function(storage, painter, proxy, painterRoot) {
         Eventful.call(this);
 
         this.storage = storage;
 
         this.painter = painter;
 
+        this.painterRoot = painterRoot;
+
         proxy = proxy || new EmptyProxy();
+
         /**
          * Proxy of event. can be Dom, WebGLSurface, etc.
          */
@@ -1131,9 +1134,21 @@ define('zrender/Handler',['require','./core/util','./mixin/Draggable','./mixin/E
         mouseout: function (event) {
             this.dispatchToElement(this._hovered, 'mouseout', event);
 
-            this.trigger('globalout', {
-                event: event
-            });
+            // There might be some doms created by upper layer application
+            // at the same level of painter.getViewportRoot() (e.g., tooltip
+            // dom created by echarts), where 'globalout' event should not
+            // be triggered when mouse enters these doms. (But 'mouseout'
+            // should be triggered at the original hovered element as usual).
+            var element = event.toElement || event.relatedTarget;
+            var innerDom;
+            do {
+                element = element && element.parentNode;
+            }
+            while (element && element.nodeType != 9 && !(
+                innerDom = element === this.painterRoot
+            ));
+
+            !innerDom && this.trigger('globalout', {event: event});
         },
 
         /**
@@ -1239,7 +1254,7 @@ define('zrender/Handler',['require','./core/util','./mixin/Draggable','./mixin/E
     };
 
     // Common handlers
-    util.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick'], function (name) {
+    util.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick', 'contextmenu'], function (name) {
         Handler.prototype[name] = function (event) {
             // Find hover again to avoid click event is dispatched manually. Or click is triggered without mouseover
             var hovered = this.findHover(event.zrX, event.zrY, null);
@@ -3380,6 +3395,10 @@ define('zrender/animation/Animator',['require','./Clip','../tool/color','../core
         when: function(time /* ms */, props) {
             var tracks = this._tracks;
             for (var propName in props) {
+                if (!props.hasOwnProperty(propName)) {
+                    continue;
+                }
+
                 if (!tracks[propName]) {
                     tracks[propName] = [];
                     // Invalid value
@@ -3448,6 +3467,9 @@ define('zrender/animation/Animator',['require','./Clip','../tool/color','../core
 
             var lastClip;
             for (var propName in this._tracks) {
+                if (!this._tracks.hasOwnProperty(propName)) {
+                    continue;
+                }
                 var clip = createTrackClip(
                     this, easing, oneTrackDone,
                     this._tracks[propName], propName
@@ -3585,7 +3607,7 @@ define(
         return function(mes) {
             document.getElementById('wrong-message').innerHTML =
                 mes + ' ' + (new Date() - 0)
-                + '<br/>' 
+                + '<br/>'
                 + document.getElementById('wrong-message').innerHTML;
         };
         */
@@ -3816,6 +3838,10 @@ define('zrender/mixin/Animatable',['require','../animation/Animator','../core/ut
             var objShallow = {};
             var propertyCount = 0;
             for (var name in target) {
+                if (!target.hasOwnProperty(name)) {
+                    continue;
+                }
+
                 if (source[name] != null) {
                     if (isObject(target[name]) && !util.isArrayLike(target[name])) {
                         this._animateToShallow(
@@ -4138,6 +4164,16 @@ define('zrender/core/BoundingRect',['require','./vector','./matrix'],function(re
      * @alias module:echarts/core/BoundingRect
      */
     function BoundingRect(x, y, width, height) {
+
+        if (width < 0) {
+            x = x + width;
+            width = -width;
+        }
+        if (height < 0) {
+            y = y + height;
+            height = -height;
+        }
+
         /**
          * @type {number}
          */
@@ -4233,6 +4269,11 @@ define('zrender/core/BoundingRect',['require','./vector','./matrix'],function(re
          * @return {boolean}
          */
         intersect: function (b) {
+            if (!(b instanceof BoundingRect)) {
+                // Normalize negative width/height.
+                b = BoundingRect.create(b);
+            }
+
             var a = this;
             var ax0 = a.x;
             var ax1 = a.x + a.width;
@@ -4270,7 +4311,28 @@ define('zrender/core/BoundingRect',['require','./vector','./matrix'],function(re
             this.y = other.y;
             this.width = other.width;
             this.height = other.height;
+        },
+
+        plain: function () {
+            return {
+                x: this.x,
+                y: this.y,
+                width: this.width,
+                height: this.height
+            };
         }
+    };
+
+    /**
+     * @param {Object|module:zrender/core/BoundingRect} rect
+     * @param {number} rect.x
+     * @param {number} rect.y
+     * @param {number} rect.width
+     * @param {number} rect.height
+     * @return {module:zrender/core/BoundingRect}
+     */
+    BoundingRect.create = function (rect) {
+        return new BoundingRect(rect.x, rect.y, rect.width, rect.height);
     };
 
     return BoundingRect;
@@ -4312,7 +4374,9 @@ define('zrender/container/Group',['require','../core/util','../Element','../core
         Element.call(this, opts);
 
         for (var key in opts) {
-            this[key] = opts[key];
+            if (opts.hasOwnProperty(key)) {
+                this[key] = opts[key];
+            }
         }
 
         this._children = [];
@@ -5535,11 +5599,12 @@ define('zrender/Storage',['require','./core/util','./core/env','./container/Grou
  * @module zrender/core/event
  * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  */
-define('zrender/core/event',['require','../mixin/Eventful'],function(require) {
+define('zrender/core/event',['require','../mixin/Eventful','./env'],function(require) {
 
     
 
     var Eventful = require('../mixin/Eventful');
+    var env = require('./env');
 
     var isDomLevel2 = (typeof window !== 'undefined') && !!window.addEventListener;
 
@@ -5549,12 +5614,51 @@ define('zrender/core/event',['require','../mixin/Eventful'],function(require) {
     }
 
     function clientToLocal(el, e, out) {
-        // clientX/clientY is according to view port.
+        // According to the W3C Working Draft, offsetX and offsetY should be relative
+        // to the padding edge of the target element. The only browser using this convention
+        // is IE. Webkit uses the border edge, Opera uses the content edge, and FireFox does
+        // not support the properties.
+        // (see http://www.jacklmoore.com/notes/mouse-position/)
+        // In zr painter.dom, padding edge equals to border edge.
+
+        // FIXME
+        // When mousemove event triggered on ec tooltip, target is not zr painter.dom, and
+        // offsetX/Y is relative to e.target, where the calculation of zrX/Y via offsetX/Y
+        // is too complex. So css-transfrom dont support in this case temporarily.
+
+        if (!e.currentTarget || el !== e.currentTarget) {
+            defaultGetZrXY(el, e, out);
+        }
+        // Caution: In FireFox, layerX/layerY Mouse position relative to the closest positioned
+        // ancestor element, so we should make sure el is positioned (e.g., not position:static).
+        // BTW1, Webkit don't return the same results as FF in non-simple cases (like add
+        // zoom-factor, overflow / opacity layers, transforms ...)
+        // BTW2, (ev.offsetY || ev.pageY - $(ev.target).offset().top) is not correct in preserve-3d.
+        // <https://bugs.jquery.com/ticket/8523#comment:14>
+        // BTW3, In ff, offsetX/offsetY is always 0.
+        else if (env.browser.firefox && e.layerX != null && e.layerX !== e.offsetX) {
+            out.zrX = e.layerX;
+            out.zrY = e.layerY;
+        }
+        // For IE6+, chrome, safari, opera. (When will ff support offsetX?)
+        else if (e.offsetX != null) {
+            out.zrX = e.offsetX;
+            out.zrY = e.offsetY;
+        }
+        // For some other device, e.g., IOS safari.
+        else {
+            defaultGetZrXY(el, e, out);
+        }
+
+        return out;
+    }
+
+    function defaultGetZrXY(el, e, out) {
+        // This well-known method below does not support css transform.
         var box = getBoundingClientRect(el);
         out = out || {};
         out.zrX = e.clientX - box.left;
         out.zrY = e.clientY - box.top;
-        return out;
     }
 
     /**
@@ -6035,7 +6139,7 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
 
     var mouseHandlerNames = [
         'click', 'dblclick', 'mousewheel', 'mouseout',
-        'mouseup', 'mousedown', 'mousemove'
+        'mouseup', 'mousedown', 'mousemove', 'contextmenu'
     ];
 
     var touchHandlerNames = [
@@ -6190,7 +6294,7 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
     };
 
     // Common handlers
-    zrUtil.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick'], function (name) {
+    zrUtil.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick', 'contextmenu'], function (name) {
         domHandlers[name] = function (event) {
             event = normalizeEvent(this.dom, event);
             this.trigger(name, event);
@@ -6691,6 +6795,9 @@ define('zrender/Layer',['require','./core/util','./config','./graphic/Style','./
             domStyle['user-select'] = 'none';
             domStyle['-webkit-touch-callout'] = 'none';
             domStyle['-webkit-tap-highlight-color'] = 'rgba(0,0,0,0)';
+            domStyle['padding'] = 0;
+            domStyle['margin'] = 0;
+            domStyle['border-width'] = 0;
         }
 
         this.domBack = null;
@@ -7961,13 +8068,18 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
 
     function createRoot(width, height) {
         var domRoot = document.createElement('div');
-        var domRootStyle = domRoot.style;
 
         // domRoot.onselectstart = returnFalse; // 避免页面选中的尴尬
-        domRootStyle.position = 'relative';
-        domRootStyle.overflow = 'hidden';
-        domRootStyle.width = width + 'px';
-        domRootStyle.height = height + 'px';
+        domRoot.style.cssText = [
+            'position:relative',
+            'overflow:hidden',
+            'width:' + width + 'px',
+            'height:' + height + 'px',
+            'padding:0',
+            'margin:0',
+            'border-width:0'
+        ].join(';') + ';';
+
         return domRoot;
     }
 
@@ -7983,7 +8095,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
         var singleCanvas = !root.nodeName // In node ?
             || root.nodeName.toUpperCase() === 'CANVAS';
 
-        opts = opts || {};
+        this._opts = opts = util.extend({}, opts || {});
 
         /**
          * @type {number}
@@ -8035,8 +8147,8 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
         this._layerConfig = {};
 
         if (!singleCanvas) {
-            this._width = this._getWidth();
-            this._height = this._getHeight();
+            this._width = this._getSize(0);
+            this._height = this._getSize(1);
 
             var domRoot = this._domRoot = createRoot(
                 this._width, this._height
@@ -8741,8 +8853,13 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
             // FIXME Why ?
             domRoot.style.display = 'none';
 
-            width = width || this._getWidth();
-            height = height || this._getHeight();
+            // Save input w/h
+            var opts = this._opts;
+            width != null && (opts.width = width);
+            height != null && (opts.height = height);
+
+            width = this._getSize(0);
+            height = this._getSize(1);
 
             domRoot.style.display = '';
 
@@ -8752,8 +8869,13 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
                 domRoot.style.height = height + 'px';
 
                 for (var id in this._layers) {
-                    this._layers[id].resize(width, height);
+                    if (this._layers.hasOwnProperty(id)) {
+                        this._layers[id].resize(width, height);
+                    }
                 }
+                util.each(this._progressiveLayers, function (layer) {
+                    layer.resize(width, height);
+                });
 
                 this.refresh(true);
             }
@@ -8829,23 +8951,25 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
             return this._height;
         },
 
-        _getWidth: function () {
+        _getSize: function (whIdx) {
+            var opts = this._opts;
+            var wh = ['width', 'height'][whIdx];
+            var cwh = ['clientWidth', 'clientHeight'][whIdx];
+            var plt = ['paddingLeft', 'paddingTop'][whIdx];
+            var prb = ['paddingRight', 'paddingBottom'][whIdx];
+
+            if (opts[wh] != null && opts[wh] !== 'auto') {
+                return parseFloat(opts[wh]);
+            }
+
             var root = this.root;
             var stl = document.defaultView.getComputedStyle(root);
 
-            // FIXME Better way to get the width and height when element has not been append to the document
-            return ((root.clientWidth || parseInt10(stl.width) || parseInt10(root.style.width))
-                    - (parseInt10(stl.paddingLeft) || 0)
-                    - (parseInt10(stl.paddingRight) || 0)) | 0;
-        },
-
-        _getHeight: function () {
-            var root = this.root;
-            var stl = document.defaultView.getComputedStyle(root);
-
-            return ((root.clientHeight || parseInt10(stl.height) || parseInt10(root.style.height))
-                    - (parseInt10(stl.paddingTop) || 0)
-                    - (parseInt10(stl.paddingBottom) || 0)) | 0;
+            return (
+                (root[cwh] || parseInt10(stl[wh]) || parseInt10(root.style[wh]))
+                - (parseInt10(stl[plt]) || 0)
+                - (parseInt10(stl[prb]) || 0)
+            ) | 0;
         },
 
         _pathToImage: function (id, path, width, height, dpr) {
@@ -8936,10 +9060,11 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
     var instances = {};    // ZRender实例map索引
 
     var zrender = {};
+
     /**
      * @type {string}
      */
-    zrender.version = '3.1.3';
+    zrender.version = '3.2.0';
 
     /**
      * Initializing a zrender instance
@@ -8947,6 +9072,8 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
      * @param {Object} opts
      * @param {string} [opts.renderer='canvas'] 'canvas' or 'svg'
      * @param {number} [opts.devicePixelRatio]
+     * @param {number|string} [opts.width] Can be 'auto' (the same as null/undefined)
+     * @param {number|string} [opts.height] Can be 'auto' (the same as null/undefined)
      * @return {module:zrender/ZRender}
      */
     zrender.init = function(dom, opts) {
@@ -8965,7 +9092,9 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
         }
         else {
             for (var key in instances) {
-                instances[key].dispose();
+                if (instances.hasOwnProperty(key)) {
+                    instances[key].dispose();
+                }
             }
             instances = {};
         }
@@ -9001,6 +9130,8 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
      * @param {Object} opts
      * @param {string} [opts.renderer='canvas'] 'canvas' or 'svg'
      * @param {number} [opts.devicePixelRatio]
+     * @param {number} [opts.width] Can be 'auto' (the same as null/undefined)
+     * @param {number} [opts.height] Can be 'auto' (the same as null/undefined)
      */
     var ZRender = function(id, dom, opts) {
 
@@ -9035,7 +9166,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
         this.painter = painter;
 
         var handerProxy = !env.node ? new HandlerProxy(painter.getViewportRoot()) : null;
-        this.handler = new Handler(storage, painter, handerProxy);
+        this.handler = new Handler(storage, painter, handerProxy, painter.root);
 
         /**
          * @type {module:zrender/animation/Animation}
@@ -9195,9 +9326,13 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
         /**
          * Resize the canvas.
          * Should be invoked when container size is changed
+         * @param {Object} [opts]
+         * @param {number|string} [opts.width] Can be 'auto' (the same as null/undefined)
+         * @param {number|string} [opts.height] Can be 'auto' (the same as null/undefined)
          */
-        resize: function() {
-            this.painter.resize();
+        resize: function(opts) {
+            opts = opts || {};
+            this.painter.resize(opts.width, opts.height);
             this.handler.resize();
         },
 
@@ -11891,7 +12026,9 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
             if (shape) {
                 if (zrUtil.isObject(key)) {
                     for (var name in key) {
-                        shape[name] = key[name];
+                        if (key.hasOwnProperty(name)) {
+                            shape[name] = key[name];
+                        }
                     }
                 }
                 else {
@@ -12228,7 +12365,7 @@ define('zrender/graphic/shape/Ring',['require','../Path'],function (require) {
 });
 
 /**
- * 水滴形状
+ * 椭圆形状
  * @module zrender/graphic/shape/Ellipse
  */
 
@@ -14303,11 +14440,11 @@ define('zrender/vml/Painter',['require','../core/log','./core'],function (requir
             }
         },
 
-        resize: function () {
-            var width = this._getWidth();
-            var height = this._getHeight();
+        resize: function (width, height) {
+            var width = width == null ? this._getWidth() : width;
+            var height = height == null ? this._getHeight() : height;
 
-            if (this._width != width && this._height != height) {
+            if (this._width != width || this._height != height) {
                 this._width = width;
                 this._height = height;
 
@@ -14334,7 +14471,9 @@ define('zrender/vml/Painter',['require','../core/log','./core'],function (requir
         },
 
         clear: function () {
-            this.root.removeChild(this.vmlViewport);
+            if (this._vmlViewport) {
+                this.root.removeChild(this._vmlViewport);
+            }
         },
 
         _getWidth: function () {
