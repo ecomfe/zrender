@@ -30,7 +30,7 @@ define(function(require) {
     /**
      * @type {string}
      */
-    zrender.version = '3.1.3';
+    zrender.version = '3.2.0';
 
     /**
      * Initializing a zrender instance
