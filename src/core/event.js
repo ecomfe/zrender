@@ -17,7 +17,8 @@ define(function(require) {
         return el.getBoundingClientRect ? el.getBoundingClientRect() : {left: 0, top: 0};
     }
 
-    function clientToLocal(el, e, out) {
+    // `calculate` is optional, default false
+    function clientToLocal(el, e, out, calculate) {
         // According to the W3C Working Draft, offsetX and offsetY should be relative
         // to the padding edge of the target element. The only browser using this convention
         // is IE. Webkit uses the border edge, Opera uses the content edge, and FireFox does
@@ -29,8 +30,7 @@ define(function(require) {
         // When mousemove event triggered on ec tooltip, target is not zr painter.dom, and
         // offsetX/Y is relative to e.target, where the calculation of zrX/Y via offsetX/Y
         // is too complex. So css-transfrom dont support in this case temporarily.
-
-        if (!e.currentTarget || el !== e.currentTarget) {
+        if (calculate) {
             defaultGetZrXY(el, e, out);
         }
         // Caution: In FireFox, layerX/layerY Mouse position relative to the closest positioned
@@ -66,9 +66,10 @@ define(function(require) {
     }
 
     /**
-     * 如果存在第三方嵌入的一些dom触发的事件，或touch事件，需要转换一下事件坐标
+     * 如果存在第三方嵌入的一些dom触发的事件，或touch事件，需要转换一下事件坐标.
+     * `calculate` is optional, default false.
      */
-    function normalizeEvent(el, e) {
+    function normalizeEvent(el, e, calculate) {
 
         e = e || window.event;
 
@@ -80,14 +81,14 @@ define(function(require) {
         var isTouch = eventType && eventType.indexOf('touch') >= 0;
 
         if (!isTouch) {
-            clientToLocal(el, e, e);
+            clientToLocal(el, e, e, calculate);
             e.zrDelta = (e.wheelDelta) ? e.wheelDelta / 120 : -(e.detail || 0) / 3;
         }
         else {
             var touch = eventType != 'touchend'
                 ? e.targetTouches[0]
                 : e.changedTouches[0];
-            touch && clientToLocal(el, touch, e);
+            touch && clientToLocal(el, touch, e, calculate);
         }
 
         return e;
