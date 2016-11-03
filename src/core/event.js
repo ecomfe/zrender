@@ -19,6 +19,8 @@ define(function(require) {
 
     // `calculate` is optional, default false
     function clientToLocal(el, e, out, calculate) {
+        out = out || {};
+
         // According to the W3C Working Draft, offsetX and offsetY should be relative
         // to the padding edge of the target element. The only browser using this convention
         // is IE. Webkit uses the border edge, Opera uses the content edge, and FireFox does
@@ -60,7 +62,6 @@ define(function(require) {
     function defaultGetZrXY(el, e, out) {
         // This well-known method below does not support css transform.
         var box = getBoundingClientRect(el);
-        out = out || {};
         out.zrX = e.clientX - box.left;
         out.zrY = e.clientY - box.top;
     }
