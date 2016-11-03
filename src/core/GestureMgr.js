@@ -46,7 +46,7 @@ define(function(require) {
 
             for (var i = 0, len = touches.length; i < len; i++) {
                 var touch = touches[i];
-                var pos = eventUtil.clientToLocal(root, touch);
+                var pos = eventUtil.clientToLocal(root, touch, {});
                 trackItem.points.push([pos.zrX, pos.zrY]);
                 trackItem.touches.push(touch);
             }
