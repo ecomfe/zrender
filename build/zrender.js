@@ -5613,7 +5613,10 @@ define('zrender/core/event',['require','../mixin/Eventful','./env'],function(req
         return el.getBoundingClientRect ? el.getBoundingClientRect() : {left: 0, top: 0};
     }
 
-    function clientToLocal(el, e, out) {
+    // `calculate` is optional, default false
+    function clientToLocal(el, e, out, calculate) {
+        out = out || {};
+
         // According to the W3C Working Draft, offsetX and offsetY should be relative
         // to the padding edge of the target element. The only browser using this convention
         // is IE. Webkit uses the border edge, Opera uses the content edge, and FireFox does
@@ -5625,8 +5628,7 @@ define('zrender/core/event',['require','../mixin/Eventful','./env'],function(req
         // When mousemove event triggered on ec tooltip, target is not zr painter.dom, and
         // offsetX/Y is relative to e.target, where the calculation of zrX/Y via offsetX/Y
         // is too complex. So css-transfrom dont support in this case temporarily.
-
-        if (!e.currentTarget || el !== e.currentTarget) {
+        if (calculate) {
             defaultGetZrXY(el, e, out);
         }
         // Caution: In FireFox, layerX/layerY Mouse position relative to the closest positioned
@@ -5656,15 +5658,15 @@ define('zrender/core/event',['require','../mixin/Eventful','./env'],function(req
     function defaultGetZrXY(el, e, out) {
         // This well-known method below does not support css transform.
         var box = getBoundingClientRect(el);
-        out = out || {};
         out.zrX = e.clientX - box.left;
         out.zrY = e.clientY - box.top;
     }
 
     /**
-     * 如果存在第三方嵌入的一些dom触发的事件，或touch事件，需要转换一下事件坐标
+     * 如果存在第三方嵌入的一些dom触发的事件，或touch事件，需要转换一下事件坐标.
+     * `calculate` is optional, default false.
      */
-    function normalizeEvent(el, e) {
+    function normalizeEvent(el, e, calculate) {
 
         e = e || window.event;
 
@@ -5676,14 +5678,14 @@ define('zrender/core/event',['require','../mixin/Eventful','./env'],function(req
         var isTouch = eventType && eventType.indexOf('touch') >= 0;
 
         if (!isTouch) {
-            clientToLocal(el, e, e);
+            clientToLocal(el, e, e, calculate);
             e.zrDelta = (e.wheelDelta) ? e.wheelDelta / 120 : -(e.detail || 0) / 3;
         }
         else {
             var touch = eventType != 'touchend'
                 ? e.targetTouches[0]
                 : e.changedTouches[0];
-            touch && clientToLocal(el, touch, e);
+            touch && clientToLocal(el, touch, e, calculate);
         }
 
         return e;
@@ -6049,7 +6051,7 @@ define('zrender/core/GestureMgr',['require','./event'],function(require) {
 
             for (var i = 0, len = touches.length; i < len; i++) {
                 var touch = touches[i];
-                var pos = eventUtil.clientToLocal(root, touch);
+                var pos = eventUtil.clientToLocal(root, touch, {});
                 trackItem.points.push([pos.zrX, pos.zrY]);
                 trackItem.touches.push(touch);
             }
@@ -9064,7 +9066,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
     /**
      * @type {string}
      */
-    zrender.version = '3.2.0';
+    zrender.version = '3.2.1';
 
     /**
      * Initializing a zrender instance
