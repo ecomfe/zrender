@@ -11,6 +11,7 @@
 define(function(require) {
     var guid = require('./core/guid');
     var env = require('./core/env');
+    var zrUtil = require('./core/util');
 
     var Handler = require('./Handler');
     var Storage = require('./Storage');
@@ -139,14 +140,7 @@ define(function(require) {
          */
         this.animation = new Animation({
             stage: {
-                update: function () {
-                    if (self._needsRefresh) {
-                        self.refreshImmediately();
-                    }
-                    if (self._needsRefreshHover) {
-                        self.refreshHoverImmediately();
-                    }
-                }
+                update: zrUtil.bind(this.flush, this)
             }
         });
         this.animation.start();
@@ -238,6 +232,18 @@ define(function(require) {
          */
         refresh: function() {
             this._needsRefresh = true;
+        },
+
+        /**
+         * Perform all refresh
+         */
+        flush: function () {
+            if (this._needsRefresh) {
+                this.refreshImmediately();
+            }
+            if (this._needsRefreshHover) {
+                this.refreshHoverImmediately();
+            }
         },
 
         /**
