@@ -136,7 +136,7 @@ define(function (require) {
             this.restoreTransform(ctx);
 
             // Draw rect text
-            if (style.text || style.text === 0) {
+            if (style.text != null) {
                 // var rect = this.getBoundingRect();
                 this.drawRectText(ctx, this.getBoundingRect());
             }

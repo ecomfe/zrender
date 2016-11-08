@@ -498,7 +498,7 @@ if (!require('../core/env').canvasSupported) {
         append(vmlRoot, vmlEl);
 
         // Text
-        if (style.text) {
+        if (style.text != null) {
             this.drawRectText(vmlRoot, this.getBoundingRect());
         }
         else {
@@ -727,7 +727,7 @@ if (!require('../core/env').canvasSupported) {
         append(vmlRoot, vmlEl);
 
         // Text
-        if (style.text) {
+        if (style.text != null) {
             this.drawRectText(vmlRoot, this.getBoundingRect());
         }
     };
@@ -821,6 +821,8 @@ if (!require('../core/env').canvasSupported) {
 
         var style = this.style;
         var text = style.text;
+        // Convert to string
+        text != null && (text += '');
         if (!text) {
             return;
         }
@@ -1031,7 +1033,7 @@ if (!require('../core/env').canvasSupported) {
 
     Text.prototype.brushVML = function (vmlRoot) {
         var style = this.style;
-        if (style.text) {
+        if (style.text != null) {
             this.drawRectText(vmlRoot, {
                 x: style.x || 0, y: style.y || 0,
                 width: 0, height: 0
