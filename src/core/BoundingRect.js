@@ -120,6 +120,10 @@ define(function(require) {
          * @return {boolean}
          */
         intersect: function (b) {
+            if (!b) {
+                return false;
+            }
+
             if (!(b instanceof BoundingRect)) {
                 // Normalize negative width/height.
                 b = BoundingRect.create(b);
