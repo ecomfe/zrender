@@ -31,7 +31,7 @@ define(function(require) {
     function clone(source) {
         if (typeof source == 'object' && source !== null) {
             var result = source;
-            if (source instanceof Array) {
+            if (Object.prototype.toString.call(source) === '[object Array]') {
                 result = [];
                 for (var i = 0, len = source.length; i < len; i++) {
                     result[i] = clone(source[i]);
