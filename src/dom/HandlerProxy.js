@@ -112,13 +112,16 @@ define(function (require) {
 
             event = normalizeEvent(this.dom, event);
 
+            // Mark touch, which is useful in distinguish touch and
+            // mouse event in upper applicatoin.
+            event.zrByTouch = true;
+
             this._lastTouchMoment = new Date();
 
             processGesture(this, event, 'start');
 
-            // 平板补充一次findHover
-            // this._mobileFindFixed(event);
-            // Trigger mousemove and mousedown
+            // In touch device, trigger `mousemove`(`mouseover`) should
+            // be triggered.
             domHandlers.mousemove.call(this, event);
 
             domHandlers.mousedown.call(this, event);
@@ -134,6 +137,10 @@ define(function (require) {
         touchmove: function (event) {
 
             event = normalizeEvent(this.dom, event);
+
+            // Mark touch, which is useful in distinguish touch and
+            // mouse event in upper applicatoin.
+            event.zrByTouch = true;
 
             processGesture(this, event, 'change');
 
@@ -154,9 +161,21 @@ define(function (require) {
 
             event = normalizeEvent(this.dom, event);
 
+            // Mark touch, which is useful in distinguish touch and
+            // mouse event in upper applicatoin.
+            event.zrByTouch = true;
+
             processGesture(this, event, 'end');
 
             domHandlers.mouseup.call(this, event);
+
+            // Do not trigger `mouseout` here, in spite of `mousemove`(`mouseover`) is
+            // triggered in `touchstart`. This seems to be illogical, but by this mechanism,
+            // we can conveniently implement "hover style" in both PC and touch device just
+            // by listening to `mouseover` to add "hover style" and listening to `mouseout`
+            // to remove "hover style" on an element, without any additional code for
+            // compatibility. (`mouseout` will not be triggered in `touchend`, so "hover
+            // style" will remain for user view)
 
             // click event should always be triggered no matter whether
             // there is gestrue event. System click can not be prevented.
