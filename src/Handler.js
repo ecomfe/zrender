@@ -26,7 +26,8 @@ define(function (require) {
             pinchX: event.pinchX,
             pinchY: event.pinchY,
             pinchScale: event.pinchScale,
-            wheelDelta: event.zrDelta
+            wheelDelta: event.zrDelta,
+            zrByTouch: event.zrByTouch
         };
     }
 
