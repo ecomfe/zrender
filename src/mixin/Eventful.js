@@ -263,6 +263,11 @@ define(function (require) {
      * @default null
      */
     /**
+     * @event module:zrender/mixin/Eventful#ondrag
+     * @type {Function}
+     * @default null
+     */
+    /**
      * @event module:zrender/mixin/Eventful#ondragstart
      * @type {Function}
      * @default null
