@@ -9,7 +9,6 @@ define(function(require) {
 
     var v2ApplyTransform = vec2.applyTransform;
     var mathMin = Math.min;
-    var mathAbs = Math.abs;
     var mathMax = Math.max;
     /**
      * @alias module:echarts/core/BoundingRect
@@ -71,8 +70,10 @@ define(function(require) {
          * @methods
          */
         applyTransform: (function () {
-            var min = [];
-            var max = [];
+            var lt = [];
+            var rb = [];
+            var lb = [];
+            var rt = [];
             return function (m) {
                 // In case usage like this
                 // el.getBoundingRect().applyTransform(el.transform)
@@ -80,18 +81,22 @@ define(function(require) {
                 if (!m) {
                     return;
                 }
-                min[0] = this.x;
-                min[1] = this.y;
-                max[0] = this.x + this.width;
-                max[1] = this.y + this.height;
+                lt[0] = lb[0] = this.x;
+                lt[1] = rt[1] = this.y;
+                rb[0] = rt[0] = this.x + this.width;
+                rb[1] = lb[1] = this.y + this.height;
 
-                v2ApplyTransform(min, min, m);
-                v2ApplyTransform(max, max, m);
+                v2ApplyTransform(lt, lt, m);
+                v2ApplyTransform(rb, rb, m);
+                v2ApplyTransform(lb, lb, m);
+                v2ApplyTransform(rt, rt, m);
 
-                this.x = mathMin(min[0], max[0]);
-                this.y = mathMin(min[1], max[1]);
-                this.width = mathAbs(max[0] - min[0]);
-                this.height = mathAbs(max[1] - min[1]);
+                this.x = mathMin(lt[0], rb[0], lb[0], rt[0]);
+                this.y = mathMin(lt[1], rb[1], lb[1], rt[1]);
+                var maxX = mathMax(lt[0], rb[0], lb[0], rt[0]);
+                var maxY = mathMax(lt[1], rb[1], lb[1], rt[1]);
+                this.width = maxX - this.x;
+                this.height = maxY - this.y;
             };
         })(),
 
