@@ -11,8 +11,9 @@ define(function(require) {
         '[object Error]': 1,
         '[object CanvasGradient]': 1,
         '[object CanvasPattern]': 1,
-        // In node-canvas Image can be Canvas.Image
-        '[object Image]': 1
+        // For node-canvas
+        '[object Image]': 1,
+        '[object Canvas]': 1
     };
 
     var TYPED_ARRAY = {
