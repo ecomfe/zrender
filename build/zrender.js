@@ -67,6 +67,8 @@ define('zrender/core/env',[],function () {
             || ua.match(/Trident\/.+?rv:(([\d.]+))/);
         var edge = ua.match(/Edge\/([\d.]+)/); // IE 12 and 12+
 
+        var weChat = (/micromessenger/i).test(ua);
+
         // Todo: clean this up with a better OS/browser seperation:
         // - discern (more) between multiple browsers on android
         // - decide if kindle fire in silk mode is android or not
@@ -89,18 +91,27 @@ define('zrender/core/env',[],function () {
         // if (silk) browser.silk = true, browser.version = silk[1];
         // if (!silk && os.android && ua.match(/Kindle Fire/)) browser.silk = true;
         // if (chrome) browser.chrome = true, browser.version = chrome[1];
-        if (firefox) browser.firefox = true, browser.version = firefox[1];
+        if (firefox) {
+            browser.firefox = true;
+            browser.version = firefox[1];
+        }
         // if (safari && (ua.match(/Safari/) || !!os.ios)) browser.safari = true;
         // if (webview) browser.webview = true;
-        
+
         if (ie) {
             browser.ie = true;
             browser.version = ie[1];
         }
-        
+
         if (edge) {
             browser.edge = true;
             browser.version = edge[1];
+        }
+
+        // It is difficult to detect WeChat in Win Phone precisely, because ua can
+        // not be set on win phone. So we do not consider Win Phone.
+        if (weChat) {
+            browser.weChat = true;
         }
 
         // os.tablet = !!(ipad || playbook || (android && !ua.match(/Mobile/)) ||
@@ -142,8 +153,21 @@ define('zrender/core/util',['require'],function(require) {
         '[object Error]': 1,
         '[object CanvasGradient]': 1,
         '[object CanvasPattern]': 1,
-        // In node-canvas Image can be Canvas.Image
-        '[object Image]': 1
+        // For node-canvas
+        '[object Image]': 1,
+        '[object Canvas]': 1
+    };
+
+    var TYPED_ARRAY = {
+        '[object Int8Array]': 1,
+        '[object Uint8Array]': 1,
+        '[object Uint8ClampedArray]': 1,
+        '[object Int16Array]': 1,
+        '[object Uint16Array]': 1,
+        '[object Int32Array]': 1,
+        '[object Uint32Array]': 1,
+        '[object Float32Array]': 1,
+        '[object Float64Array]': 1
     };
 
     var objToString = Object.prototype.toString;
@@ -156,35 +180,48 @@ define('zrender/core/util',['require'],function(require) {
     var nativeReduce = arrayProto.reduce;
 
     /**
+     * Those data types can be cloned:
+     *     Plain object, Array, TypedArray, number, string, null, undefined.
+     * Those data types will be assgined using the orginal data:
+     *     BUILTIN_OBJECT
+     * Instance of user defined class will be cloned to a plain object, without
+     * properties in prototype.
+     * Other data types is not supported (not sure what will happen).
+     *
+     * Caution: do not support clone Date, for performance consideration.
+     * (There might be a large number of date in `series.data`).
+     * So date should not be modified in and out of echarts.
+     *
      * @param {*} source
-     * @return {*} 拷贝后的新对象
+     * @return {*} new
      */
     function clone(source) {
-        if (typeof source == 'object' && source !== null) {
-            var result = source;
-            if (source instanceof Array) {
-                result = [];
-                for (var i = 0, len = source.length; i < len; i++) {
-                    result[i] = clone(source[i]);
-                }
-            }
-            else if (
-                !isBuildInObject(source)
-                // 是否为 dom 对象
-                && !isDom(source)
-            ) {
-                result = {};
-                for (var key in source) {
-                    if (source.hasOwnProperty(key)) {
-                        result[key] = clone(source[key]);
-                    }
-                }
-            }
-
-            return result;
+        if (source == null || typeof source != 'object') {
+            return source;
         }
 
-        return source;
+        var result = source;
+        var typeStr = objToString.call(source);
+
+        if (typeStr === '[object Array]') {
+            result = [];
+            for (var i = 0, len = source.length; i < len; i++) {
+                result[i] = clone(source[i]);
+            }
+        }
+        else if (TYPED_ARRAY[typeStr]) {
+            result = source.constructor.from(source);
+        }
+        else if (!BUILTIN_OBJECT[typeStr] && !isDom(source)) {
+            result = {};
+            for (var key in source) {
+                if (source.hasOwnProperty(key)) {
+                    result[key] = clone(source[key]);
+                }
+            }
+        }
+
+        return result;
     }
 
     /**
@@ -549,8 +586,9 @@ define('zrender/core/util',['require'],function(require) {
      * @return {boolean}
      */
     function isDom(value) {
-        return value && value.nodeType === 1
-               && typeof(value.nodeName) == 'string';
+        return typeof value === 'object'
+            && typeof value.nodeType === 'number'
+            && typeof value.ownerDocument === 'object';
     }
 
     /**
@@ -969,6 +1007,11 @@ define('zrender/mixin/Eventful',['require'],function (require) {
      * @default null
      */
     /**
+     * @event module:zrender/mixin/Eventful#ondrag
+     * @type {Function}
+     * @default null
+     */
+    /**
      * @event module:zrender/mixin/Eventful#ondragstart
      * @type {Function}
      * @default null
@@ -1030,7 +1073,8 @@ define('zrender/Handler',['require','./core/util','./mixin/Draggable','./mixin/E
             pinchX: event.pinchX,
             pinchY: event.pinchY,
             pinchScale: event.pinchScale,
-            wheelDelta: event.zrDelta
+            wheelDelta: event.zrDelta,
+            zrByTouch: event.zrByTouch
         };
     }
 
@@ -4158,7 +4202,6 @@ define('zrender/core/BoundingRect',['require','./vector','./matrix'],function(re
 
     var v2ApplyTransform = vec2.applyTransform;
     var mathMin = Math.min;
-    var mathAbs = Math.abs;
     var mathMax = Math.max;
     /**
      * @alias module:echarts/core/BoundingRect
@@ -4220,8 +4263,10 @@ define('zrender/core/BoundingRect',['require','./vector','./matrix'],function(re
          * @methods
          */
         applyTransform: (function () {
-            var min = [];
-            var max = [];
+            var lt = [];
+            var rb = [];
+            var lb = [];
+            var rt = [];
             return function (m) {
                 // In case usage like this
                 // el.getBoundingRect().applyTransform(el.transform)
@@ -4229,18 +4274,22 @@ define('zrender/core/BoundingRect',['require','./vector','./matrix'],function(re
                 if (!m) {
                     return;
                 }
-                min[0] = this.x;
-                min[1] = this.y;
-                max[0] = this.x + this.width;
-                max[1] = this.y + this.height;
+                lt[0] = lb[0] = this.x;
+                lt[1] = rt[1] = this.y;
+                rb[0] = rt[0] = this.x + this.width;
+                rb[1] = lb[1] = this.y + this.height;
 
-                v2ApplyTransform(min, min, m);
-                v2ApplyTransform(max, max, m);
+                v2ApplyTransform(lt, lt, m);
+                v2ApplyTransform(rb, rb, m);
+                v2ApplyTransform(lb, lb, m);
+                v2ApplyTransform(rt, rt, m);
 
-                this.x = mathMin(min[0], max[0]);
-                this.y = mathMin(min[1], max[1]);
-                this.width = mathAbs(max[0] - min[0]);
-                this.height = mathAbs(max[1] - min[1]);
+                this.x = mathMin(lt[0], rb[0], lb[0], rt[0]);
+                this.y = mathMin(lt[1], rb[1], lb[1], rt[1]);
+                var maxX = mathMax(lt[0], rb[0], lb[0], rt[0]);
+                var maxY = mathMax(lt[1], rb[1], lb[1], rt[1]);
+                this.width = maxX - this.x;
+                this.height = maxY - this.y;
             };
         })(),
 
@@ -4269,6 +4318,10 @@ define('zrender/core/BoundingRect',['require','./vector','./matrix'],function(re
          * @return {boolean}
          */
         intersect: function (b) {
+            if (!b) {
+                return false;
+            }
+
             if (!(b instanceof BoundingRect)) {
                 // Normalize negative width/height.
                 b = BoundingRect.create(b);
@@ -4615,7 +4668,6 @@ define('zrender/container/Group',['require','../core/util','../Element','../core
          */
         getBoundingRect: function (includeChildren) {
             // TODO Caching
-            // TODO Transform
             var rect = null;
             var tmpRect = new BoundingRect(0, 0, 0, 0);
             var children = includeChildren || this._children;
@@ -4629,6 +4681,13 @@ define('zrender/container/Group',['require','../core/util','../Element','../core
 
                 var childRect = child.getBoundingRect();
                 var transform = child.getLocalTransform(tmpMat);
+                // TODO
+                // The boundingRect cacluated by transforming original
+                // rect may be bigger than the actual bundingRect when rotation
+                // is used. (Consider a circle rotated aginst its center, where
+                // the actual boundingRect should be the same as that not be
+                // rotated.) But we can not find better approach to calculate
+                // actual boundingRect yet, considering performance.
                 if (transform) {
                     tmpRect.copy(childRect);
                     tmpRect.applyTransform(transform);
@@ -5628,7 +5687,7 @@ define('zrender/core/event',['require','../mixin/Eventful','./env'],function(req
         // When mousemove event triggered on ec tooltip, target is not zr painter.dom, and
         // offsetX/Y is relative to e.target, where the calculation of zrX/Y via offsetX/Y
         // is too complex. So css-transfrom dont support in this case temporarily.
-        if (calculate) {
+        if (calculate || !env.canvasSupported) {
             defaultGetZrXY(el, e, out);
         }
         // Caution: In FireFox, layerX/layerY Mouse position relative to the closest positioned
@@ -6239,13 +6298,16 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
 
             event = normalizeEvent(this.dom, event);
 
+            // Mark touch, which is useful in distinguish touch and
+            // mouse event in upper applicatoin.
+            event.zrByTouch = true;
+
             this._lastTouchMoment = new Date();
 
             processGesture(this, event, 'start');
 
-            // 平板补充一次findHover
-            // this._mobileFindFixed(event);
-            // Trigger mousemove and mousedown
+            // In touch device, trigger `mousemove`(`mouseover`) should
+            // be triggered.
             domHandlers.mousemove.call(this, event);
 
             domHandlers.mousedown.call(this, event);
@@ -6261,6 +6323,10 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
         touchmove: function (event) {
 
             event = normalizeEvent(this.dom, event);
+
+            // Mark touch, which is useful in distinguish touch and
+            // mouse event in upper applicatoin.
+            event.zrByTouch = true;
 
             processGesture(this, event, 'change');
 
@@ -6281,9 +6347,21 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
 
             event = normalizeEvent(this.dom, event);
 
+            // Mark touch, which is useful in distinguish touch and
+            // mouse event in upper applicatoin.
+            event.zrByTouch = true;
+
             processGesture(this, event, 'end');
 
             domHandlers.mouseup.call(this, event);
+
+            // Do not trigger `mouseout` here, in spite of `mousemove`(`mouseover`) is
+            // triggered in `touchstart`. This seems to be illogical, but by this mechanism,
+            // we can conveniently implement "hover style" in both PC and touch device just
+            // by listening to `mouseover` to add "hover style" and listening to `mouseout`
+            // to remove "hover style" on an element, without any additional code for
+            // compatibility. (`mouseout` will not be triggered in `touchend`, so "hover
+            // style" will remain for user view)
 
             // click event should always be triggered no matter whether
             // there is gestrue event. System click can not be prevented.
@@ -9044,9 +9122,10 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
  * https://github.com/ecomfe/zrender/blob/master/LICENSE.txt
  */
 // Global defines
-define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./Storage','./animation/Animation','./dom/HandlerProxy','./Painter'],function(require) {
+define('zrender/zrender',['require','./core/guid','./core/env','./core/util','./Handler','./Storage','./animation/Animation','./dom/HandlerProxy','./Painter'],function(require) {
     var guid = require('./core/guid');
     var env = require('./core/env');
+    var zrUtil = require('./core/util');
 
     var Handler = require('./Handler');
     var Storage = require('./Storage');
@@ -9066,7 +9145,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
     /**
      * @type {string}
      */
-    zrender.version = '3.2.1';
+    zrender.version = '3.2.2';
 
     /**
      * Initializing a zrender instance
@@ -9175,14 +9254,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
          */
         this.animation = new Animation({
             stage: {
-                update: function () {
-                    if (self._needsRefresh) {
-                        self.refreshImmediately();
-                    }
-                    if (self._needsRefreshHover) {
-                        self.refreshHoverImmediately();
-                    }
-                }
+                update: zrUtil.bind(this.flush, this)
             }
         });
         this.animation.start();
@@ -9274,6 +9346,18 @@ define('zrender/zrender',['require','./core/guid','./core/env','./Handler','./St
          */
         refresh: function() {
             this._needsRefresh = true;
+        },
+
+        /**
+         * Perform all refresh
+         */
+        flush: function () {
+            if (this._needsRefresh) {
+                this.refreshImmediately();
+            }
+            if (this._needsRefreshHover) {
+                this.refreshHoverImmediately();
+            }
         },
 
         /**
@@ -11885,7 +11969,7 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
             this.restoreTransform(ctx);
 
             // Draw rect text
-            if (style.text || style.text === 0) {
+            if (style.text != null) {
                 // var rect = this.getBoundingRect();
                 this.drawRectText(ctx, this.getBoundingRect());
             }
@@ -13769,7 +13853,7 @@ if (!require('../core/env').canvasSupported) {
         append(vmlRoot, vmlEl);
 
         // Text
-        if (style.text) {
+        if (style.text != null) {
             this.drawRectText(vmlRoot, this.getBoundingRect());
         }
         else {
@@ -13998,7 +14082,7 @@ if (!require('../core/env').canvasSupported) {
         append(vmlRoot, vmlEl);
 
         // Text
-        if (style.text) {
+        if (style.text != null) {
             this.drawRectText(vmlRoot, this.getBoundingRect());
         }
     };
@@ -14092,6 +14176,8 @@ if (!require('../core/env').canvasSupported) {
 
         var style = this.style;
         var text = style.text;
+        // Convert to string
+        text != null && (text += '');
         if (!text) {
             return;
         }
@@ -14302,7 +14388,7 @@ if (!require('../core/env').canvasSupported) {
 
     Text.prototype.brushVML = function (vmlRoot) {
         var style = this.style;
-        if (style.text) {
+        if (style.text != null) {
             this.drawRectText(vmlRoot, {
                 x: style.x || 0, y: style.y || 0,
                 width: 0, height: 0
