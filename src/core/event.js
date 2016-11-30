@@ -114,7 +114,10 @@ define(function(require) {
     }
 
     /**
-     * 停止冒泡和阻止默认行为
+     * preventDefault and stopPropagation.
+     * Notice: do not do that in zrender. Upper application
+     * do that if necessary.
+     *
      * @memberOf module:zrender/core/event
      * @method
      * @param {Event} e : event对象

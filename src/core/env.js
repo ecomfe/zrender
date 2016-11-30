@@ -119,9 +119,11 @@ define(function () {
             touchEventsSupported: 'ontouchstart' in window && !browser.ie && !browser.edge,
             // <http://caniuse.com/#search=pointer%20event>.
             pointerEventsSupported: 'onpointerdown' in window
-                // Firefox supports pointer but not by default,
-                // only MS browsers are reliable on pointer events currently.
-                && (browser.edge || (browser.ie && browser.version >= 10))
+                // Firefox supports pointer but not by default, only MS browsers are reliable on pointer
+                // events currently. So we dont use that on other browsers unless tested sufficiently.
+                // Although IE 10 supports pointer event, it use old style and is different from the
+                // standard. So we exclude that. (IE 10 is hardly used on touch device)
+                && (browser.edge || (browser.ie && browser.version >= 11))
         };
     }
 });
