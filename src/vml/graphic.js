@@ -356,7 +356,7 @@ if (!require('../core/env').canvasSupported) {
                     var y1 = cy + sin(endAngle) * ry;
 
                     var type = clockwise ? ' wa ' : ' at ';
-                    if (Math.abs(x0 - x1) < 1e-10) {
+                    if (Math.abs(x0 - x1) < 1e-4) {
                         // IE won't render arches drawn counter clockwise if x0 == x1.
                         if (Math.abs(endAngle - startAngle) > 1e-2) {
                             // Offset x0 by 1/80 of a pixel. Use something
@@ -367,7 +367,7 @@ if (!require('../core/env').canvasSupported) {
                         }
                         else {
                             // Avoid case draw full circle
-                            if (Math.abs(y0 - cy) < 1e-10) {
+                            if (Math.abs(y0 - cy) < 1e-4) {
                                 if ((clockwise && x0 < cx) || (!clockwise && x0 > cx)) {
                                     y1 -= 270 / Z;
                                 }
