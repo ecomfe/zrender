@@ -450,6 +450,15 @@ define(function(require) {
     }
 
     /**
+     * Whether is exactly NaN. Notice isNaN('a') returns true.
+     * @param {*} value
+     * @return {boolean}
+     */
+    function eqNaN(value) {
+        return value !== value;
+    }
+
+    /**
      * If value1 is not null, then return value1, otherwise judget rest of values.
      * @memberOf module:zrender/core/util
      * @return {*} Final value
@@ -510,6 +519,7 @@ define(function(require) {
         isFunction: isFunction,
         isBuildInObject: isBuildInObject,
         isDom: isDom,
+        eqNaN: eqNaN,
         retrieve: retrieve,
         assert: assert,
         noop: function () {}
