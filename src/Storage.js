@@ -130,14 +130,16 @@ define(function (require) {
                 }
 
                 var currentClipPath = userSetClipPath;
+                var parentClipPath = el;
                 // Recursively add clip path
                 while (currentClipPath) {
-                    // clipPath 的变换是基于 group 的变换
-                    // PENDING clipPath.clipPath 呢？
-                    currentClipPath.parent = el;
+                    // clipPath 的变换是基于使用这个 clipPath 的元素
+                    currentClipPath.parent = parentClipPath;
                     currentClipPath.updateTransform();
 
                     clipPaths.push(currentClipPath);
+
+                    parentClipPath = currentClipPath;
                     currentClipPath = currentClipPath.clipPath;
                 }
             }
