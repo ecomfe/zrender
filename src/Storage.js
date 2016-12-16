@@ -118,19 +118,31 @@ define(function (require) {
 
             el.afterUpdate();
 
-            var clipPath = el.clipPath;
-            if (clipPath) {
+            var userSetClipPath = el.clipPath;
+            if (userSetClipPath) {
                 // clipPath 的变换是基于 group 的变换
-                clipPath.parent = el;
-                clipPath.updateTransform();
+                userSetClipPath.parent = el;
+                userSetClipPath.updateTransform();
 
                 // FIXME 效率影响
                 if (clipPaths) {
                     clipPaths = clipPaths.slice();
-                    clipPaths.push(clipPath);
+                    if (userSetClipPath instanceof Array) {
+                        for (var i = 0; i < userSetClipPath.length; i++) {
+                            clipPaths.push(userSetClipPath[i]);
+                        }
+                    }
+                    else {
+                        clipPaths.push(userSetClipPath);
+                    }
                 }
                 else {
-                    clipPaths = [clipPath];
+                    if (userSetClipPath instanceof Array) {
+                        clipPaths = userSetClipPath.slice();
+                    }
+                    else {
+                        clipPaths = [userSetClipPath];
+                    }
                 }
             }
 
