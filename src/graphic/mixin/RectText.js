@@ -47,6 +47,7 @@ define(function (require) {
             var x;
             var y;
             var textPosition = style.textPosition;
+            var textOffset = style.textOffset;
             var distance = style.textDistance;
             var align = style.textAlign;
             var font = style.textFont || style.font;
@@ -100,6 +101,11 @@ define(function (require) {
                 // Default align and baseline when has textPosition
                 align = align || res.textAlign;
                 baseline = baseline || res.textBaseline;
+            }
+
+            if (textOffset) {
+                x += textOffset[0];
+                y += textOffset[1];
             }
 
             // Use canvas default left textAlign. Giving invalid value will cause state not change

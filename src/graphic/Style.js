@@ -135,6 +135,12 @@ define(function (require) {
         textPosition: 'inside',
 
         /**
+         * [x, y]
+         * @type {Array.<number>}
+         */
+        textOffset: null,
+
+        /**
          * @type {string}
          */
         textBaseline: null,
