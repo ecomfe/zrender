@@ -235,12 +235,15 @@ define(function(require) {
         // TODO Gap
         animate: function (target, options) {
             options = options || {};
+
             var animator = new Animator(
                 target,
                 options.loop,
                 options.getter,
                 options.setter
             );
+
+            this.addAnimator(animator);
 
             return animator;
         }
