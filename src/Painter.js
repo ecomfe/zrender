@@ -201,6 +201,8 @@
             // mainLayer.resize(width, height);
             layers[0] = mainLayer;
             zlevelList.push(0);
+
+            this._domRoot = root;
         }
 
         this.pathToImage = this._createPathToImage();
@@ -232,7 +234,7 @@
          * @return {HTMLDivElement}
          */
         getViewportRoot: function () {
-            return this._singleCanvas ? this._layers[0].dom : this._domRoot;
+            return this._domRoot;
         },
 
         /**
