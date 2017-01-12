@@ -134,9 +134,11 @@ define('zrender/core/env',[],function () {
             touchEventsSupported: 'ontouchstart' in window && !browser.ie && !browser.edge,
             // <http://caniuse.com/#search=pointer%20event>.
             pointerEventsSupported: 'onpointerdown' in window
-                // Firefox supports pointer but not by default,
-                // only MS browsers are reliable on pointer events currently.
-                && (browser.edge || (browser.ie && browser.version >= 10))
+                // Firefox supports pointer but not by default, only MS browsers are reliable on pointer
+                // events currently. So we dont use that on other browsers unless tested sufficiently.
+                // Although IE 10 supports pointer event, it use old style and is different from the
+                // standard. So we exclude that. (IE 10 is hardly used on touch device)
+                && (browser.edge || (browser.ie && browser.version >= 11))
         };
     }
 });
@@ -592,6 +594,15 @@ define('zrender/core/util',['require'],function(require) {
     }
 
     /**
+     * Whether is exactly NaN. Notice isNaN('a') returns true.
+     * @param {*} value
+     * @return {boolean}
+     */
+    function eqNaN(value) {
+        return value !== value;
+    }
+
+    /**
      * If value1 is not null, then return value1, otherwise judget rest of values.
      * @memberOf module:zrender/core/util
      * @return {*} Final value
@@ -652,6 +663,7 @@ define('zrender/core/util',['require'],function(require) {
         isFunction: isFunction,
         isBuildInObject: isBuildInObject,
         isDom: isDom,
+        eqNaN: eqNaN,
         retrieve: retrieve,
         assert: assert,
         noop: function () {}
@@ -5503,19 +5515,29 @@ define('zrender/Storage',['require','./core/util','./core/env','./container/Grou
 
             el.afterUpdate();
 
-            var clipPath = el.clipPath;
-            if (clipPath) {
-                // clipPath 的变换是基于 group 的变换
-                clipPath.parent = el;
-                clipPath.updateTransform();
+            var userSetClipPath = el.clipPath;
+            if (userSetClipPath) {
 
                 // FIXME 效率影响
                 if (clipPaths) {
                     clipPaths = clipPaths.slice();
-                    clipPaths.push(clipPath);
                 }
                 else {
-                    clipPaths = [clipPath];
+                    clipPaths = [];
+                }
+
+                var currentClipPath = userSetClipPath;
+                var parentClipPath = el;
+                // Recursively add clip path
+                while (currentClipPath) {
+                    // clipPath 的变换是基于使用这个 clipPath 的元素
+                    currentClipPath.parent = parentClipPath;
+                    currentClipPath.updateTransform();
+
+                    clipPaths.push(currentClipPath);
+
+                    parentClipPath = currentClipPath;
+                    currentClipPath = currentClipPath.clipPath;
                 }
             }
 
@@ -5769,7 +5791,10 @@ define('zrender/core/event',['require','../mixin/Eventful','./env'],function(req
     }
 
     /**
-     * 停止冒泡和阻止默认行为
+     * preventDefault and stopPropagation.
+     * Notice: do not do that in zrender. Upper application
+     * do that if necessary.
+     *
      * @memberOf module:zrender/core/event
      * @method
      * @param {Event} e : event对象
@@ -6046,12 +6071,15 @@ define('zrender/animation/Animation',['require','../core/util','../core/event','
         // TODO Gap
         animate: function (target, options) {
             options = options || {};
+
             var animator = new Animator(
                 target,
                 options.loop,
                 options.getter,
                 options.setter
             );
+
+            this.addAnimator(animator);
 
             return animator;
         }
@@ -6207,6 +6235,15 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
         'touchstart', 'touchend', 'touchmove'
     ];
 
+    var pointerEventNames = {
+        pointerdown: 1, pointerup: 1, pointermove: 1, pointerout: 1
+    };
+
+    var pointerHandlerNames = zrUtil.map(mouseHandlerNames, function (name) {
+        var nm = name.replace('mouse', 'pointer');
+        return pointerEventNames[nm] ? nm : name;
+    });
+
     function eventNameFix(name) {
         return (name === 'mousewheel' && env.browser.firefox) ? 'DOMMouseScroll' : name;
     }
@@ -6224,14 +6261,27 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
 
         stage === 'end' && gestureMgr.clear();
 
+        // Do not do any preventDefault here. Upper application do that if necessary.
         if (gestureInfo) {
-            // eventTool.stop(event);
             var type = gestureInfo.type;
             event.gestureEvent = type;
 
             proxy.handler.dispatchToElement(gestureInfo.target, type, gestureInfo.event);
         }
     }
+
+    // function onMSGestureChange(proxy, event) {
+    //     if (event.translationX || event.translationY) {
+    //         // mousemove is carried by MSGesture to reduce the sensitivity.
+    //         proxy.handler.dispatchToElement(event.target, 'mousemove', event);
+    //     }
+    //     if (event.scale !== 1) {
+    //         event.pinchX = event.offsetX;
+    //         event.pinchY = event.offsetY;
+    //         event.pinchScale = event.scale;
+    //         proxy.handler.dispatchToElement(event.target, 'pinch', event);
+    //     }
+    // }
 
     /**
      * Prevent mouse event from being dispatched after Touch Events action
@@ -6248,9 +6298,6 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
         }, 700);
     }
 
-    function useTouchEvent() {
-        return env.touchEventsSupported;
-    }
 
     var domHandlers = {
         /**
@@ -6295,7 +6342,6 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
         touchstart: function (event) {
             // Default mouse behaviour should not be disabled here.
             // For example, page may needs to be slided.
-
             event = normalizeEvent(this.dom, event);
 
             // Mark touch, which is useful in distinguish touch and
@@ -6307,7 +6353,7 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
             processGesture(this, event, 'start');
 
             // In touch device, trigger `mousemove`(`mouseover`) should
-            // be triggered.
+            // be triggered, and must before `mousedown` triggered.
             domHandlers.mousemove.call(this, event);
 
             domHandlers.mousedown.call(this, event);
@@ -6370,8 +6416,51 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
             }
 
             setTouchTimer(this);
+        },
+
+        pointerdown: function (event) {
+            domHandlers.mousedown.call(this, event);
+
+            // if (useMSGuesture(this, event)) {
+            //     this._msGesture.addPointer(event.pointerId);
+            // }
+        },
+
+        pointermove: function (event) {
+            // FIXME
+            // pointermove is so sensitive that it always triggered when
+            // tap(click) on touch screen, which affect some judgement in
+            // upper application. So, we dont support mousemove on MS touch
+            // device yet.
+            if (!isPointerFromTouch(event)) {
+                domHandlers.mousemove.call(this, event);
+            }
+        },
+
+        pointerup: function (event) {
+            domHandlers.mouseup.call(this, event);
+        },
+
+        pointerout: function (event) {
+            // pointerout will be triggered when tap on touch screen
+            // (IE11+/Edge on MS Surface) after click event triggered,
+            // which is inconsistent with the mousout behavior we defined
+            // in touchend. So we unify them.
+            // (check domHandlers.touchend for detailed explanation)
+            if (!isPointerFromTouch(event)) {
+                domHandlers.mouseout.call(this, event);
+            }
         }
     };
+
+    function isPointerFromTouch(event) {
+        var pointerType = event.pointerType;
+        return pointerType === 'pen' || pointerType === 'touch';
+    }
+
+    // function useMSGuesture(handlerProxy, event) {
+    //     return isPointerFromTouch(event) && !!handlerProxy._msGesture;
+    // }
 
     // Common handlers
     zrUtil.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick', 'contextmenu'], function (name) {
@@ -6388,15 +6477,17 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
      * @param {module:zrender/Handler} instance 控制类实例
      */
     function initDomHandler(instance) {
-        for (var i = 0; i < touchHandlerNames.length; i++) {
-            var name = touchHandlerNames[i];
+        zrUtil.each(touchHandlerNames, function (name) {
             instance._handlers[name] = zrUtil.bind(domHandlers[name], instance);
-        }
+        });
 
-        for (var i = 0; i < mouseHandlerNames.length; i++) {
-            var name = mouseHandlerNames[i];
+        zrUtil.each(pointerHandlerNames, function (name) {
+            instance._handlers[name] = zrUtil.bind(domHandlers[name], instance);
+        });
+
+        zrUtil.each(mouseHandlerNames, function (name) {
             instance._handlers[name] = makeMouseHandler(domHandlers[name], instance);
-        }
+        });
 
         function makeMouseHandler(fn, instance) {
             return function () {
@@ -6436,17 +6527,44 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
 
         initDomHandler(this);
 
-        if (useTouchEvent()) {
-            mountHandlers(touchHandlerNames, this);
+        if (env.pointerEventsSupported) { // Only IE11+/Edge
+            // 1. On devices that both enable touch and mouse (e.g., MS Surface and lenovo X240),
+            // IE11+/Edge do not trigger touch event, but trigger pointer event and mouse event
+            // at the same time.
+            // 2. On MS Surface, it probablely only trigger mousedown but no mouseup when tap on
+            // screen, which do not occurs in pointer event.
+            // So we use pointer event to both detect touch gesture and mouse behavior.
+            mountHandlers(pointerHandlerNames, this);
 
-            // Handler of 'mouseout' event is needed in touch mode, which will be mounted below.
-            // addEventListener(root, 'mouseout', this._mouseoutHandler);
+            // FIXME
+            // Note: MS Gesture require CSS touch-action set. But touch-action is not reliable,
+            // which does not prevent defuault behavior occasionally (which may cause view port
+            // zoomed in but use can not zoom it back). And event.preventDefault() does not work.
+            // So we have to not to use MSGesture and not to support touchmove and pinch on MS
+            // touch screen. And we only support click behavior on MS touch screen now.
+
+            // MS Gesture Event is only supported on IE11+/Edge and on Windows 8+.
+            // We dont support touch on IE on win7.
+            // See <https://msdn.microsoft.com/en-us/library/dn433243(v=vs.85).aspx>
+            // if (typeof MSGesture === 'function') {
+            //     (this._msGesture = new MSGesture()).target = dom; // jshint ignore:line
+            //     dom.addEventListener('MSGestureChange', onMSGestureChange);
+            // }
         }
+        else {
+            if (env.touchEventsSupported) {
+                mountHandlers(touchHandlerNames, this);
+                // Handler of 'mouseout' event is needed in touch mode, which will be mounted below.
+                // addEventListener(root, 'mouseout', this._mouseoutHandler);
+            }
 
-        // Considering some devices that both enable touch and mouse event (like MS Surface
-        // and lenovo X240, @see #2350), we make mouse event be always listened, otherwise
-        // mouse event can not be handle in those devices.
-        mountHandlers(mouseHandlerNames, this);
+            // 1. Considering some devices that both enable touch and mouse event (like on MS Surface
+            // and lenovo X240, @see #2350), we make mouse event be always listened, otherwise
+            // mouse event can not be handle in those devices.
+            // 2. On MS Surface, Chrome will trigger both touch event and mouse event. How to prevent
+            // mouseevent after touch event triggered, see `setTouchTimer`.
+            mountHandlers(mouseHandlerNames, this);
+        }
 
         function mountHandlers(handlerNames, instance) {
             zrUtil.each(handlerNames, function (name) {
@@ -6608,6 +6726,12 @@ define('zrender/graphic/Style',['require'],function (require) {
          * @default 'inside'
          */
         textPosition: 'inside',
+
+        /**
+         * [x, y]
+         * @type {Array.<number>}
+         */
+        textOffset: null,
 
         /**
          * @type {string}
@@ -7357,6 +7481,7 @@ define('zrender/graphic/mixin/RectText',['require','../../contain/text','../../c
             var x;
             var y;
             var textPosition = style.textPosition;
+            var textOffset = style.textOffset;
             var distance = style.textDistance;
             var align = style.textAlign;
             var font = style.textFont || style.font;
@@ -7410,6 +7535,11 @@ define('zrender/graphic/mixin/RectText',['require','../../contain/text','../../c
                 // Default align and baseline when has textPosition
                 align = align || res.textAlign;
                 baseline = baseline || res.textBaseline;
+            }
+
+            if (textOffset) {
+                x += textOffset[0];
+                y += textOffset[1];
             }
 
             // Use canvas default left textAlign. Giving invalid value will cause state not change
@@ -8250,6 +8380,8 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
             // mainLayer.resize(width, height);
             layers[0] = mainLayer;
             zlevelList.push(0);
+
+            this._domRoot = root;
         }
 
         this.pathToImage = this._createPathToImage();
@@ -8281,7 +8413,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
          * @return {HTMLDivElement}
          */
         getViewportRoot: function () {
-            return this._singleCanvas ? this._layers[0].dom : this._domRoot;
+            return this._domRoot;
         },
 
         /**
@@ -9145,7 +9277,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./core/util','./
     /**
      * @type {string}
      */
-    zrender.version = '3.2.2';
+    zrender.version = '3.3.0';
 
     /**
      * Initializing a zrender instance
@@ -10660,7 +10792,7 @@ define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./Boun
             this._ctx && this._ctx.arc(cx, cy, r, startAngle, endAngle, anticlockwise);
 
             this._xi = mathCos(endAngle) * r + cx;
-            this._xi = mathSin(endAngle) * r + cx;
+            this._yi = mathSin(endAngle) * r + cx;
             return this;
         },
 
@@ -12365,9 +12497,19 @@ define('zrender/graphic/shape/Circle',['require','../Path'],function (require) {
  * @module zrender/graphic/shape/Sector
  */
 
-define('zrender/graphic/shape/Sector',['require','../Path'],function (require) {
+define('zrender/graphic/shape/Sector',['require','../../core/env','../Path'],function (require) {
 
-    return require('../Path').extend({
+    var env = require('../../core/env');
+    var Path = require('../Path');
+
+    var shadowTemp = [
+        ['shadowBlur', 0],
+        ['shadowColor', '#000'],
+        ['shadowOffsetX', 0],
+        ['shadowOffsetY', 0]
+    ];
+
+    return Path.extend({
 
         type: 'sector',
 
@@ -12387,6 +12529,49 @@ define('zrender/graphic/shape/Sector',['require','../Path'],function (require) {
 
             clockwise: true
         },
+
+        brush: (env.browser.ie && env.browser.version >= 11) // version: '11.0'
+            // Fix weird bug in some version of IE11 (like 11.0.9600.17801),
+            // where exception "unexpected call to method or property access"
+            // might be thrown when calling ctx.fill after a path whose area size
+            // is zero is drawn and ctx.clip() is called and shadowBlur is set.
+            // (e.g.,
+            //  ctx.moveTo(10, 10);
+            //  ctx.lineTo(20, 10);
+            //  ctx.closePath();
+            //  ctx.clip();
+            //  ctx.shadowBlur = 10;
+            //  ...
+            //  ctx.fill();
+            // )
+            ? function () {
+                var clipPaths = this.__clipPaths;
+                var style = this.style;
+                var modified;
+
+                if (clipPaths) {
+                    for (var i = 0; i < clipPaths.length; i++) {
+                        var shape = clipPaths[i] && clipPaths[i].shape;
+                        if (shape && shape.startAngle === shape.endAngle) {
+                            for (var j = 0; j < shadowTemp.length; j++) {
+                                shadowTemp[j][2] = style[shadowTemp[j][0]];
+                                style[shadowTemp[j][0]] = shadowTemp[j][1];
+                            }
+                            modified = true;
+                            break;
+                        }
+                    }
+                }
+
+                Path.prototype.brush.apply(this, arguments);
+
+                if (modified) {
+                    for (var j = 0; j < shadowTemp.length; j++) {
+                        style[shadowTemp[j][0]] = shadowTemp[j][2];
+                    }
+                }
+            }
+            : Path.prototype.brush,
 
         buildPath: function (ctx, shape) {
 
@@ -13711,7 +13896,7 @@ if (!require('../core/env').canvasSupported) {
                     var y1 = cy + sin(endAngle) * ry;
 
                     var type = clockwise ? ' wa ' : ' at ';
-                    if (Math.abs(x0 - x1) < 1e-10) {
+                    if (Math.abs(x0 - x1) < 1e-4) {
                         // IE won't render arches drawn counter clockwise if x0 == x1.
                         if (Math.abs(endAngle - startAngle) > 1e-2) {
                             // Offset x0 by 1/80 of a pixel. Use something
@@ -13722,7 +13907,7 @@ if (!require('../core/env').canvasSupported) {
                         }
                         else {
                             // Avoid case draw full circle
-                            if (Math.abs(y0 - cy) < 1e-10) {
+                            if (Math.abs(y0 - cy) < 1e-4) {
                                 if ((clockwise && x0 < cx) || (!clockwise && x0 > cx)) {
                                     y1 -= 270 / Z;
                                 }
