@@ -84,18 +84,29 @@ define(function (require) {
                 // }
                 // Else is canvas
 
-                var width = style.width || image.width;
-                var height = style.height || image.height;
                 var x = style.x || 0;
                 var y = style.y || 0;
                 // 图片加载失败
                 if (!image.width || !image.height) {
                     return;
                 }
+                var width = style.width;
+                var height = style.height;
+                var aspect = image.width / image.height;
+                if (width == null && height != null) {
+                    // Keep image/height ratio
+                    width = height * aspect;
+                }
+                else if (height == null && width != null) {
+                    height = width / aspect;
+                }
+                else if (width == null && height == null) {
+                    width = image.width;
+                    height = image.height;
+                }
 
                 // 设置transform
                 this.setTransform(ctx);
-
 
                 if (style.sWidth && style.sHeight) {
                     var sx = style.sx || 0;
@@ -119,14 +130,6 @@ define(function (require) {
                 }
                 else {
                     ctx.drawImage(image, x, y, width, height);
-                }
-
-                // 如果没设置宽和高的话自动根据图片宽高设置
-                if (style.width == null) {
-                    style.width = width;
-                }
-                if (style.height == null) {
-                    style.height = height;
                 }
 
                 this.restoreTransform(ctx);
