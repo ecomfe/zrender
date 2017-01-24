@@ -396,11 +396,11 @@
 
             this._clearProgressive();
 
-            this.eachBuildinLayer(preProcessLayer);
+            this.eachBuiltinLayer(preProcessLayer);
 
             this._doPaintList(list, paintAll);
 
-            this.eachBuildinLayer(postProcessLayer);
+            this.eachBuiltinLayer(postProcessLayer);
         },
 
         _doPaintList: function (list, paintAll) {
@@ -685,7 +685,7 @@
         },
 
         // Iterate each buildin layer
-        eachBuildinLayer: function (cb, context) {
+        eachBuiltinLayer: function (cb, context) {
             var zlevelList = this._zlevelList;
             var layer;
             var z;
@@ -730,7 +730,7 @@
             var elCountsLastFrame = {};
             var progressiveElCountsLastFrame = {};
 
-            this.eachBuildinLayer(function (layer, z) {
+            this.eachBuiltinLayer(function (layer, z) {
                 elCountsLastFrame[z] = layer.elCount;
                 layer.elCount = 0;
                 layer.__dirty = false;
@@ -804,7 +804,7 @@
             }
 
             // 层中的元素数量有发生变化
-            this.eachBuildinLayer(function (layer, z) {
+            this.eachBuiltinLayer(function (layer, z) {
                 if (elCountsLastFrame[z] !== layer.elCount) {
                     layer.__dirty = true;
                 }
@@ -825,7 +825,7 @@
          * 清除hover层外所有内容
          */
         clear: function () {
-            this.eachBuildinLayer(this._clearLayer);
+            this.eachBuiltinLayer(this._clearLayer);
             return this;
         },
 
