@@ -33,7 +33,7 @@
             return false;
         }
 
-        if (layer.isBuildin) {
+        if (layer.__builtin__) {
             return true;
         }
 
@@ -253,7 +253,7 @@
             for (var i = 0; i < zlevelList.length; i++) {
                 var z = zlevelList[i];
                 var layer = this._layers[z];
-                if (!layer.isBuildin && layer.refresh) {
+                if (!layer.__builtin__ && layer.refresh) {
                     layer.refresh();
                 }
             }
@@ -456,7 +456,7 @@
                     currentZLevel = elZLevel;
                     currentLayer = this.getLayer(currentZLevel);
 
-                    if (!currentLayer.isBuildin) {
+                    if (!currentLayer.__builtin__) {
                         log(
                             'ZLevel ' + currentZLevel
                             + ' has been used by unkown layer ' + currentLayer.id
@@ -601,7 +601,7 @@
             if (!layer) {
                 // Create a new layer
                 layer = new Layer('zr_' + zlevel, this, this.dpr);
-                layer.isBuildin = true;
+                layer.__builtin__ = true;
 
                 if (this._layerConfig[zlevel]) {
                     util.merge(layer, this._layerConfig[zlevel], true);
@@ -693,7 +693,7 @@
             for (i = 0; i < zlevelList.length; i++) {
                 z = zlevelList[i];
                 layer = this._layers[z];
-                if (layer.isBuildin) {
+                if (layer.__builtin__) {
                     cb.call(context, layer, z);
                 }
             }
@@ -708,7 +708,7 @@
             for (i = 0; i < zlevelList.length; i++) {
                 z = zlevelList[i];
                 layer = this._layers[z];
-                if (! layer.isBuildin) {
+                if (!layer.__builtin__) {
                     cb.call(context, layer, z);
                 }
             }

@@ -106,8 +106,8 @@ define(function(require) {
                     && !isArray(targetProp)
                     && !isDom(sourceProp)
                     && !isDom(targetProp)
-                    && !isBuildInObject(sourceProp)
-                    && !isBuildInObject(targetProp)
+                    && !isBuiltInObject(sourceProp)
+                    && !isBuiltInObject(targetProp)
                 ) {
                     // 如果需要递归覆盖，就递归调用merge
                     merge(targetProp, sourceProp, overwrite);
@@ -434,7 +434,7 @@ define(function(require) {
      * @param {*} value
      * @return {boolean}
      */
-    function isBuildInObject(value) {
+    function isBuiltInObject(value) {
         return !!BUILTIN_OBJECT[objToString.call(value)];
     }
 
@@ -517,7 +517,7 @@ define(function(require) {
         isString: isString,
         isObject: isObject,
         isFunction: isFunction,
-        isBuildInObject: isBuildInObject,
+        isBuiltInObject: isBuiltInObject,
         isDom: isDom,
         eqNaN: eqNaN,
         retrieve: retrieve,
