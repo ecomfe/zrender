@@ -348,9 +348,8 @@ define(function(require) {
          * @param {number} width
          * @param {number} height
          */
-        pathToImage: function(e, width, height) {
-            var id = guid();
-            return this.painter.pathToImage(id, e, width, height);
+        pathToImage: function(e, dpr) {
+            return this.painter.pathToImage(e, dpr);
         },
 
         /**

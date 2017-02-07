@@ -205,8 +205,6 @@
             this._domRoot = root;
         }
 
-        this.pathToImage = this._createPathToImage();
-
         // Layers for progressive rendering
         this._progressiveLayers = [];
 
@@ -1005,7 +1003,9 @@
             ) | 0;
         },
 
-        _pathToImage: function (id, path, dpr) {
+        pathToImage: function (path, dpr) {
+            dpr = dpr || this.dpr;
+
             var canvas = document.createElement('canvas');
             var ctx = canvas.getContext('2d');
             var rect = path.getBoundingRect();
@@ -1027,6 +1027,7 @@
 
             ctx.scale(dpr, dpr);
             ctx.clearRect(0, 0, width, height);
+            ctx.dpr = dpr;
 
             var pathTransform = {
                 position: path.position,
@@ -1043,7 +1044,6 @@
 
             var ImageShape = require('./graphic/Image');
             var imgShape = new ImageShape({
-                id: id,
                 style: {
                     x: 0,
                     y: 0,
@@ -1064,16 +1064,6 @@
             }
 
             return imgShape;
-        },
-
-        _createPathToImage: function () {
-            var me = this;
-            return function (id, e) {
-                var img = me._pathToImage(
-                    id, e, me.dpr
-                );
-                return img;
-            };
         }
     };
 
