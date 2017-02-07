@@ -1005,23 +1005,38 @@
             ) | 0;
         },
 
-        _pathToImage: function (id, path, width, height, dpr) {
+        _pathToImage: function (id, path, dpr) {
             var canvas = document.createElement('canvas');
             var ctx = canvas.getContext('2d');
+            var rect = path.getBoundingRect();
+            var style = path.style;
+            var shadowBlurSize = style.shadowBlur;
+            var shadowOffsetX = style.shadowOffsetX;
+            var shadowOffsetY = style.shadowOffsetY;
+            var lineWidth = style.hasStroke() ? style.lineWidth : 0;
+
+            var leftMargin = Math.max(lineWidth / 2, -shadowOffsetX + shadowBlurSize);
+            var rightMargin = Math.max(lineWidth / 2, shadowOffsetX + shadowBlurSize);
+            var topMargin = Math.max(lineWidth / 2, -shadowOffsetY + shadowBlurSize);
+            var bottomMargin = Math.max(lineWidth / 2, shadowOffsetY + shadowBlurSize);
+            var width = rect.width + leftMargin + rightMargin;
+            var height = rect.height + topMargin + bottomMargin;
 
             canvas.width = width * dpr;
             canvas.height = height * dpr;
 
-            ctx.clearRect(0, 0, width * dpr, height * dpr);
+            ctx.scale(dpr, dpr);
+            ctx.clearRect(0, 0, width, height);
 
             var pathTransform = {
                 position: path.position,
                 rotation: path.rotation,
                 scale: path.scale
             };
-            path.position = [0, 0, 0];
+            path.position = [leftMargin - rect.x, topMargin - rect.y];
             path.rotation = 0;
             path.scale = [1, 1];
+            path.updateTransform();
             if (path) {
                 path.brush(ctx);
             }
@@ -1053,11 +1068,11 @@
 
         _createPathToImage: function () {
             var me = this;
-
-            return function (id, e, width, height) {
-                return me._pathToImage(
-                    id, e, width, height, me.dpr
+            return function (id, e) {
+                var img = me._pathToImage(
+                    id, e, me.dpr
                 );
+                return img;
             };
         }
     };
