@@ -3,6 +3,8 @@
  */
 define(function(require) {
 
+    var LRU = require('../core/LRU');
+
     var kCSSColorTable = {
         'transparent': [0,0,0,0], 'aliceblue': [240,248,255,1],
         'antiquewhite': [250,235,215,1], 'aqua': [0,255,255,1],
@@ -132,15 +134,40 @@ define(function(require) {
         return a + (b - a) * p;
     }
 
+    function setRgba(out, r, g, b, a) {
+        out[0] = r; out[1] = g; out[2] = b; out[3] = a;
+        return out;
+    }
+    function copyRgba(out, a) {
+        out[0] = a[0]; out[1] = a[1]; out[2] = a[2]; out[3] = a[3];
+        return out;
+    }
+    var colorCache = new LRU(20);
+    var lastRemovedArr = null;
+    function putToCache(colorStr, rgbaArr) {
+        // Reuse removed array
+        if (lastRemovedArr) {
+            copyRgba(lastRemovedArr, rgbaArr);
+        }
+        lastRemovedArr = colorCache.put(colorStr, lastRemovedArr || (rgbaArr.slice()));
+    }
     /**
      * @param {string} colorStr
+     * @param {Array.<number>} out
      * @return {Array.<number>}
      * @memberOf module:zrender/util/color
      */
-    function parse(colorStr) {
+    function parse(colorStr, rgbaArr) {
         if (!colorStr) {
             return;
         }
+        rgbaArr = rgbaArr || [];
+
+        var cached = colorCache.get(colorStr);
+        if (cached) {
+            return copyRgba(rgbaArr, cached);
+        }
+
         // colorStr may be not string
         colorStr = colorStr + '';
         // Remove all whitespace, not compliant, but should just be more accepting.
@@ -148,7 +175,9 @@ define(function(require) {
 
         // Color keywords (and transparent) lookup.
         if (str in kCSSColorTable) {
-            return kCSSColorTable[str].slice();  // dup.
+            copyRgba(rgbaArr, kCSSColorTable[str]);
+            putToCache(colorStr, rgbaArr);
+            return rgbaArr;
         }
 
         // #abc and #abc123 syntax.
@@ -156,26 +185,32 @@ define(function(require) {
             if (str.length === 4) {
                 var iv = parseInt(str.substr(1), 16);  // TODO(deanm): Stricter parsing.
                 if (!(iv >= 0 && iv <= 0xfff)) {
+                    setRgba(rgbaArr, 0, 0, 0, 1);
                     return;  // Covers NaN.
                 }
-                return [
+                setRgba(rgbaArr,
                     ((iv & 0xf00) >> 4) | ((iv & 0xf00) >> 8),
                     (iv & 0xf0) | ((iv & 0xf0) >> 4),
                     (iv & 0xf) | ((iv & 0xf) << 4),
                     1
-                ];
+                );
+                putToCache(colorStr, rgbaArr);
+                return rgbaArr;
             }
             else if (str.length === 7) {
                 var iv = parseInt(str.substr(1), 16);  // TODO(deanm): Stricter parsing.
                 if (!(iv >= 0 && iv <= 0xffffff)) {
+                    setRgba(rgbaArr, 0, 0, 0, 1);
                     return;  // Covers NaN.
                 }
-                return [
+                setRgba(rgbaArr,
                     (iv & 0xff0000) >> 16,
                     (iv & 0xff00) >> 8,
                     iv & 0xff,
                     1
-                ];
+                );
+                putToCache(colorStr, rgbaArr);
+                return rgbaArr;
             }
 
             return;
@@ -188,44 +223,56 @@ define(function(require) {
             switch (fname) {
                 case 'rgba':
                     if (params.length !== 4) {
+                        setRgba(rgbaArr, 0, 0, 0, 1);
                         return;
                     }
                     alpha = parseCssFloat(params.pop()); // jshint ignore:line
                 // Fall through.
                 case 'rgb':
                     if (params.length !== 3) {
+                        setRgba(rgbaArr, 0, 0, 0, 1);
                         return;
                     }
-                    return [
+                    setRgba(rgbaArr,
                         parseCssInt(params[0]),
                         parseCssInt(params[1]),
                         parseCssInt(params[2]),
                         alpha
-                    ];
+                    );
+                    putToCache(colorStr, rgbaArr);
+                    return rgbaArr;
                 case 'hsla':
                     if (params.length !== 4) {
+                        setRgba(rgbaArr, 0, 0, 0, 1);
                         return;
                     }
                     params[3] = parseCssFloat(params[3]);
-                    return hsla2rgba(params);
+                    hsla2rgba(params, rgbaArr);
+                    putToCache(colorStr, rgbaArr);
+                    return rgbaArr;
                 case 'hsl':
                     if (params.length !== 3) {
+                        setRgba(rgbaArr, 0, 0, 0, 1);
                         return;
                     }
-                    return hsla2rgba(params);
+                    hsla2rgba(params, rgbaArr);
+                    putToCache(colorStr, rgbaArr);
+                    return rgbaArr;
                 default:
                     return;
             }
         }
 
+        setRgba(rgbaArr, 0, 0, 0, 1);
         return;
     }
 
     /**
      * @param {Array.<number>} hsla
+     * @param {Array.<number>} rgba
      * @return {Array.<number>} rgba
      */
-    function hsla2rgba(hsla) {
+    function hsla2rgba(hsla, rgba) {
         var h = (((parseFloat(hsla[0]) % 360) + 360) % 360) / 360;  // 0 .. 1
         // NOTE(deanm): According to the CSS spec s/l should only be
         // percentages, but we don't bother and let float or percentage.
@@ -234,11 +281,13 @@ define(function(require) {
         var m2 = l <= 0.5 ? l * (s + 1) : l + s - l * s;
         var m1 = l * 2 - m2;
 
-        var rgba = [
+        rgba = rgba || [];
+        setRgba(rgba,
             clampCssByte(cssHueToRgb(m1, m2, h + 1 / 3) * 255),
             clampCssByte(cssHueToRgb(m1, m2, h) * 255),
-            clampCssByte(cssHueToRgb(m1, m2, h - 1 / 3) * 255)
-        ];
+            clampCssByte(cssHueToRgb(m1, m2, h - 1 / 3) * 255),
+            1
+        );
 
         if (hsla.length === 4) {
             rgba[3] = hsla[3];

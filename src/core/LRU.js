@@ -1,12 +1,12 @@
 // Simple LRU cache use doubly linked list
 // @module zrender/core/LRU
-define(function(require) {
+define(function (require) {
 
     /**
      * Simple double linked list. Compared with array, it has O(1) remove operation.
      * @constructor
      */
-    var LinkedList = function() {
+    var LinkedList = function () {
 
         /**
          * @type {module:zrender/core/LRU~Entry}
@@ -27,7 +27,7 @@ define(function(require) {
      * @param  {} val
      * @return {module:zrender/core/LRU~Entry}
      */
-    linkedListProto.insert = function(val) {
+    linkedListProto.insert = function (val) {
         var entry = new Entry(val);
         this.insertEntry(entry);
         return entry;
@@ -37,13 +37,14 @@ define(function(require) {
      * Insert an entry at the tail
      * @param  {module:zrender/core/LRU~Entry} entry
      */
-    linkedListProto.insertEntry = function(entry) {
+    linkedListProto.insertEntry = function (entry) {
         if (!this.head) {
             this.head = this.tail = entry;
         }
         else {
             this.tail.next = entry;
             entry.prev = this.tail;
+            entry.next = null;
             this.tail = entry;
         }
         this._len++;
@@ -53,7 +54,7 @@ define(function(require) {
      * Remove entry.
      * @param  {module:zrender/core/LRU~Entry} entry
      */
-    linkedListProto.remove = function(entry) {
+    linkedListProto.remove = function (entry) {
         var prev = entry.prev;
         var next = entry.next;
         if (prev) {
@@ -77,7 +78,7 @@ define(function(require) {
     /**
      * @return {number}
      */
-    linkedListProto.len = function() {
+    linkedListProto.len = function () {
         return this._len;
     };
 
@@ -85,7 +86,7 @@ define(function(require) {
      * @constructor
      * @param {} val
      */
-    var Entry = function(val) {
+    var Entry = function (val) {
         /**
          * @type {}
          */
@@ -107,13 +108,15 @@ define(function(require) {
      * @constructor
      * @alias module:zrender/core/LRU
      */
-    var LRU = function(maxSize) {
+    var LRU = function (maxSize) {
 
         this._list = new LinkedList();
 
         this._map = {};
 
         this._maxSize = maxSize || 10;
+
+        this._lastRemovedEntry = null;
     };
 
     var LRUProto = LRU.prototype;
@@ -121,30 +124,46 @@ define(function(require) {
     /**
      * @param  {string} key
      * @param  {} value
+     * @return {} Removed value
      */
-    LRUProto.put = function(key, value) {
+    LRUProto.put = function (key, value) {
         var list = this._list;
         var map = this._map;
+        var removed = null;
         if (map[key] == null) {
             var len = list.len();
+            // Reuse last removed entry
+            var entry = this._lastRemovedEntry;
+
             if (len >= this._maxSize && len > 0) {
                 // Remove the least recently used
                 var leastUsedEntry = list.head;
                 list.remove(leastUsedEntry);
                 delete map[leastUsedEntry.key];
+
+                removed = leastUsedEntry.value;
+                this._lastRemovedEntry = leastUsedEntry;
             }
 
-            var entry = list.insert(value);
+            if (entry) {
+                entry.value = value;
+            }
+            else {
+                entry = new Entry(value);
+            }
             entry.key = key;
+            list.insertEntry(entry);
             map[key] = entry;
         }
+
+        return removed;
     };
 
     /**
      * @param  {string} key
      * @return {}
      */
-    LRUProto.get = function(key) {
+    LRUProto.get = function (key) {
         var entry = this._map[key];
         var list = this._list;
         if (entry != null) {
@@ -161,7 +180,7 @@ define(function(require) {
     /**
      * Clear the cache
      */
-    LRUProto.clear = function() {
+    LRUProto.clear = function () {
         this._list.clear();
         this._map = {};
     };
