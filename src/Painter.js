@@ -187,6 +187,12 @@
             root.appendChild(domRoot);
         }
         else {
+            if (opts.width != null) {
+                root.width = opts.width;
+            }
+            if (opts.height != null) {
+                root.height = opts.height;
+            }
             // Use canvas width and height directly
             var width = root.width;
             var height = root.height;
@@ -647,28 +653,33 @@
             }
             zlevelList.splice(i + 1, 0, zlevel);
 
-            if (prevLayer) {
-                var prevDom = prevLayer.dom;
-                if (prevDom.nextSibling) {
-                    domRoot.insertBefore(
-                        layer.dom,
-                        prevDom.nextSibling
-                    );
-                }
-                else {
-                    domRoot.appendChild(layer.dom);
-                }
-            }
-            else {
-                if (domRoot.firstChild) {
-                    domRoot.insertBefore(layer.dom, domRoot.firstChild);
-                }
-                else {
-                    domRoot.appendChild(layer.dom);
-                }
-            }
-
             layersMap[zlevel] = layer;
+
+            // Vitual layer will not directly show on the screen.
+            // (It can be a WebGL layer and assigned to a ZImage element)
+            // But it still under management of zrender.
+            if (!layer.virtual) {
+                if (prevLayer) {
+                    var prevDom = prevLayer.dom;
+                    if (prevDom.nextSibling) {
+                        domRoot.insertBefore(
+                            layer.dom,
+                            prevDom.nextSibling
+                        );
+                    }
+                    else {
+                        domRoot.appendChild(layer.dom);
+                    }
+                }
+                else {
+                    if (domRoot.firstChild) {
+                        domRoot.insertBefore(layer.dom, domRoot.firstChild);
+                    }
+                    else {
+                        domRoot.appendChild(layer.dom);
+                    }
+                }
+            }
         },
 
         // Iterate each layer
