@@ -70,7 +70,7 @@ define(function(require) {
         else if (TYPED_ARRAY[typeStr]) {
             result = source.constructor.from(source);
         }
-        else if (!BUILTIN_OBJECT[typeStr] && !isDom(source)) {
+        else if (!BUILTIN_OBJECT[typeStr] && !isPrimitive(source) && !isDom(source)) {
             result = {};
             for (var key in source) {
                 if (source.hasOwnProperty(key)) {
@@ -108,6 +108,8 @@ define(function(require) {
                     && !isDom(targetProp)
                     && !isBuiltInObject(sourceProp)
                     && !isBuiltInObject(targetProp)
+                    && !isPrimitive(sourceProp)
+                    && !isPrimitive(targetProp)
                 ) {
                     // 如果需要递归覆盖，就递归调用merge
                     merge(targetProp, sourceProp, overwrite);
@@ -493,6 +495,18 @@ define(function(require) {
         }
     }
 
+    var primitiveKey = '__ec_primitive__';
+    /**
+     * Set an object as primitive to be ignored traversing children in clone or merge
+     */
+    function setAsPrimitive(obj) {
+        obj[primitiveKey] = true;
+    }
+
+    function isPrimitive(obj) {
+        return obj[primitiveKey];
+    }
+
     var util = {
         inherits: inherits,
         mixin: mixin,
@@ -522,6 +536,7 @@ define(function(require) {
         eqNaN: eqNaN,
         retrieve: retrieve,
         assert: assert,
+        setAsPrimitive: setAsPrimitive,
         noop: function () {}
     };
     return util;
