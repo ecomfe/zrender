@@ -502,9 +502,12 @@ define(function(require) {
     /**
      * @param {Array.<string>} colors Color list.
      * @param {string} type 'rgba', 'hsva', ...
-     * @return {string} Result color.
+     * @return {string} Result color. (If input illegal, return undefined).
      */
     function stringify(arrColor, type) {
+        if (!arrColor) {
+            return;
+        }
         var colorStr = arrColor[0] + ',' + arrColor[1] + ',' + arrColor[2];
         if (type === 'rgba' || type === 'hsva' || type === 'hsla') {
             colorStr += ',' + arrColor[3];
