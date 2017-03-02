@@ -403,12 +403,12 @@ define(function(require) {
      * @return {Array.<number>}
      */
     function fastMapToColor(normalizedValue, colors, out) {
+        out = out || [0, 0, 0, 0];
         if (!(colors && colors.length)
             || !(normalizedValue >= 0 && normalizedValue <= 1)
         ) {
-            return;
+            return out;
         }
-        out = out || [0, 0, 0, 0];
         var value = normalizedValue * (colors.length - 1);
         var leftIndex = Math.floor(value);
         var rightIndex = Math.ceil(value);

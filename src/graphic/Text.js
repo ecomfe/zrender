@@ -77,6 +77,7 @@ define(function (require) {
                 if (ctx.textAlign !== textAlign) {
                     ctx.textAlign = 'left';
                 }
+                // FIXME in text contain default is top
                 ctx.textBaseline = textBaseline || 'alphabetic';
                 // Use canvas default alphabetic baseline
                 if (ctx.textBaseline !== textBaseline) {
