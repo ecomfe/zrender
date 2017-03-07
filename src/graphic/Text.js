@@ -88,8 +88,9 @@ define(function (require) {
 
                 var textLines = text.split('\n');
                 for (var i = 0; i < textLines.length; i++) {
-                    style.hasFill() && ctx.fillText(textLines[i], x, y);
+                    // Fill after stroke so the outline will not cover the main part.
                     style.hasStroke() && ctx.strokeText(textLines[i], x, y);
+                    style.hasFill() && ctx.fillText(textLines[i], x, y);
                     y += lineHeight;
                 }
 

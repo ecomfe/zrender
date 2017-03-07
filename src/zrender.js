@@ -118,6 +118,7 @@ define(function(require) {
         var storage = new Storage();
 
         var rendererType = opts.renderer;
+        // TODO WebGL
         if (useVML) {
             if (!painterCtors.vml) {
                 throw new Error('You need to require \'zrender/vml/vml\' to support IE8');
