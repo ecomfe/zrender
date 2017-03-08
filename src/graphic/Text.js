@@ -99,8 +99,8 @@ define(function (require) {
         },
 
         getBoundingRect: function () {
+            var style = this.style;
             if (!this._rect) {
-                var style = this.style;
                 var textVerticalAlign = style.textVerticalAlign;
                 var rect = textContain.getBoundingRect(
                     style.text + '', style.textFont || style.font, style.textAlign,
@@ -116,8 +116,16 @@ define(function (require) {
                 }
                 rect.x += style.x || 0;
                 rect.y += style.y || 0;
+                if (style.hasStroke()) {
+                    var w = style.lineWidth;
+                    rect.x -= w / 2;
+                    rect.y -= w / 2;
+                    rect.width += w;
+                    rect.height += w;
+                }
                 this._rect = rect;
             }
+
             return this._rect;
         }
     };
