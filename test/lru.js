@@ -26,11 +26,16 @@ requirejs(['../src/core/LRU'], function (LRU) {
     }
     dump();
 
+    lru.clear();
+    console.log('----clear-----');
+    dump();
+
     function dump () {
         var entry = lru._list.head;
         while (entry) {
             console.log(entry.value);
             entry = entry.next;
         }
+        console.log('length:' + lru._list.len());
     }
 });

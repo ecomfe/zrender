@@ -83,6 +83,14 @@ define(function (require) {
     };
 
     /**
+     * Clear list
+     */
+    linkedListProto.clear = function () {
+        this.head = this.tail = null;
+        this._len = 0;
+    };
+
+    /**
      * @constructor
      * @param {} val
      */
