@@ -271,18 +271,6 @@ define(function (require) {
             return this;
         },
 
-        hide: function () {
-            for (var i = 0; i < this._children.length; i++) {
-                this._children[i].hide();
-            }
-        },
-
-        show: function () {
-            for (var i = 0; i < this._children.length; i++) {
-                this._children[i].show();
-            }
-        },
-
         /**
          * @return {module:zrender/core/BoundingRect}
          */
