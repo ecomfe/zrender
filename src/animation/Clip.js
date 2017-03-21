@@ -38,13 +38,16 @@ define(function(require) {
         this.onframe = options.onframe;
         this.ondestroy = options.ondestroy;
         this.onrestart = options.onrestart;
+
+        this._pausedTime = 0;
+        this._paused = false;
     }
 
     Clip.prototype = {
 
         constructor: Clip,
 
-        step: function (globalTime) {
+        step: function (globalTime, deltaTime) {
             // Set startTime on first step, or _startTime may has milleseconds different between clips
             // PENDING
             if (!this._initialized) {
@@ -52,7 +55,12 @@ define(function(require) {
                 this._initialized = true;
             }
 
-            var percent = (globalTime - this._startTime) / this._life;
+            if (this._paused) {
+                this._pausedTime += deltaTime;
+                return;
+            }
+
+            var percent = (globalTime - this._startTime - this._pausedTime) / this._life;
 
             // 还没开始
             if (percent < 0) {
@@ -88,17 +96,26 @@ define(function(require) {
         },
 
         restart: function (globalTime) {
-            var remainder = (globalTime - this._startTime) % this._life;
+            var remainder = (globalTime - this._startTime - this._pausedTime) % this._life;
             this._startTime = globalTime - remainder + this.gap;
+            this._pausedTime = 0;
 
             this._needsRemove = false;
         },
 
-        fire: function(eventType, arg) {
+        fire: function (eventType, arg) {
             eventType = 'on' + eventType;
             if (this[eventType]) {
                 this[eventType](this._target, arg);
             }
+        },
+
+        pause: function () {
+            this._paused = true;
+        },
+
+        resume: function () {
+            this._paused = false;
         }
     };
 

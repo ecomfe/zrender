@@ -512,6 +512,24 @@ define(function (require) {
             return this;
         },
 
+        pause: function () {
+            for (var i = 0; i < this._clipList.length; i++) {
+                this._clipList[i].pause();
+            }
+            this._paused = true;
+        },
+
+        resume: function () {
+            for (var i = 0; i < this._clipList.length; i++) {
+                this._clipList[i].resume();
+            }
+            this._paused = false;
+        },
+
+        isPaused: function () {
+            return !!this._paused;
+        },
+
         _doneCallback: function () {
             // Clear all tracks
             this._tracks = {};
