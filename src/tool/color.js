@@ -418,7 +418,7 @@ define(function(require) {
         out[0] = clampCssByte(lerp(leftColor[0], rightColor[0], dv));
         out[1] = clampCssByte(lerp(leftColor[1], rightColor[1], dv));
         out[2] = clampCssByte(lerp(leftColor[2], rightColor[2], dv));
-        out[3] = clampCssByte(lerp(leftColor[3], rightColor[3], dv));
+        out[3] = clampCssFloat(lerp(leftColor[3], rightColor[3], dv));
         return out;
     }
     /**
