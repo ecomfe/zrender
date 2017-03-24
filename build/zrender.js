@@ -214,7 +214,7 @@ define('zrender/core/util',['require'],function(require) {
         else if (TYPED_ARRAY[typeStr]) {
             result = source.constructor.from(source);
         }
-        else if (!BUILTIN_OBJECT[typeStr] && !isDom(source)) {
+        else if (!BUILTIN_OBJECT[typeStr] && !isPrimitive(source) && !isDom(source)) {
             result = {};
             for (var key in source) {
                 if (source.hasOwnProperty(key)) {
@@ -250,8 +250,10 @@ define('zrender/core/util',['require'],function(require) {
                     && !isArray(targetProp)
                     && !isDom(sourceProp)
                     && !isDom(targetProp)
-                    && !isBuildInObject(sourceProp)
-                    && !isBuildInObject(targetProp)
+                    && !isBuiltInObject(sourceProp)
+                    && !isBuiltInObject(targetProp)
+                    && !isPrimitive(sourceProp)
+                    && !isPrimitive(targetProp)
                 ) {
                     // 如果需要递归覆盖，就递归调用merge
                     merge(targetProp, sourceProp, overwrite);
@@ -578,7 +580,7 @@ define('zrender/core/util',['require'],function(require) {
      * @param {*} value
      * @return {boolean}
      */
-    function isBuildInObject(value) {
+    function isBuiltInObject(value) {
         return !!BUILTIN_OBJECT[objToString.call(value)];
     }
 
@@ -637,6 +639,18 @@ define('zrender/core/util',['require'],function(require) {
         }
     }
 
+    var primitiveKey = '__ec_primitive__';
+    /**
+     * Set an object as primitive to be ignored traversing children in clone or merge
+     */
+    function setAsPrimitive(obj) {
+        obj[primitiveKey] = true;
+    }
+
+    function isPrimitive(obj) {
+        return obj[primitiveKey];
+    }
+
     var util = {
         inherits: inherits,
         mixin: mixin,
@@ -661,11 +675,12 @@ define('zrender/core/util',['require'],function(require) {
         isString: isString,
         isObject: isObject,
         isFunction: isFunction,
-        isBuildInObject: isBuildInObject,
+        isBuiltInObject: isBuiltInObject,
         isDom: isDom,
         eqNaN: eqNaN,
         retrieve: retrieve,
         assert: assert,
+        setAsPrimitive: setAsPrimitive,
         noop: function () {}
     };
     return util;
@@ -2432,13 +2447,16 @@ define('zrender/animation/Clip',['require','./easing'],function(require) {
         this.onframe = options.onframe;
         this.ondestroy = options.ondestroy;
         this.onrestart = options.onrestart;
+
+        this._pausedTime = 0;
+        this._paused = false;
     }
 
     Clip.prototype = {
 
         constructor: Clip,
 
-        step: function (globalTime) {
+        step: function (globalTime, deltaTime) {
             // Set startTime on first step, or _startTime may has milleseconds different between clips
             // PENDING
             if (!this._initialized) {
@@ -2446,7 +2464,12 @@ define('zrender/animation/Clip',['require','./easing'],function(require) {
                 this._initialized = true;
             }
 
-            var percent = (globalTime - this._startTime) / this._life;
+            if (this._paused) {
+                this._pausedTime += deltaTime;
+                return;
+            }
+
+            var percent = (globalTime - this._startTime - this._pausedTime) / this._life;
 
             // 还没开始
             if (percent < 0) {
@@ -2482,27 +2505,235 @@ define('zrender/animation/Clip',['require','./easing'],function(require) {
         },
 
         restart: function (globalTime) {
-            var remainder = (globalTime - this._startTime) % this._life;
+            var remainder = (globalTime - this._startTime - this._pausedTime) % this._life;
             this._startTime = globalTime - remainder + this.gap;
+            this._pausedTime = 0;
 
             this._needsRemove = false;
         },
 
-        fire: function(eventType, arg) {
+        fire: function (eventType, arg) {
             eventType = 'on' + eventType;
             if (this[eventType]) {
                 this[eventType](this._target, arg);
             }
+        },
+
+        pause: function () {
+            this._paused = true;
+        },
+
+        resume: function () {
+            this._paused = false;
         }
     };
 
     return Clip;
 });
 
+// Simple LRU cache use doubly linked list
+// @module zrender/core/LRU
+define('zrender/core/LRU',['require'],function (require) {
+
+    /**
+     * Simple double linked list. Compared with array, it has O(1) remove operation.
+     * @constructor
+     */
+    var LinkedList = function () {
+
+        /**
+         * @type {module:zrender/core/LRU~Entry}
+         */
+        this.head = null;
+
+        /**
+         * @type {module:zrender/core/LRU~Entry}
+         */
+        this.tail = null;
+
+        this._len = 0;
+    };
+
+    var linkedListProto = LinkedList.prototype;
+    /**
+     * Insert a new value at the tail
+     * @param  {} val
+     * @return {module:zrender/core/LRU~Entry}
+     */
+    linkedListProto.insert = function (val) {
+        var entry = new Entry(val);
+        this.insertEntry(entry);
+        return entry;
+    };
+
+    /**
+     * Insert an entry at the tail
+     * @param  {module:zrender/core/LRU~Entry} entry
+     */
+    linkedListProto.insertEntry = function (entry) {
+        if (!this.head) {
+            this.head = this.tail = entry;
+        }
+        else {
+            this.tail.next = entry;
+            entry.prev = this.tail;
+            entry.next = null;
+            this.tail = entry;
+        }
+        this._len++;
+    };
+
+    /**
+     * Remove entry.
+     * @param  {module:zrender/core/LRU~Entry} entry
+     */
+    linkedListProto.remove = function (entry) {
+        var prev = entry.prev;
+        var next = entry.next;
+        if (prev) {
+            prev.next = next;
+        }
+        else {
+            // Is head
+            this.head = next;
+        }
+        if (next) {
+            next.prev = prev;
+        }
+        else {
+            // Is tail
+            this.tail = prev;
+        }
+        entry.next = entry.prev = null;
+        this._len--;
+    };
+
+    /**
+     * @return {number}
+     */
+    linkedListProto.len = function () {
+        return this._len;
+    };
+
+    /**
+     * Clear list
+     */
+    linkedListProto.clear = function () {
+        this.head = this.tail = null;
+        this._len = 0;
+    };
+
+    /**
+     * @constructor
+     * @param {} val
+     */
+    var Entry = function (val) {
+        /**
+         * @type {}
+         */
+        this.value = val;
+
+        /**
+         * @type {module:zrender/core/LRU~Entry}
+         */
+        this.next;
+
+        /**
+         * @type {module:zrender/core/LRU~Entry}
+         */
+        this.prev;
+    };
+
+    /**
+     * LRU Cache
+     * @constructor
+     * @alias module:zrender/core/LRU
+     */
+    var LRU = function (maxSize) {
+
+        this._list = new LinkedList();
+
+        this._map = {};
+
+        this._maxSize = maxSize || 10;
+
+        this._lastRemovedEntry = null;
+    };
+
+    var LRUProto = LRU.prototype;
+
+    /**
+     * @param  {string} key
+     * @param  {} value
+     * @return {} Removed value
+     */
+    LRUProto.put = function (key, value) {
+        var list = this._list;
+        var map = this._map;
+        var removed = null;
+        if (map[key] == null) {
+            var len = list.len();
+            // Reuse last removed entry
+            var entry = this._lastRemovedEntry;
+
+            if (len >= this._maxSize && len > 0) {
+                // Remove the least recently used
+                var leastUsedEntry = list.head;
+                list.remove(leastUsedEntry);
+                delete map[leastUsedEntry.key];
+
+                removed = leastUsedEntry.value;
+                this._lastRemovedEntry = leastUsedEntry;
+            }
+
+            if (entry) {
+                entry.value = value;
+            }
+            else {
+                entry = new Entry(value);
+            }
+            entry.key = key;
+            list.insertEntry(entry);
+            map[key] = entry;
+        }
+
+        return removed;
+    };
+
+    /**
+     * @param  {string} key
+     * @return {}
+     */
+    LRUProto.get = function (key) {
+        var entry = this._map[key];
+        var list = this._list;
+        if (entry != null) {
+            // Put the latest used entry in the tail
+            if (entry !== list.tail) {
+                list.remove(entry);
+                list.insertEntry(entry);
+            }
+
+            return entry.value;
+        }
+    };
+
+    /**
+     * Clear the cache
+     */
+    LRUProto.clear = function () {
+        this._list.clear();
+        this._map = {};
+    };
+
+    return LRU;
+});
 /**
  * @module zrender/tool/color
  */
-define('zrender/tool/color',['require'],function(require) {
+define('zrender/tool/color',['require','../core/LRU'],function(require) {
+
+    var LRU = require('../core/LRU');
 
     var kCSSColorTable = {
         'transparent': [0,0,0,0], 'aliceblue': [240,248,255,1],
@@ -2633,15 +2864,40 @@ define('zrender/tool/color',['require'],function(require) {
         return a + (b - a) * p;
     }
 
+    function setRgba(out, r, g, b, a) {
+        out[0] = r; out[1] = g; out[2] = b; out[3] = a;
+        return out;
+    }
+    function copyRgba(out, a) {
+        out[0] = a[0]; out[1] = a[1]; out[2] = a[2]; out[3] = a[3];
+        return out;
+    }
+    var colorCache = new LRU(20);
+    var lastRemovedArr = null;
+    function putToCache(colorStr, rgbaArr) {
+        // Reuse removed array
+        if (lastRemovedArr) {
+            copyRgba(lastRemovedArr, rgbaArr);
+        }
+        lastRemovedArr = colorCache.put(colorStr, lastRemovedArr || (rgbaArr.slice()));
+    }
     /**
      * @param {string} colorStr
+     * @param {Array.<number>} out
      * @return {Array.<number>}
      * @memberOf module:zrender/util/color
      */
-    function parse(colorStr) {
+    function parse(colorStr, rgbaArr) {
         if (!colorStr) {
             return;
         }
+        rgbaArr = rgbaArr || [];
+
+        var cached = colorCache.get(colorStr);
+        if (cached) {
+            return copyRgba(rgbaArr, cached);
+        }
+
         // colorStr may be not string
         colorStr = colorStr + '';
         // Remove all whitespace, not compliant, but should just be more accepting.
@@ -2649,7 +2905,9 @@ define('zrender/tool/color',['require'],function(require) {
 
         // Color keywords (and transparent) lookup.
         if (str in kCSSColorTable) {
-            return kCSSColorTable[str].slice();  // dup.
+            copyRgba(rgbaArr, kCSSColorTable[str]);
+            putToCache(colorStr, rgbaArr);
+            return rgbaArr;
         }
 
         // #abc and #abc123 syntax.
@@ -2657,26 +2915,32 @@ define('zrender/tool/color',['require'],function(require) {
             if (str.length === 4) {
                 var iv = parseInt(str.substr(1), 16);  // TODO(deanm): Stricter parsing.
                 if (!(iv >= 0 && iv <= 0xfff)) {
+                    setRgba(rgbaArr, 0, 0, 0, 1);
                     return;  // Covers NaN.
                 }
-                return [
+                setRgba(rgbaArr,
                     ((iv & 0xf00) >> 4) | ((iv & 0xf00) >> 8),
                     (iv & 0xf0) | ((iv & 0xf0) >> 4),
                     (iv & 0xf) | ((iv & 0xf) << 4),
                     1
-                ];
+                );
+                putToCache(colorStr, rgbaArr);
+                return rgbaArr;
             }
             else if (str.length === 7) {
                 var iv = parseInt(str.substr(1), 16);  // TODO(deanm): Stricter parsing.
                 if (!(iv >= 0 && iv <= 0xffffff)) {
+                    setRgba(rgbaArr, 0, 0, 0, 1);
                     return;  // Covers NaN.
                 }
-                return [
+                setRgba(rgbaArr,
                     (iv & 0xff0000) >> 16,
                     (iv & 0xff00) >> 8,
                     iv & 0xff,
                     1
-                ];
+                );
+                putToCache(colorStr, rgbaArr);
+                return rgbaArr;
             }
 
             return;
@@ -2689,44 +2953,56 @@ define('zrender/tool/color',['require'],function(require) {
             switch (fname) {
                 case 'rgba':
                     if (params.length !== 4) {
+                        setRgba(rgbaArr, 0, 0, 0, 1);
                         return;
                     }
                     alpha = parseCssFloat(params.pop()); // jshint ignore:line
                 // Fall through.
                 case 'rgb':
                     if (params.length !== 3) {
+                        setRgba(rgbaArr, 0, 0, 0, 1);
                         return;
                     }
-                    return [
+                    setRgba(rgbaArr,
                         parseCssInt(params[0]),
                         parseCssInt(params[1]),
                         parseCssInt(params[2]),
                         alpha
-                    ];
+                    );
+                    putToCache(colorStr, rgbaArr);
+                    return rgbaArr;
                 case 'hsla':
                     if (params.length !== 4) {
+                        setRgba(rgbaArr, 0, 0, 0, 1);
                         return;
                     }
                     params[3] = parseCssFloat(params[3]);
-                    return hsla2rgba(params);
+                    hsla2rgba(params, rgbaArr);
+                    putToCache(colorStr, rgbaArr);
+                    return rgbaArr;
                 case 'hsl':
                     if (params.length !== 3) {
+                        setRgba(rgbaArr, 0, 0, 0, 1);
                         return;
                     }
-                    return hsla2rgba(params);
+                    hsla2rgba(params, rgbaArr);
+                    putToCache(colorStr, rgbaArr);
+                    return rgbaArr;
                 default:
                     return;
             }
         }
 
+        setRgba(rgbaArr, 0, 0, 0, 1);
         return;
     }
 
     /**
      * @param {Array.<number>} hsla
+     * @param {Array.<number>} rgba
      * @return {Array.<number>} rgba
      */
-    function hsla2rgba(hsla) {
+    function hsla2rgba(hsla, rgba) {
         var h = (((parseFloat(hsla[0]) % 360) + 360) % 360) / 360;  // 0 .. 1
         // NOTE(deanm): According to the CSS spec s/l should only be
         // percentages, but we don't bother and let float or percentage.
@@ -2735,11 +3011,13 @@ define('zrender/tool/color',['require'],function(require) {
         var m2 = l <= 0.5 ? l * (s + 1) : l + s - l * s;
         var m1 = l * 2 - m2;
 
-        var rgba = [
+        rgba = rgba || [];
+        setRgba(rgba,
             clampCssByte(cssHueToRgb(m1, m2, h + 1 / 3) * 255),
             clampCssByte(cssHueToRgb(m1, m2, h) * 255),
-            clampCssByte(cssHueToRgb(m1, m2, h - 1 / 3) * 255)
-        ];
+            clampCssByte(cssHueToRgb(m1, m2, h - 1 / 3) * 255),
+            1
+        );
 
         if (hsla.length === 4) {
             rgba[3] = hsla[3];
@@ -2855,12 +3133,12 @@ define('zrender/tool/color',['require'],function(require) {
      * @return {Array.<number>}
      */
     function fastMapToColor(normalizedValue, colors, out) {
+        out = out || [0, 0, 0, 0];
         if (!(colors && colors.length)
             || !(normalizedValue >= 0 && normalizedValue <= 1)
         ) {
-            return;
+            return out;
         }
-        out = out || [0, 0, 0, 0];
         var value = normalizedValue * (colors.length - 1);
         var leftIndex = Math.floor(value);
         var rightIndex = Math.ceil(value);
@@ -2954,9 +3232,12 @@ define('zrender/tool/color',['require'],function(require) {
     /**
      * @param {Array.<string>} colors Color list.
      * @param {string} type 'rgba', 'hsva', ...
-     * @return {string} Result color.
+     * @return {string} Result color. (If input illegal, return undefined).
      */
     function stringify(arrColor, type) {
+        if (!arrColor) {
+            return;
+        }
         var colorStr = arrColor[0] + ',' + arrColor[1] + ',' + arrColor[2];
         if (type === 'rgba' || type === 'hsva' || type === 'hsla') {
             colorStr += ',' + arrColor[3];
@@ -3489,6 +3770,24 @@ define('zrender/animation/Animator',['require','./Clip','../tool/color','../core
         during: function (callback) {
             this._onframeList.push(callback);
             return this;
+        },
+
+        pause: function () {
+            for (var i = 0; i < this._clipList.length; i++) {
+                this._clipList[i].pause();
+            }
+            this._paused = true;
+        },
+
+        resume: function () {
+            for (var i = 0; i < this._clipList.length; i++) {
+                this._clipList[i].resume();
+            }
+            this._paused = false;
+        },
+
+        isPaused: function () {
+            return !!this._paused;
         },
 
         _doneCallback: function () {
@@ -5960,7 +6259,7 @@ define('zrender/animation/Animation',['require','../core/util','../core/event','
             var deferredClips = [];
             for (var i = 0; i < len; i++) {
                 var clip = clips[i];
-                var e = clip.step(time);
+                var e = clip.step(time, delta);
                 // Throw out the events need to be called after
                 // stage.update, like destroy
                 if (e) {
@@ -7571,8 +7870,9 @@ define('zrender/graphic/mixin/RectText',['require','../../contain/text','../../c
             }
 
             for (var i = 0; i < textLines.length; i++) {
-                textFill && ctx.fillText(textLines[i], x, y);
+                    // Fill after stroke so the outline will not cover the main part.
                 textStroke && ctx.strokeText(textLines[i], x, y);
+                textFill && ctx.fillText(textLines[i], x, y);
                 y += textRect.lineHeight;
             }
 
@@ -7851,176 +8151,6 @@ define('zrender/graphic/Displayable',['require','../core/util','./Style','../Ele
 
     return Displayable;
 });
-// Simple LRU cache use doubly linked list
-// @module zrender/core/LRU
-define('zrender/core/LRU',['require'],function(require) {
-
-    /**
-     * Simple double linked list. Compared with array, it has O(1) remove operation.
-     * @constructor
-     */
-    var LinkedList = function() {
-
-        /**
-         * @type {module:zrender/core/LRU~Entry}
-         */
-        this.head = null;
-
-        /**
-         * @type {module:zrender/core/LRU~Entry}
-         */
-        this.tail = null;
-
-        this._len = 0;
-    };
-
-    var linkedListProto = LinkedList.prototype;
-    /**
-     * Insert a new value at the tail
-     * @param  {} val
-     * @return {module:zrender/core/LRU~Entry}
-     */
-    linkedListProto.insert = function(val) {
-        var entry = new Entry(val);
-        this.insertEntry(entry);
-        return entry;
-    };
-
-    /**
-     * Insert an entry at the tail
-     * @param  {module:zrender/core/LRU~Entry} entry
-     */
-    linkedListProto.insertEntry = function(entry) {
-        if (!this.head) {
-            this.head = this.tail = entry;
-        }
-        else {
-            this.tail.next = entry;
-            entry.prev = this.tail;
-            this.tail = entry;
-        }
-        this._len++;
-    };
-
-    /**
-     * Remove entry.
-     * @param  {module:zrender/core/LRU~Entry} entry
-     */
-    linkedListProto.remove = function(entry) {
-        var prev = entry.prev;
-        var next = entry.next;
-        if (prev) {
-            prev.next = next;
-        }
-        else {
-            // Is head
-            this.head = next;
-        }
-        if (next) {
-            next.prev = prev;
-        }
-        else {
-            // Is tail
-            this.tail = prev;
-        }
-        entry.next = entry.prev = null;
-        this._len--;
-    };
-
-    /**
-     * @return {number}
-     */
-    linkedListProto.len = function() {
-        return this._len;
-    };
-
-    /**
-     * @constructor
-     * @param {} val
-     */
-    var Entry = function(val) {
-        /**
-         * @type {}
-         */
-        this.value = val;
-
-        /**
-         * @type {module:zrender/core/LRU~Entry}
-         */
-        this.next;
-
-        /**
-         * @type {module:zrender/core/LRU~Entry}
-         */
-        this.prev;
-    };
-
-    /**
-     * LRU Cache
-     * @constructor
-     * @alias module:zrender/core/LRU
-     */
-    var LRU = function(maxSize) {
-
-        this._list = new LinkedList();
-
-        this._map = {};
-
-        this._maxSize = maxSize || 10;
-    };
-
-    var LRUProto = LRU.prototype;
-
-    /**
-     * @param  {string} key
-     * @param  {} value
-     */
-    LRUProto.put = function(key, value) {
-        var list = this._list;
-        var map = this._map;
-        if (map[key] == null) {
-            var len = list.len();
-            if (len >= this._maxSize && len > 0) {
-                // Remove the least recently used
-                var leastUsedEntry = list.head;
-                list.remove(leastUsedEntry);
-                delete map[leastUsedEntry.key];
-            }
-
-            var entry = list.insert(value);
-            entry.key = key;
-            map[key] = entry;
-        }
-    };
-
-    /**
-     * @param  {string} key
-     * @return {}
-     */
-    LRUProto.get = function(key) {
-        var entry = this._map[key];
-        var list = this._list;
-        if (entry != null) {
-            // Put the latest used entry in the tail
-            if (entry !== list.tail) {
-                list.remove(entry);
-                list.insertEntry(entry);
-            }
-
-            return entry.value;
-        }
-    };
-
-    /**
-     * Clear the cache
-     */
-    LRUProto.clear = function() {
-        this._list.clear();
-        this._map = {};
-    };
-
-    return LRU;
-});
 /**
  * Image element
  * @module zrender/graphic/Image
@@ -8107,18 +8237,29 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
                 // }
                 // Else is canvas
 
-                var width = style.width || image.width;
-                var height = style.height || image.height;
                 var x = style.x || 0;
                 var y = style.y || 0;
                 // 图片加载失败
                 if (!image.width || !image.height) {
                     return;
                 }
+                var width = style.width;
+                var height = style.height;
+                var aspect = image.width / image.height;
+                if (width == null && height != null) {
+                    // Keep image/height ratio
+                    width = height * aspect;
+                }
+                else if (height == null && width != null) {
+                    height = width / aspect;
+                }
+                else if (width == null && height == null) {
+                    width = image.width;
+                    height = image.height;
+                }
 
                 // 设置transform
                 this.setTransform(ctx);
-
 
                 if (style.sWidth && style.sHeight) {
                     var sx = style.sx || 0;
@@ -8142,14 +8283,6 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
                 }
                 else {
                     ctx.drawImage(image, x, y, width, height);
-                }
-
-                // 如果没设置宽和高的话自动根据图片宽高设置
-                if (style.width == null) {
-                    style.width = width;
-                }
-                if (style.height == null) {
-                    style.height = height;
                 }
 
                 this.restoreTransform(ctx);
@@ -8212,7 +8345,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
             return false;
         }
 
-        if (layer.isBuildin) {
+        if (layer.__builtin__) {
             return true;
         }
 
@@ -8366,6 +8499,12 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
             root.appendChild(domRoot);
         }
         else {
+            if (opts.width != null) {
+                root.width = opts.width;
+            }
+            if (opts.height != null) {
+                root.height = opts.height;
+            }
             // Use canvas width and height directly
             var width = root.width;
             var height = root.height;
@@ -8383,8 +8522,6 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
 
             this._domRoot = root;
         }
-
-        this.pathToImage = this._createPathToImage();
 
         // Layers for progressive rendering
         this._progressiveLayers = [];
@@ -8432,7 +8569,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
             for (var i = 0; i < zlevelList.length; i++) {
                 var z = zlevelList[i];
                 var layer = this._layers[z];
-                if (!layer.isBuildin && layer.refresh) {
+                if (!layer.__builtin__ && layer.refresh) {
                     layer.refresh();
                 }
             }
@@ -8575,11 +8712,11 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
 
             this._clearProgressive();
 
-            this.eachBuildinLayer(preProcessLayer);
+            this.eachBuiltinLayer(preProcessLayer);
 
             this._doPaintList(list, paintAll);
 
-            this.eachBuildinLayer(postProcessLayer);
+            this.eachBuiltinLayer(postProcessLayer);
         },
 
         _doPaintList: function (list, paintAll) {
@@ -8635,7 +8772,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
                     currentZLevel = elZLevel;
                     currentLayer = this.getLayer(currentZLevel);
 
-                    if (!currentLayer.isBuildin) {
+                    if (!currentLayer.__builtin__) {
                         log(
                             'ZLevel ' + currentZLevel
                             + ' has been used by unkown layer ' + currentLayer.id
@@ -8780,7 +8917,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
             if (!layer) {
                 // Create a new layer
                 layer = new Layer('zr_' + zlevel, this, this.dpr);
-                layer.isBuildin = true;
+                layer.__builtin__ = true;
 
                 if (this._layerConfig[zlevel]) {
                     util.merge(layer, this._layerConfig[zlevel], true);
@@ -8828,28 +8965,33 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
             }
             zlevelList.splice(i + 1, 0, zlevel);
 
-            if (prevLayer) {
-                var prevDom = prevLayer.dom;
-                if (prevDom.nextSibling) {
-                    domRoot.insertBefore(
-                        layer.dom,
-                        prevDom.nextSibling
-                    );
-                }
-                else {
-                    domRoot.appendChild(layer.dom);
-                }
-            }
-            else {
-                if (domRoot.firstChild) {
-                    domRoot.insertBefore(layer.dom, domRoot.firstChild);
-                }
-                else {
-                    domRoot.appendChild(layer.dom);
-                }
-            }
-
             layersMap[zlevel] = layer;
+
+            // Vitual layer will not directly show on the screen.
+            // (It can be a WebGL layer and assigned to a ZImage element)
+            // But it still under management of zrender.
+            if (!layer.virtual) {
+                if (prevLayer) {
+                    var prevDom = prevLayer.dom;
+                    if (prevDom.nextSibling) {
+                        domRoot.insertBefore(
+                            layer.dom,
+                            prevDom.nextSibling
+                        );
+                    }
+                    else {
+                        domRoot.appendChild(layer.dom);
+                    }
+                }
+                else {
+                    if (domRoot.firstChild) {
+                        domRoot.insertBefore(layer.dom, domRoot.firstChild);
+                    }
+                    else {
+                        domRoot.appendChild(layer.dom);
+                    }
+                }
+            }
         },
 
         // Iterate each layer
@@ -8864,7 +9006,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
         },
 
         // Iterate each buildin layer
-        eachBuildinLayer: function (cb, context) {
+        eachBuiltinLayer: function (cb, context) {
             var zlevelList = this._zlevelList;
             var layer;
             var z;
@@ -8872,7 +9014,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
             for (i = 0; i < zlevelList.length; i++) {
                 z = zlevelList[i];
                 layer = this._layers[z];
-                if (layer.isBuildin) {
+                if (layer.__builtin__) {
                     cb.call(context, layer, z);
                 }
             }
@@ -8887,7 +9029,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
             for (i = 0; i < zlevelList.length; i++) {
                 z = zlevelList[i];
                 layer = this._layers[z];
-                if (! layer.isBuildin) {
+                if (!layer.__builtin__) {
                     cb.call(context, layer, z);
                 }
             }
@@ -8909,7 +9051,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
             var elCountsLastFrame = {};
             var progressiveElCountsLastFrame = {};
 
-            this.eachBuildinLayer(function (layer, z) {
+            this.eachBuiltinLayer(function (layer, z) {
                 elCountsLastFrame[z] = layer.elCount;
                 layer.elCount = 0;
                 layer.__dirty = false;
@@ -8983,7 +9125,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
             }
 
             // 层中的元素数量有发生变化
-            this.eachBuildinLayer(function (layer, z) {
+            this.eachBuiltinLayer(function (layer, z) {
                 if (elCountsLastFrame[z] !== layer.elCount) {
                     layer.__dirty = true;
                 }
@@ -9004,7 +9146,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
          * 清除hover层外所有内容
          */
         clear: function () {
-            this.eachBuildinLayer(this._clearLayer);
+            this.eachBuiltinLayer(this._clearLayer);
             return this;
         },
 
@@ -9184,30 +9326,47 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
             ) | 0;
         },
 
-        _pathToImage: function (id, path, width, height, dpr) {
+        pathToImage: function (path, dpr) {
+            dpr = dpr || this.dpr;
+
             var canvas = document.createElement('canvas');
             var ctx = canvas.getContext('2d');
+            var rect = path.getBoundingRect();
+            var style = path.style;
+            var shadowBlurSize = style.shadowBlur;
+            var shadowOffsetX = style.shadowOffsetX;
+            var shadowOffsetY = style.shadowOffsetY;
+            var lineWidth = style.hasStroke() ? style.lineWidth : 0;
+
+            var leftMargin = Math.max(lineWidth / 2, -shadowOffsetX + shadowBlurSize);
+            var rightMargin = Math.max(lineWidth / 2, shadowOffsetX + shadowBlurSize);
+            var topMargin = Math.max(lineWidth / 2, -shadowOffsetY + shadowBlurSize);
+            var bottomMargin = Math.max(lineWidth / 2, shadowOffsetY + shadowBlurSize);
+            var width = rect.width + leftMargin + rightMargin;
+            var height = rect.height + topMargin + bottomMargin;
 
             canvas.width = width * dpr;
             canvas.height = height * dpr;
 
-            ctx.clearRect(0, 0, width * dpr, height * dpr);
+            ctx.scale(dpr, dpr);
+            ctx.clearRect(0, 0, width, height);
+            ctx.dpr = dpr;
 
             var pathTransform = {
                 position: path.position,
                 rotation: path.rotation,
                 scale: path.scale
             };
-            path.position = [0, 0, 0];
+            path.position = [leftMargin - rect.x, topMargin - rect.y];
             path.rotation = 0;
             path.scale = [1, 1];
+            path.updateTransform();
             if (path) {
                 path.brush(ctx);
             }
 
             var ImageShape = require('./graphic/Image');
             var imgShape = new ImageShape({
-                id: id,
                 style: {
                     x: 0,
                     y: 0,
@@ -9228,16 +9387,6 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
             }
 
             return imgShape;
-        },
-
-        _createPathToImage: function () {
-            var me = this;
-
-            return function (id, e, width, height) {
-                return me._pathToImage(
-                    id, e, width, height, me.dpr
-                );
-            };
         }
     };
 
@@ -9277,7 +9426,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./core/util','./
     /**
      * @type {string}
      */
-    zrender.version = '3.3.0';
+    zrender.version = '3.4.0';
 
     /**
      * Initializing a zrender instance
@@ -9364,6 +9513,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./core/util','./
         var storage = new Storage();
 
         var rendererType = opts.renderer;
+        // TODO WebGL
         if (useVML) {
             if (!painterCtors.vml) {
                 throw new Error('You need to require \'zrender/vml/vml\' to support IE8');
@@ -9594,9 +9744,8 @@ define('zrender/zrender',['require','./core/guid','./core/env','./core/util','./
          * @param {number} width
          * @param {number} height
          */
-        pathToImage: function(e, width, height) {
-            var id = guid();
-            return this.painter.pathToImage(id, e, width, height);
+        pathToImage: function(e, dpr) {
+            return this.painter.pathToImage(e, dpr);
         },
 
         /**
@@ -9750,6 +9899,7 @@ define('zrender/graphic/Text',['require','./Displayable','../core/util','../cont
                 if (ctx.textAlign !== textAlign) {
                     ctx.textAlign = 'left';
                 }
+                // FIXME in text contain default is top
                 ctx.textBaseline = textBaseline || 'alphabetic';
                 // Use canvas default alphabetic baseline
                 if (ctx.textBaseline !== textBaseline) {
@@ -9760,8 +9910,9 @@ define('zrender/graphic/Text',['require','./Displayable','../core/util','../cont
 
                 var textLines = text.split('\n');
                 for (var i = 0; i < textLines.length; i++) {
-                    style.hasFill() && ctx.fillText(textLines[i], x, y);
+                    // Fill after stroke so the outline will not cover the main part.
                     style.hasStroke() && ctx.strokeText(textLines[i], x, y);
+                    style.hasFill() && ctx.fillText(textLines[i], x, y);
                     y += lineHeight;
                 }
 
@@ -9770,8 +9921,8 @@ define('zrender/graphic/Text',['require','./Displayable','../core/util','../cont
         },
 
         getBoundingRect: function () {
+            var style = this.style;
             if (!this._rect) {
-                var style = this.style;
                 var textVerticalAlign = style.textVerticalAlign;
                 var rect = textContain.getBoundingRect(
                     style.text + '', style.textFont || style.font, style.textAlign,
@@ -9787,8 +9938,16 @@ define('zrender/graphic/Text',['require','./Displayable','../core/util','../cont
                 }
                 rect.x += style.x || 0;
                 rect.y += style.y || 0;
+                if (style.hasStroke()) {
+                    var w = style.lineWidth;
+                    rect.x -= w / 2;
+                    rect.y -= w / 2;
+                    rect.width += w;
+                    rect.height += w;
+                }
                 this._rect = rect;
             }
+
             return this._rect;
         }
     };
@@ -14776,7 +14935,7 @@ define('zrender/vml/Painter',['require','../core/log','./core'],function (requir
     }
 
     var notSupportedMethods = [
-        'getLayer', 'insertLayer', 'eachLayer', 'eachBuildinLayer', 'eachOtherLayer', 'getLayers',
+        'getLayer', 'insertLayer', 'eachLayer', 'eachBuiltinLayer', 'eachOtherLayer', 'getLayers',
         'modLayer', 'delLayer', 'clearLayer', 'toDataURL', 'pathToImage'
     ];
 
