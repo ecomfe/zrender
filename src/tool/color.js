@@ -396,19 +396,27 @@ define(function(require) {
     }
 
     /**
-     * Map value to color. Faster than mapToColor methods because color is represented by rgba array
+     * Map value to color. Faster than mapToColor methods because color is represented by rgba array.
+     * If illegal colors or normalizedValue, return the original out or empty out if no out input.
      * @param {number} normalizedValue A float between 0 and 1.
      * @param {Array.<Array.<number>>} colors List of rgba color array
      * @param {Array.<number>} [out] Mapped gba color array
-     * @return {Array.<number>}
+     * @return {Array.<number>} will not be null/undefined.
      */
     function fastMapToColor(normalizedValue, colors, out) {
-        out = out || [0, 0, 0, 0];
+        // If illegal colors or normalizedValue, return the original out
+        // or empty out if no out input. So !out.length can be used to judge
+        // illegal input if no out input, and original out will remain when
+        // input out exists. (If null can be returned, null check should be
+        // preformed outside, which is inconvenient.)
+        out = out || [];
+
         if (!(colors && colors.length)
             || !(normalizedValue >= 0 && normalizedValue <= 1)
         ) {
             return out;
         }
+
         var value = normalizedValue * (colors.length - 1);
         var leftIndex = Math.floor(value);
         var rightIndex = Math.ceil(value);
@@ -500,12 +508,12 @@ define(function(require) {
     }
 
     /**
-     * @param {Array.<string>} colors Color list.
+     * @param {Array.<number>} arrColor like [12,33,44,0.4]
      * @param {string} type 'rgba', 'hsva', ...
      * @return {string} Result color. (If input illegal, return undefined).
      */
     function stringify(arrColor, type) {
-        if (!arrColor) {
+        if (!arrColor || !arrColor.length) {
             return;
         }
         var colorStr = arrColor[0] + ',' + arrColor[1] + ',' + arrColor[2];
