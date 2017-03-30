@@ -397,25 +397,19 @@ define(function(require) {
 
     /**
      * Map value to color. Faster than mapToColor methods because color is represented by rgba array.
-     * If illegal colors or normalizedValue, return the original out or empty out if no out input.
      * @param {number} normalizedValue A float between 0 and 1.
      * @param {Array.<Array.<number>>} colors List of rgba color array
      * @param {Array.<number>} [out] Mapped gba color array
-     * @return {Array.<number>} will not be null/undefined.
+     * @return {Array.<number>} will be null/undefined if input illegal.
      */
     function fastMapToColor(normalizedValue, colors, out) {
-        // If illegal colors or normalizedValue, return the original out
-        // or empty out if no out input. So !out.length can be used to judge
-        // illegal input if no out input, and original out will remain when
-        // input out exists. (If null can be returned, null check should be
-        // preformed outside, which is inconvenient.)
-        out = out || [];
-
         if (!(colors && colors.length)
             || !(normalizedValue >= 0 && normalizedValue <= 1)
         ) {
-            return out;
+            return;
         }
+
+        out = out || [];
 
         var value = normalizedValue * (colors.length - 1);
         var leftIndex = Math.floor(value);
@@ -427,6 +421,7 @@ define(function(require) {
         out[1] = clampCssByte(lerp(leftColor[1], rightColor[1], dv));
         out[2] = clampCssByte(lerp(leftColor[2], rightColor[2], dv));
         out[3] = clampCssFloat(lerp(leftColor[3], rightColor[3], dv));
+
         return out;
     }
     /**
