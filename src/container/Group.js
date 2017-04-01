@@ -150,7 +150,7 @@ define(function (require) {
             var zr = this.__zr;
             if (storage && storage !== child.__storage) {
 
-                storage.addToMap(child);
+                storage.addToStorage(child);
 
                 if (child instanceof Group) {
                     child.addChildrenToStorage(storage);
@@ -179,7 +179,7 @@ define(function (require) {
 
             if (storage) {
 
-                storage.delFromMap(child.id);
+                storage.delFromStorage(child);
 
                 if (child instanceof Group) {
                     child.delChildrenFromStorage(storage);
@@ -202,7 +202,7 @@ define(function (require) {
             for (i = 0; i < children.length; i++) {
                 child = children[i];
                 if (storage) {
-                    storage.delFromMap(child.id);
+                    storage.delFromStorage(child);
                     if (child instanceof Group) {
                         child.delChildrenFromStorage(storage);
                     }
@@ -248,7 +248,7 @@ define(function (require) {
         addChildrenToStorage: function (storage) {
             for (var i = 0; i < this._children.length; i++) {
                 var child = this._children[i];
-                storage.addToMap(child);
+                storage.addToStorage(child);
                 if (child instanceof Group) {
                     child.addChildrenToStorage(storage);
                 }
@@ -258,7 +258,7 @@ define(function (require) {
         delChildrenFromStorage: function (storage) {
             for (var i = 0; i < this._children.length; i++) {
                 var child = this._children[i];
-                storage.delFromMap(child.id);
+                storage.delFromStorage(child);
                 if (child instanceof Group) {
                     child.delChildrenFromStorage(storage);
                 }

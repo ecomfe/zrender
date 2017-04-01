@@ -152,21 +152,19 @@ define(function(require) {
          */
         this._needsRefresh;
 
-        // 修改 storage.delFromMap, 每次删除元素之前删除动画
+        // 修改 storage.delFromStorage, 每次删除元素之前删除动画
         // FIXME 有点ugly
-        var oldDelFromMap = storage.delFromMap;
-        var oldAddToMap = storage.addToMap;
+        var oldDelFromStorage = storage.delFromStorage;
+        var oldAddToStorage = storage.addToStorage;
 
-        storage.delFromMap = function (elId) {
-            var el = storage.get(elId);
-
-            oldDelFromMap.call(storage, elId);
+        storage.delFromStorage = function (el) {
+            oldDelFromStorage.call(storage, el);
 
             el && el.removeSelfFromZr(self);
         };
 
-        storage.addToMap = function (el) {
-            oldAddToMap.call(storage, el);
+        storage.addToStorage = function (el) {
+            oldAddToStorage.call(storage, el);
 
             el.addSelfToZr(self);
         };

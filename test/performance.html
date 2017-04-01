@@ -73,7 +73,6 @@
         ) {
             // 初始化zrender
             zr = zrender.init(document.getElementById("main"));
-            zrColor = require('zrender/tool/color');
             width = zr.getWidth();
             height = zr.getHeight();
             isRunning = false;
@@ -101,7 +100,6 @@
             var t3 = 0;
             var zr;
             var isRunning;
-            var zrColor;
             var width;
             var height;
             var round;
@@ -110,7 +108,7 @@
             var total;
             var shapeType;
             var img = new Image();
-            img.src = 'test.jpeg';
+            img.src = 'test.png';
 
             function start() {
                 if (isRunning) {
@@ -152,13 +150,20 @@
                 }
             }
 
+            function randomColor() {
+                var r = Math.round(Math.random() * 255);
+                var g = Math.round(Math.random() * 255);
+                var b = Math.round(Math.random() * 255);
+                return 'rgb(' + [r, g, b].join(',') + ')';
+            }
+
             function run(){
                 if (round--) {
                     zr.clear();
                     for (var i = 0; i < n; i++) {
                         var ShapeClass = ShapeClasses[shapeType];
                         zr.add(new ShapeClass({
-                            style: {
+                            shape: {
                                 x: Math.round(Math.random() * width),
                                 y: Math.round(Math.random() * height),
                                 x1: Math.round(Math.random() * width),
@@ -168,31 +173,36 @@
                                 cx: Math.round(Math.random() * width),
                                 cy: Math.round(Math.random() * height),
                                 r0: Math.round(Math.random() * 10),
-                                r: shapeType != 'rose'
-                                    ? Math.round(Math.random() * 30)
-                                    : [5 + Math.round(Math.random() * 5),
-                                       10 + Math.round(Math.random() * 5),
-                                       15 + Math.round(Math.random() * 5)],
+                                r: shapeType === 'rect' ? 0 :
+                                    (shapeType != 'rose'
+                                        ? Math.round(Math.random() * 30)
+                                        : [5 + Math.round(Math.random() * 5),
+                                           10 + Math.round(Math.random() * 5),
+                                           15 + Math.round(Math.random() * 5)]
+                                        ),
                                 n: Math.round(Math.random() * 10 + 2),
                                 rx: Math.round(Math.random() * 10),
                                 ry: Math.round(Math.random() * 30),
                                 k: Math.round(Math.random() * 10),
                                 lineWidth : 1,
-                                width: Math.round(Math.random() * 100),
-                                height: Math.round(Math.random() * 50),
+                                width: Math.round(Math.random() * 10),
+                                height: Math.round(Math.random() * 5),
                                 startAngle : Math.round(Math.random() * 30),
                                 endAngle: Math.round(Math.random() * 180) + 30,
-                                image : img,
-                                text : shapeType == 'text' ? 'zrender' : false,
-                                fill: zrColor.random()
+                                image: img,
+                                text: shapeType == 'text' ? 'zrender': false
                             },
-                            hoverable : false
+                            style: {
+                                // fill: randomColor()
+                                fill: 'rgb(' + Math.round(i / n * 255) + ',0,0)'
+                            },
+                            silent: true
                         }));
                     }
                     var ticket = new Date();
-                    zr.render();
+                    zr.refreshImmediately();
                     ticket = new Date() - ticket;
-                    total += ticket
+                    total += ticket;
                     result.push(ticket);
                     setTimeout(run,50);
                 }else {

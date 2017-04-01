@@ -15,6 +15,7 @@ define(function (require) {
 
     var abs = Math.abs;
 
+    var pathProxyForDraw = new PathProxy(true);
     /**
      * @alias module:zrender/graphic/Path
      * @extends module:zrender/graphic/Displayable
@@ -28,7 +29,7 @@ define(function (require) {
          * @type {module:zrender/core/PathProxy}
          * @readOnly
          */
-        this.path = new PathProxy();
+        this.path = null;
     }
 
     Path.prototype = {
@@ -43,7 +44,7 @@ define(function (require) {
 
         brush: function (ctx, prevEl) {
             var style = this.style;
-            var path = this.path;
+            var path = this.path || pathProxyForDraw;
             var hasStroke = style.hasStroke();
             var hasFill = style.hasFill();
             var fill = style.fill;
@@ -57,12 +58,14 @@ define(function (require) {
             this.setTransform(ctx);
 
             if (this.__dirty) {
-                var rect = this.getBoundingRect();
+                var rect;
                 // Update gradient because bounding rect may changed
                 if (hasFillGradient) {
+                    rect = rect || this.getBoundingRect();
                     this._fillGradient = style.getGradient(ctx, fill, rect);
                 }
                 if (hasStrokeGradient) {
+                    rect = rect || this.getBoundingRect();
                     this._strokeGradient = style.getGradient(ctx, stroke, rect);
                 }
             }
@@ -95,10 +98,10 @@ define(function (require) {
             // 1. Path is dirty
             // 2. Path needs javascript implemented lineDash stroking.
             //    In this case, lineDash information will not be saved in PathProxy
-            if (this.__dirtyPath || (
-                lineDash && !ctxLineDash && hasStroke
-            )) {
-                path = this.path.beginPath(ctx);
+            if (this.__dirtyPath
+                || (lineDash && !ctxLineDash && hasStroke)
+            ) {
+                path.beginPath(ctx);
 
                 // Setting line dash before build path
                 if (lineDash && !ctxLineDash) {
@@ -109,7 +112,9 @@ define(function (require) {
                 this.buildPath(path, this.shape, false);
 
                 // Clear path dirty flag
-                this.__dirtyPath = false;
+                if (this.path) {
+                    this.__dirtyPath = false;
+                }
             }
             else {
                 // Replay path building
@@ -152,6 +157,10 @@ define(function (require) {
             var needsUpdateRect = !rect;
             if (needsUpdateRect) {
                 var path = this.path;
+                if (!path) {
+                    // Create path on demand.
+                    path = this.path = new PathProxy();
+                }
                 if (this.__dirtyPath) {
                     path.beginPath();
                     this.buildPath(path, this.shape, false);
