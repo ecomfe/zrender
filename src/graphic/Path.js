@@ -151,6 +151,10 @@ define(function (require) {
         // Like in circle
         buildPath: function (ctx, shapeCfg, inBundle) {},
 
+        createPathProxy: function () {
+            this.path = new PathProxy();
+        },
+
         getBoundingRect: function () {
             var rect = this._rect;
             var style = this.style;

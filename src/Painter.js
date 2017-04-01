@@ -86,11 +86,10 @@
     function doClip(clipPaths, ctx) {
         for (var i = 0; i < clipPaths.length; i++) {
             var clipPath = clipPaths[i];
-            var path = clipPath.path;
 
             clipPath.setTransform(ctx);
-            path.beginPath(ctx);
-            clipPath.buildPath(path, clipPath.shape);
+            ctx.beginPath();
+            clipPath.buildPath(ctx, clipPath.shape);
             ctx.clip();
             // Transform back
             clipPath.restoreTransform(ctx);

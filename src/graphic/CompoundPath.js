@@ -2,6 +2,7 @@
 define(function (require) {
 
     var Path = require('./Path');
+
     return Path.extend({
 
         type: 'compound',
@@ -24,12 +25,12 @@ define(function (require) {
 
         beforeBrush: function () {
             this._updatePathDirty();
-            var paths = this.shape.paths || [];
-            var scale = this.getGlobalScale();
-            // Update path scale
-            for (var i = 0; i < paths.length; i++) {
-                paths[i].path.setScale(scale[0], scale[1]);
-            }
+            // var paths = this.shape.paths || [];
+            // var scale = this.getGlobalScale();
+            // // Update path scale
+            // for (var i = 0; i < paths.length; i++) {
+            //     paths[i].path.setScale(scale[0], scale[1]);
+            // }
         },
 
         buildPath: function (ctx, shape) {

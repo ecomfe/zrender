@@ -381,13 +381,18 @@ define(function (require) {
             var len = pathEls.length;
             for (var i = 0; i < len; i++) {
                 var pathEl = pathEls[i];
-                if (pathEl.__dirty) {
+                if (!pathEl.path) {
+                    pathEl.createPathProxy();
+                }
+                if (pathEl.__dirtyPath) {
                     pathEl.buildPath(pathEl.path, pathEl.shape, true);
                 }
                 pathList.push(pathEl.path);
             }
 
             var pathBundle = new Path(opts);
+            // Need path proxy.
+            pathBundle.createPathProxy();
             pathBundle.buildPath = function (path) {
                 path.appendPath(pathList);
                 // Svg and vml renderer don't have context
