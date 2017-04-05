@@ -3126,19 +3126,21 @@ define('zrender/tool/color',['require','../core/LRU'],function(require) {
     }
 
     /**
-     * Map value to color. Faster than mapToColor methods because color is represented by rgba array
+     * Map value to color. Faster than mapToColor methods because color is represented by rgba array.
      * @param {number} normalizedValue A float between 0 and 1.
      * @param {Array.<Array.<number>>} colors List of rgba color array
      * @param {Array.<number>} [out] Mapped gba color array
-     * @return {Array.<number>}
+     * @return {Array.<number>} will be null/undefined if input illegal.
      */
     function fastMapToColor(normalizedValue, colors, out) {
-        out = out || [0, 0, 0, 0];
         if (!(colors && colors.length)
             || !(normalizedValue >= 0 && normalizedValue <= 1)
         ) {
-            return out;
+            return;
         }
+
+        out = out || [];
+
         var value = normalizedValue * (colors.length - 1);
         var leftIndex = Math.floor(value);
         var rightIndex = Math.ceil(value);
@@ -3149,6 +3151,7 @@ define('zrender/tool/color',['require','../core/LRU'],function(require) {
         out[1] = clampCssByte(lerp(leftColor[1], rightColor[1], dv));
         out[2] = clampCssByte(lerp(leftColor[2], rightColor[2], dv));
         out[3] = clampCssFloat(lerp(leftColor[3], rightColor[3], dv));
+
         return out;
     }
     /**
@@ -3230,12 +3233,12 @@ define('zrender/tool/color',['require','../core/LRU'],function(require) {
     }
 
     /**
-     * @param {Array.<string>} colors Color list.
+     * @param {Array.<number>} arrColor like [12,33,44,0.4]
      * @param {string} type 'rgba', 'hsva', ...
      * @return {string} Result color. (If input illegal, return undefined).
      */
     function stringify(arrColor, type) {
-        if (!arrColor) {
+        if (!arrColor || !arrColor.length) {
             return;
         }
         var colorStr = arrColor[0] + ',' + arrColor[1] + ',' + arrColor[2];
@@ -9426,7 +9429,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./core/util','./
     /**
      * @type {string}
      */
-    zrender.version = '3.4.1';
+    zrender.version = '3.4.2';
 
     /**
      * Initializing a zrender instance
