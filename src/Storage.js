@@ -39,9 +39,6 @@ define(function (require) {
      * @constructor
      */
     var Storage = function () {
-        // 所有常规形状，id索引的map
-        this._elements = {};
-
         this._roots = [];
 
         this._displayList = [];
@@ -175,8 +172,7 @@ define(function (require) {
          * @param {module:zrender/Element} el
          */
         addRoot: function (el) {
-            // Element has been added
-            if (this._elements[el.id]) {
+            if (el.__storage === this) {
                 return;
             }
 
@@ -184,17 +180,17 @@ define(function (require) {
                 el.addChildrenToStorage(this);
             }
 
-            this.addToMap(el);
+            this.addToStorage(el);
             this._roots.push(el);
         },
 
         /**
          * 删除指定的图形(Shape)或者组(Group)
-         * @param {string|Array.<string>} [elId] 如果为空清空整个Storage
+         * @param {string|Array.<string>} [el] 如果为空清空整个Storage
          */
-        delRoot: function (elId) {
-            if (elId == null) {
-                // 不指定elId清空
+        delRoot: function (el) {
+            if (el == null) {
+                // 不指定el清空
                 for (var i = 0; i < this._roots.length; i++) {
                     var root = this._roots[i];
                     if (root instanceof Group) {
@@ -202,7 +198,6 @@ define(function (require) {
                     }
                 }
 
-                this._elements = {};
                 this._roots = [];
                 this._displayList = [];
                 this._displayListLen = 0;
@@ -210,24 +205,17 @@ define(function (require) {
                 return;
             }
 
-            if (elId instanceof Array) {
-                for (var i = 0, l = elId.length; i < l; i++) {
-                    this.delRoot(elId[i]);
+            if (el instanceof Array) {
+                for (var i = 0, l = el.length; i < l; i++) {
+                    this.delRoot(el[i]);
                 }
                 return;
             }
 
-            var el;
-            if (typeof(elId) == 'string') {
-                el = this._elements[elId];
-            }
-            else {
-                el = elId;
-            }
 
             var idx = util.indexOf(this._roots, el);
             if (idx >= 0) {
-                this.delFromMap(el.id);
+                this.delFromStorage(el);
                 this._roots.splice(idx, 1);
                 if (el instanceof Group) {
                     el.delChildrenFromStorage(this);
@@ -235,29 +223,16 @@ define(function (require) {
             }
         },
 
-        addToMap: function (el) {
-            if (el instanceof Group) {
-                el.__storage = this;
-            }
+        addToStorage: function (el) {
+            el.__storage = this;
             el.dirty(false);
-
-            this._elements[el.id] = el;
 
             return this;
         },
 
-        get: function (elId) {
-            return this._elements[elId];
-        },
-
-        delFromMap: function (elId) {
-            var elements = this._elements;
-            var el = elements[elId];
+        delFromStorage: function (el) {
             if (el) {
-                delete elements[elId];
-                if (el instanceof Group) {
-                    el.__storage = null;
-                }
+                el.__storage = null;
             }
 
             return this;
@@ -267,7 +242,6 @@ define(function (require) {
          * 清空并且释放Storage
          */
         dispose: function () {
-            this._elements =
             this._renderList =
             this._roots = null;
         },

@@ -27,6 +27,16 @@ define(function (require) {
         R: 7
     };
 
+    // var CMD_MEM_SIZE = {
+    //     M: 3,
+    //     L: 3,
+    //     C: 7,
+    //     Q: 5,
+    //     A: 9,
+    //     R: 5,
+    //     Z: 1
+    // };
+
     var min = [];
     var max = [];
     var min2 = [];
@@ -44,27 +54,19 @@ define(function (require) {
      * @alias module:zrender/core/PathProxy
      * @constructor
      */
-    var PathProxy = function () {
+    var PathProxy = function (notSaveData) {
 
-        /**
-         * Path data. Stored as flat array
-         * @type {Array.<Object>}
-         */
-        this.data = [];
+        this._saveData = !(notSaveData || false);
 
-        this._len = 0;
+        if (this._saveData) {
+            /**
+             * Path data. Stored as flat array
+             * @type {Array.<Object>}
+             */
+            this.data = [];
+        }
 
         this._ctx = null;
-
-        this._xi = 0;
-        this._yi = 0;
-
-        this._x0 = 0;
-        this._y0 = 0;
-
-        // Unit x, Unit y. Provide for avoiding drawing that too short line segment
-        this._ux = 0;
-        this._uy = 0;
     };
 
     /**
@@ -74,6 +76,17 @@ define(function (require) {
     PathProxy.prototype = {
 
         constructor: PathProxy,
+
+        _xi: 0,
+        _yi: 0,
+
+        _x0: 0,
+        _y0: 0,
+        // Unit x, Unit y. Provide for avoiding drawing that too short line segment
+        _ux: 0,
+        _uy: 0,
+
+        _len: 0,
 
         _lineDash: null,
 
@@ -108,7 +121,9 @@ define(function (require) {
             ctx && (this.dpr = ctx.dpr);
 
             // Reset
-            this._len = 0;
+            if (this._saveData) {
+                this._len = 0;
+            }
 
             if (this._lineDash) {
                 this._lineDash = null;
@@ -365,6 +380,10 @@ define(function (require) {
          * 尽量复用而不申明新的数组。大部分图形重绘的指令数据长度都是不变的。
          */
         addData: function (cmd) {
+            if (!this._saveData) {
+                return;
+            }
+
             var data = this.data;
             if (this._len + arguments.length > data.length) {
                 // 因为之前的数组已经转换成静态的 Float32Array
