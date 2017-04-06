@@ -14,6 +14,10 @@ define(function(require) {
      * @param {boolean} [globalCoord=false]
      */
     var RadialGradient = function (x, y, r, colorStops, globalCoord) {
+        // Should do nothing more in this constructor. Because gradient can be
+        // declard by `color: {type: 'radial', colorStops: ...}`, where
+        // this constructor will not be called.
+
         this.x = x == null ? 0.5 : x;
 
         this.y = y == null ? 0.5 : y;
