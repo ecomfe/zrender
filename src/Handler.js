@@ -234,16 +234,19 @@ define(function (require) {
          * @param {number} x
          * @param {number} y
          * @param {module:zrender/graphic/Displayable} exclude
+         * @param {boolean} checkAll include silent and ignore
          * @method
          */
-        findHover: function(x, y, exclude) {
+        findHover: function(x, y, exclude, checkAll) {
             var list = this.storage.getDisplayList();
             for (var i = list.length - 1; i >= 0 ; i--) {
-                if (!list[i].silent
-                 && list[i] !== exclude
-                 // getDisplayList may include ignored item in VML mode
-                 && !list[i].ignore
-                 && isHover(list[i], x, y)) {
+                if (list[i] !== exclude
+                 && (checkAll || (
+                    !list[i].silent
+                    // getDisplayList may include ignored item in VML mode
+                    && !list[i].ignore
+                 ))
+                 && isHover(list[i], x, y, checkAll)) {
                     return list[i];
                 }
             }
@@ -274,12 +277,12 @@ define(function (require) {
         };
     });
 
-    function isHover(displayable, x, y) {
+    function isHover(displayable, x, y, checkSilent) {
         if (displayable[displayable.rectHover ? 'rectContain' : 'contain'](x, y)) {
             var el = displayable;
             while (el) {
                 // If ancestor is silent or clipped by ancestor
-                if (el.silent || (el.clipPath && !el.clipPath.contain(x, y)))  {
+                if ((!checkSilent && el.silent) || (el.clipPath && !el.clipPath.contain(x, y)))  {
                     return false;
                 }
                 el = el.parent;
