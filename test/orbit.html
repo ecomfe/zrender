@@ -47,7 +47,7 @@
             });
             var zImage = zr.pathToImage(starShape);
 
-            var NUMBER = 1000;
+            var NUMBER = 5000;
 
             for (var i = 0; i < NUMBER; i++) {
                 var star = new ImageShape({
@@ -91,13 +91,11 @@
                         opacity: 0.2,
                         lineWidth: Math.random() * 5
                     },
-                    highlightStyle: {
-                        opacity: 1
-                    }
+                    silent: true
                 });
-                // zr.add(polyline);
+                zr.add(polyline);
 
-                // animator.start('spline');
+                animator.start('spline');
             }
             zr.configLayer(1, {
                 // clearColor: 'rgba(255, 255, 255, 0.1)'
@@ -106,7 +104,7 @@
             });
 
             console.profile('render');
-            zr.refresh();
+            zr.refreshImmediately();
             console.profileEnd('render');
         }
     );
