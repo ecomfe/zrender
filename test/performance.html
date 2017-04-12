@@ -189,10 +189,12 @@
                                 height: Math.round(Math.random() * 5),
                                 startAngle : Math.round(Math.random() * 30),
                                 endAngle: Math.round(Math.random() * 180) + 30,
-                                image: img,
-                                text: shapeType == 'text' ? 'zrender': false
+                                image: img
                             },
                             style: {
+                                text: shapeType == 'text' ? '测试测试测试' : '',
+                                x: Math.round(Math.random() * width),
+                                y: Math.round(Math.random() * height),
                                 // fill: randomColor()
                                 fill: 'rgb(' + Math.round(i / n * 255) + ',0,0)'
                             },
