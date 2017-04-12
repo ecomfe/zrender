@@ -235,6 +235,7 @@ define(function(require) {
     }
 
     /**
+     * Consider typed array.
      * @param {Array|TypedArray} data
      */
     function isArrayLike(data) {

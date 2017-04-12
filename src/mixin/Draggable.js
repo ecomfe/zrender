@@ -26,7 +26,7 @@ define(function (require) {
                 this._x = e.offsetX;
                 this._y = e.offsetY;
 
-                this.dispatchToElement(draggingTarget, 'dragstart', e.event);
+                this.dispatchToElement(param(draggingTarget, e), 'dragstart', e.event);
             }
         },
 
@@ -43,18 +43,18 @@ define(function (require) {
                 this._y = y;
 
                 draggingTarget.drift(dx, dy, e);
-                this.dispatchToElement(draggingTarget, 'drag', e.event);
+                this.dispatchToElement(param(draggingTarget, e), 'drag', e.event);
 
-                var dropTarget = this.findHover(x, y, draggingTarget);
+                var dropTarget = this.findHover(x, y, draggingTarget).target;
                 var lastDropTarget = this._dropTarget;
                 this._dropTarget = dropTarget;
 
                 if (draggingTarget !== dropTarget) {
                     if (lastDropTarget && dropTarget !== lastDropTarget) {
-                        this.dispatchToElement(lastDropTarget, 'dragleave', e.event);
+                        this.dispatchToElement(param(lastDropTarget, e), 'dragleave', e.event);
                     }
                     if (dropTarget && dropTarget !== lastDropTarget) {
-                        this.dispatchToElement(dropTarget, 'dragenter', e.event);
+                        this.dispatchToElement(param(dropTarget, e), 'dragenter', e.event);
                     }
                 }
             }
@@ -67,10 +67,10 @@ define(function (require) {
                 draggingTarget.dragging = false;
             }
 
-            this.dispatchToElement(draggingTarget, 'dragend', e.event);
+            this.dispatchToElement(param(draggingTarget, e), 'dragend', e.event);
 
             if (this._dropTarget) {
-                this.dispatchToElement(this._dropTarget, 'drop', e.event);
+                this.dispatchToElement(param(this._dropTarget, e), 'drop', e.event);
             }
 
             this._draggingTarget = null;
@@ -78,6 +78,10 @@ define(function (require) {
         }
 
     };
+
+    function param(target, e) {
+        return {target: target, topTarget: e && e.topTarget};
+    }
 
     return Draggable;
 });

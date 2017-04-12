@@ -41,7 +41,7 @@ define(function (require) {
 
         var gestureInfo = gestureMgr.recognize(
             event,
-            proxy.handler.findHover(event.zrX, event.zrY, null),
+            proxy.handler.findHover(event.zrX, event.zrY, null).target,
             proxy.dom
         );
 
@@ -52,7 +52,7 @@ define(function (require) {
             var type = gestureInfo.type;
             event.gestureEvent = type;
 
-            proxy.handler.dispatchToElement(gestureInfo.target, type, gestureInfo.event);
+            proxy.handler.dispatchToElement({target: gestureInfo.target}, type, gestureInfo.event);
         }
     }
 
