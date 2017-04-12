@@ -360,6 +360,16 @@ define(function(require) {
         },
 
         /**
+         * Find hovered element
+         * @param {number} x
+         * @param {number} y
+         * @return {Object} {target, topTarget}
+         */
+        findHover: function (x, y) {
+            return this.handler.findHover(x, y);
+        },
+
+        /**
          * Bind event
          *
          * @param {string} eventName Event name
