@@ -13,6 +13,7 @@ if (!require('../core/env').canvasSupported) {
     var ZImage = require('../graphic/Image');
     var Text = require('../graphic/Text');
     var Path = require('../graphic/Path');
+    var PathProxy = require('../core/PathProxy');
 
     var Gradient = require('../graphic/Gradient');
 
@@ -482,7 +483,7 @@ if (!require('../core/env').canvasSupported) {
             strokeEl.weight = lineWidth + 'px';
         }
 
-        var path = this.path;
+        var path = this.path || (this.path = new PathProxy());
         if (this.__dirtyPath) {
             path.beginPath();
             this.buildPath(path, this.shape);

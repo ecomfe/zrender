@@ -40,23 +40,21 @@ define(function (require) {
         this.resize();
 
         // Modify storage
-        var oldDelFromMap = storage.delFromMap;
-        var oldAddToMap = storage.addToMap;
-        storage.delFromMap = function (elId) {
-            var el = storage.get(elId);
-
-            oldDelFromMap.call(storage, elId);
+        var oldDelFromStorage = storage.delFromStorage;
+        var oldAddToStorage = storage.addToStorage;
+        storage.delFromStorage = function (el) {
+            oldDelFromStorage.call(storage, el);
 
             if (el) {
                 el.onRemove && el.onRemove(vmlRoot);
             }
         };
 
-        storage.addToMap = function (el) {
+        storage.addToStorage = function (el) {
             // Displayable already has a vml node
             el.onAdd && el.onAdd(vmlRoot);
 
-            oldAddToMap.call(storage, el);
+            oldAddToStorage.call(storage, el);
         };
 
         this._firstPaint = true;
