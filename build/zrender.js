@@ -379,6 +379,7 @@ define('zrender/core/util',['require'],function(require) {
     }
 
     /**
+     * Consider typed array.
      * @param {Array|TypedArray} data
      */
     function isArrayLike(data) {
@@ -714,7 +715,7 @@ define('zrender/mixin/Draggable',['require'],function (require) {
                 this._x = e.offsetX;
                 this._y = e.offsetY;
 
-                this.dispatchToElement(draggingTarget, 'dragstart', e.event);
+                this.dispatchToElement(param(draggingTarget, e), 'dragstart', e.event);
             }
         },
 
@@ -731,18 +732,18 @@ define('zrender/mixin/Draggable',['require'],function (require) {
                 this._y = y;
 
                 draggingTarget.drift(dx, dy, e);
-                this.dispatchToElement(draggingTarget, 'drag', e.event);
+                this.dispatchToElement(param(draggingTarget, e), 'drag', e.event);
 
-                var dropTarget = this.findHover(x, y, draggingTarget);
+                var dropTarget = this.findHover(x, y, draggingTarget).target;
                 var lastDropTarget = this._dropTarget;
                 this._dropTarget = dropTarget;
 
                 if (draggingTarget !== dropTarget) {
                     if (lastDropTarget && dropTarget !== lastDropTarget) {
-                        this.dispatchToElement(lastDropTarget, 'dragleave', e.event);
+                        this.dispatchToElement(param(lastDropTarget, e), 'dragleave', e.event);
                     }
                     if (dropTarget && dropTarget !== lastDropTarget) {
-                        this.dispatchToElement(dropTarget, 'dragenter', e.event);
+                        this.dispatchToElement(param(dropTarget, e), 'dragenter', e.event);
                     }
                 }
             }
@@ -755,10 +756,10 @@ define('zrender/mixin/Draggable',['require'],function (require) {
                 draggingTarget.dragging = false;
             }
 
-            this.dispatchToElement(draggingTarget, 'dragend', e.event);
+            this.dispatchToElement(param(draggingTarget, e), 'dragend', e.event);
 
             if (this._dropTarget) {
-                this.dispatchToElement(this._dropTarget, 'drop', e.event);
+                this.dispatchToElement(param(this._dropTarget, e), 'drop', e.event);
             }
 
             this._draggingTarget = null;
@@ -766,6 +767,10 @@ define('zrender/mixin/Draggable',['require'],function (require) {
         }
 
     };
+
+    function param(target, e) {
+        return {target: target, topTarget: e && e.topTarget};
+    }
 
     return Draggable;
 });
@@ -1088,11 +1093,16 @@ define('zrender/Handler',['require','./core/util','./mixin/Draggable','./mixin/E
 
     var Eventful = require('./mixin/Eventful');
 
-    function makeEventPacket(eveType, target, event) {
+    var SILENT = 'silent';
+
+    function makeEventPacket(eveType, targetInfo, event) {
         return {
             type: eveType,
             event: event,
-            target: target,
+            // target can only be an element that is not silent.
+            target: targetInfo.target,
+            // topTarget can be a silent element.
+            topTarget: targetInfo.topTarget,
             cancelBubble: false,
             offsetX: event.zrX,
             offsetY: event.zrY,
@@ -1141,10 +1151,11 @@ define('zrender/Handler',['require','./core/util','./mixin/Draggable','./mixin/E
         proxy.handler = this;
 
         /**
+         * {target, topTarget}
          * @private
-         * @type {boolean}
+         * @type {Object}
          */
-        this._hovered;
+        this._hovered = {};
 
         /**
          * @private
@@ -1180,16 +1191,16 @@ define('zrender/Handler',['require','./core/util','./mixin/Draggable','./mixin/E
             var x = event.zrX;
             var y = event.zrY;
 
-            var hovered = this.findHover(x, y, null);
             var lastHovered = this._hovered;
+            var hovered = this._hovered = this.findHover(x, y);
+            var hoveredTarget = hovered.target;
+            var lastHoveredTarget = lastHovered.target;
+
             var proxy = this.proxy;
-
-            this._hovered = hovered;
-
-            proxy.setCursor && proxy.setCursor(hovered ? hovered.cursor : 'default');
+            proxy.setCursor && proxy.setCursor(hoveredTarget ? hoveredTarget.cursor : 'default');
 
             // Mouse out on previous hovered element
-            if (lastHovered && hovered !== lastHovered && lastHovered.__zr) {
+            if (lastHoveredTarget && hoveredTarget !== lastHoveredTarget && lastHoveredTarget.__zr) {
                 this.dispatchToElement(lastHovered, 'mouseout', event);
             }
 
@@ -1197,7 +1208,7 @@ define('zrender/Handler',['require','./core/util','./mixin/Draggable','./mixin/E
             this.dispatchToElement(hovered, 'mousemove', event);
 
             // Mouse over on a new element
-            if (hovered && hovered !== lastHovered) {
+            if (hoveredTarget && hoveredTarget !== lastHoveredTarget) {
                 this.dispatchToElement(hovered, 'mouseover', event);
             }
         },
@@ -1226,7 +1237,7 @@ define('zrender/Handler',['require','./core/util','./mixin/Draggable','./mixin/E
          * Resize
          */
         resize: function (event) {
-            this._hovered = null;
+            this._hovered = {};
         },
 
         /**
@@ -1264,16 +1275,16 @@ define('zrender/Handler',['require','./core/util','./mixin/Draggable','./mixin/E
          * 事件分发代理
          *
          * @private
-         * @param {Object} targetEl 目标图形元素
+         * @param {Object} targetInfo {target, topTarget} 目标图形元素
          * @param {string} eventName 事件名称
          * @param {Object} event 事件对象
          */
-        dispatchToElement: function (targetEl, eventName, event) {
+        dispatchToElement: function (targetInfo, eventName, event) {
+            targetInfo = targetInfo || {};
             var eventHandler = 'on' + eventName;
-            var eventPacket = makeEventPacket(eventName, targetEl, event);
+            var eventPacket = makeEventPacket(eventName, targetInfo, event);
 
-            var el = targetEl;
-
+            var el = targetInfo.target;
             while (el) {
                 el[eventHandler]
                     && (eventPacket.cancelBubble = el[eventHandler].call(el, eventPacket));
@@ -1308,19 +1319,29 @@ define('zrender/Handler',['require','./core/util','./mixin/Draggable','./mixin/E
          * @param {number} x
          * @param {number} y
          * @param {module:zrender/graphic/Displayable} exclude
+         * @return {model:zrender/Element}
          * @method
          */
         findHover: function(x, y, exclude) {
             var list = this.storage.getDisplayList();
+            var out = {};
+
             for (var i = list.length - 1; i >= 0 ; i--) {
-                if (!list[i].silent
-                 && list[i] !== exclude
-                 // getDisplayList may include ignored item in VML mode
-                 && !list[i].ignore
-                 && isHover(list[i], x, y)) {
-                    return list[i];
+                var hoverCheckResult;
+                if (list[i] !== exclude
+                    // getDisplayList may include ignored item in VML mode
+                    && !list[i].ignore
+                    && (hoverCheckResult = isHover(list[i], x, y))
+                ) {
+                    !out.topTarget && (out.topTarget = list[i]);
+                    if (hoverCheckResult !== SILENT) {
+                        out.target = list[i];
+                        break;
+                    }
                 }
             }
+
+            return out;
         }
     };
 
@@ -1328,15 +1349,16 @@ define('zrender/Handler',['require','./core/util','./mixin/Draggable','./mixin/E
     util.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick', 'contextmenu'], function (name) {
         Handler.prototype[name] = function (event) {
             // Find hover again to avoid click event is dispatched manually. Or click is triggered without mouseover
-            var hovered = this.findHover(event.zrX, event.zrY, null);
+            var hovered = this.findHover(event.zrX, event.zrY);
+            var hoveredTarget = hovered.target;
 
             if (name === 'mousedown') {
-                this._downel = hovered;
+                this._downel = hoveredTarget;
                 // In case click triggered before mouseup
-                this._upel = hovered;
+                this._upel = hoveredTarget;
             }
             else if (name === 'mosueup') {
-                this._upel = hovered;
+                this._upel = hoveredTarget;
             }
             else if (name === 'click') {
                 if (this._downel !== this._upel) {
@@ -1351,14 +1373,18 @@ define('zrender/Handler',['require','./core/util','./mixin/Draggable','./mixin/E
     function isHover(displayable, x, y) {
         if (displayable[displayable.rectHover ? 'rectContain' : 'contain'](x, y)) {
             var el = displayable;
+            var isSilent;
             while (el) {
-                // If ancestor is silent or clipped by ancestor
-                if (el.silent || (el.clipPath && !el.clipPath.contain(x, y)))  {
+                // If clipped by ancestor.
+                if (el.clipPath && !el.clipPath.contain(x, y))  {
                     return false;
+                }
+                if (el.silent) {
+                    isSilent = true;
                 }
                 el = el.parent;
             }
-            return true;
+            return isSilent ? SILENT : true;
         }
 
         return false;
@@ -1919,34 +1945,9 @@ define('zrender/mixin/Transformable',['require','../core/matrix','../core/vector
     };
 
     transformableProto.getLocalTransform = function (m) {
-        m = m || [];
-        mIdentity(m);
-
-        var origin = this.origin;
-
-        var scale = this.scale;
-        var rotation = this.rotation;
-        var position = this.position;
-        if (origin) {
-            // Translate to origin
-            m[4] -= origin[0];
-            m[5] -= origin[1];
-        }
-        matrix.scale(m, m, scale);
-        if (rotation) {
-            matrix.rotate(m, m, rotation);
-        }
-        if (origin) {
-            // Translate back from origin
-            m[4] += origin[0];
-            m[5] += origin[1];
-        }
-
-        m[4] += position[0];
-        m[5] += position[1];
-
-        return m;
+        return Transformable.getLocalTransform(this, m);
     };
+
     /**
      * 将自己的transform应用到context上
      * @param {Context2D} ctx
@@ -1963,10 +1964,9 @@ define('zrender/mixin/Transformable',['require','../core/matrix','../core/vector
     };
 
     transformableProto.restoreTransform = function (ctx) {
-        var m = this.transform;
         var dpr = ctx.dpr || 1;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
+    };
 
     var tmpTransform = [];
 
@@ -2056,6 +2056,44 @@ define('zrender/mixin/Transformable',['require','../core/matrix','../core/vector
             vector.applyTransform(v2, v2, transform);
         }
         return v2;
+    };
+
+    /**
+     * @static
+     * @param {Object} target
+     * @param {Array.<number>} target.origin
+     * @param {number} target.rotation
+     * @param {Array.<number>} target.position
+     * @param {Array.<number>} [m]
+     */
+    Transformable.getLocalTransform = function (target, m) {
+        m = m || [];
+        mIdentity(m);
+
+        var origin = target.origin;
+        var scale = target.scale || [1, 1];
+        var rotation = target.rotation || 0;
+        var position = target.position || [0, 0];
+
+        if (origin) {
+            // Translate to origin
+            m[4] -= origin[0];
+            m[5] -= origin[1];
+        }
+        matrix.scale(m, m, scale);
+        if (rotation) {
+            matrix.rotate(m, m, rotation);
+        }
+        if (origin) {
+            // Translate back from origin
+            m[4] += origin[0];
+            m[5] += origin[1];
+        }
+
+        m[4] += position[0];
+        m[5] += position[1];
+
+        return m;
     };
 
     return Transformable;
@@ -4856,7 +4894,7 @@ define('zrender/container/Group',['require','../core/util','../Element','../core
             var zr = this.__zr;
             if (storage && storage !== child.__storage) {
 
-                storage.addToMap(child);
+                storage.addToStorage(child);
 
                 if (child instanceof Group) {
                     child.addChildrenToStorage(storage);
@@ -4885,7 +4923,7 @@ define('zrender/container/Group',['require','../core/util','../Element','../core
 
             if (storage) {
 
-                storage.delFromMap(child.id);
+                storage.delFromStorage(child);
 
                 if (child instanceof Group) {
                     child.delChildrenFromStorage(storage);
@@ -4908,7 +4946,7 @@ define('zrender/container/Group',['require','../core/util','../Element','../core
             for (i = 0; i < children.length; i++) {
                 child = children[i];
                 if (storage) {
-                    storage.delFromMap(child.id);
+                    storage.delFromStorage(child);
                     if (child instanceof Group) {
                         child.delChildrenFromStorage(storage);
                     }
@@ -4954,7 +4992,7 @@ define('zrender/container/Group',['require','../core/util','../Element','../core
         addChildrenToStorage: function (storage) {
             for (var i = 0; i < this._children.length; i++) {
                 var child = this._children[i];
-                storage.addToMap(child);
+                storage.addToStorage(child);
                 if (child instanceof Group) {
                     child.addChildrenToStorage(storage);
                 }
@@ -4964,7 +5002,7 @@ define('zrender/container/Group',['require','../core/util','../Element','../core
         delChildrenFromStorage: function (storage) {
             for (var i = 0; i < this._children.length; i++) {
                 var child = this._children[i];
-                storage.delFromMap(child.id);
+                storage.delFromStorage(child);
                 if (child instanceof Group) {
                     child.delChildrenFromStorage(storage);
                 }
@@ -5738,9 +5776,6 @@ define('zrender/Storage',['require','./core/util','./core/env','./container/Grou
      * @constructor
      */
     var Storage = function () {
-        // 所有常规形状，id索引的map
-        this._elements = {};
-
         this._roots = [];
 
         this._displayList = [];
@@ -5874,8 +5909,7 @@ define('zrender/Storage',['require','./core/util','./core/env','./container/Grou
          * @param {module:zrender/Element} el
          */
         addRoot: function (el) {
-            // Element has been added
-            if (this._elements[el.id]) {
+            if (el.__storage === this) {
                 return;
             }
 
@@ -5883,17 +5917,17 @@ define('zrender/Storage',['require','./core/util','./core/env','./container/Grou
                 el.addChildrenToStorage(this);
             }
 
-            this.addToMap(el);
+            this.addToStorage(el);
             this._roots.push(el);
         },
 
         /**
          * 删除指定的图形(Shape)或者组(Group)
-         * @param {string|Array.<string>} [elId] 如果为空清空整个Storage
+         * @param {string|Array.<string>} [el] 如果为空清空整个Storage
          */
-        delRoot: function (elId) {
-            if (elId == null) {
-                // 不指定elId清空
+        delRoot: function (el) {
+            if (el == null) {
+                // 不指定el清空
                 for (var i = 0; i < this._roots.length; i++) {
                     var root = this._roots[i];
                     if (root instanceof Group) {
@@ -5901,7 +5935,6 @@ define('zrender/Storage',['require','./core/util','./core/env','./container/Grou
                     }
                 }
 
-                this._elements = {};
                 this._roots = [];
                 this._displayList = [];
                 this._displayListLen = 0;
@@ -5909,24 +5942,17 @@ define('zrender/Storage',['require','./core/util','./core/env','./container/Grou
                 return;
             }
 
-            if (elId instanceof Array) {
-                for (var i = 0, l = elId.length; i < l; i++) {
-                    this.delRoot(elId[i]);
+            if (el instanceof Array) {
+                for (var i = 0, l = el.length; i < l; i++) {
+                    this.delRoot(el[i]);
                 }
                 return;
             }
 
-            var el;
-            if (typeof(elId) == 'string') {
-                el = this._elements[elId];
-            }
-            else {
-                el = elId;
-            }
 
             var idx = util.indexOf(this._roots, el);
             if (idx >= 0) {
-                this.delFromMap(el.id);
+                this.delFromStorage(el);
                 this._roots.splice(idx, 1);
                 if (el instanceof Group) {
                     el.delChildrenFromStorage(this);
@@ -5934,29 +5960,16 @@ define('zrender/Storage',['require','./core/util','./core/env','./container/Grou
             }
         },
 
-        addToMap: function (el) {
-            if (el instanceof Group) {
-                el.__storage = this;
-            }
+        addToStorage: function (el) {
+            el.__storage = this;
             el.dirty(false);
-
-            this._elements[el.id] = el;
 
             return this;
         },
 
-        get: function (elId) {
-            return this._elements[elId];
-        },
-
-        delFromMap: function (elId) {
-            var elements = this._elements;
-            var el = elements[elId];
+        delFromStorage: function (el) {
             if (el) {
-                delete elements[elId];
-                if (el instanceof Group) {
-                    el.__storage = null;
-                }
+                el.__storage = null;
             }
 
             return this;
@@ -5966,7 +5979,6 @@ define('zrender/Storage',['require','./core/util','./core/env','./container/Grou
          * 清空并且释放Storage
          */
         dispose: function () {
-            this._elements =
             this._renderList =
             this._roots = null;
         },
@@ -6557,7 +6569,7 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
 
         var gestureInfo = gestureMgr.recognize(
             event,
-            proxy.handler.findHover(event.zrX, event.zrY, null),
+            proxy.handler.findHover(event.zrX, event.zrY, null).target,
             proxy.dom
         );
 
@@ -6568,7 +6580,7 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
             var type = gestureInfo.type;
             event.gestureEvent = type;
 
-            proxy.handler.dispatchToElement(gestureInfo.target, type, gestureInfo.event);
+            proxy.handler.dispatchToElement({target: gestureInfo.target}, type, gestureInfo.event);
         }
     }
 
@@ -6911,11 +6923,10 @@ define('zrender/graphic/Style',['require'],function (require) {
     };
 
     function createLinearGradient(ctx, obj, rect) {
-        // var size =
-        var x = obj.x;
-        var x2 = obj.x2;
-        var y = obj.y;
-        var y2 = obj.y2;
+        var x = obj.x == null ? 0 : obj.x;
+        var x2 = obj.x2 == null ? 1 : obj.x2;
+        var y = obj.y == null ? 0 : obj.y;
+        var y2 = obj.y2 == null ? 0 : obj.y2;
 
         if (!obj.global) {
             x = x * rect.width + rect.x;
@@ -6934,9 +6945,9 @@ define('zrender/graphic/Style',['require'],function (require) {
         var height = rect.height;
         var min = Math.min(width, height);
 
-        var x = obj.x;
-        var y = obj.y;
-        var r = obj.r;
+        var x = obj.x == null ? 0.5 : obj.x;
+        var y = obj.y == null ? 0.5 : obj.y;
+        var r = obj.r == null ? 0.5 : obj.r;
         if (!obj.global) {
             x = x * width + rect.x;
             y = y * height + rect.y;
@@ -7213,6 +7224,9 @@ define('zrender/graphic/Style',['require'],function (require) {
 define('zrender/graphic/Pattern',['require'],function (require) {
 
     var Pattern = function (image, repeat) {
+        // Should do nothing more in this constructor. Because gradient can be
+        // declard by `color: {image: ...}`, where this constructor will not be called.
+
         this.image = image;
         this.repeat = repeat;
 
@@ -7221,9 +7235,7 @@ define('zrender/graphic/Pattern',['require'],function (require) {
     };
 
     Pattern.prototype.getCanvasPattern = function (ctx) {
-
-        return this._canvasPattern
-            || (this._canvasPattern = ctx.createPattern(this.image, this.repeat));
+        return ctx.createPattern(this.image, this.repeat || 'repeat');
     };
 
     return Pattern;
@@ -7542,7 +7554,8 @@ define('zrender/contain/text',['require','../core/util','../core/BoundingRect'],
 
         var textHeight = textRect.height;
 
-        var halfHeight = height / 2 - textHeight / 2;
+        var lineHeight = textRect.lineHeight;
+        var halfHeight = height / 2 - textHeight / 2 + lineHeight;
 
         var textAlign = 'left';
 
@@ -7559,12 +7572,12 @@ define('zrender/contain/text',['require','../core/util','../core/BoundingRect'],
                 break;
             case 'top':
                 x += width / 2;
-                y -= distance + textHeight;
+                y -= distance + textHeight - lineHeight;
                 textAlign = 'center';
                 break;
             case 'bottom':
                 x += width / 2;
-                y += height + distance;
+                y += height + distance + lineHeight;
                 textAlign = 'center';
                 break;
             case 'inside':
@@ -7589,7 +7602,7 @@ define('zrender/contain/text',['require','../core/util','../core/BoundingRect'],
                 break;
             case 'insideBottom':
                 x += width / 2;
-                y += height - textHeight - distance;
+                y += height - textHeight - distance + lineHeight;
                 textAlign = 'center';
                 break;
             case 'insideTopLeft':
@@ -7604,11 +7617,11 @@ define('zrender/contain/text',['require','../core/util','../core/BoundingRect'],
                 break;
             case 'insideBottomLeft':
                 x += distance;
-                y += height - textHeight - distance;
+                y += height - textHeight - distance + lineHeight;
                 break;
             case 'insideBottomRight':
                 x += width - distance;
-                y += height - textHeight - distance;
+                y += height - textHeight - distance + lineHeight;
                 textAlign = 'right';
                 break;
         }
@@ -7617,7 +7630,7 @@ define('zrender/contain/text',['require','../core/util','../core/BoundingRect'],
             x: x,
             y: y,
             textAlign: textAlign,
-            textBaseline: 'top'
+            textBaseline: 'alphabetic'
         };
     }
 
@@ -8401,11 +8414,10 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
     function doClip(clipPaths, ctx) {
         for (var i = 0; i < clipPaths.length; i++) {
             var clipPath = clipPaths[i];
-            var path = clipPath.path;
 
             clipPath.setTransform(ctx);
-            path.beginPath(ctx);
-            clipPath.buildPath(path, clipPath.shape);
+            ctx.beginPath();
+            clipPath.buildPath(ctx, clipPath.shape);
             ctx.clip();
             // Transform back
             clipPath.restoreTransform(ctx);
@@ -9429,7 +9441,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./core/util','./
     /**
      * @type {string}
      */
-    zrender.version = '3.4.2';
+    zrender.version = '3.4.3';
 
     /**
      * Initializing a zrender instance
@@ -9550,21 +9562,19 @@ define('zrender/zrender',['require','./core/guid','./core/env','./core/util','./
          */
         this._needsRefresh;
 
-        // 修改 storage.delFromMap, 每次删除元素之前删除动画
+        // 修改 storage.delFromStorage, 每次删除元素之前删除动画
         // FIXME 有点ugly
-        var oldDelFromMap = storage.delFromMap;
-        var oldAddToMap = storage.addToMap;
+        var oldDelFromStorage = storage.delFromStorage;
+        var oldAddToStorage = storage.addToStorage;
 
-        storage.delFromMap = function (elId) {
-            var el = storage.get(elId);
-
-            oldDelFromMap.call(storage, elId);
+        storage.delFromStorage = function (el) {
+            oldDelFromStorage.call(storage, el);
 
             el && el.removeSelfFromZr(self);
         };
 
-        storage.addToMap = function (el) {
-            oldAddToMap.call(storage, el);
+        storage.addToStorage = function (el) {
+            oldAddToStorage.call(storage, el);
 
             el.addSelfToZr(self);
         };
@@ -9757,6 +9767,16 @@ define('zrender/zrender',['require','./core/guid','./core/env','./core/util','./
          */
         setCursorStyle: function (cursorStyle) {
             this.handler.setCursorStyle(cursorStyle);
+        },
+
+        /**
+         * Find hovered element
+         * @param {number} x
+         * @param {number} y
+         * @return {Object} {target, topTarget}
+         */
+        findHover: function (x, y) {
+            return this.handler.findHover(x, y);
         },
 
         /**
@@ -10761,6 +10781,16 @@ define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./Boun
         R: 7
     };
 
+    // var CMD_MEM_SIZE = {
+    //     M: 3,
+    //     L: 3,
+    //     C: 7,
+    //     Q: 5,
+    //     A: 9,
+    //     R: 5,
+    //     Z: 1
+    // };
+
     var min = [];
     var max = [];
     var min2 = [];
@@ -10778,27 +10808,19 @@ define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./Boun
      * @alias module:zrender/core/PathProxy
      * @constructor
      */
-    var PathProxy = function () {
+    var PathProxy = function (notSaveData) {
 
-        /**
-         * Path data. Stored as flat array
-         * @type {Array.<Object>}
-         */
-        this.data = [];
+        this._saveData = !(notSaveData || false);
 
-        this._len = 0;
+        if (this._saveData) {
+            /**
+             * Path data. Stored as flat array
+             * @type {Array.<Object>}
+             */
+            this.data = [];
+        }
 
         this._ctx = null;
-
-        this._xi = 0;
-        this._yi = 0;
-
-        this._x0 = 0;
-        this._y0 = 0;
-
-        // Unit x, Unit y. Provide for avoiding drawing that too short line segment
-        this._ux = 0;
-        this._uy = 0;
     };
 
     /**
@@ -10808,6 +10830,17 @@ define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./Boun
     PathProxy.prototype = {
 
         constructor: PathProxy,
+
+        _xi: 0,
+        _yi: 0,
+
+        _x0: 0,
+        _y0: 0,
+        // Unit x, Unit y. Provide for avoiding drawing that too short line segment
+        _ux: 0,
+        _uy: 0,
+
+        _len: 0,
 
         _lineDash: null,
 
@@ -10842,7 +10875,9 @@ define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./Boun
             ctx && (this.dpr = ctx.dpr);
 
             // Reset
-            this._len = 0;
+            if (this._saveData) {
+                this._len = 0;
+            }
 
             if (this._lineDash) {
                 this._lineDash = null;
@@ -11099,6 +11134,10 @@ define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./Boun
          * 尽量复用而不申明新的数组。大部分图形重绘的指令数据长度都是不变的。
          */
         addData: function (cmd) {
+            if (!this._saveData) {
+                return;
+            }
+
             var data = this.data;
             if (this._len + arguments.length > data.length) {
                 // 因为之前的数组已经转换成静态的 Float32Array
@@ -12142,6 +12181,7 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
 
     var abs = Math.abs;
 
+    var pathProxyForDraw = new PathProxy(true);
     /**
      * @alias module:zrender/graphic/Path
      * @extends module:zrender/graphic/Displayable
@@ -12155,7 +12195,7 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
          * @type {module:zrender/core/PathProxy}
          * @readOnly
          */
-        this.path = new PathProxy();
+        this.path = null;
     }
 
     Path.prototype = {
@@ -12170,7 +12210,7 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
 
         brush: function (ctx, prevEl) {
             var style = this.style;
-            var path = this.path;
+            var path = this.path || pathProxyForDraw;
             var hasStroke = style.hasStroke();
             var hasFill = style.hasFill();
             var fill = style.fill;
@@ -12184,12 +12224,14 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
             this.setTransform(ctx);
 
             if (this.__dirty) {
-                var rect = this.getBoundingRect();
+                var rect;
                 // Update gradient because bounding rect may changed
                 if (hasFillGradient) {
+                    rect = rect || this.getBoundingRect();
                     this._fillGradient = style.getGradient(ctx, fill, rect);
                 }
                 if (hasStrokeGradient) {
+                    rect = rect || this.getBoundingRect();
                     this._strokeGradient = style.getGradient(ctx, stroke, rect);
                 }
             }
@@ -12222,10 +12264,10 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
             // 1. Path is dirty
             // 2. Path needs javascript implemented lineDash stroking.
             //    In this case, lineDash information will not be saved in PathProxy
-            if (this.__dirtyPath || (
-                lineDash && !ctxLineDash && hasStroke
-            )) {
-                path = this.path.beginPath(ctx);
+            if (this.__dirtyPath
+                || (lineDash && !ctxLineDash && hasStroke)
+            ) {
+                path.beginPath(ctx);
 
                 // Setting line dash before build path
                 if (lineDash && !ctxLineDash) {
@@ -12236,7 +12278,9 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
                 this.buildPath(path, this.shape, false);
 
                 // Clear path dirty flag
-                this.__dirtyPath = false;
+                if (this.path) {
+                    this.__dirtyPath = false;
+                }
             }
             else {
                 // Replay path building
@@ -12273,12 +12317,20 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
         // Like in circle
         buildPath: function (ctx, shapeCfg, inBundle) {},
 
+        createPathProxy: function () {
+            this.path = new PathProxy();
+        },
+
         getBoundingRect: function () {
             var rect = this._rect;
             var style = this.style;
             var needsUpdateRect = !rect;
             if (needsUpdateRect) {
                 var path = this.path;
+                if (!path) {
+                    // Create path on demand.
+                    path = this.path = new PathProxy();
+                }
                 if (this.__dirtyPath) {
                     path.beginPath();
                     this.buildPath(path, this.shape, false);
@@ -12647,6 +12699,11 @@ define('zrender/graphic/shape/Circle',['require','../Path'],function (require) {
             if (inBundle) {
                 ctx.moveTo(shape.cx + shape.r, shape.cy);
             }
+            // else {
+            //     if (ctx.allocate && !ctx.data.length) {
+            //         ctx.allocate(ctx.CMD_MEM_SIZE.A);
+            //     }
+            // }
             // Better stroking in ShapeBundle
             // ctx.moveTo(shape.cx + shape.r, shape.cy);
             ctx.arc(shape.cx, shape.cy, shape.r, 0, Math.PI * 2, true);
@@ -13702,7 +13759,7 @@ if (!require('../core/env').canvasSupported) {
 });
 // http://www.w3.org/TR/NOTE-VML
 // TODO Use proxy like svg instead of overwrite brush methods
-define('zrender/vml/graphic',['require','../core/env','../core/vector','../core/BoundingRect','../core/PathProxy','../tool/color','../contain/text','../graphic/mixin/RectText','../graphic/Displayable','../graphic/Image','../graphic/Text','../graphic/Path','../graphic/Gradient','./core'],function (require) {
+define('zrender/vml/graphic',['require','../core/env','../core/vector','../core/BoundingRect','../core/PathProxy','../tool/color','../contain/text','../graphic/mixin/RectText','../graphic/Displayable','../graphic/Image','../graphic/Text','../graphic/Path','../core/PathProxy','../graphic/Gradient','./core'],function (require) {
 
 if (!require('../core/env').canvasSupported) {
     var vec2 = require('../core/vector');
@@ -13715,6 +13772,7 @@ if (!require('../core/env').canvasSupported) {
     var ZImage = require('../graphic/Image');
     var Text = require('../graphic/Text');
     var Path = require('../graphic/Path');
+    var PathProxy = require('../core/PathProxy');
 
     var Gradient = require('../graphic/Gradient');
 
@@ -14184,7 +14242,7 @@ if (!require('../core/env').canvasSupported) {
             strokeEl.weight = lineWidth + 'px';
         }
 
-        var path = this.path;
+        var path = this.path || (this.path = new PathProxy());
         if (this.__dirtyPath) {
             path.beginPath();
             this.buildPath(path, this.shape);
@@ -14797,23 +14855,21 @@ define('zrender/vml/Painter',['require','../core/log','./core'],function (requir
         this.resize();
 
         // Modify storage
-        var oldDelFromMap = storage.delFromMap;
-        var oldAddToMap = storage.addToMap;
-        storage.delFromMap = function (elId) {
-            var el = storage.get(elId);
-
-            oldDelFromMap.call(storage, elId);
+        var oldDelFromStorage = storage.delFromStorage;
+        var oldAddToStorage = storage.addToStorage;
+        storage.delFromStorage = function (el) {
+            oldDelFromStorage.call(storage, el);
 
             if (el) {
                 el.onRemove && el.onRemove(vmlRoot);
             }
         };
 
-        storage.addToMap = function (el) {
+        storage.addToStorage = function (el) {
             // Displayable already has a vml node
             el.onAdd && el.onAdd(vmlRoot);
 
-            oldAddToMap.call(storage, el);
+            oldAddToStorage.call(storage, el);
         };
 
         this._firstPaint = true;
