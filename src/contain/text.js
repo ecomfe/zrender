@@ -125,7 +125,7 @@ define(function (require) {
                 break;
             case 'insideTop':
                 x += width / 2;
-                y += distance;
+                y += distance + lineHeight;
                 textAlign = 'center';
                 break;
             case 'insideBottom':
@@ -135,12 +135,12 @@ define(function (require) {
                 break;
             case 'insideTopLeft':
                 x += distance;
-                y += distance;
+                y += distance + lineHeight;
                 textAlign = 'left';
                 break;
             case 'insideTopRight':
                 x += width - distance;
-                y += distance;
+                y += distance + lineHeight;
                 textAlign = 'right';
                 break;
             case 'insideBottomLeft':

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <script type="text/javascript" src="esl.js"></script>
+</head>
+<body>
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+
+    require(['zrender', 'zrender/graphic/shape/Rect'], function(zrender, RectShape){
+        // 初始化zrender
+        var zr = zrender.init(document.getElementById('main'));
+
+        ['left', 'right', 'top', 'bottom', 'inside', 'insideTop', 'insideLeft', 'insideRight', 'insideBottom', 'insideTopLeft', 'insideTopRight', 'insideBottomLeft', 'insideBottomRight'].forEach(function (textPos, idx) {
+            var text = textPos;
+            if (text.length < 8) {
+                text = text + text;
+            }
+            if (text.length > 8) {
+                text = text.substr(0, 8) + '\n' + text.substr(8, text.length - 1);
+            }
+            zr.add(new RectShape({
+                position: [(idx % 5) * 200, 100 * Math.floor(idx / 5)],
+                scale: [1, 1],
+                style: {
+                    fill: 'red',
+                    text: text,
+                    textPosition: textPos,
+                    textDistance: 0
+                },
+                shape: {
+                    x: 100,
+                    y: 50,
+                    width: 100,
+                    height: 60
+                }
+            }));
+        });
+    });
+    </script>
+    <div id="main" style="width:1000px;height:600px;"></div>
+</body>
+</html>
