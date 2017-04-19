@@ -328,23 +328,25 @@ define(function (require) {
     // TODO Optimize double memory cost problem
     function createPathOptions(str, opts) {
         var pathProxy = createPathProxyFromString(str);
-        var transform;
         opts = opts || {};
         opts.buildPath = function (path) {
-            path.setData(pathProxy.data);
-            transform && transformPath(path, transform);
-            // Svg and vml renderer don't have context
-            var ctx = path.getContext();
-            if (ctx) {
-                path.rebuildPath(ctx);
+            if (path.setData) {
+                path.setData(pathProxy.data);
+                // Svg and vml renderer don't have context
+                var ctx = path.getContext();
+                if (ctx) {
+                    path.rebuildPath(ctx);
+                }
+            }
+            else {
+                var ctx = path;
+                pathProxy.rebuildPath(ctx);
             }
         };
 
         opts.applyTransform = function (m) {
-            if (!transform) {
-                transform = matrix.create();
-            }
-            matrix.mul(transform, m, transform);
+            transformPath(pathProxy, m);
+
             this.dirty(true);
         };
 
