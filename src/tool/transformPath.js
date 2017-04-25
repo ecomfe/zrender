@@ -48,8 +48,10 @@ define(function (require) {
                     var sy = mathSqrt(m[2] * m[2] + m[3] * m[3]);
                     var angle = mathAtan2(-m[1] / sy, m[0] / sx);
                     // cx
+                    data[i] *= sx;
                     data[i++] += x;
                     // cy
+                    data[i] *= sy;
                     data[i++] += y;
                     // Scale rx and ry
                     // FIXME Assume psi is 0 here
