@@ -652,6 +652,50 @@ define('zrender/core/util',['require'],function(require) {
         return obj[primitiveKey];
     }
 
+    /**
+     * @constructor
+     */
+    function HashMap(obj) {
+        obj && extend(this, obj);
+    }
+
+    // Add prefix to avoid conflict with Object.prototype.
+    var HASH_MAP_PREFIX = '_ec_';
+    var HASH_MAP_PREFIX_LENGTH = 4;
+
+    HashMap.prototype = {
+        constructor: HashMap,
+        // Do not provide `has` method to avoid defining what is `has`.
+        // (We usually treat `null` and `undefined` as the same, different
+        // from ES6 Map).
+        get: function (key) {
+            return this[HASH_MAP_PREFIX + key];
+        },
+        set: function (key, value) {
+            this[HASH_MAP_PREFIX + key] = value;
+            // Comparing with invocation chaining, `return value` is more commonly
+            // used in this case: `var someVal = map.set('a', genVal());`
+            return value;
+        },
+        // Although util.each can be performed on this hashMap directly, user
+        // should not use the exposed keys, who are prefixed.
+        each: function (cb, context) {
+            context !== void 0 && (cb = bind(cb, context));
+            for (var prefixedKey in this) {
+                this.hasOwnProperty(prefixedKey)
+                    && cb(this[prefixedKey], prefixedKey.slice(HASH_MAP_PREFIX_LENGTH));
+            }
+        },
+        // Do not use this method if performance sensitive.
+        removeKey: function (key) {
+            delete this[key];
+        }
+    };
+
+    function createHashMap() {
+        return new HashMap();
+    }
+
     var util = {
         inherits: inherits,
         mixin: mixin,
@@ -682,6 +726,7 @@ define('zrender/core/util',['require'],function(require) {
         retrieve: retrieve,
         assert: assert,
         setAsPrimitive: setAsPrimitive,
+        createHashMap: createHashMap,
         noop: function () {}
     };
     return util;
@@ -7597,7 +7642,7 @@ define('zrender/contain/text',['require','../core/util','../core/BoundingRect'],
                 break;
             case 'insideTop':
                 x += width / 2;
-                y += distance;
+                y += distance + lineHeight;
                 textAlign = 'center';
                 break;
             case 'insideBottom':
@@ -7607,12 +7652,12 @@ define('zrender/contain/text',['require','../core/util','../core/BoundingRect'],
                 break;
             case 'insideTopLeft':
                 x += distance;
-                y += distance;
+                y += distance + lineHeight;
                 textAlign = 'left';
                 break;
             case 'insideTopRight':
                 x += width - distance;
-                y += distance;
+                y += distance + lineHeight;
                 textAlign = 'right';
                 break;
             case 'insideBottomLeft':
@@ -9441,7 +9486,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./core/util','./
     /**
      * @type {string}
      */
-    zrender.version = '3.4.3';
+    zrender.version = '3.4.4';
 
     /**
      * Initializing a zrender instance
