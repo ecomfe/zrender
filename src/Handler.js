@@ -297,6 +297,8 @@ define(function (require) {
             var isSilent;
             while (el) {
                 // If clipped by ancestor.
+                // FIXME: If clipPath has neither stroke nor fill,
+                // el.clipPath.contain(x, y) will always return false.
                 if (el.clipPath && !el.clipPath.contain(x, y))  {
                     return false;
                 }
