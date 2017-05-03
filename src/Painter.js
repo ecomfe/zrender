@@ -971,10 +971,40 @@
             var displayList = this.storage.getDisplayList(true);
 
             var scope = {};
+            var zlevel;
+
+            var self = this;
+            function findAndDrawOtherLayer(smaller, larger) {
+                var zlevelList = self._zlevelList;
+                if (smaller == null) {
+                    smaller = -Infinity;
+                }
+                var intermediateLayer;
+                for (var i = 0; i < zlevelList.length; i++) {
+                    var z = zlevelList[i];
+                    var layer = self._layers[z];
+                    if (!layer.__builtin__ && z > smaller && z < larger) {
+                        intermediateLayer = layer;
+                        break;
+                    }
+                }
+                if (intermediateLayer && intermediateLayer.renderToCanvas) {
+                    imageLayer.ctx.save();
+                    intermediateLayer.renderToCanvas(imageLayer.ctx);
+                    imageLayer.ctx.restore();
+                }
+            }
             for (var i = 0; i < displayList.length; i++) {
                 var el = displayList[i];
+
+                if (el.zlevel !== zlevel) {
+                    findAndDrawOtherLayer(zlevel, el.zlevel);
+                    zlevel = el.zlevel;
+                }
                 this._doPaintEl(el, imageLayer, true, scope);
             }
+
+            findAndDrawOtherLayer(zlevel, Infinity);
 
             return imageLayer.dom;
         },
