@@ -53,7 +53,7 @@ define(function (require) {
             }
         }
         else {
-            var len2 = p0[0].length;
+            var len2 = len && p0[0].length;
             for (var i = 0; i < len; i++) {
                 for (var j = 0; j < len2; j++) {
                     out[i][j] = interpolateNumber(
