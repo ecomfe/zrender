@@ -217,6 +217,11 @@ define(function (require) {
         return 'rgba(' + rgba.join(',') + ')';
     }
 
+    function getArrayDim(keyframes) {
+        var lastValue = keyframes[keyframes.length - 1].value;
+        return isArrayLike(lastValue && lastValue[0]) ? 2 : 1;
+    }
+
     function createTrackClip (animator, easing, oneTrackDone, keyframes, propName) {
         var getter = animator._getter;
         var setter = animator._setter;
@@ -233,11 +238,8 @@ define(function (require) {
         var isValueString = false;
 
         // For vertices morphing
-        var arrDim = (
-                isValueArray
-                && isArrayLike(firstVal[0])
-            )
-            ? 2 : 1;
+        var arrDim = isValueArray ? getArrayDim(keyframes) : 0;
+
         var trackMaxTime;
         // Sort keyframe as ascending
         keyframes.sort(function(a, b) {
