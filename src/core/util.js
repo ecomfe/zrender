@@ -510,9 +510,12 @@ define(function(require) {
 
     /**
      * @constructor
+     * @param {Object} obj Only apply `ownProperty`.
      */
     function HashMap(obj) {
-        obj && extend(this, obj);
+        obj && each(obj, function (value, key) {
+            this.set(key, value);
+        }, this);
     }
 
     // Add prefix to avoid conflict with Object.prototype.
@@ -548,8 +551,8 @@ define(function(require) {
         }
     };
 
-    function createHashMap() {
-        return new HashMap();
+    function createHashMap(obj) {
+        return new HashMap(obj);
     }
 
     var util = {
