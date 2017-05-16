@@ -113,10 +113,18 @@ define(function(require) {
             animator.animation = null;
         },
 
-        _update: function() {
+        _update: function () {
 
             var time = new Date().getTime() - this._pausedTime;
             var delta = time - this._time;
+
+            // 如果 delta 小于 12 就不渲染了
+            // why: 在一些浏览器上当我们切换到后台时，会造成回掉函数堆积
+            //      当切回来时堆积的大量渲染会是浏览器挂掉
+            if (delta < 12) {
+                return;
+            }
+
             var clips = this._clips;
             var len = clips.length;
 
