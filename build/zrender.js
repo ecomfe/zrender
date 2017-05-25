@@ -654,9 +654,12 @@ define('zrender/core/util',['require'],function(require) {
 
     /**
      * @constructor
+     * @param {Object} obj Only apply `ownProperty`.
      */
     function HashMap(obj) {
-        obj && extend(this, obj);
+        obj && each(obj, function (value, key) {
+            this.set(key, value);
+        }, this);
     }
 
     // Add prefix to avoid conflict with Object.prototype.
@@ -692,8 +695,8 @@ define('zrender/core/util',['require'],function(require) {
         }
     };
 
-    function createHashMap() {
-        return new HashMap();
+    function createHashMap(obj) {
+        return new HashMap(obj);
     }
 
     var util = {
@@ -1421,6 +1424,8 @@ define('zrender/Handler',['require','./core/util','./mixin/Draggable','./mixin/E
             var isSilent;
             while (el) {
                 // If clipped by ancestor.
+                // FIXME: If clipPath has neither stroke nor fill,
+                // el.clipPath.contain(x, y) will always return false.
                 if (el.clipPath && !el.clipPath.contain(x, y))  {
                     return false;
                 }
@@ -1440,6 +1445,7 @@ define('zrender/Handler',['require','./core/util','./mixin/Draggable','./mixin/E
 
     return Handler;
 });
+
 define('zrender/core/matrix',[],function () {
     var ArrayCtor = typeof Float32Array === 'undefined'
         ? Array
@@ -3399,7 +3405,7 @@ define('zrender/animation/Animator',['require','./Clip','../tool/color','../core
             }
         }
         else {
-            var len2 = p0[0].length;
+            var len2 = len && p0[0].length;
             for (var i = 0; i < len; i++) {
                 for (var j = 0; j < len2; j++) {
                     out[i][j] = interpolateNumber(
@@ -3563,6 +3569,11 @@ define('zrender/animation/Animator',['require','./Clip','../tool/color','../core
         return 'rgba(' + rgba.join(',') + ')';
     }
 
+    function getArrayDim(keyframes) {
+        var lastValue = keyframes[keyframes.length - 1].value;
+        return isArrayLike(lastValue && lastValue[0]) ? 2 : 1;
+    }
+
     function createTrackClip (animator, easing, oneTrackDone, keyframes, propName) {
         var getter = animator._getter;
         var setter = animator._setter;
@@ -3579,11 +3590,8 @@ define('zrender/animation/Animator',['require','./Clip','../tool/color','../core
         var isValueString = false;
 
         // For vertices morphing
-        var arrDim = (
-                isValueArray
-                && isArrayLike(firstVal[0])
-            )
-            ? 2 : 1;
+        var arrDim = isValueArray ? getArrayDim(keyframes) : 0;
+
         var trackMaxTime;
         // Sort keyframe as ascending
         keyframes.sort(function(a, b) {
@@ -9344,10 +9352,40 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
             var displayList = this.storage.getDisplayList(true);
 
             var scope = {};
+            var zlevel;
+
+            var self = this;
+            function findAndDrawOtherLayer(smaller, larger) {
+                var zlevelList = self._zlevelList;
+                if (smaller == null) {
+                    smaller = -Infinity;
+                }
+                var intermediateLayer;
+                for (var i = 0; i < zlevelList.length; i++) {
+                    var z = zlevelList[i];
+                    var layer = self._layers[z];
+                    if (!layer.__builtin__ && z > smaller && z < larger) {
+                        intermediateLayer = layer;
+                        break;
+                    }
+                }
+                if (intermediateLayer && intermediateLayer.renderToCanvas) {
+                    imageLayer.ctx.save();
+                    intermediateLayer.renderToCanvas(imageLayer.ctx);
+                    imageLayer.ctx.restore();
+                }
+            }
             for (var i = 0; i < displayList.length; i++) {
                 var el = displayList[i];
+
+                if (el.zlevel !== zlevel) {
+                    findAndDrawOtherLayer(zlevel, el.zlevel);
+                    zlevel = el.zlevel;
+                }
                 this._doPaintEl(el, imageLayer, true, scope);
             }
+
+            findAndDrawOtherLayer(zlevel, Infinity);
 
             return imageLayer.dom;
         },
@@ -9486,7 +9524,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./core/util','./
     /**
      * @type {string}
      */
-    zrender.version = '3.4.4';
+    zrender.version = '3.5.0';
 
     /**
      * Initializing a zrender instance
