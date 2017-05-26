@@ -6192,13 +6192,15 @@ define('zrender/core/event',['require','../mixin/Eventful','./env'],function(req
 define('zrender/animation/requestAnimationFrame',['require'],function(require) {
 
     return (typeof window !== 'undefined' &&
-                                    (window.requestAnimationFrame
-                                    || window.msRequestAnimationFrame
-                                    || window.mozRequestAnimationFrame
-                                    || window.webkitRequestAnimationFrame))
-                                || function (func) {
-                                    setTimeout(func, 16);
-                                };
+                ((window.requestAnimationFrame && window.requestAnimationFrame.bind(window))
+                // https://github.com/ecomfe/zrender/issues/189#issuecomment-224919809
+                || (window.msRequestAnimationFrame && window.msRequestAnimationFrame.bind(window))
+                || window.mozRequestAnimationFrame
+                || window.webkitRequestAnimationFrame)
+            )
+            || function (func) {
+                setTimeout(func, 16);
+            };
 });
 
 /**
@@ -9524,7 +9526,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./core/util','./
     /**
      * @type {string}
      */
-    zrender.version = '3.5.0';
+    zrender.version = '3.5.1';
 
     /**
      * Initializing a zrender instance
