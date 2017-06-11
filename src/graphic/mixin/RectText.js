@@ -53,6 +53,7 @@ define(function (require) {
             var font = style.textFont || style.font;
             var baseline = style.textBaseline;
             var verticalAlign = style.textVerticalAlign;
+            rect = style.textPositionRect || rect;
 
             textRect = textRect || textContain.getBoundingRect(text, font, align, baseline);
 
@@ -137,7 +138,7 @@ define(function (require) {
             }
 
             for (var i = 0; i < textLines.length; i++) {
-                    // Fill after stroke so the outline will not cover the main part.
+                // Fill after stroke so the outline will not cover the main part.
                 textStroke && ctx.strokeText(textLines[i], x, y);
                 textFill && ctx.fillText(textLines[i], x, y);
                 y += textRect.lineHeight;

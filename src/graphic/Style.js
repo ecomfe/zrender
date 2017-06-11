@@ -134,6 +134,12 @@ define(function (require) {
         textPosition: 'inside',
 
         /**
+         * If not specified, use the boundingRect of a `displayable`.
+         * @type {Object}
+         */
+        textPositionRect: null,
+
+        /**
          * [x, y]
          * @type {Array.<number>}
          */
