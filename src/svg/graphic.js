@@ -140,10 +140,23 @@ define(function (require) {
                     var y = round4(cy + ry * mathSin(theta + dTheta) * sign);
 
                     // FIXME Ellipse
-                    str.push('A',round4(rx), round4(ry), mathRound((psi + theta) * degree), +large, +clockwise, x, y);
+                    str.push('A', round4(rx), round4(ry), mathRound((psi + theta) * degree), +large, +clockwise, x, y);
                     break;
                 case CMD.Z:
                     cmdStr = 'Z';
+                    break;
+                case CMD.R:
+                    var x = round4(data[i++]);
+                    var y = round4(data[i++]);
+                    var w = round4(data[i++]);
+                    var h = round4(data[i++]);
+                    str.push(
+                        'M', x, y,
+                        'L', x + w, y,
+                        'L', x + w, y + h,
+                        'L', x, y + h,
+                        'L', x, y
+                    );
                     break;
             }
             cmdStr && str.push(cmdStr);
@@ -161,11 +174,16 @@ define(function (require) {
         var style = el.style;
 
         var svgEl = el.__svgEl;
-        if (! svgEl) {
+        if (!svgEl) {
             svgEl = createElement('path');
             el.__svgEl = svgEl;
         }
+
+        if (!el.path) {
+            el.createPathProxy();
+        }
         var path = el.path;
+
         if (el.__dirtyPath) {
             path.beginPath();
             el.buildPath(path, el.shape);
