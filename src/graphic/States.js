@@ -354,7 +354,7 @@ define(function (require) {
          * @param {Object} state
          * @param {string} subPropKey
          * @param {string} key
-         * @param {string} transitionCfg
+         * @param {Object} transitionCfg
          * @param {Function} done
          * @private
          */
