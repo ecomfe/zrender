@@ -155,7 +155,7 @@ define(function(require) {
     /**
      * @param {*} target
      * @param {*} source
-     * @param {boolen} [overlay=false]
+     * @param {boolean} [overlay=false]
      * @memberOf module:zrender/core/util
      */
     function defaults(target, source, overlay) {
@@ -312,7 +312,7 @@ define(function(require) {
         if (!(obj && cb)) {
             return;
         }
-        if (obj.reduce && obj.reduce === nativeReduce) {
+        if (obj.reduce && obj.reduce === nativeReduce) {            
             return obj.reduce(cb, memo, context);
         }
         else {

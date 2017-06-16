@@ -151,7 +151,7 @@ define(function (require) {
 
         /**
          * 图形绘制方法
-         * @param {Canvas2DRenderingContext} ctx
+         * @param {CanvasRenderingContext2D} ctx
          */
         // Interface
         brush: function (ctx, prevEl) {},
