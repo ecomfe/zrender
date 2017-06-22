@@ -18,12 +18,11 @@ define(function (require) {
      *
      * @inner
      * @param {string} id dom id 待用
-     * @param {string} type dom type，such as canvas, div etc.
      * @param {Painter} painter painter instance
      * @param {number} number
      */
-    function createDom(id, type, painter, dpr) {
-        var newDom = document.createElement(type);
+    function createDom(id, painter, dpr) {
+        var newDom = util.createCanvas();
         var width = painter.getWidth();
         var height = painter.getHeight();
 
@@ -54,7 +53,7 @@ define(function (require) {
         var dom;
         dpr = dpr || config.devicePixelRatio;
         if (typeof id === 'string') {
-            dom = createDom(id, 'canvas', painter, dpr);
+            dom = createDom(id, painter, dpr);
         }
         // Not using isDom because in node it will return false
         else if (util.isObject(id)) {
@@ -127,7 +126,7 @@ define(function (require) {
         createBackBuffer: function () {
             var dpr = this.dpr;
 
-            this.domBack = createDom('back-' + this.id, 'canvas', this.painter, dpr);
+            this.domBack = createDom('back-' + this.id, this.painter, dpr);
             this.ctxBack = this.domBack.getContext('2d');
 
             if (dpr != 1) {
