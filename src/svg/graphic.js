@@ -134,6 +134,7 @@ define(function (require) {
                         dTheta = PI2 - 1e-4;
                         clockwise = false;
                         sign = -1;
+                        str.push('M', x0, y0);
                     }
 
                     var x = round4(cx + rx * mathCos(theta + dTheta));

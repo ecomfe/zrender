@@ -17,22 +17,39 @@
         ]
     });
 
-    require(['zrender', 'zrender/graphic/shape/Rect', 'zrender/svg/svg'], function(zrender, Rect){
-        // 初始化zrender
-        var zr = zrender.init(document.getElementById('main'), {
-            renderer: 'svg'
-        });
+    require(
+        [
+            'zrender',
+            'zrender/graphic/shape/Rect',
+            'zrender/graphic/shape/Circle',
+            'zrender/svg/svg'
+        ],
+        function(zrender, Rect, Circle){
+            // 初始化zrender
+            var zr = zrender.init(document.getElementById('main'), {
+                renderer: 'svg'
+            });
 
-        var rect = new Rect({
-            shape: {
-                x: 10,
-                y: 10,
-                width: 100,
-                height: 100
-            }
-        });
-        zr.add(rect);
-    });
+            var rect = new Rect({
+                shape: {
+                    x: 10,
+                    y: 10,
+                    width: 80,
+                    height: 80
+                }
+            });
+            zr.add(rect);
+
+            var circle = new Circle({
+                shape: {
+                    cx: 150,
+                    cy: 50,
+                    r: 40
+                }
+            });
+            zr.add(circle);
+        }
+    );
     </script>
     <div id="main" style="width:1000px;height:600px;"></div>
 </body>
