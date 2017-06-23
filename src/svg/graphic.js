@@ -126,6 +126,7 @@ define(function (require) {
 
                     var x0 = round4(cx + rx * mathCos(theta));
                     var y0 = round4(cy + ry * mathSin(theta) * sign);
+                    console.log(+large, +clockwise);
 
                     // It will not draw if start point and end point are exactly the same
                     // We need to shift the end point with a small value
@@ -140,7 +141,7 @@ define(function (require) {
                     var y = round4(cy + ry * mathSin(theta + dTheta) * sign);
 
                     // FIXME Ellipse
-                    str.push('A', round4(rx), round4(ry), mathRound((psi + theta) * degree), +large, +clockwise, x, y);
+                    str.push('A', round4(rx), round4(ry), mathRound(psi * degree), +large, +clockwise, x, y);
                     break;
                 case CMD.Z:
                     cmdStr = 'Z';
