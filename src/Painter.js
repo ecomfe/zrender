@@ -118,7 +118,7 @@
      * @constructor
      * @param {HTMLElement} root 绘图容器
      * @param {module:zrender/Storage} storage
-     * @param {Ojbect} opts
+     * @param {Object} opts
      */
     var Painter = function (root, storage, opts) {
         // In node environment using node-canvas

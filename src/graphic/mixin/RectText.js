@@ -28,7 +28,7 @@ define(function (require) {
 
         /**
          * Draw text in a rect with specified position.
-         * @param  {CanvasRenderingContext} ctx
+         * @param  {CanvasRenderingContext2D} ctx
          * @param  {Object} rect Displayable rect
          * @return {Object} textRect Alternative precalculated text bounding rect
          */

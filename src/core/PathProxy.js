@@ -681,7 +681,7 @@ define(function (require) {
         /**
          * Rebuild path from current data
          * Rebuild path will not consider javascript implemented line dash.
-         * @param {CanvasRenderingContext} ctx
+         * @param {CanvasRenderingContext2D} ctx
          */
         rebuildPath: function (ctx) {
             var d = this.data;

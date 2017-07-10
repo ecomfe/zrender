@@ -113,9 +113,9 @@ define(function (require) {
 
     /**
      * 将自己的transform应用到context上
-     * @param {Context2D} ctx
+     * @param {CanvasRenderingContext2D} ctx
      */
-    transformableProto.setTransform = function (ctx) {
+    transformableProto.setTransform = function (ctx) {        
         var m = this.transform;
         var dpr = ctx.dpr || 1;
         if (m) {

@@ -93,7 +93,7 @@ define(function(require) {
      * @constructor
      * @alias module:zrender/ZRender
      * @param {string} id
-     * @param {HTMLDomElement} dom
+     * @param {HTMLElement} dom
      * @param {Object} opts
      * @param {string} [opts.renderer='canvas'] 'canvas' or 'svg'
      * @param {number} [opts.devicePixelRatio]
