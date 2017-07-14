@@ -240,6 +240,16 @@
             return this._domRoot;
         },
 
+        getViewportRootOffset: function () {
+            var viewportRoot = this.getViewportRoot();
+            if (viewportRoot) {
+                return {
+                    offsetLeft: viewportRoot.offsetLeft || 0,
+                    offsetTop: viewportRoot.offsetTop || 0
+                };
+            }
+        },
+
         /**
          * 刷新
          * @param {boolean} [paintAll=false] 强制绘制所有displayable
