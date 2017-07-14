@@ -202,10 +202,13 @@ define(function (require) {
          */
         dispatchToElement: function (targetInfo, eventName, event) {
             targetInfo = targetInfo || {};
+            var el = targetInfo.target;
+            if (el && el.silent) {
+                return;
+            }
             var eventHandler = 'on' + eventName;
             var eventPacket = makeEventPacket(eventName, targetInfo, event);
 
-            var el = targetInfo.target;
             while (el) {
                 el[eventHandler]
                     && (eventPacket.cancelBubble = el[eventHandler].call(el, eventPacket));
