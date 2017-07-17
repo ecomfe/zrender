@@ -72,7 +72,7 @@ define(function (require) {
         proxy.handler = this;
 
         /**
-         * {target, topTarget}
+         * {target, topTarget, x, y}
          * @private
          * @type {Object}
          */
@@ -113,15 +113,25 @@ define(function (require) {
             var y = event.zrY;
 
             var lastHovered = this._hovered;
+            var lastHoveredTarget = lastHovered.target;
+
+            // If lastHoveredTarget is removed from zr (detected by '__zr') by some API call
+            // (like 'setOption' or 'dispatchAction') in event handlers, we should find
+            // lastHovered again here. Otherwise 'mouseout' can not be triggered normally.
+            // See #6198.
+            if (lastHoveredTarget && !lastHoveredTarget.__zr) {
+                lastHovered = this.findHover(lastHovered.x, lastHovered.y);
+                lastHoveredTarget = lastHovered.target;
+            }
+
             var hovered = this._hovered = this.findHover(x, y);
             var hoveredTarget = hovered.target;
-            var lastHoveredTarget = lastHovered.target;
 
             var proxy = this.proxy;
             proxy.setCursor && proxy.setCursor(hoveredTarget ? hoveredTarget.cursor : 'default');
 
             // Mouse out on previous hovered element
-            if (lastHoveredTarget && hoveredTarget !== lastHoveredTarget && lastHoveredTarget.__zr) {
+            if (lastHoveredTarget && hoveredTarget !== lastHoveredTarget) {
                 this.dispatchToElement(lastHovered, 'mouseout', event);
             }
 
@@ -202,10 +212,13 @@ define(function (require) {
          */
         dispatchToElement: function (targetInfo, eventName, event) {
             targetInfo = targetInfo || {};
+            var el = targetInfo.target;
+            if (el && el.silent) {
+                return;
+            }
             var eventHandler = 'on' + eventName;
             var eventPacket = makeEventPacket(eventName, targetInfo, event);
 
-            var el = targetInfo.target;
             while (el) {
                 el[eventHandler]
                     && (eventPacket.cancelBubble = el[eventHandler].call(el, eventPacket));
@@ -245,7 +258,7 @@ define(function (require) {
          */
         findHover: function(x, y, exclude) {
             var list = this.storage.getDisplayList();
-            var out = {};
+            var out = {x: x, y: y};
 
             for (var i = list.length - 1; i >= 0 ; i--) {
                 var hoverCheckResult;
