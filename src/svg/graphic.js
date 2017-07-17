@@ -121,27 +121,37 @@ define(function (require) {
                     var sign = clockwise ? 1 : -1;
 
                     var dThetaPositive = Math.abs(dTheta);
-                    var isCircle = isAroundZero(dThetaPositive - PI2) || isAroundZero(dThetaPositive % PI2);
-                    var large = dThetaPositive > PI;
+                    var isCircle = isAroundZero(dThetaPositive % PI2)
+                        && !isAroundZero(dThetaPositive);
 
-                    var x0 = round4(cx + rx * mathCos(theta));
-                    var y0 = round4(cy + ry * mathSin(theta) * sign);
-                    console.log(+large, +clockwise);
+                    var large = false;
+                    if (dThetaPositive >= PI2) {
+                        large = true;
+                    }
+                    else if (isAroundZero(dThetaPositive)) {
+                        large = false;
+                    }
+                    else {
+                        large = (dTheta > -PI && dTheta < 0 || dTheta > PI)
+                            === !!clockwise;
+                    }
 
                     // It will not draw if start point and end point are exactly the same
                     // We need to shift the end point with a small value
                     // FIXME A better way to draw circle ?
                     if (isCircle) {
                         dTheta = PI2 - 1e-4;
-                        clockwise = false;
+                        clockwise = true;
+                        large = true;
                         sign = -1;
                     }
 
                     var x = round4(cx + rx * mathCos(theta + dTheta));
-                    var y = round4(cy + ry * mathSin(theta + dTheta) * sign);
+                    var y = round4(cy + ry * mathSin(theta + dTheta));
 
                     // FIXME Ellipse
-                    str.push('A', round4(rx), round4(ry), mathRound(psi * degree), +large, +clockwise, x, y);
+                    str.push('A', round4(rx), round4(ry),
+                        mathRound(psi * degree), +large, +clockwise, x, y);
                     break;
                 case CMD.Z:
                     cmdStr = 'Z';

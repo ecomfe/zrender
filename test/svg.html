@@ -20,105 +20,28 @@
     require(
         [
             'zrender',
-            'zrender/graphic/shape/Arc',
             'zrender/graphic/shape/Rect',
             'zrender/svg/svg'
         ],
-        function(zrender, Arc, Rect){
+        function(zrender, Rect){
             // 初始化zrender
             var zr = zrender.init(document.getElementById('main'), {
                 renderer: 'svg'
             });
 
-            for (var i = 0; i < 8; ++i) {
-                var s = 0 + Math.PI / 4 * i;
-                for (var j = 0; j < 8; ++j) {
-                    var e = Math.PI / 4 * j;
-                    var arc = new Arc({
-                        shape: {
-                            cx: 50 + 100 * i,
-                            cy: 50 + 100 * j,
-                            r: 20
-                        },
-                        style: {
-                            stroke: '#aaa'
-                        }
-                    });
-                    zr.add(arc);
-                    var arc = new Arc({
-                        shape: {
-                            cx: 50 + 100 * i,
-                            cy: 50 + 100 * j,
-                            r: 20,
-                            startAngle: s,
-                            endAngle: e,
-                            clockwise: false
-                        },
-                        style: {
-                            stroke: '#f00'
-                        }
-                    });
-                    zr.add(arc);
+            var rect = new Rect({
+                shape: {
+                    x: 10,
+                    y: 10,
+                    width: 80,
+                    height: 80
                 }
-            }
-
-            // var circle = new Arc({
-            //     shape: {
-            //         cx: 50,
-            //         cy: 50,
-            //         r: 40,
-            //         startAngle: 0,
-            //         endAngle: Math.PI * 3 / 2
-            //     },
-            //     style: {
-            //         stroke: '#999'
-            //     }
-            // });
-            // zr.add(circle);
-
-            // setInterval(function () {
-            //     circle.setShape('startAngle', circle.shape.startAngle + Math.PI / 24);
-            // }, 100);
-
-            window.updateStart = function () {
-                console.log('start', document.getElementById('start').value, document.getElementById('end').value);
-                var start = (+document.getElementById('start').value) * Math.PI / 180;
-                circle.setShape('startAngle', start);
-            }
-
-            window.updateEnd = function () {
-                console.log('end', document.getElementById('start').value, document.getElementById('end').value);
-                var end = (+document.getElementById('end').value) * Math.PI / 180;
-                circle.setShape('endAngle', end);
-            }
-
-            // var arc = new Arc({
-            //     shape: {
-            //         cx: 50,
-            //         cy: 50,
-            //         r: 40,
-            //         startAngle: 0,
-            //         endAngle: -Math.PI / 3,
-            //         clockwise: false
-            //     }
-            // });
-            // zr.add(arc);
-
-            // var rect = new Rect({
-            //     shape: {
-            //         x: 110,
-            //         y: 10,
-            //         width: 80,
-            //         height: 80
-            //     }
-            // });
-            // zr.add(rect);
+            });
+            zr.add(rect);
         }
     );
     </script>
     <div id="main" style="width:1000px;height:800px;"></div>
 
-    <input id="start" type="range" value="0" min="-180" max="180" onmousemove="updateStart()"/>
-    <input id="end" type="range" value="30" min="-180" max="180" onmousemove="updateEnd()"/>
 </body>
 </html>
