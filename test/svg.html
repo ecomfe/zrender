@@ -21,9 +21,10 @@
         [
             'zrender',
             'zrender/graphic/shape/Rect',
+            'zrender/graphic/shape/Circle',
             'zrender/svg/svg'
         ],
-        function(zrender, Rect){
+        function(zrender, Rect, Circle){
             // 初始化zrender
             var zr = zrender.init(document.getElementById('main'), {
                 renderer: 'svg'
@@ -38,6 +39,15 @@
                 }
             });
             zr.add(rect);
+
+            var circle = new Circle({
+                shape: {
+                    cx: 150,
+                    cy: 50,
+                    r: 40
+                }
+            });
+            zr.add(circle);
         }
     );
     </script>

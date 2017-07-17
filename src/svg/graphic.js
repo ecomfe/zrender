@@ -136,6 +136,9 @@ define(function (require) {
                             === !!clockwise;
                     }
 
+                    var x0 = round4(cx + rx * mathCos(theta));
+                    var y0 = round4(cy + ry * mathSin(theta));
+
                     // It will not draw if start point and end point are exactly the same
                     // We need to shift the end point with a small value
                     // FIXME A better way to draw circle ?
@@ -144,6 +147,7 @@ define(function (require) {
                         clockwise = true;
                         large = true;
                         sign = -1;
+                        str.push('M', x0, y0);
                     }
 
                     var x = round4(cx + rx * mathCos(theta + dTheta));

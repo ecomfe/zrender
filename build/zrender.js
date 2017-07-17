@@ -7096,6 +7096,12 @@ define('zrender/graphic/Style',['require'],function (require) {
         textPosition: 'inside',
 
         /**
+         * If not specified, use the boundingRect of a `displayable`.
+         * @type {Object}
+         */
+        textPositionRect: null,
+
+        /**
          * [x, y]
          * @type {Array.<number>}
          */
@@ -7857,6 +7863,7 @@ define('zrender/graphic/mixin/RectText',['require','../../contain/text','../../c
             var font = style.textFont || style.font;
             var baseline = style.textBaseline;
             var verticalAlign = style.textVerticalAlign;
+            rect = style.textPositionRect || rect;
 
             textRect = textRect || textContain.getBoundingRect(text, font, align, baseline);
 
@@ -7941,7 +7948,7 @@ define('zrender/graphic/mixin/RectText',['require','../../contain/text','../../c
             }
 
             for (var i = 0; i < textLines.length; i++) {
-                    // Fill after stroke so the outline will not cover the main part.
+                // Fill after stroke so the outline will not cover the main part.
                 textStroke && ctx.strokeText(textLines[i], x, y);
                 textFill && ctx.fillText(textLines[i], x, y);
                 y += textRect.lineHeight;
@@ -9526,7 +9533,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./core/util','./
     /**
      * @type {string}
      */
-    zrender.version = '3.5.1';
+    zrender.version = '3.5.2';
 
     /**
      * Initializing a zrender instance
@@ -12393,7 +12400,6 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
 
             // Draw rect text
             if (style.text != null) {
-                // var rect = this.getBoundingRect();
                 this.drawRectText(ctx, this.getBoundingRect());
             }
         },

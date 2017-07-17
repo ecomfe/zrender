@@ -31,7 +31,7 @@ define(function(require) {
     /**
      * @type {string}
      */
-    zrender.version = '3.5.1';
+    zrender.version = '3.5.2';
 
     /**
      * Initializing a zrender instance
@@ -93,7 +93,7 @@ define(function(require) {
      * @constructor
      * @alias module:zrender/ZRender
      * @param {string} id
-     * @param {HTMLDomElement} dom
+     * @param {HTMLElement} dom
      * @param {Object} opts
      * @param {string} [opts.renderer='canvas'] 'canvas' or 'svg'
      * @param {number} [opts.devicePixelRatio]
