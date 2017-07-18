@@ -118,7 +118,6 @@ define(function (require) {
                     var dTheta = data[i++];
                     var psi = data[i++];
                     var clockwise = data[i++];
-                    var sign = clockwise ? 1 : -1;
 
                     var dThetaPositive = Math.abs(dTheta);
                     var isCircle = isAroundZero(dThetaPositive % PI2)
@@ -143,11 +142,23 @@ define(function (require) {
                     // We need to shift the end point with a small value
                     // FIXME A better way to draw circle ?
                     if (isCircle) {
-                        dTheta = PI2 - 1e-4;
-                        clockwise = true;
+                        if (clockwise) {
+                            dTheta = PI2 - 1e-4;
+                        }
+                        else {
+                            dTheta = -PI2 + 1e-4;
+                        }
+
                         large = true;
-                        sign = -1;
-                        str.push('M', x0, y0);
+
+                        if (i === 9) {
+                            // Move to (x0, y0) only when CMD.A comes at the
+                            // first position of a shape.
+                            // For instance, when drawing a ring, CMD.A comes
+                            // after CMD.M, so it's unnecessary to move to
+                            // (x0, y0).
+                            str.push('M', x0, y0);
+                        }
                     }
 
                     var x = round4(cx + rx * mathCos(theta + dTheta));
