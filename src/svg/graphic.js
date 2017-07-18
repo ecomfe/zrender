@@ -301,10 +301,10 @@ define(function (require) {
         var y;
         var textPosition = style.textPosition;
         var distance = style.textDistance;
-        var align = style.textAlign;
+        var align = style.textAlign || 'left';
         // Default font
         var font = style.textFont || '12px sans-serif';
-        var baseline = style.textBaseline;
+        var baseline = style.textBaseline || 'alphabetic';
 
         textRect = textRect || textContain.getBoundingRect(text, font, align, baseline);
 
@@ -321,7 +321,7 @@ define(function (require) {
             x = newPos.x;
             y = newPos.y;
 
-            align = 'left';
+            align = 'center';
         }
 
         if (font) {
@@ -355,7 +355,7 @@ define(function (require) {
                 if (! tspan) {
                     tspan = tspanList[i] = createElement('tspan');
                     textSvgEl.appendChild(tspan);
-                    attr(tspan, 'alignment-baseline', 'hanging');
+                    attr(tspan, 'alignment-baseline', baseline);
                     attr(tspan, 'text-anchor', textAnchor);
                 }
                 attr(tspan, 'x', x);
