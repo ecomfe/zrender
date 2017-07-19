@@ -312,8 +312,10 @@ define(function(require) {
         if (!(obj && cb)) {
             return;
         }
-        if (obj.reduce && obj.reduce === nativeReduce) {            
-            return obj.reduce(cb, memo, context);
+        if (obj.reduce && obj.reduce === nativeReduce) {
+            var cbBind = bind(cb, context);
+            // ref: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/Reduce?v=control
+            return obj.reduce(cbBind, memo);
         }
         else {
             for (var i = 0, len = obj.length; i < len; i++) {
