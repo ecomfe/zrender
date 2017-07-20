@@ -120,7 +120,7 @@ define(function (require) {
 
         initContext: function () {
             this.ctx = this.dom.getContext('2d');
-
+            this.ctx.__currentValues = {};
             this.ctx.dpr = this.dpr;
         },
 
@@ -129,6 +129,7 @@ define(function (require) {
 
             this.domBack = createDom('back-' + this.id, 'canvas', this.painter, dpr);
             this.ctxBack = this.domBack.getContext('2d');
+            this.ctxBack.__currentValues = {};
 
             if (dpr != 1) {
                 this.ctxBack.scale(dpr, dpr);

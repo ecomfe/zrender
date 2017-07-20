@@ -118,29 +118,55 @@ define(function (require) {
                     var dTheta = data[i++];
                     var psi = data[i++];
                     var clockwise = data[i++];
-                    var sign = clockwise ? 1 : -1;
 
                     var dThetaPositive = Math.abs(dTheta);
-                    var isCircle = isAroundZero(dThetaPositive - PI2) || isAroundZero(dThetaPositive % PI2);
-                    var large = dThetaPositive > PI;
+                    var isCircle = isAroundZero(dThetaPositive % PI2)
+                        && !isAroundZero(dThetaPositive);
+
+                    var large = false;
+                    if (dThetaPositive >= PI2) {
+                        large = true;
+                    }
+                    else if (isAroundZero(dThetaPositive)) {
+                        large = false;
+                    }
+                    else {
+                        large = (dTheta > -PI && dTheta < 0 || dTheta > PI)
+                            === !!clockwise;
+                    }
 
                     var x0 = round4(cx + rx * mathCos(theta));
-                    var y0 = round4(cy + ry * mathSin(theta) * sign);
+                    var y0 = round4(cy + ry * mathSin(theta));
 
                     // It will not draw if start point and end point are exactly the same
                     // We need to shift the end point with a small value
                     // FIXME A better way to draw circle ?
                     if (isCircle) {
-                        dTheta = PI2 - 1e-4;
-                        clockwise = false;
-                        sign = -1;
+                        if (clockwise) {
+                            dTheta = PI2 - 1e-4;
+                        }
+                        else {
+                            dTheta = -PI2 + 1e-4;
+                        }
+
+                        large = true;
+
+                        if (i === 9) {
+                            // Move to (x0, y0) only when CMD.A comes at the
+                            // first position of a shape.
+                            // For instance, when drawing a ring, CMD.A comes
+                            // after CMD.M, so it's unnecessary to move to
+                            // (x0, y0).
+                            str.push('M', x0, y0);
+                        }
                     }
 
                     var x = round4(cx + rx * mathCos(theta + dTheta));
-                    var y = round4(cy + ry * mathSin(theta + dTheta) * sign);
+                    var y = round4(cy + ry * mathSin(theta + dTheta));
 
                     // FIXME Ellipse
-                    str.push('A', round4(rx), round4(ry), mathRound((psi + theta) * degree), +large, +clockwise, x, y);
+                    str.push('A', round4(rx), round4(ry),
+                        mathRound(psi * degree), +large, +clockwise, x, y);
                     break;
                 case CMD.Z:
                     cmdStr = 'Z';
