@@ -126,6 +126,11 @@ define(function (require) {
         textStroke: null,
 
         /**
+         * @type {number}
+         */
+        textLineWidth: 1,
+
+        /**
          * 'inside', 'left', 'right', 'top', 'bottom'
          * [x, y]
          * @type {string|Array.<number>}
@@ -148,11 +153,6 @@ define(function (require) {
         /**
          * @type {string}
          */
-        textBaseline: null,
-
-        /**
-         * @type {string}
-         */
         textAlign: null,
 
         /**
@@ -161,41 +161,92 @@ define(function (require) {
         textVerticalAlign: null,
 
         /**
-         * Only useful in Path and Image element
          * @type {number}
          */
         textDistance: 5,
 
         /**
-         * Only useful in Path and Image element
+         * @type {string}
+         */
+        textShadowColor: 'transparent',
+
+        /**
          * @type {number}
          */
         textShadowBlur: 0,
 
         /**
-         * Only useful in Path and Image element
          * @type {number}
          */
         textShadowOffsetX: 0,
 
         /**
-         * Only useful in Path and Image element
          * @type {number}
          */
         textShadowOffsetY: 0,
 
         /**
-         * If transform text
+         * @type {string}
+         */
+        textBoxShadowColor: 'transparent',
+
+        /**
+         * @type {number}
+         */
+        textBoxShadowBlur: 0,
+
+        /**
+         * @type {number}
+         */
+        textBoxShadowOffsetX: 0,
+
+        /**
+         * @type {number}
+         */
+        textBoxShadowOffsetY: 0,
+
+        /**
+         * Whether transform text.
          * Only useful in Path and Image element
          * @type {boolean}
          */
-        textTransform: false,
+        transformText: false,
 
         /**
          * Text rotate around position of Path or Image
-         * Only useful in Path and Image element and textTransform is false.
+         * Only useful in Path and Image element and transformText is false.
          */
         textRotation: 0,
+
+        /**
+         * Text background
+         */
+        textBackgroundColor: null,
+
+        /**
+         * Text border color
+         */
+        textBorderColor: null,
+
+        /**
+         * Text border width
+         */
+        textBorderWidth: 0,
+
+        /**
+         * Text border radius
+         */
+        textBorderRadius: 0,
+
+        /**
+         * Text padding, can be `2` or `[2, 4]` or `[2, 3, 4, 5]`
+         */
+        textPadding: null,
+
+        /**
+         * Text styles for rich text.
+         */
+        rich: null,
 
         /**
          * @type {string}
