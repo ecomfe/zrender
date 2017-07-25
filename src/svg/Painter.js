@@ -9,6 +9,9 @@ define(function (require) {
     var Path = require('../graphic/Path');
     var ZImage = require('../graphic/Image');
     var ZText = require('../graphic/Text');
+    var Gradient = require('../graphic/Gradient');
+    var LinearGradient = require('../graphic/LinearGradient');
+    var RadialGradient = require('../graphic/RadialGradient');
     var arrayDiff = require('../core/arrayDiff');
 
     var svgGraphic = require('./graphic');
@@ -172,6 +175,10 @@ define(function (require) {
                         // Insert text
                         insertAfter(svgRoot, textSvgElement, svgElement);
                         prevSvgElement = textSvgElement || svgElement;
+
+                        this._updateGradient(svgElement, displayable, 'fill');
+                        this._updateGradient(svgElement, displayable, 'stroke');
+
                         break;
                     // case '^':
                         // var displayable = visibleList[item.idx];
@@ -183,6 +190,94 @@ define(function (require) {
             }
 
             this._visibleList = newVisibleList;
+        },
+
+        /**
+         * Updates gradient for fill or stroke
+         *
+         * @param {SvgElement}  svgElement   SVG element to paint
+         * @param {Displayable} displayable  zrender displayable element
+         * @param {string}      fillOrStroke should be 'fill' or 'stroke'
+         */
+        _updateGradient: function (svgElement, displayable, fillOrStroke) {
+            if (displayable
+                && displayable.style
+                && displayable.style[fillOrStroke] instanceof Gradient
+            ) {
+                var gradient = displayable.style[fillOrStroke];
+
+                // Create dom in <defs> if not exists
+                var dom = gradient.__dom || this._addGradient(gradient);
+                var id = dom.getAttribute('id');
+
+                svgElement.setAttribute(fillOrStroke, 'url(#' + id + ')');
+            }
+        },
+
+        /**
+         * Add a new gradient tag in <defs>
+         *
+         * @param {Gradient} gradient zr gradient instance
+         * @returns {SVGElement} Either <linearGradient>
+         *                       or <radialGradient> element
+         */
+        _addGradient: function (gradient) {
+            var el = null;
+            if (gradient instanceof LinearGradient) {
+                el = createElement('linearGradient');
+                el.setAttribute('x1', gradient.x);
+                el.setAttribute('y1', gradient.y);
+                el.setAttribute('x2', gradient.x2);
+                el.setAttribute('y2', gradient.y2);
+            }
+            else if (gradient instanceof RadialGradient) {
+                el = createElement('radialGradient');
+                el.setAttribute('cx', gradient.x);
+                el.setAttribute('cy', gradient.y);
+                el.setAttribute('r', gradient.r);
+            }
+            else {
+                zrLog('Illegal gradient type.');
+                return null;
+            }
+
+            // Set dom id with gradient id, since each gradient instance
+            // will have no more than one dom element
+            el.setAttribute('id', 'ec-gradient-' + gradient.id);
+
+            // Add color stops
+            var colors = gradient.colorStops;
+            for (var i = 0, len = colors.length; i < len; ++i) {
+                var stop = createElement('stop');
+                stop.setAttribute('offset', colors[i].offset * 100 + '%');
+                stop.setAttribute('stop-color', colors[i].color);
+                el.appendChild(stop);
+            }
+
+            var defs = this._getDefs();
+            defs.appendChild(el);
+
+            // Store dom element in gradient, to avoid creating multiple
+            // dom instances for the same gradient element
+            gradient.__dom = el;
+
+            return el;
+        },
+
+        /**
+         * Get the <defs> tag for svgRoot. Create one if not exists.
+         *
+         * @returns {SVGDefsElement} SVG <defs> element
+         */
+        _getDefs: function () {
+            var svgRoot = this._svgRoot;
+            var defs = this._svgRoot.getElementsByTagName('defs');
+            return defs.length === 0
+                ? svgRoot.insertBefore(
+                    createElement('defs'), // Create new tag
+                    svgRoot.firstChild // Insert in the front of svg
+                )
+                : defs[0]; // Use previously defined <defs>
         },
 
         resize: function () {
