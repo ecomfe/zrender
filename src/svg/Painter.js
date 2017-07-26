@@ -272,6 +272,11 @@ define(function (require) {
         },
 
         _removeUnusedGradient: function (newVisibleList, removeList) {
+            if (removeList.length === 0) {
+                // Not removing any, do nothing
+                return;
+            }
+
             var defs = this._getDefs();
 
             // Get all gradients doms
