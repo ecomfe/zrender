@@ -6,7 +6,7 @@ define(function (require) {
 
     var retrieve = util.retrieve;
 
-    // TODO: Do not support 'start', 'end' yet.
+    // TODO: Have not support 'start', 'end' yet.
     var VALID_TEXT_ALIGN = {left: 1, right: 1, center: 1};
     var VALID_TEXT_VERTICAL_ALIGN = {top: 1, bottom: 1, middle: 1};
 
@@ -27,10 +27,17 @@ define(function (require) {
     function normalizeStyle(style) {
         if (style) {
             style.font = style.textFont || style.font;
-            style.textAlign = validTextAlign(style.textAlign);
-            style.textVerticalAlign = validTextVerticalAlign(
-                style.textVerticalAlign || style.textBaseline
-            );
+
+            var textAlign = style.textAlign;
+            style.textAlign = (
+                textAlign == null || VALID_TEXT_ALIGN[textAlign]
+            ) ? textAlign : 'left';
+
+            // Compatible with textBaseline.
+            var textVerticalAlign = style.textVerticalAlign || style.textBaseline;
+            style.textVerticalAlign = (
+                textVerticalAlign == null || VALID_TEXT_VERTICAL_ALIGN[textVerticalAlign]
+            ) ? textVerticalAlign : 'top';
 
             var textPadding = style.textPadding;
             if (textPadding) {
@@ -55,24 +62,26 @@ define(function (require) {
     function renderPlainText(ctx, text, style, rect) {
         var font = setCtx(ctx, 'font', style.font || textContain.DEFAULT_FONT);
 
-        var block = textContain.parsePlainText(text, font);
+        var contentBlock = textContain.parsePlainText(text, font);
         var textPadding = style.textPadding;
-        var outerHeight = block.height;
+        var outerHeight = contentBlock.height;
         textPadding && (outerHeight += textPadding[0] + textPadding[2]);
 
-        var textLines = block.lines;
-        var lineHeight = block.lineHeight;
+        var textLines = contentBlock.lines;
+        var lineHeight = contentBlock.lineHeight;
 
-        var textAlign = style.textAlign;
-        var textVerticalAlign = style.textVerticalAlign;
+        var boxPos = getBoxPosition(outerHeight, style, rect);
+        var baseX = boxPos.baseX;
+        var baseY = boxPos.baseY;
+        var textAlign = boxPos.textAlign;
+        var textVerticalAlign = boxPos.textVerticalAlign;
 
-        var x = style.x || 0;
-        var y = textContain.adjustTextY(style.y || 0, outerHeight, textVerticalAlign);
+        // Origin of textRotation should be the base point of text drawing.
+        applyTextRotation(ctx, style, rect, baseX, baseY);
 
-        var adjustedBox = adjustBlockPosition(x, y, textAlign, outerHeight, style, rect);
-        x = adjustedBox.x;
-        y = adjustedBox.y;
-        textAlign = adjustedBox.textAlign;
+        var boxY = textContain.adjustTextY(baseY, outerHeight, textVerticalAlign);
+        var textX = baseX;
+        var textY = boxY;
 
         var needDrawBg = needDrawBackground(style);
         if (needDrawBg || textPadding) {
@@ -80,12 +89,13 @@ define(function (require) {
             var textWidth = textContain.getWidth(text, font);
             var outerWidth = textWidth;
             textPadding && (outerWidth += textPadding[1] + textPadding[3]);
+            var boxX = textContain.adjustTextX(baseX, outerWidth, textAlign);
 
-            needDrawBg && drawBackground(ctx, style, x, y, outerWidth, outerHeight);
+            needDrawBg && drawBackground(ctx, style, boxX, boxY, outerWidth, outerHeight);
 
             if (textPadding) {
-                x = getTextXForPadding(x, textAlign, outerWidth, textWidth, textPadding);
-                y += textPadding[0];
+                textX = getTextXForPadding(baseX, textAlign, outerWidth, textWidth, textPadding);
+                textY += textPadding[0];
             }
         }
 
@@ -104,7 +114,7 @@ define(function (require) {
         setCtx(ctx, 'shadowOffsetY', style.textShadowOffsetY);
 
         // `textBaseline` is set as 'middle'.
-        y += lineHeight / 2;
+        textY += lineHeight / 2;
 
         var textLineWidth = style.textLineWidth;
         var hasStroke = needStroke(textStroke, textLineWidth);
@@ -120,50 +130,48 @@ define(function (require) {
 
         for (var i = 0; i < textLines.length; i++) {
             // Fill after stroke so the outline will not cover the main part.
-            hasStroke && ctx.strokeText(textLines[i], x, y);
-            hasFill && ctx.fillText(textLines[i], x, y);
-            y += lineHeight;
+            hasStroke && ctx.strokeText(textLines[i], textX, textY);
+            hasFill && ctx.fillText(textLines[i], textX, textY);
+            textY += lineHeight;
         }
     }
 
     function renderRichText(ctx, text, style, rect) {
-        var block = textContain.parseRichText(text, style);
-        drawRichText(ctx, block, style, rect);
+        var contentBlock = textContain.parseRichText(text, style);
+        drawRichText(ctx, contentBlock, style, rect);
     }
 
-    function drawRichText(ctx, block, style, rect) {
-        var x = style.x || 0;
-        var y = style.y || 0;
-        var blockWidth = block.width;
-        var outerWidth = block.outerWidth;
-        var outerHeight = block.outerHeight;
+    function drawRichText(ctx, contentBlock, style, rect) {
+        var contentWidth = contentBlock.width;
+        var outerWidth = contentBlock.outerWidth;
+        var outerHeight = contentBlock.outerHeight;
         var textPadding = style.textPadding;
-        var textAlign = style.textAlign;
-        var textVerticalAlign = style.textVerticalAlign;
 
-        var adjustedBox = adjustBlockPosition(
-            x, y, textAlign, outerHeight, style, rect
-        );
-        x = adjustedBox.x;
-        y = adjustedBox.y;
-        textAlign = adjustedBox.textAlign;
+        var boxPos = getBoxPosition(outerHeight, style, rect);
+        var baseX = boxPos.baseX;
+        var baseY = boxPos.baseY;
+        var textAlign = boxPos.textAlign;
+        var textVerticalAlign = boxPos.textVerticalAlign;
 
-        var x = textContain.adjustTextX(x, outerWidth, textAlign);
-        var y = textContain.adjustTextY(y, outerHeight, textVerticalAlign);
-        var xLeft = x;
-        var lineTop = y;
+        // Origin of textRotation should be the base point of text drawing.
+        applyTextRotation(ctx, style, rect, baseX, baseY);
+
+        var boxX = textContain.adjustTextX(baseX, outerWidth, textAlign);
+        var boxY = textContain.adjustTextY(baseY, outerHeight, textVerticalAlign);
+        var xLeft = boxX;
+        var lineTop = boxY;
         if (textPadding) {
             xLeft += textPadding[3];
             lineTop += textPadding[0];
         }
-        var xRight = xLeft + blockWidth;
+        var xRight = xLeft + contentWidth;
 
         needDrawBackground(style) && drawBackground(
-            ctx, style, x, y, outerWidth, outerHeight
+            ctx, style, boxX, boxY, outerWidth, outerHeight
         );
 
-        for (var i = 0; i < block.lines.length; i++) {
-            var line = block.lines[i];
+        for (var i = 0; i < contentBlock.lines.length; i++) {
+            var line = contentBlock.lines[i];
             var tokens = line.tokens;
             var tokenCount = tokens.length;
             var lineHeight = line.lineHeight;
@@ -196,7 +204,7 @@ define(function (require) {
             }
 
             // The other tokens are placed as textAlign 'center' if there is enough space.
-            lineXLeft += (blockWidth - (lineXLeft - xLeft) - (xRight - lineXRight) - usedWidth) / 2;
+            lineXLeft += (contentWidth - (lineXLeft - xLeft) - (xRight - lineXRight) - usedWidth) / 2;
             while (leftIndex <= rightIndex) {
                 token = tokens[leftIndex];
                 // Consider width specified by user, use 'center' rather than 'left'.
@@ -206,6 +214,26 @@ define(function (require) {
             }
 
             lineTop += lineHeight;
+        }
+    }
+
+    function applyTextRotation(ctx, style, rect, x, y) {
+        // textRotation only apply in RectText.
+        if (rect && style.textRotation) {
+            var origin = style.textOrigin;
+            if (origin === 'center') {
+                x = rect.width / 2 + rect.x;
+                y = rect.height / 2 + rect.y;
+            }
+            else if (origin) {
+                x = origin[0] + rect.x;
+                y = origin[1] + rect.y;
+            }
+
+            ctx.translate(x, y);
+            // Positive: anticlockwise
+            ctx.rotate(-style.textRotation);
+            ctx.translate(-x, -y);
         }
     }
 
@@ -309,40 +337,49 @@ define(function (require) {
         }
     }
 
-    function adjustBlockPosition(x, y, textAlign, blockHeiht, style, rect) {
-        var textPosition = style.textPosition;
+    function getBoxPosition(blockHeiht, style, rect) {
+        var baseX = style.x || 0;
+        var baseY = style.y || 0;
+        var textAlign = style.textAlign;
+        var textVerticalAlign = style.textVerticalAlign;
+
         if (rect !== false) {
             rect = style.textPositionRect || rect;
         }
 
         // Text position represented by coord
         if (rect) {
+            var textPosition = style.textPosition;
             if (textPosition instanceof Array) {
                 // Percent
-                x = rect.x + parsePercent(textPosition[0], rect.width);
-                y = rect.y + parsePercent(textPosition[1], rect.height);
+                baseX = rect.x + parsePercent(textPosition[0], rect.width);
+                baseY = rect.y + parsePercent(textPosition[1], rect.height);
             }
             else {
                 var res = textContain.adjustTextPositionOnRect(
-                    textPosition, rect, blockHeiht, style.textDistance
+                    textPosition, rect, style.textDistance
                 );
-                x = res.x;
-                y = res.y;
+                baseX = res.x;
+                baseY = res.y;
                 // Default align and baseline when has textPosition
                 textAlign = textAlign || res.textAlign;
+                textVerticalAlign = textVerticalAlign || res.textVerticalAlign;
             }
 
             // textOffset is only support in RectText, otherwise
             // we have to adjust boundingRect for textOffset.
             var textOffset = style.textOffset;
             if (textOffset) {
-                x += textOffset[0];
-                y += textOffset[1];
+                baseX += textOffset[0];
+                baseY += textOffset[1];
             }
         }
 
         return {
-            x: x, y: y, textAlign: textAlign
+            baseX: baseX,
+            baseY: baseY,
+            textAlign: textAlign,
+            textVerticalAlign: textVerticalAlign
         };
     }
 
@@ -375,15 +412,6 @@ define(function (require) {
             return parseFloat(value);
         }
         return value;
-    }
-
-    // Invalid value will cause state not change.
-    function validTextAlign(val) {
-        return (val == null || VALID_TEXT_ALIGN[val]) ? val : 'left';
-    }
-
-    function validTextVerticalAlign(val) {
-        return (val == null || VALID_TEXT_VERTICAL_ALIGN[val]) ? val : 'top';
     }
 
     function getTextXForPadding(x, textAlign, outerWidth, textWidth, textPadding) {

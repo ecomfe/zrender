@@ -59,9 +59,9 @@ define(function (require) {
     }
 
     function getPlainTextRect(text, font, textAlign, textVerticalAlign, textPadding) {
-        var block = parsePlainText(text, font, textVerticalAlign);
+        var contentBlock = parsePlainText(text, font, textVerticalAlign);
         var outerWidth = getTextWidth(text, font);
-        var outerHeight = block.height;
+        var outerHeight = contentBlock.height;
 
         if (textPadding) {
             outerWidth += textPadding[1] + textPadding[3];
@@ -72,25 +72,25 @@ define(function (require) {
         var y = adjustTextY(0, outerHeight, textVerticalAlign);
 
         var rect = new BoundingRect(x, y, outerWidth, outerHeight);
-        rect.lineHeight = block.lineHeight;
+        rect.lineHeight = contentBlock.lineHeight;
 
         return rect;
     }
 
     function getRichTextRect(text, font, textAlign, textVerticalAlign, textPadding, rich) {
-        var block = parseRichText(text, {
+        var contentBlock = parseRichText(text, {
             rich: rich,
             font: font,
             textAlign: textAlign,
             textPadding: textPadding
         });
-        var width = block.outerWidth;
-        var height = block.outerHeight;
+        var outerWidth = contentBlock.outerWidth;
+        var outerHeight = contentBlock.outerHeight;
 
-        var x = adjustTextX(0, width, textAlign);
-        var y = adjustTextY(0, height, textVerticalAlign);
+        var x = adjustTextX(0, outerWidth, textAlign);
+        var y = adjustTextY(0, outerHeight, textVerticalAlign);
 
-        return new BoundingRect(x, y, width, height);
+        return new BoundingRect(x, y, outerWidth, outerHeight);
     }
 
     /**
@@ -132,37 +132,38 @@ define(function (require) {
      * @public
      * @param {stirng} textPosition
      * @param {Object} rect {x, y, width, height}
-     * @param {number} textHeight
      * @param {number} distance
-     * @return {Object} {x, y, textAlign}
+     * @return {Object} {x, y, textAlign, textVerticalAlign}
      */
-    function adjustTextPositionOnRect(textPosition, rect, textHeight, distance) {
+    function adjustTextPositionOnRect(textPosition, rect, distance) {
 
         var x = rect.x;
         var y = rect.y;
 
         var height = rect.height;
         var width = rect.width;
-
-        var halfHeight = height / 2 - textHeight / 2;
+        var halfHeight = height / 2;
 
         var textAlign = 'left';
+        var textVerticalAlign = 'top';
 
         switch (textPosition) {
             case 'left':
                 x -= distance;
                 y += halfHeight;
                 textAlign = 'right';
+                textVerticalAlign = 'middle';
                 break;
             case 'right':
                 x += distance + width;
                 y += halfHeight;
-                textAlign = 'left';
+                textVerticalAlign = 'middle';
                 break;
             case 'top':
                 x += width / 2;
-                y -= distance + textHeight;
+                y -= distance;
                 textAlign = 'center';
+                textVerticalAlign = 'bottom';
                 break;
             case 'bottom':
                 x += width / 2;
@@ -173,16 +174,18 @@ define(function (require) {
                 x += width / 2;
                 y += halfHeight;
                 textAlign = 'center';
+                textVerticalAlign = 'middle';
                 break;
             case 'insideLeft':
                 x += distance;
                 y += halfHeight;
-                textAlign = 'left';
+                textVerticalAlign = 'middle';
                 break;
             case 'insideRight':
                 x += width - distance;
                 y += halfHeight;
                 textAlign = 'right';
+                textVerticalAlign = 'middle';
                 break;
             case 'insideTop':
                 x += width / 2;
@@ -191,13 +194,13 @@ define(function (require) {
                 break;
             case 'insideBottom':
                 x += width / 2;
-                y += height - textHeight - distance;
+                y += height - distance;
                 textAlign = 'center';
+                textVerticalAlign = 'bottom';
                 break;
             case 'insideTopLeft':
                 x += distance;
                 y += distance;
-                textAlign = 'left';
                 break;
             case 'insideTopRight':
                 x += width - distance;
@@ -206,19 +209,22 @@ define(function (require) {
                 break;
             case 'insideBottomLeft':
                 x += distance;
-                y += height - textHeight - distance;
+                y += height - distance;
+                textVerticalAlign = 'bottom';
                 break;
             case 'insideBottomRight':
                 x += width - distance;
-                y += height - textHeight - distance;
+                y += height - distance;
                 textAlign = 'right';
+                textVerticalAlign = 'bottom';
                 break;
         }
 
         return {
             x: x,
             y: y,
-            textAlign: textAlign
+            textAlign: textAlign,
+            textVerticalAlign: textVerticalAlign
         };
     }
 
@@ -393,11 +399,11 @@ define(function (require) {
      * If styleName is undefined, it is plain text.
      */
     function parseRichText(text, style) {
-        var block = {lines: [], width: 0, height: 0};
+        var contentBlock = {lines: [], width: 0, height: 0};
 
         text != null && (text += '');
         if (!text) {
-            return block;
+            return contentBlock;
         }
 
         var lastIndex = STYLE_REG.lastIndex = 0;
@@ -405,20 +411,20 @@ define(function (require) {
         while ((result = STYLE_REG.exec(text)) != null)  {
             var matchedIndex = result.index;
             if (matchedIndex > lastIndex) {
-                pushTokens(block, text.substring(lastIndex, matchedIndex));
+                pushTokens(contentBlock, text.substring(lastIndex, matchedIndex));
             }
-            pushTokens(block, result[2], result[1]);
+            pushTokens(contentBlock, result[2], result[1]);
             lastIndex = STYLE_REG.lastIndex;
         }
 
         if (lastIndex < text.length) {
-            pushTokens(block, text.substring(lastIndex, text.length));
+            pushTokens(contentBlock, text.substring(lastIndex, text.length));
         }
 
-        var lines = block.lines;
+        var lines = contentBlock.lines;
         var baseLineHeight = textContain.getLineHeight(style.font);
-        var blockHeight = 0;
-        var blockWidth = 0;
+        var contentHeight = 0;
+        var contentWidth = 0;
 
         for (var i = 0; i < lines.length; i++) {
             var line = lines[i];
@@ -455,20 +461,20 @@ define(function (require) {
 
             line.width = lineWidth;
             line.lineHeight = lineHeight;
-            blockHeight += lineHeight;
-            blockWidth = Math.max(blockWidth, lineWidth);
+            contentHeight += lineHeight;
+            contentWidth = Math.max(contentWidth, lineWidth);
         }
 
-        block.outerWidth = block.width = blockWidth;
-        block.outerHeight = block.height = blockHeight;
+        contentBlock.outerWidth = contentBlock.width = contentWidth;
+        contentBlock.outerHeight = contentBlock.height = contentHeight;
 
         var textPadding = style.textPadding;
         if (textPadding) {
-            block.outerWidth += textPadding[1] + textPadding[3];
-            block.outerHeight += textPadding[0] + textPadding[2];
+            contentBlock.outerWidth += textPadding[1] + textPadding[3];
+            contentBlock.outerHeight += textPadding[0] + textPadding[2];
         }
 
-        return block;
+        return contentBlock;
     }
 
     function pushTokens(block, str, styleName) {

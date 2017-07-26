@@ -133,6 +133,7 @@ define(function (require) {
         /**
          * 'inside', 'left', 'right', 'top', 'bottom'
          * [x, y]
+         * Based on x, y of rect.
          * @type {string|Array.<number>}
          * @default 'inside'
          */
@@ -219,38 +220,50 @@ define(function (require) {
         textRotation: 0,
 
         /**
-         * Text background
+         * Text origin of text rotation, like [10, 40].
+         * Based on x, y of rect.
+         * Useful in label rotation of circular symbol.
+         * By default, this origin is textPosition.
+         * Can be 'center'.
+         * @type {string|Array.<number>}
+         */
+        textOrigin: null,
+
+        /**
+         * @type {string}
          */
         textBackgroundColor: null,
 
         /**
-         * Text border color
+         * @type {string}
          */
         textBorderColor: null,
 
         /**
-         * Text border width
+         * @type {number}
          */
         textBorderWidth: 0,
 
         /**
-         * Text border radius
+         * @type {number}
          */
         textBorderRadius: 0,
 
         /**
-         * Text padding, can be `2` or `[2, 4]` or `[2, 3, 4, 5]`
+         * Can be `2` or `[2, 4]` or `[2, 3, 4, 5]`
+         * @type {number|Array.<number>}
          */
         textPadding: null,
 
         /**
          * Text styles for rich text.
+         * @type {Object}
          */
         rich: null,
 
         /**
-         * @type {string}
          * https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/globalCompositeOperation
+         * @type {string}
          */
         blend: null,
 

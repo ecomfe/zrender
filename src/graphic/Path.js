@@ -137,7 +137,6 @@ define(function (require) {
                 ctx.setLineDash([]);
             }
 
-
             this.restoreTransform(ctx);
 
             // Draw rect text

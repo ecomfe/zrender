@@ -48,12 +48,6 @@ define(function (require) {
             }
 
             // transformText and textRotation can not be used at the same time.
-            if (style.textRotation) {
-                transform && ctx.translate(transform[4], transform[5]);
-                ctx.rotate(style.textRotation);
-                transform && ctx.translate(-transform[4], -transform[5]);
-            }
-
             textHelper.renderText(ctx, text, style, rect);
 
             ctx.restore();
