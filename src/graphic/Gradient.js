@@ -5,16 +5,11 @@ define(function (require) {
      */
     var Gradient = function (colorStops) {
 
-        this.id = Gradient.prototype.__nextId++;
-
         this.colorStops = colorStops || [];
 
     };
 
     Gradient.prototype = {
-
-        // Next gradient uid
-        __nextId: 0,
 
         constructor: Gradient,
 
@@ -26,6 +21,7 @@ define(function (require) {
                 color: color
             });
         }
+
     };
 
     return Gradient;

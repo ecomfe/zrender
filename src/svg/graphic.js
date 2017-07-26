@@ -47,10 +47,8 @@ define(function (require) {
     }
 
     function attr(el, key, val) {
-        if (val instanceof Gradient) {
-
-        }
-        else {
+        if (!val || val.type !== 'linear' && val.type !== 'radial') {
+            // Don't set attribute for gradient, since it need new dom nodes
             el.setAttribute(key, val);
         }
     }

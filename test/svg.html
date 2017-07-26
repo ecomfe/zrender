@@ -69,6 +69,14 @@
             });
             zr.add(rect);
 
+            setTimeout(function () {
+                zr.remove(rect);
+            }, 1000);
+
+            setTimeout(function () {
+                zr.add(rect);
+            }, 5000);
+
             var gradient2 = new LinearGradient();
             gradient2.addColorStop(0, 'blue');
             gradient2.addColorStop(1, 'yellow');
@@ -88,6 +96,14 @@
             });
             zr.add(circle);
 
+            setTimeout(function () {
+                zr.remove(circle);
+            }, 3000);
+
+            setTimeout(function () {
+                zr.add(circle);
+            }, 6000);
+
             var ring = new Ring({
                 shape: {
                     cx: 250,
@@ -100,6 +116,14 @@
                 }
             });
             zr.add(ring);
+
+            setTimeout(function () {
+                zr.remove(ring);
+            }, 4000);
+
+            setTimeout(function () {
+                zr.add(ring);
+            }, 6000);
 
             var sector = new Sector({
                 shape: {

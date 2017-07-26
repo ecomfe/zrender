@@ -9,10 +9,8 @@ define(function (require) {
     var Path = require('../graphic/Path');
     var ZImage = require('../graphic/Image');
     var ZText = require('../graphic/Text');
-    var Gradient = require('../graphic/Gradient');
-    var LinearGradient = require('../graphic/LinearGradient');
-    var RadialGradient = require('../graphic/RadialGradient');
     var arrayDiff = require('../core/arrayDiff');
+    var util = require('../core/util');
 
     var svgGraphic = require('./graphic');
     var svgPath = svgGraphic.path;
@@ -140,6 +138,7 @@ define(function (require) {
             var prevSvgElement;
 
             // First do remove, in case element moved to the head and do remove after add
+            var removeList = [];
             for (i = 0; i < diff.length; i++) {
                 var item = diff[i];
                 if (item.cmd === '-') {
@@ -148,6 +147,7 @@ define(function (require) {
                     var textSvgElement = getTextSvgElement(displayable);
                     remove(svgRoot, svgElement);
                     remove(svgRoot, textSvgElement);
+                    removeList.push(displayable);
                 }
             }
             for (i = 0; i < diff.length; i++) {
@@ -176,8 +176,8 @@ define(function (require) {
                         insertAfter(svgRoot, textSvgElement, svgElement);
                         prevSvgElement = textSvgElement || svgElement;
 
-                        this._updateGradient(svgElement, displayable, 'fill');
-                        this._updateGradient(svgElement, displayable, 'stroke');
+                        this._setGradient(svgElement, displayable, 'fill');
+                        this._setGradient(svgElement, displayable, 'stroke');
 
                         break;
                     // case '^':
@@ -189,20 +189,24 @@ define(function (require) {
                 }
             }
 
+            this._removeUnusedGradient(newVisibleList, removeList);
+
             this._visibleList = newVisibleList;
         },
 
         /**
-         * Updates gradient for fill or stroke
+         * Set gradient for fill or stroke
          *
          * @param {SvgElement}  svgElement   SVG element to paint
          * @param {Displayable} displayable  zrender displayable element
          * @param {string}      fillOrStroke should be 'fill' or 'stroke'
          */
-        _updateGradient: function (svgElement, displayable, fillOrStroke) {
+        _setGradient: function (svgElement, displayable, fillOrStroke) {
             if (displayable
                 && displayable.style
-                && displayable.style[fillOrStroke] instanceof Gradient
+                && displayable.style[fillOrStroke]
+                && (displayable.style[fillOrStroke].type === 'linear'
+                || displayable.style[fillOrStroke].type === 'radial')
             ) {
                 var gradient = displayable.style[fillOrStroke];
 
@@ -222,15 +226,15 @@ define(function (require) {
          *                       or <radialGradient> element
          */
         _addGradient: function (gradient) {
-            var el = null;
-            if (gradient instanceof LinearGradient) {
+            var el;
+            if (gradient.type === 'linear') {
                 el = createElement('linearGradient');
                 el.setAttribute('x1', gradient.x);
                 el.setAttribute('y1', gradient.y);
                 el.setAttribute('x2', gradient.x2);
                 el.setAttribute('y2', gradient.y2);
             }
-            else if (gradient instanceof RadialGradient) {
+            else if (gradient.type === 'radial') {
                 el = createElement('radialGradient');
                 el.setAttribute('cx', gradient.x);
                 el.setAttribute('cy', gradient.y);
@@ -243,7 +247,10 @@ define(function (require) {
 
             // Set dom id with gradient id, since each gradient instance
             // will have no more than one dom element
-            el.setAttribute('id', 'ec-gradient-' + gradient.id);
+            if (!gradient.id) {
+                gradient.id = Math.random();
+            }
+            el.setAttribute('id', 'zr-gradient-' + gradient.id);
 
             // Add color stops
             var colors = gradient.colorStops;
@@ -264,6 +271,49 @@ define(function (require) {
             return el;
         },
 
+        _removeUnusedGradient: function (newVisibleList, removeList) {
+            var defs = this._getDefs();
+
+            // Get all gradients doms
+            var doms = this._getGradients();
+
+            util.each(doms, function (dom) {
+                var isUsed = false;
+
+                util.each(newVisibleList, function (element) {
+                    var inUse = function (attr) {
+                        return element.style
+                            && element.style[attr]
+                            && element.style[attr].__dom === dom;
+                    };
+                    isUsed = isUsed || inUse('fill') || inUse('stroke');
+                });
+
+                if (!isUsed) {
+                    // Remove gradient that is not used by any elements
+                    defs.removeChild(dom);
+
+                    // Romove reference to dom element in displayables
+                    // so that if this element is to be added afterwards,
+                    // it will create new gradient dom
+                    util.each(removeList, function (element) {
+                        if (element && element.style) {
+                            var checkAttr = function (attr) {
+                                if (element.style[attr]
+                                    && element.style[attr].__dom === dom
+                                ) {
+                                    element.style[attr].__dom = null;
+                                }
+                            };
+                            checkAttr('fill');
+                            checkAttr('stroke');
+                        }
+                    });
+                }
+            });
+
+        },
+
         /**
          * Get the <defs> tag for svgRoot. Create one if not exists.
          *
@@ -278,6 +328,23 @@ define(function (require) {
                     svgRoot.firstChild // Insert in the front of svg
                 )
                 : defs[0]; // Use previously defined <defs>
+        },
+
+        _getGradients: function () {
+            var defs = this._getDefs();
+
+            var gradType = ['linear', 'radial'];
+            var doms = [];
+
+            util.each(gradType, function (type) {
+                var tags = defs.getElementsByTagName(type + 'Gradient');
+                // Note that tags is HTMLCollection, which is array-like
+                // rather than real array.
+                // So`doms.concat(tags)` add tags as one object.
+                doms = doms.concat([].slice.call(tags));
+            });
+
+            return doms;
         },
 
         resize: function () {
