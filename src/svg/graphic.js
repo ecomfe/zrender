@@ -7,6 +7,8 @@ define(function (require) {
     var CMD = require('../core/PathProxy').CMD;
     var textContain = require('../contain/text');
 
+    var Gradient = require('../graphic/Gradient');
+
     var createElement = svgCore.createElement;
     var arrayJoin = Array.prototype.join;
 
@@ -45,7 +47,10 @@ define(function (require) {
     }
 
     function attr(el, key, val) {
-        el.setAttribute(key, val);
+        if (!val || val.type !== 'linear' && val.type !== 'radial') {
+            // Don't set attribute for gradient, since it need new dom nodes
+            el.setAttribute(key, val);
+        }
     }
 
     function attrXLink(el, key, val) {
@@ -60,6 +65,7 @@ define(function (require) {
         else {
             attr(svgEl, 'fill', NONE);
         }
+
         if (pathHasStroke(style, isText)) {
             attr(svgEl, 'stroke', isText ? style.textStroke : style.stroke);
             attr(svgEl, 'stroke-width', style.lineWidth);

@@ -35,18 +35,26 @@
             'zrender/graphic/shape/Polygon',
             'zrender/graphic/shape/Polyline',
             'zrender/graphic/shape/Star',
+            'zrender/graphic/LinearGradient',
+            'zrender/graphic/RadialGradient',
             'zrender/svg/svg'
         ],
         function(
             zrender,
             Rect, Circle, Ring, Sector, Droplet,
             BezierCurve, Ellipse, Heart, Rose, Trochoid,
-            Isogon, Line, Polygon, Polyline, Star
+            Isogon, Line, Polygon, Polyline, Star,
+            LinearGradient, RadialGradient
         ) {
             // 初始化zrender
             var zr = zrender.init(document.getElementById('main'), {
                 renderer: 'svg'
             });
+
+            var gradient1 = new LinearGradient();
+            gradient1.addColorStop(0, 'red');
+            gradient1.addColorStop(0.7, 'rgb(255, 255, 0)');
+            gradient1.addColorStop(1, '#0f0');
 
             var rect = new Rect({
                 shape: {
@@ -54,18 +62,47 @@
                     y: 10,
                     width: 80,
                     height: 80
+                },
+                style: {
+                    fill: gradient1
                 }
             });
             zr.add(rect);
+
+            setTimeout(function () {
+                zr.remove(rect);
+            }, 1000);
+
+            setTimeout(function () {
+                zr.add(rect);
+            }, 5000);
+
+            var gradient2 = new LinearGradient();
+            gradient2.addColorStop(0, 'blue');
+            gradient2.addColorStop(1, 'yellow');
+            gradient2.x2 = 0;
+            gradient2.y2 = 1;
 
             var circle = new Circle({
                 shape: {
                     cx: 150,
                     cy: 50,
                     r: 40
+                },
+                style: {
+                    fill: 'none',
+                    stroke: gradient2
                 }
             });
             zr.add(circle);
+
+            setTimeout(function () {
+                zr.remove(circle);
+            }, 3000);
+
+            setTimeout(function () {
+                zr.add(circle);
+            }, 6000);
 
             var ring = new Ring({
                 shape: {
@@ -73,9 +110,20 @@
                     cy: 50,
                     r: 40,
                     r0: 30
+                },
+                style: {
+                    fill: gradient1
                 }
             });
             zr.add(ring);
+
+            setTimeout(function () {
+                zr.remove(ring);
+            }, 4000);
+
+            setTimeout(function () {
+                zr.add(ring);
+            }, 6000);
 
             var sector = new Sector({
                 shape: {
@@ -89,12 +137,19 @@
             });
             zr.add(sector);
 
+            var gradient3 = new RadialGradient();
+            gradient3.addColorStop(0, 'red');
+            gradient3.addColorStop(1, 'green');
+
             var drop = new Droplet({
                 shape: {
                     cx: 350,
                     cy: 50,
                     width: 20,
                     height: 30
+                },
+                style: {
+                    fill: gradient3
                 }
             });
             zr.add(drop);

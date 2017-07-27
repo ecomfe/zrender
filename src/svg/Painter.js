@@ -10,6 +10,7 @@ define(function (require) {
     var ZImage = require('../graphic/Image');
     var ZText = require('../graphic/Text');
     var arrayDiff = require('../core/arrayDiff');
+    var util = require('../core/util');
 
     var svgGraphic = require('./graphic');
     var svgPath = svgGraphic.path;
@@ -17,6 +18,10 @@ define(function (require) {
     var svgText = svgGraphic.text;
 
     var createElement = svgCore.createElement;
+
+    var GRADIENT_MARK = 'zr-gradient-in-use';
+    var GRADIENT_MARK_UNUSED = '0';
+    var GRADIENT_MARK_USED = '1';
 
     function parseInt10(val) {
         return parseInt(val, 10);
@@ -115,6 +120,8 @@ define(function (require) {
         },
 
         _paintList: function (list) {
+            this._markGradientsUnused();
+
             var svgRoot = this._svgRoot;
             var visibleList = this._visibleList;
             var listLen = list.length;
@@ -153,6 +160,7 @@ define(function (require) {
                     case '=':
                         var displayable = visibleList[item.idx];
                         prevSvgElement = getTextSvgElement(displayable) || getSvgElement(displayable);
+                        this._markGradientUsed(displayable);
                         break;
                     case '+':
                         var displayable = newVisibleList[item.idx];
@@ -172,6 +180,10 @@ define(function (require) {
                         // Insert text
                         insertAfter(svgRoot, textSvgElement, svgElement);
                         prevSvgElement = textSvgElement || svgElement;
+
+                        this._setGradient(svgElement, displayable, 'fill');
+                        this._setGradient(svgElement, displayable, 'stroke');
+
                         break;
                     // case '^':
                         // var displayable = visibleList[item.idx];
@@ -182,7 +194,210 @@ define(function (require) {
                 }
             }
 
+            this._removeUnusedGradient();
+
             this._visibleList = newVisibleList;
+        },
+
+        /**
+         * Set gradient for fill or stroke
+         *
+         * @param {SvgElement}  svgElement   SVG element to paint
+         * @param {Displayable} displayable  zrender displayable element
+         * @param {string}      fillOrStroke should be 'fill' or 'stroke'
+         */
+        _setGradient: function (svgElement, displayable, fillOrStroke) {
+            if (displayable
+                && displayable.style
+                && displayable.style[fillOrStroke]
+                && (displayable.style[fillOrStroke].type === 'linear'
+                || displayable.style[fillOrStroke].type === 'radial')
+            ) {
+                var gradient = displayable.style[fillOrStroke];
+                var defs = this._getDefs(true);
+
+                // Create dom in <defs> if not exists
+                var dom;
+                if (gradient.__dom) {
+                    // Gradient exists
+                    dom = gradient.__dom;
+                    if (!defs.contains(gradient.__dom)) {
+                        // __dom is no longer in defs, recreate
+                        this._addGradientDom(dom);
+                    }
+                }
+                else {
+                    dom = this._addGradient(gradient);
+                }
+
+                // Mark gradient to be used
+                dom.setAttribute(GRADIENT_MARK, GRADIENT_MARK_USED);
+
+                var id = dom.getAttribute('id');
+                svgElement.setAttribute(fillOrStroke, 'url(#' + id + ')');
+            }
+        },
+
+        /**
+         * Add a new gradient tag in <defs>
+         *
+         * @param {Gradient} gradient zr gradient instance
+         * @returns {SVGElement} Either <linearGradient>
+         *                       or <radialGradient> element
+         */
+        _addGradient: function (gradient) {
+            var el;
+            if (gradient.type === 'linear') {
+                el = createElement('linearGradient');
+                el.setAttribute('x1', gradient.x);
+                el.setAttribute('y1', gradient.y);
+                el.setAttribute('x2', gradient.x2);
+                el.setAttribute('y2', gradient.y2);
+            }
+            else if (gradient.type === 'radial') {
+                el = createElement('radialGradient');
+                el.setAttribute('cx', gradient.x);
+                el.setAttribute('cy', gradient.y);
+                el.setAttribute('r', gradient.r);
+            }
+            else {
+                zrLog('Illegal gradient type.');
+                return null;
+            }
+
+            // Set dom id with gradient id, since each gradient instance
+            // will have no more than one dom element
+            gradient.id = Math.random();
+            el.setAttribute('id', 'zr-gradient-' + gradient.id);
+
+            // Add color stops
+            var colors = gradient.colorStops;
+            for (var i = 0, len = colors.length; i < len; ++i) {
+                var stop = createElement('stop');
+                stop.setAttribute('offset', colors[i].offset * 100 + '%');
+                stop.setAttribute('stop-color', colors[i].color);
+                el.appendChild(stop);
+            }
+
+            this._addGradientDom(el);
+
+            // Store dom element in gradient, to avoid creating multiple
+            // dom instances for the same gradient element
+            gradient.__dom = el;
+
+            return el;
+        },
+
+        /**
+         * Add gradient dom to defs
+         *
+         * @param {SVGElement} dom      Either <linearGradient>
+         *                              or <radialGradient> element
+         */
+        _addGradientDom: function (dom) {
+            var defs = this._getDefs(true);
+            defs.appendChild(dom);
+        },
+
+        /**
+         * Mark gradients to be unused before painting, and clear unused
+         * ones at the end of the painting
+         */
+        _markGradientsUnused: function () {
+            var doms = this._getGradients();
+            util.each(doms, function (dom) {
+                dom.setAttribute(GRADIENT_MARK, GRADIENT_MARK_UNUSED);
+            });
+        },
+
+        _removeUnusedGradient: function () {
+            var defs = this._getDefs(false);
+            if (!defs) {
+                // Nothing to remove
+                return;
+            }
+
+            var doms = this._getGradients();
+            util.each(doms, function (dom) {
+                if (dom.getAttribute(GRADIENT_MARK) !== GRADIENT_MARK_USED) {
+                    // Remove gradient
+                    defs.removeChild(dom);
+                }
+            });
+
+        },
+
+        /**
+         * Mark a single gradient to be used
+         *
+         * @param {Displayable} displayable displayable element
+         */
+        _markGradientUsed: function (displayable) {
+            var mark = function (gradient) {
+                if (gradient.__dom) {
+                    gradient.__dom.setAttribute(
+                        GRADIENT_MARK,
+                        GRADIENT_MARK_USED
+                    );
+                }
+            };
+
+            if (displayable.style) {
+                if (displayable.style.fill) {
+                    mark(displayable.style.fill);
+                }
+                if (displayable.style.stroke) {
+                    mark(displayable.style.stroke);
+                }
+            }
+        },
+
+        /**
+         * Get the <defs> tag for svgRoot; optionally creates one if not exists.
+         *
+         * @param {boolean} isForceCreating if need to create when not exists
+         * @returns {SVGDefsElement} SVG <defs> element, null if it doesn't
+         * exist and isForceCreating is false
+         */
+        _getDefs: function (isForceCreating) {
+            var svgRoot = this._svgRoot;
+            var defs = this._svgRoot.getElementsByTagName('defs');
+            if (defs.length === 0) {
+                // Not exist
+                if (isForceCreating) {
+                    return svgRoot.insertBefore(
+                        createElement('defs'), // Create new tag
+                        svgRoot.firstChild // Insert in the front of svg
+                    );
+                }
+                else {
+                    return null;
+                }
+            }
+            else {
+                return defs[0];
+            }
+        },
+
+        _getGradients: function () {
+            var defs = this._getDefs(false);
+            if (!defs) {
+                // No gradients when defs is not defined
+                return [];
+            }
+
+            var gradType = ['linear', 'radial'];
+            var doms = [];
+
+            util.each(gradType, function (type) {
+                var tags = defs.getElementsByTagName(type + 'Gradient');
+                // Note that tags is HTMLCollection, which is array-like
+                // rather than real array.
+                // So`doms.concat(tags)` add tags as one object.
+                doms = doms.concat([].slice.call(tags));
+            });
+
+            return doms;
         },
 
         resize: function () {
