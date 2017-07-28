@@ -19,9 +19,11 @@ define(function (require) {
 
     var createElement = svgCore.createElement;
 
-    var GRADIENT_MARK = 'zr-gradient-in-use';
+    var GRADIENT_MARK = '_gradientInUse';
     var GRADIENT_MARK_UNUSED = '0';
     var GRADIENT_MARK_USED = '1';
+
+    var nextGradientId = 1;
 
     function parseInt10(val) {
         return parseInt(val, 10);
@@ -134,6 +136,13 @@ define(function (require) {
                 if (!displayable.invisible) {
                     if (displayable.__dirty) {
                         svgProxy && svgProxy.brush(displayable);
+
+                        // Update gradient
+                        if (displayable.style) {
+                            this._updateGradient(displayable.style.fill);
+                            this._updateGradient(displayable.style.stroke);
+                        }
+
                         displayable.__dirty = false;
                     }
                     newVisibleList.push(displayable);
@@ -181,8 +190,8 @@ define(function (require) {
                         insertAfter(svgRoot, textSvgElement, svgElement);
                         prevSvgElement = textSvgElement || svgElement;
 
-                        this._setGradient(svgElement, displayable, 'fill');
-                        this._setGradient(svgElement, displayable, 'stroke');
+                        this._createGradient(svgElement, displayable, 'fill');
+                        this._createGradient(svgElement, displayable, 'stroke');
 
                         break;
                     // case '^':
@@ -200,13 +209,13 @@ define(function (require) {
         },
 
         /**
-         * Set gradient for fill or stroke
+         * Create new gradient for fill or stroke
          *
          * @param {SvgElement}  svgElement   SVG element to paint
          * @param {Displayable} displayable  zrender displayable element
          * @param {string}      fillOrStroke should be 'fill' or 'stroke'
          */
-        _setGradient: function (svgElement, displayable, fillOrStroke) {
+        _createGradient: function (svgElement, displayable, fillOrStroke) {
             if (displayable
                 && displayable.style
                 && displayable.style[fillOrStroke]
@@ -231,7 +240,7 @@ define(function (require) {
                 }
 
                 // Mark gradient to be used
-                dom.setAttribute(GRADIENT_MARK, GRADIENT_MARK_USED);
+                dom[GRADIENT_MARK] = GRADIENT_MARK_USED;
 
                 var id = dom.getAttribute('id');
                 svgElement.setAttribute(fillOrStroke, 'url(#' + id + ')');
@@ -249,16 +258,9 @@ define(function (require) {
             var el;
             if (gradient.type === 'linear') {
                 el = createElement('linearGradient');
-                el.setAttribute('x1', gradient.x);
-                el.setAttribute('y1', gradient.y);
-                el.setAttribute('x2', gradient.x2);
-                el.setAttribute('y2', gradient.y2);
             }
             else if (gradient.type === 'radial') {
                 el = createElement('radialGradient');
-                el.setAttribute('cx', gradient.x);
-                el.setAttribute('cy', gradient.y);
-                el.setAttribute('r', gradient.r);
             }
             else {
                 zrLog('Illegal gradient type.');
@@ -266,24 +268,15 @@ define(function (require) {
             }
 
             // Set dom id with gradient id, since each gradient instance
-            // will have no more than one dom element
-            gradient.id = Math.random();
+            // will have no more than one dom element.
+            // id may exists before for those dirty elements, in which case
+            // id should remain the same, and other attributes should be
+            // updated.
+            gradient.id = gradient.id || nextGradientId++;
             el.setAttribute('id', 'zr-gradient-' + gradient.id);
 
-            // Add color stops
-            var colors = gradient.colorStops;
-            for (var i = 0, len = colors.length; i < len; ++i) {
-                var stop = createElement('stop');
-                stop.setAttribute('offset', colors[i].offset * 100 + '%');
-                stop.setAttribute('stop-color', colors[i].color);
-                el.appendChild(stop);
-            }
-
+            this._updateGradientDom(gradient, el);
             this._addGradientDom(el);
-
-            // Store dom element in gradient, to avoid creating multiple
-            // dom instances for the same gradient element
-            gradient.__dom = el;
 
             return el;
         },
@@ -300,16 +293,82 @@ define(function (require) {
         },
 
         /**
+         * Update gradient
+         *
+         * @param {Gradient} gradient zr gradient instance
+         */
+        _updateGradient: function (gradient) {
+            // Not a gradient
+            if (!gradient) {
+                return;
+            }
+
+            // Remove  previous gradient dom if exists
+            var defs = this._getDefs(false);
+            if (gradient.__dom && defs && defs.contains(gradient.__dom)) {
+                // Remove previous gradient dom
+                defs.removeChild(gradient.__dom);
+            }
+
+            // Add new gradient
+            this._addGradient(gradient);
+        },
+
+        /**
+         * Update gradient dom
+         *
+         * @param {Gradient} gradient zr gradient instance
+         * @param {SVGElement} dom Either <linearGradient>
+         *                         or <radialGradient> element
+         */
+        _updateGradientDom: function (gradient, dom) {
+           if (gradient.type === 'linear') {
+                dom.setAttribute('x1', gradient.x);
+                dom.setAttribute('y1', gradient.y);
+                dom.setAttribute('x2', gradient.x2);
+                dom.setAttribute('y2', gradient.y2);
+            }
+            else if (gradient.type === 'radial') {
+                dom.setAttribute('cx', gradient.x);
+                dom.setAttribute('cy', gradient.y);
+                dom.setAttribute('r', gradient.r);
+            }
+            else {
+                zrLog('Illegal gradient type.');
+                return;
+            }
+
+            // Remove color stops if exists
+            dom.innerHTML = '';
+
+            // Add color stops
+            var colors = gradient.colorStops;
+            for (var i = 0, len = colors.length; i < len; ++i) {
+                var stop = createElement('stop');
+                stop.setAttribute('offset', colors[i].offset * 100 + '%');
+                stop.setAttribute('stop-color', colors[i].color);
+                dom.appendChild(stop);
+            }
+
+            // Store dom element in gradient, to avoid creating multiple
+            // dom instances for the same gradient element
+            gradient.__dom = dom;
+        },
+
+        /**
          * Mark gradients to be unused before painting, and clear unused
          * ones at the end of the painting
          */
         _markGradientsUnused: function () {
             var doms = this._getGradients();
             util.each(doms, function (dom) {
-                dom.setAttribute(GRADIENT_MARK, GRADIENT_MARK_UNUSED);
+                dom[GRADIENT_MARK] = GRADIENT_MARK_UNUSED;
             });
         },
 
+        /**
+         * Remove unused gradients defined in <defs>
+         */
         _removeUnusedGradient: function () {
             var defs = this._getDefs(false);
             if (!defs) {
@@ -319,12 +378,11 @@ define(function (require) {
 
             var doms = this._getGradients();
             util.each(doms, function (dom) {
-                if (dom.getAttribute(GRADIENT_MARK) !== GRADIENT_MARK_USED) {
+                if (dom[GRADIENT_MARK] !== GRADIENT_MARK_USED) {
                     // Remove gradient
                     defs.removeChild(dom);
                 }
             });
-
         },
 
         /**
@@ -333,21 +391,15 @@ define(function (require) {
          * @param {Displayable} displayable displayable element
          */
         _markGradientUsed: function (displayable) {
-            var mark = function (gradient) {
-                if (gradient.__dom) {
-                    gradient.__dom.setAttribute(
-                        GRADIENT_MARK,
-                        GRADIENT_MARK_USED
-                    );
-                }
-            };
-
             if (displayable.style) {
-                if (displayable.style.fill) {
-                    mark(displayable.style.fill);
+                var gradient = displayable.style.fill;
+                if (gradient && gradient.__dom) {
+                    gradient.__dom[GRADIENT_MARK] = GRADIENT_MARK_USED;
                 }
-                if (displayable.style.stroke) {
-                    mark(displayable.style.stroke);
+
+                gradient = displayable.style.stroke;
+                if (gradient && gradient.__dom) {
+                    gradient.__dom[GRADIENT_MARK] = GRADIENT_MARK_USED;
                 }
             }
         },

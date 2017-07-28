@@ -70,8 +70,13 @@
             zr.add(rect);
 
             setTimeout(function () {
-                zr.remove(rect);
+                gradient1.colorStops[0].color = '#f0f';
+                rect.dirty();
             }, 1000);
+
+            setTimeout(function () {
+                zr.remove(rect);
+            }, 3000);
 
             setTimeout(function () {
                 zr.add(rect);
@@ -98,11 +103,11 @@
 
             setTimeout(function () {
                 zr.remove(circle);
-            }, 3000);
+            }, 2000);
 
             setTimeout(function () {
                 zr.add(circle);
-            }, 6000);
+            }, 4000);
 
             var ring = new Ring({
                 shape: {
