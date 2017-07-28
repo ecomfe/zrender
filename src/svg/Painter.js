@@ -19,9 +19,11 @@ define(function (require) {
 
     var createElement = svgCore.createElement;
 
-    var GRADIENT_MARK = 'zr-gradient-in-use';
+    var GRADIENT_MARK = '_gradientInUse';
     var GRADIENT_MARK_UNUSED = '0';
     var GRADIENT_MARK_USED = '1';
+
+    var nextGradientId = 1;
 
     function parseInt10(val) {
         return parseInt(val, 10);
@@ -231,7 +233,7 @@ define(function (require) {
                 }
 
                 // Mark gradient to be used
-                dom.setAttribute(GRADIENT_MARK, GRADIENT_MARK_USED);
+                dom[GRADIENT_MARK] = GRADIENT_MARK_USED;
 
                 var id = dom.getAttribute('id');
                 svgElement.setAttribute(fillOrStroke, 'url(#' + id + ')');
@@ -267,7 +269,7 @@ define(function (require) {
 
             // Set dom id with gradient id, since each gradient instance
             // will have no more than one dom element
-            gradient.id = Math.random();
+            gradient.id = nextGradientId++;
             el.setAttribute('id', 'zr-gradient-' + gradient.id);
 
             // Add color stops
@@ -306,7 +308,7 @@ define(function (require) {
         _markGradientsUnused: function () {
             var doms = this._getGradients();
             util.each(doms, function (dom) {
-                dom.setAttribute(GRADIENT_MARK, GRADIENT_MARK_UNUSED);
+                dom[GRADIENT_MARK] = GRADIENT_MARK_UNUSED;
             });
         },
 
@@ -319,7 +321,7 @@ define(function (require) {
 
             var doms = this._getGradients();
             util.each(doms, function (dom) {
-                if (dom.getAttribute(GRADIENT_MARK) !== GRADIENT_MARK_USED) {
+                if (dom[GRADIENT_MARK] !== GRADIENT_MARK_USED) {
                     // Remove gradient
                     defs.removeChild(dom);
                 }
@@ -333,21 +335,15 @@ define(function (require) {
          * @param {Displayable} displayable displayable element
          */
         _markGradientUsed: function (displayable) {
-            var mark = function (gradient) {
-                if (gradient.__dom) {
-                    gradient.__dom.setAttribute(
-                        GRADIENT_MARK,
-                        GRADIENT_MARK_USED
-                    );
-                }
-            };
-
             if (displayable.style) {
-                if (displayable.style.fill) {
-                    mark(displayable.style.fill);
+                var gradient = displayable.style.fill;
+                if (gradient && gradient.__dom) {
+                    gradient.__dom[GRADIENT_MARK] = GRADIENT_MARK_USED;
                 }
-                if (displayable.style.stroke) {
-                    mark(displayable.style.stroke);
+
+                gradient = displayable.style.stroke;
+                if (gradient && gradient.__dom) {
+                    gradient.__dom[GRADIENT_MARK] = GRADIENT_MARK_USED;
                 }
             }
         },
