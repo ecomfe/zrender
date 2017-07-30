@@ -128,7 +128,23 @@ define(function (require) {
         /**
          * @type {number}
          */
+        textWidth: null,
+
+        /**
+         * Only for textBackground.
+         * @type {number}
+         */
+        textHeight: null,
+
+        /**
+         * @type {number}
+         */
         textLineWidth: 1,
+
+        /**
+         * @type {number}
+         */
+        textLineHeight: null,
 
         /**
          * 'inside', 'left', 'right', 'top', 'bottom'

@@ -28,8 +28,8 @@ define(function (require) {
         var width = 0;
 
         for (var i = 0, l = textLines.length; i < l; i++) {
-            // measureText 可以被覆盖以兼容不支持 Canvas 的环境
-            width = Math.max(measureText(textLines[i], font).width, width);
+            // textContain.measureText may be overrided in SVG or VML
+            width = Math.max(textContain.measureText(textLines[i], font).width, width);
         }
 
         if (textWidthCacheCounter > TEXT_CACHE_MAX) {
@@ -426,6 +426,7 @@ define(function (require) {
         var contentHeight = 0;
         var contentWidth = 0;
 
+        // Calculate layout info of tokens.
         for (var i = 0; i < lines.length; i++) {
             var line = lines[i];
             var lineHeight = baseLineHeight;
@@ -441,16 +442,18 @@ define(function (require) {
                 var font = token.font = tokenStyle.font || style.font;
 
                 // Real text height is used when textVerticalAlign specified in token.
-                var textHeight = token.textHeight = textContain.getLineHeight(font);
+                var textHeight = token.textHeight = util.retrieve(
+                    tokenStyle.textHeight, style.textHeight, textContain.getLineHeight(font)
+                );
                 textPadding && (textHeight += textPadding[0] + textPadding[2]);
                 token.height = textHeight;
-                token.lineHeight = util.retrieve(tokenStyle.lineHeight, style.lineHeight, textHeight);
+                token.lineHeight = util.retrieve(tokenStyle.textLineHeight, style.textLineHeight, textHeight);
 
                 token.textAlign = tokenStyle && tokenStyle.textAlign || style.textAlign;
                 token.textVerticalAlign = tokenStyle && tokenStyle.textVerticalAlign || 'middle';
 
                 var textWidth = token.textWidth = textContain.getWidth(token.text, font);
-                var tokenWidth = tokenStyle.width;
+                var tokenWidth = tokenStyle.textWidth;
                 if (tokenWidth == null) {
                     tokenWidth = textWidth;
                     textPadding && (tokenWidth += textPadding[1] + textPadding[3]);
@@ -482,6 +485,7 @@ define(function (require) {
         var lines = block.lines;
 
         for (var i = 0; i < strs.length; i++) {
+            var text = strs[i];
             var token = {
                 styleName: styleName,
                 text: strs[i]
@@ -494,13 +498,15 @@ define(function (require) {
             // The first token should be appended to the last line.
             else {
                 var tokens = (lines[lines.length - 1] || (lines[0] = {tokens: []})).tokens;
-                // Consider ''.split('\n') => ['', '\n', ''], the '' at the first item
+                // Consider cases:
+                // (1) ''.split('\n') => ['', '\n', ''], the '' at the first item
                 // (which is a placeholder) should be replaced by new token.
-                (tokens.length === 1 && !tokens[0].text)
-                    ? (tokens[0] = token)
-                    // Consider '', only insert when it is the first item.
-                    // Otherwise a redundant '' will affect textAlign in line.
-                    : ((token.text || !tokens.length) && tokens.push(token));
+                // (2) A image backage, where token likes {a|}.
+                // (3) A redundant '' will affect textAlign in line.
+                var tokensLen = tokens.length;
+                (tokensLen && tokens[tokensLen - 1].styleName === styleName)
+                    ? (tokens[tokensLen - 1].text += text)
+                    : tokens.push(token);
             }
         }
     }

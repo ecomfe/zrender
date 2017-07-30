@@ -27,7 +27,8 @@ define(function (require) {
 
             // Convert to string
             text != null && (text += '');
-            if (!text) {
+
+            if (!textHelper.needDrawText(text, style)) {
                 return;
             }
 
@@ -48,7 +49,7 @@ define(function (require) {
             }
 
             // transformText and textRotation can not be used at the same time.
-            textHelper.renderText(ctx, text, style, rect);
+            textHelper.renderText(this, ctx, text, style, rect);
 
             ctx.restore();
         }

@@ -3,6 +3,7 @@ define(function (require) {
     var textContain = require('../../contain/text');
     var util = require('../../core/util');
     var roundRectHelper = require('./roundRect');
+    var imageHelper = require('./image');
 
     var retrieve = util.retrieve;
 
@@ -53,13 +54,13 @@ define(function (require) {
      * @param {Object|boolean} [rect] {x, y, width, height}
      *                  If set false, rect text is not used.
      */
-    helper.renderText = function (ctx, text, style, rect) {
+    helper.renderText = function (hostEl, ctx, text, style, rect) {
         style.rich
-            ? renderRichText(ctx, text, style, rect)
-            : renderPlainText(ctx, text, style, rect);
+            ? renderRichText(hostEl, ctx, text, style, rect)
+            : renderPlainText(hostEl, ctx, text, style, rect);
     };
 
-    function renderPlainText(ctx, text, style, rect) {
+    function renderPlainText(hostEl, ctx, text, style, rect) {
         var font = setCtx(ctx, 'font', style.font || textContain.DEFAULT_FONT);
 
         var contentBlock = textContain.parsePlainText(text, font);
@@ -91,7 +92,7 @@ define(function (require) {
             textPadding && (outerWidth += textPadding[1] + textPadding[3]);
             var boxX = textContain.adjustTextX(baseX, outerWidth, textAlign);
 
-            needDrawBg && drawBackground(ctx, style, boxX, boxY, outerWidth, outerHeight);
+            needDrawBg && drawBackground(hostEl, ctx, style, boxX, boxY, outerWidth, outerHeight);
 
             if (textPadding) {
                 textX = getTextXForPadding(baseX, textAlign, outerWidth, textWidth, textPadding);
@@ -136,12 +137,12 @@ define(function (require) {
         }
     }
 
-    function renderRichText(ctx, text, style, rect) {
+    function renderRichText(hostEl, ctx, text, style, rect) {
         var contentBlock = textContain.parseRichText(text, style);
-        drawRichText(ctx, contentBlock, style, rect);
+        drawRichText(hostEl, ctx, contentBlock, style, rect);
     }
 
-    function drawRichText(ctx, contentBlock, style, rect) {
+    function drawRichText(hostEl, ctx, contentBlock, style, rect) {
         var contentWidth = contentBlock.width;
         var outerWidth = contentBlock.outerWidth;
         var outerHeight = contentBlock.outerHeight;
@@ -167,7 +168,7 @@ define(function (require) {
         var xRight = xLeft + contentWidth;
 
         needDrawBackground(style) && drawBackground(
-            ctx, style, boxX, boxY, outerWidth, outerHeight
+            hostEl, ctx, style, boxX, boxY, outerWidth, outerHeight
         );
 
         for (var i = 0; i < contentBlock.lines.length; i++) {
@@ -187,7 +188,7 @@ define(function (require) {
                 leftIndex < tokenCount
                 && (token = tokens[leftIndex], !token.textAlign || token.textAlign === 'left')
             ) {
-                placeToken(ctx, token, style, lineHeight, lineTop, lineXLeft, 'left');
+                placeToken(hostEl, ctx, token, style, lineHeight, lineTop, lineXLeft, 'left');
                 usedWidth -= token.width;
                 lineXLeft += token.width;
                 leftIndex++;
@@ -197,7 +198,7 @@ define(function (require) {
                 rightIndex >= 0
                 && (token = tokens[rightIndex], token.textAlign === 'right')
             ) {
-                placeToken(ctx, token, style, lineHeight, lineTop, lineXRight, 'right');
+                placeToken(hostEl, ctx, token, style, lineHeight, lineTop, lineXRight, 'right');
                 usedWidth -= token.width;
                 lineXRight -= token.width;
                 rightIndex--;
@@ -208,7 +209,7 @@ define(function (require) {
             while (leftIndex <= rightIndex) {
                 token = tokens[leftIndex];
                 // Consider width specified by user, use 'center' rather than 'left'.
-                placeToken(ctx, token, style, lineHeight, lineTop, lineXLeft + token.width / 2, 'center');
+                placeToken(hostEl, ctx, token, style, lineHeight, lineTop, lineXLeft + token.width / 2, 'center');
                 lineXLeft += token.width;
                 leftIndex++;
             }
@@ -237,7 +238,7 @@ define(function (require) {
         }
     }
 
-    function placeToken(ctx, token, style, lineHeight, lineTop, x, textAlign) {
+    function placeToken(hostEl, ctx, token, style, lineHeight, lineTop, x, textAlign) {
         var tokenStyle = style.rich[token.styleName] || {};
 
         // 'ctx.textBaseline' is always set as 'middle', for sake of
@@ -252,6 +253,7 @@ define(function (require) {
         }
 
         needDrawBackground(tokenStyle) && drawBackground(
+            hostEl,
             ctx,
             tokenStyle,
             textAlign === 'right'
@@ -304,32 +306,47 @@ define(function (require) {
 
     // style: {textBackgroundColor, textBorderWidth, textBorderColor, textBorderRadius}
     // shape: {x, y, width, height}
-    function drawBackground(ctx, style, x, y, width, height) {
+    function drawBackground(hostEl, ctx, style, x, y, width, height) {
         var textBackgroundColor = style.textBackgroundColor;
         var textBorderWidth = style.textBorderWidth;
         var textBorderColor = style.textBorderColor;
-
-        ctx.beginPath();
-        var textBorderRadius = style.textBorderRadius;
-        if (!textBorderRadius) {
-            ctx.rect(x, y, width, height);
-        }
-        else {
-            roundRectHelper.buildPath(ctx, {
-                x: x, y: y, width: width, height: height, r: textBorderRadius
-            });
-        }
-        ctx.closePath();
+        var isPlainBg = util.isString(textBackgroundColor);
 
         setCtx(ctx, 'shadowBlur', style.textBoxShadowBlur || 0);
         setCtx(ctx, 'shadowColor', style.textBoxShadowColor || 'transparent');
         setCtx(ctx, 'shadowOffsetX', style.textBoxShadowOffsetX || 0);
         setCtx(ctx, 'shadowOffsetY', style.textBoxShadowOffsetY || 0);
 
-        if (textBackgroundColor) {
+        if (isPlainBg || (textBorderWidth && textBorderColor)) {
+            ctx.beginPath();
+            var textBorderRadius = style.textBorderRadius;
+            if (!textBorderRadius) {
+                ctx.rect(x, y, width, height);
+            }
+            else {
+                roundRectHelper.buildPath(ctx, {
+                    x: x, y: y, width: width, height: height, r: textBorderRadius
+                });
+            }
+            ctx.closePath();
+        }
+
+        if (isPlainBg) {
             setCtx(ctx, 'fillStyle', textBackgroundColor);
             ctx.fill();
         }
+        else if (util.isObject(textBackgroundColor)) {
+            var image = textBackgroundColor.image;
+            image = imageHelper.createOrUpdateImage(image, null, hostEl);
+            if (image && imageHelper.isImageReady(image)) {
+                // Update style width after image loaded.
+                if (style.textWidth == null) {
+                    width = style.textWidth = image.width * height / image.height;
+                }
+                ctx.drawImage(image, x, y, width, height);
+            }
+        }
+
         if (textBorderWidth && textBorderColor) {
             setCtx(ctx, 'lineWidth', textBorderWidth);
             setCtx(ctx, 'strokeStyle', textBorderColor);
@@ -421,6 +438,18 @@ define(function (require) {
             ? (x - outerWidth / 2 + textPadding[3] + textWidth / 2)
             : (x + textPadding[3]);
     }
+
+    /**
+     * @param {string} text
+     * @param {module:zrender/Style} style
+     * @return {boolean}
+     */
+    helper.needDrawText = function (text, style) {
+        return text
+            || style.textBackgroundColor
+            || (style.textBorderWidth && style.textBorderColor)
+            || style.textPadding;
+    };
 
     return helper;
 

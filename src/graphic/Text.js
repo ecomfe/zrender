@@ -43,13 +43,13 @@ define(function (require) {
             // Always bind style
             style.bind(ctx, this, prevEl);
 
-            if (!text) {
+            if (!textHelper.needDrawText(text, style)) {
                 return;
             }
 
             this.setTransform(ctx);
 
-            textHelper.renderText(ctx, text, style, false);
+            textHelper.renderText(this, ctx, text, style, false);
 
             this.restoreTransform(ctx);
         },

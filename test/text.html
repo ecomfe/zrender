@@ -32,7 +32,8 @@ vml 测试
         'zrender',
         'zrender/graphic/Text',
         'zrender/graphic/shape/Line',
-        'zrender/graphic/shape/Rect'
+        'zrender/graphic/shape/Rect',
+        'zrender/vml/vml'
     ], function(zrender, Text, Line, Rect){
 
         var zr = zrender.init(document.getElementById('main'));
@@ -246,17 +247,33 @@ vml 测试
             }
         }));
 
+
+        zr.add(new Text({
+            position : [100, 300],
+            style: {
+                // Empty text but has background
+                text: '',
+                x: 0,
+                y: 0,
+                textPadding: [10, 20, 30, 40],
+                textBackgroundColor: 'rgba(124, 0, 123, 0.4)'
+            }
+        }));
+
+
         zr.add(new Text({
             style: {
                 x: 200,
                 y: 300,
                 text: [
-                    'x: 200, y: 300{j|这行指定了 lineHeight 100px (vertical top)}所以比较宽裕{k|vertical bottom}',
+                    'x: 200, y: 300{j|这行指定了 textLineHeight 100px (vertical top)}所以比较宽裕{k|vertical bottom}',
                     '{l|textPadding: [10, 20]}{m|textPadding: [10, 20, 30, 40], vertical: top}{o|width100}{n|width100}',
                     '默认样式red 18px',
                     '{a|富文本，样式a没定义}',
                     '{b|默认字体大小但有阴影}默认样式18px{c|绿色 30px}{b|这句非常非常长最长。阴影样式。中间有\n换行}',
                     '{c|textAlign: left}紧跟左{e|这两块}{f|在剩余区域居中}{d|textAlign: right}',
+                    '这是指定宽默认取lineHeight的图片{p|} 这是指定高宽的图片{q|}{r|}',
+                    '这个自动获取长宽比的图片（只高度指定）{s|}',
                     '{g|textVerticalAlign: top}{h|最大文字}{i|textVerticalAlign: bottom}'
                 ].join('\n'),
                 textFill: 'red',
@@ -302,12 +319,12 @@ vml 测试
                         font: '23px Arial',
                         textFill: '#922889',
                         textVerticalAlign: 'top',
-                        lineHeight: 100
+                        textLineHeight: 100
                     },
                     k: {
                         font: '14px Arial',
                         textFill: '#126354',
-                        textVerticalAlign: 'bottom',
+                        textVerticalAlign: 'bottom'
                     },
                     l: {
                         font: '18px Arial',
@@ -330,12 +347,38 @@ vml 测试
                         textAlign: 'right',
                         textVerticalAlign: 'bottom',
                         textBackgroundColor: '#6712ab',
-                        width: 100
+                        textWidth: 100
                     },
                     o: {
                         textAlign: 'center',
-                        width: 100,
+                        textWidth: 100,
                         textBackgroundColor: '#99aa44'
+                    },
+                    p: {
+                        textBackgroundColor: {
+                            image: './data/hill-Qomolangma.png'
+                        },
+                        textWidth: 100
+                    },
+                    q: {
+                        textBackgroundColor: {
+                            image: './data/hill-Kilimanjaro.png'
+                        },
+                        textWidth: 30,
+                        textHeight: 90
+                    },
+                    r: {
+                        textBackgroundColor: {
+                            image: './data/hill-Kilimanjaro.png'
+                        },
+                        textWidth: 30,
+                        textHeight: 12,
+                        textVerticalAlign: 'bottom'
+                    },
+                    s: {
+                        textBackgroundColor: {
+                            image: './data/hill-Qomolangma.png'
+                        }
                     }
                 }
             },
@@ -344,10 +387,10 @@ vml 测试
 
         zr.add(new Text({
             rotation: -0.1,
-            position: [500, 800],
+            position: [500, 900],
             style: {
                 text: [
-                    'position: [500, 800]{j|rotation: -0.1}',
+                    'position: [500, 900]{j|rotation: -0.1}',
                     '{l|且有 textPadding: [20, 30, 40, 50]}{m|textPadding, vertical: top}{o|width100}{n|width100}',
                     '整体的 textAlign center, textVerticalAlign middle'
                 ].join('\n'),
@@ -365,7 +408,7 @@ vml 测试
                         font: '23px Arial',
                         textFill: '#922889',
                         textVerticalAlign: 'top',
-                        lineHeight: 100
+                        textLineHeight: 100
                     },
                     l: {
                         font: '18px Arial',
@@ -388,11 +431,11 @@ vml 测试
                         textAlign: 'right',
                         textVerticalAlign: 'bottom',
                         textBackgroundColor: '#6712ab',
-                        width: 100
+                        textWidth: 100
                     },
                     o: {
                         textAlign: 'center',
-                        width: 100,
+                        textWidth: 100,
                         textBackgroundColor: '#99aa44'
                     }
                 }
@@ -403,10 +446,10 @@ vml 测试
 
         zr.add(new Text({
             rotation: -0.1,
-            position: [500, 1200],
+            position: [500, 1300],
             style: {
                 text: [
-                    'position: [500, 1200]{j|rotation: -0.1}',
+                    'position: [500, 1300]{j|rotation: -0.1}',
                     '整体的 textAlign right, textVerticalAlign bottom',
                     'textBoxShadow'
                 ].join('\n'),
@@ -428,7 +471,7 @@ vml 测试
                         font: '23px Arial',
                         textFill: '#922889',
                         textVerticalAlign: 'top',
-                        lineHeight: 100
+                        textLineHeight: 100
                     }
                 }
             },
