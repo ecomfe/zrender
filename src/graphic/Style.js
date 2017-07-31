@@ -126,8 +126,14 @@ define(function (require) {
         textStroke: null,
 
         /**
+         * @type {number}
+         */
+        textLineWidth: 1,
+
+        /**
          * 'inside', 'left', 'right', 'top', 'bottom'
          * [x, y]
+         * Based on x, y of rect.
          * @type {string|Array.<number>}
          * @default 'inside'
          */
@@ -148,11 +154,6 @@ define(function (require) {
         /**
          * @type {string}
          */
-        textBaseline: null,
-
-        /**
-         * @type {string}
-         */
         textAlign: null,
 
         /**
@@ -161,45 +162,108 @@ define(function (require) {
         textVerticalAlign: null,
 
         /**
-         * Only useful in Path and Image element
          * @type {number}
          */
         textDistance: 5,
 
         /**
-         * Only useful in Path and Image element
+         * @type {string}
+         */
+        textShadowColor: 'transparent',
+
+        /**
          * @type {number}
          */
         textShadowBlur: 0,
 
         /**
-         * Only useful in Path and Image element
          * @type {number}
          */
         textShadowOffsetX: 0,
 
         /**
-         * Only useful in Path and Image element
          * @type {number}
          */
         textShadowOffsetY: 0,
 
         /**
-         * If transform text
+         * @type {string}
+         */
+        textBoxShadowColor: 'transparent',
+
+        /**
+         * @type {number}
+         */
+        textBoxShadowBlur: 0,
+
+        /**
+         * @type {number}
+         */
+        textBoxShadowOffsetX: 0,
+
+        /**
+         * @type {number}
+         */
+        textBoxShadowOffsetY: 0,
+
+        /**
+         * Whether transform text.
          * Only useful in Path and Image element
          * @type {boolean}
          */
-        textTransform: false,
+        transformText: false,
 
         /**
          * Text rotate around position of Path or Image
-         * Only useful in Path and Image element and textTransform is false.
+         * Only useful in Path and Image element and transformText is false.
          */
         textRotation: 0,
 
         /**
+         * Text origin of text rotation, like [10, 40].
+         * Based on x, y of rect.
+         * Useful in label rotation of circular symbol.
+         * By default, this origin is textPosition.
+         * Can be 'center'.
+         * @type {string|Array.<number>}
+         */
+        textOrigin: null,
+
+        /**
          * @type {string}
+         */
+        textBackgroundColor: null,
+
+        /**
+         * @type {string}
+         */
+        textBorderColor: null,
+
+        /**
+         * @type {number}
+         */
+        textBorderWidth: 0,
+
+        /**
+         * @type {number}
+         */
+        textBorderRadius: 0,
+
+        /**
+         * Can be `2` or `[2, 4]` or `[2, 3, 4, 5]`
+         * @type {number|Array.<number>}
+         */
+        textPadding: null,
+
+        /**
+         * Text styles for rich text.
+         * @type {Object}
+         */
+        rich: null,
+
+        /**
          * https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/globalCompositeOperation
+         * @type {string}
          */
         blend: null,
 

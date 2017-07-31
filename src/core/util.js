@@ -68,7 +68,16 @@ define(function(require) {
             }
         }
         else if (TYPED_ARRAY[typeStr]) {
-            result = source.constructor.from(source);
+            var Ctor = source.constructor;
+            if (source.constructor.from) {
+                result = Ctor.from(source);
+            }
+            else {
+                result = new Ctor(source.length);
+                for (var i = 0, len = source.length; i < len; i++) {
+                    result[i] = clone(source[i]);
+                }
+            }
         }
         else if (!BUILTIN_OBJECT[typeStr] && !isPrimitive(source) && !isDom(source)) {
             result = {};
@@ -312,7 +321,7 @@ define(function(require) {
         if (!(obj && cb)) {
             return;
         }
-        if (obj.reduce && obj.reduce === nativeReduce) {            
+        if (obj.reduce && obj.reduce === nativeReduce) {
             return obj.reduce(cb, memo, context);
         }
         else {
@@ -486,6 +495,31 @@ define(function(require) {
     }
 
     /**
+     * Normalize css liked array configuration
+     * e.g.
+     *  3 => [3, 3, 3, 3]
+     *  [4, 2] => [4, 2, 4, 2]
+     *  [4, 3, 2] => [4, 3, 2, 3]
+     * @param {number|Array.<number>} val
+     * @return {Array.<number>}
+     */
+    function normalizeCssArray(val) {
+        if (typeof (val) === 'number') {
+            return [val, val, val, val];
+        }
+        var len = val.length;
+        if (len === 2) {
+            // vertical | horizontal
+            return [val[0], val[1], val[0], val[1]];
+        }
+        else if (len === 3) {
+            // top | horizontal | bottom
+            return [val[0], val[1], val[2], val[1]];
+        }
+        return val;
+    }
+
+    /**
      * @memberOf module:zrender/core/util
      * @param {boolean} condition
      * @param {string} message
@@ -586,6 +620,7 @@ define(function(require) {
         assert: assert,
         setAsPrimitive: setAsPrimitive,
         createHashMap: createHashMap,
+        normalizeCssArray: normalizeCssArray,
         noop: function () {}
     };
     return util;

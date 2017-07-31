@@ -35,15 +35,13 @@
             'zrender/graphic/shape/Polygon',
             'zrender/graphic/shape/Polyline',
             'zrender/graphic/shape/Star',
-            'zrender/graphic/Text',
             'zrender/svg/svg'
         ],
         function(
             zrender,
             Rect, Circle, Ring, Sector, Droplet,
             BezierCurve, Ellipse, Heart, Rose, Trochoid,
-            Isogon, Line, Polygon, Polyline, Star,
-            Text
+            Isogon, Line, Polygon, Polyline, Star
         ) {
             // 初始化zrender
             var zr = zrender.init(document.getElementById('main'), {
@@ -213,45 +211,6 @@
                 }
             });
             zr.add(star);
-
-            var text = new Text({
-                style: {
-                    text: 'hello',
-                    textFont: '50px serif',
-                    x: 520,
-                    y: 170
-                }
-            });
-            // zr.add(text);
-            rect = new Rect({
-                shape: {
-                    x: 520,
-                    y: 120,
-                    width: 160,
-                    height: 50
-                },
-                style: {
-                    fill: 'none',
-                    stroke: 'red'
-                }
-            });
-            // zr.add(rect);
-
-            rect = new Rect({
-                shape: {
-                    x: 700,
-                    y: 120,
-                    width: 160,
-                    height: 100
-                },
-                style: {
-                    fill: 'none',
-                    stroke: 'green',
-                    text: 'hello',
-                    textFont: '50px serif'
-                }
-            });
-            // zr.add(rect);
         }
     );
     </script>

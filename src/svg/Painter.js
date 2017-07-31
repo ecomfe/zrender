@@ -236,6 +236,12 @@ define(function (require) {
             this._svgRoot =
             this._viewport =
             this.storage = null;
+        },
+
+        clear: function () {
+            if (this._viewport) {
+                this.root.removeChild(this._viewport);
+            }
         }
     }
 

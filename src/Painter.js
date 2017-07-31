@@ -1044,6 +1044,7 @@
             }
 
             var root = this.root;
+            // IE8 does not support getComputedStyle, but it use VML.
             var stl = document.defaultView.getComputedStyle(root);
 
             return (

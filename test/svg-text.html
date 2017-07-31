@@ -32,10 +32,13 @@ vml 测试
         'zrender',
         'zrender/graphic/Text',
         'zrender/graphic/shape/Line',
-        'zrender/graphic/shape/Rect'
+        'zrender/graphic/shape/Rect',
+        'zrender/svg/svg'
     ], function(zrender, Text, Line, Rect){
 
-        var zr = zrender.init(document.getElementById('main'));
+        var zr = zrender.init(document.getElementById('main'), {
+            renderer: 'svg'
+        });
 
         showBoundingRect = function () {
             zr.storage.traverse(function (el) {
