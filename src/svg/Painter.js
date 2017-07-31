@@ -299,19 +299,35 @@ define(function (require) {
          */
         _updateGradient: function (gradient) {
             // Not a gradient
-            if (!gradient) {
+            if (!gradient
+                || gradient.type !== 'linear' && gradient.type !== 'radial'
+            ) {
                 return;
             }
 
-            // Remove  previous gradient dom if exists
+            // Update previous gradient dom if exists
             var defs = this._getDefs(false);
             if (gradient.__dom && defs && defs.contains(gradient.__dom)) {
-                // Remove previous gradient dom
-                defs.removeChild(gradient.__dom);
+                // Update dom
+                var type = gradient.type;
+                var tagName = gradient.__dom.tagName;
+                if (type === 'linear' && tagName === 'linearGradient'
+                    || type === 'radial' && tagName === 'radialGradient'
+                ) {
+                    // Gradient type is not changed, update gradient
+                    this._updateGradientDom(gradient, gradient.__dom);
+                }
+                else {
+                    // Remove and re-create if type is changed
+                    defs.removeChild(gradient.__dom);
+                    this._addGradient(gradient);
+                }
             }
-
-            // Add new gradient
-            this._addGradient(gradient);
+            else {
+                // No previous dom, create new
+                var dom = this._addGradient(gradient);
+                gradient.__dom = dom;
+            }
         },
 
         /**
