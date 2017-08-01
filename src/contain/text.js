@@ -2,14 +2,16 @@ define(function (require) {
 
     var util = require('../core/util');
     var BoundingRect = require('../core/BoundingRect');
-    var retrieve = util.retrieve;
 
     var textWidthCache = {};
     var textWidthCacheCounter = 0;
 
     var TEXT_CACHE_MAX = 5000;
-    var STYLE_REG = /\{([a-zA-Z_]+)\|([^}]*)\}/g;
+    var STYLE_REG = /\{([a-zA-Z0-9_]+)\|([^}]*)\}/g;
     var DEFAULT_FONT = '12px sans-serif';
+
+    var retrieve2 = util.retrieve2;
+    var retrieve3 = util.retrieve3;
 
     /**
      * @public
@@ -251,16 +253,16 @@ define(function (require) {
 
         options = options || {};
 
-        ellipsis = retrieve(ellipsis, '...');
-        var maxIterations = retrieve(options.maxIterations, 2);
-        var minChar = retrieve(options.minChar, 0);
+        ellipsis = retrieve2(ellipsis, '...');
+        var maxIterations = retrieve2(options.maxIterations, 2);
+        var minChar = retrieve2(options.minChar, 0);
         // FIXME
         // Other languages?
         var cnCharWidth = getTextWidth('国', font);
         // FIXME
         // Consider proportional font?
         var ascCharWidth = getTextWidth('a', font);
-        var placeholder = retrieve(options.placeholder, '');
+        var placeholder = retrieve2(options.placeholder, '');
 
         // Example 1: minChar: 3, text: 'asdfzxcv', truncate result: 'asdf', but not: 'a...'.
         // Example 2: minChar: 3, text: '维度', truncate result: '维', but not: '...'.
@@ -441,14 +443,14 @@ define(function (require) {
                 var font = token.font = tokenStyle.font || style.font;
 
                 // textHeight can be used when textVerticalAlign is specified in token.
-                var textHeight = token.textHeight = util.retrieve(
+                var textHeight = token.textHeight = retrieve2(
                     // textHeight should not be inherited, consider it can be specified
                     // as box height of the block.
                     tokenStyle.textHeight, textContain.getLineHeight(font)
                 );
                 textPadding && (textHeight += textPadding[0] + textPadding[2]);
                 token.height = textHeight;
-                token.lineHeight = util.retrieve(
+                token.lineHeight = retrieve3(
                     tokenStyle.textLineHeight, style.textLineHeight, textHeight
                 );
 
@@ -457,7 +459,7 @@ define(function (require) {
 
                 var textWidth = token.textWidth = textContain.getWidth(token.text, font);
                 var tokenWidth = tokenStyle.textWidth;
-                if (tokenWidth == null) {
+                if (tokenWidth == null || tokenWidth === 'auto') {
                     tokenWidth = textWidth;
                     textPadding && (tokenWidth += textPadding[1] + textPadding[3]);
                 }
@@ -471,8 +473,8 @@ define(function (require) {
             contentWidth = Math.max(contentWidth, lineWidth);
         }
 
-        contentBlock.outerWidth = contentBlock.width = util.retrieve(style.textWidth, contentWidth);
-        contentBlock.outerHeight = contentBlock.height = util.retrieve(style.textHeight, contentHeight);
+        contentBlock.outerWidth = contentBlock.width = retrieve2(style.textWidth, contentWidth);
+        contentBlock.outerHeight = contentBlock.height = retrieve2(style.textHeight, contentHeight);
 
         var textPadding = style.textPadding;
         if (textPadding) {

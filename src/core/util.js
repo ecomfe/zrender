@@ -472,6 +472,7 @@ define(function(require) {
 
     /**
      * If value1 is not null, then return value1, otherwise judget rest of values.
+     * Low performance.
      * @memberOf module:zrender/core/util
      * @return {*} Final value
      */
@@ -481,6 +482,20 @@ define(function(require) {
                 return arguments[i];
             }
         }
+    }
+
+    function retrieve2(value0, value1) {
+        return value0 != null
+            ? value0
+            : value1;
+    }
+
+    function retrieve3(value0, value1, value2) {
+        return value0 != null
+            ? value0
+            : value1 != null
+            ? value1
+            : value2;
     }
 
     /**
@@ -617,6 +632,8 @@ define(function(require) {
         isDom: isDom,
         eqNaN: eqNaN,
         retrieve: retrieve,
+        retrieve2: retrieve2,
+        retrieve3: retrieve3,
         assert: assert,
         setAsPrimitive: setAsPrimitive,
         createHashMap: createHashMap,

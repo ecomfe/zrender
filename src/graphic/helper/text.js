@@ -5,7 +5,8 @@ define(function (require) {
     var roundRectHelper = require('./roundRect');
     var imageHelper = require('./image');
 
-    var retrieve = util.retrieve;
+    var retrieve3 = util.retrieve3;
+    var retrieve2 = util.retrieve2;
 
     // TODO: Have not support 'start', 'end' yet.
     var VALID_TEXT_ALIGN = {left: 1, right: 1, center: 1};
@@ -109,10 +110,10 @@ define(function (require) {
         var textFill = style.textFill;
 
         // Always set shadowBlur and shadowOffset to avoid leak from displayable.
-        setCtx(ctx, 'shadowBlur', style.textShadowBlur);
+        setCtx(ctx, 'shadowBlur', style.textShadowBlur || 0);
         setCtx(ctx, 'shadowColor', style.textShadowColor || 'transparent');
-        setCtx(ctx, 'shadowOffsetX', style.textShadowOffsetX);
-        setCtx(ctx, 'shadowOffsetY', style.textShadowOffsetY);
+        setCtx(ctx, 'shadowOffsetX', style.textShadowOffsetX || 0);
+        setCtx(ctx, 'shadowOffsetY', style.textShadowOffsetY || 0);
 
         // `textBaseline` is set as 'middle'.
         textY += lineHeight / 2;
@@ -272,10 +273,10 @@ define(function (require) {
             y -= token.height / 2 - textPadding[2] - token.textHeight / 2;
         }
 
-        setCtx(ctx, 'shadowBlur', retrieve(tokenStyle.textShadowBlur, style.textShadowBlur, 0));
+        setCtx(ctx, 'shadowBlur', retrieve3(tokenStyle.textShadowBlur, style.textShadowBlur, 0));
         setCtx(ctx, 'shadowColor', tokenStyle.textShadowColor || style.textShadowColor || 'transparent');
-        setCtx(ctx, 'shadowOffsetX', retrieve(tokenStyle.textShadowOffsetX, style.textShadowOffsetX, 0));
-        setCtx(ctx, 'shadowOffsetY', retrieve(tokenStyle.textShadowOffsetY, style.textShadowOffsetY, 0));
+        setCtx(ctx, 'shadowOffsetX', retrieve3(tokenStyle.textShadowOffsetX, style.textShadowOffsetX, 0));
+        setCtx(ctx, 'shadowOffsetY', retrieve3(tokenStyle.textShadowOffsetY, style.textShadowOffsetY, 0));
 
         setCtx(ctx, 'textAlign', textAlign);
         // Force baseline to be "middle". Otherwise, if using "top", the
@@ -286,8 +287,9 @@ define(function (require) {
 
         var textStroke = tokenStyle.textStroke || style.textStroke;
         var textFill = tokenStyle.textFill || style.textFill;
-        var textLineWidth = retrieve(tokenStyle.textLineWidth, style.textLineWidth);
+        var textLineWidth = retrieve2(tokenStyle.textLineWidth, style.textLineWidth);
 
+        // Fill after stroke so the outline will not cover the main part.
         if (needStroke(textStroke, textLineWidth)) {
             setCtx(ctx, 'lineWidth', textLineWidth);
             setCtx(ctx, 'strokeStyle', textStroke);
