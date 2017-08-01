@@ -118,6 +118,11 @@ define(function (require) {
         /**
          * @type {string}
          */
+        font: null,
+
+        /**
+         * @type {string}
+         */
         textFill: '#000',
 
         /**

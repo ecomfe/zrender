@@ -252,7 +252,7 @@ define(function (require) {
             y = lineTop + lineHeight - token.height / 2;
         }
 
-        needDrawBackground(tokenStyle) && drawBackground(
+        !token.isLineHolder && needDrawBackground(tokenStyle) && drawBackground(
             hostEl,
             ctx,
             tokenStyle,
@@ -445,10 +445,12 @@ define(function (require) {
      * @return {boolean}
      */
     helper.needDrawText = function (text, style) {
-        return text
-            || style.textBackgroundColor
-            || (style.textBorderWidth && style.textBorderColor)
-            || style.textPadding;
+        return text != null
+            && (text
+                || style.textBackgroundColor
+                || (style.textBorderWidth && style.textBorderColor)
+                || style.textPadding
+            );
     };
 
     return helper;

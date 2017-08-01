@@ -422,14 +422,13 @@ define(function (require) {
         }
 
         var lines = contentBlock.lines;
-        var baseLineHeight = textContain.getLineHeight(style.font);
         var contentHeight = 0;
         var contentWidth = 0;
 
         // Calculate layout info of tokens.
         for (var i = 0; i < lines.length; i++) {
             var line = lines[i];
-            var lineHeight = baseLineHeight;
+            var lineHeight = 0;
             var lineWidth = 0;
 
             for (var j = 0; j < line.tokens.length; j++) {
@@ -441,13 +440,17 @@ define(function (require) {
                 // textFont has been asigned to font by `normalizeStyle`.
                 var font = token.font = tokenStyle.font || style.font;
 
-                // Real text height is used when textVerticalAlign specified in token.
+                // textHeight can be used when textVerticalAlign is specified in token.
                 var textHeight = token.textHeight = util.retrieve(
-                    tokenStyle.textHeight, style.textHeight, textContain.getLineHeight(font)
+                    // textHeight should not be inherited, consider it can be specified
+                    // as box height of the block.
+                    tokenStyle.textHeight, textContain.getLineHeight(font)
                 );
                 textPadding && (textHeight += textPadding[0] + textPadding[2]);
                 token.height = textHeight;
-                token.lineHeight = util.retrieve(tokenStyle.textLineHeight, style.textLineHeight, textHeight);
+                token.lineHeight = util.retrieve(
+                    tokenStyle.textLineHeight, style.textLineHeight, textHeight
+                );
 
                 token.textAlign = tokenStyle && tokenStyle.textAlign || style.textAlign;
                 token.textVerticalAlign = tokenStyle && tokenStyle.textVerticalAlign || 'middle';
@@ -468,8 +471,8 @@ define(function (require) {
             contentWidth = Math.max(contentWidth, lineWidth);
         }
 
-        contentBlock.outerWidth = contentBlock.width = contentWidth;
-        contentBlock.outerHeight = contentBlock.height = contentHeight;
+        contentBlock.outerWidth = contentBlock.width = util.retrieve(style.textWidth, contentWidth);
+        contentBlock.outerHeight = contentBlock.height = util.retrieve(style.textHeight, contentHeight);
 
         var textPadding = style.textPadding;
         if (textPadding) {
@@ -481,6 +484,7 @@ define(function (require) {
     }
 
     function pushTokens(block, str, styleName) {
+        var isEmptyStr = str === '';
         var strs = str.split('\n');
         var lines = block.lines;
 
@@ -488,25 +492,32 @@ define(function (require) {
             var text = strs[i];
             var token = {
                 styleName: styleName,
-                text: strs[i]
+                text: text,
+                isLineHolder: !text && !isEmptyStr
             };
-            // Other tokens always start a new line.
-            if (i) {
-                // If there is '', insert it as a placeholder.
-                lines.push({tokens: [token]});
-            }
+
             // The first token should be appended to the last line.
-            else {
+            if (!i) {
                 var tokens = (lines[lines.length - 1] || (lines[0] = {tokens: []})).tokens;
+
                 // Consider cases:
                 // (1) ''.split('\n') => ['', '\n', ''], the '' at the first item
                 // (which is a placeholder) should be replaced by new token.
                 // (2) A image backage, where token likes {a|}.
                 // (3) A redundant '' will affect textAlign in line.
+                // (4) tokens with the same tplName should not be merged, because
+                // they should be displayed in different box (with border and padding).
                 var tokensLen = tokens.length;
-                (tokensLen && tokens[tokensLen - 1].styleName === styleName)
-                    ? (tokens[tokensLen - 1].text += text)
-                    : tokens.push(token);
+                (tokensLen === 1 && tokens[0].isLineHolder)
+                    ? (tokens[0] = token)
+                    // Consider text is '', only insert when it is the "lineHolder" or
+                    // "emptyStr". Otherwise a redundant '' will affect textAlign in line.
+                    : ((text || !tokensLen || isEmptyStr) && tokens.push(token));
+            }
+            // Other tokens always start a new line.
+            else {
+                // If there is '', insert it as a placeholder.
+                lines.push({tokens: [token]});
             }
         }
     }
