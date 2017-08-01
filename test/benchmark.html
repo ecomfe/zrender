@@ -24,11 +24,18 @@
         [
             'zrender',
             'zrender/graphic/shape/Rect',
-            'd3'
+            'd3',
+            'stats',
+            'zrender/svg/svg'
         ],
-        function (zrender, Rect, d3) {
+        function (zrender, Rect, d3, Stats) {
 
-var zr = zrender.init(document.getElementById('main'));
+var zr = zrender.init(document.getElementById('main'), {
+    renderer: 'svg'
+});
+
+var stats = new Stats();
+document.body.appendChild(stats.dom);
 
 option = {
     series: []
@@ -234,6 +241,7 @@ function animate(rects, layout) {
     });
 
     timer = d3.timer((elapsed) => {
+        stats.begin();
         // compute how far through the animation we are (0 to 1)
         var t = Math.min(1, ease(elapsed / duration));
 
@@ -261,6 +269,8 @@ function animate(rects, layout) {
             // start animation for next layout
             animate(rects, layouts[currLayout]);
         }
+
+        stats.end();
     });
 }
 zr.clear();
