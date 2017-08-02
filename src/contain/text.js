@@ -462,22 +462,13 @@ define(function (require) {
                 var textWidth = token.textWidth = textContain.getWidth(token.text, font);
                 var tokenWidth = tokenStyle.textWidth;
 
-                // var textTag = tokenStyle.textTag;
-                // if (textTag) {
-                //     token.tag = textTag;
-                //     if (textTag === 'hr' && (tokenWidth == null || tokenWidth === 'auto')) {
-                //         tokenWidth = '100%outer';
-                //         borderColor =
-                //     }
-                // }
-
                 if (tokenWidth == null || tokenWidth === 'auto') {
                     tokenWidth = textWidth;
                     textPadding && (tokenWidth += textPadding[1] + textPadding[3]);
                 }
-                // Percent width, can be `100%outer` or `40%inner`, can be used in drawing separate
+                // Percent width, can be `100%`, can be used in drawing separate
                 // line when box width is needed to be auto.
-                else if (typeof tokenWidth === 'string' && tokenWidth.charAt(tokenWidth.length - 1) === 'r') {
+                else if (typeof tokenWidth === 'string' && tokenWidth.charAt(tokenWidth.length - 1) === '%') {
                     token.percentWidth = tokenWidth;
                     pendingList.push(token);
                     tokenWidth = 0;
@@ -504,8 +495,8 @@ define(function (require) {
         for (var i = 0; i < pendingList.length; i++) {
             var token = pendingList[i];
             var percentWidth = token.percentWidth;
-            token.width = parseInt(percentWidth, 10) / 100
-                * (percentWidth.indexOf('inner') >= 0 ? contentWidth : contentBlock.outerWidth);
+            // Should not base on outerWidth, because token can not be placed out of padding.
+            token.width = parseInt(percentWidth, 10) / 100 * contentWidth;
         }
 
         return contentBlock;
