@@ -426,6 +426,8 @@ define(function (require) {
         var lines = contentBlock.lines;
         var contentHeight = 0;
         var contentWidth = 0;
+        // For `textWidth: 100%`
+        var pendingList = [];
 
         // Calculate layout info of tokens.
         for (var i = 0; i < lines.length; i++) {
@@ -459,9 +461,26 @@ define(function (require) {
 
                 var textWidth = token.textWidth = textContain.getWidth(token.text, font);
                 var tokenWidth = tokenStyle.textWidth;
+
+                // var textTag = tokenStyle.textTag;
+                // if (textTag) {
+                //     token.tag = textTag;
+                //     if (textTag === 'hr' && (tokenWidth == null || tokenWidth === 'auto')) {
+                //         tokenWidth = '100%outer';
+                //         borderColor =
+                //     }
+                // }
+
                 if (tokenWidth == null || tokenWidth === 'auto') {
                     tokenWidth = textWidth;
                     textPadding && (tokenWidth += textPadding[1] + textPadding[3]);
+                }
+                // Percent width, can be `100%outer` or `40%inner`, can be used in drawing separate
+                // line when box width is needed to be auto.
+                else if (typeof tokenWidth === 'string' && tokenWidth.charAt(tokenWidth.length - 1) === 'r') {
+                    token.percentWidth = tokenWidth;
+                    pendingList.push(token);
+                    tokenWidth = 0;
                 }
                 lineWidth += (token.width = tokenWidth);
                 tokenStyle && (lineHeight = Math.max(lineHeight, token.lineHeight));
@@ -480,6 +499,13 @@ define(function (require) {
         if (textPadding) {
             contentBlock.outerWidth += textPadding[1] + textPadding[3];
             contentBlock.outerHeight += textPadding[0] + textPadding[2];
+        }
+
+        for (var i = 0; i < pendingList.length; i++) {
+            var token = pendingList[i];
+            var percentWidth = token.percentWidth;
+            token.width = parseInt(percentWidth, 10) / 100
+                * (percentWidth.indexOf('inner') >= 0 ? contentWidth : contentBlock.outerWidth);
         }
 
         return contentBlock;
