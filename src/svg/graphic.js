@@ -62,7 +62,8 @@ define(function (require) {
         }
         if (pathHasStroke(style, isText)) {
             attr(svgEl, 'stroke', isText ? style.textStroke : style.stroke);
-            attr(svgEl, 'stroke-width', style.lineWidth);
+            attr(svgEl, 'stroke-width', style.textLineWidth || style.lineWidth);
+            attr(svgEl, 'paint-order', 'stroke');
             attr(svgEl, 'stroke-opacity', style.opacity);
             var lineDash = style.lineDash;
             if (lineDash) {
@@ -303,10 +304,13 @@ define(function (require) {
         var distance = style.textDistance;
         var align = style.textAlign || 'left';
         // Default font
-        var font = style.textFont || '12px sans-serif';
-        var baseline = style.textBaseline || 'alphabetic';
+        var font = style.textFont || style.font ||  '12px sans-serif';
 
-        textRect = textRect || textContain.getBoundingRect(text, font, align, baseline);
+        var verticalAlign = style.textVerticalAlign || 'hanging';
+
+        textRect = textRect || textContain.getBoundingRect(text, font, align,
+            verticalAlign);
+        attr(textSvgEl, 'alignment-baseline', verticalAlign);
 
         var lineHeight = textRect.lineHeight;
         // Text position represented by coord
@@ -328,6 +332,8 @@ define(function (require) {
             textSvgEl.style.font = font;
         }
 
+        var textPadding = style.textPadding;
+
         // Make baseline top
         attr(textSvgEl, 'x', x);
         attr(textSvgEl, 'y', y);
@@ -338,12 +344,15 @@ define(function (require) {
         // PENDING
         if (textAnchor === 'left')  {
             textAnchor = 'start';
+            textPadding && (x += textPadding[3]);
         }
         else if (textAnchor === 'right') {
             textAnchor = 'end';
+            textPadding && (x -= textPadding[1]);
         }
         else if (textAnchor === 'center') {
             textAnchor = 'middle';
+            textPadding && (x += (textPadding[3] - textPadding[1]) / 2);
         }
         // Font may affect position of each tspan elements
         if (el.__text !== text || el.__textFont !== font) {
@@ -355,11 +364,24 @@ define(function (require) {
                 if (! tspan) {
                     tspan = tspanList[i] = createElement('tspan');
                     textSvgEl.appendChild(tspan);
-                    attr(tspan, 'alignment-baseline', baseline);
+                    attr(tspan, 'alignment-baseline', verticalAlign);
                     attr(tspan, 'text-anchor', textAnchor);
                 }
+                var dy = 0;
+                if (verticalAlign === 'bottom') {
+                    dy = -textRect.height + lineHeight;
+                    textPadding && (dy -= textPadding[2]);
+                }
+                else if (verticalAlign === 'middle') {
+                    dy = (-textRect.height + lineHeight) / 2;
+                    textPadding && (y += (textPadding[0] - textPadding[2]) / 2);
+                }
+                else {
+                    textPadding && (dy += textPadding[0]);
+                }
+
                 attr(tspan, 'x', x);
-                attr(tspan, 'y', y + i * lineHeight);
+                attr(tspan, 'y', y + i * lineHeight + dy);
                 tspan.appendChild(document.createTextNode(textLines[i]));
             }
             // Remove unsed tspan elements
