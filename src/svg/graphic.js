@@ -68,7 +68,10 @@ define(function (require) {
 
         if (pathHasStroke(style, isText)) {
             attr(svgEl, 'stroke', isText ? style.textStroke : style.stroke);
-            attr(svgEl, 'stroke-width', style.textLineWidth || style.lineWidth);
+            attr(svgEl, 'stroke-width', isText
+                ? style.textLineWidth
+                : style.lineWidth
+            );
             attr(svgEl, 'paint-order', 'stroke');
             attr(svgEl, 'stroke-opacity', style.opacity);
             var lineDash = style.lineDash;
