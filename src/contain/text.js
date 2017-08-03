@@ -2,14 +2,16 @@ define(function (require) {
 
     var util = require('../core/util');
     var BoundingRect = require('../core/BoundingRect');
-    var retrieve = util.retrieve;
 
     var textWidthCache = {};
     var textWidthCacheCounter = 0;
 
     var TEXT_CACHE_MAX = 5000;
-    var STYLE_REG = /\{([a-zA-Z_]+)\|([^}]*)\}/g;
+    var STYLE_REG = /\{([a-zA-Z0-9_]+)\|([^}]*)\}/g;
     var DEFAULT_FONT = '12px sans-serif';
+
+    var retrieve2 = util.retrieve2;
+    var retrieve3 = util.retrieve3;
 
     /**
      * @public
@@ -28,8 +30,8 @@ define(function (require) {
         var width = 0;
 
         for (var i = 0, l = textLines.length; i < l; i++) {
-            // measureText 可以被覆盖以兼容不支持 Canvas 的环境
-            width = Math.max(measureText(textLines[i], font).width, width);
+            // textContain.measureText may be overrided in SVG or VML
+            width = Math.max(textContain.measureText(textLines[i], font).width, width);
         }
 
         if (textWidthCacheCounter > TEXT_CACHE_MAX) {
@@ -251,16 +253,16 @@ define(function (require) {
 
         options = options || {};
 
-        ellipsis = retrieve(ellipsis, '...');
-        var maxIterations = retrieve(options.maxIterations, 2);
-        var minChar = retrieve(options.minChar, 0);
+        ellipsis = retrieve2(ellipsis, '...');
+        var maxIterations = retrieve2(options.maxIterations, 2);
+        var minChar = retrieve2(options.minChar, 0);
         // FIXME
         // Other languages?
         var cnCharWidth = getTextWidth('国', font);
         // FIXME
         // Consider proportional font?
         var ascCharWidth = getTextWidth('a', font);
-        var placeholder = retrieve(options.placeholder, '');
+        var placeholder = retrieve2(options.placeholder, '');
 
         // Example 1: minChar: 3, text: 'asdfzxcv', truncate result: 'asdf', but not: 'a...'.
         // Example 2: minChar: 3, text: '维度', truncate result: '维', but not: '...'.
@@ -422,13 +424,15 @@ define(function (require) {
         }
 
         var lines = contentBlock.lines;
-        var baseLineHeight = textContain.getLineHeight(style.font);
         var contentHeight = 0;
         var contentWidth = 0;
+        // For `textWidth: 100%`
+        var pendingList = [];
 
+        // Calculate layout info of tokens.
         for (var i = 0; i < lines.length; i++) {
             var line = lines[i];
-            var lineHeight = baseLineHeight;
+            var lineHeight = 0;
             var lineWidth = 0;
 
             for (var j = 0; j < line.tokens.length; j++) {
@@ -440,20 +444,43 @@ define(function (require) {
                 // textFont has been asigned to font by `normalizeStyle`.
                 var font = token.font = tokenStyle.font || style.font;
 
-                // Real text height is used when textVerticalAlign specified in token.
-                var textHeight = token.textHeight = textContain.getLineHeight(font);
+                // textHeight can be used when textVerticalAlign is specified in token.
+                var textHeight = token.textHeight = retrieve2(
+                    // textHeight should not be inherited, consider it can be specified
+                    // as box height of the block.
+                    tokenStyle.textHeight, textContain.getLineHeight(font)
+                );
                 textPadding && (textHeight += textPadding[0] + textPadding[2]);
                 token.height = textHeight;
-                token.lineHeight = util.retrieve(tokenStyle.lineHeight, style.lineHeight, textHeight);
+                token.lineHeight = retrieve3(
+                    tokenStyle.textLineHeight, style.textLineHeight, textHeight
+                );
 
                 token.textAlign = tokenStyle && tokenStyle.textAlign || style.textAlign;
                 token.textVerticalAlign = tokenStyle && tokenStyle.textVerticalAlign || 'middle';
 
                 var textWidth = token.textWidth = textContain.getWidth(token.text, font);
-                var tokenWidth = tokenStyle.width;
-                if (tokenWidth == null) {
+                var tokenWidth = tokenStyle.textWidth;
+
+                // var textTag = tokenStyle.textTag;
+                // if (textTag) {
+                //     token.tag = textTag;
+                //     if (textTag === 'hr' && (tokenWidth == null || tokenWidth === 'auto')) {
+                //         tokenWidth = '100%outer';
+                //         borderColor =
+                //     }
+                // }
+
+                if (tokenWidth == null || tokenWidth === 'auto') {
                     tokenWidth = textWidth;
                     textPadding && (tokenWidth += textPadding[1] + textPadding[3]);
+                }
+                // Percent width, can be `100%outer` or `40%inner`, can be used in drawing separate
+                // line when box width is needed to be auto.
+                else if (typeof tokenWidth === 'string' && tokenWidth.charAt(tokenWidth.length - 1) === 'r') {
+                    token.percentWidth = tokenWidth;
+                    pendingList.push(token);
+                    tokenWidth = 0;
                 }
                 lineWidth += (token.width = tokenWidth);
                 tokenStyle && (lineHeight = Math.max(lineHeight, token.lineHeight));
@@ -465,8 +492,8 @@ define(function (require) {
             contentWidth = Math.max(contentWidth, lineWidth);
         }
 
-        contentBlock.outerWidth = contentBlock.width = contentWidth;
-        contentBlock.outerHeight = contentBlock.height = contentHeight;
+        contentBlock.outerWidth = contentBlock.width = retrieve2(style.textWidth, contentWidth);
+        contentBlock.outerHeight = contentBlock.height = retrieve2(style.textHeight, contentHeight);
 
         var textPadding = style.textPadding;
         if (textPadding) {
@@ -474,33 +501,51 @@ define(function (require) {
             contentBlock.outerHeight += textPadding[0] + textPadding[2];
         }
 
+        for (var i = 0; i < pendingList.length; i++) {
+            var token = pendingList[i];
+            var percentWidth = token.percentWidth;
+            token.width = parseInt(percentWidth, 10) / 100
+                * (percentWidth.indexOf('inner') >= 0 ? contentWidth : contentBlock.outerWidth);
+        }
+
         return contentBlock;
     }
 
     function pushTokens(block, str, styleName) {
+        var isEmptyStr = str === '';
         var strs = str.split('\n');
         var lines = block.lines;
 
         for (var i = 0; i < strs.length; i++) {
+            var text = strs[i];
             var token = {
                 styleName: styleName,
-                text: strs[i]
+                text: text,
+                isLineHolder: !text && !isEmptyStr
             };
+
+            // The first token should be appended to the last line.
+            if (!i) {
+                var tokens = (lines[lines.length - 1] || (lines[0] = {tokens: []})).tokens;
+
+                // Consider cases:
+                // (1) ''.split('\n') => ['', '\n', ''], the '' at the first item
+                // (which is a placeholder) should be replaced by new token.
+                // (2) A image backage, where token likes {a|}.
+                // (3) A redundant '' will affect textAlign in line.
+                // (4) tokens with the same tplName should not be merged, because
+                // they should be displayed in different box (with border and padding).
+                var tokensLen = tokens.length;
+                (tokensLen === 1 && tokens[0].isLineHolder)
+                    ? (tokens[0] = token)
+                    // Consider text is '', only insert when it is the "lineHolder" or
+                    // "emptyStr". Otherwise a redundant '' will affect textAlign in line.
+                    : ((text || !tokensLen || isEmptyStr) && tokens.push(token));
+            }
             // Other tokens always start a new line.
-            if (i) {
+            else {
                 // If there is '', insert it as a placeholder.
                 lines.push({tokens: [token]});
-            }
-            // The first token should be appended to the last line.
-            else {
-                var tokens = (lines[lines.length - 1] || (lines[0] = {tokens: []})).tokens;
-                // Consider ''.split('\n') => ['', '\n', ''], the '' at the first item
-                // (which is a placeholder) should be replaced by new token.
-                (tokens.length === 1 && !tokens[0].text)
-                    ? (tokens[0] = token)
-                    // Consider '', only insert when it is the first item.
-                    // Otherwise a redundant '' will affect textAlign in line.
-                    : ((token.text || !tokens.length) && tokens.push(token));
             }
         }
     }

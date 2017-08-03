@@ -6,6 +6,7 @@ define(function (require) {
     var Gradient = function (colorStops) {
 
         this.colorStops = colorStops || [];
+
     };
 
     Gradient.prototype = {
@@ -20,6 +21,7 @@ define(function (require) {
                 color: color
             });
         }
+
     };
 
     return Gradient;

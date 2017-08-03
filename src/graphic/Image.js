@@ -8,9 +8,8 @@ define(function (require) {
     var Displayable = require('./Displayable');
     var BoundingRect = require('../core/BoundingRect');
     var zrUtil = require('../core/util');
+    var imageHelper = require('./helper/image');
 
-    var LRU = require('../core/LRU');
-    var globalImageCache = new LRU(50);
     /**
      * @alias zrender/graphic/Image
      * @extends module:zrender/graphic/Displayable
@@ -30,115 +29,73 @@ define(function (require) {
         brush: function (ctx, prevEl) {
             var style = this.style;
             var src = style.image;
-            var image;
 
             // Must bind each time
             style.bind(ctx, this, prevEl);
-            // style.image is a url string
-            if (typeof src === 'string') {
-                image = this._image;
+
+            var image = this._image = imageHelper.createOrUpdateImage(src, this._image, this);
+
+            if (!image || !imageHelper.isImageReady(image)) {
+                return;
             }
-            // style.image is an HTMLImageElement or HTMLCanvasElement or Canvas
+
+            // 图片已经加载完成
+            // if (image.nodeName.toUpperCase() == 'IMG') {
+            //     if (!image.complete) {
+            //         return;
+            //     }
+            // }
+            // Else is canvas
+
+            var x = style.x || 0;
+            var y = style.y || 0;
+            var width = style.width;
+            var height = style.height;
+            var aspect = image.width / image.height;
+            if (width == null && height != null) {
+                // Keep image/height ratio
+                width = height * aspect;
+            }
+            else if (height == null && width != null) {
+                height = width / aspect;
+            }
+            else if (width == null && height == null) {
+                width = image.width;
+                height = image.height;
+            }
+
+            // 设置transform
+            this.setTransform(ctx);
+
+            if (style.sWidth && style.sHeight) {
+                var sx = style.sx || 0;
+                var sy = style.sy || 0;
+                ctx.drawImage(
+                    image,
+                    sx, sy, style.sWidth, style.sHeight,
+                    x, y, width, height
+                );
+            }
+            else if (style.sx && style.sy) {
+                var sx = style.sx;
+                var sy = style.sy;
+                var sWidth = width - sx;
+                var sHeight = height - sy;
+                ctx.drawImage(
+                    image,
+                    sx, sy, sWidth, sHeight,
+                    x, y, width, height
+                );
+            }
             else {
-                image = src;
-            }
-            // FIXME Case create many images with src
-            if (!image && src) {
-                // Try get from global image cache
-                var cachedImgObj = globalImageCache.get(src);
-                if (!cachedImgObj) {
-                    // Create a new image
-                    image = new Image();
-                    image.onload = function () {
-                        image.onload = null;
-                        for (var i = 0; i < cachedImgObj.pending.length; i++) {
-                            cachedImgObj.pending[i].dirty();
-                        }
-                    };
-                    cachedImgObj = {
-                        image: image,
-                        pending: [this]
-                    };
-                    image.src = src;
-                    globalImageCache.put(src, cachedImgObj);
-                    this._image = image;
-                    return;
-                }
-                else {
-                    image = cachedImgObj.image;
-                    this._image = image;
-                    // Image is not complete finish, add to pending list
-                    if (!image.width || !image.height) {
-                        cachedImgObj.pending.push(this);
-                        return;
-                    }
-                }
+                ctx.drawImage(image, x, y, width, height);
             }
 
-            if (image) {
-                // 图片已经加载完成
-                // if (image.nodeName.toUpperCase() == 'IMG') {
-                //     if (!image.complete) {
-                //         return;
-                //     }
-                // }
-                // Else is canvas
+            this.restoreTransform(ctx);
 
-                var x = style.x || 0;
-                var y = style.y || 0;
-                // 图片加载失败
-                if (!image.width || !image.height) {
-                    return;
-                }
-                var width = style.width;
-                var height = style.height;
-                var aspect = image.width / image.height;
-                if (width == null && height != null) {
-                    // Keep image/height ratio
-                    width = height * aspect;
-                }
-                else if (height == null && width != null) {
-                    height = width / aspect;
-                }
-                else if (width == null && height == null) {
-                    width = image.width;
-                    height = image.height;
-                }
-
-                // 设置transform
-                this.setTransform(ctx);
-
-                if (style.sWidth && style.sHeight) {
-                    var sx = style.sx || 0;
-                    var sy = style.sy || 0;
-                    ctx.drawImage(
-                        image,
-                        sx, sy, style.sWidth, style.sHeight,
-                        x, y, width, height
-                    );
-                }
-                else if (style.sx && style.sy) {
-                    var sx = style.sx;
-                    var sy = style.sy;
-                    var sWidth = width - sx;
-                    var sHeight = height - sy;
-                    ctx.drawImage(
-                        image,
-                        sx, sy, sWidth, sHeight,
-                        x, y, width, height
-                    );
-                }
-                else {
-                    ctx.drawImage(image, x, y, width, height);
-                }
-
-                this.restoreTransform(ctx);
-
-                // Draw rect text
-                if (style.text != null) {
-                    this.drawRectText(ctx, this.getBoundingRect());
-                }
-
+            // Draw rect text
+            if (style.text != null) {
+                this.drawRectText(ctx, this.getBoundingRect());
             }
         },
 

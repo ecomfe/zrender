@@ -11,8 +11,9 @@ define(function (require) {
     // var SHADOW_PROPS = STYLE_COMMON_PROPS.slice(0, 4);
     // var LINE_PROPS = STYLE_COMMON_PROPS.slice(4);
 
-    var Style = function (opts) {
+    var Style = function (opts, host) {
         this.extendFrom(opts);
+        this.host = host;
     };
 
     function createLinearGradient(ctx, obj, rect) {
@@ -56,6 +57,11 @@ define(function (require) {
     Style.prototype = {
 
         constructor: Style,
+
+        /**
+         * @type {module:zrender/graphic/Displayable}
+         */
+        host: null,
 
         /**
          * @type {string}
@@ -118,6 +124,17 @@ define(function (require) {
         /**
          * @type {string}
          */
+        font: null,
+
+        /**
+         * Reserved for special functinality, like 'hr'.
+         * @type {string}
+         */
+        textTag: null,
+
+        /**
+         * @type {string}
+         */
         textFill: '#000',
 
         /**
@@ -128,7 +145,23 @@ define(function (require) {
         /**
          * @type {number}
          */
+        textWidth: null,
+
+        /**
+         * Only for textBackground.
+         * @type {number}
+         */
+        textHeight: null,
+
+        /**
+         * @type {number}
+         */
         textLineWidth: 1,
+
+        /**
+         * @type {number}
+         */
+        textLineHeight: null,
 
         /**
          * 'inside', 'left', 'right', 'top', 'bottom'
@@ -368,6 +401,10 @@ define(function (require) {
                 );
             }
             return canvasGradient;
+        },
+
+        dirty: function () {
+            this.host && this.host.dirty(false);
         }
     };
 

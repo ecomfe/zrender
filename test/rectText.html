@@ -51,13 +51,13 @@
         'insideTopLeft', 'insideTopRight', 'insideBottomLeft', 'insideBottomRight'
     ];
 
-    require(['zrender', 'zrender/graphic/shape/Rect'], function(zrender, RectShape){
+    require(['zrender', 'zrender/core/util', 'zrender/graphic/shape/Rect', 'zrender/vml/vml'], function(zrender, zrUtil, RectShape){
 
 
         var zr1 = zrender.init(document.getElementById('main1'));
         var shapes1 = [];
 
-        posList.forEach(function (textPos, idx) {
+        zrUtil.each(posList, function (textPos, idx) {
             var text = textPos;
             if (text.length < 8) {
                 text = text + text;
@@ -89,7 +89,7 @@
         var zr2 = zrender.init(document.getElementById('main2'));
         var shapes2 = [];
 
-        posList.forEach(function (textPos, idx) {
+        zrUtil.each(posList, function (textPos, idx) {
             var text = textPos;
 
             var shape = new RectShape({
@@ -171,7 +171,7 @@
                         textBoxShadowColor: '#1099ee',
                         textBoxShadowOffsetX: 2,
                         textBoxShadowOffsetY: 5,
-                        textPadding: [15, 20, 5, 10],
+                        textPadding: [15, 20, 5, 10]
                     }
                 });
             }
@@ -187,7 +187,7 @@
                         textBoxShadowColor: '#1099ee',
                         textBoxShadowOffsetX: 2,
                         textBoxShadowOffsetY: 5,
-                        textPadding: [15, 20, 5, 10],
+                        textPadding: [15, 20, 5, 10]
                     }
                 });
             }
