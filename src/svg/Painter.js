@@ -114,6 +114,16 @@ define(function (require) {
             return this._viewport;
         },
 
+        getViewportRootOffset: function () {
+            var viewportRoot = this.getViewportRoot();
+            if (viewportRoot) {
+                return {
+                    offsetLeft: viewportRoot.offsetLeft || 0,
+                    offsetTop: viewportRoot.offsetTop || 0
+                };
+            }
+        },
+
         refresh: function () {
 
             var list = this.storage.getDisplayList(true);
