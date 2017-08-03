@@ -326,7 +326,7 @@ define(function (require) {
         }
         else {
             var newPos = textContain.adjustTextPositionOnRect(
-                textPosition, rect, textRect, distance
+                textPosition, rect, distance
             );
             x = newPos.x;
             y = newPos.y;
