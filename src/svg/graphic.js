@@ -315,11 +315,10 @@ define(function (require) {
         // Default font
         var font = style.textFont || style.font ||  '12px sans-serif';
 
-        var verticalAlign = style.textVerticalAlign || 'hanging';
+        var verticalAlign = getVerticalAlignForSvg(style.textVerticalAlign);
 
         textRect = textRect || textContain.getBoundingRect(text, font, align,
             verticalAlign);
-        attr(textSvgEl, 'alignment-baseline', verticalAlign);
 
         var lineHeight = textRect.lineHeight;
         // Text position represented by coord
@@ -333,9 +332,11 @@ define(function (require) {
             );
             x = newPos.x;
             y = newPos.y;
-
+            verticalAlign = getVerticalAlignForSvg(newPos.textVerticalAlign);
             align = 'center';
         }
+
+        attr(textSvgEl, 'alignment-baseline', verticalAlign);
 
         if (font) {
             textSvgEl.style.font = font;
@@ -363,6 +364,20 @@ define(function (require) {
             textAnchor = 'middle';
             textPadding && (x += (textPadding[3] - textPadding[1]) / 2);
         }
+
+        var dy = 0;
+        if (verticalAlign === 'bottom') {
+            dy = -textRect.height + lineHeight;
+            textPadding && (dy -= textPadding[2]);
+        }
+        else if (verticalAlign === 'middle') {
+            dy = (-textRect.height + lineHeight) / 2;
+            textPadding && (y += (textPadding[0] - textPadding[2]) / 2);
+        }
+        else {
+            textPadding && (dy += textPadding[0]);
+        }
+
         // Font may affect position of each tspan elements
         if (el.__text !== text || el.__textFont !== font) {
             var tspanList = el.__tspanList || [];
@@ -376,19 +391,6 @@ define(function (require) {
                     attr(tspan, 'alignment-baseline', verticalAlign);
                     attr(tspan, 'text-anchor', textAnchor);
                 }
-                var dy = 0;
-                if (verticalAlign === 'bottom') {
-                    dy = -textRect.height + lineHeight;
-                    textPadding && (dy -= textPadding[2]);
-                }
-                else if (verticalAlign === 'middle') {
-                    dy = (-textRect.height + lineHeight) / 2;
-                    textPadding && (y += (textPadding[0] - textPadding[2]) / 2);
-                }
-                else {
-                    textPadding && (dy += textPadding[0]);
-                }
-
                 attr(tspan, 'x', x);
                 attr(tspan, 'y', y + i * lineHeight + dy);
                 tspan.appendChild(document.createTextNode(textLines[i]));
@@ -402,7 +404,30 @@ define(function (require) {
             el.__text = text;
             el.__textFont = font;
         }
+        else if (el.__tspanList.length) {
+            // Update span x and y
+            var len = el.__tspanList.length;
+            for (var i = 0; i < len; ++i) {
+                var tspan = el.__tspanList[i];
+                if (tspan) {
+                    attr(tspan, 'x', x);
+                    attr(tspan, 'y', y + i * lineHeight + dy);
+                }
+            }
+        }
     };
+
+    function getVerticalAlignForSvg(verticalAlign) {
+        if (verticalAlign === 'middle') {
+            return 'middle';
+        }
+        else if (verticalAlign === 'bottom') {
+            verticalAlign = 'baseline';
+        }
+        else {
+            return 'hanging';
+        }
+    }
 
     svgText.drawRectText = svgTextDrawRectText;
 
