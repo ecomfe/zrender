@@ -227,7 +227,7 @@ define(function (require) {
                         var initialState = this._states[this._initialState];
                         el.style = new Style();
                         if (initialState) {
-                            el.style.extendFrom(initialState.style);
+                            el.style.extendFrom(initialState.style, false);
                         }
                         if (
                             // Not initial state

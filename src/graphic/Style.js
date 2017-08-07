@@ -12,7 +12,7 @@ define(function (require) {
     // var LINE_PROPS = STYLE_COMMON_PROPS.slice(4);
 
     var Style = function (opts, host) {
-        this.extendFrom(opts);
+        this.extendFrom(opts, false);
         this.host = host;
     };
 
@@ -352,14 +352,22 @@ define(function (require) {
         /**
          * Extend from other style
          * @param {zrender/graphic/Style} otherStyle
-         * @param {boolean} overwrite
+         * @param {boolean} overwrite true: overwrirte any way. 
+         *                            false: overwrite only when !target.hasOwnProperty
+         *                            others: overwrite when property is not null/undefined.
          */
         extendFrom: function (otherStyle, overwrite) {
             if (otherStyle) {
                 var target = this;
                 for (var name in otherStyle) {
                     if (otherStyle.hasOwnProperty(name)
-                        && (overwrite || ! target.hasOwnProperty(name))
+                        && (overwrite === true 
+                            || (
+                                overwrite === false 
+                                    ? !target.hasOwnProperty(name)
+                                    : otherStyle[name] != null
+                            )
+                        ) 
                     ) {
                         target[name] = otherStyle[name];
                     }
