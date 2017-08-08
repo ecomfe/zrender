@@ -7,7 +7,7 @@ define(function (require) {
     var CMD = require('../core/PathProxy').CMD;
     var textContain = require('../contain/text');
 
-    var Gradient = require('../graphic/Gradient');
+    var Text = require('../graphic/Text');
 
     var createElement = svgCore.createElement;
     var arrayJoin = Array.prototype.join;
@@ -232,7 +232,11 @@ define(function (require) {
         setTransform(svgEl, el.transform);
 
         if (style.text != null) {
-            svgTextDrawRectText(el, el.getBoundingRect());
+            var rect = el.getBoundingRect();
+            var pos = el.transformCoordToGlobal(rect.x, rect.y);
+            rect.x = pos[0];
+            rect.y = pos[1];
+            svgTextDrawRectText(el, rect);
         }
     };
 
@@ -305,7 +309,10 @@ define(function (require) {
         }
 
         bindStyle(textSvgEl, style, true);
-        setTransform(textSvgEl, el.transform);
+        if (el instanceof Text || el.style.transformText) {
+            // Transform text with element
+            setTransform(textSvgEl, el.transform);
+        }
 
         var x;
         var y;
