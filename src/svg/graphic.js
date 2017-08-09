@@ -5,6 +5,7 @@ define(function (require) {
 
     var svgCore = require('./core');
     var CMD = require('../core/PathProxy').CMD;
+    var BoundingRect = require('../core/BoundingRect');
     var textContain = require('../contain/text');
 
     var Text = require('../graphic/Text');
@@ -235,11 +236,7 @@ define(function (require) {
         setTransform(svgEl, el.transform);
 
         if (style.text != null) {
-            var rect = el.getBoundingRect();
-            var pos = el.transformCoordToGlobal(rect.x, rect.y);
-            rect.x = pos[0];
-            rect.y = pos[1];
-            svgTextDrawRectText(el, rect);
+            svgTextDrawRectText(el, el.getBoundingRect());
         }
     };
 
@@ -295,6 +292,7 @@ define(function (require) {
      * TEXT
      **************************************************/
     var svgText = {};
+    var tmpRect = new BoundingRect();
 
     var svgTextDrawRectText = function (el, rect, textRect) {
         var style = el.style;
@@ -315,6 +313,18 @@ define(function (require) {
         if (el instanceof Text || el.style.transformText) {
             // Transform text with element
             setTransform(textSvgEl, el.transform);
+        }
+        else {
+            if (el.transform) {
+                tmpRect.copy(rect);
+                tmpRect.applyTransform(el.transform);
+                rect = tmpRect;
+            }
+            else {
+                var pos = el.transformCoordToGlobal(rect.x, rect.y);
+                rect.x = pos[0];
+                rect.y = pos[1];
+            }
         }
 
         var x;
