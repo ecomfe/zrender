@@ -222,7 +222,7 @@ define(function (require) {
         return isArrayLike(lastValue && lastValue[0]) ? 2 : 1;
     }
 
-    function createTrackClip (animator, easing, oneTrackDone, keyframes, propName) {
+    function createTrackClip(animator, easing, oneTrackDone, keyframes, propName, forceAnimate) {
         var getter = animator._getter;
         var setter = animator._setter;
         var useSpline = easing === 'spline';
@@ -278,7 +278,7 @@ define(function (require) {
             }
             kfValues.push(value);
         }
-        if (isAllValueEqual) {
+        if (!forceAnimate && isAllValueEqual) {
             return;
         }
 
@@ -546,11 +546,12 @@ define(function (require) {
         },
         /**
          * 开始执行动画
-         * @param  {string|Function} easing
+         * @param  {string|Function} [easing]
          *         动画缓动函数，详见{@link module:zrender/animation/easing}
+         * @param  {boolean} forceAnimate
          * @return {module:zrender/animation/Animator}
          */
-        start: function (easing) {
+        start: function (easing, forceAnimate) {
 
             var self = this;
             var clipCount = 0;
@@ -569,7 +570,7 @@ define(function (require) {
                 }
                 var clip = createTrackClip(
                     this, easing, oneTrackDone,
-                    this._tracks[propName], propName
+                    this._tracks[propName], propName, forceAnimate
                 );
                 if (clip) {
                     this._clipList.push(clip);
@@ -596,6 +597,9 @@ define(function (require) {
                 };
             }
 
+            // This optimization will help the case that in the upper application
+            // the view may be refreshed frequently, where animation will be
+            // called repeatly but nothing changed.
             if (!clipCount) {
                 this._doneCallback();
             }
