@@ -411,6 +411,9 @@ define(function (require) {
                     attr(tspan, 'alignment-baseline', verticalAlign);
                     attr(tspan, 'text-anchor', textAnchor);
                 }
+                else {
+                    tspan.innerHTML = '';
+                }
                 attr(tspan, 'x', x);
                 attr(tspan, 'y', y + i * lineHeight + dy);
                 tspan.appendChild(document.createTextNode(textLines[i]));
