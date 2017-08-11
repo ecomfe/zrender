@@ -32,8 +32,8 @@ define(function(require) {
         /**
          * 动画
          *
-         * @param {string} path 需要添加动画的属性获取路径，可以通过a.b.c来获取深层的属性
-         * @param {boolean} [loop] 动画是否循环
+         * @param {string} path The path to fetch value from object, like 'a.b.c'.
+         * @param {boolean} [loop] Whether to loop animation.
          * @return {module:zrender/animation/Animator}
          * @example:
          *     el.animate('style', false)
@@ -118,6 +118,8 @@ define(function(require) {
          * @param {string} [easing='linear']
          * @param {number} [delay=0]
          * @param {Function} [callback]
+         * @param {Function} [forceAnimate] Prevent stop animation and callback
+         *        immediently when target values are the same as current values.
          *
          * @example
          *  // Animate position
@@ -137,7 +139,7 @@ define(function(require) {
          *  }, 100, 100, 'cubicOut', function () { // done })
          */
          // TODO Return animation key
-        animateTo: function (target, time, delay, easing, callback) {
+        animateTo: function (target, time, delay, easing, callback, forceAnimate) {
             // animateTo(target, time, easing, callback);
             if (isString(delay)) {
                 callback = easing;
@@ -189,7 +191,7 @@ define(function(require) {
             for (var i = 0; i < animators.length; i++) {
                 animators[i]
                     .done(done)
-                    .start(easing);
+                    .start(easing, forceAnimate);
             }
         },
 
