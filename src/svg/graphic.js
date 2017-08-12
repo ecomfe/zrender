@@ -356,7 +356,6 @@ define(function (require) {
             x = newPos.x;
             y = newPos.y;
             verticalAlign = getVerticalAlignForSvg(newPos.textVerticalAlign);
-            align = 'center';
         }
 
         attr(textSvgEl, 'alignment-baseline', verticalAlign);
@@ -389,7 +388,7 @@ define(function (require) {
         }
 
         var dy = 0;
-        if (verticalAlign === 'bottom') {
+        if (verticalAlign === 'baseline') {
             dy = -textRect.height + lineHeight;
             textPadding && (dy -= textPadding[2]);
         }
@@ -413,6 +412,9 @@ define(function (require) {
                     textSvgEl.appendChild(tspan);
                     attr(tspan, 'alignment-baseline', verticalAlign);
                     attr(tspan, 'text-anchor', textAnchor);
+                }
+                else {
+                    tspan.innerHTML = '';
                 }
                 attr(tspan, 'x', x);
                 attr(tspan, 'y', y + i * lineHeight + dy);
@@ -445,7 +447,7 @@ define(function (require) {
             return 'middle';
         }
         else if (verticalAlign === 'bottom') {
-            verticalAlign = 'baseline';
+            return 'baseline';
         }
         else {
             return 'hanging';
