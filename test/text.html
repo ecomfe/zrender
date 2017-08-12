@@ -141,6 +141,25 @@ vml 测试
             draggable: true
         }));
 
+        zr.add(new Text({
+            position : [100, 200],
+            rotation: -1,
+            origin: [0, 50],
+            scale: [.5, .5],
+            style: {
+                x: 0,
+                y: 0,
+                text: 'position\n[100, 200],\nrotation: -1\nscale: 0.5\ntextAlign: middle\ntextVerticalAlign: bottom\norigin:[0, 50]',
+                width: 50,
+                height: 50,
+                textFill: '#c0f',
+                textFont: '18px Microsoft Yahei',
+                textAlign: 'middle',
+                textVerticalAlign: 'bottom'
+            },
+            draggable: true
+        }));
+
         zr.add(new Rect({
             position : [300, 100],
             shape: {

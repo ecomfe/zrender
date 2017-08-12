@@ -30,12 +30,14 @@ define(function (require) {
             style.font = textContain.makeFont(style);
 
             var textAlign = style.textAlign;
+            textAlign === 'middle' && (textAlign = 'center');
             style.textAlign = (
                 textAlign == null || VALID_TEXT_ALIGN[textAlign]
             ) ? textAlign : 'left';
 
             // Compatible with textBaseline.
             var textVerticalAlign = style.textVerticalAlign || style.textBaseline;
+            textAlign === 'center' && (textAlign = 'middle');
             style.textVerticalAlign = (
                 textVerticalAlign == null || VALID_TEXT_VERTICAL_ALIGN[textVerticalAlign]
             ) ? textVerticalAlign : 'top';
