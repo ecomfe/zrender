@@ -374,9 +374,6 @@ define(function (require) {
      * @public
      * @param {string} text
      * @param {Object} style
-     * @param {Object} style.rich Styles of rich text.
-     * @param {string} [style.font]
-     * @param {string} [style.textAlign]
      * @return {Object} block
      * {
      *      width,
@@ -541,6 +538,18 @@ define(function (require) {
         }
     }
 
+    function makeFont(style) {
+        // FIXME in node-canvas fontWeight is before fontStyle
+        // Use `fontSize` `fontFamily` to check whether font properties are defined.
+        return (style.fontSize || style.fontFamily) && [
+            style.fontStyle,
+            style.fontWeight,
+            (style.fontSize || 12) + 'px',
+            // If font properties are defined, `fontFamily` should not be ignored.
+            style.fontFamily || 'sans-serif'
+        ].join(' ') || style.textFont || style.font;
+    }
+
     var textContain = {
 
         getWidth: getTextWidth,
@@ -562,6 +571,8 @@ define(function (require) {
         adjustTextX: adjustTextX,
 
         adjustTextY: adjustTextY,
+
+        makeFont: makeFont,
 
         DEFAULT_FONT: DEFAULT_FONT
     };

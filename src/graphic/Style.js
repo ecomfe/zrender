@@ -3,6 +3,9 @@
  */
 define(function (require) {
 
+    var textContain = require('../contain/text');
+    var textHelper = require('./helper/text');
+
     var STYLE_COMMON_PROPS = [
         ['shadowBlur', 0], ['shadowOffsetX', 0], ['shadowOffsetY', 0], ['shadowColor', '#000'],
         ['lineCap', 'butt'], ['lineJoin', 'miter'], ['miterLimit', 10]
@@ -122,9 +125,45 @@ define(function (require) {
         text: null,
 
         /**
+         * If `fontSize` or `fontFamily` exists, `font` will be reset by
+         * `fontSize`, `fontStyle`, `fontWeight`, `fontFamily`.
+         * So do not visit it directly in upper application (like echarts),
+         * but use `contain/text#makeFont` instead.
          * @type {string}
          */
         font: null,
+
+        /**
+         * The same as font. Use font please.
+         * @deprecated
+         * @type {string}
+         */
+        textFont: null,
+
+        /**
+         * It helps merging respectively, rather than parsing an entire font string.
+         * @type {string}
+         */
+        fontStyle: null,
+
+        /**
+         * It helps merging respectively, rather than parsing an entire font string.
+         * @type {string}
+         */
+        fontWeight: null,
+
+        /**
+         * It helps merging respectively, rather than parsing an entire font string.
+         * Should be 12 but not '12px'.
+         * @type {number}
+         */
+        fontSize: null,
+
+        /**
+         * It helps merging respectively, rather than parsing an entire font string.
+         * @type {string}
+         */
+        fontFamily: null,
 
         /**
          * Reserved for special functinality, like 'hr'.
@@ -300,6 +339,10 @@ define(function (require) {
          */
         blend: null,
 
+        normalize: function () {
+            textHelper.normalizeTextStyle(this);
+        },
+
         /**
          * @param {CanvasRenderingContext2D} ctx
          */
@@ -352,24 +395,23 @@ define(function (require) {
         /**
          * Extend from other style
          * @param {zrender/graphic/Style} otherStyle
-         * @param {boolean} overwrite true: overwrirte any way. 
+         * @param {boolean} overwrite true: overwrirte any way.
          *                            false: overwrite only when !target.hasOwnProperty
          *                            others: overwrite when property is not null/undefined.
          */
         extendFrom: function (otherStyle, overwrite) {
             if (otherStyle) {
-                var target = this;
                 for (var name in otherStyle) {
                     if (otherStyle.hasOwnProperty(name)
-                        && (overwrite === true 
+                        && (overwrite === true
                             || (
-                                overwrite === false 
-                                    ? !target.hasOwnProperty(name)
+                                overwrite === false
+                                    ? !this.hasOwnProperty(name)
                                     : otherStyle[name] != null
                             )
-                        ) 
+                        )
                     ) {
-                        target[name] = otherStyle[name];
+                        this[name] = otherStyle[name];
                     }
                 }
             }
@@ -409,11 +451,8 @@ define(function (require) {
                 );
             }
             return canvasGradient;
-        },
-
-        dirty: function () {
-            this.host && this.host.dirty(false);
         }
+
     };
 
     var styleProto = Style.prototype;

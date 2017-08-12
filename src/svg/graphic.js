@@ -7,6 +7,7 @@ define(function (require) {
     var CMD = require('../core/PathProxy').CMD;
     var BoundingRect = require('../core/BoundingRect');
     var textContain = require('../contain/text');
+    var textHelper = require('../graphic/helper/text');
 
     var Text = require('../graphic/Text');
 
@@ -296,6 +297,9 @@ define(function (require) {
 
     var svgTextDrawRectText = function (el, rect, textRect) {
         var style = el.style;
+
+        this.__dirty && textHelper.normalizeTextStyle(style, true);
+
         var text = style.text;
         // Convert to string
         text != null && (text += '');
@@ -332,8 +336,7 @@ define(function (require) {
         var textPosition = style.textPosition;
         var distance = style.textDistance;
         var align = style.textAlign || 'left';
-        // Default font
-        var font = style.textFont || style.font ||  '12px sans-serif';
+        var font = style.font || textContain.DEFAULT_FONT;
 
         var verticalAlign = getVerticalAlignForSvg(style.textVerticalAlign);
 

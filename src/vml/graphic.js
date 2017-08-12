@@ -8,6 +8,7 @@ if (!require('../core/env').canvasSupported) {
     var CMD = require('../core/PathProxy').CMD;
     var colorTool = require('../tool/color');
     var textContain = require('../contain/text');
+    var textHelper = require('../graphic/helper/text');
     var RectText = require('../graphic/mixin/RectText');
     var Displayable = require('../graphic/Displayable');
     var ZImage = require('../graphic/Image');
@@ -821,6 +822,10 @@ if (!require('../core/env').canvasSupported) {
     var drawRectText = function (vmlRoot, rect, textRect, fromTextEl) {
 
         var style = this.style;
+
+        // Optimize, avoid normalize every time.
+        this.__dirty && textHelper.normalizeTextStyle(style, true);
+
         var text = style.text;
         // Convert to string
         text != null && (text += '');
@@ -831,7 +836,7 @@ if (!require('../core/env').canvasSupported) {
         var x;
         var y;
         var align = style.textAlign;
-        var fontStyle = getFontStyle(style.textFont);
+        var fontStyle = getFontStyle(style.font);
         // FIXME encodeHtmlAttribute ?
         var font = fontStyle.style + ' ' + fontStyle.variant + ' ' + fontStyle.weight + ' '
             + fontStyle.size + 'px "' + fontStyle.family + '"';

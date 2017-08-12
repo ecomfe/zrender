@@ -16,19 +16,18 @@ define(function (require) {
 
     /**
      * @param {module:zrender/graphic/Style} style
-     * @param {boolean} [inRectText=false]
      * @return {module:zrender/graphic/Style} The input style.
      */
-    helper.normalizeTextStyle = function (style, inRectText) {
-        // In rect text, outermost textFill and textStroke should not be overrided.
-        normalizeStyle(style, !!inRectText);
+    helper.normalizeTextStyle = function (style) {
+        normalizeStyle(style);
         util.each(style.rich, normalizeStyle);
         return style;
     };
 
     function normalizeStyle(style) {
         if (style) {
-            style.font = style.textFont || style.font;
+
+            style.font = textContain.makeFont(style);
 
             var textAlign = style.textAlign;
             style.textAlign = (
@@ -106,9 +105,6 @@ define(function (require) {
         // text will offset downward a little bit in font "Microsoft YaHei".
         setCtx(ctx, 'textBaseline', 'middle');
 
-        var textStroke = style.textStroke;
-        var textFill = style.textFill;
-
         // Always set shadowBlur and shadowOffset to avoid leak from displayable.
         setCtx(ctx, 'shadowBlur', style.textShadowBlur || 0);
         setCtx(ctx, 'shadowColor', style.textShadowColor || 'transparent');
@@ -119,21 +115,21 @@ define(function (require) {
         textY += lineHeight / 2;
 
         var textLineWidth = style.textLineWidth;
-        var hasStroke = needStroke(textStroke, textLineWidth);
-        var hasFill = needFill(textFill);
+        var textStroke = getStroke(style.textStroke, textLineWidth);
+        var textFill = getFill(style.textFill);
 
-        if (hasStroke) {
+        if (textStroke) {
             setCtx(ctx, 'lineWidth', textLineWidth);
             setCtx(ctx, 'strokeStyle', textStroke);
         }
-        if (hasFill) {
+        if (textFill) {
             setCtx(ctx, 'fillStyle', textFill);
         }
 
         for (var i = 0; i < textLines.length; i++) {
             // Fill after stroke so the outline will not cover the main part.
-            hasStroke && ctx.strokeText(textLines[i], textX, textY);
-            hasFill && ctx.fillText(textLines[i], textX, textY);
+            textStroke && ctx.strokeText(textLines[i], textX, textY);
+            textFill && ctx.fillText(textLines[i], textX, textY);
             textY += lineHeight;
         }
     }
@@ -285,17 +281,17 @@ define(function (require) {
 
         setCtx(ctx, 'font', token.font || textContain.DEFAULT_FONT);
 
-        var textStroke = tokenStyle.textStroke || style.textStroke;
-        var textFill = tokenStyle.textFill || style.textFill;
+        var textStroke = getStroke(tokenStyle.textStroke || style.textStroke, textLineWidth);
+        var textFill = getFill(tokenStyle.textFill || style.textFill);
         var textLineWidth = retrieve2(tokenStyle.textLineWidth, style.textLineWidth);
 
         // Fill after stroke so the outline will not cover the main part.
-        if (needStroke(textStroke, textLineWidth)) {
+        if (textStroke) {
             setCtx(ctx, 'lineWidth', textLineWidth);
             setCtx(ctx, 'strokeStyle', textStroke);
             ctx.strokeText(token.text, x, y);
         }
-        if (needFill(textFill)) {
+        if (textFill) {
             setCtx(ctx, 'fillStyle', textFill);
             ctx.fillText(token.text, x, y);
         }
@@ -415,12 +411,22 @@ define(function (require) {
      * @param {string} [lineWidth] If specified, do not check style.textStroke.
      * @param {number} style
      */
-    var needStroke = helper.needStroke = function (stroke, lineWidth) {
-        return stroke != null && stroke !== 'none' && lineWidth > 0;
+    var getStroke = helper.getStroke = function (stroke, lineWidth) {
+        return (stroke == null || stroke === 'none' || lineWidth < 0)
+            ? null
+            // TODO pattern and gradient?
+            : (stroke.image || stroke.colorStops)
+            ? '#000'
+            : stroke;
     };
 
-    var needFill = helper.needFill = function (fill) {
-        return fill != null && fill !== 'none';
+    var getFill = helper.getFill = function (fill) {
+        return (fill == null || fill === 'none')
+            ? null
+            // TODO pattern and gradient?
+            : (fill.image || fill.colorStops)
+            ? '#000'
+            : fill;
     };
 
     function parsePercent(value, maxValue) {
