@@ -31,7 +31,11 @@ define(function (require) {
         type: 'text',
 
         brush: function (ctx, prevEl) {
-            var style = textHelper.normalizeTextStyle(this.style);
+            var style = this.style;
+
+            // Optimize, avoid normalize every time.
+            this.__dirty && textHelper.normalizeTextStyle(style, true);
+
             // Use props with prefix 'text'.
             style.fill = style.stroke = style.shadowBlur = style.shadowColor =
                 style.shadowOffsetX = style.shadowOffsetY = null;
@@ -55,7 +59,10 @@ define(function (require) {
         },
 
         getBoundingRect: function () {
-            var style = textHelper.normalizeTextStyle(this.style);
+            var style = this.style;
+
+            // Optimize, avoid normalize every time.
+            this.__dirty && textHelper.normalizeTextStyle(style, true);
 
             if (!this._rect) {
                 var text = style.text;
@@ -73,7 +80,7 @@ define(function (require) {
                 rect.x += style.x || 0;
                 rect.y += style.y || 0;
 
-                if (textHelper.needStroke(style.textStroke, style.textLineWidth)) {
+                if (textHelper.getStroke(style.textStroke, style.textLineWidth)) {
                     var w = style.textLineWidth;
                     rect.x -= w / 2;
                     rect.y -= w / 2;

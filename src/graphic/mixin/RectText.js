@@ -22,7 +22,11 @@ define(function (require) {
          * @param  {Object} rect Displayable rect
          */
         drawRectText: function (ctx, rect) {
-            var style = textHelper.normalizeTextStyle(this.style, true);
+            var style = this.style;
+
+            // Optimize, avoid normalize every time.
+            this.__dirty && textHelper.normalizeTextStyle(style, true);
+
             var text = style.text;
 
             // Convert to string
