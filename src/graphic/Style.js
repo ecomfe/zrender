@@ -215,7 +215,7 @@ define(function (require) {
          * If not specified, use the boundingRect of a `displayable`.
          * @type {Object}
          */
-        textPositionRect: null,
+        textRect: null,
 
         /**
          * [x, y]

@@ -24,6 +24,8 @@ define(function (require) {
         drawRectText: function (ctx, rect) {
             var style = this.style;
 
+            rect = style.textRect || rect;
+
             // Optimize, avoid normalize every time.
             this.__dirty && textHelper.normalizeTextStyle(style, true);
 

@@ -360,10 +360,6 @@ define(function (require) {
         var textAlign = style.textAlign;
         var textVerticalAlign = style.textVerticalAlign;
 
-        if (rect !== false) {
-            rect = style.textPositionRect || rect;
-        }
-
         // Text position represented by coord
         if (rect) {
             var textPosition = style.textPosition;

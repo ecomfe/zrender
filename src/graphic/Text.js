@@ -53,7 +53,7 @@ define(function (require) {
 
             this.setTransform(ctx);
 
-            textHelper.renderText(this, ctx, text, style, false);
+            textHelper.renderText(this, ctx, text, style);
 
             this.restoreTransform(ctx);
         },
