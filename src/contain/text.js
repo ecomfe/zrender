@@ -485,8 +485,8 @@ define(function (require) {
         var stlPadding = style.textPadding;
 
         var truncate = style.truncate;
-        var truncateWidth = truncate.outerWidth;
-        var truncateHeight = truncate.outerHeight;
+        var truncateWidth = truncate && truncate.outerWidth;
+        var truncateHeight = truncate && truncate.outerHeight;
         if (stlPadding) {
             truncateWidth && (truncateWidth -= stlPadding[1] + stlPadding[3]);
             truncateHeight && (truncateHeight -= stlPadding[0] + stlPadding[2]);
