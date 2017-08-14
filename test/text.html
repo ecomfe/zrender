@@ -12,8 +12,6 @@
     </div>
     <div id="main" style="width:1200px;height:2200px;margin:0;"></div>
 
-vml 测试
-
     <script type="text/javascript">
 
     var showBoundingRect;
@@ -42,6 +40,7 @@ vml 测试
             zr.storage.traverse(function (el) {
                 if (el.type === 'text') {
                     var rect = el.getBoundingRect();
+
                     zr.add(new Rect({
                         shape: {
                             x: rect.x, y: rect.y, width: rect.width, height: rect.height

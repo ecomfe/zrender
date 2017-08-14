@@ -833,18 +833,33 @@ if (!require('../core/env').canvasSupported) {
             return;
         }
 
+        // Convert rich text to plain text. Rich text is not supported in
+        // IE8-, but tags in rich text template will be removed.
+        if (style.rich) {
+            var contentBlock = textContain.parseRichText(text, style);
+            text = [];
+            for (var i = 0; i < contentBlock.lines.length; i++) {
+                var tokens = contentBlock.lines[i].tokens;
+                var textLine = [];
+                for (var j = 0; j < tokens.length; j++) {
+                    textLine.push(tokens[j].text);
+                }
+                text.push(textLine.join(''));
+            }
+            text = text.join('\n');
+        }
+
         var x;
         var y;
         var align = style.textAlign;
+        var verticalAlign = style.textVerticalAlign;
+
         var fontStyle = getFontStyle(style.font);
         // FIXME encodeHtmlAttribute ?
         var font = fontStyle.style + ' ' + fontStyle.variant + ' ' + fontStyle.weight + ' '
             + fontStyle.size + 'px "' + fontStyle.family + '"';
 
-        var baseline = style.textBaseline;
-        var verticalAlign = style.textVerticalAlign;
-
-        textRect = textRect || textContain.getBoundingRect(text, font, align, baseline);
+        textRect = textRect || textContain.getBoundingRect(text, font, align, verticalAlign);
 
         // Transform rect to view space
         var m = this.transform;
@@ -864,64 +879,57 @@ if (!require('../core/env').canvasSupported) {
                 y = rect.y + parsePercent(textPosition[1], rect.height);
 
                 align = align || 'left';
-                baseline = baseline || 'top';
             }
             else {
                 var res = textContain.adjustTextPositionOnRect(
-                    textPosition, rect, textRect, distance
+                    textPosition, rect, distance
                 );
                 x = res.x;
                 y = res.y;
 
                 // Default align and baseline when has textPosition
                 align = align || res.textAlign;
-                baseline = baseline || res.textBaseline;
+                verticalAlign = verticalAlign || res.textVerticalAlign;
             }
         }
         else {
             x = rect.x;
             y = rect.y;
         }
-        if (verticalAlign) {
-            switch (verticalAlign) {
-                case 'middle':
-                    y -= textRect.height / 2;
-                    break;
-                case 'bottom':
-                    y -= textRect.height;
-                    break;
-                // 'top'
-            }
-            // Ignore baseline
-            baseline = 'top';
-        }
 
-        var fontSize = fontStyle.size;
+        x = textContain.adjustTextX(x, textRect.width, align);
+        y = textContain.adjustTextY(y, textRect.height, verticalAlign);
+
+        // Force baseline 'middle'
+        y += textRect.height / 2;
+
+        // var fontSize = fontStyle.size;
         // 1.75 is an arbitrary number, as there is no info about the text baseline
-        switch (baseline) {
-            case 'hanging':
-            case 'top':
-                y += fontSize / 1.75;
-                break;
-            case 'middle':
-                break;
-            default:
-            // case null:
-            // case 'alphabetic':
-            // case 'ideographic':
-            // case 'bottom':
-                y -= fontSize / 2.25;
-                break;
-        }
-        switch (align) {
-            case 'left':
-                break;
-            case 'center':
-                x -= textRect.width / 2;
-                break;
-            case 'right':
-                x -= textRect.width;
-                break;
+        // switch (baseline) {
+            // case 'hanging':
+            // case 'top':
+            //     y += fontSize / 1.75;
+            //     break;
+        //     case 'middle':
+        //         break;
+        //     default:
+        //     // case null:
+        //     // case 'alphabetic':
+        //     // case 'ideographic':
+        //     // case 'bottom':
+        //         y -= fontSize / 2.25;
+        //         break;
+        // }
+
+        // switch (align) {
+        //     case 'left':
+        //         break;
+        //     case 'center':
+        //         x -= textRect.width / 2;
+        //         break;
+        //     case 'right':
+        //         x -= textRect.width;
+        //         break;
             // case 'end':
                 // align = elementStyle.direction == 'ltr' ? 'right' : 'left';
                 // break;
@@ -930,7 +938,7 @@ if (!require('../core/env').canvasSupported) {
                 // break;
             // default:
             //     align = 'left';
-        }
+        // }
 
         var createNode = vmlCore.createNode;
 
