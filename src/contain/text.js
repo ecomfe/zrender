@@ -52,23 +52,22 @@ define(function (require) {
      * @param {string} [textVerticalAlign='top']
      * @param {Array.<number>} [textPadding]
      * @param {Object} [rich]
+     * @param {Object} [truncate]
      * @return {Object} {x, y, width, height, lineHeight}
      */
-    function getTextRect(text, font, textAlign, textVerticalAlign, textPadding, rich) {
+    function getTextRect(text, font, textAlign, textVerticalAlign, textPadding, rich, truncate) {
         return rich
-            ? getRichTextRect(text, font, textAlign, textVerticalAlign, textPadding, rich)
-            : getPlainTextRect(text, font, textAlign, textVerticalAlign, textPadding);
+            ? getRichTextRect(text, font, textAlign, textVerticalAlign, textPadding, rich, truncate)
+            : getPlainTextRect(text, font, textAlign, textVerticalAlign, textPadding, truncate);
     }
 
-    function getPlainTextRect(text, font, textAlign, textVerticalAlign, textPadding) {
-        var contentBlock = parsePlainText(text, font, textVerticalAlign);
+    function getPlainTextRect(text, font, textAlign, textVerticalAlign, textPadding, truncate) {
+        var contentBlock = parsePlainText(text, font, textPadding, truncate);
         var outerWidth = getTextWidth(text, font);
-        var outerHeight = contentBlock.height;
-
         if (textPadding) {
             outerWidth += textPadding[1] + textPadding[3];
-            outerHeight += textPadding[0] + textPadding[2];
         }
+        var outerHeight = contentBlock.outerHeight;
 
         var x = adjustTextX(0, outerWidth, textAlign);
         var y = adjustTextY(0, outerHeight, textVerticalAlign);
@@ -79,9 +78,10 @@ define(function (require) {
         return rect;
     }
 
-    function getRichTextRect(text, font, textAlign, textVerticalAlign, textPadding, rich) {
+    function getRichTextRect(text, font, textAlign, textVerticalAlign, textPadding, rich, truncate) {
         var contentBlock = parseRichText(text, {
             rich: rich,
+            truncate: truncate,
             font: font,
             textAlign: textAlign,
             textPadding: textPadding
@@ -251,18 +251,32 @@ define(function (require) {
             return '';
         }
 
-        options = options || {};
+        var textLines = (text + '').split('\n');
+        options = prepareTruncateOptions(containerWidth, font, ellipsis, options);
 
-        ellipsis = retrieve2(ellipsis, '...');
-        var maxIterations = retrieve2(options.maxIterations, 2);
-        var minChar = retrieve2(options.minChar, 0);
+        // FIXME
+        // It is not appropriate that every line has '...' when truncate multiple lines.
+        for (var i = 0, len = textLines.length; i < len; i++) {
+            textLines[i] = truncateSingleLine(textLines[i], options);
+        }
+
+        return textLines.join('\n');
+    }
+
+    function prepareTruncateOptions(containerWidth, font, ellipsis, options) {
+        options = util.extend({}, options);
+
+        options.font = font;
+        var ellipsis = retrieve2(ellipsis, '...');
+        options.maxIterations = retrieve2(options.maxIterations, 2);
+        var minChar = options.minChar = retrieve2(options.minChar, 0);
         // FIXME
         // Other languages?
-        var cnCharWidth = getTextWidth('国', font);
+        options.cnCharWidth = getTextWidth('国', font);
         // FIXME
         // Consider proportional font?
-        var ascCharWidth = getTextWidth('a', font);
-        var placeholder = retrieve2(options.placeholder, '');
+        var ascCharWidth = options.ascCharWidth = getTextWidth('a', font);
+        options.placeholder = retrieve2(options.placeholder, '');
 
         // Example 1: minChar: 3, text: 'asdfzxcv', truncate result: 'asdf', but not: 'a...'.
         // Example 2: minChar: 3, text: '维度', truncate result: '维', but not: '...'.
@@ -279,40 +293,50 @@ define(function (require) {
 
         contentWidth = containerWidth - ellipsisWidth;
 
-        var textLines = (text + '').split('\n');
+        options.ellipsis = ellipsis;
+        options.ellipsisWidth = ellipsisWidth;
+        options.contentWidth = contentWidth;
+        options.containerWidth = containerWidth;
 
-        for (var i = 0, len = textLines.length; i < len; i++) {
-            var textLine = textLines[i];
-            var lineWidth = getTextWidth(textLine, font);
+        return options;
+    }
 
-            if (lineWidth <= containerWidth) {
-                continue;
-            }
+    function truncateSingleLine(textLine, options) {
+        var containerWidth = options.containerWidth;
+        var font = options.font;
+        var contentWidth = options.contentWidth;
 
-            for (var j = 0;; j++) {
-                if (lineWidth <= contentWidth || j >= maxIterations) {
-                    textLine += ellipsis;
-                    break;
-                }
-
-                var subLength = j === 0
-                    ? estimateLength(textLine, contentWidth, ascCharWidth, cnCharWidth)
-                    : lineWidth > 0
-                    ? Math.floor(textLine.length * contentWidth / lineWidth)
-                    : 0;
-
-                textLine = textLine.substr(0, subLength);
-                lineWidth = getTextWidth(textLine, font);
-            }
-
-            if (textLine === '') {
-                textLine = placeholder;
-            }
-
-            textLines[i] = textLine;
+        if (!containerWidth) {
+            return '';
         }
 
-        return textLines.join('\n');
+        var lineWidth = getTextWidth(textLine, font);
+
+        if (lineWidth <= containerWidth) {
+            return textLine;
+        }
+
+        for (var j = 0;; j++) {
+            if (lineWidth <= contentWidth || j >= options.maxIterations) {
+                textLine += options.ellipsis;
+                break;
+            }
+
+            var subLength = j === 0
+                ? estimateLength(textLine, contentWidth, options.ascCharWidth, options.cnCharWidth)
+                : lineWidth > 0
+                ? Math.floor(textLine.length * contentWidth / lineWidth)
+                : 0;
+
+            textLine = textLine.substr(0, subLength);
+            lineWidth = getTextWidth(textLine, font);
+        }
+
+        if (textLine === '') {
+            textLine = options.placeholder;
+        }
+
+        return textLine;
     }
 
     function estimateLength(text, contentWidth, ascCharWidth, cnCharWidth) {
@@ -351,19 +375,51 @@ define(function (require) {
      * @public
      * @param {string} text
      * @param {string} font
-     * @return {Object} block: {lineHeight, lines, height}
+     * @param {Object} [truncate]
+     * @return {Object} block: {lineHeight, lines, height, outerHeight}
+     *  Notice: for performance, do not calculate outerWidth util needed.
      */
-    function parsePlainText(text, font) {
-        var lines = (text + '').split('\n');
+    function parsePlainText(text, font, padding, truncate) {
+        text != null && (text += '');
+
         var lineHeight = getLineHeight(font);
+        var lines = text ? text.split('\n') : [];
         var height = lines.length * lineHeight;
-        var y = 0;
+        var outerHeight = height;
+
+        if (padding) {
+            outerHeight += padding[0] + padding[2];
+        }
+
+        if (text && truncate) {
+            var truncOuterHeight = truncate.outerHeight;
+            var truncOuterWidth = truncate.outerWidth;
+            if (truncOuterHeight != null && outerHeight > truncOuterHeight) {
+                text = '';
+                lines = [];
+            }
+            else if (truncOuterWidth != null) {
+                // TODO: performance, cache
+                var options = prepareTruncateOptions(
+                    truncOuterWidth - (padding ? padding[1] + padding[3] : 0),
+                    font,
+                    truncate.ellipsis,
+                    {minChar: truncate.minChar, placeholder: truncate.placeholder}
+                );
+
+                // FIXME
+                // It is not appropriate that every line has '...' when truncate multiple lines.
+                for (var i = 0, len = lines.length; i < len; i++) {
+                    lines[i] = truncateSingleLine(lines[i], options);
+                }
+            }
+        }
 
         return {
             lines: lines,
             height: height,
-            lineHeight: lineHeight,
-            y: y
+            outerHeight: outerHeight,
+            lineHeight: lineHeight
         };
     }
 
@@ -426,6 +482,16 @@ define(function (require) {
         // For `textWidth: 100%`
         var pendingList = [];
 
+        var stlPadding = style.textPadding;
+
+        var truncate = style.truncate;
+        var truncateWidth = truncate.outerWidth;
+        var truncateHeight = truncate.outerHeight;
+        if (stlPadding) {
+            truncateWidth && (truncateWidth -= stlPadding[1] + stlPadding[3]);
+            truncateHeight && (truncateHeight -= stlPadding[0] + stlPadding[2]);
+        }
+
         // Calculate layout info of tokens.
         for (var i = 0; i < lines.length; i++) {
             var line = lines[i];
@@ -457,8 +523,28 @@ define(function (require) {
                 token.textVerticalAlign = tokenStyle && tokenStyle.textVerticalAlign || 'middle';
 
                 var textWidth = token.textWidth = textContain.getWidth(token.text, font);
+
+                if (truncate) {
+                    if (truncateHeight != null && contentHeight + token.lineHeight > truncateHeight) {
+                        return {lines: [], width: 0, height: 0};
+                    }
+                    if (truncateWidth != null) {
+                        var remianWidth = truncateWidth - lineWidth;
+                        if (remianWidth < textWidth) {
+                            token.text = remianWidth > 0
+                                ? truncateText(
+                                    token.text, remianWidth, font, truncate.ellipsis,
+                                    {minChar: truncate.minChar}
+                                )
+                                : '';
+                            textWidth = token.textWidth = textContain.getWidth(token.text, font);
+                        }
+                    }
+                }
+
                 var tokenWidth = tokenStyle.textWidth;
 
+                // TODO: truncate by user-specified tokenWidth.
                 if (tokenWidth == null || tokenWidth === 'auto') {
                     tokenWidth = textWidth;
                     textPadding && (tokenWidth += textPadding[1] + textPadding[3]);
@@ -483,10 +569,9 @@ define(function (require) {
         contentBlock.outerWidth = contentBlock.width = retrieve2(style.textWidth, contentWidth);
         contentBlock.outerHeight = contentBlock.height = retrieve2(style.textHeight, contentHeight);
 
-        var textPadding = style.textPadding;
-        if (textPadding) {
-            contentBlock.outerWidth += textPadding[1] + textPadding[3];
-            contentBlock.outerHeight += textPadding[0] + textPadding[2];
+        if (stlPadding) {
+            contentBlock.outerWidth += stlPadding[1] + stlPadding[3];
+            contentBlock.outerHeight += stlPadding[0] + stlPadding[2];
         }
 
         for (var i = 0; i < pendingList.length; i++) {

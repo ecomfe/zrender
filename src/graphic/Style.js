@@ -3,7 +3,6 @@
  */
 define(function (require) {
 
-    var textContain = require('../contain/text');
     var textHelper = require('./helper/text');
 
     var STYLE_COMMON_PROPS = [
@@ -332,6 +331,12 @@ define(function (require) {
          * @type {Object}
          */
         rich: null,
+
+        /**
+         * {outerWidth, outerHeight, ellipsis, placeholder}
+         * @type {Object}
+         */
+        truncate: null,
 
         /**
          * https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/globalCompositeOperation

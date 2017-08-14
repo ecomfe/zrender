@@ -65,10 +65,9 @@ define(function (require) {
     function renderPlainText(hostEl, ctx, text, style, rect) {
         var font = setCtx(ctx, 'font', style.font || textContain.DEFAULT_FONT);
 
-        var contentBlock = textContain.parsePlainText(text, font);
         var textPadding = style.textPadding;
-        var outerHeight = contentBlock.height;
-        textPadding && (outerHeight += textPadding[0] + textPadding[2]);
+        var contentBlock = textContain.parsePlainText(text, font, textPadding, style.truncate);
+        var outerHeight = contentBlock.outerHeight;
 
         var textLines = contentBlock.lines;
         var lineHeight = contentBlock.lineHeight;
