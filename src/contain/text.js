@@ -488,8 +488,8 @@ define(function (require) {
         var truncateWidth = truncate && truncate.outerWidth;
         var truncateHeight = truncate && truncate.outerHeight;
         if (stlPadding) {
-            truncateWidth && (truncateWidth -= stlPadding[1] + stlPadding[3]);
-            truncateHeight && (truncateHeight -= stlPadding[0] + stlPadding[2]);
+            truncateWidth != null && (truncateWidth -= stlPadding[1] + stlPadding[3]);
+            truncateHeight != null && (truncateHeight -= stlPadding[0] + stlPadding[2]);
         }
 
         // Calculate layout info of tokens.
@@ -508,54 +508,61 @@ define(function (require) {
                 var font = token.font = tokenStyle.font || style.font;
 
                 // textHeight can be used when textVerticalAlign is specified in token.
-                var textHeight = token.textHeight = retrieve2(
+                var tokenHeight = token.textHeight = retrieve2(
                     // textHeight should not be inherited, consider it can be specified
                     // as box height of the block.
                     tokenStyle.textHeight, textContain.getLineHeight(font)
                 );
-                textPadding && (textHeight += textPadding[0] + textPadding[2]);
-                token.height = textHeight;
+                textPadding && (tokenHeight += textPadding[0] + textPadding[2]);
+                token.height = tokenHeight;
                 token.lineHeight = retrieve3(
-                    tokenStyle.textLineHeight, style.textLineHeight, textHeight
+                    tokenStyle.textLineHeight, style.textLineHeight, tokenHeight
                 );
 
                 token.textAlign = tokenStyle && tokenStyle.textAlign || style.textAlign;
                 token.textVerticalAlign = tokenStyle && tokenStyle.textVerticalAlign || 'middle';
 
-                var textWidth = token.textWidth = textContain.getWidth(token.text, font);
+                if (truncateHeight != null && contentHeight + token.lineHeight > truncateHeight) {
+                    return {lines: [], width: 0, height: 0};
+                }
 
-                if (truncate) {
-                    if (truncateHeight != null && contentHeight + token.lineHeight > truncateHeight) {
-                        return {lines: [], width: 0, height: 0};
-                    }
-                    if (truncateWidth != null) {
-                        var remianWidth = truncateWidth - lineWidth;
-                        if (remianWidth < textWidth) {
-                            token.text = remianWidth > 0
-                                ? truncateText(
-                                    token.text, remianWidth, font, truncate.ellipsis,
-                                    {minChar: truncate.minChar}
-                                )
-                                : '';
-                            textWidth = token.textWidth = textContain.getWidth(token.text, font);
+                token.textWidth = textContain.getWidth(token.text, font);
+                var tokenWidth = tokenStyle.textWidth;
+                var tokenWidthNotSpecified = tokenWidth == null || tokenWidth === 'auto';
+
+                // Percent width, can be `100%`, can be used in drawing separate
+                // line when box width is needed to be auto.
+                if (typeof tokenWidth === 'string' && tokenWidth.charAt(tokenWidth.length - 1) === '%') {
+                    token.percentWidth = tokenWidth;
+                    pendingList.push(token);
+                    tokenWidth = 0;
+                    // Do not truncate in this case, because there is no user case
+                    // and it is too complicated.
+                }
+                else {
+                    tokenWidthNotSpecified && (tokenWidth = token.textWidth);
+
+                    var paddingW = textPadding ? textPadding[1] + textPadding[3] : 0;
+                    tokenWidth += paddingW;
+
+                    var remianTruncWidth = truncateWidth != null ? truncateWidth - lineWidth : null;
+
+                    if (remianTruncWidth != null && remianTruncWidth < tokenWidth) {
+                        if (!tokenWidthNotSpecified || remianTruncWidth < paddingW) {
+                            token.text = '';
+                            token.textWidth = tokenWidth = 0;
+                        }
+                        else {
+                            token.text = truncateText(
+                                token.text, remianTruncWidth - paddingW, font, truncate.ellipsis,
+                                {minChar: truncate.minChar}
+                            );
+                            token.textWidth = textContain.getWidth(token.text, font);
+                            tokenWidth = token.textWidth + paddingW;
                         }
                     }
                 }
 
-                var tokenWidth = tokenStyle.textWidth;
-
-                // TODO: truncate by user-specified tokenWidth.
-                if (tokenWidth == null || tokenWidth === 'auto') {
-                    tokenWidth = textWidth;
-                    textPadding && (tokenWidth += textPadding[1] + textPadding[3]);
-                }
-                // Percent width, can be `100%`, can be used in drawing separate
-                // line when box width is needed to be auto.
-                else if (typeof tokenWidth === 'string' && tokenWidth.charAt(tokenWidth.length - 1) === '%') {
-                    token.percentWidth = tokenWidth;
-                    pendingList.push(token);
-                    tokenWidth = 0;
-                }
                 lineWidth += (token.width = tokenWidth);
                 tokenStyle && (lineHeight = Math.max(lineHeight, token.lineHeight));
             }
