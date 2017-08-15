@@ -103,7 +103,7 @@ define(function (require) {
             needDrawBg && drawBackground(hostEl, ctx, style, boxX, boxY, outerWidth, outerHeight);
 
             if (textPadding) {
-                textX = getTextXForPadding(baseX, textAlign, outerWidth, textWidth, textPadding);
+                textX = getTextXForPadding(baseX, textAlign, textPadding);
                 textY += textPadding[0];
             }
         }
@@ -278,7 +278,7 @@ define(function (require) {
 
         var textPadding = token.textPadding;
         if (textPadding) {
-            x = getTextXForPadding(x, textAlign, token.width, token.textWidth, textPadding);
+            x = getTextXForPadding(x, textAlign, textPadding);
             y -= token.height / 2 - textPadding[2] - token.textHeight / 2;
         }
 
@@ -453,11 +453,11 @@ define(function (require) {
         return value;
     }
 
-    function getTextXForPadding(x, textAlign, outerWidth, textWidth, textPadding) {
+    function getTextXForPadding(x, textAlign, textPadding) {
         return textAlign === 'right'
             ? (x - textPadding[1])
             : textAlign === 'center'
-            ? (x - outerWidth / 2 + textPadding[3] + textWidth / 2)
+            ? (x + textPadding[3] / 2 - textPadding[1] / 2)
             : (x + textPadding[3]);
     }
 
