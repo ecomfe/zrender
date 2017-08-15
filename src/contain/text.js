@@ -547,10 +547,22 @@ define(function (require) {
                         // `getBoundingRect()` will not get correct result.
                         var textBackgroundColor = tokenStyle.textBackgroundColor;
                         var bgImg = textBackgroundColor && textBackgroundColor.image;
-                        // If image is not loaded, it will be loaded at render phase and `dirty()`.
-                        // See `graphic/helper/text.js`
-                        if (bgImg && !util.isString(bgImg) && imageHelper.isImageReady(bgImg)) {
-                            tokenWidth = Math.max(tokenWidth, bgImg.width * tokenHeight / bgImg.height);
+
+                        // Use cases:
+                        // (1) If image is not loaded, it will be loaded at render phase and call
+                        // `dirty()` and `textBackgroundColor.image` will be replaced with the loaded
+                        // image, and then the right size will be calculated here at the next tick.
+                        // See `graphic/helper/text.js`.
+                        // (2) If image loaded, and `textBackgroundColor.image` is image src string,
+                        // use `imageHelper.findExistImage` to find cached image.
+                        // `imageHelper.findExistImage` will always be called here before
+                        // `imageHelper.createOrUpdateImage` in `graphic/helper/text.js#renderRichText`
+                        // which ensures that image will not be rendered before correct size calcualted.
+                        if (bgImg) {
+                            bgImg = imageHelper.findExistImage(bgImg);
+                            if (imageHelper.isImageReady(bgImg)) {
+                                tokenWidth = Math.max(tokenWidth, bgImg.width * tokenHeight / bgImg.height);
+                            }
                         }
                     }
 

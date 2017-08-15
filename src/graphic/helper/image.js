@@ -6,6 +6,20 @@ define(function (require) {
     var helper = {};
 
     /**
+     * @param {string|HTMLImageElement|HTMLCanvasElement|Canvas} newImageOrSrc
+     * @return {HTMLImageElement|HTMLCanvasElement|Canvas} image
+     */
+    helper.findExistImage = function (newImageOrSrc) {
+        if (typeof newImageOrSrc === 'string') {
+            var cachedImgObj = globalImageCache.get(newImageOrSrc);
+            return cachedImgObj && cachedImgObj.image;
+        }
+        else {
+            return newImageOrSrc;
+        }
+    };
+
+    /**
      * Caution: User should cache loaded images, but not just count on LRU.
      * Consider if required images more than LRU size, will dead loop occur?
      *
