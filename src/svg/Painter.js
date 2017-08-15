@@ -178,7 +178,10 @@ define(function (require) {
                 switch (item.cmd) {
                     case '=':
                         var displayable = visibleList[item.idx];
-                        prevSvgElement = getTextSvgElement(displayable) || getSvgElement(displayable);
+                        prevSvgElement
+                            = svgElement
+                            = getTextSvgElement(displayable)
+                                || getSvgElement(displayable);
                         this._markGradientUsed(displayable);
                         break;
                     case '+':
@@ -200,9 +203,6 @@ define(function (require) {
                         insertAfter(svgRoot, textSvgElement, svgElement);
                         prevSvgElement = textSvgElement || svgElement;
 
-                        this._createGradient(svgElement, displayable, 'fill');
-                        this._createGradient(svgElement, displayable, 'stroke');
-
                         break;
                     // case '^':
                         // var displayable = visibleList[item.idx];
@@ -211,6 +211,9 @@ define(function (require) {
                         //     : prepend(svgRoot, svgElement);
                         // break;
                 }
+
+                this._createGradient(svgElement, displayable, 'fill');
+                this._createGradient(svgElement, displayable, 'stroke');
             }
 
             this._removeUnusedGradient();
