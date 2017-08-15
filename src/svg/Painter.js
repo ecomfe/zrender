@@ -348,7 +348,7 @@ define(function (require) {
          *                         or <radialGradient> element
          */
         _updateGradientDom: function (gradient, dom) {
-           if (gradient.type === 'linear') {
+            if (gradient.type === 'linear') {
                 dom.setAttribute('x1', gradient.x);
                 dom.setAttribute('y1', gradient.y);
                 dom.setAttribute('x2', gradient.x2);
@@ -362,6 +362,15 @@ define(function (require) {
             else {
                 zrLog('Illegal gradient type.');
                 return;
+            }
+
+            if (gradient.global) {
+                // x1, x2, y1, y2 in range of 0 to canvas width or height
+                dom.setAttribute('gradientUnits', 'userSpaceOnUse');
+            }
+            else {
+                // x1, x2, y1, y2 in range of 0 to 1
+                dom.setAttribute('gradientUnits', 'objectBoundingBox');
             }
 
             // Remove color stops if exists
