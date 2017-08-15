@@ -70,6 +70,24 @@
             zr.add(rect);
 
             setTimeout(function () {
+                rect.style.fill = {
+                    type: 'linear',
+                    x: 0,
+                    x2: 1,
+                    y: 0,
+                    y2: 1,
+                    colorStops: [{
+                        offset: 0,
+                        color: '#00f'
+                    }, {
+                        offset: 1,
+                        color: '#f0f'
+                    }]
+                };
+                rect.dirty();
+            }, 8000);
+
+            setTimeout(function () {
                 gradient1.colorStops[0].color = '#f0f';
                 rect.dirty();
             }, 1000);

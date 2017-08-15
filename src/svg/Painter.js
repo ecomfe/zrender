@@ -178,7 +178,10 @@ define(function (require) {
                 switch (item.cmd) {
                     case '=':
                         var displayable = visibleList[item.idx];
-                        prevSvgElement = getTextSvgElement(displayable) || getSvgElement(displayable);
+                        prevSvgElement
+                            = svgElement
+                            = getTextSvgElement(displayable)
+                                || getSvgElement(displayable);
                         this._markGradientUsed(displayable);
                         break;
                     case '+':
@@ -200,9 +203,6 @@ define(function (require) {
                         insertAfter(svgRoot, textSvgElement, svgElement);
                         prevSvgElement = textSvgElement || svgElement;
 
-                        this._createGradient(svgElement, displayable, 'fill');
-                        this._createGradient(svgElement, displayable, 'stroke');
-
                         break;
                     // case '^':
                         // var displayable = visibleList[item.idx];
@@ -211,6 +211,9 @@ define(function (require) {
                         //     : prepend(svgRoot, svgElement);
                         // break;
                 }
+
+                this._createGradient(svgElement, displayable, 'fill');
+                this._createGradient(svgElement, displayable, 'stroke');
             }
 
             this._removeUnusedGradient();
@@ -348,7 +351,7 @@ define(function (require) {
          *                         or <radialGradient> element
          */
         _updateGradientDom: function (gradient, dom) {
-           if (gradient.type === 'linear') {
+            if (gradient.type === 'linear') {
                 dom.setAttribute('x1', gradient.x);
                 dom.setAttribute('y1', gradient.y);
                 dom.setAttribute('x2', gradient.x2);
@@ -362,6 +365,15 @@ define(function (require) {
             else {
                 zrLog('Illegal gradient type.');
                 return;
+            }
+
+            if (gradient.global) {
+                // x1, x2, y1, y2 in range of 0 to canvas width or height
+                dom.setAttribute('gradientUnits', 'userSpaceOnUse');
+            }
+            else {
+                // x1, x2, y1, y2 in range of 0 to 1
+                dom.setAttribute('gradientUnits', 'objectBoundingBox');
             }
 
             // Remove color stops if exists
