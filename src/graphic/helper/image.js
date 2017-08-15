@@ -6,12 +6,17 @@ define(function (require) {
     var helper = {};
 
     /**
+     * Caution: User should cache loaded images, but not just count on LRU.
+     * Consider if required images more than LRU size, will dead loop occur?
+     *
      * @param {string|HTMLImageElement|HTMLCanvasElement|Canvas} newImageOrSrc
      * @param {HTMLImageElement|HTMLCanvasElement|Canvas} image Existent image.
      * @param {module:zrender/Element} [hostEl] For calling `dirty`.
+     * @param {Function} [cb] params: (image, cbPayload)
+     * @param {Object} [cbPayload] Payload on cb calling.
      * @return {HTMLImageElement|HTMLCanvasElement|Canvas} image
      */
-    helper.createOrUpdateImage = function (newImageOrSrc, image, hostEl) {
+    helper.createOrUpdateImage = function (newImageOrSrc, image, hostEl, cb, cbPayload) {
         if (!newImageOrSrc) {
             return image;
         }
@@ -26,9 +31,11 @@ define(function (require) {
             // is different, this method is responsible for load.
             var cachedImgObj = globalImageCache.get(newImageOrSrc);
 
+            var pendingWrap = {hostEl: hostEl, cb: cb, cbPayload: cbPayload};
+
             if (cachedImgObj) {
                 image = cachedImgObj.image;
-                !isImageReady(image) && cachedImgObj.pending.push(hostEl);
+                !isImageReady(image) && cachedImgObj.pending.push(pendingWrap);
             }
             else {
                 !image && (image = new Image());
@@ -38,7 +45,7 @@ define(function (require) {
                     newImageOrSrc,
                     image.__cachedImgObj = {
                         image: image,
-                        pending: [hostEl]
+                        pending: [pendingWrap]
                     }
                 );
 
@@ -58,8 +65,12 @@ define(function (require) {
         this.onload = this.__cachedImgObj = null;
 
         for (var i = 0; i < cachedImgObj.pending.length; i++) {
-            cachedImgObj.pending[i].dirty();
+            var pendingWrap = cachedImgObj.pending[i];
+            var cb = pendingWrap.cb;
+            cb && cb(this, pendingWrap.cbPayload);
+            pendingWrap.hostEl.dirty();
         }
+        cachedImgObj.pending.length = 0;
     }
 
     var isImageReady = helper.isImageReady = function (image) {

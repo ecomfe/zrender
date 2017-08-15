@@ -2,6 +2,7 @@ define(function (require) {
 
     var util = require('../core/util');
     var BoundingRect = require('../core/BoundingRect');
+    var imageHelper = require('../graphic/helper/image');
 
     var textWidthCache = {};
     var textWidthCacheCounter = 0;
@@ -499,7 +500,7 @@ define(function (require) {
 
             for (var j = 0; j < line.tokens.length; j++) {
                 var token = line.tokens[j];
-                var tokenStyle = style.rich[token.styleName] || {};
+                var tokenStyle = token.styleName && style.rich[token.styleName] || {};
                 // textPadding should not inherit from style.
                 var textPadding = token.textPadding = tokenStyle.textPadding;
 
@@ -539,7 +540,19 @@ define(function (require) {
                     // and it is too complicated.
                 }
                 else {
-                    tokenWidthNotSpecified && (tokenWidth = token.textWidth);
+                    if (tokenWidthNotSpecified) {
+                        tokenWidth = token.textWidth;
+
+                        // FIXME: If image is not loaded and textWidth is not specified, calling
+                        // `getBoundingRect()` will not get correct result.
+                        var textBackgroundColor = tokenStyle.textBackgroundColor;
+                        var bgImg = textBackgroundColor && textBackgroundColor.image;
+                        // If image is not loaded, it will be loaded at render phase and `dirty()`.
+                        // See `graphic/helper/text.js`
+                        if (bgImg && !util.isString(bgImg) && imageHelper.isImageReady(bgImg)) {
+                            tokenWidth = Math.max(tokenWidth, bgImg.width * tokenHeight / bgImg.height);
+                        }
+                    }
 
                     var paddingW = textPadding ? textPadding[1] + textPadding[3] : 0;
                     tokenWidth += paddingW;

@@ -348,12 +348,11 @@ define(function (require) {
         }
         else if (util.isObject(textBackgroundColor)) {
             var image = textBackgroundColor.image;
-            image = imageHelper.createOrUpdateImage(image, null, hostEl);
+
+            image = imageHelper.createOrUpdateImage(
+                image, null, hostEl, onBgImageLoaded, textBackgroundColor
+            );
             if (image && imageHelper.isImageReady(image)) {
-                // Update style width after image loaded.
-                if (style.textWidth == null) {
-                    width = style.textWidth = image.width * height / image.height;
-                }
                 ctx.drawImage(image, x, y, width, height);
             }
         }
@@ -363,6 +362,12 @@ define(function (require) {
             setCtx(ctx, 'strokeStyle', textBorderColor);
             ctx.stroke();
         }
+    }
+
+    function onBgImageLoaded(image, textBackgroundColor) {
+        // Replace image, so that `contain/text.js#parseRichText`
+        // will get correct result in next tick.
+        textBackgroundColor.image = image;
     }
 
     function getBoxPosition(blockHeiht, style, rect) {
