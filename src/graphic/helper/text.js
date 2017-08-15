@@ -66,7 +66,14 @@ define(function (require) {
         var font = setCtx(ctx, 'font', style.font || textContain.DEFAULT_FONT);
 
         var textPadding = style.textPadding;
-        var contentBlock = textContain.parsePlainText(text, font, textPadding, style.truncate);
+
+        var contentBlock = hostEl.__textCotentBlock;
+        if (!contentBlock || hostEl.__dirty) {
+            contentBlock = hostEl.__textCotentBlock = textContain.parsePlainText(
+                text, font, textPadding, style.truncate
+            );
+        }
+
         var outerHeight = contentBlock.outerHeight;
 
         var textLines = contentBlock.lines;
@@ -136,7 +143,12 @@ define(function (require) {
     }
 
     function renderRichText(hostEl, ctx, text, style, rect) {
-        var contentBlock = textContain.parseRichText(text, style);
+        var contentBlock = hostEl.__textCotentBlock;
+
+        if (!contentBlock || hostEl.__dirty) {
+            contentBlock = hostEl.__textCotentBlock = textContain.parseRichText(text, style);
+        }
+
         drawRichText(hostEl, ctx, contentBlock, style, rect);
     }
 

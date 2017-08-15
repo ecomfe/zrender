@@ -399,7 +399,6 @@ define(function (require) {
                 lines = [];
             }
             else if (truncOuterWidth != null) {
-                // TODO: performance, cache
                 var options = prepareTruncateOptions(
                     truncOuterWidth - (padding ? padding[1] + padding[3] : 0),
                     font,
