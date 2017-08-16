@@ -20,6 +20,7 @@ define(function (require) {
     var createElement = svgCore.createElement;
 
     var GRADIENT_MARK = '_gradientInUse';
+    var CLIPPATH_MARK = '_clipPathInUse';
     var MARK_UNUSED = '0';
     var MARK_USED = '1';
 
@@ -134,6 +135,7 @@ define(function (require) {
 
         _paintList: function (list) {
             this._markGradientsUnused();
+            this._markClipPathsUnused();
 
             var svgRoot = this._svgRoot;
             var visibleList = this._visibleList;
@@ -183,8 +185,9 @@ define(function (require) {
                         prevSvgElement
                             = svgElement
                             = getTextSvgElement(displayable)
-                                || getSvgElement(displayable);
+                            || getSvgElement(displayable);
                         this._markGradientUsed(displayable);
+                        this._markClipPathUsed(displayable);
                         break;
                     case '+':
                         var displayable = newVisibleList[item.idx];
@@ -218,7 +221,8 @@ define(function (require) {
                 this._createGradient(svgElement, displayable, 'stroke');
             }
 
-            this._removeUnusedGradient();
+            this._removeUnusedGradients();
+            this._removeUnusedClipPaths();
 
             this._visibleList = newVisibleList;
         },
@@ -235,7 +239,7 @@ define(function (require) {
                 && displayable.style
                 && displayable.style[fillOrStroke]
                 && (displayable.style[fillOrStroke].type === 'linear'
-                || displayable.style[fillOrStroke].type === 'radial')
+                    || displayable.style[fillOrStroke].type === 'radial')
             ) {
                 var gradient = displayable.style[fillOrStroke];
                 var defs = this._getDefs(true);
@@ -409,7 +413,7 @@ define(function (require) {
         /**
          * Remove unused gradients defined in <defs>
          */
-        _removeUnusedGradient: function () {
+        _removeUnusedGradients: function () {
             var defs = this._getDefs(false);
             if (!defs) {
                 // Nothing to remove
@@ -493,9 +497,9 @@ define(function (require) {
         },
 
         _doClip: function (el) {
+            var svgElement = getSvgElement(el);
             var clipPaths = el.__clipPaths;
             if (clipPaths) {
-                var svgElement = getSvgElement(el);
                 var defs = this._getDefs(true);
 
                 if (clipPaths.length > 1) {
@@ -523,13 +527,64 @@ define(function (require) {
                     else {
                         // Use a dom that is already in <defs>
                         id = clipPath.__dom.getAttribute('id');
+                        if (!defs.contains(clipPath.__dom)) {
+                            // This happens when set old clipPath that has
+                            // been previously removed
+                            defs.appendChild(clipPath.__dom);
+                        }
                     }
 
+                    this._markClipPathUsed(el);
                     svgElement.setAttribute('clip-path', 'url(#' + id + ')');
 
                     ++nextClippathId;
                 }
             }
+            else {
+                svgElement.setAttribute('clip-path', 'none');
+            }
+        },
+
+        _markClipPathsUnused: function () {
+            var tags = this._getClipPaths();
+            util.each(tags, function (tag) {
+                tag[CLIPPATH_MARK] = MARK_UNUSED;
+            });
+        },
+
+        _markClipPathUsed: function (displayable) {
+            if (displayable.__clipPaths && displayable.__clipPaths.length > 0) {
+                util.each(displayable.__clipPaths, function (clipPath) {
+                    if (clipPath.__dom) {
+                        clipPath.__dom[CLIPPATH_MARK] = MARK_USED;
+                    }
+                });
+            }
+        },
+
+        _getClipPaths: function () {
+            var defs = this._getDefs(false);
+            if (!defs) {
+                return [];
+            }
+
+            var tags = defs.getElementsByTagName('clipPath');
+            return [].slice.call(tags);
+        },
+
+        _removeUnusedClipPaths: function () {
+            var defs = this._getDefs(false);
+            if (!defs) {
+                // Nothing to remove
+                return;
+            }
+
+            var doms = this._getClipPaths();
+            util.each(doms, function (dom) {
+                if (dom[CLIPPATH_MARK] !== MARK_USED) {
+                    defs.removeChild(dom);
+                }
+            });
         },
 
         resize: function () {

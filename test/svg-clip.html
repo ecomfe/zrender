@@ -70,6 +70,14 @@
             rect.setClipPath(circle);
             zr.add(rect);
 
+            setTimeout(function () {
+                rect.removeClipPath();
+            }, 6000);
+
+            setTimeout(function () {
+                rect.setClipPath(circle);
+            }, 12000);
+
             var rect2 = new Rect({
                 shape: {
                     x: 100,
@@ -80,6 +88,14 @@
             });
             rect2.setClipPath(circle);
             zr.add(rect2);
+
+            setTimeout(function () {
+                rect2.removeClipPath();
+            }, 9000);
+
+            setTimeout(function () {
+                heart.removeClipPath();
+            }, 3000);
 
             var ring = new Ring({
                 shape: {
@@ -101,9 +117,9 @@
             heart.setClipPath(ring);
             zr.add(heart);
 
-            // setTimeout(function () {
-            //     heart.removeClipPath();
-            // }, 3000);
+            setTimeout(function () {
+                heart.removeClipPath();
+            }, 3000);
         }
     );
     </script>
