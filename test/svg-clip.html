@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Image</title>
+    <script type="text/javascript" src="esl.js"></script>
+</head>
+<body>
+    <script type="text/javascript">
+    require.config({
+        packages: [
+            {
+                name: 'zrender',
+                location: '../src',
+                main: 'zrender'
+            }
+        ]
+    });
+
+    require(
+        [
+            'zrender',
+            'zrender/graphic/shape/Rect',
+            'zrender/graphic/shape/Circle',
+            'zrender/graphic/shape/Ring',
+            'zrender/graphic/shape/Sector',
+            'zrender/graphic/shape/Droplet',
+            'zrender/graphic/shape/BezierCurve',
+            'zrender/graphic/shape/Ellipse',
+            'zrender/graphic/shape/Heart',
+            'zrender/graphic/shape/Rose',
+            'zrender/graphic/shape/Trochoid',
+            'zrender/graphic/shape/Isogon',
+            'zrender/graphic/shape/Line',
+            'zrender/graphic/shape/Polygon',
+            'zrender/graphic/shape/Polyline',
+            'zrender/graphic/shape/Star',
+            'zrender/graphic/LinearGradient',
+            'zrender/graphic/RadialGradient',
+            'zrender/svg/svg'
+        ],
+        function(
+            zrender,
+            Rect, Circle, Ring, Sector, Droplet,
+            BezierCurve, Ellipse, Heart, Rose, Trochoid,
+            Isogon, Line, Polygon, Polyline, Star,
+            LinearGradient, RadialGradient
+        ) {
+            // 初始化zrender
+            var zr = zrender.init(document.getElementById('main'), {
+                renderer: 'svg'
+            });
+
+            var rect = new Rect({
+                shape: {
+                    x: 10,
+                    y: 10,
+                    width: 80,
+                    height: 80
+                }
+            });
+
+            var circle = new Circle({
+                shape: {
+                    cx: 80,
+                    cy: 30,
+                    r: 40
+                }
+            });
+            rect.setClipPath(circle);
+            zr.add(rect);
+
+            var rect2 = new Rect({
+                shape: {
+                    x: 100,
+                    y: 10,
+                    width: 80,
+                    height: 80
+                }
+            });
+            rect2.setClipPath(circle);
+            zr.add(rect2);
+
+            var ring = new Ring({
+                shape: {
+                    cx: 250,
+                    cy: 50,
+                    r: 40,
+                    r0: 30
+                }
+            });
+
+            var heart = new Heart({
+                shape: {
+                    cx: 250,
+                    cy: 25,
+                    width: 50,
+                    height: 60
+                }
+            });
+            heart.setClipPath(ring);
+            zr.add(heart);
+
+            // setTimeout(function () {
+            //     heart.removeClipPath();
+            // }, 3000);
+        }
+    );
+    </script>
+    <div id="main" style="width:1000px;height:800px;"></div>
+
+</body>
+</html>
