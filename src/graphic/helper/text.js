@@ -37,7 +37,7 @@ define(function (require) {
 
             // Compatible with textBaseline.
             var textVerticalAlign = style.textVerticalAlign || style.textBaseline;
-            textAlign === 'center' && (textAlign = 'middle');
+            textVerticalAlign === 'center' && (textVerticalAlign = 'middle');
             style.textVerticalAlign = (
                 textVerticalAlign == null || VALID_TEXT_VERTICAL_ALIGN[textVerticalAlign]
             ) ? textVerticalAlign : 'top';
