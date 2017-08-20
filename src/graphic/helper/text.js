@@ -426,7 +426,7 @@ define(function (require) {
      * @param {number} style
      */
     var getStroke = helper.getStroke = function (stroke, lineWidth) {
-        return (stroke == null || stroke === 'none' || lineWidth <= 0)
+        return (stroke == null || lineWidth <= 0 || stroke === 'transparent' || stroke === 'none')
             ? null
             // TODO pattern and gradient?
             : (stroke.image || stroke.colorStops)
