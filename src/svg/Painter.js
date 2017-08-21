@@ -41,6 +41,9 @@ define(function (require) {
         else if (el instanceof ZText) {
             return svgText;
         }
+        else {
+            return svgPath;
+        }
     }
 
     function checkParentAvailable(parent, child) {
@@ -149,7 +152,9 @@ define(function (require) {
                 if (!displayable.invisible) {
                     if (displayable.__dirty) {
                         svgProxy && svgProxy.brush(displayable);
-                        this._doClip(displayable);
+                        var el = getSvgElement(displayable)
+                            || getTextSvgElement(displayable);
+                        this._doClip(displayable, el);
 
                         // Update gradient
                         if (displayable.style) {
@@ -496,53 +501,79 @@ define(function (require) {
             return doms;
         },
 
-        _doClip: function (el) {
-            var svgElement = getSvgElement(el);
-            var clipPaths = el.__clipPaths;
-            if (clipPaths) {
-                var defs = this._getDefs(true);
+        _doClip: function (el, svgElement) {
+            this._doClipEl(svgElement, el.__clipPaths);
 
-                if (clipPaths.length > 1) {
-                    zrLog('Warning: zrender doesn\'t support multiple clipPaths'
-                        + ' at this version. It may cause potential errors.');
+            var textEl = getTextSvgElement(el);
+            if (textEl) {
+                // Update text to have the same clipPath id
+                var clipId = svgElement.getAttribute('clip-path');
+                textEl.setAttribute('clip-path', clipId);
+            }
+
+            this._markClipPathUsed(el);
+        },
+
+        /**
+         * Create an SVGElement of displayable and create a <clipPath> of its
+         * clipPath
+         */
+        _doClipEl: function (parentEl, clipPaths) {
+            if (clipPaths && clipPaths.length > 0) {
+                // Has clipPath, create <clipPath> with the first clipPath
+                var defs = this._getDefs(true);
+                var clipPath = clipPaths[0];
+                var clipPathEl;
+                var id;
+
+                if (clipPath.__dom) {
+                    // Use a dom that is already in <defs>
+                    id = clipPath.__dom.getAttribute('id');
+                    clipPathEl = clipPath.__dom;
+
+                    // Use a dom that is already in <defs>
+                    if (!defs.contains(clipPathEl)) {
+                        console.log('add back');
+                        // This happens when set old clipPath that has
+                        // been previously removed
+                        defs.appendChild(clipPathEl);
+                    }
+                }
+                else {
+                    // New <clipPath>
+                    id = 'zr-clip-' + nextClippathId;
+                    ++nextClippathId;
+                    clipPathEl = createElement('clipPath');
+                    clipPathEl.setAttribute('id', id);
+                    defs.appendChild(clipPathEl);
+
+                    clipPath.__dom = clipPathEl;
                 }
 
-                for (var i = 0, len = clipPaths.length; i < len; ++i) {
-                    var clipPath = clipPaths[i];
-                    var id;
+                // Build path and add to <clipPath>
+                var svgProxy = getSvgProxy(clipPath);
+                clipPath.transform = null;
+                svgProxy.brush(clipPath);
 
-                    if (!clipPath.__dom) {
-                        var svgProxy = getSvgProxy(clipPath);
-                        svgProxy.brush(clipPath);
+                var pathEl = getSvgElement(clipPath);
+                clipPathEl.appendChild(pathEl);
 
-                        var pathEl = getSvgElement(clipPath);
-                        var clipPathEl = createElement('clipPath');
-                        id = 'zr-clip-' + nextClippathId;
-                        clipPathEl.setAttribute('id', id);
-                        clipPathEl.appendChild(pathEl);
+                // Clear style of pathEl
+                // pathEl.setAttribute('fill', 'none');
+                // pathEl.setAttribute('stroke', 'none');
 
-                        defs.appendChild(clipPathEl);
-                        clipPath.__dom = clipPathEl;
-                    }
-                    else {
-                        // Use a dom that is already in <defs>
-                        id = clipPath.__dom.getAttribute('id');
-                        if (!defs.contains(clipPath.__dom)) {
-                            // This happens when set old clipPath that has
-                            // been previously removed
-                            defs.appendChild(clipPath.__dom);
-                        }
-                    }
+                parentEl.setAttribute('clip-path', 'url(#' + id + ')');
 
-                    this._markClipPathUsed(el);
-                    svgElement.setAttribute('clip-path', 'url(#' + id + ')');
-
-                    ++nextClippathId;
+                if (clipPaths.length > 1) {
+                    // Make the other clipPaths recursively
+                    this._doClipEl(clipPathEl, clipPaths.slice(1));
                 }
             }
             else {
-                svgElement.setAttribute('clip-path', 'none');
+                // No clipPath
+                parentEl.setAttribute('clip-path', 'none');
             }
+
         },
 
         _markClipPathsUnused: function () {

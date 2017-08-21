@@ -23,29 +23,13 @@
             'zrender/graphic/shape/Rect',
             'zrender/graphic/shape/Circle',
             'zrender/graphic/shape/Ring',
-            'zrender/graphic/shape/Sector',
-            'zrender/graphic/shape/Droplet',
-            'zrender/graphic/shape/BezierCurve',
-            'zrender/graphic/shape/Ellipse',
             'zrender/graphic/shape/Heart',
-            'zrender/graphic/shape/Rose',
-            'zrender/graphic/shape/Trochoid',
-            'zrender/graphic/shape/Isogon',
-            'zrender/graphic/shape/Line',
-            'zrender/graphic/shape/Polygon',
-            'zrender/graphic/shape/Polyline',
-            'zrender/graphic/shape/Star',
-            'zrender/graphic/LinearGradient',
-            'zrender/graphic/RadialGradient',
+            'zrender/graphic/Image',
+            'zrender/graphic/Text',
+            'zrender/graphic/CompoundPath',
             'zrender/svg/svg'
         ],
-        function(
-            zrender,
-            Rect, Circle, Ring, Sector, Droplet,
-            BezierCurve, Ellipse, Heart, Rose, Trochoid,
-            Isogon, Line, Polygon, Polyline, Star,
-            LinearGradient, RadialGradient
-        ) {
+        function(zrender, Rect, Circle, Ring, Heart, Image, Text, CompoundPath) {
             // 初始化zrender
             var zr = zrender.init(document.getElementById('main'), {
                 renderer: 'svg'
@@ -120,6 +104,106 @@
             setTimeout(function () {
                 heart.removeClipPath();
             }, 3000);
+
+
+            var image = new Image({
+                style: {
+                    x: 310,
+                    y: 10,
+                    image: 'test.png',
+                    width: 80,
+                    height: 80
+                }
+            });
+
+            var imgClip = new Circle({
+                shape: {
+                    cx: 380,
+                    cy: 30,
+                    r: 40
+                }
+            });
+            image.setClipPath(imgClip);
+
+            zr.add(image);
+
+
+            var text = new Text({
+                style: {
+                    x: 400,
+                    y: 10,
+                    text: 'Hello',
+                    font: '50px serif'
+                }
+            });
+
+            var textClip = new Rect({
+                shape: {
+                    x: 420,
+                    y: 20,
+                    width: 80,
+                    height: 30
+                }
+            });
+            text.setClipPath(textClip);
+
+            zr.add(text);
+
+
+            var text2 = new Rect({
+                shape: {
+                    x: 500,
+                    y: 40,
+                    width: 200,
+                    height: 30
+                },
+                style: {
+                    text: 'World! I like this world...',
+                    fill: 'transparent',
+                    textFill: 'red',
+                    font: '50px serif'
+                }
+            });
+            var text2Clip1 = new Rect({
+                shape: {
+                    x: 520,
+                    y: 40,
+                    width: 280,
+                    height: 40
+                }
+            });
+            var text2Clip2 = new Rect({
+                shape: {
+                    x: 500,
+                    y: 50,
+                    width: 320,
+                    height: 30
+                }
+            });
+
+            var bound = new Circle({
+                shape: {
+                    cx: 650,
+                    cy: 30,
+                    r: 100
+                }
+            });
+
+            var group = new CompoundPath({
+                shape: {
+                    paths: [text2Clip1, text2Clip2]
+                },
+                style: {
+                    fill: '#0f0'
+                }
+            });
+
+            group.setClipPath(bound);
+
+            text2.setClipPath(group);
+            // zr.add(group);
+
+            zr.add(text2);
         }
     );
     </script>

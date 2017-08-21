@@ -336,7 +336,14 @@ define(function (require) {
         var textPosition = style.textPosition;
         var distance = style.textDistance;
         var align = style.textAlign || 'left';
-        var font = style.font || textContain.DEFAULT_FONT;
+        var font = style.font
+            || [
+                style.fontStyle || '',
+                style.fontWeight || '',
+                style.fontSize || '',
+                style.fontFamily || ''
+            ].join(' ')
+            || textContain.DEFAULT_FONT;
 
         var verticalAlign = getVerticalAlignForSvg(style.textVerticalAlign);
 
@@ -356,6 +363,7 @@ define(function (require) {
             x = newPos.x;
             y = newPos.y;
             verticalAlign = getVerticalAlignForSvg(newPos.textVerticalAlign);
+            align = newPos.textAlign;
         }
 
         attr(textSvgEl, 'alignment-baseline', verticalAlign);
