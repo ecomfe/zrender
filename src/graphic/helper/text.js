@@ -37,7 +37,7 @@ define(function (require) {
 
             // Compatible with textBaseline.
             var textVerticalAlign = style.textVerticalAlign || style.textBaseline;
-            textAlign === 'center' && (textAlign = 'middle');
+            textVerticalAlign === 'center' && (textVerticalAlign = 'middle');
             style.textVerticalAlign = (
                 textVerticalAlign == null || VALID_TEXT_VERTICAL_ALIGN[textVerticalAlign]
             ) ? textVerticalAlign : 'top';
@@ -103,7 +103,7 @@ define(function (require) {
             needDrawBg && drawBackground(hostEl, ctx, style, boxX, boxY, outerWidth, outerHeight);
 
             if (textPadding) {
-                textX = getTextXForPadding(baseX, textAlign, outerWidth, textWidth, textPadding);
+                textX = getTextXForPadding(baseX, textAlign, textPadding);
                 textY += textPadding[0];
             }
         }
@@ -278,7 +278,7 @@ define(function (require) {
 
         var textPadding = token.textPadding;
         if (textPadding) {
-            x = getTextXForPadding(x, textAlign, token.width, token.textWidth, textPadding);
+            x = getTextXForPadding(x, textAlign, textPadding);
             y -= token.height / 2 - textPadding[2] - token.textHeight / 2;
         }
 
@@ -426,7 +426,7 @@ define(function (require) {
      * @param {number} style
      */
     var getStroke = helper.getStroke = function (stroke, lineWidth) {
-        return (stroke == null || stroke === 'none' || lineWidth < 0)
+        return (stroke == null || lineWidth <= 0 || stroke === 'transparent' || stroke === 'none')
             ? null
             // TODO pattern and gradient?
             : (stroke.image || stroke.colorStops)
@@ -453,11 +453,11 @@ define(function (require) {
         return value;
     }
 
-    function getTextXForPadding(x, textAlign, outerWidth, textWidth, textPadding) {
+    function getTextXForPadding(x, textAlign, textPadding) {
         return textAlign === 'right'
             ? (x - textPadding[1])
             : textAlign === 'center'
-            ? (x - outerWidth / 2 + textPadding[3] + textWidth / 2)
+            ? (x + textPadding[3] / 2 - textPadding[1] / 2)
             : (x + textPadding[3]);
     }
 
