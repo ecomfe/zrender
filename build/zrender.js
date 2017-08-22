@@ -212,7 +212,16 @@ define('zrender/core/util',['require'],function(require) {
             }
         }
         else if (TYPED_ARRAY[typeStr]) {
-            result = source.constructor.from(source);
+            var Ctor = source.constructor;
+            if (source.constructor.from) {
+                result = Ctor.from(source);
+            }
+            else {
+                result = new Ctor(source.length);
+                for (var i = 0, len = source.length; i < len; i++) {
+                    result[i] = clone(source[i]);
+                }
+            }
         }
         else if (!BUILTIN_OBJECT[typeStr] && !isPrimitive(source) && !isDom(source)) {
             result = {};
@@ -299,7 +308,7 @@ define('zrender/core/util',['require'],function(require) {
     /**
      * @param {*} target
      * @param {*} source
-     * @param {boolen} [overlay=false]
+     * @param {boolean} [overlay=false]
      * @memberOf module:zrender/core/util
      */
     function defaults(target, source, overlay) {
@@ -607,6 +616,7 @@ define('zrender/core/util',['require'],function(require) {
 
     /**
      * If value1 is not null, then return value1, otherwise judget rest of values.
+     * Low performance.
      * @memberOf module:zrender/core/util
      * @return {*} Final value
      */
@@ -618,6 +628,20 @@ define('zrender/core/util',['require'],function(require) {
         }
     }
 
+    function retrieve2(value0, value1) {
+        return value0 != null
+            ? value0
+            : value1;
+    }
+
+    function retrieve3(value0, value1, value2) {
+        return value0 != null
+            ? value0
+            : value1 != null
+            ? value1
+            : value2;
+    }
+
     /**
      * @memberOf module:zrender/core/util
      * @param {Array} arr
@@ -627,6 +651,31 @@ define('zrender/core/util',['require'],function(require) {
      */
     function slice() {
         return Function.call.apply(nativeSlice, arguments);
+    }
+
+    /**
+     * Normalize css liked array configuration
+     * e.g.
+     *  3 => [3, 3, 3, 3]
+     *  [4, 2] => [4, 2, 4, 2]
+     *  [4, 3, 2] => [4, 3, 2, 3]
+     * @param {number|Array.<number>} val
+     * @return {Array.<number>}
+     */
+    function normalizeCssArray(val) {
+        if (typeof (val) === 'number') {
+            return [val, val, val, val];
+        }
+        var len = val.length;
+        if (len === 2) {
+            // vertical | horizontal
+            return [val[0], val[1], val[0], val[1]];
+        }
+        else if (len === 3) {
+            // top | horizontal | bottom
+            return [val[0], val[1], val[2], val[1]];
+        }
+        return val;
     }
 
     /**
@@ -727,9 +776,12 @@ define('zrender/core/util',['require'],function(require) {
         isDom: isDom,
         eqNaN: eqNaN,
         retrieve: retrieve,
+        retrieve2: retrieve2,
+        retrieve3: retrieve3,
         assert: assert,
         setAsPrimitive: setAsPrimitive,
         createHashMap: createHashMap,
+        normalizeCssArray: normalizeCssArray,
         noop: function () {}
     };
     return util;
@@ -1199,7 +1251,7 @@ define('zrender/Handler',['require','./core/util','./mixin/Draggable','./mixin/E
         proxy.handler = this;
 
         /**
-         * {target, topTarget}
+         * {target, topTarget, x, y}
          * @private
          * @type {Object}
          */
@@ -1240,15 +1292,25 @@ define('zrender/Handler',['require','./core/util','./mixin/Draggable','./mixin/E
             var y = event.zrY;
 
             var lastHovered = this._hovered;
+            var lastHoveredTarget = lastHovered.target;
+
+            // If lastHoveredTarget is removed from zr (detected by '__zr') by some API call
+            // (like 'setOption' or 'dispatchAction') in event handlers, we should find
+            // lastHovered again here. Otherwise 'mouseout' can not be triggered normally.
+            // See #6198.
+            if (lastHoveredTarget && !lastHoveredTarget.__zr) {
+                lastHovered = this.findHover(lastHovered.x, lastHovered.y);
+                lastHoveredTarget = lastHovered.target;
+            }
+
             var hovered = this._hovered = this.findHover(x, y);
             var hoveredTarget = hovered.target;
-            var lastHoveredTarget = lastHovered.target;
 
             var proxy = this.proxy;
             proxy.setCursor && proxy.setCursor(hoveredTarget ? hoveredTarget.cursor : 'default');
 
             // Mouse out on previous hovered element
-            if (lastHoveredTarget && hoveredTarget !== lastHoveredTarget && lastHoveredTarget.__zr) {
+            if (lastHoveredTarget && hoveredTarget !== lastHoveredTarget) {
                 this.dispatchToElement(lastHovered, 'mouseout', event);
             }
 
@@ -1329,10 +1391,13 @@ define('zrender/Handler',['require','./core/util','./mixin/Draggable','./mixin/E
          */
         dispatchToElement: function (targetInfo, eventName, event) {
             targetInfo = targetInfo || {};
+            var el = targetInfo.target;
+            if (el && el.silent) {
+                return;
+            }
             var eventHandler = 'on' + eventName;
             var eventPacket = makeEventPacket(eventName, targetInfo, event);
 
-            var el = targetInfo.target;
             while (el) {
                 el[eventHandler]
                     && (eventPacket.cancelBubble = el[eventHandler].call(el, eventPacket));
@@ -1372,7 +1437,7 @@ define('zrender/Handler',['require','./core/util','./mixin/Draggable','./mixin/E
          */
         findHover: function(x, y, exclude) {
             var list = this.storage.getDisplayList();
-            var out = {};
+            var out = {x: x, y: y};
 
             for (var i = list.length - 1; i >= 0 ; i--) {
                 var hoverCheckResult;
@@ -2001,9 +2066,9 @@ define('zrender/mixin/Transformable',['require','../core/matrix','../core/vector
 
     /**
      * 将自己的transform应用到context上
-     * @param {Context2D} ctx
+     * @param {CanvasRenderingContext2D} ctx
      */
-    transformableProto.setTransform = function (ctx) {
+    transformableProto.setTransform = function (ctx) {        
         var m = this.transform;
         var dpr = ctx.dpr || 1;
         if (m) {
@@ -3574,7 +3639,7 @@ define('zrender/animation/Animator',['require','./Clip','../tool/color','../core
         return isArrayLike(lastValue && lastValue[0]) ? 2 : 1;
     }
 
-    function createTrackClip (animator, easing, oneTrackDone, keyframes, propName) {
+    function createTrackClip(animator, easing, oneTrackDone, keyframes, propName, forceAnimate) {
         var getter = animator._getter;
         var setter = animator._setter;
         var useSpline = easing === 'spline';
@@ -3630,7 +3695,7 @@ define('zrender/animation/Animator',['require','./Clip','../tool/color','../core
             }
             kfValues.push(value);
         }
-        if (isAllValueEqual) {
+        if (!forceAnimate && isAllValueEqual) {
             return;
         }
 
@@ -3898,11 +3963,12 @@ define('zrender/animation/Animator',['require','./Clip','../tool/color','../core
         },
         /**
          * 开始执行动画
-         * @param  {string|Function} easing
+         * @param  {string|Function} [easing]
          *         动画缓动函数，详见{@link module:zrender/animation/easing}
+         * @param  {boolean} forceAnimate
          * @return {module:zrender/animation/Animator}
          */
-        start: function (easing) {
+        start: function (easing, forceAnimate) {
 
             var self = this;
             var clipCount = 0;
@@ -3921,7 +3987,7 @@ define('zrender/animation/Animator',['require','./Clip','../tool/color','../core
                 }
                 var clip = createTrackClip(
                     this, easing, oneTrackDone,
-                    this._tracks[propName], propName
+                    this._tracks[propName], propName, forceAnimate
                 );
                 if (clip) {
                     this._clipList.push(clip);
@@ -3948,6 +4014,9 @@ define('zrender/animation/Animator',['require','./Clip','../tool/color','../core
                 };
             }
 
+            // This optimization will help the case that in the upper application
+            // the view may be refreshed frequently, where animation will be
+            // called repeatly but nothing changed.
             if (!clipCount) {
                 this._doneCallback();
             }
@@ -4097,8 +4166,8 @@ define('zrender/mixin/Animatable',['require','../animation/Animator','../core/ut
         /**
          * 动画
          *
-         * @param {string} path 需要添加动画的属性获取路径，可以通过a.b.c来获取深层的属性
-         * @param {boolean} [loop] 动画是否循环
+         * @param {string} path The path to fetch value from object, like 'a.b.c'.
+         * @param {boolean} [loop] Whether to loop animation.
          * @return {module:zrender/animation/Animator}
          * @example:
          *     el.animate('style', false)
@@ -4183,6 +4252,8 @@ define('zrender/mixin/Animatable',['require','../animation/Animator','../core/ut
          * @param {string} [easing='linear']
          * @param {number} [delay=0]
          * @param {Function} [callback]
+         * @param {Function} [forceAnimate] Prevent stop animation and callback
+         *        immediently when target values are the same as current values.
          *
          * @example
          *  // Animate position
@@ -4202,7 +4273,7 @@ define('zrender/mixin/Animatable',['require','../animation/Animator','../core/ut
          *  }, 100, 100, 'cubicOut', function () { // done })
          */
          // TODO Return animation key
-        animateTo: function (target, time, delay, easing, callback) {
+        animateTo: function (target, time, delay, easing, callback, forceAnimate) {
             // animateTo(target, time, easing, callback);
             if (isString(delay)) {
                 callback = easing;
@@ -4254,7 +4325,7 @@ define('zrender/mixin/Animatable',['require','../animation/Animator','../core/ut
             for (var i = 0; i < animators.length; i++) {
                 animators[i]
                     .done(done)
-                    .start(easing);
+                    .start(easing, forceAnimate);
             }
         },
 
@@ -6960,10 +7031,1376 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
 
     return HandlerDomProxy;
 });
+define('zrender/graphic/helper/image',['require','../../core/LRU'],function (require) {
+
+    var LRU = require('../../core/LRU');
+    var globalImageCache = new LRU(50);
+
+    var helper = {};
+
+    /**
+     * @param {string|HTMLImageElement|HTMLCanvasElement|Canvas} newImageOrSrc
+     * @return {HTMLImageElement|HTMLCanvasElement|Canvas} image
+     */
+    helper.findExistImage = function (newImageOrSrc) {
+        if (typeof newImageOrSrc === 'string') {
+            var cachedImgObj = globalImageCache.get(newImageOrSrc);
+            return cachedImgObj && cachedImgObj.image;
+        }
+        else {
+            return newImageOrSrc;
+        }
+    };
+
+    /**
+     * Caution: User should cache loaded images, but not just count on LRU.
+     * Consider if required images more than LRU size, will dead loop occur?
+     *
+     * @param {string|HTMLImageElement|HTMLCanvasElement|Canvas} newImageOrSrc
+     * @param {HTMLImageElement|HTMLCanvasElement|Canvas} image Existent image.
+     * @param {module:zrender/Element} [hostEl] For calling `dirty`.
+     * @param {Function} [cb] params: (image, cbPayload)
+     * @param {Object} [cbPayload] Payload on cb calling.
+     * @return {HTMLImageElement|HTMLCanvasElement|Canvas} image
+     */
+    helper.createOrUpdateImage = function (newImageOrSrc, image, hostEl, cb, cbPayload) {
+        if (!newImageOrSrc) {
+            return image;
+        }
+        else if (typeof newImageOrSrc === 'string') {
+
+            // Image should not be loaded repeatly.
+            if ((image && image.__zrImageSrc === newImageOrSrc) || !hostEl) {
+                return image;
+            }
+
+            // Only when there is no existent image or existent image src
+            // is different, this method is responsible for load.
+            var cachedImgObj = globalImageCache.get(newImageOrSrc);
+
+            var pendingWrap = {hostEl: hostEl, cb: cb, cbPayload: cbPayload};
+
+            if (cachedImgObj) {
+                image = cachedImgObj.image;
+                !isImageReady(image) && cachedImgObj.pending.push(pendingWrap);
+            }
+            else {
+                !image && (image = new Image());
+                image.onload = imageOnLoad;
+
+                globalImageCache.put(
+                    newImageOrSrc,
+                    image.__cachedImgObj = {
+                        image: image,
+                        pending: [pendingWrap]
+                    }
+                );
+
+                image.src = image.__zrImageSrc = newImageOrSrc;
+            }
+
+            return image;
+        }
+        // newImageOrSrc is an HTMLImageElement or HTMLCanvasElement or Canvas
+        else {
+            return newImageOrSrc;
+        }
+    };
+
+    function imageOnLoad() {
+        var cachedImgObj = this.__cachedImgObj;
+        this.onload = this.__cachedImgObj = null;
+
+        for (var i = 0; i < cachedImgObj.pending.length; i++) {
+            var pendingWrap = cachedImgObj.pending[i];
+            var cb = pendingWrap.cb;
+            cb && cb(this, pendingWrap.cbPayload);
+            pendingWrap.hostEl.dirty();
+        }
+        cachedImgObj.pending.length = 0;
+    }
+
+    var isImageReady = helper.isImageReady = function (image) {
+        return image && image.width && image.height;
+    };
+
+    return helper;
+
+});
+define('zrender/contain/text',['require','../core/util','../core/BoundingRect','../graphic/helper/image'],function (require) {
+
+    var util = require('../core/util');
+    var BoundingRect = require('../core/BoundingRect');
+    var imageHelper = require('../graphic/helper/image');
+
+    var textWidthCache = {};
+    var textWidthCacheCounter = 0;
+
+    var TEXT_CACHE_MAX = 5000;
+    var STYLE_REG = /\{([a-zA-Z0-9_]+)\|([^}]*)\}/g;
+    var DEFAULT_FONT = '12px sans-serif';
+
+    var retrieve2 = util.retrieve2;
+    var retrieve3 = util.retrieve3;
+
+    /**
+     * @public
+     * @param {string} text
+     * @param {string} font
+     * @return {number} width
+     */
+    function getTextWidth(text, font) {
+        font = font || DEFAULT_FONT;
+        var key = text + ':' + font;
+        if (textWidthCache[key]) {
+            return textWidthCache[key];
+        }
+
+        var textLines = (text + '').split('\n');
+        var width = 0;
+
+        for (var i = 0, l = textLines.length; i < l; i++) {
+            // textContain.measureText may be overrided in SVG or VML
+            width = Math.max(textContain.measureText(textLines[i], font).width, width);
+        }
+
+        if (textWidthCacheCounter > TEXT_CACHE_MAX) {
+            textWidthCacheCounter = 0;
+            textWidthCache = {};
+        }
+        textWidthCacheCounter++;
+        textWidthCache[key] = width;
+
+        return width;
+    }
+
+    /**
+     * @public
+     * @param {string} text
+     * @param {string} font
+     * @param {string} [textAlign='left']
+     * @param {string} [textVerticalAlign='top']
+     * @param {Array.<number>} [textPadding]
+     * @param {Object} [rich]
+     * @param {Object} [truncate]
+     * @return {Object} {x, y, width, height, lineHeight}
+     */
+    function getTextRect(text, font, textAlign, textVerticalAlign, textPadding, rich, truncate) {
+        return rich
+            ? getRichTextRect(text, font, textAlign, textVerticalAlign, textPadding, rich, truncate)
+            : getPlainTextRect(text, font, textAlign, textVerticalAlign, textPadding, truncate);
+    }
+
+    function getPlainTextRect(text, font, textAlign, textVerticalAlign, textPadding, truncate) {
+        var contentBlock = parsePlainText(text, font, textPadding, truncate);
+        var outerWidth = getTextWidth(text, font);
+        if (textPadding) {
+            outerWidth += textPadding[1] + textPadding[3];
+        }
+        var outerHeight = contentBlock.outerHeight;
+
+        var x = adjustTextX(0, outerWidth, textAlign);
+        var y = adjustTextY(0, outerHeight, textVerticalAlign);
+
+        var rect = new BoundingRect(x, y, outerWidth, outerHeight);
+        rect.lineHeight = contentBlock.lineHeight;
+
+        return rect;
+    }
+
+    function getRichTextRect(text, font, textAlign, textVerticalAlign, textPadding, rich, truncate) {
+        var contentBlock = parseRichText(text, {
+            rich: rich,
+            truncate: truncate,
+            font: font,
+            textAlign: textAlign,
+            textPadding: textPadding
+        });
+        var outerWidth = contentBlock.outerWidth;
+        var outerHeight = contentBlock.outerHeight;
+
+        var x = adjustTextX(0, outerWidth, textAlign);
+        var y = adjustTextY(0, outerHeight, textVerticalAlign);
+
+        return new BoundingRect(x, y, outerWidth, outerHeight);
+    }
+
+    /**
+     * @public
+     * @param {number} x
+     * @param {number} width
+     * @param {string} [textAlign='left']
+     * @return {number} Adjusted x.
+     */
+    function adjustTextX(x, width, textAlign) {
+        // FIXME Right to left language
+        if (textAlign === 'right') {
+            x -= width;
+        }
+        else if (textAlign === 'center') {
+            x -= width / 2;
+        }
+        return x;
+    }
+
+    /**
+     * @public
+     * @param {number} y
+     * @param {number} height
+     * @param {string} [textVerticalAlign='top']
+     * @return {number} Adjusted y.
+     */
+    function adjustTextY(y, height, textVerticalAlign) {
+        if (textVerticalAlign === 'middle') {
+            y -= height / 2;
+        }
+        else if (textVerticalAlign === 'bottom') {
+            y -= height;
+        }
+        return y;
+    }
+
+    /**
+     * @public
+     * @param {stirng} textPosition
+     * @param {Object} rect {x, y, width, height}
+     * @param {number} distance
+     * @return {Object} {x, y, textAlign, textVerticalAlign}
+     */
+    function adjustTextPositionOnRect(textPosition, rect, distance) {
+
+        var x = rect.x;
+        var y = rect.y;
+
+        var height = rect.height;
+        var width = rect.width;
+        var halfHeight = height / 2;
+
+        var textAlign = 'left';
+        var textVerticalAlign = 'top';
+
+        switch (textPosition) {
+            case 'left':
+                x -= distance;
+                y += halfHeight;
+                textAlign = 'right';
+                textVerticalAlign = 'middle';
+                break;
+            case 'right':
+                x += distance + width;
+                y += halfHeight;
+                textVerticalAlign = 'middle';
+                break;
+            case 'top':
+                x += width / 2;
+                y -= distance;
+                textAlign = 'center';
+                textVerticalAlign = 'bottom';
+                break;
+            case 'bottom':
+                x += width / 2;
+                y += height + distance;
+                textAlign = 'center';
+                break;
+            case 'inside':
+                x += width / 2;
+                y += halfHeight;
+                textAlign = 'center';
+                textVerticalAlign = 'middle';
+                break;
+            case 'insideLeft':
+                x += distance;
+                y += halfHeight;
+                textVerticalAlign = 'middle';
+                break;
+            case 'insideRight':
+                x += width - distance;
+                y += halfHeight;
+                textAlign = 'right';
+                textVerticalAlign = 'middle';
+                break;
+            case 'insideTop':
+                x += width / 2;
+                y += distance;
+                textAlign = 'center';
+                break;
+            case 'insideBottom':
+                x += width / 2;
+                y += height - distance;
+                textAlign = 'center';
+                textVerticalAlign = 'bottom';
+                break;
+            case 'insideTopLeft':
+                x += distance;
+                y += distance;
+                break;
+            case 'insideTopRight':
+                x += width - distance;
+                y += distance;
+                textAlign = 'right';
+                break;
+            case 'insideBottomLeft':
+                x += distance;
+                y += height - distance;
+                textVerticalAlign = 'bottom';
+                break;
+            case 'insideBottomRight':
+                x += width - distance;
+                y += height - distance;
+                textAlign = 'right';
+                textVerticalAlign = 'bottom';
+                break;
+        }
+
+        return {
+            x: x,
+            y: y,
+            textAlign: textAlign,
+            textVerticalAlign: textVerticalAlign
+        };
+    }
+
+    /**
+     * Show ellipsis if overflow.
+     *
+     * @public
+     * @param  {string} text
+     * @param  {string} containerWidth
+     * @param  {string} font
+     * @param  {number} [ellipsis='...']
+     * @param  {Object} [options]
+     * @param  {number} [options.maxIterations=3]
+     * @param  {number} [options.minChar=0] If truncate result are less
+     *                  then minChar, ellipsis will not show, which is
+     *                  better for user hint in some cases.
+     * @param  {number} [options.placeholder=''] When all truncated, use the placeholder.
+     * @return {string}
+     */
+    function truncateText(text, containerWidth, font, ellipsis, options) {
+        if (!containerWidth) {
+            return '';
+        }
+
+        var textLines = (text + '').split('\n');
+        options = prepareTruncateOptions(containerWidth, font, ellipsis, options);
+
+        // FIXME
+        // It is not appropriate that every line has '...' when truncate multiple lines.
+        for (var i = 0, len = textLines.length; i < len; i++) {
+            textLines[i] = truncateSingleLine(textLines[i], options);
+        }
+
+        return textLines.join('\n');
+    }
+
+    function prepareTruncateOptions(containerWidth, font, ellipsis, options) {
+        options = util.extend({}, options);
+
+        options.font = font;
+        var ellipsis = retrieve2(ellipsis, '...');
+        options.maxIterations = retrieve2(options.maxIterations, 2);
+        var minChar = options.minChar = retrieve2(options.minChar, 0);
+        // FIXME
+        // Other languages?
+        options.cnCharWidth = getTextWidth('国', font);
+        // FIXME
+        // Consider proportional font?
+        var ascCharWidth = options.ascCharWidth = getTextWidth('a', font);
+        options.placeholder = retrieve2(options.placeholder, '');
+
+        // Example 1: minChar: 3, text: 'asdfzxcv', truncate result: 'asdf', but not: 'a...'.
+        // Example 2: minChar: 3, text: '维度', truncate result: '维', but not: '...'.
+        var contentWidth = containerWidth = Math.max(0, containerWidth - 1); // Reserve some gap.
+        for (var i = 0; i < minChar && contentWidth >= ascCharWidth; i++) {
+            contentWidth -= ascCharWidth;
+        }
+
+        var ellipsisWidth = getTextWidth(ellipsis);
+        if (ellipsisWidth > contentWidth) {
+            ellipsis = '';
+            ellipsisWidth = 0;
+        }
+
+        contentWidth = containerWidth - ellipsisWidth;
+
+        options.ellipsis = ellipsis;
+        options.ellipsisWidth = ellipsisWidth;
+        options.contentWidth = contentWidth;
+        options.containerWidth = containerWidth;
+
+        return options;
+    }
+
+    function truncateSingleLine(textLine, options) {
+        var containerWidth = options.containerWidth;
+        var font = options.font;
+        var contentWidth = options.contentWidth;
+
+        if (!containerWidth) {
+            return '';
+        }
+
+        var lineWidth = getTextWidth(textLine, font);
+
+        if (lineWidth <= containerWidth) {
+            return textLine;
+        }
+
+        for (var j = 0;; j++) {
+            if (lineWidth <= contentWidth || j >= options.maxIterations) {
+                textLine += options.ellipsis;
+                break;
+            }
+
+            var subLength = j === 0
+                ? estimateLength(textLine, contentWidth, options.ascCharWidth, options.cnCharWidth)
+                : lineWidth > 0
+                ? Math.floor(textLine.length * contentWidth / lineWidth)
+                : 0;
+
+            textLine = textLine.substr(0, subLength);
+            lineWidth = getTextWidth(textLine, font);
+        }
+
+        if (textLine === '') {
+            textLine = options.placeholder;
+        }
+
+        return textLine;
+    }
+
+    function estimateLength(text, contentWidth, ascCharWidth, cnCharWidth) {
+        var width = 0;
+        var i = 0;
+        for (var len = text.length; i < len && width < contentWidth; i++) {
+            var charCode = text.charCodeAt(i);
+            width += (0 <= charCode && charCode <= 127) ? ascCharWidth : cnCharWidth;
+        }
+        return i;
+    }
+
+    /**
+     * @public
+     * @param {string} font
+     * @return {number} line height
+     */
+    function getLineHeight(font) {
+        // FIXME A rough approach.
+        return getTextWidth('国', font);
+    }
+
+    /**
+     * @public
+     * @param {string} text
+     * @param {string} font
+     * @return {Object} width
+     */
+    function measureText(text, font) {
+        var ctx = util.getContext();
+        ctx.font = font || DEFAULT_FONT;
+        return ctx.measureText(text);
+    }
+
+    /**
+     * @public
+     * @param {string} text
+     * @param {string} font
+     * @param {Object} [truncate]
+     * @return {Object} block: {lineHeight, lines, height, outerHeight}
+     *  Notice: for performance, do not calculate outerWidth util needed.
+     */
+    function parsePlainText(text, font, padding, truncate) {
+        text != null && (text += '');
+
+        var lineHeight = getLineHeight(font);
+        var lines = text ? text.split('\n') : [];
+        var height = lines.length * lineHeight;
+        var outerHeight = height;
+
+        if (padding) {
+            outerHeight += padding[0] + padding[2];
+        }
+
+        if (text && truncate) {
+            var truncOuterHeight = truncate.outerHeight;
+            var truncOuterWidth = truncate.outerWidth;
+            if (truncOuterHeight != null && outerHeight > truncOuterHeight) {
+                text = '';
+                lines = [];
+            }
+            else if (truncOuterWidth != null) {
+                var options = prepareTruncateOptions(
+                    truncOuterWidth - (padding ? padding[1] + padding[3] : 0),
+                    font,
+                    truncate.ellipsis,
+                    {minChar: truncate.minChar, placeholder: truncate.placeholder}
+                );
+
+                // FIXME
+                // It is not appropriate that every line has '...' when truncate multiple lines.
+                for (var i = 0, len = lines.length; i < len; i++) {
+                    lines[i] = truncateSingleLine(lines[i], options);
+                }
+            }
+        }
+
+        return {
+            lines: lines,
+            height: height,
+            outerHeight: outerHeight,
+            lineHeight: lineHeight
+        };
+    }
+
+    /**
+     * For example: 'some text {a|some text}other text{b|some text}xxx{c|}xxx'
+     * Also consider 'bbbb{a|xxx\nzzz}xxxx\naaaa'.
+     *
+     * @public
+     * @param {string} text
+     * @param {Object} style
+     * @return {Object} block
+     * {
+     *      width,
+     *      height,
+     *      lines: [{
+     *          lineHeight,
+     *          width,
+     *          tokens: [[{
+     *              styleName,
+     *              text,
+     *              width,      // include textPadding
+     *              height,     // include textPadding
+     *              textWidth, // pure text width
+     *              textHeight, // pure text height
+     *              lineHeihgt,
+     *              font,
+     *              textAlign,
+     *              textVerticalAlign
+     *          }], [...], ...]
+     *      }, ...]
+     * }
+     * If styleName is undefined, it is plain text.
+     */
+    function parseRichText(text, style) {
+        var contentBlock = {lines: [], width: 0, height: 0};
+
+        text != null && (text += '');
+        if (!text) {
+            return contentBlock;
+        }
+
+        var lastIndex = STYLE_REG.lastIndex = 0;
+        var result;
+        while ((result = STYLE_REG.exec(text)) != null)  {
+            var matchedIndex = result.index;
+            if (matchedIndex > lastIndex) {
+                pushTokens(contentBlock, text.substring(lastIndex, matchedIndex));
+            }
+            pushTokens(contentBlock, result[2], result[1]);
+            lastIndex = STYLE_REG.lastIndex;
+        }
+
+        if (lastIndex < text.length) {
+            pushTokens(contentBlock, text.substring(lastIndex, text.length));
+        }
+
+        var lines = contentBlock.lines;
+        var contentHeight = 0;
+        var contentWidth = 0;
+        // For `textWidth: 100%`
+        var pendingList = [];
+
+        var stlPadding = style.textPadding;
+
+        var truncate = style.truncate;
+        var truncateWidth = truncate && truncate.outerWidth;
+        var truncateHeight = truncate && truncate.outerHeight;
+        if (stlPadding) {
+            truncateWidth != null && (truncateWidth -= stlPadding[1] + stlPadding[3]);
+            truncateHeight != null && (truncateHeight -= stlPadding[0] + stlPadding[2]);
+        }
+
+        // Calculate layout info of tokens.
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            var lineHeight = 0;
+            var lineWidth = 0;
+
+            for (var j = 0; j < line.tokens.length; j++) {
+                var token = line.tokens[j];
+                var tokenStyle = token.styleName && style.rich[token.styleName] || {};
+                // textPadding should not inherit from style.
+                var textPadding = token.textPadding = tokenStyle.textPadding;
+
+                // textFont has been asigned to font by `normalizeStyle`.
+                var font = token.font = tokenStyle.font || style.font;
+
+                // textHeight can be used when textVerticalAlign is specified in token.
+                var tokenHeight = token.textHeight = retrieve2(
+                    // textHeight should not be inherited, consider it can be specified
+                    // as box height of the block.
+                    tokenStyle.textHeight, textContain.getLineHeight(font)
+                );
+                textPadding && (tokenHeight += textPadding[0] + textPadding[2]);
+                token.height = tokenHeight;
+                token.lineHeight = retrieve3(
+                    tokenStyle.textLineHeight, style.textLineHeight, tokenHeight
+                );
+
+                token.textAlign = tokenStyle && tokenStyle.textAlign || style.textAlign;
+                token.textVerticalAlign = tokenStyle && tokenStyle.textVerticalAlign || 'middle';
+
+                if (truncateHeight != null && contentHeight + token.lineHeight > truncateHeight) {
+                    return {lines: [], width: 0, height: 0};
+                }
+
+                token.textWidth = textContain.getWidth(token.text, font);
+                var tokenWidth = tokenStyle.textWidth;
+                var tokenWidthNotSpecified = tokenWidth == null || tokenWidth === 'auto';
+
+                // Percent width, can be `100%`, can be used in drawing separate
+                // line when box width is needed to be auto.
+                if (typeof tokenWidth === 'string' && tokenWidth.charAt(tokenWidth.length - 1) === '%') {
+                    token.percentWidth = tokenWidth;
+                    pendingList.push(token);
+                    tokenWidth = 0;
+                    // Do not truncate in this case, because there is no user case
+                    // and it is too complicated.
+                }
+                else {
+                    if (tokenWidthNotSpecified) {
+                        tokenWidth = token.textWidth;
+
+                        // FIXME: If image is not loaded and textWidth is not specified, calling
+                        // `getBoundingRect()` will not get correct result.
+                        var textBackgroundColor = tokenStyle.textBackgroundColor;
+                        var bgImg = textBackgroundColor && textBackgroundColor.image;
+
+                        // Use cases:
+                        // (1) If image is not loaded, it will be loaded at render phase and call
+                        // `dirty()` and `textBackgroundColor.image` will be replaced with the loaded
+                        // image, and then the right size will be calculated here at the next tick.
+                        // See `graphic/helper/text.js`.
+                        // (2) If image loaded, and `textBackgroundColor.image` is image src string,
+                        // use `imageHelper.findExistImage` to find cached image.
+                        // `imageHelper.findExistImage` will always be called here before
+                        // `imageHelper.createOrUpdateImage` in `graphic/helper/text.js#renderRichText`
+                        // which ensures that image will not be rendered before correct size calcualted.
+                        if (bgImg) {
+                            bgImg = imageHelper.findExistImage(bgImg);
+                            if (imageHelper.isImageReady(bgImg)) {
+                                tokenWidth = Math.max(tokenWidth, bgImg.width * tokenHeight / bgImg.height);
+                            }
+                        }
+                    }
+
+                    var paddingW = textPadding ? textPadding[1] + textPadding[3] : 0;
+                    tokenWidth += paddingW;
+
+                    var remianTruncWidth = truncateWidth != null ? truncateWidth - lineWidth : null;
+
+                    if (remianTruncWidth != null && remianTruncWidth < tokenWidth) {
+                        if (!tokenWidthNotSpecified || remianTruncWidth < paddingW) {
+                            token.text = '';
+                            token.textWidth = tokenWidth = 0;
+                        }
+                        else {
+                            token.text = truncateText(
+                                token.text, remianTruncWidth - paddingW, font, truncate.ellipsis,
+                                {minChar: truncate.minChar}
+                            );
+                            token.textWidth = textContain.getWidth(token.text, font);
+                            tokenWidth = token.textWidth + paddingW;
+                        }
+                    }
+                }
+
+                lineWidth += (token.width = tokenWidth);
+                tokenStyle && (lineHeight = Math.max(lineHeight, token.lineHeight));
+            }
+
+            line.width = lineWidth;
+            line.lineHeight = lineHeight;
+            contentHeight += lineHeight;
+            contentWidth = Math.max(contentWidth, lineWidth);
+        }
+
+        contentBlock.outerWidth = contentBlock.width = retrieve2(style.textWidth, contentWidth);
+        contentBlock.outerHeight = contentBlock.height = retrieve2(style.textHeight, contentHeight);
+
+        if (stlPadding) {
+            contentBlock.outerWidth += stlPadding[1] + stlPadding[3];
+            contentBlock.outerHeight += stlPadding[0] + stlPadding[2];
+        }
+
+        for (var i = 0; i < pendingList.length; i++) {
+            var token = pendingList[i];
+            var percentWidth = token.percentWidth;
+            // Should not base on outerWidth, because token can not be placed out of padding.
+            token.width = parseInt(percentWidth, 10) / 100 * contentWidth;
+        }
+
+        return contentBlock;
+    }
+
+    function pushTokens(block, str, styleName) {
+        var isEmptyStr = str === '';
+        var strs = str.split('\n');
+        var lines = block.lines;
+
+        for (var i = 0; i < strs.length; i++) {
+            var text = strs[i];
+            var token = {
+                styleName: styleName,
+                text: text,
+                isLineHolder: !text && !isEmptyStr
+            };
+
+            // The first token should be appended to the last line.
+            if (!i) {
+                var tokens = (lines[lines.length - 1] || (lines[0] = {tokens: []})).tokens;
+
+                // Consider cases:
+                // (1) ''.split('\n') => ['', '\n', ''], the '' at the first item
+                // (which is a placeholder) should be replaced by new token.
+                // (2) A image backage, where token likes {a|}.
+                // (3) A redundant '' will affect textAlign in line.
+                // (4) tokens with the same tplName should not be merged, because
+                // they should be displayed in different box (with border and padding).
+                var tokensLen = tokens.length;
+                (tokensLen === 1 && tokens[0].isLineHolder)
+                    ? (tokens[0] = token)
+                    // Consider text is '', only insert when it is the "lineHolder" or
+                    // "emptyStr". Otherwise a redundant '' will affect textAlign in line.
+                    : ((text || !tokensLen || isEmptyStr) && tokens.push(token));
+            }
+            // Other tokens always start a new line.
+            else {
+                // If there is '', insert it as a placeholder.
+                lines.push({tokens: [token]});
+            }
+        }
+    }
+
+    function makeFont(style) {
+        // FIXME in node-canvas fontWeight is before fontStyle
+        // Use `fontSize` `fontFamily` to check whether font properties are defined.
+        return (style.fontSize || style.fontFamily) && [
+            style.fontStyle,
+            style.fontWeight,
+            (style.fontSize || 12) + 'px',
+            // If font properties are defined, `fontFamily` should not be ignored.
+            style.fontFamily || 'sans-serif'
+        ].join(' ') || style.textFont || style.font;
+    }
+
+    var textContain = {
+
+        getWidth: getTextWidth,
+
+        getBoundingRect: getTextRect,
+
+        adjustTextPositionOnRect: adjustTextPositionOnRect,
+
+        truncateText: truncateText,
+
+        measureText: measureText,
+
+        getLineHeight: getLineHeight,
+
+        parsePlainText: parsePlainText,
+
+        parseRichText: parseRichText,
+
+        adjustTextX: adjustTextX,
+
+        adjustTextY: adjustTextY,
+
+        makeFont: makeFont,
+
+        DEFAULT_FONT: DEFAULT_FONT
+    };
+
+    return textContain;
+});
+define('zrender/graphic/helper/roundRect',['require'],function (require) {
+
+    return {
+        buildPath: function (ctx, shape) {
+            var x = shape.x;
+            var y = shape.y;
+            var width = shape.width;
+            var height = shape.height;
+            var r = shape.r;
+            var r1;
+            var r2;
+            var r3;
+            var r4;
+
+            // Convert width and height to positive for better borderRadius
+            if (width < 0) {
+                x = x + width;
+                width = -width;
+            }
+            if (height < 0) {
+                y = y + height;
+                height = -height;
+            }
+
+            if (typeof r === 'number') {
+                r1 = r2 = r3 = r4 = r;
+            }
+            else if (r instanceof Array) {
+                if (r.length === 1) {
+                    r1 = r2 = r3 = r4 = r[0];
+                }
+                else if (r.length === 2) {
+                    r1 = r3 = r[0];
+                    r2 = r4 = r[1];
+                }
+                else if (r.length === 3) {
+                    r1 = r[0];
+                    r2 = r4 = r[1];
+                    r3 = r[2];
+                }
+                else {
+                    r1 = r[0];
+                    r2 = r[1];
+                    r3 = r[2];
+                    r4 = r[3];
+                }
+            }
+            else {
+                r1 = r2 = r3 = r4 = 0;
+            }
+
+            var total;
+            if (r1 + r2 > width) {
+                total = r1 + r2;
+                r1 *= width / total;
+                r2 *= width / total;
+            }
+            if (r3 + r4 > width) {
+                total = r3 + r4;
+                r3 *= width / total;
+                r4 *= width / total;
+            }
+            if (r2 + r3 > height) {
+                total = r2 + r3;
+                r2 *= height / total;
+                r3 *= height / total;
+            }
+            if (r1 + r4 > height) {
+                total = r1 + r4;
+                r1 *= height / total;
+                r4 *= height / total;
+            }
+            ctx.moveTo(x + r1, y);
+            ctx.lineTo(x + width - r2, y);
+            r2 !== 0 && ctx.quadraticCurveTo(
+                x + width, y, x + width, y + r2
+            );
+            ctx.lineTo(x + width, y + height - r3);
+            r3 !== 0 && ctx.quadraticCurveTo(
+                x + width, y + height, x + width - r3, y + height
+            );
+            ctx.lineTo(x + r4, y + height);
+            r4 !== 0 && ctx.quadraticCurveTo(
+                x, y + height, x, y + height - r4
+            );
+            ctx.lineTo(x, y + r1);
+            r1 !== 0 && ctx.quadraticCurveTo(x, y, x + r1, y);
+        }
+    };
+});
+define('zrender/graphic/helper/text',['require','../../contain/text','../../core/util','./roundRect','./image'],function (require) {
+
+    var textContain = require('../../contain/text');
+    var util = require('../../core/util');
+    var roundRectHelper = require('./roundRect');
+    var imageHelper = require('./image');
+
+    var retrieve3 = util.retrieve3;
+    var retrieve2 = util.retrieve2;
+
+    // TODO: Have not support 'start', 'end' yet.
+    var VALID_TEXT_ALIGN = {left: 1, right: 1, center: 1};
+    var VALID_TEXT_VERTICAL_ALIGN = {top: 1, bottom: 1, middle: 1};
+
+    var helper = {};
+
+    /**
+     * @param {module:zrender/graphic/Style} style
+     * @return {module:zrender/graphic/Style} The input style.
+     */
+    helper.normalizeTextStyle = function (style) {
+        normalizeStyle(style);
+        util.each(style.rich, normalizeStyle);
+        return style;
+    };
+
+    function normalizeStyle(style) {
+        if (style) {
+
+            style.font = textContain.makeFont(style);
+
+            var textAlign = style.textAlign;
+            textAlign === 'middle' && (textAlign = 'center');
+            style.textAlign = (
+                textAlign == null || VALID_TEXT_ALIGN[textAlign]
+            ) ? textAlign : 'left';
+
+            // Compatible with textBaseline.
+            var textVerticalAlign = style.textVerticalAlign || style.textBaseline;
+            textVerticalAlign === 'center' && (textVerticalAlign = 'middle');
+            style.textVerticalAlign = (
+                textVerticalAlign == null || VALID_TEXT_VERTICAL_ALIGN[textVerticalAlign]
+            ) ? textVerticalAlign : 'top';
+
+            var textPadding = style.textPadding;
+            if (textPadding) {
+                style.textPadding = util.normalizeCssArray(style.textPadding);
+            }
+        }
+    }
+
+    /**
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {string} text
+     * @param {module:zrender/graphic/Style} style
+     * @param {Object|boolean} [rect] {x, y, width, height}
+     *                  If set false, rect text is not used.
+     */
+    helper.renderText = function (hostEl, ctx, text, style, rect) {
+        style.rich
+            ? renderRichText(hostEl, ctx, text, style, rect)
+            : renderPlainText(hostEl, ctx, text, style, rect);
+    };
+
+    function renderPlainText(hostEl, ctx, text, style, rect) {
+        var font = setCtx(ctx, 'font', style.font || textContain.DEFAULT_FONT);
+
+        var textPadding = style.textPadding;
+
+        var contentBlock = hostEl.__textCotentBlock;
+        if (!contentBlock || hostEl.__dirty) {
+            contentBlock = hostEl.__textCotentBlock = textContain.parsePlainText(
+                text, font, textPadding, style.truncate
+            );
+        }
+
+        var outerHeight = contentBlock.outerHeight;
+
+        var textLines = contentBlock.lines;
+        var lineHeight = contentBlock.lineHeight;
+
+        var boxPos = getBoxPosition(outerHeight, style, rect);
+        var baseX = boxPos.baseX;
+        var baseY = boxPos.baseY;
+        var textAlign = boxPos.textAlign;
+        var textVerticalAlign = boxPos.textVerticalAlign;
+
+        // Origin of textRotation should be the base point of text drawing.
+        applyTextRotation(ctx, style, rect, baseX, baseY);
+
+        var boxY = textContain.adjustTextY(baseY, outerHeight, textVerticalAlign);
+        var textX = baseX;
+        var textY = boxY;
+
+        var needDrawBg = needDrawBackground(style);
+        if (needDrawBg || textPadding) {
+            // Consider performance, do not call getTextWidth util necessary.
+            var textWidth = textContain.getWidth(text, font);
+            var outerWidth = textWidth;
+            textPadding && (outerWidth += textPadding[1] + textPadding[3]);
+            var boxX = textContain.adjustTextX(baseX, outerWidth, textAlign);
+
+            needDrawBg && drawBackground(hostEl, ctx, style, boxX, boxY, outerWidth, outerHeight);
+
+            if (textPadding) {
+                textX = getTextXForPadding(baseX, textAlign, textPadding);
+                textY += textPadding[0];
+            }
+        }
+
+        setCtx(ctx, 'textAlign', textAlign || 'left');
+        // Force baseline to be "middle". Otherwise, if using "top", the
+        // text will offset downward a little bit in font "Microsoft YaHei".
+        setCtx(ctx, 'textBaseline', 'middle');
+
+        // Always set shadowBlur and shadowOffset to avoid leak from displayable.
+        setCtx(ctx, 'shadowBlur', style.textShadowBlur || 0);
+        setCtx(ctx, 'shadowColor', style.textShadowColor || 'transparent');
+        setCtx(ctx, 'shadowOffsetX', style.textShadowOffsetX || 0);
+        setCtx(ctx, 'shadowOffsetY', style.textShadowOffsetY || 0);
+
+        // `textBaseline` is set as 'middle'.
+        textY += lineHeight / 2;
+
+        var textLineWidth = style.textLineWidth;
+        var textStroke = getStroke(style.textStroke, textLineWidth);
+        var textFill = getFill(style.textFill);
+
+        if (textStroke) {
+            setCtx(ctx, 'lineWidth', textLineWidth);
+            setCtx(ctx, 'strokeStyle', textStroke);
+        }
+        if (textFill) {
+            setCtx(ctx, 'fillStyle', textFill);
+        }
+
+        for (var i = 0; i < textLines.length; i++) {
+            // Fill after stroke so the outline will not cover the main part.
+            textStroke && ctx.strokeText(textLines[i], textX, textY);
+            textFill && ctx.fillText(textLines[i], textX, textY);
+            textY += lineHeight;
+        }
+    }
+
+    function renderRichText(hostEl, ctx, text, style, rect) {
+        var contentBlock = hostEl.__textCotentBlock;
+
+        if (!contentBlock || hostEl.__dirty) {
+            contentBlock = hostEl.__textCotentBlock = textContain.parseRichText(text, style);
+        }
+
+        drawRichText(hostEl, ctx, contentBlock, style, rect);
+    }
+
+    function drawRichText(hostEl, ctx, contentBlock, style, rect) {
+        var contentWidth = contentBlock.width;
+        var outerWidth = contentBlock.outerWidth;
+        var outerHeight = contentBlock.outerHeight;
+        var textPadding = style.textPadding;
+
+        var boxPos = getBoxPosition(outerHeight, style, rect);
+        var baseX = boxPos.baseX;
+        var baseY = boxPos.baseY;
+        var textAlign = boxPos.textAlign;
+        var textVerticalAlign = boxPos.textVerticalAlign;
+
+        // Origin of textRotation should be the base point of text drawing.
+        applyTextRotation(ctx, style, rect, baseX, baseY);
+
+        var boxX = textContain.adjustTextX(baseX, outerWidth, textAlign);
+        var boxY = textContain.adjustTextY(baseY, outerHeight, textVerticalAlign);
+        var xLeft = boxX;
+        var lineTop = boxY;
+        if (textPadding) {
+            xLeft += textPadding[3];
+            lineTop += textPadding[0];
+        }
+        var xRight = xLeft + contentWidth;
+
+        needDrawBackground(style) && drawBackground(
+            hostEl, ctx, style, boxX, boxY, outerWidth, outerHeight
+        );
+
+        for (var i = 0; i < contentBlock.lines.length; i++) {
+            var line = contentBlock.lines[i];
+            var tokens = line.tokens;
+            var tokenCount = tokens.length;
+            var lineHeight = line.lineHeight;
+            var usedWidth = line.width;
+
+            var leftIndex = 0;
+            var lineXLeft = xLeft;
+            var lineXRight = xRight;
+            var rightIndex = tokenCount - 1;
+            var token;
+
+            while (
+                leftIndex < tokenCount
+                && (token = tokens[leftIndex], !token.textAlign || token.textAlign === 'left')
+            ) {
+                placeToken(hostEl, ctx, token, style, lineHeight, lineTop, lineXLeft, 'left');
+                usedWidth -= token.width;
+                lineXLeft += token.width;
+                leftIndex++;
+            }
+
+            while (
+                rightIndex >= 0
+                && (token = tokens[rightIndex], token.textAlign === 'right')
+            ) {
+                placeToken(hostEl, ctx, token, style, lineHeight, lineTop, lineXRight, 'right');
+                usedWidth -= token.width;
+                lineXRight -= token.width;
+                rightIndex--;
+            }
+
+            // The other tokens are placed as textAlign 'center' if there is enough space.
+            lineXLeft += (contentWidth - (lineXLeft - xLeft) - (xRight - lineXRight) - usedWidth) / 2;
+            while (leftIndex <= rightIndex) {
+                token = tokens[leftIndex];
+                // Consider width specified by user, use 'center' rather than 'left'.
+                placeToken(hostEl, ctx, token, style, lineHeight, lineTop, lineXLeft + token.width / 2, 'center');
+                lineXLeft += token.width;
+                leftIndex++;
+            }
+
+            lineTop += lineHeight;
+        }
+    }
+
+    function applyTextRotation(ctx, style, rect, x, y) {
+        // textRotation only apply in RectText.
+        if (rect && style.textRotation) {
+            var origin = style.textOrigin;
+            if (origin === 'center') {
+                x = rect.width / 2 + rect.x;
+                y = rect.height / 2 + rect.y;
+            }
+            else if (origin) {
+                x = origin[0] + rect.x;
+                y = origin[1] + rect.y;
+            }
+
+            ctx.translate(x, y);
+            // Positive: anticlockwise
+            ctx.rotate(-style.textRotation);
+            ctx.translate(-x, -y);
+        }
+    }
+
+    function placeToken(hostEl, ctx, token, style, lineHeight, lineTop, x, textAlign) {
+        var tokenStyle = style.rich[token.styleName] || {};
+
+        // 'ctx.textBaseline' is always set as 'middle', for sake of
+        // the bias of "Microsoft YaHei".
+        var textVerticalAlign = token.textVerticalAlign;
+        var y = lineTop + lineHeight / 2;
+        if (textVerticalAlign === 'top') {
+            y = lineTop + token.height / 2;
+        }
+        else if (textVerticalAlign === 'bottom') {
+            y = lineTop + lineHeight - token.height / 2;
+        }
+
+        !token.isLineHolder && needDrawBackground(tokenStyle) && drawBackground(
+            hostEl,
+            ctx,
+            tokenStyle,
+            textAlign === 'right'
+                ? x - token.width
+                : textAlign === 'center'
+                ? x - token.width / 2
+                : x,
+            y - token.height / 2,
+            token.width,
+            token.height
+        );
+
+        var textPadding = token.textPadding;
+        if (textPadding) {
+            x = getTextXForPadding(x, textAlign, textPadding);
+            y -= token.height / 2 - textPadding[2] - token.textHeight / 2;
+        }
+
+        setCtx(ctx, 'shadowBlur', retrieve3(tokenStyle.textShadowBlur, style.textShadowBlur, 0));
+        setCtx(ctx, 'shadowColor', tokenStyle.textShadowColor || style.textShadowColor || 'transparent');
+        setCtx(ctx, 'shadowOffsetX', retrieve3(tokenStyle.textShadowOffsetX, style.textShadowOffsetX, 0));
+        setCtx(ctx, 'shadowOffsetY', retrieve3(tokenStyle.textShadowOffsetY, style.textShadowOffsetY, 0));
+
+        setCtx(ctx, 'textAlign', textAlign);
+        // Force baseline to be "middle". Otherwise, if using "top", the
+        // text will offset downward a little bit in font "Microsoft YaHei".
+        setCtx(ctx, 'textBaseline', 'middle');
+
+        setCtx(ctx, 'font', token.font || textContain.DEFAULT_FONT);
+
+        var textStroke = getStroke(tokenStyle.textStroke || style.textStroke, textLineWidth);
+        var textFill = getFill(tokenStyle.textFill || style.textFill);
+        var textLineWidth = retrieve2(tokenStyle.textLineWidth, style.textLineWidth);
+
+        // Fill after stroke so the outline will not cover the main part.
+        if (textStroke) {
+            setCtx(ctx, 'lineWidth', textLineWidth);
+            setCtx(ctx, 'strokeStyle', textStroke);
+            ctx.strokeText(token.text, x, y);
+        }
+        if (textFill) {
+            setCtx(ctx, 'fillStyle', textFill);
+            ctx.fillText(token.text, x, y);
+        }
+    }
+
+    function needDrawBackground(style) {
+        return style.textBackgroundColor
+            || (style.textBorderWidth && style.textBorderColor);
+    }
+
+    // style: {textBackgroundColor, textBorderWidth, textBorderColor, textBorderRadius}
+    // shape: {x, y, width, height}
+    function drawBackground(hostEl, ctx, style, x, y, width, height) {
+        var textBackgroundColor = style.textBackgroundColor;
+        var textBorderWidth = style.textBorderWidth;
+        var textBorderColor = style.textBorderColor;
+        var isPlainBg = util.isString(textBackgroundColor);
+
+        setCtx(ctx, 'shadowBlur', style.textBoxShadowBlur || 0);
+        setCtx(ctx, 'shadowColor', style.textBoxShadowColor || 'transparent');
+        setCtx(ctx, 'shadowOffsetX', style.textBoxShadowOffsetX || 0);
+        setCtx(ctx, 'shadowOffsetY', style.textBoxShadowOffsetY || 0);
+
+        if (isPlainBg || (textBorderWidth && textBorderColor)) {
+            ctx.beginPath();
+            var textBorderRadius = style.textBorderRadius;
+            if (!textBorderRadius) {
+                ctx.rect(x, y, width, height);
+            }
+            else {
+                roundRectHelper.buildPath(ctx, {
+                    x: x, y: y, width: width, height: height, r: textBorderRadius
+                });
+            }
+            ctx.closePath();
+        }
+
+        if (isPlainBg) {
+            setCtx(ctx, 'fillStyle', textBackgroundColor);
+            ctx.fill();
+        }
+        else if (util.isObject(textBackgroundColor)) {
+            var image = textBackgroundColor.image;
+
+            image = imageHelper.createOrUpdateImage(
+                image, null, hostEl, onBgImageLoaded, textBackgroundColor
+            );
+            if (image && imageHelper.isImageReady(image)) {
+                ctx.drawImage(image, x, y, width, height);
+            }
+        }
+
+        if (textBorderWidth && textBorderColor) {
+            setCtx(ctx, 'lineWidth', textBorderWidth);
+            setCtx(ctx, 'strokeStyle', textBorderColor);
+            ctx.stroke();
+        }
+    }
+
+    function onBgImageLoaded(image, textBackgroundColor) {
+        // Replace image, so that `contain/text.js#parseRichText`
+        // will get correct result in next tick.
+        textBackgroundColor.image = image;
+    }
+
+    function getBoxPosition(blockHeiht, style, rect) {
+        var baseX = style.x || 0;
+        var baseY = style.y || 0;
+        var textAlign = style.textAlign;
+        var textVerticalAlign = style.textVerticalAlign;
+
+        // Text position represented by coord
+        if (rect) {
+            var textPosition = style.textPosition;
+            if (textPosition instanceof Array) {
+                // Percent
+                baseX = rect.x + parsePercent(textPosition[0], rect.width);
+                baseY = rect.y + parsePercent(textPosition[1], rect.height);
+            }
+            else {
+                var res = textContain.adjustTextPositionOnRect(
+                    textPosition, rect, style.textDistance
+                );
+                baseX = res.x;
+                baseY = res.y;
+                // Default align and baseline when has textPosition
+                textAlign = textAlign || res.textAlign;
+                textVerticalAlign = textVerticalAlign || res.textVerticalAlign;
+            }
+
+            // textOffset is only support in RectText, otherwise
+            // we have to adjust boundingRect for textOffset.
+            var textOffset = style.textOffset;
+            if (textOffset) {
+                baseX += textOffset[0];
+                baseY += textOffset[1];
+            }
+        }
+
+        return {
+            baseX: baseX,
+            baseY: baseY,
+            textAlign: textAlign,
+            textVerticalAlign: textVerticalAlign
+        };
+    }
+
+    function setCtx(ctx, prop, value) {
+        // FIXME ??? performance try
+        // if (ctx.__currentValues[prop] !== value) {
+            ctx[prop] = ctx.__currentValues[prop] = value;
+        // }
+        return ctx[prop];
+    }
+
+    /**
+     * @param {string} [stroke] If specified, do not check style.textStroke.
+     * @param {string} [lineWidth] If specified, do not check style.textStroke.
+     * @param {number} style
+     */
+    var getStroke = helper.getStroke = function (stroke, lineWidth) {
+        return (stroke == null || lineWidth <= 0 || stroke === 'transparent' || stroke === 'none')
+            ? null
+            // TODO pattern and gradient?
+            : (stroke.image || stroke.colorStops)
+            ? '#000'
+            : stroke;
+    };
+
+    var getFill = helper.getFill = function (fill) {
+        return (fill == null || fill === 'none')
+            ? null
+            // TODO pattern and gradient?
+            : (fill.image || fill.colorStops)
+            ? '#000'
+            : fill;
+    };
+
+    function parsePercent(value, maxValue) {
+        if (typeof value === 'string') {
+            if (value.lastIndexOf('%') >= 0) {
+                return parseFloat(value) / 100 * maxValue;
+            }
+            return parseFloat(value);
+        }
+        return value;
+    }
+
+    function getTextXForPadding(x, textAlign, textPadding) {
+        return textAlign === 'right'
+            ? (x - textPadding[1])
+            : textAlign === 'center'
+            ? (x + textPadding[3] / 2 - textPadding[1] / 2)
+            : (x + textPadding[3]);
+    }
+
+    /**
+     * @param {string} text
+     * @param {module:zrender/Style} style
+     * @return {boolean}
+     */
+    helper.needDrawText = function (text, style) {
+        return text != null
+            && (text
+                || style.textBackgroundColor
+                || (style.textBorderWidth && style.textBorderColor)
+                || style.textPadding
+            );
+    };
+
+    return helper;
+
+});
+
 /**
  * @module zrender/graphic/Style
  */
-define('zrender/graphic/Style',['require'],function (require) {
+define('zrender/graphic/Style',['require','./helper/text'],function (require) {
+
+    var textHelper = require('./helper/text');
 
     var STYLE_COMMON_PROPS = [
         ['shadowBlur', 0], ['shadowOffsetX', 0], ['shadowOffsetY', 0], ['shadowColor', '#000'],
@@ -6973,8 +8410,9 @@ define('zrender/graphic/Style',['require'],function (require) {
     // var SHADOW_PROPS = STYLE_COMMON_PROPS.slice(0, 4);
     // var LINE_PROPS = STYLE_COMMON_PROPS.slice(4);
 
-    var Style = function (opts) {
-        this.extendFrom(opts);
+    var Style = function (opts, host) {
+        this.extendFrom(opts, false);
+        this.host = host;
     };
 
     function createLinearGradient(ctx, obj, rect) {
@@ -7018,6 +8456,11 @@ define('zrender/graphic/Style',['require'],function (require) {
     Style.prototype = {
 
         constructor: Style,
+
+        /**
+         * @type {module:zrender/graphic/Displayable}
+         */
+        host: null,
 
         /**
          * @type {string}
@@ -7078,6 +8521,53 @@ define('zrender/graphic/Style',['require'],function (require) {
         text: null,
 
         /**
+         * If `fontSize` or `fontFamily` exists, `font` will be reset by
+         * `fontSize`, `fontStyle`, `fontWeight`, `fontFamily`.
+         * So do not visit it directly in upper application (like echarts),
+         * but use `contain/text#makeFont` instead.
+         * @type {string}
+         */
+        font: null,
+
+        /**
+         * The same as font. Use font please.
+         * @deprecated
+         * @type {string}
+         */
+        textFont: null,
+
+        /**
+         * It helps merging respectively, rather than parsing an entire font string.
+         * @type {string}
+         */
+        fontStyle: null,
+
+        /**
+         * It helps merging respectively, rather than parsing an entire font string.
+         * @type {string}
+         */
+        fontWeight: null,
+
+        /**
+         * It helps merging respectively, rather than parsing an entire font string.
+         * Should be 12 but not '12px'.
+         * @type {number}
+         */
+        fontSize: null,
+
+        /**
+         * It helps merging respectively, rather than parsing an entire font string.
+         * @type {string}
+         */
+        fontFamily: null,
+
+        /**
+         * Reserved for special functinality, like 'hr'.
+         * @type {string}
+         */
+        textTag: null,
+
+        /**
          * @type {string}
          */
         textFill: '#000',
@@ -7088,8 +8578,34 @@ define('zrender/graphic/Style',['require'],function (require) {
         textStroke: null,
 
         /**
+         * @type {number}
+         */
+        textWidth: null,
+
+        /**
+         * Only for textBackground.
+         * @type {number}
+         */
+        textHeight: null,
+
+        /**
+         * textStroke may be set as some color as a default
+         * value in upper applicaion, where the default value
+         * of textLineWidth should be 0 to make sure that
+         * user can choose to do not use text stroke.
+         * @type {number}
+         */
+        textLineWidth: 0,
+
+        /**
+         * @type {number}
+         */
+        textLineHeight: null,
+
+        /**
          * 'inside', 'left', 'right', 'top', 'bottom'
          * [x, y]
+         * Based on x, y of rect.
          * @type {string|Array.<number>}
          * @default 'inside'
          */
@@ -7099,18 +8615,13 @@ define('zrender/graphic/Style',['require'],function (require) {
          * If not specified, use the boundingRect of a `displayable`.
          * @type {Object}
          */
-        textPositionRect: null,
+        textRect: null,
 
         /**
          * [x, y]
          * @type {Array.<number>}
          */
         textOffset: null,
-
-        /**
-         * @type {string}
-         */
-        textBaseline: null,
 
         /**
          * @type {string}
@@ -7123,47 +8634,120 @@ define('zrender/graphic/Style',['require'],function (require) {
         textVerticalAlign: null,
 
         /**
-         * Only useful in Path and Image element
          * @type {number}
          */
         textDistance: 5,
 
         /**
-         * Only useful in Path and Image element
+         * @type {string}
+         */
+        textShadowColor: 'transparent',
+
+        /**
          * @type {number}
          */
         textShadowBlur: 0,
 
         /**
-         * Only useful in Path and Image element
          * @type {number}
          */
         textShadowOffsetX: 0,
 
         /**
-         * Only useful in Path and Image element
          * @type {number}
          */
         textShadowOffsetY: 0,
 
         /**
-         * If transform text
+         * @type {string}
+         */
+        textBoxShadowColor: 'transparent',
+
+        /**
+         * @type {number}
+         */
+        textBoxShadowBlur: 0,
+
+        /**
+         * @type {number}
+         */
+        textBoxShadowOffsetX: 0,
+
+        /**
+         * @type {number}
+         */
+        textBoxShadowOffsetY: 0,
+
+        /**
+         * Whether transform text.
          * Only useful in Path and Image element
          * @type {boolean}
          */
-        textTransform: false,
+        transformText: false,
 
         /**
          * Text rotate around position of Path or Image
-         * Only useful in Path and Image element and textTransform is false.
+         * Only useful in Path and Image element and transformText is false.
          */
         textRotation: 0,
 
         /**
+         * Text origin of text rotation, like [10, 40].
+         * Based on x, y of rect.
+         * Useful in label rotation of circular symbol.
+         * By default, this origin is textPosition.
+         * Can be 'center'.
+         * @type {string|Array.<number>}
+         */
+        textOrigin: null,
+
+        /**
          * @type {string}
+         */
+        textBackgroundColor: null,
+
+        /**
+         * @type {string}
+         */
+        textBorderColor: null,
+
+        /**
+         * @type {number}
+         */
+        textBorderWidth: 0,
+
+        /**
+         * @type {number}
+         */
+        textBorderRadius: 0,
+
+        /**
+         * Can be `2` or `[2, 4]` or `[2, 3, 4, 5]`
+         * @type {number|Array.<number>}
+         */
+        textPadding: null,
+
+        /**
+         * Text styles for rich text.
+         * @type {Object}
+         */
+        rich: null,
+
+        /**
+         * {outerWidth, outerHeight, ellipsis, placeholder}
+         * @type {Object}
+         */
+        truncate: null,
+
+        /**
          * https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/globalCompositeOperation
+         * @type {string}
          */
         blend: null,
+
+        normalize: function () {
+            textHelper.normalizeTextStyle(this);
+        },
 
         /**
          * @param {CanvasRenderingContext2D} ctx
@@ -7217,16 +8801,23 @@ define('zrender/graphic/Style',['require'],function (require) {
         /**
          * Extend from other style
          * @param {zrender/graphic/Style} otherStyle
-         * @param {boolean} overwrite
+         * @param {boolean} overwrite true: overwrirte any way.
+         *                            false: overwrite only when !target.hasOwnProperty
+         *                            others: overwrite when property is not null/undefined.
          */
         extendFrom: function (otherStyle, overwrite) {
             if (otherStyle) {
-                var target = this;
                 for (var name in otherStyle) {
                     if (otherStyle.hasOwnProperty(name)
-                        && (overwrite || ! target.hasOwnProperty(name))
+                        && (overwrite === true
+                            || (
+                                overwrite === false
+                                    ? !this.hasOwnProperty(name)
+                                    : otherStyle[name] != null
+                            )
+                        )
                     ) {
-                        target[name] = otherStyle[name];
+                        this[name] = otherStyle[name];
                     }
                 }
             }
@@ -7267,6 +8858,7 @@ define('zrender/graphic/Style',['require'],function (require) {
             }
             return canvasGradient;
         }
+
     };
 
     var styleProto = Style.prototype;
@@ -7423,7 +9015,7 @@ define('zrender/Layer',['require','./core/util','./config','./graphic/Style','./
 
         initContext: function () {
             this.ctx = this.dom.getContext('2d');
-
+            this.ctx.__currentValues = {};
             this.ctx.dpr = this.dpr;
         },
 
@@ -7432,6 +9024,7 @@ define('zrender/Layer',['require','./core/util','./config','./graphic/Style','./
 
             this.domBack = createDom('back-' + this.id, 'canvas', this.painter, dpr);
             this.ctxBack = this.domBack.getContext('2d');
+            this.ctxBack.__currentValues = {};
 
             if (dpr != 1) {
                 this.ctxBack.scale(dpr, dpr);
@@ -7531,306 +9124,19 @@ define('zrender/Layer',['require','./core/util','./config','./graphic/Style','./
 
     return Layer;
 });
-define('zrender/contain/text',['require','../core/util','../core/BoundingRect'],function (require) {
-
-    var textWidthCache = {};
-    var textWidthCacheCounter = 0;
-    var TEXT_CACHE_MAX = 5000;
-
-    var util = require('../core/util');
-    var BoundingRect = require('../core/BoundingRect');
-    var retrieve = util.retrieve;
-
-    function getTextWidth(text, textFont) {
-        var key = text + ':' + textFont;
-        if (textWidthCache[key]) {
-            return textWidthCache[key];
-        }
-
-        var textLines = (text + '').split('\n');
-        var width = 0;
-
-        for (var i = 0, l = textLines.length; i < l; i++) {
-            // measureText 可以被覆盖以兼容不支持 Canvas 的环境
-            width = Math.max(textContain.measureText(textLines[i], textFont).width, width);
-        }
-
-        if (textWidthCacheCounter > TEXT_CACHE_MAX) {
-            textWidthCacheCounter = 0;
-            textWidthCache = {};
-        }
-        textWidthCacheCounter++;
-        textWidthCache[key] = width;
-
-        return width;
-    }
-
-    function getTextRect(text, textFont, textAlign, textBaseline) {
-        var textLineLen = ((text || '') + '').split('\n').length;
-
-        var width = getTextWidth(text, textFont);
-        // FIXME 高度计算比较粗暴
-        var lineHeight = getTextWidth('国', textFont);
-        var height = textLineLen * lineHeight;
-
-        var rect = new BoundingRect(0, 0, width, height);
-        // Text has a special line height property
-        rect.lineHeight = lineHeight;
-
-        switch (textBaseline) {
-            case 'bottom':
-            case 'alphabetic':
-                rect.y -= lineHeight;
-                break;
-            case 'middle':
-                rect.y -= lineHeight / 2;
-                break;
-            // case 'hanging':
-            // case 'top':
-        }
-
-        // FIXME Right to left language
-        switch (textAlign) {
-            case 'end':
-            case 'right':
-                rect.x -= rect.width;
-                break;
-            case 'center':
-                rect.x -= rect.width / 2;
-                break;
-            // case 'start':
-            // case 'left':
-        }
-
-        return rect;
-    }
-
-    function adjustTextPositionOnRect(textPosition, rect, textRect, distance) {
-
-        var x = rect.x;
-        var y = rect.y;
-
-        var height = rect.height;
-        var width = rect.width;
-
-        var textHeight = textRect.height;
-
-        var lineHeight = textRect.lineHeight;
-        var halfHeight = height / 2 - textHeight / 2 + lineHeight;
-
-        var textAlign = 'left';
-
-        switch (textPosition) {
-            case 'left':
-                x -= distance;
-                y += halfHeight;
-                textAlign = 'right';
-                break;
-            case 'right':
-                x += distance + width;
-                y += halfHeight;
-                textAlign = 'left';
-                break;
-            case 'top':
-                x += width / 2;
-                y -= distance + textHeight - lineHeight;
-                textAlign = 'center';
-                break;
-            case 'bottom':
-                x += width / 2;
-                y += height + distance + lineHeight;
-                textAlign = 'center';
-                break;
-            case 'inside':
-                x += width / 2;
-                y += halfHeight;
-                textAlign = 'center';
-                break;
-            case 'insideLeft':
-                x += distance;
-                y += halfHeight;
-                textAlign = 'left';
-                break;
-            case 'insideRight':
-                x += width - distance;
-                y += halfHeight;
-                textAlign = 'right';
-                break;
-            case 'insideTop':
-                x += width / 2;
-                y += distance + lineHeight;
-                textAlign = 'center';
-                break;
-            case 'insideBottom':
-                x += width / 2;
-                y += height - textHeight - distance + lineHeight;
-                textAlign = 'center';
-                break;
-            case 'insideTopLeft':
-                x += distance;
-                y += distance + lineHeight;
-                textAlign = 'left';
-                break;
-            case 'insideTopRight':
-                x += width - distance;
-                y += distance + lineHeight;
-                textAlign = 'right';
-                break;
-            case 'insideBottomLeft':
-                x += distance;
-                y += height - textHeight - distance + lineHeight;
-                break;
-            case 'insideBottomRight':
-                x += width - distance;
-                y += height - textHeight - distance + lineHeight;
-                textAlign = 'right';
-                break;
-        }
-
-        return {
-            x: x,
-            y: y,
-            textAlign: textAlign,
-            textBaseline: 'alphabetic'
-        };
-    }
-
-    /**
-     * Show ellipsis if overflow.
-     *
-     * @param  {string} text
-     * @param  {string} containerWidth
-     * @param  {string} textFont
-     * @param  {number} [ellipsis='...']
-     * @param  {Object} [options]
-     * @param  {number} [options.maxIterations=3]
-     * @param  {number} [options.minChar=0] If truncate result are less
-     *                  then minChar, ellipsis will not show, which is
-     *                  better for user hint in some cases.
-     * @param  {number} [options.placeholder=''] When all truncated, use the placeholder.
-     * @return {string}
-     */
-    function truncateText(text, containerWidth, textFont, ellipsis, options) {
-        if (!containerWidth) {
-            return '';
-        }
-
-        options = options || {};
-
-        ellipsis = retrieve(ellipsis, '...');
-        var maxIterations = retrieve(options.maxIterations, 2);
-        var minChar = retrieve(options.minChar, 0);
-        // FIXME
-        // Other languages?
-        var cnCharWidth = getTextWidth('国', textFont);
-        // FIXME
-        // Consider proportional font?
-        var ascCharWidth = getTextWidth('a', textFont);
-        var placeholder = retrieve(options.placeholder, '');
-
-        // Example 1: minChar: 3, text: 'asdfzxcv', truncate result: 'asdf', but not: 'a...'.
-        // Example 2: minChar: 3, text: '维度', truncate result: '维', but not: '...'.
-        var contentWidth = containerWidth = Math.max(0, containerWidth - 1); // Reserve some gap.
-        for (var i = 0; i < minChar && contentWidth >= ascCharWidth; i++) {
-            contentWidth -= ascCharWidth;
-        }
-
-        var ellipsisWidth = getTextWidth(ellipsis);
-        if (ellipsisWidth > contentWidth) {
-            ellipsis = '';
-            ellipsisWidth = 0;
-        }
-
-        contentWidth = containerWidth - ellipsisWidth;
-
-        var textLines = (text + '').split('\n');
-
-        for (var i = 0, len = textLines.length; i < len; i++) {
-            var textLine = textLines[i];
-            var lineWidth = getTextWidth(textLine, textFont);
-
-            if (lineWidth <= containerWidth) {
-                continue;
-            }
-
-            for (var j = 0;; j++) {
-                if (lineWidth <= contentWidth || j >= maxIterations) {
-                    textLine += ellipsis;
-                    break;
-                }
-
-                var subLength = j === 0
-                    ? estimateLength(textLine, contentWidth, ascCharWidth, cnCharWidth)
-                    : lineWidth > 0
-                    ? Math.floor(textLine.length * contentWidth / lineWidth)
-                    : 0;
-
-                textLine = textLine.substr(0, subLength);
-                lineWidth = getTextWidth(textLine, textFont);
-            }
-
-            if (textLine === '') {
-                textLine = placeholder;
-            }
-
-            textLines[i] = textLine;
-        }
-
-        return textLines.join('\n');
-    }
-
-    function estimateLength(text, contentWidth, ascCharWidth, cnCharWidth) {
-        var width = 0;
-        var i = 0;
-        for (var len = text.length; i < len && width < contentWidth; i++) {
-            var charCode = text.charCodeAt(i);
-            width += (0 <= charCode && charCode <= 127) ? ascCharWidth : cnCharWidth;
-        }
-        return i;
-    }
-
-    var textContain = {
-
-        getWidth: getTextWidth,
-
-        getBoundingRect: getTextRect,
-
-        adjustTextPositionOnRect: adjustTextPositionOnRect,
-
-        truncateText: truncateText,
-
-        measureText: function (text, textFont) {
-            var ctx = util.getContext();
-            ctx.font = textFont || '12px sans-serif';
-            return ctx.measureText(text);
-        }
-    };
-
-    return textContain;
-});
 /**
  * Mixin for drawing text in a element bounding rect
  * @module zrender/mixin/RectText
  */
 
-define('zrender/graphic/mixin/RectText',['require','../../contain/text','../../core/BoundingRect'],function (require) {
+define('zrender/graphic/mixin/RectText',['require','../helper/text','../../core/BoundingRect'],function (require) {
 
-    var textContain = require('../../contain/text');
+    var textHelper = require('../helper/text');
     var BoundingRect = require('../../core/BoundingRect');
 
     var tmpRect = new BoundingRect();
 
     var RectText = function () {};
-
-    function parsePercent(value, maxValue) {
-        if (typeof value === 'string') {
-            if (value.lastIndexOf('%') >= 0) {
-                return parseFloat(value) / 100 * maxValue;
-            }
-            return parseFloat(value);
-        }
-        return value;
-    }
 
     RectText.prototype = {
 
@@ -7838,38 +9144,32 @@ define('zrender/graphic/mixin/RectText',['require','../../contain/text','../../c
 
         /**
          * Draw text in a rect with specified position.
-         * @param  {CanvasRenderingContext} ctx
+         * @param  {CanvasRenderingContext2D} ctx
          * @param  {Object} rect Displayable rect
-         * @return {Object} textRect Alternative precalculated text bounding rect
          */
-        drawRectText: function (ctx, rect, textRect) {
+        drawRectText: function (ctx, rect) {
             var style = this.style;
+
+            rect = style.textRect || rect;
+
+            // Optimize, avoid normalize every time.
+            this.__dirty && textHelper.normalizeTextStyle(style, true);
+
             var text = style.text;
+
             // Convert to string
             text != null && (text += '');
-            if (!text) {
+
+            if (!textHelper.needDrawText(text, style)) {
                 return;
             }
 
             // FIXME
             ctx.save();
 
-            var x;
-            var y;
-            var textPosition = style.textPosition;
-            var textOffset = style.textOffset;
-            var distance = style.textDistance;
-            var align = style.textAlign;
-            var font = style.textFont || style.font;
-            var baseline = style.textBaseline;
-            var verticalAlign = style.textVerticalAlign;
-            rect = style.textPositionRect || rect;
-
-            textRect = textRect || textContain.getBoundingRect(text, font, align, baseline);
-
             // Transform rect to view space
             var transform = this.transform;
-            if (!style.textTransform) {
+            if (!style.transformText) {
                 if (transform) {
                     tmpRect.copy(rect);
                     tmpRect.applyTransform(transform);
@@ -7880,79 +9180,8 @@ define('zrender/graphic/mixin/RectText',['require','../../contain/text','../../c
                 this.setTransform(ctx);
             }
 
-            // Text position represented by coord
-            if (textPosition instanceof Array) {
-                // Percent
-                x = rect.x + parsePercent(textPosition[0], rect.width);
-                y = rect.y + parsePercent(textPosition[1], rect.height);
-                align = align || 'left';
-                baseline = baseline || 'top';
-
-                if (verticalAlign) {
-                    switch (verticalAlign) {
-                        case 'middle':
-                            y -= textRect.height / 2 - textRect.lineHeight / 2;
-                            break;
-                        case 'bottom':
-                            y -= textRect.height - textRect.lineHeight / 2;
-                            break;
-                        default:
-                            y += textRect.lineHeight / 2;
-                    }
-                    // Force bseline to be middle
-                    baseline = 'middle';
-                }
-            }
-            else {
-                var res = textContain.adjustTextPositionOnRect(
-                    textPosition, rect, textRect, distance
-                );
-                x = res.x;
-                y = res.y;
-                // Default align and baseline when has textPosition
-                align = align || res.textAlign;
-                baseline = baseline || res.textBaseline;
-            }
-
-            if (textOffset) {
-                x += textOffset[0];
-                y += textOffset[1];
-            }
-
-            // Use canvas default left textAlign. Giving invalid value will cause state not change
-            ctx.textAlign = align || 'left';
-            // Use canvas default alphabetic baseline
-            ctx.textBaseline = baseline || 'alphabetic';
-
-            var textFill = style.textFill;
-            var textStroke = style.textStroke;
-            textFill && (ctx.fillStyle = textFill);
-            textStroke && (ctx.strokeStyle = textStroke);
-
-            // TODO Invalid font
-            ctx.font = font || '12px sans-serif';
-
-            // Text shadow
-            // Always set shadowBlur and shadowOffset to avoid leak from displayable
-            ctx.shadowBlur = style.textShadowBlur;
-            ctx.shadowColor = style.textShadowColor || 'transparent';
-            ctx.shadowOffsetX = style.textShadowOffsetX;
-            ctx.shadowOffsetY = style.textShadowOffsetY;
-
-            var textLines = text.split('\n');
-
-            if (style.textRotation) {
-                transform && ctx.translate(transform[4], transform[5]);
-                ctx.rotate(style.textRotation);
-                transform && ctx.translate(-transform[4], -transform[5]);
-            }
-
-            for (var i = 0; i < textLines.length; i++) {
-                // Fill after stroke so the outline will not cover the main part.
-                textStroke && ctx.strokeText(textLines[i], x, y);
-                textFill && ctx.fillText(textLines[i], x, y);
-                y += textRect.lineHeight;
-            }
+            // transformText and textRotation can not be used at the same time.
+            textHelper.renderText(this, ctx, text, style, rect);
 
             ctx.restore();
         }
@@ -8000,7 +9229,7 @@ define('zrender/graphic/Displayable',['require','../core/util','./Style','../Ele
         /**
          * @type {module:zrender/graphic/Style}
          */
-        this.style = new Style(opts.style);
+        this.style = new Style(opts.style, this);
 
         this._rect = null;
         // Shapes for cascade clipping.
@@ -8113,7 +9342,7 @@ define('zrender/graphic/Displayable',['require','../core/util','./Style','../Ele
 
         /**
          * 图形绘制方法
-         * @param {Canvas2DRenderingContext} ctx
+         * @param {CanvasRenderingContext2D} ctx
          */
         // Interface
         brush: function (ctx, prevEl) {},
@@ -8216,7 +9445,7 @@ define('zrender/graphic/Displayable',['require','../core/util','./Style','../Ele
          * @param  {Object} obj
          */
         useStyle: function (obj) {
-            this.style = new Style(obj);
+            this.style = new Style(obj, this);
             this.dirty(false);
             return this;
         }
@@ -8234,14 +9463,13 @@ define('zrender/graphic/Displayable',['require','../core/util','./Style','../Ele
  * @module zrender/graphic/Image
  */
 
-define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect','../core/util','../core/LRU'],function (require) {
+define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect','../core/util','./helper/image'],function (require) {
 
     var Displayable = require('./Displayable');
     var BoundingRect = require('../core/BoundingRect');
     var zrUtil = require('../core/util');
+    var imageHelper = require('./helper/image');
 
-    var LRU = require('../core/LRU');
-    var globalImageCache = new LRU(50);
     /**
      * @alias zrender/graphic/Image
      * @extends module:zrender/graphic/Displayable
@@ -8261,115 +9489,73 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
         brush: function (ctx, prevEl) {
             var style = this.style;
             var src = style.image;
-            var image;
 
             // Must bind each time
             style.bind(ctx, this, prevEl);
-            // style.image is a url string
-            if (typeof src === 'string') {
-                image = this._image;
+
+            var image = this._image = imageHelper.createOrUpdateImage(src, this._image, this);
+
+            if (!image || !imageHelper.isImageReady(image)) {
+                return;
             }
-            // style.image is an HTMLImageElement or HTMLCanvasElement or Canvas
+
+            // 图片已经加载完成
+            // if (image.nodeName.toUpperCase() == 'IMG') {
+            //     if (!image.complete) {
+            //         return;
+            //     }
+            // }
+            // Else is canvas
+
+            var x = style.x || 0;
+            var y = style.y || 0;
+            var width = style.width;
+            var height = style.height;
+            var aspect = image.width / image.height;
+            if (width == null && height != null) {
+                // Keep image/height ratio
+                width = height * aspect;
+            }
+            else if (height == null && width != null) {
+                height = width / aspect;
+            }
+            else if (width == null && height == null) {
+                width = image.width;
+                height = image.height;
+            }
+
+            // 设置transform
+            this.setTransform(ctx);
+
+            if (style.sWidth && style.sHeight) {
+                var sx = style.sx || 0;
+                var sy = style.sy || 0;
+                ctx.drawImage(
+                    image,
+                    sx, sy, style.sWidth, style.sHeight,
+                    x, y, width, height
+                );
+            }
+            else if (style.sx && style.sy) {
+                var sx = style.sx;
+                var sy = style.sy;
+                var sWidth = width - sx;
+                var sHeight = height - sy;
+                ctx.drawImage(
+                    image,
+                    sx, sy, sWidth, sHeight,
+                    x, y, width, height
+                );
+            }
             else {
-                image = src;
-            }
-            // FIXME Case create many images with src
-            if (!image && src) {
-                // Try get from global image cache
-                var cachedImgObj = globalImageCache.get(src);
-                if (!cachedImgObj) {
-                    // Create a new image
-                    image = new Image();
-                    image.onload = function () {
-                        image.onload = null;
-                        for (var i = 0; i < cachedImgObj.pending.length; i++) {
-                            cachedImgObj.pending[i].dirty();
-                        }
-                    };
-                    cachedImgObj = {
-                        image: image,
-                        pending: [this]
-                    };
-                    image.src = src;
-                    globalImageCache.put(src, cachedImgObj);
-                    this._image = image;
-                    return;
-                }
-                else {
-                    image = cachedImgObj.image;
-                    this._image = image;
-                    // Image is not complete finish, add to pending list
-                    if (!image.width || !image.height) {
-                        cachedImgObj.pending.push(this);
-                        return;
-                    }
-                }
+                ctx.drawImage(image, x, y, width, height);
             }
 
-            if (image) {
-                // 图片已经加载完成
-                // if (image.nodeName.toUpperCase() == 'IMG') {
-                //     if (!image.complete) {
-                //         return;
-                //     }
-                // }
-                // Else is canvas
+            this.restoreTransform(ctx);
 
-                var x = style.x || 0;
-                var y = style.y || 0;
-                // 图片加载失败
-                if (!image.width || !image.height) {
-                    return;
-                }
-                var width = style.width;
-                var height = style.height;
-                var aspect = image.width / image.height;
-                if (width == null && height != null) {
-                    // Keep image/height ratio
-                    width = height * aspect;
-                }
-                else if (height == null && width != null) {
-                    height = width / aspect;
-                }
-                else if (width == null && height == null) {
-                    width = image.width;
-                    height = image.height;
-                }
-
-                // 设置transform
-                this.setTransform(ctx);
-
-                if (style.sWidth && style.sHeight) {
-                    var sx = style.sx || 0;
-                    var sy = style.sy || 0;
-                    ctx.drawImage(
-                        image,
-                        sx, sy, style.sWidth, style.sHeight,
-                        x, y, width, height
-                    );
-                }
-                else if (style.sx && style.sy) {
-                    var sx = style.sx;
-                    var sy = style.sy;
-                    var sWidth = width - sx;
-                    var sHeight = height - sy;
-                    ctx.drawImage(
-                        image,
-                        sx, sy, sWidth, sHeight,
-                        x, y, width, height
-                    );
-                }
-                else {
-                    ctx.drawImage(image, x, y, width, height);
-                }
-
-                this.restoreTransform(ctx);
-
-                // Draw rect text
-                if (style.text != null) {
-                    this.drawRectText(ctx, this.getBoundingRect());
-                }
-
+            // Draw rect text
+            if (style.text != null) {
+                this.drawRectText(ctx, this.getBoundingRect());
             }
         },
 
@@ -8508,7 +9694,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
      * @constructor
      * @param {HTMLElement} root 绘图容器
      * @param {module:zrender/Storage} storage
-     * @param {Ojbect} opts
+     * @param {Object} opts
      */
     var Painter = function (root, storage, opts) {
         // In node environment using node-canvas
@@ -8628,6 +9814,16 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
          */
         getViewportRoot: function () {
             return this._domRoot;
+        },
+
+        getViewportRootOffset: function () {
+            var viewportRoot = this.getViewportRoot();
+            if (viewportRoot) {
+                return {
+                    offsetLeft: viewportRoot.offsetLeft || 0,
+                    offsetTop: viewportRoot.offsetTop || 0
+                };
+            }
         },
 
         /**
@@ -9424,6 +10620,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
             }
 
             var root = this.root;
+            // IE8 does not support getComputedStyle, but it use VML.
             var stl = document.defaultView.getComputedStyle(root);
 
             return (
@@ -9510,7 +10707,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
  * https://github.com/ecomfe/zrender/blob/master/LICENSE.txt
  */
 // Global defines
-define('zrender/zrender',['require','./core/guid','./core/env','./core/util','./Handler','./Storage','./animation/Animation','./dom/HandlerProxy','./Painter'],function(require) {
+define('zrender/zrender',['require','./core/guid','./core/env','./core/util','./Handler','./Storage','./animation/Animation','./dom/HandlerProxy','./Painter'],function (require) {
     var guid = require('./core/guid');
     var env = require('./core/env');
     var zrUtil = require('./core/util');
@@ -9533,7 +10730,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./core/util','./
     /**
      * @type {string}
      */
-    zrender.version = '3.5.2';
+    zrender.version = '3.6.0';
 
     /**
      * Initializing a zrender instance
@@ -9545,7 +10742,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./core/util','./
      * @param {number|string} [opts.height] Can be 'auto' (the same as null/undefined)
      * @return {module:zrender/ZRender}
      */
-    zrender.init = function(dom, opts) {
+    zrender.init = function (dom, opts) {
         var zr = new ZRender(guid(), dom, opts);
         instances[zr.id] = zr;
         return zr;
@@ -9595,14 +10792,14 @@ define('zrender/zrender',['require','./core/guid','./core/env','./core/util','./
      * @constructor
      * @alias module:zrender/ZRender
      * @param {string} id
-     * @param {HTMLDomElement} dom
+     * @param {HTMLElement} dom
      * @param {Object} opts
      * @param {string} [opts.renderer='canvas'] 'canvas' or 'svg'
      * @param {number} [opts.devicePixelRatio]
      * @param {number} [opts.width] Can be 'auto' (the same as null/undefined)
      * @param {number} [opts.height] Can be 'auto' (the same as null/undefined)
      */
-    var ZRender = function(id, dom, opts) {
+    var ZRender = function (id, dom, opts) {
 
         opts = opts || {};
 
@@ -9718,6 +10915,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./core/util','./
          * Repaint the canvas immediately
          */
         refreshImmediately: function () {
+            // var start = new Date();
             // Clear needsRefresh ahead to avoid something wrong happens in refresh
             // Or it will cause zrender refreshes again and again.
             this._needsRefresh = false;
@@ -9726,6 +10924,12 @@ define('zrender/zrender',['require','./core/guid','./core/env','./core/util','./
              * Avoid trigger zr.refresh in Element#beforeUpdate hook
              */
             this._needsRefresh = false;
+            // var end = new Date();
+
+            // var log = document.getElementById('log');
+            // if (log) {
+            //     log.innerHTML = log.innerHTML + '<br>' + (end - start);
+            // }
         },
 
         /**
@@ -9944,11 +11148,12 @@ define('zrender', ['zrender/zrender'], function (main) { return main; });
  * Text not support gradient
  */
 
-define('zrender/graphic/Text',['require','./Displayable','../core/util','../contain/text'],function (require) {
+define('zrender/graphic/Text',['require','./Displayable','../core/util','../contain/text','./helper/text'],function (require) {
 
     var Displayable = require('./Displayable');
     var zrUtil = require('../core/util');
     var textContain = require('../contain/text');
+    var textHelper = require('./helper/text');
 
     /**
      * @alias zrender/graphic/Text
@@ -9968,98 +11173,62 @@ define('zrender/graphic/Text',['require','./Displayable','../core/util','../cont
 
         brush: function (ctx, prevEl) {
             var style = this.style;
-            var x = style.x || 0;
-            var y = style.y || 0;
-            // Convert to string
-            var text = style.text;
 
+            // Optimize, avoid normalize every time.
+            this.__dirty && textHelper.normalizeTextStyle(style, true);
+
+            // Use props with prefix 'text'.
+            style.fill = style.stroke = style.shadowBlur = style.shadowColor =
+                style.shadowOffsetX = style.shadowOffsetY = null;
+
+            var text = style.text;
             // Convert to string
             text != null && (text += '');
 
             // Always bind style
             style.bind(ctx, this, prevEl);
 
-            if (text) {
-
-                this.setTransform(ctx);
-
-                var textBaseline;
-                var textAlign = style.textAlign;
-                var font = style.textFont || style.font;
-                if (style.textVerticalAlign) {
-                    var rect = textContain.getBoundingRect(
-                        text, font, style.textAlign, 'top'
-                    );
-                    // Ignore textBaseline
-                    textBaseline = 'middle';
-                    switch (style.textVerticalAlign) {
-                        case 'middle':
-                            y -= rect.height / 2 - rect.lineHeight / 2;
-                            break;
-                        case 'bottom':
-                            y -= rect.height - rect.lineHeight / 2;
-                            break;
-                        default:
-                            y += rect.lineHeight / 2;
-                    }
-                }
-                else {
-                    textBaseline = style.textBaseline;
-                }
-
-                // TODO Invalid font
-                ctx.font = font || '12px sans-serif';
-                ctx.textAlign = textAlign || 'left';
-                // Use canvas default left textAlign. Giving invalid value will cause state not change
-                if (ctx.textAlign !== textAlign) {
-                    ctx.textAlign = 'left';
-                }
-                // FIXME in text contain default is top
-                ctx.textBaseline = textBaseline || 'alphabetic';
-                // Use canvas default alphabetic baseline
-                if (ctx.textBaseline !== textBaseline) {
-                    ctx.textBaseline = 'alphabetic';
-                }
-
-                var lineHeight = textContain.measureText('国', ctx.font).width;
-
-                var textLines = text.split('\n');
-                for (var i = 0; i < textLines.length; i++) {
-                    // Fill after stroke so the outline will not cover the main part.
-                    style.hasStroke() && ctx.strokeText(textLines[i], x, y);
-                    style.hasFill() && ctx.fillText(textLines[i], x, y);
-                    y += lineHeight;
-                }
-
-                this.restoreTransform(ctx);
+            if (!textHelper.needDrawText(text, style)) {
+                return;
             }
+
+            this.setTransform(ctx);
+
+            textHelper.renderText(this, ctx, text, style);
+
+            this.restoreTransform(ctx);
         },
 
         getBoundingRect: function () {
             var style = this.style;
+
+            // Optimize, avoid normalize every time.
+            this.__dirty && textHelper.normalizeTextStyle(style, true);
+
             if (!this._rect) {
-                var textVerticalAlign = style.textVerticalAlign;
+                var text = style.text;
+                text != null ? (text += '') : (text = '');
+
                 var rect = textContain.getBoundingRect(
-                    style.text + '', style.textFont || style.font, style.textAlign,
-                    textVerticalAlign ? 'top' : style.textBaseline
+                    style.text + '',
+                    style.font,
+                    style.textAlign,
+                    style.textVerticalAlign,
+                    style.textPadding,
+                    style.rich
                 );
-                switch (textVerticalAlign) {
-                    case 'middle':
-                        rect.y -= rect.height / 2;
-                        break;
-                    case 'bottom':
-                        rect.y -= rect.height;
-                        break;
-                }
+
                 rect.x += style.x || 0;
                 rect.y += style.y || 0;
-                if (style.hasStroke()) {
-                    var w = style.lineWidth;
+
+                if (textHelper.getStroke(style.textStroke, style.textLineWidth)) {
+                    var w = style.textLineWidth;
                     rect.x -= w / 2;
                     rect.y -= w / 2;
                     rect.width += w;
                     rect.height += w;
                 }
+
                 this._rect = rect;
             }
 
@@ -11527,7 +12696,7 @@ define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./Boun
         /**
          * Rebuild path from current data
          * Rebuild path will not consider javascript implemented line dash.
-         * @param {CanvasRenderingContext} ctx
+         * @param {CanvasRenderingContext2D} ctx
          */
         rebuildPath: function (ctx) {
             var d = this.data;
@@ -12395,7 +13564,6 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
                 ctx.setLineDash([]);
             }
 
-
             this.restoreTransform(ctx);
 
             // Draw rect text
@@ -12802,15 +13970,24 @@ define('zrender/graphic/shape/Circle',['require','../Path'],function (require) {
     });
 });
 
-/**
- * 扇形
- * @module zrender/graphic/shape/Sector
- */
-
-define('zrender/graphic/shape/Sector',['require','../../core/env','../Path'],function (require) {
+define('zrender/graphic/helper/fixClipWithShadow',['require','../../core/env'],function (require) {
 
     var env = require('../../core/env');
-    var Path = require('../Path');
+
+    // Fix weird bug in some version of IE11 (like 11.0.9600.178**),
+    // where exception "unexpected call to method or property access"
+    // might be thrown when calling ctx.fill or ctx.stroke after a path
+    // whose area size is zero is drawn and ctx.clip() is called and
+    // shadowBlur is set. See #4572, #3112, #5777.
+    // (e.g.,
+    //  ctx.moveTo(10, 10);
+    //  ctx.lineTo(20, 10);
+    //  ctx.closePath();
+    //  ctx.clip();
+    //  ctx.shadowBlur = 10;
+    //  ...
+    //  ctx.fill();
+    // )
 
     var shadowTemp = [
         ['shadowBlur', 0],
@@ -12818,6 +13995,61 @@ define('zrender/graphic/shape/Sector',['require','../../core/env','../Path'],fun
         ['shadowOffsetX', 0],
         ['shadowOffsetY', 0]
     ];
+
+    return function (orignalBrush) {
+
+        // version string can be: '11.0'
+        return (env.browser.ie && env.browser.version >= 11)
+
+            ? function () {
+                var clipPaths = this.__clipPaths;
+                var style = this.style;
+                var modified;
+
+                if (clipPaths) {
+                    for (var i = 0; i < clipPaths.length; i++) {
+                        var clipPath = clipPaths[i];
+                        var shape = clipPath && clipPath.shape;
+                        var type = clipPath && clipPath.type;
+
+                        if (shape && (
+                            (type === 'sector' && shape.startAngle === shape.endAngle)
+                            || (type === 'rect' && (!shape.width || !shape.height))
+                        )) {
+                            for (var j = 0; j < shadowTemp.length; j++) {
+                                // It is save to put shadowTemp static, because shadowTemp
+                                // will be all modified each item brush called.
+                                shadowTemp[j][2] = style[shadowTemp[j][0]];
+                                style[shadowTemp[j][0]] = shadowTemp[j][1];
+                            }
+                            modified = true;
+                            break;
+                        }
+                    }
+                }
+
+                orignalBrush.apply(this, arguments);
+
+                if (modified) {
+                    for (var j = 0; j < shadowTemp.length; j++) {
+                        style[shadowTemp[j][0]] = shadowTemp[j][2];
+                    }
+                }
+            }
+
+            : orignalBrush;
+    };
+
+});
+/**
+ * 扇形
+ * @module zrender/graphic/shape/Sector
+ */
+
+define('zrender/graphic/shape/Sector',['require','../Path','../helper/fixClipWithShadow'],function (require) {
+
+    var Path = require('../Path');
+    var fixClipWithShadow = require('../helper/fixClipWithShadow');
 
     return Path.extend({
 
@@ -12840,48 +14072,7 @@ define('zrender/graphic/shape/Sector',['require','../../core/env','../Path'],fun
             clockwise: true
         },
 
-        brush: (env.browser.ie && env.browser.version >= 11) // version: '11.0'
-            // Fix weird bug in some version of IE11 (like 11.0.9600.17801),
-            // where exception "unexpected call to method or property access"
-            // might be thrown when calling ctx.fill after a path whose area size
-            // is zero is drawn and ctx.clip() is called and shadowBlur is set.
-            // (e.g.,
-            //  ctx.moveTo(10, 10);
-            //  ctx.lineTo(20, 10);
-            //  ctx.closePath();
-            //  ctx.clip();
-            //  ctx.shadowBlur = 10;
-            //  ...
-            //  ctx.fill();
-            // )
-            ? function () {
-                var clipPaths = this.__clipPaths;
-                var style = this.style;
-                var modified;
-
-                if (clipPaths) {
-                    for (var i = 0; i < clipPaths.length; i++) {
-                        var shape = clipPaths[i] && clipPaths[i].shape;
-                        if (shape && shape.startAngle === shape.endAngle) {
-                            for (var j = 0; j < shadowTemp.length; j++) {
-                                shadowTemp[j][2] = style[shadowTemp[j][0]];
-                                style[shadowTemp[j][0]] = shadowTemp[j][1];
-                            }
-                            modified = true;
-                            break;
-                        }
-                    }
-                }
-
-                Path.prototype.brush.apply(this, arguments);
-
-                if (modified) {
-                    for (var j = 0; j < shadowTemp.length; j++) {
-                        style[shadowTemp[j][0]] = shadowTemp[j][2];
-                    }
-                }
-            }
-            : Path.prototype.brush,
+        brush: fixClipWithShadow(Path.prototype.brush),
 
         buildPath: function (ctx, shape) {
 
@@ -12981,96 +14172,6 @@ define('zrender/graphic/shape/Ellipse',['require','../Path'],function (require) 
     });
 });
 
-define('zrender/graphic/helper/roundRect',['require'],function (require) {
-
-    return {
-        buildPath: function (ctx, shape) {
-            var x = shape.x;
-            var y = shape.y;
-            var width = shape.width;
-            var height = shape.height;
-            var r = shape.r;
-            var r1;
-            var r2;
-            var r3;
-            var r4;
-
-            // Convert width and height to positive for better borderRadius
-            if (width < 0) {
-                x = x + width;
-                width = -width;
-            }
-            if (height < 0) {
-                y = y + height;
-                height = -height;
-            }
-
-            if (typeof r === 'number') {
-                r1 = r2 = r3 = r4 = r;
-            }
-            else if (r instanceof Array) {
-                if (r.length === 1) {
-                    r1 = r2 = r3 = r4 = r[0];
-                }
-                else if (r.length === 2) {
-                    r1 = r3 = r[0];
-                    r2 = r4 = r[1];
-                }
-                else if (r.length === 3) {
-                    r1 = r[0];
-                    r2 = r4 = r[1];
-                    r3 = r[2];
-                }
-                else {
-                    r1 = r[0];
-                    r2 = r[1];
-                    r3 = r[2];
-                    r4 = r[3];
-                }
-            }
-            else {
-                r1 = r2 = r3 = r4 = 0;
-            }
-
-            var total;
-            if (r1 + r2 > width) {
-                total = r1 + r2;
-                r1 *= width / total;
-                r2 *= width / total;
-            }
-            if (r3 + r4 > width) {
-                total = r3 + r4;
-                r3 *= width / total;
-                r4 *= width / total;
-            }
-            if (r2 + r3 > height) {
-                total = r2 + r3;
-                r2 *= height / total;
-                r3 *= height / total;
-            }
-            if (r1 + r4 > height) {
-                total = r1 + r4;
-                r1 *= height / total;
-                r4 *= height / total;
-            }
-            ctx.moveTo(x + r1, y);
-            ctx.lineTo(x + width - r2, y);
-            r2 !== 0 && ctx.quadraticCurveTo(
-                x + width, y, x + width, y + r2
-            );
-            ctx.lineTo(x + width, y + height - r3);
-            r3 !== 0 && ctx.quadraticCurveTo(
-                x + width, y + height, x + width - r3, y + height
-            );
-            ctx.lineTo(x + r4, y + height);
-            r4 !== 0 && ctx.quadraticCurveTo(
-                x, y + height, x, y + height - r4
-            );
-            ctx.lineTo(x, y + r1);
-            r1 !== 0 && ctx.quadraticCurveTo(x, y, x + r1, y);
-        }
-    };
-});
 /**
  * 矩形
  * @module zrender/graphic/shape/Rect
@@ -13782,6 +14883,7 @@ define('zrender/graphic/Gradient',['require'],function (require) {
     var Gradient = function (colorStops) {
 
         this.colorStops = colorStops || [];
+
     };
 
     Gradient.prototype = {
@@ -13796,6 +14898,7 @@ define('zrender/graphic/Gradient',['require'],function (require) {
                 color: color
             });
         }
+
     };
 
     return Gradient;
@@ -13850,7 +14953,7 @@ if (!require('../core/env').canvasSupported) {
 });
 // http://www.w3.org/TR/NOTE-VML
 // TODO Use proxy like svg instead of overwrite brush methods
-define('zrender/vml/graphic',['require','../core/env','../core/vector','../core/BoundingRect','../core/PathProxy','../tool/color','../contain/text','../graphic/mixin/RectText','../graphic/Displayable','../graphic/Image','../graphic/Text','../graphic/Path','../core/PathProxy','../graphic/Gradient','./core'],function (require) {
+define('zrender/vml/graphic',['require','../core/env','../core/vector','../core/BoundingRect','../core/PathProxy','../tool/color','../contain/text','../graphic/helper/text','../graphic/mixin/RectText','../graphic/Displayable','../graphic/Image','../graphic/Text','../graphic/Path','../core/PathProxy','../graphic/Gradient','./core'],function (require) {
 
 if (!require('../core/env').canvasSupported) {
     var vec2 = require('../core/vector');
@@ -13858,6 +14961,7 @@ if (!require('../core/env').canvasSupported) {
     var CMD = require('../core/PathProxy').CMD;
     var colorTool = require('../tool/color');
     var textContain = require('../contain/text');
+    var textHelper = require('../graphic/helper/text');
     var RectText = require('../graphic/mixin/RectText');
     var Displayable = require('../graphic/Displayable');
     var ZImage = require('../graphic/Image');
@@ -14671,6 +15775,10 @@ if (!require('../core/env').canvasSupported) {
     var drawRectText = function (vmlRoot, rect, textRect, fromTextEl) {
 
         var style = this.style;
+
+        // Optimize, avoid normalize every time.
+        this.__dirty && textHelper.normalizeTextStyle(style, true);
+
         var text = style.text;
         // Convert to string
         text != null && (text += '');
@@ -14678,18 +15786,33 @@ if (!require('../core/env').canvasSupported) {
             return;
         }
 
+        // Convert rich text to plain text. Rich text is not supported in
+        // IE8-, but tags in rich text template will be removed.
+        if (style.rich) {
+            var contentBlock = textContain.parseRichText(text, style);
+            text = [];
+            for (var i = 0; i < contentBlock.lines.length; i++) {
+                var tokens = contentBlock.lines[i].tokens;
+                var textLine = [];
+                for (var j = 0; j < tokens.length; j++) {
+                    textLine.push(tokens[j].text);
+                }
+                text.push(textLine.join(''));
+            }
+            text = text.join('\n');
+        }
+
         var x;
         var y;
         var align = style.textAlign;
-        var fontStyle = getFontStyle(style.textFont);
+        var verticalAlign = style.textVerticalAlign;
+
+        var fontStyle = getFontStyle(style.font);
         // FIXME encodeHtmlAttribute ?
         var font = fontStyle.style + ' ' + fontStyle.variant + ' ' + fontStyle.weight + ' '
             + fontStyle.size + 'px "' + fontStyle.family + '"';
 
-        var baseline = style.textBaseline;
-        var verticalAlign = style.textVerticalAlign;
-
-        textRect = textRect || textContain.getBoundingRect(text, font, align, baseline);
+        textRect = textRect || textContain.getBoundingRect(text, font, align, verticalAlign);
 
         // Transform rect to view space
         var m = this.transform;
@@ -14709,64 +15832,57 @@ if (!require('../core/env').canvasSupported) {
                 y = rect.y + parsePercent(textPosition[1], rect.height);
 
                 align = align || 'left';
-                baseline = baseline || 'top';
             }
             else {
                 var res = textContain.adjustTextPositionOnRect(
-                    textPosition, rect, textRect, distance
+                    textPosition, rect, distance
                 );
                 x = res.x;
                 y = res.y;
 
                 // Default align and baseline when has textPosition
                 align = align || res.textAlign;
-                baseline = baseline || res.textBaseline;
+                verticalAlign = verticalAlign || res.textVerticalAlign;
             }
         }
         else {
             x = rect.x;
             y = rect.y;
         }
-        if (verticalAlign) {
-            switch (verticalAlign) {
-                case 'middle':
-                    y -= textRect.height / 2;
-                    break;
-                case 'bottom':
-                    y -= textRect.height;
-                    break;
-                // 'top'
-            }
-            // Ignore baseline
-            baseline = 'top';
-        }
 
-        var fontSize = fontStyle.size;
+        x = textContain.adjustTextX(x, textRect.width, align);
+        y = textContain.adjustTextY(y, textRect.height, verticalAlign);
+
+        // Force baseline 'middle'
+        y += textRect.height / 2;
+
+        // var fontSize = fontStyle.size;
         // 1.75 is an arbitrary number, as there is no info about the text baseline
-        switch (baseline) {
-            case 'hanging':
-            case 'top':
-                y += fontSize / 1.75;
-                break;
-            case 'middle':
-                break;
-            default:
-            // case null:
-            // case 'alphabetic':
-            // case 'ideographic':
-            // case 'bottom':
-                y -= fontSize / 2.25;
-                break;
-        }
-        switch (align) {
-            case 'left':
-                break;
-            case 'center':
-                x -= textRect.width / 2;
-                break;
-            case 'right':
-                x -= textRect.width;
-                break;
+        // switch (baseline) {
+            // case 'hanging':
+            // case 'top':
+            //     y += fontSize / 1.75;
+            //     break;
+        //     case 'middle':
+        //         break;
+        //     default:
+        //     // case null:
+        //     // case 'alphabetic':
+        //     // case 'ideographic':
+        //     // case 'bottom':
+        //         y -= fontSize / 2.25;
+        //         break;
+        // }
+
+        // switch (align) {
+        //     case 'left':
+        //         break;
+        //     case 'center':
+        //         x -= textRect.width / 2;
+        //         break;
+        //     case 'right':
+        //         x -= textRect.width;
+        //         break;
             // case 'end':
                 // align = elementStyle.direction == 'ltr' ? 'right' : 'left';
                 // break;
@@ -14775,7 +15891,7 @@ if (!require('../core/env').canvasSupported) {
                 // break;
             // default:
             //     align = 'left';
-        }
+        // }
 
         var createNode = vmlCore.createNode;
 
@@ -14975,6 +16091,16 @@ define('zrender/vml/Painter',['require','../core/log','./core'],function (requir
          */
         getViewportRoot: function () {
             return this._vmlViewport;
+        },
+
+        getViewportRootOffset: function () {
+            var viewportRoot = this.getViewportRoot();
+            if (viewportRoot) {
+                return {
+                    offsetLeft: viewportRoot.offsetLeft || 0,
+                    offsetTop: viewportRoot.offsetTop || 0
+                };
+            }
         },
 
         /**

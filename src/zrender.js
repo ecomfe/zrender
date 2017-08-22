@@ -31,7 +31,7 @@ define(function (require) {
     /**
      * @type {string}
      */
-    zrender.version = '3.5.2';
+    zrender.version = '3.6.0';
 
     /**
      * Initializing a zrender instance
@@ -216,7 +216,7 @@ define(function (require) {
          * Repaint the canvas immediately
          */
         refreshImmediately: function () {
-            var start = new Date();
+            // var start = new Date();
             // Clear needsRefresh ahead to avoid something wrong happens in refresh
             // Or it will cause zrender refreshes again and again.
             this._needsRefresh = false;
@@ -225,12 +225,12 @@ define(function (require) {
              * Avoid trigger zr.refresh in Element#beforeUpdate hook
              */
             this._needsRefresh = false;
-            var end = new Date();
+            // var end = new Date();
 
-            var log = document.getElementById('log');
-            if (log) {
-                log.innerHTML = log.innerHTML + '<br>' + (end - start);
-            }
+            // var log = document.getElementById('log');
+            // if (log) {
+            //     log.innerHTML = log.innerHTML + '<br>' + (end - start);
+            // }
         },
 
         /**

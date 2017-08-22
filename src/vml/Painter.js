@@ -71,6 +71,16 @@ define(function (require) {
             return this._vmlViewport;
         },
 
+        getViewportRootOffset: function () {
+            var viewportRoot = this.getViewportRoot();
+            if (viewportRoot) {
+                return {
+                    offsetLeft: viewportRoot.offsetLeft || 0,
+                    offsetTop: viewportRoot.offsetTop || 0
+                };
+            }
+        },
+
         /**
          * 刷新
          */
