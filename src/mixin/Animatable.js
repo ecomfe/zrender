@@ -113,6 +113,9 @@ define(function(require) {
         },
 
         /**
+         * Caution: this method will stop previous animation.
+         * So if do not use this method to one element twice before
+         * animation starts, unless you know what you are doing.
          * @param {Object} target
          * @param {number} [time=500] Time in ms
          * @param {string} [easing='linear']
