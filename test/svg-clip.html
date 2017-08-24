@@ -152,40 +152,44 @@
 
             var text2 = new Rect({
                 shape: {
-                    x: 500,
-                    y: 40,
+                    x: 20,
+                    y: 20,
                     width: 200,
-                    height: 30
+                    height: 100
                 },
                 style: {
-                    text: 'World! I like this world...',
+                    text: 'XXXXXXXXXXXXXXXXX\nXXXXXXXXXXXXXXXXX\nXXXXXXXXXXXXXXXXX\nXXXXXXXXXXXXXXXXX\nXXXXXXXXXXXXXXXXX\nXXXXXXXXXXXXXXXXX\n',
                     fill: 'transparent',
                     textFill: 'red',
-                    font: '50px serif'
-                }
+                    font: '20px serif'
+                },
+                position: [400, 20]
             });
             var text2Clip1 = new Rect({
                 shape: {
-                    x: 520,
-                    y: 40,
-                    width: 280,
-                    height: 40
+                    x: 20,
+                    y: 20,
+                    width: 100,
+                    height: 80
                 }
             });
             var text2Clip2 = new Rect({
                 shape: {
-                    x: 500,
-                    y: 50,
-                    width: 320,
-                    height: 30
+                    x: 140,
+                    y: 20,
+                    width: 80,
+                    height: 60
                 }
             });
 
             var bound = new Circle({
                 shape: {
-                    cx: 650,
-                    cy: 30,
-                    r: 100
+                    cx: 120,
+                    cy: 70,
+                    r: 80
+                },
+                style: {
+                    fill: '#ff0'
                 }
             });
 
@@ -201,9 +205,33 @@
             group.setClipPath(bound);
 
             text2.setClipPath(group);
-            // zr.add(group);
 
             zr.add(text2);
+
+            var parent = new Rect({
+                shape: {
+                    x: 10,
+                    y: 10,
+                    width: 100,
+                    height: 100
+                },
+                position: [20, 200],
+                rotation: Math.PI / 6,
+                style: {
+                    fill: 'red'
+                }
+            });
+            zr.add(parent);
+
+            var child = new Circle({
+                shape: {
+                    cx: 110,
+                    cy: 110,
+                    r: 100
+                },
+                position: [40, 40]
+            });
+            parent.setClipPath(child);
         }
     );
     </script>
