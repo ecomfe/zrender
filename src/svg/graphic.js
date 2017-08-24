@@ -360,6 +360,10 @@ define(function (require) {
         var textPosition = style.textPosition;
         var distance = style.textDistance;
         var align = style.textAlign || 'left';
+
+        if (typeof style.fontSize === 'number') {
+            style.fontSize += 'px';
+        }
         var font = style.font
             || [
                 style.fontStyle || '',
