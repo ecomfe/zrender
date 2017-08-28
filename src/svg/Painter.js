@@ -552,7 +552,6 @@ define(function (require) {
 
                     // Use a dom that is already in <defs>
                     if (!defs.contains(clipPathEl)) {
-                        console.log('add back');
                         // This happens when set old clipPath that has
                         // been previously removed
                         defs.appendChild(clipPathEl);
