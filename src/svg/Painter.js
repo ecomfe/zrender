@@ -467,10 +467,26 @@ define(function (require) {
             if (defs.length === 0) {
                 // Not exist
                 if (isForceCreating) {
-                    return svgRoot.insertBefore(
+                    var defs = svgRoot.insertBefore(
                         createElement('defs'), // Create new tag
                         svgRoot.firstChild // Insert in the front of svg
                     );
+                    if (!defs.contains) {
+                        // IE doesn't support contains method
+                        defs.contains = function (el) {
+                            var children = defs.children;
+                            if (!children) {
+                                return false;
+                            }
+                            for (var i = children.length - 1; i >= 0; --i) {
+                                if (children[i] === el) {
+                                    return true;
+                                }
+                            }
+                            return false;
+                        };
+                    }
+                    return defs;
                 }
                 else {
                     return null;
@@ -567,7 +583,9 @@ define(function (require) {
                      * transform.
                      */
                     // Store old transform
-                    var transform = clipPath.transform.slice();
+                    var transform = Array.prototype.slice.call(
+                        clipPath.transform
+                    );
 
                     // Transform back from parent, and brush path
                     matrix.mul(
