@@ -68,7 +68,7 @@ define(function (require) {
         /**
          * @type {string}
          */
-        fill: '#000000',
+        fill: '#000',
 
         /**
          * @type {string}
@@ -347,10 +347,6 @@ define(function (require) {
          * @type {string}
          */
         blend: null,
-
-        normalize: function () {
-            textHelper.normalizeTextStyle(this);
-        },
 
         /**
          * @param {CanvasRenderingContext2D} ctx
