@@ -6,6 +6,7 @@
 define(function (require) {
     var svgCore = require('./core');
     var zrLog = require('../core/log');
+    var matrix = require('../core/matrix');
     var Path = require('../graphic/Path');
     var ZImage = require('../graphic/Image');
     var ZText = require('../graphic/Text');
@@ -20,10 +21,12 @@ define(function (require) {
     var createElement = svgCore.createElement;
 
     var GRADIENT_MARK = '_gradientInUse';
-    var GRADIENT_MARK_UNUSED = '0';
-    var GRADIENT_MARK_USED = '1';
+    var CLIPPATH_MARK = '_clipPathInUse';
+    var MARK_UNUSED = '0';
+    var MARK_USED = '1';
 
     var nextGradientId = 1;
+    var nextClippathId = 1;
 
     function parseInt10(val) {
         return parseInt(val, 10);
@@ -38,6 +41,9 @@ define(function (require) {
         }
         else if (el instanceof ZText) {
             return svgText;
+        }
+        else {
+            return svgPath;
         }
     }
 
@@ -133,6 +139,7 @@ define(function (require) {
 
         _paintList: function (list) {
             this._markGradientsUnused();
+            this._markClipPathsUnused();
 
             var svgRoot = this._svgRoot;
             var visibleList = this._visibleList;
@@ -146,6 +153,9 @@ define(function (require) {
                 if (!displayable.invisible) {
                     if (displayable.__dirty) {
                         svgProxy && svgProxy.brush(displayable);
+                        var el = getSvgElement(displayable)
+                            || getTextSvgElement(displayable);
+                        this._doClip(displayable, el);
 
                         // Update gradient
                         if (displayable.style) {
@@ -181,8 +191,9 @@ define(function (require) {
                         prevSvgElement
                             = svgElement
                             = getTextSvgElement(displayable)
-                                || getSvgElement(displayable);
+                            || getSvgElement(displayable);
                         this._markGradientUsed(displayable);
+                        this._markClipPathUsed(displayable);
                         break;
                     case '+':
                         var displayable = newVisibleList[item.idx];
@@ -202,7 +213,7 @@ define(function (require) {
                         // Insert text
                         insertAfter(svgRoot, textSvgElement, svgElement);
                         prevSvgElement = textSvgElement || svgElement;
-
+                        this._markClipPathUsed(displayable);
                         break;
                     // case '^':
                         // var displayable = visibleList[item.idx];
@@ -216,7 +227,8 @@ define(function (require) {
                 this._createGradient(svgElement, displayable, 'stroke');
             }
 
-            this._removeUnusedGradient();
+            this._removeUnusedGradients();
+            this._removeUnusedClipPaths();
 
             this._visibleList = newVisibleList;
         },
@@ -233,7 +245,7 @@ define(function (require) {
                 && displayable.style
                 && displayable.style[fillOrStroke]
                 && (displayable.style[fillOrStroke].type === 'linear'
-                || displayable.style[fillOrStroke].type === 'radial')
+                    || displayable.style[fillOrStroke].type === 'radial')
             ) {
                 var gradient = displayable.style[fillOrStroke];
                 var defs = this._getDefs(true);
@@ -253,7 +265,7 @@ define(function (require) {
                 }
 
                 // Mark gradient to be used
-                dom[GRADIENT_MARK] = GRADIENT_MARK_USED;
+                dom[GRADIENT_MARK] = MARK_USED;
 
                 var id = dom.getAttribute('id');
                 svgElement.setAttribute(fillOrStroke, 'url(#' + id + ')');
@@ -400,14 +412,14 @@ define(function (require) {
         _markGradientsUnused: function () {
             var doms = this._getGradients();
             util.each(doms, function (dom) {
-                dom[GRADIENT_MARK] = GRADIENT_MARK_UNUSED;
+                dom[GRADIENT_MARK] = MARK_UNUSED;
             });
         },
 
         /**
          * Remove unused gradients defined in <defs>
          */
-        _removeUnusedGradient: function () {
+        _removeUnusedGradients: function () {
             var defs = this._getDefs(false);
             if (!defs) {
                 // Nothing to remove
@@ -416,7 +428,7 @@ define(function (require) {
 
             var doms = this._getGradients();
             util.each(doms, function (dom) {
-                if (dom[GRADIENT_MARK] !== GRADIENT_MARK_USED) {
+                if (dom[GRADIENT_MARK] !== MARK_USED) {
                     // Remove gradient
                     defs.removeChild(dom);
                 }
@@ -432,12 +444,12 @@ define(function (require) {
             if (displayable.style) {
                 var gradient = displayable.style.fill;
                 if (gradient && gradient.__dom) {
-                    gradient.__dom[GRADIENT_MARK] = GRADIENT_MARK_USED;
+                    gradient.__dom[GRADIENT_MARK] = MARK_USED;
                 }
 
                 gradient = displayable.style.stroke;
                 if (gradient && gradient.__dom) {
-                    gradient.__dom[GRADIENT_MARK] = GRADIENT_MARK_USED;
+                    gradient.__dom[GRADIENT_MARK] = MARK_USED;
                 }
             }
         },
@@ -455,10 +467,26 @@ define(function (require) {
             if (defs.length === 0) {
                 // Not exist
                 if (isForceCreating) {
-                    return svgRoot.insertBefore(
+                    var defs = svgRoot.insertBefore(
                         createElement('defs'), // Create new tag
                         svgRoot.firstChild // Insert in the front of svg
                     );
+                    if (!defs.contains) {
+                        // IE doesn't support contains method
+                        defs.contains = function (el) {
+                            var children = defs.children;
+                            if (!children) {
+                                return false;
+                            }
+                            for (var i = children.length - 1; i >= 0; --i) {
+                                if (children[i] === el) {
+                                    return true;
+                                }
+                            }
+                            return false;
+                        };
+                    }
+                    return defs;
                 }
                 else {
                     return null;
@@ -483,11 +511,156 @@ define(function (require) {
                 var tags = defs.getElementsByTagName(type + 'Gradient');
                 // Note that tags is HTMLCollection, which is array-like
                 // rather than real array.
-                // So`doms.concat(tags)` add tags as one object.
+                // So `doms.concat(tags)` add tags as one object.
                 doms = doms.concat([].slice.call(tags));
             });
 
             return doms;
+        },
+
+        _doClip: function (el, svgElement) {
+            this._doClipEl(svgElement, el.__clipPaths, false);
+
+            var textEl = getTextSvgElement(el);
+            if (textEl) {
+                // Make another clipPath for text, since it's transform
+                // matrix is not the same with svgElement
+                this._doClipEl(textEl, el.__clipPaths, true);
+            }
+
+            this._markClipPathUsed(el);
+        },
+
+        /**
+         * Create an SVGElement of displayable and create a <clipPath> of its
+         * clipPath
+         */
+        _doClipEl: function (parentEl, clipPaths, isText) {
+            if (clipPaths && clipPaths.length > 0) {
+                // Has clipPath, create <clipPath> with the first clipPath
+                var defs = this._getDefs(true);
+                var clipPath = clipPaths[0];
+                var clipPathEl;
+                var id;
+
+                var dom = isText ? '__textDom' : '__dom';
+
+                if (clipPath[dom]) {
+                    // Use a dom that is already in <defs>
+                    id = clipPath[dom].getAttribute('id');
+                    clipPathEl = clipPath[dom];
+
+                    // Use a dom that is already in <defs>
+                    if (!defs.contains(clipPathEl)) {
+                        // This happens when set old clipPath that has
+                        // been previously removed
+                        defs.appendChild(clipPathEl);
+                    }
+                }
+                else {
+                    // New <clipPath>
+                    id = 'zr-clip-' + nextClippathId;
+                    ++nextClippathId;
+                    clipPathEl = createElement('clipPath');
+                    clipPathEl.setAttribute('id', id);
+                    defs.appendChild(clipPathEl);
+
+                    clipPath[dom] = clipPathEl;
+                }
+
+                // Build path and add to <clipPath>
+                var svgProxy = getSvgProxy(clipPath);
+                if (clipPath.transform
+                    && clipPath.parent.invTransform
+                    && !isText
+                ) {
+                    /**
+                     * If a clipPath has a parent with transform, the transform
+                     * of parent should not be considered when setting transform
+                     * of clipPath. So we need to transform back from parent's
+                     * transform, which is done by multiplying parent's inverse
+                     * transform.
+                     */
+                    // Store old transform
+                    var transform = Array.prototype.slice.call(
+                        clipPath.transform
+                    );
+
+                    // Transform back from parent, and brush path
+                    matrix.mul(
+                        clipPath.transform,
+                        clipPath.parent.invTransform,
+                        clipPath.transform
+                    );
+                    svgProxy.brush(clipPath);
+
+                    // Set back transform of clipPath
+                    clipPath.transform = transform;
+                }
+                else {
+                    svgProxy.brush(clipPath);
+                }
+
+                var pathEl = getSvgElement(clipPath);
+                clipPathEl.appendChild(pathEl);
+
+                parentEl.setAttribute('clip-path', 'url(#' + id + ')');
+
+                if (clipPaths.length > 1) {
+                    // Make the other clipPaths recursively
+                    this._doClipEl(clipPathEl, clipPaths.slice(1), isText);
+                }
+            }
+            else {
+                // No clipPath
+                parentEl.setAttribute('clip-path', 'none');
+            }
+
+        },
+
+        _markClipPathsUnused: function () {
+            var tags = this._getClipPaths();
+            util.each(tags, function (tag) {
+                tag[CLIPPATH_MARK] = MARK_UNUSED;
+            });
+        },
+
+        _markClipPathUsed: function (displayable) {
+            if (displayable.__clipPaths && displayable.__clipPaths.length > 0) {
+                util.each(displayable.__clipPaths, function (clipPath) {
+                    if (clipPath.__dom) {
+                        clipPath.__dom[CLIPPATH_MARK] = MARK_USED;
+                    }
+                    if (clipPath.__textDom) {
+                        clipPath.__textDom[CLIPPATH_MARK] = MARK_USED;
+                    }
+                });
+            }
+        },
+
+        _getClipPaths: function () {
+            var defs = this._getDefs(false);
+            if (!defs) {
+                return [];
+            }
+
+            var tags = defs.getElementsByTagName('clipPath');
+            return [].slice.call(tags);
+        },
+
+        _removeUnusedClipPaths: function () {
+            var defs = this._getDefs(false);
+            if (!defs) {
+                // Nothing to remove
+                return;
+            }
+
+            var doms = this._getClipPaths();
+            util.each(doms, function (dom) {
+                if (dom[CLIPPATH_MARK] !== MARK_USED) {
+                    defs.removeChild(dom);
+                }
+            });
         },
 
         resize: function () {
@@ -548,7 +721,7 @@ define(function (require) {
                 this.root.removeChild(this._viewport);
             }
         }
-    }
+    };
 
     // Not supported methods
     function createMethodNotSupport(method) {

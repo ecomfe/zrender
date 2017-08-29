@@ -61,7 +61,29 @@ define(function (require) {
 
     function bindStyle(svgEl, style, isText) {
         if (pathHasFill(style, isText)) {
-            attr(svgEl, 'fill', isText ? style.textFill : style.fill);
+            var fill = isText ? style.textFill : style.fill;
+            fill = fill === 'transparent' ? NONE : fill;
+
+            /**
+             * FIXME:
+             * This is a temporary fix for Chrome's clipping bug
+             * that happens when a clip-path is referring another one.
+             * This fix should be used before Chrome's bug is fixed.
+             * For an element that has clip-path, and fill is none,
+             * set it to be "rgba(0, 0, 0, 0.002)" will hide the element.
+             * Otherwise, it will show black fill color.
+             * 0.002 is used because this won't work for alpha values smaller
+             * than 0.002.
+             *
+             * See
+             * https://bugs.chromium.org/p/chromium/issues/detail?id=659790
+             * for more information.
+             */
+            if (svgEl.getAttribute('clip-path') !== 'none' && fill === NONE) {
+                fill = 'rgba(0, 0, 0, 0.002)';
+            }
+
+            attr(svgEl, 'fill', fill);
             attr(svgEl, 'fill-opacity', style.opacity);
         }
         else {
@@ -69,7 +91,9 @@ define(function (require) {
         }
 
         if (pathHasStroke(style, isText)) {
-            attr(svgEl, 'stroke', isText ? style.textStroke : style.stroke);
+            var stroke = isText ? style.textStroke : style.stroke;
+            stroke = stroke === 'transparent' ? NONE : stroke;
+            attr(svgEl, 'stroke', stroke);
             var strokeWidth = isText
                 ? style.textLineWidth
                 : style.lineWidth;
@@ -336,7 +360,18 @@ define(function (require) {
         var textPosition = style.textPosition;
         var distance = style.textDistance;
         var align = style.textAlign || 'left';
-        var font = style.font || textContain.DEFAULT_FONT;
+
+        if (typeof style.fontSize === 'number') {
+            style.fontSize += 'px';
+        }
+        var font = style.font
+            || [
+                style.fontStyle || '',
+                style.fontWeight || '',
+                style.fontSize || '',
+                style.fontFamily || ''
+            ].join(' ')
+            || textContain.DEFAULT_FONT;
 
         var verticalAlign = getVerticalAlignForSvg(style.textVerticalAlign);
 
@@ -356,6 +391,7 @@ define(function (require) {
             x = newPos.x;
             y = newPos.y;
             verticalAlign = getVerticalAlignForSvg(newPos.textVerticalAlign);
+            align = newPos.textAlign;
         }
 
         attr(textSvgEl, 'alignment-baseline', verticalAlign);
