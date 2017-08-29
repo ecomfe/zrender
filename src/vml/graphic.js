@@ -1011,11 +1011,11 @@ if (!require('../core/env').canvasSupported) {
         catch (e) {}
 
         updateFillAndStroke(textVmlEl, 'fill', {
-            fill: fromTextEl ? style.fill : style.textFill,
+            fill: style.textFill,
             opacity: style.opacity
         }, this);
         updateFillAndStroke(textVmlEl, 'stroke', {
-            stroke: fromTextEl ? style.stroke : style.textStroke,
+            stroke: style.textStroke,
             opacity: style.opacity,
             lineDash: style.lineDash
         }, this);
