@@ -596,7 +596,7 @@ define(function(require) {
         },
         // Do not use this method if performance sensitive.
         removeKey: function (key) {
-            delete this[key];
+            delete this[HASH_MAP_PREFIX + key];
         }
     };
 
