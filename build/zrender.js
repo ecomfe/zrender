@@ -740,7 +740,7 @@ define('zrender/core/util',['require'],function(require) {
         },
         // Do not use this method if performance sensitive.
         removeKey: function (key) {
-            delete this[key];
+            delete this[HASH_MAP_PREFIX + key];
         }
     };
 
@@ -4247,6 +4247,9 @@ define('zrender/mixin/Animatable',['require','../animation/Animator','../core/ut
         },
 
         /**
+         * Caution: this method will stop previous animation.
+         * So do not use this method to one element twice before
+         * animation starts, unless you know what you are doing.
          * @param {Object} target
          * @param {number} [time=500] Time in ms
          * @param {string} [easing='linear']
@@ -8465,7 +8468,7 @@ define('zrender/graphic/Style',['require','./helper/text'],function (require) {
         /**
          * @type {string}
          */
-        fill: '#000000',
+        fill: '#000',
 
         /**
          * @type {string}
@@ -8744,10 +8747,6 @@ define('zrender/graphic/Style',['require','./helper/text'],function (require) {
          * @type {string}
          */
         blend: null,
-
-        normalize: function () {
-            textHelper.normalizeTextStyle(this);
-        },
 
         /**
          * @param {CanvasRenderingContext2D} ctx
@@ -10730,7 +10729,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./core/util','./
     /**
      * @type {string}
      */
-    zrender.version = '3.6.0';
+    zrender.version = '3.6.1';
 
     /**
      * Initializing a zrender instance
@@ -15964,11 +15963,11 @@ if (!require('../core/env').canvasSupported) {
         catch (e) {}
 
         updateFillAndStroke(textVmlEl, 'fill', {
-            fill: fromTextEl ? style.fill : style.textFill,
+            fill: style.textFill,
             opacity: style.opacity
         }, this);
         updateFillAndStroke(textVmlEl, 'stroke', {
-            stroke: fromTextEl ? style.stroke : style.textStroke,
+            stroke: style.textStroke,
             opacity: style.opacity,
             lineDash: style.lineDash
         }, this);
