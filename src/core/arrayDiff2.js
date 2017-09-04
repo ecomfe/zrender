@@ -159,26 +159,7 @@ define(function (require) {
                 }
                 component.indices = indices;
                 oldPos += component.count;
-
-                // Reverse add and remove so removes are output first to match common convention
-                // The diffing algorithm is tied to add then remove output and this is the simplest
-                // route to get the desired output with minimal overhead.
-                if (componentPos && components[componentPos - 1].added) {
-                    var tmp = components[componentPos - 1];
-                    components[componentPos - 1] = components[componentPos];
-                    components[componentPos] = tmp;
-                }
             }
-        }
-
-        // Special case handle for when one terminal is ignored. For this case we merge the
-        // terminal into the prior string and drop the change.
-        var lastComponent = components[componentLen - 1];
-        if (componentLen > 1
-                && (lastComponent.added || lastComponent.removed)
-                && diff.equals('', lastComponent.value)) {
-            components[componentLen - 2].value += lastComponent.value;
-            components.pop();
         }
 
         return components;

@@ -209,9 +209,9 @@ define(function (require) {
                         this._markClipPathUsed(displayable);
                     }
                 }
-                else {
+                else if (!item.removed) {
                     for (var k = 0; k < item.count; k++) {
-                        var displayable = visibleList[item.indices[k]];
+                        var displayable = newVisibleList[item.indices[k]];
                         prevSvgElement
                             = svgElement
                             = getTextSvgElement(displayable)
