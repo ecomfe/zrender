@@ -10,7 +10,7 @@ define(function (require) {
     var Path = require('../graphic/Path');
     var ZImage = require('../graphic/Image');
     var ZText = require('../graphic/Text');
-    var arrayDiff = require('../core/arrayDiff');
+    var arrayDiff = require('../core/arrayDiff2');
     var util = require('../core/util');
 
     var svgGraphic = require('./graphic');
@@ -175,28 +175,21 @@ define(function (require) {
             // First do remove, in case element moved to the head and do remove after add
             for (i = 0; i < diff.length; i++) {
                 var item = diff[i];
-                if (item.cmd === '-') {
-                    var displayable = visibleList[item.idx];
-                    var svgElement = getSvgElement(displayable);
-                    var textSvgElement = getTextSvgElement(displayable);
-                    remove(svgRoot, svgElement);
-                    remove(svgRoot, textSvgElement);
+                if (item.removed) {
+                    for (var k = 0; k < item.count; k++) {
+                        var displayable = visibleList[item.indices[k]];
+                        var svgElement = getSvgElement(displayable);
+                        var textSvgElement = getTextSvgElement(displayable);
+                        remove(svgRoot, svgElement);
+                        remove(svgRoot, textSvgElement);
+                    }
                 }
             }
             for (i = 0; i < diff.length; i++) {
                 var item = diff[i];
-                switch (item.cmd) {
-                    case '=':
-                        var displayable = visibleList[item.idx];
-                        prevSvgElement
-                            = svgElement
-                            = getTextSvgElement(displayable)
-                            || getSvgElement(displayable);
-                        this._markGradientUsed(displayable);
-                        this._markClipPathUsed(displayable);
-                        break;
-                    case '+':
-                        var displayable = newVisibleList[item.idx];
+                if (item.added) {
+                    for (var k = 0; k < item.count; k++) {
+                        var displayable = newVisibleList[item.indices[k]];
                         var svgElement = getSvgElement(displayable);
                         var textSvgElement = getTextSvgElement(displayable);
                         prevSvgElement ? insertAfter(svgRoot, svgElement, prevSvgElement)
@@ -214,13 +207,18 @@ define(function (require) {
                         insertAfter(svgRoot, textSvgElement, svgElement);
                         prevSvgElement = textSvgElement || svgElement;
                         this._markClipPathUsed(displayable);
-                        break;
-                    // case '^':
-                        // var displayable = visibleList[item.idx];
-                        // var svgElement = getSvgElement(displayable);
-                        // prevSvgElement ? insertAfter(svgRoot, svgElement, prevSvgElement)
-                        //     : prepend(svgRoot, svgElement);
-                        // break;
+                    }
+                }
+                else {
+                    for (var k = 0; k < item.count; k++) {
+                        var displayable = visibleList[item.indices[k]];
+                        prevSvgElement
+                            = svgElement
+                            = getTextSvgElement(displayable)
+                            || getSvgElement(displayable);
+                        this._markGradientUsed(displayable);
+                        this._markClipPathUsed(displayable);
+                    }
                 }
 
                 this._createGradient(svgElement, displayable, 'fill');
