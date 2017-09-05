@@ -16,7 +16,12 @@ define(function (require) {
      * @param   {SVGElement} svgRoot root of SVG document
      */
     function GradientManager(svgRoot) {
-        Definable.call(this, svgRoot, '__gradient_in_use__');
+        Definable.call(
+            this,
+            svgRoot,
+            ['linearGradient', 'radialGradient'],
+            '__gradient_in_use__'
+        );
     }
 
 

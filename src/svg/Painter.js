@@ -6,12 +6,10 @@
 define(function (require) {
     var svgCore = require('./core');
     var zrLog = require('../core/log');
-    var matrix = require('../core/matrix');
     var Path = require('../graphic/Path');
     var ZImage = require('../graphic/Image');
     var ZText = require('../graphic/Text');
     var arrayDiff = require('../core/arrayDiff2');
-    var util = require('../core/util');
 
     var svgGraphic = require('./graphic');
     var svgPath = svgGraphic.path;
@@ -19,15 +17,9 @@ define(function (require) {
     var svgText = svgGraphic.text;
 
     var GradientManager = require('./helper/gradient');
-
-    var MARK_UNUSED = '0';
-    var MARK_USED = '1';
+    var ClippathManager = require('./helper/clippath');
 
     var createElement = svgCore.createElement;
-
-    var CLIPPATH_MARK = '_clipPathInUse';
-
-    var nextClippathId = 1;
 
     function parseInt10(val) {
         return parseInt(val, 10);
@@ -99,6 +91,7 @@ define(function (require) {
 
         var svgRoot = createElement('svg');
         this.gradient = new GradientManager(svgRoot);
+        this.clipPath = new ClippathManager(svgRoot);
 
         var viewport = document.createElement('div');
         viewport.style.cssText = 'overflow: hidden;';
@@ -141,7 +134,7 @@ define(function (require) {
 
         _paintList: function (list) {
             this.gradient.markAllUnused();
-            this._markClipPathsUnused();
+            this.clipPath.markAllUnused();
 
             var svgRoot = this._svgRoot;
             var visibleList = this._visibleList;
@@ -157,7 +150,9 @@ define(function (require) {
                         svgProxy && svgProxy.brush(displayable);
                         var el = getSvgElement(displayable)
                             || getTextSvgElement(displayable);
-                        this._doClip(displayable, el);
+
+                        // Update clipPath
+                        this.clipPath.update(displayable, el);
 
                         // Update gradient
                         if (displayable.style) {
@@ -210,7 +205,7 @@ define(function (require) {
                         prevSvgElement = textSvgElement || svgElement;
 
                         this.gradient.addWithoutUpdate(svgElement, displayable);
-                        this._markClipPathUsed(displayable);
+                        this.clipPath.markUsed(displayable);
                     }
                 }
                 else if (!item.removed) {
@@ -220,16 +215,17 @@ define(function (require) {
                             = svgElement
                             = getTextSvgElement(displayable)
                             || getSvgElement(displayable);
-                        this._markClipPathUsed(displayable);
 
                         this.gradient.markUsed(displayable);
                         this.gradient.addWithoutUpdate(svgElement, displayable);
+
+                        this.clipPath.markUsed(displayable);
                     }
                 }
             }
 
             this.gradient.removeUnused();
-            this._removeUnusedClipPaths();
+            this.clipPath.removeUnused();
 
             this._visibleList = newVisibleList;
         },
@@ -268,151 +264,6 @@ define(function (require) {
             else {
                 return defs[0];
             }
-        },
-
-        _doClip: function (el, svgElement) {
-            this._doClipEl(svgElement, el.__clipPaths, false);
-
-            var textEl = getTextSvgElement(el);
-            if (textEl) {
-                // Make another clipPath for text, since it's transform
-                // matrix is not the same with svgElement
-                this._doClipEl(textEl, el.__clipPaths, true);
-            }
-
-            this._markClipPathUsed(el);
-        },
-
-        /**
-         * Create an SVGElement of displayable and create a <clipPath> of its
-         * clipPath
-         */
-        _doClipEl: function (parentEl, clipPaths, isText) {
-            if (clipPaths && clipPaths.length > 0) {
-                // Has clipPath, create <clipPath> with the first clipPath
-                var defs = this._getDefs(true);
-                var clipPath = clipPaths[0];
-                var clipPathEl;
-                var id;
-
-                var dom = isText ? '__textDom' : '__dom';
-
-                if (clipPath[dom]) {
-                    // Use a dom that is already in <defs>
-                    id = clipPath[dom].getAttribute('id');
-                    clipPathEl = clipPath[dom];
-
-                    // Use a dom that is already in <defs>
-                    if (!defs.contains(clipPathEl)) {
-                        // This happens when set old clipPath that has
-                        // been previously removed
-                        defs.appendChild(clipPathEl);
-                    }
-                }
-                else {
-                    // New <clipPath>
-                    id = 'zr-clip-' + nextClippathId;
-                    ++nextClippathId;
-                    clipPathEl = createElement('clipPath');
-                    clipPathEl.setAttribute('id', id);
-                    defs.appendChild(clipPathEl);
-
-                    clipPath[dom] = clipPathEl;
-                }
-
-                // Build path and add to <clipPath>
-                var svgProxy = getSvgProxy(clipPath);
-                if (clipPath.transform
-                    && clipPath.parent.invTransform
-                    && !isText
-                ) {
-                    /**
-                     * If a clipPath has a parent with transform, the transform
-                     * of parent should not be considered when setting transform
-                     * of clipPath. So we need to transform back from parent's
-                     * transform, which is done by multiplying parent's inverse
-                     * transform.
-                     */
-                    // Store old transform
-                    var transform = Array.prototype.slice.call(
-                        clipPath.transform
-                    );
-
-                    // Transform back from parent, and brush path
-                    matrix.mul(
-                        clipPath.transform,
-                        clipPath.parent.invTransform,
-                        clipPath.transform
-                    );
-                    svgProxy.brush(clipPath);
-
-                    // Set back transform of clipPath
-                    clipPath.transform = transform;
-                }
-                else {
-                    svgProxy.brush(clipPath);
-                }
-
-                var pathEl = getSvgElement(clipPath);
-                clipPathEl.appendChild(pathEl);
-
-                parentEl.setAttribute('clip-path', 'url(#' + id + ')');
-
-                if (clipPaths.length > 1) {
-                    // Make the other clipPaths recursively
-                    this._doClipEl(clipPathEl, clipPaths.slice(1), isText);
-                }
-            }
-            else {
-                // No clipPath
-                parentEl.setAttribute('clip-path', 'none');
-            }
-
-        },
-
-        _markClipPathsUnused: function () {
-            var tags = this._getClipPaths();
-            util.each(tags, function (tag) {
-                tag[CLIPPATH_MARK] = MARK_UNUSED;
-            });
-        },
-
-        _markClipPathUsed: function (displayable) {
-            if (displayable.__clipPaths && displayable.__clipPaths.length > 0) {
-                util.each(displayable.__clipPaths, function (clipPath) {
-                    if (clipPath.__dom) {
-                        clipPath.__dom[CLIPPATH_MARK] = MARK_USED;
-                    }
-                    if (clipPath.__textDom) {
-                        clipPath.__textDom[CLIPPATH_MARK] = MARK_USED;
-                    }
-                });
-            }
-        },
-
-        _getClipPaths: function () {
-            var defs = this._getDefs(false);
-            if (!defs) {
-                return [];
-            }
-
-            var tags = defs.getElementsByTagName('clipPath');
-            return [].slice.call(tags);
-        },
-
-        _removeUnusedClipPaths: function () {
-            var defs = this._getDefs(false);
-            if (!defs) {
-                // Nothing to remove
-                return;
-            }
-
-            var doms = this._getClipPaths();
-            util.each(doms, function (dom) {
-                if (dom[CLIPPATH_MARK] !== MARK_USED) {
-                    defs.removeChild(dom);
-                }
-            });
         },
 
         resize: function () {

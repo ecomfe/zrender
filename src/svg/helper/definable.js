@@ -8,6 +8,14 @@ define(function (require) {
     var svgCore = require('../core');
     var zrUtil = require('../../core/util');
 
+    var Path = require('../../graphic/Path');
+    var ZImage = require('../../graphic/Image');
+    var ZText = require('../../graphic/Text');
+    var svgGraphic = require('../graphic');
+    var svgPath = svgGraphic.path;
+    var svgImage = svgGraphic.image;
+    var svgText = svgGraphic.text;
+
     var MARK_UNUSED = '0';
     var MARK_USED = '1';
 
@@ -170,7 +178,9 @@ define(function (require) {
      * @param {SVGElement} dom DOM to mark
      */
     Definable.prototype.markUsed = function (dom) {
-        dom[this._markLabel] = MARK_USED;
+        if (dom) {
+            dom[this._markLabel] = MARK_USED;
+        }
     };
 
 
@@ -191,6 +201,47 @@ define(function (require) {
                 defs.removeChild(dom);
             }
         });
+    };
+
+
+    /**
+     * Get SVG proxy.
+     *
+     * @param {Displayable} displayable displayable element
+     */
+    Definable.prototype.getSvgProxy = function (displayable) {
+        if (displayable instanceof Path) {
+            return svgPath;
+        }
+        else if (displayable instanceof ZImage) {
+            return svgImage;
+        }
+        else if (displayable instanceof ZText) {
+            return svgText;
+        }
+        else {
+            return svgPath;
+        }
+    };
+
+
+    /**
+     * Get text SVG element.
+     *
+     * @param {Displayable} displayable displayable element
+     */
+    Definable.prototype.getTextSvgElement = function (displayable) {
+        return displayable.__textSvgEl;
+    };
+
+
+    /**
+     * Get SVG element.
+     *
+     * @param {Displayable} displayable displayable element
+     */
+    Definable.prototype.getSvgElement = function (displayable) {
+        return displayable.__svgEl;
     };
 
 
