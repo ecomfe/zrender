@@ -18,14 +18,15 @@ define(function (require) {
     var svgImage = svgGraphic.image;
     var svgText = svgGraphic.text;
 
-    var createElement = svgCore.createElement;
+    var GradientManager = require('./helper/gradient');
 
-    var GRADIENT_MARK = '_gradientInUse';
-    var CLIPPATH_MARK = '_clipPathInUse';
     var MARK_UNUSED = '0';
     var MARK_USED = '1';
 
-    var nextGradientId = 1;
+    var createElement = svgCore.createElement;
+
+    var CLIPPATH_MARK = '_clipPathInUse';
+
     var nextClippathId = 1;
 
     function parseInt10(val) {
@@ -97,6 +98,7 @@ define(function (require) {
         this.storage = storage;
 
         var svgRoot = createElement('svg');
+        this.gradient = new GradientManager(svgRoot);
 
         var viewport = document.createElement('div');
         viewport.style.cssText = 'overflow: hidden;';
@@ -138,7 +140,7 @@ define(function (require) {
         },
 
         _paintList: function (list) {
-            this._markGradientsUnused();
+            this.gradient.markAllUnused();
             this._markClipPathsUnused();
 
             var svgRoot = this._svgRoot;
@@ -159,8 +161,8 @@ define(function (require) {
 
                         // Update gradient
                         if (displayable.style) {
-                            this._updateGradient(displayable.style.fill);
-                            this._updateGradient(displayable.style.stroke);
+                            this.gradient.update(displayable.style.fill);
+                            this.gradient.update(displayable.style.stroke);
                         }
 
                         displayable.__dirty = false;
@@ -206,6 +208,8 @@ define(function (require) {
                         // Insert text
                         insertAfter(svgRoot, textSvgElement, svgElement);
                         prevSvgElement = textSvgElement || svgElement;
+
+                        this.gradient.addWithoutUpdate(svgElement, displayable);
                         this._markClipPathUsed(displayable);
                     }
                 }
@@ -216,249 +220,20 @@ define(function (require) {
                             = svgElement
                             = getTextSvgElement(displayable)
                             || getSvgElement(displayable);
-                        this._markGradientUsed(displayable);
                         this._markClipPathUsed(displayable);
+
+                        this.gradient.markUsed(displayable);
+                        this.gradient.addWithoutUpdate(svgElement, displayable);
                     }
                 }
-
-                this._createGradient(svgElement, displayable, 'fill');
-                this._createGradient(svgElement, displayable, 'stroke');
             }
 
-            this._removeUnusedGradients();
+            this.gradient.removeUnused();
             this._removeUnusedClipPaths();
 
             this._visibleList = newVisibleList;
         },
 
-        /**
-         * Create new gradient for fill or stroke
-         *
-         * @param {SvgElement}  svgElement   SVG element to paint
-         * @param {Displayable} displayable  zrender displayable element
-         * @param {string}      fillOrStroke should be 'fill' or 'stroke'
-         */
-        _createGradient: function (svgElement, displayable, fillOrStroke) {
-            if (displayable
-                && displayable.style
-                && displayable.style[fillOrStroke]
-                && (displayable.style[fillOrStroke].type === 'linear'
-                    || displayable.style[fillOrStroke].type === 'radial')
-            ) {
-                var gradient = displayable.style[fillOrStroke];
-                var defs = this._getDefs(true);
-
-                // Create dom in <defs> if not exists
-                var dom;
-                if (gradient.__dom) {
-                    // Gradient exists
-                    dom = gradient.__dom;
-                    if (!defs.contains(gradient.__dom)) {
-                        // __dom is no longer in defs, recreate
-                        this._addGradientDom(dom);
-                    }
-                }
-                else {
-                    dom = this._addGradient(gradient);
-                }
-
-                // Mark gradient to be used
-                dom[GRADIENT_MARK] = MARK_USED;
-
-                var id = dom.getAttribute('id');
-                svgElement.setAttribute(fillOrStroke, 'url(#' + id + ')');
-            }
-        },
-
-        /**
-         * Add a new gradient tag in <defs>
-         *
-         * @param {Gradient} gradient zr gradient instance
-         * @returns {SVGElement} Either <linearGradient>
-         *                       or <radialGradient> element
-         */
-        _addGradient: function (gradient) {
-            var el;
-            if (gradient.type === 'linear') {
-                el = createElement('linearGradient');
-            }
-            else if (gradient.type === 'radial') {
-                el = createElement('radialGradient');
-            }
-            else {
-                zrLog('Illegal gradient type.');
-                return null;
-            }
-
-            // Set dom id with gradient id, since each gradient instance
-            // will have no more than one dom element.
-            // id may exists before for those dirty elements, in which case
-            // id should remain the same, and other attributes should be
-            // updated.
-            gradient.id = gradient.id || nextGradientId++;
-            el.setAttribute('id', 'zr-gradient-' + gradient.id);
-
-            this._updateGradientDom(gradient, el);
-            this._addGradientDom(el);
-
-            return el;
-        },
-
-        /**
-         * Add gradient dom to defs
-         *
-         * @param {SVGElement} dom      Either <linearGradient>
-         *                              or <radialGradient> element
-         */
-        _addGradientDom: function (dom) {
-            var defs = this._getDefs(true);
-            defs.appendChild(dom);
-        },
-
-        /**
-         * Update gradient
-         *
-         * @param {Gradient} gradient zr gradient instance
-         */
-        _updateGradient: function (gradient) {
-            // Not a gradient
-            if (!gradient
-                || gradient.type !== 'linear' && gradient.type !== 'radial'
-            ) {
-                return;
-            }
-
-            // Update previous gradient dom if exists
-            var defs = this._getDefs(false);
-            if (gradient.__dom && defs && defs.contains(gradient.__dom)) {
-                // Update dom
-                var type = gradient.type;
-                var tagName = gradient.__dom.tagName;
-                if (type === 'linear' && tagName === 'linearGradient'
-                    || type === 'radial' && tagName === 'radialGradient'
-                ) {
-                    // Gradient type is not changed, update gradient
-                    this._updateGradientDom(gradient, gradient.__dom);
-                }
-                else {
-                    // Remove and re-create if type is changed
-                    defs.removeChild(gradient.__dom);
-                    this._addGradient(gradient);
-                }
-            }
-            else {
-                // No previous dom, create new
-                var dom = this._addGradient(gradient);
-                gradient.__dom = dom;
-            }
-        },
-
-        /**
-         * Update gradient dom
-         *
-         * @param {Gradient} gradient zr gradient instance
-         * @param {SVGElement} dom Either <linearGradient>
-         *                         or <radialGradient> element
-         */
-        _updateGradientDom: function (gradient, dom) {
-            if (gradient.type === 'linear') {
-                dom.setAttribute('x1', gradient.x);
-                dom.setAttribute('y1', gradient.y);
-                dom.setAttribute('x2', gradient.x2);
-                dom.setAttribute('y2', gradient.y2);
-            }
-            else if (gradient.type === 'radial') {
-                dom.setAttribute('cx', gradient.x);
-                dom.setAttribute('cy', gradient.y);
-                dom.setAttribute('r', gradient.r);
-            }
-            else {
-                zrLog('Illegal gradient type.');
-                return;
-            }
-
-            if (gradient.global) {
-                // x1, x2, y1, y2 in range of 0 to canvas width or height
-                dom.setAttribute('gradientUnits', 'userSpaceOnUse');
-            }
-            else {
-                // x1, x2, y1, y2 in range of 0 to 1
-                dom.setAttribute('gradientUnits', 'objectBoundingBox');
-            }
-
-            // Remove color stops if exists
-            dom.innerHTML = '';
-
-            // Add color stops
-            var colors = gradient.colorStops;
-            for (var i = 0, len = colors.length; i < len; ++i) {
-                var stop = createElement('stop');
-                stop.setAttribute('offset', colors[i].offset * 100 + '%');
-                stop.setAttribute('stop-color', colors[i].color);
-                dom.appendChild(stop);
-            }
-
-            // Store dom element in gradient, to avoid creating multiple
-            // dom instances for the same gradient element
-            gradient.__dom = dom;
-        },
-
-        /**
-         * Mark gradients to be unused before painting, and clear unused
-         * ones at the end of the painting
-         */
-        _markGradientsUnused: function () {
-            var doms = this._getGradients();
-            util.each(doms, function (dom) {
-                dom[GRADIENT_MARK] = MARK_UNUSED;
-            });
-        },
-
-        /**
-         * Remove unused gradients defined in <defs>
-         */
-        _removeUnusedGradients: function () {
-            var defs = this._getDefs(false);
-            if (!defs) {
-                // Nothing to remove
-                return;
-            }
-
-            var doms = this._getGradients();
-            util.each(doms, function (dom) {
-                if (dom[GRADIENT_MARK] !== MARK_USED) {
-                    // Remove gradient
-                    defs.removeChild(dom);
-                }
-            });
-        },
-
-        /**
-         * Mark a single gradient to be used
-         *
-         * @param {Displayable} displayable displayable element
-         */
-        _markGradientUsed: function (displayable) {
-            if (displayable.style) {
-                var gradient = displayable.style.fill;
-                if (gradient && gradient.__dom) {
-                    gradient.__dom[GRADIENT_MARK] = MARK_USED;
-                }
-
-                gradient = displayable.style.stroke;
-                if (gradient && gradient.__dom) {
-                    gradient.__dom[GRADIENT_MARK] = MARK_USED;
-                }
-            }
-        },
-
-        /**
-         * Get the <defs> tag for svgRoot; optionally creates one if not exists.
-         *
-         * @param {boolean} isForceCreating if need to create when not exists
-         * @returns {SVGDefsElement} SVG <defs> element, null if it doesn't
-         * exist and isForceCreating is false
-         */
         _getDefs: function (isForceCreating) {
             var svgRoot = this._svgRoot;
             var defs = this._svgRoot.getElementsByTagName('defs');
@@ -493,27 +268,6 @@ define(function (require) {
             else {
                 return defs[0];
             }
-        },
-
-        _getGradients: function () {
-            var defs = this._getDefs(false);
-            if (!defs) {
-                // No gradients when defs is not defined
-                return [];
-            }
-
-            var gradType = ['linear', 'radial'];
-            var doms = [];
-
-            util.each(gradType, function (type) {
-                var tags = defs.getElementsByTagName(type + 'Gradient');
-                // Note that tags is HTMLCollection, which is array-like
-                // rather than real array.
-                // So `doms.concat(tags)` add tags as one object.
-                doms = doms.concat([].slice.call(tags));
-            });
-
-            return doms;
         },
 
         _doClip: function (el, svgElement) {
