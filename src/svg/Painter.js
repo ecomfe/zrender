@@ -206,7 +206,7 @@ define(function (require) {
                         }
                         // Insert text
                         insertAfter(svgRoot, textSvgElement, svgElement);
-                        prevSvgElement = textSvgElement || svgElement;
+                        prevSvgElement = textSvgElement || svgElement || prevSvgElement;
 
                         this.gradient.addWithoutUpdate(svgElement, displayable);
                         this.clipPath.markUsed(displayable);
@@ -218,7 +218,8 @@ define(function (require) {
                         prevSvgElement
                             = svgElement
                             = getTextSvgElement(displayable)
-                            || getSvgElement(displayable);
+                            || getSvgElement(displayable)
+                            || prevSvgElement;
 
                         this.gradient.markUsed(displayable);
                         this.gradient.addWithoutUpdate(svgElement, displayable);
