@@ -166,8 +166,9 @@ define(function (require) {
      */
     Definable.prototype.markAllUnused = function () {
         var doms = this.getDoms();
+        var that = this;
         zrUtil.each(doms, function (dom) {
-            dom[this._markLabel] = MARK_UNUSED;
+            dom[that._markLabel] = MARK_UNUSED;
         });
     };
 
@@ -195,8 +196,9 @@ define(function (require) {
         }
 
         var doms = this.getDoms();
+        var that = this;
         zrUtil.each(doms, function (dom) {
-            if (dom[this.markLabel] !== MARK_USED) {
+            if (dom[that._markLabel] !== MARK_USED) {
                 // Remove gradient
                 defs.removeChild(dom);
             }
