@@ -64,6 +64,10 @@ define(function (require) {
 
         constructor: VMLPainter,
 
+        getType: function () {
+            return 'vml';
+        },
+
         /**
          * @return {HTMLDivElement}
          */

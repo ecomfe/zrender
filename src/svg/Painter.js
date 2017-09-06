@@ -111,6 +111,10 @@ define(function (require) {
 
         constructor: SVGPainter,
 
+        getType: function () {
+            return 'svg';
+        },
+
         getViewportRoot: function () {
             return this._viewport;
         },
