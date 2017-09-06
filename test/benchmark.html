@@ -6,10 +6,53 @@
     <script type="text/javascript" src="esl.js"></script>
 </head>
 <body style="margin:0px;">
+
+
+    <div style="text-align: right">
+        <input type="button" onclick="setParam(['with-text'], '')" value="No Text"/>
+        <input type="button" onclick="setParam(['with-text'], 'with-text')" value="Has Text"/>
+        <input type="button" onclick="setParam(['canvas', 'svg'], 'canvas')" value="Canvas"/>
+        <input type="button" onclick="setParam(['canvas', 'svg'], 'svg')" value="SVG"/>
+    </div>
+    <div id="main" style="width:600px;height:600px;"></div>
+
     <script type="text/javascript">
+
+    function setParam(cleanList, newVal) {
+        var params = location.search.split('&');
+        var has;
+        for (var i = params.length - 1; i >= 0; i--) {
+            for (var j = 0; j < cleanList.length; j++) {
+                if (params[i] === cleanList[j]) {
+                    params.splice(i, 1);
+                }
+            }
+        }
+        newVal && params.push(newVal);
+        params.sort();
+        location.search = params.join('&');
+    }
+
+    function hasParam(val) {
+        var params = location.search.split('&');
+        var has;
+        for (var i = params.length - 1; i >= 0; i--) {
+            if (params[i] === val) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    var withText = hasParam('with-text');
+    var renderMode = hasParam('svg') ? 'svg' : 'canvas';
+
+
+
     require.config({
         paths: {
-            d3: 'https://d3js.org/d3.v4.min'
+            d3: './lib/d3.v4.min'
         },
         packages: [
             {
@@ -30,8 +73,9 @@
         ],
         function (zrender, Rect, d3, Stats) {
 
+
 var zr = zrender.init(document.getElementById('main'), {
-    renderer: 'svg'
+    renderer: renderMode
 });
 
 var stats = new Stats();
@@ -197,7 +241,7 @@ var width = zr.getWidth();
 var height = zr.getHeight();
 
 // point settings
-var numPoints = 10000;
+var numPoints = withText ? 2000 : 10000;
 var pointWidth = 3;
 var pointMargin = 3;
 
@@ -281,7 +325,9 @@ var rects = points.map(function(pt) {
             height: pointWidth
         },
         style: {
-            fill: pt.color
+            fill: pt.color,
+            text: withText ? 'a' : null,
+            textFill: withText ? pt.color : null
         },
         silent: true,
         __point__: pt
@@ -307,6 +353,6 @@ setTimeout(function () {
         }
     );
     </script>
-    <div id="main" style="width:600px;height:600px;"></div>
+
 </body>
 </html>
