@@ -121,6 +121,9 @@
      * @param {Object} opts
      */
     var Painter = function (root, storage, opts) {
+
+        this.type = 'canvas';
+
         // In node environment using node-canvas
         var singleCanvas = !root.nodeName // In node ?
             || root.nodeName.toUpperCase() === 'CANVAS';
@@ -225,6 +228,10 @@
     Painter.prototype = {
 
         constructor: Painter,
+
+        getType: function () {
+            return 'canvas';
+        },
 
         /**
          * If painter use a single canvas
