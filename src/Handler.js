@@ -10,6 +10,7 @@ define(function (require) {
     'use strict';
 
     var util = require('./core/util');
+    var vec2 = require('./core/vector');
     var Draggable = require('./mixin/Draggable');
 
     var Eventful = require('./mixin/Eventful');
@@ -287,17 +288,27 @@ define(function (require) {
             var hoveredTarget = hovered.target;
 
             if (name === 'mousedown') {
-                this._downel = hoveredTarget;
+                this._downEl = hoveredTarget;
+                this._downPoint = [event.zrX, event.zrY];
                 // In case click triggered before mouseup
-                this._upel = hoveredTarget;
+                this._upEl = hoveredTarget;
             }
             else if (name === 'mosueup') {
-                this._upel = hoveredTarget;
+                this._upEl = hoveredTarget;
             }
             else if (name === 'click') {
-                if (this._downel !== this._upel) {
+                if (this._downEl !== this._upEl
+                    // Original click event is triggered on the whole canvas element,
+                    // including the case that `mousedown` - `mousemove` - `mouseup`,
+                    // which should be filtered, otherwise it will bring trouble to
+                    // pan and zoom.
+                    || !this._downPoint
+                    // Arbitrary value
+                    || vec2.dist(this._downPoint, [event.zrX, event.zrY]) > 4
+                ) {
                     return;
                 }
+                this._downPoint = null;
             }
 
             this.dispatchToElement(hovered, name, event);
