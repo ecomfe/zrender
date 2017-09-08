@@ -33,7 +33,8 @@ define(function (require) {
             pinchY: event.pinchY,
             pinchScale: event.pinchScale,
             wheelDelta: event.zrDelta,
-            zrByTouch: event.zrByTouch
+            zrByTouch: event.zrByTouch,
+            which: event.which
         };
     }
 

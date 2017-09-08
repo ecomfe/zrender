@@ -12,6 +12,8 @@ define(function(require) {
 
     var isDomLevel2 = (typeof window !== 'undefined') && !!window.addEventListener;
 
+    var MOUSE_EVENT_REG = /^(?:mouse|pointer|contextmenu|drag|drop)|click/;
+
     function getBoundingClientRect(el) {
         // BlackBerry 5, iOS 3 (original iPhone) don't have getBoundingRect
         return el.getBoundingClientRect ? el.getBoundingClientRect() : {left: 0, top: 0};
@@ -92,6 +94,15 @@ define(function(require) {
             touch && clientToLocal(el, touch, e, calculate);
         }
 
+        // Add which for click: 1 === left; 2 === middle; 3 === right; otherwise: 0;
+        // See jQuery: https://github.com/jquery/jquery/blob/master/src/event.js
+        // If e.which has been defined, if may be readonly,
+        // see: https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/which
+        var button = e.button;
+        if (e.which == null && button !== undefined && MOUSE_EVENT_REG.test(e.type)) {
+            e.which = (button & 1 ? 1 : (button & 2 ? 3 : (button & 4 ? 2 : 0)));
+        }
+
         return e;
     }
 
@@ -133,11 +144,17 @@ define(function(require) {
             e.cancelBubble = true;
         };
 
+    function notLeftMouse(e) {
+        // If e.which is undefined, considered as left mouse event.
+        return e.which > 1;
+    }
+
     return {
         clientToLocal: clientToLocal,
         normalizeEvent: normalizeEvent,
         addEventListener: addEventListener,
         removeEventListener: removeEventListener,
+        notLeftMouse: notLeftMouse,
 
         stop: stop,
         // 做向上兼容
