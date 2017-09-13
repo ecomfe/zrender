@@ -31,5 +31,8 @@ zrender.color = require('./lib/tool/color');
 zrender.path = require('./lib/tool/path');
 zrender.util = require('./lib/core/util');
 
+require('./lib/svg/svg');
+require('./lib/vml/vml');
+
 module.exports = zrender;
 
