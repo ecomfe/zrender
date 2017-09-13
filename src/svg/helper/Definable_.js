@@ -1,6 +1,7 @@
 /**
  * @file Manages elements that can be defined in <defs> in SVG,
  *       e.g., gradients, clip path, etc.
+ * @author Zhang Wenli
  */
 
 define(function (require) {
@@ -50,7 +51,7 @@ define(function (require) {
      * Get the <defs> tag for svgRoot; optionally creates one if not exists.
      *
      * @param {boolean} isForceCreating if need to create when not exists
-     * @returns {SVGDefsElement} SVG <defs> element, null if it doesn't
+     * @return {SVGDefsElement} SVG <defs> element, null if it doesn't
      * exist and isForceCreating is false
      */
     Definable.prototype.getDefs = function (isForceCreating) {
@@ -59,7 +60,7 @@ define(function (require) {
         if (defs.length === 0) {
             // Not exist
             if (isForceCreating) {
-                var defs = svgRoot.insertBefore(
+                defs = svgRoot.insertBefore(
                     this.createElement('defs'), // Create new tag
                     svgRoot.firstChild // Insert in the front of svg
                 );
@@ -93,7 +94,9 @@ define(function (require) {
     /**
      * Update DOM element if necessary.
      *
-     * @param {SVGElement} DOM element
+     * @param {Object|string} element style element. e.g., for gradient,
+     *                                it may be '#ccc' or {type: 'linear', ...}
+     * @param {Function|undefined} onUpdate update callback
      */
     Definable.prototype.update = function (element, onUpdate) {
         if (!element) {
@@ -110,7 +113,9 @@ define(function (require) {
         else {
             // No previous dom, create new
             var dom = this.add(element);
-            element._dom = dom;
+            if (dom) {
+                element._dom = dom;
+            }
         }
     };
 
@@ -129,7 +134,7 @@ define(function (require) {
     /**
      * Remove DOM of a given element.
      *
-     * @param {SVGElement} DOM element
+     * @param {SVGElement} element element to remove dom
      */
     Definable.prototype.removeDom = function (element) {
         var defs = this.getDefs(false);
@@ -139,6 +144,8 @@ define(function (require) {
 
     /**
      * Get DOMs of this element.
+     *
+     * @return {HTMLDomElement} doms of this defineable elements in <defs>
      */
     Definable.prototype.getDoms = function () {
         var defs = this.getDefs(false);
@@ -210,6 +217,7 @@ define(function (require) {
      * Get SVG proxy.
      *
      * @param {Displayable} displayable displayable element
+     * @return {Path|Image|Text} svg proxy of given element
      */
     Definable.prototype.getSvgProxy = function (displayable) {
         if (displayable instanceof Path) {
@@ -231,6 +239,7 @@ define(function (require) {
      * Get text SVG element.
      *
      * @param {Displayable} displayable displayable element
+     * @return {SVGElement} SVG element of text
      */
     Definable.prototype.getTextSvgElement = function (displayable) {
         return displayable.__textSvgEl;
@@ -241,6 +250,7 @@ define(function (require) {
      * Get SVG element.
      *
      * @param {Displayable} displayable displayable element
+     * @return {SVGElement} SVG element
      */
     Definable.prototype.getSvgElement = function (displayable) {
         return displayable.__svgEl;

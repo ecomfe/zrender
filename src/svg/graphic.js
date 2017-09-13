@@ -268,7 +268,7 @@ define(function (require) {
     /***************************************************
      * IMAGE
      **************************************************/
-    var svgImage = {}
+    var svgImage = {};
 
     svgImage.brush = function (el) {
         var style = el.style;
@@ -375,7 +375,7 @@ define(function (require) {
 
         var verticalAlign = getVerticalAlignForSvg(style.textVerticalAlign);
 
-        textRect = textRect || textContain.getBoundingRect(text, font, align,
+        textRect = textContain.getBoundingRect(text, font, align,
             verticalAlign);
 
         var lineHeight = textRect.lineHeight;

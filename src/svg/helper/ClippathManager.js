@@ -1,10 +1,11 @@
 /**
  * @file Manages SVG clipPath elements.
+ * @author Zhang Wenli
  */
 
 define(function (require) {
 
-    var Definable = require('./definable');
+    var Definable = require('./Definable');
     var zrUtil = require('../../core/util');
     var matrix = require('../../core/matrix');
 
