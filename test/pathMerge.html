@@ -3,28 +3,17 @@
 <head>
     <meta charset="utf-8" />
     <title>Path Merge</title>
-    <script type="text/javascript" src="esl.js"></script>
+    <script type="text/javascript" src="../dist/zrender.js"></script>
 </head>
 <body>
-    <script type="text/javascript">
-    require.config({
-        packages: [
-            {
-                name: 'zrender',
-                location: '../src',
-                main: 'zrender'
-            }
-        ]
-    });
-
-    require(["zrender", 'zrender/graphic/shape/Line', 'zrender/tool/path'], function(zrender, LineShape, pathTool){
-
+    <div id="main" style="width:1000px;height:500px;"></div>
+    <script>
         // 初始化zrender
-        var zr = zrender.init(document.getElementById("main"));
+        var zr = zrender.init(document.getElementById('main'));
 
         var lineList = [];
         for (var i = 0; i < 300; i ++) {
-            var line = new LineShape({
+            var line = new zrender.Line({
                 shape: {
                     x1: 0,
                     y1: i * 3,
@@ -34,13 +23,12 @@
             });
             lineList.push(line);
         }
-        zr.add(pathTool.mergePath(lineList, {
+        zr.add(zrender.path.mergePath(lineList, {
             style: {
                 stroke: 'black',
                 fill: 'none'
             }
         }));
-    })
     </script>
     <div id="main" style="width:1000px;height:800px;"></div>
 </body>

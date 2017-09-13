@@ -3,7 +3,9 @@
 <head>
     <meta charset="utf-8" />
     <title>Animation</title>
-    <script type="text/javascript" src="esl.js"></script>
+    <script type="text/javascript" src="../dist/zrender.js"></script>
+    <script type="text/javascript" src="stats.js"></script>
+    <script type="text/javascript" src="https://d3js.org/d3.v4.min.js"></script>
 </head>
 <body style="margin:0px;">
 
@@ -20,7 +22,6 @@
 
     function setParam(cleanList, newVal) {
         var params = location.search.split('&');
-        var has;
         for (var i = params.length - 1; i >= 0; i--) {
             for (var j = 0; j < cleanList.length; j++) {
                 if (params[i] === cleanList[j]) {
@@ -35,7 +36,6 @@
 
     function hasParam(val) {
         var params = location.search.split('&');
-        var has;
         for (var i = params.length - 1; i >= 0; i--) {
             if (params[i] === val) {
                 return true;
@@ -47,32 +47,6 @@
 
     var withText = hasParam('with-text');
     var renderMode = hasParam('svg') ? 'svg' : 'canvas';
-
-
-
-    require.config({
-        paths: {
-            d3: './lib/d3.v4.min'
-        },
-        packages: [
-            {
-                name: 'zrender',
-                location: '../src',
-                main: 'zrender'
-            }
-        ]
-    });
-
-    require(
-        [
-            'zrender',
-            'zrender/graphic/shape/Rect',
-            'd3',
-            'stats',
-            'zrender/svg/svg'
-        ],
-        function (zrender, Rect, d3, Stats) {
-
 
 var zr = zrender.init(document.getElementById('main'), {
     renderer: renderMode
@@ -319,7 +293,7 @@ function animate(rects, layout) {
 }
 zr.clear();
 var rects = points.map(function(pt) {
-    var rect = new Rect({
+    var rect = new zrender.Rect({
         shape: {
             width: pointWidth,
             height: pointWidth
@@ -349,9 +323,6 @@ setTimeout(function () {
     // start the animation
     animate(rects, layouts[currLayout]);
 }, 1000);
-
-        }
-    );
     </script>
 
 </body>

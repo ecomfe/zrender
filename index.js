@@ -18,6 +18,8 @@ zrender.Arc = require('./lib/graphic/shape/Arc');
 zrender.Ellipse = require('./lib/graphic/shape/Ellipse');
 zrender.Star = require('./lib/graphic/shape/Star');
 zrender.Isogon = require('./lib/graphic/shape/Isogon');
+zrender.Rose = require('./lib/graphic/shape/Rose');
+zrender.Trochoid = require('./lib/graphic/shape/Trochoid');
 
 zrender.LinearGradient = require('./lib/graphic/LinearGradient');
 zrender.RadialGradient = require('./lib/graphic/RadialGradient');

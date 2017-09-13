@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <script type="text/javascript" src="esl.js"></script>
+    <script type="text/javascript" src="../dist/zrender.js"></script>
 </head>
 <body>
 
@@ -34,15 +34,6 @@
 
     <script type="text/javascript">
 
-    require.config({
-        packages: [
-            {
-                name: 'zrender',
-                location: '../src',
-                main: 'zrender'
-            }
-        ]
-    });
 
     var posList = [
         'left', 'right', 'top', 'bottom',
@@ -50,14 +41,10 @@
         'insideTop', 'insideLeft', 'insideRight', 'insideBottom',
         'insideTopLeft', 'insideTopRight', 'insideBottomLeft', 'insideBottomRight'
     ];
-
-    require(['zrender', 'zrender/core/util', 'zrender/graphic/shape/Rect', 'zrender/vml/vml'], function(zrender, zrUtil, RectShape){
-
-
         var zr1 = zrender.init(document.getElementById('main1'));
         var shapes1 = [];
 
-        zrUtil.each(posList, function (textPos, idx) {
+        zrender.util.each(posList, function (textPos, idx) {
             var text = textPos;
             if (text.length < 8) {
                 text = text + text;
@@ -65,7 +52,7 @@
             if (text.length > 8) {
                 text = text.substr(0, 8) + '\n' + text.substr(8, text.length - 1);
             }
-            var shape = new RectShape({
+            var shape = new zrender.Rect({
                 position: [(idx % 4) * 220, 150 * Math.floor(idx / 4)],
                 scale: [1, 1],
                 style: {
@@ -89,10 +76,10 @@
         var zr2 = zrender.init(document.getElementById('main2'));
         var shapes2 = [];
 
-        zrUtil.each(posList, function (textPos, idx) {
+        zrender.util.each(posList, function (textPos, idx) {
             var text = textPos;
 
-            var shape = new RectShape({
+            var shape = new zrender.Rect({
                 position: [(idx % 2) * 500, 350 * Math.floor(idx / 2)],
                 style: {
                     fill: '#eeaaff',
@@ -270,8 +257,6 @@
                 });
             }
         };
-
-    });
 
 
     </script>
