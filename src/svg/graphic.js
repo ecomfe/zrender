@@ -322,7 +322,7 @@ define(function (require) {
     var svgTextDrawRectText = function (el, rect, textRect) {
         var style = el.style;
 
-        this.__dirty && textHelper.normalizeTextStyle(style, true);
+        el.__dirty && textHelper.normalizeTextStyle(style, true);
 
         var text = style.text;
         // Convert to string
