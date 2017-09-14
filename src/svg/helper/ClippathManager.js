@@ -1,10 +1,11 @@
 /**
  * @file Manages SVG clipPath elements.
+ * @author Zhang Wenli
  */
 
 define(function (require) {
 
-    var Definable = require('./definable');
+    var Definable = require('./Definable');
     var zrUtil = require('../../core/util');
     var matrix = require('../../core/matrix');
 
@@ -145,13 +146,14 @@ define(function (require) {
      * @param {Displayable} displayable displayable element
      */
     ClippathManager.prototype.markUsed = function (displayable) {
+        var that = this;
         if (displayable.__clipPaths && displayable.__clipPaths.length > 0) {
             zrUtil.each(displayable.__clipPaths, function (clipPath) {
                 if (clipPath._dom) {
-                    Definable.prototype.markUsed.call(this, clipPath._dom);
+                    Definable.prototype.markUsed.call(that, clipPath._dom);
                 }
                 if (clipPath._textDom) {
-                    Definable.prototype.markUsed.call(this, clipPath._textDom);
+                    Definable.prototype.markUsed.call(that, clipPath._textDom);
                 }
             });
         }

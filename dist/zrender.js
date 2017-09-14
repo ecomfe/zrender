@@ -1,3 +1,8 @@
+(function (global, factory) {
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+	typeof define === 'function' && define.amd ? define(factory) :
+	(global.zrender = factory());
+}(this, (function () { 'use strict';
 
 /**
  * zrender: 生成唯一id
@@ -5,13 +10,12 @@
  * @author errorrik (errorrik@gmail.com)
  */
 
-define('zrender/core/guid',[],function() {
+
     var idStart = 0x0907;
 
-    return function () {
+    var guid = function () {
         return idStart++;
     };
-});
 
 /**
  * echarts设备环境识别
@@ -20,7 +24,7 @@ define('zrender/core/guid',[],function() {
  * @author firede[firede@firede.us]
  * @desc thanks zepto.
  */
-define('zrender/core/env',[],function () {
+
     var env = {};
     if (typeof navigator === 'undefined') {
         // In node
@@ -36,7 +40,7 @@ define('zrender/core/env',[],function () {
         env = detect(navigator.userAgent);
     }
 
-    return env;
+    var env_1 = env;
 
     // Zepto.js
     // (c) 2010-2013 Thomas Fuchs
@@ -141,11 +145,11 @@ define('zrender/core/env',[],function () {
                 && (browser.edge || (browser.ie && browser.version >= 11))
         };
     }
-});
+
 /**
  * @module zrender/core/util
  */
-define('zrender/core/util',['require'],function(require) {
+
 
     // 用于处理merge时无法遍历Date等对象的问题
     var BUILTIN_OBJECT = {
@@ -784,12 +788,290 @@ define('zrender/core/util',['require'],function(require) {
         normalizeCssArray: normalizeCssArray,
         noop: function () {}
     };
-    return util;
-});
+    var util_1 = util;
+
+var ArrayCtor = typeof Float32Array === 'undefined'
+        ? Array
+        : Float32Array;
+
+    /**
+     * @typedef {Float32Array|Array.<number>} Vector2
+     */
+    /**
+     * 二维向量类
+     * @exports zrender/tool/vector
+     */
+    var vector = {
+        /**
+         * 创建一个向量
+         * @param {number} [x=0]
+         * @param {number} [y=0]
+         * @return {Vector2}
+         */
+        create: function (x, y) {
+            var out = new ArrayCtor(2);
+            if (x == null) {
+                x = 0;
+            }
+            if (y == null) {
+                y = 0;
+            }
+            out[0] = x;
+            out[1] = y;
+            return out;
+        },
+
+        /**
+         * 复制向量数据
+         * @param {Vector2} out
+         * @param {Vector2} v
+         * @return {Vector2}
+         */
+        copy: function (out, v) {
+            out[0] = v[0];
+            out[1] = v[1];
+            return out;
+        },
+
+        /**
+         * 克隆一个向量
+         * @param {Vector2} v
+         * @return {Vector2}
+         */
+        clone: function (v) {
+            var out = new ArrayCtor(2);
+            out[0] = v[0];
+            out[1] = v[1];
+            return out;
+        },
+
+        /**
+         * 设置向量的两个项
+         * @param {Vector2} out
+         * @param {number} a
+         * @param {number} b
+         * @return {Vector2} 结果
+         */
+        set: function (out, a, b) {
+            out[0] = a;
+            out[1] = b;
+            return out;
+        },
+
+        /**
+         * 向量相加
+         * @param {Vector2} out
+         * @param {Vector2} v1
+         * @param {Vector2} v2
+         */
+        add: function (out, v1, v2) {
+            out[0] = v1[0] + v2[0];
+            out[1] = v1[1] + v2[1];
+            return out;
+        },
+
+        /**
+         * 向量缩放后相加
+         * @param {Vector2} out
+         * @param {Vector2} v1
+         * @param {Vector2} v2
+         * @param {number} a
+         */
+        scaleAndAdd: function (out, v1, v2, a) {
+            out[0] = v1[0] + v2[0] * a;
+            out[1] = v1[1] + v2[1] * a;
+            return out;
+        },
+
+        /**
+         * 向量相减
+         * @param {Vector2} out
+         * @param {Vector2} v1
+         * @param {Vector2} v2
+         */
+        sub: function (out, v1, v2) {
+            out[0] = v1[0] - v2[0];
+            out[1] = v1[1] - v2[1];
+            return out;
+        },
+
+        /**
+         * 向量长度
+         * @param {Vector2} v
+         * @return {number}
+         */
+        len: function (v) {
+            return Math.sqrt(this.lenSquare(v));
+        },
+
+        /**
+         * 向量长度平方
+         * @param {Vector2} v
+         * @return {number}
+         */
+        lenSquare: function (v) {
+            return v[0] * v[0] + v[1] * v[1];
+        },
+
+        /**
+         * 向量乘法
+         * @param {Vector2} out
+         * @param {Vector2} v1
+         * @param {Vector2} v2
+         */
+        mul: function (out, v1, v2) {
+            out[0] = v1[0] * v2[0];
+            out[1] = v1[1] * v2[1];
+            return out;
+        },
+
+        /**
+         * 向量除法
+         * @param {Vector2} out
+         * @param {Vector2} v1
+         * @param {Vector2} v2
+         */
+        div: function (out, v1, v2) {
+            out[0] = v1[0] / v2[0];
+            out[1] = v1[1] / v2[1];
+            return out;
+        },
+
+        /**
+         * 向量点乘
+         * @param {Vector2} v1
+         * @param {Vector2} v2
+         * @return {number}
+         */
+        dot: function (v1, v2) {
+            return v1[0] * v2[0] + v1[1] * v2[1];
+        },
+
+        /**
+         * 向量缩放
+         * @param {Vector2} out
+         * @param {Vector2} v
+         * @param {number} s
+         */
+        scale: function (out, v, s) {
+            out[0] = v[0] * s;
+            out[1] = v[1] * s;
+            return out;
+        },
+
+        /**
+         * 向量归一化
+         * @param {Vector2} out
+         * @param {Vector2} v
+         */
+        normalize: function (out, v) {
+            var d = vector.len(v);
+            if (d === 0) {
+                out[0] = 0;
+                out[1] = 0;
+            }
+            else {
+                out[0] = v[0] / d;
+                out[1] = v[1] / d;
+            }
+            return out;
+        },
+
+        /**
+         * 计算向量间距离
+         * @param {Vector2} v1
+         * @param {Vector2} v2
+         * @return {number}
+         */
+        distance: function (v1, v2) {
+            return Math.sqrt(
+                (v1[0] - v2[0]) * (v1[0] - v2[0])
+                + (v1[1] - v2[1]) * (v1[1] - v2[1])
+            );
+        },
+
+        /**
+         * 向量距离平方
+         * @param {Vector2} v1
+         * @param {Vector2} v2
+         * @return {number}
+         */
+        distanceSquare: function (v1, v2) {
+            return (v1[0] - v2[0]) * (v1[0] - v2[0])
+                + (v1[1] - v2[1]) * (v1[1] - v2[1]);
+        },
+
+        /**
+         * 求负向量
+         * @param {Vector2} out
+         * @param {Vector2} v
+         */
+        negate: function (out, v) {
+            out[0] = -v[0];
+            out[1] = -v[1];
+            return out;
+        },
+
+        /**
+         * 插值两个点
+         * @param {Vector2} out
+         * @param {Vector2} v1
+         * @param {Vector2} v2
+         * @param {number} t
+         */
+        lerp: function (out, v1, v2, t) {
+            out[0] = v1[0] + t * (v2[0] - v1[0]);
+            out[1] = v1[1] + t * (v2[1] - v1[1]);
+            return out;
+        },
+
+        /**
+         * 矩阵左乘向量
+         * @param {Vector2} out
+         * @param {Vector2} v
+         * @param {Vector2} m
+         */
+        applyTransform: function (out, v, m) {
+            var x = v[0];
+            var y = v[1];
+            out[0] = m[0] * x + m[2] * y + m[4];
+            out[1] = m[1] * x + m[3] * y + m[5];
+            return out;
+        },
+        /**
+         * 求两个向量最小值
+         * @param  {Vector2} out
+         * @param  {Vector2} v1
+         * @param  {Vector2} v2
+         */
+        min: function (out, v1, v2) {
+            out[0] = Math.min(v1[0], v2[0]);
+            out[1] = Math.min(v1[1], v2[1]);
+            return out;
+        },
+        /**
+         * 求两个向量最大值
+         * @param  {Vector2} out
+         * @param  {Vector2} v1
+         * @param  {Vector2} v2
+         */
+        max: function (out, v1, v2) {
+            out[0] = Math.max(v1[0], v2[0]);
+            out[1] = Math.max(v1[1], v2[1]);
+            return out;
+        }
+    };
+
+    vector.length = vector.len;
+    vector.lengthSquare = vector.lenSquare;
+    vector.dist = vector.distance;
+    vector.distSquare = vector.distanceSquare;
+
+    var vector_1 = vector;
 
 // TODO Draggable for group
 // FIXME Draggable on element which has parent rotation or scale
-define('zrender/mixin/Draggable',['require'],function (require) {
+
     function Draggable() {
 
         this.on('mousedown', this._dragStart, this);
@@ -872,15 +1154,15 @@ define('zrender/mixin/Draggable',['require'],function (require) {
         return {target: target, topTarget: e && e.topTarget};
     }
 
-    return Draggable;
-});
+    var Draggable_1 = Draggable;
+
 /**
  * 事件扩展
  * @module zrender/mixin/Eventful
  * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *         pissang (https://www.github.com/pissang)
  */
-define('zrender/mixin/Eventful',['require'],function (require) {
+
 
     var arrySlice = Array.prototype.slice;
 
@@ -1174,9 +1456,9 @@ define('zrender/mixin/Eventful',['require'],function (require) {
      * @default null
      */
 
-    return Eventful;
-});
+    var Eventful_1 = Eventful;
 
+'use strict';
 /**
  * Handler
  * @module zrender/Handler
@@ -1184,14 +1466,13 @@ define('zrender/mixin/Eventful',['require'],function (require) {
  *         errorrik (errorrik@gmail.com)
  *         pissang (shenyi.914@gmail.com)
  */
-define('zrender/Handler',['require','./core/util','./mixin/Draggable','./mixin/Eventful'],function (require) {
+
 
     
+    
+    
 
-    var util = require('./core/util');
-    var Draggable = require('./mixin/Draggable');
-
-    var Eventful = require('./mixin/Eventful');
+    
 
     var SILENT = 'silent';
 
@@ -1211,7 +1492,8 @@ define('zrender/Handler',['require','./core/util','./mixin/Draggable','./mixin/E
             pinchY: event.pinchY,
             pinchScale: event.pinchScale,
             wheelDelta: event.zrDelta,
-            zrByTouch: event.zrByTouch
+            zrByTouch: event.zrByTouch,
+            which: event.which
         };
     }
 
@@ -1232,7 +1514,7 @@ define('zrender/Handler',['require','./core/util','./mixin/Draggable','./mixin/E
      * @param {HTMLElement} painterRoot painter.root (not painter.getViewportRoot()).
      */
     var Handler = function(storage, painter, proxy, painterRoot) {
-        Eventful.call(this);
+        Eventful_1.call(this);
 
         this.storage = storage;
 
@@ -1276,9 +1558,9 @@ define('zrender/Handler',['require','./core/util','./mixin/Draggable','./mixin/E
         this._lastY;
 
 
-        Draggable.call(this);
+        Draggable_1.call(this);
 
-        util.each(handlerNames, function (name) {
+        util_1.each(handlerNames, function (name) {
             proxy.on && proxy.on(name, this[name], this);
         }, this);
     };
@@ -1459,24 +1741,34 @@ define('zrender/Handler',['require','./core/util','./mixin/Draggable','./mixin/E
     };
 
     // Common handlers
-    util.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick', 'contextmenu'], function (name) {
+    util_1.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick', 'contextmenu'], function (name) {
         Handler.prototype[name] = function (event) {
             // Find hover again to avoid click event is dispatched manually. Or click is triggered without mouseover
             var hovered = this.findHover(event.zrX, event.zrY);
             var hoveredTarget = hovered.target;
 
             if (name === 'mousedown') {
-                this._downel = hoveredTarget;
+                this._downEl = hoveredTarget;
+                this._downPoint = [event.zrX, event.zrY];
                 // In case click triggered before mouseup
-                this._upel = hoveredTarget;
+                this._upEl = hoveredTarget;
             }
             else if (name === 'mosueup') {
-                this._upel = hoveredTarget;
+                this._upEl = hoveredTarget;
             }
             else if (name === 'click') {
-                if (this._downel !== this._upel) {
+                if (this._downEl !== this._upEl
+                    // Original click event is triggered on the whole canvas element,
+                    // including the case that `mousedown` - `mousemove` - `mouseup`,
+                    // which should be filtered, otherwise it will bring trouble to
+                    // pan and zoom.
+                    || !this._downPoint
+                    // Arbitrary value
+                    || vector_1.dist(this._downPoint, [event.zrX, event.zrY]) > 4
+                ) {
                     return;
                 }
+                this._downPoint = null;
             }
 
             this.dispatchToElement(hovered, name, event);
@@ -1505,14 +1797,12 @@ define('zrender/Handler',['require','./core/util','./mixin/Draggable','./mixin/E
         return false;
     }
 
-    util.mixin(Handler, Eventful);
-    util.mixin(Handler, Draggable);
+    util_1.mixin(Handler, Eventful_1);
+    util_1.mixin(Handler, Draggable_1);
 
-    return Handler;
-});
+    var Handler_1 = Handler;
 
-define('zrender/core/matrix',[],function () {
-    var ArrayCtor = typeof Float32Array === 'undefined'
+var ArrayCtor$1 = typeof Float32Array === 'undefined'
         ? Array
         : Float32Array;
     /**
@@ -1525,7 +1815,7 @@ define('zrender/core/matrix',[],function () {
          * @return {Float32Array|Array.<number>}
          */
         create : function() {
-            var out = new ArrayCtor(6);
+            var out = new ArrayCtor$1(6);
             matrix.identity(out);
 
             return out;
@@ -1667,302 +1957,19 @@ define('zrender/core/matrix',[],function () {
         }
     };
 
-    return matrix;
-});
+    var matrix_1 = matrix;
 
-define('zrender/core/vector',[],function () {
-    var ArrayCtor = typeof Float32Array === 'undefined'
-        ? Array
-        : Float32Array;
-
-    /**
-     * @typedef {Float32Array|Array.<number>} Vector2
-     */
-    /**
-     * 二维向量类
-     * @exports zrender/tool/vector
-     */
-    var vector = {
-        /**
-         * 创建一个向量
-         * @param {number} [x=0]
-         * @param {number} [y=0]
-         * @return {Vector2}
-         */
-        create: function (x, y) {
-            var out = new ArrayCtor(2);
-            if (x == null) {
-                x = 0;
-            }
-            if (y == null) {
-                y = 0;
-            }
-            out[0] = x;
-            out[1] = y;
-            return out;
-        },
-
-        /**
-         * 复制向量数据
-         * @param {Vector2} out
-         * @param {Vector2} v
-         * @return {Vector2}
-         */
-        copy: function (out, v) {
-            out[0] = v[0];
-            out[1] = v[1];
-            return out;
-        },
-
-        /**
-         * 克隆一个向量
-         * @param {Vector2} v
-         * @return {Vector2}
-         */
-        clone: function (v) {
-            var out = new ArrayCtor(2);
-            out[0] = v[0];
-            out[1] = v[1];
-            return out;
-        },
-
-        /**
-         * 设置向量的两个项
-         * @param {Vector2} out
-         * @param {number} a
-         * @param {number} b
-         * @return {Vector2} 结果
-         */
-        set: function (out, a, b) {
-            out[0] = a;
-            out[1] = b;
-            return out;
-        },
-
-        /**
-         * 向量相加
-         * @param {Vector2} out
-         * @param {Vector2} v1
-         * @param {Vector2} v2
-         */
-        add: function (out, v1, v2) {
-            out[0] = v1[0] + v2[0];
-            out[1] = v1[1] + v2[1];
-            return out;
-        },
-
-        /**
-         * 向量缩放后相加
-         * @param {Vector2} out
-         * @param {Vector2} v1
-         * @param {Vector2} v2
-         * @param {number} a
-         */
-        scaleAndAdd: function (out, v1, v2, a) {
-            out[0] = v1[0] + v2[0] * a;
-            out[1] = v1[1] + v2[1] * a;
-            return out;
-        },
-
-        /**
-         * 向量相减
-         * @param {Vector2} out
-         * @param {Vector2} v1
-         * @param {Vector2} v2
-         */
-        sub: function (out, v1, v2) {
-            out[0] = v1[0] - v2[0];
-            out[1] = v1[1] - v2[1];
-            return out;
-        },
-
-        /**
-         * 向量长度
-         * @param {Vector2} v
-         * @return {number}
-         */
-        len: function (v) {
-            return Math.sqrt(this.lenSquare(v));
-        },
-
-        /**
-         * 向量长度平方
-         * @param {Vector2} v
-         * @return {number}
-         */
-        lenSquare: function (v) {
-            return v[0] * v[0] + v[1] * v[1];
-        },
-
-        /**
-         * 向量乘法
-         * @param {Vector2} out
-         * @param {Vector2} v1
-         * @param {Vector2} v2
-         */
-        mul: function (out, v1, v2) {
-            out[0] = v1[0] * v2[0];
-            out[1] = v1[1] * v2[1];
-            return out;
-        },
-
-        /**
-         * 向量除法
-         * @param {Vector2} out
-         * @param {Vector2} v1
-         * @param {Vector2} v2
-         */
-        div: function (out, v1, v2) {
-            out[0] = v1[0] / v2[0];
-            out[1] = v1[1] / v2[1];
-            return out;
-        },
-
-        /**
-         * 向量点乘
-         * @param {Vector2} v1
-         * @param {Vector2} v2
-         * @return {number}
-         */
-        dot: function (v1, v2) {
-            return v1[0] * v2[0] + v1[1] * v2[1];
-        },
-
-        /**
-         * 向量缩放
-         * @param {Vector2} out
-         * @param {Vector2} v
-         * @param {number} s
-         */
-        scale: function (out, v, s) {
-            out[0] = v[0] * s;
-            out[1] = v[1] * s;
-            return out;
-        },
-
-        /**
-         * 向量归一化
-         * @param {Vector2} out
-         * @param {Vector2} v
-         */
-        normalize: function (out, v) {
-            var d = vector.len(v);
-            if (d === 0) {
-                out[0] = 0;
-                out[1] = 0;
-            }
-            else {
-                out[0] = v[0] / d;
-                out[1] = v[1] / d;
-            }
-            return out;
-        },
-
-        /**
-         * 计算向量间距离
-         * @param {Vector2} v1
-         * @param {Vector2} v2
-         * @return {number}
-         */
-        distance: function (v1, v2) {
-            return Math.sqrt(
-                (v1[0] - v2[0]) * (v1[0] - v2[0])
-                + (v1[1] - v2[1]) * (v1[1] - v2[1])
-            );
-        },
-
-        /**
-         * 向量距离平方
-         * @param {Vector2} v1
-         * @param {Vector2} v2
-         * @return {number}
-         */
-        distanceSquare: function (v1, v2) {
-            return (v1[0] - v2[0]) * (v1[0] - v2[0])
-                + (v1[1] - v2[1]) * (v1[1] - v2[1]);
-        },
-
-        /**
-         * 求负向量
-         * @param {Vector2} out
-         * @param {Vector2} v
-         */
-        negate: function (out, v) {
-            out[0] = -v[0];
-            out[1] = -v[1];
-            return out;
-        },
-
-        /**
-         * 插值两个点
-         * @param {Vector2} out
-         * @param {Vector2} v1
-         * @param {Vector2} v2
-         * @param {number} t
-         */
-        lerp: function (out, v1, v2, t) {
-            out[0] = v1[0] + t * (v2[0] - v1[0]);
-            out[1] = v1[1] + t * (v2[1] - v1[1]);
-            return out;
-        },
-
-        /**
-         * 矩阵左乘向量
-         * @param {Vector2} out
-         * @param {Vector2} v
-         * @param {Vector2} m
-         */
-        applyTransform: function (out, v, m) {
-            var x = v[0];
-            var y = v[1];
-            out[0] = m[0] * x + m[2] * y + m[4];
-            out[1] = m[1] * x + m[3] * y + m[5];
-            return out;
-        },
-        /**
-         * 求两个向量最小值
-         * @param  {Vector2} out
-         * @param  {Vector2} v1
-         * @param  {Vector2} v2
-         */
-        min: function (out, v1, v2) {
-            out[0] = Math.min(v1[0], v2[0]);
-            out[1] = Math.min(v1[1], v2[1]);
-            return out;
-        },
-        /**
-         * 求两个向量最大值
-         * @param  {Vector2} out
-         * @param  {Vector2} v1
-         * @param  {Vector2} v2
-         */
-        max: function (out, v1, v2) {
-            out[0] = Math.max(v1[0], v2[0]);
-            out[1] = Math.max(v1[1], v2[1]);
-            return out;
-        }
-    };
-
-    vector.length = vector.len;
-    vector.lengthSquare = vector.lenSquare;
-    vector.dist = vector.distance;
-    vector.distSquare = vector.distanceSquare;
-
-    return vector;
-});
-
+'use strict';
 /**
  * 提供变换扩展
  * @module zrender/mixin/Transformable
  * @author pissang (https://www.github.com/pissang)
  */
-define('zrender/mixin/Transformable',['require','../core/matrix','../core/vector'],function (require) {
+
 
     
-
-    var matrix = require('../core/matrix');
-    var vector = require('../core/vector');
-    var mIdentity = matrix.identity;
+    
+    var mIdentity = matrix_1.identity;
 
     var EPSILON = 5e-5;
 
@@ -2035,7 +2042,7 @@ define('zrender/mixin/Transformable',['require','../core/matrix','../core/vector
             return;
         }
 
-        m = m || matrix.create();
+        m = m || matrix_1.create();
 
         if (needLocalTransform) {
             this.getLocalTransform(m);
@@ -2047,17 +2054,17 @@ define('zrender/mixin/Transformable',['require','../core/matrix','../core/vector
         // 应用父节点变换
         if (parentHasTransform) {
             if (needLocalTransform) {
-                matrix.mul(m, parent.transform, m);
+                matrix_1.mul(m, parent.transform, m);
             }
             else {
-                matrix.copy(m, parent.transform);
+                matrix_1.copy(m, parent.transform);
             }
         }
         // 保存这个变换矩阵
         this.transform = m;
 
-        this.invTransform = this.invTransform || matrix.create();
-        matrix.invert(this.invTransform, m);
+        this.invTransform = this.invTransform || matrix_1.create();
+        matrix_1.invert(this.invTransform, m);
     };
 
     transformableProto.getLocalTransform = function (m) {
@@ -2097,7 +2104,7 @@ define('zrender/mixin/Transformable',['require','../core/matrix','../core/vector
         var m = this.transform;
         if (parent && parent.transform) {
             // Get local transform and decompose them to position, scale, rotation
-            matrix.mul(tmpTransform, parent.invTransform, m);
+            matrix_1.mul(tmpTransform, parent.invTransform, m);
             m = tmpTransform;
         }
         var sx = m[0] * m[0] + m[1] * m[1];
@@ -2153,7 +2160,7 @@ define('zrender/mixin/Transformable',['require','../core/matrix','../core/vector
         var v2 = [x, y];
         var invTransform = this.invTransform;
         if (invTransform) {
-            vector.applyTransform(v2, v2, invTransform);
+            vector_1.applyTransform(v2, v2, invTransform);
         }
         return v2;
     };
@@ -2169,7 +2176,7 @@ define('zrender/mixin/Transformable',['require','../core/matrix','../core/vector
         var v2 = [x, y];
         var transform = this.transform;
         if (transform) {
-            vector.applyTransform(v2, v2, transform);
+            vector_1.applyTransform(v2, v2, transform);
         }
         return v2;
     };
@@ -2196,9 +2203,9 @@ define('zrender/mixin/Transformable',['require','../core/matrix','../core/vector
             m[4] -= origin[0];
             m[5] -= origin[1];
         }
-        matrix.scale(m, m, scale);
+        matrix_1.scale(m, m, scale);
         if (rotation) {
-            matrix.rotate(m, m, rotation);
+            matrix_1.rotate(m, m, rotation);
         }
         if (origin) {
             // Translate back from origin
@@ -2212,15 +2219,14 @@ define('zrender/mixin/Transformable',['require','../core/matrix','../core/vector
         return m;
     };
 
-    return Transformable;
-});
+    var Transformable_1 = Transformable;
 
 /**
  * 缓动代码来自 https://github.com/sole/tween.js/blob/master/src/Tween.js
  * @see http://sole.github.io/tween.js/examples/03_graphs.html
  * @exports zrender/animation/easing
  */
-define('zrender/animation/easing',[],function () {
+
     var easing = {
         /**
         * @param {number} k
@@ -2557,9 +2563,7 @@ define('zrender/animation/easing',[],function () {
         }
     };
 
-    return easing;
-});
-
+    var easing_1 = easing;
 
 /**
  * 动画主控制器
@@ -2575,9 +2579,9 @@ define('zrender/animation/easing',[],function () {
  *
  * TODO pause
  */
-define('zrender/animation/Clip',['require','./easing'],function(require) {
 
-    var easingFuncs = require('./easing');
+
+    
 
     function Clip(options) {
 
@@ -2633,7 +2637,7 @@ define('zrender/animation/Clip',['require','./easing'],function(require) {
             percent = Math.min(percent, 1);
 
             var easing = this.easing;
-            var easingFunc = typeof easing == 'string' ? easingFuncs[easing] : easing;
+            var easingFunc = typeof easing == 'string' ? easing_1[easing] : easing;
             var schedule = typeof easingFunc === 'function'
                 ? easingFunc(percent)
                 : percent;
@@ -2682,12 +2686,11 @@ define('zrender/animation/Clip',['require','./easing'],function(require) {
         }
     };
 
-    return Clip;
-});
+    var Clip_1 = Clip;
 
 // Simple LRU cache use doubly linked list
 // @module zrender/core/LRU
-define('zrender/core/LRU',['require'],function (require) {
+
 
     /**
      * Simple double linked list. Compared with array, it has O(1) remove operation.
@@ -2880,14 +2883,14 @@ define('zrender/core/LRU',['require'],function (require) {
         this._map = {};
     };
 
-    return LRU;
-});
+    var LRU_1 = LRU;
+
 /**
  * @module zrender/tool/color
  */
-define('zrender/tool/color',['require','../core/LRU'],function(require) {
 
-    var LRU = require('../core/LRU');
+
+    
 
     var kCSSColorTable = {
         'transparent': [0,0,0,0], 'aliceblue': [240,248,255,1],
@@ -3026,7 +3029,7 @@ define('zrender/tool/color',['require','../core/LRU'],function(require) {
         out[0] = a[0]; out[1] = a[1]; out[2] = a[2]; out[3] = a[3];
         return out;
     }
-    var colorCache = new LRU(20);
+    var colorCache = new LRU_1(20);
     var lastRemovedArr = null;
     function putToCache(colorStr, rgbaArr) {
         // Reuse removed array
@@ -3402,7 +3405,7 @@ define('zrender/tool/color',['require','../core/LRU'],function(require) {
         return type + '(' + colorStr + ')';
     }
 
-    return {
+    var color = {
         parse: parse,
         lift: lift,
         toHex: toHex,
@@ -3412,18 +3415,16 @@ define('zrender/tool/color',['require','../core/LRU'],function(require) {
         modifyAlpha: modifyAlpha,
         stringify: stringify
     };
-});
-
 
 /**
  * @module echarts/animation/Animator
  */
-define('zrender/animation/Animator',['require','./Clip','../tool/color','../core/util'],function (require) {
 
-    var Clip = require('./Clip');
-    var color = require('../tool/color');
-    var util = require('../core/util');
-    var isArrayLike = util.isArrayLike;
+
+    
+    
+    
+    var isArrayLike$1 = util_1.isArrayLike;
 
     var arraySlice = Array.prototype.slice;
 
@@ -3610,9 +3611,9 @@ define('zrender/animation/Animator',['require','./Clip','../tool/color','../core
     }
 
     function cloneValue(value) {
-        if (isArrayLike(value)) {
+        if (isArrayLike$1(value)) {
             var len = value.length;
-            if (isArrayLike(value[0])) {
+            if (isArrayLike$1(value[0])) {
                 var ret = [];
                 for (var i = 0; i < len; i++) {
                     ret.push(arraySlice.call(value[i]));
@@ -3636,7 +3637,7 @@ define('zrender/animation/Animator',['require','./Clip','../tool/color','../core
 
     function getArrayDim(keyframes) {
         var lastValue = keyframes[keyframes.length - 1].value;
-        return isArrayLike(lastValue && lastValue[0]) ? 2 : 1;
+        return isArrayLike$1(lastValue && lastValue[0]) ? 2 : 1;
     }
 
     function createTrackClip(animator, easing, oneTrackDone, keyframes, propName, forceAnimate) {
@@ -3650,7 +3651,7 @@ define('zrender/animation/Animator',['require','./Clip','../tool/color','../core
         }
         // Guess data type
         var firstVal = keyframes[0].value;
-        var isValueArray = isArrayLike(firstVal);
+        var isValueArray = isArrayLike$1(firstVal);
         var isValueColor = false;
         var isValueString = false;
 
@@ -3837,7 +3838,7 @@ define('zrender/animation/Animator',['require','./Clip','../tool/color','../core
             }
         };
 
-        var clip = new Clip({
+        var clip = new Clip_1({
             target: animator._target,
             life: trackMaxTime,
             loop: animator._loop,
@@ -4068,10 +4069,9 @@ define('zrender/animation/Animator',['require','./Clip','../tool/color','../core
         }
     };
 
-    return Animator;
-});
-define('zrender/config',[],function () {
-    var dpr = 1;
+    var Animator_1 = Animator;
+
+var dpr = 1;
     // If in browser environment
     if (typeof window !== 'undefined') {
         dpr = Math.max(window.devicePixelRatio || 1, 1);
@@ -4093,28 +4093,22 @@ define('zrender/config',[],function () {
         // retina 屏幕优化
         devicePixelRatio: dpr
     };
-    return config;
-});
+    var config_1 = config;
 
-
-define(
-    'zrender/core/log',['require','../config'],function (require) {
-        var config = require('../config');
-
-        /**
+/**
          * @exports zrender/tool/log
          * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
          */
-        return function() {
-            if (config.debugMode === 0) {
+        var log = function() {
+            if (config_1.debugMode === 0) {
                 return;
             }
-            else if (config.debugMode == 1) {
+            else if (config_1.debugMode == 1) {
                 for (var k in arguments) {
                     throw new Error(arguments[k]);
                 }
             }
-            else if (config.debugMode > 1) {
+            else if (config_1.debugMode > 1) {
                 for (var k in arguments) {
                     console.log(arguments[k]);
                 }
@@ -4129,22 +4123,19 @@ define(
                 + document.getElementById('wrong-message').innerHTML;
         };
         */
-    }
-);
 
+'use strict';
 /**
  * @module zrender/mixin/Animatable
  */
-define('zrender/mixin/Animatable',['require','../animation/Animator','../core/util','../core/log'],function(require) {
+
 
     
-
-    var Animator = require('../animation/Animator');
-    var util = require('../core/util');
-    var isString = util.isString;
-    var isFunction = util.isFunction;
-    var isObject = util.isObject;
-    var log = require('../core/log');
+    
+    var isString$1 = util_1.isString;
+    var isFunction$1 = util_1.isFunction;
+    var isObject$1 = util_1.isObject;
+    
 
     /**
      * @alias modue:zrender/mixin/Animatable
@@ -4211,14 +4202,14 @@ define('zrender/mixin/Animatable',['require','../animation/Animator','../core/ut
 
             var animators = el.animators;
 
-            var animator = new Animator(target, loop);
+            var animator = new Animator_1(target, loop);
 
             animator.during(function (target) {
                 el.dirty(animatingShape);
             })
             .done(function () {
                 // FIXME Animator will not be removed if use `Animator#stop` to stop animation
-                animators.splice(util.indexOf(animators, animator), 1);
+                animators.splice(util_1.indexOf(animators, animator), 1);
             });
 
             animators.push(animator);
@@ -4278,24 +4269,24 @@ define('zrender/mixin/Animatable',['require','../animation/Animator','../core/ut
          // TODO Return animation key
         animateTo: function (target, time, delay, easing, callback, forceAnimate) {
             // animateTo(target, time, easing, callback);
-            if (isString(delay)) {
+            if (isString$1(delay)) {
                 callback = easing;
                 easing = delay;
                 delay = 0;
             }
             // animateTo(target, time, delay, callback);
-            else if (isFunction(easing)) {
+            else if (isFunction$1(easing)) {
                 callback = easing;
                 easing = 'linear';
                 delay = 0;
             }
             // animateTo(target, time, callback);
-            else if (isFunction(delay)) {
+            else if (isFunction$1(delay)) {
                 callback = delay;
                 delay = 0;
             }
             // animateTo(target, callback)
-            else if (isFunction(time)) {
+            else if (isFunction$1(time)) {
                 callback = time;
                 time = 500;
             }
@@ -4366,7 +4357,7 @@ define('zrender/mixin/Animatable',['require','../animation/Animator','../core/ut
                 }
 
                 if (source[name] != null) {
-                    if (isObject(target[name]) && !util.isArrayLike(target[name])) {
+                    if (isObject$1(target[name]) && !util_1.isArrayLike(target[name])) {
                         this._animateToShallow(
                             path ? path + '.' + name : name,
                             source[name],
@@ -4405,19 +4396,19 @@ define('zrender/mixin/Animatable',['require','../animation/Animator','../core/ut
         }
     };
 
-    return Animatable;
-});
+    var Animatable_1 = Animatable;
+
+'use strict';
 /**
  * @module zrender/Element
  */
-define('zrender/Element',['require','./core/guid','./mixin/Eventful','./mixin/Transformable','./mixin/Animatable','./core/util'],function(require) {
-    
 
-    var guid = require('./core/guid');
-    var Eventful = require('./mixin/Eventful');
-    var Transformable = require('./mixin/Transformable');
-    var Animatable = require('./mixin/Animatable');
-    var zrUtil = require('./core/util');
+
+    
+    
+    
+    
+    
 
     /**
      * @alias module:zrender/Element
@@ -4428,9 +4419,9 @@ define('zrender/Element',['require','./core/guid','./mixin/Eventful','./mixin/Tr
      */
     var Element = function (opts) {
 
-        Transformable.call(this, opts);
-        Eventful.call(this, opts);
-        Animatable.call(this, opts);
+        Transformable_1.call(this, opts);
+        Eventful_1.call(this, opts);
+        Animatable_1.call(this, opts);
 
         /**
          * 画布元素ID
@@ -4572,7 +4563,7 @@ define('zrender/Element',['require','./core/guid','./mixin/Eventful','./mixin/Tr
             if (typeof key === 'string') {
                 this.attrKV(key, value);
             }
-            else if (zrUtil.isObject(key)) {
+            else if (util_1.isObject(key)) {
                 for (var name in key) {
                     if (key.hasOwnProperty(name)) {
                         this.attrKV(name, key[name]);
@@ -4664,22 +4655,22 @@ define('zrender/Element',['require','./core/guid','./mixin/Eventful','./mixin/Tr
         }
     };
 
-    zrUtil.mixin(Element, Animatable);
-    zrUtil.mixin(Element, Transformable);
-    zrUtil.mixin(Element, Eventful);
+    util_1.mixin(Element, Animatable_1);
+    util_1.mixin(Element, Transformable_1);
+    util_1.mixin(Element, Eventful_1);
 
-    return Element;
-});
+    var Element_1 = Element;
+
+'use strict';
 /**
  * @module echarts/core/BoundingRect
  */
-define('zrender/core/BoundingRect',['require','./vector','./matrix'],function(require) {
+
+
+    
     
 
-    var vec2 = require('./vector');
-    var matrix = require('./matrix');
-
-    var v2ApplyTransform = vec2.applyTransform;
+    var v2ApplyTransform = vector_1.applyTransform;
     var mathMin = Math.min;
     var mathMax = Math.max;
     /**
@@ -4782,12 +4773,12 @@ define('zrender/core/BoundingRect',['require','./vector','./matrix'],function(re
             var sx = b.width / a.width;
             var sy = b.height / a.height;
 
-            var m = matrix.create();
+            var m = matrix_1.create();
 
             // 矩阵右乘
-            matrix.translate(m, m, [-a.x, -a.y]);
-            matrix.scale(m, m, [sx, sy]);
-            matrix.translate(m, m, [b.x, b.y]);
+            matrix_1.translate(m, m, [-a.x, -a.y]);
+            matrix_1.scale(m, m, [sx, sy]);
+            matrix_1.translate(m, m, [b.x, b.y]);
 
             return m;
         },
@@ -4867,14 +4858,14 @@ define('zrender/core/BoundingRect',['require','./vector','./matrix'],function(re
         return new BoundingRect(rect.x, rect.y, rect.width, rect.height);
     };
 
-    return BoundingRect;
-});
+    var BoundingRect_1 = BoundingRect;
+
 /**
  * Group是一个容器，可以插入子节点，Group的变换也会被应用到子节点上
  * @module zrender/graphic/Group
  * @example
- *     var Group = require('zrender/container/Group');
- *     var Circle = require('zrender/graphic/shape/Circle');
+ *     var Group = require('zrender/lib/container/Group');
+ *     var Circle = require('zrender/lib/graphic/shape/Circle');
  *     var g = new Group();
  *     g.position[0] = 100;
  *     g.position[1] = 100;
@@ -4887,11 +4878,11 @@ define('zrender/core/BoundingRect',['require','./vector','./matrix'],function(re
  *     }));
  *     zr.add(g);
  */
-define('zrender/container/Group',['require','../core/util','../Element','../core/BoundingRect'],function (require) {
 
-    var zrUtil = require('../core/util');
-    var Element = require('../Element');
-    var BoundingRect = require('../core/BoundingRect');
+
+    
+    
+    
 
     /**
      * @alias module:zrender/graphic/Group
@@ -4903,7 +4894,7 @@ define('zrender/container/Group',['require','../core/util','../Element','../core
 
         opts = opts || {};
 
-        Element.call(this, opts);
+        Element_1.call(this, opts);
 
         for (var key in opts) {
             if (opts.hasOwnProperty(key)) {
@@ -5040,7 +5031,7 @@ define('zrender/container/Group',['require','../core/util','../Element','../core
             var storage = this.__storage;
             var children = this._children;
 
-            var idx = zrUtil.indexOf(children, child);
+            var idx = util_1.indexOf(children, child);
             if (idx < 0) {
                 return this;
             }
@@ -5148,7 +5139,7 @@ define('zrender/container/Group',['require','../core/util','../Element','../core
         getBoundingRect: function (includeChildren) {
             // TODO Caching
             var rect = null;
-            var tmpRect = new BoundingRect(0, 0, 0, 0);
+            var tmpRect = new BoundingRect_1(0, 0, 0, 0);
             var children = includeChildren || this._children;
             var tmpMat = [];
 
@@ -5182,17 +5173,15 @@ define('zrender/container/Group',['require','../core/util','../Element','../core
         }
     };
 
-    zrUtil.inherits(Group, Element);
+    util_1.inherits(Group, Element_1);
 
-    return Group;
-});
+    var Group_1 = Group;
+
 // https://github.com/mziccard/node-timsort
-define('zrender/core/timsort',[],function () {
+
     var DEFAULT_MIN_MERGE = 32;
 
     var DEFAULT_MIN_GALLOPING = 7;
-
-    var DEFAULT_TMP_STORAGE_LENGTH = 256;
 
     function minRunLength(n) {
         var r = 0;
@@ -5404,22 +5393,11 @@ define('zrender/core/timsort',[],function () {
 
     function TimSort(array, compare) {
         var minGallop = DEFAULT_MIN_GALLOPING;
-        var length = 0;
-        var tmpStorageLength = DEFAULT_TMP_STORAGE_LENGTH;
-        var stackLength = 0;
         var runStart;
         var runLength;
         var stackSize = 0;
 
-        length = array.length;
-
-        if (length < 2 * DEFAULT_TMP_STORAGE_LENGTH) {
-            tmpStorageLength = length >>> 1;
-        }
-
         var tmp = [];
-
-        stackLength = length < 120 ? 5 : length < 1542 ? 10 : length < 119151 ? 19 : 40;
 
         runStart = [];
         runLength = [];
@@ -5860,8 +5838,9 @@ define('zrender/core/timsort',[],function () {
         ts.forceMergeRuns();
     }
 
-    return sort;
-});
+    var timsort = sort;
+
+'use strict';
 /**
  * Storage内容仓库模块
  * @module zrender/Storage
@@ -5869,18 +5848,16 @@ define('zrender/core/timsort',[],function () {
  * @author errorrik (errorrik@gmail.com)
  * @author pissang (https://github.com/pissang/)
  */
-define('zrender/Storage',['require','./core/util','./core/env','./container/Group','./core/timsort'],function (require) {
+
+
+    
+    
 
     
 
-    var util = require('./core/util');
-    var env = require('./core/env');
-
-    var Group = require('./container/Group');
-
     // Use timsort because in most case elements are partially sorted
     // https://jsfiddle.net/pissang/jr4x7mdm/8/
-    var timsort = require('./core/timsort');
+    
 
     function shapeCompareFunc(a, b) {
         if (a.zlevel === b.zlevel) {
@@ -5960,7 +5937,7 @@ define('zrender/Storage',['require','./core/util','./core/env','./container/Grou
             // }
 
             // displayList.sort(shapeCompareFunc);
-            env.canvasSupported && timsort(displayList, shapeCompareFunc);
+            env_1.canvasSupported && timsort(displayList, shapeCompareFunc);
         },
 
         _updateAndAddDisplayable: function (el, clipPaths, includeIgnore) {
@@ -6040,7 +6017,7 @@ define('zrender/Storage',['require','./core/util','./core/env','./container/Grou
                 return;
             }
 
-            if (el instanceof Group) {
+            if (el instanceof Group_1) {
                 el.addChildrenToStorage(this);
             }
 
@@ -6057,7 +6034,7 @@ define('zrender/Storage',['require','./core/util','./core/env','./container/Grou
                 // 不指定el清空
                 for (var i = 0; i < this._roots.length; i++) {
                     var root = this._roots[i];
-                    if (root instanceof Group) {
+                    if (root instanceof Group_1) {
                         root.delChildrenFromStorage(this);
                     }
                 }
@@ -6077,11 +6054,11 @@ define('zrender/Storage',['require','./core/util','./core/env','./container/Grou
             }
 
 
-            var idx = util.indexOf(this._roots, el);
+            var idx = util_1.indexOf(this._roots, el);
             if (idx >= 0) {
                 this.delFromStorage(el);
                 this._roots.splice(idx, 1);
-                if (el instanceof Group) {
+                if (el instanceof Group_1) {
                     el.delChildrenFromStorage(this);
                 }
             }
@@ -6113,22 +6090,22 @@ define('zrender/Storage',['require','./core/util','./core/env','./container/Grou
         displayableSortFunc: shapeCompareFunc
     };
 
-    return Storage;
-});
+    var Storage_1 = Storage;
 
+'use strict';
 /**
  * 事件辅助类
  * @module zrender/core/event
  * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  */
-define('zrender/core/event',['require','../mixin/Eventful','./env'],function(require) {
+
 
     
-
-    var Eventful = require('../mixin/Eventful');
-    var env = require('./env');
+    
 
     var isDomLevel2 = (typeof window !== 'undefined') && !!window.addEventListener;
+
+    var MOUSE_EVENT_REG = /^(?:mouse|pointer|contextmenu|drag|drop)|click/;
 
     function getBoundingClientRect(el) {
         // BlackBerry 5, iOS 3 (original iPhone) don't have getBoundingRect
@@ -6150,7 +6127,7 @@ define('zrender/core/event',['require','../mixin/Eventful','./env'],function(req
         // When mousemove event triggered on ec tooltip, target is not zr painter.dom, and
         // offsetX/Y is relative to e.target, where the calculation of zrX/Y via offsetX/Y
         // is too complex. So css-transfrom dont support in this case temporarily.
-        if (calculate || !env.canvasSupported) {
+        if (calculate || !env_1.canvasSupported) {
             defaultGetZrXY(el, e, out);
         }
         // Caution: In FireFox, layerX/layerY Mouse position relative to the closest positioned
@@ -6160,7 +6137,7 @@ define('zrender/core/event',['require','../mixin/Eventful','./env'],function(req
         // BTW2, (ev.offsetY || ev.pageY - $(ev.target).offset().top) is not correct in preserve-3d.
         // <https://bugs.jquery.com/ticket/8523#comment:14>
         // BTW3, In ff, offsetX/offsetY is always 0.
-        else if (env.browser.firefox && e.layerX != null && e.layerX !== e.offsetX) {
+        else if (env_1.browser.firefox && e.layerX != null && e.layerX !== e.offsetX) {
             out.zrX = e.layerX;
             out.zrY = e.layerY;
         }
@@ -6210,6 +6187,15 @@ define('zrender/core/event',['require','../mixin/Eventful','./env'],function(req
             touch && clientToLocal(el, touch, e, calculate);
         }
 
+        // Add which for click: 1 === left; 2 === middle; 3 === right; otherwise: 0;
+        // See jQuery: https://github.com/jquery/jquery/blob/master/src/event.js
+        // If e.which has been defined, if may be readonly,
+        // see: https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/which
+        var button = e.button;
+        if (e.which == null && button !== undefined && MOUSE_EVENT_REG.test(e.type)) {
+            e.which = (button & 1 ? 1 : (button & 2 ? 3 : (button & 4 ? 2 : 0)));
+        }
+
         return e;
     }
 
@@ -6251,21 +6237,24 @@ define('zrender/core/event',['require','../mixin/Eventful','./env'],function(req
             e.cancelBubble = true;
         };
 
-    return {
+    function notLeftMouse(e) {
+        // If e.which is undefined, considered as left mouse event.
+        return e.which > 1;
+    }
+
+    var event = {
         clientToLocal: clientToLocal,
         normalizeEvent: normalizeEvent,
         addEventListener: addEventListener,
         removeEventListener: removeEventListener,
+        notLeftMouse: notLeftMouse,
 
         stop: stop,
         // 做向上兼容
-        Dispatcher: Eventful
+        Dispatcher: Eventful_1
     };
-});
 
-define('zrender/animation/requestAnimationFrame',['require'],function(require) {
-
-    return (typeof window !== 'undefined' &&
+var requestAnimationFrame = (typeof window !== 'undefined' &&
                 ((window.requestAnimationFrame && window.requestAnimationFrame.bind(window))
                 // https://github.com/ecomfe/zrender/issues/189#issuecomment-224919809
                 || (window.msRequestAnimationFrame && window.msRequestAnimationFrame.bind(window))
@@ -6275,8 +6264,8 @@ define('zrender/animation/requestAnimationFrame',['require'],function(require) {
             || function (func) {
                 setTimeout(func, 16);
             };
-});
 
+'use strict';
 /**
  * 动画主类, 调度和管理所有动画控制器
  *
@@ -6286,16 +6275,14 @@ define('zrender/animation/requestAnimationFrame',['require'],function(require) {
 // TODO Additive animation
 // http://iosoteric.com/additive-animations-animatewithduration-in-ios-8/
 // https://developer.apple.com/videos/wwdc2014/#236
-define('zrender/animation/Animation',['require','../core/util','../core/event','./requestAnimationFrame','./Animator'],function(require) {
+
+
+    
+    var Dispatcher = event.Dispatcher;
 
     
 
-    var util = require('../core/util');
-    var Dispatcher = require('../core/event').Dispatcher;
-
-    var requestAnimationFrame = require('./requestAnimationFrame');
-
-    var Animator = require('./Animator');
+    
     /**
      * @typedef {Object} IZRenderStage
      * @property {Function} update
@@ -6374,7 +6361,7 @@ define('zrender/animation/Animation',['require','../core/util','../core/event','
          * @param {module:zrender/animation/Clip} clip
          */
         removeClip: function(clip) {
-            var idx = util.indexOf(this._clips, clip);
+            var idx = util_1.indexOf(this._clips, clip);
             if (idx >= 0) {
                 this._clips.splice(idx, 1);
             }
@@ -6515,7 +6502,7 @@ define('zrender/animation/Animation',['require','../core/util','../core/event','
         animate: function (target, options) {
             options = options || {};
 
-            var animator = new Animator(
+            var animator = new Animator_1(
                 target,
                 options.loop,
                 options.getter,
@@ -6528,19 +6515,17 @@ define('zrender/animation/Animation',['require','../core/util','../core/event','
         }
     };
 
-    util.mixin(Animation, Dispatcher);
+    util_1.mixin(Animation, Dispatcher);
 
-    return Animation;
-});
+    var Animation_1 = Animation;
 
+'use strict';
 /**
  * Only implements needed gestures for mobile.
  */
-define('zrender/core/GestureMgr',['require','./event'],function(require) {
+
 
     
-
-    var eventUtil = require('./event');
 
     var GestureMgr = function () {
 
@@ -6555,9 +6540,9 @@ define('zrender/core/GestureMgr',['require','./event'],function(require) {
 
         constructor: GestureMgr,
 
-        recognize: function (event, target, root) {
-            this._doTrack(event, target, root);
-            return this._recognize(event);
+        recognize: function (event$$2, target, root) {
+            this._doTrack(event$$2, target, root);
+            return this._recognize(event$$2);
         },
 
         clear: function () {
@@ -6565,8 +6550,8 @@ define('zrender/core/GestureMgr',['require','./event'],function(require) {
             return this;
         },
 
-        _doTrack: function (event, target, root) {
-            var touches = event.touches;
+        _doTrack: function (event$$2, target, root) {
+            var touches = event$$2.touches;
 
             if (!touches) {
                 return;
@@ -6576,12 +6561,12 @@ define('zrender/core/GestureMgr',['require','./event'],function(require) {
                 points: [],
                 touches: [],
                 target: target,
-                event: event
+                event: event$$2
             };
 
             for (var i = 0, len = touches.length; i < len; i++) {
                 var touch = touches[i];
-                var pos = eventUtil.clientToLocal(root, touch, {});
+                var pos = event.clientToLocal(root, touch, {});
                 trackItem.points.push([pos.zrX, pos.zrY]);
                 trackItem.touches.push(touch);
             }
@@ -6589,10 +6574,10 @@ define('zrender/core/GestureMgr',['require','./event'],function(require) {
             this._track.push(trackItem);
         },
 
-        _recognize: function (event) {
+        _recognize: function (event$$2) {
             for (var eventName in recognizers) {
                 if (recognizers.hasOwnProperty(eventName)) {
-                    var gestureInfo = recognizers[eventName](this._track, event);
+                    var gestureInfo = recognizers[eventName](this._track, event$$2);
                     if (gestureInfo) {
                         return gestureInfo;
                     }
@@ -6617,7 +6602,7 @@ define('zrender/core/GestureMgr',['require','./event'],function(require) {
 
     var recognizers = {
 
-        pinch: function (track, event) {
+        pinch: function (track, event$$2) {
             var trackLen = track.length;
 
             if (!trackLen) {
@@ -6635,16 +6620,16 @@ define('zrender/core/GestureMgr',['require','./event'],function(require) {
                 var pinchScale = dist(pinchEnd) / dist(pinchPre);
                 !isFinite(pinchScale) && (pinchScale = 1);
 
-                event.pinchScale = pinchScale;
+                event$$2.pinchScale = pinchScale;
 
                 var pinchCenter = center(pinchEnd);
-                event.pinchX = pinchCenter[0];
-                event.pinchY = pinchCenter[1];
+                event$$2.pinchX = pinchCenter[0];
+                event$$2.pinchY = pinchCenter[1];
 
                 return {
                     type: 'pinch',
                     target: track[0].target,
-                    event: event
+                    event: event$$2
                 };
             }
         }
@@ -6652,20 +6637,11 @@ define('zrender/core/GestureMgr',['require','./event'],function(require) {
         // Only pinch currently.
     };
 
-    return GestureMgr;
-});
+    var GestureMgr_1 = GestureMgr;
 
-define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../mixin/Eventful','../core/env','../core/GestureMgr'],function (require) {
-
-    var eventTool = require('../core/event');
-    var zrUtil = require('../core/util');
-    var Eventful = require('../mixin/Eventful');
-    var env = require('../core/env');
-    var GestureMgr = require('../core/GestureMgr');
-
-    var addEventListener = eventTool.addEventListener;
-    var removeEventListener = eventTool.removeEventListener;
-    var normalizeEvent = eventTool.normalizeEvent;
+var addEventListener$1 = event.addEventListener;
+    var removeEventListener$1 = event.removeEventListener;
+    var normalizeEvent$1 = event.normalizeEvent;
 
     var TOUCH_CLICK_DELAY = 300;
 
@@ -6682,23 +6658,23 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
         pointerdown: 1, pointerup: 1, pointermove: 1, pointerout: 1
     };
 
-    var pointerHandlerNames = zrUtil.map(mouseHandlerNames, function (name) {
+    var pointerHandlerNames = util_1.map(mouseHandlerNames, function (name) {
         var nm = name.replace('mouse', 'pointer');
         return pointerEventNames[nm] ? nm : name;
     });
 
     function eventNameFix(name) {
-        return (name === 'mousewheel' && env.browser.firefox) ? 'DOMMouseScroll' : name;
+        return (name === 'mousewheel' && env_1.browser.firefox) ? 'DOMMouseScroll' : name;
     }
 
-    function processGesture(proxy, event, stage) {
+    function processGesture(proxy, event$$2, stage) {
         var gestureMgr = proxy._gestureMgr;
 
         stage === 'start' && gestureMgr.clear();
 
         var gestureInfo = gestureMgr.recognize(
-            event,
-            proxy.handler.findHover(event.zrX, event.zrY, null).target,
+            event$$2,
+            proxy.handler.findHover(event$$2.zrX, event$$2.zrY, null).target,
             proxy.dom
         );
 
@@ -6707,7 +6683,7 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
         // Do not do any preventDefault here. Upper application do that if necessary.
         if (gestureInfo) {
             var type = gestureInfo.type;
-            event.gestureEvent = type;
+            event$$2.gestureEvent = type;
 
             proxy.handler.dispatchToElement({target: gestureInfo.target}, type, gestureInfo.event);
         }
@@ -6748,10 +6724,10 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
          * @inner
          * @param {Event} event
          */
-        mousemove: function (event) {
-            event = normalizeEvent(this.dom, event);
+        mousemove: function (event$$2) {
+            event$$2 = normalizeEvent$1(this.dom, event$$2);
 
-            this.trigger('mousemove', event);
+            this.trigger('mousemove', event$$2);
         },
 
         /**
@@ -6759,10 +6735,10 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
          * @inner
          * @param {Event} event
          */
-        mouseout: function (event) {
-            event = normalizeEvent(this.dom, event);
+        mouseout: function (event$$2) {
+            event$$2 = normalizeEvent$1(this.dom, event$$2);
 
-            var element = event.toElement || event.relatedTarget;
+            var element = event$$2.toElement || event$$2.relatedTarget;
             if (element != this.dom) {
                 while (element && element.nodeType != 9) {
                     // 忽略包含在root中的dom引起的mouseOut
@@ -6774,7 +6750,7 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
                 }
             }
 
-            this.trigger('mouseout', event);
+            this.trigger('mouseout', event$$2);
         },
 
         /**
@@ -6782,24 +6758,24 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
          * @inner
          * @param {Event} event
          */
-        touchstart: function (event) {
+        touchstart: function (event$$2) {
             // Default mouse behaviour should not be disabled here.
             // For example, page may needs to be slided.
-            event = normalizeEvent(this.dom, event);
+            event$$2 = normalizeEvent$1(this.dom, event$$2);
 
             // Mark touch, which is useful in distinguish touch and
             // mouse event in upper applicatoin.
-            event.zrByTouch = true;
+            event$$2.zrByTouch = true;
 
             this._lastTouchMoment = new Date();
 
-            processGesture(this, event, 'start');
+            processGesture(this, event$$2, 'start');
 
             // In touch device, trigger `mousemove`(`mouseover`) should
             // be triggered, and must before `mousedown` triggered.
-            domHandlers.mousemove.call(this, event);
+            domHandlers.mousemove.call(this, event$$2);
 
-            domHandlers.mousedown.call(this, event);
+            domHandlers.mousedown.call(this, event$$2);
 
             setTouchTimer(this);
         },
@@ -6809,20 +6785,20 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
          * @inner
          * @param {Event} event
          */
-        touchmove: function (event) {
+        touchmove: function (event$$2) {
 
-            event = normalizeEvent(this.dom, event);
+            event$$2 = normalizeEvent$1(this.dom, event$$2);
 
             // Mark touch, which is useful in distinguish touch and
             // mouse event in upper applicatoin.
-            event.zrByTouch = true;
+            event$$2.zrByTouch = true;
 
-            processGesture(this, event, 'change');
+            processGesture(this, event$$2, 'change');
 
             // Mouse move should always be triggered no matter whether
             // there is gestrue event, because mouse move and pinch may
             // be used at the same time.
-            domHandlers.mousemove.call(this, event);
+            domHandlers.mousemove.call(this, event$$2);
 
             setTouchTimer(this);
         },
@@ -6832,17 +6808,17 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
          * @inner
          * @param {Event} event
          */
-        touchend: function (event) {
+        touchend: function (event$$2) {
 
-            event = normalizeEvent(this.dom, event);
+            event$$2 = normalizeEvent$1(this.dom, event$$2);
 
             // Mark touch, which is useful in distinguish touch and
             // mouse event in upper applicatoin.
-            event.zrByTouch = true;
+            event$$2.zrByTouch = true;
 
-            processGesture(this, event, 'end');
+            processGesture(this, event$$2, 'end');
 
-            domHandlers.mouseup.call(this, event);
+            domHandlers.mouseup.call(this, event$$2);
 
             // Do not trigger `mouseout` here, in spite of `mousemove`(`mouseover`) is
             // triggered in `touchstart`. This seems to be illogical, but by this mechanism,
@@ -6855,49 +6831,49 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
             // click event should always be triggered no matter whether
             // there is gestrue event. System click can not be prevented.
             if (+new Date() - this._lastTouchMoment < TOUCH_CLICK_DELAY) {
-                domHandlers.click.call(this, event);
+                domHandlers.click.call(this, event$$2);
             }
 
             setTouchTimer(this);
         },
 
-        pointerdown: function (event) {
-            domHandlers.mousedown.call(this, event);
+        pointerdown: function (event$$2) {
+            domHandlers.mousedown.call(this, event$$2);
 
             // if (useMSGuesture(this, event)) {
             //     this._msGesture.addPointer(event.pointerId);
             // }
         },
 
-        pointermove: function (event) {
+        pointermove: function (event$$2) {
             // FIXME
             // pointermove is so sensitive that it always triggered when
             // tap(click) on touch screen, which affect some judgement in
             // upper application. So, we dont support mousemove on MS touch
             // device yet.
-            if (!isPointerFromTouch(event)) {
-                domHandlers.mousemove.call(this, event);
+            if (!isPointerFromTouch(event$$2)) {
+                domHandlers.mousemove.call(this, event$$2);
             }
         },
 
-        pointerup: function (event) {
-            domHandlers.mouseup.call(this, event);
+        pointerup: function (event$$2) {
+            domHandlers.mouseup.call(this, event$$2);
         },
 
-        pointerout: function (event) {
+        pointerout: function (event$$2) {
             // pointerout will be triggered when tap on touch screen
             // (IE11+/Edge on MS Surface) after click event triggered,
             // which is inconsistent with the mousout behavior we defined
             // in touchend. So we unify them.
             // (check domHandlers.touchend for detailed explanation)
-            if (!isPointerFromTouch(event)) {
-                domHandlers.mouseout.call(this, event);
+            if (!isPointerFromTouch(event$$2)) {
+                domHandlers.mouseout.call(this, event$$2);
             }
         }
     };
 
-    function isPointerFromTouch(event) {
-        var pointerType = event.pointerType;
+    function isPointerFromTouch(event$$2) {
+        var pointerType = event$$2.pointerType;
         return pointerType === 'pen' || pointerType === 'touch';
     }
 
@@ -6906,10 +6882,10 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
     // }
 
     // Common handlers
-    zrUtil.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick', 'contextmenu'], function (name) {
-        domHandlers[name] = function (event) {
-            event = normalizeEvent(this.dom, event);
-            this.trigger(name, event);
+    util_1.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick', 'contextmenu'], function (name) {
+        domHandlers[name] = function (event$$2) {
+            event$$2 = normalizeEvent$1(this.dom, event$$2);
+            this.trigger(name, event$$2);
         };
     });
 
@@ -6920,15 +6896,15 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
      * @param {module:zrender/Handler} instance 控制类实例
      */
     function initDomHandler(instance) {
-        zrUtil.each(touchHandlerNames, function (name) {
-            instance._handlers[name] = zrUtil.bind(domHandlers[name], instance);
+        util_1.each(touchHandlerNames, function (name) {
+            instance._handlers[name] = util_1.bind(domHandlers[name], instance);
         });
 
-        zrUtil.each(pointerHandlerNames, function (name) {
-            instance._handlers[name] = zrUtil.bind(domHandlers[name], instance);
+        util_1.each(pointerHandlerNames, function (name) {
+            instance._handlers[name] = util_1.bind(domHandlers[name], instance);
         });
 
-        zrUtil.each(mouseHandlerNames, function (name) {
+        util_1.each(mouseHandlerNames, function (name) {
             instance._handlers[name] = makeMouseHandler(domHandlers[name], instance);
         });
 
@@ -6944,7 +6920,7 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
 
 
     function HandlerDomProxy(dom) {
-        Eventful.call(this);
+        Eventful_1.call(this);
 
         this.dom = dom;
 
@@ -6964,13 +6940,13 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
          * @private
          * @type {module:zrender/core/GestureMgr}
          */
-        this._gestureMgr = new GestureMgr();
+        this._gestureMgr = new GestureMgr_1();
 
         this._handlers = {};
 
         initDomHandler(this);
 
-        if (env.pointerEventsSupported) { // Only IE11+/Edge
+        if (env_1.pointerEventsSupported) { // Only IE11+/Edge
             // 1. On devices that both enable touch and mouse (e.g., MS Surface and lenovo X240),
             // IE11+/Edge do not trigger touch event, but trigger pointer event and mouse event
             // at the same time.
@@ -6995,7 +6971,7 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
             // }
         }
         else {
-            if (env.touchEventsSupported) {
+            if (env_1.touchEventsSupported) {
                 mountHandlers(touchHandlerNames, this);
                 // Handler of 'mouseout' event is needed in touch mode, which will be mounted below.
                 // addEventListener(root, 'mouseout', this._mouseoutHandler);
@@ -7010,8 +6986,8 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
         }
 
         function mountHandlers(handlerNames, instance) {
-            zrUtil.each(handlerNames, function (name) {
-                addEventListener(dom, eventNameFix(name), instance._handlers[name]);
+            util_1.each(handlerNames, function (name) {
+                addEventListener$1(dom, eventNameFix(name), instance._handlers[name]);
             }, instance);
         }
     }
@@ -7022,7 +6998,7 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
 
         for (var i = 0; i < handlerNames.length; i++) {
             var name = handlerNames[i];
-            removeEventListener(this.dom, eventNameFix(name), this._handlers[name]);
+            removeEventListener$1(this.dom, eventNameFix(name), this._handlers[name]);
         }
     };
 
@@ -7030,22 +7006,19 @@ define('zrender/dom/HandlerProxy',['require','../core/event','../core/util','../
         this.dom.style.cursor = cursorStyle || 'default';
     };
 
-    zrUtil.mixin(HandlerDomProxy, Eventful);
+    util_1.mixin(HandlerDomProxy, Eventful_1);
 
-    return HandlerDomProxy;
-});
-define('zrender/graphic/helper/image',['require','../../core/LRU'],function (require) {
+    var HandlerProxy = HandlerDomProxy;
 
-    var LRU = require('../../core/LRU');
-    var globalImageCache = new LRU(50);
+var globalImageCache = new LRU_1(50);
 
-    var helper = {};
+    var helper$1 = {};
 
     /**
      * @param {string|HTMLImageElement|HTMLCanvasElement|Canvas} newImageOrSrc
      * @return {HTMLImageElement|HTMLCanvasElement|Canvas} image
      */
-    helper.findExistImage = function (newImageOrSrc) {
+    helper$1.findExistImage = function (newImageOrSrc) {
         if (typeof newImageOrSrc === 'string') {
             var cachedImgObj = globalImageCache.get(newImageOrSrc);
             return cachedImgObj && cachedImgObj.image;
@@ -7066,7 +7039,7 @@ define('zrender/graphic/helper/image',['require','../../core/LRU'],function (req
      * @param {Object} [cbPayload] Payload on cb calling.
      * @return {HTMLImageElement|HTMLCanvasElement|Canvas} image
      */
-    helper.createOrUpdateImage = function (newImageOrSrc, image, hostEl, cb, cbPayload) {
+    helper$1.createOrUpdateImage = function (newImageOrSrc, image, hostEl, cb, cbPayload) {
         if (!newImageOrSrc) {
             return image;
         }
@@ -7123,28 +7096,21 @@ define('zrender/graphic/helper/image',['require','../../core/LRU'],function (req
         cachedImgObj.pending.length = 0;
     }
 
-    var isImageReady = helper.isImageReady = function (image) {
+    var isImageReady = helper$1.isImageReady = function (image) {
         return image && image.width && image.height;
     };
 
-    return helper;
+    var image = helper$1;
 
-});
-define('zrender/contain/text',['require','../core/util','../core/BoundingRect','../graphic/helper/image'],function (require) {
-
-    var util = require('../core/util');
-    var BoundingRect = require('../core/BoundingRect');
-    var imageHelper = require('../graphic/helper/image');
-
-    var textWidthCache = {};
+var textWidthCache = {};
     var textWidthCacheCounter = 0;
 
     var TEXT_CACHE_MAX = 5000;
     var STYLE_REG = /\{([a-zA-Z0-9_]+)\|([^}]*)\}/g;
     var DEFAULT_FONT = '12px sans-serif';
 
-    var retrieve2 = util.retrieve2;
-    var retrieve3 = util.retrieve3;
+    var retrieve2$2 = util_1.retrieve2;
+    var retrieve3$2 = util_1.retrieve3;
 
     /**
      * @public
@@ -7205,7 +7171,7 @@ define('zrender/contain/text',['require','../core/util','../core/BoundingRect','
         var x = adjustTextX(0, outerWidth, textAlign);
         var y = adjustTextY(0, outerHeight, textVerticalAlign);
 
-        var rect = new BoundingRect(x, y, outerWidth, outerHeight);
+        var rect = new BoundingRect_1(x, y, outerWidth, outerHeight);
         rect.lineHeight = contentBlock.lineHeight;
 
         return rect;
@@ -7225,7 +7191,7 @@ define('zrender/contain/text',['require','../core/util','../core/BoundingRect','
         var x = adjustTextX(0, outerWidth, textAlign);
         var y = adjustTextY(0, outerHeight, textVerticalAlign);
 
-        return new BoundingRect(x, y, outerWidth, outerHeight);
+        return new BoundingRect_1(x, y, outerWidth, outerHeight);
     }
 
     /**
@@ -7397,19 +7363,19 @@ define('zrender/contain/text',['require','../core/util','../core/BoundingRect','
     }
 
     function prepareTruncateOptions(containerWidth, font, ellipsis, options) {
-        options = util.extend({}, options);
+        options = util_1.extend({}, options);
 
         options.font = font;
-        var ellipsis = retrieve2(ellipsis, '...');
-        options.maxIterations = retrieve2(options.maxIterations, 2);
-        var minChar = options.minChar = retrieve2(options.minChar, 0);
+        var ellipsis = retrieve2$2(ellipsis, '...');
+        options.maxIterations = retrieve2$2(options.maxIterations, 2);
+        var minChar = options.minChar = retrieve2$2(options.minChar, 0);
         // FIXME
         // Other languages?
         options.cnCharWidth = getTextWidth('国', font);
         // FIXME
         // Consider proportional font?
         var ascCharWidth = options.ascCharWidth = getTextWidth('a', font);
-        options.placeholder = retrieve2(options.placeholder, '');
+        options.placeholder = retrieve2$2(options.placeholder, '');
 
         // Example 1: minChar: 3, text: 'asdfzxcv', truncate result: 'asdf', but not: 'a...'.
         // Example 2: minChar: 3, text: '维度', truncate result: '维', but not: '...'.
@@ -7499,7 +7465,7 @@ define('zrender/contain/text',['require','../core/util','../core/BoundingRect','
      * @return {Object} width
      */
     function measureText(text, font) {
-        var ctx = util.getContext();
+        var ctx = util_1.getContext();
         ctx.font = font || DEFAULT_FONT;
         return ctx.measureText(text);
     }
@@ -7640,14 +7606,14 @@ define('zrender/contain/text',['require','../core/util','../core/BoundingRect','
                 var font = token.font = tokenStyle.font || style.font;
 
                 // textHeight can be used when textVerticalAlign is specified in token.
-                var tokenHeight = token.textHeight = retrieve2(
+                var tokenHeight = token.textHeight = retrieve2$2(
                     // textHeight should not be inherited, consider it can be specified
                     // as box height of the block.
                     tokenStyle.textHeight, textContain.getLineHeight(font)
                 );
                 textPadding && (tokenHeight += textPadding[0] + textPadding[2]);
                 token.height = tokenHeight;
-                token.lineHeight = retrieve3(
+                token.lineHeight = retrieve3$2(
                     tokenStyle.textLineHeight, style.textLineHeight, tokenHeight
                 );
 
@@ -7691,8 +7657,8 @@ define('zrender/contain/text',['require','../core/util','../core/BoundingRect','
                         // `imageHelper.createOrUpdateImage` in `graphic/helper/text.js#renderRichText`
                         // which ensures that image will not be rendered before correct size calcualted.
                         if (bgImg) {
-                            bgImg = imageHelper.findExistImage(bgImg);
-                            if (imageHelper.isImageReady(bgImg)) {
+                            bgImg = image.findExistImage(bgImg);
+                            if (image.isImageReady(bgImg)) {
                                 tokenWidth = Math.max(tokenWidth, bgImg.width * tokenHeight / bgImg.height);
                             }
                         }
@@ -7729,8 +7695,8 @@ define('zrender/contain/text',['require','../core/util','../core/BoundingRect','
             contentWidth = Math.max(contentWidth, lineWidth);
         }
 
-        contentBlock.outerWidth = contentBlock.width = retrieve2(style.textWidth, contentWidth);
-        contentBlock.outerHeight = contentBlock.height = retrieve2(style.textHeight, contentHeight);
+        contentBlock.outerWidth = contentBlock.width = retrieve2$2(style.textWidth, contentWidth);
+        contentBlock.outerHeight = contentBlock.height = retrieve2$2(style.textHeight, contentHeight);
 
         if (stlPadding) {
             contentBlock.outerWidth += stlPadding[1] + stlPadding[3];
@@ -7825,11 +7791,9 @@ define('zrender/contain/text',['require','../core/util','../core/BoundingRect','
         DEFAULT_FONT: DEFAULT_FONT
     };
 
-    return textContain;
-});
-define('zrender/graphic/helper/roundRect',['require'],function (require) {
+    var text$2 = textContain;
 
-    return {
+var roundRect = {
         buildPath: function (ctx, shape) {
             var x = shape.x;
             var y = shape.y;
@@ -7916,16 +7880,9 @@ define('zrender/graphic/helper/roundRect',['require'],function (require) {
             r1 !== 0 && ctx.quadraticCurveTo(x, y, x + r1, y);
         }
     };
-});
-define('zrender/graphic/helper/text',['require','../../contain/text','../../core/util','./roundRect','./image'],function (require) {
 
-    var textContain = require('../../contain/text');
-    var util = require('../../core/util');
-    var roundRectHelper = require('./roundRect');
-    var imageHelper = require('./image');
-
-    var retrieve3 = util.retrieve3;
-    var retrieve2 = util.retrieve2;
+var retrieve3$1 = util_1.retrieve3;
+    var retrieve2$1 = util_1.retrieve2;
 
     // TODO: Have not support 'start', 'end' yet.
     var VALID_TEXT_ALIGN = {left: 1, right: 1, center: 1};
@@ -7939,14 +7896,14 @@ define('zrender/graphic/helper/text',['require','../../contain/text','../../core
      */
     helper.normalizeTextStyle = function (style) {
         normalizeStyle(style);
-        util.each(style.rich, normalizeStyle);
+        util_1.each(style.rich, normalizeStyle);
         return style;
     };
 
     function normalizeStyle(style) {
         if (style) {
 
-            style.font = textContain.makeFont(style);
+            style.font = text$2.makeFont(style);
 
             var textAlign = style.textAlign;
             textAlign === 'middle' && (textAlign = 'center');
@@ -7963,7 +7920,7 @@ define('zrender/graphic/helper/text',['require','../../contain/text','../../core
 
             var textPadding = style.textPadding;
             if (textPadding) {
-                style.textPadding = util.normalizeCssArray(style.textPadding);
+                style.textPadding = util_1.normalizeCssArray(style.textPadding);
             }
         }
     }
@@ -7982,13 +7939,13 @@ define('zrender/graphic/helper/text',['require','../../contain/text','../../core
     };
 
     function renderPlainText(hostEl, ctx, text, style, rect) {
-        var font = setCtx(ctx, 'font', style.font || textContain.DEFAULT_FONT);
+        var font = setCtx(ctx, 'font', style.font || text$2.DEFAULT_FONT);
 
         var textPadding = style.textPadding;
 
         var contentBlock = hostEl.__textCotentBlock;
         if (!contentBlock || hostEl.__dirty) {
-            contentBlock = hostEl.__textCotentBlock = textContain.parsePlainText(
+            contentBlock = hostEl.__textCotentBlock = text$2.parsePlainText(
                 text, font, textPadding, style.truncate
             );
         }
@@ -8007,17 +7964,17 @@ define('zrender/graphic/helper/text',['require','../../contain/text','../../core
         // Origin of textRotation should be the base point of text drawing.
         applyTextRotation(ctx, style, rect, baseX, baseY);
 
-        var boxY = textContain.adjustTextY(baseY, outerHeight, textVerticalAlign);
+        var boxY = text$2.adjustTextY(baseY, outerHeight, textVerticalAlign);
         var textX = baseX;
         var textY = boxY;
 
         var needDrawBg = needDrawBackground(style);
         if (needDrawBg || textPadding) {
             // Consider performance, do not call getTextWidth util necessary.
-            var textWidth = textContain.getWidth(text, font);
+            var textWidth = text$2.getWidth(text, font);
             var outerWidth = textWidth;
             textPadding && (outerWidth += textPadding[1] + textPadding[3]);
-            var boxX = textContain.adjustTextX(baseX, outerWidth, textAlign);
+            var boxX = text$2.adjustTextX(baseX, outerWidth, textAlign);
 
             needDrawBg && drawBackground(hostEl, ctx, style, boxX, boxY, outerWidth, outerHeight);
 
@@ -8065,7 +8022,7 @@ define('zrender/graphic/helper/text',['require','../../contain/text','../../core
         var contentBlock = hostEl.__textCotentBlock;
 
         if (!contentBlock || hostEl.__dirty) {
-            contentBlock = hostEl.__textCotentBlock = textContain.parseRichText(text, style);
+            contentBlock = hostEl.__textCotentBlock = text$2.parseRichText(text, style);
         }
 
         drawRichText(hostEl, ctx, contentBlock, style, rect);
@@ -8086,8 +8043,8 @@ define('zrender/graphic/helper/text',['require','../../contain/text','../../core
         // Origin of textRotation should be the base point of text drawing.
         applyTextRotation(ctx, style, rect, baseX, baseY);
 
-        var boxX = textContain.adjustTextX(baseX, outerWidth, textAlign);
-        var boxY = textContain.adjustTextY(baseY, outerHeight, textVerticalAlign);
+        var boxX = text$2.adjustTextX(baseX, outerWidth, textAlign);
+        var boxY = text$2.adjustTextY(baseY, outerHeight, textVerticalAlign);
         var xLeft = boxX;
         var lineTop = boxY;
         if (textPadding) {
@@ -8201,21 +8158,21 @@ define('zrender/graphic/helper/text',['require','../../contain/text','../../core
             y -= token.height / 2 - textPadding[2] - token.textHeight / 2;
         }
 
-        setCtx(ctx, 'shadowBlur', retrieve3(tokenStyle.textShadowBlur, style.textShadowBlur, 0));
+        setCtx(ctx, 'shadowBlur', retrieve3$1(tokenStyle.textShadowBlur, style.textShadowBlur, 0));
         setCtx(ctx, 'shadowColor', tokenStyle.textShadowColor || style.textShadowColor || 'transparent');
-        setCtx(ctx, 'shadowOffsetX', retrieve3(tokenStyle.textShadowOffsetX, style.textShadowOffsetX, 0));
-        setCtx(ctx, 'shadowOffsetY', retrieve3(tokenStyle.textShadowOffsetY, style.textShadowOffsetY, 0));
+        setCtx(ctx, 'shadowOffsetX', retrieve3$1(tokenStyle.textShadowOffsetX, style.textShadowOffsetX, 0));
+        setCtx(ctx, 'shadowOffsetY', retrieve3$1(tokenStyle.textShadowOffsetY, style.textShadowOffsetY, 0));
 
         setCtx(ctx, 'textAlign', textAlign);
         // Force baseline to be "middle". Otherwise, if using "top", the
         // text will offset downward a little bit in font "Microsoft YaHei".
         setCtx(ctx, 'textBaseline', 'middle');
 
-        setCtx(ctx, 'font', token.font || textContain.DEFAULT_FONT);
+        setCtx(ctx, 'font', token.font || text$2.DEFAULT_FONT);
 
         var textStroke = getStroke(tokenStyle.textStroke || style.textStroke, textLineWidth);
         var textFill = getFill(tokenStyle.textFill || style.textFill);
-        var textLineWidth = retrieve2(tokenStyle.textLineWidth, style.textLineWidth);
+        var textLineWidth = retrieve2$1(tokenStyle.textLineWidth, style.textLineWidth);
 
         // Fill after stroke so the outline will not cover the main part.
         if (textStroke) {
@@ -8240,7 +8197,7 @@ define('zrender/graphic/helper/text',['require','../../contain/text','../../core
         var textBackgroundColor = style.textBackgroundColor;
         var textBorderWidth = style.textBorderWidth;
         var textBorderColor = style.textBorderColor;
-        var isPlainBg = util.isString(textBackgroundColor);
+        var isPlainBg = util_1.isString(textBackgroundColor);
 
         setCtx(ctx, 'shadowBlur', style.textBoxShadowBlur || 0);
         setCtx(ctx, 'shadowColor', style.textBoxShadowColor || 'transparent');
@@ -8254,7 +8211,7 @@ define('zrender/graphic/helper/text',['require','../../contain/text','../../core
                 ctx.rect(x, y, width, height);
             }
             else {
-                roundRectHelper.buildPath(ctx, {
+                roundRect.buildPath(ctx, {
                     x: x, y: y, width: width, height: height, r: textBorderRadius
                 });
             }
@@ -8265,14 +8222,14 @@ define('zrender/graphic/helper/text',['require','../../contain/text','../../core
             setCtx(ctx, 'fillStyle', textBackgroundColor);
             ctx.fill();
         }
-        else if (util.isObject(textBackgroundColor)) {
-            var image = textBackgroundColor.image;
+        else if (util_1.isObject(textBackgroundColor)) {
+            var image$$1 = textBackgroundColor.image;
 
-            image = imageHelper.createOrUpdateImage(
-                image, null, hostEl, onBgImageLoaded, textBackgroundColor
+            image$$1 = image.createOrUpdateImage(
+                image$$1, null, hostEl, onBgImageLoaded, textBackgroundColor
             );
-            if (image && imageHelper.isImageReady(image)) {
-                ctx.drawImage(image, x, y, width, height);
+            if (image$$1 && image.isImageReady(image$$1)) {
+                ctx.drawImage(image$$1, x, y, width, height);
             }
         }
 
@@ -8283,10 +8240,10 @@ define('zrender/graphic/helper/text',['require','../../contain/text','../../core
         }
     }
 
-    function onBgImageLoaded(image, textBackgroundColor) {
+    function onBgImageLoaded(image$$1, textBackgroundColor) {
         // Replace image, so that `contain/text.js#parseRichText`
         // will get correct result in next tick.
-        textBackgroundColor.image = image;
+        textBackgroundColor.image = image$$1;
     }
 
     function getBoxPosition(blockHeiht, style, rect) {
@@ -8304,7 +8261,7 @@ define('zrender/graphic/helper/text',['require','../../contain/text','../../core
                 baseY = rect.y + parsePercent(textPosition[1], rect.height);
             }
             else {
-                var res = textContain.adjustTextPositionOnRect(
+                var res = text$2.adjustTextPositionOnRect(
                     textPosition, rect, style.textDistance
                 );
                 baseX = res.x;
@@ -8394,16 +8351,14 @@ define('zrender/graphic/helper/text',['require','../../contain/text','../../core
             );
     };
 
-    return helper;
-
-});
+    var text = helper;
 
 /**
  * @module zrender/graphic/Style
  */
-define('zrender/graphic/Style',['require','./helper/text'],function (require) {
 
-    var textHelper = require('./helper/text');
+
+    
 
     var STYLE_COMMON_PROPS = [
         ['shadowBlur', 0], ['shadowOffsetX', 0], ['shadowOffsetY', 0], ['shadowColor', '#000'],
@@ -8871,11 +8826,9 @@ define('zrender/graphic/Style',['require','./helper/text'],function (require) {
     // Provide for others
     Style.getGradient = styleProto.getGradient;
 
-    return Style;
-});
-define('zrender/graphic/Pattern',['require'],function (require) {
+    var Style_1 = Style;
 
-    var Pattern = function (image, repeat) {
+var Pattern = function (image, repeat) {
         // Should do nothing more in this constructor. Because gradient can be
         // declard by `color: {image: ...}`, where this constructor will not be called.
 
@@ -8890,18 +8843,18 @@ define('zrender/graphic/Pattern',['require'],function (require) {
         return ctx.createPattern(this.image, this.repeat || 'repeat');
     };
 
-    return Pattern;
-});
+    var Pattern_1 = Pattern;
+
 /**
  * @module zrender/Layer
  * @author pissang(https://www.github.com/pissang)
  */
-define('zrender/Layer',['require','./core/util','./config','./graphic/Style','./graphic/Pattern'],function (require) {
 
-    var util = require('./core/util');
-    var config = require('./config');
-    var Style = require('./graphic/Style');
-    var Pattern = require('./graphic/Pattern');
+
+    
+    
+    
+    
 
     function returnFalse() {
         return false;
@@ -8946,12 +8899,12 @@ define('zrender/Layer',['require','./core/util','./config','./graphic/Style','./
      */
     var Layer = function(id, painter, dpr) {
         var dom;
-        dpr = dpr || config.devicePixelRatio;
+        dpr = dpr || config_1.devicePixelRatio;
         if (typeof id === 'string') {
             dom = createDom(id, 'canvas', painter, dpr);
         }
         // Not using isDom because in node it will return false
-        else if (util.isObject(id)) {
+        else if (util_1.isObject(id)) {
             dom = id;
             id = dom.id;
         }
@@ -9092,7 +9045,7 @@ define('zrender/Layer',['require','./core/util','./config','./graphic/Style','./
                 // Gradient
                 if (clearColor.colorStops) {
                     // Cache canvas gradient
-                    clearColorGradientOrPattern = clearColor.__canvasGradient || Style.getGradient(ctx, clearColor, {
+                    clearColorGradientOrPattern = clearColor.__canvasGradient || Style_1.getGradient(ctx, clearColor, {
                         x: 0,
                         y: 0,
                         width: width,
@@ -9103,7 +9056,7 @@ define('zrender/Layer',['require','./core/util','./config','./graphic/Style','./
                 }
                 // Pattern
                 else if (clearColor.image) {
-                    clearColorGradientOrPattern = Pattern.prototype.getCanvasPattern.call(clearColor, ctx);
+                    clearColorGradientOrPattern = Pattern_1.prototype.getCanvasPattern.call(clearColor, ctx);
                 }
                 ctx.save();
                 ctx.fillStyle = clearColorGradientOrPattern || clearColor;
@@ -9121,19 +9074,19 @@ define('zrender/Layer',['require','./core/util','./config','./graphic/Style','./
         }
     };
 
-    return Layer;
-});
+    var Layer_1 = Layer;
+
 /**
  * Mixin for drawing text in a element bounding rect
  * @module zrender/mixin/RectText
  */
 
-define('zrender/graphic/mixin/RectText',['require','../helper/text','../../core/BoundingRect'],function (require) {
 
-    var textHelper = require('../helper/text');
-    var BoundingRect = require('../../core/BoundingRect');
 
-    var tmpRect = new BoundingRect();
+    
+    
+
+    var tmpRect$1 = new BoundingRect_1();
 
     var RectText = function () {};
 
@@ -9152,14 +9105,14 @@ define('zrender/graphic/mixin/RectText',['require','../helper/text','../../core/
             rect = style.textRect || rect;
 
             // Optimize, avoid normalize every time.
-            this.__dirty && textHelper.normalizeTextStyle(style, true);
+            this.__dirty && text.normalizeTextStyle(style, true);
 
-            var text = style.text;
+            var text$$2 = style.text;
 
             // Convert to string
-            text != null && (text += '');
+            text$$2 != null && (text$$2 += '');
 
-            if (!textHelper.needDrawText(text, style)) {
+            if (!text.needDrawText(text$$2, style)) {
                 return;
             }
 
@@ -9170,9 +9123,9 @@ define('zrender/graphic/mixin/RectText',['require','../helper/text','../../core/
             var transform = this.transform;
             if (!style.transformText) {
                 if (transform) {
-                    tmpRect.copy(rect);
-                    tmpRect.applyTransform(transform);
-                    rect = tmpRect;
+                    tmpRect$1.copy(rect);
+                    tmpRect$1.applyTransform(transform);
+                    rect = tmpRect$1;
                 }
             }
             else {
@@ -9180,28 +9133,28 @@ define('zrender/graphic/mixin/RectText',['require','../helper/text','../../core/
             }
 
             // transformText and textRotation can not be used at the same time.
-            textHelper.renderText(this, ctx, text, style, rect);
+            text.renderText(this, ctx, text$$2, style, rect);
 
             ctx.restore();
         }
     };
 
-    return RectText;
-});
+    var RectText_1 = RectText;
+
 /**
  * 可绘制的图形基类
  * Base class of all displayable graphic objects
  * @module zrender/graphic/Displayable
  */
 
-define('zrender/graphic/Displayable',['require','../core/util','./Style','../Element','./mixin/RectText'],function (require) {
 
-    var zrUtil = require('../core/util');
 
-    var Style = require('./Style');
+    
 
-    var Element = require('../Element');
-    var RectText = require('./mixin/RectText');
+    
+
+    
+    
     // var Stateful = require('./mixin/Stateful');
 
     /**
@@ -9213,7 +9166,7 @@ define('zrender/graphic/Displayable',['require','../core/util','./Style','../Ele
 
         opts = opts || {};
 
-        Element.call(this, opts);
+        Element_1.call(this, opts);
 
         // Extend properties
         for (var name in opts) {
@@ -9228,7 +9181,7 @@ define('zrender/graphic/Displayable',['require','../core/util','./Style','../Ele
         /**
          * @type {module:zrender/graphic/Style}
          */
-        this.style = new Style(opts.style, this);
+        this.style = new Style_1(opts.style, this);
 
         this._rect = null;
         // Shapes for cascade clipping.
@@ -9422,7 +9375,7 @@ define('zrender/graphic/Displayable',['require','../core/util','./Style','../Ele
 
         attrKV: function (key, value) {
             if (key !== 'style') {
-                Element.prototype.attrKV.call(this, key, value);
+                Element_1.prototype.attrKV.call(this, key, value);
             }
             else {
                 this.style.set(value);
@@ -9444,30 +9397,30 @@ define('zrender/graphic/Displayable',['require','../core/util','./Style','../Ele
          * @param  {Object} obj
          */
         useStyle: function (obj) {
-            this.style = new Style(obj, this);
+            this.style = new Style_1(obj, this);
             this.dirty(false);
             return this;
         }
     };
 
-    zrUtil.inherits(Displayable, Element);
+    util_1.inherits(Displayable, Element_1);
 
-    zrUtil.mixin(Displayable, RectText);
+    util_1.mixin(Displayable, RectText_1);
     // zrUtil.mixin(Displayable, Stateful);
 
-    return Displayable;
-});
+    var Displayable_1 = Displayable;
+
 /**
  * Image element
  * @module zrender/graphic/Image
  */
 
-define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect','../core/util','./helper/image'],function (require) {
 
-    var Displayable = require('./Displayable');
-    var BoundingRect = require('../core/BoundingRect');
-    var zrUtil = require('../core/util');
-    var imageHelper = require('./helper/image');
+
+    
+    
+    
+    
 
     /**
      * @alias zrender/graphic/Image
@@ -9476,7 +9429,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
      * @param {Object} opts
      */
     function ZImage(opts) {
-        Displayable.call(this, opts);
+        Displayable_1.call(this, opts);
     }
 
     ZImage.prototype = {
@@ -9492,9 +9445,9 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
             // Must bind each time
             style.bind(ctx, this, prevEl);
 
-            var image = this._image = imageHelper.createOrUpdateImage(src, this._image, this);
+            var image$$2 = this._image = image.createOrUpdateImage(src, this._image, this);
 
-            if (!image || !imageHelper.isImageReady(image)) {
+            if (!image$$2 || !image.isImageReady(image$$2)) {
                 return;
             }
 
@@ -9510,7 +9463,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
             var y = style.y || 0;
             var width = style.width;
             var height = style.height;
-            var aspect = image.width / image.height;
+            var aspect = image$$2.width / image$$2.height;
             if (width == null && height != null) {
                 // Keep image/height ratio
                 width = height * aspect;
@@ -9519,8 +9472,8 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
                 height = width / aspect;
             }
             else if (width == null && height == null) {
-                width = image.width;
-                height = image.height;
+                width = image$$2.width;
+                height = image$$2.height;
             }
 
             // 设置transform
@@ -9530,7 +9483,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
                 var sx = style.sx || 0;
                 var sy = style.sy || 0;
                 ctx.drawImage(
-                    image,
+                    image$$2,
                     sx, sy, style.sWidth, style.sHeight,
                     x, y, width, height
                 );
@@ -9541,13 +9494,13 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
                 var sWidth = width - sx;
                 var sHeight = height - sy;
                 ctx.drawImage(
-                    image,
+                    image$$2,
                     sx, sy, sWidth, sHeight,
                     x, y, width, height
                 );
             }
             else {
-                ctx.drawImage(image, x, y, width, height);
+                ctx.drawImage(image$$2, x, y, width, height);
             }
 
             this.restoreTransform(ctx);
@@ -9561,7 +9514,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
         getBoundingRect: function () {
             var style = this.style;
             if (! this._rect) {
-                this._rect = new BoundingRect(
+                this._rect = new BoundingRect_1(
                     style.x || 0, style.y || 0, style.width || 0, style.height || 0
                 );
             }
@@ -9569,10 +9522,11 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
         }
     };
 
-    zrUtil.inherits(ZImage, Displayable);
+    util_1.inherits(ZImage, Displayable_1);
 
-    return ZImage;
-});
+    var Image$1 = ZImage;
+
+'use strict';
 /**
  * Default canvas painter
  * @module zrender/Painter
@@ -9580,18 +9534,17 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
  *         errorrik (errorrik@gmail.com)
  *         pissang (https://www.github.com/pissang)
  */
- define('zrender/Painter',['require','./config','./core/util','./core/log','./core/BoundingRect','./core/timsort','./Layer','./animation/requestAnimationFrame','./graphic/Image'],function (require) {
+ 
+
+    
+    
+    
+    
     
 
-    var config = require('./config');
-    var util = require('./core/util');
-    var log = require('./core/log');
-    var BoundingRect = require('./core/BoundingRect');
-    var timsort = require('./core/timsort');
+    
 
-    var Layer = require('./Layer');
-
-    var requestAnimationFrame = require('./animation/requestAnimationFrame');
+    
 
     // PENDIGN
     // Layer exceeds MAX_PROGRESSIVE_LAYER_NUMBER may have some problem when flush directly second time.
@@ -9631,8 +9584,8 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
         }
     }
 
-    var tmpRect = new BoundingRect(0, 0, 0, 0);
-    var viewRect = new BoundingRect(0, 0, 0, 0);
+    var tmpRect = new BoundingRect_1(0, 0, 0, 0);
+    var viewRect = new BoundingRect_1(0, 0, 0, 0);
     function isDisplayableCulled(el, width, height) {
         tmpRect.copy(el.getBoundingRect());
         if (el.transform) {
@@ -9696,16 +9649,19 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
      * @param {Object} opts
      */
     var Painter = function (root, storage, opts) {
+
+        this.type = 'canvas';
+
         // In node environment using node-canvas
         var singleCanvas = !root.nodeName // In node ?
             || root.nodeName.toUpperCase() === 'CANVAS';
 
-        this._opts = opts = util.extend({}, opts || {});
+        this._opts = opts = util_1.extend({}, opts || {});
 
         /**
          * @type {number}
          */
-        this.dpr = opts.devicePixelRatio || config.devicePixelRatio;
+        this.dpr = opts.devicePixelRatio || config_1.devicePixelRatio;
         /**
          * @type {boolean}
          * @private
@@ -9775,7 +9731,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
 
             // Create layer if only one given canvas
             // Device pixel ratio is fixed to 1 because given canvas has its specified width and height
-            var mainLayer = new Layer(root, this, 1);
+            var mainLayer = new Layer_1(root, this, 1);
             mainLayer.initContext();
             // FIXME Use canvas width and height
             // mainLayer.resize(width, height);
@@ -9800,6 +9756,10 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
     Painter.prototype = {
 
         constructor: Painter,
+
+        getType: function () {
+            return 'canvas';
+        },
 
         /**
          * If painter use a single canvas
@@ -9872,7 +9832,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
         removeHover: function (el) {
             var elMirror = el.__hoverMir;
             var hoverElements = this._hoverElements;
-            var idx = util.indexOf(hoverElements, elMirror);
+            var idx = util_1.indexOf(hoverElements, elMirror);
             if (idx >= 0) {
                 hoverElements.splice(idx, 1);
             }
@@ -9969,7 +9929,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
         _clearProgressive: function () {
             this._progressiveToken = -1;
             this._progress = 0;
-            util.each(this._progressiveLayers, function (layer) {
+            util_1.each(this._progressiveLayers, function (layer) {
                 layer.__dirty && layer.clear();
             });
         },
@@ -10120,7 +10080,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
             // }
 
             this._furtherProgressive = false;
-            util.each(this._progressiveLayers, function (layer) {
+            util_1.each(this._progressiveLayers, function (layer) {
                 if (layer.__maxProgress >= layer.__progress) {
                     this._furtherProgressive = true;
                 }
@@ -10188,11 +10148,11 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
             var layer = this._layers[zlevel];
             if (!layer) {
                 // Create a new layer
-                layer = new Layer('zr_' + zlevel, this, this.dpr);
+                layer = new Layer_1('zr_' + zlevel, this, this.dpr);
                 layer.__builtin__ = true;
 
                 if (this._layerConfig[zlevel]) {
-                    util.merge(layer, this._layerConfig[zlevel], true);
+                    util_1.merge(layer, this._layerConfig[zlevel], true);
                 }
 
                 this.insertLayer(zlevel, layer);
@@ -10329,7 +10289,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
                 layer.__dirty = false;
             });
 
-            util.each(progressiveLayers, function (layer, idx) {
+            util_1.each(progressiveLayers, function (layer, idx) {
                 progressiveElCountsLastFrame[idx] = layer.elCount;
                 layer.elCount = 0;
                 layer.__dirty = false;
@@ -10361,7 +10321,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
                         var idx = Math.min(progressiveLayerCount, MAX_PROGRESSIVE_LAYER_NUMBER - 1);
                         currentProgressiveLayer = progressiveLayers[idx];
                         if (!currentProgressiveLayer) {
-                            currentProgressiveLayer = progressiveLayers[idx] = new Layer(
+                            currentProgressiveLayer = progressiveLayers[idx] = new Layer_1(
                                 'progressive', this, this.dpr
                             );
                             currentProgressiveLayer.initContext();
@@ -10404,7 +10364,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
             });
 
             progressiveLayers.length = Math.min(progressiveLayerCount, MAX_PROGRESSIVE_LAYER_NUMBER);
-            util.each(progressiveLayers, function (layer, idx) {
+            util_1.each(progressiveLayers, function (layer, idx) {
                 if (progressiveElCountsLastFrame[idx] !== layer.elCount) {
                     el.__dirty = true;
                 }
@@ -10443,13 +10403,13 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
                     layerConfig[zlevel] = config;
                 }
                 else {
-                    util.merge(layerConfig[zlevel], config, true);
+                    util_1.merge(layerConfig[zlevel], config, true);
                 }
 
                 var layer = this._layers[zlevel];
 
                 if (layer) {
-                    util.merge(layer, layerConfig[zlevel], true);
+                    util_1.merge(layer, layerConfig[zlevel], true);
                 }
             }
         },
@@ -10468,7 +10428,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
             layer.dom.parentNode.removeChild(layer.dom);
             delete layers[zlevel];
 
-            zlevelList.splice(util.indexOf(zlevelList, zlevel), 1);
+            zlevelList.splice(util_1.indexOf(zlevelList, zlevel), 1);
         },
 
         /**
@@ -10499,7 +10459,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
                         this._layers[id].resize(width, height);
                     }
                 }
-                util.each(this._progressiveLayers, function (layer) {
+                util_1.each(this._progressiveLayers, function (layer) {
                     layer.resize(width, height);
                 });
 
@@ -10547,7 +10507,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
                 return this._layers[0].dom;
             }
 
-            var imageLayer = new Layer('image', this, opts.pixelRatio || this.dpr);
+            var imageLayer = new Layer_1('image', this, opts.pixelRatio || this.dpr);
             imageLayer.initContext();
 
             imageLayer.clearColor = opts.backgroundColor;
@@ -10668,7 +10628,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
                 path.brush(ctx);
             }
 
-            var ImageShape = require('./graphic/Image');
+            var ImageShape = Image$1;
             var imgShape = new ImageShape({
                 style: {
                     x: 0,
@@ -10693,8 +10653,7 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
         }
     };
 
-    return Painter;
-});
+    var Painter_1 = Painter;
 
 /*!
  * ZRender, a high performance 2d drawing library.
@@ -10706,20 +10665,20 @@ define('zrender/graphic/Image',['require','./Displayable','../core/BoundingRect'
  * https://github.com/ecomfe/zrender/blob/master/LICENSE.txt
  */
 // Global defines
-define('zrender/zrender',['require','./core/guid','./core/env','./core/util','./Handler','./Storage','./animation/Animation','./dom/HandlerProxy','./Painter'],function (require) {
-    var guid = require('./core/guid');
-    var env = require('./core/env');
-    var zrUtil = require('./core/util');
 
-    var Handler = require('./Handler');
-    var Storage = require('./Storage');
-    var Animation = require('./animation/Animation');
-    var HandlerProxy = require('./dom/HandlerProxy');
+    
+    
+    
 
-    var useVML = !env.canvasSupported;
+    
+    
+    
+    
+
+    var useVML = !env_1.canvasSupported;
 
     var painterCtors = {
-        canvas: require('./Painter')
+        canvas: Painter_1
     };
 
     var instances = {};    // ZRender实例map索引
@@ -10813,7 +10772,7 @@ define('zrender/zrender',['require','./core/guid','./core/env','./core/util','./
         this.id = id;
 
         var self = this;
-        var storage = new Storage();
+        var storage = new Storage_1();
 
         var rendererType = opts.renderer;
         // TODO WebGL
@@ -10831,15 +10790,15 @@ define('zrender/zrender',['require','./core/guid','./core/env','./core/util','./
         this.storage = storage;
         this.painter = painter;
 
-        var handerProxy = !env.node ? new HandlerProxy(painter.getViewportRoot()) : null;
-        this.handler = new Handler(storage, painter, handerProxy, painter.root);
+        var handerProxy = !env_1.node ? new HandlerProxy(painter.getViewportRoot()) : null;
+        this.handler = new Handler_1(storage, painter, handerProxy, painter.root);
 
         /**
          * @type {module:zrender/animation/Animation}
          */
-        this.animation = new Animation({
+        this.animation = new Animation_1({
             stage: {
-                update: zrUtil.bind(this.flush, this)
+                update: util_1.bind(this.flush, this)
             }
         });
         this.animation.start();
@@ -11133,131 +11092,26 @@ define('zrender/zrender',['require','./core/guid','./core/env','./core/util','./
         }
     };
 
-    return zrender;
-});
+    var zrender_1$2 = zrender;
 
-define('zrender', ['zrender/zrender'], function (main) { return main; });
-
-/**
- * Text element
- * @module zrender/graphic/Text
- *
- * TODO Wrapping
- *
- * Text not support gradient
- */
-
-define('zrender/graphic/Text',['require','./Displayable','../core/util','../contain/text','./helper/text'],function (require) {
-
-    var Displayable = require('./Displayable');
-    var zrUtil = require('../core/util');
-    var textContain = require('../contain/text');
-    var textHelper = require('./helper/text');
-
-    /**
-     * @alias zrender/graphic/Text
-     * @extends module:zrender/graphic/Displayable
-     * @constructor
-     * @param {Object} opts
-     */
-    var Text = function (opts) {
-        Displayable.call(this, opts);
-    };
-
-    Text.prototype = {
-
-        constructor: Text,
-
-        type: 'text',
-
-        brush: function (ctx, prevEl) {
-            var style = this.style;
-
-            // Optimize, avoid normalize every time.
-            this.__dirty && textHelper.normalizeTextStyle(style, true);
-
-            // Use props with prefix 'text'.
-            style.fill = style.stroke = style.shadowBlur = style.shadowColor =
-                style.shadowOffsetX = style.shadowOffsetY = null;
-
-            var text = style.text;
-            // Convert to string
-            text != null && (text += '');
-
-            // Always bind style
-            style.bind(ctx, this, prevEl);
-
-            if (!textHelper.needDrawText(text, style)) {
-                return;
-            }
-
-            this.setTransform(ctx);
-
-            textHelper.renderText(this, ctx, text, style);
-
-            this.restoreTransform(ctx);
-        },
-
-        getBoundingRect: function () {
-            var style = this.style;
-
-            // Optimize, avoid normalize every time.
-            this.__dirty && textHelper.normalizeTextStyle(style, true);
-
-            if (!this._rect) {
-                var text = style.text;
-                text != null ? (text += '') : (text = '');
-
-                var rect = textContain.getBoundingRect(
-                    style.text + '',
-                    style.font,
-                    style.textAlign,
-                    style.textVerticalAlign,
-                    style.textPadding,
-                    style.rich
-                );
-
-                rect.x += style.x || 0;
-                rect.y += style.y || 0;
-
-                if (textHelper.getStroke(style.textStroke, style.textLineWidth)) {
-                    var w = style.textLineWidth;
-                    rect.x -= w / 2;
-                    rect.y -= w / 2;
-                    rect.width += w;
-                    rect.height += w;
-                }
-
-                this._rect = rect;
-            }
-
-            return this._rect;
-        }
-    };
-
-    zrUtil.inherits(Text, Displayable);
-
-    return Text;
-});
+'use strict';
 /**
  * 曲线辅助模块
  * @module zrender/core/curve
  * @author pissang(https://www.github.com/pissang)
  */
-define('zrender/core/curve',['require','./vector'],function(require) {
+
 
     
-
-    var vec2 = require('./vector');
-    var v2Create = vec2.create;
-    var v2DistSquare = vec2.distSquare;
+    var v2Create = vector_1.create;
+    var v2DistSquare = vector_1.distSquare;
     var mathPow = Math.pow;
-    var mathSqrt = Math.sqrt;
+    var mathSqrt$1 = Math.sqrt;
 
-    var EPSILON = 1e-8;
+    var EPSILON$1 = 1e-8;
     var EPSILON_NUMERIC = 1e-4;
 
-    var THREE_SQRT = mathSqrt(3);
+    var THREE_SQRT = mathSqrt$1(3);
     var ONE_THIRD = 1 / 3;
 
     // 临时变量
@@ -11267,10 +11121,10 @@ define('zrender/core/curve',['require','./vector'],function(require) {
     // var _v3 = vec2.create();
 
     function isAroundZero(val) {
-        return val > -EPSILON && val < EPSILON;
+        return val > -EPSILON$1 && val < EPSILON$1;
     }
-    function isNotAroundZero(val) {
-        return val > EPSILON || val < -EPSILON;
+    function isNotAroundZero$1(val) {
+        return val > EPSILON$1 || val < -EPSILON$1;
     }
     /**
      * 计算三次贝塞尔值
@@ -11356,7 +11210,7 @@ define('zrender/core/curve',['require','./vector'],function(require) {
                 }
             }
             else if (disc > 0) {
-                var discSqrt = mathSqrt(disc);
+                var discSqrt = mathSqrt$1(disc);
                 var Y1 = A * b + 1.5 * a * (-B + discSqrt);
                 var Y2 = A * b + 1.5 * a * (-B - discSqrt);
                 if (Y1 < 0) {
@@ -11377,9 +11231,9 @@ define('zrender/core/curve',['require','./vector'],function(require) {
                 }
             }
             else {
-                var T = (2 * A * b - 3 * a * B) / (2 * mathSqrt(A * A * A));
+                var T = (2 * A * b - 3 * a * B) / (2 * mathSqrt$1(A * A * A));
                 var theta = Math.acos(T) / 3;
-                var ASqrt = mathSqrt(A);
+                var ASqrt = mathSqrt$1(A);
                 var tmp = Math.cos(theta);
 
                 var t1 = (-b - 2 * ASqrt * tmp) / (3 * a);
@@ -11416,7 +11270,7 @@ define('zrender/core/curve',['require','./vector'],function(require) {
 
         var n = 0;
         if (isAroundZero(a)) {
-            if (isNotAroundZero(b)) {
+            if (isNotAroundZero$1(b)) {
                 var t1 = -c / b;
                 if (t1 >= 0 && t1 <=1) {
                     extrema[n++] = t1;
@@ -11429,7 +11283,7 @@ define('zrender/core/curve',['require','./vector'],function(require) {
                 extrema[0] = -b / (2 * a);
             }
             else if (disc > 0) {
-                var discSqrt = mathSqrt(disc);
+                var discSqrt = mathSqrt$1(disc);
                 var t1 = (-b + discSqrt) / (2 * a);
                 var t2 = (-b - discSqrt) / (2 * a);
                 if (t1 >= 0 && t1 <= 1) {
@@ -11557,7 +11411,7 @@ define('zrender/core/curve',['require','./vector'],function(require) {
             out[1] = cubicAt(y0, y1, y2, y3, t);
         }
         // console.log(interval, i);
-        return mathSqrt(d);
+        return mathSqrt$1(d);
     }
 
     /**
@@ -11601,7 +11455,7 @@ define('zrender/core/curve',['require','./vector'],function(require) {
 
         var n = 0;
         if (isAroundZero(a)) {
-            if (isNotAroundZero(b)) {
+            if (isNotAroundZero$1(b)) {
                 var t1 = -c / b;
                 if (t1 >= 0 && t1 <= 1) {
                     roots[n++] = t1;
@@ -11617,7 +11471,7 @@ define('zrender/core/curve',['require','./vector'],function(require) {
                 }
             }
             else if (disc > 0) {
-                var discSqrt = mathSqrt(disc);
+                var discSqrt = mathSqrt$1(disc);
                 var t1 = (-b + discSqrt) / (2 * a);
                 var t2 = (-b - discSqrt) / (2 * a);
                 if (t1 >= 0 && t1 <= 1) {
@@ -11751,10 +11605,10 @@ define('zrender/core/curve',['require','./vector'],function(require) {
             out[1] = quadraticAt(y0, y1, y2, t);
         }
         // console.log(interval, i);
-        return mathSqrt(d);
+        return mathSqrt$1(d);
     }
 
-    return {
+    var curve = {
 
         cubicAt: cubicAt,
 
@@ -11780,24 +11634,24 @@ define('zrender/core/curve',['require','./vector'],function(require) {
 
         quadraticProjectPoint: quadraticProjectPoint
     };
-});
+
 /**
  * @author Yi Shen(https://github.com/pissang)
  */
-define('zrender/core/bbox',['require','./vector','./curve'],function (require) {
 
-    var vec2 = require('./vector');
-    var curve = require('./curve');
+
+    
+    
 
     var bbox = {};
-    var mathMin = Math.min;
-    var mathMax = Math.max;
-    var mathSin = Math.sin;
-    var mathCos = Math.cos;
+    var mathMin$2 = Math.min;
+    var mathMax$2 = Math.max;
+    var mathSin$1 = Math.sin;
+    var mathCos$1 = Math.cos;
 
-    var start = vec2.create();
-    var end = vec2.create();
-    var extremity = vec2.create();
+    var start = vector_1.create();
+    var end = vector_1.create();
+    var extremity = vector_1.create();
 
     var PI2 = Math.PI * 2;
     /**
@@ -11820,10 +11674,10 @@ define('zrender/core/bbox',['require','./vector','./curve'],function (require) {
 
         for (i = 1; i < points.length; i++) {
             p = points[i];
-            left = mathMin(left, p[0]);
-            right = mathMax(right, p[0]);
-            top = mathMin(top, p[1]);
-            bottom = mathMax(bottom, p[1]);
+            left = mathMin$2(left, p[0]);
+            right = mathMax$2(right, p[0]);
+            top = mathMin$2(top, p[1]);
+            bottom = mathMax$2(bottom, p[1]);
         }
 
         min[0] = left;
@@ -11842,10 +11696,10 @@ define('zrender/core/bbox',['require','./vector','./curve'],function (require) {
      * @param {Array.<number>} max
      */
     bbox.fromLine = function (x0, y0, x1, y1, min, max) {
-        min[0] = mathMin(x0, x1);
-        min[1] = mathMin(y0, y1);
-        max[0] = mathMax(x0, x1);
-        max[1] = mathMax(y0, y1);
+        min[0] = mathMin$2(x0, x1);
+        min[1] = mathMin$2(y0, y1);
+        max[0] = mathMax$2(x0, x1);
+        max[1] = mathMax$2(y0, y1);
     };
 
     var xDim = [];
@@ -11878,25 +11732,25 @@ define('zrender/core/bbox',['require','./vector','./curve'],function (require) {
 
         for (i = 0; i < n; i++) {
             var x = cubicAt(x0, x1, x2, x3, xDim[i]);
-            min[0] = mathMin(x, min[0]);
-            max[0] = mathMax(x, max[0]);
+            min[0] = mathMin$2(x, min[0]);
+            max[0] = mathMax$2(x, max[0]);
         }
         n = cubicExtrema(y0, y1, y2, y3, yDim);
         for (i = 0; i < n; i++) {
             var y = cubicAt(y0, y1, y2, y3, yDim[i]);
-            min[1] = mathMin(y, min[1]);
-            max[1] = mathMax(y, max[1]);
+            min[1] = mathMin$2(y, min[1]);
+            max[1] = mathMax$2(y, max[1]);
         }
 
-        min[0] = mathMin(x0, min[0]);
-        max[0] = mathMax(x0, max[0]);
-        min[0] = mathMin(x3, min[0]);
-        max[0] = mathMax(x3, max[0]);
+        min[0] = mathMin$2(x0, min[0]);
+        max[0] = mathMax$2(x0, max[0]);
+        min[0] = mathMin$2(x3, min[0]);
+        max[0] = mathMax$2(x3, max[0]);
 
-        min[1] = mathMin(y0, min[1]);
-        max[1] = mathMax(y0, max[1]);
-        min[1] = mathMin(y3, min[1]);
-        max[1] = mathMax(y3, max[1]);
+        min[1] = mathMin$2(y0, min[1]);
+        max[1] = mathMax$2(y0, max[1]);
+        min[1] = mathMin$2(y3, min[1]);
+        max[1] = mathMax$2(y3, max[1]);
     };
 
     /**
@@ -11916,21 +11770,21 @@ define('zrender/core/bbox',['require','./vector','./curve'],function (require) {
         var quadraticAt = curve.quadraticAt;
         // Find extremities, where derivative in x dim or y dim is zero
         var tx =
-            mathMax(
-                mathMin(quadraticExtremum(x0, x1, x2), 1), 0
+            mathMax$2(
+                mathMin$2(quadraticExtremum(x0, x1, x2), 1), 0
             );
         var ty =
-            mathMax(
-                mathMin(quadraticExtremum(y0, y1, y2), 1), 0
+            mathMax$2(
+                mathMin$2(quadraticExtremum(y0, y1, y2), 1), 0
             );
 
         var x = quadraticAt(x0, x1, x2, tx);
         var y = quadraticAt(y0, y1, y2, ty);
 
-        min[0] = mathMin(x0, x2, x);
-        min[1] = mathMin(y0, y2, y);
-        max[0] = mathMax(x0, x2, x);
-        max[1] = mathMax(y0, y2, y);
+        min[0] = mathMin$2(x0, x2, x);
+        min[1] = mathMin$2(y0, y2, y);
+        max[0] = mathMax$2(x0, x2, x);
+        max[1] = mathMax$2(y0, y2, y);
     };
 
     /**
@@ -11950,8 +11804,8 @@ define('zrender/core/bbox',['require','./vector','./curve'],function (require) {
     bbox.fromArc = function (
         x, y, rx, ry, startAngle, endAngle, anticlockwise, min, max
     ) {
-        var vec2Min = vec2.min;
-        var vec2Max = vec2.max;
+        var vec2Min = vector_1.min;
+        var vec2Max = vector_1.max;
 
         var diff = Math.abs(startAngle - endAngle);
 
@@ -11965,11 +11819,11 @@ define('zrender/core/bbox',['require','./vector','./curve'],function (require) {
             return;
         }
 
-        start[0] = mathCos(startAngle) * rx + x;
-        start[1] = mathSin(startAngle) * ry + y;
+        start[0] = mathCos$1(startAngle) * rx + x;
+        start[1] = mathSin$1(startAngle) * ry + y;
 
-        end[0] = mathCos(endAngle) * rx + x;
-        end[1] = mathSin(endAngle) * ry + y;
+        end[0] = mathCos$1(endAngle) * rx + x;
+        end[1] = mathSin$1(endAngle) * ry + y;
 
         vec2Min(min, start, end);
         vec2Max(max, start, end);
@@ -12000,8 +11854,8 @@ define('zrender/core/bbox',['require','./vector','./curve'],function (require) {
         // var step = (anticlockwise ? -Math.PI : Math.PI) / 2;
         for (var angle = 0; angle < endAngle; angle += Math.PI / 2) {
             if (angle > startAngle) {
-                extremity[0] = mathCos(angle) * rx + x;
-                extremity[1] = mathSin(angle) * ry + y;
+                extremity[0] = mathCos$1(angle) * rx + x;
+                extremity[1] = mathSin$1(angle) * ry + y;
 
                 vec2Min(min, extremity, min);
                 vec2Max(max, extremity, max);
@@ -12009,9 +11863,9 @@ define('zrender/core/bbox',['require','./vector','./curve'],function (require) {
         }
     };
 
-    return bbox;
-});
+    var bbox_1 = bbox;
 
+'use strict';
 /**
  * Path 代理，可以在`buildPath`中用于替代`ctx`, 会保存每个path操作的命令到pathCommands属性中
  * 可以用于 isInsidePath 判断以及获取boundingRect
@@ -12021,14 +11875,13 @@ define('zrender/core/bbox',['require','./vector','./curve'],function (require) {
  */
 
  // TODO getTotalLength, getPointAtLength
-define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./BoundingRect','../config'],function (require) {
-    
 
-    var curve = require('./curve');
-    var vec2 = require('./vector');
-    var bbox = require('./bbox');
-    var BoundingRect = require('./BoundingRect');
-    var dpr = require('../config').devicePixelRatio;
+
+    
+    
+    
+    
+    var dpr$1 = config_1.devicePixelRatio;
 
     var CMD = {
         M: 1,
@@ -12055,8 +11908,8 @@ define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./Boun
     var max = [];
     var min2 = [];
     var max2 = [];
-    var mathMin = Math.min;
-    var mathMax = Math.max;
+    var mathMin$1 = Math.min;
+    var mathMax$1 = Math.max;
     var mathCos = Math.cos;
     var mathSin = Math.sin;
     var mathSqrt = Math.sqrt;
@@ -12114,8 +11967,8 @@ define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./Boun
          * @readOnly
          */
         setScale: function (sx, sy) {
-            this._ux = mathAbs(1 / dpr / sx) || 0;
-            this._uy = mathAbs(1 / dpr / sy) || 0;
+            this._ux = mathAbs(1 / dpr$1 / sx) || 0;
+            this._uy = mathAbs(1 / dpr$1 / sy) || 0;
         },
 
         getContext: function () {
@@ -12471,8 +12324,8 @@ define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./Boun
                     continue;
                 }
                 ctx[idx % 2 ? 'moveTo' : 'lineTo'](
-                    dx >= 0 ? mathMin(x, x1) : mathMax(x, x1),
-                    dy >= 0 ? mathMin(y, y1) : mathMax(y, y1)
+                    dx >= 0 ? mathMin$1(x, x1) : mathMax$1(x, x1),
+                    dy >= 0 ? mathMin$1(y, y1) : mathMax$1(y, y1)
                 );
             }
             // Offset for next lineTo
@@ -12616,12 +12469,12 @@ define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./Boun
                         max2[1] = y0;
                         break;
                     case CMD.L:
-                        bbox.fromLine(xi, yi, data[i], data[i + 1], min2, max2);
+                        bbox_1.fromLine(xi, yi, data[i], data[i + 1], min2, max2);
                         xi = data[i++];
                         yi = data[i++];
                         break;
                     case CMD.C:
-                        bbox.fromCubic(
+                        bbox_1.fromCubic(
                             xi, yi, data[i++], data[i++], data[i++], data[i++], data[i], data[i + 1],
                             min2, max2
                         );
@@ -12629,7 +12482,7 @@ define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./Boun
                         yi = data[i++];
                         break;
                     case CMD.Q:
-                        bbox.fromQuadratic(
+                        bbox_1.fromQuadratic(
                             xi, yi, data[i++], data[i++], data[i], data[i + 1],
                             min2, max2
                         );
@@ -12655,7 +12508,7 @@ define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./Boun
                             y0 = mathSin(startAngle) * ry + cy;
                         }
 
-                        bbox.fromArc(
+                        bbox_1.fromArc(
                             cx, cy, rx, ry, startAngle, endAngle,
                             anticlockwise, min2, max2
                         );
@@ -12669,7 +12522,7 @@ define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./Boun
                         var width = data[i++];
                         var height = data[i++];
                         // Use fromLine
-                        bbox.fromLine(x0, y0, x0 + width, y0 + height, min2, max2);
+                        bbox_1.fromLine(x0, y0, x0 + width, y0 + height, min2, max2);
                         break;
                     case CMD.Z:
                         xi = x0;
@@ -12678,8 +12531,8 @@ define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./Boun
                 }
 
                 // Union
-                vec2.min(min, min, min2);
-                vec2.max(max, max, max2);
+                vector_1.min(min, min, min2);
+                vector_1.max(max, max, max2);
             }
 
             // No data
@@ -12687,7 +12540,7 @@ define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./Boun
                 min[0] = min[1] = max[0] = max[1] = 0;
             }
 
-            return new BoundingRect(
+            return new BoundingRect_1(
                 min[0], min[1], max[0] - min[0], max[1] - min[1]
             );
         },
@@ -12799,10 +12652,9 @@ define('zrender/core/PathProxy',['require','./curve','./vector','./bbox','./Boun
 
     PathProxy.CMD = CMD;
 
-    return PathProxy;
-});
-define('zrender/contain/line',[],function () {
-    return {
+    var PathProxy_1 = PathProxy;
+
+var line = {
         /**
          * 线段包含判断
          * @param  {number}  x0
@@ -12843,12 +12695,8 @@ define('zrender/contain/line',[],function () {
             return _s <= _l / 2 * _l / 2;
         }
     };
-});
-define('zrender/contain/cubic',['require','../core/curve'],function (require) {
 
-    var curve = require('../core/curve');
-
-    return {
+var cubic = {
         /**
          * 三次贝塞尔曲线描边包含判断
          * @param  {number}  x0
@@ -12885,12 +12733,8 @@ define('zrender/contain/cubic',['require','../core/curve'],function (require) {
             return d <= _l / 2;
         }
     };
-});
-define('zrender/contain/quadratic',['require','../core/curve'],function (require) {
 
-    var curve = require('../core/curve');
-
-    return {
+var quadratic = {
         /**
          * 二次贝塞尔曲线描边包含判断
          * @param  {number}  x0
@@ -12925,26 +12769,22 @@ define('zrender/contain/quadratic',['require','../core/curve'],function (require
             return d <= _l / 2;
         }
     };
-});
-define('zrender/contain/util',['require'],function (require) {
 
-    var PI2 = Math.PI * 2;
-    return {
+var PI2$3 = Math.PI * 2;
+    var util$1 = {
         normalizeRadian: function(angle) {
-            angle %= PI2;
+            angle %= PI2$3;
             if (angle < 0) {
-                angle += PI2;
+                angle += PI2$3;
             }
             return angle;
         }
     };
-});
-define('zrender/contain/arc',['require','./util'],function (require) {
 
-    var normalizeRadian = require('./util').normalizeRadian;
-    var PI2 = Math.PI * 2;
+var normalizeRadian$1 = util$1.normalizeRadian;
+    var PI2$2 = Math.PI * 2;
 
-    return {
+    var arc = {
         /**
          * 圆弧描边包含判断
          * @param  {number}  cx
@@ -12975,33 +12815,32 @@ define('zrender/contain/arc',['require','./util'],function (require) {
             if ((d - _l > r) || (d + _l < r)) {
                 return false;
             }
-            if (Math.abs(startAngle - endAngle) % PI2 < 1e-4) {
+            if (Math.abs(startAngle - endAngle) % PI2$2 < 1e-4) {
                 // Is a circle
                 return true;
             }
             if (anticlockwise) {
                 var tmp = startAngle;
-                startAngle = normalizeRadian(endAngle);
-                endAngle = normalizeRadian(tmp);
+                startAngle = normalizeRadian$1(endAngle);
+                endAngle = normalizeRadian$1(tmp);
             } else {
-                startAngle = normalizeRadian(startAngle);
-                endAngle = normalizeRadian(endAngle);
+                startAngle = normalizeRadian$1(startAngle);
+                endAngle = normalizeRadian$1(endAngle);
             }
             if (startAngle > endAngle) {
-                endAngle += PI2;
+                endAngle += PI2$2;
             }
 
             var angle = Math.atan2(y, x);
             if (angle < 0) {
-                angle += PI2;
+                angle += PI2$2;
             }
             return (angle >= startAngle && angle <= endAngle)
-                || (angle + PI2 >= startAngle && angle + PI2 <= endAngle);
+                || (angle + PI2$2 >= startAngle && angle + PI2$2 <= endAngle);
         }
     };
-});
-define('zrender/contain/windingLine',[],function () {
-    return function windingLine(x0, y0, x1, y1, x, y) {
+
+var windingLine = function windingLine(x0, y0, x1, y1, x, y) {
         if ((y > y0 && y > y1) || (y < y0 && y < y1)) {
             return 0;
         }
@@ -13021,29 +12860,28 @@ define('zrender/contain/windingLine',[],function () {
 
         return x_ > x ? dir : 0;
     };
-});
-define('zrender/contain/path',['require','../core/PathProxy','./line','./cubic','./quadratic','./arc','./util','../core/curve','./windingLine'],function (require) {
+
+'use strict';
+
+
+    var CMD$1 = PathProxy_1.CMD;
+    
+    
+    
+    
+    var normalizeRadian = util$1.normalizeRadian;
+    
 
     
 
-    var CMD = require('../core/PathProxy').CMD;
-    var line = require('./line');
-    var cubic = require('./cubic');
-    var quadratic = require('./quadratic');
-    var arc = require('./arc');
-    var normalizeRadian = require('./util').normalizeRadian;
-    var curve = require('../core/curve');
-
-    var windingLine = require('./windingLine');
-
     var containStroke = line.containStroke;
 
-    var PI2 = Math.PI * 2;
+    var PI2$1 = Math.PI * 2;
 
-    var EPSILON = 1e-4;
+    var EPSILON$2 = 1e-4;
 
     function isAroundEqual(a, b) {
-        return Math.abs(a - b) < EPSILON;
+        return Math.abs(a - b) < EPSILON$2;
     }
 
     // 临时数组
@@ -13182,10 +13020,10 @@ define('zrender/contain/path',['require','../core/PathProxy','./line','./cubic',
         if (diff < 1e-4) {
             return 0;
         }
-        if (diff % PI2 < 1e-4) {
+        if (diff % PI2$1 < 1e-4) {
             // Is a circle
             startAngle = 0;
-            endAngle = PI2;
+            endAngle = PI2$1;
             var dir = anticlockwise ? 1 : -1;
             if (x >= roots[0] + cx && x <= roots[1] + cx) {
                 return dir;
@@ -13204,7 +13042,7 @@ define('zrender/contain/path',['require','../core/PathProxy','./line','./cubic',
             endAngle = normalizeRadian(endAngle);
         }
         if (startAngle > endAngle) {
-            endAngle += PI2;
+            endAngle += PI2$1;
         }
 
         var w = 0;
@@ -13214,11 +13052,11 @@ define('zrender/contain/path',['require','../core/PathProxy','./line','./cubic',
                 var angle = Math.atan2(y, x_);
                 var dir = anticlockwise ? 1 : -1;
                 if (angle < 0) {
-                    angle = PI2 + angle;
+                    angle = PI2$1 + angle;
                 }
                 if (
                     (angle >= startAngle && angle <= endAngle)
-                    || (angle + PI2 >= startAngle && angle + PI2 <= endAngle)
+                    || (angle + PI2$1 >= startAngle && angle + PI2$1 <= endAngle)
                 ) {
                     if (angle > Math.PI / 2 && angle < Math.PI * 1.5) {
                         dir = -dir;
@@ -13240,7 +13078,7 @@ define('zrender/contain/path',['require','../core/PathProxy','./line','./cubic',
         for (var i = 0; i < data.length;) {
             var cmd = data[i++];
             // Begin a new subpath
-            if (cmd === CMD.M && i > 1) {
+            if (cmd === CMD$1.M && i > 1) {
                 // Close previous subpath
                 if (!isStroke) {
                     w += windingLine(xi, yi, x0, y0, x, y);
@@ -13264,7 +13102,7 @@ define('zrender/contain/path',['require','../core/PathProxy','./line','./cubic',
             }
 
             switch (cmd) {
-                case CMD.M:
+                case CMD$1.M:
                     // moveTo 命令重新创建一个新的 subpath, 并且更新新的起点
                     // 在 closePath 的时候使用
                     x0 = data[i++];
@@ -13272,7 +13110,7 @@ define('zrender/contain/path',['require','../core/PathProxy','./line','./cubic',
                     xi = x0;
                     yi = y0;
                     break;
-                case CMD.L:
+                case CMD$1.L:
                     if (isStroke) {
                         if (containStroke(xi, yi, data[i], data[i + 1], lineWidth, x, y)) {
                             return true;
@@ -13285,7 +13123,7 @@ define('zrender/contain/path',['require','../core/PathProxy','./line','./cubic',
                     xi = data[i++];
                     yi = data[i++];
                     break;
-                case CMD.C:
+                case CMD$1.C:
                     if (isStroke) {
                         if (cubic.containStroke(xi, yi,
                             data[i++], data[i++], data[i++], data[i++], data[i], data[i + 1],
@@ -13304,7 +13142,7 @@ define('zrender/contain/path',['require','../core/PathProxy','./line','./cubic',
                     xi = data[i++];
                     yi = data[i++];
                     break;
-                case CMD.Q:
+                case CMD$1.Q:
                     if (isStroke) {
                         if (quadratic.containStroke(xi, yi,
                             data[i++], data[i++], data[i], data[i + 1],
@@ -13323,7 +13161,7 @@ define('zrender/contain/path',['require','../core/PathProxy','./line','./cubic',
                     xi = data[i++];
                     yi = data[i++];
                     break;
-                case CMD.A:
+                case CMD$1.A:
                     // TODO Arc 判断的开销比较大
                     var cx = data[i++];
                     var cy = data[i++];
@@ -13364,7 +13202,7 @@ define('zrender/contain/path',['require','../core/PathProxy','./line','./cubic',
                     xi = Math.cos(theta + dTheta) * rx + cx;
                     yi = Math.sin(theta + dTheta) * ry + cy;
                     break;
-                case CMD.R:
+                case CMD$1.R:
                     x0 = xi = data[i++];
                     y0 = yi = data[i++];
                     var width = data[i++];
@@ -13386,7 +13224,7 @@ define('zrender/contain/path',['require','../core/PathProxy','./line','./cubic',
                         w += windingLine(x0, y1, x0, y0, x, y);
                     }
                     break;
-                case CMD.Z:
+                case CMD$1.Z:
                     if (isStroke) {
                         if (containStroke(
                             xi, yi, x0, y0, lineWidth, x, y
@@ -13414,7 +13252,7 @@ define('zrender/contain/path',['require','../core/PathProxy','./line','./cubic',
         return w !== 0;
     }
 
-    return {
+    var path = {
         contain: function (pathData, x, y) {
             return containPath(pathData, 0, false, x, y);
         },
@@ -13423,25 +13261,25 @@ define('zrender/contain/path',['require','../core/PathProxy','./line','./cubic',
             return containPath(pathData, lineWidth, true, x, y);
         }
     };
-});
+
 /**
  * Path element
  * @module zrender/graphic/Path
  */
 
-define('zrender/graphic/Path',['require','./Displayable','../core/util','../core/PathProxy','../contain/path','./Pattern'],function (require) {
 
-    var Displayable = require('./Displayable');
-    var zrUtil = require('../core/util');
-    var PathProxy = require('../core/PathProxy');
-    var pathContain = require('../contain/path');
 
-    var Pattern = require('./Pattern');
-    var getCanvasPattern = Pattern.prototype.getCanvasPattern;
+    
+    
+    
+    
+
+    
+    var getCanvasPattern = Pattern_1.prototype.getCanvasPattern;
 
     var abs = Math.abs;
 
-    var pathProxyForDraw = new PathProxy(true);
+    var pathProxyForDraw = new PathProxy_1(true);
     /**
      * @alias module:zrender/graphic/Path
      * @extends module:zrender/graphic/Displayable
@@ -13449,7 +13287,7 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
      * @param {Object} opts
      */
     function Path(opts) {
-        Displayable.call(this, opts);
+        Displayable_1.call(this, opts);
 
         /**
          * @type {module:zrender/core/PathProxy}
@@ -13470,7 +13308,7 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
 
         brush: function (ctx, prevEl) {
             var style = this.style;
-            var path = this.path || pathProxyForDraw;
+            var path$$1 = this.path || pathProxyForDraw;
             var hasStroke = style.hasStroke();
             var hasFill = style.hasFill();
             var fill = style.fill;
@@ -13517,7 +13355,7 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
 
             // Update path sx, sy
             var scale = this.getGlobalScale();
-            path.setScale(scale[0], scale[1]);
+            path$$1.setScale(scale[0], scale[1]);
 
             // Proxy context
             // Rebuild path in following 2 cases
@@ -13527,15 +13365,15 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
             if (this.__dirtyPath
                 || (lineDash && !ctxLineDash && hasStroke)
             ) {
-                path.beginPath(ctx);
+                path$$1.beginPath(ctx);
 
                 // Setting line dash before build path
                 if (lineDash && !ctxLineDash) {
-                    path.setLineDash(lineDash);
-                    path.setLineDashOffset(lineDashOffset);
+                    path$$1.setLineDash(lineDash);
+                    path$$1.setLineDashOffset(lineDashOffset);
                 }
 
-                this.buildPath(path, this.shape, false);
+                this.buildPath(path$$1, this.shape, false);
 
                 // Clear path dirty flag
                 if (this.path) {
@@ -13548,14 +13386,14 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
                 this.path.rebuildPath(ctx);
             }
 
-            hasFill && path.fill(ctx);
+            hasFill && path$$1.fill(ctx);
 
             if (lineDash && ctxLineDash) {
                 ctx.setLineDash(lineDash);
                 ctx.lineDashOffset = lineDashOffset;
             }
 
-            hasStroke && path.stroke(ctx);
+            hasStroke && path$$1.stroke(ctx);
 
             if (lineDash && ctxLineDash) {
                 // PENDING
@@ -13576,7 +13414,7 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
         buildPath: function (ctx, shapeCfg, inBundle) {},
 
         createPathProxy: function () {
-            this.path = new PathProxy();
+            this.path = new PathProxy_1();
         },
 
         getBoundingRect: function () {
@@ -13584,16 +13422,16 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
             var style = this.style;
             var needsUpdateRect = !rect;
             if (needsUpdateRect) {
-                var path = this.path;
-                if (!path) {
+                var path$$1 = this.path;
+                if (!path$$1) {
                     // Create path on demand.
-                    path = this.path = new PathProxy();
+                    path$$1 = this.path = new PathProxy_1();
                 }
                 if (this.__dirtyPath) {
-                    path.beginPath();
-                    this.buildPath(path, this.shape, false);
+                    path$$1.beginPath();
+                    this.buildPath(path$$1, this.shape, false);
                 }
-                rect = path.getBoundingRect();
+                rect = path$$1.getBoundingRect();
             }
             this._rect = rect;
 
@@ -13648,7 +13486,7 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
                         if (!style.hasFill()) {
                             lineWidth = Math.max(lineWidth, this.strokeContainThreshold);
                         }
-                        if (pathContain.containStroke(
+                        if (path.containStroke(
                             pathData, lineWidth / lineScale, x, y
                         )) {
                             return true;
@@ -13656,7 +13494,7 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
                     }
                 }
                 if (style.hasFill()) {
-                    return pathContain.contain(pathData, x, y);
+                    return path.contain(pathData, x, y);
                 }
             }
             return false;
@@ -13702,7 +13540,7 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
                 this._rect = null;
             }
             else {
-                Displayable.prototype.attrKV.call(this, key, value);
+                Displayable_1.prototype.attrKV.call(this, key, value);
             }
         },
 
@@ -13714,7 +13552,7 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
             var shape = this.shape;
             // Path from string may not have shape
             if (shape) {
-                if (zrUtil.isObject(key)) {
+                if (util_1.isObject(key)) {
                     for (var name in key) {
                         if (key.hasOwnProperty(name)) {
                             shape[name] = key[name];
@@ -13778,7 +13616,7 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
             defaults.init && defaults.init.call(this, opts);
         };
 
-        zrUtil.inherits(Sub, Path);
+        util_1.inherits(Sub, Path);
 
         // FIXME 不能 extend position, rotation 等引用对象
         for (var name in defaults) {
@@ -13791,156 +13629,362 @@ define('zrender/graphic/Path',['require','./Displayable','../core/util','../core
         return Sub;
     };
 
-    zrUtil.inherits(Path, Displayable);
+    util_1.inherits(Path, Displayable_1);
 
-    return Path;
-});
-/**
- * 玫瑰线
- * @module zrender/graphic/shape/Rose
- */
-define('zrender/graphic/shape/Rose',['require','../Path'],function (require) {
+    var Path_1 = Path;
 
-    var sin = Math.sin;
-    var cos = Math.cos;
-    var radian = Math.PI / 180;
+// CompoundPath to improve performance
 
-    return require('../Path').extend({
 
-        type: 'rose',
+    
+
+    var CompoundPath = Path_1.extend({
+
+        type: 'compound',
 
         shape: {
-            cx: 0,
-            cy: 0,
-            r: [],
-            k: 0,
-            n: 1
+
+            paths: null
         },
 
-        style: {
-            stroke: '#000',
-            fill: null
+        _updatePathDirty: function () {
+            var dirtyPath = this.__dirtyPath;
+            var paths = this.shape.paths;
+            for (var i = 0; i < paths.length; i++) {
+                // Mark as dirty if any subpath is dirty
+                dirtyPath = dirtyPath || paths[i].__dirtyPath;
+            }
+            this.__dirtyPath = dirtyPath;
+            this.__dirty = this.__dirty || dirtyPath;
+        },
+
+        beforeBrush: function () {
+            this._updatePathDirty();
+            var paths = this.shape.paths || [];
+            var scale = this.getGlobalScale();
+            // Update path scale
+            for (var i = 0; i < paths.length; i++) {
+                if (!paths[i].path) {
+                    paths[i].createPathProxy();
+                }
+                paths[i].path.setScale(scale[0], scale[1]);
+            }
         },
 
         buildPath: function (ctx, shape) {
-            var x;
-            var y;
-            var R = shape.r;
-            var r;
-            var k = shape.k;
-            var n = shape.n;
-
-            var x0 = shape.cx;
-            var y0 = shape.cy;
-
-            ctx.moveTo(x0, y0);
-
-            for (var i = 0, len = R.length; i < len ; i++) {
-                r = R[i];
-
-                for (var j = 0; j <= 360 * n; j++) {
-                    x = r
-                         * sin(k / n * j % 360 * radian)
-                         * cos(j * radian) 
-                         + x0;
-                    y = r
-                         * sin(k / n * j % 360 * radian)
-                         * sin(j * radian)
-                         + y0;
-                    ctx.lineTo(x, y);
-                }
+            var paths = shape.paths || [];
+            for (var i = 0; i < paths.length; i++) {
+                paths[i].buildPath(ctx, paths[i].shape, true);
             }
+        },
+
+        afterBrush: function () {
+            var paths = this.shape.paths;
+            for (var i = 0; i < paths.length; i++) {
+                paths[i].__dirtyPath = false;
+            }
+        },
+
+        getBoundingRect: function () {
+            this._updatePathDirty();
+            return Path_1.prototype.getBoundingRect.call(this);
         }
     });
-});
 
 /**
- * 内外旋轮曲线
- * @module zrender/graphic/shape/Trochold
+ * Text element
+ * @module zrender/graphic/Text
+ *
+ * TODO Wrapping
+ *
+ * Text not support gradient
  */
-define('zrender/graphic/shape/Trochoid',['require','../Path'],function (require) {
 
-    var cos = Math.cos;
-    var sin = Math.sin;
 
-    return require('../Path').extend({
 
-        type: 'trochoid',
+    
+    
+    
+    
 
-        shape: {
-            cx: 0,
-            cy: 0,
-            r: 0,
-            r0: 0,
-            d: 0,
-            location: 'out'
-        },
+    /**
+     * @alias zrender/graphic/Text
+     * @extends module:zrender/graphic/Displayable
+     * @constructor
+     * @param {Object} opts
+     */
+    var Text = function (opts) {
+        Displayable_1.call(this, opts);
+    };
 
-        style: {
-            stroke: '#000',
+    Text.prototype = {
 
-            fill: null
-        },
+        constructor: Text,
 
-        buildPath: function (ctx, shape) {
-            var x1;
-            var y1;
-            var x2;
-            var y2;
-            var R = shape.r;
-            var r = shape.r0;
-            var d = shape.d;
-            var offsetX = shape.cx;
-            var offsetY = shape.cy;
-            var delta = shape.location == 'out' ? 1 : -1;
+        type: 'text',
 
-            if (shape.location && R <= r) {
+        brush: function (ctx, prevEl) {
+            var style = this.style;
+
+            // Optimize, avoid normalize every time.
+            this.__dirty && text.normalizeTextStyle(style, true);
+
+            // Use props with prefix 'text'.
+            style.fill = style.stroke = style.shadowBlur = style.shadowColor =
+                style.shadowOffsetX = style.shadowOffsetY = null;
+
+            var text$$2 = style.text;
+            // Convert to string
+            text$$2 != null && (text$$2 += '');
+
+            // Always bind style
+            style.bind(ctx, this, prevEl);
+
+            if (!text.needDrawText(text$$2, style)) {
                 return;
             }
 
-            var num = 0;
-            var i = 1;
-            var theta;
+            this.setTransform(ctx);
 
-            x1 = (R + delta * r) * cos(0)
-                - delta * d * cos(0) + offsetX;
-            y1 = (R + delta * r) * sin(0)
-                - d * sin(0) + offsetY;
+            text.renderText(this, ctx, text$$2, style);
+
+            this.restoreTransform(ctx);
+        },
+
+        getBoundingRect: function () {
+            var style = this.style;
+
+            // Optimize, avoid normalize every time.
+            this.__dirty && text.normalizeTextStyle(style, true);
+
+            if (!this._rect) {
+                var text$$2 = style.text;
+                text$$2 != null ? (text$$2 += '') : (text$$2 = '');
+
+                var rect = text$2.getBoundingRect(
+                    style.text + '',
+                    style.font,
+                    style.textAlign,
+                    style.textVerticalAlign,
+                    style.textPadding,
+                    style.rich
+                );
+
+                rect.x += style.x || 0;
+                rect.y += style.y || 0;
+
+                if (text.getStroke(style.textStroke, style.textLineWidth)) {
+                    var w = style.textLineWidth;
+                    rect.x -= w / 2;
+                    rect.y -= w / 2;
+                    rect.width += w;
+                    rect.height += w;
+                }
+
+                this._rect = rect;
+            }
+
+            return this._rect;
+        }
+    };
+
+    util_1.inherits(Text, Displayable_1);
+
+    var Text_1 = Text;
+
+/**
+ * 圆弧
+ * @module zrender/graphic/shape/Arc
+ */
+ 
+
+    var Arc = Path_1.extend({
+
+        type: 'arc',
+
+        shape: {
+
+            cx: 0,
+
+            cy: 0,
+
+            r: 0,
+
+            startAngle: 0,
+
+            endAngle: Math.PI * 2,
+
+            clockwise: true
+        },
+
+        style: {
+
+            stroke: '#000',
+
+            fill: null
+        },
+
+        buildPath: function (ctx, shape) {
+
+            var x = shape.cx;
+            var y = shape.cy;
+            var r = Math.max(shape.r, 0);
+            var startAngle = shape.startAngle;
+            var endAngle = shape.endAngle;
+            var clockwise = shape.clockwise;
+
+            var unitX = Math.cos(startAngle);
+            var unitY = Math.sin(startAngle);
+
+            ctx.moveTo(unitX * r + x, unitY * r + y);
+            ctx.arc(x, y, r, startAngle, endAngle, !clockwise);
+        }
+    });
+
+'use strict';
+/**
+ * 贝塞尔曲线
+ * @module zrender/shape/BezierCurve
+ */
+
+
+    
+    
+    var quadraticSubdivide$1 = curve.quadraticSubdivide;
+    var cubicSubdivide$1 = curve.cubicSubdivide;
+    var quadraticAt$1 = curve.quadraticAt;
+    var cubicAt$1 = curve.cubicAt;
+    var quadraticDerivativeAt$1 = curve.quadraticDerivativeAt;
+    var cubicDerivativeAt$1 = curve.cubicDerivativeAt;
+
+    var out = [];
+
+    function someVectorAt(shape, t, isTangent) {
+        var cpx2 = shape.cpx2;
+        var cpy2 = shape.cpy2;
+        if (cpx2 === null || cpy2 === null) {
+            return [
+                (isTangent ? cubicDerivativeAt$1 : cubicAt$1)(shape.x1, shape.cpx1, shape.cpx2, shape.x2, t),
+                (isTangent ? cubicDerivativeAt$1 : cubicAt$1)(shape.y1, shape.cpy1, shape.cpy2, shape.y2, t)
+            ];
+        }
+        else {
+            return [
+                (isTangent ? quadraticDerivativeAt$1 : quadraticAt$1)(shape.x1, shape.cpx1, shape.x2, t),
+                (isTangent ? quadraticDerivativeAt$1 : quadraticAt$1)(shape.y1, shape.cpy1, shape.y2, t)
+            ];
+        }
+    }
+    var BezierCurve = Path_1.extend({
+
+        type: 'bezier-curve',
+
+        shape: {
+            x1: 0,
+            y1: 0,
+            x2: 0,
+            y2: 0,
+            cpx1: 0,
+            cpy1: 0,
+            // cpx2: 0,
+            // cpy2: 0
+
+            // Curve show percent, for animating
+            percent: 1
+        },
+
+        style: {
+            stroke: '#000',
+            fill: null
+        },
+
+        buildPath: function (ctx, shape) {
+            var x1 = shape.x1;
+            var y1 = shape.y1;
+            var x2 = shape.x2;
+            var y2 = shape.y2;
+            var cpx1 = shape.cpx1;
+            var cpy1 = shape.cpy1;
+            var cpx2 = shape.cpx2;
+            var cpy2 = shape.cpy2;
+            var percent = shape.percent;
+            if (percent === 0) {
+                return;
+            }
 
             ctx.moveTo(x1, y1);
 
-            // 计算结束时的i
-            do {
-                num++;
-            }
-            while ((r * num) % (R + delta * r) !== 0);
+            if (cpx2 == null || cpy2 == null) {
+                if (percent < 1) {
+                    quadraticSubdivide$1(
+                        x1, cpx1, x2, percent, out
+                    );
+                    cpx1 = out[1];
+                    x2 = out[2];
+                    quadraticSubdivide$1(
+                        y1, cpy1, y2, percent, out
+                    );
+                    cpy1 = out[1];
+                    y2 = out[2];
+                }
 
-            do {
-                theta = Math.PI / 180 * i;
-                x2 = (R + delta * r) * cos(theta)
-                     - delta * d * cos((R / r +  delta) * theta)
-                     + offsetX;
-                y2 = (R + delta * r) * sin(theta)
-                     - d * sin((R / r + delta) * theta)
-                     + offsetY;
-                ctx.lineTo(x2, y2);
-                i++;
+                ctx.quadraticCurveTo(
+                    cpx1, cpy1,
+                    x2, y2
+                );
             }
-            while (i <= (r * num) / (R + delta * r) * 360);
+            else {
+                if (percent < 1) {
+                    cubicSubdivide$1(
+                        x1, cpx1, cpx2, x2, percent, out
+                    );
+                    cpx1 = out[1];
+                    cpx2 = out[2];
+                    x2 = out[3];
+                    cubicSubdivide$1(
+                        y1, cpy1, cpy2, y2, percent, out
+                    );
+                    cpy1 = out[1];
+                    cpy2 = out[2];
+                    y2 = out[3];
+                }
+                ctx.bezierCurveTo(
+                    cpx1, cpy1,
+                    cpx2, cpy2,
+                    x2, y2
+                );
+            }
+        },
 
+        /**
+         * Get point at percent
+         * @param  {number} t
+         * @return {Array.<number>}
+         */
+        pointAt: function (t) {
+            return someVectorAt(this.shape, t, false);
+        },
+
+        /**
+         * Get tangent at percent
+         * @param  {number} t
+         * @return {Array.<number>}
+         */
+        tangentAt: function (t) {
+            var p = someVectorAt(this.shape, t, true);
+            return vector_1.normalize(p, p);
         }
     });
-});
 
+'use strict';
 /**
  * 圆形
  * @module zrender/shape/Circle
  */
 
-define('zrender/graphic/shape/Circle',['require','../Path'],function (require) {
-    
 
-    return require('../Path').extend({
+
+    var Circle = Path_1.extend({
 
         type: 'circle',
 
@@ -13967,300 +14011,16 @@ define('zrender/graphic/shape/Circle',['require','../Path'],function (require) {
             ctx.arc(shape.cx, shape.cy, shape.r, 0, Math.PI * 2, true);
         }
     });
-});
 
-define('zrender/graphic/helper/fixClipWithShadow',['require','../../core/env'],function (require) {
-
-    var env = require('../../core/env');
-
-    // Fix weird bug in some version of IE11 (like 11.0.9600.178**),
-    // where exception "unexpected call to method or property access"
-    // might be thrown when calling ctx.fill or ctx.stroke after a path
-    // whose area size is zero is drawn and ctx.clip() is called and
-    // shadowBlur is set. See #4572, #3112, #5777.
-    // (e.g.,
-    //  ctx.moveTo(10, 10);
-    //  ctx.lineTo(20, 10);
-    //  ctx.closePath();
-    //  ctx.clip();
-    //  ctx.shadowBlur = 10;
-    //  ...
-    //  ctx.fill();
-    // )
-
-    var shadowTemp = [
-        ['shadowBlur', 0],
-        ['shadowColor', '#000'],
-        ['shadowOffsetX', 0],
-        ['shadowOffsetY', 0]
-    ];
-
-    return function (orignalBrush) {
-
-        // version string can be: '11.0'
-        return (env.browser.ie && env.browser.version >= 11)
-
-            ? function () {
-                var clipPaths = this.__clipPaths;
-                var style = this.style;
-                var modified;
-
-                if (clipPaths) {
-                    for (var i = 0; i < clipPaths.length; i++) {
-                        var clipPath = clipPaths[i];
-                        var shape = clipPath && clipPath.shape;
-                        var type = clipPath && clipPath.type;
-
-                        if (shape && (
-                            (type === 'sector' && shape.startAngle === shape.endAngle)
-                            || (type === 'rect' && (!shape.width || !shape.height))
-                        )) {
-                            for (var j = 0; j < shadowTemp.length; j++) {
-                                // It is save to put shadowTemp static, because shadowTemp
-                                // will be all modified each item brush called.
-                                shadowTemp[j][2] = style[shadowTemp[j][0]];
-                                style[shadowTemp[j][0]] = shadowTemp[j][1];
-                            }
-                            modified = true;
-                            break;
-                        }
-                    }
-                }
-
-                orignalBrush.apply(this, arguments);
-
-                if (modified) {
-                    for (var j = 0; j < shadowTemp.length; j++) {
-                        style[shadowTemp[j][0]] = shadowTemp[j][2];
-                    }
-                }
-            }
-
-            : orignalBrush;
-    };
-
-});
-/**
- * 扇形
- * @module zrender/graphic/shape/Sector
- */
-
-define('zrender/graphic/shape/Sector',['require','../Path','../helper/fixClipWithShadow'],function (require) {
-
-    var Path = require('../Path');
-    var fixClipWithShadow = require('../helper/fixClipWithShadow');
-
-    return Path.extend({
-
-        type: 'sector',
-
-        shape: {
-
-            cx: 0,
-
-            cy: 0,
-
-            r0: 0,
-
-            r: 0,
-
-            startAngle: 0,
-
-            endAngle: Math.PI * 2,
-
-            clockwise: true
-        },
-
-        brush: fixClipWithShadow(Path.prototype.brush),
-
-        buildPath: function (ctx, shape) {
-
-            var x = shape.cx;
-            var y = shape.cy;
-            var r0 = Math.max(shape.r0 || 0, 0);
-            var r = Math.max(shape.r, 0);
-            var startAngle = shape.startAngle;
-            var endAngle = shape.endAngle;
-            var clockwise = shape.clockwise;
-
-            var unitX = Math.cos(startAngle);
-            var unitY = Math.sin(startAngle);
-
-            ctx.moveTo(unitX * r0 + x, unitY * r0 + y);
-
-            ctx.lineTo(unitX * r + x, unitY * r + y);
-
-            ctx.arc(x, y, r, startAngle, endAngle, !clockwise);
-
-            ctx.lineTo(
-                Math.cos(endAngle) * r0 + x,
-                Math.sin(endAngle) * r0 + y
-            );
-
-            if (r0 !== 0) {
-                ctx.arc(x, y, r0, endAngle, startAngle, clockwise);
-            }
-
-            ctx.closePath();
-        }
-    });
-});
-
-/**
- * 圆环
- * @module zrender/graphic/shape/Ring
- */
-define('zrender/graphic/shape/Ring',['require','../Path'],function (require) {
-
-    return require('../Path').extend({
-
-        type: 'ring',
-
-        shape: {
-            cx: 0,
-            cy: 0,
-            r: 0,
-            r0: 0
-        },
-
-        buildPath: function (ctx, shape) {
-            var x = shape.cx;
-            var y = shape.cy;
-            var PI2 = Math.PI * 2;
-            ctx.moveTo(x + shape.r, y);
-            ctx.arc(x, y, shape.r, 0, PI2, false);
-            ctx.moveTo(x + shape.r0, y);
-            ctx.arc(x, y, shape.r0, 0, PI2, true);
-        }
-    });
-});
-
-/**
- * 椭圆形状
- * @module zrender/graphic/shape/Ellipse
- */
-
-define('zrender/graphic/shape/Ellipse',['require','../Path'],function (require) {
-    
-
-    return require('../Path').extend({
-        
-        type: 'ellipse',
-
-        shape: {
-            cx: 0, cy: 0,
-            rx: 0, ry: 0
-        },
-
-        buildPath: function (ctx, shape) {
-            var k = 0.5522848;
-            var x = shape.cx;
-            var y = shape.cy;
-            var a = shape.rx;
-            var b = shape.ry;
-            var ox = a * k; // 水平控制点偏移量
-            var oy = b * k; // 垂直控制点偏移量
-            // 从椭圆的左端点开始顺时针绘制四条三次贝塞尔曲线
-            ctx.moveTo(x - a, y);
-            ctx.bezierCurveTo(x - a, y - oy, x - ox, y - b, x, y - b);
-            ctx.bezierCurveTo(x + ox, y - b, x + a, y - oy, x + a, y);
-            ctx.bezierCurveTo(x + a, y + oy, x + ox, y + b, x, y + b);
-            ctx.bezierCurveTo(x - ox, y + b, x - a, y + oy, x - a, y);
-            ctx.closePath();
-        }
-    });
-});
-
-/**
- * 矩形
- * @module zrender/graphic/shape/Rect
- */
-
-define('zrender/graphic/shape/Rect',['require','../helper/roundRect','../Path'],function (require) {
-    var roundRectHelper = require('../helper/roundRect');
-
-    return require('../Path').extend({
-
-        type: 'rect',
-
-        shape: {
-            // 左上、右上、右下、左下角的半径依次为r1、r2、r3、r4
-            // r缩写为1         相当于 [1, 1, 1, 1]
-            // r缩写为[1]       相当于 [1, 1, 1, 1]
-            // r缩写为[1, 2]    相当于 [1, 2, 1, 2]
-            // r缩写为[1, 2, 3] 相当于 [1, 2, 3, 2]
-            r: 0,
-
-            x: 0,
-            y: 0,
-            width: 0,
-            height: 0
-        },
-
-        buildPath: function (ctx, shape) {
-            var x = shape.x;
-            var y = shape.y;
-            var width = shape.width;
-            var height = shape.height;
-            if (!shape.r) {
-                ctx.rect(x, y, width, height);
-            }
-            else {
-                roundRectHelper.buildPath(ctx, shape);
-            }
-            ctx.closePath();
-            return;
-        }
-    });
-});
-
-/**
- * 心形
- * @module zrender/graphic/shape/Heart
- */
-define('zrender/graphic/shape/Heart',['require','../Path'],function (require) {
-    
-    
-    return require('../Path').extend({
-        
-        type: 'heart',
-
-        shape: {
-            cx: 0,
-            cy: 0,
-            width: 0,
-            height: 0
-        },
-
-        buildPath: function (ctx, shape) {
-            var x = shape.cx;
-            var y = shape.cy;
-            var a = shape.width;
-            var b = shape.height;
-            ctx.moveTo(x, y);
-            ctx.bezierCurveTo(
-                x + a / 2, y - b * 2 / 3,
-                x + a * 2, y + b / 3,
-                x, y + b
-            );
-            ctx.bezierCurveTo(
-                x - a *  2, y + b / 3,
-                x - a / 2, y - b * 2 / 3,
-                x, y
-            );
-        }
-    });
-});
-
+'use strict';
 /**
  * 水滴形状
  * @module zrender/graphic/shape/Droplet
  */
 
-define('zrender/graphic/shape/Droplet',['require','../Path'],function (require) {
-    
 
-    return require('../Path').extend({
+
+    var Droplet = Path_1.extend({
         
         type: 'droplet',
 
@@ -14295,14 +14055,131 @@ define('zrender/graphic/shape/Droplet',['require','../Path'],function (require) 
             ctx.closePath();
         }
     });
-});
+
+'use strict';
+/**
+ * 椭圆形状
+ * @module zrender/graphic/shape/Ellipse
+ */
+
+
+
+    var Ellipse = Path_1.extend({
+        
+        type: 'ellipse',
+
+        shape: {
+            cx: 0, cy: 0,
+            rx: 0, ry: 0
+        },
+
+        buildPath: function (ctx, shape) {
+            var k = 0.5522848;
+            var x = shape.cx;
+            var y = shape.cy;
+            var a = shape.rx;
+            var b = shape.ry;
+            var ox = a * k; // 水平控制点偏移量
+            var oy = b * k; // 垂直控制点偏移量
+            // 从椭圆的左端点开始顺时针绘制四条三次贝塞尔曲线
+            ctx.moveTo(x - a, y);
+            ctx.bezierCurveTo(x - a, y - oy, x - ox, y - b, x, y - b);
+            ctx.bezierCurveTo(x + ox, y - b, x + a, y - oy, x + a, y);
+            ctx.bezierCurveTo(x + a, y + oy, x + ox, y + b, x, y + b);
+            ctx.bezierCurveTo(x - ox, y + b, x - a, y + oy, x - a, y);
+            ctx.closePath();
+        }
+    });
+
+'use strict';
+/**
+ * 心形
+ * @module zrender/graphic/shape/Heart
+ */
+
+    
+    var Heart = Path_1.extend({
+        
+        type: 'heart',
+
+        shape: {
+            cx: 0,
+            cy: 0,
+            width: 0,
+            height: 0
+        },
+
+        buildPath: function (ctx, shape) {
+            var x = shape.cx;
+            var y = shape.cy;
+            var a = shape.width;
+            var b = shape.height;
+            ctx.moveTo(x, y);
+            ctx.bezierCurveTo(
+                x + a / 2, y - b * 2 / 3,
+                x + a * 2, y + b / 3,
+                x, y + b
+            );
+            ctx.bezierCurveTo(
+                x - a *  2, y + b / 3,
+                x - a / 2, y - b * 2 / 3,
+                x, y
+            );
+        }
+    });
+
+'use strict';
+/**
+ * 正多边形
+ * @module zrender/shape/Isogon
+ * @author sushuang (宿爽, sushuang0322@gmail.com)
+ */
+
+
+    var PI = Math.PI;
+    var sin = Math.sin;
+    var cos = Math.cos;
+
+    var Isogon = Path_1.extend({
+
+        type: 'isogon',
+
+        shape: {
+            x: 0, y: 0,
+            r: 0, n: 0
+        },
+
+        buildPath: function (ctx, shape) {
+            var n = shape.n;
+            if (!n || n < 2) {
+                return;
+            }
+
+            var x = shape.x;
+            var y = shape.y;
+            var r = shape.r;
+
+            var dStep = 2 * PI / n;
+            var deg = -PI / 2;
+
+            ctx.moveTo(x + r * cos(deg), y + r * sin(deg));
+            for (var i = 0, end = n - 1; i < end; i++) {
+                deg += dStep;
+                ctx.lineTo(x + r * cos(deg), y + r * sin(deg));
+            }
+
+            ctx.closePath();
+
+            return;
+        }
+    });
 
 /**
  * 直线
  * @module zrender/graphic/shape/Line
  */
-define('zrender/graphic/shape/Line',['require','../Path'],function (require) {
-    return require('../Path').extend({
+
+    var Line = Path_1.extend({
 
         type: 'line',
 
@@ -14355,254 +14232,6 @@ define('zrender/graphic/shape/Line',['require','../Path'],function (require) {
             ];
         }
     });
-});
-
-/**
- * n角星（n>3）
- * @module zrender/graphic/shape/Star
- */
-
-define('zrender/graphic/shape/Star',['require','../Path'],function (require) {
-    var PI = Math.PI;
-
-    var cos = Math.cos;
-    var sin = Math.sin;
-
-    return require('../Path').extend({
-        
-        type: 'star',
-
-        shape: {
-            cx: 0,
-            cy: 0,
-            n: 3,
-            r0: null,
-            r: 0
-        },
-
-        buildPath: function (ctx, shape) {
-
-            var n = shape.n;
-            if (!n || n < 2) {
-                return;
-            }
-
-            var x = shape.cx;
-            var y = shape.cy;
-            var r = shape.r;
-            var r0 = shape.r0;
-
-            // 如果未指定内部顶点外接圆半径，则自动计算
-            if (r0 == null) {
-                r0 = n > 4
-                    // 相隔的外部顶点的连线的交点，
-                    // 被取为内部交点，以此计算r0
-                    ? r * cos(2 * PI / n) / cos(PI / n)
-                    // 二三四角星的特殊处理
-                    : r / 3;
-            }
-
-            var dStep = PI / n;
-            var deg = -PI / 2;
-            var xStart = x + r * cos(deg);
-            var yStart = y + r * sin(deg);
-            deg += dStep;
-
-            // 记录边界点，用于判断inside
-            ctx.moveTo(xStart, yStart);
-            for (var i = 0, end = n * 2 - 1, ri; i < end; i++) {
-                ri = i % 2 === 0 ? r0 : r;
-                ctx.lineTo(x + ri * cos(deg), y + ri * sin(deg));
-                deg += dStep;
-            }
-            
-            ctx.closePath();
-        }
-    });
-});
-
-/**
- * 正多边形
- * @module zrender/shape/Isogon
- * @author sushuang (宿爽, sushuang0322@gmail.com)
- */
-define('zrender/graphic/shape/Isogon',['require','../Path'],function (require) {
-    
-
-    var PI = Math.PI;
-    var sin = Math.sin;
-    var cos = Math.cos;
-
-    return require('../Path').extend({
-
-        type: 'isogon',
-
-        shape: {
-            x: 0, y: 0,
-            r: 0, n: 0
-        },
-
-        buildPath: function (ctx, shape) {
-            var n = shape.n;
-            if (!n || n < 2) {
-                return;
-            }
-
-            var x = shape.x;
-            var y = shape.y;
-            var r = shape.r;
-
-            var dStep = 2 * PI / n;
-            var deg = -PI / 2;
-
-            ctx.moveTo(x + r * cos(deg), y + r * sin(deg));
-            for (var i = 0, end = n - 1; i < end; i++) {
-                deg += dStep;
-                ctx.lineTo(x + r * cos(deg), y + r * sin(deg));
-            }
-
-            ctx.closePath();
-
-            return;
-        }
-    });
-});
-
-/**
- * 贝塞尔曲线
- * @module zrender/shape/BezierCurve
- */
-define('zrender/graphic/shape/BezierCurve',['require','../../core/curve','../../core/vector','../Path'],function (require) {
-    
-
-    var curveTool = require('../../core/curve');
-    var vec2 = require('../../core/vector');
-    var quadraticSubdivide = curveTool.quadraticSubdivide;
-    var cubicSubdivide = curveTool.cubicSubdivide;
-    var quadraticAt = curveTool.quadraticAt;
-    var cubicAt = curveTool.cubicAt;
-    var quadraticDerivativeAt = curveTool.quadraticDerivativeAt;
-    var cubicDerivativeAt = curveTool.cubicDerivativeAt;
-
-    var out = [];
-
-    function someVectorAt(shape, t, isTangent) {
-        var cpx2 = shape.cpx2;
-        var cpy2 = shape.cpy2;
-        if (cpx2 === null || cpy2 === null) {
-            return [
-                (isTangent ? cubicDerivativeAt : cubicAt)(shape.x1, shape.cpx1, shape.cpx2, shape.x2, t),
-                (isTangent ? cubicDerivativeAt : cubicAt)(shape.y1, shape.cpy1, shape.cpy2, shape.y2, t)
-            ];
-        }
-        else {
-            return [
-                (isTangent ? quadraticDerivativeAt : quadraticAt)(shape.x1, shape.cpx1, shape.x2, t),
-                (isTangent ? quadraticDerivativeAt : quadraticAt)(shape.y1, shape.cpy1, shape.y2, t)
-            ];
-        }
-    }
-    return require('../Path').extend({
-
-        type: 'bezier-curve',
-
-        shape: {
-            x1: 0,
-            y1: 0,
-            x2: 0,
-            y2: 0,
-            cpx1: 0,
-            cpy1: 0,
-            // cpx2: 0,
-            // cpy2: 0
-
-            // Curve show percent, for animating
-            percent: 1
-        },
-
-        style: {
-            stroke: '#000',
-            fill: null
-        },
-
-        buildPath: function (ctx, shape) {
-            var x1 = shape.x1;
-            var y1 = shape.y1;
-            var x2 = shape.x2;
-            var y2 = shape.y2;
-            var cpx1 = shape.cpx1;
-            var cpy1 = shape.cpy1;
-            var cpx2 = shape.cpx2;
-            var cpy2 = shape.cpy2;
-            var percent = shape.percent;
-            if (percent === 0) {
-                return;
-            }
-
-            ctx.moveTo(x1, y1);
-
-            if (cpx2 == null || cpy2 == null) {
-                if (percent < 1) {
-                    quadraticSubdivide(
-                        x1, cpx1, x2, percent, out
-                    );
-                    cpx1 = out[1];
-                    x2 = out[2];
-                    quadraticSubdivide(
-                        y1, cpy1, y2, percent, out
-                    );
-                    cpy1 = out[1];
-                    y2 = out[2];
-                }
-
-                ctx.quadraticCurveTo(
-                    cpx1, cpy1,
-                    x2, y2
-                );
-            }
-            else {
-                if (percent < 1) {
-                    cubicSubdivide(
-                        x1, cpx1, cpx2, x2, percent, out
-                    );
-                    cpx1 = out[1];
-                    cpx2 = out[2];
-                    x2 = out[3];
-                    cubicSubdivide(
-                        y1, cpy1, cpy2, y2, percent, out
-                    );
-                    cpy1 = out[1];
-                    cpy2 = out[2];
-                    y2 = out[3];
-                }
-                ctx.bezierCurveTo(
-                    cpx1, cpy1,
-                    cpx2, cpy2,
-                    x2, y2
-                );
-            }
-        },
-
-        /**
-         * Get point at percent
-         * @param  {number} t
-         * @return {Array.<number>}
-         */
-        pointAt: function (t) {
-            return someVectorAt(this.shape, t, false);
-        },
-
-        /**
-         * Get tangent at percent
-         * @param  {number} t
-         * @return {Array.<number>}
-         */
-        tangentAt: function (t) {
-            var p = someVectorAt(this.shape, t, true);
-            return vec2.normalize(p, p);
-        }
-    });
-});
 
 /**
  * Catmull-Rom spline 插值折线
@@ -14611,8 +14240,8 @@ define('zrender/graphic/shape/BezierCurve',['require','../../core/curve','../../
  *         Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *         errorrik (errorrik@gmail.com)
  */
-define('zrender/graphic/helper/smoothSpline',['require','../../core/vector'],function (require) {
-    var vec2 = require('../../core/vector');
+
+    
 
     /**
      * @inner
@@ -14631,13 +14260,13 @@ define('zrender/graphic/helper/smoothSpline',['require','../../core/vector'],fun
      * @param {boolean} isLoop
      * @return {Array}
      */
-    return function (points, isLoop) {
+    var smoothSpline = function (points, isLoop) {
         var len = points.length;
         var ret = [];
 
         var distance = 0;
         for (var i = 1; i < len; i++) {
-            distance += vec2.distance(points[i - 1], points[i]);
+            distance += vector_1.distance(points[i - 1], points[i]);
         }
 
         var segs = distance / 2;
@@ -14673,7 +14302,6 @@ define('zrender/graphic/helper/smoothSpline',['require','../../core/vector'],fun
         }
         return ret;
     };
-});
 
 /**
  * 贝塞尔平滑曲线
@@ -14682,14 +14310,14 @@ define('zrender/graphic/helper/smoothSpline',['require','../../core/vector'],fun
  *         Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *         errorrik (errorrik@gmail.com)
  */
-define('zrender/graphic/helper/smoothBezier',['require','../../core/vector'],function (require) {
 
-    var vec2 = require('../../core/vector');
-    var v2Min = vec2.min;
-    var v2Max = vec2.max;
-    var v2Scale = vec2.scale;
-    var v2Distance = vec2.distance;
-    var v2Add = vec2.add;
+
+    
+    var v2Min = vector_1.min;
+    var v2Max = vector_1.max;
+    var v2Scale = vector_1.scale;
+    var v2Distance = vector_1.distance;
+    var v2Add = vector_1.add;
 
     /**
      * 贝塞尔平滑曲线
@@ -14702,7 +14330,7 @@ define('zrender/graphic/helper/smoothBezier',['require','../../core/vector'],fun
      *                           整个折线的包围盒做一个并集用来约束控制点。
      * @param {Array} 计算出来的控制点数组
      */
-    return function (points, smooth, isLoop, constraint) {
+    var smoothBezier = function (points, smooth, isLoop, constraint) {
         var cps = [];
 
         var v = [];
@@ -14733,7 +14361,7 @@ define('zrender/graphic/helper/smoothBezier',['require','../../core/vector'],fun
             }
             else {
                 if (i === 0 || i === len - 1) {
-                    cps.push(vec2.clone(points[i]));
+                    cps.push(vector_1.clone(points[i]));
                     continue;
                 }
                 else {
@@ -14742,7 +14370,7 @@ define('zrender/graphic/helper/smoothBezier',['require','../../core/vector'],fun
                 }
             }
 
-            vec2.sub(v, nextPoint, prevPoint);
+            vector_1.sub(v, nextPoint, prevPoint);
 
             // use degree to scale the handle length
             v2Scale(v, v, smooth);
@@ -14775,14 +14403,8 @@ define('zrender/graphic/helper/smoothBezier',['require','../../core/vector'],fun
 
         return cps;
     };
-});
 
-define('zrender/graphic/helper/poly',['require','./smoothSpline','./smoothBezier'],function (require) {
-
-    var smoothSpline = require('./smoothSpline');
-    var smoothBezier = require('./smoothBezier');
-
-    return {
+var poly = {
         buildPath: function (ctx, shape, closePath) {
             var points = shape.points;
             var smooth = shape.smooth;
@@ -14818,15 +14440,40 @@ define('zrender/graphic/helper/poly',['require','./smoothSpline','./smoothBezier
             }
         }
     };
-});
+
+/**
+ * 多边形
+ * @module zrender/shape/Polygon
+ */
+
+
+    
+
+    var Polygon = Path_1.extend({
+        
+        type: 'polygon',
+
+        shape: {
+            points: null,
+
+            smooth: false,
+
+            smoothConstraint: null
+        },
+
+        buildPath: function (ctx, shape) {
+            poly.buildPath(ctx, shape, true);
+        }
+    });
+
 /**
  * @module zrender/graphic/shape/Polyline
  */
-define('zrender/graphic/shape/Polyline',['require','../helper/poly','../Path'],function (require) {
 
-    var polyHelper = require('../helper/poly');
 
-    return require('../Path').extend({
+    
+
+    var Polyline = Path_1.extend({
         
         type: 'polyline',
 
@@ -14845,38 +14492,410 @@ define('zrender/graphic/shape/Polyline',['require','../helper/poly','../Path'],f
         },
 
         buildPath: function (ctx, shape) {
-            polyHelper.buildPath(ctx, shape, false);
+            poly.buildPath(ctx, shape, false);
         }
     });
-});
+
 /**
- * 多边形
- * @module zrender/shape/Polygon
+ * 矩形
+ * @module zrender/graphic/shape/Rect
  */
-define('zrender/graphic/shape/Polygon',['require','../helper/poly','../Path'],function (require) {
 
-    var polyHelper = require('../helper/poly');
 
-    return require('../Path').extend({
-        
-        type: 'polygon',
+    
+
+    var Rect = Path_1.extend({
+
+        type: 'rect',
 
         shape: {
-            points: null,
+            // 左上、右上、右下、左下角的半径依次为r1、r2、r3、r4
+            // r缩写为1         相当于 [1, 1, 1, 1]
+            // r缩写为[1]       相当于 [1, 1, 1, 1]
+            // r缩写为[1, 2]    相当于 [1, 2, 1, 2]
+            // r缩写为[1, 2, 3] 相当于 [1, 2, 3, 2]
+            r: 0,
 
-            smooth: false,
-
-            smoothConstraint: null
+            x: 0,
+            y: 0,
+            width: 0,
+            height: 0
         },
 
         buildPath: function (ctx, shape) {
-            polyHelper.buildPath(ctx, shape, true);
+            var x = shape.x;
+            var y = shape.y;
+            var width = shape.width;
+            var height = shape.height;
+            if (!shape.r) {
+                ctx.rect(x, y, width, height);
+            }
+            else {
+                roundRect.buildPath(ctx, shape);
+            }
+            ctx.closePath();
+            return;
         }
     });
-});
-define('zrender/graphic/Gradient',['require'],function (require) {
 
-    /**
+/**
+ * 圆环
+ * @module zrender/graphic/shape/Ring
+ */
+
+
+    var Ring = Path_1.extend({
+
+        type: 'ring',
+
+        shape: {
+            cx: 0,
+            cy: 0,
+            r: 0,
+            r0: 0
+        },
+
+        buildPath: function (ctx, shape) {
+            var x = shape.cx;
+            var y = shape.cy;
+            var PI2 = Math.PI * 2;
+            ctx.moveTo(x + shape.r, y);
+            ctx.arc(x, y, shape.r, 0, PI2, false);
+            ctx.moveTo(x + shape.r0, y);
+            ctx.arc(x, y, shape.r0, 0, PI2, true);
+        }
+    });
+
+/**
+ * 玫瑰线
+ * @module zrender/graphic/shape/Rose
+ */
+
+
+    var sin$1 = Math.sin;
+    var cos$1 = Math.cos;
+    var radian = Math.PI / 180;
+
+    var Rose = Path_1.extend({
+
+        type: 'rose',
+
+        shape: {
+            cx: 0,
+            cy: 0,
+            r: [],
+            k: 0,
+            n: 1
+        },
+
+        style: {
+            stroke: '#000',
+            fill: null
+        },
+
+        buildPath: function (ctx, shape) {
+            var x;
+            var y;
+            var R = shape.r;
+            var r;
+            var k = shape.k;
+            var n = shape.n;
+
+            var x0 = shape.cx;
+            var y0 = shape.cy;
+
+            ctx.moveTo(x0, y0);
+
+            for (var i = 0, len = R.length; i < len ; i++) {
+                r = R[i];
+
+                for (var j = 0; j <= 360 * n; j++) {
+                    x = r
+                         * sin$1(k / n * j % 360 * radian)
+                         * cos$1(j * radian) 
+                         + x0;
+                    y = r
+                         * sin$1(k / n * j % 360 * radian)
+                         * sin$1(j * radian)
+                         + y0;
+                    ctx.lineTo(x, y);
+                }
+            }
+        }
+    });
+
+// Fix weird bug in some version of IE11 (like 11.0.9600.178**),
+    // where exception "unexpected call to method or property access"
+    // might be thrown when calling ctx.fill or ctx.stroke after a path
+    // whose area size is zero is drawn and ctx.clip() is called and
+    // shadowBlur is set. See #4572, #3112, #5777.
+    // (e.g.,
+    //  ctx.moveTo(10, 10);
+    //  ctx.lineTo(20, 10);
+    //  ctx.closePath();
+    //  ctx.clip();
+    //  ctx.shadowBlur = 10;
+    //  ...
+    //  ctx.fill();
+    // )
+
+    var shadowTemp = [
+        ['shadowBlur', 0],
+        ['shadowColor', '#000'],
+        ['shadowOffsetX', 0],
+        ['shadowOffsetY', 0]
+    ];
+
+    var fixClipWithShadow = function (orignalBrush) {
+
+        // version string can be: '11.0'
+        return (env_1.browser.ie && env_1.browser.version >= 11)
+
+            ? function () {
+                var clipPaths = this.__clipPaths;
+                var style = this.style;
+                var modified;
+
+                if (clipPaths) {
+                    for (var i = 0; i < clipPaths.length; i++) {
+                        var clipPath = clipPaths[i];
+                        var shape = clipPath && clipPath.shape;
+                        var type = clipPath && clipPath.type;
+
+                        if (shape && (
+                            (type === 'sector' && shape.startAngle === shape.endAngle)
+                            || (type === 'rect' && (!shape.width || !shape.height))
+                        )) {
+                            for (var j = 0; j < shadowTemp.length; j++) {
+                                // It is save to put shadowTemp static, because shadowTemp
+                                // will be all modified each item brush called.
+                                shadowTemp[j][2] = style[shadowTemp[j][0]];
+                                style[shadowTemp[j][0]] = shadowTemp[j][1];
+                            }
+                            modified = true;
+                            break;
+                        }
+                    }
+                }
+
+                orignalBrush.apply(this, arguments);
+
+                if (modified) {
+                    for (var j = 0; j < shadowTemp.length; j++) {
+                        style[shadowTemp[j][0]] = shadowTemp[j][2];
+                    }
+                }
+            }
+
+            : orignalBrush;
+    };
+
+/**
+ * 扇形
+ * @module zrender/graphic/shape/Sector
+ */
+
+
+
+    
+    
+
+    var Sector = Path_1.extend({
+
+        type: 'sector',
+
+        shape: {
+
+            cx: 0,
+
+            cy: 0,
+
+            r0: 0,
+
+            r: 0,
+
+            startAngle: 0,
+
+            endAngle: Math.PI * 2,
+
+            clockwise: true
+        },
+
+        brush: fixClipWithShadow(Path_1.prototype.brush),
+
+        buildPath: function (ctx, shape) {
+
+            var x = shape.cx;
+            var y = shape.cy;
+            var r0 = Math.max(shape.r0 || 0, 0);
+            var r = Math.max(shape.r, 0);
+            var startAngle = shape.startAngle;
+            var endAngle = shape.endAngle;
+            var clockwise = shape.clockwise;
+
+            var unitX = Math.cos(startAngle);
+            var unitY = Math.sin(startAngle);
+
+            ctx.moveTo(unitX * r0 + x, unitY * r0 + y);
+
+            ctx.lineTo(unitX * r + x, unitY * r + y);
+
+            ctx.arc(x, y, r, startAngle, endAngle, !clockwise);
+
+            ctx.lineTo(
+                Math.cos(endAngle) * r0 + x,
+                Math.sin(endAngle) * r0 + y
+            );
+
+            if (r0 !== 0) {
+                ctx.arc(x, y, r0, endAngle, startAngle, clockwise);
+            }
+
+            ctx.closePath();
+        }
+    });
+
+/**
+ * n角星（n>3）
+ * @module zrender/graphic/shape/Star
+ */
+
+
+    var PI$1 = Math.PI;
+
+    var cos$2 = Math.cos;
+    var sin$2 = Math.sin;
+
+    var Star = Path_1.extend({
+        
+        type: 'star',
+
+        shape: {
+            cx: 0,
+            cy: 0,
+            n: 3,
+            r0: null,
+            r: 0
+        },
+
+        buildPath: function (ctx, shape) {
+
+            var n = shape.n;
+            if (!n || n < 2) {
+                return;
+            }
+
+            var x = shape.cx;
+            var y = shape.cy;
+            var r = shape.r;
+            var r0 = shape.r0;
+
+            // 如果未指定内部顶点外接圆半径，则自动计算
+            if (r0 == null) {
+                r0 = n > 4
+                    // 相隔的外部顶点的连线的交点，
+                    // 被取为内部交点，以此计算r0
+                    ? r * cos$2(2 * PI$1 / n) / cos$2(PI$1 / n)
+                    // 二三四角星的特殊处理
+                    : r / 3;
+            }
+
+            var dStep = PI$1 / n;
+            var deg = -PI$1 / 2;
+            var xStart = x + r * cos$2(deg);
+            var yStart = y + r * sin$2(deg);
+            deg += dStep;
+
+            // 记录边界点，用于判断inside
+            ctx.moveTo(xStart, yStart);
+            for (var i = 0, end = n * 2 - 1, ri; i < end; i++) {
+                ri = i % 2 === 0 ? r0 : r;
+                ctx.lineTo(x + ri * cos$2(deg), y + ri * sin$2(deg));
+                deg += dStep;
+            }
+            
+            ctx.closePath();
+        }
+    });
+
+/**
+ * 内外旋轮曲线
+ * @module zrender/graphic/shape/Trochold
+ */
+
+
+    var cos$3 = Math.cos;
+    var sin$3 = Math.sin;
+
+    var Trochoid = Path_1.extend({
+
+        type: 'trochoid',
+
+        shape: {
+            cx: 0,
+            cy: 0,
+            r: 0,
+            r0: 0,
+            d: 0,
+            location: 'out'
+        },
+
+        style: {
+            stroke: '#000',
+
+            fill: null
+        },
+
+        buildPath: function (ctx, shape) {
+            var x1;
+            var y1;
+            var x2;
+            var y2;
+            var R = shape.r;
+            var r = shape.r0;
+            var d = shape.d;
+            var offsetX = shape.cx;
+            var offsetY = shape.cy;
+            var delta = shape.location == 'out' ? 1 : -1;
+
+            if (shape.location && R <= r) {
+                return;
+            }
+
+            var num = 0;
+            var i = 1;
+            var theta;
+
+            x1 = (R + delta * r) * cos$3(0)
+                - delta * d * cos$3(0) + offsetX;
+            y1 = (R + delta * r) * sin$3(0)
+                - d * sin$3(0) + offsetY;
+
+            ctx.moveTo(x1, y1);
+
+            // 计算结束时的i
+            do {
+                num++;
+            }
+            while ((r * num) % (R + delta * r) !== 0);
+
+            do {
+                theta = Math.PI / 180 * i;
+                x2 = (R + delta * r) * cos$3(theta)
+                     - delta * d * cos$3((R / r +  delta) * theta)
+                     + offsetX;
+                y2 = (R + delta * r) * sin$3(theta)
+                     - d * sin$3((R / r + delta) * theta)
+                     + offsetY;
+                ctx.lineTo(x2, y2);
+                i++;
+            }
+            while (i <= (r * num) / (R + delta * r) * 360);
+
+        }
+    });
+
+/**
      * @param {Array.<Object>} colorStops
      */
     var Gradient = function (colorStops) {
@@ -14900,11 +14919,2294 @@ define('zrender/graphic/Gradient',['require'],function (require) {
 
     };
 
-    return Gradient;
-});
-define('zrender/vml/core',['require','exports','module','../core/env'],function (require, exports, module) {
+    var Gradient_1 = Gradient;
 
-if (!require('../core/env').canvasSupported) {
+'use strict';
+
+
+    
+
+    
+
+    /**
+     * x, y, x2, y2 are all percent from 0 to 1
+     * @param {number} [x=0]
+     * @param {number} [y=0]
+     * @param {number} [x2=1]
+     * @param {number} [y2=0]
+     * @param {Array.<Object>} colorStops
+     * @param {boolean} [globalCoord=false]
+     */
+    var LinearGradient = function (x, y, x2, y2, colorStops, globalCoord) {
+        // Should do nothing more in this constructor. Because gradient can be
+        // declard by `color: {type: 'linear', colorStops: ...}`, where
+        // this constructor will not be called.
+
+        this.x = x == null ? 0 : x;
+
+        this.y = y == null ? 0 : y;
+
+        this.x2 = x2 == null ? 1 : x2;
+
+        this.y2 = y2 == null ? 0 : y2;
+
+        // Can be cloned
+        this.type = 'linear';
+
+        // If use global coord
+        this.global = globalCoord || false;
+
+        Gradient_1.call(this, colorStops);
+    };
+
+    LinearGradient.prototype = {
+
+        constructor: LinearGradient
+    };
+
+    util_1.inherits(LinearGradient, Gradient_1);
+
+    var LinearGradient_1 = LinearGradient;
+
+'use strict';
+
+
+    
+
+    
+
+    /**
+     * x, y, r are all percent from 0 to 1
+     * @param {number} [x=0.5]
+     * @param {number} [y=0.5]
+     * @param {number} [r=0.5]
+     * @param {Array.<Object>} [colorStops]
+     * @param {boolean} [globalCoord=false]
+     */
+    var RadialGradient = function (x, y, r, colorStops, globalCoord) {
+        // Should do nothing more in this constructor. Because gradient can be
+        // declard by `color: {type: 'radial', colorStops: ...}`, where
+        // this constructor will not be called.
+
+        this.x = x == null ? 0.5 : x;
+
+        this.y = y == null ? 0.5 : y;
+
+        this.r = r == null ? 0.5 : r;
+
+        // Can be cloned
+        this.type = 'radial';
+
+        // If use global coord
+        this.global = globalCoord || false;
+
+        Gradient_1.call(this, colorStops);
+    };
+
+    RadialGradient.prototype = {
+
+        constructor: RadialGradient
+    };
+
+    util_1.inherits(RadialGradient, Gradient_1);
+
+    var RadialGradient_1 = RadialGradient;
+
+var CMD$2 = PathProxy_1.CMD;
+    
+    var v2ApplyTransform$1 = vector_1.applyTransform;
+
+    var points = [[], [], []];
+    var mathSqrt$3 = Math.sqrt;
+    var mathAtan2 = Math.atan2;
+    function transformPath(path, m) {
+        var data = path.data;
+        var cmd;
+        var nPoint;
+        var i;
+        var j;
+        var k;
+        var p;
+
+        var M = CMD$2.M;
+        var C = CMD$2.C;
+        var L = CMD$2.L;
+        var R = CMD$2.R;
+        var A = CMD$2.A;
+        var Q = CMD$2.Q;
+
+        for (i = 0, j = 0; i < data.length;) {
+            cmd = data[i++];
+            j = i;
+            nPoint = 0;
+
+            switch (cmd) {
+                case M:
+                    nPoint = 1;
+                    break;
+                case L:
+                    nPoint = 1;
+                    break;
+                case C:
+                    nPoint = 3;
+                    break;
+                case Q:
+                    nPoint = 2;
+                    break;
+                case A:
+                    var x = m[4];
+                    var y = m[5];
+                    var sx = mathSqrt$3(m[0] * m[0] + m[1] * m[1]);
+                    var sy = mathSqrt$3(m[2] * m[2] + m[3] * m[3]);
+                    var angle = mathAtan2(-m[1] / sy, m[0] / sx);
+                    // cx
+                    data[i] *= sx;
+                    data[i++] += x;
+                    // cy
+                    data[i] *= sy;
+                    data[i++] += y;
+                    // Scale rx and ry
+                    // FIXME Assume psi is 0 here
+                    data[i++] *= sx;
+                    data[i++] *= sy;
+
+                    // Start angle
+                    data[i++] += angle;
+                    // end angle
+                    data[i++] += angle;
+                    // FIXME psi
+                    i += 2;
+                    j = i;
+                    break;
+                case R:
+                    // x0, y0
+                    p[0] = data[i++];
+                    p[1] = data[i++];
+                    v2ApplyTransform$1(p, p, m);
+                    data[j++] = p[0];
+                    data[j++] = p[1];
+                    // x1, y1
+                    p[0] += data[i++];
+                    p[1] += data[i++];
+                    v2ApplyTransform$1(p, p, m);
+                    data[j++] = p[0];
+                    data[j++] = p[1];
+            }
+
+            for (k = 0; k < nPoint; k++) {
+                var p = points[k];
+                p[0] = data[i++];
+                p[1] = data[i++];
+
+                v2ApplyTransform$1(p, p, m);
+                // Write back
+                data[j++] = p[0];
+                data[j++] = p[1];
+            }
+        }
+    }
+
+    var transformPath_1 = transformPath;
+
+// command chars
+    var cc = [
+        'm', 'M', 'l', 'L', 'v', 'V', 'h', 'H', 'z', 'Z',
+        'c', 'C', 'q', 'Q', 't', 'T', 's', 'S', 'a', 'A'
+    ];
+
+    var mathSqrt$2 = Math.sqrt;
+    var mathSin$2 = Math.sin;
+    var mathCos$2 = Math.cos;
+    var PI$2 = Math.PI;
+
+    var vMag = function(v) {
+        return Math.sqrt(v[0] * v[0] + v[1] * v[1]);
+    };
+    var vRatio = function(u, v) {
+        return (u[0] * v[0] + u[1] * v[1]) / (vMag(u) * vMag(v));
+    };
+    var vAngle = function(u, v) {
+        return (u[0] * v[1] < u[1] * v[0] ? -1 : 1)
+                * Math.acos(vRatio(u, v));
+    };
+
+    function processArc(x1, y1, x2, y2, fa, fs, rx, ry, psiDeg, cmd, path) {
+        var psi = psiDeg * (PI$2 / 180.0);
+        var xp = mathCos$2(psi) * (x1 - x2) / 2.0
+                 + mathSin$2(psi) * (y1 - y2) / 2.0;
+        var yp = -1 * mathSin$2(psi) * (x1 - x2) / 2.0
+                 + mathCos$2(psi) * (y1 - y2) / 2.0;
+
+        var lambda = (xp * xp) / (rx * rx) + (yp * yp) / (ry * ry);
+
+        if (lambda > 1) {
+            rx *= mathSqrt$2(lambda);
+            ry *= mathSqrt$2(lambda);
+        }
+
+        var f = (fa === fs ? -1 : 1)
+            * mathSqrt$2((((rx * rx) * (ry * ry))
+                    - ((rx * rx) * (yp * yp))
+                    - ((ry * ry) * (xp * xp))) / ((rx * rx) * (yp * yp)
+                    + (ry * ry) * (xp * xp))
+                ) || 0;
+
+        var cxp = f * rx * yp / ry;
+        var cyp = f * -ry * xp / rx;
+
+        var cx = (x1 + x2) / 2.0
+                 + mathCos$2(psi) * cxp
+                 - mathSin$2(psi) * cyp;
+        var cy = (y1 + y2) / 2.0
+                + mathSin$2(psi) * cxp
+                + mathCos$2(psi) * cyp;
+
+        var theta = vAngle([ 1, 0 ], [ (xp - cxp) / rx, (yp - cyp) / ry ]);
+        var u = [ (xp - cxp) / rx, (yp - cyp) / ry ];
+        var v = [ (-1 * xp - cxp) / rx, (-1 * yp - cyp) / ry ];
+        var dTheta = vAngle(u, v);
+
+        if (vRatio(u, v) <= -1) {
+            dTheta = PI$2;
+        }
+        if (vRatio(u, v) >= 1) {
+            dTheta = 0;
+        }
+        if (fs === 0 && dTheta > 0) {
+            dTheta = dTheta - 2 * PI$2;
+        }
+        if (fs === 1 && dTheta < 0) {
+            dTheta = dTheta + 2 * PI$2;
+        }
+
+        path.addData(cmd, cx, cy, rx, ry, theta, dTheta, psi, fs);
+    }
+
+    function createPathProxyFromString(data) {
+        if (!data) {
+            return [];
+        }
+
+        // command string
+        var cs = data.replace(/-/g, ' -')
+            .replace(/  /g, ' ')
+            .replace(/ /g, ',')
+            .replace(/,,/g, ',');
+
+        var n;
+        // create pipes so that we can split the data
+        for (n = 0; n < cc.length; n++) {
+            cs = cs.replace(new RegExp(cc[n], 'g'), '|' + cc[n]);
+        }
+
+        // create array
+        var arr = cs.split('|');
+        // init context point
+        var cpx = 0;
+        var cpy = 0;
+
+        var path = new PathProxy_1();
+        var CMD = PathProxy_1.CMD;
+
+        var prevCmd;
+        for (n = 1; n < arr.length; n++) {
+            var str = arr[n];
+            var c = str.charAt(0);
+            var off = 0;
+            var p = str.slice(1).replace(/e,-/g, 'e-').split(',');
+            var cmd;
+
+            if (p.length > 0 && p[0] === '') {
+                p.shift();
+            }
+
+            for (var i = 0; i < p.length; i++) {
+                p[i] = parseFloat(p[i]);
+            }
+            while (off < p.length && !isNaN(p[off])) {
+                if (isNaN(p[0])) {
+                    break;
+                }
+                var ctlPtx;
+                var ctlPty;
+
+                var rx;
+                var ry;
+                var psi;
+                var fa;
+                var fs;
+
+                var x1 = cpx;
+                var y1 = cpy;
+
+                // convert l, H, h, V, and v to L
+                switch (c) {
+                    case 'l':
+                        cpx += p[off++];
+                        cpy += p[off++];
+                        cmd = CMD.L;
+                        path.addData(cmd, cpx, cpy);
+                        break;
+                    case 'L':
+                        cpx = p[off++];
+                        cpy = p[off++];
+                        cmd = CMD.L;
+                        path.addData(cmd, cpx, cpy);
+                        break;
+                    case 'm':
+                        cpx += p[off++];
+                        cpy += p[off++];
+                        cmd = CMD.M;
+                        path.addData(cmd, cpx, cpy);
+                        c = 'l';
+                        break;
+                    case 'M':
+                        cpx = p[off++];
+                        cpy = p[off++];
+                        cmd = CMD.M;
+                        path.addData(cmd, cpx, cpy);
+                        c = 'L';
+                        break;
+                    case 'h':
+                        cpx += p[off++];
+                        cmd = CMD.L;
+                        path.addData(cmd, cpx, cpy);
+                        break;
+                    case 'H':
+                        cpx = p[off++];
+                        cmd = CMD.L;
+                        path.addData(cmd, cpx, cpy);
+                        break;
+                    case 'v':
+                        cpy += p[off++];
+                        cmd = CMD.L;
+                        path.addData(cmd, cpx, cpy);
+                        break;
+                    case 'V':
+                        cpy = p[off++];
+                        cmd = CMD.L;
+                        path.addData(cmd, cpx, cpy);
+                        break;
+                    case 'C':
+                        cmd = CMD.C;
+                        path.addData(
+                            cmd, p[off++], p[off++], p[off++], p[off++], p[off++], p[off++]
+                        );
+                        cpx = p[off - 2];
+                        cpy = p[off - 1];
+                        break;
+                    case 'c':
+                        cmd = CMD.C;
+                        path.addData(
+                            cmd,
+                            p[off++] + cpx, p[off++] + cpy,
+                            p[off++] + cpx, p[off++] + cpy,
+                            p[off++] + cpx, p[off++] + cpy
+                        );
+                        cpx += p[off - 2];
+                        cpy += p[off - 1];
+                        break;
+                    case 'S':
+                        ctlPtx = cpx;
+                        ctlPty = cpy;
+                        var len = path.len();
+                        var pathData = path.data;
+                        if (prevCmd === CMD.C) {
+                            ctlPtx += cpx - pathData[len - 4];
+                            ctlPty += cpy - pathData[len - 3];
+                        }
+                        cmd = CMD.C;
+                        x1 = p[off++];
+                        y1 = p[off++];
+                        cpx = p[off++];
+                        cpy = p[off++];
+                        path.addData(cmd, ctlPtx, ctlPty, x1, y1, cpx, cpy);
+                        break;
+                    case 's':
+                        ctlPtx = cpx;
+                        ctlPty = cpy;
+                        var len = path.len();
+                        var pathData = path.data;
+                        if (prevCmd === CMD.C) {
+                            ctlPtx += cpx - pathData[len - 4];
+                            ctlPty += cpy - pathData[len - 3];
+                        }
+                        cmd = CMD.C;
+                        x1 = cpx + p[off++];
+                        y1 = cpy + p[off++];
+                        cpx += p[off++];
+                        cpy += p[off++];
+                        path.addData(cmd, ctlPtx, ctlPty, x1, y1, cpx, cpy);
+                        break;
+                    case 'Q':
+                        x1 = p[off++];
+                        y1 = p[off++];
+                        cpx = p[off++];
+                        cpy = p[off++];
+                        cmd = CMD.Q;
+                        path.addData(cmd, x1, y1, cpx, cpy);
+                        break;
+                    case 'q':
+                        x1 = p[off++] + cpx;
+                        y1 = p[off++] + cpy;
+                        cpx += p[off++];
+                        cpy += p[off++];
+                        cmd = CMD.Q;
+                        path.addData(cmd, x1, y1, cpx, cpy);
+                        break;
+                    case 'T':
+                        ctlPtx = cpx;
+                        ctlPty = cpy;
+                        var len = path.len();
+                        var pathData = path.data;
+                        if (prevCmd === CMD.Q) {
+                            ctlPtx += cpx - pathData[len - 4];
+                            ctlPty += cpy - pathData[len - 3];
+                        }
+                        cpx = p[off++];
+                        cpy = p[off++];
+                        cmd = CMD.Q;
+                        path.addData(cmd, ctlPtx, ctlPty, cpx, cpy);
+                        break;
+                    case 't':
+                        ctlPtx = cpx;
+                        ctlPty = cpy;
+                        var len = path.len();
+                        var pathData = path.data;
+                        if (prevCmd === CMD.Q) {
+                            ctlPtx += cpx - pathData[len - 4];
+                            ctlPty += cpy - pathData[len - 3];
+                        }
+                        cpx += p[off++];
+                        cpy += p[off++];
+                        cmd = CMD.Q;
+                        path.addData(cmd, ctlPtx, ctlPty, cpx, cpy);
+                        break;
+                    case 'A':
+                        rx = p[off++];
+                        ry = p[off++];
+                        psi = p[off++];
+                        fa = p[off++];
+                        fs = p[off++];
+
+                        x1 = cpx, y1 = cpy;
+                        cpx = p[off++];
+                        cpy = p[off++];
+                        cmd = CMD.A;
+                        processArc(
+                            x1, y1, cpx, cpy, fa, fs, rx, ry, psi, cmd, path
+                        );
+                        break;
+                    case 'a':
+                        rx = p[off++];
+                        ry = p[off++];
+                        psi = p[off++];
+                        fa = p[off++];
+                        fs = p[off++];
+
+                        x1 = cpx, y1 = cpy;
+                        cpx += p[off++];
+                        cpy += p[off++];
+                        cmd = CMD.A;
+                        processArc(
+                            x1, y1, cpx, cpy, fa, fs, rx, ry, psi, cmd, path
+                        );
+                        break;
+                }
+            }
+
+            if (c === 'z' || c === 'Z') {
+                cmd = CMD.Z;
+                path.addData(cmd);
+            }
+
+            prevCmd = cmd;
+        }
+
+        path.toStatic();
+
+        return path;
+    }
+
+    // TODO Optimize double memory cost problem
+    function createPathOptions(str, opts) {
+        var pathProxy = createPathProxyFromString(str);
+        opts = opts || {};
+        opts.buildPath = function (path) {
+            if (path.setData) {
+                path.setData(pathProxy.data);
+                // Svg and vml renderer don't have context
+                var ctx = path.getContext();
+                if (ctx) {
+                    path.rebuildPath(ctx);
+                }
+            }
+            else {
+                var ctx = path;
+                pathProxy.rebuildPath(ctx);
+            }
+        };
+
+        opts.applyTransform = function (m) {
+            transformPath_1(pathProxy, m);
+
+            this.dirty(true);
+        };
+
+        return opts;
+    }
+
+    var path$2 = {
+        /**
+         * Create a Path object from path string data
+         * http://www.w3.org/TR/SVG/paths.html#PathData
+         * @param  {Object} opts Other options
+         */
+        createFromString: function (str, opts) {
+            return new Path_1(createPathOptions(str, opts));
+        },
+
+        /**
+         * Create a Path class from path string data
+         * @param  {string} str
+         * @param  {Object} opts Other options
+         */
+        extendFromString: function (str, opts) {
+            return Path_1.extend(createPathOptions(str, opts));
+        },
+
+        /**
+         * Merge multiple paths
+         */
+        // TODO Apply transform
+        // TODO stroke dash
+        // TODO Optimize double memory cost problem
+        mergePath: function (pathEls, opts) {
+            var pathList = [];
+            var len = pathEls.length;
+            for (var i = 0; i < len; i++) {
+                var pathEl = pathEls[i];
+                if (!pathEl.path) {
+                    pathEl.createPathProxy();
+                }
+                if (pathEl.__dirtyPath) {
+                    pathEl.buildPath(pathEl.path, pathEl.shape, true);
+                }
+                pathList.push(pathEl.path);
+            }
+
+            var pathBundle = new Path_1(opts);
+            // Need path proxy.
+            pathBundle.createPathProxy();
+            pathBundle.buildPath = function (path) {
+                path.appendPath(pathList);
+                // Svg and vml renderer don't have context
+                var ctx = path.getContext();
+                if (ctx) {
+                    path.rebuildPath(ctx);
+                }
+            };
+
+            return pathBundle;
+        }
+    };
+
+var svgURI = 'http://www.w3.org/2000/svg';
+
+    var core = {
+        createElement: function (name) {
+            return document.createElementNS(svgURI, name);
+        }
+    };
+
+// TODO
+// 1. shadow
+// 2. Image: sx, sy, sw, sh
+
+
+    
+    var CMD$3 = PathProxy_1.CMD;
+    
+    
+    
+
+    
+
+    var createElement = core.createElement;
+    var arrayJoin = Array.prototype.join;
+
+    var NONE = 'none';
+    var mathRound = Math.round;
+    var mathSin$3 = Math.sin;
+    var mathCos$3 = Math.cos;
+    var PI$3 = Math.PI;
+    var PI2$4 = Math.PI * 2;
+    var degree = 180 / PI$3;
+
+    var EPSILON$3 = 1e-4;
+
+    function round4(val) {
+        return mathRound(val * 1e4) / 1e4;
+    }
+
+    function isAroundZero$1(val) {
+        return val < EPSILON$3 && val > -EPSILON$3;
+    }
+
+    function pathHasFill(style, isText) {
+        var fill = isText ? style.textFill : style.fill;
+        return fill != null && fill !== NONE;
+    }
+
+    function pathHasStroke(style, isText) {
+        var stroke = isText ? style.textStroke : style.stroke;
+        return stroke != null && stroke !== NONE;
+    }
+
+    function setTransform(svgEl, m) {
+        if (m) {
+            attr(svgEl, 'transform', 'matrix(' + arrayJoin.call(m, ',') + ')');
+        }
+    }
+
+    function attr(el, key, val) {
+        if (!val || val.type !== 'linear' && val.type !== 'radial') {
+            // Don't set attribute for gradient, since it need new dom nodes
+            el.setAttribute(key, val);
+        }
+    }
+
+    function attrXLink(el, key, val) {
+        el.setAttributeNS('http://www.w3.org/1999/xlink', key, val);
+    }
+
+    function bindStyle(svgEl, style, isText) {
+        if (pathHasFill(style, isText)) {
+            var fill = isText ? style.textFill : style.fill;
+            fill = fill === 'transparent' ? NONE : fill;
+
+            /**
+             * FIXME:
+             * This is a temporary fix for Chrome's clipping bug
+             * that happens when a clip-path is referring another one.
+             * This fix should be used before Chrome's bug is fixed.
+             * For an element that has clip-path, and fill is none,
+             * set it to be "rgba(0, 0, 0, 0.002)" will hide the element.
+             * Otherwise, it will show black fill color.
+             * 0.002 is used because this won't work for alpha values smaller
+             * than 0.002.
+             *
+             * See
+             * https://bugs.chromium.org/p/chromium/issues/detail?id=659790
+             * for more information.
+             */
+            if (svgEl.getAttribute('clip-path') !== 'none' && fill === NONE) {
+                fill = 'rgba(0, 0, 0, 0.002)';
+            }
+
+            attr(svgEl, 'fill', fill);
+            attr(svgEl, 'fill-opacity', style.opacity);
+        }
+        else {
+            attr(svgEl, 'fill', NONE);
+        }
+
+        if (pathHasStroke(style, isText)) {
+            var stroke = isText ? style.textStroke : style.stroke;
+            stroke = stroke === 'transparent' ? NONE : stroke;
+            attr(svgEl, 'stroke', stroke);
+            var strokeWidth = isText
+                ? style.textLineWidth
+                : style.lineWidth;
+            var strokeScale = style.strokeNoScale
+                ? style.host.getLineScale()
+                : 1;
+            attr(svgEl, 'stroke-width', strokeWidth / strokeScale);
+            attr(svgEl, 'paint-order', 'stroke');
+            attr(svgEl, 'stroke-opacity', style.opacity);
+            var lineDash = style.lineDash;
+            if (lineDash) {
+                attr(svgEl, 'stroke-dasharray', style.lineDash.join(','));
+                attr(svgEl, 'stroke-dashoffset', mathRound(style.lineDashOffset || 0));
+            }
+            else {
+                attr(svgEl, 'stroke-dasharray', '');
+            }
+
+            // PENDING
+            style.lineCap && attr(svgEl, 'stroke-linecap', style.lineCap);
+            style.lineJoin && attr(svgEl, 'stroke-linejoin', style.lineJoin);
+            style.miterLimit && attr(svgEl, 'stroke-miterlimit', style.miterLimit);
+        }
+        else {
+            attr(svgEl, 'stroke', NONE);
+        }
+    }
+
+    /***************************************************
+     * PATH
+     **************************************************/
+    function pathDataToString(data) {
+        var str = [];
+        for (var i = 0; i < data.length;) {
+            var cmd = data[i++];
+            var cmdStr = '';
+            var nData = 0;
+            switch (cmd) {
+                case CMD$3.M:
+                    cmdStr = 'M';
+                    nData = 2;
+                    break;
+                case CMD$3.L:
+                    cmdStr = 'L';
+                    nData = 2;
+                    break;
+                case CMD$3.Q:
+                    cmdStr = 'Q';
+                    nData = 4;
+                    break;
+                case CMD$3.C:
+                    cmdStr = 'C';
+                    nData = 6;
+                    break;
+                case CMD$3.A:
+                    var cx = data[i++];
+                    var cy = data[i++];
+                    var rx = data[i++];
+                    var ry = data[i++];
+                    var theta = data[i++];
+                    var dTheta = data[i++];
+                    var psi = data[i++];
+                    var clockwise = data[i++];
+
+                    var dThetaPositive = Math.abs(dTheta);
+                    var isCircle = isAroundZero$1(dThetaPositive % PI2$4)
+                        && !isAroundZero$1(dThetaPositive);
+
+                    var large = false;
+                    if (dThetaPositive >= PI2$4) {
+                        large = true;
+                    }
+                    else if (isAroundZero$1(dThetaPositive)) {
+                        large = false;
+                    }
+                    else {
+                        large = (dTheta > -PI$3 && dTheta < 0 || dTheta > PI$3)
+                            === !!clockwise;
+                    }
+
+                    var x0 = round4(cx + rx * mathCos$3(theta));
+                    var y0 = round4(cy + ry * mathSin$3(theta));
+
+                    // It will not draw if start point and end point are exactly the same
+                    // We need to shift the end point with a small value
+                    // FIXME A better way to draw circle ?
+                    if (isCircle) {
+                        if (clockwise) {
+                            dTheta = PI2$4 - 1e-4;
+                        }
+                        else {
+                            dTheta = -PI2$4 + 1e-4;
+                        }
+
+                        large = true;
+
+                        if (i === 9) {
+                            // Move to (x0, y0) only when CMD.A comes at the
+                            // first position of a shape.
+                            // For instance, when drawing a ring, CMD.A comes
+                            // after CMD.M, so it's unnecessary to move to
+                            // (x0, y0).
+                            str.push('M', x0, y0);
+                        }
+                    }
+
+                    var x = round4(cx + rx * mathCos$3(theta + dTheta));
+                    var y = round4(cy + ry * mathSin$3(theta + dTheta));
+
+                    // FIXME Ellipse
+                    str.push('A', round4(rx), round4(ry),
+                        mathRound(psi * degree), +large, +clockwise, x, y);
+                    break;
+                case CMD$3.Z:
+                    cmdStr = 'Z';
+                    break;
+                case CMD$3.R:
+                    var x = round4(data[i++]);
+                    var y = round4(data[i++]);
+                    var w = round4(data[i++]);
+                    var h = round4(data[i++]);
+                    str.push(
+                        'M', x, y,
+                        'L', x + w, y,
+                        'L', x + w, y + h,
+                        'L', x, y + h,
+                        'L', x, y
+                    );
+                    break;
+            }
+            cmdStr && str.push(cmdStr);
+            for (var j = 0; j < nData; j++) {
+                // PENDING With scale
+                str.push(round4(data[i++]));
+            }
+        }
+        return str.join(' ');
+    }
+
+    var svgPath = {};
+
+    svgPath.brush = function (el) {
+        var style = el.style;
+
+        var svgEl = el.__svgEl;
+        if (!svgEl) {
+            svgEl = createElement('path');
+            el.__svgEl = svgEl;
+        }
+
+        if (!el.path) {
+            el.createPathProxy();
+        }
+        var path = el.path;
+
+        if (el.__dirtyPath) {
+            path.beginPath();
+            el.buildPath(path, el.shape);
+            el.__dirtyPath = false;
+
+            attr(svgEl, 'd', pathDataToString(path.data));
+        }
+
+        bindStyle(svgEl, style);
+        setTransform(svgEl, el.transform);
+
+        if (style.text != null) {
+            svgTextDrawRectText(el, el.getBoundingRect());
+        }
+    };
+
+    /***************************************************
+     * IMAGE
+     **************************************************/
+    var svgImage = {};
+
+    svgImage.brush = function (el) {
+        var style = el.style;
+        var image = style.image;
+
+        if (image instanceof HTMLImageElement) {
+            var src = image.src;
+            image = src;
+        }
+        if (! image) {
+            return;
+        }
+
+        var x = style.x || 0;
+        var y = style.y || 0;
+
+        var dw = style.width;
+        var dh = style.height;
+
+        var svgEl = el.__svgEl;
+        if (! svgEl) {
+            svgEl = createElement('image');
+            el.__svgEl = svgEl;
+        }
+
+        if (image !== el.__imageSrc) {
+            attrXLink(svgEl, 'href', image);
+            // Caching image src
+            el.__imageSrc = image;
+        }
+
+        attr(svgEl, 'width', dw);
+        attr(svgEl, 'height', dh);
+
+        attr(svgEl, 'x', x);
+        attr(svgEl, 'y', y);
+
+        setTransform(svgEl, el.transform);
+
+        if (style.text != null) {
+            svgTextDrawRectText(el, el.getBoundingRect());
+        }
+    };
+
+    /***************************************************
+     * TEXT
+     **************************************************/
+    var svgText = {};
+    var tmpRect$2 = new BoundingRect_1();
+
+    var svgTextDrawRectText = function (el, rect, textRect) {
+        var style = el.style;
+
+        el.__dirty && text.normalizeTextStyle(style, true);
+
+        var text$$2 = style.text;
+        // Convert to string
+        text$$2 != null && (text$$2 += '');
+        if (!text$$2) {
+            return;
+        }
+
+        var textSvgEl = el.__textSvgEl;
+        if (! textSvgEl) {
+            textSvgEl = createElement('text');
+            el.__textSvgEl = textSvgEl;
+        }
+
+        bindStyle(textSvgEl, style, true);
+        if (el instanceof Text_1 || el.style.transformText) {
+            // Transform text with element
+            setTransform(textSvgEl, el.transform);
+        }
+        else {
+            if (el.transform) {
+                tmpRect$2.copy(rect);
+                tmpRect$2.applyTransform(el.transform);
+                rect = tmpRect$2;
+            }
+            else {
+                var pos = el.transformCoordToGlobal(rect.x, rect.y);
+                rect.x = pos[0];
+                rect.y = pos[1];
+            }
+        }
+
+        var x;
+        var y;
+        var textPosition = style.textPosition;
+        var distance = style.textDistance;
+        var align = style.textAlign || 'left';
+
+        if (typeof style.fontSize === 'number') {
+            style.fontSize += 'px';
+        }
+        var font = style.font
+            || [
+                style.fontStyle || '',
+                style.fontWeight || '',
+                style.fontSize || '',
+                style.fontFamily || ''
+            ].join(' ')
+            || text$2.DEFAULT_FONT;
+
+        var verticalAlign = getVerticalAlignForSvg(style.textVerticalAlign);
+
+        textRect = text$2.getBoundingRect(text$$2, font, align,
+            verticalAlign);
+
+        var lineHeight = textRect.lineHeight;
+        // Text position represented by coord
+        if (textPosition instanceof Array) {
+            x = rect.x + textPosition[0];
+            y = rect.y + textPosition[1];
+        }
+        else {
+            var newPos = text$2.adjustTextPositionOnRect(
+                textPosition, rect, distance
+            );
+            x = newPos.x;
+            y = newPos.y;
+            verticalAlign = getVerticalAlignForSvg(newPos.textVerticalAlign);
+            align = newPos.textAlign;
+        }
+
+        attr(textSvgEl, 'alignment-baseline', verticalAlign);
+
+        if (font) {
+            textSvgEl.style.font = font;
+        }
+
+        var textPadding = style.textPadding;
+
+        // Make baseline top
+        attr(textSvgEl, 'x', x);
+        attr(textSvgEl, 'y', y);
+
+        var textLines = text$$2.split('\n');
+        var nTextLines = textLines.length;
+        var textAnchor = align;
+        // PENDING
+        if (textAnchor === 'left')  {
+            textAnchor = 'start';
+            textPadding && (x += textPadding[3]);
+        }
+        else if (textAnchor === 'right') {
+            textAnchor = 'end';
+            textPadding && (x -= textPadding[1]);
+        }
+        else if (textAnchor === 'center') {
+            textAnchor = 'middle';
+            textPadding && (x += (textPadding[3] - textPadding[1]) / 2);
+        }
+
+        var dy = 0;
+        if (verticalAlign === 'baseline') {
+            dy = -textRect.height + lineHeight;
+            textPadding && (dy -= textPadding[2]);
+        }
+        else if (verticalAlign === 'middle') {
+            dy = (-textRect.height + lineHeight) / 2;
+            textPadding && (y += (textPadding[0] - textPadding[2]) / 2);
+        }
+        else {
+            textPadding && (dy += textPadding[0]);
+        }
+
+        // Font may affect position of each tspan elements
+        if (el.__text !== text$$2 || el.__textFont !== font) {
+            var tspanList = el.__tspanList || [];
+            el.__tspanList = tspanList;
+            for (var i = 0; i < nTextLines; i++) {
+                // Using cached tspan elements
+                var tspan = tspanList[i];
+                if (! tspan) {
+                    tspan = tspanList[i] = createElement('tspan');
+                    textSvgEl.appendChild(tspan);
+                    attr(tspan, 'alignment-baseline', verticalAlign);
+                    attr(tspan, 'text-anchor', textAnchor);
+                }
+                else {
+                    tspan.innerHTML = '';
+                }
+                attr(tspan, 'x', x);
+                attr(tspan, 'y', y + i * lineHeight + dy);
+                tspan.appendChild(document.createTextNode(textLines[i]));
+            }
+            // Remove unsed tspan elements
+            for (; i < tspanList.length; i++) {
+                textSvgEl.removeChild(tspanList[i]);
+            }
+            tspanList.length = nTextLines;
+
+            el.__text = text$$2;
+            el.__textFont = font;
+        }
+        else if (el.__tspanList.length) {
+            // Update span x and y
+            var len = el.__tspanList.length;
+            for (var i = 0; i < len; ++i) {
+                var tspan = el.__tspanList[i];
+                if (tspan) {
+                    attr(tspan, 'x', x);
+                    attr(tspan, 'y', y + i * lineHeight + dy);
+                }
+            }
+        }
+    };
+
+    function getVerticalAlignForSvg(verticalAlign) {
+        if (verticalAlign === 'middle') {
+            return 'middle';
+        }
+        else if (verticalAlign === 'bottom') {
+            return 'baseline';
+        }
+        else {
+            return 'hanging';
+        }
+    }
+
+    svgText.drawRectText = svgTextDrawRectText;
+
+    svgText.brush = function (el) {
+        var style = el.style;
+        if (style.text != null) {
+            // 强制设置 textPosition
+            style.textPosition = [0, 0];
+            svgTextDrawRectText(el, {
+                x: style.x || 0, y: style.y || 0,
+                width: 0, height: 0
+            }, el.getBoundingRect());
+        }
+    };
+
+    var graphic = {
+        path: svgPath,
+        image: svgImage,
+        text: svgText
+    };
+
+// Myers' Diff Algorithm
+// Modified from https://github.com/kpdecker/jsdiff/blob/master/src/diff/base.js
+
+
+    function Diff() {}
+
+    Diff.prototype = {
+        diff: function (oldArr, newArr, equals) {
+            if (!equals) {
+                equals = function (a, b) {
+                    return a === b;
+                };
+            }
+            this.equals = equals;
+
+            var self = this;
+
+            oldArr = oldArr.slice();
+            newArr = newArr.slice();
+            // Allow subclasses to massage the input prior to running
+            var newLen = newArr.length;
+            var oldLen = oldArr.length;
+            var editLength = 1;
+            var maxEditLength = newLen + oldLen;
+            var bestPath = [{ newPos: -1, components: [] }];
+
+            // Seed editLength = 0, i.e. the content starts with the same values
+            var oldPos = this.extractCommon(bestPath[0], newArr, oldArr, 0);
+            if (bestPath[0].newPos + 1 >= newLen && oldPos + 1 >= oldLen) {
+                var indices = [];
+                for (var i = 0; i < newArr.length; i++) {
+                    indices.push(i);
+                }
+                // Identity per the equality and tokenizer
+                return [{
+                    indices: indices, count: newArr.length
+                }];
+            }
+
+            // Main worker method. checks all permutations of a given edit length for acceptance.
+            function execEditLength() {
+                for (var diagonalPath = -1 * editLength; diagonalPath <= editLength; diagonalPath += 2) {
+                    var basePath;
+                    var addPath = bestPath[diagonalPath - 1];
+                    var removePath = bestPath[diagonalPath + 1];
+                    var oldPos = (removePath ? removePath.newPos : 0) - diagonalPath;
+                    if (addPath) {
+                        // No one else is going to attempt to use this value, clear it
+                        bestPath[diagonalPath - 1] = undefined;
+                    }
+
+                    var canAdd = addPath && addPath.newPos + 1 < newLen;
+                    var canRemove = removePath && 0 <= oldPos && oldPos < oldLen;
+                    if (!canAdd && !canRemove) {
+                        // If this path is a terminal then prune
+                        bestPath[diagonalPath] = undefined;
+                        continue;
+                    }
+
+                    // Select the diagonal that we want to branch from. We select the prior
+                    // path whose position in the new string is the farthest from the origin
+                    // and does not pass the bounds of the diff graph
+                    if (!canAdd || (canRemove && addPath.newPos < removePath.newPos)) {
+                        basePath = clonePath(removePath);
+                        self.pushComponent(basePath.components, undefined, true);
+                    }
+                    else {
+                        basePath = addPath;   // No need to clone, we've pulled it from the list
+                        basePath.newPos++;
+                        self.pushComponent(basePath.components, true, undefined);
+                    }
+
+                    oldPos = self.extractCommon(basePath, newArr, oldArr, diagonalPath);
+
+                    // If we have hit the end of both strings, then we are done
+                    if (basePath.newPos + 1 >= newLen && oldPos + 1 >= oldLen) {
+                        return buildValues(self, basePath.components, newArr, oldArr);
+                    }
+                    else {
+                        // Otherwise track this path as a potential candidate and continue.
+                        bestPath[diagonalPath] = basePath;
+                    }
+                }
+
+                editLength++;
+            }
+
+            while (editLength <= maxEditLength) {
+                var ret = execEditLength();
+                if (ret) {
+                    return ret;
+                }
+            }
+        },
+
+        pushComponent: function (components, added, removed) {
+            var last = components[components.length - 1];
+            if (last && last.added === added && last.removed === removed) {
+                // We need to clone here as the component clone operation is just
+                // as shallow array clone
+                components[components.length - 1] = {count: last.count + 1, added: added, removed: removed };
+            }
+            else {
+                components.push({count: 1, added: added, removed: removed });
+            }
+        },
+        extractCommon: function (basePath, newArr, oldArr, diagonalPath) {
+            var newLen = newArr.length;
+            var oldLen = oldArr.length;
+            var newPos = basePath.newPos;
+            var oldPos = newPos - diagonalPath;
+            var commonCount = 0;
+
+            while (newPos + 1 < newLen && oldPos + 1 < oldLen && this.equals(newArr[newPos + 1], oldArr[oldPos + 1])) {
+                newPos++;
+                oldPos++;
+                commonCount++;
+            }
+
+            if (commonCount) {
+                basePath.components.push({count: commonCount});
+            }
+
+            basePath.newPos = newPos;
+            return oldPos;
+        },
+        tokenize: function (value) {
+            return value.slice();
+        },
+        join: function (value) {
+            return value.slice();
+        }
+    };
+
+    function buildValues(diff, components, newArr, oldArr) {
+        var componentPos = 0;
+        var componentLen = components.length;
+        var newPos = 0;
+        var oldPos = 0;
+
+        for (; componentPos < componentLen; componentPos++) {
+            var component = components[componentPos];
+            if (!component.removed) {
+                var indices = [];
+                for (var i = newPos; i < newPos + component.count; i++) {
+                    indices.push(i);
+                }
+                component.indices = indices;
+                newPos += component.count;
+                // Common case
+                if (!component.added) {
+                    oldPos += component.count;
+                }
+            }
+            else {
+                var indices = [];
+                for (var i = oldPos; i < oldPos + component.count; i++) {
+                    indices.push(i);
+                }
+                component.indices = indices;
+                oldPos += component.count;
+            }
+        }
+
+        return components;
+    }
+
+    function clonePath(path) {
+        return { newPos: path.newPos, components: path.components.slice(0) };
+    }
+
+    var arrayDiff = new Diff();
+
+    var arrayDiff2 = function (oldArr, newArr, callback) {
+        return arrayDiff.diff(oldArr, newArr, callback);
+    };
+
+/**
+ * @file Manages elements that can be defined in <defs> in SVG,
+ *       e.g., gradients, clip path, etc.
+ * @author Zhang Wenli
+ */
+
+
+
+    
+    
+
+    
+    
+    
+    
+    var svgPath$2 = graphic.path;
+    var svgImage$2 = graphic.image;
+    var svgText$2 = graphic.text;
+
+    var MARK_UNUSED = '0';
+    var MARK_USED = '1';
+
+    /**
+     * Manages elements that can be defined in <defs> in SVG,
+     * e.g., gradients, clip path, etc.
+     *
+     * @class
+     * @param {SVGElement}      svgRoot   root of SVG document
+     * @param {string|string[]} tagNames  possible tag names
+     * @param {string}          markLabel label name to make if the element
+     *                                    is used
+     */
+    function Definable(
+        svgRoot,
+        tagNames,
+        markLabel
+    ) {
+
+        this._svgRoot = svgRoot;
+        this._tagNames = typeof tagNames === 'string' ? [tagNames] : tagNames;
+        this._markLabel = markLabel;
+
+        this.nextId = 0;
+    }
+
+
+    Definable.prototype.createElement = core.createElement;
+
+
+    /**
+     * Get the <defs> tag for svgRoot; optionally creates one if not exists.
+     *
+     * @param {boolean} isForceCreating if need to create when not exists
+     * @return {SVGDefsElement} SVG <defs> element, null if it doesn't
+     * exist and isForceCreating is false
+     */
+    Definable.prototype.getDefs = function (isForceCreating) {
+        var svgRoot = this._svgRoot;
+        var defs = this._svgRoot.getElementsByTagName('defs');
+        if (defs.length === 0) {
+            // Not exist
+            if (isForceCreating) {
+                defs = svgRoot.insertBefore(
+                    this.createElement('defs'), // Create new tag
+                    svgRoot.firstChild // Insert in the front of svg
+                );
+                if (!defs.contains) {
+                    // IE doesn't support contains method
+                    defs.contains = function (el) {
+                        var children = defs.children;
+                        if (!children) {
+                            return false;
+                        }
+                        for (var i = children.length - 1; i >= 0; --i) {
+                            if (children[i] === el) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    };
+                }
+                return defs;
+            }
+            else {
+                return null;
+            }
+        }
+        else {
+            return defs[0];
+        }
+    };
+
+
+    /**
+     * Update DOM element if necessary.
+     *
+     * @param {Object|string} element style element. e.g., for gradient,
+     *                                it may be '#ccc' or {type: 'linear', ...}
+     * @param {Function|undefined} onUpdate update callback
+     */
+    Definable.prototype.update = function (element, onUpdate) {
+        if (!element) {
+            return;
+        }
+
+        var defs = this.getDefs(false);
+        if (element._dom && defs.contains(element._dom)) {
+            // Update DOM
+            if (typeof onUpdate === 'function') {
+                onUpdate();
+            }
+        }
+        else {
+            // No previous dom, create new
+            var dom = this.add(element);
+            if (dom) {
+                element._dom = dom;
+            }
+        }
+    };
+
+
+    /**
+     * Add gradient dom to defs
+     *
+     * @param {SVGElement} dom DOM to be added to <defs>
+     */
+    Definable.prototype.addDom = function (dom) {
+        var defs = this.getDefs(true);
+        defs.appendChild(dom);
+    };
+
+
+    /**
+     * Remove DOM of a given element.
+     *
+     * @param {SVGElement} element element to remove dom
+     */
+    Definable.prototype.removeDom = function (element) {
+        var defs = this.getDefs(false);
+        defs.removeChild(element._dom);
+    };
+
+
+    /**
+     * Get DOMs of this element.
+     *
+     * @return {HTMLDomElement} doms of this defineable elements in <defs>
+     */
+    Definable.prototype.getDoms = function () {
+        var defs = this.getDefs(false);
+        if (!defs) {
+            // No dom when defs is not defined
+            return [];
+        }
+
+        var doms = [];
+        util_1.each(this._tagNames, function (tagName) {
+            var tags = defs.getElementsByTagName(tagName);
+            // Note that tags is HTMLCollection, which is array-like
+            // rather than real array.
+            // So `doms.concat(tags)` add tags as one object.
+            doms = doms.concat([].slice.call(tags));
+        });
+
+        return doms;
+    };
+
+
+    /**
+     * Mark DOMs to be unused before painting, and clear unused ones at the end
+     * of the painting.
+     */
+    Definable.prototype.markAllUnused = function () {
+        var doms = this.getDoms();
+        var that = this;
+        util_1.each(doms, function (dom) {
+            dom[that._markLabel] = MARK_UNUSED;
+        });
+    };
+
+
+    /**
+     * Mark a single DOM to be used.
+     *
+     * @param {SVGElement} dom DOM to mark
+     */
+    Definable.prototype.markUsed = function (dom) {
+        if (dom) {
+            dom[this._markLabel] = MARK_USED;
+        }
+    };
+
+
+    /**
+     * Remove unused DOMs defined in <defs>
+     */
+    Definable.prototype.removeUnused = function () {
+        var defs = this.getDefs(false);
+        if (!defs) {
+            // Nothing to remove
+            return;
+        }
+
+        var doms = this.getDoms();
+        var that = this;
+        util_1.each(doms, function (dom) {
+            if (dom[that._markLabel] !== MARK_USED) {
+                // Remove gradient
+                defs.removeChild(dom);
+            }
+        });
+    };
+
+
+    /**
+     * Get SVG proxy.
+     *
+     * @param {Displayable} displayable displayable element
+     * @return {Path|Image|Text} svg proxy of given element
+     */
+    Definable.prototype.getSvgProxy = function (displayable) {
+        if (displayable instanceof Path_1) {
+            return svgPath$2;
+        }
+        else if (displayable instanceof Image$1) {
+            return svgImage$2;
+        }
+        else if (displayable instanceof Text_1) {
+            return svgText$2;
+        }
+        else {
+            return svgPath$2;
+        }
+    };
+
+
+    /**
+     * Get text SVG element.
+     *
+     * @param {Displayable} displayable displayable element
+     * @return {SVGElement} SVG element of text
+     */
+    Definable.prototype.getTextSvgElement = function (displayable) {
+        return displayable.__textSvgEl;
+    };
+
+
+    /**
+     * Get SVG element.
+     *
+     * @param {Displayable} displayable displayable element
+     * @return {SVGElement} SVG element
+     */
+    Definable.prototype.getSvgElement = function (displayable) {
+        return displayable.__svgEl;
+    };
+
+
+    var Definable_1 = Definable;
+
+/**
+ * @file Manages SVG gradient elements.
+ * @author Zhang Wenli
+ */
+
+
+
+    
+    
+    
+
+    /**
+     * Manages SVG gradient elements.
+     *
+     * @class
+     * @extends Definable
+     * @param   {SVGElement} svgRoot root of SVG document
+     */
+    function GradientManager(svgRoot) {
+        Definable_1.call(
+            this,
+            svgRoot,
+            ['linearGradient', 'radialGradient'],
+            '__gradient_in_use__'
+        );
+    }
+
+
+    util_1.inherits(GradientManager, Definable_1);
+
+
+    /**
+     * Create new gradient DOM for fill or stroke if not exist,
+     * but will not update gradient if exists.
+     *
+     * @param {SvgElement}  svgElement   SVG element to paint
+     * @param {Displayable} displayable  zrender displayable element
+     */
+    GradientManager.prototype.addWithoutUpdate = function (
+        svgElement,
+        displayable
+    ) {
+        if (displayable && displayable.style) {
+            var that = this;
+            util_1.each(['fill', 'stroke'], function (fillOrStroke) {
+                if (displayable.style[fillOrStroke]
+                    && (displayable.style[fillOrStroke].type === 'linear'
+                    || displayable.style[fillOrStroke].type === 'radial')
+                ) {
+                    var gradient = displayable.style[fillOrStroke];
+                    var defs = that.getDefs(true);
+
+                    // Create dom in <defs> if not exists
+                    var dom;
+                    if (gradient._dom) {
+                        // Gradient exists
+                        dom = gradient._dom;
+                        if (!defs.contains(gradient._dom)) {
+                            // _dom is no longer in defs, recreate
+                            that.addDom(dom);
+                        }
+                    }
+                    else {
+                        // New dom
+                        dom = that.add(gradient);
+                    }
+
+                    that.markUsed(displayable);
+
+                    var id = dom.getAttribute('id');
+                    svgElement.setAttribute(fillOrStroke, 'url(#' + id + ')');
+                }
+            });
+        }
+    };
+
+
+    /**
+     * Add a new gradient tag in <defs>
+     *
+     * @param   {Gradient} gradient zr gradient instance
+     * @return {SVGLinearGradientElement | SVGRadialGradientElement}
+     *                            created DOM
+     */
+    GradientManager.prototype.add = function (gradient) {
+        var dom;
+        if (gradient.type === 'linear') {
+            dom = this.createElement('linearGradient');
+        }
+        else if (gradient.type === 'radial') {
+            dom = this.createElement('radialGradient');
+        }
+        else {
+            log('Illegal gradient type.');
+            return null;
+        }
+
+        // Set dom id with gradient id, since each gradient instance
+        // will have no more than one dom element.
+        // id may exists before for those dirty elements, in which case
+        // id should remain the same, and other attributes should be
+        // updated.
+        gradient.id = gradient.id || this.nextId++;
+        dom.setAttribute('id', 'zr-gradient-' + gradient.id);
+
+        this.updateDom(gradient, dom);
+        this.addDom(dom);
+
+        return dom;
+    };
+
+
+    /**
+     * Update gradient.
+     *
+     * @param {Gradient} gradient zr gradient instance
+     */
+    GradientManager.prototype.update = function (gradient) {
+        var that = this;
+        Definable_1.prototype.update.call(this, gradient, function () {
+            var type = gradient.type;
+            var tagName = gradient._dom.tagName;
+            if (type === 'linear' && tagName === 'linearGradient'
+                || type === 'radial' && tagName === 'radialGradient'
+            ) {
+                // Gradient type is not changed, update gradient
+                that.updateDom(gradient, gradient._dom);
+            }
+            else {
+                // Remove and re-create if type is changed
+                that.removeDom(gradient);
+                that.add(gradient);
+            }
+        });
+    };
+
+
+    /**
+     * Update gradient dom
+     *
+     * @param {Gradient} gradient zr gradient instance
+     * @param {SVGLinearGradientElement | SVGRadialGradientElement} dom
+     *                            DOM to update
+     */
+    GradientManager.prototype.updateDom = function (gradient, dom) {
+        if (gradient.type === 'linear') {
+            dom.setAttribute('x1', gradient.x);
+            dom.setAttribute('y1', gradient.y);
+            dom.setAttribute('x2', gradient.x2);
+            dom.setAttribute('y2', gradient.y2);
+        }
+        else if (gradient.type === 'radial') {
+            dom.setAttribute('cx', gradient.x);
+            dom.setAttribute('cy', gradient.y);
+            dom.setAttribute('r', gradient.r);
+        }
+        else {
+            log('Illegal gradient type.');
+            return;
+        }
+
+        if (gradient.global) {
+            // x1, x2, y1, y2 in range of 0 to canvas width or height
+            dom.setAttribute('gradientUnits', 'userSpaceOnUse');
+        }
+        else {
+            // x1, x2, y1, y2 in range of 0 to 1
+            dom.setAttribute('gradientUnits', 'objectBoundingBox');
+        }
+
+        // Remove color stops if exists
+        dom.innerHTML = '';
+
+        // Add color stops
+        var colors = gradient.colorStops;
+        for (var i = 0, len = colors.length; i < len; ++i) {
+            var stop = this.createElement('stop');
+            stop.setAttribute('offset', colors[i].offset * 100 + '%');
+            stop.setAttribute('stop-color', colors[i].color);
+            dom.appendChild(stop);
+        }
+
+        // Store dom element in gradient, to avoid creating multiple
+        // dom instances for the same gradient element
+        gradient._dom = dom;
+    };
+
+    /**
+     * Mark a single gradient to be used
+     *
+     * @param {Displayable} displayable displayable element
+     */
+    GradientManager.prototype.markUsed = function (displayable) {
+        if (displayable.style) {
+            var gradient = displayable.style.fill;
+            if (gradient && gradient._dom) {
+                Definable_1.prototype.markUsed.call(this, gradient._dom);
+            }
+
+            gradient = displayable.style.stroke;
+            if (gradient && gradient._dom) {
+                Definable_1.prototype.markUsed.call(this, gradient._dom);
+            }
+        }
+    };
+
+
+    var GradientManager_1 = GradientManager;
+
+/**
+ * @file Manages SVG clipPath elements.
+ * @author Zhang Wenli
+ */
+
+
+
+    
+    
+    
+
+    /**
+     * Manages SVG clipPath elements.
+     *
+     * @class
+     * @extends Definable
+     * @param   {SVGElement} svgRoot root of SVG document
+     */
+    function ClippathManager(svgRoot) {
+        Definable_1.call(this, svgRoot, 'clipPath', '__clippath_in_use__');
+    }
+
+
+    util_1.inherits(ClippathManager, Definable_1);
+
+
+    /**
+     * Update clipPath.
+     *
+     * @param {Displayable} displayable displayable element
+     * @param {SVGElement}  svgElement  SVG element of displayable
+     */
+    ClippathManager.prototype.update = function (displayable, svgElement) {
+        this.updateDom(svgElement, displayable.__clipPaths, false);
+
+        var textEl = this.getTextSvgElement(displayable);
+        if (textEl) {
+            // Make another clipPath for text, since it's transform
+            // matrix is not the same with svgElement
+            this.updateDom(textEl, displayable.__clipPaths, true);
+        }
+
+        this.markUsed(displayable);
+    };
+
+
+    /**
+     * Create an SVGElement of displayable and create a <clipPath> of its
+     * clipPath
+     *
+     * @param {Displayable} parentEl  parent element
+     * @param {ClipPath[]}  clipPaths clipPaths of parent element
+     * @param {boolean}     isText    if parent element is Text
+     */
+    ClippathManager.prototype.updateDom = function (
+        parentEl,
+        clipPaths,
+        isText
+    ) {
+        if (clipPaths && clipPaths.length > 0) {
+            // Has clipPath, create <clipPath> with the first clipPath
+            var defs = this.getDefs(true);
+            var clipPath = clipPaths[0];
+            var clipPathEl;
+            var id;
+
+            var dom = isText ? '_textDom' : '_dom';
+
+            if (clipPath[dom]) {
+                // Use a dom that is already in <defs>
+                id = clipPath[dom].getAttribute('id');
+                clipPathEl = clipPath[dom];
+
+                // Use a dom that is already in <defs>
+                if (!defs.contains(clipPathEl)) {
+                    // This happens when set old clipPath that has
+                    // been previously removed
+                    defs.appendChild(clipPathEl);
+                }
+            }
+            else {
+                // New <clipPath>
+                id = 'zr-clip-' + this.nextId;
+                ++this.nextId;
+                clipPathEl = this.createElement('clipPath');
+                clipPathEl.setAttribute('id', id);
+                defs.appendChild(clipPathEl);
+
+                clipPath[dom] = clipPathEl;
+            }
+
+            // Build path and add to <clipPath>
+            var svgProxy = this.getSvgProxy(clipPath);
+            if (clipPath.transform
+                && clipPath.parent.invTransform
+                && !isText
+            ) {
+                /**
+                 * If a clipPath has a parent with transform, the transform
+                 * of parent should not be considered when setting transform
+                 * of clipPath. So we need to transform back from parent's
+                 * transform, which is done by multiplying parent's inverse
+                 * transform.
+                 */
+                // Store old transform
+                var transform = Array.prototype.slice.call(
+                    clipPath.transform
+                );
+
+                // Transform back from parent, and brush path
+                matrix_1.mul(
+                    clipPath.transform,
+                    clipPath.parent.invTransform,
+                    clipPath.transform
+                );
+                svgProxy.brush(clipPath);
+
+                // Set back transform of clipPath
+                clipPath.transform = transform;
+            }
+            else {
+                svgProxy.brush(clipPath);
+            }
+
+            var pathEl = this.getSvgElement(clipPath);
+            clipPathEl.appendChild(pathEl);
+
+            parentEl.setAttribute('clip-path', 'url(#' + id + ')');
+
+            if (clipPaths.length > 1) {
+                // Make the other clipPaths recursively
+                this.updateDom(clipPathEl, clipPaths.slice(1), isText);
+            }
+        }
+        else {
+            // No clipPath
+            if (parentEl) {
+                parentEl.setAttribute('clip-path', 'none');
+            }
+        }
+    };
+
+    /**
+     * Mark a single clipPath to be used
+     *
+     * @param {Displayable} displayable displayable element
+     */
+    ClippathManager.prototype.markUsed = function (displayable) {
+        var that = this;
+        if (displayable.__clipPaths && displayable.__clipPaths.length > 0) {
+            util_1.each(displayable.__clipPaths, function (clipPath) {
+                if (clipPath._dom) {
+                    Definable_1.prototype.markUsed.call(that, clipPath._dom);
+                }
+                if (clipPath._textDom) {
+                    Definable_1.prototype.markUsed.call(that, clipPath._textDom);
+                }
+            });
+        }
+    };
+
+
+    var ClippathManager_1 = ClippathManager;
+
+/**
+ * SVG Painter
+ * @module zrender/svg/Painter
+ */
+
+
+    
+    
+    
+    
+    
+    
+
+    
+    var svgPath$1 = graphic.path;
+    var svgImage$1 = graphic.image;
+    var svgText$1 = graphic.text;
+
+    
+    
+
+    var createElement$1 = core.createElement;
+
+    function parseInt10$1(val) {
+        return parseInt(val, 10);
+    }
+
+    function getSvgProxy(el) {
+        if (el instanceof Path_1) {
+            return svgPath$1;
+        }
+        else if (el instanceof Image$1) {
+            return svgImage$1;
+        }
+        else if (el instanceof Text_1) {
+            return svgText$1;
+        }
+        else {
+            return svgPath$1;
+        }
+    }
+
+    function checkParentAvailable(parent, child) {
+        return child && parent && child.parentNode !== parent;
+    }
+
+    function insertAfter(parent, child, prevSibling) {
+        if (checkParentAvailable(parent, child) && prevSibling) {
+            var nextSibling = prevSibling.nextSibling;
+            nextSibling ? parent.insertBefore(child, nextSibling)
+                : parent.appendChild(child);
+        }
+    }
+
+    function prepend(parent, child) {
+        if (checkParentAvailable(parent, child)) {
+            var firstChild = parent.firstChild;
+            firstChild ? parent.insertBefore(child, firstChild)
+                : parent.appendChild(child);
+        }
+    }
+
+    function remove(parent, child) {
+        if (child && parent && child.parentNode === parent) {
+            parent.removeChild(child);
+        }
+    }
+
+    function getTextSvgElement(displayable) {
+        return displayable.__textSvgEl;
+    }
+
+    function getSvgElement(displayable) {
+        return displayable.__svgEl;
+    }
+
+    /**
+     * @alias module:zrender/svg/Painter
+     */
+    var SVGPainter = function (root, storage) {
+
+        this.root = root;
+
+        this.storage = storage;
+
+        var svgRoot = createElement$1('svg');
+        this.gradientManager = new GradientManager_1(svgRoot);
+        this.clipPathManager = new ClippathManager_1(svgRoot);
+
+        var viewport = document.createElement('div');
+        viewport.style.cssText = 'overflow: hidden;';
+
+        this._svgRoot = svgRoot;
+        this._viewport = viewport;
+
+        root.appendChild(viewport);
+        viewport.appendChild(svgRoot);
+
+        this.resize();
+
+        this._visibleList = [];
+    };
+
+    SVGPainter.prototype = {
+
+        constructor: SVGPainter,
+
+        getType: function () {
+            return 'svg';
+        },
+
+        getViewportRoot: function () {
+            return this._viewport;
+        },
+
+        getViewportRootOffset: function () {
+            var viewportRoot = this.getViewportRoot();
+            if (viewportRoot) {
+                return {
+                    offsetLeft: viewportRoot.offsetLeft || 0,
+                    offsetTop: viewportRoot.offsetTop || 0
+                };
+            }
+        },
+
+        refresh: function () {
+
+            var list = this.storage.getDisplayList(true);
+
+            this._paintList(list);
+        },
+
+        _paintList: function (list) {
+            this.gradientManager.markAllUnused();
+            this.clipPathManager.markAllUnused();
+
+            var svgRoot = this._svgRoot;
+            var visibleList = this._visibleList;
+            var listLen = list.length;
+
+            var newVisibleList = [];
+            var i;
+            for (i = 0; i < listLen; i++) {
+                var displayable = list[i];
+                var svgProxy = getSvgProxy(displayable);
+                if (!displayable.invisible) {
+                    if (displayable.__dirty) {
+                        svgProxy && svgProxy.brush(displayable);
+                        var el = getSvgElement(displayable)
+                            || getTextSvgElement(displayable);
+
+                        // Update clipPath
+                        this.clipPathManager.update(displayable, el);
+
+                        // Update gradient
+                        if (displayable.style) {
+                            this.gradientManager
+                                .update(displayable.style.fill);
+                            this.gradientManager
+                                .update(displayable.style.stroke);
+                        }
+
+                        displayable.__dirty = false;
+                    }
+                    newVisibleList.push(displayable);
+                }
+            }
+
+            var diff = arrayDiff2(visibleList, newVisibleList);
+            var prevSvgElement;
+
+            // First do remove, in case element moved to the head and do remove
+            // after add
+            for (i = 0; i < diff.length; i++) {
+                var item = diff[i];
+                if (item.removed) {
+                    for (var k = 0; k < item.count; k++) {
+                        var displayable = visibleList[item.indices[k]];
+                        var svgElement = getSvgElement(displayable);
+                        var textSvgElement = getTextSvgElement(displayable);
+                        remove(svgRoot, svgElement);
+                        remove(svgRoot, textSvgElement);
+                    }
+                }
+            }
+            for (i = 0; i < diff.length; i++) {
+                var item = diff[i];
+                if (item.added) {
+                    for (var k = 0; k < item.count; k++) {
+                        var displayable = newVisibleList[item.indices[k]];
+                        var svgElement = getSvgElement(displayable);
+                        var textSvgElement = getTextSvgElement(displayable);
+                        prevSvgElement
+                            ? insertAfter(svgRoot, svgElement, prevSvgElement)
+                            : prepend(svgRoot, svgElement);
+                        if (svgElement) {
+                            insertAfter(svgRoot, textSvgElement, svgElement);
+                        }
+                        else if (prevSvgElement) {
+                            insertAfter(
+                                svgRoot, textSvgElement, prevSvgElement
+                            );
+                        }
+                        else {
+                            prepend(svgRoot, textSvgElement);
+                        }
+                        // Insert text
+                        insertAfter(svgRoot, textSvgElement, svgElement);
+                        prevSvgElement = textSvgElement || svgElement
+                            || prevSvgElement;
+
+                        this.gradientManager
+                            .addWithoutUpdate(svgElement, displayable);
+                        this.clipPathManager.markUsed(displayable);
+                    }
+                }
+                else if (!item.removed) {
+                    for (var k = 0; k < item.count; k++) {
+                        var displayable = newVisibleList[item.indices[k]];
+                        prevSvgElement
+                            = svgElement
+                            = getTextSvgElement(displayable)
+                            || getSvgElement(displayable)
+                            || prevSvgElement;
+
+                        this.gradientManager.markUsed(displayable);
+                        this.gradientManager
+                            .addWithoutUpdate(svgElement, displayable);
+
+                        this.clipPathManager.markUsed(displayable);
+                    }
+                }
+            }
+
+            this.gradientManager.removeUnused();
+            this.clipPathManager.removeUnused();
+
+            this._visibleList = newVisibleList;
+        },
+
+        _getDefs: function (isForceCreating) {
+            var svgRoot = this._svgRoot;
+            var defs = this._svgRoot.getElementsByTagName('defs');
+            if (defs.length === 0) {
+                // Not exist
+                if (isForceCreating) {
+                    var defs = svgRoot.insertBefore(
+                        createElement$1('defs'), // Create new tag
+                        svgRoot.firstChild // Insert in the front of svg
+                    );
+                    if (!defs.contains) {
+                        // IE doesn't support contains method
+                        defs.contains = function (el) {
+                            var children = defs.children;
+                            if (!children) {
+                                return false;
+                            }
+                            for (var i = children.length - 1; i >= 0; --i) {
+                                if (children[i] === el) {
+                                    return true;
+                                }
+                            }
+                            return false;
+                        };
+                    }
+                    return defs;
+                }
+                else {
+                    return null;
+                }
+            }
+            else {
+                return defs[0];
+            }
+        },
+
+        resize: function () {
+            var width = this._getWidth();
+            var height = this._getHeight();
+
+            if (this._width !== width && this._height !== height) {
+                this._width = width;
+                this._height = height;
+
+                var viewportStyle = this._viewport.style;
+                viewportStyle.width = width + 'px';
+                viewportStyle.height = height + 'px';
+
+                var svgRoot = this._svgRoot;
+                // Set width by 'svgRoot.width = width' is invalid
+                svgRoot.setAttribute('width', width);
+                svgRoot.setAttribute('height', height);
+            }
+        },
+
+        getWidth: function () {
+            return this._getWidth();
+        },
+
+        getHeight: function () {
+            return this._getHeight();
+        },
+
+        _getWidth: function () {
+            var root = this.root;
+            var stl = document.defaultView.getComputedStyle(root);
+
+            return ((root.clientWidth || parseInt10$1(stl.width))
+                    - parseInt10$1(stl.paddingLeft)
+                    - parseInt10$1(stl.paddingRight)) | 0;
+        },
+
+        _getHeight: function () {
+            var root = this.root;
+            var stl = document.defaultView.getComputedStyle(root);
+
+            return ((root.clientHeight || parseInt10$1(stl.height))
+                    - parseInt10$1(stl.paddingTop)
+                    - parseInt10$1(stl.paddingBottom)) | 0;
+        },
+
+        dispose: function () {
+            this.root.innerHTML = '';
+
+            this._svgRoot
+                = this._viewport
+                = this.storage
+                = null;
+        },
+
+        clear: function () {
+            if (this._viewport) {
+                this.root.removeChild(this._viewport);
+            }
+        }
+    };
+
+    // Not supported methods
+    function createMethodNotSupport(method) {
+        return function () {
+            log('In SVG mode painter not support method "' + method + '"');
+        };
+    }
+
+    var notSupportedMethods = [
+        'getLayer', 'insertLayer', 'eachLayer', 'eachBuiltinLayer',
+        'eachOtherLayer', 'getLayers', 'modLayer', 'delLayer', 'clearLayer',
+        'toDataURL', 'pathToImage'
+    ];
+
+    for (var i$1 = 0; i$1 < notSupportedMethods.length; i$1++) {
+        var name = notSupportedMethods[i$1];
+        SVGPainter.prototype[name] = createMethodNotSupport(name);
+    }
+
+    var Painter$1 = SVGPainter;
+
+zrender_1$2.registerPainter('svg', Painter$1);
+
+function createCommonjsModule(fn, module) {
+	return module = { exports: {} }, fn(module, module.exports), module.exports;
+}
+
+var core$2 = createCommonjsModule(function (module) {
+if (!env_1.canvasSupported) {
     var urn = 'urn:schemas-microsoft-com:vml';
 
     var createNode;
@@ -14950,34 +17252,35 @@ if (!require('../core/env').canvasSupported) {
     };
 }
 });
+
 // http://www.w3.org/TR/NOTE-VML
 // TODO Use proxy like svg instead of overwrite brush methods
-define('zrender/vml/graphic',['require','../core/env','../core/vector','../core/BoundingRect','../core/PathProxy','../tool/color','../contain/text','../graphic/helper/text','../graphic/mixin/RectText','../graphic/Displayable','../graphic/Image','../graphic/Text','../graphic/Path','../core/PathProxy','../graphic/Gradient','./core'],function (require) {
 
-if (!require('../core/env').canvasSupported) {
-    var vec2 = require('../core/vector');
-    var BoundingRect = require('../core/BoundingRect');
-    var CMD = require('../core/PathProxy').CMD;
-    var colorTool = require('../tool/color');
-    var textContain = require('../contain/text');
-    var textHelper = require('../graphic/helper/text');
-    var RectText = require('../graphic/mixin/RectText');
-    var Displayable = require('../graphic/Displayable');
-    var ZImage = require('../graphic/Image');
-    var Text = require('../graphic/Text');
-    var Path = require('../graphic/Path');
-    var PathProxy = require('../core/PathProxy');
 
-    var Gradient = require('../graphic/Gradient');
+if (!env_1.canvasSupported) {
+    var vec2 = vector_1;
+    var BoundingRect$1 = BoundingRect_1;
+    var CMD$4 = PathProxy_1.CMD;
+    var colorTool = color;
+    var textContain$1 = text$2;
+    var textHelper = text;
+    var RectText$1 = RectText_1;
+    var Displayable$1 = Displayable_1;
+    var ZImage$1 = Image$1;
+    var Text$1 = Text_1;
+    var Path$1 = Path_1;
+    var PathProxy$1 = PathProxy_1;
 
-    var vmlCore = require('./core');
+    var Gradient$1 = Gradient_1;
+
+    var vmlCore = core$2;
 
     var round = Math.round;
     var sqrt = Math.sqrt;
-    var abs = Math.abs;
-    var cos = Math.cos;
-    var sin = Math.sin;
-    var mathMax = Math.max;
+    var abs$1 = Math.abs;
+    var cos$4 = Math.cos;
+    var sin$4 = Math.sin;
+    var mathMax$3 = Math.max;
 
     var applyTransform = vec2.applyTransform;
 
@@ -15004,13 +17307,13 @@ if (!require('../core/env').canvasSupported) {
         return 'rgb(' + [r, g, b].join(',') + ')';
     };
 
-    var append = function (parent, child) {
+    var append$1 = function (parent, child) {
         if (child && parent && child.parentNode !== parent) {
             parent.appendChild(child);
         }
     };
 
-    var remove = function (parent, child) {
+    var remove$1 = function (parent, child) {
         if (child && parent && child.parentNode === parent) {
             parent.removeChild(child);
         }
@@ -15021,7 +17324,7 @@ if (!require('../core/env').canvasSupported) {
         return (parseFloat(zlevel) || 0) * ZLEVEL_BASE + (parseFloat(z) || 0) * Z_BASE + z2;
     };
 
-    var parsePercent = function (value, maxValue) {
+    var parsePercent$1 = function (value, maxValue) {
         if (typeof value === 'string') {
             if (value.lastIndexOf('%') >= 0) {
                 return parseFloat(value) / 100 * maxValue;
@@ -15035,8 +17338,8 @@ if (!require('../core/env').canvasSupported) {
      * PATH
      **************************************************/
 
-    var setColorAndOpacity = function (el, color, opacity) {
-        var colorArr = colorTool.parse(color);
+    var setColorAndOpacity = function (el, color$$2, opacity) {
+        var colorArr = colorTool.parse(color$$2);
         opacity = +opacity;
         if (isNaN(opacity)) {
             opacity = 1;
@@ -15047,8 +17350,8 @@ if (!require('../core/env').canvasSupported) {
         }
     };
 
-    var getColorAndAlpha = function (color) {
-        var colorArr = colorTool.parse(color);
+    var getColorAndAlpha = function (color$$2) {
+        var colorArr = colorTool.parse(color$$2);
         return [
             rgb2Str(colorArr[0], colorArr[1], colorArr[2]),
             colorArr[3]
@@ -15060,7 +17363,7 @@ if (!require('../core/env').canvasSupported) {
         var fill = style.fill;
         if (fill != null) {
             // Modified from excanvas
-            if (fill instanceof Gradient) {
+            if (fill instanceof Gradient$1) {
                 var gradientType;
                 var angle = 0;
                 var focus = [0, 0];
@@ -15112,7 +17415,7 @@ if (!require('../core/env').canvasSupported) {
 
                     width /= scale[0] * Z;
                     height /= scale[1] * Z;
-                    var dimension = mathMax(width, height);
+                    var dimension = mathMax$3(width, height);
                     shift = 2 * 0 / dimension;
                     expansion = 2 * fill.r / dimension - shift;
                 }
@@ -15180,7 +17483,7 @@ if (!require('../core/env').canvasSupported) {
         if (style.lineDash != null) {
             el.dashstyle = style.lineDash.join(' ');
         }
-        if (style.stroke != null && !(style.stroke instanceof Gradient)) {
+        if (style.stroke != null && !(style.stroke instanceof Gradient$1)) {
             setColorAndOpacity(el, style.stroke, style.opacity);
         }
     };
@@ -15192,29 +17495,29 @@ if (!require('../core/env').canvasSupported) {
         if (style[type] != null && style[type] !== 'none' && (isFill || (!isFill && style.lineWidth))) {
             vmlEl[isFill ? 'filled' : 'stroked'] = 'true';
             // FIXME Remove before updating, or set `colors` will throw error
-            if (style[type] instanceof Gradient) {
-                remove(vmlEl, el);
+            if (style[type] instanceof Gradient$1) {
+                remove$1(vmlEl, el);
             }
             if (!el) {
                 el = vmlCore.createNode(type);
             }
 
             isFill ? updateFillNode(el, style, zrEl) : updateStrokeNode(el, style);
-            append(vmlEl, el);
+            append$1(vmlEl, el);
         }
         else {
             vmlEl[isFill ? 'filled' : 'stroked'] = 'false';
-            remove(vmlEl, el);
+            remove$1(vmlEl, el);
         }
     };
 
-    var points = [[], [], []];
-    var pathDataToString = function (data, m) {
-        var M = CMD.M;
-        var C = CMD.C;
-        var L = CMD.L;
-        var A = CMD.A;
-        var Q = CMD.Q;
+    var points$1 = [[], [], []];
+    var pathDataToString$1 = function (data, m) {
+        var M = CMD$4.M;
+        var C = CMD$4.C;
+        var L = CMD$4.L;
+        var A = CMD$4.A;
+        var Q = CMD$4.Q;
 
         var str = [];
         var nPoint;
@@ -15233,16 +17536,16 @@ if (!require('../core/env').canvasSupported) {
                     nPoint = 1;
                     xi = data[i++];
                     yi = data[i++];
-                    points[0][0] = xi;
-                    points[0][1] = yi;
+                    points$1[0][0] = xi;
+                    points$1[0][1] = yi;
                     break;
                 case L:
                     cmdStr = ' l ';
                     nPoint = 1;
                     xi = data[i++];
                     yi = data[i++];
-                    points[0][0] = xi;
-                    points[0][1] = yi;
+                    points$1[0][0] = xi;
+                    points$1[0][1] = yi;
                     break;
                 case Q:
                 case C:
@@ -15267,12 +17570,12 @@ if (!require('../core/env').canvasSupported) {
                         x3 = data[i++];
                         y3 = data[i++];
                     }
-                    points[0][0] = x1;
-                    points[0][1] = y1;
-                    points[1][0] = x2;
-                    points[1][1] = y2;
-                    points[2][0] = x3;
-                    points[2][1] = y3;
+                    points$1[0][0] = x1;
+                    points$1[0][1] = y1;
+                    points$1[1][0] = x2;
+                    points$1[1][1] = y2;
+                    points$1[2][0] = x3;
+                    points$1[2][1] = y3;
 
                     xi = x3;
                     yi = y3;
@@ -15303,11 +17606,11 @@ if (!require('../core/env').canvasSupported) {
                     i++;
                     var clockwise = data[i++];
 
-                    var x0 = cx + cos(startAngle) * rx;
-                    var y0 = cy + sin(startAngle) * ry;
+                    var x0 = cx + cos$4(startAngle) * rx;
+                    var y0 = cy + sin$4(startAngle) * ry;
 
-                    var x1 = cx + cos(endAngle) * rx;
-                    var y1 = cy + sin(endAngle) * ry;
+                    var x1 = cx + cos$4(endAngle) * rx;
+                    var y1 = cy + sin$4(endAngle) * ry;
 
                     var type = clockwise ? ' wa ' : ' at ';
                     if (Math.abs(x0 - x1) < 1e-4) {
@@ -15352,9 +17655,9 @@ if (!require('../core/env').canvasSupported) {
                     xi = x1;
                     yi = y1;
                     break;
-                case CMD.R:
-                    var p0 = points[0];
-                    var p1 = points[1];
+                case CMD$4.R:
+                    var p0 = points$1[0];
+                    var p1 = points$1[1];
                     // x0, y0
                     p0[0] = data[i++];
                     p0[1] = data[i++];
@@ -15382,7 +17685,7 @@ if (!require('../core/env').canvasSupported) {
                         ' l ', p0[0], comma, p1[1]
                     );
                     break;
-                case CMD.Z:
+                case CMD$4.Z:
                     // FIXME Update xi, yi
                     str.push(' x ');
             }
@@ -15390,7 +17693,7 @@ if (!require('../core/env').canvasSupported) {
             if (nPoint > 0) {
                 str.push(cmdStr);
                 for (var k = 0; k < nPoint; k++) {
-                    var p = points[k];
+                    var p = points$1[k];
 
                     m && applyTransform(p, p, m);
                     // 不 round 会非常慢
@@ -15406,7 +17709,7 @@ if (!require('../core/env').canvasSupported) {
     };
 
     // Rewrite the original path method
-    Path.prototype.brushVML = function (vmlRoot) {
+    Path$1.prototype.brushVML = function (vmlRoot) {
         var style = this.style;
 
         var vmlEl = this._vmlEl;
@@ -15431,12 +17734,12 @@ if (!require('../core/env').canvasSupported) {
             // for width.
             if (needTransform && !style.strokeNoScale) {
                 var det = m[0] * m[3] - m[1] * m[2];
-                lineWidth *= sqrt(abs(det));
+                lineWidth *= sqrt(abs$1(det));
             }
             strokeEl.weight = lineWidth + 'px';
         }
 
-        var path = this.path || (this.path = new PathProxy());
+        var path = this.path || (this.path = new PathProxy$1());
         if (this.__dirtyPath) {
             path.beginPath();
             this.buildPath(path, this.shape);
@@ -15444,12 +17747,12 @@ if (!require('../core/env').canvasSupported) {
             this.__dirtyPath = false;
         }
 
-        vmlEl.path = pathDataToString(path.data, this.transform);
+        vmlEl.path = pathDataToString$1(path.data, this.transform);
 
         vmlEl.style.zIndex = getZIndex(this.zlevel, this.z, this.z2);
 
         // Append to root
-        append(vmlRoot, vmlEl);
+        append$1(vmlRoot, vmlEl);
 
         // Text
         if (style.text != null) {
@@ -15460,13 +17763,13 @@ if (!require('../core/env').canvasSupported) {
         }
     };
 
-    Path.prototype.onRemove = function (vmlRoot) {
-        remove(vmlRoot, this._vmlEl);
+    Path$1.prototype.onRemove = function (vmlRoot) {
+        remove$1(vmlRoot, this._vmlEl);
         this.removeRectText(vmlRoot);
     };
 
-    Path.prototype.onAdd = function (vmlRoot) {
-        append(vmlRoot, this._vmlEl);
+    Path$1.prototype.onAdd = function (vmlRoot) {
+        append$1(vmlRoot, this._vmlEl);
         this.appendRectText(vmlRoot);
     };
 
@@ -15480,7 +17783,7 @@ if (!require('../core/env').canvasSupported) {
     };
 
     // Rewrite the original path method
-    ZImage.prototype.brushVML = function (vmlRoot) {
+    ZImage$1.prototype.brushVML = function (vmlRoot) {
         var style = this.style;
         var image = style.image;
 
@@ -15576,8 +17879,8 @@ if (!require('../core/env').canvasSupported) {
             applyTransform(p2, p2, m);
             applyTransform(p3, p3, m);
 
-            var maxX = mathMax(p0[0], p1[0], p2[0], p3[0]);
-            var maxY = mathMax(p0[1], p1[1], p2[1], p3[1]);
+            var maxX = mathMax$3(p0[0], p1[0], p2[0], p3[0]);
+            var maxY = mathMax$3(p0[1], p1[1], p2[1], p3[1]);
 
             var transformFilter = [];
             transformFilter.push('M11=', m[0] / scaleX, comma,
@@ -15678,7 +17981,7 @@ if (!require('../core/env').canvasSupported) {
         vmlEl.style.zIndex = getZIndex(this.zlevel, this.z, this.z2);
 
         // Append to root
-        append(vmlRoot, vmlEl);
+        append$1(vmlRoot, vmlEl);
 
         // Text
         if (style.text != null) {
@@ -15686,8 +17989,8 @@ if (!require('../core/env').canvasSupported) {
         }
     };
 
-    ZImage.prototype.onRemove = function (vmlRoot) {
-        remove(vmlRoot, this._vmlEl);
+    ZImage$1.prototype.onRemove = function (vmlRoot) {
+        remove$1(vmlRoot, this._vmlEl);
 
         this._vmlEl = null;
         this._cropEl = null;
@@ -15696,8 +17999,8 @@ if (!require('../core/env').canvasSupported) {
         this.removeRectText(vmlRoot);
     };
 
-    ZImage.prototype.onAdd = function (vmlRoot) {
-        append(vmlRoot, this._vmlEl);
+    ZImage$1.prototype.onAdd = function (vmlRoot) {
+        append$1(vmlRoot, this._vmlEl);
         this.appendRectText(vmlRoot);
     };
 
@@ -15747,7 +18050,7 @@ if (!require('../core/env').canvasSupported) {
 
     var textMeasureEl;
     // Overwrite measure text method
-    textContain.measureText = function (text, textFont) {
+    textContain$1.measureText = function (text$$2, textFont) {
         var doc = vmlCore.doc;
         if (!textMeasureEl) {
             textMeasureEl = doc.createElement('div');
@@ -15763,13 +18066,13 @@ if (!require('../core/env').canvasSupported) {
         }
         textMeasureEl.innerHTML = '';
         // Don't use innerHTML or innerText because they allow markup/whitespace.
-        textMeasureEl.appendChild(doc.createTextNode(text));
+        textMeasureEl.appendChild(doc.createTextNode(text$$2));
         return {
             width: textMeasureEl.offsetWidth
         };
     };
 
-    var tmpRect = new BoundingRect();
+    var tmpRect$3 = new BoundingRect$1();
 
     var drawRectText = function (vmlRoot, rect, textRect, fromTextEl) {
 
@@ -15778,27 +18081,27 @@ if (!require('../core/env').canvasSupported) {
         // Optimize, avoid normalize every time.
         this.__dirty && textHelper.normalizeTextStyle(style, true);
 
-        var text = style.text;
+        var text$$2 = style.text;
         // Convert to string
-        text != null && (text += '');
-        if (!text) {
+        text$$2 != null && (text$$2 += '');
+        if (!text$$2) {
             return;
         }
 
         // Convert rich text to plain text. Rich text is not supported in
         // IE8-, but tags in rich text template will be removed.
         if (style.rich) {
-            var contentBlock = textContain.parseRichText(text, style);
-            text = [];
+            var contentBlock = textContain$1.parseRichText(text$$2, style);
+            text$$2 = [];
             for (var i = 0; i < contentBlock.lines.length; i++) {
                 var tokens = contentBlock.lines[i].tokens;
                 var textLine = [];
                 for (var j = 0; j < tokens.length; j++) {
                     textLine.push(tokens[j].text);
                 }
-                text.push(textLine.join(''));
+                text$$2.push(textLine.join(''));
             }
-            text = text.join('\n');
+            text$$2 = text$$2.join('\n');
         }
 
         var x;
@@ -15811,15 +18114,15 @@ if (!require('../core/env').canvasSupported) {
         var font = fontStyle.style + ' ' + fontStyle.variant + ' ' + fontStyle.weight + ' '
             + fontStyle.size + 'px "' + fontStyle.family + '"';
 
-        textRect = textRect || textContain.getBoundingRect(text, font, align, verticalAlign);
+        textRect = textRect || textContain$1.getBoundingRect(text$$2, font, align, verticalAlign);
 
         // Transform rect to view space
         var m = this.transform;
         // Ignore transform for text in other element
         if (m && !fromTextEl) {
-            tmpRect.copy(rect);
-            tmpRect.applyTransform(m);
-            rect = tmpRect;
+            tmpRect$3.copy(rect);
+            tmpRect$3.applyTransform(m);
+            rect = tmpRect$3;
         }
 
         if (!fromTextEl) {
@@ -15827,13 +18130,13 @@ if (!require('../core/env').canvasSupported) {
             var distance = style.textDistance;
             // Text position represented by coord
             if (textPosition instanceof Array) {
-                x = rect.x + parsePercent(textPosition[0], rect.width);
-                y = rect.y + parsePercent(textPosition[1], rect.height);
+                x = rect.x + parsePercent$1(textPosition[0], rect.width);
+                y = rect.y + parsePercent$1(textPosition[1], rect.height);
 
                 align = align || 'left';
             }
             else {
-                var res = textContain.adjustTextPositionOnRect(
+                var res = textContain$1.adjustTextPositionOnRect(
                     textPosition, rect, distance
                 );
                 x = res.x;
@@ -15849,8 +18152,8 @@ if (!require('../core/env').canvasSupported) {
             y = rect.y;
         }
 
-        x = textContain.adjustTextX(x, textRect.width, align);
-        y = textContain.adjustTextY(y, textRect.height, verticalAlign);
+        x = textContain$1.adjustTextX(x, textRect.width, align);
+        y = textContain$1.adjustTextY(y, textRect.height, verticalAlign);
 
         // Force baseline 'middle'
         y += textRect.height / 2;
@@ -15916,9 +18219,9 @@ if (!require('../core/env').canvasSupported) {
             textVmlEl.from = '0 0';
             textVmlEl.to = '1000 0.05';
 
-            append(textVmlEl, skewEl);
-            append(textVmlEl, pathEl);
-            append(textVmlEl, textPathEl);
+            append$1(textVmlEl, skewEl);
+            append$1(textVmlEl, pathEl);
+            append$1(textVmlEl, textPathEl);
 
             this._textVmlEl = textVmlEl;
         }
@@ -15954,7 +18257,7 @@ if (!require('../core/env').canvasSupported) {
             textVmlElStyle.top = round(y) + 'px';
         }
 
-        textPathEl.string = encodeHtmlAttribute(text);
+        textPathEl.string = encodeHtmlAttribute(text$$2);
         // TODO
         try {
             textPathEl.style.font = font;
@@ -15975,29 +18278,29 @@ if (!require('../core/env').canvasSupported) {
         textVmlEl.style.zIndex = getZIndex(this.zlevel, this.z, this.z2);
 
         // Attached to root
-        append(vmlRoot, textVmlEl);
+        append$1(vmlRoot, textVmlEl);
     };
 
     var removeRectText = function (vmlRoot) {
-        remove(vmlRoot, this._textVmlEl);
+        remove$1(vmlRoot, this._textVmlEl);
         this._textVmlEl = null;
     };
 
     var appendRectText = function (vmlRoot) {
-        append(vmlRoot, this._textVmlEl);
+        append$1(vmlRoot, this._textVmlEl);
     };
 
-    var list = [RectText, Displayable, ZImage, Path, Text];
+    var list = [RectText$1, Displayable$1, ZImage$1, Path$1, Text$1];
 
     // In case Displayable has been mixed in RectText
-    for (var i = 0; i < list.length; i++) {
-        var proto = list[i].prototype;
+    for (var i$2 = 0; i$2 < list.length; i$2++) {
+        var proto = list[i$2].prototype;
         proto.drawRectText = drawRectText;
         proto.removeRectText = removeRectText;
         proto.appendRectText = appendRectText;
     }
 
-    Text.prototype.brushVML = function (vmlRoot) {
+    Text$1.prototype.brushVML = function (vmlRoot) {
         var style = this.style;
         if (style.text != null) {
             this.drawRectText(vmlRoot, {
@@ -16010,27 +18313,27 @@ if (!require('../core/env').canvasSupported) {
         }
     };
 
-    Text.prototype.onRemove = function (vmlRoot) {
+    Text$1.prototype.onRemove = function (vmlRoot) {
         this.removeRectText(vmlRoot);
     };
 
-    Text.prototype.onAdd = function (vmlRoot) {
+    Text$1.prototype.onAdd = function (vmlRoot) {
         this.appendRectText(vmlRoot);
     };
 }
-});
+
 /**
  * VML Painter.
  *
  * @module zrender/vml/Painter
  */
 
-define('zrender/vml/Painter',['require','../core/log','./core'],function (require) {
 
-    var zrLog = require('../core/log');
-    var vmlCore = require('./core');
 
-    function parseInt10(val) {
+    
+    
+
+    function parseInt10$2(val) {
         return parseInt(val, 10);
     }
 
@@ -16039,7 +18342,7 @@ define('zrender/vml/Painter',['require','../core/log','./core'],function (requir
      */
     function VMLPainter(root, storage) {
 
-        vmlCore.initVML();
+        core$2.initVML();
 
         this.root = root;
 
@@ -16084,6 +18387,10 @@ define('zrender/vml/Painter',['require','../core/log','./core'],function (requir
     VMLPainter.prototype = {
 
         constructor: VMLPainter,
+
+        getType: function () {
+            return 'vml';
+        },
 
         /**
          * @return {HTMLDivElement}
@@ -16187,41 +18494,82 @@ define('zrender/vml/Painter',['require','../core/log','./core'],function (requir
             var root = this.root;
             var stl = root.currentStyle;
 
-            return ((root.clientWidth || parseInt10(stl.width))
-                    - parseInt10(stl.paddingLeft)
-                    - parseInt10(stl.paddingRight)) | 0;
+            return ((root.clientWidth || parseInt10$2(stl.width))
+                    - parseInt10$2(stl.paddingLeft)
+                    - parseInt10$2(stl.paddingRight)) | 0;
         },
 
         _getHeight: function () {
             var root = this.root;
             var stl = root.currentStyle;
 
-            return ((root.clientHeight || parseInt10(stl.height))
-                    - parseInt10(stl.paddingTop)
-                    - parseInt10(stl.paddingBottom)) | 0;
+            return ((root.clientHeight || parseInt10$2(stl.height))
+                    - parseInt10$2(stl.paddingTop)
+                    - parseInt10$2(stl.paddingBottom)) | 0;
         }
     };
 
     // Not supported methods
-    function createMethodNotSupport(method) {
+    function createMethodNotSupport$1(method) {
         return function () {
-            zrLog('In IE8.0 VML mode painter not support method "' + method + '"');
+            log('In IE8.0 VML mode painter not support method "' + method + '"');
         };
     }
 
-    var notSupportedMethods = [
+    var notSupportedMethods$1 = [
         'getLayer', 'insertLayer', 'eachLayer', 'eachBuiltinLayer', 'eachOtherLayer', 'getLayers',
         'modLayer', 'delLayer', 'clearLayer', 'toDataURL', 'pathToImage'
     ];
 
-    for (var i = 0; i < notSupportedMethods.length; i++) {
-        var name = notSupportedMethods[i];
-        VMLPainter.prototype[name] = createMethodNotSupport(name);
+    for (var i$3 = 0; i$3 < notSupportedMethods$1.length; i$3++) {
+        var name$1 = notSupportedMethods$1[i$3];
+        VMLPainter.prototype[name$1] = createMethodNotSupport$1(name$1);
     }
 
-    return VMLPainter;
-});
-define('zrender/vml/vml',['require','./graphic','../zrender','./Painter'],function (require) {
-    require('./graphic');
-    require('../zrender').registerPainter('vml', require('./Painter'));
-});
+    var Painter$3 = VMLPainter;
+
+zrender_1$2.registerPainter('vml', Painter$3);
+
+zrender_1$2.Group = Group_1;
+zrender_1$2.Path = Path_1;
+zrender_1$2.Image = Image$1;
+zrender_1$2.CompoundPath = CompoundPath;
+zrender_1$2.Text = Text_1;
+
+zrender_1$2.Arc = Arc;
+zrender_1$2.BezierCurve = BezierCurve;
+zrender_1$2.Circle = Circle;
+zrender_1$2.Droplet = Droplet;
+zrender_1$2.Ellipse = Ellipse;
+zrender_1$2.Heart = Heart;
+zrender_1$2.Isogon = Isogon;
+zrender_1$2.Line = Line;
+zrender_1$2.Polygon = Polygon;
+zrender_1$2.Polyline = Polyline;
+zrender_1$2.Rect = Rect;
+zrender_1$2.Ring = Ring;
+zrender_1$2.Rose = Rose;
+zrender_1$2.Sector = Sector;
+zrender_1$2.Star = Star;
+zrender_1$2.Trochoid = Trochoid;
+
+zrender_1$2.LinearGradient = LinearGradient_1;
+zrender_1$2.RadialGradient = RadialGradient_1;
+zrender_1$2.Pattern = Pattern_1;
+
+zrender_1$2.BoundingRect = BoundingRect_1;
+zrender_1$2.matrix = matrix_1;
+zrender_1$2.vector = vector_1;
+
+zrender_1$2.color = color;
+zrender_1$2.path = path$2;
+zrender_1$2.util = util_1;
+
+
+
+
+var zrender_1 = zrender_1$2;
+
+return zrender_1;
+
+})));

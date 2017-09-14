@@ -2,46 +2,32 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>Image</title>
-    <script type="text/javascript" src="esl.js"></script>
+    <title>Single Canvas</title>
+    <script type="text/javascript" src="../dist/zrender.js"></script>
 </head>
 <body>
+    <canvas id="main" width="1000" height="600"></canvas>
     <script type="text/javascript">
-    require.config({
-        packages: [
-            {
-                name: 'zrender',
-                location: '../src',
-                main: 'zrender'
-            }
-        ]
-    });
+    // 初始化zrender
+    var zr = zrender.init( document.getElementById('main') );
 
-    require(['zrender', 'zrender/graphic/Image'], function(zrender, ImageShape){
-        // 初始化zrender
-        var zr = zrender.init( document.getElementById('main') );
-
-        for( var i = 0; i < 20; i ++){
-            for( var j = 0; j < 20; j++){
-                var image = new ImageShape({
-                    position: [i * 50, j * 50],
-                    scale: [1, 1],
-                    style: {
-                        x: 0,
-                        y: 0,
-                        image: 'test.jpeg',
-                        width: 50,
-                        height: 50
-                    },
-                    draggable: true
-                });
-                zr.add( image );
-            }
+    for( var i = 0; i < 20; i ++){
+        for( var j = 0; j < 20; j++){
+            var image = new zrender.Image({
+                position: [i * 50, j * 50],
+                scale: [1, 1],
+                style: {
+                    x: 0,
+                    y: 0,
+                    image: 'test.png',
+                    width: 50,
+                    height: 50
+                },
+                draggable: true
+            });
+            zr.add(image);
         }
-
-
-    })
+    }
     </script>
-    <canvas id="main" style="width:1000px;height:600px;"></canvas>
 </body>
 </html>

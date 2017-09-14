@@ -1,2 +1,7 @@
-node r.js -o build.js
-uglifyjs zrender.js -m -c -o zrender.min.js
+basePath=$(cd `dirname $0`; pwd)
+cd ${basePath}/../
+rm -r dist
+
+npm run prepublish
+rollup -c
+uglifyjs ./dist/zrender.js -m -c -o ./dist/zrender.min.js

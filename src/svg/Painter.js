@@ -16,8 +16,8 @@ define(function (require) {
     var svgImage = svgGraphic.image;
     var svgText = svgGraphic.text;
 
-    var GradientManager = require('./helper/gradient');
-    var ClippathManager = require('./helper/clippath');
+    var GradientManager = require('./helper/GradientManager');
+    var ClippathManager = require('./helper/ClippathManager');
 
     var createElement = svgCore.createElement;
 
@@ -90,8 +90,8 @@ define(function (require) {
         this.storage = storage;
 
         var svgRoot = createElement('svg');
-        this.gradient = new GradientManager(svgRoot);
-        this.clipPath = new ClippathManager(svgRoot);
+        this.gradientManager = new GradientManager(svgRoot);
+        this.clipPathManager = new ClippathManager(svgRoot);
 
         var viewport = document.createElement('div');
         viewport.style.cssText = 'overflow: hidden;';
@@ -137,8 +137,8 @@ define(function (require) {
         },
 
         _paintList: function (list) {
-            this.gradient.markAllUnused();
-            this.clipPath.markAllUnused();
+            this.gradientManager.markAllUnused();
+            this.clipPathManager.markAllUnused();
 
             var svgRoot = this._svgRoot;
             var visibleList = this._visibleList;
@@ -156,12 +156,14 @@ define(function (require) {
                             || getTextSvgElement(displayable);
 
                         // Update clipPath
-                        this.clipPath.update(displayable, el);
+                        this.clipPathManager.update(displayable, el);
 
                         // Update gradient
                         if (displayable.style) {
-                            this.gradient.update(displayable.style.fill);
-                            this.gradient.update(displayable.style.stroke);
+                            this.gradientManager
+                                .update(displayable.style.fill);
+                            this.gradientManager
+                                .update(displayable.style.stroke);
                         }
 
                         displayable.__dirty = false;
@@ -173,7 +175,8 @@ define(function (require) {
             var diff = arrayDiff(visibleList, newVisibleList);
             var prevSvgElement;
 
-            // First do remove, in case element moved to the head and do remove after add
+            // First do remove, in case element moved to the head and do remove
+            // after add
             for (i = 0; i < diff.length; i++) {
                 var item = diff[i];
                 if (item.removed) {
@@ -193,23 +196,28 @@ define(function (require) {
                         var displayable = newVisibleList[item.indices[k]];
                         var svgElement = getSvgElement(displayable);
                         var textSvgElement = getTextSvgElement(displayable);
-                        prevSvgElement ? insertAfter(svgRoot, svgElement, prevSvgElement)
+                        prevSvgElement
+                            ? insertAfter(svgRoot, svgElement, prevSvgElement)
                             : prepend(svgRoot, svgElement);
                         if (svgElement) {
                             insertAfter(svgRoot, textSvgElement, svgElement);
                         }
                         else if (prevSvgElement) {
-                            insertAfter(svgRoot, textSvgElement, prevSvgElement);
+                            insertAfter(
+                                svgRoot, textSvgElement, prevSvgElement
+                            );
                         }
                         else {
                             prepend(svgRoot, textSvgElement);
                         }
                         // Insert text
                         insertAfter(svgRoot, textSvgElement, svgElement);
-                        prevSvgElement = textSvgElement || svgElement || prevSvgElement;
+                        prevSvgElement = textSvgElement || svgElement
+                            || prevSvgElement;
 
-                        this.gradient.addWithoutUpdate(svgElement, displayable);
-                        this.clipPath.markUsed(displayable);
+                        this.gradientManager
+                            .addWithoutUpdate(svgElement, displayable);
+                        this.clipPathManager.markUsed(displayable);
                     }
                 }
                 else if (!item.removed) {
@@ -221,16 +229,17 @@ define(function (require) {
                             || getSvgElement(displayable)
                             || prevSvgElement;
 
-                        this.gradient.markUsed(displayable);
-                        this.gradient.addWithoutUpdate(svgElement, displayable);
+                        this.gradientManager.markUsed(displayable);
+                        this.gradientManager
+                            .addWithoutUpdate(svgElement, displayable);
 
-                        this.clipPath.markUsed(displayable);
+                        this.clipPathManager.markUsed(displayable);
                     }
                 }
             }
 
-            this.gradient.removeUnused();
-            this.clipPath.removeUnused();
+            this.gradientManager.removeUnused();
+            this.clipPathManager.removeUnused();
 
             this._visibleList = newVisibleList;
         },
@@ -319,9 +328,10 @@ define(function (require) {
         dispose: function () {
             this.root.innerHTML = '';
 
-            this._svgRoot =
-            this._viewport =
-            this.storage = null;
+            this._svgRoot
+                = this._viewport
+                = this.storage
+                = null;
         },
 
         clear: function () {
@@ -334,13 +344,14 @@ define(function (require) {
     // Not supported methods
     function createMethodNotSupport(method) {
         return function () {
-            zrLog('In SVG mode painter not support method "' + method + '"')
-        }
+            zrLog('In SVG mode painter not support method "' + method + '"');
+        };
     }
 
     var notSupportedMethods = [
-        'getLayer', 'insertLayer', 'eachLayer', 'eachBuiltinLayer', 'eachOtherLayer', 'getLayers',
-        'modLayer', 'delLayer', 'clearLayer', 'toDataURL', 'pathToImage'
+        'getLayer', 'insertLayer', 'eachLayer', 'eachBuiltinLayer',
+        'eachOtherLayer', 'getLayers', 'modLayer', 'delLayer', 'clearLayer',
+        'toDataURL', 'pathToImage'
     ];
 
     for (var i = 0; i < notSupportedMethods.length; i++) {

@@ -6,20 +6,26 @@
     "canvas",
     "2d"
   ],
-  "author": [{
-    "name": "Kenner",
-    "email": "kener.linfeng@gmail.com"
-  }, {
-    "name": "Yi Shen",
-    "url": "https://github.com/pissang"
-  }, {
-    "name": "Shuang Su",
-    "url": "https://github.com/100pah"
-  }],
-  "contributors": [{
-    "name": "erik",
-    "email": "errorrik@gmail.com"
-  }],
+  "author": [
+    {
+      "name": "Kenner",
+      "email": "kener.linfeng@gmail.com"
+    },
+    {
+      "name": "Yi Shen",
+      "url": "https://github.com/pissang"
+    },
+    {
+      "name": "Shuang Su",
+      "url": "https://github.com/100pah"
+    }
+  ],
+  "contributors": [
+    {
+      "name": "erik",
+      "email": "errorrik@gmail.com"
+    }
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/ecomfe/zrender.git"
@@ -28,5 +34,9 @@
     "prepublish": "node build/amd2common.bundle.js"
   },
   "license": "BSD",
-  "main": "lib/zrender.js"
+  "devDependencies": {
+    "jsdiff": "^1.1.1",
+    "rollup-plugin-commonjs": "^8.2.1",
+    "rollup-plugin-node-resolve": "^3.0.0"
+  }
 }

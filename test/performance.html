@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <title>Performance</title>
-    <script type="text/javascript" src="esl.js"></script>
+    <script type="text/javascript" src="../dist/zrender.js"></script>
 </head>
 <body>
     <div id="main" style="width:100%;height:400px;border:1px solid green"></div>
@@ -29,49 +29,6 @@
     </div>
     <div id="res">loading</div>
     <script type="text/javascript">
-    require.config({
-        packages: [
-            {
-                name: 'zrender',
-                location: '../src',
-                main: 'zrender'
-            }
-        ]
-    });
-
-
-    require(
-        [
-            "zrender",
-            'zrender/graphic/shape/Circle',
-            'zrender/graphic/shape/Sector',
-            'zrender/graphic/shape/Ring',
-            'zrender/graphic/shape/Ellipse',
-            'zrender/graphic/shape/Rect',
-            'zrender/graphic/Text',
-            'zrender/graphic/shape/Heart',
-            'zrender/graphic/shape/Droplet',
-            'zrender/graphic/shape/Line',
-            'zrender/graphic/Image',
-            'zrender/graphic/shape/Star',
-            'zrender/graphic/shape/Isogon'
-        ],
-        function(
-            zrender,
-            CircleShape,
-            SectorShape,
-            RingShape,
-            EllipseShape,
-            RectShape,
-            TextShape,
-            HeartShape,
-            DropletShape,
-            LineShape,
-            ImageShape,
-            StarShape,
-            IsogonShape
-        ) {
-
             var  str = `
 　　——此开卷第一回也。作者自云：曾历过一番梦幻之后，故将真事隐去，而借
 通灵说此《石头记》一书也，故曰“甄士隐”云云。但书中所记何事何人?自己又
@@ -298,18 +255,18 @@
             document.getElementById('auto-run').onclick = autoStart;
 
             var ShapeClasses = {
-                circle    :CircleShape,
-                sector    :SectorShape,
-                ring      :RingShape,
-                ellipse   :EllipseShape,
-                rect      :RectShape,
-                text      :TextShape,
-                heart     :HeartShape,
-                droplet   :DropletShape,
-                line      :LineShape,
-                image     :ImageShape,
-                star      :StarShape,
-                isogon    :IsogonShape
+                circle: zrender.Circle,
+                sector: zrender.Sector,
+                ring: zrender.Ring,
+                ellipse: zrender.Ellipse,
+                rect: zrender.Rect,
+                text: zrender.Text,
+                heart: zrender.Heart,
+                droplet: zrender.Droplet,
+                line: zrender.Line,
+                image: zrender.Image,
+                star: zrender.Star,
+                isogon: zrender.Isogon
             };
 
             var t1 = 0;
@@ -437,8 +394,6 @@
                     autoCheck();
                 }
             }
-        }
-    );
     </script>
 
 </body>

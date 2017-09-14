@@ -1,10 +1,11 @@
 /**
  * @file Manages SVG gradient elements.
+ * @author Zhang Wenli
  */
 
 define(function (require) {
 
-    var Definable = require('./definable');
+    var Definable = require('./Definable');
     var zrUtil = require('../../core/util');
     var zrLog = require('../../core/log');
 
@@ -78,7 +79,7 @@ define(function (require) {
      * Add a new gradient tag in <defs>
      *
      * @param   {Gradient} gradient zr gradient instance
-     * @returns {SVGLinearGradientElement | SVGRadialGradientElement}
+     * @return {SVGLinearGradientElement | SVGRadialGradientElement}
      *                            created DOM
      */
     GradientManager.prototype.add = function (gradient) {
@@ -111,6 +112,7 @@ define(function (require) {
 
     /**
      * Update gradient.
+     *
      * @param {Gradient} gradient zr gradient instance
      */
     GradientManager.prototype.update = function (gradient) {
