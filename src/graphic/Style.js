@@ -194,11 +194,11 @@ define(function (require) {
         /**
          * textStroke may be set as some color as a default
          * value in upper applicaion, where the default value
-         * of textLineWidth should be 0 to make sure that
+         * of textStrokeWidth should be 0 to make sure that
          * user can choose to do not use text stroke.
          * @type {number}
          */
-        textLineWidth: 0,
+        textStrokeWidth: 0,
 
         /**
          * @type {number}
