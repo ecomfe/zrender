@@ -1458,6 +1458,7 @@ var ArrayCtor = typeof Float32Array === 'undefined'
 
     var Eventful_1 = Eventful;
 
+'use strict';
 /**
  * Handler
  * @module zrender/Handler
@@ -1958,6 +1959,7 @@ var ArrayCtor$1 = typeof Float32Array === 'undefined'
 
     var matrix_1 = matrix;
 
+'use strict';
 /**
  * 提供变换扩展
  * @module zrender/mixin/Transformable
@@ -4122,6 +4124,7 @@ var dpr = 1;
         };
         */
 
+'use strict';
 /**
  * @module zrender/mixin/Animatable
  */
@@ -4395,6 +4398,7 @@ var dpr = 1;
 
     var Animatable_1 = Animatable;
 
+'use strict';
 /**
  * @module zrender/Element
  */
@@ -4657,6 +4661,7 @@ var dpr = 1;
 
     var Element_1 = Element;
 
+'use strict';
 /**
  * @module echarts/core/BoundingRect
  */
@@ -5178,8 +5183,6 @@ var dpr = 1;
 
     var DEFAULT_MIN_GALLOPING = 7;
 
-    var DEFAULT_TMP_STORAGE_LENGTH = 256;
-
     function minRunLength(n) {
         var r = 0;
 
@@ -5390,22 +5393,11 @@ var dpr = 1;
 
     function TimSort(array, compare) {
         var minGallop = DEFAULT_MIN_GALLOPING;
-        var length = 0;
-        var tmpStorageLength = DEFAULT_TMP_STORAGE_LENGTH;
-        var stackLength = 0;
         var runStart;
         var runLength;
         var stackSize = 0;
 
-        length = array.length;
-
-        if (length < 2 * DEFAULT_TMP_STORAGE_LENGTH) {
-            tmpStorageLength = length >>> 1;
-        }
-
         var tmp = [];
-
-        stackLength = length < 120 ? 5 : length < 1542 ? 10 : length < 119151 ? 19 : 40;
 
         runStart = [];
         runLength = [];
@@ -5848,6 +5840,7 @@ var dpr = 1;
 
     var timsort = sort;
 
+'use strict';
 /**
  * Storage内容仓库模块
  * @module zrender/Storage
@@ -6099,6 +6092,7 @@ var dpr = 1;
 
     var Storage_1 = Storage;
 
+'use strict';
 /**
  * 事件辅助类
  * @module zrender/core/event
@@ -6271,6 +6265,7 @@ var requestAnimationFrame = (typeof window !== 'undefined' &&
                 setTimeout(func, 16);
             };
 
+'use strict';
 /**
  * 动画主类, 调度和管理所有动画控制器
  *
@@ -6524,6 +6519,7 @@ var requestAnimationFrame = (typeof window !== 'undefined' &&
 
     var Animation_1 = Animation;
 
+'use strict';
 /**
  * Only implements needed gestures for mobile.
  */
@@ -9530,6 +9526,7 @@ var Pattern = function (image, repeat) {
 
     var Image$1 = ZImage;
 
+'use strict';
 /**
  * Default canvas painter
  * @module zrender/Painter
@@ -11097,6 +11094,7 @@ var Pattern = function (image, repeat) {
 
     var zrender_1$2 = zrender;
 
+'use strict';
 /**
  * 曲线辅助模块
  * @module zrender/core/curve
@@ -11867,6 +11865,7 @@ var Pattern = function (image, repeat) {
 
     var bbox_1 = bbox;
 
+'use strict';
 /**
  * Path 代理，可以在`buildPath`中用于替代`ctx`, 会保存每个path操作的命令到pathCommands属性中
  * 可以用于 isInsidePath 判断以及获取boundingRect
@@ -12862,7 +12861,10 @@ var windingLine = function windingLine(x0, y0, x1, y1, x, y) {
         return x_ > x ? dir : 0;
     };
 
-var CMD$1 = PathProxy_1.CMD;
+'use strict';
+
+
+    var CMD$1 = PathProxy_1.CMD;
     
     
     
@@ -13791,6 +13793,191 @@ var CMD$1 = PathProxy_1.CMD;
     var Text_1 = Text;
 
 /**
+ * 圆弧
+ * @module zrender/graphic/shape/Arc
+ */
+ 
+
+    var Arc = Path_1.extend({
+
+        type: 'arc',
+
+        shape: {
+
+            cx: 0,
+
+            cy: 0,
+
+            r: 0,
+
+            startAngle: 0,
+
+            endAngle: Math.PI * 2,
+
+            clockwise: true
+        },
+
+        style: {
+
+            stroke: '#000',
+
+            fill: null
+        },
+
+        buildPath: function (ctx, shape) {
+
+            var x = shape.cx;
+            var y = shape.cy;
+            var r = Math.max(shape.r, 0);
+            var startAngle = shape.startAngle;
+            var endAngle = shape.endAngle;
+            var clockwise = shape.clockwise;
+
+            var unitX = Math.cos(startAngle);
+            var unitY = Math.sin(startAngle);
+
+            ctx.moveTo(unitX * r + x, unitY * r + y);
+            ctx.arc(x, y, r, startAngle, endAngle, !clockwise);
+        }
+    });
+
+'use strict';
+/**
+ * 贝塞尔曲线
+ * @module zrender/shape/BezierCurve
+ */
+
+
+    
+    
+    var quadraticSubdivide$1 = curve.quadraticSubdivide;
+    var cubicSubdivide$1 = curve.cubicSubdivide;
+    var quadraticAt$1 = curve.quadraticAt;
+    var cubicAt$1 = curve.cubicAt;
+    var quadraticDerivativeAt$1 = curve.quadraticDerivativeAt;
+    var cubicDerivativeAt$1 = curve.cubicDerivativeAt;
+
+    var out = [];
+
+    function someVectorAt(shape, t, isTangent) {
+        var cpx2 = shape.cpx2;
+        var cpy2 = shape.cpy2;
+        if (cpx2 === null || cpy2 === null) {
+            return [
+                (isTangent ? cubicDerivativeAt$1 : cubicAt$1)(shape.x1, shape.cpx1, shape.cpx2, shape.x2, t),
+                (isTangent ? cubicDerivativeAt$1 : cubicAt$1)(shape.y1, shape.cpy1, shape.cpy2, shape.y2, t)
+            ];
+        }
+        else {
+            return [
+                (isTangent ? quadraticDerivativeAt$1 : quadraticAt$1)(shape.x1, shape.cpx1, shape.x2, t),
+                (isTangent ? quadraticDerivativeAt$1 : quadraticAt$1)(shape.y1, shape.cpy1, shape.y2, t)
+            ];
+        }
+    }
+    var BezierCurve = Path_1.extend({
+
+        type: 'bezier-curve',
+
+        shape: {
+            x1: 0,
+            y1: 0,
+            x2: 0,
+            y2: 0,
+            cpx1: 0,
+            cpy1: 0,
+            // cpx2: 0,
+            // cpy2: 0
+
+            // Curve show percent, for animating
+            percent: 1
+        },
+
+        style: {
+            stroke: '#000',
+            fill: null
+        },
+
+        buildPath: function (ctx, shape) {
+            var x1 = shape.x1;
+            var y1 = shape.y1;
+            var x2 = shape.x2;
+            var y2 = shape.y2;
+            var cpx1 = shape.cpx1;
+            var cpy1 = shape.cpy1;
+            var cpx2 = shape.cpx2;
+            var cpy2 = shape.cpy2;
+            var percent = shape.percent;
+            if (percent === 0) {
+                return;
+            }
+
+            ctx.moveTo(x1, y1);
+
+            if (cpx2 == null || cpy2 == null) {
+                if (percent < 1) {
+                    quadraticSubdivide$1(
+                        x1, cpx1, x2, percent, out
+                    );
+                    cpx1 = out[1];
+                    x2 = out[2];
+                    quadraticSubdivide$1(
+                        y1, cpy1, y2, percent, out
+                    );
+                    cpy1 = out[1];
+                    y2 = out[2];
+                }
+
+                ctx.quadraticCurveTo(
+                    cpx1, cpy1,
+                    x2, y2
+                );
+            }
+            else {
+                if (percent < 1) {
+                    cubicSubdivide$1(
+                        x1, cpx1, cpx2, x2, percent, out
+                    );
+                    cpx1 = out[1];
+                    cpx2 = out[2];
+                    x2 = out[3];
+                    cubicSubdivide$1(
+                        y1, cpy1, cpy2, y2, percent, out
+                    );
+                    cpy1 = out[1];
+                    cpy2 = out[2];
+                    y2 = out[3];
+                }
+                ctx.bezierCurveTo(
+                    cpx1, cpy1,
+                    cpx2, cpy2,
+                    x2, y2
+                );
+            }
+        },
+
+        /**
+         * Get point at percent
+         * @param  {number} t
+         * @return {Array.<number>}
+         */
+        pointAt: function (t) {
+            return someVectorAt(this.shape, t, false);
+        },
+
+        /**
+         * Get tangent at percent
+         * @param  {number} t
+         * @return {Array.<number>}
+         */
+        tangentAt: function (t) {
+            var p = someVectorAt(this.shape, t, true);
+            return vector_1.normalize(p, p);
+        }
+    });
+
+'use strict';
+/**
  * 圆形
  * @module zrender/shape/Circle
  */
@@ -13825,162 +14012,224 @@ var CMD$1 = PathProxy_1.CMD;
         }
     });
 
-// Fix weird bug in some version of IE11 (like 11.0.9600.178**),
-    // where exception "unexpected call to method or property access"
-    // might be thrown when calling ctx.fill or ctx.stroke after a path
-    // whose area size is zero is drawn and ctx.clip() is called and
-    // shadowBlur is set. See #4572, #3112, #5777.
-    // (e.g.,
-    //  ctx.moveTo(10, 10);
-    //  ctx.lineTo(20, 10);
-    //  ctx.closePath();
-    //  ctx.clip();
-    //  ctx.shadowBlur = 10;
-    //  ...
-    //  ctx.fill();
-    // )
-
-    var shadowTemp = [
-        ['shadowBlur', 0],
-        ['shadowColor', '#000'],
-        ['shadowOffsetX', 0],
-        ['shadowOffsetY', 0]
-    ];
-
-    var fixClipWithShadow = function (orignalBrush) {
-
-        // version string can be: '11.0'
-        return (env_1.browser.ie && env_1.browser.version >= 11)
-
-            ? function () {
-                var clipPaths = this.__clipPaths;
-                var style = this.style;
-                var modified;
-
-                if (clipPaths) {
-                    for (var i = 0; i < clipPaths.length; i++) {
-                        var clipPath = clipPaths[i];
-                        var shape = clipPath && clipPath.shape;
-                        var type = clipPath && clipPath.type;
-
-                        if (shape && (
-                            (type === 'sector' && shape.startAngle === shape.endAngle)
-                            || (type === 'rect' && (!shape.width || !shape.height))
-                        )) {
-                            for (var j = 0; j < shadowTemp.length; j++) {
-                                // It is save to put shadowTemp static, because shadowTemp
-                                // will be all modified each item brush called.
-                                shadowTemp[j][2] = style[shadowTemp[j][0]];
-                                style[shadowTemp[j][0]] = shadowTemp[j][1];
-                            }
-                            modified = true;
-                            break;
-                        }
-                    }
-                }
-
-                orignalBrush.apply(this, arguments);
-
-                if (modified) {
-                    for (var j = 0; j < shadowTemp.length; j++) {
-                        style[shadowTemp[j][0]] = shadowTemp[j][2];
-                    }
-                }
-            }
-
-            : orignalBrush;
-    };
-
+'use strict';
 /**
- * 扇形
- * @module zrender/graphic/shape/Sector
+ * 水滴形状
+ * @module zrender/graphic/shape/Droplet
  */
 
 
 
-    
-    
-
-    var Sector = Path_1.extend({
-
-        type: 'sector',
+    var Droplet = Path_1.extend({
+        
+        type: 'droplet',
 
         shape: {
-
-            cx: 0,
-
-            cy: 0,
-
-            r0: 0,
-
-            r: 0,
-
-            startAngle: 0,
-
-            endAngle: Math.PI * 2,
-
-            clockwise: true
+            cx: 0, cy: 0,
+            width: 0, height: 0
         },
 
-        brush: fixClipWithShadow(Path_1.prototype.brush),
-
-        buildPath: function (ctx, shape) {
-
+        buildPath : function (ctx, shape) {
             var x = shape.cx;
             var y = shape.cy;
-            var r0 = Math.max(shape.r0 || 0, 0);
-            var r = Math.max(shape.r, 0);
-            var startAngle = shape.startAngle;
-            var endAngle = shape.endAngle;
-            var clockwise = shape.clockwise;
+            var a = shape.width;
+            var b = shape.height;
 
-            var unitX = Math.cos(startAngle);
-            var unitY = Math.sin(startAngle);
-
-            ctx.moveTo(unitX * r0 + x, unitY * r0 + y);
-
-            ctx.lineTo(unitX * r + x, unitY * r + y);
-
-            ctx.arc(x, y, r, startAngle, endAngle, !clockwise);
-
-            ctx.lineTo(
-                Math.cos(endAngle) * r0 + x,
-                Math.sin(endAngle) * r0 + y
+            ctx.moveTo(x, y + a);
+            ctx.bezierCurveTo(
+                x + a,
+                y + a,
+                x + a * 3 / 2,
+                y - a / 3,
+                x,
+                y - b
             );
-
-            if (r0 !== 0) {
-                ctx.arc(x, y, r0, endAngle, startAngle, clockwise);
-            }
-
+            ctx.bezierCurveTo(
+                x - a * 3 / 2,
+                y - a / 3,
+                x - a,
+                y + a,
+                x,
+                y + a
+            );
             ctx.closePath();
         }
     });
 
+'use strict';
 /**
- * 圆环
- * @module zrender/graphic/shape/Ring
+ * 椭圆形状
+ * @module zrender/graphic/shape/Ellipse
  */
 
 
-    var Ring = Path_1.extend({
 
-        type: 'ring',
+    var Ellipse = Path_1.extend({
+        
+        type: 'ellipse',
+
+        shape: {
+            cx: 0, cy: 0,
+            rx: 0, ry: 0
+        },
+
+        buildPath: function (ctx, shape) {
+            var k = 0.5522848;
+            var x = shape.cx;
+            var y = shape.cy;
+            var a = shape.rx;
+            var b = shape.ry;
+            var ox = a * k; // 水平控制点偏移量
+            var oy = b * k; // 垂直控制点偏移量
+            // 从椭圆的左端点开始顺时针绘制四条三次贝塞尔曲线
+            ctx.moveTo(x - a, y);
+            ctx.bezierCurveTo(x - a, y - oy, x - ox, y - b, x, y - b);
+            ctx.bezierCurveTo(x + ox, y - b, x + a, y - oy, x + a, y);
+            ctx.bezierCurveTo(x + a, y + oy, x + ox, y + b, x, y + b);
+            ctx.bezierCurveTo(x - ox, y + b, x - a, y + oy, x - a, y);
+            ctx.closePath();
+        }
+    });
+
+'use strict';
+/**
+ * 心形
+ * @module zrender/graphic/shape/Heart
+ */
+
+    
+    var Heart = Path_1.extend({
+        
+        type: 'heart',
 
         shape: {
             cx: 0,
             cy: 0,
-            r: 0,
-            r0: 0
+            width: 0,
+            height: 0
         },
 
         buildPath: function (ctx, shape) {
             var x = shape.cx;
             var y = shape.cy;
-            var PI2 = Math.PI * 2;
-            ctx.moveTo(x + shape.r, y);
-            ctx.arc(x, y, shape.r, 0, PI2, false);
-            ctx.moveTo(x + shape.r0, y);
-            ctx.arc(x, y, shape.r0, 0, PI2, true);
+            var a = shape.width;
+            var b = shape.height;
+            ctx.moveTo(x, y);
+            ctx.bezierCurveTo(
+                x + a / 2, y - b * 2 / 3,
+                x + a * 2, y + b / 3,
+                x, y + b
+            );
+            ctx.bezierCurveTo(
+                x - a *  2, y + b / 3,
+                x - a / 2, y - b * 2 / 3,
+                x, y
+            );
+        }
+    });
+
+'use strict';
+/**
+ * 正多边形
+ * @module zrender/shape/Isogon
+ * @author sushuang (宿爽, sushuang0322@gmail.com)
+ */
+
+
+    var PI = Math.PI;
+    var sin = Math.sin;
+    var cos = Math.cos;
+
+    var Isogon = Path_1.extend({
+
+        type: 'isogon',
+
+        shape: {
+            x: 0, y: 0,
+            r: 0, n: 0
+        },
+
+        buildPath: function (ctx, shape) {
+            var n = shape.n;
+            if (!n || n < 2) {
+                return;
+            }
+
+            var x = shape.x;
+            var y = shape.y;
+            var r = shape.r;
+
+            var dStep = 2 * PI / n;
+            var deg = -PI / 2;
+
+            ctx.moveTo(x + r * cos(deg), y + r * sin(deg));
+            for (var i = 0, end = n - 1; i < end; i++) {
+                deg += dStep;
+                ctx.lineTo(x + r * cos(deg), y + r * sin(deg));
+            }
+
+            ctx.closePath();
+
+            return;
+        }
+    });
+
+/**
+ * 直线
+ * @module zrender/graphic/shape/Line
+ */
+
+    var Line = Path_1.extend({
+
+        type: 'line',
+
+        shape: {
+            // Start point
+            x1: 0,
+            y1: 0,
+            // End point
+            x2: 0,
+            y2: 0,
+
+            percent: 1
+        },
+
+        style: {
+            stroke: '#000',
+            fill: null
+        },
+
+        buildPath: function (ctx, shape) {
+            var x1 = shape.x1;
+            var y1 = shape.y1;
+            var x2 = shape.x2;
+            var y2 = shape.y2;
+            var percent = shape.percent;
+
+            if (percent === 0) {
+                return;
+            }
+
+            ctx.moveTo(x1, y1);
+
+            if (percent < 1) {
+                x2 = x1 * (1 - percent) + x2 * percent;
+                y2 = y1 * (1 - percent) + y2 * percent;
+            }
+            ctx.lineTo(x2, y2);
+        },
+
+        /**
+         * Get point at percent
+         * @param  {number} percent
+         * @return {Array.<number>}
+         */
+        pointAt: function (p) {
+            var shape = this.shape;
+            return [
+                shape.x1 * (1 - p) + shape.x2 * p,
+                shape.y1 * (1 - p) + shape.y2 * p
+            ];
         }
     });
 
@@ -14290,386 +14539,30 @@ var poly = {
     });
 
 /**
- * 直线
- * @module zrender/graphic/shape/Line
- */
-
-    var Line = Path_1.extend({
-
-        type: 'line',
-
-        shape: {
-            // Start point
-            x1: 0,
-            y1: 0,
-            // End point
-            x2: 0,
-            y2: 0,
-
-            percent: 1
-        },
-
-        style: {
-            stroke: '#000',
-            fill: null
-        },
-
-        buildPath: function (ctx, shape) {
-            var x1 = shape.x1;
-            var y1 = shape.y1;
-            var x2 = shape.x2;
-            var y2 = shape.y2;
-            var percent = shape.percent;
-
-            if (percent === 0) {
-                return;
-            }
-
-            ctx.moveTo(x1, y1);
-
-            if (percent < 1) {
-                x2 = x1 * (1 - percent) + x2 * percent;
-                y2 = y1 * (1 - percent) + y2 * percent;
-            }
-            ctx.lineTo(x2, y2);
-        },
-
-        /**
-         * Get point at percent
-         * @param  {number} percent
-         * @return {Array.<number>}
-         */
-        pointAt: function (p) {
-            var shape = this.shape;
-            return [
-                shape.x1 * (1 - p) + shape.x2 * p,
-                shape.y1 * (1 - p) + shape.y2 * p
-            ];
-        }
-    });
-
-/**
- * 贝塞尔曲线
- * @module zrender/shape/BezierCurve
+ * 圆环
+ * @module zrender/graphic/shape/Ring
  */
 
 
-    
-    
-    var quadraticSubdivide$1 = curve.quadraticSubdivide;
-    var cubicSubdivide$1 = curve.cubicSubdivide;
-    var quadraticAt$1 = curve.quadraticAt;
-    var cubicAt$1 = curve.cubicAt;
-    var quadraticDerivativeAt$1 = curve.quadraticDerivativeAt;
-    var cubicDerivativeAt$1 = curve.cubicDerivativeAt;
+    var Ring = Path_1.extend({
 
-    var out = [];
-
-    function someVectorAt(shape, t, isTangent) {
-        var cpx2 = shape.cpx2;
-        var cpy2 = shape.cpy2;
-        if (cpx2 === null || cpy2 === null) {
-            return [
-                (isTangent ? cubicDerivativeAt$1 : cubicAt$1)(shape.x1, shape.cpx1, shape.cpx2, shape.x2, t),
-                (isTangent ? cubicDerivativeAt$1 : cubicAt$1)(shape.y1, shape.cpy1, shape.cpy2, shape.y2, t)
-            ];
-        }
-        else {
-            return [
-                (isTangent ? quadraticDerivativeAt$1 : quadraticAt$1)(shape.x1, shape.cpx1, shape.x2, t),
-                (isTangent ? quadraticDerivativeAt$1 : quadraticAt$1)(shape.y1, shape.cpy1, shape.y2, t)
-            ];
-        }
-    }
-    var BezierCurve = Path_1.extend({
-
-        type: 'bezier-curve',
+        type: 'ring',
 
         shape: {
-            x1: 0,
-            y1: 0,
-            x2: 0,
-            y2: 0,
-            cpx1: 0,
-            cpy1: 0,
-            // cpx2: 0,
-            // cpy2: 0
-
-            // Curve show percent, for animating
-            percent: 1
-        },
-
-        style: {
-            stroke: '#000',
-            fill: null
-        },
-
-        buildPath: function (ctx, shape) {
-            var x1 = shape.x1;
-            var y1 = shape.y1;
-            var x2 = shape.x2;
-            var y2 = shape.y2;
-            var cpx1 = shape.cpx1;
-            var cpy1 = shape.cpy1;
-            var cpx2 = shape.cpx2;
-            var cpy2 = shape.cpy2;
-            var percent = shape.percent;
-            if (percent === 0) {
-                return;
-            }
-
-            ctx.moveTo(x1, y1);
-
-            if (cpx2 == null || cpy2 == null) {
-                if (percent < 1) {
-                    quadraticSubdivide$1(
-                        x1, cpx1, x2, percent, out
-                    );
-                    cpx1 = out[1];
-                    x2 = out[2];
-                    quadraticSubdivide$1(
-                        y1, cpy1, y2, percent, out
-                    );
-                    cpy1 = out[1];
-                    y2 = out[2];
-                }
-
-                ctx.quadraticCurveTo(
-                    cpx1, cpy1,
-                    x2, y2
-                );
-            }
-            else {
-                if (percent < 1) {
-                    cubicSubdivide$1(
-                        x1, cpx1, cpx2, x2, percent, out
-                    );
-                    cpx1 = out[1];
-                    cpx2 = out[2];
-                    x2 = out[3];
-                    cubicSubdivide$1(
-                        y1, cpy1, cpy2, y2, percent, out
-                    );
-                    cpy1 = out[1];
-                    cpy2 = out[2];
-                    y2 = out[3];
-                }
-                ctx.bezierCurveTo(
-                    cpx1, cpy1,
-                    cpx2, cpy2,
-                    x2, y2
-                );
-            }
-        },
-
-        /**
-         * Get point at percent
-         * @param  {number} t
-         * @return {Array.<number>}
-         */
-        pointAt: function (t) {
-            return someVectorAt(this.shape, t, false);
-        },
-
-        /**
-         * Get tangent at percent
-         * @param  {number} t
-         * @return {Array.<number>}
-         */
-        tangentAt: function (t) {
-            var p = someVectorAt(this.shape, t, true);
-            return vector_1.normalize(p, p);
-        }
-    });
-
-/**
- * 圆弧
- * @module zrender/graphic/shape/Arc
- */
- 
-
-    var Arc = Path_1.extend({
-
-        type: 'arc',
-
-        shape: {
-
             cx: 0,
-
             cy: 0,
-
             r: 0,
-
-            startAngle: 0,
-
-            endAngle: Math.PI * 2,
-
-            clockwise: true
-        },
-
-        style: {
-
-            stroke: '#000',
-
-            fill: null
+            r0: 0
         },
 
         buildPath: function (ctx, shape) {
-
             var x = shape.cx;
             var y = shape.cy;
-            var r = Math.max(shape.r, 0);
-            var startAngle = shape.startAngle;
-            var endAngle = shape.endAngle;
-            var clockwise = shape.clockwise;
-
-            var unitX = Math.cos(startAngle);
-            var unitY = Math.sin(startAngle);
-
-            ctx.moveTo(unitX * r + x, unitY * r + y);
-            ctx.arc(x, y, r, startAngle, endAngle, !clockwise);
-        }
-    });
-
-/**
- * 椭圆形状
- * @module zrender/graphic/shape/Ellipse
- */
-
-
-
-    var Ellipse = Path_1.extend({
-        
-        type: 'ellipse',
-
-        shape: {
-            cx: 0, cy: 0,
-            rx: 0, ry: 0
-        },
-
-        buildPath: function (ctx, shape) {
-            var k = 0.5522848;
-            var x = shape.cx;
-            var y = shape.cy;
-            var a = shape.rx;
-            var b = shape.ry;
-            var ox = a * k; // 水平控制点偏移量
-            var oy = b * k; // 垂直控制点偏移量
-            // 从椭圆的左端点开始顺时针绘制四条三次贝塞尔曲线
-            ctx.moveTo(x - a, y);
-            ctx.bezierCurveTo(x - a, y - oy, x - ox, y - b, x, y - b);
-            ctx.bezierCurveTo(x + ox, y - b, x + a, y - oy, x + a, y);
-            ctx.bezierCurveTo(x + a, y + oy, x + ox, y + b, x, y + b);
-            ctx.bezierCurveTo(x - ox, y + b, x - a, y + oy, x - a, y);
-            ctx.closePath();
-        }
-    });
-
-/**
- * n角星（n>3）
- * @module zrender/graphic/shape/Star
- */
-
-
-    var PI = Math.PI;
-
-    var cos = Math.cos;
-    var sin = Math.sin;
-
-    var Star = Path_1.extend({
-        
-        type: 'star',
-
-        shape: {
-            cx: 0,
-            cy: 0,
-            n: 3,
-            r0: null,
-            r: 0
-        },
-
-        buildPath: function (ctx, shape) {
-
-            var n = shape.n;
-            if (!n || n < 2) {
-                return;
-            }
-
-            var x = shape.cx;
-            var y = shape.cy;
-            var r = shape.r;
-            var r0 = shape.r0;
-
-            // 如果未指定内部顶点外接圆半径，则自动计算
-            if (r0 == null) {
-                r0 = n > 4
-                    // 相隔的外部顶点的连线的交点，
-                    // 被取为内部交点，以此计算r0
-                    ? r * cos(2 * PI / n) / cos(PI / n)
-                    // 二三四角星的特殊处理
-                    : r / 3;
-            }
-
-            var dStep = PI / n;
-            var deg = -PI / 2;
-            var xStart = x + r * cos(deg);
-            var yStart = y + r * sin(deg);
-            deg += dStep;
-
-            // 记录边界点，用于判断inside
-            ctx.moveTo(xStart, yStart);
-            for (var i = 0, end = n * 2 - 1, ri; i < end; i++) {
-                ri = i % 2 === 0 ? r0 : r;
-                ctx.lineTo(x + ri * cos(deg), y + ri * sin(deg));
-                deg += dStep;
-            }
-            
-            ctx.closePath();
-        }
-    });
-
-/**
- * 正多边形
- * @module zrender/shape/Isogon
- * @author sushuang (宿爽, sushuang0322@gmail.com)
- */
-
-
-    var PI$1 = Math.PI;
-    var sin$1 = Math.sin;
-    var cos$1 = Math.cos;
-
-    var Isogon = Path_1.extend({
-
-        type: 'isogon',
-
-        shape: {
-            x: 0, y: 0,
-            r: 0, n: 0
-        },
-
-        buildPath: function (ctx, shape) {
-            var n = shape.n;
-            if (!n || n < 2) {
-                return;
-            }
-
-            var x = shape.x;
-            var y = shape.y;
-            var r = shape.r;
-
-            var dStep = 2 * PI$1 / n;
-            var deg = -PI$1 / 2;
-
-            ctx.moveTo(x + r * cos$1(deg), y + r * sin$1(deg));
-            for (var i = 0, end = n - 1; i < end; i++) {
-                deg += dStep;
-                ctx.lineTo(x + r * cos$1(deg), y + r * sin$1(deg));
-            }
-
-            ctx.closePath();
-
-            return;
+            var PI2 = Math.PI * 2;
+            ctx.moveTo(x + shape.r, y);
+            ctx.arc(x, y, shape.r, 0, PI2, false);
+            ctx.moveTo(x + shape.r0, y);
+            ctx.arc(x, y, shape.r0, 0, PI2, true);
         }
     });
 
@@ -14679,8 +14572,8 @@ var poly = {
  */
 
 
-    var sin$2 = Math.sin;
-    var cos$2 = Math.cos;
+    var sin$1 = Math.sin;
+    var cos$1 = Math.cos;
     var radian = Math.PI / 180;
 
     var Rose = Path_1.extend({
@@ -14718,16 +14611,210 @@ var poly = {
 
                 for (var j = 0; j <= 360 * n; j++) {
                     x = r
-                         * sin$2(k / n * j % 360 * radian)
-                         * cos$2(j * radian) 
+                         * sin$1(k / n * j % 360 * radian)
+                         * cos$1(j * radian) 
                          + x0;
                     y = r
-                         * sin$2(k / n * j % 360 * radian)
-                         * sin$2(j * radian)
+                         * sin$1(k / n * j % 360 * radian)
+                         * sin$1(j * radian)
                          + y0;
                     ctx.lineTo(x, y);
                 }
             }
+        }
+    });
+
+// Fix weird bug in some version of IE11 (like 11.0.9600.178**),
+    // where exception "unexpected call to method or property access"
+    // might be thrown when calling ctx.fill or ctx.stroke after a path
+    // whose area size is zero is drawn and ctx.clip() is called and
+    // shadowBlur is set. See #4572, #3112, #5777.
+    // (e.g.,
+    //  ctx.moveTo(10, 10);
+    //  ctx.lineTo(20, 10);
+    //  ctx.closePath();
+    //  ctx.clip();
+    //  ctx.shadowBlur = 10;
+    //  ...
+    //  ctx.fill();
+    // )
+
+    var shadowTemp = [
+        ['shadowBlur', 0],
+        ['shadowColor', '#000'],
+        ['shadowOffsetX', 0],
+        ['shadowOffsetY', 0]
+    ];
+
+    var fixClipWithShadow = function (orignalBrush) {
+
+        // version string can be: '11.0'
+        return (env_1.browser.ie && env_1.browser.version >= 11)
+
+            ? function () {
+                var clipPaths = this.__clipPaths;
+                var style = this.style;
+                var modified;
+
+                if (clipPaths) {
+                    for (var i = 0; i < clipPaths.length; i++) {
+                        var clipPath = clipPaths[i];
+                        var shape = clipPath && clipPath.shape;
+                        var type = clipPath && clipPath.type;
+
+                        if (shape && (
+                            (type === 'sector' && shape.startAngle === shape.endAngle)
+                            || (type === 'rect' && (!shape.width || !shape.height))
+                        )) {
+                            for (var j = 0; j < shadowTemp.length; j++) {
+                                // It is save to put shadowTemp static, because shadowTemp
+                                // will be all modified each item brush called.
+                                shadowTemp[j][2] = style[shadowTemp[j][0]];
+                                style[shadowTemp[j][0]] = shadowTemp[j][1];
+                            }
+                            modified = true;
+                            break;
+                        }
+                    }
+                }
+
+                orignalBrush.apply(this, arguments);
+
+                if (modified) {
+                    for (var j = 0; j < shadowTemp.length; j++) {
+                        style[shadowTemp[j][0]] = shadowTemp[j][2];
+                    }
+                }
+            }
+
+            : orignalBrush;
+    };
+
+/**
+ * 扇形
+ * @module zrender/graphic/shape/Sector
+ */
+
+
+
+    
+    
+
+    var Sector = Path_1.extend({
+
+        type: 'sector',
+
+        shape: {
+
+            cx: 0,
+
+            cy: 0,
+
+            r0: 0,
+
+            r: 0,
+
+            startAngle: 0,
+
+            endAngle: Math.PI * 2,
+
+            clockwise: true
+        },
+
+        brush: fixClipWithShadow(Path_1.prototype.brush),
+
+        buildPath: function (ctx, shape) {
+
+            var x = shape.cx;
+            var y = shape.cy;
+            var r0 = Math.max(shape.r0 || 0, 0);
+            var r = Math.max(shape.r, 0);
+            var startAngle = shape.startAngle;
+            var endAngle = shape.endAngle;
+            var clockwise = shape.clockwise;
+
+            var unitX = Math.cos(startAngle);
+            var unitY = Math.sin(startAngle);
+
+            ctx.moveTo(unitX * r0 + x, unitY * r0 + y);
+
+            ctx.lineTo(unitX * r + x, unitY * r + y);
+
+            ctx.arc(x, y, r, startAngle, endAngle, !clockwise);
+
+            ctx.lineTo(
+                Math.cos(endAngle) * r0 + x,
+                Math.sin(endAngle) * r0 + y
+            );
+
+            if (r0 !== 0) {
+                ctx.arc(x, y, r0, endAngle, startAngle, clockwise);
+            }
+
+            ctx.closePath();
+        }
+    });
+
+/**
+ * n角星（n>3）
+ * @module zrender/graphic/shape/Star
+ */
+
+
+    var PI$1 = Math.PI;
+
+    var cos$2 = Math.cos;
+    var sin$2 = Math.sin;
+
+    var Star = Path_1.extend({
+        
+        type: 'star',
+
+        shape: {
+            cx: 0,
+            cy: 0,
+            n: 3,
+            r0: null,
+            r: 0
+        },
+
+        buildPath: function (ctx, shape) {
+
+            var n = shape.n;
+            if (!n || n < 2) {
+                return;
+            }
+
+            var x = shape.cx;
+            var y = shape.cy;
+            var r = shape.r;
+            var r0 = shape.r0;
+
+            // 如果未指定内部顶点外接圆半径，则自动计算
+            if (r0 == null) {
+                r0 = n > 4
+                    // 相隔的外部顶点的连线的交点，
+                    // 被取为内部交点，以此计算r0
+                    ? r * cos$2(2 * PI$1 / n) / cos$2(PI$1 / n)
+                    // 二三四角星的特殊处理
+                    : r / 3;
+            }
+
+            var dStep = PI$1 / n;
+            var deg = -PI$1 / 2;
+            var xStart = x + r * cos$2(deg);
+            var yStart = y + r * sin$2(deg);
+            deg += dStep;
+
+            // 记录边界点，用于判断inside
+            ctx.moveTo(xStart, yStart);
+            for (var i = 0, end = n * 2 - 1, ri; i < end; i++) {
+                ri = i % 2 === 0 ? r0 : r;
+                ctx.lineTo(x + ri * cos$2(deg), y + ri * sin$2(deg));
+                deg += dStep;
+            }
+            
+            ctx.closePath();
         }
     });
 
@@ -14834,7 +14921,14 @@ var poly = {
 
     var Gradient_1 = Gradient;
 
-/**
+'use strict';
+
+
+    
+
+    
+
+    /**
      * x, y, x2, y2 are all percent from 0 to 1
      * @param {number} [x=0]
      * @param {number} [y=0]
@@ -14874,7 +14968,14 @@ var poly = {
 
     var LinearGradient_1 = LinearGradient;
 
-/**
+'use strict';
+
+
+    
+
+    
+
+    /**
      * x, y, r are all percent from 0 to 1
      * @param {number} [x=0.5]
      * @param {number} [y=0.5]
@@ -15742,7 +15843,7 @@ var svgURI = 'http://www.w3.org/2000/svg';
     var svgTextDrawRectText = function (el, rect, textRect) {
         var style = el.style;
 
-        this.__dirty && text.normalizeTextStyle(style, true);
+        el.__dirty && text.normalizeTextStyle(style, true);
 
         var text$$2 = style.text;
         // Convert to string
@@ -16725,13 +16826,14 @@ var svgURI = 'http://www.w3.org/2000/svg';
      * @param {Displayable} displayable displayable element
      */
     ClippathManager.prototype.markUsed = function (displayable) {
+        var that = this;
         if (displayable.__clipPaths && displayable.__clipPaths.length > 0) {
             util_1.each(displayable.__clipPaths, function (clipPath) {
                 if (clipPath._dom) {
-                    Definable_1.prototype.markUsed.call(this, clipPath._dom);
+                    Definable_1.prototype.markUsed.call(that, clipPath._dom);
                 }
                 if (clipPath._textDom) {
-                    Definable_1.prototype.markUsed.call(this, clipPath._textDom);
+                    Definable_1.prototype.markUsed.call(that, clipPath._textDom);
                 }
             });
         }
@@ -18434,19 +18536,21 @@ zrender_1$2.Image = Image$1;
 zrender_1$2.CompoundPath = CompoundPath;
 zrender_1$2.Text = Text_1;
 
+zrender_1$2.Arc = Arc;
+zrender_1$2.BezierCurve = BezierCurve;
 zrender_1$2.Circle = Circle;
-zrender_1$2.Sector = Sector;
-zrender_1$2.Ring = Ring;
+zrender_1$2.Droplet = Droplet;
+zrender_1$2.Ellipse = Ellipse;
+zrender_1$2.Heart = Heart;
+zrender_1$2.Isogon = Isogon;
+zrender_1$2.Line = Line;
 zrender_1$2.Polygon = Polygon;
 zrender_1$2.Polyline = Polyline;
 zrender_1$2.Rect = Rect;
-zrender_1$2.Line = Line;
-zrender_1$2.BezierCurve = BezierCurve;
-zrender_1$2.Arc = Arc;
-zrender_1$2.Ellipse = Ellipse;
-zrender_1$2.Star = Star;
-zrender_1$2.Isogon = Isogon;
+zrender_1$2.Ring = Ring;
 zrender_1$2.Rose = Rose;
+zrender_1$2.Sector = Sector;
+zrender_1$2.Star = Star;
 zrender_1$2.Trochoid = Trochoid;
 
 zrender_1$2.LinearGradient = LinearGradient_1;
