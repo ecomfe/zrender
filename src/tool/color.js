@@ -130,7 +130,7 @@ define(function(require) {
         return m1;
     }
 
-    function lerp(a, b, p) {
+    function lerpNumber(a, b, p) {
         return a + (b - a) * p;
     }
 
@@ -396,13 +396,13 @@ define(function(require) {
     }
 
     /**
-     * Map value to color. Faster than mapToColor methods because color is represented by rgba array.
+     * Map value to color. Faster than lerp methods because color is represented by rgba array.
      * @param {number} normalizedValue A float between 0 and 1.
      * @param {Array.<Array.<number>>} colors List of rgba color array
      * @param {Array.<number>} [out] Mapped gba color array
      * @return {Array.<number>} will be null/undefined if input illegal.
      */
-    function fastMapToColor(normalizedValue, colors, out) {
+    function fastLerp(normalizedValue, colors, out) {
         if (!(colors && colors.length)
             || !(normalizedValue >= 0 && normalizedValue <= 1)
         ) {
@@ -417,13 +417,14 @@ define(function(require) {
         var leftColor = colors[leftIndex];
         var rightColor = colors[rightIndex];
         var dv = value - leftIndex;
-        out[0] = clampCssByte(lerp(leftColor[0], rightColor[0], dv));
-        out[1] = clampCssByte(lerp(leftColor[1], rightColor[1], dv));
-        out[2] = clampCssByte(lerp(leftColor[2], rightColor[2], dv));
-        out[3] = clampCssFloat(lerp(leftColor[3], rightColor[3], dv));
+        out[0] = clampCssByte(lerpNumber(leftColor[0], rightColor[0], dv));
+        out[1] = clampCssByte(lerpNumber(leftColor[1], rightColor[1], dv));
+        out[2] = clampCssByte(lerpNumber(leftColor[2], rightColor[2], dv));
+        out[3] = clampCssFloat(lerpNumber(leftColor[3], rightColor[3], dv));
 
         return out;
     }
+
     /**
      * @param {number} normalizedValue A float between 0 and 1.
      * @param {Array.<string>} colors Color list.
@@ -432,7 +433,7 @@ define(function(require) {
      *                           return {color: ..., leftIndex: ..., rightIndex: ..., value: ...},
      * @memberOf module:zrender/util/color
      */
-    function mapToColor(normalizedValue, colors, fullOutput) {
+    function lerp(normalizedValue, colors, fullOutput) {
         if (!(colors && colors.length)
             || !(normalizedValue >= 0 && normalizedValue <= 1)
         ) {
@@ -448,10 +449,10 @@ define(function(require) {
 
         var color = stringify(
             [
-                clampCssByte(lerp(leftColor[0], rightColor[0], dv)),
-                clampCssByte(lerp(leftColor[1], rightColor[1], dv)),
-                clampCssByte(lerp(leftColor[2], rightColor[2], dv)),
-                clampCssFloat(lerp(leftColor[3], rightColor[3], dv))
+                clampCssByte(lerpNumber(leftColor[0], rightColor[0], dv)),
+                clampCssByte(lerpNumber(leftColor[1], rightColor[1], dv)),
+                clampCssByte(lerpNumber(leftColor[2], rightColor[2], dv)),
+                clampCssFloat(lerpNumber(leftColor[3], rightColor[3], dv))
             ],
             'rgba'
         );
@@ -522,8 +523,10 @@ define(function(require) {
         parse: parse,
         lift: lift,
         toHex: toHex,
-        fastMapToColor: fastMapToColor,
-        mapToColor: mapToColor,
+        fastLerp: fastLerp,
+        fastMapToColor: fastLerp, // Deprecated
+        lerp: lerp,
+        mapToColor: lerp, // Deprecated
         modifyHSL: modifyHSL,
         modifyAlpha: modifyAlpha,
         stringify: stringify
