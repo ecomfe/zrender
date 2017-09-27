@@ -1,6 +1,6 @@
 {
   "name": "zrender",
-  "version": "3.6.1",
+  "version": "3.6.2",
   "description": "A lightweight canvas library.",
   "keywords": [
     "canvas",
@@ -36,6 +36,7 @@
   "license": "BSD",
   "devDependencies": {
     "jsdiff": "^1.1.1",
+    "rollup": "^0.50.0",
     "rollup-plugin-commonjs": "^8.2.1",
     "rollup-plugin-node-resolve": "^3.0.0"
   }
