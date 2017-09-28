@@ -171,7 +171,7 @@ define(function(require) {
             }
             // Stop all previous animations
             this.stopAnimation();
-            this._animateToShallow('', this, target, time, delay, easing, callback);
+            this._animateToShallow('', this, target, time, delay);
 
             // Animators may be removed immediately after start
             // if there is nothing to animate

@@ -364,7 +364,7 @@ define(function(require) {
      * @param {Array} obj
      * @param {Function} cb
      * @param {*} [context]
-     * @return {Array}
+     * @return {*}
      */
     function find(obj, cb, context) {
         if (!(obj && cb)) {
