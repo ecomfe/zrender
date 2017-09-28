@@ -95,7 +95,7 @@ define(function (require) {
             stroke = stroke === 'transparent' ? NONE : stroke;
             attr(svgEl, 'stroke', stroke);
             var strokeWidth = isText
-                ? style.textLineWidth
+                ? style.textStrokeWidth
                 : style.lineWidth;
             var strokeScale = style.strokeNoScale
                 ? style.host.getLineScale()

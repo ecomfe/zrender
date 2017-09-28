@@ -122,12 +122,12 @@ define(function (require) {
         // `textBaseline` is set as 'middle'.
         textY += lineHeight / 2;
 
-        var textLineWidth = style.textLineWidth;
-        var textStroke = getStroke(style.textStroke, textLineWidth);
+        var textStrokeWidth = style.textStrokeWidth;
+        var textStroke = getStroke(style.textStroke, textStrokeWidth);
         var textFill = getFill(style.textFill);
 
         if (textStroke) {
-            setCtx(ctx, 'lineWidth', textLineWidth);
+            setCtx(ctx, 'lineWidth', textStrokeWidth);
             setCtx(ctx, 'strokeStyle', textStroke);
         }
         if (textFill) {
@@ -294,13 +294,13 @@ define(function (require) {
 
         setCtx(ctx, 'font', token.font || textContain.DEFAULT_FONT);
 
-        var textStroke = getStroke(tokenStyle.textStroke || style.textStroke, textLineWidth);
+        var textStroke = getStroke(tokenStyle.textStroke || style.textStroke, textStrokeWidth);
         var textFill = getFill(tokenStyle.textFill || style.textFill);
-        var textLineWidth = retrieve2(tokenStyle.textLineWidth, style.textLineWidth);
+        var textStrokeWidth = retrieve2(tokenStyle.textStrokeWidth, style.textStrokeWidth);
 
         // Fill after stroke so the outline will not cover the main part.
         if (textStroke) {
-            setCtx(ctx, 'lineWidth', textLineWidth);
+            setCtx(ctx, 'lineWidth', textStrokeWidth);
             setCtx(ctx, 'strokeStyle', textStroke);
             ctx.strokeText(token.text, x, y);
         }
@@ -415,7 +415,8 @@ define(function (require) {
     function setCtx(ctx, prop, value) {
         // FIXME ??? performance try
         // if (ctx.__currentValues[prop] !== value) {
-            ctx[prop] = ctx.__currentValues[prop] = value;
+            // ctx[prop] = ctx.__currentValues[prop] = value;
+        ctx[prop] = value;
         // }
         return ctx[prop];
     }

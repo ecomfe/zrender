@@ -80,8 +80,8 @@ define(function (require) {
                 rect.x += style.x || 0;
                 rect.y += style.y || 0;
 
-                if (textHelper.getStroke(style.textStroke, style.textLineWidth)) {
-                    var w = style.textLineWidth;
+                if (textHelper.getStroke(style.textStroke, style.textStrokeWidth)) {
+                    var w = style.textStrokeWidth;
                     rect.x -= w / 2;
                     rect.y -= w / 2;
                     rect.width += w;

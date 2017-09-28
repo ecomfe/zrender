@@ -3,5 +3,6 @@ cd ${basePath}/../
 rm -r dist
 
 npm run prepublish
-rollup -c
+
+./node_modules/.bin/rollup -c
 uglifyjs ./dist/zrender.js -m -c -o ./dist/zrender.min.js

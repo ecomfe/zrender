@@ -3,8 +3,6 @@
  */
 define(function (require) {
 
-    var textHelper = require('./helper/text');
-
     var STYLE_COMMON_PROPS = [
         ['shadowBlur', 0], ['shadowOffsetX', 0], ['shadowOffsetY', 0], ['shadowColor', '#000'],
         ['lineCap', 'butt'], ['lineJoin', 'miter'], ['miterLimit', 10]
@@ -194,11 +192,11 @@ define(function (require) {
         /**
          * textStroke may be set as some color as a default
          * value in upper applicaion, where the default value
-         * of textLineWidth should be 0 to make sure that
+         * of textStrokeWidth should be 0 to make sure that
          * user can choose to do not use text stroke.
          * @type {number}
          */
-        textLineWidth: 0,
+        textStrokeWidth: 0,
 
         /**
          * @type {number}
