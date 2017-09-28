@@ -10690,7 +10690,7 @@ var retrieve3$1 = util_1.retrieve3;
     /**
      * @type {string}
      */
-    zrender.version = '3.6.2';
+    zrender.version = '3.6.3';
 
     /**
      * Initializing a zrender instance
