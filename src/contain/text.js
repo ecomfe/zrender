@@ -463,7 +463,7 @@ define(function (require) {
 
         var lastIndex = STYLE_REG.lastIndex = 0;
         var result;
-        while ((result = STYLE_REG.exec(text)) != null)  {
+        while ((result = STYLE_REG.exec(text)) != null) {
             var matchedIndex = result.index;
             if (matchedIndex > lastIndex) {
                 pushTokens(contentBlock, text.substring(lastIndex, matchedIndex));
