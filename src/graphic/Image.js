@@ -33,7 +33,12 @@ define(function (require) {
             // Must bind each time
             style.bind(ctx, this, prevEl);
 
-            var image = this._image = imageHelper.createOrUpdateImage(src, this._image, this);
+            var image = this._image = imageHelper.createOrUpdateImage(
+                src,
+                this._image,
+                this,
+                this.onload
+            );
 
             if (!image || !imageHelper.isImageReady(image)) {
                 return;
