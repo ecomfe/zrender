@@ -1,30 +1,28 @@
 /**
  * @module zrender/graphic/shape/Polyline
  */
-define(function (require) {
 
-    var polyHelper = require('../helper/poly');
+var polyHelper = require('../helper/poly');
 
-    return require('../Path').extend({
-        
-        type: 'polyline',
+return require('../Path').extend({
 
-        shape: {
-            points: null,
+    type: 'polyline',
 
-            smooth: false,
+    shape: {
+        points: null,
 
-            smoothConstraint: null
-        },
+        smooth: false,
 
-        style: {
-            stroke: '#000',
+        smoothConstraint: null
+    },
 
-            fill: null
-        },
+    style: {
+        stroke: '#000',
 
-        buildPath: function (ctx, shape) {
-            polyHelper.buildPath(ctx, shape, false);
-        }
-    });
+        fill: null
+    },
+
+    buildPath: function (ctx, shape) {
+        polyHelper.buildPath(ctx, shape, false);
+    }
 });

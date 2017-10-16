@@ -1,6 +1,5 @@
 // http://www.w3.org/TR/NOTE-VML
 // TODO Use proxy like svg instead of overwrite brush methods
-define(function (require) {
 
 if (!require('../core/env').canvasSupported) {
     var vec2 = require('../core/vector');
@@ -1066,4 +1065,3 @@ if (!require('../core/env').canvasSupported) {
         this.appendRectText(vmlRoot);
     };
 }
-});

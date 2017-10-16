@@ -1,4 +1,3 @@
-define(function (require, exports, module) {
 
 if (!require('../core/env').canvasSupported) {
     var urn = 'urn:schemas-microsoft-com:vml';
@@ -45,4 +44,3 @@ if (!require('../core/env').canvasSupported) {
         createNode: createNode
     };
 }
-});

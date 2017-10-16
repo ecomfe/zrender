@@ -1,4 +1,2 @@
-define(function (require) {
-    require('./graphic');
-    require('../zrender').registerPainter('svg', require('./Painter'));
-});
+require('./graphic');
+require('../zrender').registerPainter('svg', require('./Painter'));
