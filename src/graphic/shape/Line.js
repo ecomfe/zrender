@@ -2,7 +2,10 @@
  * 直线
  * @module zrender/graphic/shape/Line
  */
-return require('../Path').extend({
+
+import Path from '../Path';
+
+export default Path.extend({
 
     type: 'line',
 

@@ -1,7 +1,5 @@
-
-var zrUtil = require('../core/util');
-
-var Gradient = require('./Gradient');
+import * as zrUtil from '../core/util';
+import Gradient from './Gradient';
 
 /**
  * x, y, r are all percent from 0 to 1
@@ -38,4 +36,4 @@ RadialGradient.prototype = {
 
 zrUtil.inherits(RadialGradient, Gradient);
 
-return RadialGradient;
+export default RadialGradient;

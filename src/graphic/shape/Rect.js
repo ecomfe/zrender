@@ -3,9 +3,10 @@
  * @module zrender/graphic/shape/Rect
  */
 
-var roundRectHelper = require('../helper/roundRect');
+import Path from '../Path';
+import * as roundRectHelper from '../helper/roundRect';
 
-return require('../Path').extend({
+export default Path.extend({
 
     type: 'rect',
 

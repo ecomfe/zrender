@@ -2,20 +2,19 @@
  * @author Yi Shen(https://github.com/pissang)
  */
 
-var vec2 = require('./vector');
-var curve = require('./curve');
+import * as vec2 from './vector';
+import * as curve from './curve';
 
-var bbox = {};
 var mathMin = Math.min;
 var mathMax = Math.max;
 var mathSin = Math.sin;
 var mathCos = Math.cos;
+var PI2 = Math.PI * 2;
 
 var start = vec2.create();
 var end = vec2.create();
 var extremity = vec2.create();
 
-var PI2 = Math.PI * 2;
 /**
  * 从顶点数组中计算出最小包围盒，写入`min`和`max`中
  * @module zrender/core/bbox
@@ -23,7 +22,7 @@ var PI2 = Math.PI * 2;
  * @param {number} min
  * @param {number} max
  */
-bbox.fromPoints = function(points, min, max) {
+export function fromPoints(points, min, max) {
     if (points.length === 0) {
         return;
     }
@@ -46,7 +45,7 @@ bbox.fromPoints = function(points, min, max) {
     min[1] = top;
     max[0] = right;
     max[1] = bottom;
-};
+}
 
 /**
  * @memberOf module:zrender/core/bbox
@@ -57,12 +56,12 @@ bbox.fromPoints = function(points, min, max) {
  * @param {Array.<number>} min
  * @param {Array.<number>} max
  */
-bbox.fromLine = function (x0, y0, x1, y1, min, max) {
+export function fromLine(x0, y0, x1, y1, min, max) {
     min[0] = mathMin(x0, x1);
     min[1] = mathMin(y0, y1);
     max[0] = mathMax(x0, x1);
     max[1] = mathMax(y0, y1);
-};
+}
 
 var xDim = [];
 var yDim = [];
@@ -80,7 +79,7 @@ var yDim = [];
  * @param {Array.<number>} min
  * @param {Array.<number>} max
  */
-bbox.fromCubic = function(
+export function fromCubic(
     x0, y0, x1, y1, x2, y2, x3, y3, min, max
 ) {
     var cubicExtrema = curve.cubicExtrema;
@@ -113,7 +112,7 @@ bbox.fromCubic = function(
     max[1] = mathMax(y0, max[1]);
     min[1] = mathMin(y3, min[1]);
     max[1] = mathMax(y3, max[1]);
-};
+}
 
 /**
  * 从二阶贝塞尔曲线(p0, p1, p2)中计算出最小包围盒，写入`min`和`max`中
@@ -127,7 +126,7 @@ bbox.fromCubic = function(
  * @param {Array.<number>} min
  * @param {Array.<number>} max
  */
-bbox.fromQuadratic = function(x0, y0, x1, y1, x2, y2, min, max) {
+export function fromQuadratic(x0, y0, x1, y1, x2, y2, min, max) {
     var quadraticExtremum = curve.quadraticExtremum;
     var quadraticAt = curve.quadraticAt;
     // Find extremities, where derivative in x dim or y dim is zero
@@ -147,7 +146,7 @@ bbox.fromQuadratic = function(x0, y0, x1, y1, x2, y2, min, max) {
     min[1] = mathMin(y0, y2, y);
     max[0] = mathMax(x0, x2, x);
     max[1] = mathMax(y0, y2, y);
-};
+}
 
 /**
  * 从圆弧中计算出最小包围盒，写入`min`和`max`中
@@ -163,7 +162,7 @@ bbox.fromQuadratic = function(x0, y0, x1, y1, x2, y2, min, max) {
  * @param {Array.<number>} min
  * @param {Array.<number>} max
  */
-bbox.fromArc = function (
+export function fromArc(
     x, y, rx, ry, startAngle, endAngle, anticlockwise, min, max
 ) {
     var vec2Min = vec2.min;
@@ -223,6 +222,4 @@ bbox.fromArc = function (
             vec2Max(max, extremity, max);
         }
     }
-};
-
-return bbox;
+}

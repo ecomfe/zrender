@@ -2,12 +2,13 @@
  * @module echarts/core/BoundingRect
  */
 
-var vec2 = require('./vector');
-var matrix = require('./matrix');
+import * as vec2 from './vector';
+import * as matrix from './matrix';
 
 var v2ApplyTransform = vec2.applyTransform;
 var mathMin = Math.min;
 var mathMax = Math.max;
+
 /**
  * @alias module:echarts/core/BoundingRect
  */
@@ -193,4 +194,4 @@ BoundingRect.create = function (rect) {
     return new BoundingRect(rect.x, rect.y, rect.width, rect.height);
 };
 
-return BoundingRect;
+export default BoundingRect;

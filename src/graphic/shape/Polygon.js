@@ -3,9 +3,10 @@
  * @module zrender/shape/Polygon
  */
 
-var polyHelper = require('../helper/poly');
+import Path from '../Path';
+import * as polyHelper from '../helper/poly';
 
-return require('../Path').extend({
+export default Path.extend({
 
     type: 'polygon',
 

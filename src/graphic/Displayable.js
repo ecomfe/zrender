@@ -5,13 +5,10 @@
  */
 
 
-var zrUtil = require('../core/util');
-
-var Style = require('./Style');
-
-var Element = require('../Element');
-var RectText = require('./mixin/RectText');
-// var Stateful = require('./mixin/Stateful');
+import * as zrUtil from '../core/util';
+import Style from './Style';
+import Element from '../Element';
+import RectText from './mixin/RectText';
 
 /**
  * @alias module:zrender/graphic/Displayable
@@ -264,4 +261,4 @@ zrUtil.inherits(Displayable, Element);
 zrUtil.mixin(Displayable, RectText);
 // zrUtil.mixin(Displayable, Stateful);
 
-return Displayable;
+export default Displayable;

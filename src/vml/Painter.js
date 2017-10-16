@@ -4,9 +4,9 @@
  * @module zrender/vml/Painter
  */
 
-
-var zrLog = require('../core/log');
-var vmlCore = require('./core');
+import zrLog from '../core/log';
+import * as vmlCore from './core';
+import {each} from '../core/util';
 
 function parseInt10(val) {
     return parseInt(val, 10);
@@ -191,14 +191,12 @@ function createMethodNotSupport(method) {
     };
 }
 
-var notSupportedMethods = [
+// Unsupported methods
+each([
     'getLayer', 'insertLayer', 'eachLayer', 'eachBuiltinLayer', 'eachOtherLayer', 'getLayers',
     'modLayer', 'delLayer', 'clearLayer', 'toDataURL', 'pathToImage'
-];
-
-for (var i = 0; i < notSupportedMethods.length; i++) {
-    var name = notSupportedMethods[i];
+], function (name) {
     VMLPainter.prototype[name] = createMethodNotSupport(name);
-}
+});
 
-return VMLPainter;
+export default VMLPainter;

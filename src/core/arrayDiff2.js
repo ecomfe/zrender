@@ -170,6 +170,6 @@ function clonePath(path) {
 
 var arrayDiff = new Diff();
 
-return function (oldArr, newArr, callback) {
+export default function (oldArr, newArr, callback) {
     return arrayDiff.diff(oldArr, newArr, callback);
-};
+}

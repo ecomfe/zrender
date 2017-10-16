@@ -3,10 +3,10 @@
  * @author pissang(https://www.github.com/pissang)
  */
 
-var util = require('./core/util');
-var config = require('./config');
-var Style = require('./graphic/Style');
-var Pattern = require('./graphic/Pattern');
+import * as util from './core/util';
+import {devicePixelRatio} from './config';
+import Style from './graphic/Style';
+import Pattern from './graphic/Pattern';
 
 function returnFalse() {
     return false;
@@ -50,7 +50,7 @@ function createDom(id, painter, dpr) {
  */
 var Layer = function(id, painter, dpr) {
     var dom;
-    dpr = dpr || config.devicePixelRatio;
+    dpr = dpr || devicePixelRatio;
     if (typeof id === 'string') {
         dom = createDom(id, painter, dpr);
     }
@@ -225,4 +225,4 @@ Layer.prototype = {
     }
 };
 
-return Layer;
+export default Layer;

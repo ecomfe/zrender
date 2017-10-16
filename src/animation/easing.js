@@ -339,4 +339,4 @@ var easing = {
     }
 };
 
-return easing;
+export default easing;

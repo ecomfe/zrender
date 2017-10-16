@@ -4,9 +4,11 @@
  * @author pissang(https://www.github.com/pissang)
  */
 
-var vec2 = require('./vector');
-var v2Create = vec2.create;
-var v2DistSquare = vec2.distSquare;
+import {
+    create as v2Create,
+    distSquare as v2DistSquare
+} from './vector';
+
 var mathPow = Math.pow;
 var mathSqrt = Math.sqrt;
 
@@ -20,7 +22,6 @@ var ONE_THIRD = 1 / 3;
 var _v0 = v2Create();
 var _v1 = v2Create();
 var _v2 = v2Create();
-// var _v3 = vec2.create();
 
 function isAroundZero(val) {
     return val > -EPSILON && val < EPSILON;
@@ -38,7 +39,7 @@ function isNotAroundZero(val) {
  * @param  {number} t
  * @return {number}
  */
-function cubicAt(p0, p1, p2, p3, t) {
+export function cubicAt(p0, p1, p2, p3, t) {
     var onet = 1 - t;
     return onet * onet * (onet * p0 + 3 * t * p1)
             + t * t * (t * p3 + 3 * onet * p2);
@@ -54,7 +55,7 @@ function cubicAt(p0, p1, p2, p3, t) {
  * @param  {number} t
  * @return {number}
  */
-function cubicDerivativeAt(p0, p1, p2, p3, t) {
+export function cubicDerivativeAt(p0, p1, p2, p3, t) {
     var onet = 1 - t;
     return 3 * (
         ((p1 - p0) * onet + 2 * (p2 - p1) * t) * onet
@@ -73,7 +74,7 @@ function cubicDerivativeAt(p0, p1, p2, p3, t) {
  * @param  {Array.<number>} roots
  * @return {number} 有效根数目
  */
-function cubicRootAt(p0, p1, p2, p3, val, roots) {
+export function cubicRootAt(p0, p1, p2, p3, val, roots) {
     // Evaluate roots of cubic functions
     var a = p3 + 3 * (p1 - p2) - p0;
     var b = 3 * (p2 - p1 * 2 + p0);
@@ -165,7 +166,7 @@ function cubicRootAt(p0, p1, p2, p3, val, roots) {
  * @param  {Array.<number>} extrema
  * @return {number} 有效数目
  */
-function cubicExtrema(p0, p1, p2, p3, extrema) {
+export function cubicExtrema(p0, p1, p2, p3, extrema) {
     var b = 6 * p2 - 12 * p1 + 6 * p0;
     var a = 9 * p1 + 3 * p3 - 3 * p0 - 9 * p2;
     var c = 3 * p1 - 3 * p0;
@@ -209,7 +210,7 @@ function cubicExtrema(p0, p1, p2, p3, extrema) {
  * @param  {number} t
  * @param  {Array.<number>} out
  */
-function cubicSubdivide(p0, p1, p2, p3, t, out) {
+export function cubicSubdivide(p0, p1, p2, p3, t, out) {
     var p01 = (p1 - p0) * t + p0;
     var p12 = (p2 - p1) * t + p1;
     var p23 = (p3 - p2) * t + p2;
@@ -246,7 +247,7 @@ function cubicSubdivide(p0, p1, p2, p3, t, out) {
  * @param {Array.<number>} [out] 投射点
  * @return {number}
  */
-function cubicProjectPoint(
+export function cubicProjectPoint(
     x0, y0, x1, y1, x2, y2, x3, y3,
     x, y, out
 ) {
@@ -324,7 +325,7 @@ function cubicProjectPoint(
  * @param  {number} t
  * @return {number}
  */
-function quadraticAt(p0, p1, p2, t) {
+export function quadraticAt(p0, p1, p2, t) {
     var onet = 1 - t;
     return onet * (onet * p0 + 2 * t * p1) + t * t * p2;
 }
@@ -337,7 +338,7 @@ function quadraticAt(p0, p1, p2, t) {
  * @param  {number} t
  * @return {number}
  */
-function quadraticDerivativeAt(p0, p1, p2, t) {
+export function quadraticDerivativeAt(p0, p1, p2, t) {
     return 2 * ((1 - t) * (p1 - p0) + t * (p2 - p1));
 }
 
@@ -350,7 +351,7 @@ function quadraticDerivativeAt(p0, p1, p2, t) {
  * @param  {Array.<number>} roots
  * @return {number} 有效根数目
  */
-function quadraticRootAt(p0, p1, p2, val, roots) {
+export function quadraticRootAt(p0, p1, p2, val, roots) {
     var a = p0 - 2 * p1 + p2;
     var b = 2 * (p1 - p0);
     var c = p0 - val;
@@ -395,7 +396,7 @@ function quadraticRootAt(p0, p1, p2, val, roots) {
  * @param  {number} p2
  * @return {number}
  */
-function quadraticExtremum(p0, p1, p2) {
+export function quadraticExtremum(p0, p1, p2) {
     var divider = p0 + p2 - 2 * p1;
     if (divider === 0) {
         // p1 is center of p0 and p2
@@ -415,7 +416,7 @@ function quadraticExtremum(p0, p1, p2) {
  * @param  {number} t
  * @param  {Array.<number>} out
  */
-function quadraticSubdivide(p0, p1, p2, t, out) {
+export function quadraticSubdivide(p0, p1, p2, t, out) {
     var p01 = (p1 - p0) * t + p0;
     var p12 = (p2 - p1) * t + p1;
     var p012 = (p12 - p01) * t + p01;
@@ -445,7 +446,7 @@ function quadraticSubdivide(p0, p1, p2, t, out) {
  * @param {Array.<number>} out 投射点
  * @return {number}
  */
-function quadraticProjectPoint(
+export function quadraticProjectPoint(
     x0, y0, x1, y1, x2, y2,
     x, y, out
 ) {
@@ -509,30 +510,3 @@ function quadraticProjectPoint(
     // console.log(interval, i);
     return mathSqrt(d);
 }
-
-return {
-
-    cubicAt: cubicAt,
-
-    cubicDerivativeAt: cubicDerivativeAt,
-
-    cubicRootAt: cubicRootAt,
-
-    cubicExtrema: cubicExtrema,
-
-    cubicSubdivide: cubicSubdivide,
-
-    cubicProjectPoint: cubicProjectPoint,
-
-    quadraticAt: quadraticAt,
-
-    quadraticDerivativeAt: quadraticDerivativeAt,
-
-    quadraticRootAt: quadraticRootAt,
-
-    quadraticExtremum: quadraticExtremum,
-
-    quadraticSubdivide: quadraticSubdivide,
-
-    quadraticProjectPoint: quadraticProjectPoint
-};

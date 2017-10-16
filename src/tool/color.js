@@ -1,8 +1,4 @@
-/**
- * @module zrender/tool/color
- */
-
-var LRU = require('../core/LRU');
+import LRU from '../core/LRU';
 
 var kCSSColorTable = {
     'transparent': [0,0,0,0], 'aliceblue': [240,248,255,1],
@@ -141,8 +137,10 @@ function copyRgba(out, a) {
     out[0] = a[0]; out[1] = a[1]; out[2] = a[2]; out[3] = a[3];
     return out;
 }
+
 var colorCache = new LRU(20);
 var lastRemovedArr = null;
+
 function putToCache(colorStr, rgbaArr) {
     // Reuse removed array
     if (lastRemovedArr) {
@@ -150,13 +148,14 @@ function putToCache(colorStr, rgbaArr) {
     }
     lastRemovedArr = colorCache.put(colorStr, lastRemovedArr || (rgbaArr.slice()));
 }
+
 /**
  * @param {string} colorStr
  * @param {Array.<number>} out
  * @return {Array.<number>}
  * @memberOf module:zrender/util/color
  */
-function parse(colorStr, rgbaArr) {
+export function parse(colorStr, rgbaArr) {
     if (!colorStr) {
         return;
     }
@@ -367,7 +366,7 @@ function rgba2hsla(rgba) {
  * @return {string}
  * @memberOf module:zrender/util/color
  */
-function lift(color, level) {
+export function lift(color, level) {
     var colorArr = parse(color);
     if (colorArr) {
         for (var i = 0; i < 3; i++) {
@@ -387,7 +386,7 @@ function lift(color, level) {
  * @return {string}
  * @memberOf module:zrender/util/color
  */
-function toHex(color) {
+export function toHex(color) {
     var colorArr = parse(color);
     if (colorArr) {
         return ((1 << 24) + (colorArr[0] << 16) + (colorArr[1] << 8) + (+colorArr[2])).toString(16).slice(1);
@@ -401,7 +400,7 @@ function toHex(color) {
  * @param {Array.<number>} [out] Mapped gba color array
  * @return {Array.<number>} will be null/undefined if input illegal.
  */
-function fastLerp(normalizedValue, colors, out) {
+export function fastLerp(normalizedValue, colors, out) {
     if (!(colors && colors.length)
         || !(normalizedValue >= 0 && normalizedValue <= 1)
     ) {
@@ -425,6 +424,11 @@ function fastLerp(normalizedValue, colors, out) {
 }
 
 /**
+ * @deprecated
+ */
+export var fastMapToColor = fastLerp;
+
+/**
  * @param {number} normalizedValue A float between 0 and 1.
  * @param {Array.<string>} colors Color list.
  * @param {boolean=} fullOutput Default false.
@@ -432,7 +436,7 @@ function fastLerp(normalizedValue, colors, out) {
  *                           return {color: ..., leftIndex: ..., rightIndex: ..., value: ...},
  * @memberOf module:zrender/util/color
  */
-function lerp(normalizedValue, colors, fullOutput) {
+export function lerp(normalizedValue, colors, fullOutput) {
     if (!(colors && colors.length)
         || !(normalizedValue >= 0 && normalizedValue <= 1)
     ) {
@@ -467,6 +471,11 @@ function lerp(normalizedValue, colors, fullOutput) {
 }
 
 /**
+ * @deprecated
+ */
+export var mapToColor = lerp;
+
+/**
  * @param {string} color
  * @param {number=} h 0 ~ 360, ignore when null.
  * @param {number=} s 0 ~ 1, ignore when null.
@@ -474,7 +483,7 @@ function lerp(normalizedValue, colors, fullOutput) {
  * @return {string} Color string in rgba format.
  * @memberOf module:zrender/util/color
  */
-function modifyHSL(color, h, s, l) {
+export function modifyHSL(color, h, s, l) {
     color = parse(color);
 
     if (color) {
@@ -493,7 +502,7 @@ function modifyHSL(color, h, s, l) {
  * @return {string} Color string in rgba format.
  * @memberOf module:zrender/util/color
  */
-function modifyAlpha(color, alpha) {
+export function modifyAlpha(color, alpha) {
     color = parse(color);
 
     if (color && alpha != null) {
@@ -507,7 +516,7 @@ function modifyAlpha(color, alpha) {
  * @param {string} type 'rgba', 'hsva', ...
  * @return {string} Result color. (If input illegal, return undefined).
  */
-function stringify(arrColor, type) {
+export function stringify(arrColor, type) {
     if (!arrColor || !arrColor.length) {
         return;
     }
@@ -517,16 +526,3 @@ function stringify(arrColor, type) {
     }
     return type + '(' + colorStr + ')';
 }
-
-return {
-    parse: parse,
-    lift: lift,
-    toHex: toHex,
-    fastLerp: fastLerp,
-    fastMapToColor: fastLerp, // Deprecated
-    lerp: lerp,
-    mapToColor: lerp, // Deprecated
-    modifyHSL: modifyHSL,
-    modifyAlpha: modifyAlpha,
-    stringify: stringify
-};

@@ -1,8 +1,8 @@
 // CompoundPath to improve performance
 
-var Path = require('./Path');
+import Path from './Path';
 
-return Path.extend({
+export default Path.extend({
 
     type: 'compound',
 

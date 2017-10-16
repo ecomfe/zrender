@@ -1,27 +1,29 @@
 
-var textContain = require('../../contain/text');
-var util = require('../../core/util');
-var roundRectHelper = require('./roundRect');
-var imageHelper = require('./image');
-
-var retrieve3 = util.retrieve3;
-var retrieve2 = util.retrieve2;
+import {
+    retrieve2,
+    retrieve3,
+    each,
+    normalizeCssArray,
+    isString,
+    isObject
+} from '../../core/util';
+import * as textContain from '../../contain/text';
+import * as roundRectHelper from './roundRect';
+import * as imageHelper from './image';
 
 // TODO: Have not support 'start', 'end' yet.
 var VALID_TEXT_ALIGN = {left: 1, right: 1, center: 1};
 var VALID_TEXT_VERTICAL_ALIGN = {top: 1, bottom: 1, middle: 1};
 
-var helper = {};
-
 /**
  * @param {module:zrender/graphic/Style} style
  * @return {module:zrender/graphic/Style} The input style.
  */
-helper.normalizeTextStyle = function (style) {
+export function normalizeTextStyle(style) {
     normalizeStyle(style);
-    util.each(style.rich, normalizeStyle);
+    each(style.rich, normalizeStyle);
     return style;
-};
+}
 
 function normalizeStyle(style) {
     if (style) {
@@ -43,7 +45,7 @@ function normalizeStyle(style) {
 
         var textPadding = style.textPadding;
         if (textPadding) {
-            style.textPadding = util.normalizeCssArray(style.textPadding);
+            style.textPadding = normalizeCssArray(style.textPadding);
         }
     }
 }
@@ -55,11 +57,11 @@ function normalizeStyle(style) {
  * @param {Object|boolean} [rect] {x, y, width, height}
  *                  If set false, rect text is not used.
  */
-helper.renderText = function (hostEl, ctx, text, style, rect) {
+export function renderText(hostEl, ctx, text, style, rect) {
     style.rich
         ? renderRichText(hostEl, ctx, text, style, rect)
         : renderPlainText(hostEl, ctx, text, style, rect);
-};
+}
 
 function renderPlainText(hostEl, ctx, text, style, rect) {
     var font = setCtx(ctx, 'font', style.font || textContain.DEFAULT_FONT);
@@ -320,7 +322,7 @@ function drawBackground(hostEl, ctx, style, x, y, width, height) {
     var textBackgroundColor = style.textBackgroundColor;
     var textBorderWidth = style.textBorderWidth;
     var textBorderColor = style.textBorderColor;
-    var isPlainBg = util.isString(textBackgroundColor);
+    var isPlainBg = isString(textBackgroundColor);
 
     setCtx(ctx, 'shadowBlur', style.textBoxShadowBlur || 0);
     setCtx(ctx, 'shadowColor', style.textBoxShadowColor || 'transparent');
@@ -345,7 +347,7 @@ function drawBackground(hostEl, ctx, style, x, y, width, height) {
         setCtx(ctx, 'fillStyle', textBackgroundColor);
         ctx.fill();
     }
-    else if (util.isObject(textBackgroundColor)) {
+    else if (isObject(textBackgroundColor)) {
         var image = textBackgroundColor.image;
 
         image = imageHelper.createOrUpdateImage(
@@ -425,23 +427,23 @@ function setCtx(ctx, prop, value) {
  * @param {string} [lineWidth] If specified, do not check style.textStroke.
  * @param {number} style
  */
-var getStroke = helper.getStroke = function (stroke, lineWidth) {
+export function getStroke(stroke, lineWidth) {
     return (stroke == null || lineWidth <= 0 || stroke === 'transparent' || stroke === 'none')
         ? null
         // TODO pattern and gradient?
         : (stroke.image || stroke.colorStops)
         ? '#000'
         : stroke;
-};
+}
 
-var getFill = helper.getFill = function (fill) {
+export function getFill(fill) {
     return (fill == null || fill === 'none')
         ? null
         // TODO pattern and gradient?
         : (fill.image || fill.colorStops)
         ? '#000'
         : fill;
-};
+}
 
 function parsePercent(value, maxValue) {
     if (typeof value === 'string') {
@@ -466,13 +468,11 @@ function getTextXForPadding(x, textAlign, textPadding) {
  * @param {module:zrender/Style} style
  * @return {boolean}
  */
-helper.needDrawText = function (text, style) {
+export function needDrawText(text, style) {
     return text != null
         && (text
             || style.textBackgroundColor
             || (style.textBorderWidth && style.textBorderColor)
             || style.textPadding
         );
-};
-
-return helper;
+}

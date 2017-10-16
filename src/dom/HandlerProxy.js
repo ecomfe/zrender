@@ -1,13 +1,13 @@
 
-var eventTool = require('../core/event');
-var zrUtil = require('../core/util');
-var Eventful = require('../mixin/Eventful');
-var env = require('../core/env');
-var GestureMgr = require('../core/GestureMgr');
-
-var addEventListener = eventTool.addEventListener;
-var removeEventListener = eventTool.removeEventListener;
-var normalizeEvent = eventTool.normalizeEvent;
+import {
+    addEventListener,
+    removeEventListener,
+    normalizeEvent
+} from '../core/event';
+import * as zrUtil from '../core/util';
+import Eventful from '../mixin/Eventful';
+import env from '../core/env';
+import GestureMgr from '../core/GestureMgr';
 
 var TOUCH_CLICK_DELAY = 300;
 
@@ -374,4 +374,4 @@ handlerDomProxyProto.setCursor = function (cursorStyle) {
 
 zrUtil.mixin(HandlerDomProxy, Eventful);
 
-return HandlerDomProxy;
+export default HandlerDomProxy;

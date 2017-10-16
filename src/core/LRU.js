@@ -192,4 +192,4 @@ LRUProto.clear = function () {
     this._map = {};
 };
 
-return LRU;
+export default LRU;

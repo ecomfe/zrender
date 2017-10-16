@@ -3,11 +3,13 @@
  * @module zrender/graphic/shape/Rose
  */
 
+import Path from '../Path';
+
 var sin = Math.sin;
 var cos = Math.cos;
 var radian = Math.PI / 180;
 
-return require('../Path').extend({
+export default Path.extend({
 
     type: 'rose',
 

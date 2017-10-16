@@ -1,17 +1,7 @@
-/**
- * Text element
- * @module zrender/graphic/Text
- *
- * TODO Wrapping
- *
- * Text not support gradient
- */
-
-
-var Displayable = require('./Displayable');
-var zrUtil = require('../core/util');
-var textContain = require('../contain/text');
-var textHelper = require('./helper/text');
+import Displayable from './Displayable';
+import * as zrUtil from '../core/util';
+import * as textContain from '../contain/text';
+import * as textHelper from './helper/text';
 
 /**
  * @alias zrender/graphic/Text
@@ -19,7 +9,7 @@ var textHelper = require('./helper/text');
  * @constructor
  * @param {Object} opts
  */
-var Text = function (opts) {
+var Text = function (opts) { // jshint ignore:line
     Displayable.call(this, opts);
 };
 
@@ -96,4 +86,4 @@ Text.prototype = {
 
 zrUtil.inherits(Text, Displayable);
 
-return Text;
+export default Text;

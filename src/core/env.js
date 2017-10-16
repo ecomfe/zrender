@@ -5,7 +5,9 @@
  * @author firede[firede@firede.us]
  * @desc thanks zepto.
  */
+
 var env = {};
+
 if (typeof navigator === 'undefined') {
     // In node
     env = {
@@ -20,7 +22,7 @@ else {
     env = detect(navigator.userAgent);
 }
 
-return env;
+export default env;
 
 // Zepto.js
 // (c) 2010-2013 Thomas Fuchs

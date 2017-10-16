@@ -2,7 +2,7 @@
  * Only implements needed gestures for mobile.
  */
 
-var eventUtil = require('./event');
+import * as eventUtil from './event';
 
 var GestureMgr = function () {
 
@@ -114,4 +114,4 @@ var recognizers = {
     // Only pinch currently.
 };
 
-return GestureMgr;
+export default GestureMgr;

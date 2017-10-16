@@ -17,9 +17,9 @@
  *     zr.add(g);
  */
 
-var zrUtil = require('../core/util');
-var Element = require('../Element');
-var BoundingRect = require('../core/BoundingRect');
+import * as zrUtil from '../core/util';
+import Element from '../Element';
+import BoundingRect from '../core/BoundingRect';
 
 /**
  * @alias module:zrender/graphic/Group
@@ -312,4 +312,4 @@ Group.prototype = {
 
 zrUtil.inherits(Group, Element);
 
-return Group;
+export default Group;

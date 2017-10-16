@@ -3,9 +3,8 @@
  * @module zrender/mixin/RectText
  */
 
-
-var textHelper = require('../helper/text');
-var BoundingRect = require('../../core/BoundingRect');
+import * as textHelper from '../helper/text';
+import BoundingRect from '../../core/BoundingRect';
 
 var tmpRect = new BoundingRect();
 
@@ -60,4 +59,4 @@ RectText.prototype = {
     }
 };
 
-return RectText;
+export default RectText;

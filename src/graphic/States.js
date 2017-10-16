@@ -2,7 +2,6 @@
  * States machine for managing graphic states
  */
 
-
 /**
  * @typedef {Object} IGraphicState
  * @property {number} [zlevel]
@@ -19,9 +18,9 @@
  *           Transition object or a string descriptor like '* 30 0 Linear'
  */
 
-var zrUtil = require('../core/util');
-var Style = require('./Style');
-var vec2Copy = require('../core/vector').copy;
+import * as zrUtil from '../core/util';
+import Style from './Style';
+import {copy as vec2Copy} from '../core/vector';
 
 var transitionProperties = ['position', 'rotation', 'scale', 'style', 'shape'];
 /**
@@ -414,4 +413,4 @@ GraphicStates.prototype = {
     }
 };
 
-return GraphicStates;
+export default GraphicStates;

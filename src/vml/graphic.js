@@ -1,32 +1,30 @@
 // http://www.w3.org/TR/NOTE-VML
 // TODO Use proxy like svg instead of overwrite brush methods
 
-if (!require('../core/env').canvasSupported) {
-    var vec2 = require('../core/vector');
-    var BoundingRect = require('../core/BoundingRect');
-    var CMD = require('../core/PathProxy').CMD;
-    var colorTool = require('../tool/color');
-    var textContain = require('../contain/text');
-    var textHelper = require('../graphic/helper/text');
-    var RectText = require('../graphic/mixin/RectText');
-    var Displayable = require('../graphic/Displayable');
-    var ZImage = require('../graphic/Image');
-    var Text = require('../graphic/Text');
-    var Path = require('../graphic/Path');
-    var PathProxy = require('../core/PathProxy');
+import env from '../core/env';
+import {applyTransform} from '../core/vector';
+import BoundingRect from '../core/BoundingRect';
+import {CMD} from '../core/PathProxy';
+import * as colorTool from '../tool/color';
+import * as textContain from '../contain/text';
+import * as textHelper from '../graphic/helper/text';
+import RectText from '../graphic/mixin/RectText';
+import Displayable from '../graphic/Displayable';
+import ZImage from '../graphic/Image';
+import Text from '../graphic/Text';
+import Path from '../graphic/Path';
+import PathProxy from '../core/PathProxy';
+import Gradient from '../graphic/Gradient';
+import * as vmlCore from './core';
 
-    var Gradient = require('../graphic/Gradient');
+var round = Math.round;
+var sqrt = Math.sqrt;
+var abs = Math.abs;
+var cos = Math.cos;
+var sin = Math.sin;
+var mathMax = Math.max;
 
-    var vmlCore = require('./core');
-
-    var round = Math.round;
-    var sqrt = Math.sqrt;
-    var abs = Math.abs;
-    var cos = Math.cos;
-    var sin = Math.sin;
-    var mathMax = Math.max;
-
-    var applyTransform = vec2.applyTransform;
+if (!env.canvasSupported) {
 
     var comma = ',';
     var imageTransformPrefix = 'progid:DXImageTransform.Microsoft';
@@ -794,7 +792,7 @@ if (!require('../core/env').canvasSupported) {
 
     var textMeasureEl;
     // Overwrite measure text method
-    textContain.measureText = function (text, textFont) {
+    textContain.$inject.measureText(function (text, textFont) {
         var doc = vmlCore.doc;
         if (!textMeasureEl) {
             textMeasureEl = doc.createElement('div');
@@ -814,7 +812,7 @@ if (!require('../core/env').canvasSupported) {
         return {
             width: textMeasureEl.offsetWidth
         };
-    };
+    });
 
     var tmpRect = new BoundingRect();
 

@@ -1,5 +1,4 @@
-
-var windingLine = require('./windingLine');
+import windingLine from './windingLine';
 
 var EPSILON = 1e-8;
 
@@ -7,7 +6,7 @@ function isAroundEqual(a, b) {
     return Math.abs(a - b) < EPSILON;
 }
 
-function contain(points, x, y) {
+export function contain(points, x, y) {
     var w = 0;
     var p = points[0];
 
@@ -29,8 +28,3 @@ function contain(points, x, y) {
 
     return w !== 0;
 }
-
-
-return {
-    contain: contain
-};

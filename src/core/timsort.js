@@ -623,7 +623,7 @@ function TimSort(array, compare) {
     this.pushRun = pushRun;
 }
 
-function sort(array, compare, lo, hi) {
+export default function sort(array, compare, lo, hi) {
     if (!lo) {
         lo = 0;
     }
@@ -670,5 +670,3 @@ function sort(array, compare, lo, hi) {
 
     ts.forceMergeRuns();
 }
-
-return sort;

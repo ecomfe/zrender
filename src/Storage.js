@@ -6,14 +6,13 @@
  * @author pissang (https://github.com/pissang/)
  */
 
-var util = require('./core/util');
-var env = require('./core/env');
-
-var Group = require('./container/Group');
+import * as util from './core/util';
+import env from './core/env';
+import Group from './container/Group';
 
 // Use timsort because in most case elements are partially sorted
 // https://jsfiddle.net/pissang/jr4x7mdm/8/
-var timsort = require('./core/timsort');
+import timsort from './core/timsort';
 
 function shapeCompareFunc(a, b) {
     if (a.zlevel === b.zlevel) {
@@ -35,7 +34,7 @@ function shapeCompareFunc(a, b) {
  * @alias module:zrender/Storage
  * @constructor
  */
-var Storage = function () {
+var Storage = function () { // jshint ignore:line
     this._roots = [];
 
     this._displayList = [];
@@ -246,4 +245,4 @@ Storage.prototype = {
     displayableSortFunc: shapeCompareFunc
 };
 
-return Storage;
+export default Storage;

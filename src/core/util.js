@@ -52,7 +52,7 @@ var nativeReduce = arrayProto.reduce;
  * @param {*} source
  * @return {*} new
  */
-function clone(source) {
+export function clone(source) {
     if (source == null || typeof source != 'object') {
         return source;
     }
@@ -96,7 +96,7 @@ function clone(source) {
  * @param {*} source
  * @param {boolean} [overwrite=false]
  */
-function merge(target, source, overwrite) {
+export function merge(target, source, overwrite) {
     // We should escapse that source is string
     // and enter for ... in ...
     if (!isObject(source) || !isObject(target)) {
@@ -138,7 +138,7 @@ function merge(target, source, overwrite) {
  * @param {boolean} [overwrite=false]
  * @return {*} target
  */
-function mergeAll(targetAndSources, overwrite) {
+export function mergeAll(targetAndSources, overwrite) {
     var result = targetAndSources[0];
     for (var i = 1, len = targetAndSources.length; i < len; i++) {
         result = merge(result, targetAndSources[i], overwrite);
@@ -151,7 +151,7 @@ function mergeAll(targetAndSources, overwrite) {
  * @param {*} source
  * @memberOf module:zrender/core/util
  */
-function extend(target, source) {
+export function extend(target, source) {
     for (var key in source) {
         if (source.hasOwnProperty(key)) {
             target[key] = source[key];
@@ -166,7 +166,7 @@ function extend(target, source) {
  * @param {boolean} [overlay=false]
  * @memberOf module:zrender/core/util
  */
-function defaults(target, source, overlay) {
+export function defaults(target, source, overlay) {
     for (var key in source) {
         if (source.hasOwnProperty(key)
             && (overlay ? source[key] != null : target[key] == null)
@@ -177,16 +177,18 @@ function defaults(target, source, overlay) {
     return target;
 }
 
-function createCanvas() {
+export var createCanvas = function () {
     return document.createElement('canvas');
-}
+};
+
 // FIXME
 var _ctx;
-function getContext() {
+
+export function getContext() {
     if (!_ctx) {
         // Use util.createCanvas instead of createCanvas
         // because createCanvas may be overwritten in different environment
-        _ctx = util.createCanvas().getContext('2d');
+        _ctx = createCanvas().getContext('2d');
     }
     return _ctx;
 }
@@ -195,7 +197,7 @@ function getContext() {
  * 查询数组中元素的index
  * @memberOf module:zrender/core/util
  */
-function indexOf(array, value) {
+export function indexOf(array, value) {
     if (array) {
         if (array.indexOf) {
             return array.indexOf(value);
@@ -216,7 +218,7 @@ function indexOf(array, value) {
  * @param {Function} clazz 源类
  * @param {Function} baseClazz 基类
  */
-function inherits(clazz, baseClazz) {
+export function inherits(clazz, baseClazz) {
     var clazzPrototype = clazz.prototype;
     function F() {}
     F.prototype = baseClazz.prototype;
@@ -235,7 +237,7 @@ function inherits(clazz, baseClazz) {
  * @param {Object|Function} sorce
  * @param {boolean} overlay
  */
-function mixin(target, source, overlay) {
+export function mixin(target, source, overlay) {
     target = 'prototype' in target ? target.prototype : target;
     source = 'prototype' in source ? source.prototype : source;
 
@@ -246,7 +248,7 @@ function mixin(target, source, overlay) {
  * Consider typed array.
  * @param {Array|TypedArray} data
  */
-function isArrayLike(data) {
+export function isArrayLike(data) {
     if (! data) {
         return;
     }
@@ -263,7 +265,7 @@ function isArrayLike(data) {
  * @param {Function} cb
  * @param {*} [context]
  */
-function each(obj, cb, context) {
+export function each(obj, cb, context) {
     if (!(obj && cb)) {
         return;
     }
@@ -292,7 +294,7 @@ function each(obj, cb, context) {
  * @param {*} [context]
  * @return {Array}
  */
-function map(obj, cb, context) {
+export function map(obj, cb, context) {
     if (!(obj && cb)) {
         return;
     }
@@ -316,7 +318,7 @@ function map(obj, cb, context) {
  * @param {*} [context]
  * @return {Array}
  */
-function reduce(obj, cb, memo, context) {
+export function reduce(obj, cb, memo, context) {
     if (!(obj && cb)) {
         return;
     }
@@ -339,7 +341,7 @@ function reduce(obj, cb, memo, context) {
  * @param {*} [context]
  * @return {Array}
  */
-function filter(obj, cb, context) {
+export function filter(obj, cb, context) {
     if (!(obj && cb)) {
         return;
     }
@@ -365,7 +367,7 @@ function filter(obj, cb, context) {
  * @param {*} [context]
  * @return {*}
  */
-function find(obj, cb, context) {
+export function find(obj, cb, context) {
     if (!(obj && cb)) {
         return;
     }
@@ -382,7 +384,7 @@ function find(obj, cb, context) {
  * @param {*} context
  * @return {Function}
  */
-function bind(func, context) {
+export function bind(func, context) {
     var args = nativeSlice.call(arguments, 2);
     return function () {
         return func.apply(context, args.concat(nativeSlice.call(arguments)));
@@ -394,7 +396,7 @@ function bind(func, context) {
  * @param {Function} func
  * @return {Function}
  */
-function curry(func) {
+export function curry(func) {
     var args = nativeSlice.call(arguments, 1);
     return function () {
         return func.apply(this, args.concat(nativeSlice.call(arguments)));
@@ -406,7 +408,7 @@ function curry(func) {
  * @param {*} value
  * @return {boolean}
  */
-function isArray(value) {
+export function isArray(value) {
     return objToString.call(value) === '[object Array]';
 }
 
@@ -415,7 +417,7 @@ function isArray(value) {
  * @param {*} value
  * @return {boolean}
  */
-function isFunction(value) {
+export function isFunction(value) {
     return typeof value === 'function';
 }
 
@@ -424,7 +426,7 @@ function isFunction(value) {
  * @param {*} value
  * @return {boolean}
  */
-function isString(value) {
+export function isString(value) {
     return objToString.call(value) === '[object String]';
 }
 
@@ -433,7 +435,7 @@ function isString(value) {
  * @param {*} value
  * @return {boolean}
  */
-function isObject(value) {
+export function isObject(value) {
     // Avoid a V8 JIT bug in Chrome 19-20.
     // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
     var type = typeof value;
@@ -445,7 +447,7 @@ function isObject(value) {
  * @param {*} value
  * @return {boolean}
  */
-function isBuiltInObject(value) {
+export function isBuiltInObject(value) {
     return !!BUILTIN_OBJECT[objToString.call(value)];
 }
 
@@ -454,7 +456,7 @@ function isBuiltInObject(value) {
  * @param {*} value
  * @return {boolean}
  */
-function isDom(value) {
+export function isDom(value) {
     return typeof value === 'object'
         && typeof value.nodeType === 'number'
         && typeof value.ownerDocument === 'object';
@@ -465,7 +467,7 @@ function isDom(value) {
  * @param {*} value
  * @return {boolean}
  */
-function eqNaN(value) {
+export function eqNaN(value) {
     return value !== value;
 }
 
@@ -475,7 +477,7 @@ function eqNaN(value) {
  * @memberOf module:zrender/core/util
  * @return {*} Final value
  */
-function retrieve(values) {
+export function retrieve(values) {
     for (var i = 0, len = arguments.length; i < len; i++) {
         if (arguments[i] != null) {
             return arguments[i];
@@ -483,13 +485,13 @@ function retrieve(values) {
     }
 }
 
-function retrieve2(value0, value1) {
+export function retrieve2(value0, value1) {
     return value0 != null
         ? value0
         : value1;
 }
 
-function retrieve3(value0, value1, value2) {
+export function retrieve3(value0, value1, value2) {
     return value0 != null
         ? value0
         : value1 != null
@@ -504,7 +506,7 @@ function retrieve3(value0, value1, value2) {
  * @param {number} endIndex
  * @return {Array}
  */
-function slice() {
+export function slice() {
     return Function.call.apply(nativeSlice, arguments);
 }
 
@@ -517,7 +519,7 @@ function slice() {
  * @param {number|Array.<number>} val
  * @return {Array.<number>}
  */
-function normalizeCssArray(val) {
+export function normalizeCssArray(val) {
     if (typeof (val) === 'number') {
         return [val, val, val, val];
     }
@@ -538,7 +540,7 @@ function normalizeCssArray(val) {
  * @param {boolean} condition
  * @param {string} message
  */
-function assert(condition, message) {
+export function assert(condition, message) {
     if (!condition) {
         throw new Error(message);
     }
@@ -548,11 +550,11 @@ var primitiveKey = '__ec_primitive__';
 /**
  * Set an object as primitive to be ignored traversing children in clone or merge
  */
-function setAsPrimitive(obj) {
+export function setAsPrimitive(obj) {
     obj[primitiveKey] = true;
 }
 
-function isPrimitive(obj) {
+export function isPrimitive(obj) {
     return obj[primitiveKey];
 }
 
@@ -599,44 +601,14 @@ HashMap.prototype = {
     }
 };
 
-function createHashMap(obj) {
+export function createHashMap(obj) {
     return new HashMap(obj);
 }
 
-var util = {
-    inherits: inherits,
-    mixin: mixin,
-    clone: clone,
-    merge: merge,
-    mergeAll: mergeAll,
-    extend: extend,
-    defaults: defaults,
-    getContext: getContext,
-    createCanvas: createCanvas,
-    indexOf: indexOf,
-    slice: slice,
-    find: find,
-    isArrayLike: isArrayLike,
-    each: each,
-    map: map,
-    reduce: reduce,
-    filter: filter,
-    bind: bind,
-    curry: curry,
-    isArray: isArray,
-    isString: isString,
-    isObject: isObject,
-    isFunction: isFunction,
-    isBuiltInObject: isBuiltInObject,
-    isDom: isDom,
-    eqNaN: eqNaN,
-    retrieve: retrieve,
-    retrieve2: retrieve2,
-    retrieve3: retrieve3,
-    assert: assert,
-    setAsPrimitive: setAsPrimitive,
-    createHashMap: createHashMap,
-    normalizeCssArray: normalizeCssArray,
-    noop: function () {}
+export function noop() {}
+
+export var $inject = {
+    createCanvas: function (f) {
+        createCanvas = f;
+    }
 };
-return util;

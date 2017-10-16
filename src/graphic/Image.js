@@ -1,13 +1,7 @@
-/**
- * Image element
- * @module zrender/graphic/Image
- */
-
-
-var Displayable = require('./Displayable');
-var BoundingRect = require('../core/BoundingRect');
-var zrUtil = require('../core/util');
-var imageHelper = require('./helper/image');
+import Displayable from './Displayable';
+import BoundingRect from '../core/BoundingRect';
+import * as zrUtil from '../core/util';
+import * as imageHelper from './helper/image';
 
 /**
  * @alias zrender/graphic/Image
@@ -116,4 +110,4 @@ ZImage.prototype = {
 
 zrUtil.inherits(ZImage, Displayable);
 
-return ZImage;
+export default ZImage;

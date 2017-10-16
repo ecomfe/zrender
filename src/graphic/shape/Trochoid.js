@@ -3,10 +3,12 @@
  * @module zrender/graphic/shape/Trochold
  */
 
+import Path from '../Path';
+
 var cos = Math.cos;
 var sin = Math.sin;
 
-return require('../Path').extend({
+export default Path.extend({
 
     type: 'trochoid',
 

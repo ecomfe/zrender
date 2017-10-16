@@ -7,30 +7,32 @@
 * LICENSE
 * https://github.com/ecomfe/zrender/blob/master/LICENSE.txt
 */
-// Global defines
-var guid = require('./core/guid');
-var env = require('./core/env');
-var zrUtil = require('./core/util');
 
-var Handler = require('./Handler');
-var Storage = require('./Storage');
-var Animation = require('./animation/Animation');
-var HandlerProxy = require('./dom/HandlerProxy');
+import guid from './core/guid';
+import env from './core/env';
+import * as zrUtil from './core/util';
+import * as matrix from './core/matrix';
+import * as vector from './core/vector';
+import * as colorTool from './tool/color';
+import * as pathTool from './tool/path';
+import Handler from './Handler';
+import Storage from './Storage';
+import Painter from './Painter';
+import Animation from './animation/Animation';
+import HandlerProxy from './dom/HandlerProxy';
 
 var useVML = !env.canvasSupported;
 
 var painterCtors = {
-    canvas: require('./Painter')
+    canvas: Painter
 };
 
 var instances = {};    // ZRender实例map索引
 
-var zrender = {};
-
 /**
  * @type {string}
  */
-zrender.version = '3.6.3';
+export var version = '3.6.3';
 
 /**
  * Initializing a zrender instance
@@ -42,17 +44,17 @@ zrender.version = '3.6.3';
  * @param {number|string} [opts.height] Can be 'auto' (the same as null/undefined)
  * @return {module:zrender/ZRender}
  */
-zrender.init = function (dom, opts) {
+export function init(dom, opts) {
     var zr = new ZRender(guid(), dom, opts);
     instances[zr.id] = zr;
     return zr;
-};
+}
 
 /**
  * Dispose zrender instance
  * @param {module:zrender/ZRender} zr
  */
-zrender.dispose = function (zr) {
+export function dispose(zr) {
     if (zr) {
         zr.dispose();
     }
@@ -65,21 +67,21 @@ zrender.dispose = function (zr) {
         instances = {};
     }
 
-    return zrender;
-};
+    return this;
+}
 
 /**
  * Get zrender instance by id
  * @param {string} id zrender instance id
  * @return {module:zrender/ZRender}
  */
-zrender.getInstance = function (id) {
+export function getInstance(id) {
     return instances[id];
-};
+}
 
-zrender.registerPainter = function (name, Ctor) {
+export function registerPainter(name, Ctor) {
     painterCtors[name] = Ctor;
-};
+}
 
 function delInstance(id) {
     delete instances[id];
@@ -434,4 +436,36 @@ ZRender.prototype = {
     }
 };
 
-return zrender;
+export {default as Group} from './container/Group';
+export {default as Path} from './graphic/Path';
+export {default as Image} from './graphic/Image';
+export {default as CompoundPath} from './graphic/CompoundPath';
+export {default as Text} from './graphic/Text';
+
+export {default as Arc} from './graphic/shape/Arc';
+export {default as BezierCurve} from './graphic/shape/BezierCurve';
+export {default as Circle} from './graphic/shape/Circle';
+export {default as Droplet} from './graphic/shape/Droplet';
+export {default as Ellipse} from './graphic/shape/Ellipse';
+export {default as Heart} from './graphic/shape/Heart';
+export {default as Isogon} from './graphic/shape/Isogon';
+export {default as Line} from './graphic/shape/Line';
+export {default as Polygon} from './graphic/shape/Polygon';
+export {default as Polyline} from './graphic/shape/Polyline';
+export {default as Rect} from './graphic/shape/Rect';
+export {default as Ring} from './graphic/shape/Ring';
+export {default as Rose} from './graphic/shape/Rose';
+export {default as Sector} from './graphic/shape/Sector';
+export {default as Star} from './graphic/shape/Star';
+export {default as Trochoid} from './graphic/shape/Trochoid';
+
+export {default as LinearGradient} from './graphic/LinearGradient';
+export {default as RadialGradient} from './graphic/RadialGradient';
+export {default as Pattern} from './graphic/Pattern';
+export {default as BoundingRect} from './core/BoundingRect';
+
+export {matrix};
+export {vector};
+export {colorTool as color};
+export {pathTool as path};
+export {zrUtil as util};

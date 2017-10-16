@@ -8,12 +8,11 @@
 // http://iosoteric.com/additive-animations-animatewithduration-in-ios-8/
 // https://developer.apple.com/videos/wwdc2014/#236
 
-var util = require('../core/util');
-var Dispatcher = require('../core/event').Dispatcher;
+import * as util from '../core/util';
+import {Dispatcher} from '../core/event';
+import requestAnimationFrame from './requestAnimationFrame';
+import Animator from './Animator';
 
-var requestAnimationFrame = require('./requestAnimationFrame');
-
-var Animator = require('./Animator');
 /**
  * @typedef {Object} IZRenderStage
  * @property {Function} update
@@ -248,4 +247,4 @@ Animation.prototype = {
 
 util.mixin(Animation, Dispatcher);
 
-return Animation;
+export default Animation;

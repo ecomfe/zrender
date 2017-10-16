@@ -3,10 +3,9 @@
  * @author Zhang Wenli
  */
 
-
-var Definable = require('./Definable');
-var zrUtil = require('../../core/util');
-var zrLog = require('../../core/log');
+import Definable from './Definable';
+import * as zrUtil from '../../core/util';
+import zrLog from '../../core/log';
 
 /**
  * Manages SVG gradient elements.
@@ -204,4 +203,4 @@ GradientManager.prototype.markUsed = function (displayable) {
 };
 
 
-return GradientManager;
+export default GradientManager;

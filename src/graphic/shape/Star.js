@@ -3,12 +3,13 @@
  * @module zrender/graphic/shape/Star
  */
 
-var PI = Math.PI;
+import Path from '../Path';
 
+var PI = Math.PI;
 var cos = Math.cos;
 var sin = Math.sin;
 
-return require('../Path').extend({
+export default Path.extend({
 
     type: 'star',
 

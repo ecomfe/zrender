@@ -2,9 +2,10 @@
  * @module zrender/graphic/shape/Polyline
  */
 
-var polyHelper = require('../helper/poly');
+import Path from '../Path';
+import * as polyHelper from '../helper/poly';
 
-return require('../Path').extend({
+export default Path.extend({
 
     type: 'polyline',
 

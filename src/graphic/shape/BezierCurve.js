@@ -3,14 +3,16 @@
  * @module zrender/shape/BezierCurve
  */
 
-var curveTool = require('../../core/curve');
-var vec2 = require('../../core/vector');
-var quadraticSubdivide = curveTool.quadraticSubdivide;
-var cubicSubdivide = curveTool.cubicSubdivide;
-var quadraticAt = curveTool.quadraticAt;
-var cubicAt = curveTool.cubicAt;
-var quadraticDerivativeAt = curveTool.quadraticDerivativeAt;
-var cubicDerivativeAt = curveTool.cubicDerivativeAt;
+import Path from '../Path';
+import * as vec2 from '../../core/vector';
+import {
+    quadraticSubdivide,
+    cubicSubdivide,
+    quadraticAt,
+    cubicAt,
+    quadraticDerivativeAt,
+    cubicDerivativeAt
+} from '../../core/curve';
 
 var out = [];
 
@@ -30,7 +32,8 @@ function someVectorAt(shape, t, isTangent) {
         ];
     }
 }
-return require('../Path').extend({
+
+export default Path.extend({
 
     type: 'bezier-curve',
 

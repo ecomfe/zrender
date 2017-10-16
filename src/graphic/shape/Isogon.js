@@ -1,14 +1,15 @@
 /**
  * 正多边形
  * @module zrender/shape/Isogon
- * @author sushuang (宿爽, sushuang0322@gmail.com)
  */
+
+import Path from '../Path';
 
 var PI = Math.PI;
 var sin = Math.sin;
 var cos = Math.cos;
 
-return require('../Path').extend({
+export default Path.extend({
 
     type: 'isogon',
 

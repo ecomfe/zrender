@@ -5,7 +5,8 @@
  *         Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *         errorrik (errorrik@gmail.com)
  */
-var vec2 = require('../../core/vector');
+
+import {distance as v2Distance} from '../../core/vector';
 
 /**
  * @inner
@@ -24,13 +25,13 @@ function interpolate(p0, p1, p2, p3, t, t2, t3) {
  * @param {boolean} isLoop
  * @return {Array}
  */
-return function (points, isLoop) {
+export default function (points, isLoop) {
     var len = points.length;
     var ret = [];
 
     var distance = 0;
     for (var i = 1; i < len; i++) {
-        distance += vec2.distance(points[i - 1], points[i]);
+        distance += v2Distance(points[i - 1], points[i]);
     }
 
     var segs = distance / 2;
@@ -65,4 +66,4 @@ return function (points, isLoop) {
         ]);
     }
     return ret;
-};
+}

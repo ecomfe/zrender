@@ -1,17 +1,19 @@
-
-var util = require('../core/util');
-var BoundingRect = require('../core/BoundingRect');
-var imageHelper = require('../graphic/helper/image');
+import BoundingRect from '../core/BoundingRect';
+import * as imageHelper from '../graphic/helper/image';
+import {
+    getContext,
+    extend,
+    retrieve2,
+    retrieve3
+} from '../core/util';
 
 var textWidthCache = {};
 var textWidthCacheCounter = 0;
 
 var TEXT_CACHE_MAX = 5000;
 var STYLE_REG = /\{([a-zA-Z0-9_]+)\|([^}]*)\}/g;
-var DEFAULT_FONT = '12px sans-serif';
 
-var retrieve2 = util.retrieve2;
-var retrieve3 = util.retrieve3;
+export var DEFAULT_FONT = '12px sans-serif';
 
 /**
  * @public
@@ -19,7 +21,7 @@ var retrieve3 = util.retrieve3;
  * @param {string} font
  * @return {number} width
  */
-function getTextWidth(text, font) {
+export function getWidth(text, font) {
     font = font || DEFAULT_FONT;
     var key = text + ':' + font;
     if (textWidthCache[key]) {
@@ -31,7 +33,7 @@ function getTextWidth(text, font) {
 
     for (var i = 0, l = textLines.length; i < l; i++) {
         // textContain.measureText may be overrided in SVG or VML
-        width = Math.max(textContain.measureText(textLines[i], font).width, width);
+        width = Math.max(measureText(textLines[i], font).width, width);
     }
 
     if (textWidthCacheCounter > TEXT_CACHE_MAX) {
@@ -55,7 +57,7 @@ function getTextWidth(text, font) {
  * @param {Object} [truncate]
  * @return {Object} {x, y, width, height, lineHeight}
  */
-function getTextRect(text, font, textAlign, textVerticalAlign, textPadding, rich, truncate) {
+export function getBoundingRect(text, font, textAlign, textVerticalAlign, textPadding, rich, truncate) {
     return rich
         ? getRichTextRect(text, font, textAlign, textVerticalAlign, textPadding, rich, truncate)
         : getPlainTextRect(text, font, textAlign, textVerticalAlign, textPadding, truncate);
@@ -63,7 +65,7 @@ function getTextRect(text, font, textAlign, textVerticalAlign, textPadding, rich
 
 function getPlainTextRect(text, font, textAlign, textVerticalAlign, textPadding, truncate) {
     var contentBlock = parsePlainText(text, font, textPadding, truncate);
-    var outerWidth = getTextWidth(text, font);
+    var outerWidth = getWidth(text, font);
     if (textPadding) {
         outerWidth += textPadding[1] + textPadding[3];
     }
@@ -102,7 +104,7 @@ function getRichTextRect(text, font, textAlign, textVerticalAlign, textPadding, 
  * @param {string} [textAlign='left']
  * @return {number} Adjusted x.
  */
-function adjustTextX(x, width, textAlign) {
+export function adjustTextX(x, width, textAlign) {
     // FIXME Right to left language
     if (textAlign === 'right') {
         x -= width;
@@ -120,7 +122,7 @@ function adjustTextX(x, width, textAlign) {
  * @param {string} [textVerticalAlign='top']
  * @return {number} Adjusted y.
  */
-function adjustTextY(y, height, textVerticalAlign) {
+export function adjustTextY(y, height, textVerticalAlign) {
     if (textVerticalAlign === 'middle') {
         y -= height / 2;
     }
@@ -137,7 +139,7 @@ function adjustTextY(y, height, textVerticalAlign) {
  * @param {number} distance
  * @return {Object} {x, y, textAlign, textVerticalAlign}
  */
-function adjustTextPositionOnRect(textPosition, rect, distance) {
+export function adjustTextPositionOnRect(textPosition, rect, distance) {
 
     var x = rect.x;
     var y = rect.y;
@@ -246,7 +248,7 @@ function adjustTextPositionOnRect(textPosition, rect, distance) {
  * @param  {number} [options.placeholder=''] When all truncated, use the placeholder.
  * @return {string}
  */
-function truncateText(text, containerWidth, font, ellipsis, options) {
+export function truncateText(text, containerWidth, font, ellipsis, options) {
     if (!containerWidth) {
         return '';
     }
@@ -264,7 +266,7 @@ function truncateText(text, containerWidth, font, ellipsis, options) {
 }
 
 function prepareTruncateOptions(containerWidth, font, ellipsis, options) {
-    options = util.extend({}, options);
+    options = extend({}, options);
 
     options.font = font;
     var ellipsis = retrieve2(ellipsis, '...');
@@ -272,10 +274,10 @@ function prepareTruncateOptions(containerWidth, font, ellipsis, options) {
     var minChar = options.minChar = retrieve2(options.minChar, 0);
     // FIXME
     // Other languages?
-    options.cnCharWidth = getTextWidth('国', font);
+    options.cnCharWidth = getWidth('国', font);
     // FIXME
     // Consider proportional font?
-    var ascCharWidth = options.ascCharWidth = getTextWidth('a', font);
+    var ascCharWidth = options.ascCharWidth = getWidth('a', font);
     options.placeholder = retrieve2(options.placeholder, '');
 
     // Example 1: minChar: 3, text: 'asdfzxcv', truncate result: 'asdf', but not: 'a...'.
@@ -285,7 +287,7 @@ function prepareTruncateOptions(containerWidth, font, ellipsis, options) {
         contentWidth -= ascCharWidth;
     }
 
-    var ellipsisWidth = getTextWidth(ellipsis);
+    var ellipsisWidth = getWidth(ellipsis);
     if (ellipsisWidth > contentWidth) {
         ellipsis = '';
         ellipsisWidth = 0;
@@ -310,7 +312,7 @@ function truncateSingleLine(textLine, options) {
         return '';
     }
 
-    var lineWidth = getTextWidth(textLine, font);
+    var lineWidth = getWidth(textLine, font);
 
     if (lineWidth <= containerWidth) {
         return textLine;
@@ -329,7 +331,7 @@ function truncateSingleLine(textLine, options) {
             : 0;
 
         textLine = textLine.substr(0, subLength);
-        lineWidth = getTextWidth(textLine, font);
+        lineWidth = getWidth(textLine, font);
     }
 
     if (textLine === '') {
@@ -354,9 +356,9 @@ function estimateLength(text, contentWidth, ascCharWidth, cnCharWidth) {
  * @param {string} font
  * @return {number} line height
  */
-function getLineHeight(font) {
+export function getLineHeight(font) {
     // FIXME A rough approach.
-    return getTextWidth('国', font);
+    return getWidth('国', font);
 }
 
 /**
@@ -365,11 +367,11 @@ function getLineHeight(font) {
  * @param {string} font
  * @return {Object} width
  */
-function measureText(text, font) {
-    var ctx = util.getContext();
+export var measureText = function (text, font) {
+    var ctx = getContext();
     ctx.font = font || DEFAULT_FONT;
     return ctx.measureText(text);
-}
+};
 
 /**
  * @public
@@ -379,7 +381,7 @@ function measureText(text, font) {
  * @return {Object} block: {lineHeight, lines, height, outerHeight}
  *  Notice: for performance, do not calculate outerWidth util needed.
  */
-function parsePlainText(text, font, padding, truncate) {
+export function parsePlainText(text, font, padding, truncate) {
     text != null && (text += '');
 
     var lineHeight = getLineHeight(font);
@@ -452,7 +454,7 @@ function parsePlainText(text, font, padding, truncate) {
  * }
  * If styleName is undefined, it is plain text.
  */
-function parseRichText(text, style) {
+export function parseRichText(text, style) {
     var contentBlock = {lines: [], width: 0, height: 0};
 
     text != null && (text += '');
@@ -510,7 +512,7 @@ function parseRichText(text, style) {
             var tokenHeight = token.textHeight = retrieve2(
                 // textHeight should not be inherited, consider it can be specified
                 // as box height of the block.
-                tokenStyle.textHeight, textContain.getLineHeight(font)
+                tokenStyle.textHeight, getLineHeight(font)
             );
             textPadding && (tokenHeight += textPadding[0] + textPadding[2]);
             token.height = tokenHeight;
@@ -525,7 +527,7 @@ function parseRichText(text, style) {
                 return {lines: [], width: 0, height: 0};
             }
 
-            token.textWidth = textContain.getWidth(token.text, font);
+            token.textWidth = getWidth(token.text, font);
             var tokenWidth = tokenStyle.textWidth;
             var tokenWidthNotSpecified = tokenWidth == null || tokenWidth === 'auto';
 
@@ -580,7 +582,7 @@ function parseRichText(text, style) {
                             token.text, remianTruncWidth - paddingW, font, truncate.ellipsis,
                             {minChar: truncate.minChar}
                         );
-                        token.textWidth = textContain.getWidth(token.text, font);
+                        token.textWidth = getWidth(token.text, font);
                         tokenWidth = token.textWidth + paddingW;
                     }
                 }
@@ -653,7 +655,7 @@ function pushTokens(block, str, styleName) {
     }
 }
 
-function makeFont(style) {
+export function makeFont(style) {
     // FIXME in node-canvas fontWeight is before fontStyle
     // Use `fontSize` `fontFamily` to check whether font properties are defined.
     return (style.fontSize || style.fontFamily) && [
@@ -665,31 +667,8 @@ function makeFont(style) {
     ].join(' ') || style.textFont || style.font;
 }
 
-var textContain = {
-
-    getWidth: getTextWidth,
-
-    getBoundingRect: getTextRect,
-
-    adjustTextPositionOnRect: adjustTextPositionOnRect,
-
-    truncateText: truncateText,
-
-    measureText: measureText,
-
-    getLineHeight: getLineHeight,
-
-    parsePlainText: parsePlainText,
-
-    parseRichText: parseRichText,
-
-    adjustTextX: adjustTextX,
-
-    adjustTextY: adjustTextY,
-
-    makeFont: makeFont,
-
-    DEFAULT_FONT: DEFAULT_FONT
+export var $inject = {
+    measureText: function (f) {
+        measureText = f;
+    }
 };
-
-return textContain;

@@ -297,4 +297,4 @@ Eventful.prototype = {
  * @default null
  */
 
-return Eventful;
+export default Eventful;

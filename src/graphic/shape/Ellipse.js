@@ -3,8 +3,9 @@
  * @module zrender/graphic/shape/Ellipse
  */
 
+import Path from '../Path';
 
-return require('../Path').extend({
+export default Path.extend({
 
     type: 'ellipse',
 

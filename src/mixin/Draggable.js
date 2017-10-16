@@ -82,4 +82,4 @@ function param(target, e) {
     return {target: target, topTarget: e && e.topTarget};
 }
 
-return Draggable;
+export default Draggable;

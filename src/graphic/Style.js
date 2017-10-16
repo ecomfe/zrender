@@ -1,6 +1,3 @@
-/**
- * @module zrender/graphic/Style
- */
 
 var STYLE_COMMON_PROPS = [
     ['shadowBlur', 0], ['shadowOffsetX', 0], ['shadowOffsetY', 0], ['shadowColor', '#000'],
@@ -468,4 +465,4 @@ for (var i = 0; i < STYLE_COMMON_PROPS.length; i++) {
 // Provide for others
 Style.getGradient = styleProto.getGradient;
 
-return Style;
+export default Style;

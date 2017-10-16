@@ -3,22 +3,20 @@
  * @module zrender/svg/Painter
  */
 
-var svgCore = require('./core');
-var zrLog = require('../core/log');
-var Path = require('../graphic/Path');
-var ZImage = require('../graphic/Image');
-var ZText = require('../graphic/Text');
-var arrayDiff = require('../core/arrayDiff2');
-
-var svgGraphic = require('./graphic');
-var svgPath = svgGraphic.path;
-var svgImage = svgGraphic.image;
-var svgText = svgGraphic.text;
-
-var GradientManager = require('./helper/GradientManager');
-var ClippathManager = require('./helper/ClippathManager');
-
-var createElement = svgCore.createElement;
+import {createElement} from './core';
+import zrLog from '../core/log';
+import Path from '../graphic/Path';
+import ZImage from '../graphic/Image';
+import ZText from '../graphic/Text';
+import arrayDiff from '../core/arrayDiff2';
+import GradientManager from './helper/GradientManager';
+import ClippathManager from './helper/ClippathManager';
+import {each} from '../core/util';
+import {
+    path as svgPath,
+    image as svgImage,
+    text as svgText
+} from './graphic';
 
 function parseInt10(val) {
     return parseInt(val, 10);
@@ -347,15 +345,13 @@ function createMethodNotSupport(method) {
     };
 }
 
-var notSupportedMethods = [
+// Unsuppoted methods
+each([
     'getLayer', 'insertLayer', 'eachLayer', 'eachBuiltinLayer',
     'eachOtherLayer', 'getLayers', 'modLayer', 'delLayer', 'clearLayer',
     'toDataURL', 'pathToImage'
-];
-
-for (var i = 0; i < notSupportedMethods.length; i++) {
-    var name = notSupportedMethods[i];
+], function (name) {
     SVGPainter.prototype[name] = createMethodNotSupport(name);
-}
+});
 
-return SVGPainter;
+export default SVGPainter;

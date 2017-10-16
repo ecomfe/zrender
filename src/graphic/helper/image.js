@@ -1,14 +1,13 @@
 
-var LRU = require('../../core/LRU');
-var globalImageCache = new LRU(50);
+import LRU from '../../core/LRU';
 
-var helper = {};
+var globalImageCache = new LRU(50);
 
 /**
  * @param {string|HTMLImageElement|HTMLCanvasElement|Canvas} newImageOrSrc
  * @return {HTMLImageElement|HTMLCanvasElement|Canvas} image
  */
-helper.findExistImage = function (newImageOrSrc) {
+export function findExistImage(newImageOrSrc) {
     if (typeof newImageOrSrc === 'string') {
         var cachedImgObj = globalImageCache.get(newImageOrSrc);
         return cachedImgObj && cachedImgObj.image;
@@ -16,7 +15,7 @@ helper.findExistImage = function (newImageOrSrc) {
     else {
         return newImageOrSrc;
     }
-};
+}
 
 /**
  * Caution: User should cache loaded images, but not just count on LRU.
@@ -29,7 +28,7 @@ helper.findExistImage = function (newImageOrSrc) {
  * @param {Object} [cbPayload] Payload on cb calling.
  * @return {HTMLImageElement|HTMLCanvasElement|Canvas} image
  */
-helper.createOrUpdateImage = function (newImageOrSrc, image, hostEl, cb, cbPayload) {
+export function createOrUpdateImage(newImageOrSrc, image, hostEl, cb, cbPayload) {
     if (!newImageOrSrc) {
         return image;
     }
@@ -71,7 +70,7 @@ helper.createOrUpdateImage = function (newImageOrSrc, image, hostEl, cb, cbPaylo
     else {
         return newImageOrSrc;
     }
-};
+}
 
 function imageOnLoad() {
     var cachedImgObj = this.__cachedImgObj;
@@ -86,8 +85,7 @@ function imageOnLoad() {
     cachedImgObj.pending.length = 0;
 }
 
-var isImageReady = helper.isImageReady = function (image) {
+export function isImageReady(image) {
     return image && image.width && image.height;
-};
+}
 
-return helper;

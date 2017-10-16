@@ -1,13 +1,12 @@
-/**
- * @module zrender/mixin/Animatable
- */
-
-var Animator = require('../animation/Animator');
-var util = require('../core/util');
-var isString = util.isString;
-var isFunction = util.isFunction;
-var isObject = util.isObject;
-var log = require('../core/log');
+import Animator from '../animation/Animator';
+import log from '../core/log';
+import {
+    isString,
+    isFunction,
+    isObject,
+    isArrayLike,
+    indexOf
+} from '../core/util';
 
 /**
  * @alias modue:zrender/mixin/Animatable
@@ -81,7 +80,7 @@ Animatable.prototype = {
         })
         .done(function () {
             // FIXME Animator will not be removed if use `Animator#stop` to stop animation
-            animators.splice(util.indexOf(animators, animator), 1);
+            animators.splice(indexOf(animators, animator), 1);
         });
 
         animators.push(animator);
@@ -229,7 +228,7 @@ Animatable.prototype = {
             }
 
             if (source[name] != null) {
-                if (isObject(target[name]) && !util.isArrayLike(target[name])) {
+                if (isObject(target[name]) && !isArrayLike(target[name])) {
                     this._animateToShallow(
                         path ? path + '.' + name : name,
                         source[name],
@@ -268,4 +267,4 @@ Animatable.prototype = {
     }
 };
 
-return Animatable;
+export default Animatable;

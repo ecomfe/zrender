@@ -3,8 +3,9 @@
  * @module zrender/graphic/shape/Droplet
  */
 
+import Path from '../Path';
 
-return require('../Path').extend({
+export default Path.extend({
 
     type: 'droplet',
 

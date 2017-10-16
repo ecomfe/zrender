@@ -13,7 +13,7 @@
  * TODO pause
  */
 
-var easingFuncs = require('./easing');
+import easingFuncs from './easing';
 
 function Clip(options) {
 
@@ -118,4 +118,4 @@ Clip.prototype = {
     }
 };
 
-return Clip;
+export default Clip;

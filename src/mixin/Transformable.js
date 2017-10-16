@@ -4,8 +4,9 @@
  * @author pissang (https://www.github.com/pissang)
  */
 
-var matrix = require('../core/matrix');
-var vector = require('../core/vector');
+import * as matrix from '../core/matrix';
+import * as vector from '../core/vector';
+
 var mIdentity = matrix.identity;
 
 var EPSILON = 5e-5;
@@ -256,4 +257,4 @@ Transformable.getLocalTransform = function (target, m) {
     return m;
 };
 
-return Transformable;
+export default Transformable;

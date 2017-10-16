@@ -1,12 +1,8 @@
-/**
- * @module zrender/Element
- */
-
-var guid = require('./core/guid');
-var Eventful = require('./mixin/Eventful');
-var Transformable = require('./mixin/Transformable');
-var Animatable = require('./mixin/Animatable');
-var zrUtil = require('./core/util');
+import guid from './core/guid';
+import Eventful from './mixin/Eventful';
+import Transformable from './mixin/Transformable';
+import Animatable from './mixin/Animatable';
+import * as zrUtil from './core/util';
 
 /**
  * @alias module:zrender/Element
@@ -15,7 +11,7 @@ var zrUtil = require('./core/util');
  * @extends {module:zrender/mixin/Transformable}
  * @extends {module:zrender/mixin/Eventful}
  */
-var Element = function (opts) {
+var Element = function (opts) { // jshint ignore:line
 
     Transformable.call(this, opts);
     Eventful.call(this, opts);
@@ -257,4 +253,4 @@ zrUtil.mixin(Element, Animatable);
 zrUtil.mixin(Element, Transformable);
 zrUtil.mixin(Element, Eventful);
 
-return Element;
+export default Element;

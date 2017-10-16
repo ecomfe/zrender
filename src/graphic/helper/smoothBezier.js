@@ -6,12 +6,15 @@
  *         errorrik (errorrik@gmail.com)
  */
 
-var vec2 = require('../../core/vector');
-var v2Min = vec2.min;
-var v2Max = vec2.max;
-var v2Scale = vec2.scale;
-var v2Distance = vec2.distance;
-var v2Add = vec2.add;
+import {
+    min as v2Min,
+    max as v2Max,
+    scale as v2Scale,
+    distance as v2Distance,
+    add as v2Add,
+    clone as v2Clone,
+    sub as v2Sub
+} from '../../core/vector';
 
 /**
  * 贝塞尔平滑曲线
@@ -24,7 +27,7 @@ var v2Add = vec2.add;
  *                           整个折线的包围盒做一个并集用来约束控制点。
  * @param {Array} 计算出来的控制点数组
  */
-return function (points, smooth, isLoop, constraint) {
+export default function (points, smooth, isLoop, constraint) {
     var cps = [];
 
     var v = [];
@@ -55,7 +58,7 @@ return function (points, smooth, isLoop, constraint) {
         }
         else {
             if (i === 0 || i === len - 1) {
-                cps.push(vec2.clone(points[i]));
+                cps.push(v2Clone(points[i]));
                 continue;
             }
             else {
@@ -64,7 +67,7 @@ return function (points, smooth, isLoop, constraint) {
             }
         }
 
-        vec2.sub(v, nextPoint, prevPoint);
+        v2Sub(v, nextPoint, prevPoint);
 
         // use degree to scale the handle length
         v2Scale(v, v, smooth);
@@ -96,4 +99,4 @@ return function (points, smooth, isLoop, constraint) {
     }
 
     return cps;
-};
+}

@@ -8,13 +8,13 @@
 
 // TODO getTotalLength, getPointAtLength
 
-var curve = require('./curve');
-var vec2 = require('./vector');
-var bbox = require('./bbox');
-var BoundingRect = require('./BoundingRect');
-var dpr = require('../config').devicePixelRatio;
+import * as curve from './curve';
+import * as vec2 from './vector';
+import * as bbox from './bbox';
+import BoundingRect from './BoundingRect';
+import {devicePixelRatio as dpr} from '../config';
 
-var CMD = {
+export var CMD = {
     M: 1,
     L: 2,
     C: 3,
@@ -783,4 +783,4 @@ PathProxy.prototype = {
 
 PathProxy.CMD = CMD;
 
-return PathProxy;
+export default PathProxy;

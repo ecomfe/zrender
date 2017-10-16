@@ -2,8 +2,7 @@
  * Stateful mixin for graphic object
  */
 
-
-var States = require('../States');
+import States from '../States';
 
 var Stateful = function (opts) {
 
@@ -34,4 +33,4 @@ Stateful.prototype = {
     }
 };
 
-return Stateful;
+export default Stateful;

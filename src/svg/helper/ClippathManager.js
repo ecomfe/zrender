@@ -3,10 +3,9 @@
  * @author Zhang Wenli
  */
 
-
-var Definable = require('./Definable');
-var zrUtil = require('../../core/util');
-var matrix = require('../../core/matrix');
+import Definable from './Definable';
+import * as zrUtil from '../../core/util';
+import * as matrix from '../../core/matrix';
 
 /**
  * Manages SVG clipPath elements.
@@ -159,4 +158,4 @@ ClippathManager.prototype.markUsed = function (displayable) {
 };
 
 
-return ClippathManager;
+export default ClippathManager;

@@ -3,7 +3,9 @@
  * @module zrender/graphic/shape/Heart
  */
 
-return require('../Path').extend({
+import Path from '../Path';
+
+export default Path.extend({
 
     type: 'heart',
 

@@ -6,11 +6,10 @@
  *         pissang (shenyi.914@gmail.com)
  */
 
-var util = require('./core/util');
-var vec2 = require('./core/vector');
-var Draggable = require('./mixin/Draggable');
-
-var Eventful = require('./mixin/Eventful');
+import * as util from './core/util';
+import * as vec2 from './core/vector';
+import Draggable from './mixin/Draggable';
+import Eventful from './mixin/Eventful';
 
 var SILENT = 'silent';
 
@@ -338,4 +337,4 @@ function isHover(displayable, x, y) {
 util.mixin(Handler, Eventful);
 util.mixin(Handler, Draggable);
 
-return Handler;
+export default Handler;

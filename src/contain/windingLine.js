@@ -1,4 +1,5 @@
-return function windingLine(x0, y0, x1, y1, x, y) {
+
+export default function windingLine(x0, y0, x1, y1, x, y) {
     if ((y > y0 && y > y1) || (y < y0 && y < y1)) {
         return 0;
     }
@@ -17,4 +18,4 @@ return function windingLine(x0, y0, x1, y1, x, y) {
     var x_ = t * (x1 - x0) + x0;
 
     return x_ > x ? dir : 0;
-};
+}

@@ -6,15 +6,14 @@
  *         pissang (https://www.github.com/pissang)
  */
 
-var config = require('./config');
-var util = require('./core/util');
-var log = require('./core/log');
-var BoundingRect = require('./core/BoundingRect');
-var timsort = require('./core/timsort');
-
-var Layer = require('./Layer');
-
-var requestAnimationFrame = require('./animation/requestAnimationFrame');
+import {devicePixelRatio} from './config';
+import * as util from './core/util';
+import log from './core/log';
+import BoundingRect from './core/BoundingRect';
+import timsort from './core/timsort';
+import Layer from './Layer';
+import requestAnimationFrame from './animation/requestAnimationFrame';
+import Image from './graphic/Image';
 
 // PENDIGN
 // Layer exceeds MAX_PROGRESSIVE_LAYER_NUMBER may have some problem when flush directly second time.
@@ -131,7 +130,7 @@ var Painter = function (root, storage, opts) {
     /**
      * @type {number}
      */
-    this.dpr = opts.devicePixelRatio || config.devicePixelRatio;
+    this.dpr = opts.devicePixelRatio || devicePixelRatio;
     /**
      * @type {boolean}
      * @private
@@ -1098,7 +1097,7 @@ Painter.prototype = {
             path.brush(ctx);
         }
 
-        var ImageShape = require('./graphic/Image');
+        var ImageShape = Image;
         var imgShape = new ImageShape({
             style: {
                 x: 0,
@@ -1123,4 +1122,4 @@ Painter.prototype = {
     }
 };
 
-return Painter;
+export default Painter;

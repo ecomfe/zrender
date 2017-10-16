@@ -1,7 +1,6 @@
-
-var Path = require('../graphic/Path');
-var PathProxy = require('../core/PathProxy');
-var transformPath = require('./transformPath');
+import Path from '../graphic/Path';
+import PathProxy from '../core/PathProxy';
+import transformPath from './transformPath';
 
 // command chars
 var cc = [
@@ -351,57 +350,55 @@ function createPathOptions(str, opts) {
     return opts;
 }
 
-return {
-    /**
-     * Create a Path object from path string data
-     * http://www.w3.org/TR/SVG/paths.html#PathData
-     * @param  {Object} opts Other options
-     */
-    createFromString: function (str, opts) {
-        return new Path(createPathOptions(str, opts));
-    },
+/**
+ * Create a Path object from path string data
+ * http://www.w3.org/TR/SVG/paths.html#PathData
+ * @param  {Object} opts Other options
+ */
+export function createFromString(str, opts) {
+    return new Path(createPathOptions(str, opts));
+}
 
-    /**
-     * Create a Path class from path string data
-     * @param  {string} str
-     * @param  {Object} opts Other options
-     */
-    extendFromString: function (str, opts) {
-        return Path.extend(createPathOptions(str, opts));
-    },
+/**
+ * Create a Path class from path string data
+ * @param  {string} str
+ * @param  {Object} opts Other options
+ */
+export function extendFromString(str, opts) {
+    return Path.extend(createPathOptions(str, opts));
+}
 
-    /**
-     * Merge multiple paths
-     */
-    // TODO Apply transform
-    // TODO stroke dash
-    // TODO Optimize double memory cost problem
-    mergePath: function (pathEls, opts) {
-        var pathList = [];
-        var len = pathEls.length;
-        for (var i = 0; i < len; i++) {
-            var pathEl = pathEls[i];
-            if (!pathEl.path) {
-                pathEl.createPathProxy();
-            }
-            if (pathEl.__dirtyPath) {
-                pathEl.buildPath(pathEl.path, pathEl.shape, true);
-            }
-            pathList.push(pathEl.path);
+/**
+ * Merge multiple paths
+ */
+// TODO Apply transform
+// TODO stroke dash
+// TODO Optimize double memory cost problem
+export function mergePath(pathEls, opts) {
+    var pathList = [];
+    var len = pathEls.length;
+    for (var i = 0; i < len; i++) {
+        var pathEl = pathEls[i];
+        if (!pathEl.path) {
+            pathEl.createPathProxy();
         }
-
-        var pathBundle = new Path(opts);
-        // Need path proxy.
-        pathBundle.createPathProxy();
-        pathBundle.buildPath = function (path) {
-            path.appendPath(pathList);
-            // Svg and vml renderer don't have context
-            var ctx = path.getContext();
-            if (ctx) {
-                path.rebuildPath(ctx);
-            }
-        };
-
-        return pathBundle;
+        if (pathEl.__dirtyPath) {
+            pathEl.buildPath(pathEl.path, pathEl.shape, true);
+        }
+        pathList.push(pathEl.path);
     }
-};
+
+    var pathBundle = new Path(opts);
+    // Need path proxy.
+    pathBundle.createPathProxy();
+    pathBundle.buildPath = function (path) {
+        path.appendPath(pathList);
+        // Svg and vml renderer don't have context
+        var ctx = path.getContext();
+        if (ctx) {
+            path.rebuildPath(ctx);
+        }
+    };
+
+    return pathBundle;
+}

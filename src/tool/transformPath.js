@@ -1,12 +1,11 @@
-
-var CMD = require('../core/PathProxy').CMD;
-var vec2 = require('../core/vector');
-var v2ApplyTransform = vec2.applyTransform;
+import {CMD} from '../core/PathProxy';
+import {applyTransform as v2ApplyTransform} from '../core/vector';
 
 var points = [[], [], []];
 var mathSqrt = Math.sqrt;
 var mathAtan2 = Math.atan2;
-function transformPath(path, m) {
+
+export default function (path, m) {
     var data = path.data;
     var cmd;
     var nPoint;
@@ -92,5 +91,3 @@ function transformPath(path, m) {
         }
     }
 }
-
-return transformPath;

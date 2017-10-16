@@ -14,4 +14,4 @@ Pattern.prototype.getCanvasPattern = function (ctx) {
     return ctx.createPattern(this.image, this.repeat || 'repeat');
 };
 
-return Pattern;
+export default Pattern;

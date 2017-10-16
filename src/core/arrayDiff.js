@@ -205,4 +205,4 @@ function arrayDiff(arr0, arr1, equal) {
     return head;
 }
 
-return arrayDiff;
+export default arrayDiff;

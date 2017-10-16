@@ -1,15 +1,9 @@
-/**
- * Path element
- * @module zrender/graphic/Path
- */
+import Displayable from './Displayable';
+import * as zrUtil from '../core/util';
+import PathProxy from '../core/PathProxy';
+import * as pathContain from '../contain/path';
+import Pattern from './Pattern';
 
-
-var Displayable = require('./Displayable');
-var zrUtil = require('../core/util');
-var PathProxy = require('../core/PathProxy');
-var pathContain = require('../contain/path');
-
-var Pattern = require('./Pattern');
 var getCanvasPattern = Pattern.prototype.getCanvasPattern;
 
 var abs = Math.abs;
@@ -366,4 +360,4 @@ Path.extend = function (defaults) {
 
 zrUtil.inherits(Path, Displayable);
 
-return Path;
+export default Path;

@@ -1,15 +1,11 @@
-
-var CMD = require('../core/PathProxy').CMD;
-var line = require('./line');
-var cubic = require('./cubic');
-var quadratic = require('./quadratic');
-var arc = require('./arc');
-var normalizeRadian = require('./util').normalizeRadian;
-var curve = require('../core/curve');
-
-var windingLine = require('./windingLine');
-
-var containStroke = line.containStroke;
+import {CMD} from '../core/PathProxy';
+import * as line from './line';
+import * as cubic from './cubic';
+import * as quadratic from './quadratic';
+import * as arc from './arc';
+import {normalizeRadian} from './util';
+import * as curve from '../core/curve';
+import windingLine from './windingLine';
 
 var PI2 = Math.PI * 2;
 
@@ -247,7 +243,7 @@ function containPath(data, lineWidth, isStroke, x, y) {
                 break;
             case CMD.L:
                 if (isStroke) {
-                    if (containStroke(xi, yi, data[i], data[i + 1], lineWidth, x, y)) {
+                    if (line.containStroke(xi, yi, data[i], data[i + 1], lineWidth, x, y)) {
                         return true;
                     }
                 }
@@ -345,10 +341,10 @@ function containPath(data, lineWidth, isStroke, x, y) {
                 var x1 = x0 + width;
                 var y1 = y0 + height;
                 if (isStroke) {
-                    if (containStroke(x0, y0, x1, y0, lineWidth, x, y)
-                        || containStroke(x1, y0, x1, y1, lineWidth, x, y)
-                        || containStroke(x1, y1, x0, y1, lineWidth, x, y)
-                        || containStroke(x0, y1, x0, y0, lineWidth, x, y)
+                    if (line.containStroke(x0, y0, x1, y0, lineWidth, x, y)
+                        || line.containStroke(x1, y0, x1, y1, lineWidth, x, y)
+                        || line.containStroke(x1, y1, x0, y1, lineWidth, x, y)
+                        || line.containStroke(x0, y1, x0, y0, lineWidth, x, y)
                     ) {
                         return true;
                     }
@@ -361,7 +357,7 @@ function containPath(data, lineWidth, isStroke, x, y) {
                 break;
             case CMD.Z:
                 if (isStroke) {
-                    if (containStroke(
+                    if (line.containStroke(
                         xi, yi, x0, y0, lineWidth, x, y
                     )) {
                         return true;
@@ -387,12 +383,10 @@ function containPath(data, lineWidth, isStroke, x, y) {
     return w !== 0;
 }
 
-return {
-    contain: function (pathData, x, y) {
-        return containPath(pathData, 0, false, x, y);
-    },
+export function contain(pathData, x, y) {
+    return containPath(pathData, 0, false, x, y);
+}
 
-    containStroke: function (pathData, lineWidth, x, y) {
-        return containPath(pathData, lineWidth, true, x, y);
-    }
-};
+export function containStroke(pathData, lineWidth, x, y) {
+    return containPath(pathData, lineWidth, true, x, y);
+}

@@ -3,11 +3,10 @@
  * @module zrender/graphic/shape/Sector
  */
 
+import Path from '../Path';
+import fixClipWithShadow from '../helper/fixClipWithShadow';
 
-var Path = require('../Path');
-var fixClipWithShadow = require('../helper/fixClipWithShadow');
-
-return Path.extend({
+export default Path.extend({
 
     type: 'sector',
 

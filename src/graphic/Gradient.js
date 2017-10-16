@@ -23,4 +23,4 @@ Gradient.prototype = {
 
 };
 
-return Gradient;
+export default Gradient;

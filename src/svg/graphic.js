@@ -2,15 +2,13 @@
 // 1. shadow
 // 2. Image: sx, sy, sw, sh
 
-var svgCore = require('./core');
-var CMD = require('../core/PathProxy').CMD;
-var BoundingRect = require('../core/BoundingRect');
-var textContain = require('../contain/text');
-var textHelper = require('../graphic/helper/text');
+import {createElement} from './core';
+import {CMD} from '../core/PathProxy';
+import BoundingRect from '../core/BoundingRect';
+import * as textContain from '../contain/text';
+import * as textHelper from '../graphic/helper/text';
+import Text from '../graphic/Text';
 
-var Text = require('../graphic/Text');
-
-var createElement = svgCore.createElement;
 var arrayJoin = Array.prototype.join;
 
 var NONE = 'none';
@@ -233,6 +231,7 @@ function pathDataToString(data) {
 }
 
 var svgPath = {};
+export {svgPath as path};
 
 svgPath.brush = function (el) {
     var style = el.style;
@@ -268,6 +267,7 @@ svgPath.brush = function (el) {
  * IMAGE
  **************************************************/
 var svgImage = {};
+export {svgImage as image};
 
 svgImage.brush = function (el) {
     var style = el.style;
@@ -316,6 +316,7 @@ svgImage.brush = function (el) {
  * TEXT
  **************************************************/
 var svgText = {};
+export {svgText as text};
 var tmpRect = new BoundingRect();
 
 var svgTextDrawRectText = function (el, rect, textRect) {
@@ -501,10 +502,4 @@ svgText.brush = function (el) {
             width: 0, height: 0
         }, el.getBoundingRect());
     }
-};
-
-return {
-    path: svgPath,
-    image: svgImage,
-    text: svgText
 };

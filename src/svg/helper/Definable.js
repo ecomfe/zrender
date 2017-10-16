@@ -4,17 +4,17 @@
  * @author Zhang Wenli
  */
 
+import {createElement} from '../core';
+import * as zrUtil from '../../core/util';
+import Path from '../../graphic/Path';
+import ZImage from '../../graphic/Image';
+import ZText from '../../graphic/Text';
+import {
+    path as svgPath,
+    image as svgImage,
+    text as svgText,
+} from '../graphic';
 
-var svgCore = require('../core');
-var zrUtil = require('../../core/util');
-
-var Path = require('../../graphic/Path');
-var ZImage = require('../../graphic/Image');
-var ZText = require('../../graphic/Text');
-var svgGraphic = require('../graphic');
-var svgPath = svgGraphic.path;
-var svgImage = svgGraphic.image;
-var svgText = svgGraphic.text;
 
 var MARK_UNUSED = '0';
 var MARK_USED = '1';
@@ -43,7 +43,7 @@ function Definable(
 }
 
 
-Definable.prototype.createElement = svgCore.createElement;
+Definable.prototype.createElement = createElement;
 
 
 /**
@@ -256,4 +256,4 @@ Definable.prototype.getSvgElement = function (displayable) {
 };
 
 
-return Definable;
+export default Definable;

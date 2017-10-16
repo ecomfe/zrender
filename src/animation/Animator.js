@@ -2,10 +2,9 @@
  * @module echarts/animation/Animator
  */
 
-var Clip = require('./Clip');
-var color = require('../tool/color');
-var util = require('../core/util');
-var isArrayLike = util.isArrayLike;
+import Clip from './Clip';
+import * as color from '../tool/color';
+import {isArrayLike} from '../core/util';
 
 var arraySlice = Array.prototype.slice;
 
@@ -650,4 +649,4 @@ Animator.prototype = {
     }
 };
 
-return Animator;
+export default Animator;

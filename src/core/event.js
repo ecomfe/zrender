@@ -4,8 +4,8 @@
  * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  */
 
-var Eventful = require('../mixin/Eventful');
-var env = require('./env');
+import Eventful from '../mixin/Eventful';
+import env from './env';
 
 var isDomLevel2 = (typeof window !== 'undefined') && !!window.addEventListener;
 
@@ -17,7 +17,7 @@ function getBoundingClientRect(el) {
 }
 
 // `calculate` is optional, default false
-function clientToLocal(el, e, out, calculate) {
+export function clientToLocal(el, e, out, calculate) {
     out = out || {};
 
     // According to the W3C Working Draft, offsetX and offsetY should be relative
@@ -69,7 +69,7 @@ function defaultGetZrXY(el, e, out) {
  * 如果存在第三方嵌入的一些dom触发的事件，或touch事件，需要转换一下事件坐标.
  * `calculate` is optional, default false.
  */
-function normalizeEvent(el, e, calculate) {
+export function normalizeEvent(el, e, calculate) {
 
     e = e || window.event;
 
@@ -103,7 +103,7 @@ function normalizeEvent(el, e, calculate) {
     return e;
 }
 
-function addEventListener(el, name, handler) {
+export function addEventListener(el, name, handler) {
     if (isDomLevel2) {
         el.addEventListener(name, handler);
     }
@@ -112,7 +112,7 @@ function addEventListener(el, name, handler) {
     }
 }
 
-function removeEventListener(el, name, handler) {
+export function removeEventListener(el, name, handler) {
     if (isDomLevel2) {
         el.removeEventListener(name, handler);
     }
@@ -130,7 +130,7 @@ function removeEventListener(el, name, handler) {
  * @method
  * @param {Event} e : event对象
  */
-var stop = isDomLevel2
+export var stop = isDomLevel2
     ? function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -141,19 +141,10 @@ var stop = isDomLevel2
         e.cancelBubble = true;
     };
 
-function notLeftMouse(e) {
+export function notLeftMouse(e) {
     // If e.which is undefined, considered as left mouse event.
     return e.which > 1;
 }
 
-return {
-    clientToLocal: clientToLocal,
-    normalizeEvent: normalizeEvent,
-    addEventListener: addEventListener,
-    removeEventListener: removeEventListener,
-    notLeftMouse: notLeftMouse,
-
-    stop: stop,
-    // 做向上兼容
-    Dispatcher: Eventful
-};
+// 做向上兼容
+export {Eventful as Dispatcher};

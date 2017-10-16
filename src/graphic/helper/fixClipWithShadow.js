@@ -1,5 +1,4 @@
-
-var env = require('../../core/env');
+import env from '../../core/env';
 
 // Fix weird bug in some version of IE11 (like 11.0.9600.178**),
 // where exception "unexpected call to method or property access"
@@ -23,7 +22,7 @@ var shadowTemp = [
     ['shadowOffsetY', 0]
 ];
 
-return function (orignalBrush) {
+export default function (orignalBrush) {
 
     // version string can be: '11.0'
     return (env.browser.ie && env.browser.version >= 11)
@@ -65,4 +64,4 @@ return function (orignalBrush) {
         }
 
         : orignalBrush;
-};
+}

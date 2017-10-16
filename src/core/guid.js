@@ -6,6 +6,6 @@
 
 var idStart = 0x0907;
 
-return function () {
+export default function () {
     return idStart++;
-};
+}
