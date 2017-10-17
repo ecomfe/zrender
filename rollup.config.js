@@ -2,6 +2,7 @@ import resolve from 'rollup-plugin-node-resolve';
 import commonjs from 'rollup-plugin-commonjs';
 import uglify from 'rollup-plugin-uglify';
 
+var watching = process.argv.indexOf('--watch') >= 0 || process.argv.indexOf('-w') >= 0;
 
 function getPlugins(production) {
     let plugins = [
@@ -62,12 +63,16 @@ function createBuild(production) {
             file: 'dist/zrender.js'
         },
         watch: {
-            include: ['./zrender*.js']
+            include: ['./src/**', './zrender*.js']
         }
     };
 }
 
-export default [
-    createBuild(false),
-    createBuild(true),
-];
+var configs = watching
+    ? createBuild(false)
+    : [
+        createBuild(false),
+        createBuild(true),
+    ];
+
+export default configs;
