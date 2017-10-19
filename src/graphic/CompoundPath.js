@@ -44,7 +44,7 @@ define(function (require) {
         },
 
         afterBrush: function () {
-            var paths = this.shape.paths;
+            var paths = this.shape.paths || [];
             for (var i = 0; i < paths.length; i++) {
                 paths[i].__dirtyPath = false;
             }
