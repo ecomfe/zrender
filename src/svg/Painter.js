@@ -90,6 +90,10 @@ define(function (require) {
         this.storage = storage;
 
         var svgRoot = createElement('svg');
+        svgRoot.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        svgRoot.setAttribute('version', '1.1');
+        svgRoot.setAttribute('baseProfile', 'full');
+
         this.gradientManager = new GradientManager(svgRoot);
         this.clipPathManager = new ClippathManager(svgRoot);
 
@@ -338,6 +342,12 @@ define(function (require) {
             if (this._viewport) {
                 this.root.removeChild(this._viewport);
             }
+        },
+
+        pathToSvg: function () {
+            this.refresh();
+            var html = this._svgRoot.outerHTML;
+            return 'data:img/svg+xml;utf-8,' + unescape(html);
         }
     };
 
