@@ -969,6 +969,7 @@ Painter.prototype = {
      * Get canvas which has all thing rendered
      * @param {Object} opts
      * @param {string} [opts.backgroundColor]
+     * @param {number} [opts.pixelRatio]
      */
     getRenderedCanvas: function (opts) {
         opts = opts || {};
