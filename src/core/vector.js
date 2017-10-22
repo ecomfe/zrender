@@ -102,7 +102,7 @@ export function sub(out, v1, v2) {
  * @return {number}
  */
 export function len(v) {
-    return Math.sqrt(this.lenSquare(v));
+    return Math.sqrt(lenSquare(v));
 }
 export var length = len; // jshint ignore:line
 

@@ -1078,7 +1078,7 @@ function sub(out, v1, v2) {
  * @return {number}
  */
 function len(v) {
-    return Math.sqrt(this.lenSquare(v));
+    return Math.sqrt(lenSquare(v));
 }
 var length = len; // jshint ignore:line
 
@@ -15104,7 +15104,7 @@ function sub$1(out, v1, v2) {
  * @return {number}
  */
 function len$1(v) {
-    return Math.sqrt(this.lenSquare(v));
+    return Math.sqrt(lenSquare$1(v));
 }
  // jshint ignore:line
 
@@ -15113,7 +15113,9 @@ function len$1(v) {
  * @param {Vector2} v
  * @return {number}
  */
-
+function lenSquare$1(v) {
+    return v[0] * v[0] + v[1] * v[1];
+}
 
 
 /**

@@ -31,7 +31,7 @@ function createBuild(min) {
             file: `dist/zrender${postfix}.js`
         },
         watch: {
-            include: ['./src/**', './zrender*.js']
+            include: ['./src/**', './index*.js']
         }
     };
 }
@@ -40,7 +40,7 @@ var configs = watching
     ? createBuild(false)
     : [
         createBuild(false),
-        createBuild(true),
+        createBuild(true)
     ];
 
 export default configs;
