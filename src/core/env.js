@@ -15,7 +15,8 @@ if (typeof navigator === 'undefined') {
         os: {},
         node: true,
         // Assume canvas is supported
-        canvasSupported: true
+        canvasSupported: true,
+        svgSupported: true
     };
 }
 else {
@@ -112,7 +113,8 @@ function detect(ua) {
         node: false,
         // 原生canvas支持，改极端点了
         // canvasSupported : !(browser.ie && parseFloat(browser.version) < 9)
-        canvasSupported : document.createElement('canvas').getContext ? true : false,
+        canvasSupported: !!document.createElement('canvas').getContext,
+        svgSupported: typeof SVGRect !== 'undefined',
         // @see <http://stackoverflow.com/questions/4817029/whats-the-best-way-to-detect-a-touch-screen-device-using-javascript>
         // works on most browsers
         // IE10/11 does not support touch event, and MS Edge supports them but not by
