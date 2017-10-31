@@ -1,7 +1,5 @@
-/* global require, __dirname, exports */
-
-let uglifyPlugin = require('rollup-plugin-uglify');
-let {resolve} = require('path');
+const uglifyPlugin = require('rollup-plugin-uglify');
+const {resolve} = require('path');
 
 // Based on echarts/
 function getPath(relativePath) {
@@ -28,7 +26,7 @@ function getPlugins(min) {
 /**
  * @param {boolean} [min=false]
  */
-exports.createBuild = function (min) {
+exports.create = function (min) {
     let postfixMin = min ? '.min' : '';
 
     return {
@@ -46,4 +44,3 @@ exports.createBuild = function (min) {
         }
     };
 };
-

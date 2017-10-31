@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-let fsExtra = require('fs-extra');
-let {resolve} = require('path');
-let config = require('./config.js');
-let commander = require('commander');
-let {build, watch} = require('./helper');
+const fsExtra = require('fs-extra');
+const {resolve} = require('path');
+const config = require('./config.js');
+const commander = require('commander');
+const {build, watch} = require('./helper');
 
 function run() {
 
@@ -44,16 +44,16 @@ function run() {
     let configs = [];
 
     if (isWatch) {
-        watch(config.createBuild());
+        watch(config.create());
     }
     else {
         if (!buildAll) {
-            configs = [config.createBuild(min)];
+            configs = [config.create(min)];
         }
         else {
             configs = [
-                config.createBuild(false),
-                config.createBuild(true)
+                config.create(false),
+                config.create(true)
             ];
         }
 
@@ -65,7 +65,10 @@ function run() {
     }
 }
 
-// Based on zrender dir/
+/**
+ * @param {string} relativePath Based on zrender directory.
+ * @return {string} Absolute path.
+ */
 function getPath(relativePath) {
     return resolve(__dirname, '../', relativePath);
 }
