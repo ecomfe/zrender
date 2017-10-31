@@ -3,7 +3,9 @@
 <head>
     <meta charset="utf-8" />
     <title>Text</title>
-    <script type="text/javascript" src="./esl.js"></script>
+    <script src="lib/rollup.browser.js"></script>
+    <script src="lib/requireES.js"></script>
+    <script src="lib/config.js"></script>
 </head>
 <body style="margin:0">
 
@@ -16,22 +18,12 @@
 
     var showBoundingRect;
 
-    require.config({
-        packages: [
-            {
-                name: 'zrender',
-                location: '../src',
-                main: 'zrender'
-            }
-        ]
-    });
-
-    require([
-        'zrender',
-        'zrender/graphic/Text',
-        'zrender/graphic/shape/Line',
-        'zrender/graphic/shape/Rect',
-        'zrender/vml/vml'
+    requireES([
+        'zrender/src/zrender',
+        'zrender/src/graphic/Text',
+        'zrender/src/graphic/shape/Line',
+        'zrender/src/graphic/shape/Rect',
+        'zrender/src/vml/vml'
     ], function(zrender, Text, Line, Rect){
 
         var zr = zrender.init(document.getElementById('main'));

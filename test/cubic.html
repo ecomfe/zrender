@@ -3,21 +3,14 @@
 <head>
     <meta charset="utf-8" />
     <title>cubic 函数测试</title>
-    <script type="text/javascript" src="esl.js"></script>
+    <script src="lib/rollup.browser.js"></script>
+    <script src="lib/requireES.js"></script>
+    <script src="lib/config.js"></script>
 </head>
 <body style="margin:0px;">
     <script type="text/javascript">
-    require.config({
-        packages: [
-            {
-                name: 'zrender',
-                location: '../src',
-                main: 'zrender'
-            }
-        ]
-    });
 
-    require(["zrender/core/curve"], function(curve){
+    requireES(["zrender/src/core/curve"], function(curve){
 
         function initCubic() {
             var dom = document.getElementById('cubic');

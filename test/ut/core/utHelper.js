@@ -47,14 +47,11 @@
                 if (!(requireId instanceof Array)) {
                     requireId = requireId != null ? [] : [requireId];
                 }
-                requireId = ['zrender'].concat(requireId);
+                requireId = ['zrender/src/zrender'].concat(requireId);
 
                 window.it(name, function (done) {
-                    helper.resetPackageLoader(onLoaderReset);
 
-                    function onLoaderReset() {
-                        window.require(requireId, onModuleLoaded);
-                    }
+                    window.requireES(requireId, onModuleLoaded);
 
                     function onModuleLoaded(zrender) {
                         var userScope = {
@@ -199,62 +196,10 @@
     };
 
     /**
-     * Reset package loader, where esl is cleaned and reloaded.
-     *
-     * @public
-     */
-    helper.resetPackageLoader = function (then) {
-        // Clean esl
-        var eslEl = helper.g('esl');
-        if (eslEl) {
-            helper.removeEl(eslEl);
-        }
-        var eslConfig = helper.g('esl');
-        if (eslConfig) {
-            helper.removeEl(eslConfig);
-        }
-        context.define = null;
-        context.require = null;
-
-        // Import esl.
-        helper.loadScript('./core/esl.js', 'esl', function () {
-            helper.loadScript('./core/config.js', 'config', function () {
-                then();
-            });
-        });
-    };
-
-    /**
      * @public
      */
     helper.isValueFinite = function (val) {
         return val != null && val !== '' && isFinite(val);
-    };
-
-    /**
-     * @public
-     * @param {Array.<string>} deps
-     * @param {Array.<Function>} testFnList
-     * @param {Function} done All done callback.
-     */
-    helper.resetPackageLoaderEachTest = function (deps, testFnList, done) {
-        var i = -1;
-        next();
-
-        function next() {
-            i++;
-            if (testFnList.length <= i) {
-                done();
-                return;
-            }
-
-            helper.resetPackageLoader(function () {
-                window.require(deps, function () {
-                    testFnList[i].apply(null, arguments);
-                    next();
-                });
-            });
-        }
     };
 
     helper.getGraphicElements = function (chartOrGroup, mainType, index) {
