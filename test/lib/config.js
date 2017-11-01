@@ -3,7 +3,7 @@
     var baseUrl = window.AMD_BASE_URL || '../';
     var sourceMap = window.AMD_ENABLE_SOURCE_MAP;
     // `true` by default for debugging.
-    sourceMap == null && (sourceMap === true);
+    sourceMap == null && (sourceMap = true);
 
     if (typeof require !== 'undefined') {
         require.config({
@@ -11,8 +11,9 @@
             paths: {
                 'zrender': 'dist/zrender',
                 'data': 'test/data'
-            },
-            urlArgs: '_v_=' + (+new Date())
+            }
+            // urlArgs will prevent break point on init in debug tool.
+            // urlArgs: '_v_=' + (+new Date())
         });
     }
 
@@ -23,8 +24,8 @@
                 'zrender': './',
                 'data': 'test/data'
             },
-            urlArgs: '_v_=' + (+new Date()),
             sourceMap: sourceMap
+            // urlArgs: '_v_=' + (+new Date()),
         });
     }
 
