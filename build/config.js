@@ -36,6 +36,7 @@ exports.create = function (min) {
         output: {
             name: 'zrender',
             format: 'umd',
+            legacy: true, // Must be declared both in inputOptions and outputOptions.
             sourcemap: !min,
             file: getPath(`dist/zrender${postfixMin}.js`)
         },
