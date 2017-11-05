@@ -122,9 +122,11 @@ function bindStyle(svgEl, style, isText) {
 /***************************************************
  * PATH
  **************************************************/
-function pathDataToString(data) {
+function pathDataToString(path) {
     var str = [];
-    for (var i = 0; i < data.length;) {
+    var data = path.data;
+    var dataLength = path.len();
+    for (var i = 0; i < dataLength;) {
         var cmd = data[i++];
         var cmdStr = '';
         var nData = 0;
@@ -252,7 +254,7 @@ svgPath.brush = function (el) {
         el.buildPath(path, el.shape);
         el.__dirtyPath = false;
 
-        attr(svgEl, 'd', pathDataToString(path.data));
+        attr(svgEl, 'd', pathDataToString(path));
     }
 
     bindStyle(svgEl, style);

@@ -254,7 +254,7 @@ if (!env.canvasSupported) {
     };
 
     var points = [[], [], []];
-    var pathDataToString = function (data, m) {
+    var pathDataToString = function (path, m) {
         var M = CMD.M;
         var C = CMD.C;
         var L = CMD.L;
@@ -268,7 +268,9 @@ if (!env.canvasSupported) {
         var i;
         var xi;
         var yi;
-        for (i = 0; i < data.length;) {
+        var data = path.data;
+        var dataLength = path.len();
+        for (i = 0; i < dataLength;) {
             cmd = data[i++];
             cmdStr = '';
             nPoint = 0;
@@ -489,7 +491,7 @@ if (!env.canvasSupported) {
             this.__dirtyPath = false;
         }
 
-        vmlEl.path = pathDataToString(path.data, this.transform);
+        vmlEl.path = pathDataToString(path, this.transform);
 
         vmlEl.style.zIndex = getZIndex(this.zlevel, this.z, this.z2);
 
