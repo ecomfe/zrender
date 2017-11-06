@@ -6,11 +6,11 @@ var win = window;
 
 var vmlInited = false;
 
-export var doc = win.document;
+export var doc = win && win.document;
 
 export var createNode;
 
-if (!env.canvasSupported) {
+if (doc && !env.canvasSupported) {
     try {
         !doc.namespaces.zrvml && doc.namespaces.add('zrvml', urn);
         createNode = function (tagName) {
@@ -26,7 +26,7 @@ if (!env.canvasSupported) {
 
 // From raphael
 export function initVML() {
-    if (vmlInited) {
+    if (vmlInited || !doc) {
         return;
     }
     vmlInited = true;
