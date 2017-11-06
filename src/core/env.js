@@ -9,15 +9,29 @@
 var env = {};
 
 if (typeof navigator === 'undefined') {
-    // In node
-    env = {
-        browser: {},
-        os: {},
-        node: true,
-        // Assume canvas is supported
-        canvasSupported: true,
-        svgSupported: true
-    };
+    if (wx && wx.version) {
+        // In Weixin Application
+        env = {
+            browser: {},
+            os: {},
+            node: false,
+            wxa: true, // Weixin Application
+            canvasSupported: true,
+            svgSupported: false
+        }
+    }
+    else {
+        // In node
+        env = {
+            browser: {},
+            os: {},
+            node: true,
+            wxa: false,
+            // Assume canvas is supported
+            canvasSupported: true,
+            svgSupported: true
+        };
+    }
 }
 else {
     env = detect(navigator.userAgent);
