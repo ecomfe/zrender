@@ -3,10 +3,10 @@
  */
 
 import * as zrUtil from './core/util';
-import * as matrix from './src/core/matrix';
-import * as vector from './src/core/vector';
-import * as colorTool from './src/tool/color';
-import * as pathTool from './src/tool/path';
+import * as matrix from './core/matrix';
+import * as vector from './core/vector';
+import * as colorTool from './tool/color';
+import * as pathTool from './tool/path';
 
 
 export {default as Group} from './container/Group';
