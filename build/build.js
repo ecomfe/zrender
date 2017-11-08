@@ -22,6 +22,10 @@ function run() {
         .usage('[options]')
         .description('Build zrender and generate result files in directory `zrender/dist` ')
         .option(
+            '--release',
+            'Build all for release'
+        )
+        .option(
             '-w, --watch',
             'Watch modifications of files and auto-compile to dist file (e.g., `zrender/dist/zrender.js`).'
         )
@@ -32,19 +36,18 @@ function run() {
         .parse(process.argv);
 
     let isWatch = !!commander.watch;
+    let isRelease = !!commander.release;
     let min = !!commander.min;
-    let buildAll = commander.watch == null
-        && commander.min == null;
 
     // Clear `echarts/dist`
-    if (buildAll) {
+    if (isRelease) {
         fsExtra.removeSync(getPath('./dist'));
     }
 
     if (isWatch) {
         watch(config.create());
     }
-    else if (buildAll) {
+    else if (isRelease) {
         build([
             config.create(false),
             config.create(true)
