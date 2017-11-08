@@ -2,7 +2,7 @@ import env from '../core/env';
 
 
 var urn = 'urn:schemas-microsoft-com:vml';
-var win = window;
+var win = typeof window === 'undefined' ? null : window;
 
 var vmlInited = false;
 
