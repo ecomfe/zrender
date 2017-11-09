@@ -4,7 +4,6 @@
 import env from '../core/env';
 import {applyTransform} from '../core/vector';
 import BoundingRect from '../core/BoundingRect';
-import {CMD} from '../core/PathProxy';
 import * as colorTool from '../tool/color';
 import * as textContain from '../contain/text';
 import * as textHelper from '../graphic/helper/text';
@@ -17,6 +16,7 @@ import PathProxy from '../core/PathProxy';
 import Gradient from '../graphic/Gradient';
 import * as vmlCore from './core';
 
+var CMD = PathProxy.CMD;
 var round = Math.round;
 var sqrt = Math.sqrt;
 var abs = Math.abs;

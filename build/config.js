@@ -31,7 +31,7 @@ exports.create = function (min) {
 
     return {
         plugins: getPlugins(min),
-        input: getPath(`./index.js`),
+        input: getPath(`./zrender.all.js`),
         legacy: true, // Support IE8-
         output: {
             name: 'zrender',
@@ -41,7 +41,7 @@ exports.create = function (min) {
             file: getPath(`dist/zrender${postfixMin}.js`)
         },
         watch: {
-            include: [getPath('./src/**'), getPath('./index*.js')]
+            include: [getPath('./src/**'), getPath('./zrender*.js')]
         }
     };
 };

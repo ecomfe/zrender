@@ -1,5 +1,7 @@
-import {CMD} from '../core/PathProxy';
+import PathProxy from '../core/PathProxy';
 import {applyTransform as v2ApplyTransform} from '../core/vector';
+
+var CMD = PathProxy.CMD;
 
 var points = [[], [], []];
 var mathSqrt = Math.sqrt;

@@ -5,6 +5,7 @@ const {resolve} = require('path');
 const config = require('./config.js');
 const commander = require('commander');
 const {build, watch} = require('./helper');
+const prePublish = require('./pre-publish');
 
 function run() {
 
@@ -26,6 +27,10 @@ function run() {
             'Build all for release'
         )
         .option(
+            '--prepublish',
+            'Build all for release'
+        )
+        .option(
             '-w, --watch',
             'Watch modifications of files and auto-compile to dist file (e.g., `zrender/dist/zrender.js`).'
         )
@@ -37,6 +42,7 @@ function run() {
 
     let isWatch = !!commander.watch;
     let isRelease = !!commander.release;
+    let isPrePublish = !!commander.prepublish;
     let min = !!commander.min;
 
     // Clear `echarts/dist`
@@ -47,15 +53,15 @@ function run() {
     if (isWatch) {
         watch(config.create());
     }
+    else if (isPrePublish) {
+        prePublish();
+    }
     else if (isRelease) {
         build([
             config.create(false),
             config.create(true)
         ]).then(function () {
-            // Compatible with prevoius folder structure: `echarts/lib` exists in `node_modules`
-            // npm run prepublish: `rm -r lib; cp -r src lib`
-            fsExtra.removeSync(getPath('./lib'));
-            fsExtra.copySync(getPath('./src'), getPath('./lib'));
+            prePublish();
         });
     }
     else {

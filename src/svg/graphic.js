@@ -3,12 +3,13 @@
 // 2. Image: sx, sy, sw, sh
 
 import {createElement} from './core';
-import {CMD} from '../core/PathProxy';
+import PathProxy from '../core/PathProxy';
 import BoundingRect from '../core/BoundingRect';
 import * as textContain from '../contain/text';
 import * as textHelper from '../graphic/helper/text';
 import Text from '../graphic/Text';
 
+var CMD = PathProxy.CMD;
 var arrayJoin = Array.prototype.join;
 
 var NONE = 'none';

@@ -1,4 +1,4 @@
-import {CMD} from '../core/PathProxy';
+import PathProxy from '../core/PathProxy';
 import * as line from './line';
 import * as cubic from './cubic';
 import * as quadratic from './quadratic';
@@ -7,6 +7,7 @@ import {normalizeRadian} from './util';
 import * as curve from '../core/curve';
 import windingLine from './windingLine';
 
+var CMD = PathProxy.CMD;
 var PI2 = Math.PI * 2;
 
 var EPSILON = 1e-4;

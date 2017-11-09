@@ -70,6 +70,7 @@
         "global",
         "require",
         "exports",
+        "module",
         "__dirname"
     ]
 }
