@@ -254,7 +254,12 @@ svgPath.brush = function (el) {
         el.buildPath(path, el.shape);
         el.__dirtyPath = false;
 
-        attr(svgEl, 'd', pathDataToString(path));
+        var pathStr = pathDataToString(path);
+        if (pathStr.indexOf('NaN') < 0) {
+            // Ignore illegal path, which may happen such in out-of-range
+            // data in Calendar series.
+            attr(svgEl, 'd', pathStr);
+        }
     }
 
     bindStyle(svgEl, style);
