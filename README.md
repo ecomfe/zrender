@@ -3,6 +3,10 @@ ZRender
 
 A lightweight canvas library which providing 2d draw for [ECharts](https://github.com/ecomfe/echarts)
 
+## Document
+
+[https://ecomfe.github.io/zrender-doc/public/](https://ecomfe.github.io/zrender-doc/public/)
+
 ## License
 
 BSD 3-Clause License
