@@ -803,181 +803,7 @@ var util = (Object.freeze || Object)({
 	$inject: $inject
 });
 
-/**
- * 3x2矩阵操作类
- * @exports zrender/tool/matrix
- */
-
 var ArrayCtor = typeof Float32Array === 'undefined'
-    ? Array
-   : Float32Array;
-
-/**
- * 创建一个单位矩阵
- * @return {Float32Array|Array.<number>}
- */
-function create() {
-    var out = new ArrayCtor(6);
-    identity(out);
-
-    return out;
-}
-
-/**
- * 设置矩阵为单位矩阵
- * @param {Float32Array|Array.<number>} out
- */
-function identity(out) {
-    out[0] = 1;
-    out[1] = 0;
-    out[2] = 0;
-    out[3] = 1;
-    out[4] = 0;
-    out[5] = 0;
-    return out;
-}
-
-/**
- * 复制矩阵
- * @param {Float32Array|Array.<number>} out
- * @param {Float32Array|Array.<number>} m
- */
-function copy(out, m) {
-    out[0] = m[0];
-    out[1] = m[1];
-    out[2] = m[2];
-    out[3] = m[3];
-    out[4] = m[4];
-    out[5] = m[5];
-    return out;
-}
-
-/**
- * 矩阵相乘
- * @param {Float32Array|Array.<number>} out
- * @param {Float32Array|Array.<number>} m1
- * @param {Float32Array|Array.<number>} m2
- */
-function mul(out, m1, m2) {
-    // Consider matrix.mul(m, m2, m);
-    // where out is the same as m2.
-    // So use temp variable to escape error.
-    var out0 = m1[0] * m2[0] + m1[2] * m2[1];
-    var out1 = m1[1] * m2[0] + m1[3] * m2[1];
-    var out2 = m1[0] * m2[2] + m1[2] * m2[3];
-    var out3 = m1[1] * m2[2] + m1[3] * m2[3];
-    var out4 = m1[0] * m2[4] + m1[2] * m2[5] + m1[4];
-    var out5 = m1[1] * m2[4] + m1[3] * m2[5] + m1[5];
-    out[0] = out0;
-    out[1] = out1;
-    out[2] = out2;
-    out[3] = out3;
-    out[4] = out4;
-    out[5] = out5;
-    return out;
-}
-
-/**
- * 平移变换
- * @param {Float32Array|Array.<number>} out
- * @param {Float32Array|Array.<number>} a
- * @param {Float32Array|Array.<number>} v
- */
-function translate(out, a, v) {
-    out[0] = a[0];
-    out[1] = a[1];
-    out[2] = a[2];
-    out[3] = a[3];
-    out[4] = a[4] + v[0];
-    out[5] = a[5] + v[1];
-    return out;
-}
-
-/**
- * 旋转变换
- * @param {Float32Array|Array.<number>} out
- * @param {Float32Array|Array.<number>} a
- * @param {number} rad
- */
-function rotate(out, a, rad) {
-    var aa = a[0];
-    var ac = a[2];
-    var atx = a[4];
-    var ab = a[1];
-    var ad = a[3];
-    var aty = a[5];
-    var st = Math.sin(rad);
-    var ct = Math.cos(rad);
-
-    out[0] = aa * ct + ab * st;
-    out[1] = -aa * st + ab * ct;
-    out[2] = ac * ct + ad * st;
-    out[3] = -ac * st + ct * ad;
-    out[4] = ct * atx + st * aty;
-    out[5] = ct * aty - st * atx;
-    return out;
-}
-
-/**
- * 缩放变换
- * @param {Float32Array|Array.<number>} out
- * @param {Float32Array|Array.<number>} a
- * @param {Float32Array|Array.<number>} v
- */
-function scale(out, a, v) {
-    var vx = v[0];
-    var vy = v[1];
-    out[0] = a[0] * vx;
-    out[1] = a[1] * vy;
-    out[2] = a[2] * vx;
-    out[3] = a[3] * vy;
-    out[4] = a[4] * vx;
-    out[5] = a[5] * vy;
-    return out;
-}
-
-/**
- * 求逆矩阵
- * @param {Float32Array|Array.<number>} out
- * @param {Float32Array|Array.<number>} a
- */
-function invert(out, a) {
-
-    var aa = a[0];
-    var ac = a[2];
-    var atx = a[4];
-    var ab = a[1];
-    var ad = a[3];
-    var aty = a[5];
-
-    var det = aa * ad - ab * ac;
-    if (!det) {
-        return null;
-    }
-    det = 1.0 / det;
-
-    out[0] = ad * det;
-    out[1] = -ab * det;
-    out[2] = -ac * det;
-    out[3] = aa * det;
-    out[4] = (ac * aty - ad * atx) * det;
-    out[5] = (ab * atx - aa * aty) * det;
-    return out;
-}
-
-
-var matrix = (Object.freeze || Object)({
-	create: create,
-	identity: identity,
-	copy: copy,
-	mul: mul,
-	translate: translate,
-	rotate: rotate,
-	scale: scale,
-	invert: invert
-});
-
-var ArrayCtor$1 = typeof Float32Array === 'undefined'
     ? Array
     : Float32Array;
 
@@ -987,8 +813,8 @@ var ArrayCtor$1 = typeof Float32Array === 'undefined'
  * @param {number} [y=0]
  * @return {Vector2}
  */
-function create$1(x, y) {
-    var out = new ArrayCtor$1(2);
+function create(x, y) {
+    var out = new ArrayCtor(2);
     if (x == null) {
         x = 0;
     }
@@ -1006,7 +832,7 @@ function create$1(x, y) {
  * @param {Vector2} v
  * @return {Vector2}
  */
-function copy$1(out, v) {
+function copy(out, v) {
     out[0] = v[0];
     out[1] = v[1];
     return out;
@@ -1018,7 +844,7 @@ function copy$1(out, v) {
  * @return {Vector2}
  */
 function clone$1(v) {
-    var out = new ArrayCtor$1(2);
+    var out = new ArrayCtor(2);
     out[0] = v[0];
     out[1] = v[1];
     return out;
@@ -1100,7 +926,7 @@ var lengthSquare = lenSquare;
  * @param {Vector2} v1
  * @param {Vector2} v2
  */
-function mul$1(out, v1, v2) {
+function mul(out, v1, v2) {
     out[0] = v1[0] * v2[0];
     out[1] = v1[1] * v2[1];
     return out;
@@ -1134,7 +960,7 @@ function dot(v1, v2) {
  * @param {Vector2} v
  * @param {number} s
  */
-function scale$1(out, v, s) {
+function scale(out, v, s) {
     out[0] = v[0] * s;
     out[1] = v[1] * s;
     return out;
@@ -1248,8 +1074,8 @@ function max(out, v1, v2) {
 
 
 var vector = (Object.freeze || Object)({
-	create: create$1,
-	copy: copy$1,
+	create: create,
+	copy: copy,
 	clone: clone$1,
 	set: set,
 	add: add,
@@ -1259,10 +1085,10 @@ var vector = (Object.freeze || Object)({
 	length: length,
 	lenSquare: lenSquare,
 	lengthSquare: lengthSquare,
-	mul: mul$1,
+	mul: mul,
 	div: div,
 	dot: dot,
-	scale: scale$1,
+	scale: scale,
 	normalize: normalize,
 	distance: distance,
 	dist: dist,
@@ -1274,6 +1100,1540 @@ var vector = (Object.freeze || Object)({
 	min: min,
 	max: max
 });
+
+// TODO Draggable for group
+// FIXME Draggable on element which has parent rotation or scale
+function Draggable() {
+
+    this.on('mousedown', this._dragStart, this);
+    this.on('mousemove', this._drag, this);
+    this.on('mouseup', this._dragEnd, this);
+    this.on('globalout', this._dragEnd, this);
+    // this._dropTarget = null;
+    // this._draggingTarget = null;
+
+    // this._x = 0;
+    // this._y = 0;
+}
+
+Draggable.prototype = {
+
+    constructor: Draggable,
+
+    _dragStart: function (e) {
+        var draggingTarget = e.target;
+        if (draggingTarget && draggingTarget.draggable) {
+            this._draggingTarget = draggingTarget;
+            draggingTarget.dragging = true;
+            this._x = e.offsetX;
+            this._y = e.offsetY;
+
+            this.dispatchToElement(param(draggingTarget, e), 'dragstart', e.event);
+        }
+    },
+
+    _drag: function (e) {
+        var draggingTarget = this._draggingTarget;
+        if (draggingTarget) {
+
+            var x = e.offsetX;
+            var y = e.offsetY;
+
+            var dx = x - this._x;
+            var dy = y - this._y;
+            this._x = x;
+            this._y = y;
+
+            draggingTarget.drift(dx, dy, e);
+            this.dispatchToElement(param(draggingTarget, e), 'drag', e.event);
+
+            var dropTarget = this.findHover(x, y, draggingTarget).target;
+            var lastDropTarget = this._dropTarget;
+            this._dropTarget = dropTarget;
+
+            if (draggingTarget !== dropTarget) {
+                if (lastDropTarget && dropTarget !== lastDropTarget) {
+                    this.dispatchToElement(param(lastDropTarget, e), 'dragleave', e.event);
+                }
+                if (dropTarget && dropTarget !== lastDropTarget) {
+                    this.dispatchToElement(param(dropTarget, e), 'dragenter', e.event);
+                }
+            }
+        }
+    },
+
+    _dragEnd: function (e) {
+        var draggingTarget = this._draggingTarget;
+
+        if (draggingTarget) {
+            draggingTarget.dragging = false;
+        }
+
+        this.dispatchToElement(param(draggingTarget, e), 'dragend', e.event);
+
+        if (this._dropTarget) {
+            this.dispatchToElement(param(this._dropTarget, e), 'drop', e.event);
+        }
+
+        this._draggingTarget = null;
+        this._dropTarget = null;
+    }
+
+};
+
+function param(target, e) {
+    return {target: target, topTarget: e && e.topTarget};
+}
+
+/**
+ * 事件扩展
+ * @module zrender/mixin/Eventful
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
+ *         pissang (https://www.github.com/pissang)
+ */
+
+var arrySlice = Array.prototype.slice;
+
+/**
+ * 事件分发器
+ * @alias module:zrender/mixin/Eventful
+ * @constructor
+ */
+var Eventful = function () {
+    this._$handlers = {};
+};
+
+Eventful.prototype = {
+
+    constructor: Eventful,
+
+    /**
+     * 单次触发绑定，trigger后销毁
+     *
+     * @param {string} event 事件名
+     * @param {Function} handler 响应函数
+     * @param {Object} context
+     */
+    one: function (event, handler, context) {
+        var _h = this._$handlers;
+
+        if (!handler || !event) {
+            return this;
+        }
+
+        if (!_h[event]) {
+            _h[event] = [];
+        }
+
+        for (var i = 0; i < _h[event].length; i++) {
+            if (_h[event][i].h === handler) {
+                return this;
+            }
+        }
+
+        _h[event].push({
+            h: handler,
+            one: true,
+            ctx: context || this
+        });
+
+        return this;
+    },
+
+    /**
+     * 绑定事件
+     * @param {string} event 事件名
+     * @param {Function} handler 事件处理函数
+     * @param {Object} [context]
+     */
+    on: function (event, handler, context) {
+        var _h = this._$handlers;
+
+        if (!handler || !event) {
+            return this;
+        }
+
+        if (!_h[event]) {
+            _h[event] = [];
+        }
+
+        for (var i = 0; i < _h[event].length; i++) {
+            if (_h[event][i].h === handler) {
+                return this;
+            }
+        }
+
+        _h[event].push({
+            h: handler,
+            one: false,
+            ctx: context || this
+        });
+
+        return this;
+    },
+
+    /**
+     * 是否绑定了事件
+     * @param  {string}  event
+     * @return {boolean}
+     */
+    isSilent: function (event) {
+        var _h = this._$handlers;
+        return _h[event] && _h[event].length;
+    },
+
+    /**
+     * 解绑事件
+     * @param {string} event 事件名
+     * @param {Function} [handler] 事件处理函数
+     */
+    off: function (event, handler) {
+        var _h = this._$handlers;
+
+        if (!event) {
+            this._$handlers = {};
+            return this;
+        }
+
+        if (handler) {
+            if (_h[event]) {
+                var newList = [];
+                for (var i = 0, l = _h[event].length; i < l; i++) {
+                    if (_h[event][i]['h'] != handler) {
+                        newList.push(_h[event][i]);
+                    }
+                }
+                _h[event] = newList;
+            }
+
+            if (_h[event] && _h[event].length === 0) {
+                delete _h[event];
+            }
+        }
+        else {
+            delete _h[event];
+        }
+
+        return this;
+    },
+
+    /**
+     * 事件分发
+     *
+     * @param {string} type 事件类型
+     */
+    trigger: function (type) {
+        if (this._$handlers[type]) {
+            var args = arguments;
+            var argLen = args.length;
+
+            if (argLen > 3) {
+                args = arrySlice.call(args, 1);
+            }
+
+            var _h = this._$handlers[type];
+            var len = _h.length;
+            for (var i = 0; i < len;) {
+                // Optimize advise from backbone
+                switch (argLen) {
+                    case 1:
+                        _h[i]['h'].call(_h[i]['ctx']);
+                        break;
+                    case 2:
+                        _h[i]['h'].call(_h[i]['ctx'], args[1]);
+                        break;
+                    case 3:
+                        _h[i]['h'].call(_h[i]['ctx'], args[1], args[2]);
+                        break;
+                    default:
+                        // have more than 2 given arguments
+                        _h[i]['h'].apply(_h[i]['ctx'], args);
+                        break;
+                }
+
+                if (_h[i]['one']) {
+                    _h.splice(i, 1);
+                    len--;
+                }
+                else {
+                    i++;
+                }
+            }
+        }
+
+        return this;
+    },
+
+    /**
+     * 带有context的事件分发, 最后一个参数是事件回调的context
+     * @param {string} type 事件类型
+     */
+    triggerWithContext: function (type) {
+        if (this._$handlers[type]) {
+            var args = arguments;
+            var argLen = args.length;
+
+            if (argLen > 4) {
+                args = arrySlice.call(args, 1, args.length - 1);
+            }
+            var ctx = args[args.length - 1];
+
+            var _h = this._$handlers[type];
+            var len = _h.length;
+            for (var i = 0; i < len;) {
+                // Optimize advise from backbone
+                switch (argLen) {
+                    case 1:
+                        _h[i]['h'].call(ctx);
+                        break;
+                    case 2:
+                        _h[i]['h'].call(ctx, args[1]);
+                        break;
+                    case 3:
+                        _h[i]['h'].call(ctx, args[1], args[2]);
+                        break;
+                    default:
+                        // have more than 2 given arguments
+                        _h[i]['h'].apply(ctx, args);
+                        break;
+                }
+
+                if (_h[i]['one']) {
+                    _h.splice(i, 1);
+                    len--;
+                }
+                else {
+                    i++;
+                }
+            }
+        }
+
+        return this;
+    }
+};
+
+/**
+ * Handler
+ * @module zrender/Handler
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
+ *         errorrik (errorrik@gmail.com)
+ *         pissang (shenyi.914@gmail.com)
+ */
+
+var SILENT = 'silent';
+
+function makeEventPacket(eveType, targetInfo, event) {
+    return {
+        type: eveType,
+        event: event,
+        // target can only be an element that is not silent.
+        target: targetInfo.target,
+        // topTarget can be a silent element.
+        topTarget: targetInfo.topTarget,
+        cancelBubble: false,
+        offsetX: event.zrX,
+        offsetY: event.zrY,
+        gestureEvent: event.gestureEvent,
+        pinchX: event.pinchX,
+        pinchY: event.pinchY,
+        pinchScale: event.pinchScale,
+        wheelDelta: event.zrDelta,
+        zrByTouch: event.zrByTouch,
+        which: event.which
+    };
+}
+
+function EmptyProxy () {}
+EmptyProxy.prototype.dispose = function () {};
+
+var handlerNames = [
+    'click', 'dblclick', 'mousewheel', 'mouseout',
+    'mouseup', 'mousedown', 'mousemove', 'contextmenu'
+];
+/**
+ * @alias module:zrender/Handler
+ * @constructor
+ * @extends module:zrender/mixin/Eventful
+ * @param {module:zrender/Storage} storage Storage instance.
+ * @param {module:zrender/Painter} painter Painter instance.
+ * @param {module:zrender/dom/HandlerProxy} proxy HandlerProxy instance.
+ * @param {HTMLElement} painterRoot painter.root (not painter.getViewportRoot()).
+ */
+var Handler = function(storage, painter, proxy, painterRoot) {
+    Eventful.call(this);
+
+    this.storage = storage;
+
+    this.painter = painter;
+
+    this.painterRoot = painterRoot;
+
+    proxy = proxy || new EmptyProxy();
+
+    /**
+     * Proxy of event. can be Dom, WebGLSurface, etc.
+     */
+    this.proxy = proxy;
+
+    // Attach handler
+    proxy.handler = this;
+
+    /**
+     * {target, topTarget, x, y}
+     * @private
+     * @type {Object}
+     */
+    this._hovered = {};
+
+    /**
+     * @private
+     * @type {Date}
+     */
+    this._lastTouchMoment;
+
+    /**
+     * @private
+     * @type {number}
+     */
+    this._lastX;
+
+    /**
+     * @private
+     * @type {number}
+     */
+    this._lastY;
+
+
+    Draggable.call(this);
+
+    each(handlerNames, function (name) {
+        proxy.on && proxy.on(name, this[name], this);
+    }, this);
+};
+
+Handler.prototype = {
+
+    constructor: Handler,
+
+    mousemove: function (event) {
+        var x = event.zrX;
+        var y = event.zrY;
+
+        var lastHovered = this._hovered;
+        var lastHoveredTarget = lastHovered.target;
+
+        // If lastHoveredTarget is removed from zr (detected by '__zr') by some API call
+        // (like 'setOption' or 'dispatchAction') in event handlers, we should find
+        // lastHovered again here. Otherwise 'mouseout' can not be triggered normally.
+        // See #6198.
+        if (lastHoveredTarget && !lastHoveredTarget.__zr) {
+            lastHovered = this.findHover(lastHovered.x, lastHovered.y);
+            lastHoveredTarget = lastHovered.target;
+        }
+
+        var hovered = this._hovered = this.findHover(x, y);
+        var hoveredTarget = hovered.target;
+
+        var proxy = this.proxy;
+        proxy.setCursor && proxy.setCursor(hoveredTarget ? hoveredTarget.cursor : 'default');
+
+        // Mouse out on previous hovered element
+        if (lastHoveredTarget && hoveredTarget !== lastHoveredTarget) {
+            this.dispatchToElement(lastHovered, 'mouseout', event);
+        }
+
+        // Mouse moving on one element
+        this.dispatchToElement(hovered, 'mousemove', event);
+
+        // Mouse over on a new element
+        if (hoveredTarget && hoveredTarget !== lastHoveredTarget) {
+            this.dispatchToElement(hovered, 'mouseover', event);
+        }
+    },
+
+    mouseout: function (event) {
+        this.dispatchToElement(this._hovered, 'mouseout', event);
+
+        // There might be some doms created by upper layer application
+        // at the same level of painter.getViewportRoot() (e.g., tooltip
+        // dom created by echarts), where 'globalout' event should not
+        // be triggered when mouse enters these doms. (But 'mouseout'
+        // should be triggered at the original hovered element as usual).
+        var element = event.toElement || event.relatedTarget;
+        var innerDom;
+        do {
+            element = element && element.parentNode;
+        }
+        while (element && element.nodeType != 9 && !(
+            innerDom = element === this.painterRoot
+        ));
+
+        !innerDom && this.trigger('globalout', {event: event});
+    },
+
+    /**
+     * Resize
+     */
+    resize: function (event) {
+        this._hovered = {};
+    },
+
+    /**
+     * Dispatch event
+     * @param {string} eventName
+     * @param {event=} eventArgs
+     */
+    dispatch: function (eventName, eventArgs) {
+        var handler = this[eventName];
+        handler && handler.call(this, eventArgs);
+    },
+
+    /**
+     * Dispose
+     */
+    dispose: function () {
+
+        this.proxy.dispose();
+
+        this.storage =
+        this.proxy =
+        this.painter = null;
+    },
+
+    /**
+     * 设置默认的cursor style
+     * @param {string} [cursorStyle='default'] 例如 crosshair
+     */
+    setCursorStyle: function (cursorStyle) {
+        var proxy = this.proxy;
+        proxy.setCursor && proxy.setCursor(cursorStyle);
+    },
+
+    /**
+     * 事件分发代理
+     *
+     * @private
+     * @param {Object} targetInfo {target, topTarget} 目标图形元素
+     * @param {string} eventName 事件名称
+     * @param {Object} event 事件对象
+     */
+    dispatchToElement: function (targetInfo, eventName, event) {
+        targetInfo = targetInfo || {};
+        var el = targetInfo.target;
+        if (el && el.silent) {
+            return;
+        }
+        var eventHandler = 'on' + eventName;
+        var eventPacket = makeEventPacket(eventName, targetInfo, event);
+
+        while (el) {
+            el[eventHandler]
+                && (eventPacket.cancelBubble = el[eventHandler].call(el, eventPacket));
+
+            el.trigger(eventName, eventPacket);
+
+            el = el.parent;
+
+            if (eventPacket.cancelBubble) {
+                break;
+            }
+        }
+
+        if (!eventPacket.cancelBubble) {
+            // 冒泡到顶级 zrender 对象
+            this.trigger(eventName, eventPacket);
+            // 分发事件到用户自定义层
+            // 用户有可能在全局 click 事件中 dispose，所以需要判断下 painter 是否存在
+            this.painter && this.painter.eachOtherLayer(function (layer) {
+                if (typeof(layer[eventHandler]) == 'function') {
+                    layer[eventHandler].call(layer, eventPacket);
+                }
+                if (layer.trigger) {
+                    layer.trigger(eventName, eventPacket);
+                }
+            });
+        }
+    },
+
+    /**
+     * @private
+     * @param {number} x
+     * @param {number} y
+     * @param {module:zrender/graphic/Displayable} exclude
+     * @return {model:zrender/Element}
+     * @method
+     */
+    findHover: function(x, y, exclude) {
+        var list = this.storage.getDisplayList();
+        var out = {x: x, y: y};
+
+        for (var i = list.length - 1; i >= 0 ; i--) {
+            var hoverCheckResult;
+            if (list[i] !== exclude
+                // getDisplayList may include ignored item in VML mode
+                && !list[i].ignore
+                && (hoverCheckResult = isHover(list[i], x, y))
+            ) {
+                !out.topTarget && (out.topTarget = list[i]);
+                if (hoverCheckResult !== SILENT) {
+                    out.target = list[i];
+                    break;
+                }
+            }
+        }
+
+        return out;
+    }
+};
+
+// Common handlers
+each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick', 'contextmenu'], function (name) {
+    Handler.prototype[name] = function (event) {
+        // Find hover again to avoid click event is dispatched manually. Or click is triggered without mouseover
+        var hovered = this.findHover(event.zrX, event.zrY);
+        var hoveredTarget = hovered.target;
+
+        if (name === 'mousedown') {
+            this._downEl = hoveredTarget;
+            this._downPoint = [event.zrX, event.zrY];
+            // In case click triggered before mouseup
+            this._upEl = hoveredTarget;
+        }
+        else if (name === 'mosueup') {
+            this._upEl = hoveredTarget;
+        }
+        else if (name === 'click') {
+            if (this._downEl !== this._upEl
+                // Original click event is triggered on the whole canvas element,
+                // including the case that `mousedown` - `mousemove` - `mouseup`,
+                // which should be filtered, otherwise it will bring trouble to
+                // pan and zoom.
+                || !this._downPoint
+                // Arbitrary value
+                || dist(this._downPoint, [event.zrX, event.zrY]) > 4
+            ) {
+                return;
+            }
+            this._downPoint = null;
+        }
+
+        this.dispatchToElement(hovered, name, event);
+    };
+});
+
+function isHover(displayable, x, y) {
+    if (displayable[displayable.rectHover ? 'rectContain' : 'contain'](x, y)) {
+        var el = displayable;
+        var isSilent;
+        while (el) {
+            // If clipped by ancestor.
+            // FIXME: If clipPath has neither stroke nor fill,
+            // el.clipPath.contain(x, y) will always return false.
+            if (el.clipPath && !el.clipPath.contain(x, y))  {
+                return false;
+            }
+            if (el.silent) {
+                isSilent = true;
+            }
+            el = el.parent;
+        }
+        return isSilent ? SILENT : true;
+    }
+
+    return false;
+}
+
+mixin(Handler, Eventful);
+mixin(Handler, Draggable);
+
+/**
+ * 3x2矩阵操作类
+ * @exports zrender/tool/matrix
+ */
+
+var ArrayCtor$1 = typeof Float32Array === 'undefined'
+    ? Array
+   : Float32Array;
+
+/**
+ * 创建一个单位矩阵
+ * @return {Float32Array|Array.<number>}
+ */
+function create$1() {
+    var out = new ArrayCtor$1(6);
+    identity(out);
+
+    return out;
+}
+
+/**
+ * 设置矩阵为单位矩阵
+ * @param {Float32Array|Array.<number>} out
+ */
+function identity(out) {
+    out[0] = 1;
+    out[1] = 0;
+    out[2] = 0;
+    out[3] = 1;
+    out[4] = 0;
+    out[5] = 0;
+    return out;
+}
+
+/**
+ * 复制矩阵
+ * @param {Float32Array|Array.<number>} out
+ * @param {Float32Array|Array.<number>} m
+ */
+function copy$1(out, m) {
+    out[0] = m[0];
+    out[1] = m[1];
+    out[2] = m[2];
+    out[3] = m[3];
+    out[4] = m[4];
+    out[5] = m[5];
+    return out;
+}
+
+/**
+ * 矩阵相乘
+ * @param {Float32Array|Array.<number>} out
+ * @param {Float32Array|Array.<number>} m1
+ * @param {Float32Array|Array.<number>} m2
+ */
+function mul$1(out, m1, m2) {
+    // Consider matrix.mul(m, m2, m);
+    // where out is the same as m2.
+    // So use temp variable to escape error.
+    var out0 = m1[0] * m2[0] + m1[2] * m2[1];
+    var out1 = m1[1] * m2[0] + m1[3] * m2[1];
+    var out2 = m1[0] * m2[2] + m1[2] * m2[3];
+    var out3 = m1[1] * m2[2] + m1[3] * m2[3];
+    var out4 = m1[0] * m2[4] + m1[2] * m2[5] + m1[4];
+    var out5 = m1[1] * m2[4] + m1[3] * m2[5] + m1[5];
+    out[0] = out0;
+    out[1] = out1;
+    out[2] = out2;
+    out[3] = out3;
+    out[4] = out4;
+    out[5] = out5;
+    return out;
+}
+
+/**
+ * 平移变换
+ * @param {Float32Array|Array.<number>} out
+ * @param {Float32Array|Array.<number>} a
+ * @param {Float32Array|Array.<number>} v
+ */
+function translate(out, a, v) {
+    out[0] = a[0];
+    out[1] = a[1];
+    out[2] = a[2];
+    out[3] = a[3];
+    out[4] = a[4] + v[0];
+    out[5] = a[5] + v[1];
+    return out;
+}
+
+/**
+ * 旋转变换
+ * @param {Float32Array|Array.<number>} out
+ * @param {Float32Array|Array.<number>} a
+ * @param {number} rad
+ */
+function rotate(out, a, rad) {
+    var aa = a[0];
+    var ac = a[2];
+    var atx = a[4];
+    var ab = a[1];
+    var ad = a[3];
+    var aty = a[5];
+    var st = Math.sin(rad);
+    var ct = Math.cos(rad);
+
+    out[0] = aa * ct + ab * st;
+    out[1] = -aa * st + ab * ct;
+    out[2] = ac * ct + ad * st;
+    out[3] = -ac * st + ct * ad;
+    out[4] = ct * atx + st * aty;
+    out[5] = ct * aty - st * atx;
+    return out;
+}
+
+/**
+ * 缩放变换
+ * @param {Float32Array|Array.<number>} out
+ * @param {Float32Array|Array.<number>} a
+ * @param {Float32Array|Array.<number>} v
+ */
+function scale$1(out, a, v) {
+    var vx = v[0];
+    var vy = v[1];
+    out[0] = a[0] * vx;
+    out[1] = a[1] * vy;
+    out[2] = a[2] * vx;
+    out[3] = a[3] * vy;
+    out[4] = a[4] * vx;
+    out[5] = a[5] * vy;
+    return out;
+}
+
+/**
+ * 求逆矩阵
+ * @param {Float32Array|Array.<number>} out
+ * @param {Float32Array|Array.<number>} a
+ */
+function invert(out, a) {
+
+    var aa = a[0];
+    var ac = a[2];
+    var atx = a[4];
+    var ab = a[1];
+    var ad = a[3];
+    var aty = a[5];
+
+    var det = aa * ad - ab * ac;
+    if (!det) {
+        return null;
+    }
+    det = 1.0 / det;
+
+    out[0] = ad * det;
+    out[1] = -ab * det;
+    out[2] = -ac * det;
+    out[3] = aa * det;
+    out[4] = (ac * aty - ad * atx) * det;
+    out[5] = (ab * atx - aa * aty) * det;
+    return out;
+}
+
+
+var matrix = (Object.freeze || Object)({
+	create: create$1,
+	identity: identity,
+	copy: copy$1,
+	mul: mul$1,
+	translate: translate,
+	rotate: rotate,
+	scale: scale$1,
+	invert: invert
+});
+
+/**
+ * 提供变换扩展
+ * @module zrender/mixin/Transformable
+ * @author pissang (https://www.github.com/pissang)
+ */
+
+var mIdentity = identity;
+
+var EPSILON = 5e-5;
+
+function isNotAroundZero(val) {
+    return val > EPSILON || val < -EPSILON;
+}
+
+/**
+ * @alias module:zrender/mixin/Transformable
+ * @constructor
+ */
+var Transformable = function (opts) {
+    opts = opts || {};
+    // If there are no given position, rotation, scale
+    if (!opts.position) {
+        /**
+         * 平移
+         * @type {Array.<number>}
+         * @default [0, 0]
+         */
+        this.position = [0, 0];
+    }
+    if (opts.rotation == null) {
+        /**
+         * 旋转
+         * @type {Array.<number>}
+         * @default 0
+         */
+        this.rotation = 0;
+    }
+    if (!opts.scale) {
+        /**
+         * 缩放
+         * @type {Array.<number>}
+         * @default [1, 1]
+         */
+        this.scale = [1, 1];
+    }
+    /**
+     * 旋转和缩放的原点
+     * @type {Array.<number>}
+     * @default null
+     */
+    this.origin = this.origin || null;
+};
+
+var transformableProto = Transformable.prototype;
+transformableProto.transform = null;
+
+/**
+ * 判断是否需要有坐标变换
+ * 如果有坐标变换, 则从position, rotation, scale以及父节点的transform计算出自身的transform矩阵
+ */
+transformableProto.needLocalTransform = function () {
+    return isNotAroundZero(this.rotation)
+        || isNotAroundZero(this.position[0])
+        || isNotAroundZero(this.position[1])
+        || isNotAroundZero(this.scale[0] - 1)
+        || isNotAroundZero(this.scale[1] - 1);
+};
+
+transformableProto.updateTransform = function () {
+    var parent = this.parent;
+    var parentHasTransform = parent && parent.transform;
+    var needLocalTransform = this.needLocalTransform();
+
+    var m = this.transform;
+    if (!(needLocalTransform || parentHasTransform)) {
+        m && mIdentity(m);
+        return;
+    }
+
+    m = m || create$1();
+
+    if (needLocalTransform) {
+        this.getLocalTransform(m);
+    }
+    else {
+        mIdentity(m);
+    }
+
+    // 应用父节点变换
+    if (parentHasTransform) {
+        if (needLocalTransform) {
+            mul$1(m, parent.transform, m);
+        }
+        else {
+            copy$1(m, parent.transform);
+        }
+    }
+    // 保存这个变换矩阵
+    this.transform = m;
+
+    this.invTransform = this.invTransform || create$1();
+    invert(this.invTransform, m);
+};
+
+transformableProto.getLocalTransform = function (m) {
+    return Transformable.getLocalTransform(this, m);
+};
+
+/**
+ * 将自己的transform应用到context上
+ * @param {CanvasRenderingContext2D} ctx
+ */
+transformableProto.setTransform = function (ctx) {
+    var m = this.transform;
+    var dpr = ctx.dpr || 1;
+    if (m) {
+        ctx.setTransform(dpr * m[0], dpr * m[1], dpr * m[2], dpr * m[3], dpr * m[4], dpr * m[5]);
+    }
+    else {
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+};
+
+transformableProto.restoreTransform = function (ctx) {
+    var dpr = ctx.dpr || 1;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+};
+
+var tmpTransform = [];
+
+/**
+ * 分解`transform`矩阵到`position`, `rotation`, `scale`
+ */
+transformableProto.decomposeTransform = function () {
+    if (!this.transform) {
+        return;
+    }
+    var parent = this.parent;
+    var m = this.transform;
+    if (parent && parent.transform) {
+        // Get local transform and decompose them to position, scale, rotation
+        mul$1(tmpTransform, parent.invTransform, m);
+        m = tmpTransform;
+    }
+    var sx = m[0] * m[0] + m[1] * m[1];
+    var sy = m[2] * m[2] + m[3] * m[3];
+    var position = this.position;
+    var scale$$1 = this.scale;
+    if (isNotAroundZero(sx - 1)) {
+        sx = Math.sqrt(sx);
+    }
+    if (isNotAroundZero(sy - 1)) {
+        sy = Math.sqrt(sy);
+    }
+    if (m[0] < 0) {
+        sx = -sx;
+    }
+    if (m[3] < 0) {
+        sy = -sy;
+    }
+    position[0] = m[4];
+    position[1] = m[5];
+    scale$$1[0] = sx;
+    scale$$1[1] = sy;
+    this.rotation = Math.atan2(-m[1] / sy, m[0] / sx);
+};
+
+/**
+ * Get global scale
+ * @return {Array.<number>}
+ */
+transformableProto.getGlobalScale = function () {
+    var m = this.transform;
+    if (!m) {
+        return [1, 1];
+    }
+    var sx = Math.sqrt(m[0] * m[0] + m[1] * m[1]);
+    var sy = Math.sqrt(m[2] * m[2] + m[3] * m[3]);
+    if (m[0] < 0) {
+        sx = -sx;
+    }
+    if (m[3] < 0) {
+        sy = -sy;
+    }
+    return [sx, sy];
+};
+/**
+ * 变换坐标位置到 shape 的局部坐标空间
+ * @method
+ * @param {number} x
+ * @param {number} y
+ * @return {Array.<number>}
+ */
+transformableProto.transformCoordToLocal = function (x, y) {
+    var v2 = [x, y];
+    var invTransform = this.invTransform;
+    if (invTransform) {
+        applyTransform(v2, v2, invTransform);
+    }
+    return v2;
+};
+
+/**
+ * 变换局部坐标位置到全局坐标空间
+ * @method
+ * @param {number} x
+ * @param {number} y
+ * @return {Array.<number>}
+ */
+transformableProto.transformCoordToGlobal = function (x, y) {
+    var v2 = [x, y];
+    var transform = this.transform;
+    if (transform) {
+        applyTransform(v2, v2, transform);
+    }
+    return v2;
+};
+
+/**
+ * @static
+ * @param {Object} target
+ * @param {Array.<number>} target.origin
+ * @param {number} target.rotation
+ * @param {Array.<number>} target.position
+ * @param {Array.<number>} [m]
+ */
+Transformable.getLocalTransform = function (target, m) {
+    m = m || [];
+    mIdentity(m);
+
+    var origin = target.origin;
+    var scale$$1 = target.scale || [1, 1];
+    var rotation = target.rotation || 0;
+    var position = target.position || [0, 0];
+
+    if (origin) {
+        // Translate to origin
+        m[4] -= origin[0];
+        m[5] -= origin[1];
+    }
+    scale$1(m, m, scale$$1);
+    if (rotation) {
+        rotate(m, m, rotation);
+    }
+    if (origin) {
+        // Translate back from origin
+        m[4] += origin[0];
+        m[5] += origin[1];
+    }
+
+    m[4] += position[0];
+    m[5] += position[1];
+
+    return m;
+};
+
+/**
+ * 缓动代码来自 https://github.com/sole/tween.js/blob/master/src/Tween.js
+ * @see http://sole.github.io/tween.js/examples/03_graphs.html
+ * @exports zrender/animation/easing
+ */
+var easing = {
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    linear: function (k) {
+        return k;
+    },
+
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    quadraticIn: function (k) {
+        return k * k;
+    },
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    quadraticOut: function (k) {
+        return k * (2 - k);
+    },
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    quadraticInOut: function (k) {
+        if ((k *= 2) < 1) {
+            return 0.5 * k * k;
+        }
+        return -0.5 * (--k * (k - 2) - 1);
+    },
+
+    // 三次方的缓动（t^3）
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    cubicIn: function (k) {
+        return k * k * k;
+    },
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    cubicOut: function (k) {
+        return --k * k * k + 1;
+    },
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    cubicInOut: function (k) {
+        if ((k *= 2) < 1) {
+            return 0.5 * k * k * k;
+        }
+        return 0.5 * ((k -= 2) * k * k + 2);
+    },
+
+    // 四次方的缓动（t^4）
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    quarticIn: function (k) {
+        return k * k * k * k;
+    },
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    quarticOut: function (k) {
+        return 1 - (--k * k * k * k);
+    },
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    quarticInOut: function (k) {
+        if ((k *= 2) < 1) {
+            return 0.5 * k * k * k * k;
+        }
+        return -0.5 * ((k -= 2) * k * k * k - 2);
+    },
+
+    // 五次方的缓动（t^5）
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    quinticIn: function (k) {
+        return k * k * k * k * k;
+    },
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    quinticOut: function (k) {
+        return --k * k * k * k * k + 1;
+    },
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    quinticInOut: function (k) {
+        if ((k *= 2) < 1) {
+            return 0.5 * k * k * k * k * k;
+        }
+        return 0.5 * ((k -= 2) * k * k * k * k + 2);
+    },
+
+    // 正弦曲线的缓动（sin(t)）
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    sinusoidalIn: function (k) {
+        return 1 - Math.cos(k * Math.PI / 2);
+    },
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    sinusoidalOut: function (k) {
+        return Math.sin(k * Math.PI / 2);
+    },
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    sinusoidalInOut: function (k) {
+        return 0.5 * (1 - Math.cos(Math.PI * k));
+    },
+
+    // 指数曲线的缓动（2^t）
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    exponentialIn: function (k) {
+        return k === 0 ? 0 : Math.pow(1024, k - 1);
+    },
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    exponentialOut: function (k) {
+        return k === 1 ? 1 : 1 - Math.pow(2, -10 * k);
+    },
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    exponentialInOut: function (k) {
+        if (k === 0) {
+            return 0;
+        }
+        if (k === 1) {
+            return 1;
+        }
+        if ((k *= 2) < 1) {
+            return 0.5 * Math.pow(1024, k - 1);
+        }
+        return 0.5 * (-Math.pow(2, -10 * (k - 1)) + 2);
+    },
+
+    // 圆形曲线的缓动（sqrt(1-t^2)）
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    circularIn: function (k) {
+        return 1 - Math.sqrt(1 - k * k);
+    },
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    circularOut: function (k) {
+        return Math.sqrt(1 - (--k * k));
+    },
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    circularInOut: function (k) {
+        if ((k *= 2) < 1) {
+            return -0.5 * (Math.sqrt(1 - k * k) - 1);
+        }
+        return 0.5 * (Math.sqrt(1 - (k -= 2) * k) + 1);
+    },
+
+    // 创建类似于弹簧在停止前来回振荡的动画
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    elasticIn: function (k) {
+        var s;
+        var a = 0.1;
+        var p = 0.4;
+        if (k === 0) {
+            return 0;
+        }
+        if (k === 1) {
+            return 1;
+        }
+        if (!a || a < 1) {
+            a = 1; s = p / 4;
+        }
+        else {
+            s = p * Math.asin(1 / a) / (2 * Math.PI);
+        }
+        return -(a * Math.pow(2, 10 * (k -= 1)) *
+                    Math.sin((k - s) * (2 * Math.PI) / p));
+    },
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    elasticOut: function (k) {
+        var s;
+        var a = 0.1;
+        var p = 0.4;
+        if (k === 0) {
+            return 0;
+        }
+        if (k === 1) {
+            return 1;
+        }
+        if (!a || a < 1) {
+            a = 1; s = p / 4;
+        }
+        else {
+            s = p * Math.asin(1 / a) / (2 * Math.PI);
+        }
+        return (a * Math.pow(2, -10 * k) *
+                Math.sin((k - s) * (2 * Math.PI) / p) + 1);
+    },
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    elasticInOut: function (k) {
+        var s;
+        var a = 0.1;
+        var p = 0.4;
+        if (k === 0) {
+            return 0;
+        }
+        if (k === 1) {
+            return 1;
+        }
+        if (!a || a < 1) {
+            a = 1; s = p / 4;
+        }
+        else {
+            s = p * Math.asin(1 / a) / (2 * Math.PI);
+        }
+        if ((k *= 2) < 1) {
+            return -0.5 * (a * Math.pow(2, 10 * (k -= 1))
+                * Math.sin((k - s) * (2 * Math.PI) / p));
+        }
+        return a * Math.pow(2, -10 * (k -= 1))
+                * Math.sin((k - s) * (2 * Math.PI) / p) * 0.5 + 1;
+
+    },
+
+    // 在某一动画开始沿指示的路径进行动画处理前稍稍收回该动画的移动
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    backIn: function (k) {
+        var s = 1.70158;
+        return k * k * ((s + 1) * k - s);
+    },
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    backOut: function (k) {
+        var s = 1.70158;
+        return --k * k * ((s + 1) * k + s) + 1;
+    },
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    backInOut: function (k) {
+        var s = 1.70158 * 1.525;
+        if ((k *= 2) < 1) {
+            return 0.5 * (k * k * ((s + 1) * k - s));
+        }
+        return 0.5 * ((k -= 2) * k * ((s + 1) * k + s) + 2);
+    },
+
+    // 创建弹跳效果
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    bounceIn: function (k) {
+        return 1 - easing.bounceOut(1 - k);
+    },
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    bounceOut: function (k) {
+        if (k < (1 / 2.75)) {
+            return 7.5625 * k * k;
+        }
+        else if (k < (2 / 2.75)) {
+            return 7.5625 * (k -= (1.5 / 2.75)) * k + 0.75;
+        }
+        else if (k < (2.5 / 2.75)) {
+            return 7.5625 * (k -= (2.25 / 2.75)) * k + 0.9375;
+        }
+        else {
+            return 7.5625 * (k -= (2.625 / 2.75)) * k + 0.984375;
+        }
+    },
+    /**
+    * @param {number} k
+    * @return {number}
+    */
+    bounceInOut: function (k) {
+        if (k < 0.5) {
+            return easing.bounceIn(k * 2) * 0.5;
+        }
+        return easing.bounceOut(k * 2 - 1) * 0.5 + 0.5;
+    }
+};
+
+/**
+ * 动画主控制器
+ * @config target 动画对象，可以是数组，如果是数组的话会批量分发onframe等事件
+ * @config life(1000) 动画时长
+ * @config delay(0) 动画延迟时间
+ * @config loop(true)
+ * @config gap(0) 循环的间隔时间
+ * @config onframe
+ * @config easing(optional)
+ * @config ondestroy(optional)
+ * @config onrestart(optional)
+ *
+ * TODO pause
+ */
+
+function Clip(options) {
+
+    this._target = options.target;
+
+    // 生命周期
+    this._life = options.life || 1000;
+    // 延时
+    this._delay = options.delay || 0;
+    // 开始时间
+    // this._startTime = new Date().getTime() + this._delay;// 单位毫秒
+    this._initialized = false;
+
+    // 是否循环
+    this.loop = options.loop == null ? false : options.loop;
+
+    this.gap = options.gap || 0;
+
+    this.easing = options.easing || 'Linear';
+
+    this.onframe = options.onframe;
+    this.ondestroy = options.ondestroy;
+    this.onrestart = options.onrestart;
+
+    this._pausedTime = 0;
+    this._paused = false;
+}
+
+Clip.prototype = {
+
+    constructor: Clip,
+
+    step: function (globalTime, deltaTime) {
+        // Set startTime on first step, or _startTime may has milleseconds different between clips
+        // PENDING
+        if (!this._initialized) {
+            this._startTime = globalTime + this._delay;
+            this._initialized = true;
+        }
+
+        if (this._paused) {
+            this._pausedTime += deltaTime;
+            return;
+        }
+
+        var percent = (globalTime - this._startTime - this._pausedTime) / this._life;
+
+        // 还没开始
+        if (percent < 0) {
+            return;
+        }
+
+        percent = Math.min(percent, 1);
+
+        var easing$$1 = this.easing;
+        var easingFunc = typeof easing$$1 == 'string' ? easing[easing$$1] : easing$$1;
+        var schedule = typeof easingFunc === 'function'
+            ? easingFunc(percent)
+            : percent;
+
+        this.fire('frame', schedule);
+
+        // 结束
+        if (percent == 1) {
+            if (this.loop) {
+                this.restart (globalTime);
+                // 重新开始周期
+                // 抛出而不是直接调用事件直到 stage.update 后再统一调用这些事件
+                return 'restart';
+            }
+
+            // 动画完成将这个控制器标识为待删除
+            // 在Animation.update中进行批量删除
+            this._needsRemove = true;
+            return 'destroy';
+        }
+
+        return null;
+    },
+
+    restart: function (globalTime) {
+        var remainder = (globalTime - this._startTime - this._pausedTime) % this._life;
+        this._startTime = globalTime - remainder + this.gap;
+        this._pausedTime = 0;
+
+        this._needsRemove = false;
+    },
+
+    fire: function (eventType, arg) {
+        eventType = 'on' + eventType;
+        if (this[eventType]) {
+            this[eventType](this._target, arg);
+        }
+    },
+
+    pause: function () {
+        this._paused = true;
+    },
+
+    resume: function () {
+        this._paused = false;
+    }
+};
 
 // Simple LRU cache use doubly linked list
 // @module zrender/core/LRU
@@ -2009,1414 +3369,6 @@ var color = (Object.freeze || Object)({
 	modifyAlpha: modifyAlpha,
 	stringify: stringify
 });
-
-var STYLE_COMMON_PROPS = [
-    ['shadowBlur', 0], ['shadowOffsetX', 0], ['shadowOffsetY', 0], ['shadowColor', '#000'],
-    ['lineCap', 'butt'], ['lineJoin', 'miter'], ['miterLimit', 10]
-];
-
-// var SHADOW_PROPS = STYLE_COMMON_PROPS.slice(0, 4);
-// var LINE_PROPS = STYLE_COMMON_PROPS.slice(4);
-
-var Style = function (opts, host) {
-    this.extendFrom(opts, false);
-    this.host = host;
-};
-
-function createLinearGradient(ctx, obj, rect) {
-    var x = obj.x == null ? 0 : obj.x;
-    var x2 = obj.x2 == null ? 1 : obj.x2;
-    var y = obj.y == null ? 0 : obj.y;
-    var y2 = obj.y2 == null ? 0 : obj.y2;
-
-    if (!obj.global) {
-        x = x * rect.width + rect.x;
-        x2 = x2 * rect.width + rect.x;
-        y = y * rect.height + rect.y;
-        y2 = y2 * rect.height + rect.y;
-    }
-
-    var canvasGradient = ctx.createLinearGradient(x, y, x2, y2);
-
-    return canvasGradient;
-}
-
-function createRadialGradient(ctx, obj, rect) {
-    var width = rect.width;
-    var height = rect.height;
-    var min = Math.min(width, height);
-
-    var x = obj.x == null ? 0.5 : obj.x;
-    var y = obj.y == null ? 0.5 : obj.y;
-    var r = obj.r == null ? 0.5 : obj.r;
-    if (!obj.global) {
-        x = x * width + rect.x;
-        y = y * height + rect.y;
-        r = r * min;
-    }
-
-    var canvasGradient = ctx.createRadialGradient(x, y, 0, x, y, r);
-
-    return canvasGradient;
-}
-
-
-Style.prototype = {
-
-    constructor: Style,
-
-    /**
-     * @type {module:zrender/graphic/Displayable}
-     */
-    host: null,
-
-    /**
-     * @type {string}
-     */
-    fill: '#000',
-
-    /**
-     * @type {string}
-     */
-    stroke: null,
-
-    /**
-     * @type {number}
-     */
-    opacity: 1,
-
-    /**
-     * @type {Array.<number>}
-     */
-    lineDash: null,
-
-    /**
-     * @type {number}
-     */
-    lineDashOffset: 0,
-
-    /**
-     * @type {number}
-     */
-    shadowBlur: 0,
-
-    /**
-     * @type {number}
-     */
-    shadowOffsetX: 0,
-
-    /**
-     * @type {number}
-     */
-    shadowOffsetY: 0,
-
-    /**
-     * @type {number}
-     */
-    lineWidth: 1,
-
-    /**
-     * If stroke ignore scale
-     * @type {Boolean}
-     */
-    strokeNoScale: false,
-
-    // Bounding rect text configuration
-    // Not affected by element transform
-    /**
-     * @type {string}
-     */
-    text: null,
-
-    /**
-     * If `fontSize` or `fontFamily` exists, `font` will be reset by
-     * `fontSize`, `fontStyle`, `fontWeight`, `fontFamily`.
-     * So do not visit it directly in upper application (like echarts),
-     * but use `contain/text#makeFont` instead.
-     * @type {string}
-     */
-    font: null,
-
-    /**
-     * The same as font. Use font please.
-     * @deprecated
-     * @type {string}
-     */
-    textFont: null,
-
-    /**
-     * It helps merging respectively, rather than parsing an entire font string.
-     * @type {string}
-     */
-    fontStyle: null,
-
-    /**
-     * It helps merging respectively, rather than parsing an entire font string.
-     * @type {string}
-     */
-    fontWeight: null,
-
-    /**
-     * It helps merging respectively, rather than parsing an entire font string.
-     * Should be 12 but not '12px'.
-     * @type {number}
-     */
-    fontSize: null,
-
-    /**
-     * It helps merging respectively, rather than parsing an entire font string.
-     * @type {string}
-     */
-    fontFamily: null,
-
-    /**
-     * Reserved for special functinality, like 'hr'.
-     * @type {string}
-     */
-    textTag: null,
-
-    /**
-     * @type {string}
-     */
-    textFill: '#000',
-
-    /**
-     * @type {string}
-     */
-    textStroke: null,
-
-    /**
-     * @type {number}
-     */
-    textWidth: null,
-
-    /**
-     * Only for textBackground.
-     * @type {number}
-     */
-    textHeight: null,
-
-    /**
-     * textStroke may be set as some color as a default
-     * value in upper applicaion, where the default value
-     * of textStrokeWidth should be 0 to make sure that
-     * user can choose to do not use text stroke.
-     * @type {number}
-     */
-    textStrokeWidth: 0,
-
-    /**
-     * @type {number}
-     */
-    textLineHeight: null,
-
-    /**
-     * 'inside', 'left', 'right', 'top', 'bottom'
-     * [x, y]
-     * Based on x, y of rect.
-     * @type {string|Array.<number>}
-     * @default 'inside'
-     */
-    textPosition: 'inside',
-
-    /**
-     * If not specified, use the boundingRect of a `displayable`.
-     * @type {Object}
-     */
-    textRect: null,
-
-    /**
-     * [x, y]
-     * @type {Array.<number>}
-     */
-    textOffset: null,
-
-    /**
-     * @type {string}
-     */
-    textAlign: null,
-
-    /**
-     * @type {string}
-     */
-    textVerticalAlign: null,
-
-    /**
-     * @type {number}
-     */
-    textDistance: 5,
-
-    /**
-     * @type {string}
-     */
-    textShadowColor: 'transparent',
-
-    /**
-     * @type {number}
-     */
-    textShadowBlur: 0,
-
-    /**
-     * @type {number}
-     */
-    textShadowOffsetX: 0,
-
-    /**
-     * @type {number}
-     */
-    textShadowOffsetY: 0,
-
-    /**
-     * @type {string}
-     */
-    textBoxShadowColor: 'transparent',
-
-    /**
-     * @type {number}
-     */
-    textBoxShadowBlur: 0,
-
-    /**
-     * @type {number}
-     */
-    textBoxShadowOffsetX: 0,
-
-    /**
-     * @type {number}
-     */
-    textBoxShadowOffsetY: 0,
-
-    /**
-     * Whether transform text.
-     * Only useful in Path and Image element
-     * @type {boolean}
-     */
-    transformText: false,
-
-    /**
-     * Text rotate around position of Path or Image
-     * Only useful in Path and Image element and transformText is false.
-     */
-    textRotation: 0,
-
-    /**
-     * Text origin of text rotation, like [10, 40].
-     * Based on x, y of rect.
-     * Useful in label rotation of circular symbol.
-     * By default, this origin is textPosition.
-     * Can be 'center'.
-     * @type {string|Array.<number>}
-     */
-    textOrigin: null,
-
-    /**
-     * @type {string}
-     */
-    textBackgroundColor: null,
-
-    /**
-     * @type {string}
-     */
-    textBorderColor: null,
-
-    /**
-     * @type {number}
-     */
-    textBorderWidth: 0,
-
-    /**
-     * @type {number}
-     */
-    textBorderRadius: 0,
-
-    /**
-     * Can be `2` or `[2, 4]` or `[2, 3, 4, 5]`
-     * @type {number|Array.<number>}
-     */
-    textPadding: null,
-
-    /**
-     * Text styles for rich text.
-     * @type {Object}
-     */
-    rich: null,
-
-    /**
-     * {outerWidth, outerHeight, ellipsis, placeholder}
-     * @type {Object}
-     */
-    truncate: null,
-
-    /**
-     * https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/globalCompositeOperation
-     * @type {string}
-     */
-    blend: null,
-
-    /**
-     * @param {CanvasRenderingContext2D} ctx
-     */
-    bind: function (ctx, el, prevEl) {
-        var style = this;
-        var prevStyle = prevEl && prevEl.style;
-        var firstDraw = !prevStyle;
-
-        for (var i = 0; i < STYLE_COMMON_PROPS.length; i++) {
-            var prop = STYLE_COMMON_PROPS[i];
-            var styleName = prop[0];
-
-            if (firstDraw || style[styleName] !== prevStyle[styleName]) {
-                // FIXME Invalid property value will cause style leak from previous element.
-                ctx[styleName] = style[styleName] || prop[1];
-            }
-        }
-
-        if ((firstDraw || style.fill !== prevStyle.fill)) {
-            ctx.fillStyle = style.fill;
-        }
-        if ((firstDraw || style.stroke !== prevStyle.stroke)) {
-            ctx.strokeStyle = style.stroke;
-        }
-        if ((firstDraw || style.opacity !== prevStyle.opacity)) {
-            ctx.globalAlpha = style.opacity == null ? 1 : style.opacity;
-        }
-
-        if ((firstDraw || style.blend !== prevStyle.blend)) {
-            ctx.globalCompositeOperation = style.blend || 'source-over';
-        }
-        if (this.hasStroke()) {
-            var lineWidth = style.lineWidth;
-            ctx.lineWidth = lineWidth / (
-                (this.strokeNoScale && el && el.getLineScale) ? el.getLineScale() : 1
-            );
-        }
-    },
-
-    hasFill: function () {
-        var fill = this.fill;
-        return fill != null && fill !== 'none';
-    },
-
-    hasStroke: function () {
-        var stroke = this.stroke;
-        return stroke != null && stroke !== 'none' && this.lineWidth > 0;
-    },
-
-    /**
-     * Extend from other style
-     * @param {zrender/graphic/Style} otherStyle
-     * @param {boolean} overwrite true: overwrirte any way.
-     *                            false: overwrite only when !target.hasOwnProperty
-     *                            others: overwrite when property is not null/undefined.
-     */
-    extendFrom: function (otherStyle, overwrite) {
-        if (otherStyle) {
-            for (var name in otherStyle) {
-                if (otherStyle.hasOwnProperty(name)
-                    && (overwrite === true
-                        || (
-                            overwrite === false
-                                ? !this.hasOwnProperty(name)
-                                : otherStyle[name] != null
-                        )
-                    )
-                ) {
-                    this[name] = otherStyle[name];
-                }
-            }
-        }
-    },
-
-    /**
-     * Batch setting style with a given object
-     * @param {Object|string} obj
-     * @param {*} [obj]
-     */
-    set: function (obj, value) {
-        if (typeof obj === 'string') {
-            this[obj] = value;
-        }
-        else {
-            this.extendFrom(obj, true);
-        }
-    },
-
-    /**
-     * Clone
-     * @return {zrender/graphic/Style} [description]
-     */
-    clone: function () {
-        var newStyle = new this.constructor();
-        newStyle.extendFrom(this, true);
-        return newStyle;
-    },
-
-    getGradient: function (ctx, obj, rect) {
-        var method = obj.type === 'radial' ? createRadialGradient : createLinearGradient;
-        var canvasGradient = method(ctx, obj, rect);
-        var colorStops = obj.colorStops;
-        for (var i = 0; i < colorStops.length; i++) {
-            canvasGradient.addColorStop(
-                colorStops[i].offset, colorStops[i].color
-            );
-        }
-        return canvasGradient;
-    }
-
-};
-
-var styleProto = Style.prototype;
-for (var i = 0; i < STYLE_COMMON_PROPS.length; i++) {
-    var prop = STYLE_COMMON_PROPS[i];
-    if (!(prop[0] in styleProto)) {
-        styleProto[prop[0]] = prop[1];
-    }
-}
-
-// Provide for others
-Style.getGradient = styleProto.getGradient;
-
-/**
- * 事件扩展
- * @module zrender/mixin/Eventful
- * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
- *         pissang (https://www.github.com/pissang)
- */
-
-var arrySlice = Array.prototype.slice;
-
-/**
- * 事件分发器
- * @alias module:zrender/mixin/Eventful
- * @constructor
- */
-var Eventful = function () {
-    this._$handlers = {};
-};
-
-Eventful.prototype = {
-
-    constructor: Eventful,
-
-    /**
-     * 单次触发绑定，trigger后销毁
-     *
-     * @param {string} event 事件名
-     * @param {Function} handler 响应函数
-     * @param {Object} context
-     */
-    one: function (event, handler, context) {
-        var _h = this._$handlers;
-
-        if (!handler || !event) {
-            return this;
-        }
-
-        if (!_h[event]) {
-            _h[event] = [];
-        }
-
-        for (var i = 0; i < _h[event].length; i++) {
-            if (_h[event][i].h === handler) {
-                return this;
-            }
-        }
-
-        _h[event].push({
-            h: handler,
-            one: true,
-            ctx: context || this
-        });
-
-        return this;
-    },
-
-    /**
-     * 绑定事件
-     * @param {string} event 事件名
-     * @param {Function} handler 事件处理函数
-     * @param {Object} [context]
-     */
-    on: function (event, handler, context) {
-        var _h = this._$handlers;
-
-        if (!handler || !event) {
-            return this;
-        }
-
-        if (!_h[event]) {
-            _h[event] = [];
-        }
-
-        for (var i = 0; i < _h[event].length; i++) {
-            if (_h[event][i].h === handler) {
-                return this;
-            }
-        }
-
-        _h[event].push({
-            h: handler,
-            one: false,
-            ctx: context || this
-        });
-
-        return this;
-    },
-
-    /**
-     * 是否绑定了事件
-     * @param  {string}  event
-     * @return {boolean}
-     */
-    isSilent: function (event) {
-        var _h = this._$handlers;
-        return _h[event] && _h[event].length;
-    },
-
-    /**
-     * 解绑事件
-     * @param {string} event 事件名
-     * @param {Function} [handler] 事件处理函数
-     */
-    off: function (event, handler) {
-        var _h = this._$handlers;
-
-        if (!event) {
-            this._$handlers = {};
-            return this;
-        }
-
-        if (handler) {
-            if (_h[event]) {
-                var newList = [];
-                for (var i = 0, l = _h[event].length; i < l; i++) {
-                    if (_h[event][i]['h'] != handler) {
-                        newList.push(_h[event][i]);
-                    }
-                }
-                _h[event] = newList;
-            }
-
-            if (_h[event] && _h[event].length === 0) {
-                delete _h[event];
-            }
-        }
-        else {
-            delete _h[event];
-        }
-
-        return this;
-    },
-
-    /**
-     * 事件分发
-     *
-     * @param {string} type 事件类型
-     */
-    trigger: function (type) {
-        if (this._$handlers[type]) {
-            var args = arguments;
-            var argLen = args.length;
-
-            if (argLen > 3) {
-                args = arrySlice.call(args, 1);
-            }
-
-            var _h = this._$handlers[type];
-            var len = _h.length;
-            for (var i = 0; i < len;) {
-                // Optimize advise from backbone
-                switch (argLen) {
-                    case 1:
-                        _h[i]['h'].call(_h[i]['ctx']);
-                        break;
-                    case 2:
-                        _h[i]['h'].call(_h[i]['ctx'], args[1]);
-                        break;
-                    case 3:
-                        _h[i]['h'].call(_h[i]['ctx'], args[1], args[2]);
-                        break;
-                    default:
-                        // have more than 2 given arguments
-                        _h[i]['h'].apply(_h[i]['ctx'], args);
-                        break;
-                }
-
-                if (_h[i]['one']) {
-                    _h.splice(i, 1);
-                    len--;
-                }
-                else {
-                    i++;
-                }
-            }
-        }
-
-        return this;
-    },
-
-    /**
-     * 带有context的事件分发, 最后一个参数是事件回调的context
-     * @param {string} type 事件类型
-     */
-    triggerWithContext: function (type) {
-        if (this._$handlers[type]) {
-            var args = arguments;
-            var argLen = args.length;
-
-            if (argLen > 4) {
-                args = arrySlice.call(args, 1, args.length - 1);
-            }
-            var ctx = args[args.length - 1];
-
-            var _h = this._$handlers[type];
-            var len = _h.length;
-            for (var i = 0; i < len;) {
-                // Optimize advise from backbone
-                switch (argLen) {
-                    case 1:
-                        _h[i]['h'].call(ctx);
-                        break;
-                    case 2:
-                        _h[i]['h'].call(ctx, args[1]);
-                        break;
-                    case 3:
-                        _h[i]['h'].call(ctx, args[1], args[2]);
-                        break;
-                    default:
-                        // have more than 2 given arguments
-                        _h[i]['h'].apply(ctx, args);
-                        break;
-                }
-
-                if (_h[i]['one']) {
-                    _h.splice(i, 1);
-                    len--;
-                }
-                else {
-                    i++;
-                }
-            }
-        }
-
-        return this;
-    }
-};
-
-/**
- * 提供变换扩展
- * @module zrender/mixin/Transformable
- * @author pissang (https://www.github.com/pissang)
- */
-
-var mIdentity = identity;
-
-var EPSILON = 5e-5;
-
-function isNotAroundZero(val) {
-    return val > EPSILON || val < -EPSILON;
-}
-
-/**
- * @alias module:zrender/mixin/Transformable
- * @constructor
- */
-var Transformable = function (opts) {
-    opts = opts || {};
-    // If there are no given position, rotation, scale
-    if (!opts.position) {
-        /**
-         * 平移
-         * @type {Array.<number>}
-         * @default [0, 0]
-         */
-        this.position = [0, 0];
-    }
-    if (opts.rotation == null) {
-        /**
-         * 旋转
-         * @type {Array.<number>}
-         * @default 0
-         */
-        this.rotation = 0;
-    }
-    if (!opts.scale) {
-        /**
-         * 缩放
-         * @type {Array.<number>}
-         * @default [1, 1]
-         */
-        this.scale = [1, 1];
-    }
-    /**
-     * 旋转和缩放的原点
-     * @type {Array.<number>}
-     * @default null
-     */
-    this.origin = this.origin || null;
-};
-
-var transformableProto = Transformable.prototype;
-transformableProto.transform = null;
-
-/**
- * 判断是否需要有坐标变换
- * 如果有坐标变换, 则从position, rotation, scale以及父节点的transform计算出自身的transform矩阵
- */
-transformableProto.needLocalTransform = function () {
-    return isNotAroundZero(this.rotation)
-        || isNotAroundZero(this.position[0])
-        || isNotAroundZero(this.position[1])
-        || isNotAroundZero(this.scale[0] - 1)
-        || isNotAroundZero(this.scale[1] - 1);
-};
-
-transformableProto.updateTransform = function () {
-    var parent = this.parent;
-    var parentHasTransform = parent && parent.transform;
-    var needLocalTransform = this.needLocalTransform();
-
-    var m = this.transform;
-    if (!(needLocalTransform || parentHasTransform)) {
-        m && mIdentity(m);
-        return;
-    }
-
-    m = m || create();
-
-    if (needLocalTransform) {
-        this.getLocalTransform(m);
-    }
-    else {
-        mIdentity(m);
-    }
-
-    // 应用父节点变换
-    if (parentHasTransform) {
-        if (needLocalTransform) {
-            mul(m, parent.transform, m);
-        }
-        else {
-            copy(m, parent.transform);
-        }
-    }
-    // 保存这个变换矩阵
-    this.transform = m;
-
-    this.invTransform = this.invTransform || create();
-    invert(this.invTransform, m);
-};
-
-transformableProto.getLocalTransform = function (m) {
-    return Transformable.getLocalTransform(this, m);
-};
-
-/**
- * 将自己的transform应用到context上
- * @param {CanvasRenderingContext2D} ctx
- */
-transformableProto.setTransform = function (ctx) {
-    var m = this.transform;
-    var dpr = ctx.dpr || 1;
-    if (m) {
-        ctx.setTransform(dpr * m[0], dpr * m[1], dpr * m[2], dpr * m[3], dpr * m[4], dpr * m[5]);
-    }
-    else {
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
-};
-
-transformableProto.restoreTransform = function (ctx) {
-    var dpr = ctx.dpr || 1;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-};
-
-var tmpTransform = [];
-
-/**
- * 分解`transform`矩阵到`position`, `rotation`, `scale`
- */
-transformableProto.decomposeTransform = function () {
-    if (!this.transform) {
-        return;
-    }
-    var parent = this.parent;
-    var m = this.transform;
-    if (parent && parent.transform) {
-        // Get local transform and decompose them to position, scale, rotation
-        mul(tmpTransform, parent.invTransform, m);
-        m = tmpTransform;
-    }
-    var sx = m[0] * m[0] + m[1] * m[1];
-    var sy = m[2] * m[2] + m[3] * m[3];
-    var position = this.position;
-    var scale$$1 = this.scale;
-    if (isNotAroundZero(sx - 1)) {
-        sx = Math.sqrt(sx);
-    }
-    if (isNotAroundZero(sy - 1)) {
-        sy = Math.sqrt(sy);
-    }
-    if (m[0] < 0) {
-        sx = -sx;
-    }
-    if (m[3] < 0) {
-        sy = -sy;
-    }
-    position[0] = m[4];
-    position[1] = m[5];
-    scale$$1[0] = sx;
-    scale$$1[1] = sy;
-    this.rotation = Math.atan2(-m[1] / sy, m[0] / sx);
-};
-
-/**
- * Get global scale
- * @return {Array.<number>}
- */
-transformableProto.getGlobalScale = function () {
-    var m = this.transform;
-    if (!m) {
-        return [1, 1];
-    }
-    var sx = Math.sqrt(m[0] * m[0] + m[1] * m[1]);
-    var sy = Math.sqrt(m[2] * m[2] + m[3] * m[3]);
-    if (m[0] < 0) {
-        sx = -sx;
-    }
-    if (m[3] < 0) {
-        sy = -sy;
-    }
-    return [sx, sy];
-};
-/**
- * 变换坐标位置到 shape 的局部坐标空间
- * @method
- * @param {number} x
- * @param {number} y
- * @return {Array.<number>}
- */
-transformableProto.transformCoordToLocal = function (x, y) {
-    var v2 = [x, y];
-    var invTransform = this.invTransform;
-    if (invTransform) {
-        applyTransform(v2, v2, invTransform);
-    }
-    return v2;
-};
-
-/**
- * 变换局部坐标位置到全局坐标空间
- * @method
- * @param {number} x
- * @param {number} y
- * @return {Array.<number>}
- */
-transformableProto.transformCoordToGlobal = function (x, y) {
-    var v2 = [x, y];
-    var transform = this.transform;
-    if (transform) {
-        applyTransform(v2, v2, transform);
-    }
-    return v2;
-};
-
-/**
- * @static
- * @param {Object} target
- * @param {Array.<number>} target.origin
- * @param {number} target.rotation
- * @param {Array.<number>} target.position
- * @param {Array.<number>} [m]
- */
-Transformable.getLocalTransform = function (target, m) {
-    m = m || [];
-    mIdentity(m);
-
-    var origin = target.origin;
-    var scale$$1 = target.scale || [1, 1];
-    var rotation = target.rotation || 0;
-    var position = target.position || [0, 0];
-
-    if (origin) {
-        // Translate to origin
-        m[4] -= origin[0];
-        m[5] -= origin[1];
-    }
-    scale(m, m, scale$$1);
-    if (rotation) {
-        rotate(m, m, rotation);
-    }
-    if (origin) {
-        // Translate back from origin
-        m[4] += origin[0];
-        m[5] += origin[1];
-    }
-
-    m[4] += position[0];
-    m[5] += position[1];
-
-    return m;
-};
-
-/**
- * 缓动代码来自 https://github.com/sole/tween.js/blob/master/src/Tween.js
- * @see http://sole.github.io/tween.js/examples/03_graphs.html
- * @exports zrender/animation/easing
- */
-var easing = {
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    linear: function (k) {
-        return k;
-    },
-
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    quadraticIn: function (k) {
-        return k * k;
-    },
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    quadraticOut: function (k) {
-        return k * (2 - k);
-    },
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    quadraticInOut: function (k) {
-        if ((k *= 2) < 1) {
-            return 0.5 * k * k;
-        }
-        return -0.5 * (--k * (k - 2) - 1);
-    },
-
-    // 三次方的缓动（t^3）
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    cubicIn: function (k) {
-        return k * k * k;
-    },
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    cubicOut: function (k) {
-        return --k * k * k + 1;
-    },
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    cubicInOut: function (k) {
-        if ((k *= 2) < 1) {
-            return 0.5 * k * k * k;
-        }
-        return 0.5 * ((k -= 2) * k * k + 2);
-    },
-
-    // 四次方的缓动（t^4）
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    quarticIn: function (k) {
-        return k * k * k * k;
-    },
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    quarticOut: function (k) {
-        return 1 - (--k * k * k * k);
-    },
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    quarticInOut: function (k) {
-        if ((k *= 2) < 1) {
-            return 0.5 * k * k * k * k;
-        }
-        return -0.5 * ((k -= 2) * k * k * k - 2);
-    },
-
-    // 五次方的缓动（t^5）
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    quinticIn: function (k) {
-        return k * k * k * k * k;
-    },
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    quinticOut: function (k) {
-        return --k * k * k * k * k + 1;
-    },
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    quinticInOut: function (k) {
-        if ((k *= 2) < 1) {
-            return 0.5 * k * k * k * k * k;
-        }
-        return 0.5 * ((k -= 2) * k * k * k * k + 2);
-    },
-
-    // 正弦曲线的缓动（sin(t)）
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    sinusoidalIn: function (k) {
-        return 1 - Math.cos(k * Math.PI / 2);
-    },
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    sinusoidalOut: function (k) {
-        return Math.sin(k * Math.PI / 2);
-    },
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    sinusoidalInOut: function (k) {
-        return 0.5 * (1 - Math.cos(Math.PI * k));
-    },
-
-    // 指数曲线的缓动（2^t）
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    exponentialIn: function (k) {
-        return k === 0 ? 0 : Math.pow(1024, k - 1);
-    },
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    exponentialOut: function (k) {
-        return k === 1 ? 1 : 1 - Math.pow(2, -10 * k);
-    },
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    exponentialInOut: function (k) {
-        if (k === 0) {
-            return 0;
-        }
-        if (k === 1) {
-            return 1;
-        }
-        if ((k *= 2) < 1) {
-            return 0.5 * Math.pow(1024, k - 1);
-        }
-        return 0.5 * (-Math.pow(2, -10 * (k - 1)) + 2);
-    },
-
-    // 圆形曲线的缓动（sqrt(1-t^2)）
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    circularIn: function (k) {
-        return 1 - Math.sqrt(1 - k * k);
-    },
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    circularOut: function (k) {
-        return Math.sqrt(1 - (--k * k));
-    },
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    circularInOut: function (k) {
-        if ((k *= 2) < 1) {
-            return -0.5 * (Math.sqrt(1 - k * k) - 1);
-        }
-        return 0.5 * (Math.sqrt(1 - (k -= 2) * k) + 1);
-    },
-
-    // 创建类似于弹簧在停止前来回振荡的动画
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    elasticIn: function (k) {
-        var s;
-        var a = 0.1;
-        var p = 0.4;
-        if (k === 0) {
-            return 0;
-        }
-        if (k === 1) {
-            return 1;
-        }
-        if (!a || a < 1) {
-            a = 1; s = p / 4;
-        }
-        else {
-            s = p * Math.asin(1 / a) / (2 * Math.PI);
-        }
-        return -(a * Math.pow(2, 10 * (k -= 1)) *
-                    Math.sin((k - s) * (2 * Math.PI) / p));
-    },
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    elasticOut: function (k) {
-        var s;
-        var a = 0.1;
-        var p = 0.4;
-        if (k === 0) {
-            return 0;
-        }
-        if (k === 1) {
-            return 1;
-        }
-        if (!a || a < 1) {
-            a = 1; s = p / 4;
-        }
-        else {
-            s = p * Math.asin(1 / a) / (2 * Math.PI);
-        }
-        return (a * Math.pow(2, -10 * k) *
-                Math.sin((k - s) * (2 * Math.PI) / p) + 1);
-    },
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    elasticInOut: function (k) {
-        var s;
-        var a = 0.1;
-        var p = 0.4;
-        if (k === 0) {
-            return 0;
-        }
-        if (k === 1) {
-            return 1;
-        }
-        if (!a || a < 1) {
-            a = 1; s = p / 4;
-        }
-        else {
-            s = p * Math.asin(1 / a) / (2 * Math.PI);
-        }
-        if ((k *= 2) < 1) {
-            return -0.5 * (a * Math.pow(2, 10 * (k -= 1))
-                * Math.sin((k - s) * (2 * Math.PI) / p));
-        }
-        return a * Math.pow(2, -10 * (k -= 1))
-                * Math.sin((k - s) * (2 * Math.PI) / p) * 0.5 + 1;
-
-    },
-
-    // 在某一动画开始沿指示的路径进行动画处理前稍稍收回该动画的移动
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    backIn: function (k) {
-        var s = 1.70158;
-        return k * k * ((s + 1) * k - s);
-    },
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    backOut: function (k) {
-        var s = 1.70158;
-        return --k * k * ((s + 1) * k + s) + 1;
-    },
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    backInOut: function (k) {
-        var s = 1.70158 * 1.525;
-        if ((k *= 2) < 1) {
-            return 0.5 * (k * k * ((s + 1) * k - s));
-        }
-        return 0.5 * ((k -= 2) * k * ((s + 1) * k + s) + 2);
-    },
-
-    // 创建弹跳效果
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    bounceIn: function (k) {
-        return 1 - easing.bounceOut(1 - k);
-    },
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    bounceOut: function (k) {
-        if (k < (1 / 2.75)) {
-            return 7.5625 * k * k;
-        }
-        else if (k < (2 / 2.75)) {
-            return 7.5625 * (k -= (1.5 / 2.75)) * k + 0.75;
-        }
-        else if (k < (2.5 / 2.75)) {
-            return 7.5625 * (k -= (2.25 / 2.75)) * k + 0.9375;
-        }
-        else {
-            return 7.5625 * (k -= (2.625 / 2.75)) * k + 0.984375;
-        }
-    },
-    /**
-    * @param {number} k
-    * @return {number}
-    */
-    bounceInOut: function (k) {
-        if (k < 0.5) {
-            return easing.bounceIn(k * 2) * 0.5;
-        }
-        return easing.bounceOut(k * 2 - 1) * 0.5 + 0.5;
-    }
-};
-
-/**
- * 动画主控制器
- * @config target 动画对象，可以是数组，如果是数组的话会批量分发onframe等事件
- * @config life(1000) 动画时长
- * @config delay(0) 动画延迟时间
- * @config loop(true)
- * @config gap(0) 循环的间隔时间
- * @config onframe
- * @config easing(optional)
- * @config ondestroy(optional)
- * @config onrestart(optional)
- *
- * TODO pause
- */
-
-function Clip(options) {
-
-    this._target = options.target;
-
-    // 生命周期
-    this._life = options.life || 1000;
-    // 延时
-    this._delay = options.delay || 0;
-    // 开始时间
-    // this._startTime = new Date().getTime() + this._delay;// 单位毫秒
-    this._initialized = false;
-
-    // 是否循环
-    this.loop = options.loop == null ? false : options.loop;
-
-    this.gap = options.gap || 0;
-
-    this.easing = options.easing || 'Linear';
-
-    this.onframe = options.onframe;
-    this.ondestroy = options.ondestroy;
-    this.onrestart = options.onrestart;
-
-    this._pausedTime = 0;
-    this._paused = false;
-}
-
-Clip.prototype = {
-
-    constructor: Clip,
-
-    step: function (globalTime, deltaTime) {
-        // Set startTime on first step, or _startTime may has milleseconds different between clips
-        // PENDING
-        if (!this._initialized) {
-            this._startTime = globalTime + this._delay;
-            this._initialized = true;
-        }
-
-        if (this._paused) {
-            this._pausedTime += deltaTime;
-            return;
-        }
-
-        var percent = (globalTime - this._startTime - this._pausedTime) / this._life;
-
-        // 还没开始
-        if (percent < 0) {
-            return;
-        }
-
-        percent = Math.min(percent, 1);
-
-        var easing$$1 = this.easing;
-        var easingFunc = typeof easing$$1 == 'string' ? easing[easing$$1] : easing$$1;
-        var schedule = typeof easingFunc === 'function'
-            ? easingFunc(percent)
-            : percent;
-
-        this.fire('frame', schedule);
-
-        // 结束
-        if (percent == 1) {
-            if (this.loop) {
-                this.restart (globalTime);
-                // 重新开始周期
-                // 抛出而不是直接调用事件直到 stage.update 后再统一调用这些事件
-                return 'restart';
-            }
-
-            // 动画完成将这个控制器标识为待删除
-            // 在Animation.update中进行批量删除
-            this._needsRemove = true;
-            return 'destroy';
-        }
-
-        return null;
-    },
-
-    restart: function (globalTime) {
-        var remainder = (globalTime - this._startTime - this._pausedTime) % this._life;
-        this._startTime = globalTime - remainder + this.gap;
-        this._pausedTime = 0;
-
-        this._needsRemove = false;
-    },
-
-    fire: function (eventType, arg) {
-        eventType = 'on' + eventType;
-        if (this[eventType]) {
-            this[eventType](this._target, arg);
-        }
-    },
-
-    pause: function () {
-        this._paused = true;
-    },
-
-    resume: function () {
-        this._paused = false;
-    }
-};
 
 /**
  * @module echarts/animation/Animator
@@ -4725,11 +4677,11 @@ BoundingRect.prototype = {
         var sx = b.width / a.width;
         var sy = b.height / a.height;
 
-        var m = create();
+        var m = create$1();
 
         // 矩阵右乘
         translate(m, m, [-a.x, -a.y]);
-        scale(m, m, [sx, sy]);
+        scale$1(m, m, [sx, sy]);
         translate(m, m, [b.x, b.y]);
 
         return m;
@@ -4808,6 +4760,1933 @@ BoundingRect.prototype = {
  */
 BoundingRect.create = function (rect) {
     return new BoundingRect(rect.x, rect.y, rect.width, rect.height);
+};
+
+/**
+ * Group是一个容器，可以插入子节点，Group的变换也会被应用到子节点上
+ * @module zrender/graphic/Group
+ * @example
+ *     var Group = require('zrender/container/Group');
+ *     var Circle = require('zrender/graphic/shape/Circle');
+ *     var g = new Group();
+ *     g.position[0] = 100;
+ *     g.position[1] = 100;
+ *     g.add(new Circle({
+ *         style: {
+ *             x: 100,
+ *             y: 100,
+ *             r: 20,
+ *         }
+ *     }));
+ *     zr.add(g);
+ */
+
+/**
+ * @alias module:zrender/graphic/Group
+ * @constructor
+ * @extends module:zrender/mixin/Transformable
+ * @extends module:zrender/mixin/Eventful
+ */
+var Group = function (opts) {
+
+    opts = opts || {};
+
+    Element.call(this, opts);
+
+    for (var key in opts) {
+        if (opts.hasOwnProperty(key)) {
+            this[key] = opts[key];
+        }
+    }
+
+    this._children = [];
+
+    this.__storage = null;
+
+    this.__dirty = true;
+};
+
+Group.prototype = {
+
+    constructor: Group,
+
+    isGroup: true,
+
+    /**
+     * @type {string}
+     */
+    type: 'group',
+
+    /**
+     * 所有子孙元素是否响应鼠标事件
+     * @name module:/zrender/container/Group#silent
+     * @type {boolean}
+     * @default false
+     */
+    silent: false,
+
+    /**
+     * @return {Array.<module:zrender/Element>}
+     */
+    children: function () {
+        return this._children.slice();
+    },
+
+    /**
+     * 获取指定 index 的儿子节点
+     * @param  {number} idx
+     * @return {module:zrender/Element}
+     */
+    childAt: function (idx) {
+        return this._children[idx];
+    },
+
+    /**
+     * 获取指定名字的儿子节点
+     * @param  {string} name
+     * @return {module:zrender/Element}
+     */
+    childOfName: function (name) {
+        var children = this._children;
+        for (var i = 0; i < children.length; i++) {
+            if (children[i].name === name) {
+                return children[i];
+            }
+            }
+    },
+
+    /**
+     * @return {number}
+     */
+    childCount: function () {
+        return this._children.length;
+    },
+
+    /**
+     * 添加子节点到最后
+     * @param {module:zrender/Element} child
+     */
+    add: function (child) {
+        if (child && child !== this && child.parent !== this) {
+
+            this._children.push(child);
+
+            this._doAdd(child);
+        }
+
+        return this;
+    },
+
+    /**
+     * 添加子节点在 nextSibling 之前
+     * @param {module:zrender/Element} child
+     * @param {module:zrender/Element} nextSibling
+     */
+    addBefore: function (child, nextSibling) {
+        if (child && child !== this && child.parent !== this
+            && nextSibling && nextSibling.parent === this) {
+
+            var children = this._children;
+            var idx = children.indexOf(nextSibling);
+
+            if (idx >= 0) {
+                children.splice(idx, 0, child);
+                this._doAdd(child);
+            }
+        }
+
+        return this;
+    },
+
+    _doAdd: function (child) {
+        if (child.parent) {
+            child.parent.remove(child);
+        }
+
+        child.parent = this;
+
+        var storage = this.__storage;
+        var zr = this.__zr;
+        if (storage && storage !== child.__storage) {
+
+            storage.addToStorage(child);
+
+            if (child instanceof Group) {
+                child.addChildrenToStorage(storage);
+            }
+        }
+
+        zr && zr.refresh();
+    },
+
+    /**
+     * 移除子节点
+     * @param {module:zrender/Element} child
+     */
+    remove: function (child) {
+        var zr = this.__zr;
+        var storage = this.__storage;
+        var children = this._children;
+
+        var idx = indexOf(children, child);
+        if (idx < 0) {
+            return this;
+        }
+        children.splice(idx, 1);
+
+        child.parent = null;
+
+        if (storage) {
+
+            storage.delFromStorage(child);
+
+            if (child instanceof Group) {
+                child.delChildrenFromStorage(storage);
+            }
+        }
+
+        zr && zr.refresh();
+
+        return this;
+    },
+
+    /**
+     * 移除所有子节点
+     */
+    removeAll: function () {
+        var children = this._children;
+        var storage = this.__storage;
+        var child;
+        var i;
+        for (i = 0; i < children.length; i++) {
+            child = children[i];
+            if (storage) {
+                storage.delFromStorage(child);
+                if (child instanceof Group) {
+                    child.delChildrenFromStorage(storage);
+                }
+            }
+            child.parent = null;
+        }
+        children.length = 0;
+
+        return this;
+    },
+
+    /**
+     * 遍历所有子节点
+     * @param  {Function} cb
+     * @param  {}   context
+     */
+    eachChild: function (cb, context) {
+        var children = this._children;
+        for (var i = 0; i < children.length; i++) {
+            var child = children[i];
+            cb.call(context, child, i);
+        }
+        return this;
+    },
+
+    /**
+     * 深度优先遍历所有子孙节点
+     * @param  {Function} cb
+     * @param  {}   context
+     */
+    traverse: function (cb, context) {
+        for (var i = 0; i < this._children.length; i++) {
+            var child = this._children[i];
+            cb.call(context, child);
+
+            if (child.type === 'group') {
+                child.traverse(cb, context);
+            }
+        }
+        return this;
+    },
+
+    addChildrenToStorage: function (storage) {
+        for (var i = 0; i < this._children.length; i++) {
+            var child = this._children[i];
+            storage.addToStorage(child);
+            if (child instanceof Group) {
+                child.addChildrenToStorage(storage);
+            }
+        }
+    },
+
+    delChildrenFromStorage: function (storage) {
+        for (var i = 0; i < this._children.length; i++) {
+            var child = this._children[i];
+            storage.delFromStorage(child);
+            if (child instanceof Group) {
+                child.delChildrenFromStorage(storage);
+            }
+        }
+    },
+
+    dirty: function () {
+        this.__dirty = true;
+        this.__zr && this.__zr.refresh();
+        return this;
+    },
+
+    /**
+     * @return {module:zrender/core/BoundingRect}
+     */
+    getBoundingRect: function (includeChildren) {
+        // TODO Caching
+        var rect = null;
+        var tmpRect = new BoundingRect(0, 0, 0, 0);
+        var children = includeChildren || this._children;
+        var tmpMat = [];
+
+        for (var i = 0; i < children.length; i++) {
+            var child = children[i];
+            if (child.ignore || child.invisible) {
+                continue;
+            }
+
+            var childRect = child.getBoundingRect();
+            var transform = child.getLocalTransform(tmpMat);
+            // TODO
+            // The boundingRect cacluated by transforming original
+            // rect may be bigger than the actual bundingRect when rotation
+            // is used. (Consider a circle rotated aginst its center, where
+            // the actual boundingRect should be the same as that not be
+            // rotated.) But we can not find better approach to calculate
+            // actual boundingRect yet, considering performance.
+            if (transform) {
+                tmpRect.copy(childRect);
+                tmpRect.applyTransform(transform);
+                rect = rect || tmpRect.clone();
+                rect.union(tmpRect);
+            }
+            else {
+                rect = rect || childRect.clone();
+                rect.union(childRect);
+            }
+        }
+        return rect || tmpRect;
+    }
+};
+
+inherits(Group, Element);
+
+// https://github.com/mziccard/node-timsort
+var DEFAULT_MIN_MERGE = 32;
+
+var DEFAULT_MIN_GALLOPING = 7;
+
+function minRunLength(n) {
+    var r = 0;
+
+    while (n >= DEFAULT_MIN_MERGE) {
+        r |= n & 1;
+        n >>= 1;
+    }
+
+    return n + r;
+}
+
+function makeAscendingRun(array, lo, hi, compare) {
+    var runHi = lo + 1;
+
+    if (runHi === hi) {
+        return 1;
+    }
+
+    if (compare(array[runHi++], array[lo]) < 0) {
+        while (runHi < hi && compare(array[runHi], array[runHi - 1]) < 0) {
+            runHi++;
+        }
+
+        reverseRun(array, lo, runHi);
+    }
+    else {
+        while (runHi < hi && compare(array[runHi], array[runHi - 1]) >= 0) {
+            runHi++;
+        }
+    }
+
+    return runHi - lo;
+}
+
+function reverseRun(array, lo, hi) {
+    hi--;
+
+    while (lo < hi) {
+        var t = array[lo];
+        array[lo++] = array[hi];
+        array[hi--] = t;
+    }
+}
+
+function binaryInsertionSort(array, lo, hi, start, compare) {
+    if (start === lo) {
+        start++;
+    }
+
+    for (; start < hi; start++) {
+        var pivot = array[start];
+
+        var left = lo;
+        var right = start;
+        var mid;
+
+        while (left < right) {
+            mid = left + right >>> 1;
+
+            if (compare(pivot, array[mid]) < 0) {
+                right = mid;
+            }
+            else {
+                left = mid + 1;
+            }
+        }
+
+        var n = start - left;
+
+        switch (n) {
+            case 3:
+                array[left + 3] = array[left + 2];
+
+            case 2:
+                array[left + 2] = array[left + 1];
+
+            case 1:
+                array[left + 1] = array[left];
+                break;
+            default:
+                while (n > 0) {
+                    array[left + n] = array[left + n - 1];
+                    n--;
+                }
+        }
+
+        array[left] = pivot;
+    }
+}
+
+function gallopLeft(value, array, start, length, hint, compare) {
+    var lastOffset = 0;
+    var maxOffset = 0;
+    var offset = 1;
+
+    if (compare(value, array[start + hint]) > 0) {
+        maxOffset = length - hint;
+
+        while (offset < maxOffset && compare(value, array[start + hint + offset]) > 0) {
+            lastOffset = offset;
+            offset = (offset << 1) + 1;
+
+            if (offset <= 0) {
+                offset = maxOffset;
+            }
+        }
+
+        if (offset > maxOffset) {
+            offset = maxOffset;
+        }
+
+        lastOffset += hint;
+        offset += hint;
+    }
+    else {
+        maxOffset = hint + 1;
+        while (offset < maxOffset && compare(value, array[start + hint - offset]) <= 0) {
+            lastOffset = offset;
+            offset = (offset << 1) + 1;
+
+            if (offset <= 0) {
+                offset = maxOffset;
+            }
+        }
+        if (offset > maxOffset) {
+            offset = maxOffset;
+        }
+
+        var tmp = lastOffset;
+        lastOffset = hint - offset;
+        offset = hint - tmp;
+    }
+
+    lastOffset++;
+    while (lastOffset < offset) {
+        var m = lastOffset + (offset - lastOffset >>> 1);
+
+        if (compare(value, array[start + m]) > 0) {
+            lastOffset = m + 1;
+        }
+        else {
+            offset = m;
+        }
+    }
+    return offset;
+}
+
+function gallopRight(value, array, start, length, hint, compare) {
+    var lastOffset = 0;
+    var maxOffset = 0;
+    var offset = 1;
+
+    if (compare(value, array[start + hint]) < 0) {
+        maxOffset = hint + 1;
+
+        while (offset < maxOffset && compare(value, array[start + hint - offset]) < 0) {
+            lastOffset = offset;
+            offset = (offset << 1) + 1;
+
+            if (offset <= 0) {
+                offset = maxOffset;
+            }
+        }
+
+        if (offset > maxOffset) {
+            offset = maxOffset;
+        }
+
+        var tmp = lastOffset;
+        lastOffset = hint - offset;
+        offset = hint - tmp;
+    }
+    else {
+        maxOffset = length - hint;
+
+        while (offset < maxOffset && compare(value, array[start + hint + offset]) >= 0) {
+            lastOffset = offset;
+            offset = (offset << 1) + 1;
+
+            if (offset <= 0) {
+                offset = maxOffset;
+            }
+        }
+
+        if (offset > maxOffset) {
+            offset = maxOffset;
+        }
+
+        lastOffset += hint;
+        offset += hint;
+    }
+
+    lastOffset++;
+
+    while (lastOffset < offset) {
+        var m = lastOffset + (offset - lastOffset >>> 1);
+
+        if (compare(value, array[start + m]) < 0) {
+            offset = m;
+        }
+        else {
+            lastOffset = m + 1;
+        }
+    }
+
+    return offset;
+}
+
+function TimSort(array, compare) {
+    var minGallop = DEFAULT_MIN_GALLOPING;
+    var runStart;
+    var runLength;
+    var stackSize = 0;
+
+    var tmp = [];
+
+    runStart = [];
+    runLength = [];
+
+    function pushRun(_runStart, _runLength) {
+        runStart[stackSize] = _runStart;
+        runLength[stackSize] = _runLength;
+        stackSize += 1;
+    }
+
+    function mergeRuns() {
+        while (stackSize > 1) {
+            var n = stackSize - 2;
+
+            if (n >= 1 && runLength[n - 1] <= runLength[n] + runLength[n + 1] || n >= 2 && runLength[n - 2] <= runLength[n] + runLength[n - 1]) {
+                if (runLength[n - 1] < runLength[n + 1]) {
+                    n--;
+                }
+            }
+            else if (runLength[n] > runLength[n + 1]) {
+                break;
+            }
+            mergeAt(n);
+        }
+    }
+
+    function forceMergeRuns() {
+        while (stackSize > 1) {
+            var n = stackSize - 2;
+
+            if (n > 0 && runLength[n - 1] < runLength[n + 1]) {
+                n--;
+            }
+
+            mergeAt(n);
+        }
+    }
+
+    function mergeAt(i) {
+        var start1 = runStart[i];
+        var length1 = runLength[i];
+        var start2 = runStart[i + 1];
+        var length2 = runLength[i + 1];
+
+        runLength[i] = length1 + length2;
+
+        if (i === stackSize - 3) {
+            runStart[i + 1] = runStart[i + 2];
+            runLength[i + 1] = runLength[i + 2];
+        }
+
+        stackSize--;
+
+        var k = gallopRight(array[start2], array, start1, length1, 0, compare);
+        start1 += k;
+        length1 -= k;
+
+        if (length1 === 0) {
+            return;
+        }
+
+        length2 = gallopLeft(array[start1 + length1 - 1], array, start2, length2, length2 - 1, compare);
+
+        if (length2 === 0) {
+            return;
+        }
+
+        if (length1 <= length2) {
+            mergeLow(start1, length1, start2, length2);
+        }
+        else {
+            mergeHigh(start1, length1, start2, length2);
+        }
+    }
+
+    function mergeLow(start1, length1, start2, length2) {
+        var i = 0;
+
+        for (i = 0; i < length1; i++) {
+            tmp[i] = array[start1 + i];
+        }
+
+        var cursor1 = 0;
+        var cursor2 = start2;
+        var dest = start1;
+
+        array[dest++] = array[cursor2++];
+
+        if (--length2 === 0) {
+            for (i = 0; i < length1; i++) {
+                array[dest + i] = tmp[cursor1 + i];
+            }
+            return;
+        }
+
+        if (length1 === 1) {
+            for (i = 0; i < length2; i++) {
+                array[dest + i] = array[cursor2 + i];
+            }
+            array[dest + length2] = tmp[cursor1];
+            return;
+        }
+
+        var _minGallop = minGallop;
+        var count1, count2, exit;
+
+        while (1) {
+            count1 = 0;
+            count2 = 0;
+            exit = false;
+
+            do {
+                if (compare(array[cursor2], tmp[cursor1]) < 0) {
+                    array[dest++] = array[cursor2++];
+                    count2++;
+                    count1 = 0;
+
+                    if (--length2 === 0) {
+                        exit = true;
+                        break;
+                    }
+                }
+                else {
+                    array[dest++] = tmp[cursor1++];
+                    count1++;
+                    count2 = 0;
+                    if (--length1 === 1) {
+                        exit = true;
+                        break;
+                    }
+                }
+            } while ((count1 | count2) < _minGallop);
+
+            if (exit) {
+                break;
+            }
+
+            do {
+                count1 = gallopRight(array[cursor2], tmp, cursor1, length1, 0, compare);
+
+                if (count1 !== 0) {
+                    for (i = 0; i < count1; i++) {
+                        array[dest + i] = tmp[cursor1 + i];
+                    }
+
+                    dest += count1;
+                    cursor1 += count1;
+                    length1 -= count1;
+                    if (length1 <= 1) {
+                        exit = true;
+                        break;
+                    }
+                }
+
+                array[dest++] = array[cursor2++];
+
+                if (--length2 === 0) {
+                    exit = true;
+                    break;
+                }
+
+                count2 = gallopLeft(tmp[cursor1], array, cursor2, length2, 0, compare);
+
+                if (count2 !== 0) {
+                    for (i = 0; i < count2; i++) {
+                        array[dest + i] = array[cursor2 + i];
+                    }
+
+                    dest += count2;
+                    cursor2 += count2;
+                    length2 -= count2;
+
+                    if (length2 === 0) {
+                        exit = true;
+                        break;
+                    }
+                }
+                array[dest++] = tmp[cursor1++];
+
+                if (--length1 === 1) {
+                    exit = true;
+                    break;
+                }
+
+                _minGallop--;
+            } while (count1 >= DEFAULT_MIN_GALLOPING || count2 >= DEFAULT_MIN_GALLOPING);
+
+            if (exit) {
+                break;
+            }
+
+            if (_minGallop < 0) {
+                _minGallop = 0;
+            }
+
+            _minGallop += 2;
+        }
+
+        minGallop = _minGallop;
+
+        minGallop < 1 && (minGallop = 1);
+
+        if (length1 === 1) {
+            for (i = 0; i < length2; i++) {
+                array[dest + i] = array[cursor2 + i];
+            }
+            array[dest + length2] = tmp[cursor1];
+        }
+        else if (length1 === 0) {
+            throw new Error();
+            // throw new Error('mergeLow preconditions were not respected');
+        }
+        else {
+            for (i = 0; i < length1; i++) {
+                array[dest + i] = tmp[cursor1 + i];
+            }
+        }
+    }
+
+    function mergeHigh (start1, length1, start2, length2) {
+        var i = 0;
+
+        for (i = 0; i < length2; i++) {
+            tmp[i] = array[start2 + i];
+        }
+
+        var cursor1 = start1 + length1 - 1;
+        var cursor2 = length2 - 1;
+        var dest = start2 + length2 - 1;
+        var customCursor = 0;
+        var customDest = 0;
+
+        array[dest--] = array[cursor1--];
+
+        if (--length1 === 0) {
+            customCursor = dest - (length2 - 1);
+
+            for (i = 0; i < length2; i++) {
+                array[customCursor + i] = tmp[i];
+            }
+
+            return;
+        }
+
+        if (length2 === 1) {
+            dest -= length1;
+            cursor1 -= length1;
+            customDest = dest + 1;
+            customCursor = cursor1 + 1;
+
+            for (i = length1 - 1; i >= 0; i--) {
+                array[customDest + i] = array[customCursor + i];
+            }
+
+            array[dest] = tmp[cursor2];
+            return;
+        }
+
+        var _minGallop = minGallop;
+
+        while (true) {
+            var count1 = 0;
+            var count2 = 0;
+            var exit = false;
+
+            do {
+                if (compare(tmp[cursor2], array[cursor1]) < 0) {
+                    array[dest--] = array[cursor1--];
+                    count1++;
+                    count2 = 0;
+                    if (--length1 === 0) {
+                        exit = true;
+                        break;
+                    }
+                }
+                else {
+                    array[dest--] = tmp[cursor2--];
+                    count2++;
+                    count1 = 0;
+                    if (--length2 === 1) {
+                        exit = true;
+                        break;
+                    }
+                }
+            } while ((count1 | count2) < _minGallop);
+
+            if (exit) {
+                break;
+            }
+
+            do {
+                count1 = length1 - gallopRight(tmp[cursor2], array, start1, length1, length1 - 1, compare);
+
+                if (count1 !== 0) {
+                    dest -= count1;
+                    cursor1 -= count1;
+                    length1 -= count1;
+                    customDest = dest + 1;
+                    customCursor = cursor1 + 1;
+
+                    for (i = count1 - 1; i >= 0; i--) {
+                        array[customDest + i] = array[customCursor + i];
+                    }
+
+                    if (length1 === 0) {
+                        exit = true;
+                        break;
+                    }
+                }
+
+                array[dest--] = tmp[cursor2--];
+
+                if (--length2 === 1) {
+                    exit = true;
+                    break;
+                }
+
+                count2 = length2 - gallopLeft(array[cursor1], tmp, 0, length2, length2 - 1, compare);
+
+                if (count2 !== 0) {
+                    dest -= count2;
+                    cursor2 -= count2;
+                    length2 -= count2;
+                    customDest = dest + 1;
+                    customCursor = cursor2 + 1;
+
+                    for (i = 0; i < count2; i++) {
+                        array[customDest + i] = tmp[customCursor + i];
+                    }
+
+                    if (length2 <= 1) {
+                        exit = true;
+                        break;
+                    }
+                }
+
+                array[dest--] = array[cursor1--];
+
+                if (--length1 === 0) {
+                    exit = true;
+                    break;
+                }
+
+                _minGallop--;
+            } while (count1 >= DEFAULT_MIN_GALLOPING || count2 >= DEFAULT_MIN_GALLOPING);
+
+            if (exit) {
+                break;
+            }
+
+            if (_minGallop < 0) {
+                _minGallop = 0;
+            }
+
+            _minGallop += 2;
+        }
+
+        minGallop = _minGallop;
+
+        if (minGallop < 1) {
+            minGallop = 1;
+        }
+
+        if (length2 === 1) {
+            dest -= length1;
+            cursor1 -= length1;
+            customDest = dest + 1;
+            customCursor = cursor1 + 1;
+
+            for (i = length1 - 1; i >= 0; i--) {
+                array[customDest + i] = array[customCursor + i];
+            }
+
+            array[dest] = tmp[cursor2];
+        }
+        else if (length2 === 0) {
+            throw new Error();
+            // throw new Error('mergeHigh preconditions were not respected');
+        }
+        else {
+            customCursor = dest - (length2 - 1);
+            for (i = 0; i < length2; i++) {
+                array[customCursor + i] = tmp[i];
+            }
+        }
+    }
+
+    this.mergeRuns = mergeRuns;
+    this.forceMergeRuns = forceMergeRuns;
+    this.pushRun = pushRun;
+}
+
+function sort(array, compare, lo, hi) {
+    if (!lo) {
+        lo = 0;
+    }
+    if (!hi) {
+        hi = array.length;
+    }
+
+    var remaining = hi - lo;
+
+    if (remaining < 2) {
+        return;
+    }
+
+    var runLength = 0;
+
+    if (remaining < DEFAULT_MIN_MERGE) {
+        runLength = makeAscendingRun(array, lo, hi, compare);
+        binaryInsertionSort(array, lo, hi, lo + runLength, compare);
+        return;
+    }
+
+    var ts = new TimSort(array, compare);
+
+    var minRun = minRunLength(remaining);
+
+    do {
+        runLength = makeAscendingRun(array, lo, hi, compare);
+        if (runLength < minRun) {
+            var force = remaining;
+            if (force > minRun) {
+                force = minRun;
+            }
+
+            binaryInsertionSort(array, lo, lo + force, lo + runLength, compare);
+            runLength = force;
+        }
+
+        ts.pushRun(lo, runLength);
+        ts.mergeRuns();
+
+        remaining -= runLength;
+        lo += runLength;
+    } while (remaining !== 0);
+
+    ts.forceMergeRuns();
+}
+
+/**
+ * Storage内容仓库模块
+ * @module zrender/Storage
+ * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
+ * @author errorrik (errorrik@gmail.com)
+ * @author pissang (https://github.com/pissang/)
+ */
+
+// Use timsort because in most case elements are partially sorted
+// https://jsfiddle.net/pissang/jr4x7mdm/8/
+function shapeCompareFunc(a, b) {
+    if (a.zlevel === b.zlevel) {
+        if (a.z === b.z) {
+            // if (a.z2 === b.z2) {
+            //     // FIXME Slow has renderidx compare
+            //     // http://stackoverflow.com/questions/20883421/sorting-in-javascript-should-every-compare-function-have-a-return-0-statement
+            //     // https://github.com/v8/v8/blob/47cce544a31ed5577ffe2963f67acb4144ee0232/src/js/array.js#L1012
+            //     return a.__renderidx - b.__renderidx;
+            // }
+            return a.z2 - b.z2;
+        }
+        return a.z - b.z;
+    }
+    return a.zlevel - b.zlevel;
+}
+/**
+ * 内容仓库 (M)
+ * @alias module:zrender/Storage
+ * @constructor
+ */
+var Storage = function () { // jshint ignore:line
+    this._roots = [];
+
+    this._displayList = [];
+
+    this._displayListLen = 0;
+};
+
+Storage.prototype = {
+
+    constructor: Storage,
+
+    /**
+     * @param  {Function} cb
+     *
+     */
+    traverse: function (cb, context) {
+        for (var i = 0; i < this._roots.length; i++) {
+            this._roots[i].traverse(cb, context);
+        }
+    },
+
+    /**
+     * 返回所有图形的绘制队列
+     * @param {boolean} [update=false] 是否在返回前更新该数组
+     * @param {boolean} [includeIgnore=false] 是否包含 ignore 的数组, 在 update 为 true 的时候有效
+     *
+     * 详见{@link module:zrender/graphic/Displayable.prototype.updateDisplayList}
+     * @return {Array.<module:zrender/graphic/Displayable>}
+     */
+    getDisplayList: function (update, includeIgnore) {
+        includeIgnore = includeIgnore || false;
+        if (update) {
+            this.updateDisplayList(includeIgnore);
+        }
+        return this._displayList;
+    },
+
+    /**
+     * 更新图形的绘制队列。
+     * 每次绘制前都会调用，该方法会先深度优先遍历整个树，更新所有Group和Shape的变换并且把所有可见的Shape保存到数组中，
+     * 最后根据绘制的优先级（zlevel > z > 插入顺序）排序得到绘制队列
+     * @param {boolean} [includeIgnore=false] 是否包含 ignore 的数组
+     */
+    updateDisplayList: function (includeIgnore) {
+        this._displayListLen = 0;
+        var roots = this._roots;
+        var displayList = this._displayList;
+        for (var i = 0, len = roots.length; i < len; i++) {
+            this._updateAndAddDisplayable(roots[i], null, includeIgnore);
+        }
+        displayList.length = this._displayListLen;
+
+        // for (var i = 0, len = displayList.length; i < len; i++) {
+        //     displayList[i].__renderidx = i;
+        // }
+
+        // displayList.sort(shapeCompareFunc);
+        env$1.canvasSupported && sort(displayList, shapeCompareFunc);
+    },
+
+    _updateAndAddDisplayable: function (el, clipPaths, includeIgnore) {
+
+        if (el.ignore && !includeIgnore) {
+            return;
+        }
+
+        el.beforeUpdate();
+
+        if (el.__dirty) {
+
+            el.update();
+
+        }
+
+        el.afterUpdate();
+
+        var userSetClipPath = el.clipPath;
+        if (userSetClipPath) {
+
+            // FIXME 效率影响
+            if (clipPaths) {
+                clipPaths = clipPaths.slice();
+            }
+            else {
+                clipPaths = [];
+            }
+
+            var currentClipPath = userSetClipPath;
+            var parentClipPath = el;
+            // Recursively add clip path
+            while (currentClipPath) {
+                // clipPath 的变换是基于使用这个 clipPath 的元素
+                currentClipPath.parent = parentClipPath;
+                currentClipPath.updateTransform();
+
+                clipPaths.push(currentClipPath);
+
+                parentClipPath = currentClipPath;
+                currentClipPath = currentClipPath.clipPath;
+            }
+        }
+
+        if (el.isGroup) {
+            var children = el._children;
+
+            for (var i = 0; i < children.length; i++) {
+                var child = children[i];
+
+                // Force to mark as dirty if group is dirty
+                // FIXME __dirtyPath ?
+                if (el.__dirty) {
+                    child.__dirty = true;
+                }
+
+                this._updateAndAddDisplayable(child, clipPaths, includeIgnore);
+            }
+
+            // Mark group clean here
+            el.__dirty = false;
+
+        }
+        else {
+            el.__clipPaths = clipPaths;
+
+            this._displayList[this._displayListLen++] = el;
+        }
+    },
+
+    /**
+     * 添加图形(Shape)或者组(Group)到根节点
+     * @param {module:zrender/Element} el
+     */
+    addRoot: function (el) {
+        if (el.__storage === this) {
+            return;
+        }
+
+        if (el instanceof Group) {
+            el.addChildrenToStorage(this);
+        }
+
+        this.addToStorage(el);
+        this._roots.push(el);
+    },
+
+    /**
+     * 删除指定的图形(Shape)或者组(Group)
+     * @param {string|Array.<string>} [el] 如果为空清空整个Storage
+     */
+    delRoot: function (el) {
+        if (el == null) {
+            // 不指定el清空
+            for (var i = 0; i < this._roots.length; i++) {
+                var root = this._roots[i];
+                if (root instanceof Group) {
+                    root.delChildrenFromStorage(this);
+                }
+            }
+
+            this._roots = [];
+            this._displayList = [];
+            this._displayListLen = 0;
+
+            return;
+        }
+
+        if (el instanceof Array) {
+            for (var i = 0, l = el.length; i < l; i++) {
+                this.delRoot(el[i]);
+            }
+            return;
+        }
+
+
+        var idx = indexOf(this._roots, el);
+        if (idx >= 0) {
+            this.delFromStorage(el);
+            this._roots.splice(idx, 1);
+            if (el instanceof Group) {
+                el.delChildrenFromStorage(this);
+            }
+        }
+    },
+
+    addToStorage: function (el) {
+        el.__storage = this;
+        el.dirty(false);
+
+        return this;
+    },
+
+    delFromStorage: function (el) {
+        if (el) {
+            el.__storage = null;
+        }
+
+        return this;
+    },
+
+    /**
+     * 清空并且释放Storage
+     */
+    dispose: function () {
+        this._renderList =
+        this._roots = null;
+    },
+
+    displayableSortFunc: shapeCompareFunc
+};
+
+var STYLE_COMMON_PROPS = [
+    ['shadowBlur', 0], ['shadowOffsetX', 0], ['shadowOffsetY', 0], ['shadowColor', '#000'],
+    ['lineCap', 'butt'], ['lineJoin', 'miter'], ['miterLimit', 10]
+];
+
+// var SHADOW_PROPS = STYLE_COMMON_PROPS.slice(0, 4);
+// var LINE_PROPS = STYLE_COMMON_PROPS.slice(4);
+
+var Style = function (opts, host) {
+    this.extendFrom(opts, false);
+    this.host = host;
+};
+
+function createLinearGradient(ctx, obj, rect) {
+    var x = obj.x == null ? 0 : obj.x;
+    var x2 = obj.x2 == null ? 1 : obj.x2;
+    var y = obj.y == null ? 0 : obj.y;
+    var y2 = obj.y2 == null ? 0 : obj.y2;
+
+    if (!obj.global) {
+        x = x * rect.width + rect.x;
+        x2 = x2 * rect.width + rect.x;
+        y = y * rect.height + rect.y;
+        y2 = y2 * rect.height + rect.y;
+    }
+
+    var canvasGradient = ctx.createLinearGradient(x, y, x2, y2);
+
+    return canvasGradient;
+}
+
+function createRadialGradient(ctx, obj, rect) {
+    var width = rect.width;
+    var height = rect.height;
+    var min = Math.min(width, height);
+
+    var x = obj.x == null ? 0.5 : obj.x;
+    var y = obj.y == null ? 0.5 : obj.y;
+    var r = obj.r == null ? 0.5 : obj.r;
+    if (!obj.global) {
+        x = x * width + rect.x;
+        y = y * height + rect.y;
+        r = r * min;
+    }
+
+    var canvasGradient = ctx.createRadialGradient(x, y, 0, x, y, r);
+
+    return canvasGradient;
+}
+
+
+Style.prototype = {
+
+    constructor: Style,
+
+    /**
+     * @type {module:zrender/graphic/Displayable}
+     */
+    host: null,
+
+    /**
+     * @type {string}
+     */
+    fill: '#000',
+
+    /**
+     * @type {string}
+     */
+    stroke: null,
+
+    /**
+     * @type {number}
+     */
+    opacity: 1,
+
+    /**
+     * @type {Array.<number>}
+     */
+    lineDash: null,
+
+    /**
+     * @type {number}
+     */
+    lineDashOffset: 0,
+
+    /**
+     * @type {number}
+     */
+    shadowBlur: 0,
+
+    /**
+     * @type {number}
+     */
+    shadowOffsetX: 0,
+
+    /**
+     * @type {number}
+     */
+    shadowOffsetY: 0,
+
+    /**
+     * @type {number}
+     */
+    lineWidth: 1,
+
+    /**
+     * If stroke ignore scale
+     * @type {Boolean}
+     */
+    strokeNoScale: false,
+
+    // Bounding rect text configuration
+    // Not affected by element transform
+    /**
+     * @type {string}
+     */
+    text: null,
+
+    /**
+     * If `fontSize` or `fontFamily` exists, `font` will be reset by
+     * `fontSize`, `fontStyle`, `fontWeight`, `fontFamily`.
+     * So do not visit it directly in upper application (like echarts),
+     * but use `contain/text#makeFont` instead.
+     * @type {string}
+     */
+    font: null,
+
+    /**
+     * The same as font. Use font please.
+     * @deprecated
+     * @type {string}
+     */
+    textFont: null,
+
+    /**
+     * It helps merging respectively, rather than parsing an entire font string.
+     * @type {string}
+     */
+    fontStyle: null,
+
+    /**
+     * It helps merging respectively, rather than parsing an entire font string.
+     * @type {string}
+     */
+    fontWeight: null,
+
+    /**
+     * It helps merging respectively, rather than parsing an entire font string.
+     * Should be 12 but not '12px'.
+     * @type {number}
+     */
+    fontSize: null,
+
+    /**
+     * It helps merging respectively, rather than parsing an entire font string.
+     * @type {string}
+     */
+    fontFamily: null,
+
+    /**
+     * Reserved for special functinality, like 'hr'.
+     * @type {string}
+     */
+    textTag: null,
+
+    /**
+     * @type {string}
+     */
+    textFill: '#000',
+
+    /**
+     * @type {string}
+     */
+    textStroke: null,
+
+    /**
+     * @type {number}
+     */
+    textWidth: null,
+
+    /**
+     * Only for textBackground.
+     * @type {number}
+     */
+    textHeight: null,
+
+    /**
+     * textStroke may be set as some color as a default
+     * value in upper applicaion, where the default value
+     * of textStrokeWidth should be 0 to make sure that
+     * user can choose to do not use text stroke.
+     * @type {number}
+     */
+    textStrokeWidth: 0,
+
+    /**
+     * @type {number}
+     */
+    textLineHeight: null,
+
+    /**
+     * 'inside', 'left', 'right', 'top', 'bottom'
+     * [x, y]
+     * Based on x, y of rect.
+     * @type {string|Array.<number>}
+     * @default 'inside'
+     */
+    textPosition: 'inside',
+
+    /**
+     * If not specified, use the boundingRect of a `displayable`.
+     * @type {Object}
+     */
+    textRect: null,
+
+    /**
+     * [x, y]
+     * @type {Array.<number>}
+     */
+    textOffset: null,
+
+    /**
+     * @type {string}
+     */
+    textAlign: null,
+
+    /**
+     * @type {string}
+     */
+    textVerticalAlign: null,
+
+    /**
+     * @type {number}
+     */
+    textDistance: 5,
+
+    /**
+     * @type {string}
+     */
+    textShadowColor: 'transparent',
+
+    /**
+     * @type {number}
+     */
+    textShadowBlur: 0,
+
+    /**
+     * @type {number}
+     */
+    textShadowOffsetX: 0,
+
+    /**
+     * @type {number}
+     */
+    textShadowOffsetY: 0,
+
+    /**
+     * @type {string}
+     */
+    textBoxShadowColor: 'transparent',
+
+    /**
+     * @type {number}
+     */
+    textBoxShadowBlur: 0,
+
+    /**
+     * @type {number}
+     */
+    textBoxShadowOffsetX: 0,
+
+    /**
+     * @type {number}
+     */
+    textBoxShadowOffsetY: 0,
+
+    /**
+     * Whether transform text.
+     * Only useful in Path and Image element
+     * @type {boolean}
+     */
+    transformText: false,
+
+    /**
+     * Text rotate around position of Path or Image
+     * Only useful in Path and Image element and transformText is false.
+     */
+    textRotation: 0,
+
+    /**
+     * Text origin of text rotation, like [10, 40].
+     * Based on x, y of rect.
+     * Useful in label rotation of circular symbol.
+     * By default, this origin is textPosition.
+     * Can be 'center'.
+     * @type {string|Array.<number>}
+     */
+    textOrigin: null,
+
+    /**
+     * @type {string}
+     */
+    textBackgroundColor: null,
+
+    /**
+     * @type {string}
+     */
+    textBorderColor: null,
+
+    /**
+     * @type {number}
+     */
+    textBorderWidth: 0,
+
+    /**
+     * @type {number}
+     */
+    textBorderRadius: 0,
+
+    /**
+     * Can be `2` or `[2, 4]` or `[2, 3, 4, 5]`
+     * @type {number|Array.<number>}
+     */
+    textPadding: null,
+
+    /**
+     * Text styles for rich text.
+     * @type {Object}
+     */
+    rich: null,
+
+    /**
+     * {outerWidth, outerHeight, ellipsis, placeholder}
+     * @type {Object}
+     */
+    truncate: null,
+
+    /**
+     * https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/globalCompositeOperation
+     * @type {string}
+     */
+    blend: null,
+
+    /**
+     * @param {CanvasRenderingContext2D} ctx
+     */
+    bind: function (ctx, el, prevEl) {
+        var style = this;
+        var prevStyle = prevEl && prevEl.style;
+        var firstDraw = !prevStyle;
+
+        for (var i = 0; i < STYLE_COMMON_PROPS.length; i++) {
+            var prop = STYLE_COMMON_PROPS[i];
+            var styleName = prop[0];
+
+            if (firstDraw || style[styleName] !== prevStyle[styleName]) {
+                // FIXME Invalid property value will cause style leak from previous element.
+                ctx[styleName] = style[styleName] || prop[1];
+            }
+        }
+
+        if ((firstDraw || style.fill !== prevStyle.fill)) {
+            ctx.fillStyle = style.fill;
+        }
+        if ((firstDraw || style.stroke !== prevStyle.stroke)) {
+            ctx.strokeStyle = style.stroke;
+        }
+        if ((firstDraw || style.opacity !== prevStyle.opacity)) {
+            ctx.globalAlpha = style.opacity == null ? 1 : style.opacity;
+        }
+
+        if ((firstDraw || style.blend !== prevStyle.blend)) {
+            ctx.globalCompositeOperation = style.blend || 'source-over';
+        }
+        if (this.hasStroke()) {
+            var lineWidth = style.lineWidth;
+            ctx.lineWidth = lineWidth / (
+                (this.strokeNoScale && el && el.getLineScale) ? el.getLineScale() : 1
+            );
+        }
+    },
+
+    hasFill: function () {
+        var fill = this.fill;
+        return fill != null && fill !== 'none';
+    },
+
+    hasStroke: function () {
+        var stroke = this.stroke;
+        return stroke != null && stroke !== 'none' && this.lineWidth > 0;
+    },
+
+    /**
+     * Extend from other style
+     * @param {zrender/graphic/Style} otherStyle
+     * @param {boolean} overwrite true: overwrirte any way.
+     *                            false: overwrite only when !target.hasOwnProperty
+     *                            others: overwrite when property is not null/undefined.
+     */
+    extendFrom: function (otherStyle, overwrite) {
+        if (otherStyle) {
+            for (var name in otherStyle) {
+                if (otherStyle.hasOwnProperty(name)
+                    && (overwrite === true
+                        || (
+                            overwrite === false
+                                ? !this.hasOwnProperty(name)
+                                : otherStyle[name] != null
+                        )
+                    )
+                ) {
+                    this[name] = otherStyle[name];
+                }
+            }
+        }
+    },
+
+    /**
+     * Batch setting style with a given object
+     * @param {Object|string} obj
+     * @param {*} [obj]
+     */
+    set: function (obj, value) {
+        if (typeof obj === 'string') {
+            this[obj] = value;
+        }
+        else {
+            this.extendFrom(obj, true);
+        }
+    },
+
+    /**
+     * Clone
+     * @return {zrender/graphic/Style} [description]
+     */
+    clone: function () {
+        var newStyle = new this.constructor();
+        newStyle.extendFrom(this, true);
+        return newStyle;
+    },
+
+    getGradient: function (ctx, obj, rect) {
+        var method = obj.type === 'radial' ? createRadialGradient : createLinearGradient;
+        var canvasGradient = method(ctx, obj, rect);
+        var colorStops = obj.colorStops;
+        for (var i = 0; i < colorStops.length; i++) {
+            canvasGradient.addColorStop(
+                colorStops[i].offset, colorStops[i].color
+            );
+        }
+        return canvasGradient;
+    }
+
+};
+
+var styleProto = Style.prototype;
+for (var i = 0; i < STYLE_COMMON_PROPS.length; i++) {
+    var prop = STYLE_COMMON_PROPS[i];
+    if (!(prop[0] in styleProto)) {
+        styleProto[prop[0]] = prop[1];
+    }
+}
+
+// Provide for others
+Style.getGradient = styleProto.getGradient;
+
+var Pattern = function (image, repeat) {
+    // Should do nothing more in this constructor. Because gradient can be
+    // declard by `color: {image: ...}`, where this constructor will not be called.
+
+    this.image = image;
+    this.repeat = repeat;
+
+    // Can be cloned
+    this.type = 'pattern';
+};
+
+Pattern.prototype.getCanvasPattern = function (ctx) {
+    return ctx.createPattern(this.image, this.repeat || 'repeat');
+};
+
+/**
+ * @module zrender/Layer
+ * @author pissang(https://www.github.com/pissang)
+ */
+
+function returnFalse() {
+    return false;
+}
+
+/**
+ * 创建dom
+ *
+ * @inner
+ * @param {string} id dom id 待用
+ * @param {Painter} painter painter instance
+ * @param {number} number
+ */
+function createDom(id, painter, dpr) {
+    var newDom = createCanvas();
+    var width = painter.getWidth();
+    var height = painter.getHeight();
+
+    var newDomStyle = newDom.style;
+    // 没append呢，请原谅我这样写，清晰~
+    newDomStyle.position = 'absolute';
+    newDomStyle.left = 0;
+    newDomStyle.top = 0;
+    newDomStyle.width = width + 'px';
+    newDomStyle.height = height + 'px';
+    newDom.width = width * dpr;
+    newDom.height = height * dpr;
+
+    // id不作为索引用，避免可能造成的重名，定义为私有属性
+    newDom.setAttribute('data-zr-dom-id', id);
+    return newDom;
+}
+
+/**
+ * @alias module:zrender/Layer
+ * @constructor
+ * @extends module:zrender/mixin/Transformable
+ * @param {string} id
+ * @param {module:zrender/Painter} painter
+ * @param {number} [dpr]
+ */
+var Layer = function(id, painter, dpr) {
+    var dom;
+    dpr = dpr || devicePixelRatio;
+    if (typeof id === 'string') {
+        dom = createDom(id, painter, dpr);
+    }
+    // Not using isDom because in node it will return false
+    else if (isObject(id)) {
+        dom = id;
+        id = dom.id;
+    }
+    this.id = id;
+    this.dom = dom;
+
+    var domStyle = dom.style;
+    if (domStyle) { // Not in node
+        dom.onselectstart = returnFalse; // 避免页面选中的尴尬
+        domStyle['-webkit-user-select'] = 'none';
+        domStyle['user-select'] = 'none';
+        domStyle['-webkit-touch-callout'] = 'none';
+        domStyle['-webkit-tap-highlight-color'] = 'rgba(0,0,0,0)';
+        domStyle['padding'] = 0;
+        domStyle['margin'] = 0;
+        domStyle['border-width'] = 0;
+    }
+
+    this.domBack = null;
+    this.ctxBack = null;
+
+    this.painter = painter;
+
+    this.config = null;
+
+    // Configs
+    /**
+     * 每次清空画布的颜色
+     * @type {string}
+     * @default 0
+     */
+    this.clearColor = 0;
+    /**
+     * 是否开启动态模糊
+     * @type {boolean}
+     * @default false
+     */
+    this.motionBlur = false;
+    /**
+     * 在开启动态模糊的时候使用，与上一帧混合的alpha值，值越大尾迹越明显
+     * @type {number}
+     * @default 0.7
+     */
+    this.lastFrameAlpha = 0.7;
+
+    /**
+     * Layer dpr
+     * @type {number}
+     */
+    this.dpr = dpr;
+};
+
+Layer.prototype = {
+
+    constructor: Layer,
+
+    elCount: 0,
+
+    __dirty: true,
+
+    initContext: function () {
+        this.ctx = this.dom.getContext('2d');
+        this.ctx.__currentValues = {};
+        this.ctx.dpr = this.dpr;
+    },
+
+    createBackBuffer: function () {
+        var dpr = this.dpr;
+
+        this.domBack = createDom('back-' + this.id, this.painter, dpr);
+        this.ctxBack = this.domBack.getContext('2d');
+        this.ctxBack.__currentValues = {};
+
+        if (dpr != 1) {
+            this.ctxBack.scale(dpr, dpr);
+        }
+    },
+
+    /**
+     * @param  {number} width
+     * @param  {number} height
+     */
+    resize: function (width, height) {
+        var dpr = this.dpr;
+
+        var dom = this.dom;
+        var domStyle = dom.style;
+        var domBack = this.domBack;
+
+        domStyle.width = width + 'px';
+        domStyle.height = height + 'px';
+
+        dom.width = width * dpr;
+        dom.height = height * dpr;
+
+        if (domBack) {
+            domBack.width = width * dpr;
+            domBack.height = height * dpr;
+
+            if (dpr != 1) {
+                this.ctxBack.scale(dpr, dpr);
+            }
+        }
+    },
+
+    /**
+     * 清空该层画布
+     * @param {boolean} clearAll Clear all with out motion blur
+     */
+    clear: function (clearAll) {
+        var dom = this.dom;
+        var ctx = this.ctx;
+        var width = dom.width;
+        var height = dom.height;
+
+        var clearColor = this.clearColor;
+        var haveMotionBLur = this.motionBlur && !clearAll;
+        var lastFrameAlpha = this.lastFrameAlpha;
+
+        var dpr = this.dpr;
+
+        if (haveMotionBLur) {
+            if (!this.domBack) {
+                this.createBackBuffer();
+            }
+
+            this.ctxBack.globalCompositeOperation = 'copy';
+            this.ctxBack.drawImage(
+                dom, 0, 0,
+                width / dpr,
+                height / dpr
+            );
+        }
+
+        ctx.clearRect(0, 0, width, height);
+        if (clearColor) {
+            var clearColorGradientOrPattern;
+            // Gradient
+            if (clearColor.colorStops) {
+                // Cache canvas gradient
+                clearColorGradientOrPattern = clearColor.__canvasGradient || Style.getGradient(ctx, clearColor, {
+                    x: 0,
+                    y: 0,
+                    width: width,
+                    height: height
+                });
+
+                clearColor.__canvasGradient = clearColorGradientOrPattern;
+            }
+            // Pattern
+            else if (clearColor.image) {
+                clearColorGradientOrPattern = Pattern.prototype.getCanvasPattern.call(clearColor, ctx);
+            }
+            ctx.save();
+            ctx.fillStyle = clearColorGradientOrPattern || clearColor;
+            ctx.fillRect(0, 0, width, height);
+            ctx.restore();
+        }
+
+        if (haveMotionBLur) {
+            var domBack = this.domBack;
+            ctx.save();
+            ctx.globalAlpha = lastFrameAlpha;
+            ctx.drawImage(domBack, 0, 0, width, height);
+            ctx.restore();
+        }
+    }
+};
+
+var requestAnimationFrame = (
+    typeof window !== 'undefined'
+    && (
+        (window.requestAnimationFrame && window.requestAnimationFrame.bind(window))
+        // https://github.com/ecomfe/zrender/issues/189#issuecomment-224919809
+        || (window.msRequestAnimationFrame && window.msRequestAnimationFrame.bind(window))
+        || window.mozRequestAnimationFrame
+        || window.webkitRequestAnimationFrame
+    )
+) || function (func) {
+    setTimeout(func, 16);
 };
 
 var globalImageCache = new LRU(50);
@@ -6121,7 +8000,7 @@ function needDrawText(text, style) {
  * @module zrender/mixin/RectText
  */
 
-var tmpRect = new BoundingRect();
+var tmpRect$1 = new BoundingRect();
 
 var RectText = function () {};
 
@@ -6158,9 +8037,9 @@ RectText.prototype = {
         var transform = this.transform;
         if (!style.transformText) {
             if (transform) {
-                tmpRect.copy(rect);
-                tmpRect.applyTransform(transform);
-                rect = tmpRect;
+                tmpRect$1.copy(rect);
+                tmpRect$1.applyTransform(transform);
+                rect = tmpRect$1;
             }
         }
         else {
@@ -6432,4807 +8311,6 @@ inherits(Displayable, Element);
 mixin(Displayable, RectText);
 
 /**
- * 曲线辅助模块
- * @module zrender/core/curve
- * @author pissang(https://www.github.com/pissang)
- */
-
-var mathPow = Math.pow;
-var mathSqrt$2 = Math.sqrt;
-
-var EPSILON$1 = 1e-8;
-var EPSILON_NUMERIC = 1e-4;
-
-var THREE_SQRT = mathSqrt$2(3);
-var ONE_THIRD = 1 / 3;
-
-// 临时变量
-var _v0 = create$1();
-var _v1 = create$1();
-var _v2 = create$1();
-
-function isAroundZero(val) {
-    return val > -EPSILON$1 && val < EPSILON$1;
-}
-function isNotAroundZero$1(val) {
-    return val > EPSILON$1 || val < -EPSILON$1;
-}
-/**
- * 计算三次贝塞尔值
- * @memberOf module:zrender/core/curve
- * @param  {number} p0
- * @param  {number} p1
- * @param  {number} p2
- * @param  {number} p3
- * @param  {number} t
- * @return {number}
- */
-function cubicAt(p0, p1, p2, p3, t) {
-    var onet = 1 - t;
-    return onet * onet * (onet * p0 + 3 * t * p1)
-            + t * t * (t * p3 + 3 * onet * p2);
-}
-
-/**
- * 计算三次贝塞尔导数值
- * @memberOf module:zrender/core/curve
- * @param  {number} p0
- * @param  {number} p1
- * @param  {number} p2
- * @param  {number} p3
- * @param  {number} t
- * @return {number}
- */
-function cubicDerivativeAt(p0, p1, p2, p3, t) {
-    var onet = 1 - t;
-    return 3 * (
-        ((p1 - p0) * onet + 2 * (p2 - p1) * t) * onet
-        + (p3 - p2) * t * t
-    );
-}
-
-/**
- * 计算三次贝塞尔方程根，使用盛金公式
- * @memberOf module:zrender/core/curve
- * @param  {number} p0
- * @param  {number} p1
- * @param  {number} p2
- * @param  {number} p3
- * @param  {number} val
- * @param  {Array.<number>} roots
- * @return {number} 有效根数目
- */
-function cubicRootAt(p0, p1, p2, p3, val, roots) {
-    // Evaluate roots of cubic functions
-    var a = p3 + 3 * (p1 - p2) - p0;
-    var b = 3 * (p2 - p1 * 2 + p0);
-    var c = 3 * (p1  - p0);
-    var d = p0 - val;
-
-    var A = b * b - 3 * a * c;
-    var B = b * c - 9 * a * d;
-    var C = c * c - 3 * b * d;
-
-    var n = 0;
-
-    if (isAroundZero(A) && isAroundZero(B)) {
-        if (isAroundZero(b)) {
-            roots[0] = 0;
-        }
-        else {
-            var t1 = -c / b;  //t1, t2, t3, b is not zero
-            if (t1 >= 0 && t1 <= 1) {
-                roots[n++] = t1;
-            }
-        }
-    }
-    else {
-        var disc = B * B - 4 * A * C;
-
-        if (isAroundZero(disc)) {
-            var K = B / A;
-            var t1 = -b / a + K;  // t1, a is not zero
-            var t2 = -K / 2;  // t2, t3
-            if (t1 >= 0 && t1 <= 1) {
-                roots[n++] = t1;
-            }
-            if (t2 >= 0 && t2 <= 1) {
-                roots[n++] = t2;
-            }
-        }
-        else if (disc > 0) {
-            var discSqrt = mathSqrt$2(disc);
-            var Y1 = A * b + 1.5 * a * (-B + discSqrt);
-            var Y2 = A * b + 1.5 * a * (-B - discSqrt);
-            if (Y1 < 0) {
-                Y1 = -mathPow(-Y1, ONE_THIRD);
-            }
-            else {
-                Y1 = mathPow(Y1, ONE_THIRD);
-            }
-            if (Y2 < 0) {
-                Y2 = -mathPow(-Y2, ONE_THIRD);
-            }
-            else {
-                Y2 = mathPow(Y2, ONE_THIRD);
-            }
-            var t1 = (-b - (Y1 + Y2)) / (3 * a);
-            if (t1 >= 0 && t1 <= 1) {
-                roots[n++] = t1;
-            }
-        }
-        else {
-            var T = (2 * A * b - 3 * a * B) / (2 * mathSqrt$2(A * A * A));
-            var theta = Math.acos(T) / 3;
-            var ASqrt = mathSqrt$2(A);
-            var tmp = Math.cos(theta);
-
-            var t1 = (-b - 2 * ASqrt * tmp) / (3 * a);
-            var t2 = (-b + ASqrt * (tmp + THREE_SQRT * Math.sin(theta))) / (3 * a);
-            var t3 = (-b + ASqrt * (tmp - THREE_SQRT * Math.sin(theta))) / (3 * a);
-            if (t1 >= 0 && t1 <= 1) {
-                roots[n++] = t1;
-            }
-            if (t2 >= 0 && t2 <= 1) {
-                roots[n++] = t2;
-            }
-            if (t3 >= 0 && t3 <= 1) {
-                roots[n++] = t3;
-            }
-        }
-    }
-    return n;
-}
-
-/**
- * 计算三次贝塞尔方程极限值的位置
- * @memberOf module:zrender/core/curve
- * @param  {number} p0
- * @param  {number} p1
- * @param  {number} p2
- * @param  {number} p3
- * @param  {Array.<number>} extrema
- * @return {number} 有效数目
- */
-function cubicExtrema(p0, p1, p2, p3, extrema) {
-    var b = 6 * p2 - 12 * p1 + 6 * p0;
-    var a = 9 * p1 + 3 * p3 - 3 * p0 - 9 * p2;
-    var c = 3 * p1 - 3 * p0;
-
-    var n = 0;
-    if (isAroundZero(a)) {
-        if (isNotAroundZero$1(b)) {
-            var t1 = -c / b;
-            if (t1 >= 0 && t1 <=1) {
-                extrema[n++] = t1;
-            }
-        }
-    }
-    else {
-        var disc = b * b - 4 * a * c;
-        if (isAroundZero(disc)) {
-            extrema[0] = -b / (2 * a);
-        }
-        else if (disc > 0) {
-            var discSqrt = mathSqrt$2(disc);
-            var t1 = (-b + discSqrt) / (2 * a);
-            var t2 = (-b - discSqrt) / (2 * a);
-            if (t1 >= 0 && t1 <= 1) {
-                extrema[n++] = t1;
-            }
-            if (t2 >= 0 && t2 <= 1) {
-                extrema[n++] = t2;
-            }
-        }
-    }
-    return n;
-}
-
-/**
- * 细分三次贝塞尔曲线
- * @memberOf module:zrender/core/curve
- * @param  {number} p0
- * @param  {number} p1
- * @param  {number} p2
- * @param  {number} p3
- * @param  {number} t
- * @param  {Array.<number>} out
- */
-function cubicSubdivide(p0, p1, p2, p3, t, out) {
-    var p01 = (p1 - p0) * t + p0;
-    var p12 = (p2 - p1) * t + p1;
-    var p23 = (p3 - p2) * t + p2;
-
-    var p012 = (p12 - p01) * t + p01;
-    var p123 = (p23 - p12) * t + p12;
-
-    var p0123 = (p123 - p012) * t + p012;
-    // Seg0
-    out[0] = p0;
-    out[1] = p01;
-    out[2] = p012;
-    out[3] = p0123;
-    // Seg1
-    out[4] = p0123;
-    out[5] = p123;
-    out[6] = p23;
-    out[7] = p3;
-}
-
-/**
- * 投射点到三次贝塞尔曲线上，返回投射距离。
- * 投射点有可能会有一个或者多个，这里只返回其中距离最短的一个。
- * @param {number} x0
- * @param {number} y0
- * @param {number} x1
- * @param {number} y1
- * @param {number} x2
- * @param {number} y2
- * @param {number} x3
- * @param {number} y3
- * @param {number} x
- * @param {number} y
- * @param {Array.<number>} [out] 投射点
- * @return {number}
- */
-function cubicProjectPoint(
-    x0, y0, x1, y1, x2, y2, x3, y3,
-    x, y, out
-) {
-    // http://pomax.github.io/bezierinfo/#projections
-    var t;
-    var interval = 0.005;
-    var d = Infinity;
-    var prev;
-    var next;
-    var d1;
-    var d2;
-
-    _v0[0] = x;
-    _v0[1] = y;
-
-    // 先粗略估计一下可能的最小距离的 t 值
-    // PENDING
-    for (var _t = 0; _t < 1; _t += 0.05) {
-        _v1[0] = cubicAt(x0, x1, x2, x3, _t);
-        _v1[1] = cubicAt(y0, y1, y2, y3, _t);
-        d1 = distSquare(_v0, _v1);
-        if (d1 < d) {
-            t = _t;
-            d = d1;
-        }
-    }
-    d = Infinity;
-
-    // At most 32 iteration
-    for (var i = 0; i < 32; i++) {
-        if (interval < EPSILON_NUMERIC) {
-            break;
-        }
-        prev = t - interval;
-        next = t + interval;
-        // t - interval
-        _v1[0] = cubicAt(x0, x1, x2, x3, prev);
-        _v1[1] = cubicAt(y0, y1, y2, y3, prev);
-
-        d1 = distSquare(_v1, _v0);
-
-        if (prev >= 0 && d1 < d) {
-            t = prev;
-            d = d1;
-        }
-        else {
-            // t + interval
-            _v2[0] = cubicAt(x0, x1, x2, x3, next);
-            _v2[1] = cubicAt(y0, y1, y2, y3, next);
-            d2 = distSquare(_v2, _v0);
-
-            if (next <= 1 && d2 < d) {
-                t = next;
-                d = d2;
-            }
-            else {
-                interval *= 0.5;
-            }
-        }
-    }
-    // t
-    if (out) {
-        out[0] = cubicAt(x0, x1, x2, x3, t);
-        out[1] = cubicAt(y0, y1, y2, y3, t);
-    }
-    // console.log(interval, i);
-    return mathSqrt$2(d);
-}
-
-/**
- * 计算二次方贝塞尔值
- * @param  {number} p0
- * @param  {number} p1
- * @param  {number} p2
- * @param  {number} t
- * @return {number}
- */
-function quadraticAt(p0, p1, p2, t) {
-    var onet = 1 - t;
-    return onet * (onet * p0 + 2 * t * p1) + t * t * p2;
-}
-
-/**
- * 计算二次方贝塞尔导数值
- * @param  {number} p0
- * @param  {number} p1
- * @param  {number} p2
- * @param  {number} t
- * @return {number}
- */
-function quadraticDerivativeAt(p0, p1, p2, t) {
-    return 2 * ((1 - t) * (p1 - p0) + t * (p2 - p1));
-}
-
-/**
- * 计算二次方贝塞尔方程根
- * @param  {number} p0
- * @param  {number} p1
- * @param  {number} p2
- * @param  {number} t
- * @param  {Array.<number>} roots
- * @return {number} 有效根数目
- */
-function quadraticRootAt(p0, p1, p2, val, roots) {
-    var a = p0 - 2 * p1 + p2;
-    var b = 2 * (p1 - p0);
-    var c = p0 - val;
-
-    var n = 0;
-    if (isAroundZero(a)) {
-        if (isNotAroundZero$1(b)) {
-            var t1 = -c / b;
-            if (t1 >= 0 && t1 <= 1) {
-                roots[n++] = t1;
-            }
-        }
-    }
-    else {
-        var disc = b * b - 4 * a * c;
-        if (isAroundZero(disc)) {
-            var t1 = -b / (2 * a);
-            if (t1 >= 0 && t1 <= 1) {
-                roots[n++] = t1;
-            }
-        }
-        else if (disc > 0) {
-            var discSqrt = mathSqrt$2(disc);
-            var t1 = (-b + discSqrt) / (2 * a);
-            var t2 = (-b - discSqrt) / (2 * a);
-            if (t1 >= 0 && t1 <= 1) {
-                roots[n++] = t1;
-            }
-            if (t2 >= 0 && t2 <= 1) {
-                roots[n++] = t2;
-            }
-        }
-    }
-    return n;
-}
-
-/**
- * 计算二次贝塞尔方程极限值
- * @memberOf module:zrender/core/curve
- * @param  {number} p0
- * @param  {number} p1
- * @param  {number} p2
- * @return {number}
- */
-function quadraticExtremum(p0, p1, p2) {
-    var divider = p0 + p2 - 2 * p1;
-    if (divider === 0) {
-        // p1 is center of p0 and p2
-        return 0.5;
-    }
-    else {
-        return (p0 - p1) / divider;
-    }
-}
-
-/**
- * 细分二次贝塞尔曲线
- * @memberOf module:zrender/core/curve
- * @param  {number} p0
- * @param  {number} p1
- * @param  {number} p2
- * @param  {number} t
- * @param  {Array.<number>} out
- */
-function quadraticSubdivide(p0, p1, p2, t, out) {
-    var p01 = (p1 - p0) * t + p0;
-    var p12 = (p2 - p1) * t + p1;
-    var p012 = (p12 - p01) * t + p01;
-
-    // Seg0
-    out[0] = p0;
-    out[1] = p01;
-    out[2] = p012;
-
-    // Seg1
-    out[3] = p012;
-    out[4] = p12;
-    out[5] = p2;
-}
-
-/**
- * 投射点到二次贝塞尔曲线上，返回投射距离。
- * 投射点有可能会有一个或者多个，这里只返回其中距离最短的一个。
- * @param {number} x0
- * @param {number} y0
- * @param {number} x1
- * @param {number} y1
- * @param {number} x2
- * @param {number} y2
- * @param {number} x
- * @param {number} y
- * @param {Array.<number>} out 投射点
- * @return {number}
- */
-function quadraticProjectPoint(
-    x0, y0, x1, y1, x2, y2,
-    x, y, out
-) {
-    // http://pomax.github.io/bezierinfo/#projections
-    var t;
-    var interval = 0.005;
-    var d = Infinity;
-
-    _v0[0] = x;
-    _v0[1] = y;
-
-    // 先粗略估计一下可能的最小距离的 t 值
-    // PENDING
-    for (var _t = 0; _t < 1; _t += 0.05) {
-        _v1[0] = quadraticAt(x0, x1, x2, _t);
-        _v1[1] = quadraticAt(y0, y1, y2, _t);
-        var d1 = distSquare(_v0, _v1);
-        if (d1 < d) {
-            t = _t;
-            d = d1;
-        }
-    }
-    d = Infinity;
-
-    // At most 32 iteration
-    for (var i = 0; i < 32; i++) {
-        if (interval < EPSILON_NUMERIC) {
-            break;
-        }
-        var prev = t - interval;
-        var next = t + interval;
-        // t - interval
-        _v1[0] = quadraticAt(x0, x1, x2, prev);
-        _v1[1] = quadraticAt(y0, y1, y2, prev);
-
-        var d1 = distSquare(_v1, _v0);
-
-        if (prev >= 0 && d1 < d) {
-            t = prev;
-            d = d1;
-        }
-        else {
-            // t + interval
-            _v2[0] = quadraticAt(x0, x1, x2, next);
-            _v2[1] = quadraticAt(y0, y1, y2, next);
-            var d2 = distSquare(_v2, _v0);
-            if (next <= 1 && d2 < d) {
-                t = next;
-                d = d2;
-            }
-            else {
-                interval *= 0.5;
-            }
-        }
-    }
-    // t
-    if (out) {
-        out[0] = quadraticAt(x0, x1, x2, t);
-        out[1] = quadraticAt(y0, y1, y2, t);
-    }
-    // console.log(interval, i);
-    return mathSqrt$2(d);
-}
-
-/**
- * @author Yi Shen(https://github.com/pissang)
- */
-
-var mathMin$2 = Math.min;
-var mathMax$2 = Math.max;
-var mathSin$2 = Math.sin;
-var mathCos$2 = Math.cos;
-var PI2 = Math.PI * 2;
-
-var start = create$1();
-var end = create$1();
-var extremity = create$1();
-
-/**
- * 从顶点数组中计算出最小包围盒，写入`min`和`max`中
- * @module zrender/core/bbox
- * @param {Array<Object>} points 顶点数组
- * @param {number} min
- * @param {number} max
- */
-
-
-/**
- * @memberOf module:zrender/core/bbox
- * @param {number} x0
- * @param {number} y0
- * @param {number} x1
- * @param {number} y1
- * @param {Array.<number>} min
- * @param {Array.<number>} max
- */
-function fromLine(x0, y0, x1, y1, min$$1, max$$1) {
-    min$$1[0] = mathMin$2(x0, x1);
-    min$$1[1] = mathMin$2(y0, y1);
-    max$$1[0] = mathMax$2(x0, x1);
-    max$$1[1] = mathMax$2(y0, y1);
-}
-
-var xDim = [];
-var yDim = [];
-/**
- * 从三阶贝塞尔曲线(p0, p1, p2, p3)中计算出最小包围盒，写入`min`和`max`中
- * @memberOf module:zrender/core/bbox
- * @param {number} x0
- * @param {number} y0
- * @param {number} x1
- * @param {number} y1
- * @param {number} x2
- * @param {number} y2
- * @param {number} x3
- * @param {number} y3
- * @param {Array.<number>} min
- * @param {Array.<number>} max
- */
-function fromCubic(
-    x0, y0, x1, y1, x2, y2, x3, y3, min$$1, max$$1
-) {
-    var cubicExtrema$$1 = cubicExtrema;
-    var cubicAt$$1 = cubicAt;
-    var i;
-    var n = cubicExtrema$$1(x0, x1, x2, x3, xDim);
-    min$$1[0] = Infinity;
-    min$$1[1] = Infinity;
-    max$$1[0] = -Infinity;
-    max$$1[1] = -Infinity;
-
-    for (i = 0; i < n; i++) {
-        var x = cubicAt$$1(x0, x1, x2, x3, xDim[i]);
-        min$$1[0] = mathMin$2(x, min$$1[0]);
-        max$$1[0] = mathMax$2(x, max$$1[0]);
-    }
-    n = cubicExtrema$$1(y0, y1, y2, y3, yDim);
-    for (i = 0; i < n; i++) {
-        var y = cubicAt$$1(y0, y1, y2, y3, yDim[i]);
-        min$$1[1] = mathMin$2(y, min$$1[1]);
-        max$$1[1] = mathMax$2(y, max$$1[1]);
-    }
-
-    min$$1[0] = mathMin$2(x0, min$$1[0]);
-    max$$1[0] = mathMax$2(x0, max$$1[0]);
-    min$$1[0] = mathMin$2(x3, min$$1[0]);
-    max$$1[0] = mathMax$2(x3, max$$1[0]);
-
-    min$$1[1] = mathMin$2(y0, min$$1[1]);
-    max$$1[1] = mathMax$2(y0, max$$1[1]);
-    min$$1[1] = mathMin$2(y3, min$$1[1]);
-    max$$1[1] = mathMax$2(y3, max$$1[1]);
-}
-
-/**
- * 从二阶贝塞尔曲线(p0, p1, p2)中计算出最小包围盒，写入`min`和`max`中
- * @memberOf module:zrender/core/bbox
- * @param {number} x0
- * @param {number} y0
- * @param {number} x1
- * @param {number} y1
- * @param {number} x2
- * @param {number} y2
- * @param {Array.<number>} min
- * @param {Array.<number>} max
- */
-function fromQuadratic(x0, y0, x1, y1, x2, y2, min$$1, max$$1) {
-    var quadraticExtremum$$1 = quadraticExtremum;
-    var quadraticAt$$1 = quadraticAt;
-    // Find extremities, where derivative in x dim or y dim is zero
-    var tx =
-        mathMax$2(
-            mathMin$2(quadraticExtremum$$1(x0, x1, x2), 1), 0
-        );
-    var ty =
-        mathMax$2(
-            mathMin$2(quadraticExtremum$$1(y0, y1, y2), 1), 0
-        );
-
-    var x = quadraticAt$$1(x0, x1, x2, tx);
-    var y = quadraticAt$$1(y0, y1, y2, ty);
-
-    min$$1[0] = mathMin$2(x0, x2, x);
-    min$$1[1] = mathMin$2(y0, y2, y);
-    max$$1[0] = mathMax$2(x0, x2, x);
-    max$$1[1] = mathMax$2(y0, y2, y);
-}
-
-/**
- * 从圆弧中计算出最小包围盒，写入`min`和`max`中
- * @method
- * @memberOf module:zrender/core/bbox
- * @param {number} x
- * @param {number} y
- * @param {number} rx
- * @param {number} ry
- * @param {number} startAngle
- * @param {number} endAngle
- * @param {number} anticlockwise
- * @param {Array.<number>} min
- * @param {Array.<number>} max
- */
-function fromArc(
-    x, y, rx, ry, startAngle, endAngle, anticlockwise, min$$1, max$$1
-) {
-    var vec2Min = min;
-    var vec2Max = max;
-
-    var diff = Math.abs(startAngle - endAngle);
-
-
-    if (diff % PI2 < 1e-4 && diff > 1e-4) {
-        // Is a circle
-        min$$1[0] = x - rx;
-        min$$1[1] = y - ry;
-        max$$1[0] = x + rx;
-        max$$1[1] = y + ry;
-        return;
-    }
-
-    start[0] = mathCos$2(startAngle) * rx + x;
-    start[1] = mathSin$2(startAngle) * ry + y;
-
-    end[0] = mathCos$2(endAngle) * rx + x;
-    end[1] = mathSin$2(endAngle) * ry + y;
-
-    vec2Min(min$$1, start, end);
-    vec2Max(max$$1, start, end);
-
-    // Thresh to [0, Math.PI * 2]
-    startAngle = startAngle % (PI2);
-    if (startAngle < 0) {
-        startAngle = startAngle + PI2;
-    }
-    endAngle = endAngle % (PI2);
-    if (endAngle < 0) {
-        endAngle = endAngle + PI2;
-    }
-
-    if (startAngle > endAngle && !anticlockwise) {
-        endAngle += PI2;
-    }
-    else if (startAngle < endAngle && anticlockwise) {
-        startAngle += PI2;
-    }
-    if (anticlockwise) {
-        var tmp = endAngle;
-        endAngle = startAngle;
-        startAngle = tmp;
-    }
-
-    // var number = 0;
-    // var step = (anticlockwise ? -Math.PI : Math.PI) / 2;
-    for (var angle = 0; angle < endAngle; angle += Math.PI / 2) {
-        if (angle > startAngle) {
-            extremity[0] = mathCos$2(angle) * rx + x;
-            extremity[1] = mathSin$2(angle) * ry + y;
-
-            vec2Min(min$$1, extremity, min$$1);
-            vec2Max(max$$1, extremity, max$$1);
-        }
-    }
-}
-
-/**
- * Path 代理，可以在`buildPath`中用于替代`ctx`, 会保存每个path操作的命令到pathCommands属性中
- * 可以用于 isInsidePath 判断以及获取boundingRect
- *
- * @module zrender/core/PathProxy
- * @author Yi Shen (http://www.github.com/pissang)
- */
-
-// TODO getTotalLength, getPointAtLength
-
-var CMD = {
-    M: 1,
-    L: 2,
-    C: 3,
-    Q: 4,
-    A: 5,
-    Z: 6,
-    // Rect
-    R: 7
-};
-
-// var CMD_MEM_SIZE = {
-//     M: 3,
-//     L: 3,
-//     C: 7,
-//     Q: 5,
-//     A: 9,
-//     R: 5,
-//     Z: 1
-// };
-
-var min$1 = [];
-var max$1 = [];
-var min2 = [];
-var max2 = [];
-var mathMin$1 = Math.min;
-var mathMax$1 = Math.max;
-var mathCos$1 = Math.cos;
-var mathSin$1 = Math.sin;
-var mathSqrt$1 = Math.sqrt;
-var mathAbs = Math.abs;
-
-var hasTypedArray = typeof Float32Array != 'undefined';
-
-/**
- * @alias module:zrender/core/PathProxy
- * @constructor
- */
-var PathProxy = function (notSaveData) {
-
-    this._saveData = !(notSaveData || false);
-
-    if (this._saveData) {
-        /**
-         * Path data. Stored as flat array
-         * @type {Array.<Object>}
-         */
-        this.data = [];
-    }
-
-    this._ctx = null;
-};
-
-/**
- * 快速计算Path包围盒（并不是最小包围盒）
- * @return {Object}
- */
-PathProxy.prototype = {
-
-    constructor: PathProxy,
-
-    _xi: 0,
-    _yi: 0,
-
-    _x0: 0,
-    _y0: 0,
-    // Unit x, Unit y. Provide for avoiding drawing that too short line segment
-    _ux: 0,
-    _uy: 0,
-
-    _len: 0,
-
-    _lineDash: null,
-
-    _dashOffset: 0,
-
-    _dashIdx: 0,
-
-    _dashSum: 0,
-
-    /**
-     * @readOnly
-     */
-    setScale: function (sx, sy) {
-        this._ux = mathAbs(1 / devicePixelRatio / sx) || 0;
-        this._uy = mathAbs(1 / devicePixelRatio / sy) || 0;
-    },
-
-    getContext: function () {
-        return this._ctx;
-    },
-
-    /**
-     * @param  {CanvasRenderingContext2D} ctx
-     * @return {module:zrender/core/PathProxy}
-     */
-    beginPath: function (ctx) {
-
-        this._ctx = ctx;
-
-        ctx && ctx.beginPath();
-
-        ctx && (this.dpr = ctx.dpr);
-
-        // Reset
-        if (this._saveData) {
-            this._len = 0;
-        }
-
-        if (this._lineDash) {
-            this._lineDash = null;
-
-            this._dashOffset = 0;
-        }
-
-        return this;
-    },
-
-    /**
-     * @param  {number} x
-     * @param  {number} y
-     * @return {module:zrender/core/PathProxy}
-     */
-    moveTo: function (x, y) {
-        this.addData(CMD.M, x, y);
-        this._ctx && this._ctx.moveTo(x, y);
-
-        // x0, y0, xi, yi 是记录在 _dashedXXXXTo 方法中使用
-        // xi, yi 记录当前点, x0, y0 在 closePath 的时候回到起始点。
-        // 有可能在 beginPath 之后直接调用 lineTo，这时候 x0, y0 需要
-        // 在 lineTo 方法中记录，这里先不考虑这种情况，dashed line 也只在 IE10- 中不支持
-        this._x0 = x;
-        this._y0 = y;
-
-        this._xi = x;
-        this._yi = y;
-
-        return this;
-    },
-
-    /**
-     * @param  {number} x
-     * @param  {number} y
-     * @return {module:zrender/core/PathProxy}
-     */
-    lineTo: function (x, y) {
-        var exceedUnit = mathAbs(x - this._xi) > this._ux
-            || mathAbs(y - this._yi) > this._uy
-            // Force draw the first segment
-            || this._len < 5;
-
-        this.addData(CMD.L, x, y);
-
-        if (this._ctx && exceedUnit) {
-            this._needsDash() ? this._dashedLineTo(x, y)
-                : this._ctx.lineTo(x, y);
-        }
-        if (exceedUnit) {
-            this._xi = x;
-            this._yi = y;
-        }
-
-        return this;
-    },
-
-    /**
-     * @param  {number} x1
-     * @param  {number} y1
-     * @param  {number} x2
-     * @param  {number} y2
-     * @param  {number} x3
-     * @param  {number} y3
-     * @return {module:zrender/core/PathProxy}
-     */
-    bezierCurveTo: function (x1, y1, x2, y2, x3, y3) {
-        this.addData(CMD.C, x1, y1, x2, y2, x3, y3);
-        if (this._ctx) {
-            this._needsDash() ? this._dashedBezierTo(x1, y1, x2, y2, x3, y3)
-                : this._ctx.bezierCurveTo(x1, y1, x2, y2, x3, y3);
-        }
-        this._xi = x3;
-        this._yi = y3;
-        return this;
-    },
-
-    /**
-     * @param  {number} x1
-     * @param  {number} y1
-     * @param  {number} x2
-     * @param  {number} y2
-     * @return {module:zrender/core/PathProxy}
-     */
-    quadraticCurveTo: function (x1, y1, x2, y2) {
-        this.addData(CMD.Q, x1, y1, x2, y2);
-        if (this._ctx) {
-            this._needsDash() ? this._dashedQuadraticTo(x1, y1, x2, y2)
-                : this._ctx.quadraticCurveTo(x1, y1, x2, y2);
-        }
-        this._xi = x2;
-        this._yi = y2;
-        return this;
-    },
-
-    /**
-     * @param  {number} cx
-     * @param  {number} cy
-     * @param  {number} r
-     * @param  {number} startAngle
-     * @param  {number} endAngle
-     * @param  {boolean} anticlockwise
-     * @return {module:zrender/core/PathProxy}
-     */
-    arc: function (cx, cy, r, startAngle, endAngle, anticlockwise) {
-        this.addData(
-            CMD.A, cx, cy, r, r, startAngle, endAngle - startAngle, 0, anticlockwise ? 0 : 1
-        );
-        this._ctx && this._ctx.arc(cx, cy, r, startAngle, endAngle, anticlockwise);
-
-        this._xi = mathCos$1(endAngle) * r + cx;
-        this._yi = mathSin$1(endAngle) * r + cx;
-        return this;
-    },
-
-    // TODO
-    arcTo: function (x1, y1, x2, y2, radius) {
-        if (this._ctx) {
-            this._ctx.arcTo(x1, y1, x2, y2, radius);
-        }
-        return this;
-    },
-
-    // TODO
-    rect: function (x, y, w, h) {
-        this._ctx && this._ctx.rect(x, y, w, h);
-        this.addData(CMD.R, x, y, w, h);
-        return this;
-    },
-
-    /**
-     * @return {module:zrender/core/PathProxy}
-     */
-    closePath: function () {
-        this.addData(CMD.Z);
-
-        var ctx = this._ctx;
-        var x0 = this._x0;
-        var y0 = this._y0;
-        if (ctx) {
-            this._needsDash() && this._dashedLineTo(x0, y0);
-            ctx.closePath();
-        }
-
-        this._xi = x0;
-        this._yi = y0;
-        return this;
-    },
-
-    /**
-     * Context 从外部传入，因为有可能是 rebuildPath 完之后再 fill。
-     * stroke 同样
-     * @param {CanvasRenderingContext2D} ctx
-     * @return {module:zrender/core/PathProxy}
-     */
-    fill: function (ctx) {
-        ctx && ctx.fill();
-        this.toStatic();
-    },
-
-    /**
-     * @param {CanvasRenderingContext2D} ctx
-     * @return {module:zrender/core/PathProxy}
-     */
-    stroke: function (ctx) {
-        ctx && ctx.stroke();
-        this.toStatic();
-    },
-
-    /**
-     * 必须在其它绘制命令前调用
-     * Must be invoked before all other path drawing methods
-     * @return {module:zrender/core/PathProxy}
-     */
-    setLineDash: function (lineDash) {
-        if (lineDash instanceof Array) {
-            this._lineDash = lineDash;
-
-            this._dashIdx = 0;
-
-            var lineDashSum = 0;
-            for (var i = 0; i < lineDash.length; i++) {
-                lineDashSum += lineDash[i];
-            }
-            this._dashSum = lineDashSum;
-        }
-        return this;
-    },
-
-    /**
-     * 必须在其它绘制命令前调用
-     * Must be invoked before all other path drawing methods
-     * @return {module:zrender/core/PathProxy}
-     */
-    setLineDashOffset: function (offset) {
-        this._dashOffset = offset;
-        return this;
-    },
-
-    /**
-     *
-     * @return {boolean}
-     */
-    len: function () {
-        return this._len;
-    },
-
-    /**
-     * 直接设置 Path 数据
-     */
-    setData: function (data) {
-
-        var len$$1 = data.length;
-
-        if (! (this.data && this.data.length == len$$1) && hasTypedArray) {
-            this.data = new Float32Array(len$$1);
-        }
-
-        for (var i = 0; i < len$$1; i++) {
-            this.data[i] = data[i];
-        }
-
-        this._len = len$$1;
-    },
-
-    /**
-     * 添加子路径
-     * @param {module:zrender/core/PathProxy|Array.<module:zrender/core/PathProxy>} path
-     */
-    appendPath: function (path) {
-        if (!(path instanceof Array)) {
-            path = [path];
-        }
-        var len$$1 = path.length;
-        var appendSize = 0;
-        var offset = this._len;
-        for (var i = 0; i < len$$1; i++) {
-            appendSize += path[i].len();
-        }
-        if (hasTypedArray && (this.data instanceof Float32Array)) {
-            this.data = new Float32Array(offset + appendSize);
-        }
-        for (var i = 0; i < len$$1; i++) {
-            var appendPathData = path[i].data;
-            for (var k = 0; k < appendPathData.length; k++) {
-                this.data[offset++] = appendPathData[k];
-            }
-        }
-        this._len = offset;
-    },
-
-    /**
-     * 填充 Path 数据。
-     * 尽量复用而不申明新的数组。大部分图形重绘的指令数据长度都是不变的。
-     */
-    addData: function (cmd) {
-        if (!this._saveData) {
-            return;
-        }
-
-        var data = this.data;
-        if (this._len + arguments.length > data.length) {
-            // 因为之前的数组已经转换成静态的 Float32Array
-            // 所以不够用时需要扩展一个新的动态数组
-            this._expandData();
-            data = this.data;
-        }
-        for (var i = 0; i < arguments.length; i++) {
-            data[this._len++] = arguments[i];
-        }
-
-        this._prevCmd = cmd;
-    },
-
-    _expandData: function () {
-        // Only if data is Float32Array
-        if (!(this.data instanceof Array)) {
-            var newData = [];
-            for (var i = 0; i < this._len; i++) {
-                newData[i] = this.data[i];
-            }
-            this.data = newData;
-        }
-    },
-
-    /**
-     * If needs js implemented dashed line
-     * @return {boolean}
-     * @private
-     */
-    _needsDash: function () {
-        return this._lineDash;
-    },
-
-    _dashedLineTo: function (x1, y1) {
-        var dashSum = this._dashSum;
-        var offset = this._dashOffset;
-        var lineDash = this._lineDash;
-        var ctx = this._ctx;
-
-        var x0 = this._xi;
-        var y0 = this._yi;
-        var dx = x1 - x0;
-        var dy = y1 - y0;
-        var dist$$1 = mathSqrt$1(dx * dx + dy * dy);
-        var x = x0;
-        var y = y0;
-        var dash;
-        var nDash = lineDash.length;
-        var idx;
-        dx /= dist$$1;
-        dy /= dist$$1;
-
-        if (offset < 0) {
-            // Convert to positive offset
-            offset = dashSum + offset;
-        }
-        offset %= dashSum;
-        x -= offset * dx;
-        y -= offset * dy;
-
-        while ((dx > 0 && x <= x1) || (dx < 0 && x >= x1)
-        || (dx == 0 && ((dy > 0 && y <= y1) || (dy < 0 && y >= y1)))) {
-            idx = this._dashIdx;
-            dash = lineDash[idx];
-            x += dx * dash;
-            y += dy * dash;
-            this._dashIdx = (idx + 1) % nDash;
-            // Skip positive offset
-            if ((dx > 0 && x < x0) || (dx < 0 && x > x0) || (dy > 0 && y < y0) || (dy < 0 && y > y0)) {
-                continue;
-            }
-            ctx[idx % 2 ? 'moveTo' : 'lineTo'](
-                dx >= 0 ? mathMin$1(x, x1) : mathMax$1(x, x1),
-                dy >= 0 ? mathMin$1(y, y1) : mathMax$1(y, y1)
-            );
-        }
-        // Offset for next lineTo
-        dx = x - x1;
-        dy = y - y1;
-        this._dashOffset = -mathSqrt$1(dx * dx + dy * dy);
-    },
-
-    // Not accurate dashed line to
-    _dashedBezierTo: function (x1, y1, x2, y2, x3, y3) {
-        var dashSum = this._dashSum;
-        var offset = this._dashOffset;
-        var lineDash = this._lineDash;
-        var ctx = this._ctx;
-
-        var x0 = this._xi;
-        var y0 = this._yi;
-        var t;
-        var dx;
-        var dy;
-        var cubicAt$$1 = cubicAt;
-        var bezierLen = 0;
-        var idx = this._dashIdx;
-        var nDash = lineDash.length;
-
-        var x;
-        var y;
-
-        var tmpLen = 0;
-
-        if (offset < 0) {
-            // Convert to positive offset
-            offset = dashSum + offset;
-        }
-        offset %= dashSum;
-        // Bezier approx length
-        for (t = 0; t < 1; t += 0.1) {
-            dx = cubicAt$$1(x0, x1, x2, x3, t + 0.1)
-                - cubicAt$$1(x0, x1, x2, x3, t);
-            dy = cubicAt$$1(y0, y1, y2, y3, t + 0.1)
-                - cubicAt$$1(y0, y1, y2, y3, t);
-            bezierLen += mathSqrt$1(dx * dx + dy * dy);
-        }
-
-        // Find idx after add offset
-        for (; idx < nDash; idx++) {
-            tmpLen += lineDash[idx];
-            if (tmpLen > offset) {
-                break;
-            }
-        }
-        t = (tmpLen - offset) / bezierLen;
-
-        while (t <= 1) {
-
-            x = cubicAt$$1(x0, x1, x2, x3, t);
-            y = cubicAt$$1(y0, y1, y2, y3, t);
-
-            // Use line to approximate dashed bezier
-            // Bad result if dash is long
-            idx % 2 ? ctx.moveTo(x, y)
-                : ctx.lineTo(x, y);
-
-            t += lineDash[idx] / bezierLen;
-
-            idx = (idx + 1) % nDash;
-        }
-
-        // Finish the last segment and calculate the new offset
-        (idx % 2 !== 0) && ctx.lineTo(x3, y3);
-        dx = x3 - x;
-        dy = y3 - y;
-        this._dashOffset = -mathSqrt$1(dx * dx + dy * dy);
-    },
-
-    _dashedQuadraticTo: function (x1, y1, x2, y2) {
-        // Convert quadratic to cubic using degree elevation
-        var x3 = x2;
-        var y3 = y2;
-        x2 = (x2 + 2 * x1) / 3;
-        y2 = (y2 + 2 * y1) / 3;
-        x1 = (this._xi + 2 * x1) / 3;
-        y1 = (this._yi + 2 * y1) / 3;
-
-        this._dashedBezierTo(x1, y1, x2, y2, x3, y3);
-    },
-
-    /**
-     * 转成静态的 Float32Array 减少堆内存占用
-     * Convert dynamic array to static Float32Array
-     */
-    toStatic: function () {
-        var data = this.data;
-        if (data instanceof Array) {
-            data.length = this._len;
-            if (hasTypedArray) {
-                this.data = new Float32Array(data);
-            }
-        }
-    },
-
-    /**
-     * @return {module:zrender/core/BoundingRect}
-     */
-    getBoundingRect: function () {
-        min$1[0] = min$1[1] = min2[0] = min2[1] = Number.MAX_VALUE;
-        max$1[0] = max$1[1] = max2[0] = max2[1] = -Number.MAX_VALUE;
-
-        var data = this.data;
-        var xi = 0;
-        var yi = 0;
-        var x0 = 0;
-        var y0 = 0;
-
-        for (var i = 0; i < data.length;) {
-            var cmd = data[i++];
-
-            if (i == 1) {
-                // 如果第一个命令是 L, C, Q
-                // 则 previous point 同绘制命令的第一个 point
-                //
-                // 第一个命令为 Arc 的情况下会在后面特殊处理
-                xi = data[i];
-                yi = data[i + 1];
-
-                x0 = xi;
-                y0 = yi;
-            }
-
-            switch (cmd) {
-                case CMD.M:
-                    // moveTo 命令重新创建一个新的 subpath, 并且更新新的起点
-                    // 在 closePath 的时候使用
-                    x0 = data[i++];
-                    y0 = data[i++];
-                    xi = x0;
-                    yi = y0;
-                    min2[0] = x0;
-                    min2[1] = y0;
-                    max2[0] = x0;
-                    max2[1] = y0;
-                    break;
-                case CMD.L:
-                    fromLine(xi, yi, data[i], data[i + 1], min2, max2);
-                    xi = data[i++];
-                    yi = data[i++];
-                    break;
-                case CMD.C:
-                    fromCubic(
-                        xi, yi, data[i++], data[i++], data[i++], data[i++], data[i], data[i + 1],
-                        min2, max2
-                    );
-                    xi = data[i++];
-                    yi = data[i++];
-                    break;
-                case CMD.Q:
-                    fromQuadratic(
-                        xi, yi, data[i++], data[i++], data[i], data[i + 1],
-                        min2, max2
-                    );
-                    xi = data[i++];
-                    yi = data[i++];
-                    break;
-                case CMD.A:
-                    // TODO Arc 判断的开销比较大
-                    var cx = data[i++];
-                    var cy = data[i++];
-                    var rx = data[i++];
-                    var ry = data[i++];
-                    var startAngle = data[i++];
-                    var endAngle = data[i++] + startAngle;
-                    // TODO Arc 旋转
-                    var psi = data[i++];
-                    var anticlockwise = 1 - data[i++];
-
-                    if (i == 1) {
-                        // 直接使用 arc 命令
-                        // 第一个命令起点还未定义
-                        x0 = mathCos$1(startAngle) * rx + cx;
-                        y0 = mathSin$1(startAngle) * ry + cy;
-                    }
-
-                    fromArc(
-                        cx, cy, rx, ry, startAngle, endAngle,
-                        anticlockwise, min2, max2
-                    );
-
-                    xi = mathCos$1(endAngle) * rx + cx;
-                    yi = mathSin$1(endAngle) * ry + cy;
-                    break;
-                case CMD.R:
-                    x0 = xi = data[i++];
-                    y0 = yi = data[i++];
-                    var width = data[i++];
-                    var height = data[i++];
-                    // Use fromLine
-                    fromLine(x0, y0, x0 + width, y0 + height, min2, max2);
-                    break;
-                case CMD.Z:
-                    xi = x0;
-                    yi = y0;
-                    break;
-            }
-
-            // Union
-            min(min$1, min$1, min2);
-            max(max$1, max$1, max2);
-        }
-
-        // No data
-        if (i === 0) {
-            min$1[0] = min$1[1] = max$1[0] = max$1[1] = 0;
-        }
-
-        return new BoundingRect(
-            min$1[0], min$1[1], max$1[0] - min$1[0], max$1[1] - min$1[1]
-        );
-    },
-
-    /**
-     * Rebuild path from current data
-     * Rebuild path will not consider javascript implemented line dash.
-     * @param {CanvasRenderingContext2D} ctx
-     */
-    rebuildPath: function (ctx) {
-        var d = this.data;
-        var x0, y0;
-        var xi, yi;
-        var x, y;
-        var ux = this._ux;
-        var uy = this._uy;
-        var len$$1 = this._len;
-        for (var i = 0; i < len$$1;) {
-            var cmd = d[i++];
-
-            if (i == 1) {
-                // 如果第一个命令是 L, C, Q
-                // 则 previous point 同绘制命令的第一个 point
-                //
-                // 第一个命令为 Arc 的情况下会在后面特殊处理
-                xi = d[i];
-                yi = d[i + 1];
-
-                x0 = xi;
-                y0 = yi;
-            }
-            switch (cmd) {
-                case CMD.M:
-                    x0 = xi = d[i++];
-                    y0 = yi = d[i++];
-                    ctx.moveTo(xi, yi);
-                    break;
-                case CMD.L:
-                    x = d[i++];
-                    y = d[i++];
-                    // Not draw too small seg between
-                    if (mathAbs(x - xi) > ux || mathAbs(y - yi) > uy || i === len$$1 - 1) {
-                        ctx.lineTo(x, y);
-                        xi = x;
-                        yi = y;
-                    }
-                    break;
-                case CMD.C:
-                    ctx.bezierCurveTo(
-                        d[i++], d[i++], d[i++], d[i++], d[i++], d[i++]
-                    );
-                    xi = d[i - 2];
-                    yi = d[i - 1];
-                    break;
-                case CMD.Q:
-                    ctx.quadraticCurveTo(d[i++], d[i++], d[i++], d[i++]);
-                    xi = d[i - 2];
-                    yi = d[i - 1];
-                    break;
-                case CMD.A:
-                    var cx = d[i++];
-                    var cy = d[i++];
-                    var rx = d[i++];
-                    var ry = d[i++];
-                    var theta = d[i++];
-                    var dTheta = d[i++];
-                    var psi = d[i++];
-                    var fs = d[i++];
-                    var r = (rx > ry) ? rx : ry;
-                    var scaleX = (rx > ry) ? 1 : rx / ry;
-                    var scaleY = (rx > ry) ? ry / rx : 1;
-                    var isEllipse = Math.abs(rx - ry) > 1e-3;
-                    var endAngle = theta + dTheta;
-                    if (isEllipse) {
-                        ctx.translate(cx, cy);
-                        ctx.rotate(psi);
-                        ctx.scale(scaleX, scaleY);
-                        ctx.arc(0, 0, r, theta, endAngle, 1 - fs);
-                        ctx.scale(1 / scaleX, 1 / scaleY);
-                        ctx.rotate(-psi);
-                        ctx.translate(-cx, -cy);
-                    }
-                    else {
-                        ctx.arc(cx, cy, r, theta, endAngle, 1 - fs);
-                    }
-
-                    if (i == 1) {
-                        // 直接使用 arc 命令
-                        // 第一个命令起点还未定义
-                        x0 = mathCos$1(theta) * rx + cx;
-                        y0 = mathSin$1(theta) * ry + cy;
-                    }
-                    xi = mathCos$1(endAngle) * rx + cx;
-                    yi = mathSin$1(endAngle) * ry + cy;
-                    break;
-                case CMD.R:
-                    x0 = xi = d[i];
-                    y0 = yi = d[i + 1];
-                    ctx.rect(d[i++], d[i++], d[i++], d[i++]);
-                    break;
-                case CMD.Z:
-                    ctx.closePath();
-                    xi = x0;
-                    yi = y0;
-            }
-        }
-    }
-};
-
-PathProxy.CMD = CMD;
-
-/**
- * 线段包含判断
- * @param  {number}  x0
- * @param  {number}  y0
- * @param  {number}  x1
- * @param  {number}  y1
- * @param  {number}  lineWidth
- * @param  {number}  x
- * @param  {number}  y
- * @return {boolean}
- */
-function containStroke$1(x0, y0, x1, y1, lineWidth, x, y) {
-    if (lineWidth === 0) {
-        return false;
-    }
-    var _l = lineWidth;
-    var _a = 0;
-    var _b = x0;
-    // Quick reject
-    if (
-        (y > y0 + _l && y > y1 + _l)
-        || (y < y0 - _l && y < y1 - _l)
-        || (x > x0 + _l && x > x1 + _l)
-        || (x < x0 - _l && x < x1 - _l)
-    ) {
-        return false;
-    }
-
-    if (x0 !== x1) {
-        _a = (y0 - y1) / (x0 - x1);
-        _b = (x0 * y1 - x1 * y0) / (x0 - x1) ;
-    }
-    else {
-        return Math.abs(x - x0) <= _l / 2;
-    }
-    var tmp = _a * x - y + _b;
-    var _s = tmp * tmp / (_a * _a + 1);
-    return _s <= _l / 2 * _l / 2;
-}
-
-/**
- * 三次贝塞尔曲线描边包含判断
- * @param  {number}  x0
- * @param  {number}  y0
- * @param  {number}  x1
- * @param  {number}  y1
- * @param  {number}  x2
- * @param  {number}  y2
- * @param  {number}  x3
- * @param  {number}  y3
- * @param  {number}  lineWidth
- * @param  {number}  x
- * @param  {number}  y
- * @return {boolean}
- */
-function containStroke$2(x0, y0, x1, y1, x2, y2, x3, y3, lineWidth, x, y) {
-    if (lineWidth === 0) {
-        return false;
-    }
-    var _l = lineWidth;
-    // Quick reject
-    if (
-        (y > y0 + _l && y > y1 + _l && y > y2 + _l && y > y3 + _l)
-        || (y < y0 - _l && y < y1 - _l && y < y2 - _l && y < y3 - _l)
-        || (x > x0 + _l && x > x1 + _l && x > x2 + _l && x > x3 + _l)
-        || (x < x0 - _l && x < x1 - _l && x < x2 - _l && x < x3 - _l)
-    ) {
-        return false;
-    }
-    var d = cubicProjectPoint(
-        x0, y0, x1, y1, x2, y2, x3, y3,
-        x, y, null
-    );
-    return d <= _l / 2;
-}
-
-/**
- * 二次贝塞尔曲线描边包含判断
- * @param  {number}  x0
- * @param  {number}  y0
- * @param  {number}  x1
- * @param  {number}  y1
- * @param  {number}  x2
- * @param  {number}  y2
- * @param  {number}  lineWidth
- * @param  {number}  x
- * @param  {number}  y
- * @return {boolean}
- */
-function containStroke$3(x0, y0, x1, y1, x2, y2, lineWidth, x, y) {
-    if (lineWidth === 0) {
-        return false;
-    }
-    var _l = lineWidth;
-    // Quick reject
-    if (
-        (y > y0 + _l && y > y1 + _l && y > y2 + _l)
-        || (y < y0 - _l && y < y1 - _l && y < y2 - _l)
-        || (x > x0 + _l && x > x1 + _l && x > x2 + _l)
-        || (x < x0 - _l && x < x1 - _l && x < x2 - _l)
-    ) {
-        return false;
-    }
-    var d = quadraticProjectPoint(
-        x0, y0, x1, y1, x2, y2,
-        x, y, null
-    );
-    return d <= _l / 2;
-}
-
-var PI2$3 = Math.PI * 2;
-
-function normalizeRadian(angle) {
-    angle %= PI2$3;
-    if (angle < 0) {
-        angle += PI2$3;
-    }
-    return angle;
-}
-
-var PI2$2 = Math.PI * 2;
-
-/**
- * 圆弧描边包含判断
- * @param  {number}  cx
- * @param  {number}  cy
- * @param  {number}  r
- * @param  {number}  startAngle
- * @param  {number}  endAngle
- * @param  {boolean}  anticlockwise
- * @param  {number} lineWidth
- * @param  {number}  x
- * @param  {number}  y
- * @return {Boolean}
- */
-function containStroke$4(
-    cx, cy, r, startAngle, endAngle, anticlockwise,
-    lineWidth, x, y
-) {
-
-    if (lineWidth === 0) {
-        return false;
-    }
-    var _l = lineWidth;
-
-    x -= cx;
-    y -= cy;
-    var d = Math.sqrt(x * x + y * y);
-
-    if ((d - _l > r) || (d + _l < r)) {
-        return false;
-    }
-    if (Math.abs(startAngle - endAngle) % PI2$2 < 1e-4) {
-        // Is a circle
-        return true;
-    }
-    if (anticlockwise) {
-        var tmp = startAngle;
-        startAngle = normalizeRadian(endAngle);
-        endAngle = normalizeRadian(tmp);
-    } else {
-        startAngle = normalizeRadian(startAngle);
-        endAngle = normalizeRadian(endAngle);
-    }
-    if (startAngle > endAngle) {
-        endAngle += PI2$2;
-    }
-
-    var angle = Math.atan2(y, x);
-    if (angle < 0) {
-        angle += PI2$2;
-    }
-    return (angle >= startAngle && angle <= endAngle)
-        || (angle + PI2$2 >= startAngle && angle + PI2$2 <= endAngle);
-}
-
-function windingLine(x0, y0, x1, y1, x, y) {
-    if ((y > y0 && y > y1) || (y < y0 && y < y1)) {
-        return 0;
-    }
-    // Ignore horizontal line
-    if (y1 === y0) {
-        return 0;
-    }
-    var dir = y1 < y0 ? 1 : -1;
-    var t = (y - y0) / (y1 - y0);
-
-    // Avoid winding error when intersection point is the connect point of two line of polygon
-    if (t === 1 || t === 0) {
-        dir = y1 < y0 ? 0.5 : -0.5;
-    }
-
-    var x_ = t * (x1 - x0) + x0;
-
-    return x_ > x ? dir : 0;
-}
-
-var PI2$1 = Math.PI * 2;
-
-var EPSILON$2 = 1e-4;
-
-function isAroundEqual(a, b) {
-    return Math.abs(a - b) < EPSILON$2;
-}
-
-// 临时数组
-var roots = [-1, -1, -1];
-var extrema = [-1, -1];
-
-function swapExtrema() {
-    var tmp = extrema[0];
-    extrema[0] = extrema[1];
-    extrema[1] = tmp;
-}
-
-function windingCubic(x0, y0, x1, y1, x2, y2, x3, y3, x, y) {
-    // Quick reject
-    if (
-        (y > y0 && y > y1 && y > y2 && y > y3)
-        || (y < y0 && y < y1 && y < y2 && y < y3)
-    ) {
-        return 0;
-    }
-    var nRoots = cubicRootAt(y0, y1, y2, y3, y, roots);
-    if (nRoots === 0) {
-        return 0;
-    }
-    else {
-        var w = 0;
-        var nExtrema = -1;
-        var y0_, y1_;
-        for (var i = 0; i < nRoots; i++) {
-            var t = roots[i];
-
-            // Avoid winding error when intersection point is the connect point of two line of polygon
-            var unit = (t === 0 || t === 1) ? 0.5 : 1;
-
-            var x_ = cubicAt(x0, x1, x2, x3, t);
-            if (x_ < x) { // Quick reject
-                continue;
-            }
-            if (nExtrema < 0) {
-                nExtrema = cubicExtrema(y0, y1, y2, y3, extrema);
-                if (extrema[1] < extrema[0] && nExtrema > 1) {
-                    swapExtrema();
-                }
-                y0_ = cubicAt(y0, y1, y2, y3, extrema[0]);
-                if (nExtrema > 1) {
-                    y1_ = cubicAt(y0, y1, y2, y3, extrema[1]);
-                }
-            }
-            if (nExtrema == 2) {
-                // 分成三段单调函数
-                if (t < extrema[0]) {
-                    w += y0_ < y0 ? unit : -unit;
-                }
-                else if (t < extrema[1]) {
-                    w += y1_ < y0_ ? unit : -unit;
-                }
-                else {
-                    w += y3 < y1_ ? unit : -unit;
-                }
-            }
-            else {
-                // 分成两段单调函数
-                if (t < extrema[0]) {
-                    w += y0_ < y0 ? unit : -unit;
-                }
-                else {
-                    w += y3 < y0_ ? unit : -unit;
-                }
-            }
-        }
-        return w;
-    }
-}
-
-function windingQuadratic(x0, y0, x1, y1, x2, y2, x, y) {
-    // Quick reject
-    if (
-        (y > y0 && y > y1 && y > y2)
-        || (y < y0 && y < y1 && y < y2)
-    ) {
-        return 0;
-    }
-    var nRoots = quadraticRootAt(y0, y1, y2, y, roots);
-    if (nRoots === 0) {
-        return 0;
-    }
-    else {
-        var t = quadraticExtremum(y0, y1, y2);
-        if (t >= 0 && t <= 1) {
-            var w = 0;
-            var y_ = quadraticAt(y0, y1, y2, t);
-            for (var i = 0; i < nRoots; i++) {
-                // Remove one endpoint.
-                var unit = (roots[i] === 0 || roots[i] === 1) ? 0.5 : 1;
-
-                var x_ = quadraticAt(x0, x1, x2, roots[i]);
-                if (x_ < x) {   // Quick reject
-                    continue;
-                }
-                if (roots[i] < t) {
-                    w += y_ < y0 ? unit : -unit;
-                }
-                else {
-                    w += y2 < y_ ? unit : -unit;
-                }
-            }
-            return w;
-        }
-        else {
-            // Remove one endpoint.
-            var unit = (roots[0] === 0 || roots[0] === 1) ? 0.5 : 1;
-
-            var x_ = quadraticAt(x0, x1, x2, roots[0]);
-            if (x_ < x) {   // Quick reject
-                return 0;
-            }
-            return y2 < y0 ? unit : -unit;
-        }
-    }
-}
-
-// TODO
-// Arc 旋转
-function windingArc(
-    cx, cy, r, startAngle, endAngle, anticlockwise, x, y
-) {
-    y -= cy;
-    if (y > r || y < -r) {
-        return 0;
-    }
-    var tmp = Math.sqrt(r * r - y * y);
-    roots[0] = -tmp;
-    roots[1] = tmp;
-
-    var diff = Math.abs(startAngle - endAngle);
-    if (diff < 1e-4) {
-        return 0;
-    }
-    if (diff % PI2$1 < 1e-4) {
-        // Is a circle
-        startAngle = 0;
-        endAngle = PI2$1;
-        var dir = anticlockwise ? 1 : -1;
-        if (x >= roots[0] + cx && x <= roots[1] + cx) {
-            return dir;
-        } else {
-            return 0;
-        }
-    }
-
-    if (anticlockwise) {
-        var tmp = startAngle;
-        startAngle = normalizeRadian(endAngle);
-        endAngle = normalizeRadian(tmp);
-    }
-    else {
-        startAngle = normalizeRadian(startAngle);
-        endAngle = normalizeRadian(endAngle);
-    }
-    if (startAngle > endAngle) {
-        endAngle += PI2$1;
-    }
-
-    var w = 0;
-    for (var i = 0; i < 2; i++) {
-        var x_ = roots[i];
-        if (x_ + cx > x) {
-            var angle = Math.atan2(y, x_);
-            var dir = anticlockwise ? 1 : -1;
-            if (angle < 0) {
-                angle = PI2$1 + angle;
-            }
-            if (
-                (angle >= startAngle && angle <= endAngle)
-                || (angle + PI2$1 >= startAngle && angle + PI2$1 <= endAngle)
-            ) {
-                if (angle > Math.PI / 2 && angle < Math.PI * 1.5) {
-                    dir = -dir;
-                }
-                w += dir;
-            }
-        }
-    }
-    return w;
-}
-
-function containPath(data, lineWidth, isStroke, x, y) {
-    var w = 0;
-    var xi = 0;
-    var yi = 0;
-    var x0 = 0;
-    var y0 = 0;
-
-    for (var i = 0; i < data.length;) {
-        var cmd = data[i++];
-        // Begin a new subpath
-        if (cmd === CMD.M && i > 1) {
-            // Close previous subpath
-            if (!isStroke) {
-                w += windingLine(xi, yi, x0, y0, x, y);
-            }
-            // 如果被任何一个 subpath 包含
-            // if (w !== 0) {
-            //     return true;
-            // }
-        }
-
-        if (i == 1) {
-            // 如果第一个命令是 L, C, Q
-            // 则 previous point 同绘制命令的第一个 point
-            //
-            // 第一个命令为 Arc 的情况下会在后面特殊处理
-            xi = data[i];
-            yi = data[i + 1];
-
-            x0 = xi;
-            y0 = yi;
-        }
-
-        switch (cmd) {
-            case CMD.M:
-                // moveTo 命令重新创建一个新的 subpath, 并且更新新的起点
-                // 在 closePath 的时候使用
-                x0 = data[i++];
-                y0 = data[i++];
-                xi = x0;
-                yi = y0;
-                break;
-            case CMD.L:
-                if (isStroke) {
-                    if (containStroke$1(xi, yi, data[i], data[i + 1], lineWidth, x, y)) {
-                        return true;
-                    }
-                }
-                else {
-                    // NOTE 在第一个命令为 L, C, Q 的时候会计算出 NaN
-                    w += windingLine(xi, yi, data[i], data[i + 1], x, y) || 0;
-                }
-                xi = data[i++];
-                yi = data[i++];
-                break;
-            case CMD.C:
-                if (isStroke) {
-                    if (containStroke$2(xi, yi,
-                        data[i++], data[i++], data[i++], data[i++], data[i], data[i + 1],
-                        lineWidth, x, y
-                    )) {
-                        return true;
-                    }
-                }
-                else {
-                    w += windingCubic(
-                        xi, yi,
-                        data[i++], data[i++], data[i++], data[i++], data[i], data[i + 1],
-                        x, y
-                    ) || 0;
-                }
-                xi = data[i++];
-                yi = data[i++];
-                break;
-            case CMD.Q:
-                if (isStroke) {
-                    if (containStroke$3(xi, yi,
-                        data[i++], data[i++], data[i], data[i + 1],
-                        lineWidth, x, y
-                    )) {
-                        return true;
-                    }
-                }
-                else {
-                    w += windingQuadratic(
-                        xi, yi,
-                        data[i++], data[i++], data[i], data[i + 1],
-                        x, y
-                    ) || 0;
-                }
-                xi = data[i++];
-                yi = data[i++];
-                break;
-            case CMD.A:
-                // TODO Arc 判断的开销比较大
-                var cx = data[i++];
-                var cy = data[i++];
-                var rx = data[i++];
-                var ry = data[i++];
-                var theta = data[i++];
-                var dTheta = data[i++];
-                // TODO Arc 旋转
-                var psi = data[i++];
-                var anticlockwise = 1 - data[i++];
-                var x1 = Math.cos(theta) * rx + cx;
-                var y1 = Math.sin(theta) * ry + cy;
-                // 不是直接使用 arc 命令
-                if (i > 1) {
-                    w += windingLine(xi, yi, x1, y1, x, y);
-                }
-                else {
-                    // 第一个命令起点还未定义
-                    x0 = x1;
-                    y0 = y1;
-                }
-                // zr 使用scale来模拟椭圆, 这里也对x做一定的缩放
-                var _x = (x - cx) * ry / rx + cx;
-                if (isStroke) {
-                    if (containStroke$4(
-                        cx, cy, ry, theta, theta + dTheta, anticlockwise,
-                        lineWidth, _x, y
-                    )) {
-                        return true;
-                    }
-                }
-                else {
-                    w += windingArc(
-                        cx, cy, ry, theta, theta + dTheta, anticlockwise,
-                        _x, y
-                    );
-                }
-                xi = Math.cos(theta + dTheta) * rx + cx;
-                yi = Math.sin(theta + dTheta) * ry + cy;
-                break;
-            case CMD.R:
-                x0 = xi = data[i++];
-                y0 = yi = data[i++];
-                var width = data[i++];
-                var height = data[i++];
-                var x1 = x0 + width;
-                var y1 = y0 + height;
-                if (isStroke) {
-                    if (containStroke$1(x0, y0, x1, y0, lineWidth, x, y)
-                        || containStroke$1(x1, y0, x1, y1, lineWidth, x, y)
-                        || containStroke$1(x1, y1, x0, y1, lineWidth, x, y)
-                        || containStroke$1(x0, y1, x0, y0, lineWidth, x, y)
-                    ) {
-                        return true;
-                    }
-                }
-                else {
-                    // FIXME Clockwise ?
-                    w += windingLine(x1, y0, x1, y1, x, y);
-                    w += windingLine(x0, y1, x0, y0, x, y);
-                }
-                break;
-            case CMD.Z:
-                if (isStroke) {
-                    if (containStroke$1(
-                        xi, yi, x0, y0, lineWidth, x, y
-                    )) {
-                        return true;
-                    }
-                }
-                else {
-                    // Close a subpath
-                    w += windingLine(xi, yi, x0, y0, x, y);
-                    // 如果被任何一个 subpath 包含
-                    // FIXME subpaths may overlap
-                    // if (w !== 0) {
-                    //     return true;
-                    // }
-                }
-                xi = x0;
-                yi = y0;
-                break;
-        }
-    }
-    if (!isStroke && !isAroundEqual(yi, y0)) {
-        w += windingLine(xi, yi, x0, y0, x, y) || 0;
-    }
-    return w !== 0;
-}
-
-function contain(pathData, x, y) {
-    return containPath(pathData, 0, false, x, y);
-}
-
-function containStroke(pathData, lineWidth, x, y) {
-    return containPath(pathData, lineWidth, true, x, y);
-}
-
-var Pattern = function (image, repeat) {
-    // Should do nothing more in this constructor. Because gradient can be
-    // declard by `color: {image: ...}`, where this constructor will not be called.
-
-    this.image = image;
-    this.repeat = repeat;
-
-    // Can be cloned
-    this.type = 'pattern';
-};
-
-Pattern.prototype.getCanvasPattern = function (ctx) {
-    return ctx.createPattern(this.image, this.repeat || 'repeat');
-};
-
-var getCanvasPattern = Pattern.prototype.getCanvasPattern;
-
-var abs = Math.abs;
-
-var pathProxyForDraw = new PathProxy(true);
-/**
- * @alias module:zrender/graphic/Path
- * @extends module:zrender/graphic/Displayable
- * @constructor
- * @param {Object} opts
- */
-function Path(opts) {
-    Displayable.call(this, opts);
-
-    /**
-     * @type {module:zrender/core/PathProxy}
-     * @readOnly
-     */
-    this.path = null;
-}
-
-Path.prototype = {
-
-    constructor: Path,
-
-    type: 'path',
-
-    __dirtyPath: true,
-
-    strokeContainThreshold: 5,
-
-    brush: function (ctx, prevEl) {
-        var style = this.style;
-        var path = this.path || pathProxyForDraw;
-        var hasStroke = style.hasStroke();
-        var hasFill = style.hasFill();
-        var fill = style.fill;
-        var stroke = style.stroke;
-        var hasFillGradient = hasFill && !!(fill.colorStops);
-        var hasStrokeGradient = hasStroke && !!(stroke.colorStops);
-        var hasFillPattern = hasFill && !!(fill.image);
-        var hasStrokePattern = hasStroke && !!(stroke.image);
-
-        style.bind(ctx, this, prevEl);
-        this.setTransform(ctx);
-
-        if (this.__dirty) {
-            var rect;
-            // Update gradient because bounding rect may changed
-            if (hasFillGradient) {
-                rect = rect || this.getBoundingRect();
-                this._fillGradient = style.getGradient(ctx, fill, rect);
-            }
-            if (hasStrokeGradient) {
-                rect = rect || this.getBoundingRect();
-                this._strokeGradient = style.getGradient(ctx, stroke, rect);
-            }
-        }
-        // Use the gradient or pattern
-        if (hasFillGradient) {
-            // PENDING If may have affect the state
-            ctx.fillStyle = this._fillGradient;
-        }
-        else if (hasFillPattern) {
-            ctx.fillStyle = getCanvasPattern.call(fill, ctx);
-        }
-        if (hasStrokeGradient) {
-            ctx.strokeStyle = this._strokeGradient;
-        }
-        else if (hasStrokePattern) {
-            ctx.strokeStyle = getCanvasPattern.call(stroke, ctx);
-        }
-
-        var lineDash = style.lineDash;
-        var lineDashOffset = style.lineDashOffset;
-
-        var ctxLineDash = !!ctx.setLineDash;
-
-        // Update path sx, sy
-        var scale = this.getGlobalScale();
-        path.setScale(scale[0], scale[1]);
-
-        // Proxy context
-        // Rebuild path in following 2 cases
-        // 1. Path is dirty
-        // 2. Path needs javascript implemented lineDash stroking.
-        //    In this case, lineDash information will not be saved in PathProxy
-        if (this.__dirtyPath
-            || (lineDash && !ctxLineDash && hasStroke)
-        ) {
-            path.beginPath(ctx);
-
-            // Setting line dash before build path
-            if (lineDash && !ctxLineDash) {
-                path.setLineDash(lineDash);
-                path.setLineDashOffset(lineDashOffset);
-            }
-
-            this.buildPath(path, this.shape, false);
-
-            // Clear path dirty flag
-            if (this.path) {
-                this.__dirtyPath = false;
-            }
-        }
-        else {
-            // Replay path building
-            ctx.beginPath();
-            this.path.rebuildPath(ctx);
-        }
-
-        hasFill && path.fill(ctx);
-
-        if (lineDash && ctxLineDash) {
-            ctx.setLineDash(lineDash);
-            ctx.lineDashOffset = lineDashOffset;
-        }
-
-        hasStroke && path.stroke(ctx);
-
-        if (lineDash && ctxLineDash) {
-            // PENDING
-            // Remove lineDash
-            ctx.setLineDash([]);
-        }
-
-        this.restoreTransform(ctx);
-
-        // Draw rect text
-        if (style.text != null) {
-            this.drawRectText(ctx, this.getBoundingRect());
-        }
-    },
-
-    // When bundling path, some shape may decide if use moveTo to begin a new subpath or closePath
-    // Like in circle
-    buildPath: function (ctx, shapeCfg, inBundle) {},
-
-    createPathProxy: function () {
-        this.path = new PathProxy();
-    },
-
-    getBoundingRect: function () {
-        var rect = this._rect;
-        var style = this.style;
-        var needsUpdateRect = !rect;
-        if (needsUpdateRect) {
-            var path = this.path;
-            if (!path) {
-                // Create path on demand.
-                path = this.path = new PathProxy();
-            }
-            if (this.__dirtyPath) {
-                path.beginPath();
-                this.buildPath(path, this.shape, false);
-            }
-            rect = path.getBoundingRect();
-        }
-        this._rect = rect;
-
-        if (style.hasStroke()) {
-            // Needs update rect with stroke lineWidth when
-            // 1. Element changes scale or lineWidth
-            // 2. Shape is changed
-            var rectWithStroke = this._rectWithStroke || (this._rectWithStroke = rect.clone());
-            if (this.__dirty || needsUpdateRect) {
-                rectWithStroke.copy(rect);
-                // FIXME Must after updateTransform
-                var w = style.lineWidth;
-                // PENDING, Min line width is needed when line is horizontal or vertical
-                var lineScale = style.strokeNoScale ? this.getLineScale() : 1;
-
-                // Only add extra hover lineWidth when there are no fill
-                if (!style.hasFill()) {
-                    w = Math.max(w, this.strokeContainThreshold || 4);
-                }
-                // Consider line width
-                // Line scale can't be 0;
-                if (lineScale > 1e-10) {
-                    rectWithStroke.width += w / lineScale;
-                    rectWithStroke.height += w / lineScale;
-                    rectWithStroke.x -= w / lineScale / 2;
-                    rectWithStroke.y -= w / lineScale / 2;
-                }
-            }
-
-            // Return rect with stroke
-            return rectWithStroke;
-        }
-
-        return rect;
-    },
-
-    contain: function (x, y) {
-        var localPos = this.transformCoordToLocal(x, y);
-        var rect = this.getBoundingRect();
-        var style = this.style;
-        x = localPos[0];
-        y = localPos[1];
-
-        if (rect.contain(x, y)) {
-            var pathData = this.path.data;
-            if (style.hasStroke()) {
-                var lineWidth = style.lineWidth;
-                var lineScale = style.strokeNoScale ? this.getLineScale() : 1;
-                // Line scale can't be 0;
-                if (lineScale > 1e-10) {
-                    // Only add extra hover lineWidth when there are no fill
-                    if (!style.hasFill()) {
-                        lineWidth = Math.max(lineWidth, this.strokeContainThreshold);
-                    }
-                    if (containStroke(
-                        pathData, lineWidth / lineScale, x, y
-                    )) {
-                        return true;
-                    }
-                }
-            }
-            if (style.hasFill()) {
-                return contain(pathData, x, y);
-            }
-        }
-        return false;
-    },
-
-    /**
-     * @param  {boolean} dirtyPath
-     */
-    dirty: function (dirtyPath) {
-        if (dirtyPath == null) {
-            dirtyPath = true;
-        }
-        // Only mark dirty, not mark clean
-        if (dirtyPath) {
-            this.__dirtyPath = dirtyPath;
-            this._rect = null;
-        }
-
-        this.__dirty = true;
-
-        this.__zr && this.__zr.refresh();
-
-        // Used as a clipping path
-        if (this.__clipTarget) {
-            this.__clipTarget.dirty();
-        }
-    },
-
-    /**
-     * Alias for animate('shape')
-     * @param {boolean} loop
-     */
-    animateShape: function (loop) {
-        return this.animate('shape', loop);
-    },
-
-    // Overwrite attrKV
-    attrKV: function (key, value) {
-        // FIXME
-        if (key === 'shape') {
-            this.setShape(value);
-            this.__dirtyPath = true;
-            this._rect = null;
-        }
-        else {
-            Displayable.prototype.attrKV.call(this, key, value);
-        }
-    },
-
-    /**
-     * @param {Object|string} key
-     * @param {*} value
-     */
-    setShape: function (key, value) {
-        var shape = this.shape;
-        // Path from string may not have shape
-        if (shape) {
-            if (isObject(key)) {
-                for (var name in key) {
-                    if (key.hasOwnProperty(name)) {
-                        shape[name] = key[name];
-                    }
-                }
-            }
-            else {
-                shape[key] = value;
-            }
-            this.dirty(true);
-        }
-        return this;
-    },
-
-    getLineScale: function () {
-        var m = this.transform;
-        // Get the line scale.
-        // Determinant of `m` means how much the area is enlarged by the
-        // transformation. So its square root can be used as a scale factor
-        // for width.
-        return m && abs(m[0] - 1) > 1e-10 && abs(m[3] - 1) > 1e-10
-            ? Math.sqrt(abs(m[0] * m[3] - m[2] * m[1]))
-            : 1;
-    }
-};
-
-/**
- * 扩展一个 Path element, 比如星形，圆等。
- * Extend a path element
- * @param {Object} props
- * @param {string} props.type Path type
- * @param {Function} props.init Initialize
- * @param {Function} props.buildPath Overwrite buildPath method
- * @param {Object} [props.style] Extended default style config
- * @param {Object} [props.shape] Extended default shape config
- */
-Path.extend = function (defaults$$1) {
-    var Sub = function (opts) {
-        Path.call(this, opts);
-
-        if (defaults$$1.style) {
-            // Extend default style
-            this.style.extendFrom(defaults$$1.style, false);
-        }
-
-        // Extend default shape
-        var defaultShape = defaults$$1.shape;
-        if (defaultShape) {
-            this.shape = this.shape || {};
-            var thisShape = this.shape;
-            for (var name in defaultShape) {
-                if (
-                    ! thisShape.hasOwnProperty(name)
-                    && defaultShape.hasOwnProperty(name)
-                ) {
-                    thisShape[name] = defaultShape[name];
-                }
-            }
-        }
-
-        defaults$$1.init && defaults$$1.init.call(this, opts);
-    };
-
-    inherits(Sub, Path);
-
-    // FIXME 不能 extend position, rotation 等引用对象
-    for (var name in defaults$$1) {
-        // Extending prototype values and methods
-        if (name !== 'style' && name !== 'shape') {
-            Sub.prototype[name] = defaults$$1[name];
-        }
-    }
-
-    return Sub;
-};
-
-inherits(Path, Displayable);
-
-var points = [[], [], []];
-var mathSqrt$3 = Math.sqrt;
-var mathAtan2 = Math.atan2;
-
-var transformPath = function (path, m) {
-    var data = path.data;
-    var cmd;
-    var nPoint;
-    var i;
-    var j;
-    var k;
-    var p;
-
-    var M = CMD.M;
-    var C = CMD.C;
-    var L = CMD.L;
-    var R = CMD.R;
-    var A = CMD.A;
-    var Q = CMD.Q;
-
-    for (i = 0, j = 0; i < data.length;) {
-        cmd = data[i++];
-        j = i;
-        nPoint = 0;
-
-        switch (cmd) {
-            case M:
-                nPoint = 1;
-                break;
-            case L:
-                nPoint = 1;
-                break;
-            case C:
-                nPoint = 3;
-                break;
-            case Q:
-                nPoint = 2;
-                break;
-            case A:
-                var x = m[4];
-                var y = m[5];
-                var sx = mathSqrt$3(m[0] * m[0] + m[1] * m[1]);
-                var sy = mathSqrt$3(m[2] * m[2] + m[3] * m[3]);
-                var angle = mathAtan2(-m[1] / sy, m[0] / sx);
-                // cx
-                data[i] *= sx;
-                data[i++] += x;
-                // cy
-                data[i] *= sy;
-                data[i++] += y;
-                // Scale rx and ry
-                // FIXME Assume psi is 0 here
-                data[i++] *= sx;
-                data[i++] *= sy;
-
-                // Start angle
-                data[i++] += angle;
-                // end angle
-                data[i++] += angle;
-                // FIXME psi
-                i += 2;
-                j = i;
-                break;
-            case R:
-                // x0, y0
-                p[0] = data[i++];
-                p[1] = data[i++];
-                applyTransform(p, p, m);
-                data[j++] = p[0];
-                data[j++] = p[1];
-                // x1, y1
-                p[0] += data[i++];
-                p[1] += data[i++];
-                applyTransform(p, p, m);
-                data[j++] = p[0];
-                data[j++] = p[1];
-        }
-
-        for (k = 0; k < nPoint; k++) {
-            var p = points[k];
-            p[0] = data[i++];
-            p[1] = data[i++];
-
-            applyTransform(p, p, m);
-            // Write back
-            data[j++] = p[0];
-            data[j++] = p[1];
-        }
-    }
-};
-
-// command chars
-var cc = [
-    'm', 'M', 'l', 'L', 'v', 'V', 'h', 'H', 'z', 'Z',
-    'c', 'C', 'q', 'Q', 't', 'T', 's', 'S', 'a', 'A'
-];
-
-var mathSqrt = Math.sqrt;
-var mathSin = Math.sin;
-var mathCos = Math.cos;
-var PI = Math.PI;
-
-var vMag = function(v) {
-    return Math.sqrt(v[0] * v[0] + v[1] * v[1]);
-};
-var vRatio = function(u, v) {
-    return (u[0] * v[0] + u[1] * v[1]) / (vMag(u) * vMag(v));
-};
-var vAngle = function(u, v) {
-    return (u[0] * v[1] < u[1] * v[0] ? -1 : 1)
-            * Math.acos(vRatio(u, v));
-};
-
-function processArc(x1, y1, x2, y2, fa, fs, rx, ry, psiDeg, cmd, path) {
-    var psi = psiDeg * (PI / 180.0);
-    var xp = mathCos(psi) * (x1 - x2) / 2.0
-                + mathSin(psi) * (y1 - y2) / 2.0;
-    var yp = -1 * mathSin(psi) * (x1 - x2) / 2.0
-                + mathCos(psi) * (y1 - y2) / 2.0;
-
-    var lambda = (xp * xp) / (rx * rx) + (yp * yp) / (ry * ry);
-
-    if (lambda > 1) {
-        rx *= mathSqrt(lambda);
-        ry *= mathSqrt(lambda);
-    }
-
-    var f = (fa === fs ? -1 : 1)
-        * mathSqrt((((rx * rx) * (ry * ry))
-                - ((rx * rx) * (yp * yp))
-                - ((ry * ry) * (xp * xp))) / ((rx * rx) * (yp * yp)
-                + (ry * ry) * (xp * xp))
-            ) || 0;
-
-    var cxp = f * rx * yp / ry;
-    var cyp = f * -ry * xp / rx;
-
-    var cx = (x1 + x2) / 2.0
-                + mathCos(psi) * cxp
-                - mathSin(psi) * cyp;
-    var cy = (y1 + y2) / 2.0
-            + mathSin(psi) * cxp
-            + mathCos(psi) * cyp;
-
-    var theta = vAngle([ 1, 0 ], [ (xp - cxp) / rx, (yp - cyp) / ry ]);
-    var u = [ (xp - cxp) / rx, (yp - cyp) / ry ];
-    var v = [ (-1 * xp - cxp) / rx, (-1 * yp - cyp) / ry ];
-    var dTheta = vAngle(u, v);
-
-    if (vRatio(u, v) <= -1) {
-        dTheta = PI;
-    }
-    if (vRatio(u, v) >= 1) {
-        dTheta = 0;
-    }
-    if (fs === 0 && dTheta > 0) {
-        dTheta = dTheta - 2 * PI;
-    }
-    if (fs === 1 && dTheta < 0) {
-        dTheta = dTheta + 2 * PI;
-    }
-
-    path.addData(cmd, cx, cy, rx, ry, theta, dTheta, psi, fs);
-}
-
-function createPathProxyFromString(data) {
-    if (!data) {
-        return [];
-    }
-
-    // command string
-    var cs = data.replace(/-/g, ' -')
-        .replace(/  /g, ' ')
-        .replace(/ /g, ',')
-        .replace(/,,/g, ',');
-
-    var n;
-    // create pipes so that we can split the data
-    for (n = 0; n < cc.length; n++) {
-        cs = cs.replace(new RegExp(cc[n], 'g'), '|' + cc[n]);
-    }
-
-    // create array
-    var arr = cs.split('|');
-    // init context point
-    var cpx = 0;
-    var cpy = 0;
-
-    var path = new PathProxy();
-    var CMD$$1 = PathProxy.CMD;
-
-    var prevCmd;
-    for (n = 1; n < arr.length; n++) {
-        var str = arr[n];
-        var c = str.charAt(0);
-        var off = 0;
-        var p = str.slice(1).replace(/e,-/g, 'e-').split(',');
-        var cmd;
-
-        if (p.length > 0 && p[0] === '') {
-            p.shift();
-        }
-
-        for (var i = 0; i < p.length; i++) {
-            p[i] = parseFloat(p[i]);
-        }
-        while (off < p.length && !isNaN(p[off])) {
-            if (isNaN(p[0])) {
-                break;
-            }
-            var ctlPtx;
-            var ctlPty;
-
-            var rx;
-            var ry;
-            var psi;
-            var fa;
-            var fs;
-
-            var x1 = cpx;
-            var y1 = cpy;
-
-            // convert l, H, h, V, and v to L
-            switch (c) {
-                case 'l':
-                    cpx += p[off++];
-                    cpy += p[off++];
-                    cmd = CMD$$1.L;
-                    path.addData(cmd, cpx, cpy);
-                    break;
-                case 'L':
-                    cpx = p[off++];
-                    cpy = p[off++];
-                    cmd = CMD$$1.L;
-                    path.addData(cmd, cpx, cpy);
-                    break;
-                case 'm':
-                    cpx += p[off++];
-                    cpy += p[off++];
-                    cmd = CMD$$1.M;
-                    path.addData(cmd, cpx, cpy);
-                    c = 'l';
-                    break;
-                case 'M':
-                    cpx = p[off++];
-                    cpy = p[off++];
-                    cmd = CMD$$1.M;
-                    path.addData(cmd, cpx, cpy);
-                    c = 'L';
-                    break;
-                case 'h':
-                    cpx += p[off++];
-                    cmd = CMD$$1.L;
-                    path.addData(cmd, cpx, cpy);
-                    break;
-                case 'H':
-                    cpx = p[off++];
-                    cmd = CMD$$1.L;
-                    path.addData(cmd, cpx, cpy);
-                    break;
-                case 'v':
-                    cpy += p[off++];
-                    cmd = CMD$$1.L;
-                    path.addData(cmd, cpx, cpy);
-                    break;
-                case 'V':
-                    cpy = p[off++];
-                    cmd = CMD$$1.L;
-                    path.addData(cmd, cpx, cpy);
-                    break;
-                case 'C':
-                    cmd = CMD$$1.C;
-                    path.addData(
-                        cmd, p[off++], p[off++], p[off++], p[off++], p[off++], p[off++]
-                    );
-                    cpx = p[off - 2];
-                    cpy = p[off - 1];
-                    break;
-                case 'c':
-                    cmd = CMD$$1.C;
-                    path.addData(
-                        cmd,
-                        p[off++] + cpx, p[off++] + cpy,
-                        p[off++] + cpx, p[off++] + cpy,
-                        p[off++] + cpx, p[off++] + cpy
-                    );
-                    cpx += p[off - 2];
-                    cpy += p[off - 1];
-                    break;
-                case 'S':
-                    ctlPtx = cpx;
-                    ctlPty = cpy;
-                    var len = path.len();
-                    var pathData = path.data;
-                    if (prevCmd === CMD$$1.C) {
-                        ctlPtx += cpx - pathData[len - 4];
-                        ctlPty += cpy - pathData[len - 3];
-                    }
-                    cmd = CMD$$1.C;
-                    x1 = p[off++];
-                    y1 = p[off++];
-                    cpx = p[off++];
-                    cpy = p[off++];
-                    path.addData(cmd, ctlPtx, ctlPty, x1, y1, cpx, cpy);
-                    break;
-                case 's':
-                    ctlPtx = cpx;
-                    ctlPty = cpy;
-                    var len = path.len();
-                    var pathData = path.data;
-                    if (prevCmd === CMD$$1.C) {
-                        ctlPtx += cpx - pathData[len - 4];
-                        ctlPty += cpy - pathData[len - 3];
-                    }
-                    cmd = CMD$$1.C;
-                    x1 = cpx + p[off++];
-                    y1 = cpy + p[off++];
-                    cpx += p[off++];
-                    cpy += p[off++];
-                    path.addData(cmd, ctlPtx, ctlPty, x1, y1, cpx, cpy);
-                    break;
-                case 'Q':
-                    x1 = p[off++];
-                    y1 = p[off++];
-                    cpx = p[off++];
-                    cpy = p[off++];
-                    cmd = CMD$$1.Q;
-                    path.addData(cmd, x1, y1, cpx, cpy);
-                    break;
-                case 'q':
-                    x1 = p[off++] + cpx;
-                    y1 = p[off++] + cpy;
-                    cpx += p[off++];
-                    cpy += p[off++];
-                    cmd = CMD$$1.Q;
-                    path.addData(cmd, x1, y1, cpx, cpy);
-                    break;
-                case 'T':
-                    ctlPtx = cpx;
-                    ctlPty = cpy;
-                    var len = path.len();
-                    var pathData = path.data;
-                    if (prevCmd === CMD$$1.Q) {
-                        ctlPtx += cpx - pathData[len - 4];
-                        ctlPty += cpy - pathData[len - 3];
-                    }
-                    cpx = p[off++];
-                    cpy = p[off++];
-                    cmd = CMD$$1.Q;
-                    path.addData(cmd, ctlPtx, ctlPty, cpx, cpy);
-                    break;
-                case 't':
-                    ctlPtx = cpx;
-                    ctlPty = cpy;
-                    var len = path.len();
-                    var pathData = path.data;
-                    if (prevCmd === CMD$$1.Q) {
-                        ctlPtx += cpx - pathData[len - 4];
-                        ctlPty += cpy - pathData[len - 3];
-                    }
-                    cpx += p[off++];
-                    cpy += p[off++];
-                    cmd = CMD$$1.Q;
-                    path.addData(cmd, ctlPtx, ctlPty, cpx, cpy);
-                    break;
-                case 'A':
-                    rx = p[off++];
-                    ry = p[off++];
-                    psi = p[off++];
-                    fa = p[off++];
-                    fs = p[off++];
-
-                    x1 = cpx, y1 = cpy;
-                    cpx = p[off++];
-                    cpy = p[off++];
-                    cmd = CMD$$1.A;
-                    processArc(
-                        x1, y1, cpx, cpy, fa, fs, rx, ry, psi, cmd, path
-                    );
-                    break;
-                case 'a':
-                    rx = p[off++];
-                    ry = p[off++];
-                    psi = p[off++];
-                    fa = p[off++];
-                    fs = p[off++];
-
-                    x1 = cpx, y1 = cpy;
-                    cpx += p[off++];
-                    cpy += p[off++];
-                    cmd = CMD$$1.A;
-                    processArc(
-                        x1, y1, cpx, cpy, fa, fs, rx, ry, psi, cmd, path
-                    );
-                    break;
-            }
-        }
-
-        if (c === 'z' || c === 'Z') {
-            cmd = CMD$$1.Z;
-            path.addData(cmd);
-        }
-
-        prevCmd = cmd;
-    }
-
-    path.toStatic();
-
-    return path;
-}
-
-// TODO Optimize double memory cost problem
-function createPathOptions(str, opts) {
-    var pathProxy = createPathProxyFromString(str);
-    opts = opts || {};
-    opts.buildPath = function (path) {
-        if (path.setData) {
-            path.setData(pathProxy.data);
-            // Svg and vml renderer don't have context
-            var ctx = path.getContext();
-            if (ctx) {
-                path.rebuildPath(ctx);
-            }
-        }
-        else {
-            var ctx = path;
-            pathProxy.rebuildPath(ctx);
-        }
-    };
-
-    opts.applyTransform = function (m) {
-        transformPath(pathProxy, m);
-
-        this.dirty(true);
-    };
-
-    return opts;
-}
-
-/**
- * Create a Path object from path string data
- * http://www.w3.org/TR/SVG/paths.html#PathData
- * @param  {Object} opts Other options
- */
-function createFromString(str, opts) {
-    return new Path(createPathOptions(str, opts));
-}
-
-/**
- * Create a Path class from path string data
- * @param  {string} str
- * @param  {Object} opts Other options
- */
-function extendFromString(str, opts) {
-    return Path.extend(createPathOptions(str, opts));
-}
-
-/**
- * Merge multiple paths
- */
-// TODO Apply transform
-// TODO stroke dash
-// TODO Optimize double memory cost problem
-function mergePath(pathEls, opts) {
-    var pathList = [];
-    var len = pathEls.length;
-    for (var i = 0; i < len; i++) {
-        var pathEl = pathEls[i];
-        if (!pathEl.path) {
-            pathEl.createPathProxy();
-        }
-        if (pathEl.__dirtyPath) {
-            pathEl.buildPath(pathEl.path, pathEl.shape, true);
-        }
-        pathList.push(pathEl.path);
-    }
-
-    var pathBundle = new Path(opts);
-    // Need path proxy.
-    pathBundle.createPathProxy();
-    pathBundle.buildPath = function (path) {
-        path.appendPath(pathList);
-        // Svg and vml renderer don't have context
-        var ctx = path.getContext();
-        if (ctx) {
-            path.rebuildPath(ctx);
-        }
-    };
-
-    return pathBundle;
-}
-
-var path = (Object.freeze || Object)({
-	createFromString: createFromString,
-	extendFromString: extendFromString,
-	mergePath: mergePath
-});
-
-// TODO Draggable for group
-// FIXME Draggable on element which has parent rotation or scale
-function Draggable() {
-
-    this.on('mousedown', this._dragStart, this);
-    this.on('mousemove', this._drag, this);
-    this.on('mouseup', this._dragEnd, this);
-    this.on('globalout', this._dragEnd, this);
-    // this._dropTarget = null;
-    // this._draggingTarget = null;
-
-    // this._x = 0;
-    // this._y = 0;
-}
-
-Draggable.prototype = {
-
-    constructor: Draggable,
-
-    _dragStart: function (e) {
-        var draggingTarget = e.target;
-        if (draggingTarget && draggingTarget.draggable) {
-            this._draggingTarget = draggingTarget;
-            draggingTarget.dragging = true;
-            this._x = e.offsetX;
-            this._y = e.offsetY;
-
-            this.dispatchToElement(param(draggingTarget, e), 'dragstart', e.event);
-        }
-    },
-
-    _drag: function (e) {
-        var draggingTarget = this._draggingTarget;
-        if (draggingTarget) {
-
-            var x = e.offsetX;
-            var y = e.offsetY;
-
-            var dx = x - this._x;
-            var dy = y - this._y;
-            this._x = x;
-            this._y = y;
-
-            draggingTarget.drift(dx, dy, e);
-            this.dispatchToElement(param(draggingTarget, e), 'drag', e.event);
-
-            var dropTarget = this.findHover(x, y, draggingTarget).target;
-            var lastDropTarget = this._dropTarget;
-            this._dropTarget = dropTarget;
-
-            if (draggingTarget !== dropTarget) {
-                if (lastDropTarget && dropTarget !== lastDropTarget) {
-                    this.dispatchToElement(param(lastDropTarget, e), 'dragleave', e.event);
-                }
-                if (dropTarget && dropTarget !== lastDropTarget) {
-                    this.dispatchToElement(param(dropTarget, e), 'dragenter', e.event);
-                }
-            }
-        }
-    },
-
-    _dragEnd: function (e) {
-        var draggingTarget = this._draggingTarget;
-
-        if (draggingTarget) {
-            draggingTarget.dragging = false;
-        }
-
-        this.dispatchToElement(param(draggingTarget, e), 'dragend', e.event);
-
-        if (this._dropTarget) {
-            this.dispatchToElement(param(this._dropTarget, e), 'drop', e.event);
-        }
-
-        this._draggingTarget = null;
-        this._dropTarget = null;
-    }
-
-};
-
-function param(target, e) {
-    return {target: target, topTarget: e && e.topTarget};
-}
-
-/**
- * Handler
- * @module zrender/Handler
- * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
- *         errorrik (errorrik@gmail.com)
- *         pissang (shenyi.914@gmail.com)
- */
-
-var SILENT = 'silent';
-
-function makeEventPacket(eveType, targetInfo, event) {
-    return {
-        type: eveType,
-        event: event,
-        // target can only be an element that is not silent.
-        target: targetInfo.target,
-        // topTarget can be a silent element.
-        topTarget: targetInfo.topTarget,
-        cancelBubble: false,
-        offsetX: event.zrX,
-        offsetY: event.zrY,
-        gestureEvent: event.gestureEvent,
-        pinchX: event.pinchX,
-        pinchY: event.pinchY,
-        pinchScale: event.pinchScale,
-        wheelDelta: event.zrDelta,
-        zrByTouch: event.zrByTouch,
-        which: event.which
-    };
-}
-
-function EmptyProxy () {}
-EmptyProxy.prototype.dispose = function () {};
-
-var handlerNames = [
-    'click', 'dblclick', 'mousewheel', 'mouseout',
-    'mouseup', 'mousedown', 'mousemove', 'contextmenu'
-];
-/**
- * @alias module:zrender/Handler
- * @constructor
- * @extends module:zrender/mixin/Eventful
- * @param {module:zrender/Storage} storage Storage instance.
- * @param {module:zrender/Painter} painter Painter instance.
- * @param {module:zrender/dom/HandlerProxy} proxy HandlerProxy instance.
- * @param {HTMLElement} painterRoot painter.root (not painter.getViewportRoot()).
- */
-var Handler = function(storage, painter, proxy, painterRoot) {
-    Eventful.call(this);
-
-    this.storage = storage;
-
-    this.painter = painter;
-
-    this.painterRoot = painterRoot;
-
-    proxy = proxy || new EmptyProxy();
-
-    /**
-     * Proxy of event. can be Dom, WebGLSurface, etc.
-     */
-    this.proxy = proxy;
-
-    // Attach handler
-    proxy.handler = this;
-
-    /**
-     * {target, topTarget, x, y}
-     * @private
-     * @type {Object}
-     */
-    this._hovered = {};
-
-    /**
-     * @private
-     * @type {Date}
-     */
-    this._lastTouchMoment;
-
-    /**
-     * @private
-     * @type {number}
-     */
-    this._lastX;
-
-    /**
-     * @private
-     * @type {number}
-     */
-    this._lastY;
-
-
-    Draggable.call(this);
-
-    each(handlerNames, function (name) {
-        proxy.on && proxy.on(name, this[name], this);
-    }, this);
-};
-
-Handler.prototype = {
-
-    constructor: Handler,
-
-    mousemove: function (event) {
-        var x = event.zrX;
-        var y = event.zrY;
-
-        var lastHovered = this._hovered;
-        var lastHoveredTarget = lastHovered.target;
-
-        // If lastHoveredTarget is removed from zr (detected by '__zr') by some API call
-        // (like 'setOption' or 'dispatchAction') in event handlers, we should find
-        // lastHovered again here. Otherwise 'mouseout' can not be triggered normally.
-        // See #6198.
-        if (lastHoveredTarget && !lastHoveredTarget.__zr) {
-            lastHovered = this.findHover(lastHovered.x, lastHovered.y);
-            lastHoveredTarget = lastHovered.target;
-        }
-
-        var hovered = this._hovered = this.findHover(x, y);
-        var hoveredTarget = hovered.target;
-
-        var proxy = this.proxy;
-        proxy.setCursor && proxy.setCursor(hoveredTarget ? hoveredTarget.cursor : 'default');
-
-        // Mouse out on previous hovered element
-        if (lastHoveredTarget && hoveredTarget !== lastHoveredTarget) {
-            this.dispatchToElement(lastHovered, 'mouseout', event);
-        }
-
-        // Mouse moving on one element
-        this.dispatchToElement(hovered, 'mousemove', event);
-
-        // Mouse over on a new element
-        if (hoveredTarget && hoveredTarget !== lastHoveredTarget) {
-            this.dispatchToElement(hovered, 'mouseover', event);
-        }
-    },
-
-    mouseout: function (event) {
-        this.dispatchToElement(this._hovered, 'mouseout', event);
-
-        // There might be some doms created by upper layer application
-        // at the same level of painter.getViewportRoot() (e.g., tooltip
-        // dom created by echarts), where 'globalout' event should not
-        // be triggered when mouse enters these doms. (But 'mouseout'
-        // should be triggered at the original hovered element as usual).
-        var element = event.toElement || event.relatedTarget;
-        var innerDom;
-        do {
-            element = element && element.parentNode;
-        }
-        while (element && element.nodeType != 9 && !(
-            innerDom = element === this.painterRoot
-        ));
-
-        !innerDom && this.trigger('globalout', {event: event});
-    },
-
-    /**
-     * Resize
-     */
-    resize: function (event) {
-        this._hovered = {};
-    },
-
-    /**
-     * Dispatch event
-     * @param {string} eventName
-     * @param {event=} eventArgs
-     */
-    dispatch: function (eventName, eventArgs) {
-        var handler = this[eventName];
-        handler && handler.call(this, eventArgs);
-    },
-
-    /**
-     * Dispose
-     */
-    dispose: function () {
-
-        this.proxy.dispose();
-
-        this.storage =
-        this.proxy =
-        this.painter = null;
-    },
-
-    /**
-     * 设置默认的cursor style
-     * @param {string} [cursorStyle='default'] 例如 crosshair
-     */
-    setCursorStyle: function (cursorStyle) {
-        var proxy = this.proxy;
-        proxy.setCursor && proxy.setCursor(cursorStyle);
-    },
-
-    /**
-     * 事件分发代理
-     *
-     * @private
-     * @param {Object} targetInfo {target, topTarget} 目标图形元素
-     * @param {string} eventName 事件名称
-     * @param {Object} event 事件对象
-     */
-    dispatchToElement: function (targetInfo, eventName, event) {
-        targetInfo = targetInfo || {};
-        var el = targetInfo.target;
-        if (el && el.silent) {
-            return;
-        }
-        var eventHandler = 'on' + eventName;
-        var eventPacket = makeEventPacket(eventName, targetInfo, event);
-
-        while (el) {
-            el[eventHandler]
-                && (eventPacket.cancelBubble = el[eventHandler].call(el, eventPacket));
-
-            el.trigger(eventName, eventPacket);
-
-            el = el.parent;
-
-            if (eventPacket.cancelBubble) {
-                break;
-            }
-        }
-
-        if (!eventPacket.cancelBubble) {
-            // 冒泡到顶级 zrender 对象
-            this.trigger(eventName, eventPacket);
-            // 分发事件到用户自定义层
-            // 用户有可能在全局 click 事件中 dispose，所以需要判断下 painter 是否存在
-            this.painter && this.painter.eachOtherLayer(function (layer) {
-                if (typeof(layer[eventHandler]) == 'function') {
-                    layer[eventHandler].call(layer, eventPacket);
-                }
-                if (layer.trigger) {
-                    layer.trigger(eventName, eventPacket);
-                }
-            });
-        }
-    },
-
-    /**
-     * @private
-     * @param {number} x
-     * @param {number} y
-     * @param {module:zrender/graphic/Displayable} exclude
-     * @return {model:zrender/Element}
-     * @method
-     */
-    findHover: function(x, y, exclude) {
-        var list = this.storage.getDisplayList();
-        var out = {x: x, y: y};
-
-        for (var i = list.length - 1; i >= 0 ; i--) {
-            var hoverCheckResult;
-            if (list[i] !== exclude
-                // getDisplayList may include ignored item in VML mode
-                && !list[i].ignore
-                && (hoverCheckResult = isHover(list[i], x, y))
-            ) {
-                !out.topTarget && (out.topTarget = list[i]);
-                if (hoverCheckResult !== SILENT) {
-                    out.target = list[i];
-                    break;
-                }
-            }
-        }
-
-        return out;
-    }
-};
-
-// Common handlers
-each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick', 'contextmenu'], function (name) {
-    Handler.prototype[name] = function (event) {
-        // Find hover again to avoid click event is dispatched manually. Or click is triggered without mouseover
-        var hovered = this.findHover(event.zrX, event.zrY);
-        var hoveredTarget = hovered.target;
-
-        if (name === 'mousedown') {
-            this._downEl = hoveredTarget;
-            this._downPoint = [event.zrX, event.zrY];
-            // In case click triggered before mouseup
-            this._upEl = hoveredTarget;
-        }
-        else if (name === 'mosueup') {
-            this._upEl = hoveredTarget;
-        }
-        else if (name === 'click') {
-            if (this._downEl !== this._upEl
-                // Original click event is triggered on the whole canvas element,
-                // including the case that `mousedown` - `mousemove` - `mouseup`,
-                // which should be filtered, otherwise it will bring trouble to
-                // pan and zoom.
-                || !this._downPoint
-                // Arbitrary value
-                || dist(this._downPoint, [event.zrX, event.zrY]) > 4
-            ) {
-                return;
-            }
-            this._downPoint = null;
-        }
-
-        this.dispatchToElement(hovered, name, event);
-    };
-});
-
-function isHover(displayable, x, y) {
-    if (displayable[displayable.rectHover ? 'rectContain' : 'contain'](x, y)) {
-        var el = displayable;
-        var isSilent;
-        while (el) {
-            // If clipped by ancestor.
-            // FIXME: If clipPath has neither stroke nor fill,
-            // el.clipPath.contain(x, y) will always return false.
-            if (el.clipPath && !el.clipPath.contain(x, y))  {
-                return false;
-            }
-            if (el.silent) {
-                isSilent = true;
-            }
-            el = el.parent;
-        }
-        return isSilent ? SILENT : true;
-    }
-
-    return false;
-}
-
-mixin(Handler, Eventful);
-mixin(Handler, Draggable);
-
-/**
- * Group是一个容器，可以插入子节点，Group的变换也会被应用到子节点上
- * @module zrender/graphic/Group
- * @example
- *     var Group = require('zrender/container/Group');
- *     var Circle = require('zrender/graphic/shape/Circle');
- *     var g = new Group();
- *     g.position[0] = 100;
- *     g.position[1] = 100;
- *     g.add(new Circle({
- *         style: {
- *             x: 100,
- *             y: 100,
- *             r: 20,
- *         }
- *     }));
- *     zr.add(g);
- */
-
-/**
- * @alias module:zrender/graphic/Group
- * @constructor
- * @extends module:zrender/mixin/Transformable
- * @extends module:zrender/mixin/Eventful
- */
-var Group = function (opts) {
-
-    opts = opts || {};
-
-    Element.call(this, opts);
-
-    for (var key in opts) {
-        if (opts.hasOwnProperty(key)) {
-            this[key] = opts[key];
-        }
-    }
-
-    this._children = [];
-
-    this.__storage = null;
-
-    this.__dirty = true;
-};
-
-Group.prototype = {
-
-    constructor: Group,
-
-    isGroup: true,
-
-    /**
-     * @type {string}
-     */
-    type: 'group',
-
-    /**
-     * 所有子孙元素是否响应鼠标事件
-     * @name module:/zrender/container/Group#silent
-     * @type {boolean}
-     * @default false
-     */
-    silent: false,
-
-    /**
-     * @return {Array.<module:zrender/Element>}
-     */
-    children: function () {
-        return this._children.slice();
-    },
-
-    /**
-     * 获取指定 index 的儿子节点
-     * @param  {number} idx
-     * @return {module:zrender/Element}
-     */
-    childAt: function (idx) {
-        return this._children[idx];
-    },
-
-    /**
-     * 获取指定名字的儿子节点
-     * @param  {string} name
-     * @return {module:zrender/Element}
-     */
-    childOfName: function (name) {
-        var children = this._children;
-        for (var i = 0; i < children.length; i++) {
-            if (children[i].name === name) {
-                return children[i];
-            }
-            }
-    },
-
-    /**
-     * @return {number}
-     */
-    childCount: function () {
-        return this._children.length;
-    },
-
-    /**
-     * 添加子节点到最后
-     * @param {module:zrender/Element} child
-     */
-    add: function (child) {
-        if (child && child !== this && child.parent !== this) {
-
-            this._children.push(child);
-
-            this._doAdd(child);
-        }
-
-        return this;
-    },
-
-    /**
-     * 添加子节点在 nextSibling 之前
-     * @param {module:zrender/Element} child
-     * @param {module:zrender/Element} nextSibling
-     */
-    addBefore: function (child, nextSibling) {
-        if (child && child !== this && child.parent !== this
-            && nextSibling && nextSibling.parent === this) {
-
-            var children = this._children;
-            var idx = children.indexOf(nextSibling);
-
-            if (idx >= 0) {
-                children.splice(idx, 0, child);
-                this._doAdd(child);
-            }
-        }
-
-        return this;
-    },
-
-    _doAdd: function (child) {
-        if (child.parent) {
-            child.parent.remove(child);
-        }
-
-        child.parent = this;
-
-        var storage = this.__storage;
-        var zr = this.__zr;
-        if (storage && storage !== child.__storage) {
-
-            storage.addToStorage(child);
-
-            if (child instanceof Group) {
-                child.addChildrenToStorage(storage);
-            }
-        }
-
-        zr && zr.refresh();
-    },
-
-    /**
-     * 移除子节点
-     * @param {module:zrender/Element} child
-     */
-    remove: function (child) {
-        var zr = this.__zr;
-        var storage = this.__storage;
-        var children = this._children;
-
-        var idx = indexOf(children, child);
-        if (idx < 0) {
-            return this;
-        }
-        children.splice(idx, 1);
-
-        child.parent = null;
-
-        if (storage) {
-
-            storage.delFromStorage(child);
-
-            if (child instanceof Group) {
-                child.delChildrenFromStorage(storage);
-            }
-        }
-
-        zr && zr.refresh();
-
-        return this;
-    },
-
-    /**
-     * 移除所有子节点
-     */
-    removeAll: function () {
-        var children = this._children;
-        var storage = this.__storage;
-        var child;
-        var i;
-        for (i = 0; i < children.length; i++) {
-            child = children[i];
-            if (storage) {
-                storage.delFromStorage(child);
-                if (child instanceof Group) {
-                    child.delChildrenFromStorage(storage);
-                }
-            }
-            child.parent = null;
-        }
-        children.length = 0;
-
-        return this;
-    },
-
-    /**
-     * 遍历所有子节点
-     * @param  {Function} cb
-     * @param  {}   context
-     */
-    eachChild: function (cb, context) {
-        var children = this._children;
-        for (var i = 0; i < children.length; i++) {
-            var child = children[i];
-            cb.call(context, child, i);
-        }
-        return this;
-    },
-
-    /**
-     * 深度优先遍历所有子孙节点
-     * @param  {Function} cb
-     * @param  {}   context
-     */
-    traverse: function (cb, context) {
-        for (var i = 0; i < this._children.length; i++) {
-            var child = this._children[i];
-            cb.call(context, child);
-
-            if (child.type === 'group') {
-                child.traverse(cb, context);
-            }
-        }
-        return this;
-    },
-
-    addChildrenToStorage: function (storage) {
-        for (var i = 0; i < this._children.length; i++) {
-            var child = this._children[i];
-            storage.addToStorage(child);
-            if (child instanceof Group) {
-                child.addChildrenToStorage(storage);
-            }
-        }
-    },
-
-    delChildrenFromStorage: function (storage) {
-        for (var i = 0; i < this._children.length; i++) {
-            var child = this._children[i];
-            storage.delFromStorage(child);
-            if (child instanceof Group) {
-                child.delChildrenFromStorage(storage);
-            }
-        }
-    },
-
-    dirty: function () {
-        this.__dirty = true;
-        this.__zr && this.__zr.refresh();
-        return this;
-    },
-
-    /**
-     * @return {module:zrender/core/BoundingRect}
-     */
-    getBoundingRect: function (includeChildren) {
-        // TODO Caching
-        var rect = null;
-        var tmpRect = new BoundingRect(0, 0, 0, 0);
-        var children = includeChildren || this._children;
-        var tmpMat = [];
-
-        for (var i = 0; i < children.length; i++) {
-            var child = children[i];
-            if (child.ignore || child.invisible) {
-                continue;
-            }
-
-            var childRect = child.getBoundingRect();
-            var transform = child.getLocalTransform(tmpMat);
-            // TODO
-            // The boundingRect cacluated by transforming original
-            // rect may be bigger than the actual bundingRect when rotation
-            // is used. (Consider a circle rotated aginst its center, where
-            // the actual boundingRect should be the same as that not be
-            // rotated.) But we can not find better approach to calculate
-            // actual boundingRect yet, considering performance.
-            if (transform) {
-                tmpRect.copy(childRect);
-                tmpRect.applyTransform(transform);
-                rect = rect || tmpRect.clone();
-                rect.union(tmpRect);
-            }
-            else {
-                rect = rect || childRect.clone();
-                rect.union(childRect);
-            }
-        }
-        return rect || tmpRect;
-    }
-};
-
-inherits(Group, Element);
-
-// https://github.com/mziccard/node-timsort
-var DEFAULT_MIN_MERGE = 32;
-
-var DEFAULT_MIN_GALLOPING = 7;
-
-function minRunLength(n) {
-    var r = 0;
-
-    while (n >= DEFAULT_MIN_MERGE) {
-        r |= n & 1;
-        n >>= 1;
-    }
-
-    return n + r;
-}
-
-function makeAscendingRun(array, lo, hi, compare) {
-    var runHi = lo + 1;
-
-    if (runHi === hi) {
-        return 1;
-    }
-
-    if (compare(array[runHi++], array[lo]) < 0) {
-        while (runHi < hi && compare(array[runHi], array[runHi - 1]) < 0) {
-            runHi++;
-        }
-
-        reverseRun(array, lo, runHi);
-    }
-    else {
-        while (runHi < hi && compare(array[runHi], array[runHi - 1]) >= 0) {
-            runHi++;
-        }
-    }
-
-    return runHi - lo;
-}
-
-function reverseRun(array, lo, hi) {
-    hi--;
-
-    while (lo < hi) {
-        var t = array[lo];
-        array[lo++] = array[hi];
-        array[hi--] = t;
-    }
-}
-
-function binaryInsertionSort(array, lo, hi, start, compare) {
-    if (start === lo) {
-        start++;
-    }
-
-    for (; start < hi; start++) {
-        var pivot = array[start];
-
-        var left = lo;
-        var right = start;
-        var mid;
-
-        while (left < right) {
-            mid = left + right >>> 1;
-
-            if (compare(pivot, array[mid]) < 0) {
-                right = mid;
-            }
-            else {
-                left = mid + 1;
-            }
-        }
-
-        var n = start - left;
-
-        switch (n) {
-            case 3:
-                array[left + 3] = array[left + 2];
-
-            case 2:
-                array[left + 2] = array[left + 1];
-
-            case 1:
-                array[left + 1] = array[left];
-                break;
-            default:
-                while (n > 0) {
-                    array[left + n] = array[left + n - 1];
-                    n--;
-                }
-        }
-
-        array[left] = pivot;
-    }
-}
-
-function gallopLeft(value, array, start, length, hint, compare) {
-    var lastOffset = 0;
-    var maxOffset = 0;
-    var offset = 1;
-
-    if (compare(value, array[start + hint]) > 0) {
-        maxOffset = length - hint;
-
-        while (offset < maxOffset && compare(value, array[start + hint + offset]) > 0) {
-            lastOffset = offset;
-            offset = (offset << 1) + 1;
-
-            if (offset <= 0) {
-                offset = maxOffset;
-            }
-        }
-
-        if (offset > maxOffset) {
-            offset = maxOffset;
-        }
-
-        lastOffset += hint;
-        offset += hint;
-    }
-    else {
-        maxOffset = hint + 1;
-        while (offset < maxOffset && compare(value, array[start + hint - offset]) <= 0) {
-            lastOffset = offset;
-            offset = (offset << 1) + 1;
-
-            if (offset <= 0) {
-                offset = maxOffset;
-            }
-        }
-        if (offset > maxOffset) {
-            offset = maxOffset;
-        }
-
-        var tmp = lastOffset;
-        lastOffset = hint - offset;
-        offset = hint - tmp;
-    }
-
-    lastOffset++;
-    while (lastOffset < offset) {
-        var m = lastOffset + (offset - lastOffset >>> 1);
-
-        if (compare(value, array[start + m]) > 0) {
-            lastOffset = m + 1;
-        }
-        else {
-            offset = m;
-        }
-    }
-    return offset;
-}
-
-function gallopRight(value, array, start, length, hint, compare) {
-    var lastOffset = 0;
-    var maxOffset = 0;
-    var offset = 1;
-
-    if (compare(value, array[start + hint]) < 0) {
-        maxOffset = hint + 1;
-
-        while (offset < maxOffset && compare(value, array[start + hint - offset]) < 0) {
-            lastOffset = offset;
-            offset = (offset << 1) + 1;
-
-            if (offset <= 0) {
-                offset = maxOffset;
-            }
-        }
-
-        if (offset > maxOffset) {
-            offset = maxOffset;
-        }
-
-        var tmp = lastOffset;
-        lastOffset = hint - offset;
-        offset = hint - tmp;
-    }
-    else {
-        maxOffset = length - hint;
-
-        while (offset < maxOffset && compare(value, array[start + hint + offset]) >= 0) {
-            lastOffset = offset;
-            offset = (offset << 1) + 1;
-
-            if (offset <= 0) {
-                offset = maxOffset;
-            }
-        }
-
-        if (offset > maxOffset) {
-            offset = maxOffset;
-        }
-
-        lastOffset += hint;
-        offset += hint;
-    }
-
-    lastOffset++;
-
-    while (lastOffset < offset) {
-        var m = lastOffset + (offset - lastOffset >>> 1);
-
-        if (compare(value, array[start + m]) < 0) {
-            offset = m;
-        }
-        else {
-            lastOffset = m + 1;
-        }
-    }
-
-    return offset;
-}
-
-function TimSort(array, compare) {
-    var minGallop = DEFAULT_MIN_GALLOPING;
-    var runStart;
-    var runLength;
-    var stackSize = 0;
-
-    var tmp = [];
-
-    runStart = [];
-    runLength = [];
-
-    function pushRun(_runStart, _runLength) {
-        runStart[stackSize] = _runStart;
-        runLength[stackSize] = _runLength;
-        stackSize += 1;
-    }
-
-    function mergeRuns() {
-        while (stackSize > 1) {
-            var n = stackSize - 2;
-
-            if (n >= 1 && runLength[n - 1] <= runLength[n] + runLength[n + 1] || n >= 2 && runLength[n - 2] <= runLength[n] + runLength[n - 1]) {
-                if (runLength[n - 1] < runLength[n + 1]) {
-                    n--;
-                }
-            }
-            else if (runLength[n] > runLength[n + 1]) {
-                break;
-            }
-            mergeAt(n);
-        }
-    }
-
-    function forceMergeRuns() {
-        while (stackSize > 1) {
-            var n = stackSize - 2;
-
-            if (n > 0 && runLength[n - 1] < runLength[n + 1]) {
-                n--;
-            }
-
-            mergeAt(n);
-        }
-    }
-
-    function mergeAt(i) {
-        var start1 = runStart[i];
-        var length1 = runLength[i];
-        var start2 = runStart[i + 1];
-        var length2 = runLength[i + 1];
-
-        runLength[i] = length1 + length2;
-
-        if (i === stackSize - 3) {
-            runStart[i + 1] = runStart[i + 2];
-            runLength[i + 1] = runLength[i + 2];
-        }
-
-        stackSize--;
-
-        var k = gallopRight(array[start2], array, start1, length1, 0, compare);
-        start1 += k;
-        length1 -= k;
-
-        if (length1 === 0) {
-            return;
-        }
-
-        length2 = gallopLeft(array[start1 + length1 - 1], array, start2, length2, length2 - 1, compare);
-
-        if (length2 === 0) {
-            return;
-        }
-
-        if (length1 <= length2) {
-            mergeLow(start1, length1, start2, length2);
-        }
-        else {
-            mergeHigh(start1, length1, start2, length2);
-        }
-    }
-
-    function mergeLow(start1, length1, start2, length2) {
-        var i = 0;
-
-        for (i = 0; i < length1; i++) {
-            tmp[i] = array[start1 + i];
-        }
-
-        var cursor1 = 0;
-        var cursor2 = start2;
-        var dest = start1;
-
-        array[dest++] = array[cursor2++];
-
-        if (--length2 === 0) {
-            for (i = 0; i < length1; i++) {
-                array[dest + i] = tmp[cursor1 + i];
-            }
-            return;
-        }
-
-        if (length1 === 1) {
-            for (i = 0; i < length2; i++) {
-                array[dest + i] = array[cursor2 + i];
-            }
-            array[dest + length2] = tmp[cursor1];
-            return;
-        }
-
-        var _minGallop = minGallop;
-        var count1, count2, exit;
-
-        while (1) {
-            count1 = 0;
-            count2 = 0;
-            exit = false;
-
-            do {
-                if (compare(array[cursor2], tmp[cursor1]) < 0) {
-                    array[dest++] = array[cursor2++];
-                    count2++;
-                    count1 = 0;
-
-                    if (--length2 === 0) {
-                        exit = true;
-                        break;
-                    }
-                }
-                else {
-                    array[dest++] = tmp[cursor1++];
-                    count1++;
-                    count2 = 0;
-                    if (--length1 === 1) {
-                        exit = true;
-                        break;
-                    }
-                }
-            } while ((count1 | count2) < _minGallop);
-
-            if (exit) {
-                break;
-            }
-
-            do {
-                count1 = gallopRight(array[cursor2], tmp, cursor1, length1, 0, compare);
-
-                if (count1 !== 0) {
-                    for (i = 0; i < count1; i++) {
-                        array[dest + i] = tmp[cursor1 + i];
-                    }
-
-                    dest += count1;
-                    cursor1 += count1;
-                    length1 -= count1;
-                    if (length1 <= 1) {
-                        exit = true;
-                        break;
-                    }
-                }
-
-                array[dest++] = array[cursor2++];
-
-                if (--length2 === 0) {
-                    exit = true;
-                    break;
-                }
-
-                count2 = gallopLeft(tmp[cursor1], array, cursor2, length2, 0, compare);
-
-                if (count2 !== 0) {
-                    for (i = 0; i < count2; i++) {
-                        array[dest + i] = array[cursor2 + i];
-                    }
-
-                    dest += count2;
-                    cursor2 += count2;
-                    length2 -= count2;
-
-                    if (length2 === 0) {
-                        exit = true;
-                        break;
-                    }
-                }
-                array[dest++] = tmp[cursor1++];
-
-                if (--length1 === 1) {
-                    exit = true;
-                    break;
-                }
-
-                _minGallop--;
-            } while (count1 >= DEFAULT_MIN_GALLOPING || count2 >= DEFAULT_MIN_GALLOPING);
-
-            if (exit) {
-                break;
-            }
-
-            if (_minGallop < 0) {
-                _minGallop = 0;
-            }
-
-            _minGallop += 2;
-        }
-
-        minGallop = _minGallop;
-
-        minGallop < 1 && (minGallop = 1);
-
-        if (length1 === 1) {
-            for (i = 0; i < length2; i++) {
-                array[dest + i] = array[cursor2 + i];
-            }
-            array[dest + length2] = tmp[cursor1];
-        }
-        else if (length1 === 0) {
-            throw new Error();
-            // throw new Error('mergeLow preconditions were not respected');
-        }
-        else {
-            for (i = 0; i < length1; i++) {
-                array[dest + i] = tmp[cursor1 + i];
-            }
-        }
-    }
-
-    function mergeHigh (start1, length1, start2, length2) {
-        var i = 0;
-
-        for (i = 0; i < length2; i++) {
-            tmp[i] = array[start2 + i];
-        }
-
-        var cursor1 = start1 + length1 - 1;
-        var cursor2 = length2 - 1;
-        var dest = start2 + length2 - 1;
-        var customCursor = 0;
-        var customDest = 0;
-
-        array[dest--] = array[cursor1--];
-
-        if (--length1 === 0) {
-            customCursor = dest - (length2 - 1);
-
-            for (i = 0; i < length2; i++) {
-                array[customCursor + i] = tmp[i];
-            }
-
-            return;
-        }
-
-        if (length2 === 1) {
-            dest -= length1;
-            cursor1 -= length1;
-            customDest = dest + 1;
-            customCursor = cursor1 + 1;
-
-            for (i = length1 - 1; i >= 0; i--) {
-                array[customDest + i] = array[customCursor + i];
-            }
-
-            array[dest] = tmp[cursor2];
-            return;
-        }
-
-        var _minGallop = minGallop;
-
-        while (true) {
-            var count1 = 0;
-            var count2 = 0;
-            var exit = false;
-
-            do {
-                if (compare(tmp[cursor2], array[cursor1]) < 0) {
-                    array[dest--] = array[cursor1--];
-                    count1++;
-                    count2 = 0;
-                    if (--length1 === 0) {
-                        exit = true;
-                        break;
-                    }
-                }
-                else {
-                    array[dest--] = tmp[cursor2--];
-                    count2++;
-                    count1 = 0;
-                    if (--length2 === 1) {
-                        exit = true;
-                        break;
-                    }
-                }
-            } while ((count1 | count2) < _minGallop);
-
-            if (exit) {
-                break;
-            }
-
-            do {
-                count1 = length1 - gallopRight(tmp[cursor2], array, start1, length1, length1 - 1, compare);
-
-                if (count1 !== 0) {
-                    dest -= count1;
-                    cursor1 -= count1;
-                    length1 -= count1;
-                    customDest = dest + 1;
-                    customCursor = cursor1 + 1;
-
-                    for (i = count1 - 1; i >= 0; i--) {
-                        array[customDest + i] = array[customCursor + i];
-                    }
-
-                    if (length1 === 0) {
-                        exit = true;
-                        break;
-                    }
-                }
-
-                array[dest--] = tmp[cursor2--];
-
-                if (--length2 === 1) {
-                    exit = true;
-                    break;
-                }
-
-                count2 = length2 - gallopLeft(array[cursor1], tmp, 0, length2, length2 - 1, compare);
-
-                if (count2 !== 0) {
-                    dest -= count2;
-                    cursor2 -= count2;
-                    length2 -= count2;
-                    customDest = dest + 1;
-                    customCursor = cursor2 + 1;
-
-                    for (i = 0; i < count2; i++) {
-                        array[customDest + i] = tmp[customCursor + i];
-                    }
-
-                    if (length2 <= 1) {
-                        exit = true;
-                        break;
-                    }
-                }
-
-                array[dest--] = array[cursor1--];
-
-                if (--length1 === 0) {
-                    exit = true;
-                    break;
-                }
-
-                _minGallop--;
-            } while (count1 >= DEFAULT_MIN_GALLOPING || count2 >= DEFAULT_MIN_GALLOPING);
-
-            if (exit) {
-                break;
-            }
-
-            if (_minGallop < 0) {
-                _minGallop = 0;
-            }
-
-            _minGallop += 2;
-        }
-
-        minGallop = _minGallop;
-
-        if (minGallop < 1) {
-            minGallop = 1;
-        }
-
-        if (length2 === 1) {
-            dest -= length1;
-            cursor1 -= length1;
-            customDest = dest + 1;
-            customCursor = cursor1 + 1;
-
-            for (i = length1 - 1; i >= 0; i--) {
-                array[customDest + i] = array[customCursor + i];
-            }
-
-            array[dest] = tmp[cursor2];
-        }
-        else if (length2 === 0) {
-            throw new Error();
-            // throw new Error('mergeHigh preconditions were not respected');
-        }
-        else {
-            customCursor = dest - (length2 - 1);
-            for (i = 0; i < length2; i++) {
-                array[customCursor + i] = tmp[i];
-            }
-        }
-    }
-
-    this.mergeRuns = mergeRuns;
-    this.forceMergeRuns = forceMergeRuns;
-    this.pushRun = pushRun;
-}
-
-function sort(array, compare, lo, hi) {
-    if (!lo) {
-        lo = 0;
-    }
-    if (!hi) {
-        hi = array.length;
-    }
-
-    var remaining = hi - lo;
-
-    if (remaining < 2) {
-        return;
-    }
-
-    var runLength = 0;
-
-    if (remaining < DEFAULT_MIN_MERGE) {
-        runLength = makeAscendingRun(array, lo, hi, compare);
-        binaryInsertionSort(array, lo, hi, lo + runLength, compare);
-        return;
-    }
-
-    var ts = new TimSort(array, compare);
-
-    var minRun = minRunLength(remaining);
-
-    do {
-        runLength = makeAscendingRun(array, lo, hi, compare);
-        if (runLength < minRun) {
-            var force = remaining;
-            if (force > minRun) {
-                force = minRun;
-            }
-
-            binaryInsertionSort(array, lo, lo + force, lo + runLength, compare);
-            runLength = force;
-        }
-
-        ts.pushRun(lo, runLength);
-        ts.mergeRuns();
-
-        remaining -= runLength;
-        lo += runLength;
-    } while (remaining !== 0);
-
-    ts.forceMergeRuns();
-}
-
-/**
- * Storage内容仓库模块
- * @module zrender/Storage
- * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
- * @author errorrik (errorrik@gmail.com)
- * @author pissang (https://github.com/pissang/)
- */
-
-// Use timsort because in most case elements are partially sorted
-// https://jsfiddle.net/pissang/jr4x7mdm/8/
-function shapeCompareFunc(a, b) {
-    if (a.zlevel === b.zlevel) {
-        if (a.z === b.z) {
-            // if (a.z2 === b.z2) {
-            //     // FIXME Slow has renderidx compare
-            //     // http://stackoverflow.com/questions/20883421/sorting-in-javascript-should-every-compare-function-have-a-return-0-statement
-            //     // https://github.com/v8/v8/blob/47cce544a31ed5577ffe2963f67acb4144ee0232/src/js/array.js#L1012
-            //     return a.__renderidx - b.__renderidx;
-            // }
-            return a.z2 - b.z2;
-        }
-        return a.z - b.z;
-    }
-    return a.zlevel - b.zlevel;
-}
-/**
- * 内容仓库 (M)
- * @alias module:zrender/Storage
- * @constructor
- */
-var Storage = function () { // jshint ignore:line
-    this._roots = [];
-
-    this._displayList = [];
-
-    this._displayListLen = 0;
-};
-
-Storage.prototype = {
-
-    constructor: Storage,
-
-    /**
-     * @param  {Function} cb
-     *
-     */
-    traverse: function (cb, context) {
-        for (var i = 0; i < this._roots.length; i++) {
-            this._roots[i].traverse(cb, context);
-        }
-    },
-
-    /**
-     * 返回所有图形的绘制队列
-     * @param {boolean} [update=false] 是否在返回前更新该数组
-     * @param {boolean} [includeIgnore=false] 是否包含 ignore 的数组, 在 update 为 true 的时候有效
-     *
-     * 详见{@link module:zrender/graphic/Displayable.prototype.updateDisplayList}
-     * @return {Array.<module:zrender/graphic/Displayable>}
-     */
-    getDisplayList: function (update, includeIgnore) {
-        includeIgnore = includeIgnore || false;
-        if (update) {
-            this.updateDisplayList(includeIgnore);
-        }
-        return this._displayList;
-    },
-
-    /**
-     * 更新图形的绘制队列。
-     * 每次绘制前都会调用，该方法会先深度优先遍历整个树，更新所有Group和Shape的变换并且把所有可见的Shape保存到数组中，
-     * 最后根据绘制的优先级（zlevel > z > 插入顺序）排序得到绘制队列
-     * @param {boolean} [includeIgnore=false] 是否包含 ignore 的数组
-     */
-    updateDisplayList: function (includeIgnore) {
-        this._displayListLen = 0;
-        var roots = this._roots;
-        var displayList = this._displayList;
-        for (var i = 0, len = roots.length; i < len; i++) {
-            this._updateAndAddDisplayable(roots[i], null, includeIgnore);
-        }
-        displayList.length = this._displayListLen;
-
-        // for (var i = 0, len = displayList.length; i < len; i++) {
-        //     displayList[i].__renderidx = i;
-        // }
-
-        // displayList.sort(shapeCompareFunc);
-        env$1.canvasSupported && sort(displayList, shapeCompareFunc);
-    },
-
-    _updateAndAddDisplayable: function (el, clipPaths, includeIgnore) {
-
-        if (el.ignore && !includeIgnore) {
-            return;
-        }
-
-        el.beforeUpdate();
-
-        if (el.__dirty) {
-
-            el.update();
-
-        }
-
-        el.afterUpdate();
-
-        var userSetClipPath = el.clipPath;
-        if (userSetClipPath) {
-
-            // FIXME 效率影响
-            if (clipPaths) {
-                clipPaths = clipPaths.slice();
-            }
-            else {
-                clipPaths = [];
-            }
-
-            var currentClipPath = userSetClipPath;
-            var parentClipPath = el;
-            // Recursively add clip path
-            while (currentClipPath) {
-                // clipPath 的变换是基于使用这个 clipPath 的元素
-                currentClipPath.parent = parentClipPath;
-                currentClipPath.updateTransform();
-
-                clipPaths.push(currentClipPath);
-
-                parentClipPath = currentClipPath;
-                currentClipPath = currentClipPath.clipPath;
-            }
-        }
-
-        if (el.isGroup) {
-            var children = el._children;
-
-            for (var i = 0; i < children.length; i++) {
-                var child = children[i];
-
-                // Force to mark as dirty if group is dirty
-                // FIXME __dirtyPath ?
-                if (el.__dirty) {
-                    child.__dirty = true;
-                }
-
-                this._updateAndAddDisplayable(child, clipPaths, includeIgnore);
-            }
-
-            // Mark group clean here
-            el.__dirty = false;
-
-        }
-        else {
-            el.__clipPaths = clipPaths;
-
-            this._displayList[this._displayListLen++] = el;
-        }
-    },
-
-    /**
-     * 添加图形(Shape)或者组(Group)到根节点
-     * @param {module:zrender/Element} el
-     */
-    addRoot: function (el) {
-        if (el.__storage === this) {
-            return;
-        }
-
-        if (el instanceof Group) {
-            el.addChildrenToStorage(this);
-        }
-
-        this.addToStorage(el);
-        this._roots.push(el);
-    },
-
-    /**
-     * 删除指定的图形(Shape)或者组(Group)
-     * @param {string|Array.<string>} [el] 如果为空清空整个Storage
-     */
-    delRoot: function (el) {
-        if (el == null) {
-            // 不指定el清空
-            for (var i = 0; i < this._roots.length; i++) {
-                var root = this._roots[i];
-                if (root instanceof Group) {
-                    root.delChildrenFromStorage(this);
-                }
-            }
-
-            this._roots = [];
-            this._displayList = [];
-            this._displayListLen = 0;
-
-            return;
-        }
-
-        if (el instanceof Array) {
-            for (var i = 0, l = el.length; i < l; i++) {
-                this.delRoot(el[i]);
-            }
-            return;
-        }
-
-
-        var idx = indexOf(this._roots, el);
-        if (idx >= 0) {
-            this.delFromStorage(el);
-            this._roots.splice(idx, 1);
-            if (el instanceof Group) {
-                el.delChildrenFromStorage(this);
-            }
-        }
-    },
-
-    addToStorage: function (el) {
-        el.__storage = this;
-        el.dirty(false);
-
-        return this;
-    },
-
-    delFromStorage: function (el) {
-        if (el) {
-            el.__storage = null;
-        }
-
-        return this;
-    },
-
-    /**
-     * 清空并且释放Storage
-     */
-    dispose: function () {
-        this._renderList =
-        this._roots = null;
-    },
-
-    displayableSortFunc: shapeCompareFunc
-};
-
-/**
- * @module zrender/Layer
- * @author pissang(https://www.github.com/pissang)
- */
-
-function returnFalse() {
-    return false;
-}
-
-/**
- * 创建dom
- *
- * @inner
- * @param {string} id dom id 待用
- * @param {Painter} painter painter instance
- * @param {number} number
- */
-function createDom(id, painter, dpr) {
-    var newDom = createCanvas();
-    var width = painter.getWidth();
-    var height = painter.getHeight();
-
-    var newDomStyle = newDom.style;
-    // 没append呢，请原谅我这样写，清晰~
-    newDomStyle.position = 'absolute';
-    newDomStyle.left = 0;
-    newDomStyle.top = 0;
-    newDomStyle.width = width + 'px';
-    newDomStyle.height = height + 'px';
-    newDom.width = width * dpr;
-    newDom.height = height * dpr;
-
-    // id不作为索引用，避免可能造成的重名，定义为私有属性
-    newDom.setAttribute('data-zr-dom-id', id);
-    return newDom;
-}
-
-/**
- * @alias module:zrender/Layer
- * @constructor
- * @extends module:zrender/mixin/Transformable
- * @param {string} id
- * @param {module:zrender/Painter} painter
- * @param {number} [dpr]
- */
-var Layer = function(id, painter, dpr) {
-    var dom;
-    dpr = dpr || devicePixelRatio;
-    if (typeof id === 'string') {
-        dom = createDom(id, painter, dpr);
-    }
-    // Not using isDom because in node it will return false
-    else if (isObject(id)) {
-        dom = id;
-        id = dom.id;
-    }
-    this.id = id;
-    this.dom = dom;
-
-    var domStyle = dom.style;
-    if (domStyle) { // Not in node
-        dom.onselectstart = returnFalse; // 避免页面选中的尴尬
-        domStyle['-webkit-user-select'] = 'none';
-        domStyle['user-select'] = 'none';
-        domStyle['-webkit-touch-callout'] = 'none';
-        domStyle['-webkit-tap-highlight-color'] = 'rgba(0,0,0,0)';
-        domStyle['padding'] = 0;
-        domStyle['margin'] = 0;
-        domStyle['border-width'] = 0;
-    }
-
-    this.domBack = null;
-    this.ctxBack = null;
-
-    this.painter = painter;
-
-    this.config = null;
-
-    // Configs
-    /**
-     * 每次清空画布的颜色
-     * @type {string}
-     * @default 0
-     */
-    this.clearColor = 0;
-    /**
-     * 是否开启动态模糊
-     * @type {boolean}
-     * @default false
-     */
-    this.motionBlur = false;
-    /**
-     * 在开启动态模糊的时候使用，与上一帧混合的alpha值，值越大尾迹越明显
-     * @type {number}
-     * @default 0.7
-     */
-    this.lastFrameAlpha = 0.7;
-
-    /**
-     * Layer dpr
-     * @type {number}
-     */
-    this.dpr = dpr;
-};
-
-Layer.prototype = {
-
-    constructor: Layer,
-
-    elCount: 0,
-
-    __dirty: true,
-
-    initContext: function () {
-        this.ctx = this.dom.getContext('2d');
-        this.ctx.__currentValues = {};
-        this.ctx.dpr = this.dpr;
-    },
-
-    createBackBuffer: function () {
-        var dpr = this.dpr;
-
-        this.domBack = createDom('back-' + this.id, this.painter, dpr);
-        this.ctxBack = this.domBack.getContext('2d');
-        this.ctxBack.__currentValues = {};
-
-        if (dpr != 1) {
-            this.ctxBack.scale(dpr, dpr);
-        }
-    },
-
-    /**
-     * @param  {number} width
-     * @param  {number} height
-     */
-    resize: function (width, height) {
-        var dpr = this.dpr;
-
-        var dom = this.dom;
-        var domStyle = dom.style;
-        var domBack = this.domBack;
-
-        domStyle.width = width + 'px';
-        domStyle.height = height + 'px';
-
-        dom.width = width * dpr;
-        dom.height = height * dpr;
-
-        if (domBack) {
-            domBack.width = width * dpr;
-            domBack.height = height * dpr;
-
-            if (dpr != 1) {
-                this.ctxBack.scale(dpr, dpr);
-            }
-        }
-    },
-
-    /**
-     * 清空该层画布
-     * @param {boolean} clearAll Clear all with out motion blur
-     */
-    clear: function (clearAll) {
-        var dom = this.dom;
-        var ctx = this.ctx;
-        var width = dom.width;
-        var height = dom.height;
-
-        var clearColor = this.clearColor;
-        var haveMotionBLur = this.motionBlur && !clearAll;
-        var lastFrameAlpha = this.lastFrameAlpha;
-
-        var dpr = this.dpr;
-
-        if (haveMotionBLur) {
-            if (!this.domBack) {
-                this.createBackBuffer();
-            }
-
-            this.ctxBack.globalCompositeOperation = 'copy';
-            this.ctxBack.drawImage(
-                dom, 0, 0,
-                width / dpr,
-                height / dpr
-            );
-        }
-
-        ctx.clearRect(0, 0, width, height);
-        if (clearColor) {
-            var clearColorGradientOrPattern;
-            // Gradient
-            if (clearColor.colorStops) {
-                // Cache canvas gradient
-                clearColorGradientOrPattern = clearColor.__canvasGradient || Style.getGradient(ctx, clearColor, {
-                    x: 0,
-                    y: 0,
-                    width: width,
-                    height: height
-                });
-
-                clearColor.__canvasGradient = clearColorGradientOrPattern;
-            }
-            // Pattern
-            else if (clearColor.image) {
-                clearColorGradientOrPattern = Pattern.prototype.getCanvasPattern.call(clearColor, ctx);
-            }
-            ctx.save();
-            ctx.fillStyle = clearColorGradientOrPattern || clearColor;
-            ctx.fillRect(0, 0, width, height);
-            ctx.restore();
-        }
-
-        if (haveMotionBLur) {
-            var domBack = this.domBack;
-            ctx.save();
-            ctx.globalAlpha = lastFrameAlpha;
-            ctx.drawImage(domBack, 0, 0, width, height);
-            ctx.restore();
-        }
-    }
-};
-
-var requestAnimationFrame = (
-    typeof window !== 'undefined'
-    && (
-        (window.requestAnimationFrame && window.requestAnimationFrame.bind(window))
-        // https://github.com/ecomfe/zrender/issues/189#issuecomment-224919809
-        || (window.msRequestAnimationFrame && window.msRequestAnimationFrame.bind(window))
-        || window.mozRequestAnimationFrame
-        || window.webkitRequestAnimationFrame
-    )
-) || function (func) {
-    setTimeout(func, 16);
-};
-
-/**
  * @alias zrender/graphic/Image
  * @extends module:zrender/graphic/Displayable
  * @constructor
@@ -11385,16 +8463,16 @@ function postProcessLayer(layer) {
     }
 }
 
-var tmpRect$1 = new BoundingRect(0, 0, 0, 0);
+var tmpRect = new BoundingRect(0, 0, 0, 0);
 var viewRect = new BoundingRect(0, 0, 0, 0);
 function isDisplayableCulled(el, width, height) {
-    tmpRect$1.copy(el.getBoundingRect());
+    tmpRect.copy(el.getBoundingRect());
     if (el.transform) {
-        tmpRect$1.applyTransform(el.transform);
+        tmpRect.applyTransform(el.transform);
     }
     viewRect.width = width;
     viewRect.height = height;
-    return !tmpRect$1.intersect(viewRect);
+    return !tmpRect.intersect(viewRect);
 }
 
 function isClipPathChanged(clipPaths, prevClipPaths) {
@@ -13308,6 +10386,3353 @@ handlerDomProxyProto.setCursor = function (cursorStyle) {
 
 mixin(HandlerDomProxy, Eventful);
 
+/*!
+* ZRender, a high performance 2d drawing library.
+*
+* Copyright (c) 2013, Baidu Inc.
+* All rights reserved.
+*
+* LICENSE
+* https://github.com/ecomfe/zrender/blob/master/LICENSE.txt
+*/
+
+var useVML = !env$1.canvasSupported;
+
+var painterCtors = {
+    canvas: Painter
+};
+
+var instances = {};    // ZRender实例map索引
+
+/**
+ * @type {string}
+ */
+var version = '3.7.0';
+
+/**
+ * Initializing a zrender instance
+ * @param {HTMLElement} dom
+ * @param {Object} opts
+ * @param {string} [opts.renderer='canvas'] 'canvas' or 'svg'
+ * @param {number} [opts.devicePixelRatio]
+ * @param {number|string} [opts.width] Can be 'auto' (the same as null/undefined)
+ * @param {number|string} [opts.height] Can be 'auto' (the same as null/undefined)
+ * @return {module:zrender/ZRender}
+ */
+function init(dom, opts) {
+    var zr = new ZRender(guid(), dom, opts);
+    instances[zr.id] = zr;
+    return zr;
+}
+
+/**
+ * Dispose zrender instance
+ * @param {module:zrender/ZRender} zr
+ */
+function dispose(zr) {
+    if (zr) {
+        zr.dispose();
+    }
+    else {
+        for (var key in instances) {
+            if (instances.hasOwnProperty(key)) {
+                instances[key].dispose();
+            }
+        }
+        instances = {};
+    }
+
+    return this;
+}
+
+/**
+ * Get zrender instance by id
+ * @param {string} id zrender instance id
+ * @return {module:zrender/ZRender}
+ */
+function getInstance(id) {
+    return instances[id];
+}
+
+function registerPainter(name, Ctor) {
+    painterCtors[name] = Ctor;
+}
+
+function delInstance(id) {
+    delete instances[id];
+}
+
+/**
+ * @module zrender/ZRender
+ */
+/**
+ * @constructor
+ * @alias module:zrender/ZRender
+ * @param {string} id
+ * @param {HTMLElement} dom
+ * @param {Object} opts
+ * @param {string} [opts.renderer='canvas'] 'canvas' or 'svg'
+ * @param {number} [opts.devicePixelRatio]
+ * @param {number} [opts.width] Can be 'auto' (the same as null/undefined)
+ * @param {number} [opts.height] Can be 'auto' (the same as null/undefined)
+ */
+var ZRender = function (id, dom, opts) {
+
+    opts = opts || {};
+
+    /**
+     * @type {HTMLDomElement}
+     */
+    this.dom = dom;
+
+    /**
+     * @type {string}
+     */
+    this.id = id;
+
+    var self = this;
+    var storage = new Storage();
+
+    var rendererType = opts.renderer;
+    // TODO WebGL
+    if (useVML) {
+        if (!painterCtors.vml) {
+            throw new Error('You need to require \'zrender/vml/vml\' to support IE8');
+        }
+        rendererType = 'vml';
+    }
+    else if (!rendererType || !painterCtors[rendererType]) {
+        rendererType = 'canvas';
+    }
+    var painter = new painterCtors[rendererType](dom, storage, opts);
+
+    this.storage = storage;
+    this.painter = painter;
+
+    var handerProxy = !env$1.node ? new HandlerDomProxy(painter.getViewportRoot()) : null;
+    this.handler = new Handler(storage, painter, handerProxy, painter.root);
+
+    /**
+     * @type {module:zrender/animation/Animation}
+     */
+    this.animation = new Animation({
+        stage: {
+            update: bind(this.flush, this)
+        }
+    });
+    this.animation.start();
+
+    /**
+     * @type {boolean}
+     * @private
+     */
+    this._needsRefresh;
+
+    // 修改 storage.delFromStorage, 每次删除元素之前删除动画
+    // FIXME 有点ugly
+    var oldDelFromStorage = storage.delFromStorage;
+    var oldAddToStorage = storage.addToStorage;
+
+    storage.delFromStorage = function (el) {
+        oldDelFromStorage.call(storage, el);
+
+        el && el.removeSelfFromZr(self);
+    };
+
+    storage.addToStorage = function (el) {
+        oldAddToStorage.call(storage, el);
+
+        el.addSelfToZr(self);
+    };
+};
+
+ZRender.prototype = {
+
+    constructor: ZRender,
+    /**
+     * 获取实例唯一标识
+     * @return {string}
+     */
+    getId: function () {
+        return this.id;
+    },
+
+    /**
+     * 添加元素
+     * @param  {module:zrender/Element} el
+     */
+    add: function (el) {
+        this.storage.addRoot(el);
+        this._needsRefresh = true;
+    },
+
+    /**
+     * 删除元素
+     * @param  {module:zrender/Element} el
+     */
+    remove: function (el) {
+        this.storage.delRoot(el);
+        this._needsRefresh = true;
+    },
+
+    /**
+     * Change configuration of layer
+     * @param {string} zLevel
+     * @param {Object} config
+     * @param {string} [config.clearColor=0] Clear color
+     * @param {string} [config.motionBlur=false] If enable motion blur
+     * @param {number} [config.lastFrameAlpha=0.7] Motion blur factor. Larger value cause longer trailer
+    */
+    configLayer: function (zLevel, config) {
+        this.painter.configLayer(zLevel, config);
+        this._needsRefresh = true;
+    },
+
+    /**
+     * Repaint the canvas immediately
+     */
+    refreshImmediately: function () {
+        // var start = new Date();
+        // Clear needsRefresh ahead to avoid something wrong happens in refresh
+        // Or it will cause zrender refreshes again and again.
+        this._needsRefresh = false;
+        this.painter.refresh();
+        /**
+         * Avoid trigger zr.refresh in Element#beforeUpdate hook
+         */
+        this._needsRefresh = false;
+        // var end = new Date();
+
+        // var log = document.getElementById('log');
+        // if (log) {
+        //     log.innerHTML = log.innerHTML + '<br>' + (end - start);
+        // }
+    },
+
+    /**
+     * Mark and repaint the canvas in the next frame of browser
+     */
+    refresh: function() {
+        this._needsRefresh = true;
+    },
+
+    /**
+     * Perform all refresh
+     */
+    flush: function () {
+        if (this._needsRefresh) {
+            this.refreshImmediately();
+        }
+        if (this._needsRefreshHover) {
+            this.refreshHoverImmediately();
+        }
+    },
+
+    /**
+     * Add element to hover layer
+     * @param  {module:zrender/Element} el
+     * @param {Object} style
+     */
+    addHover: function (el, style) {
+        if (this.painter.addHover) {
+            this.painter.addHover(el, style);
+            this.refreshHover();
+        }
+    },
+
+    /**
+     * Add element from hover layer
+     * @param  {module:zrender/Element} el
+     */
+    removeHover: function (el) {
+        if (this.painter.removeHover) {
+            this.painter.removeHover(el);
+            this.refreshHover();
+        }
+    },
+
+    /**
+     * Clear all hover elements in hover layer
+     * @param  {module:zrender/Element} el
+     */
+    clearHover: function () {
+        if (this.painter.clearHover) {
+            this.painter.clearHover();
+            this.refreshHover();
+        }
+    },
+
+    /**
+     * Refresh hover in next frame
+     */
+    refreshHover: function () {
+        this._needsRefreshHover = true;
+    },
+
+    /**
+     * Refresh hover immediately
+     */
+    refreshHoverImmediately: function () {
+        this._needsRefreshHover = false;
+        this.painter.refreshHover && this.painter.refreshHover();
+    },
+
+    /**
+     * Resize the canvas.
+     * Should be invoked when container size is changed
+     * @param {Object} [opts]
+     * @param {number|string} [opts.width] Can be 'auto' (the same as null/undefined)
+     * @param {number|string} [opts.height] Can be 'auto' (the same as null/undefined)
+     */
+    resize: function(opts) {
+        opts = opts || {};
+        this.painter.resize(opts.width, opts.height);
+        this.handler.resize();
+    },
+
+    /**
+     * Stop and clear all animation immediately
+     */
+    clearAnimation: function () {
+        this.animation.clear();
+    },
+
+    /**
+     * Get container width
+     */
+    getWidth: function() {
+        return this.painter.getWidth();
+    },
+
+    /**
+     * Get container height
+     */
+    getHeight: function() {
+        return this.painter.getHeight();
+    },
+
+    /**
+     * Export the canvas as Base64 URL
+     * @param {string} type
+     * @param {string} [backgroundColor='#fff']
+     * @return {string} Base64 URL
+     */
+    // toDataURL: function(type, backgroundColor) {
+    //     return this.painter.getRenderedCanvas({
+    //         backgroundColor: backgroundColor
+    //     }).toDataURL(type);
+    // },
+
+    /**
+     * Converting a path to image.
+     * It has much better performance of drawing image rather than drawing a vector path.
+     * @param {module:zrender/graphic/Path} e
+     * @param {number} width
+     * @param {number} height
+     */
+    pathToImage: function(e, dpr) {
+        return this.painter.pathToImage(e, dpr);
+    },
+
+    /**
+     * Set default cursor
+     * @param {string} [cursorStyle='default'] 例如 crosshair
+     */
+    setCursorStyle: function (cursorStyle) {
+        this.handler.setCursorStyle(cursorStyle);
+    },
+
+    /**
+     * Find hovered element
+     * @param {number} x
+     * @param {number} y
+     * @return {Object} {target, topTarget}
+     */
+    findHover: function (x, y) {
+        return this.handler.findHover(x, y);
+    },
+
+    /**
+     * Bind event
+     *
+     * @param {string} eventName Event name
+     * @param {Function} eventHandler Handler function
+     * @param {Object} [context] Context object
+     */
+    on: function(eventName, eventHandler, context) {
+        this.handler.on(eventName, eventHandler, context);
+    },
+
+    /**
+     * Unbind event
+     * @param {string} eventName Event name
+     * @param {Function} [eventHandler] Handler function
+     */
+    off: function(eventName, eventHandler) {
+        this.handler.off(eventName, eventHandler);
+    },
+
+    /**
+     * Trigger event manually
+     *
+     * @param {string} eventName Event name
+     * @param {event=} event Event object
+     */
+    trigger: function (eventName, event) {
+        this.handler.trigger(eventName, event);
+    },
+
+
+    /**
+     * Clear all objects and the canvas.
+     */
+    clear: function () {
+        this.storage.delRoot();
+        this.painter.clear();
+    },
+
+    /**
+     * Dispose self.
+     */
+    dispose: function () {
+        this.animation.stop();
+
+        this.clear();
+        this.storage.dispose();
+        this.painter.dispose();
+        this.handler.dispose();
+
+        this.animation =
+        this.storage =
+        this.painter =
+        this.handler = null;
+
+        delInstance(this.id);
+    }
+};
+
+/**
+ * 曲线辅助模块
+ * @module zrender/core/curve
+ * @author pissang(https://www.github.com/pissang)
+ */
+
+var mathPow = Math.pow;
+var mathSqrt$2 = Math.sqrt;
+
+var EPSILON$1 = 1e-8;
+var EPSILON_NUMERIC = 1e-4;
+
+var THREE_SQRT = mathSqrt$2(3);
+var ONE_THIRD = 1 / 3;
+
+// 临时变量
+var _v0 = create();
+var _v1 = create();
+var _v2 = create();
+
+function isAroundZero(val) {
+    return val > -EPSILON$1 && val < EPSILON$1;
+}
+function isNotAroundZero$1(val) {
+    return val > EPSILON$1 || val < -EPSILON$1;
+}
+/**
+ * 计算三次贝塞尔值
+ * @memberOf module:zrender/core/curve
+ * @param  {number} p0
+ * @param  {number} p1
+ * @param  {number} p2
+ * @param  {number} p3
+ * @param  {number} t
+ * @return {number}
+ */
+function cubicAt(p0, p1, p2, p3, t) {
+    var onet = 1 - t;
+    return onet * onet * (onet * p0 + 3 * t * p1)
+            + t * t * (t * p3 + 3 * onet * p2);
+}
+
+/**
+ * 计算三次贝塞尔导数值
+ * @memberOf module:zrender/core/curve
+ * @param  {number} p0
+ * @param  {number} p1
+ * @param  {number} p2
+ * @param  {number} p3
+ * @param  {number} t
+ * @return {number}
+ */
+function cubicDerivativeAt(p0, p1, p2, p3, t) {
+    var onet = 1 - t;
+    return 3 * (
+        ((p1 - p0) * onet + 2 * (p2 - p1) * t) * onet
+        + (p3 - p2) * t * t
+    );
+}
+
+/**
+ * 计算三次贝塞尔方程根，使用盛金公式
+ * @memberOf module:zrender/core/curve
+ * @param  {number} p0
+ * @param  {number} p1
+ * @param  {number} p2
+ * @param  {number} p3
+ * @param  {number} val
+ * @param  {Array.<number>} roots
+ * @return {number} 有效根数目
+ */
+function cubicRootAt(p0, p1, p2, p3, val, roots) {
+    // Evaluate roots of cubic functions
+    var a = p3 + 3 * (p1 - p2) - p0;
+    var b = 3 * (p2 - p1 * 2 + p0);
+    var c = 3 * (p1  - p0);
+    var d = p0 - val;
+
+    var A = b * b - 3 * a * c;
+    var B = b * c - 9 * a * d;
+    var C = c * c - 3 * b * d;
+
+    var n = 0;
+
+    if (isAroundZero(A) && isAroundZero(B)) {
+        if (isAroundZero(b)) {
+            roots[0] = 0;
+        }
+        else {
+            var t1 = -c / b;  //t1, t2, t3, b is not zero
+            if (t1 >= 0 && t1 <= 1) {
+                roots[n++] = t1;
+            }
+        }
+    }
+    else {
+        var disc = B * B - 4 * A * C;
+
+        if (isAroundZero(disc)) {
+            var K = B / A;
+            var t1 = -b / a + K;  // t1, a is not zero
+            var t2 = -K / 2;  // t2, t3
+            if (t1 >= 0 && t1 <= 1) {
+                roots[n++] = t1;
+            }
+            if (t2 >= 0 && t2 <= 1) {
+                roots[n++] = t2;
+            }
+        }
+        else if (disc > 0) {
+            var discSqrt = mathSqrt$2(disc);
+            var Y1 = A * b + 1.5 * a * (-B + discSqrt);
+            var Y2 = A * b + 1.5 * a * (-B - discSqrt);
+            if (Y1 < 0) {
+                Y1 = -mathPow(-Y1, ONE_THIRD);
+            }
+            else {
+                Y1 = mathPow(Y1, ONE_THIRD);
+            }
+            if (Y2 < 0) {
+                Y2 = -mathPow(-Y2, ONE_THIRD);
+            }
+            else {
+                Y2 = mathPow(Y2, ONE_THIRD);
+            }
+            var t1 = (-b - (Y1 + Y2)) / (3 * a);
+            if (t1 >= 0 && t1 <= 1) {
+                roots[n++] = t1;
+            }
+        }
+        else {
+            var T = (2 * A * b - 3 * a * B) / (2 * mathSqrt$2(A * A * A));
+            var theta = Math.acos(T) / 3;
+            var ASqrt = mathSqrt$2(A);
+            var tmp = Math.cos(theta);
+
+            var t1 = (-b - 2 * ASqrt * tmp) / (3 * a);
+            var t2 = (-b + ASqrt * (tmp + THREE_SQRT * Math.sin(theta))) / (3 * a);
+            var t3 = (-b + ASqrt * (tmp - THREE_SQRT * Math.sin(theta))) / (3 * a);
+            if (t1 >= 0 && t1 <= 1) {
+                roots[n++] = t1;
+            }
+            if (t2 >= 0 && t2 <= 1) {
+                roots[n++] = t2;
+            }
+            if (t3 >= 0 && t3 <= 1) {
+                roots[n++] = t3;
+            }
+        }
+    }
+    return n;
+}
+
+/**
+ * 计算三次贝塞尔方程极限值的位置
+ * @memberOf module:zrender/core/curve
+ * @param  {number} p0
+ * @param  {number} p1
+ * @param  {number} p2
+ * @param  {number} p3
+ * @param  {Array.<number>} extrema
+ * @return {number} 有效数目
+ */
+function cubicExtrema(p0, p1, p2, p3, extrema) {
+    var b = 6 * p2 - 12 * p1 + 6 * p0;
+    var a = 9 * p1 + 3 * p3 - 3 * p0 - 9 * p2;
+    var c = 3 * p1 - 3 * p0;
+
+    var n = 0;
+    if (isAroundZero(a)) {
+        if (isNotAroundZero$1(b)) {
+            var t1 = -c / b;
+            if (t1 >= 0 && t1 <=1) {
+                extrema[n++] = t1;
+            }
+        }
+    }
+    else {
+        var disc = b * b - 4 * a * c;
+        if (isAroundZero(disc)) {
+            extrema[0] = -b / (2 * a);
+        }
+        else if (disc > 0) {
+            var discSqrt = mathSqrt$2(disc);
+            var t1 = (-b + discSqrt) / (2 * a);
+            var t2 = (-b - discSqrt) / (2 * a);
+            if (t1 >= 0 && t1 <= 1) {
+                extrema[n++] = t1;
+            }
+            if (t2 >= 0 && t2 <= 1) {
+                extrema[n++] = t2;
+            }
+        }
+    }
+    return n;
+}
+
+/**
+ * 细分三次贝塞尔曲线
+ * @memberOf module:zrender/core/curve
+ * @param  {number} p0
+ * @param  {number} p1
+ * @param  {number} p2
+ * @param  {number} p3
+ * @param  {number} t
+ * @param  {Array.<number>} out
+ */
+function cubicSubdivide(p0, p1, p2, p3, t, out) {
+    var p01 = (p1 - p0) * t + p0;
+    var p12 = (p2 - p1) * t + p1;
+    var p23 = (p3 - p2) * t + p2;
+
+    var p012 = (p12 - p01) * t + p01;
+    var p123 = (p23 - p12) * t + p12;
+
+    var p0123 = (p123 - p012) * t + p012;
+    // Seg0
+    out[0] = p0;
+    out[1] = p01;
+    out[2] = p012;
+    out[3] = p0123;
+    // Seg1
+    out[4] = p0123;
+    out[5] = p123;
+    out[6] = p23;
+    out[7] = p3;
+}
+
+/**
+ * 投射点到三次贝塞尔曲线上，返回投射距离。
+ * 投射点有可能会有一个或者多个，这里只返回其中距离最短的一个。
+ * @param {number} x0
+ * @param {number} y0
+ * @param {number} x1
+ * @param {number} y1
+ * @param {number} x2
+ * @param {number} y2
+ * @param {number} x3
+ * @param {number} y3
+ * @param {number} x
+ * @param {number} y
+ * @param {Array.<number>} [out] 投射点
+ * @return {number}
+ */
+function cubicProjectPoint(
+    x0, y0, x1, y1, x2, y2, x3, y3,
+    x, y, out
+) {
+    // http://pomax.github.io/bezierinfo/#projections
+    var t;
+    var interval = 0.005;
+    var d = Infinity;
+    var prev;
+    var next;
+    var d1;
+    var d2;
+
+    _v0[0] = x;
+    _v0[1] = y;
+
+    // 先粗略估计一下可能的最小距离的 t 值
+    // PENDING
+    for (var _t = 0; _t < 1; _t += 0.05) {
+        _v1[0] = cubicAt(x0, x1, x2, x3, _t);
+        _v1[1] = cubicAt(y0, y1, y2, y3, _t);
+        d1 = distSquare(_v0, _v1);
+        if (d1 < d) {
+            t = _t;
+            d = d1;
+        }
+    }
+    d = Infinity;
+
+    // At most 32 iteration
+    for (var i = 0; i < 32; i++) {
+        if (interval < EPSILON_NUMERIC) {
+            break;
+        }
+        prev = t - interval;
+        next = t + interval;
+        // t - interval
+        _v1[0] = cubicAt(x0, x1, x2, x3, prev);
+        _v1[1] = cubicAt(y0, y1, y2, y3, prev);
+
+        d1 = distSquare(_v1, _v0);
+
+        if (prev >= 0 && d1 < d) {
+            t = prev;
+            d = d1;
+        }
+        else {
+            // t + interval
+            _v2[0] = cubicAt(x0, x1, x2, x3, next);
+            _v2[1] = cubicAt(y0, y1, y2, y3, next);
+            d2 = distSquare(_v2, _v0);
+
+            if (next <= 1 && d2 < d) {
+                t = next;
+                d = d2;
+            }
+            else {
+                interval *= 0.5;
+            }
+        }
+    }
+    // t
+    if (out) {
+        out[0] = cubicAt(x0, x1, x2, x3, t);
+        out[1] = cubicAt(y0, y1, y2, y3, t);
+    }
+    // console.log(interval, i);
+    return mathSqrt$2(d);
+}
+
+/**
+ * 计算二次方贝塞尔值
+ * @param  {number} p0
+ * @param  {number} p1
+ * @param  {number} p2
+ * @param  {number} t
+ * @return {number}
+ */
+function quadraticAt(p0, p1, p2, t) {
+    var onet = 1 - t;
+    return onet * (onet * p0 + 2 * t * p1) + t * t * p2;
+}
+
+/**
+ * 计算二次方贝塞尔导数值
+ * @param  {number} p0
+ * @param  {number} p1
+ * @param  {number} p2
+ * @param  {number} t
+ * @return {number}
+ */
+function quadraticDerivativeAt(p0, p1, p2, t) {
+    return 2 * ((1 - t) * (p1 - p0) + t * (p2 - p1));
+}
+
+/**
+ * 计算二次方贝塞尔方程根
+ * @param  {number} p0
+ * @param  {number} p1
+ * @param  {number} p2
+ * @param  {number} t
+ * @param  {Array.<number>} roots
+ * @return {number} 有效根数目
+ */
+function quadraticRootAt(p0, p1, p2, val, roots) {
+    var a = p0 - 2 * p1 + p2;
+    var b = 2 * (p1 - p0);
+    var c = p0 - val;
+
+    var n = 0;
+    if (isAroundZero(a)) {
+        if (isNotAroundZero$1(b)) {
+            var t1 = -c / b;
+            if (t1 >= 0 && t1 <= 1) {
+                roots[n++] = t1;
+            }
+        }
+    }
+    else {
+        var disc = b * b - 4 * a * c;
+        if (isAroundZero(disc)) {
+            var t1 = -b / (2 * a);
+            if (t1 >= 0 && t1 <= 1) {
+                roots[n++] = t1;
+            }
+        }
+        else if (disc > 0) {
+            var discSqrt = mathSqrt$2(disc);
+            var t1 = (-b + discSqrt) / (2 * a);
+            var t2 = (-b - discSqrt) / (2 * a);
+            if (t1 >= 0 && t1 <= 1) {
+                roots[n++] = t1;
+            }
+            if (t2 >= 0 && t2 <= 1) {
+                roots[n++] = t2;
+            }
+        }
+    }
+    return n;
+}
+
+/**
+ * 计算二次贝塞尔方程极限值
+ * @memberOf module:zrender/core/curve
+ * @param  {number} p0
+ * @param  {number} p1
+ * @param  {number} p2
+ * @return {number}
+ */
+function quadraticExtremum(p0, p1, p2) {
+    var divider = p0 + p2 - 2 * p1;
+    if (divider === 0) {
+        // p1 is center of p0 and p2
+        return 0.5;
+    }
+    else {
+        return (p0 - p1) / divider;
+    }
+}
+
+/**
+ * 细分二次贝塞尔曲线
+ * @memberOf module:zrender/core/curve
+ * @param  {number} p0
+ * @param  {number} p1
+ * @param  {number} p2
+ * @param  {number} t
+ * @param  {Array.<number>} out
+ */
+function quadraticSubdivide(p0, p1, p2, t, out) {
+    var p01 = (p1 - p0) * t + p0;
+    var p12 = (p2 - p1) * t + p1;
+    var p012 = (p12 - p01) * t + p01;
+
+    // Seg0
+    out[0] = p0;
+    out[1] = p01;
+    out[2] = p012;
+
+    // Seg1
+    out[3] = p012;
+    out[4] = p12;
+    out[5] = p2;
+}
+
+/**
+ * 投射点到二次贝塞尔曲线上，返回投射距离。
+ * 投射点有可能会有一个或者多个，这里只返回其中距离最短的一个。
+ * @param {number} x0
+ * @param {number} y0
+ * @param {number} x1
+ * @param {number} y1
+ * @param {number} x2
+ * @param {number} y2
+ * @param {number} x
+ * @param {number} y
+ * @param {Array.<number>} out 投射点
+ * @return {number}
+ */
+function quadraticProjectPoint(
+    x0, y0, x1, y1, x2, y2,
+    x, y, out
+) {
+    // http://pomax.github.io/bezierinfo/#projections
+    var t;
+    var interval = 0.005;
+    var d = Infinity;
+
+    _v0[0] = x;
+    _v0[1] = y;
+
+    // 先粗略估计一下可能的最小距离的 t 值
+    // PENDING
+    for (var _t = 0; _t < 1; _t += 0.05) {
+        _v1[0] = quadraticAt(x0, x1, x2, _t);
+        _v1[1] = quadraticAt(y0, y1, y2, _t);
+        var d1 = distSquare(_v0, _v1);
+        if (d1 < d) {
+            t = _t;
+            d = d1;
+        }
+    }
+    d = Infinity;
+
+    // At most 32 iteration
+    for (var i = 0; i < 32; i++) {
+        if (interval < EPSILON_NUMERIC) {
+            break;
+        }
+        var prev = t - interval;
+        var next = t + interval;
+        // t - interval
+        _v1[0] = quadraticAt(x0, x1, x2, prev);
+        _v1[1] = quadraticAt(y0, y1, y2, prev);
+
+        var d1 = distSquare(_v1, _v0);
+
+        if (prev >= 0 && d1 < d) {
+            t = prev;
+            d = d1;
+        }
+        else {
+            // t + interval
+            _v2[0] = quadraticAt(x0, x1, x2, next);
+            _v2[1] = quadraticAt(y0, y1, y2, next);
+            var d2 = distSquare(_v2, _v0);
+            if (next <= 1 && d2 < d) {
+                t = next;
+                d = d2;
+            }
+            else {
+                interval *= 0.5;
+            }
+        }
+    }
+    // t
+    if (out) {
+        out[0] = quadraticAt(x0, x1, x2, t);
+        out[1] = quadraticAt(y0, y1, y2, t);
+    }
+    // console.log(interval, i);
+    return mathSqrt$2(d);
+}
+
+/**
+ * @author Yi Shen(https://github.com/pissang)
+ */
+
+var mathMin$2 = Math.min;
+var mathMax$2 = Math.max;
+var mathSin$2 = Math.sin;
+var mathCos$2 = Math.cos;
+var PI2 = Math.PI * 2;
+
+var start = create();
+var end = create();
+var extremity = create();
+
+/**
+ * 从顶点数组中计算出最小包围盒，写入`min`和`max`中
+ * @module zrender/core/bbox
+ * @param {Array<Object>} points 顶点数组
+ * @param {number} min
+ * @param {number} max
+ */
+
+
+/**
+ * @memberOf module:zrender/core/bbox
+ * @param {number} x0
+ * @param {number} y0
+ * @param {number} x1
+ * @param {number} y1
+ * @param {Array.<number>} min
+ * @param {Array.<number>} max
+ */
+function fromLine(x0, y0, x1, y1, min$$1, max$$1) {
+    min$$1[0] = mathMin$2(x0, x1);
+    min$$1[1] = mathMin$2(y0, y1);
+    max$$1[0] = mathMax$2(x0, x1);
+    max$$1[1] = mathMax$2(y0, y1);
+}
+
+var xDim = [];
+var yDim = [];
+/**
+ * 从三阶贝塞尔曲线(p0, p1, p2, p3)中计算出最小包围盒，写入`min`和`max`中
+ * @memberOf module:zrender/core/bbox
+ * @param {number} x0
+ * @param {number} y0
+ * @param {number} x1
+ * @param {number} y1
+ * @param {number} x2
+ * @param {number} y2
+ * @param {number} x3
+ * @param {number} y3
+ * @param {Array.<number>} min
+ * @param {Array.<number>} max
+ */
+function fromCubic(
+    x0, y0, x1, y1, x2, y2, x3, y3, min$$1, max$$1
+) {
+    var cubicExtrema$$1 = cubicExtrema;
+    var cubicAt$$1 = cubicAt;
+    var i;
+    var n = cubicExtrema$$1(x0, x1, x2, x3, xDim);
+    min$$1[0] = Infinity;
+    min$$1[1] = Infinity;
+    max$$1[0] = -Infinity;
+    max$$1[1] = -Infinity;
+
+    for (i = 0; i < n; i++) {
+        var x = cubicAt$$1(x0, x1, x2, x3, xDim[i]);
+        min$$1[0] = mathMin$2(x, min$$1[0]);
+        max$$1[0] = mathMax$2(x, max$$1[0]);
+    }
+    n = cubicExtrema$$1(y0, y1, y2, y3, yDim);
+    for (i = 0; i < n; i++) {
+        var y = cubicAt$$1(y0, y1, y2, y3, yDim[i]);
+        min$$1[1] = mathMin$2(y, min$$1[1]);
+        max$$1[1] = mathMax$2(y, max$$1[1]);
+    }
+
+    min$$1[0] = mathMin$2(x0, min$$1[0]);
+    max$$1[0] = mathMax$2(x0, max$$1[0]);
+    min$$1[0] = mathMin$2(x3, min$$1[0]);
+    max$$1[0] = mathMax$2(x3, max$$1[0]);
+
+    min$$1[1] = mathMin$2(y0, min$$1[1]);
+    max$$1[1] = mathMax$2(y0, max$$1[1]);
+    min$$1[1] = mathMin$2(y3, min$$1[1]);
+    max$$1[1] = mathMax$2(y3, max$$1[1]);
+}
+
+/**
+ * 从二阶贝塞尔曲线(p0, p1, p2)中计算出最小包围盒，写入`min`和`max`中
+ * @memberOf module:zrender/core/bbox
+ * @param {number} x0
+ * @param {number} y0
+ * @param {number} x1
+ * @param {number} y1
+ * @param {number} x2
+ * @param {number} y2
+ * @param {Array.<number>} min
+ * @param {Array.<number>} max
+ */
+function fromQuadratic(x0, y0, x1, y1, x2, y2, min$$1, max$$1) {
+    var quadraticExtremum$$1 = quadraticExtremum;
+    var quadraticAt$$1 = quadraticAt;
+    // Find extremities, where derivative in x dim or y dim is zero
+    var tx =
+        mathMax$2(
+            mathMin$2(quadraticExtremum$$1(x0, x1, x2), 1), 0
+        );
+    var ty =
+        mathMax$2(
+            mathMin$2(quadraticExtremum$$1(y0, y1, y2), 1), 0
+        );
+
+    var x = quadraticAt$$1(x0, x1, x2, tx);
+    var y = quadraticAt$$1(y0, y1, y2, ty);
+
+    min$$1[0] = mathMin$2(x0, x2, x);
+    min$$1[1] = mathMin$2(y0, y2, y);
+    max$$1[0] = mathMax$2(x0, x2, x);
+    max$$1[1] = mathMax$2(y0, y2, y);
+}
+
+/**
+ * 从圆弧中计算出最小包围盒，写入`min`和`max`中
+ * @method
+ * @memberOf module:zrender/core/bbox
+ * @param {number} x
+ * @param {number} y
+ * @param {number} rx
+ * @param {number} ry
+ * @param {number} startAngle
+ * @param {number} endAngle
+ * @param {number} anticlockwise
+ * @param {Array.<number>} min
+ * @param {Array.<number>} max
+ */
+function fromArc(
+    x, y, rx, ry, startAngle, endAngle, anticlockwise, min$$1, max$$1
+) {
+    var vec2Min = min;
+    var vec2Max = max;
+
+    var diff = Math.abs(startAngle - endAngle);
+
+
+    if (diff % PI2 < 1e-4 && diff > 1e-4) {
+        // Is a circle
+        min$$1[0] = x - rx;
+        min$$1[1] = y - ry;
+        max$$1[0] = x + rx;
+        max$$1[1] = y + ry;
+        return;
+    }
+
+    start[0] = mathCos$2(startAngle) * rx + x;
+    start[1] = mathSin$2(startAngle) * ry + y;
+
+    end[0] = mathCos$2(endAngle) * rx + x;
+    end[1] = mathSin$2(endAngle) * ry + y;
+
+    vec2Min(min$$1, start, end);
+    vec2Max(max$$1, start, end);
+
+    // Thresh to [0, Math.PI * 2]
+    startAngle = startAngle % (PI2);
+    if (startAngle < 0) {
+        startAngle = startAngle + PI2;
+    }
+    endAngle = endAngle % (PI2);
+    if (endAngle < 0) {
+        endAngle = endAngle + PI2;
+    }
+
+    if (startAngle > endAngle && !anticlockwise) {
+        endAngle += PI2;
+    }
+    else if (startAngle < endAngle && anticlockwise) {
+        startAngle += PI2;
+    }
+    if (anticlockwise) {
+        var tmp = endAngle;
+        endAngle = startAngle;
+        startAngle = tmp;
+    }
+
+    // var number = 0;
+    // var step = (anticlockwise ? -Math.PI : Math.PI) / 2;
+    for (var angle = 0; angle < endAngle; angle += Math.PI / 2) {
+        if (angle > startAngle) {
+            extremity[0] = mathCos$2(angle) * rx + x;
+            extremity[1] = mathSin$2(angle) * ry + y;
+
+            vec2Min(min$$1, extremity, min$$1);
+            vec2Max(max$$1, extremity, max$$1);
+        }
+    }
+}
+
+/**
+ * Path 代理，可以在`buildPath`中用于替代`ctx`, 会保存每个path操作的命令到pathCommands属性中
+ * 可以用于 isInsidePath 判断以及获取boundingRect
+ *
+ * @module zrender/core/PathProxy
+ * @author Yi Shen (http://www.github.com/pissang)
+ */
+
+// TODO getTotalLength, getPointAtLength
+
+var CMD = {
+    M: 1,
+    L: 2,
+    C: 3,
+    Q: 4,
+    A: 5,
+    Z: 6,
+    // Rect
+    R: 7
+};
+
+// var CMD_MEM_SIZE = {
+//     M: 3,
+//     L: 3,
+//     C: 7,
+//     Q: 5,
+//     A: 9,
+//     R: 5,
+//     Z: 1
+// };
+
+var min$1 = [];
+var max$1 = [];
+var min2 = [];
+var max2 = [];
+var mathMin$1 = Math.min;
+var mathMax$1 = Math.max;
+var mathCos$1 = Math.cos;
+var mathSin$1 = Math.sin;
+var mathSqrt$1 = Math.sqrt;
+var mathAbs = Math.abs;
+
+var hasTypedArray = typeof Float32Array != 'undefined';
+
+/**
+ * @alias module:zrender/core/PathProxy
+ * @constructor
+ */
+var PathProxy = function (notSaveData) {
+
+    this._saveData = !(notSaveData || false);
+
+    if (this._saveData) {
+        /**
+         * Path data. Stored as flat array
+         * @type {Array.<Object>}
+         */
+        this.data = [];
+    }
+
+    this._ctx = null;
+};
+
+/**
+ * 快速计算Path包围盒（并不是最小包围盒）
+ * @return {Object}
+ */
+PathProxy.prototype = {
+
+    constructor: PathProxy,
+
+    _xi: 0,
+    _yi: 0,
+
+    _x0: 0,
+    _y0: 0,
+    // Unit x, Unit y. Provide for avoiding drawing that too short line segment
+    _ux: 0,
+    _uy: 0,
+
+    _len: 0,
+
+    _lineDash: null,
+
+    _dashOffset: 0,
+
+    _dashIdx: 0,
+
+    _dashSum: 0,
+
+    /**
+     * @readOnly
+     */
+    setScale: function (sx, sy) {
+        this._ux = mathAbs(1 / devicePixelRatio / sx) || 0;
+        this._uy = mathAbs(1 / devicePixelRatio / sy) || 0;
+    },
+
+    getContext: function () {
+        return this._ctx;
+    },
+
+    /**
+     * @param  {CanvasRenderingContext2D} ctx
+     * @return {module:zrender/core/PathProxy}
+     */
+    beginPath: function (ctx) {
+
+        this._ctx = ctx;
+
+        ctx && ctx.beginPath();
+
+        ctx && (this.dpr = ctx.dpr);
+
+        // Reset
+        if (this._saveData) {
+            this._len = 0;
+        }
+
+        if (this._lineDash) {
+            this._lineDash = null;
+
+            this._dashOffset = 0;
+        }
+
+        return this;
+    },
+
+    /**
+     * @param  {number} x
+     * @param  {number} y
+     * @return {module:zrender/core/PathProxy}
+     */
+    moveTo: function (x, y) {
+        this.addData(CMD.M, x, y);
+        this._ctx && this._ctx.moveTo(x, y);
+
+        // x0, y0, xi, yi 是记录在 _dashedXXXXTo 方法中使用
+        // xi, yi 记录当前点, x0, y0 在 closePath 的时候回到起始点。
+        // 有可能在 beginPath 之后直接调用 lineTo，这时候 x0, y0 需要
+        // 在 lineTo 方法中记录，这里先不考虑这种情况，dashed line 也只在 IE10- 中不支持
+        this._x0 = x;
+        this._y0 = y;
+
+        this._xi = x;
+        this._yi = y;
+
+        return this;
+    },
+
+    /**
+     * @param  {number} x
+     * @param  {number} y
+     * @return {module:zrender/core/PathProxy}
+     */
+    lineTo: function (x, y) {
+        var exceedUnit = mathAbs(x - this._xi) > this._ux
+            || mathAbs(y - this._yi) > this._uy
+            // Force draw the first segment
+            || this._len < 5;
+
+        this.addData(CMD.L, x, y);
+
+        if (this._ctx && exceedUnit) {
+            this._needsDash() ? this._dashedLineTo(x, y)
+                : this._ctx.lineTo(x, y);
+        }
+        if (exceedUnit) {
+            this._xi = x;
+            this._yi = y;
+        }
+
+        return this;
+    },
+
+    /**
+     * @param  {number} x1
+     * @param  {number} y1
+     * @param  {number} x2
+     * @param  {number} y2
+     * @param  {number} x3
+     * @param  {number} y3
+     * @return {module:zrender/core/PathProxy}
+     */
+    bezierCurveTo: function (x1, y1, x2, y2, x3, y3) {
+        this.addData(CMD.C, x1, y1, x2, y2, x3, y3);
+        if (this._ctx) {
+            this._needsDash() ? this._dashedBezierTo(x1, y1, x2, y2, x3, y3)
+                : this._ctx.bezierCurveTo(x1, y1, x2, y2, x3, y3);
+        }
+        this._xi = x3;
+        this._yi = y3;
+        return this;
+    },
+
+    /**
+     * @param  {number} x1
+     * @param  {number} y1
+     * @param  {number} x2
+     * @param  {number} y2
+     * @return {module:zrender/core/PathProxy}
+     */
+    quadraticCurveTo: function (x1, y1, x2, y2) {
+        this.addData(CMD.Q, x1, y1, x2, y2);
+        if (this._ctx) {
+            this._needsDash() ? this._dashedQuadraticTo(x1, y1, x2, y2)
+                : this._ctx.quadraticCurveTo(x1, y1, x2, y2);
+        }
+        this._xi = x2;
+        this._yi = y2;
+        return this;
+    },
+
+    /**
+     * @param  {number} cx
+     * @param  {number} cy
+     * @param  {number} r
+     * @param  {number} startAngle
+     * @param  {number} endAngle
+     * @param  {boolean} anticlockwise
+     * @return {module:zrender/core/PathProxy}
+     */
+    arc: function (cx, cy, r, startAngle, endAngle, anticlockwise) {
+        this.addData(
+            CMD.A, cx, cy, r, r, startAngle, endAngle - startAngle, 0, anticlockwise ? 0 : 1
+        );
+        this._ctx && this._ctx.arc(cx, cy, r, startAngle, endAngle, anticlockwise);
+
+        this._xi = mathCos$1(endAngle) * r + cx;
+        this._yi = mathSin$1(endAngle) * r + cx;
+        return this;
+    },
+
+    // TODO
+    arcTo: function (x1, y1, x2, y2, radius) {
+        if (this._ctx) {
+            this._ctx.arcTo(x1, y1, x2, y2, radius);
+        }
+        return this;
+    },
+
+    // TODO
+    rect: function (x, y, w, h) {
+        this._ctx && this._ctx.rect(x, y, w, h);
+        this.addData(CMD.R, x, y, w, h);
+        return this;
+    },
+
+    /**
+     * @return {module:zrender/core/PathProxy}
+     */
+    closePath: function () {
+        this.addData(CMD.Z);
+
+        var ctx = this._ctx;
+        var x0 = this._x0;
+        var y0 = this._y0;
+        if (ctx) {
+            this._needsDash() && this._dashedLineTo(x0, y0);
+            ctx.closePath();
+        }
+
+        this._xi = x0;
+        this._yi = y0;
+        return this;
+    },
+
+    /**
+     * Context 从外部传入，因为有可能是 rebuildPath 完之后再 fill。
+     * stroke 同样
+     * @param {CanvasRenderingContext2D} ctx
+     * @return {module:zrender/core/PathProxy}
+     */
+    fill: function (ctx) {
+        ctx && ctx.fill();
+        this.toStatic();
+    },
+
+    /**
+     * @param {CanvasRenderingContext2D} ctx
+     * @return {module:zrender/core/PathProxy}
+     */
+    stroke: function (ctx) {
+        ctx && ctx.stroke();
+        this.toStatic();
+    },
+
+    /**
+     * 必须在其它绘制命令前调用
+     * Must be invoked before all other path drawing methods
+     * @return {module:zrender/core/PathProxy}
+     */
+    setLineDash: function (lineDash) {
+        if (lineDash instanceof Array) {
+            this._lineDash = lineDash;
+
+            this._dashIdx = 0;
+
+            var lineDashSum = 0;
+            for (var i = 0; i < lineDash.length; i++) {
+                lineDashSum += lineDash[i];
+            }
+            this._dashSum = lineDashSum;
+        }
+        return this;
+    },
+
+    /**
+     * 必须在其它绘制命令前调用
+     * Must be invoked before all other path drawing methods
+     * @return {module:zrender/core/PathProxy}
+     */
+    setLineDashOffset: function (offset) {
+        this._dashOffset = offset;
+        return this;
+    },
+
+    /**
+     *
+     * @return {boolean}
+     */
+    len: function () {
+        return this._len;
+    },
+
+    /**
+     * 直接设置 Path 数据
+     */
+    setData: function (data) {
+
+        var len$$1 = data.length;
+
+        if (! (this.data && this.data.length == len$$1) && hasTypedArray) {
+            this.data = new Float32Array(len$$1);
+        }
+
+        for (var i = 0; i < len$$1; i++) {
+            this.data[i] = data[i];
+        }
+
+        this._len = len$$1;
+    },
+
+    /**
+     * 添加子路径
+     * @param {module:zrender/core/PathProxy|Array.<module:zrender/core/PathProxy>} path
+     */
+    appendPath: function (path) {
+        if (!(path instanceof Array)) {
+            path = [path];
+        }
+        var len$$1 = path.length;
+        var appendSize = 0;
+        var offset = this._len;
+        for (var i = 0; i < len$$1; i++) {
+            appendSize += path[i].len();
+        }
+        if (hasTypedArray && (this.data instanceof Float32Array)) {
+            this.data = new Float32Array(offset + appendSize);
+        }
+        for (var i = 0; i < len$$1; i++) {
+            var appendPathData = path[i].data;
+            for (var k = 0; k < appendPathData.length; k++) {
+                this.data[offset++] = appendPathData[k];
+            }
+        }
+        this._len = offset;
+    },
+
+    /**
+     * 填充 Path 数据。
+     * 尽量复用而不申明新的数组。大部分图形重绘的指令数据长度都是不变的。
+     */
+    addData: function (cmd) {
+        if (!this._saveData) {
+            return;
+        }
+
+        var data = this.data;
+        if (this._len + arguments.length > data.length) {
+            // 因为之前的数组已经转换成静态的 Float32Array
+            // 所以不够用时需要扩展一个新的动态数组
+            this._expandData();
+            data = this.data;
+        }
+        for (var i = 0; i < arguments.length; i++) {
+            data[this._len++] = arguments[i];
+        }
+
+        this._prevCmd = cmd;
+    },
+
+    _expandData: function () {
+        // Only if data is Float32Array
+        if (!(this.data instanceof Array)) {
+            var newData = [];
+            for (var i = 0; i < this._len; i++) {
+                newData[i] = this.data[i];
+            }
+            this.data = newData;
+        }
+    },
+
+    /**
+     * If needs js implemented dashed line
+     * @return {boolean}
+     * @private
+     */
+    _needsDash: function () {
+        return this._lineDash;
+    },
+
+    _dashedLineTo: function (x1, y1) {
+        var dashSum = this._dashSum;
+        var offset = this._dashOffset;
+        var lineDash = this._lineDash;
+        var ctx = this._ctx;
+
+        var x0 = this._xi;
+        var y0 = this._yi;
+        var dx = x1 - x0;
+        var dy = y1 - y0;
+        var dist$$1 = mathSqrt$1(dx * dx + dy * dy);
+        var x = x0;
+        var y = y0;
+        var dash;
+        var nDash = lineDash.length;
+        var idx;
+        dx /= dist$$1;
+        dy /= dist$$1;
+
+        if (offset < 0) {
+            // Convert to positive offset
+            offset = dashSum + offset;
+        }
+        offset %= dashSum;
+        x -= offset * dx;
+        y -= offset * dy;
+
+        while ((dx > 0 && x <= x1) || (dx < 0 && x >= x1)
+        || (dx == 0 && ((dy > 0 && y <= y1) || (dy < 0 && y >= y1)))) {
+            idx = this._dashIdx;
+            dash = lineDash[idx];
+            x += dx * dash;
+            y += dy * dash;
+            this._dashIdx = (idx + 1) % nDash;
+            // Skip positive offset
+            if ((dx > 0 && x < x0) || (dx < 0 && x > x0) || (dy > 0 && y < y0) || (dy < 0 && y > y0)) {
+                continue;
+            }
+            ctx[idx % 2 ? 'moveTo' : 'lineTo'](
+                dx >= 0 ? mathMin$1(x, x1) : mathMax$1(x, x1),
+                dy >= 0 ? mathMin$1(y, y1) : mathMax$1(y, y1)
+            );
+        }
+        // Offset for next lineTo
+        dx = x - x1;
+        dy = y - y1;
+        this._dashOffset = -mathSqrt$1(dx * dx + dy * dy);
+    },
+
+    // Not accurate dashed line to
+    _dashedBezierTo: function (x1, y1, x2, y2, x3, y3) {
+        var dashSum = this._dashSum;
+        var offset = this._dashOffset;
+        var lineDash = this._lineDash;
+        var ctx = this._ctx;
+
+        var x0 = this._xi;
+        var y0 = this._yi;
+        var t;
+        var dx;
+        var dy;
+        var cubicAt$$1 = cubicAt;
+        var bezierLen = 0;
+        var idx = this._dashIdx;
+        var nDash = lineDash.length;
+
+        var x;
+        var y;
+
+        var tmpLen = 0;
+
+        if (offset < 0) {
+            // Convert to positive offset
+            offset = dashSum + offset;
+        }
+        offset %= dashSum;
+        // Bezier approx length
+        for (t = 0; t < 1; t += 0.1) {
+            dx = cubicAt$$1(x0, x1, x2, x3, t + 0.1)
+                - cubicAt$$1(x0, x1, x2, x3, t);
+            dy = cubicAt$$1(y0, y1, y2, y3, t + 0.1)
+                - cubicAt$$1(y0, y1, y2, y3, t);
+            bezierLen += mathSqrt$1(dx * dx + dy * dy);
+        }
+
+        // Find idx after add offset
+        for (; idx < nDash; idx++) {
+            tmpLen += lineDash[idx];
+            if (tmpLen > offset) {
+                break;
+            }
+        }
+        t = (tmpLen - offset) / bezierLen;
+
+        while (t <= 1) {
+
+            x = cubicAt$$1(x0, x1, x2, x3, t);
+            y = cubicAt$$1(y0, y1, y2, y3, t);
+
+            // Use line to approximate dashed bezier
+            // Bad result if dash is long
+            idx % 2 ? ctx.moveTo(x, y)
+                : ctx.lineTo(x, y);
+
+            t += lineDash[idx] / bezierLen;
+
+            idx = (idx + 1) % nDash;
+        }
+
+        // Finish the last segment and calculate the new offset
+        (idx % 2 !== 0) && ctx.lineTo(x3, y3);
+        dx = x3 - x;
+        dy = y3 - y;
+        this._dashOffset = -mathSqrt$1(dx * dx + dy * dy);
+    },
+
+    _dashedQuadraticTo: function (x1, y1, x2, y2) {
+        // Convert quadratic to cubic using degree elevation
+        var x3 = x2;
+        var y3 = y2;
+        x2 = (x2 + 2 * x1) / 3;
+        y2 = (y2 + 2 * y1) / 3;
+        x1 = (this._xi + 2 * x1) / 3;
+        y1 = (this._yi + 2 * y1) / 3;
+
+        this._dashedBezierTo(x1, y1, x2, y2, x3, y3);
+    },
+
+    /**
+     * 转成静态的 Float32Array 减少堆内存占用
+     * Convert dynamic array to static Float32Array
+     */
+    toStatic: function () {
+        var data = this.data;
+        if (data instanceof Array) {
+            data.length = this._len;
+            if (hasTypedArray) {
+                this.data = new Float32Array(data);
+            }
+        }
+    },
+
+    /**
+     * @return {module:zrender/core/BoundingRect}
+     */
+    getBoundingRect: function () {
+        min$1[0] = min$1[1] = min2[0] = min2[1] = Number.MAX_VALUE;
+        max$1[0] = max$1[1] = max2[0] = max2[1] = -Number.MAX_VALUE;
+
+        var data = this.data;
+        var xi = 0;
+        var yi = 0;
+        var x0 = 0;
+        var y0 = 0;
+
+        for (var i = 0; i < data.length;) {
+            var cmd = data[i++];
+
+            if (i == 1) {
+                // 如果第一个命令是 L, C, Q
+                // 则 previous point 同绘制命令的第一个 point
+                //
+                // 第一个命令为 Arc 的情况下会在后面特殊处理
+                xi = data[i];
+                yi = data[i + 1];
+
+                x0 = xi;
+                y0 = yi;
+            }
+
+            switch (cmd) {
+                case CMD.M:
+                    // moveTo 命令重新创建一个新的 subpath, 并且更新新的起点
+                    // 在 closePath 的时候使用
+                    x0 = data[i++];
+                    y0 = data[i++];
+                    xi = x0;
+                    yi = y0;
+                    min2[0] = x0;
+                    min2[1] = y0;
+                    max2[0] = x0;
+                    max2[1] = y0;
+                    break;
+                case CMD.L:
+                    fromLine(xi, yi, data[i], data[i + 1], min2, max2);
+                    xi = data[i++];
+                    yi = data[i++];
+                    break;
+                case CMD.C:
+                    fromCubic(
+                        xi, yi, data[i++], data[i++], data[i++], data[i++], data[i], data[i + 1],
+                        min2, max2
+                    );
+                    xi = data[i++];
+                    yi = data[i++];
+                    break;
+                case CMD.Q:
+                    fromQuadratic(
+                        xi, yi, data[i++], data[i++], data[i], data[i + 1],
+                        min2, max2
+                    );
+                    xi = data[i++];
+                    yi = data[i++];
+                    break;
+                case CMD.A:
+                    // TODO Arc 判断的开销比较大
+                    var cx = data[i++];
+                    var cy = data[i++];
+                    var rx = data[i++];
+                    var ry = data[i++];
+                    var startAngle = data[i++];
+                    var endAngle = data[i++] + startAngle;
+                    // TODO Arc 旋转
+                    var psi = data[i++];
+                    var anticlockwise = 1 - data[i++];
+
+                    if (i == 1) {
+                        // 直接使用 arc 命令
+                        // 第一个命令起点还未定义
+                        x0 = mathCos$1(startAngle) * rx + cx;
+                        y0 = mathSin$1(startAngle) * ry + cy;
+                    }
+
+                    fromArc(
+                        cx, cy, rx, ry, startAngle, endAngle,
+                        anticlockwise, min2, max2
+                    );
+
+                    xi = mathCos$1(endAngle) * rx + cx;
+                    yi = mathSin$1(endAngle) * ry + cy;
+                    break;
+                case CMD.R:
+                    x0 = xi = data[i++];
+                    y0 = yi = data[i++];
+                    var width = data[i++];
+                    var height = data[i++];
+                    // Use fromLine
+                    fromLine(x0, y0, x0 + width, y0 + height, min2, max2);
+                    break;
+                case CMD.Z:
+                    xi = x0;
+                    yi = y0;
+                    break;
+            }
+
+            // Union
+            min(min$1, min$1, min2);
+            max(max$1, max$1, max2);
+        }
+
+        // No data
+        if (i === 0) {
+            min$1[0] = min$1[1] = max$1[0] = max$1[1] = 0;
+        }
+
+        return new BoundingRect(
+            min$1[0], min$1[1], max$1[0] - min$1[0], max$1[1] - min$1[1]
+        );
+    },
+
+    /**
+     * Rebuild path from current data
+     * Rebuild path will not consider javascript implemented line dash.
+     * @param {CanvasRenderingContext2D} ctx
+     */
+    rebuildPath: function (ctx) {
+        var d = this.data;
+        var x0, y0;
+        var xi, yi;
+        var x, y;
+        var ux = this._ux;
+        var uy = this._uy;
+        var len$$1 = this._len;
+        for (var i = 0; i < len$$1;) {
+            var cmd = d[i++];
+
+            if (i == 1) {
+                // 如果第一个命令是 L, C, Q
+                // 则 previous point 同绘制命令的第一个 point
+                //
+                // 第一个命令为 Arc 的情况下会在后面特殊处理
+                xi = d[i];
+                yi = d[i + 1];
+
+                x0 = xi;
+                y0 = yi;
+            }
+            switch (cmd) {
+                case CMD.M:
+                    x0 = xi = d[i++];
+                    y0 = yi = d[i++];
+                    ctx.moveTo(xi, yi);
+                    break;
+                case CMD.L:
+                    x = d[i++];
+                    y = d[i++];
+                    // Not draw too small seg between
+                    if (mathAbs(x - xi) > ux || mathAbs(y - yi) > uy || i === len$$1 - 1) {
+                        ctx.lineTo(x, y);
+                        xi = x;
+                        yi = y;
+                    }
+                    break;
+                case CMD.C:
+                    ctx.bezierCurveTo(
+                        d[i++], d[i++], d[i++], d[i++], d[i++], d[i++]
+                    );
+                    xi = d[i - 2];
+                    yi = d[i - 1];
+                    break;
+                case CMD.Q:
+                    ctx.quadraticCurveTo(d[i++], d[i++], d[i++], d[i++]);
+                    xi = d[i - 2];
+                    yi = d[i - 1];
+                    break;
+                case CMD.A:
+                    var cx = d[i++];
+                    var cy = d[i++];
+                    var rx = d[i++];
+                    var ry = d[i++];
+                    var theta = d[i++];
+                    var dTheta = d[i++];
+                    var psi = d[i++];
+                    var fs = d[i++];
+                    var r = (rx > ry) ? rx : ry;
+                    var scaleX = (rx > ry) ? 1 : rx / ry;
+                    var scaleY = (rx > ry) ? ry / rx : 1;
+                    var isEllipse = Math.abs(rx - ry) > 1e-3;
+                    var endAngle = theta + dTheta;
+                    if (isEllipse) {
+                        ctx.translate(cx, cy);
+                        ctx.rotate(psi);
+                        ctx.scale(scaleX, scaleY);
+                        ctx.arc(0, 0, r, theta, endAngle, 1 - fs);
+                        ctx.scale(1 / scaleX, 1 / scaleY);
+                        ctx.rotate(-psi);
+                        ctx.translate(-cx, -cy);
+                    }
+                    else {
+                        ctx.arc(cx, cy, r, theta, endAngle, 1 - fs);
+                    }
+
+                    if (i == 1) {
+                        // 直接使用 arc 命令
+                        // 第一个命令起点还未定义
+                        x0 = mathCos$1(theta) * rx + cx;
+                        y0 = mathSin$1(theta) * ry + cy;
+                    }
+                    xi = mathCos$1(endAngle) * rx + cx;
+                    yi = mathSin$1(endAngle) * ry + cy;
+                    break;
+                case CMD.R:
+                    x0 = xi = d[i];
+                    y0 = yi = d[i + 1];
+                    ctx.rect(d[i++], d[i++], d[i++], d[i++]);
+                    break;
+                case CMD.Z:
+                    ctx.closePath();
+                    xi = x0;
+                    yi = y0;
+            }
+        }
+    }
+};
+
+PathProxy.CMD = CMD;
+
+/**
+ * 线段包含判断
+ * @param  {number}  x0
+ * @param  {number}  y0
+ * @param  {number}  x1
+ * @param  {number}  y1
+ * @param  {number}  lineWidth
+ * @param  {number}  x
+ * @param  {number}  y
+ * @return {boolean}
+ */
+function containStroke$1(x0, y0, x1, y1, lineWidth, x, y) {
+    if (lineWidth === 0) {
+        return false;
+    }
+    var _l = lineWidth;
+    var _a = 0;
+    var _b = x0;
+    // Quick reject
+    if (
+        (y > y0 + _l && y > y1 + _l)
+        || (y < y0 - _l && y < y1 - _l)
+        || (x > x0 + _l && x > x1 + _l)
+        || (x < x0 - _l && x < x1 - _l)
+    ) {
+        return false;
+    }
+
+    if (x0 !== x1) {
+        _a = (y0 - y1) / (x0 - x1);
+        _b = (x0 * y1 - x1 * y0) / (x0 - x1) ;
+    }
+    else {
+        return Math.abs(x - x0) <= _l / 2;
+    }
+    var tmp = _a * x - y + _b;
+    var _s = tmp * tmp / (_a * _a + 1);
+    return _s <= _l / 2 * _l / 2;
+}
+
+/**
+ * 三次贝塞尔曲线描边包含判断
+ * @param  {number}  x0
+ * @param  {number}  y0
+ * @param  {number}  x1
+ * @param  {number}  y1
+ * @param  {number}  x2
+ * @param  {number}  y2
+ * @param  {number}  x3
+ * @param  {number}  y3
+ * @param  {number}  lineWidth
+ * @param  {number}  x
+ * @param  {number}  y
+ * @return {boolean}
+ */
+function containStroke$2(x0, y0, x1, y1, x2, y2, x3, y3, lineWidth, x, y) {
+    if (lineWidth === 0) {
+        return false;
+    }
+    var _l = lineWidth;
+    // Quick reject
+    if (
+        (y > y0 + _l && y > y1 + _l && y > y2 + _l && y > y3 + _l)
+        || (y < y0 - _l && y < y1 - _l && y < y2 - _l && y < y3 - _l)
+        || (x > x0 + _l && x > x1 + _l && x > x2 + _l && x > x3 + _l)
+        || (x < x0 - _l && x < x1 - _l && x < x2 - _l && x < x3 - _l)
+    ) {
+        return false;
+    }
+    var d = cubicProjectPoint(
+        x0, y0, x1, y1, x2, y2, x3, y3,
+        x, y, null
+    );
+    return d <= _l / 2;
+}
+
+/**
+ * 二次贝塞尔曲线描边包含判断
+ * @param  {number}  x0
+ * @param  {number}  y0
+ * @param  {number}  x1
+ * @param  {number}  y1
+ * @param  {number}  x2
+ * @param  {number}  y2
+ * @param  {number}  lineWidth
+ * @param  {number}  x
+ * @param  {number}  y
+ * @return {boolean}
+ */
+function containStroke$3(x0, y0, x1, y1, x2, y2, lineWidth, x, y) {
+    if (lineWidth === 0) {
+        return false;
+    }
+    var _l = lineWidth;
+    // Quick reject
+    if (
+        (y > y0 + _l && y > y1 + _l && y > y2 + _l)
+        || (y < y0 - _l && y < y1 - _l && y < y2 - _l)
+        || (x > x0 + _l && x > x1 + _l && x > x2 + _l)
+        || (x < x0 - _l && x < x1 - _l && x < x2 - _l)
+    ) {
+        return false;
+    }
+    var d = quadraticProjectPoint(
+        x0, y0, x1, y1, x2, y2,
+        x, y, null
+    );
+    return d <= _l / 2;
+}
+
+var PI2$3 = Math.PI * 2;
+
+function normalizeRadian(angle) {
+    angle %= PI2$3;
+    if (angle < 0) {
+        angle += PI2$3;
+    }
+    return angle;
+}
+
+var PI2$2 = Math.PI * 2;
+
+/**
+ * 圆弧描边包含判断
+ * @param  {number}  cx
+ * @param  {number}  cy
+ * @param  {number}  r
+ * @param  {number}  startAngle
+ * @param  {number}  endAngle
+ * @param  {boolean}  anticlockwise
+ * @param  {number} lineWidth
+ * @param  {number}  x
+ * @param  {number}  y
+ * @return {Boolean}
+ */
+function containStroke$4(
+    cx, cy, r, startAngle, endAngle, anticlockwise,
+    lineWidth, x, y
+) {
+
+    if (lineWidth === 0) {
+        return false;
+    }
+    var _l = lineWidth;
+
+    x -= cx;
+    y -= cy;
+    var d = Math.sqrt(x * x + y * y);
+
+    if ((d - _l > r) || (d + _l < r)) {
+        return false;
+    }
+    if (Math.abs(startAngle - endAngle) % PI2$2 < 1e-4) {
+        // Is a circle
+        return true;
+    }
+    if (anticlockwise) {
+        var tmp = startAngle;
+        startAngle = normalizeRadian(endAngle);
+        endAngle = normalizeRadian(tmp);
+    } else {
+        startAngle = normalizeRadian(startAngle);
+        endAngle = normalizeRadian(endAngle);
+    }
+    if (startAngle > endAngle) {
+        endAngle += PI2$2;
+    }
+
+    var angle = Math.atan2(y, x);
+    if (angle < 0) {
+        angle += PI2$2;
+    }
+    return (angle >= startAngle && angle <= endAngle)
+        || (angle + PI2$2 >= startAngle && angle + PI2$2 <= endAngle);
+}
+
+function windingLine(x0, y0, x1, y1, x, y) {
+    if ((y > y0 && y > y1) || (y < y0 && y < y1)) {
+        return 0;
+    }
+    // Ignore horizontal line
+    if (y1 === y0) {
+        return 0;
+    }
+    var dir = y1 < y0 ? 1 : -1;
+    var t = (y - y0) / (y1 - y0);
+
+    // Avoid winding error when intersection point is the connect point of two line of polygon
+    if (t === 1 || t === 0) {
+        dir = y1 < y0 ? 0.5 : -0.5;
+    }
+
+    var x_ = t * (x1 - x0) + x0;
+
+    return x_ > x ? dir : 0;
+}
+
+var PI2$1 = Math.PI * 2;
+
+var EPSILON$2 = 1e-4;
+
+function isAroundEqual(a, b) {
+    return Math.abs(a - b) < EPSILON$2;
+}
+
+// 临时数组
+var roots = [-1, -1, -1];
+var extrema = [-1, -1];
+
+function swapExtrema() {
+    var tmp = extrema[0];
+    extrema[0] = extrema[1];
+    extrema[1] = tmp;
+}
+
+function windingCubic(x0, y0, x1, y1, x2, y2, x3, y3, x, y) {
+    // Quick reject
+    if (
+        (y > y0 && y > y1 && y > y2 && y > y3)
+        || (y < y0 && y < y1 && y < y2 && y < y3)
+    ) {
+        return 0;
+    }
+    var nRoots = cubicRootAt(y0, y1, y2, y3, y, roots);
+    if (nRoots === 0) {
+        return 0;
+    }
+    else {
+        var w = 0;
+        var nExtrema = -1;
+        var y0_, y1_;
+        for (var i = 0; i < nRoots; i++) {
+            var t = roots[i];
+
+            // Avoid winding error when intersection point is the connect point of two line of polygon
+            var unit = (t === 0 || t === 1) ? 0.5 : 1;
+
+            var x_ = cubicAt(x0, x1, x2, x3, t);
+            if (x_ < x) { // Quick reject
+                continue;
+            }
+            if (nExtrema < 0) {
+                nExtrema = cubicExtrema(y0, y1, y2, y3, extrema);
+                if (extrema[1] < extrema[0] && nExtrema > 1) {
+                    swapExtrema();
+                }
+                y0_ = cubicAt(y0, y1, y2, y3, extrema[0]);
+                if (nExtrema > 1) {
+                    y1_ = cubicAt(y0, y1, y2, y3, extrema[1]);
+                }
+            }
+            if (nExtrema == 2) {
+                // 分成三段单调函数
+                if (t < extrema[0]) {
+                    w += y0_ < y0 ? unit : -unit;
+                }
+                else if (t < extrema[1]) {
+                    w += y1_ < y0_ ? unit : -unit;
+                }
+                else {
+                    w += y3 < y1_ ? unit : -unit;
+                }
+            }
+            else {
+                // 分成两段单调函数
+                if (t < extrema[0]) {
+                    w += y0_ < y0 ? unit : -unit;
+                }
+                else {
+                    w += y3 < y0_ ? unit : -unit;
+                }
+            }
+        }
+        return w;
+    }
+}
+
+function windingQuadratic(x0, y0, x1, y1, x2, y2, x, y) {
+    // Quick reject
+    if (
+        (y > y0 && y > y1 && y > y2)
+        || (y < y0 && y < y1 && y < y2)
+    ) {
+        return 0;
+    }
+    var nRoots = quadraticRootAt(y0, y1, y2, y, roots);
+    if (nRoots === 0) {
+        return 0;
+    }
+    else {
+        var t = quadraticExtremum(y0, y1, y2);
+        if (t >= 0 && t <= 1) {
+            var w = 0;
+            var y_ = quadraticAt(y0, y1, y2, t);
+            for (var i = 0; i < nRoots; i++) {
+                // Remove one endpoint.
+                var unit = (roots[i] === 0 || roots[i] === 1) ? 0.5 : 1;
+
+                var x_ = quadraticAt(x0, x1, x2, roots[i]);
+                if (x_ < x) {   // Quick reject
+                    continue;
+                }
+                if (roots[i] < t) {
+                    w += y_ < y0 ? unit : -unit;
+                }
+                else {
+                    w += y2 < y_ ? unit : -unit;
+                }
+            }
+            return w;
+        }
+        else {
+            // Remove one endpoint.
+            var unit = (roots[0] === 0 || roots[0] === 1) ? 0.5 : 1;
+
+            var x_ = quadraticAt(x0, x1, x2, roots[0]);
+            if (x_ < x) {   // Quick reject
+                return 0;
+            }
+            return y2 < y0 ? unit : -unit;
+        }
+    }
+}
+
+// TODO
+// Arc 旋转
+function windingArc(
+    cx, cy, r, startAngle, endAngle, anticlockwise, x, y
+) {
+    y -= cy;
+    if (y > r || y < -r) {
+        return 0;
+    }
+    var tmp = Math.sqrt(r * r - y * y);
+    roots[0] = -tmp;
+    roots[1] = tmp;
+
+    var diff = Math.abs(startAngle - endAngle);
+    if (diff < 1e-4) {
+        return 0;
+    }
+    if (diff % PI2$1 < 1e-4) {
+        // Is a circle
+        startAngle = 0;
+        endAngle = PI2$1;
+        var dir = anticlockwise ? 1 : -1;
+        if (x >= roots[0] + cx && x <= roots[1] + cx) {
+            return dir;
+        } else {
+            return 0;
+        }
+    }
+
+    if (anticlockwise) {
+        var tmp = startAngle;
+        startAngle = normalizeRadian(endAngle);
+        endAngle = normalizeRadian(tmp);
+    }
+    else {
+        startAngle = normalizeRadian(startAngle);
+        endAngle = normalizeRadian(endAngle);
+    }
+    if (startAngle > endAngle) {
+        endAngle += PI2$1;
+    }
+
+    var w = 0;
+    for (var i = 0; i < 2; i++) {
+        var x_ = roots[i];
+        if (x_ + cx > x) {
+            var angle = Math.atan2(y, x_);
+            var dir = anticlockwise ? 1 : -1;
+            if (angle < 0) {
+                angle = PI2$1 + angle;
+            }
+            if (
+                (angle >= startAngle && angle <= endAngle)
+                || (angle + PI2$1 >= startAngle && angle + PI2$1 <= endAngle)
+            ) {
+                if (angle > Math.PI / 2 && angle < Math.PI * 1.5) {
+                    dir = -dir;
+                }
+                w += dir;
+            }
+        }
+    }
+    return w;
+}
+
+function containPath(data, lineWidth, isStroke, x, y) {
+    var w = 0;
+    var xi = 0;
+    var yi = 0;
+    var x0 = 0;
+    var y0 = 0;
+
+    for (var i = 0; i < data.length;) {
+        var cmd = data[i++];
+        // Begin a new subpath
+        if (cmd === CMD.M && i > 1) {
+            // Close previous subpath
+            if (!isStroke) {
+                w += windingLine(xi, yi, x0, y0, x, y);
+            }
+            // 如果被任何一个 subpath 包含
+            // if (w !== 0) {
+            //     return true;
+            // }
+        }
+
+        if (i == 1) {
+            // 如果第一个命令是 L, C, Q
+            // 则 previous point 同绘制命令的第一个 point
+            //
+            // 第一个命令为 Arc 的情况下会在后面特殊处理
+            xi = data[i];
+            yi = data[i + 1];
+
+            x0 = xi;
+            y0 = yi;
+        }
+
+        switch (cmd) {
+            case CMD.M:
+                // moveTo 命令重新创建一个新的 subpath, 并且更新新的起点
+                // 在 closePath 的时候使用
+                x0 = data[i++];
+                y0 = data[i++];
+                xi = x0;
+                yi = y0;
+                break;
+            case CMD.L:
+                if (isStroke) {
+                    if (containStroke$1(xi, yi, data[i], data[i + 1], lineWidth, x, y)) {
+                        return true;
+                    }
+                }
+                else {
+                    // NOTE 在第一个命令为 L, C, Q 的时候会计算出 NaN
+                    w += windingLine(xi, yi, data[i], data[i + 1], x, y) || 0;
+                }
+                xi = data[i++];
+                yi = data[i++];
+                break;
+            case CMD.C:
+                if (isStroke) {
+                    if (containStroke$2(xi, yi,
+                        data[i++], data[i++], data[i++], data[i++], data[i], data[i + 1],
+                        lineWidth, x, y
+                    )) {
+                        return true;
+                    }
+                }
+                else {
+                    w += windingCubic(
+                        xi, yi,
+                        data[i++], data[i++], data[i++], data[i++], data[i], data[i + 1],
+                        x, y
+                    ) || 0;
+                }
+                xi = data[i++];
+                yi = data[i++];
+                break;
+            case CMD.Q:
+                if (isStroke) {
+                    if (containStroke$3(xi, yi,
+                        data[i++], data[i++], data[i], data[i + 1],
+                        lineWidth, x, y
+                    )) {
+                        return true;
+                    }
+                }
+                else {
+                    w += windingQuadratic(
+                        xi, yi,
+                        data[i++], data[i++], data[i], data[i + 1],
+                        x, y
+                    ) || 0;
+                }
+                xi = data[i++];
+                yi = data[i++];
+                break;
+            case CMD.A:
+                // TODO Arc 判断的开销比较大
+                var cx = data[i++];
+                var cy = data[i++];
+                var rx = data[i++];
+                var ry = data[i++];
+                var theta = data[i++];
+                var dTheta = data[i++];
+                // TODO Arc 旋转
+                var psi = data[i++];
+                var anticlockwise = 1 - data[i++];
+                var x1 = Math.cos(theta) * rx + cx;
+                var y1 = Math.sin(theta) * ry + cy;
+                // 不是直接使用 arc 命令
+                if (i > 1) {
+                    w += windingLine(xi, yi, x1, y1, x, y);
+                }
+                else {
+                    // 第一个命令起点还未定义
+                    x0 = x1;
+                    y0 = y1;
+                }
+                // zr 使用scale来模拟椭圆, 这里也对x做一定的缩放
+                var _x = (x - cx) * ry / rx + cx;
+                if (isStroke) {
+                    if (containStroke$4(
+                        cx, cy, ry, theta, theta + dTheta, anticlockwise,
+                        lineWidth, _x, y
+                    )) {
+                        return true;
+                    }
+                }
+                else {
+                    w += windingArc(
+                        cx, cy, ry, theta, theta + dTheta, anticlockwise,
+                        _x, y
+                    );
+                }
+                xi = Math.cos(theta + dTheta) * rx + cx;
+                yi = Math.sin(theta + dTheta) * ry + cy;
+                break;
+            case CMD.R:
+                x0 = xi = data[i++];
+                y0 = yi = data[i++];
+                var width = data[i++];
+                var height = data[i++];
+                var x1 = x0 + width;
+                var y1 = y0 + height;
+                if (isStroke) {
+                    if (containStroke$1(x0, y0, x1, y0, lineWidth, x, y)
+                        || containStroke$1(x1, y0, x1, y1, lineWidth, x, y)
+                        || containStroke$1(x1, y1, x0, y1, lineWidth, x, y)
+                        || containStroke$1(x0, y1, x0, y0, lineWidth, x, y)
+                    ) {
+                        return true;
+                    }
+                }
+                else {
+                    // FIXME Clockwise ?
+                    w += windingLine(x1, y0, x1, y1, x, y);
+                    w += windingLine(x0, y1, x0, y0, x, y);
+                }
+                break;
+            case CMD.Z:
+                if (isStroke) {
+                    if (containStroke$1(
+                        xi, yi, x0, y0, lineWidth, x, y
+                    )) {
+                        return true;
+                    }
+                }
+                else {
+                    // Close a subpath
+                    w += windingLine(xi, yi, x0, y0, x, y);
+                    // 如果被任何一个 subpath 包含
+                    // FIXME subpaths may overlap
+                    // if (w !== 0) {
+                    //     return true;
+                    // }
+                }
+                xi = x0;
+                yi = y0;
+                break;
+        }
+    }
+    if (!isStroke && !isAroundEqual(yi, y0)) {
+        w += windingLine(xi, yi, x0, y0, x, y) || 0;
+    }
+    return w !== 0;
+}
+
+function contain(pathData, x, y) {
+    return containPath(pathData, 0, false, x, y);
+}
+
+function containStroke(pathData, lineWidth, x, y) {
+    return containPath(pathData, lineWidth, true, x, y);
+}
+
+var getCanvasPattern = Pattern.prototype.getCanvasPattern;
+
+var abs = Math.abs;
+
+var pathProxyForDraw = new PathProxy(true);
+/**
+ * @alias module:zrender/graphic/Path
+ * @extends module:zrender/graphic/Displayable
+ * @constructor
+ * @param {Object} opts
+ */
+function Path(opts) {
+    Displayable.call(this, opts);
+
+    /**
+     * @type {module:zrender/core/PathProxy}
+     * @readOnly
+     */
+    this.path = null;
+}
+
+Path.prototype = {
+
+    constructor: Path,
+
+    type: 'path',
+
+    __dirtyPath: true,
+
+    strokeContainThreshold: 5,
+
+    brush: function (ctx, prevEl) {
+        var style = this.style;
+        var path = this.path || pathProxyForDraw;
+        var hasStroke = style.hasStroke();
+        var hasFill = style.hasFill();
+        var fill = style.fill;
+        var stroke = style.stroke;
+        var hasFillGradient = hasFill && !!(fill.colorStops);
+        var hasStrokeGradient = hasStroke && !!(stroke.colorStops);
+        var hasFillPattern = hasFill && !!(fill.image);
+        var hasStrokePattern = hasStroke && !!(stroke.image);
+
+        style.bind(ctx, this, prevEl);
+        this.setTransform(ctx);
+
+        if (this.__dirty) {
+            var rect;
+            // Update gradient because bounding rect may changed
+            if (hasFillGradient) {
+                rect = rect || this.getBoundingRect();
+                this._fillGradient = style.getGradient(ctx, fill, rect);
+            }
+            if (hasStrokeGradient) {
+                rect = rect || this.getBoundingRect();
+                this._strokeGradient = style.getGradient(ctx, stroke, rect);
+            }
+        }
+        // Use the gradient or pattern
+        if (hasFillGradient) {
+            // PENDING If may have affect the state
+            ctx.fillStyle = this._fillGradient;
+        }
+        else if (hasFillPattern) {
+            ctx.fillStyle = getCanvasPattern.call(fill, ctx);
+        }
+        if (hasStrokeGradient) {
+            ctx.strokeStyle = this._strokeGradient;
+        }
+        else if (hasStrokePattern) {
+            ctx.strokeStyle = getCanvasPattern.call(stroke, ctx);
+        }
+
+        var lineDash = style.lineDash;
+        var lineDashOffset = style.lineDashOffset;
+
+        var ctxLineDash = !!ctx.setLineDash;
+
+        // Update path sx, sy
+        var scale = this.getGlobalScale();
+        path.setScale(scale[0], scale[1]);
+
+        // Proxy context
+        // Rebuild path in following 2 cases
+        // 1. Path is dirty
+        // 2. Path needs javascript implemented lineDash stroking.
+        //    In this case, lineDash information will not be saved in PathProxy
+        if (this.__dirtyPath
+            || (lineDash && !ctxLineDash && hasStroke)
+        ) {
+            path.beginPath(ctx);
+
+            // Setting line dash before build path
+            if (lineDash && !ctxLineDash) {
+                path.setLineDash(lineDash);
+                path.setLineDashOffset(lineDashOffset);
+            }
+
+            this.buildPath(path, this.shape, false);
+
+            // Clear path dirty flag
+            if (this.path) {
+                this.__dirtyPath = false;
+            }
+        }
+        else {
+            // Replay path building
+            ctx.beginPath();
+            this.path.rebuildPath(ctx);
+        }
+
+        hasFill && path.fill(ctx);
+
+        if (lineDash && ctxLineDash) {
+            ctx.setLineDash(lineDash);
+            ctx.lineDashOffset = lineDashOffset;
+        }
+
+        hasStroke && path.stroke(ctx);
+
+        if (lineDash && ctxLineDash) {
+            // PENDING
+            // Remove lineDash
+            ctx.setLineDash([]);
+        }
+
+        this.restoreTransform(ctx);
+
+        // Draw rect text
+        if (style.text != null) {
+            this.drawRectText(ctx, this.getBoundingRect());
+        }
+    },
+
+    // When bundling path, some shape may decide if use moveTo to begin a new subpath or closePath
+    // Like in circle
+    buildPath: function (ctx, shapeCfg, inBundle) {},
+
+    createPathProxy: function () {
+        this.path = new PathProxy();
+    },
+
+    getBoundingRect: function () {
+        var rect = this._rect;
+        var style = this.style;
+        var needsUpdateRect = !rect;
+        if (needsUpdateRect) {
+            var path = this.path;
+            if (!path) {
+                // Create path on demand.
+                path = this.path = new PathProxy();
+            }
+            if (this.__dirtyPath) {
+                path.beginPath();
+                this.buildPath(path, this.shape, false);
+            }
+            rect = path.getBoundingRect();
+        }
+        this._rect = rect;
+
+        if (style.hasStroke()) {
+            // Needs update rect with stroke lineWidth when
+            // 1. Element changes scale or lineWidth
+            // 2. Shape is changed
+            var rectWithStroke = this._rectWithStroke || (this._rectWithStroke = rect.clone());
+            if (this.__dirty || needsUpdateRect) {
+                rectWithStroke.copy(rect);
+                // FIXME Must after updateTransform
+                var w = style.lineWidth;
+                // PENDING, Min line width is needed when line is horizontal or vertical
+                var lineScale = style.strokeNoScale ? this.getLineScale() : 1;
+
+                // Only add extra hover lineWidth when there are no fill
+                if (!style.hasFill()) {
+                    w = Math.max(w, this.strokeContainThreshold || 4);
+                }
+                // Consider line width
+                // Line scale can't be 0;
+                if (lineScale > 1e-10) {
+                    rectWithStroke.width += w / lineScale;
+                    rectWithStroke.height += w / lineScale;
+                    rectWithStroke.x -= w / lineScale / 2;
+                    rectWithStroke.y -= w / lineScale / 2;
+                }
+            }
+
+            // Return rect with stroke
+            return rectWithStroke;
+        }
+
+        return rect;
+    },
+
+    contain: function (x, y) {
+        var localPos = this.transformCoordToLocal(x, y);
+        var rect = this.getBoundingRect();
+        var style = this.style;
+        x = localPos[0];
+        y = localPos[1];
+
+        if (rect.contain(x, y)) {
+            var pathData = this.path.data;
+            if (style.hasStroke()) {
+                var lineWidth = style.lineWidth;
+                var lineScale = style.strokeNoScale ? this.getLineScale() : 1;
+                // Line scale can't be 0;
+                if (lineScale > 1e-10) {
+                    // Only add extra hover lineWidth when there are no fill
+                    if (!style.hasFill()) {
+                        lineWidth = Math.max(lineWidth, this.strokeContainThreshold);
+                    }
+                    if (containStroke(
+                        pathData, lineWidth / lineScale, x, y
+                    )) {
+                        return true;
+                    }
+                }
+            }
+            if (style.hasFill()) {
+                return contain(pathData, x, y);
+            }
+        }
+        return false;
+    },
+
+    /**
+     * @param  {boolean} dirtyPath
+     */
+    dirty: function (dirtyPath) {
+        if (dirtyPath == null) {
+            dirtyPath = true;
+        }
+        // Only mark dirty, not mark clean
+        if (dirtyPath) {
+            this.__dirtyPath = dirtyPath;
+            this._rect = null;
+        }
+
+        this.__dirty = true;
+
+        this.__zr && this.__zr.refresh();
+
+        // Used as a clipping path
+        if (this.__clipTarget) {
+            this.__clipTarget.dirty();
+        }
+    },
+
+    /**
+     * Alias for animate('shape')
+     * @param {boolean} loop
+     */
+    animateShape: function (loop) {
+        return this.animate('shape', loop);
+    },
+
+    // Overwrite attrKV
+    attrKV: function (key, value) {
+        // FIXME
+        if (key === 'shape') {
+            this.setShape(value);
+            this.__dirtyPath = true;
+            this._rect = null;
+        }
+        else {
+            Displayable.prototype.attrKV.call(this, key, value);
+        }
+    },
+
+    /**
+     * @param {Object|string} key
+     * @param {*} value
+     */
+    setShape: function (key, value) {
+        var shape = this.shape;
+        // Path from string may not have shape
+        if (shape) {
+            if (isObject(key)) {
+                for (var name in key) {
+                    if (key.hasOwnProperty(name)) {
+                        shape[name] = key[name];
+                    }
+                }
+            }
+            else {
+                shape[key] = value;
+            }
+            this.dirty(true);
+        }
+        return this;
+    },
+
+    getLineScale: function () {
+        var m = this.transform;
+        // Get the line scale.
+        // Determinant of `m` means how much the area is enlarged by the
+        // transformation. So its square root can be used as a scale factor
+        // for width.
+        return m && abs(m[0] - 1) > 1e-10 && abs(m[3] - 1) > 1e-10
+            ? Math.sqrt(abs(m[0] * m[3] - m[2] * m[1]))
+            : 1;
+    }
+};
+
+/**
+ * 扩展一个 Path element, 比如星形，圆等。
+ * Extend a path element
+ * @param {Object} props
+ * @param {string} props.type Path type
+ * @param {Function} props.init Initialize
+ * @param {Function} props.buildPath Overwrite buildPath method
+ * @param {Object} [props.style] Extended default style config
+ * @param {Object} [props.shape] Extended default shape config
+ */
+Path.extend = function (defaults$$1) {
+    var Sub = function (opts) {
+        Path.call(this, opts);
+
+        if (defaults$$1.style) {
+            // Extend default style
+            this.style.extendFrom(defaults$$1.style, false);
+        }
+
+        // Extend default shape
+        var defaultShape = defaults$$1.shape;
+        if (defaultShape) {
+            this.shape = this.shape || {};
+            var thisShape = this.shape;
+            for (var name in defaultShape) {
+                if (
+                    ! thisShape.hasOwnProperty(name)
+                    && defaultShape.hasOwnProperty(name)
+                ) {
+                    thisShape[name] = defaultShape[name];
+                }
+            }
+        }
+
+        defaults$$1.init && defaults$$1.init.call(this, opts);
+    };
+
+    inherits(Sub, Path);
+
+    // FIXME 不能 extend position, rotation 等引用对象
+    for (var name in defaults$$1) {
+        // Extending prototype values and methods
+        if (name !== 'style' && name !== 'shape') {
+            Sub.prototype[name] = defaults$$1[name];
+        }
+    }
+
+    return Sub;
+};
+
+inherits(Path, Displayable);
+
+var points = [[], [], []];
+var mathSqrt$3 = Math.sqrt;
+var mathAtan2 = Math.atan2;
+
+var transformPath = function (path, m) {
+    var data = path.data;
+    var cmd;
+    var nPoint;
+    var i;
+    var j;
+    var k;
+    var p;
+
+    var M = CMD.M;
+    var C = CMD.C;
+    var L = CMD.L;
+    var R = CMD.R;
+    var A = CMD.A;
+    var Q = CMD.Q;
+
+    for (i = 0, j = 0; i < data.length;) {
+        cmd = data[i++];
+        j = i;
+        nPoint = 0;
+
+        switch (cmd) {
+            case M:
+                nPoint = 1;
+                break;
+            case L:
+                nPoint = 1;
+                break;
+            case C:
+                nPoint = 3;
+                break;
+            case Q:
+                nPoint = 2;
+                break;
+            case A:
+                var x = m[4];
+                var y = m[5];
+                var sx = mathSqrt$3(m[0] * m[0] + m[1] * m[1]);
+                var sy = mathSqrt$3(m[2] * m[2] + m[3] * m[3]);
+                var angle = mathAtan2(-m[1] / sy, m[0] / sx);
+                // cx
+                data[i] *= sx;
+                data[i++] += x;
+                // cy
+                data[i] *= sy;
+                data[i++] += y;
+                // Scale rx and ry
+                // FIXME Assume psi is 0 here
+                data[i++] *= sx;
+                data[i++] *= sy;
+
+                // Start angle
+                data[i++] += angle;
+                // end angle
+                data[i++] += angle;
+                // FIXME psi
+                i += 2;
+                j = i;
+                break;
+            case R:
+                // x0, y0
+                p[0] = data[i++];
+                p[1] = data[i++];
+                applyTransform(p, p, m);
+                data[j++] = p[0];
+                data[j++] = p[1];
+                // x1, y1
+                p[0] += data[i++];
+                p[1] += data[i++];
+                applyTransform(p, p, m);
+                data[j++] = p[0];
+                data[j++] = p[1];
+        }
+
+        for (k = 0; k < nPoint; k++) {
+            var p = points[k];
+            p[0] = data[i++];
+            p[1] = data[i++];
+
+            applyTransform(p, p, m);
+            // Write back
+            data[j++] = p[0];
+            data[j++] = p[1];
+        }
+    }
+};
+
+// command chars
+var cc = [
+    'm', 'M', 'l', 'L', 'v', 'V', 'h', 'H', 'z', 'Z',
+    'c', 'C', 'q', 'Q', 't', 'T', 's', 'S', 'a', 'A'
+];
+
+var mathSqrt = Math.sqrt;
+var mathSin = Math.sin;
+var mathCos = Math.cos;
+var PI = Math.PI;
+
+var vMag = function(v) {
+    return Math.sqrt(v[0] * v[0] + v[1] * v[1]);
+};
+var vRatio = function(u, v) {
+    return (u[0] * v[0] + u[1] * v[1]) / (vMag(u) * vMag(v));
+};
+var vAngle = function(u, v) {
+    return (u[0] * v[1] < u[1] * v[0] ? -1 : 1)
+            * Math.acos(vRatio(u, v));
+};
+
+function processArc(x1, y1, x2, y2, fa, fs, rx, ry, psiDeg, cmd, path) {
+    var psi = psiDeg * (PI / 180.0);
+    var xp = mathCos(psi) * (x1 - x2) / 2.0
+                + mathSin(psi) * (y1 - y2) / 2.0;
+    var yp = -1 * mathSin(psi) * (x1 - x2) / 2.0
+                + mathCos(psi) * (y1 - y2) / 2.0;
+
+    var lambda = (xp * xp) / (rx * rx) + (yp * yp) / (ry * ry);
+
+    if (lambda > 1) {
+        rx *= mathSqrt(lambda);
+        ry *= mathSqrt(lambda);
+    }
+
+    var f = (fa === fs ? -1 : 1)
+        * mathSqrt((((rx * rx) * (ry * ry))
+                - ((rx * rx) * (yp * yp))
+                - ((ry * ry) * (xp * xp))) / ((rx * rx) * (yp * yp)
+                + (ry * ry) * (xp * xp))
+            ) || 0;
+
+    var cxp = f * rx * yp / ry;
+    var cyp = f * -ry * xp / rx;
+
+    var cx = (x1 + x2) / 2.0
+                + mathCos(psi) * cxp
+                - mathSin(psi) * cyp;
+    var cy = (y1 + y2) / 2.0
+            + mathSin(psi) * cxp
+            + mathCos(psi) * cyp;
+
+    var theta = vAngle([ 1, 0 ], [ (xp - cxp) / rx, (yp - cyp) / ry ]);
+    var u = [ (xp - cxp) / rx, (yp - cyp) / ry ];
+    var v = [ (-1 * xp - cxp) / rx, (-1 * yp - cyp) / ry ];
+    var dTheta = vAngle(u, v);
+
+    if (vRatio(u, v) <= -1) {
+        dTheta = PI;
+    }
+    if (vRatio(u, v) >= 1) {
+        dTheta = 0;
+    }
+    if (fs === 0 && dTheta > 0) {
+        dTheta = dTheta - 2 * PI;
+    }
+    if (fs === 1 && dTheta < 0) {
+        dTheta = dTheta + 2 * PI;
+    }
+
+    path.addData(cmd, cx, cy, rx, ry, theta, dTheta, psi, fs);
+}
+
+function createPathProxyFromString(data) {
+    if (!data) {
+        return [];
+    }
+
+    // command string
+    var cs = data.replace(/-/g, ' -')
+        .replace(/  /g, ' ')
+        .replace(/ /g, ',')
+        .replace(/,,/g, ',');
+
+    var n;
+    // create pipes so that we can split the data
+    for (n = 0; n < cc.length; n++) {
+        cs = cs.replace(new RegExp(cc[n], 'g'), '|' + cc[n]);
+    }
+
+    // create array
+    var arr = cs.split('|');
+    // init context point
+    var cpx = 0;
+    var cpy = 0;
+
+    var path = new PathProxy();
+    var CMD$$1 = PathProxy.CMD;
+
+    var prevCmd;
+    for (n = 1; n < arr.length; n++) {
+        var str = arr[n];
+        var c = str.charAt(0);
+        var off = 0;
+        var p = str.slice(1).replace(/e,-/g, 'e-').split(',');
+        var cmd;
+
+        if (p.length > 0 && p[0] === '') {
+            p.shift();
+        }
+
+        for (var i = 0; i < p.length; i++) {
+            p[i] = parseFloat(p[i]);
+        }
+        while (off < p.length && !isNaN(p[off])) {
+            if (isNaN(p[0])) {
+                break;
+            }
+            var ctlPtx;
+            var ctlPty;
+
+            var rx;
+            var ry;
+            var psi;
+            var fa;
+            var fs;
+
+            var x1 = cpx;
+            var y1 = cpy;
+
+            // convert l, H, h, V, and v to L
+            switch (c) {
+                case 'l':
+                    cpx += p[off++];
+                    cpy += p[off++];
+                    cmd = CMD$$1.L;
+                    path.addData(cmd, cpx, cpy);
+                    break;
+                case 'L':
+                    cpx = p[off++];
+                    cpy = p[off++];
+                    cmd = CMD$$1.L;
+                    path.addData(cmd, cpx, cpy);
+                    break;
+                case 'm':
+                    cpx += p[off++];
+                    cpy += p[off++];
+                    cmd = CMD$$1.M;
+                    path.addData(cmd, cpx, cpy);
+                    c = 'l';
+                    break;
+                case 'M':
+                    cpx = p[off++];
+                    cpy = p[off++];
+                    cmd = CMD$$1.M;
+                    path.addData(cmd, cpx, cpy);
+                    c = 'L';
+                    break;
+                case 'h':
+                    cpx += p[off++];
+                    cmd = CMD$$1.L;
+                    path.addData(cmd, cpx, cpy);
+                    break;
+                case 'H':
+                    cpx = p[off++];
+                    cmd = CMD$$1.L;
+                    path.addData(cmd, cpx, cpy);
+                    break;
+                case 'v':
+                    cpy += p[off++];
+                    cmd = CMD$$1.L;
+                    path.addData(cmd, cpx, cpy);
+                    break;
+                case 'V':
+                    cpy = p[off++];
+                    cmd = CMD$$1.L;
+                    path.addData(cmd, cpx, cpy);
+                    break;
+                case 'C':
+                    cmd = CMD$$1.C;
+                    path.addData(
+                        cmd, p[off++], p[off++], p[off++], p[off++], p[off++], p[off++]
+                    );
+                    cpx = p[off - 2];
+                    cpy = p[off - 1];
+                    break;
+                case 'c':
+                    cmd = CMD$$1.C;
+                    path.addData(
+                        cmd,
+                        p[off++] + cpx, p[off++] + cpy,
+                        p[off++] + cpx, p[off++] + cpy,
+                        p[off++] + cpx, p[off++] + cpy
+                    );
+                    cpx += p[off - 2];
+                    cpy += p[off - 1];
+                    break;
+                case 'S':
+                    ctlPtx = cpx;
+                    ctlPty = cpy;
+                    var len = path.len();
+                    var pathData = path.data;
+                    if (prevCmd === CMD$$1.C) {
+                        ctlPtx += cpx - pathData[len - 4];
+                        ctlPty += cpy - pathData[len - 3];
+                    }
+                    cmd = CMD$$1.C;
+                    x1 = p[off++];
+                    y1 = p[off++];
+                    cpx = p[off++];
+                    cpy = p[off++];
+                    path.addData(cmd, ctlPtx, ctlPty, x1, y1, cpx, cpy);
+                    break;
+                case 's':
+                    ctlPtx = cpx;
+                    ctlPty = cpy;
+                    var len = path.len();
+                    var pathData = path.data;
+                    if (prevCmd === CMD$$1.C) {
+                        ctlPtx += cpx - pathData[len - 4];
+                        ctlPty += cpy - pathData[len - 3];
+                    }
+                    cmd = CMD$$1.C;
+                    x1 = cpx + p[off++];
+                    y1 = cpy + p[off++];
+                    cpx += p[off++];
+                    cpy += p[off++];
+                    path.addData(cmd, ctlPtx, ctlPty, x1, y1, cpx, cpy);
+                    break;
+                case 'Q':
+                    x1 = p[off++];
+                    y1 = p[off++];
+                    cpx = p[off++];
+                    cpy = p[off++];
+                    cmd = CMD$$1.Q;
+                    path.addData(cmd, x1, y1, cpx, cpy);
+                    break;
+                case 'q':
+                    x1 = p[off++] + cpx;
+                    y1 = p[off++] + cpy;
+                    cpx += p[off++];
+                    cpy += p[off++];
+                    cmd = CMD$$1.Q;
+                    path.addData(cmd, x1, y1, cpx, cpy);
+                    break;
+                case 'T':
+                    ctlPtx = cpx;
+                    ctlPty = cpy;
+                    var len = path.len();
+                    var pathData = path.data;
+                    if (prevCmd === CMD$$1.Q) {
+                        ctlPtx += cpx - pathData[len - 4];
+                        ctlPty += cpy - pathData[len - 3];
+                    }
+                    cpx = p[off++];
+                    cpy = p[off++];
+                    cmd = CMD$$1.Q;
+                    path.addData(cmd, ctlPtx, ctlPty, cpx, cpy);
+                    break;
+                case 't':
+                    ctlPtx = cpx;
+                    ctlPty = cpy;
+                    var len = path.len();
+                    var pathData = path.data;
+                    if (prevCmd === CMD$$1.Q) {
+                        ctlPtx += cpx - pathData[len - 4];
+                        ctlPty += cpy - pathData[len - 3];
+                    }
+                    cpx += p[off++];
+                    cpy += p[off++];
+                    cmd = CMD$$1.Q;
+                    path.addData(cmd, ctlPtx, ctlPty, cpx, cpy);
+                    break;
+                case 'A':
+                    rx = p[off++];
+                    ry = p[off++];
+                    psi = p[off++];
+                    fa = p[off++];
+                    fs = p[off++];
+
+                    x1 = cpx, y1 = cpy;
+                    cpx = p[off++];
+                    cpy = p[off++];
+                    cmd = CMD$$1.A;
+                    processArc(
+                        x1, y1, cpx, cpy, fa, fs, rx, ry, psi, cmd, path
+                    );
+                    break;
+                case 'a':
+                    rx = p[off++];
+                    ry = p[off++];
+                    psi = p[off++];
+                    fa = p[off++];
+                    fs = p[off++];
+
+                    x1 = cpx, y1 = cpy;
+                    cpx += p[off++];
+                    cpy += p[off++];
+                    cmd = CMD$$1.A;
+                    processArc(
+                        x1, y1, cpx, cpy, fa, fs, rx, ry, psi, cmd, path
+                    );
+                    break;
+            }
+        }
+
+        if (c === 'z' || c === 'Z') {
+            cmd = CMD$$1.Z;
+            path.addData(cmd);
+        }
+
+        prevCmd = cmd;
+    }
+
+    path.toStatic();
+
+    return path;
+}
+
+// TODO Optimize double memory cost problem
+function createPathOptions(str, opts) {
+    var pathProxy = createPathProxyFromString(str);
+    opts = opts || {};
+    opts.buildPath = function (path) {
+        if (path.setData) {
+            path.setData(pathProxy.data);
+            // Svg and vml renderer don't have context
+            var ctx = path.getContext();
+            if (ctx) {
+                path.rebuildPath(ctx);
+            }
+        }
+        else {
+            var ctx = path;
+            pathProxy.rebuildPath(ctx);
+        }
+    };
+
+    opts.applyTransform = function (m) {
+        transformPath(pathProxy, m);
+
+        this.dirty(true);
+    };
+
+    return opts;
+}
+
+/**
+ * Create a Path object from path string data
+ * http://www.w3.org/TR/SVG/paths.html#PathData
+ * @param  {Object} opts Other options
+ */
+function createFromString(str, opts) {
+    return new Path(createPathOptions(str, opts));
+}
+
+/**
+ * Create a Path class from path string data
+ * @param  {string} str
+ * @param  {Object} opts Other options
+ */
+function extendFromString(str, opts) {
+    return Path.extend(createPathOptions(str, opts));
+}
+
+/**
+ * Merge multiple paths
+ */
+// TODO Apply transform
+// TODO stroke dash
+// TODO Optimize double memory cost problem
+function mergePath(pathEls, opts) {
+    var pathList = [];
+    var len = pathEls.length;
+    for (var i = 0; i < len; i++) {
+        var pathEl = pathEls[i];
+        if (!pathEl.path) {
+            pathEl.createPathProxy();
+        }
+        if (pathEl.__dirtyPath) {
+            pathEl.buildPath(pathEl.path, pathEl.shape, true);
+        }
+        pathList.push(pathEl.path);
+    }
+
+    var pathBundle = new Path(opts);
+    // Need path proxy.
+    pathBundle.createPathProxy();
+    pathBundle.buildPath = function (path) {
+        path.appendPath(pathList);
+        // Svg and vml renderer don't have context
+        var ctx = path.getContext();
+        if (ctx) {
+            path.rebuildPath(ctx);
+        }
+    };
+
+    return pathBundle;
+}
+
+var path = (Object.freeze || Object)({
+	createFromString: createFromString,
+	extendFromString: extendFromString,
+	mergePath: mergePath
+});
+
 // CompoundPath to improve performance
 
 var CompoundPath = Path.extend({
@@ -13992,7 +14417,7 @@ var smoothBezier = function (points, smooth, isLoop, constraint) {
         sub(v, nextPoint, prevPoint);
 
         // use degree to scale the handle length
-        scale$1(v, v, smooth);
+        scale(v, v, smooth);
 
         var d0 = distance(point, prevPoint);
         var d1 = distance(point, nextPoint);
@@ -14002,8 +14427,8 @@ var smoothBezier = function (points, smooth, isLoop, constraint) {
             d1 /= sum;
         }
 
-        scale$1(v1, v, -d0);
-        scale$1(v2, v, d1);
+        scale(v1, v, -d0);
+        scale(v2, v, d1);
         var cp0 = add([], point, v1);
         var cp1 = add([], point, v2);
         if (constraint) {
@@ -14590,430 +15015,9 @@ RadialGradient.prototype = {
 
 inherits(RadialGradient, Gradient);
 
-/*!
-* ZRender, a high performance 2d drawing library.
-*
-* Copyright (c) 2013, Baidu Inc.
-* All rights reserved.
-*
-* LICENSE
-* https://github.com/ecomfe/zrender/blob/master/LICENSE.txt
-*/
-
-var useVML = !env$1.canvasSupported;
-
-var painterCtors = {
-    canvas: Painter
-};
-
-var instances = {};    // ZRender实例map索引
-
 /**
- * @type {string}
+ * Do not mount those modules on 'src/zrender' for better tree shaking.
  */
-var version = '3.6.3';
-
-/**
- * Initializing a zrender instance
- * @param {HTMLElement} dom
- * @param {Object} opts
- * @param {string} [opts.renderer='canvas'] 'canvas' or 'svg'
- * @param {number} [opts.devicePixelRatio]
- * @param {number|string} [opts.width] Can be 'auto' (the same as null/undefined)
- * @param {number|string} [opts.height] Can be 'auto' (the same as null/undefined)
- * @return {module:zrender/ZRender}
- */
-function init(dom, opts) {
-    var zr = new ZRender(guid(), dom, opts);
-    instances[zr.id] = zr;
-    return zr;
-}
-
-/**
- * Dispose zrender instance
- * @param {module:zrender/ZRender} zr
- */
-function dispose(zr) {
-    if (zr) {
-        zr.dispose();
-    }
-    else {
-        for (var key in instances) {
-            if (instances.hasOwnProperty(key)) {
-                instances[key].dispose();
-            }
-        }
-        instances = {};
-    }
-
-    return this;
-}
-
-/**
- * Get zrender instance by id
- * @param {string} id zrender instance id
- * @return {module:zrender/ZRender}
- */
-function getInstance(id) {
-    return instances[id];
-}
-
-function registerPainter(name, Ctor) {
-    painterCtors[name] = Ctor;
-}
-
-function delInstance(id) {
-    delete instances[id];
-}
-
-/**
- * @module zrender/ZRender
- */
-/**
- * @constructor
- * @alias module:zrender/ZRender
- * @param {string} id
- * @param {HTMLElement} dom
- * @param {Object} opts
- * @param {string} [opts.renderer='canvas'] 'canvas' or 'svg'
- * @param {number} [opts.devicePixelRatio]
- * @param {number} [opts.width] Can be 'auto' (the same as null/undefined)
- * @param {number} [opts.height] Can be 'auto' (the same as null/undefined)
- */
-var ZRender = function (id, dom, opts) {
-
-    opts = opts || {};
-
-    /**
-     * @type {HTMLDomElement}
-     */
-    this.dom = dom;
-
-    /**
-     * @type {string}
-     */
-    this.id = id;
-
-    var self = this;
-    var storage = new Storage();
-
-    var rendererType = opts.renderer;
-    // TODO WebGL
-    if (useVML) {
-        if (!painterCtors.vml) {
-            throw new Error('You need to require \'zrender/vml/vml\' to support IE8');
-        }
-        rendererType = 'vml';
-    }
-    else if (!rendererType || !painterCtors[rendererType]) {
-        rendererType = 'canvas';
-    }
-    var painter = new painterCtors[rendererType](dom, storage, opts);
-
-    this.storage = storage;
-    this.painter = painter;
-
-    var handerProxy = !env$1.node ? new HandlerDomProxy(painter.getViewportRoot()) : null;
-    this.handler = new Handler(storage, painter, handerProxy, painter.root);
-
-    /**
-     * @type {module:zrender/animation/Animation}
-     */
-    this.animation = new Animation({
-        stage: {
-            update: bind(this.flush, this)
-        }
-    });
-    this.animation.start();
-
-    /**
-     * @type {boolean}
-     * @private
-     */
-    this._needsRefresh;
-
-    // 修改 storage.delFromStorage, 每次删除元素之前删除动画
-    // FIXME 有点ugly
-    var oldDelFromStorage = storage.delFromStorage;
-    var oldAddToStorage = storage.addToStorage;
-
-    storage.delFromStorage = function (el) {
-        oldDelFromStorage.call(storage, el);
-
-        el && el.removeSelfFromZr(self);
-    };
-
-    storage.addToStorage = function (el) {
-        oldAddToStorage.call(storage, el);
-
-        el.addSelfToZr(self);
-    };
-};
-
-ZRender.prototype = {
-
-    constructor: ZRender,
-    /**
-     * 获取实例唯一标识
-     * @return {string}
-     */
-    getId: function () {
-        return this.id;
-    },
-
-    /**
-     * 添加元素
-     * @param  {module:zrender/Element} el
-     */
-    add: function (el) {
-        this.storage.addRoot(el);
-        this._needsRefresh = true;
-    },
-
-    /**
-     * 删除元素
-     * @param  {module:zrender/Element} el
-     */
-    remove: function (el) {
-        this.storage.delRoot(el);
-        this._needsRefresh = true;
-    },
-
-    /**
-     * Change configuration of layer
-     * @param {string} zLevel
-     * @param {Object} config
-     * @param {string} [config.clearColor=0] Clear color
-     * @param {string} [config.motionBlur=false] If enable motion blur
-     * @param {number} [config.lastFrameAlpha=0.7] Motion blur factor. Larger value cause longer trailer
-    */
-    configLayer: function (zLevel, config) {
-        this.painter.configLayer(zLevel, config);
-        this._needsRefresh = true;
-    },
-
-    /**
-     * Repaint the canvas immediately
-     */
-    refreshImmediately: function () {
-        // var start = new Date();
-        // Clear needsRefresh ahead to avoid something wrong happens in refresh
-        // Or it will cause zrender refreshes again and again.
-        this._needsRefresh = false;
-        this.painter.refresh();
-        /**
-         * Avoid trigger zr.refresh in Element#beforeUpdate hook
-         */
-        this._needsRefresh = false;
-        // var end = new Date();
-
-        // var log = document.getElementById('log');
-        // if (log) {
-        //     log.innerHTML = log.innerHTML + '<br>' + (end - start);
-        // }
-    },
-
-    /**
-     * Mark and repaint the canvas in the next frame of browser
-     */
-    refresh: function() {
-        this._needsRefresh = true;
-    },
-
-    /**
-     * Perform all refresh
-     */
-    flush: function () {
-        if (this._needsRefresh) {
-            this.refreshImmediately();
-        }
-        if (this._needsRefreshHover) {
-            this.refreshHoverImmediately();
-        }
-    },
-
-    /**
-     * Add element to hover layer
-     * @param  {module:zrender/Element} el
-     * @param {Object} style
-     */
-    addHover: function (el, style) {
-        if (this.painter.addHover) {
-            this.painter.addHover(el, style);
-            this.refreshHover();
-        }
-    },
-
-    /**
-     * Add element from hover layer
-     * @param  {module:zrender/Element} el
-     */
-    removeHover: function (el) {
-        if (this.painter.removeHover) {
-            this.painter.removeHover(el);
-            this.refreshHover();
-        }
-    },
-
-    /**
-     * Clear all hover elements in hover layer
-     * @param  {module:zrender/Element} el
-     */
-    clearHover: function () {
-        if (this.painter.clearHover) {
-            this.painter.clearHover();
-            this.refreshHover();
-        }
-    },
-
-    /**
-     * Refresh hover in next frame
-     */
-    refreshHover: function () {
-        this._needsRefreshHover = true;
-    },
-
-    /**
-     * Refresh hover immediately
-     */
-    refreshHoverImmediately: function () {
-        this._needsRefreshHover = false;
-        this.painter.refreshHover && this.painter.refreshHover();
-    },
-
-    /**
-     * Resize the canvas.
-     * Should be invoked when container size is changed
-     * @param {Object} [opts]
-     * @param {number|string} [opts.width] Can be 'auto' (the same as null/undefined)
-     * @param {number|string} [opts.height] Can be 'auto' (the same as null/undefined)
-     */
-    resize: function(opts) {
-        opts = opts || {};
-        this.painter.resize(opts.width, opts.height);
-        this.handler.resize();
-    },
-
-    /**
-     * Stop and clear all animation immediately
-     */
-    clearAnimation: function () {
-        this.animation.clear();
-    },
-
-    /**
-     * Get container width
-     */
-    getWidth: function() {
-        return this.painter.getWidth();
-    },
-
-    /**
-     * Get container height
-     */
-    getHeight: function() {
-        return this.painter.getHeight();
-    },
-
-    /**
-     * Export the canvas as Base64 URL
-     * @param {string} type
-     * @param {string} [backgroundColor='#fff']
-     * @return {string} Base64 URL
-     */
-    // toDataURL: function(type, backgroundColor) {
-    //     return this.painter.getRenderedCanvas({
-    //         backgroundColor: backgroundColor
-    //     }).toDataURL(type);
-    // },
-
-    /**
-     * Converting a path to image.
-     * It has much better performance of drawing image rather than drawing a vector path.
-     * @param {module:zrender/graphic/Path} e
-     * @param {number} width
-     * @param {number} height
-     */
-    pathToImage: function(e, dpr) {
-        return this.painter.pathToImage(e, dpr);
-    },
-
-    /**
-     * Set default cursor
-     * @param {string} [cursorStyle='default'] 例如 crosshair
-     */
-    setCursorStyle: function (cursorStyle) {
-        this.handler.setCursorStyle(cursorStyle);
-    },
-
-    /**
-     * Find hovered element
-     * @param {number} x
-     * @param {number} y
-     * @return {Object} {target, topTarget}
-     */
-    findHover: function (x, y) {
-        return this.handler.findHover(x, y);
-    },
-
-    /**
-     * Bind event
-     *
-     * @param {string} eventName Event name
-     * @param {Function} eventHandler Handler function
-     * @param {Object} [context] Context object
-     */
-    on: function(eventName, eventHandler, context) {
-        this.handler.on(eventName, eventHandler, context);
-    },
-
-    /**
-     * Unbind event
-     * @param {string} eventName Event name
-     * @param {Function} [eventHandler] Handler function
-     */
-    off: function(eventName, eventHandler) {
-        this.handler.off(eventName, eventHandler);
-    },
-
-    /**
-     * Trigger event manually
-     *
-     * @param {string} eventName Event name
-     * @param {event=} event Event object
-     */
-    trigger: function (eventName, event) {
-        this.handler.trigger(eventName, event);
-    },
-
-
-    /**
-     * Clear all objects and the canvas.
-     */
-    clear: function () {
-        this.storage.delRoot();
-        this.painter.clear();
-    },
-
-    /**
-     * Dispose self.
-     */
-    dispose: function () {
-        this.animation.stop();
-
-        this.clear();
-        this.storage.dispose();
-        this.painter.dispose();
-        this.handler.dispose();
-
-        this.animation =
-        this.storage =
-        this.painter =
-        this.handler = null;
-
-        delInstance(this.id);
-    }
-};
 
 var svgURI = 'http://www.w3.org/2000/svg';
 
@@ -15138,9 +15142,11 @@ function bindStyle(svgEl, style, isText) {
 /***************************************************
  * PATH
  **************************************************/
-function pathDataToString(data) {
+function pathDataToString(path) {
     var str = [];
-    for (var i = 0; i < data.length;) {
+    var data = path.data;
+    var dataLength = path.len();
+    for (var i = 0; i < dataLength;) {
         var cmd = data[i++];
         var cmdStr = '';
         var nData = 0;
@@ -15266,7 +15272,7 @@ svgPath.brush = function (el) {
         el.buildPath(path, el.shape);
         el.__dirtyPath = false;
 
-        attr(svgEl, 'd', pathDataToString(path.data));
+        attr(svgEl, 'd', pathDataToString(path));
     }
 
     bindStyle(svgEl, style);
@@ -16240,7 +16246,7 @@ ClippathManager.prototype.updateDom = function (
             );
 
             // Transform back from parent, and brush path
-            mul(
+            mul$1(
                 clipPath.transform,
                 clipPath.parent.invTransform,
                 clipPath.transform
@@ -16362,6 +16368,7 @@ var SVGPainter = function (root, storage) {
     svgRoot.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
     svgRoot.setAttribute('version', '1.1');
     svgRoot.setAttribute('baseProfile', 'full');
+    svgRoot.style['user-select'] = 'none';
 
     this.gradientManager = new GradientManager(svgRoot);
     this.clipPathManager = new ClippathManager(svgRoot);
@@ -16639,15 +16646,15 @@ each([
 registerPainter('svg', SVGPainter);
 
 var urn = 'urn:schemas-microsoft-com:vml';
-var win = window;
+var win = typeof window === 'undefined' ? null : window;
 
 var vmlInited = false;
 
-var doc = win.document;
+var doc = win && win.document;
 
 var createNode;
 
-if (!env$1.canvasSupported) {
+if (doc && !env$1.canvasSupported) {
     try {
         !doc.namespaces.zrvml && doc.namespaces.add('zrvml', urn);
         createNode = function (tagName) {
@@ -16663,7 +16670,7 @@ if (!env$1.canvasSupported) {
 
 // From raphael
 function initVML() {
-    if (vmlInited) {
+    if (vmlInited || !doc) {
         return;
     }
     vmlInited = true;
@@ -16807,7 +16814,7 @@ if (!env$1.canvasSupported) {
                     gradientType = 'gradientradial';
                     var p0 = [fill.x * rectWidth, fill.y * rectHeight];
                     var transform = zrEl.transform;
-                    var scale = zrEl.scale;
+                    var scale$$1 = zrEl.scale;
                     var width = rectWidth;
                     var height = rectHeight;
                     focus = [
@@ -16819,8 +16826,8 @@ if (!env$1.canvasSupported) {
                         applyTransform(p0, p0, transform);
                     }
 
-                    width /= scale[0] * Z;
-                    height /= scale[1] * Z;
+                    width /= scale$$1[0] * Z;
+                    height /= scale$$1[1] * Z;
                     var dimension = mathMax$3(width, height);
                     shift = 2 * 0 / dimension;
                     expansion = 2 * fill.r / dimension - shift;
@@ -16918,7 +16925,7 @@ if (!env$1.canvasSupported) {
     };
 
     var points$1 = [[], [], []];
-    var pathDataToString$1 = function (data, m) {
+    var pathDataToString$1 = function (path, m) {
         var M = CMD.M;
         var C = CMD.C;
         var L = CMD.L;
@@ -16932,7 +16939,9 @@ if (!env$1.canvasSupported) {
         var i;
         var xi;
         var yi;
-        for (i = 0; i < data.length;) {
+        var data = path.data;
+        var dataLength = path.len();
+        for (i = 0; i < dataLength;) {
             cmd = data[i++];
             cmdStr = '';
             nPoint = 0;
@@ -17153,7 +17162,7 @@ if (!env$1.canvasSupported) {
             this.__dirtyPath = false;
         }
 
-        vmlEl.path = pathDataToString$1(path.data, this.transform);
+        vmlEl.path = pathDataToString$1(path, this.transform);
 
         vmlEl.style.zIndex = getZIndex(this.zlevel, this.z, this.z2);
 

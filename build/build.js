@@ -22,6 +22,10 @@ function run() {
         .usage('[options]')
         .description('Build zrender and generate result files in directory `zrender/dist` ')
         .option(
+            '--release',
+            'Build all for release'
+        )
+        .option(
             '-w, --watch',
             'Watch modifications of files and auto-compile to dist file (e.g., `zrender/dist/zrender.js`).'
         )
@@ -32,37 +36,30 @@ function run() {
         .parse(process.argv);
 
     let isWatch = !!commander.watch;
+    let isRelease = !!commander.release;
     let min = !!commander.min;
-    let buildAll = commander.watch == null
-        && commander.min == null;
 
     // Clear `echarts/dist`
-    if (buildAll) {
+    if (isRelease) {
         fsExtra.removeSync(getPath('./dist'));
     }
-
-    let configs = [];
 
     if (isWatch) {
         watch(config.create());
     }
+    else if (isRelease) {
+        build([
+            config.create(false),
+            config.create(true)
+        ]).then(function () {
+            // Compatible with prevoius folder structure: `echarts/lib` exists in `node_modules`
+            // npm run prepublish: `rm -r lib; cp -r src lib`
+            fsExtra.removeSync(getPath('./lib'));
+            fsExtra.copySync(getPath('./src'), getPath('./lib'));
+        });
+    }
     else {
-        if (!buildAll) {
-            configs = [config.create(min)];
-        }
-        else {
-            configs = [
-                config.create(false),
-                config.create(true)
-            ];
-        }
-
-        build(configs);
-
-        // Compatible with prevoius folder structure: `echarts/lib` exists in `node_modules`
-        // npm run prepublish: `rm -r lib; cp -r src lib`
-        fsExtra.removeSync(getPath('./lib'));
-        fsExtra.copySync(getPath('./src'), getPath('./lib'));
+        build([config.create(min)]);
     }
 }
 
