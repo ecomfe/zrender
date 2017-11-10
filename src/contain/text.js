@@ -669,6 +669,6 @@ export function makeFont(style) {
 
 export var $inject = {
     measureText: function (f) {
-        measureText = f;
+        measureText = f; /* ESM2CJS_REPLACE exports.measureText = f; */
     }
 };

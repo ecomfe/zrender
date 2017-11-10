@@ -609,6 +609,6 @@ export function noop() {}
 
 export var $inject = {
     createCanvas: function (f) {
-        createCanvas = f;
+        createCanvas = f; /* ESM2CJS_REPLACE exports.createCanvas = f; */
     }
 };

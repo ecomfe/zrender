@@ -40,6 +40,8 @@ module.exports = function () {
             plugins: [esm2cjsPlugin]
         });
 
+        code = esm2cjsPlugin.replaceInject(code);
+
         fsExtra.ensureFileSync(outputPath);
         fs.writeFileSync(outputPath, code, {encoding:'utf-8'});
     }

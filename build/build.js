@@ -62,11 +62,15 @@ function run() {
             config.create(true)
         ]).then(function () {
             prePublish();
-        });
+        }).catch(handleBuildError);
     }
     else {
-        build([config.create(min)]);
+        build([config.create(min)]).catch(handleBuildError);
     }
+}
+
+function handleBuildError(err) {
+    console.log(err);
 }
 
 /**
