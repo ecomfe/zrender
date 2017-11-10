@@ -10407,7 +10407,7 @@ var instances = {};    // ZRender实例map索引
 /**
  * @type {string}
  */
-var version = '3.7.1';
+var version = '3.7.2';
 
 /**
  * Initializing a zrender instance

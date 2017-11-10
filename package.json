@@ -1,6 +1,6 @@
 {
   "name": "zrender",
-  "version": "3.7.1",
+  "version": "3.7.2",
   "description": "A lightweight canvas library.",
   "keywords": [
     "canvas",
@@ -31,7 +31,7 @@
     "url": "https://github.com/ecomfe/zrender.git"
   },
   "scripts": {
-    "prepublish": "rm -r lib; cp -r src lib"
+    "prepublish": "node build/build.js --prepublish"
   },
   "license": "BSD",
   "devDependencies": {
