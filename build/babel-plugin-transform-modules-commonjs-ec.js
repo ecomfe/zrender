@@ -61,11 +61,6 @@ module.exports = function ({types, template}, options) {
     };
 };
 
-// FIXME
-module.exports.replaceInject = function (code) {
-    return code.replace(/\/\* ESM2CJS_REPLACE ([^*/]+)\*\//g, '$1');
-};
-
 
 /**
  * Remove all imports and exports from the file, and return all metadata

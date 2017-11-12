@@ -163,9 +163,6 @@ exports.prePulishSrc = function ({inputPath, outputPath, transform}) {
 
     removeDEVPlugin.recheckDEV(code);
 
-    // FIXME
-    code = esm2cjsPlugin.replaceInject(code);
-
     if (transform) {
         code = transform({code, inputPath, outputPath});
     }

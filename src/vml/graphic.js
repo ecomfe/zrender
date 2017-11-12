@@ -794,7 +794,7 @@ if (!env.canvasSupported) {
 
     var textMeasureEl;
     // Overwrite measure text method
-    textContain.$inject.measureText(function (text, textFont) {
+    textContain.$override('measureText', function (text, textFont) {
         var doc = vmlCore.doc;
         if (!textMeasureEl) {
             textMeasureEl = doc.createElement('div');
