@@ -4,6 +4,7 @@
  */
 
 import {createElement} from './core';
+import * as util from './core/util';
 import zrLog from '../core/log';
 import Path from '../graphic/Path';
 import ZImage from '../graphic/Image';
@@ -79,12 +80,16 @@ function getSvgElement(displayable) {
 
 /**
  * @alias module:zrender/svg/Painter
+ * @constructor
+ * @param {HTMLElement} root 绘图容器
+ * @param {module:zrender/Storage} storage
+ * @param {Object} opts
  */
-var SVGPainter = function (root, storage) {
+var SVGPainter = function (root, storage, opts) {
 
     this.root = root;
-
     this.storage = storage;
+    this._opts = opts = util.extend({}, opts || {});
 
     var svgRoot = createElement('svg');
     svgRoot.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
@@ -104,7 +109,7 @@ var SVGPainter = function (root, storage) {
     root.appendChild(viewport);
     viewport.appendChild(svgRoot);
 
-    this.resize();
+    this.resize(opts.width, opts.height);
 
     this._visibleList = [];
 };
@@ -282,15 +287,26 @@ SVGPainter.prototype = {
         }
     },
 
-    resize: function () {
-        var width = this._getWidth();
-        var height = this._getHeight();
+    resize: function (width, height) {
+        var viewport = this._viewport;
+        // FIXME Why ?
+        viewport.style.display = 'none';
+
+        // Save input w/h
+        var opts = this._opts;
+        width != null && (opts.width = width);
+        height != null && (opts.height = height);
+
+        width = this._getSize(0);
+        height = this._getSize(1);
+
+        viewport.style.display = '';
 
         if (this._width !== width && this._height !== height) {
             this._width = width;
             this._height = height;
 
-            var viewportStyle = this._viewport.style;
+            var viewportStyle = viewport.style;
             viewportStyle.width = width + 'px';
             viewportStyle.height = height + 'px';
 
@@ -301,30 +317,40 @@ SVGPainter.prototype = {
         }
     },
 
+    /**
+     * 获取绘图区域宽度
+     */
     getWidth: function () {
-        return this._getWidth();
+        return this._width;
     },
 
+    /**
+     * 获取绘图区域高度
+     */
     getHeight: function () {
-        return this._getHeight();
+        return this._height;
     },
 
-    _getWidth: function () {
+    _getSize: function (whIdx) {
+        var opts = this._opts;
+        var wh = ['width', 'height'][whIdx];
+        var cwh = ['clientWidth', 'clientHeight'][whIdx];
+        var plt = ['paddingLeft', 'paddingTop'][whIdx];
+        var prb = ['paddingRight', 'paddingBottom'][whIdx];
+
+        if (opts[wh] != null && opts[wh] !== 'auto') {
+            return parseFloat(opts[wh]);
+        }
+
         var root = this.root;
+        // IE8 does not support getComputedStyle, but it use VML.
         var stl = document.defaultView.getComputedStyle(root);
 
-        return ((root.clientWidth || parseInt10(stl.width))
-                - parseInt10(stl.paddingLeft)
-                - parseInt10(stl.paddingRight)) | 0;
-    },
-
-    _getHeight: function () {
-        var root = this.root;
-        var stl = document.defaultView.getComputedStyle(root);
-
-        return ((root.clientHeight || parseInt10(stl.height))
-                - parseInt10(stl.paddingTop)
-                - parseInt10(stl.paddingBottom)) | 0;
+        return (
+            (root[cwh] || parseInt10(stl[wh]) || parseInt10(root.style[wh]))
+            - (parseInt10(stl[plt]) || 0)
+            - (parseInt10(stl[prb]) || 0)
+        ) | 0;
     },
 
     dispose: function () {
