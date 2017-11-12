@@ -1,4 +1,15 @@
+/**
+ * Both used by zrender and echarts.
+ */
+
+const assert = require('assert');
 const rollup = require('rollup');
+const path = require('path');
+const fs = require('fs');
+const fsExtra = require('fs-extra');
+const babel = require('@babel/core');
+const esm2cjsPlugin = require('./babel-plugin-transform-modules-commonjs-ec');
+const removeDEVPlugin = require('./babel-plugin-transform-remove-dev');
 
 /**
  * @param {Array.<Object>} configs A list of rollup configs:
@@ -92,6 +103,75 @@ exports.watch = function (singleConfig) {
             printWatchResult(event);
         }
     });
+};
+
+/**
+ * @param {string} srcDir Absolute directory path.
+ * @param {Function} [cb] Params: {
+ *      fileName: like 'some.js', without dir path.
+ *      relativePath: relative to srcDir.
+ *      absolutePath
+ * }
+ */
+exports.travelSrcDir = function (srcDir, cb) {
+    assert(fs.statSync(srcDir).isDirectory());
+
+    const regDir = /^[^.].*$/;
+    const regSrc = /^[^.].*[.]js$/;
+
+    doTravelSrcDir('.');
+
+    function doTravelSrcDir(relativePath) {
+        const absolutePath = path.resolve(srcDir, relativePath);
+
+        fs.readdirSync(absolutePath).forEach(fileName => {
+            const childAbsolutePath = path.resolve(absolutePath, fileName);
+            const stat = fs.statSync(childAbsolutePath);
+            if (stat.isDirectory()) {
+                if (regDir.test(fileName)) {
+                    doTravelSrcDir(path.join(relativePath, fileName));
+                }
+            }
+            else if (stat.isFile()) {
+                if (regSrc.test(fileName)) {
+                    cb({fileName, relativePath, absolutePath: childAbsolutePath});
+                }
+            }
+        });
+    }
+};
+
+
+/**
+ * @param {string} [opt]
+ * @param {string} [opt.inputPath] Absolute input path.
+ * @param {string} [opt.outputPath] Absolute output path.
+ * @param {Function} [opt.transform]
+ */
+exports.prePulishSrc = function ({inputPath, outputPath, transform}) {
+    assert(inputPath && outputPath);
+
+    console.log(
+        color('fgGreen', 'dim')('[transform] '),
+        color('fgGreen')(inputPath),
+        color('fgGreen', 'dim')('...')
+    );
+
+    let {code} = babel.transformFileSync(inputPath, {
+        plugins: [removeDEVPlugin, esm2cjsPlugin]
+    });
+
+    removeDEVPlugin.recheckDEV(code);
+
+    // FIXME
+    code = esm2cjsPlugin.replaceInject(code);
+
+    if (transform) {
+        code = transform({code, inputPath, outputPath});
+    }
+
+    fsExtra.ensureFileSync(outputPath);
+    fs.writeFileSync(outputPath, code, {encoding:'utf-8'});
 };
 
 function printWatchResult(event) {
