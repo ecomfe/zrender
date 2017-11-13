@@ -4,7 +4,7 @@
  */
 
 import {createElement} from './core';
-import * as util from './core/util';
+import * as util from '../core/util';
 import zrLog from '../core/log';
 import Path from '../graphic/Path';
 import ZImage from '../graphic/Image';
