@@ -36,6 +36,13 @@ var nativeSlice = arrayProto.slice;
 var nativeMap = arrayProto.map;
 var nativeReduce = arrayProto.reduce;
 
+// Avoid assign to an exported variable, for transforming to cjs.
+var methods = {};
+
+export function $override(name, fn) {
+    methods[name] = fn;
+}
+
 /**
  * Those data types can be cloned:
  *     Plain object, Array, TypedArray, number, string, null, undefined.
@@ -178,6 +185,10 @@ export function defaults(target, source, overlay) {
 }
 
 export var createCanvas = function () {
+    return methods.createCanvas();
+};
+
+methods.createCanvas = function () {
     return document.createElement('canvas');
 };
 
@@ -606,9 +617,3 @@ export function createHashMap(obj) {
 }
 
 export function noop() {}
-
-export var $inject = {
-    createCanvas: function (f) {
-        createCanvas = f; /* ESM2CJS_REPLACE exports.createCanvas = f; */
-    }
-};

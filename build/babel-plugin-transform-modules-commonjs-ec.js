@@ -1,3 +1,7 @@
+/**
+ * Both used by zrender and echarts.
+ */
+
 const assert = require('assert');
 const nodePath = require('path');
 const basename = nodePath.basename;
@@ -12,7 +16,7 @@ const isSideEffectImport = helperModuleTransforms.isSideEffectImport;
 const ensureStatementsHoisted = helperModuleTransforms.ensureStatementsHoisted;
 
 
-function plugin({types, template}, options) {
+module.exports = function ({types, template}, options) {
     return {
         visitor: {
             Program: {
@@ -49,18 +53,13 @@ function plugin({types, template}, options) {
 
                     path.unshiftContainer('body', headers);
                     path.pushContainer('body', tails);
+
+                    checkAssignOrUpdateExport(path, meta);
                 }
             }
         }
     };
-}
-
-// FIXME
-plugin.replaceInject = function (code) {
-    return code.replace(/\/\* ESM2CJS_REPLACE ([^*/]+)\*\//g, '$1');
 };
-
-module.exports = plugin;
 
 
 /**
@@ -658,3 +657,80 @@ function buildExport({exportName, namespace, propName, localName}) {
             : `${head} = ${namespace}.${propName};`
     )(opt);
 }
+
+/**
+ * Consider this case:
+ *      export var a;
+ *      function inject(b) {
+ *          a = b;
+ *      }
+ * It will be transpiled to:
+ *      var a;
+ *      exports.a = 1;
+ *      function inject(b) {
+ *          a = b;
+ *      }
+ * That is a wrong transpilation, because the `export.a` will not
+ * be assigned as `b` when `inject` called.
+ * Of course, it can be transpiled correctly as:
+ *      var _locals = {};
+ *      var a;
+ *      Object.defineProperty(exports, 'a', {
+ *          get: function () { return _locals[a]; }
+ *      };
+ *      exports.a = a;
+ *      function inject(b) {
+ *          _locals[a] = b;
+ *      }
+ * But it is not ES3 compatible.
+ * So we just forbiden this usage here.
+ */
+function checkAssignOrUpdateExport(programPath, meta) {
+
+    let visitor = {
+        // Include:
+        // `a++;` (no `path.get('left')`)
+        // `x += 1212`;
+        UpdateExpression: {
+            exit: function exit(path, scope) {
+                // console.log(arguments);
+                let left = path.get('left');
+                if (left && left.isIdentifier()) {
+                    asertNotAssign(path, left.node.name);
+                }
+            }
+        },
+        // Include:
+        // `x = 5;` (`x` is an identifier.)
+        // `c.d = 3;` (but `c.d` is not an identifier.)
+        // `y = function () {}`
+        // Exclude:
+        // `var x = 121;`
+        // `export var x = 121;`
+        AssignmentExpression: {
+            exit: function exit(path) {
+                let left = path.get('left');
+                if (left.isIdentifier()) {
+                    asertNotAssign(path, left.node.name);
+                }
+            }
+        }
+    };
+
+    function asertNotAssign(path, localName) {
+        // Ignore variables that is not in global scope.
+        if (programPath.scope.getBinding(localName) !== path.scope.getBinding(localName)) {
+            return;
+        }
+        for (const localEntry of meta.local) {
+            assert(
+                localName !== localEntry[0],
+                `An exported variable \`${localEntry[0]}\` is forbiden to be assigned.`
+            );
+        }
+    }
+
+    programPath.traverse(visitor);
+}
+
+
