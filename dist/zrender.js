@@ -186,6 +186,13 @@ var nativeSlice = arrayProto.slice;
 var nativeMap = arrayProto.map;
 var nativeReduce = arrayProto.reduce;
 
+// Avoid assign to an exported variable, for transforming to cjs.
+var methods = {};
+
+function $override(name, fn) {
+    methods[name] = fn;
+}
+
 /**
  * Those data types can be cloned:
  *     Plain object, Array, TypedArray, number, string, null, undefined.
@@ -328,6 +335,10 @@ function defaults(target, source, overlay) {
 }
 
 var createCanvas = function () {
+    return methods.createCanvas();
+};
+
+methods.createCanvas = function () {
     return document.createElement('canvas');
 };
 
@@ -757,14 +768,9 @@ function createHashMap(obj) {
 
 function noop() {}
 
-var $inject = {
-    createCanvas: function (f) {
-        createCanvas = f; /* ESM2CJS_REPLACE exports.createCanvas = f; */
-    }
-};
-
 
 var util = (Object.freeze || Object)({
+	$override: $override,
 	clone: clone,
 	merge: merge,
 	mergeAll: mergeAll,
@@ -799,8 +805,7 @@ var util = (Object.freeze || Object)({
 	setAsPrimitive: setAsPrimitive,
 	isPrimitive: isPrimitive,
 	createHashMap: createHashMap,
-	noop: noop,
-	$inject: $inject
+	noop: noop
 });
 
 var ArrayCtor = typeof Float32Array === 'undefined'
@@ -6785,6 +6790,13 @@ var STYLE_REG = /\{([a-zA-Z0-9_]+)\|([^}]*)\}/g;
 
 var DEFAULT_FONT = '12px sans-serif';
 
+// Avoid assign to an exported variable, for transforming to cjs.
+var methods$1 = {};
+
+function $override$1(name, fn) {
+    methods$1[name] = fn;
+}
+
 /**
  * @public
  * @param {string} text
@@ -7137,7 +7149,12 @@ function getLineHeight(font) {
  * @param {string} font
  * @return {Object} width
  */
-var measureText = function (text, font) {
+function measureText(text, font) {
+    return methods$1.measureText(text, font);
+}
+
+// Avoid assign to an exported variable, for transforming to cjs.
+methods$1.measureText = function (text, font) {
     var ctx = getContext();
     ctx.font = font || DEFAULT_FONT;
     return ctx.measureText(text);
@@ -7436,12 +7453,6 @@ function makeFont(style) {
         style.fontFamily || 'sans-serif'
     ].join(' ') || style.textFont || style.font;
 }
-
-var $inject$1 = {
-    measureText: function (f) {
-        measureText = f; /* ESM2CJS_REPLACE exports.measureText = f; */
-    }
-};
 
 function buildPath(ctx, shape) {
     var x = shape.x;
@@ -10407,7 +10418,7 @@ var instances = {};    // ZRender实例map索引
 /**
  * @type {string}
  */
-var version = '3.7.2';
+var version = '3.7.3';
 
 /**
  * Initializing a zrender instance
@@ -15352,9 +15363,12 @@ var svgTextDrawRectText = function (el, rect, textRect) {
 
     var text = style.text;
     // Convert to string
-    text != null && (text += '');
-    if (!text) {
+    if (text == null) {
+        // Draw no text only when text is set to null, but not ''
         return;
+    }
+    else {
+        text += '';
     }
 
     var textSvgEl = el.__textSvgEl;
@@ -16175,10 +16189,12 @@ inherits(ClippathManager, Definable);
  * Update clipPath.
  *
  * @param {Displayable} displayable displayable element
- * @param {SVGElement}  svgElement  SVG element of displayable
  */
-ClippathManager.prototype.update = function (displayable, svgElement) {
-    this.updateDom(svgElement, displayable.__clipPaths, false);
+ClippathManager.prototype.update = function (displayable) {
+    var svgEl = this.getSvgElement(displayable);
+    if (svgEl) {
+        this.updateDom(svgEl, displayable.__clipPaths, false);
+    }
 
     var textEl = this.getTextSvgElement(displayable);
     if (textEl) {
@@ -16270,7 +16286,13 @@ ClippathManager.prototype.updateDom = function (
         }
 
         var pathEl = this.getSvgElement(clipPath);
-        clipPathEl.appendChild(pathEl);
+        /**
+         * Use `cloneNode()` here to appendChild to multiple parents,
+         * which may happend when Text and other shapes are using the same
+         * clipPath. Since Text will create an extra clipPath DOM due to
+         * different transform rules.
+         */
+        clipPathEl.appendChild(pathEl.cloneNode());
 
         parentEl.setAttribute('clip-path', 'url(#' + id + ')');
 
@@ -16441,11 +16463,9 @@ SVGPainter.prototype = {
             if (!displayable.invisible) {
                 if (displayable.__dirty) {
                     svgProxy && svgProxy.brush(displayable);
-                    var el = getSvgElement(displayable)
-                        || getTextSvgElement(displayable);
 
                     // Update clipPath
-                    this.clipPathManager.update(displayable, el);
+                    this.clipPathManager.update(displayable);
 
                     // Update gradient
                     if (displayable.style) {
@@ -16661,17 +16681,22 @@ var vmlInited = false;
 
 var doc = win && win.document;
 
-var createNode;
+function createNode(tagName) {
+    return doCreateNode(tagName);
+}
+
+// Avoid assign to an exported variable, for transforming to cjs.
+var doCreateNode;
 
 if (doc && !env$1.canvasSupported) {
     try {
         !doc.namespaces.zrvml && doc.namespaces.add('zrvml', urn);
-        createNode = function (tagName) {
+        doCreateNode = function (tagName) {
             return doc.createElement('<zrvml:' + tagName + ' class="zrvml">');
         };
     }
     catch (e) {
-        createNode = function (tagName) {
+        doCreateNode = function (tagName) {
             return doc.createElement('<' + tagName + ' xmlns="' + urn + '" class="zrvml">');
         };
     }
@@ -17475,7 +17500,7 @@ if (!env$1.canvasSupported) {
 
     var textMeasureEl;
     // Overwrite measure text method
-    $inject$1.measureText(function (text, textFont) {
+    $override$1('measureText', function (text, textFont) {
         var doc$$1 = doc;
         if (!textMeasureEl) {
             textMeasureEl = doc$$1.createElement('div');
