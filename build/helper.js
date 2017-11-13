@@ -147,8 +147,9 @@ exports.travelSrcDir = function (srcDir, cb) {
  * @param {string} [opt.inputPath] Absolute input path.
  * @param {string} [opt.outputPath] Absolute output path.
  * @param {Function} [opt.transform]
+ * @param {Function} [opt.reserveDEV]
  */
-exports.prePulishSrc = function ({inputPath, outputPath, transform}) {
+exports.prePulishSrc = function ({inputPath, outputPath, transform, reserveDEV}) {
     assert(inputPath && outputPath);
 
     console.log(
@@ -157,11 +158,16 @@ exports.prePulishSrc = function ({inputPath, outputPath, transform}) {
         color('fgGreen', 'dim')('...')
     );
 
+    let plugins = [];
+
+    !reserveDEV && plugins.push(removeDEVPlugin);
+    plugins.push(esm2cjsPlugin);
+
     let {code} = babel.transformFileSync(inputPath, {
-        plugins: [removeDEVPlugin, esm2cjsPlugin]
+        plugins: plugins
     });
 
-    removeDEVPlugin.recheckDEV(code);
+    !reserveDEV && removeDEVPlugin.recheckDEV(code);
 
     if (transform) {
         code = transform({code, inputPath, outputPath});
