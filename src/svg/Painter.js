@@ -154,11 +154,9 @@ SVGPainter.prototype = {
             if (!displayable.invisible) {
                 if (displayable.__dirty) {
                     svgProxy && svgProxy.brush(displayable);
-                    var el = getSvgElement(displayable)
-                        || getTextSvgElement(displayable);
 
                     // Update clipPath
-                    this.clipPathManager.update(displayable, el);
+                    this.clipPathManager.update(displayable);
 
                     // Update gradient
                     if (displayable.style) {

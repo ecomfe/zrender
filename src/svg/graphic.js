@@ -334,9 +334,12 @@ var svgTextDrawRectText = function (el, rect, textRect) {
 
     var text = style.text;
     // Convert to string
-    text != null && (text += '');
-    if (!text) {
+    if (text == null) {
+        // Draw no text only when text is set to null, but not ''
         return;
+    }
+    else {
+        text += '';
     }
 
     var textSvgEl = el.__textSvgEl;
