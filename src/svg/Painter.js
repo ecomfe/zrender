@@ -96,12 +96,13 @@ var SVGPainter = function (root, storage, opts) {
     svgRoot.setAttribute('version', '1.1');
     svgRoot.setAttribute('baseProfile', 'full');
     svgRoot.style['user-select'] = 'none';
+    svgRoot.style.cssText = 'position:absolute;left:0;top:0;';
 
     this.gradientManager = new GradientManager(svgRoot);
     this.clipPathManager = new ClippathManager(svgRoot);
 
     var viewport = document.createElement('div');
-    viewport.style.cssText = 'overflow: hidden;';
+    viewport.style.cssText = 'overflow:hidden;position:relative';
 
     this._svgRoot = svgRoot;
     this._viewport = viewport;
