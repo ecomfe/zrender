@@ -123,6 +123,8 @@ ClippathManager.prototype.updateDom = function (
         }
 
         var pathEl = this.getSvgElement(clipPath);
+
+        clipPathEl.innerHTML = '';
         /**
          * Use `cloneNode()` here to appendChild to multiple parents,
          * which may happend when Text and other shapes are using the same
