@@ -95,8 +95,7 @@ var SVGPainter = function (root, storage, opts) {
     svgRoot.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
     svgRoot.setAttribute('version', '1.1');
     svgRoot.setAttribute('baseProfile', 'full');
-    svgRoot.style['user-select'] = 'none';
-    svgRoot.style.cssText = 'position:absolute;left:0;top:0;';
+    svgRoot.style.cssText = 'user-select:none;position:absolute;left:0;top:0;';
 
     this.gradientManager = new GradientManager(svgRoot);
     this.clipPathManager = new ClippathManager(svgRoot);
