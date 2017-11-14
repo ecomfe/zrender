@@ -17,7 +17,8 @@ if (typeof navigator === 'undefined') {
             node: false,
             wxa: true, // Weixin Application
             canvasSupported: true,
-            svgSupported: false
+            svgSupported: false,
+            touchEventsSupported: true
         }
     }
     else {
