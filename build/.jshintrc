@@ -66,10 +66,10 @@
     "varstmt": true,
 
     "predef": [
-        "__DEV__",
         "global",
         "require",
         "exports",
+        "module",
         "__dirname"
     ]
 }

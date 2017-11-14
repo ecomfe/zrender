@@ -3,12 +3,13 @@
 // 2. Image: sx, sy, sw, sh
 
 import {createElement} from './core';
-import {CMD} from '../core/PathProxy';
+import PathProxy from '../core/PathProxy';
 import BoundingRect from '../core/BoundingRect';
 import * as textContain from '../contain/text';
 import * as textHelper from '../graphic/helper/text';
 import Text from '../graphic/Text';
 
+var CMD = PathProxy.CMD;
 var arrayJoin = Array.prototype.join;
 
 var NONE = 'none';
@@ -254,7 +255,12 @@ svgPath.brush = function (el) {
         el.buildPath(path, el.shape);
         el.__dirtyPath = false;
 
-        attr(svgEl, 'd', pathDataToString(path));
+        var pathStr = pathDataToString(path);
+        if (pathStr.indexOf('NaN') < 0) {
+            // Ignore illegal path, which may happen such in out-of-range
+            // data in Calendar series.
+            attr(svgEl, 'd', pathStr);
+        }
     }
 
     bindStyle(svgEl, style);
@@ -328,9 +334,12 @@ var svgTextDrawRectText = function (el, rect, textRect) {
 
     var text = style.text;
     // Convert to string
-    text != null && (text += '');
-    if (!text) {
+    if (text == null) {
+        // Draw no text only when text is set to null, but not ''
         return;
+    }
+    else {
+        text += '';
     }
 
     var textSvgEl = el.__textSvgEl;

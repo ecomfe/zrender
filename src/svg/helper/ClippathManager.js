@@ -26,10 +26,12 @@ zrUtil.inherits(ClippathManager, Definable);
  * Update clipPath.
  *
  * @param {Displayable} displayable displayable element
- * @param {SVGElement}  svgElement  SVG element of displayable
  */
-ClippathManager.prototype.update = function (displayable, svgElement) {
-    this.updateDom(svgElement, displayable.__clipPaths, false);
+ClippathManager.prototype.update = function (displayable) {
+    var svgEl = this.getSvgElement(displayable);
+    if (svgEl) {
+        this.updateDom(svgEl, displayable.__clipPaths, false);
+    }
 
     var textEl = this.getTextSvgElement(displayable);
     if (textEl) {
@@ -121,7 +123,13 @@ ClippathManager.prototype.updateDom = function (
         }
 
         var pathEl = this.getSvgElement(clipPath);
-        clipPathEl.appendChild(pathEl);
+        /**
+         * Use `cloneNode()` here to appendChild to multiple parents,
+         * which may happend when Text and other shapes are using the same
+         * clipPath. Since Text will create an extra clipPath DOM due to
+         * different transform rules.
+         */
+        clipPathEl.appendChild(pathEl.cloneNode());
 
         parentEl.setAttribute('clip-path', 'url(#' + id + ')');
 

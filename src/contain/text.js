@@ -15,6 +15,13 @@ var STYLE_REG = /\{([a-zA-Z0-9_]+)\|([^}]*)\}/g;
 
 export var DEFAULT_FONT = '12px sans-serif';
 
+// Avoid assign to an exported variable, for transforming to cjs.
+var methods = {};
+
+export function $override(name, fn) {
+    methods[name] = fn;
+}
+
 /**
  * @public
  * @param {string} text
@@ -367,7 +374,12 @@ export function getLineHeight(font) {
  * @param {string} font
  * @return {Object} width
  */
-export var measureText = function (text, font) {
+export function measureText(text, font) {
+    return methods.measureText(text, font);
+}
+
+// Avoid assign to an exported variable, for transforming to cjs.
+methods.measureText = function (text, font) {
     var ctx = getContext();
     ctx.font = font || DEFAULT_FONT;
     return ctx.measureText(text);
@@ -666,9 +678,3 @@ export function makeFont(style) {
         style.fontFamily || 'sans-serif'
     ].join(' ') || style.textFont || style.font;
 }
-
-export var $inject = {
-    measureText: function (f) {
-        measureText = f;
-    }
-};

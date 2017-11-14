@@ -8,17 +8,22 @@ var vmlInited = false;
 
 export var doc = win && win.document;
 
-export var createNode;
+export function createNode(tagName) {
+    return doCreateNode(tagName);
+}
+
+// Avoid assign to an exported variable, for transforming to cjs.
+var doCreateNode;
 
 if (doc && !env.canvasSupported) {
     try {
         !doc.namespaces.zrvml && doc.namespaces.add('zrvml', urn);
-        createNode = function (tagName) {
+        doCreateNode = function (tagName) {
             return doc.createElement('<zrvml:' + tagName + ' class="zrvml">');
         };
     }
     catch (e) {
-        createNode = function (tagName) {
+        doCreateNode = function (tagName) {
             return doc.createElement('<' + tagName + ' xmlns="' + urn + '" class="zrvml">');
         };
     }

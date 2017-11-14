@@ -14,7 +14,7 @@ import * as bbox from './bbox';
 import BoundingRect from './BoundingRect';
 import {devicePixelRatio as dpr} from '../config';
 
-export var CMD = {
+var CMD = {
     M: 1,
     L: 2,
     C: 3,
