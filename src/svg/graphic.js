@@ -95,7 +95,7 @@ function bindStyle(svgEl, style, isText) {
         var strokeWidth = isText
             ? style.textStrokeWidth
             : style.lineWidth;
-        var strokeScale = style.strokeNoScale
+        var strokeScale = !isText && style.strokeNoScale
             ? style.host.getLineScale()
             : 1;
         attr(svgEl, 'stroke-width', strokeWidth / strokeScale);
