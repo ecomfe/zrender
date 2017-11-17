@@ -12,6 +12,7 @@ import ZText from '../graphic/Text';
 import arrayDiff from '../core/arrayDiff2';
 import GradientManager from './helper/GradientManager';
 import ClippathManager from './helper/ClippathManager';
+import ShadowManager from './helper/ShadowManager';
 import {each} from '../core/util';
 import {
     path as svgPath,
@@ -99,6 +100,7 @@ var SVGPainter = function (root, storage, opts) {
 
     this.gradientManager = new GradientManager(svgRoot);
     this.clipPathManager = new ClippathManager(svgRoot);
+    this.shadowManager = new ShadowManager(svgRoot);
 
     var viewport = document.createElement('div');
     viewport.style.cssText = 'overflow:hidden;position:relative';
@@ -146,6 +148,7 @@ SVGPainter.prototype = {
     _paintList: function (list) {
         this.gradientManager.markAllUnused();
         this.clipPathManager.markAllUnused();
+        this.shadowManager.markAllUnused();
 
         var svgRoot = this._svgRoot;
         var visibleList = this._visibleList;
@@ -169,6 +172,8 @@ SVGPainter.prototype = {
                             .update(displayable.style.fill);
                         this.gradientManager
                             .update(displayable.style.stroke);
+
+                        this.shadowManager.update(displayable.style);
                     }
 
                     displayable.__dirty = false;
@@ -222,6 +227,8 @@ SVGPainter.prototype = {
 
                     this.gradientManager
                         .addWithoutUpdate(svgElement, displayable);
+                    this.shadowManager
+                        .addWithoutUpdate(svgElement, displayable);
                     this.clipPathManager.markUsed(displayable);
                 }
             }
@@ -238,6 +245,10 @@ SVGPainter.prototype = {
                     this.gradientManager
                         .addWithoutUpdate(svgElement, displayable);
 
+                    this.shadowManager.markUsed(displayable);
+                    this.shadowManager
+                        .addWithoutUpdate(svgElement, displayable);
+
                     this.clipPathManager.markUsed(displayable);
                 }
             }
@@ -245,6 +256,7 @@ SVGPainter.prototype = {
 
         this.gradientManager.removeUnused();
         this.clipPathManager.removeUnused();
+        this.shadowManager.removeUnused();
 
         this._visibleList = newVisibleList;
     },
