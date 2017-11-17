@@ -1066,9 +1066,9 @@ Painter.prototype = {
         var ctx = canvas.getContext('2d');
         var rect = path.getBoundingRect();
         var style = path.style;
-        var shadowBlurSize = style.shadowBlur;
-        var shadowOffsetX = style.shadowOffsetX;
-        var shadowOffsetY = style.shadowOffsetY;
+        var shadowBlurSize = style.shadowBlur * ctx.dpr;
+        var shadowOffsetX = style.shadowOffsetX * ctx.dpr;
+        var shadowOffsetY = style.shadowOffsetY * ctx.dpr;
         var lineWidth = style.hasStroke() ? style.lineWidth : 0;
 
         var leftMargin = Math.max(lineWidth / 2, -shadowOffsetX + shadowBlurSize);

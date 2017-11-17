@@ -350,13 +350,27 @@ Style.prototype = {
         var prevStyle = prevEl && prevEl.style;
         var firstDraw = !prevStyle;
 
+        // Fix shadow size and offset with dpr
+        var fixShadow = function (propName, value) {
+            if ([
+                'shadowBlur', 'shadowOffsetX', 'shadowOffsetY',
+                'textShadowBlur', 'textShadowOffsetX', 'textShadowOffsetY',
+                'textBoxShadowBlur', 'textBoxShadowOffsetX',
+                'textBoxShadowOffsetY'
+            ].indexOf(propName) >= 0) {
+                return value *= ctx.dpr;
+            }
+            return value;
+        };
+
         for (var i = 0; i < STYLE_COMMON_PROPS.length; i++) {
             var prop = STYLE_COMMON_PROPS[i];
             var styleName = prop[0];
 
             if (firstDraw || style[styleName] !== prevStyle[styleName]) {
                 // FIXME Invalid property value will cause style leak from previous element.
-                ctx[styleName] = style[styleName] || prop[1];
+                ctx[styleName] =
+                    fixShadow(styleName, style[styleName] || prop[1]);
             }
         }
 

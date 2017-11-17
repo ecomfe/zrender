@@ -417,6 +417,16 @@ function setCtx(ctx, prop, value) {
     // FIXME ??? performance try
     // if (ctx.__currentValues[prop] !== value) {
         // ctx[prop] = ctx.__currentValues[prop] = value;
+
+    // Fix shadow size and offset with dpr
+    if ([
+        'shadowBlur', 'shadowOffsetX', 'shadowOffsetY',
+        'textShadowBlur', 'textShadowOffsetX', 'textShadowOffsetY',
+        'textBoxShadowBlur', 'textBoxShadowOffsetX', 'textBoxShadowOffsetY'
+    ].indexOf(prop) >= 0) {
+        value *= ctx.dpr;
+    }
+
     ctx[prop] = value;
     // }
     return ctx[prop];
