@@ -159,6 +159,8 @@ SVGPainter.prototype = {
         for (i = 0; i < listLen; i++) {
             var displayable = list[i];
             var svgProxy = getSvgProxy(displayable);
+            var svgElement = getSvgElement(displayable)
+                || getTextSvgElement(displayable);
             if (!displayable.invisible) {
                 if (displayable.__dirty) {
                     svgProxy && svgProxy.brush(displayable);
@@ -166,14 +168,15 @@ SVGPainter.prototype = {
                     // Update clipPath
                     this.clipPathManager.update(displayable);
 
-                    // Update gradient
+                    // Update gradient and shadow
                     if (displayable.style) {
                         this.gradientManager
                             .update(displayable.style.fill);
                         this.gradientManager
                             .update(displayable.style.stroke);
 
-                        this.shadowManager.update(displayable.style);
+                        this.shadowManager
+                            .update(svgElement, displayable);
                     }
 
                     displayable.__dirty = false;
@@ -228,7 +231,7 @@ SVGPainter.prototype = {
                     this.gradientManager
                         .addWithoutUpdate(svgElement, displayable);
                     this.shadowManager
-                        .addWithoutUpdate(svgElement, displayable);
+                        .addWithoutUpdate(prevSvgElement, displayable);
                     this.clipPathManager.markUsed(displayable);
                 }
             }

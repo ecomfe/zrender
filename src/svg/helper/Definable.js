@@ -32,12 +32,14 @@ var MARK_USED = '1';
 function Definable(
     svgRoot,
     tagNames,
-    markLabel
+    markLabel,
+    domName
 ) {
 
     this._svgRoot = svgRoot;
     this._tagNames = typeof tagNames === 'string' ? [tagNames] : tagNames;
     this._markLabel = markLabel;
+    this._domName = domName || '_dom';
 
     this.nextId = 0;
 }
@@ -103,17 +105,17 @@ Definable.prototype.update = function (element, onUpdate) {
     }
 
     var defs = this.getDefs(false);
-    if (element._dom && defs.contains(element._dom)) {
+    if (element[this._domName] && defs.contains(element[this._domName])) {
         // Update DOM
         if (typeof onUpdate === 'function') {
-            onUpdate();
+            onUpdate(element);
         }
     }
     else {
         // No previous dom, create new
         var dom = this.add(element);
         if (dom) {
-            element._dom = dom;
+            element[this._domName] = dom;
         }
     }
 };
@@ -137,7 +139,10 @@ Definable.prototype.addDom = function (dom) {
  */
 Definable.prototype.removeDom = function (element) {
     var defs = this.getDefs(false);
-    defs.removeChild(element._dom);
+    if (defs) {
+        defs.removeChild(element[this._domName]);
+        element[this._domName] = null;
+    }
 };
 
 
