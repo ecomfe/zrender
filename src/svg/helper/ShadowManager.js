@@ -143,7 +143,7 @@ ShadowManager.prototype.updateDom = function (displayable, dom) {
 
     // TODO: textBoxShadowBlur is not supported yet
     var offsetX, offsetY, blur, color;
-    if (style.shadowBlur) {
+    if (style.shadowBlur || style.shadowOffsetX || style.shadowOffsetY) {
         offsetX = style.shadowOffsetX;
         offsetY = style.shadowOffsetY;
         blur = style.shadowBlur;
@@ -198,10 +198,11 @@ ShadowManager.prototype.markUsed = function (displayable) {
 };
 
 function hasShadow(style) {
+    // TODO: textBoxShadowBlur is not supported yet
     return style
-        && (style.shadowBlur
-            || style.textShadowBlur
-            || style.textBoxShadowBlur);
+        && (style.shadowBlur || style.shadowOffsetX || style.shadowOffsetY
+            || style.textShadowBlur || style.textShadowOffsetX
+            || style.textShadowOffsetY);
 }
 
 
