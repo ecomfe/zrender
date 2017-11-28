@@ -10,6 +10,7 @@ import {
 import * as textContain from '../../contain/text';
 import * as roundRectHelper from './roundRect';
 import * as imageHelper from './image';
+import fixShadow from './fixShadow';
 
 // TODO: Have not support 'start', 'end' yet.
 var VALID_TEXT_ALIGN = {left: 1, right: 1, center: 1};
@@ -418,16 +419,7 @@ function setCtx(ctx, prop, value) {
     // if (ctx.__currentValues[prop] !== value) {
         // ctx[prop] = ctx.__currentValues[prop] = value;
 
-    // Fix shadow size and offset with dpr
-    if ([
-        'shadowBlur', 'shadowOffsetX', 'shadowOffsetY',
-        'textShadowBlur', 'textShadowOffsetX', 'textShadowOffsetY',
-        'textBoxShadowBlur', 'textBoxShadowOffsetX', 'textBoxShadowOffsetY'
-    ].indexOf(prop) >= 0) {
-        value *= ctx.dpr;
-    }
-
-    ctx[prop] = value;
+    ctx[prop] = fixShadow(ctx, prop, value);
     // }
     return ctx[prop];
 }
