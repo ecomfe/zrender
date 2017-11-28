@@ -904,40 +904,51 @@ Painter.prototype = {
      * 区域大小变化后重绘
      */
     resize: function (width, height) {
-        var domRoot = this._domRoot;
-        // FIXME Why ?
-        domRoot.style.display = 'none';
-
-        // Save input w/h
-        var opts = this._opts;
-        width != null && (opts.width = width);
-        height != null && (opts.height = height);
-
-        width = this._getSize(0);
-        height = this._getSize(1);
-
-        domRoot.style.display = '';
-
-        // 优化没有实际改变的resize
-        if (this._width != width || height != this._height) {
-            domRoot.style.width = width + 'px';
-            domRoot.style.height = height + 'px';
-
-            for (var id in this._layers) {
-                if (this._layers.hasOwnProperty(id)) {
-                    this._layers[id].resize(width, height);
-                }
+        if (!this._domRoot.style) { // Maybe in node or worker
+            if (width == null || height == null) {
+                return;
             }
-            util.each(this._progressiveLayers, function (layer) {
-                layer.resize(width, height);
-            });
+            this._width = width;
+            this._height = height;
 
-            this.refresh(true);
+            this.getLayer(0).resize(width, height);
         }
+        else {
+            var domRoot = this._domRoot;
+            // FIXME Why ?
+            domRoot.style.display = 'none';
 
-        this._width = width;
-        this._height = height;
+            // Save input w/h
+            var opts = this._opts;
+            width != null && (opts.width = width);
+            height != null && (opts.height = height);
 
+            width = this._getSize(0);
+            height = this._getSize(1);
+
+            domRoot.style.display = '';
+
+            // 优化没有实际改变的resize
+            if (this._width != width || height != this._height) {
+                domRoot.style.width = width + 'px';
+                domRoot.style.height = height + 'px';
+
+                for (var id in this._layers) {
+                    if (this._layers.hasOwnProperty(id)) {
+                        this._layers[id].resize(width, height);
+                    }
+                }
+                util.each(this._progressiveLayers, function (layer) {
+                    layer.resize(width, height);
+                });
+
+                this.refresh(true);
+            }
+
+            this._width = width;
+            this._height = height;
+
+        }
         return this;
     },
 

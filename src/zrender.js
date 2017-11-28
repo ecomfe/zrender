@@ -130,7 +130,7 @@ var ZRender = function (id, dom, opts) {
     this.storage = storage;
     this.painter = painter;
 
-    var handerProxy = !env.node ? new HandlerProxy(painter.getViewportRoot()) : null;
+    var handerProxy = (!env.node && !env.worker) ? new HandlerProxy(painter.getViewportRoot()) : null;
     this.handler = new Handler(storage, painter, handerProxy, painter.root);
 
     /**
