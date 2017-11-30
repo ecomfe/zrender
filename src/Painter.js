@@ -364,6 +364,10 @@ Painter.prototype = {
         hoverLayer.ctx.restore();
     },
 
+    getHoverLayer: function () {
+        return this._hoverlayer;
+    },
+
     _startProgessive: function () {
         var self = this;
 
