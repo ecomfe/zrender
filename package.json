@@ -6,20 +6,6 @@
     "canvas",
     "2d"
   ],
-  "author": [
-    {
-      "name": "Kenner",
-      "email": "kener.linfeng@gmail.com"
-    },
-    {
-      "name": "Yi Shen",
-      "url": "https://github.com/pissang"
-    },
-    {
-      "name": "Shuang Su",
-      "url": "https://github.com/100pah"
-    }
-  ],
   "contributors": [
     {
       "name": "erik",
@@ -31,7 +17,9 @@
     "url": "https://github.com/ecomfe/zrender.git"
   },
   "scripts": {
-    "prepublish": "node build/build.js --prepublish"
+    "prepublish": "node build/build.js --prepublish",
+    "build": "node build/build.js --release",
+    "dev": "node build/build.js --watch"
   },
   "license": "BSD",
   "devDependencies": {

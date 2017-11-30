@@ -415,12 +415,7 @@ function getBoxPosition(blockHeiht, style, rect) {
 }
 
 function setCtx(ctx, prop, value) {
-    // FIXME ??? performance try
-    // if (ctx.__currentValues[prop] !== value) {
-        // ctx[prop] = ctx.__currentValues[prop] = value;
-
     ctx[prop] = fixShadow(ctx, prop, value);
-    // }
     return ctx[prop];
 }
 

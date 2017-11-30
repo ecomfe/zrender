@@ -10,6 +10,7 @@
         html, body, #main {
             width: 100%;
             height: 100%;
+            margin: 0;
             background-color: #000;
         }
     </style>
@@ -79,7 +80,7 @@
                 },
                 silent: true
             });
-            zr.add(polyline);
+            // zr.add(polyline);
 
             animator.start('spline');
         }
@@ -93,6 +94,5 @@
         zr.refreshImmediately();
         console.profileEnd('render');
     </script>
-    <div id="main" style="width:1000px;height:600px;"></div>
 </body>
 </html>
