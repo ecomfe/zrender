@@ -1,11 +1,3 @@
-/**
- * Default canvas painter
- * @module zrender/Painter
- * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
- *         errorrik (errorrik@gmail.com)
- *         pissang (https://www.github.com/pissang)
- */
-
 import {devicePixelRatio} from './config';
 import * as util from './core/util';
 import log from './core/log';
@@ -368,19 +360,30 @@ Painter.prototype = {
                 layerList.push(layer);
             }
         }
-        if (layerList > 1) {
-            // PENDING
-            layerList.sort(function (a, b) {
-                return a.getElementCount() - b.getElementCount();
-            });
-        }
+        // if (layerList > 1) {
+        //     // PENDING
+        //     layerList.sort(function (a, b) {
+        //         return a.getElementCount() - b.getElementCount();
+        //     });
+        // }
 
         for (var k = 0; k < layerList.length; k++) {
             var layer = layerList[k];
             var ctx = layer.ctx;
             var scope = {};
             ctx.save();
-            layer.clear();
+
+            if (layer.__startIndex === layer.__drawIndex) {
+                if (layer.isIncremental) {
+                    var firstEL = list[layer.__drawIndex];
+                    if (firstEL && firstEL.isFirstFrame()) {
+                        layer.clear();
+                    }
+                }
+                else {
+                    layer.clear();
+                }
+            }
             for (var i = layer.__drawIndex; i < layer.__endIndex; i++) {
                 var el = list[i];
                 this._doPaintEl(el, layer, paintAll, scope);
@@ -581,21 +584,37 @@ Painter.prototype = {
     _updateLayerStatus: function (list) {
 
         this.eachBuiltinLayer(function (layer, z) {
-            layer.__dirty = false;
-            layer.__used = false;
+            layer.__dirty = layer.__used = false;
         });
 
+        function updatePrevLayer(idx) {
+            if (prevLayer) {
+                if (prevLayer.__endIndex !== idx) {
+                    prevLayer.__dirty = true;
+                }
+                prevLayer.__endIndex = idx;
+            }
+        }
+
         var prevLayer = null;
+        // TODO
+        var incrementalLayerLevel = 0.001;
+        var incrementalLayerCount = 0;
         for (var i = 0; i < list.length; i++) {
             var el = list[i];
             var zlevel = this._singleCanvas ? 0 : el.zlevel;
-            var layer = this.getLayer(zlevel);
+            var layer;
+            if (el.isIncremental) {
+                layer = this.getLayer(zlevel + incrementalLayerLevel);
+                layer.isIncremental = true;
+                incrementalLayerCount = 1;
+            }
+            else {
+                layer = this.getLayer(zlevel + incrementalLayerCount > 0 ? 0.01 : 0);
+            }
 
             if (!layer.__builtin__) {
-                log(
-                    'ZLevel ' + zlevel
-                    + ' has been used by unkown layer ' + layer.id
-                );
+                log('ZLevel ' + zlevel + ' has been used by unkown layer ' + layer.id);
             }
 
             if (layer !== prevLayer) {
@@ -604,23 +623,13 @@ Painter.prototype = {
                     layer.__dirty = true;
                 }
                 layer.__startIndex = layer.__drawIndex = i;
-                if (prevLayer) {
-                    if (prevLayer.__endIndex !== i) {
-                        prevLayer.__dirty = true;
-                    }
-                    prevLayer.__endIndex = i;
-                }
+                updatePrevLayer(i);
                 prevLayer = layer;
             }
             layer.__dirty = layer.__dirty || el.__dirty;
         }
 
-        if (prevLayer) {
-            if (prevLayer.__endIndex !== i) {
-                prevLayer.__dirty = true;
-            }
-            prevLayer.__endIndex = i;
-        }
+        updatePrevLayer(i);
 
         this.eachBuiltinLayer(function (layer, z) {
             // Used in last frame but not in this frame. Needs clear

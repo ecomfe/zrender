@@ -1,11 +1,3 @@
-/**
- * Storage内容仓库模块
- * @module zrender/Storage
- * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
- * @author errorrik (errorrik@gmail.com)
- * @author pissang (https://github.com/pissang/)
- */
-
 import * as util from './core/util';
 import env from './core/env';
 import Group from './container/Group';
@@ -46,6 +38,8 @@ Storage.prototype = {
 
     constructor: Storage,
 
+    _needsUpdateList: true,
+
     /**
      * @param  {Function} cb
      *
@@ -79,20 +73,23 @@ Storage.prototype = {
      * @param {boolean} [includeIgnore=false] 是否包含 ignore 的数组
      */
     updateDisplayList: function (includeIgnore) {
-        this._displayListLen = 0;
+        if (this._needsUpdateList) {
+            this._displayListLen = 0;
+        }
+
         var roots = this._roots;
         var displayList = this._displayList;
         for (var i = 0, len = roots.length; i < len; i++) {
             this._updateAndAddDisplayable(roots[i], null, includeIgnore);
         }
-        displayList.length = this._displayListLen;
 
-        // for (var i = 0, len = displayList.length; i < len; i++) {
-        //     displayList[i].__renderidx = i;
-        // }
+        if (this._needsUpdateList) {
+            displayList.length = this._displayListLen;
+        }
 
-        // displayList.sort(shapeCompareFunc);
         env.canvasSupported && timsort(displayList, shapeCompareFunc);
+
+        this._needsUpdateList = false;
     },
 
     _updateAndAddDisplayable: function (el, clipPaths, includeIgnore) {
@@ -159,7 +156,9 @@ Storage.prototype = {
         else {
             el.__clipPaths = clipPaths;
 
-            this._displayList[this._displayListLen++] = el;
+            if (this._needsUpdateList) {
+                this._displayList[this._displayListLen++] = el;
+            }
         }
     },
 
@@ -220,15 +219,18 @@ Storage.prototype = {
     },
 
     addToStorage: function (el) {
-        el.__storage = this;
-        el.dirty(false);
-
+        if (el) {
+            el.__storage = this;
+            el.dirty(false);
+            this._needsUpdateList = true;    
+        }
         return this;
     },
 
     delFromStorage: function (el) {
         if (el) {
             el.__storage = null;
+            this._needsUpdateList = true;
         }
 
         return this;

@@ -1,11 +1,3 @@
-/**
- * Handler
- * @module zrender/Handler
- * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
- *         errorrik (errorrik@gmail.com)
- *         pissang (shenyi.914@gmail.com)
- */
-
 import * as util from './core/util';
 import * as vec2 from './core/vector';
 import Draggable from './mixin/Draggable';

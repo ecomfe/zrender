@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Animation</title>
+    <script src="../dist/zrender.js"></script>
+</head>
+<body style="margin:0px;">
+    <div id="main" style="width:1000px;height:600px;"></div>
+    <script type="text/javascript">
+        var zr = zrender.init(document.getElementById('main'));
+
+        var incrementalDisplayable = new zrender.IncrementalDisplayable();
+        zr.add(incrementalDisplayable);
+
+        var countText = new zrender.Text({
+            style: {
+                text: 0,
+                x: 10,
+                y: 10,
+                textFont: '40px sans-serif',
+                textFill: '#fff'
+            }
+        });
+        zr.add(countText);
+
+        zr.animation.on('frame', function ()  {
+            for (var i = 0; i < 100; i++) {
+                var circleShape = new zrender.Circle({
+                    shape: {
+                        cx: Math.random() * zr.getWidth(),
+                        cy: Math.random() * zr.getHeight(),
+                        r: 2 + Math.random() * 4
+                    },
+                    style: {
+                        fill: '#' + (Math.random().toString()).slice(2, 8)
+                    }
+                });
+                incrementalDisplayable.addDisplayable(circleShape);
+            }
+
+            countText.style.text += 100;
+            countText.dirty();
+        });
+    </script>
+</body>
+</html>

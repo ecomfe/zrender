@@ -137,9 +137,14 @@ Displayable.prototype = {
     /**
      * Render the element progressively when the value >= 0,
      * usefull for large data.
-     * @type {number}
+     * @type {boolean}
      */
-    progressive: -1,
+    progressive: false,
+
+    /**
+     * @type {boolean}
+     */
+    isIncremental: false,
 
     beforeBrush: function (ctx) {},
 
