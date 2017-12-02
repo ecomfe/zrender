@@ -25,21 +25,20 @@
         zr.add(countText);
 
         zr.animation.on('frame', function ()  {
-            for (var i = 0; i < 100; i++) {
+            for (var i = 0; i < 1000; i++) {
                 var circleShape = new zrender.Circle({
                     shape: {
-                        cx: Math.random() * zr.getWidth(),
-                        cy: Math.random() * zr.getHeight(),
                         r: 2 + Math.random() * 4
                     },
                     style: {
                         fill: '#' + (Math.random().toString()).slice(2, 8)
-                    }
+                    },
+                    position: [Math.random() * zr.getWidth(), Math.random() * zr.getHeight()]
                 });
-                incrementalDisplayable.addDisplayable(circleShape);
+                incrementalDisplayable.addDisplayable(circleShape, true);
             }
 
-            countText.style.text += 100;
+            countText.style.text += 1000;
             countText.dirty();
         });
     </script>

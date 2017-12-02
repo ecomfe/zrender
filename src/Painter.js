@@ -376,7 +376,7 @@ Painter.prototype = {
             if (layer.__startIndex === layer.__drawIndex) {
                 if (layer.isIncremental) {
                     var firstEL = list[layer.__drawIndex];
-                    if (firstEL && firstEL.isFirstFrame()) {
+                    if (firstEL && firstEL.needsClear()) {
                         layer.clear();
                     }
                 }
