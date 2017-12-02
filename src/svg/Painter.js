@@ -315,7 +315,7 @@ SVGPainter.prototype = {
 
         viewport.style.display = '';
 
-        if (this._width !== width && this._height !== height) {
+        if (this._width !== width || this._height !== height) {
             this._width = width;
             this._height = height;
 
