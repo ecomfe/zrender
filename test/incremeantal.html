@@ -10,6 +10,18 @@
     <script type="text/javascript">
         var zr = zrender.init(document.getElementById('main'));
 
+        zr.add(new zrender.Rect({
+            shape: {
+                x: 0,
+                y: 0,
+                width: zr.getWidth(),
+                height: zr.getHeight()
+            },
+            style: {
+                fill: 'red'
+            }
+        }));
+
         var incrementalDisplayable = new zrender.IncrementalDisplayable();
         zr.add(incrementalDisplayable);
 
@@ -19,26 +31,29 @@
                 x: 10,
                 y: 10,
                 textFont: '40px sans-serif',
-                textFill: '#fff'
+                textFill: '#fff',
+                textStroke: '#000',
+                textStrokeWidth: 2
             }
         });
         zr.add(countText);
 
         zr.animation.on('frame', function ()  {
-            for (var i = 0; i < 1000; i++) {
+            for (var i = 0; i < 2000; i++) {
                 var circleShape = new zrender.Circle({
                     shape: {
-                        r: 2 + Math.random() * 4
+                        r: 1 + Math.random() * 1
                     },
                     style: {
-                        fill: '#' + (Math.random().toString()).slice(2, 8)
+                        fill: '#121',
+                        blend: 'lighter'
                     },
                     position: [Math.random() * zr.getWidth(), Math.random() * zr.getHeight()]
                 });
                 incrementalDisplayable.addDisplayable(circleShape, true);
             }
 
-            countText.style.text += 1000;
+            countText.style.text += 2000;
             countText.dirty();
         });
     </script>
