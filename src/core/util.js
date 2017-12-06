@@ -68,20 +68,24 @@ export function clone(source) {
     var typeStr = objToString.call(source);
 
     if (typeStr === '[object Array]') {
-        result = [];
-        for (var i = 0, len = source.length; i < len; i++) {
-            result[i] = clone(source[i]);
+        if (!isPrimitive(source)) {
+            result = [];
+            for (var i = 0, len = source.length; i < len; i++) {
+                result[i] = clone(source[i]);
+            }
         }
     }
     else if (TYPED_ARRAY[typeStr]) {
-        var Ctor = source.constructor;
-        if (source.constructor.from) {
-            result = Ctor.from(source);
-        }
-        else {
-            result = new Ctor(source.length);
-            for (var i = 0, len = source.length; i < len; i++) {
-                result[i] = clone(source[i]);
+        if (!isPrimitive(source)) {
+            var Ctor = source.constructor;
+            if (source.constructor.from) {
+                result = Ctor.from(source);
+            }
+            else {
+                result = new Ctor(source.length);
+                for (var i = 0, len = source.length; i < len; i++) {
+                    result[i] = clone(source[i]);
+                }
             }
         }
     }

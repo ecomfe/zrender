@@ -26,12 +26,23 @@ var guid = function () {
 
 var env = {};
 
-if (typeof navigator === 'undefined') {
+if (typeof document === 'undefined' && typeof self !== 'undefined') {
+    // In worker
+    env = {
+        browser: {},
+        os: {},
+        node: false,
+        worker: true,
+        canvasSupported: true
+    };
+}
+else if (typeof navigator === 'undefined') {
     // In node
     env = {
         browser: {},
         os: {},
         node: true,
+        worker: false,
         // Assume canvas is supported
         canvasSupported: true,
         svgSupported: true
@@ -133,7 +144,6 @@ function detect(ua) {
         // canvasSupported : !(browser.ie && parseFloat(browser.version) < 9)
         canvasSupported: !!document.createElement('canvas').getContext,
         svgSupported: typeof SVGRect !== 'undefined',
-        // @see <http://stackoverflow.com/questions/4817029/whats-the-best-way-to-detect-a-touch-screen-device-using-javascript>
         // works on most browsers
         // IE10/11 does not support touch event, and MS Edge supports them but not by
         // default, so we dont check navigator.maxTouchPoints for them here.
@@ -218,20 +228,24 @@ function clone(source) {
     var typeStr = objToString.call(source);
 
     if (typeStr === '[object Array]') {
-        result = [];
-        for (var i = 0, len = source.length; i < len; i++) {
-            result[i] = clone(source[i]);
+        if (!isPrimitive(source)) {
+            result = [];
+            for (var i = 0, len = source.length; i < len; i++) {
+                result[i] = clone(source[i]);
+            }
         }
     }
     else if (TYPED_ARRAY[typeStr]) {
-        var Ctor = source.constructor;
-        if (source.constructor.from) {
-            result = Ctor.from(source);
-        }
-        else {
-            result = new Ctor(source.length);
-            for (var i = 0, len = source.length; i < len; i++) {
-                result[i] = clone(source[i]);
+        if (!isPrimitive(source)) {
+            var Ctor = source.constructor;
+            if (source.constructor.from) {
+                result = Ctor.from(source);
+            }
+            else {
+                result = new Ctor(source.length);
+                for (var i = 0, len = source.length; i < len; i++) {
+                    result[i] = clone(source[i]);
+                }
             }
         }
     }
@@ -1417,14 +1431,6 @@ Eventful.prototype = {
     }
 };
 
-/**
- * Handler
- * @module zrender/Handler
- * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
- *         errorrik (errorrik@gmail.com)
- *         pissang (shenyi.914@gmail.com)
- */
-
 var SILENT = 'silent';
 
 function makeEventPacket(eveType, targetInfo, event) {
@@ -1478,10 +1484,7 @@ var Handler = function(storage, painter, proxy, painterRoot) {
     /**
      * Proxy of event. can be Dom, WebGLSurface, etc.
      */
-    this.proxy = proxy;
-
-    // Attach handler
-    proxy.handler = this;
+    this.proxy = null;
 
     /**
      * {target, topTarget, x, y}
@@ -1511,14 +1514,27 @@ var Handler = function(storage, painter, proxy, painterRoot) {
 
     Draggable.call(this);
 
-    each(handlerNames, function (name) {
-        proxy.on && proxy.on(name, this[name], this);
-    }, this);
+    this.setHandlerProxy(proxy);
 };
 
 Handler.prototype = {
 
     constructor: Handler,
+
+    setHandlerProxy: function (proxy) {
+        if (this.proxy) {
+            this.proxy.dispose();
+        }
+
+        if (proxy) {
+            each(handlerNames, function (name) {
+                proxy.on && proxy.on(name, this[name], this);
+            }, this);
+            // Attach handler
+            proxy.handler = this;
+        }
+        this.proxy = proxy;
+    },
 
     mousemove: function (event) {
         var x = event.zrX;
@@ -4388,6 +4404,12 @@ Element.prototype = {
     clipPath: null,
 
     /**
+     * 是否是 Group
+     * @type {boolean}
+     */
+    isGroup: false,
+
+    /**
      * Drift element
      * @param  {number} dx dx on the global space
      * @param  {number} dy dy on the global space
@@ -5737,14 +5759,6 @@ function sort(array, compare, lo, hi) {
     ts.forceMergeRuns();
 }
 
-/**
- * Storage内容仓库模块
- * @module zrender/Storage
- * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
- * @author errorrik (errorrik@gmail.com)
- * @author pissang (https://github.com/pissang/)
- */
-
 // Use timsort because in most case elements are partially sorted
 // https://jsfiddle.net/pissang/jr4x7mdm/8/
 function shapeCompareFunc(a, b) {
@@ -5779,6 +5793,8 @@ Storage.prototype = {
 
     constructor: Storage,
 
+    _needsUpdateList: true,
+
     /**
      * @param  {Function} cb
      *
@@ -5812,20 +5828,23 @@ Storage.prototype = {
      * @param {boolean} [includeIgnore=false] 是否包含 ignore 的数组
      */
     updateDisplayList: function (includeIgnore) {
-        this._displayListLen = 0;
+        if (this._needsUpdateList) {
+            this._displayListLen = 0;
+        }
+
         var roots = this._roots;
         var displayList = this._displayList;
         for (var i = 0, len = roots.length; i < len; i++) {
             this._updateAndAddDisplayable(roots[i], null, includeIgnore);
         }
-        displayList.length = this._displayListLen;
 
-        // for (var i = 0, len = displayList.length; i < len; i++) {
-        //     displayList[i].__renderidx = i;
-        // }
+        if (this._needsUpdateList) {
+            displayList.length = this._displayListLen;
+        }
 
-        // displayList.sort(shapeCompareFunc);
         env$1.canvasSupported && sort(displayList, shapeCompareFunc);
+
+        this._needsUpdateList = false;
     },
 
     _updateAndAddDisplayable: function (el, clipPaths, includeIgnore) {
@@ -5892,7 +5911,9 @@ Storage.prototype = {
         else {
             el.__clipPaths = clipPaths;
 
-            this._displayList[this._displayListLen++] = el;
+            if (this._needsUpdateList) {
+                this._displayList[this._displayListLen++] = el;
+            }
         }
     },
 
@@ -5953,15 +5974,18 @@ Storage.prototype = {
     },
 
     addToStorage: function (el) {
-        el.__storage = this;
-        el.dirty(false);
-
+        if (el) {
+            el.__storage = this;
+            el.dirty(false);
+            this._needsUpdateList = true;    
+        }
         return this;
     },
 
     delFromStorage: function (el) {
         if (el) {
             el.__storage = null;
+            this._needsUpdateList = true;
         }
 
         return this;
@@ -5976,6 +6000,25 @@ Storage.prototype = {
     },
 
     displayableSortFunc: shapeCompareFunc
+};
+
+var SHADOW_PROPS = {
+    'shadowBlur': 1,
+    'shadowOffsetX': 1,
+    'shadowOffsetY': 1,
+    'textShadowBlur': 1,
+    'textShadowOffsetX': 1,
+    'textShadowOffsetY': 1,
+    'textBoxShadowBlur': 1,
+    'textBoxShadowOffsetX': 1,
+    'textBoxShadowOffsetY': 1
+};
+
+var fixShadow = function (ctx, propName, value) {
+    if (SHADOW_PROPS.hasOwnProperty(propName)) {
+        return value *= ctx.dpr;
+    }
+    return value;
 };
 
 var STYLE_COMMON_PROPS = [
@@ -6335,7 +6378,8 @@ Style.prototype = {
 
             if (firstDraw || style[styleName] !== prevStyle[styleName]) {
                 // FIXME Invalid property value will cause style leak from previous element.
-                ctx[styleName] = style[styleName] || prop[1];
+                ctx[styleName] =
+                    fixShadow(ctx, styleName, style[styleName] || prop[1]);
             }
         }
 
@@ -6568,13 +6612,22 @@ Layer.prototype = {
 
     constructor: Layer,
 
-    elCount: 0,
-
     __dirty: true,
+
+    __used: false,
+
+    __drawIndex: 0,
+    __startIndex: 0,
+    __endIndex: 0,
+
+    isIncremental: false,
+
+    getElementCount: function () {
+        return this.__endIndex - this.__startIndex;
+    },
 
     initContext: function () {
         this.ctx = this.dom.getContext('2d');
-        this.ctx.__currentValues = {};
         this.ctx.dpr = this.dpr;
     },
 
@@ -6583,7 +6636,6 @@ Layer.prototype = {
 
         this.domBack = createDom('back-' + this.id, this.painter, dpr);
         this.ctxBack = this.domBack.getContext('2d');
-        this.ctxBack.__currentValues = {};
 
         if (dpr != 1) {
             this.ctxBack.scale(dpr, dpr);
@@ -7943,11 +7995,7 @@ function getBoxPosition(blockHeiht, style, rect) {
 }
 
 function setCtx(ctx, prop, value) {
-    // FIXME ??? performance try
-    // if (ctx.__currentValues[prop] !== value) {
-        // ctx[prop] = ctx.__currentValues[prop] = value;
-    ctx[prop] = value;
-    // }
+    ctx[prop] = fixShadow(ctx, prop, value);
     return ctx[prop];
 }
 
@@ -8198,9 +8246,14 @@ Displayable.prototype = {
     /**
      * Render the element progressively when the value >= 0,
      * usefull for large data.
-     * @type {number}
+     * @type {boolean}
      */
-    progressive: -1,
+    progressive: false,
+
+    /**
+     * @type {boolean}
+     */
+    isIncremental: false,
 
     beforeBrush: function (ctx) {},
 
@@ -8407,10 +8460,10 @@ ZImage.prototype = {
             ctx.drawImage(image, x, y, width, height);
         }
 
-        this.restoreTransform(ctx);
-
         // Draw rect text
         if (style.text != null) {
+            // Only restore transform when needs draw text.
+            this.restoreTransform(ctx);    
             this.drawRectText(ctx, this.getBoundingRect());
         }
     },
@@ -8427,20 +8480,6 @@ ZImage.prototype = {
 };
 
 inherits(ZImage, Displayable);
-
-/**
- * Default canvas painter
- * @module zrender/Painter
- * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
- *         errorrik (errorrik@gmail.com)
- *         pissang (https://www.github.com/pissang)
- */
-
-// PENDIGN
-// Layer exceeds MAX_PROGRESSIVE_LAYER_NUMBER may have some problem when flush directly second time.
-//
-// Maximum progressive layer. When exceeding this number. All elements will be drawed in the last layer.
-var MAX_PROGRESSIVE_LAYER_NUMBER = 5;
 
 function parseInt10(val) {
     return parseInt(val, 10);
@@ -8462,16 +8501,6 @@ function isLayerValid(layer) {
     }
 
     return true;
-}
-
-function preProcessLayer(layer) {
-    layer.__unusedCount++;
-}
-
-function postProcessLayer(layer) {
-    if (layer.__unusedCount == 1) {
-        layer.clear();
-    }
 }
 
 var tmpRect = new BoundingRect(0, 0, 0, 0);
@@ -8631,14 +8660,11 @@ var Painter = function (root, storage, opts) {
         this._domRoot = root;
     }
 
-    // Layers for progressive rendering
-    this._progressiveLayers = [];
-
     /**
      * @type {module:zrender/Layer}
      * @private
      */
-    this._hoverlayer;
+    this._hoverlayer = null;
 
     this._hoverElements = [];
 };
@@ -8697,10 +8723,6 @@ Painter.prototype = {
         }
 
         this.refreshHover();
-
-        if (this._progressiveLayers.length) {
-            this._startProgessive();
-        }
 
         return this;
     },
@@ -8785,43 +8807,8 @@ Painter.prototype = {
         hoverLayer.ctx.restore();
     },
 
-    _startProgessive: function () {
-        var self = this;
-
-        if (!self._furtherProgressive) {
-            return;
-        }
-
-        // Use a token to stop progress steps triggered by
-        // previous zr.refresh calling.
-        var token = self._progressiveToken = +new Date();
-
-        self._progress++;
-        requestAnimationFrame(step);
-
-        function step() {
-            // In case refreshed or disposed
-            if (token === self._progressiveToken && self.storage) {
-
-                self._doPaintList(self.storage.getDisplayList());
-
-                if (self._furtherProgressive) {
-                    self._progress++;
-                    requestAnimationFrame(step);
-                }
-                else {
-                    self._progressiveToken = -1;
-                }
-            }
-        }
-    },
-
-    _clearProgressive: function () {
-        this._progressiveToken = -1;
-        this._progress = 0;
-        each(this._progressiveLayers, function (layer) {
-            layer.__dirty && layer.clear();
-        });
+    getHoverLayer: function () {
+        return this._hoverlayer;
     },
 
     _paintList: function (list, paintAll) {
@@ -8832,149 +8819,52 @@ Painter.prototype = {
 
         this._updateLayerStatus(list);
 
-        this._clearProgressive();
-
-        this.eachBuiltinLayer(preProcessLayer);
-
         this._doPaintList(list, paintAll);
-
-        this.eachBuiltinLayer(postProcessLayer);
     },
 
     _doPaintList: function (list, paintAll) {
-        var currentLayer;
-        var currentZLevel;
-        var ctx;
-
-        // var invTransform = [];
-        var scope;
-
-        var progressiveLayerIdx = 0;
-        var currentProgressiveLayer;
-
-        var width = this._width;
-        var height = this._height;
-        var layerProgress;
-        var frame = this._progress;
-        function flushProgressiveLayer(layer) {
-            var dpr = ctx.dpr || 1;
-            ctx.save();
-            ctx.globalAlpha = 1;
-            ctx.shadowBlur = 0;
-            // Avoid layer don't clear in next progressive frame
-            currentLayer.__dirty = true;
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
-            ctx.drawImage(layer.dom, 0, 0, width * dpr, height * dpr);
-            ctx.restore();
+        var layerList = [];
+        for (var zi = 0; zi < this._zlevelList.length; zi++) {
+            var zlevel = this._zlevelList[zi];
+            var layer = this._layers[zlevel];
+            if (layer.__builtin__
+                && layer !== this._hoverlayer
+                && (layer.__dirty || paintAll)
+            ) {
+                layerList.push(layer);
+            }
         }
-
-        for (var i = 0, l = list.length; i < l; i++) {
-            var el = list[i];
-            var elZLevel = this._singleCanvas ? 0 : el.zlevel;
-
-            var elFrame = el.__frame;
-
-            // Flush at current context
-            // PENDING
-            if (elFrame < 0 && currentProgressiveLayer) {
-                flushProgressiveLayer(currentProgressiveLayer);
-                currentProgressiveLayer = null;
-            }
-
-            // Change draw layer
-            if (currentZLevel !== elZLevel) {
-                if (ctx) {
-                    ctx.restore();
-                }
-
-                // Reset scope
-                scope = {};
-
-                // Only 0 zlevel if only has one canvas
-                currentZLevel = elZLevel;
-                currentLayer = this.getLayer(currentZLevel);
-
-                if (!currentLayer.__builtin__) {
-                    zrLog(
-                        'ZLevel ' + currentZLevel
-                        + ' has been used by unkown layer ' + currentLayer.id
-                    );
-                }
-
-                ctx = currentLayer.ctx;
-                ctx.save();
-
-                // Reset the count
-                currentLayer.__unusedCount = 0;
-
-                if (currentLayer.__dirty || paintAll) {
-                    currentLayer.clear();
-                }
-            }
-
-            if (!(currentLayer.__dirty || paintAll)) {
-                continue;
-            }
-
-            if (elFrame >= 0) {
-                // Progressive layer changed
-                if (!currentProgressiveLayer) {
-                    currentProgressiveLayer = this._progressiveLayers[
-                        Math.min(progressiveLayerIdx++, MAX_PROGRESSIVE_LAYER_NUMBER - 1)
-                    ];
-
-                    currentProgressiveLayer.ctx.save();
-                    currentProgressiveLayer.renderScope = {};
-
-                    if (currentProgressiveLayer
-                        && (currentProgressiveLayer.__progress > currentProgressiveLayer.__maxProgress)
-                    ) {
-                        // flushProgressiveLayer(currentProgressiveLayer);
-                        // Quick jump all progressive elements
-                        // All progressive element are not dirty, jump over and flush directly
-                        i = currentProgressiveLayer.__nextIdxNotProg - 1;
-                        // currentProgressiveLayer = null;
-                        continue;
-                    }
-
-                    layerProgress = currentProgressiveLayer.__progress;
-
-                    if (!currentProgressiveLayer.__dirty) {
-                        // Keep rendering
-                        frame = layerProgress;
-                    }
-
-                    currentProgressiveLayer.__progress = frame + 1;
-                }
-
-                if (elFrame === frame) {
-                    this._doPaintEl(el, currentProgressiveLayer, true, currentProgressiveLayer.renderScope);
-                }
-            }
-            else {
-                this._doPaintEl(el, currentLayer, paintAll, scope);
-            }
-
-            el.__dirty = false;
-        }
-
-        if (currentProgressiveLayer) {
-            flushProgressiveLayer(currentProgressiveLayer);
-        }
-
-        // Restore the lastLayer ctx
-        ctx && ctx.restore();
-        // If still has clipping state
-        // if (scope.prevElClipPaths) {
-        //     ctx.restore();
+        // if (layerList > 1) {
+        //     // PENDING
+        //     layerList.sort(function (a, b) {
+        //         return a.getElementCount() - b.getElementCount();
+        //     });
         // }
 
-        this._furtherProgressive = false;
-        each(this._progressiveLayers, function (layer) {
-            if (layer.__maxProgress >= layer.__progress) {
-                this._furtherProgressive = true;
+        for (var k = 0; k < layerList.length; k++) {
+            var layer = layerList[k];
+            var ctx = layer.ctx;
+            var scope = {};
+            ctx.save();
+
+            if (layer.__startIndex === layer.__drawIndex) {
+                if (layer.isIncremental) {
+                    var firstEL = list[layer.__drawIndex];
+                    if (firstEL && firstEL.needsClear()) {
+                        layer.clear();
+                    }
+                }
+                else {
+                    layer.clear();
+                }
             }
-        }, this);
+            for (var i = layer.__drawIndex; i < layer.__endIndex; i++) {
+                var el = list[i];
+                this._doPaintEl(el, layer, paintAll, scope);
+                el.__dirty = false;
+            }
+            ctx.restore();
+        }
     },
 
     _doPaintEl: function (el, currentLayer, forcePaint, scope) {
@@ -9167,99 +9057,59 @@ Painter.prototype = {
 
     _updateLayerStatus: function (list) {
 
-        var layers = this._layers;
-        var progressiveLayers = this._progressiveLayers;
-
-        var elCountsLastFrame = {};
-        var progressiveElCountsLastFrame = {};
-
         this.eachBuiltinLayer(function (layer, z) {
-            elCountsLastFrame[z] = layer.elCount;
-            layer.elCount = 0;
-            layer.__dirty = false;
+            layer.__dirty = layer.__used = false;
         });
 
-        each(progressiveLayers, function (layer, idx) {
-            progressiveElCountsLastFrame[idx] = layer.elCount;
-            layer.elCount = 0;
-            layer.__dirty = false;
-        });
+        function updatePrevLayer(idx) {
+            if (prevLayer) {
+                if (prevLayer.__endIndex !== idx) {
+                    prevLayer.__dirty = true;
+                }
+                prevLayer.__endIndex = idx;
+            }
+        }
 
-        var progressiveLayerCount = 0;
-        var currentProgressiveLayer;
-        var lastProgressiveKey;
-        var frameCount = 0;
-        for (var i = 0, l = list.length; i < l; i++) {
+        var prevLayer = null;
+        // TODO
+        var incrementalLayerLevel = 0.001;
+        var incrementalLayerCount = 0;
+        for (var i = 0; i < list.length; i++) {
             var el = list[i];
             var zlevel = this._singleCanvas ? 0 : el.zlevel;
-            var layer = layers[zlevel];
-            var elProgress = el.progressive;
-            if (layer) {
-                layer.elCount++;
-                layer.__dirty = layer.__dirty || el.__dirty;
-            }
-
-            /////// Update progressive
-            if (elProgress >= 0) {
-                // Fix wrong progressive sequence problem.
-                if (lastProgressiveKey !== elProgress) {
-                    lastProgressiveKey = elProgress;
-                    frameCount++;
-                }
-                var elFrame = el.__frame = frameCount - 1;
-                if (!currentProgressiveLayer) {
-                    var idx = Math.min(progressiveLayerCount, MAX_PROGRESSIVE_LAYER_NUMBER - 1);
-                    currentProgressiveLayer = progressiveLayers[idx];
-                    if (!currentProgressiveLayer) {
-                        currentProgressiveLayer = progressiveLayers[idx] = new Layer(
-                            'progressive', this, this.dpr
-                        );
-                        currentProgressiveLayer.initContext();
-                    }
-                    currentProgressiveLayer.__maxProgress = 0;
-                }
-                currentProgressiveLayer.__dirty = currentProgressiveLayer.__dirty || el.__dirty;
-                currentProgressiveLayer.elCount++;
-
-                currentProgressiveLayer.__maxProgress = Math.max(
-                    currentProgressiveLayer.__maxProgress, elFrame
-                );
-
-                if (currentProgressiveLayer.__maxProgress >= currentProgressiveLayer.__progress) {
-                    // Should keep rendering this  layer because progressive rendering is not finished yet
-                    layer.__dirty = true;
-                }
+            var layer;
+            if (el.isIncremental) {
+                layer = this.getLayer(zlevel + incrementalLayerLevel);
+                layer.isIncremental = true;
+                incrementalLayerCount = 1;
             }
             else {
-                el.__frame = -1;
+                layer = this.getLayer(zlevel + incrementalLayerCount > 0 ? 0.01 : 0);
+            }
 
-                if (currentProgressiveLayer) {
-                    currentProgressiveLayer.__nextIdxNotProg = i;
-                    progressiveLayerCount++;
-                    currentProgressiveLayer = null;
+            if (!layer.__builtin__) {
+                zrLog('ZLevel ' + zlevel + ' has been used by unkown layer ' + layer.id);
+            }
+
+            if (layer !== prevLayer) {
+                layer.__used = true;
+                if (layer.__startIndex !== i) {
+                    layer.__dirty = true;
                 }
+                layer.__startIndex = layer.__drawIndex = i;
+                updatePrevLayer(i);
+                prevLayer = layer;
             }
+            layer.__dirty = layer.__dirty || el.__dirty;
         }
 
-        if (currentProgressiveLayer) {
-            progressiveLayerCount++;
-            currentProgressiveLayer.__nextIdxNotProg = i;
-        }
+        updatePrevLayer(i);
 
-        // 层中的元素数量有发生变化
         this.eachBuiltinLayer(function (layer, z) {
-            if (elCountsLastFrame[z] !== layer.elCount) {
+            // Used in last frame but not in this frame. Needs clear
+            if (!layer.__used && layer.getElementCount() > 0) {
                 layer.__dirty = true;
-            }
-        });
-
-        progressiveLayers.length = Math.min(progressiveLayerCount, MAX_PROGRESSIVE_LAYER_NUMBER);
-        each(progressiveLayers, function (layer, idx) {
-            if (progressiveElCountsLastFrame[idx] !== layer.elCount) {
-                el.__dirty = true;
-            }
-            if (layer.__dirty) {
-                layer.__progress = 0;
+                layer.__startIndex = layer.__endIndex = layer.__drawIndex = 0;
             }
         });
     },
@@ -9325,40 +9175,51 @@ Painter.prototype = {
      * 区域大小变化后重绘
      */
     resize: function (width, height) {
-        var domRoot = this._domRoot;
-        // FIXME Why ?
-        domRoot.style.display = 'none';
-
-        // Save input w/h
-        var opts = this._opts;
-        width != null && (opts.width = width);
-        height != null && (opts.height = height);
-
-        width = this._getSize(0);
-        height = this._getSize(1);
-
-        domRoot.style.display = '';
-
-        // 优化没有实际改变的resize
-        if (this._width != width || height != this._height) {
-            domRoot.style.width = width + 'px';
-            domRoot.style.height = height + 'px';
-
-            for (var id in this._layers) {
-                if (this._layers.hasOwnProperty(id)) {
-                    this._layers[id].resize(width, height);
-                }
+        if (!this._domRoot.style) { // Maybe in node or worker
+            if (width == null || height == null) {
+                return;
             }
-            each(this._progressiveLayers, function (layer) {
-                layer.resize(width, height);
-            });
+            this._width = width;
+            this._height = height;
 
-            this.refresh(true);
+            this.getLayer(0).resize(width, height);
         }
+        else {
+            var domRoot = this._domRoot;
+            // FIXME Why ?
+            domRoot.style.display = 'none';
 
-        this._width = width;
-        this._height = height;
+            // Save input w/h
+            var opts = this._opts;
+            width != null && (opts.width = width);
+            height != null && (opts.height = height);
 
+            width = this._getSize(0);
+            height = this._getSize(1);
+
+            domRoot.style.display = '';
+
+            // 优化没有实际改变的resize
+            if (this._width != width || height != this._height) {
+                domRoot.style.width = width + 'px';
+                domRoot.style.height = height + 'px';
+
+                for (var id in this._layers) {
+                    if (this._layers.hasOwnProperty(id)) {
+                        this._layers[id].resize(width, height);
+                    }
+                }
+                each(this._progressiveLayers, function (layer) {
+                    layer.resize(width, height);
+                });
+
+                this.refresh(true);
+            }
+
+            this._width = width;
+            this._height = height;
+
+        }
         return this;
     },
 
@@ -9487,9 +9348,9 @@ Painter.prototype = {
         var ctx = canvas.getContext('2d');
         var rect = path.getBoundingRect();
         var style = path.style;
-        var shadowBlurSize = style.shadowBlur;
-        var shadowOffsetX = style.shadowOffsetX;
-        var shadowOffsetY = style.shadowOffsetY;
+        var shadowBlurSize = style.shadowBlur * dpr;
+        var shadowOffsetX = style.shadowOffsetX * dpr;
+        var shadowOffsetY = style.shadowOffsetY * dpr;
         var lineWidth = style.hasStroke() ? style.lineWidth : 0;
 
         var leftMargin = Math.max(lineWidth / 2, -shadowOffsetX + shadowBlurSize);
@@ -10520,7 +10381,7 @@ var ZRender = function (id, dom, opts) {
     this.storage = storage;
     this.painter = painter;
 
-    var handerProxy = !env$1.node ? new HandlerDomProxy(painter.getViewportRoot()) : null;
+    var handerProxy = (!env$1.node && !env$1.worker) ? new HandlerDomProxy(painter.getViewportRoot()) : null;
     this.handler = new Handler(storage, painter, handerProxy, painter.root);
 
     /**
@@ -13017,10 +12878,10 @@ Path.prototype = {
             ctx.setLineDash([]);
         }
 
-        this.restoreTransform(ctx);
-
         // Draw rect text
         if (style.text != null) {
+            // Only restore transform when needs draw text.
+            this.restoreTransform(ctx);    
             this.drawRectText(ctx, this.getBoundingRect());
         }
     },
@@ -13884,6 +13745,124 @@ Text.prototype = {
 };
 
 inherits(Text, Displayable);
+
+/**
+ * Displayable for incremental rendering. It will be rendered in a separate layer
+ * IncrementalDisplay have too main methods. `clearDisplayables` and `addDisplayables`
+ * addDisplayables will render the added displayables incremetally.
+ * clearDisplayables will clear the layer.
+ * Notice: Added displaybles can't be modified and removed.
+ */
+// TODO Style override ?
+function IncrementalDisplayble(opts) {
+
+    Displayable.call(this, opts);
+
+    this._displayables = [];
+
+    this._temporaryDisplayables = [];
+
+    this._cursor = 0;
+
+    this._needsClear = true;
+}
+
+IncrementalDisplayble.prototype.isIncremental = true;
+
+IncrementalDisplayble.prototype.needsClear = function () {
+    return this._needsClear;
+};
+
+IncrementalDisplayble.prototype.clearDisplaybles = function () {
+    this._displayables = [];
+    this._temporaryDisplayables = [];
+    this._cursor = 0;
+    this.dirty();
+    this._needsClear = true;
+};
+
+IncrementalDisplayble.prototype.addDisplayable = function (displayable, notPersistent) {
+    if (notPersistent) {
+        this._temporaryDisplayables.push(displayable);
+    }
+    else {
+        this._displayables.push(displayable);
+    }
+    this.dirty();
+};
+
+IncrementalDisplayble.prototype.addDisplayables = function (displayables, notPersistent) {
+    notPersistent = notPersistent || false;
+    for (var i = 0; i < displayables.length; i++) {
+        this.addDisplayable(displayables[i], notPersistent);
+    }
+};
+
+IncrementalDisplayble.prototype.update = function () {
+    this.updateTransform();
+    for (var i = this._cursor; i < this._displayables.length; i++) {
+        var displayable = this._displayables[i];
+        // PENDING
+        displayable.parent = this;
+        displayable.update();
+        displayable.parent = null;
+    }
+    for (var i = 0; i < this._temporaryDisplayables.length; i++) {
+        var displayable = this._temporaryDisplayables[i];
+        // PENDING
+        displayable.parent = this;
+        displayable.update();
+        displayable.parent = null;
+    }
+};
+
+IncrementalDisplayble.prototype.brush = function (ctx, prevEl) {
+    // Render persistant displayables.
+    for (var i = this._cursor; i < this._displayables.length; i++) {
+        this._displayables[i].brush(ctx, i === this._cursor ? null : this._displayables[i - 1]);
+    }
+    this._cursor = i;
+    // Render temporary displayables.
+    for (var i = 0; i < this._temporaryDisplayables.length; i++) {
+        this._temporaryDisplayables[i].brush(ctx, i === 0 ? null : this._temporaryDisplayables[i - 1]);
+    }
+    this._temporaryDisplayables = [];
+    this._needsClear = false;
+};
+
+var m = [];
+IncrementalDisplayble.prototype.getBoundingRect = function () {
+    if (!this._rect) {
+        var rect = new BoundingRect(Infinity, Infinity, -Infinity, -Infinity);
+        for (var i = 0; i < this._displayables.length; i++) {
+            var displayable = this._displayables[i];
+            var childRect = displayable.getBoundingRect().clone();
+            if (displayable.needLocalTransform()) {
+                childRect.applyTransform(displayable.getLocalTransform(m));
+            }
+            rect.union(childRect);
+        }
+        this._rect = rect;
+    }
+    return this._rect;
+};
+
+IncrementalDisplayble.prototype.contain = function (x, y) {
+    var localPos = this.transformCoordToLocal(x, y);
+    var rect = this.getBoundingRect();
+
+    if (rect.contain(localPos[0], localPos[1])) {
+        for (var i = 0; i < this._displayables.length; i++) {
+            var displayable = this._displayables[i];
+            if (displayable.contain(x, y)) {
+                return true;
+            }
+        }
+    }
+    return false;
+};
+
+inherits(IncrementalDisplayble, Displayable);
 
 /**
  * 圆弧
@@ -15129,7 +15108,7 @@ function bindStyle(svgEl, style, isText) {
         var strokeWidth = isText
             ? style.textStrokeWidth
             : style.lineWidth;
-        var strokeScale = style.strokeNoScale
+        var strokeScale = !isText && style.strokeNoScale
             ? style.host.getLineScale()
             : 1;
         attr(svgEl, 'stroke-width', strokeWidth / strokeScale);
@@ -15742,12 +15721,14 @@ var MARK_USED = '1';
 function Definable(
     svgRoot,
     tagNames,
-    markLabel
+    markLabel,
+    domName
 ) {
 
     this._svgRoot = svgRoot;
     this._tagNames = typeof tagNames === 'string' ? [tagNames] : tagNames;
     this._markLabel = markLabel;
+    this._domName = domName || '_dom';
 
     this.nextId = 0;
 }
@@ -15813,17 +15794,17 @@ Definable.prototype.update = function (element, onUpdate) {
     }
 
     var defs = this.getDefs(false);
-    if (element._dom && defs.contains(element._dom)) {
+    if (element[this._domName] && defs.contains(element[this._domName])) {
         // Update DOM
         if (typeof onUpdate === 'function') {
-            onUpdate();
+            onUpdate(element);
         }
     }
     else {
         // No previous dom, create new
         var dom = this.add(element);
         if (dom) {
-            element._dom = dom;
+            element[this._domName] = dom;
         }
     }
 };
@@ -15847,7 +15828,10 @@ Definable.prototype.addDom = function (dom) {
  */
 Definable.prototype.removeDom = function (element) {
     var defs = this.getDefs(false);
-    defs.removeChild(element._dom);
+    if (defs) {
+        defs.removeChild(element[this._domName]);
+        element[this._domName] = null;
+    }
 };
 
 
@@ -16286,6 +16270,8 @@ ClippathManager.prototype.updateDom = function (
         }
 
         var pathEl = this.getSvgElement(clipPath);
+
+        clipPathEl.innerHTML = '';
         /**
          * Use `cloneNode()` here to appendChild to multiple parents,
          * which may happend when Text and other shapes are using the same
@@ -16327,6 +16313,210 @@ ClippathManager.prototype.markUsed = function (displayable) {
         });
     }
 };
+
+/**
+ * @file Manages SVG shadow elements.
+ * @author Zhang Wenli
+ */
+
+/**
+ * Manages SVG shadow elements.
+ *
+ * @class
+ * @extends Definable
+ * @param   {SVGElement} svgRoot root of SVG document
+ */
+function ShadowManager(svgRoot) {
+    Definable.call(
+        this,
+        svgRoot,
+        ['filter'],
+        '__filter_in_use__',
+        '_shadowDom'
+    );
+}
+
+
+inherits(ShadowManager, Definable);
+
+
+/**
+ * Create new shadow DOM for fill or stroke if not exist,
+ * but will not update shadow if exists.
+ *
+ * @param {SvgElement}  svgElement   SVG element to paint
+ * @param {Displayable} displayable  zrender displayable element
+ */
+ShadowManager.prototype.addWithoutUpdate = function (
+    svgElement,
+    displayable
+) {
+    if (displayable && hasShadow(displayable.style)) {
+        var style = displayable.style;
+
+        // Create dom in <defs> if not exists
+        var dom;
+        if (style._shadowDom) {
+            // Gradient exists
+            dom = style._shadowDom;
+
+            var defs = this.getDefs(true);
+            if (!defs.contains(style._shadowDom)) {
+                // _shadowDom is no longer in defs, recreate
+                this.addDom(dom);
+            }
+        }
+        else {
+            // New dom
+            dom = this.add(displayable);
+        }
+
+        this.markUsed(displayable);
+
+        var id = dom.getAttribute('id');
+        svgElement.style.filter = 'url(#' + id + ')';
+    }
+};
+
+
+/**
+ * Add a new shadow tag in <defs>
+ *
+ * @param {Displayable} displayable  zrender displayable element
+ * @return {SVGFilterElement} created DOM
+ */
+ShadowManager.prototype.add = function (displayable) {
+    var dom = this.createElement('filter');
+    var style = displayable.style;
+
+    // Set dom id with shadow id, since each shadow instance
+    // will have no more than one dom element.
+    // id may exists before for those dirty elements, in which case
+    // id should remain the same, and other attributes should be
+    // updated.
+    style._shadowDomId = style._shadowDomId || this.nextId++;
+    dom.setAttribute('id', 'zr-shadow-' + style._shadowDomId);
+
+    this.updateDom(displayable, dom);
+    this.addDom(dom);
+
+    return dom;
+};
+
+
+/**
+ * Update shadow.
+ *
+ * @param {Displayable} displayable  zrender displayable element
+ */
+ShadowManager.prototype.update = function (svgElement, displayable) {
+    var style = displayable.style;
+    if (hasShadow(style)) {
+        var that = this;
+        Definable.prototype.update.call(this, displayable, function (style) {
+            that.updateDom(displayable, style._shadowDom);
+        });
+    }
+    else {
+        // Remove shadow
+        this.remove(svgElement, style);
+    }
+};
+
+
+/**
+ * Remove DOM and clear parent filter
+ */
+ShadowManager.prototype.remove = function (svgElement, style) {
+    if (style._shadowDomId != null) {
+        this.removeDom(style);
+        svgElement.style.filter = '';
+    }
+};
+
+
+/**
+ * Update shadow dom
+ *
+ * @param {Displayable} displayable  zrender displayable element
+ * @param {SVGFilterElement} dom DOM to update
+ */
+ShadowManager.prototype.updateDom = function (displayable, dom) {
+    var domChild = dom.getElementsByTagName('feDropShadow');
+    if (domChild.length === 0) {
+        domChild = this.createElement('feDropShadow');
+    }
+    else {
+        domChild = domChild[0];
+    }
+
+    var style = displayable.style;
+    var scaleX = displayable.scale ? (displayable.scale[0] || 1) : 1;
+    var scaleY = displayable.scale ? (displayable.scale[1] || 1) : 1;
+
+    // TODO: textBoxShadowBlur is not supported yet
+    var offsetX, offsetY, blur, color;
+    if (style.shadowBlur || style.shadowOffsetX || style.shadowOffsetY) {
+        offsetX = style.shadowOffsetX;
+        offsetY = style.shadowOffsetY;
+        blur = style.shadowBlur;
+        color = style.shadowColor;
+    }
+    else if (style.textShadowBlur) {
+        offsetX = style.textShadowOffsetX;
+        offsetY = style.textShadowOffsetY;
+        blur = style.textShadowBlur;
+        color = style.textShadowColor;
+    }
+    else {
+        // Remove shadow
+        this.removeDom(dom, style);
+        return;
+    }
+
+    domChild.setAttribute('dx', offsetX / scaleX);
+    domChild.setAttribute('dy', offsetY / scaleY);
+    domChild.setAttribute('flood-color', color);
+
+    // Divide by two here so that it looks the same as in canvas
+    // See: https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-shadowblur
+    var stdDx = blur / 2 / scaleX;
+    var stdDy = blur / 2 / scaleY;
+    var stdDeviation = stdDx + ' ' + stdDy;
+    domChild.setAttribute('stdDeviation', stdDeviation);
+
+    // Fix filter clipping problem
+    dom.setAttribute('x', '-100%');
+    dom.setAttribute('y', '-100%');
+    dom.setAttribute('width', Math.ceil(blur / 2 * 200) + '%');
+    dom.setAttribute('height', Math.ceil(blur / 2 * 200) + '%');
+
+    dom.appendChild(domChild);
+
+    // Store dom element in shadow, to avoid creating multiple
+    // dom instances for the same shadow element
+    style._shadowDom = dom;
+};
+
+/**
+ * Mark a single shadow to be used
+ *
+ * @param {Displayable} displayable displayable element
+ */
+ShadowManager.prototype.markUsed = function (displayable) {
+    var style = displayable.style;
+    if (style && style._shadowDom) {
+        Definable.prototype.markUsed.call(this, style._shadowDom);
+    }
+};
+
+function hasShadow(style) {
+    // TODO: textBoxShadowBlur is not supported yet
+    return style
+        && (style.shadowBlur || style.shadowOffsetX || style.shadowOffsetY
+            || style.textShadowBlur || style.textShadowOffsetX
+            || style.textShadowOffsetY);
+}
 
 /**
  * SVG Painter
@@ -16403,11 +16593,11 @@ var SVGPainter = function (root, storage, opts) {
     svgRoot.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
     svgRoot.setAttribute('version', '1.1');
     svgRoot.setAttribute('baseProfile', 'full');
-    svgRoot.style['user-select'] = 'none';
-    svgRoot.style.cssText = 'position:absolute;left:0;top:0;';
+    svgRoot.style.cssText = 'user-select:none;position:absolute;left:0;top:0;';
 
     this.gradientManager = new GradientManager(svgRoot);
     this.clipPathManager = new ClippathManager(svgRoot);
+    this.shadowManager = new ShadowManager(svgRoot);
 
     var viewport = document.createElement('div');
     viewport.style.cssText = 'overflow:hidden;position:relative';
@@ -16455,6 +16645,7 @@ SVGPainter.prototype = {
     _paintList: function (list) {
         this.gradientManager.markAllUnused();
         this.clipPathManager.markAllUnused();
+        this.shadowManager.markAllUnused();
 
         var svgRoot = this._svgRoot;
         var visibleList = this._visibleList;
@@ -16465,6 +16656,8 @@ SVGPainter.prototype = {
         for (i = 0; i < listLen; i++) {
             var displayable = list[i];
             var svgProxy = getSvgProxy(displayable);
+            var svgElement = getSvgElement(displayable)
+                || getTextSvgElement(displayable);
             if (!displayable.invisible) {
                 if (displayable.__dirty) {
                     svgProxy && svgProxy.brush(displayable);
@@ -16472,12 +16665,15 @@ SVGPainter.prototype = {
                     // Update clipPath
                     this.clipPathManager.update(displayable);
 
-                    // Update gradient
+                    // Update gradient and shadow
                     if (displayable.style) {
                         this.gradientManager
                             .update(displayable.style.fill);
                         this.gradientManager
                             .update(displayable.style.stroke);
+
+                        this.shadowManager
+                            .update(svgElement, displayable);
                     }
 
                     displayable.__dirty = false;
@@ -16531,6 +16727,8 @@ SVGPainter.prototype = {
 
                     this.gradientManager
                         .addWithoutUpdate(svgElement, displayable);
+                    this.shadowManager
+                        .addWithoutUpdate(prevSvgElement, displayable);
                     this.clipPathManager.markUsed(displayable);
                 }
             }
@@ -16547,6 +16745,10 @@ SVGPainter.prototype = {
                     this.gradientManager
                         .addWithoutUpdate(svgElement, displayable);
 
+                    this.shadowManager.markUsed(displayable);
+                    this.shadowManager
+                        .addWithoutUpdate(svgElement, displayable);
+
                     this.clipPathManager.markUsed(displayable);
                 }
             }
@@ -16554,6 +16756,7 @@ SVGPainter.prototype = {
 
         this.gradientManager.removeUnused();
         this.clipPathManager.removeUnused();
+        this.shadowManager.removeUnused();
 
         this._visibleList = newVisibleList;
     },
@@ -18012,6 +18215,7 @@ exports.Path = Path;
 exports.Image = ZImage;
 exports.CompoundPath = CompoundPath;
 exports.Text = Text;
+exports.IncrementalDisplayable = IncrementalDisplayble;
 exports.Arc = Arc;
 exports.BezierCurve = BezierCurve;
 exports.Circle = Circle;
