@@ -38,8 +38,6 @@ Storage.prototype = {
 
     constructor: Storage,
 
-    _needsUpdateList: true,
-
     /**
      * @param  {Function} cb
      *
@@ -73,9 +71,7 @@ Storage.prototype = {
      * @param {boolean} [includeIgnore=false] 是否包含 ignore 的数组
      */
     updateDisplayList: function (includeIgnore) {
-        if (this._needsUpdateList) {
-            this._displayListLen = 0;
-        }
+        this._displayListLen = 0;
 
         var roots = this._roots;
         var displayList = this._displayList;
@@ -83,13 +79,9 @@ Storage.prototype = {
             this._updateAndAddDisplayable(roots[i], null, includeIgnore);
         }
 
-        if (this._needsUpdateList) {
-            displayList.length = this._displayListLen;
-        }
+        displayList.length = this._displayListLen;
 
         env.canvasSupported && timsort(displayList, shapeCompareFunc);
-
-        this._needsUpdateList = false;
     },
 
     _updateAndAddDisplayable: function (el, clipPaths, includeIgnore) {
@@ -156,9 +148,7 @@ Storage.prototype = {
         else {
             el.__clipPaths = clipPaths;
 
-            if (this._needsUpdateList) {
-                this._displayList[this._displayListLen++] = el;
-            }
+            this._displayList[this._displayListLen++] = el;
         }
     },
 
@@ -222,7 +212,6 @@ Storage.prototype = {
         if (el) {
             el.__storage = this;
             el.dirty(false);
-            this._needsUpdateList = true;    
         }
         return this;
     },
@@ -230,7 +219,6 @@ Storage.prototype = {
     delFromStorage: function (el) {
         if (el) {
             el.__storage = null;
-            this._needsUpdateList = true;
         }
 
         return this;

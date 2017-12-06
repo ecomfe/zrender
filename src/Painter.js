@@ -7,6 +7,8 @@ import Layer from './Layer';
 import requestAnimationFrame from './animation/requestAnimationFrame';
 import Image from './graphic/Image';
 
+var HOVER_LAYER_ZLEVEL = 1e5;
+
 function parseInt10(val) {
     return parseInt(val, 10);
 }
@@ -302,7 +304,7 @@ Painter.prototype = {
         // Use a extream large zlevel
         // FIXME?
         if (!hoverLayer) {
-            hoverLayer = this._hoverlayer = this.getLayer(1e5);
+            hoverLayer = this._hoverlayer = this.getLayer(HOVER_LAYER_ZLEVEL);
         }
 
         var scope = {};
@@ -334,7 +336,7 @@ Painter.prototype = {
     },
 
     getHoverLayer: function () {
-        return this._hoverlayer;
+        return this.getLayer(HOVER_LAYER_ZLEVEL);
     },
 
     _paintList: function (list, paintAll) {
@@ -455,6 +457,7 @@ Painter.prototype = {
         if (!layer) {
             // Create a new layer
             layer = new Layer('zr_' + zlevel, this, this.dpr);
+            layer.zlevel = zlevel;
             layer.__builtin__ = true;
 
             if (this._layerConfig[zlevel]) {
