@@ -14,6 +14,7 @@ import timsort from './core/timsort';
 import Layer from './Layer';
 import requestAnimationFrame from './animation/requestAnimationFrame';
 import Image from './graphic/Image';
+import env from './core/env';
 
 // PENDIGN
 // Layer exceeds MAX_PROGRESSIVE_LAYER_NUMBER may have some problem when flush directly second time.
@@ -547,6 +548,15 @@ Painter.prototype = {
         // if (scope.prevElClipPaths) {
         //     ctx.restore();
         // }
+
+        if (env.wxa) {
+            // Flush for weixin application
+            util.each(this._layers, function (layer) {
+                if (layer && layer.ctx && layer.ctx.draw) {
+                    layer.ctx.draw();
+                }
+            });
+        }
 
         this._furtherProgressive = false;
         util.each(this._progressiveLayers, function (layer) {
