@@ -3,43 +3,36 @@
 <head>
     <meta charset="utf-8" />
     <title>Image</title>
-    <script type="text/javascript" src="esl.js"></script>
+    <script src="../dist/zrender.js"></script>
 </head>
 <body>
+    <style>
+        html, body, #main {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+    <div id="main"></div>
     <script type="text/javascript">
-    require.config({
-        packages: [
-            {
-                name: 'zrender',
-                location: '../src',
-                main: 'zrender'
-            }
-        ]
-    });
+        var zr = zrender.init(document.getElementById('main'));
 
-    require(["zrender", 'zrender/graphic/Image'], function(zrender, ImageShape){
-        // 初始化zrender
-        var zr = zrender.init( document.getElementById("Main") );
-
-        for( var i = 0; i < 200; i ++){
-            for( var j = 0; j < 200; j++){
-                var image = new ImageShape({
-                    position: [i * 50, j * 50],
+        for (var i = 0; i < 200; i++) {
+            for (var j = 0; j < 200; j++) {
+                var image = new zrender.Image({
+                    position: [i * 20, j * 20],
                     scale: [1, 1],
                     style: {
                         x: 0,
                         y: 0,
                         image: 'test.png',
-                        width: 50,
-                        height: 50
+                        width: 20,
+                        height: 20
                     },
                     draggable: true
                 });
-                zr.add( image );
+                zr.add(image);
             }
         }
-    })
     </script>
-    <div id="Main" style="width:1000px;height:600px;"></div>
 </body>
 </html>

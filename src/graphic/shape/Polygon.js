@@ -2,24 +2,23 @@
  * 多边形
  * @module zrender/shape/Polygon
  */
-define(function (require) {
 
-    var polyHelper = require('../helper/poly');
+import Path from '../Path';
+import * as polyHelper from '../helper/poly';
 
-    return require('../Path').extend({
-        
-        type: 'polygon',
+export default Path.extend({
 
-        shape: {
-            points: null,
+    type: 'polygon',
 
-            smooth: false,
+    shape: {
+        points: null,
 
-            smoothConstraint: null
-        },
+        smooth: false,
 
-        buildPath: function (ctx, shape) {
-            polyHelper.buildPath(ctx, shape, true);
-        }
-    });
+        smoothConstraint: null
+    },
+
+    buildPath: function (ctx, shape) {
+        polyHelper.buildPath(ctx, shape, true);
+    }
 });

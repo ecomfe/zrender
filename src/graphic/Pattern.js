@@ -1,18 +1,17 @@
-define(function (require) {
 
-    var Pattern = function (image, repeat) {
-        this.image = image;
-        this.repeat = repeat;
+var Pattern = function (image, repeat) {
+    // Should do nothing more in this constructor. Because gradient can be
+    // declard by `color: {image: ...}`, where this constructor will not be called.
 
-        // Can be cloned
-        this.type = 'pattern';
-    };
+    this.image = image;
+    this.repeat = repeat;
 
-    Pattern.prototype.getCanvasPattern = function (ctx) {
+    // Can be cloned
+    this.type = 'pattern';
+};
 
-        return this._canvasPattern
-            || (this._canvasPattern = ctx.createPattern(this.image, this.repeat));
-    };
+Pattern.prototype.getCanvasPattern = function (ctx) {
+    return ctx.createPattern(this.image, this.repeat || 'repeat');
+};
 
-    return Pattern;
-});
+export default Pattern;

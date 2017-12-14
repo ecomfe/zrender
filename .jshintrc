@@ -2,7 +2,7 @@
     "bitwise": false,
     "camelcase": true,
     "curly": true,
-    "es3": true,
+    "esversion": 6,
     "eqeqeq": false,
     "forin": false,
     "immed": true,
@@ -26,7 +26,6 @@
     "boss": false,
     "debug": false,
     "eqnull": true,
-    "esnext": false,
     "evil": true,
     "expr": true,
     "funcscope": false,
@@ -65,7 +64,5 @@
     "white": false,
 
     "predef": [
-        "define", 
-        "require"
     ]
 }

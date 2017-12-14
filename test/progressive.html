@@ -2,22 +2,12 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>Image</title>
-    <script type="text/javascript" src="esl.js"></script>
+    <title>Progressive Rendering</title>
+    <script src="../dist/zrender.js"></script>
 </head>
 <body>
+    <div id="main" style="width:1000px;height:600px;"></div>
     <script type="text/javascript">
-    require.config({
-        packages: [
-            {
-                name: 'zrender',
-                location: '../src',
-                main: 'zrender'
-            }
-        ]
-    });
-
-    require(['zrender', 'zrender/graphic/shape/BezierCurve'], function(zrender, BezierCurveShape){
         // 初始化zrender
         var zr = zrender.init(document.getElementById('main'));
 
@@ -36,7 +26,7 @@
             y2 += (Math.random() - 0.5) * 10;
             var checkpoint = !(i % 1000);
             var checkpointIdx = Math.round(i / 1000);
-            zr.add(new BezierCurveShape({
+            zr.add(new zrender.BezierCurve({
                 shape: {
                     x1: x1,
                     y1: y1,
@@ -57,8 +47,6 @@
                 progressive: checkpoint ? -1 : Math.floor(i / 100)
             }));
         }
-    });
     </script>
-    <div id="main" style="width:1000px;height:600px;"></div>
 </body>
 </html>

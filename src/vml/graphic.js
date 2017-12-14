@@ -1,31 +1,30 @@
 // http://www.w3.org/TR/NOTE-VML
 // TODO Use proxy like svg instead of overwrite brush methods
-define(function (require) {
 
-if (!require('../core/env').canvasSupported) {
-    var vec2 = require('../core/vector');
-    var BoundingRect = require('../core/BoundingRect');
-    var CMD = require('../core/PathProxy').CMD;
-    var colorTool = require('../tool/color');
-    var textContain = require('../contain/text');
-    var RectText = require('../graphic/mixin/RectText');
-    var Displayable = require('../graphic/Displayable');
-    var ZImage = require('../graphic/Image');
-    var Text = require('../graphic/Text');
-    var Path = require('../graphic/Path');
+import env from '../core/env';
+import {applyTransform} from '../core/vector';
+import BoundingRect from '../core/BoundingRect';
+import * as colorTool from '../tool/color';
+import * as textContain from '../contain/text';
+import * as textHelper from '../graphic/helper/text';
+import RectText from '../graphic/mixin/RectText';
+import Displayable from '../graphic/Displayable';
+import ZImage from '../graphic/Image';
+import Text from '../graphic/Text';
+import Path from '../graphic/Path';
+import PathProxy from '../core/PathProxy';
+import Gradient from '../graphic/Gradient';
+import * as vmlCore from './core';
 
-    var Gradient = require('../graphic/Gradient');
+var CMD = PathProxy.CMD;
+var round = Math.round;
+var sqrt = Math.sqrt;
+var abs = Math.abs;
+var cos = Math.cos;
+var sin = Math.sin;
+var mathMax = Math.max;
 
-    var vmlCore = require('./core');
-
-    var round = Math.round;
-    var sqrt = Math.sqrt;
-    var abs = Math.abs;
-    var cos = Math.cos;
-    var sin = Math.sin;
-    var mathMax = Math.max;
-
-    var applyTransform = vec2.applyTransform;
+if (!env.canvasSupported) {
 
     var comma = ',';
     var imageTransformPrefix = 'progid:DXImageTransform.Microsoft';
@@ -255,7 +254,7 @@ if (!require('../core/env').canvasSupported) {
     };
 
     var points = [[], [], []];
-    var pathDataToString = function (data, m) {
+    var pathDataToString = function (path, m) {
         var M = CMD.M;
         var C = CMD.C;
         var L = CMD.L;
@@ -269,7 +268,9 @@ if (!require('../core/env').canvasSupported) {
         var i;
         var xi;
         var yi;
-        for (i = 0; i < data.length;) {
+        var data = path.data;
+        var dataLength = path.len();
+        for (i = 0; i < dataLength;) {
             cmd = data[i++];
             cmdStr = '';
             nPoint = 0;
@@ -356,7 +357,7 @@ if (!require('../core/env').canvasSupported) {
                     var y1 = cy + sin(endAngle) * ry;
 
                     var type = clockwise ? ' wa ' : ' at ';
-                    if (Math.abs(x0 - x1) < 1e-10) {
+                    if (Math.abs(x0 - x1) < 1e-4) {
                         // IE won't render arches drawn counter clockwise if x0 == x1.
                         if (Math.abs(endAngle - startAngle) > 1e-2) {
                             // Offset x0 by 1/80 of a pixel. Use something
@@ -367,7 +368,7 @@ if (!require('../core/env').canvasSupported) {
                         }
                         else {
                             // Avoid case draw full circle
-                            if (Math.abs(y0 - cy) < 1e-10) {
+                            if (Math.abs(y0 - cy) < 1e-4) {
                                 if ((clockwise && x0 < cx) || (!clockwise && x0 > cx)) {
                                     y1 -= 270 / Z;
                                 }
@@ -482,7 +483,7 @@ if (!require('../core/env').canvasSupported) {
             strokeEl.weight = lineWidth + 'px';
         }
 
-        var path = this.path;
+        var path = this.path || (this.path = new PathProxy());
         if (this.__dirtyPath) {
             path.beginPath();
             this.buildPath(path, this.shape);
@@ -490,7 +491,7 @@ if (!require('../core/env').canvasSupported) {
             this.__dirtyPath = false;
         }
 
-        vmlEl.path = pathDataToString(path.data, this.transform);
+        vmlEl.path = pathDataToString(path, this.transform);
 
         vmlEl.style.zIndex = getZIndex(this.zlevel, this.z, this.z2);
 
@@ -498,7 +499,7 @@ if (!require('../core/env').canvasSupported) {
         append(vmlRoot, vmlEl);
 
         // Text
-        if (style.text) {
+        if (style.text != null) {
             this.drawRectText(vmlRoot, this.getBoundingRect());
         }
         else {
@@ -727,7 +728,7 @@ if (!require('../core/env').canvasSupported) {
         append(vmlRoot, vmlEl);
 
         // Text
-        if (style.text) {
+        if (style.text != null) {
             this.drawRectText(vmlRoot, this.getBoundingRect());
         }
     };
@@ -793,7 +794,7 @@ if (!require('../core/env').canvasSupported) {
 
     var textMeasureEl;
     // Overwrite measure text method
-    textContain.measureText = function (text, textFont) {
+    textContain.$override('measureText', function (text, textFont) {
         var doc = vmlCore.doc;
         if (!textMeasureEl) {
             textMeasureEl = doc.createElement('div');
@@ -813,30 +814,51 @@ if (!require('../core/env').canvasSupported) {
         return {
             width: textMeasureEl.offsetWidth
         };
-    };
+    });
 
     var tmpRect = new BoundingRect();
 
     var drawRectText = function (vmlRoot, rect, textRect, fromTextEl) {
 
         var style = this.style;
+
+        // Optimize, avoid normalize every time.
+        this.__dirty && textHelper.normalizeTextStyle(style, true);
+
         var text = style.text;
+        // Convert to string
+        text != null && (text += '');
         if (!text) {
             return;
+        }
+
+        // Convert rich text to plain text. Rich text is not supported in
+        // IE8-, but tags in rich text template will be removed.
+        if (style.rich) {
+            var contentBlock = textContain.parseRichText(text, style);
+            text = [];
+            for (var i = 0; i < contentBlock.lines.length; i++) {
+                var tokens = contentBlock.lines[i].tokens;
+                var textLine = [];
+                for (var j = 0; j < tokens.length; j++) {
+                    textLine.push(tokens[j].text);
+                }
+                text.push(textLine.join(''));
+            }
+            text = text.join('\n');
         }
 
         var x;
         var y;
         var align = style.textAlign;
-        var fontStyle = getFontStyle(style.textFont);
+        var verticalAlign = style.textVerticalAlign;
+
+        var fontStyle = getFontStyle(style.font);
         // FIXME encodeHtmlAttribute ?
         var font = fontStyle.style + ' ' + fontStyle.variant + ' ' + fontStyle.weight + ' '
             + fontStyle.size + 'px "' + fontStyle.family + '"';
 
-        var baseline = style.textBaseline;
-        var verticalAlign = style.textVerticalAlign;
-
-        textRect = textRect || textContain.getBoundingRect(text, font, align, baseline);
+        textRect = textRect || textContain.getBoundingRect(text, font, align, verticalAlign);
 
         // Transform rect to view space
         var m = this.transform;
@@ -856,64 +878,57 @@ if (!require('../core/env').canvasSupported) {
                 y = rect.y + parsePercent(textPosition[1], rect.height);
 
                 align = align || 'left';
-                baseline = baseline || 'top';
             }
             else {
                 var res = textContain.adjustTextPositionOnRect(
-                    textPosition, rect, textRect, distance
+                    textPosition, rect, distance
                 );
                 x = res.x;
                 y = res.y;
 
                 // Default align and baseline when has textPosition
                 align = align || res.textAlign;
-                baseline = baseline || res.textBaseline;
+                verticalAlign = verticalAlign || res.textVerticalAlign;
             }
         }
         else {
             x = rect.x;
             y = rect.y;
         }
-        if (verticalAlign) {
-            switch (verticalAlign) {
-                case 'middle':
-                    y -= textRect.height / 2;
-                    break;
-                case 'bottom':
-                    y -= textRect.height;
-                    break;
-                // 'top'
-            }
-            // Ignore baseline
-            baseline = 'top';
-        }
 
-        var fontSize = fontStyle.size;
+        x = textContain.adjustTextX(x, textRect.width, align);
+        y = textContain.adjustTextY(y, textRect.height, verticalAlign);
+
+        // Force baseline 'middle'
+        y += textRect.height / 2;
+
+        // var fontSize = fontStyle.size;
         // 1.75 is an arbitrary number, as there is no info about the text baseline
-        switch (baseline) {
-            case 'hanging':
-            case 'top':
-                y += fontSize / 1.75;
-                break;
-            case 'middle':
-                break;
-            default:
-            // case null:
-            // case 'alphabetic':
-            // case 'ideographic':
-            // case 'bottom':
-                y -= fontSize / 2.25;
-                break;
-        }
-        switch (align) {
-            case 'left':
-                break;
-            case 'center':
-                x -= textRect.width / 2;
-                break;
-            case 'right':
-                x -= textRect.width;
-                break;
+        // switch (baseline) {
+            // case 'hanging':
+            // case 'top':
+            //     y += fontSize / 1.75;
+            //     break;
+        //     case 'middle':
+        //         break;
+        //     default:
+        //     // case null:
+        //     // case 'alphabetic':
+        //     // case 'ideographic':
+        //     // case 'bottom':
+        //         y -= fontSize / 2.25;
+        //         break;
+        // }
+
+        // switch (align) {
+        //     case 'left':
+        //         break;
+        //     case 'center':
+        //         x -= textRect.width / 2;
+        //         break;
+        //     case 'right':
+        //         x -= textRect.width;
+        //         break;
             // case 'end':
                 // align = elementStyle.direction == 'ltr' ? 'right' : 'left';
                 // break;
@@ -922,7 +937,7 @@ if (!require('../core/env').canvasSupported) {
                 // break;
             // default:
             //     align = 'left';
-        }
+        // }
 
         var createNode = vmlCore.createNode;
 
@@ -995,11 +1010,11 @@ if (!require('../core/env').canvasSupported) {
         catch (e) {}
 
         updateFillAndStroke(textVmlEl, 'fill', {
-            fill: fromTextEl ? style.fill : style.textFill,
+            fill: style.textFill,
             opacity: style.opacity
         }, this);
         updateFillAndStroke(textVmlEl, 'stroke', {
-            stroke: fromTextEl ? style.stroke : style.textStroke,
+            stroke: style.textStroke,
             opacity: style.opacity,
             lineDash: style.lineDash
         }, this);
@@ -1031,7 +1046,7 @@ if (!require('../core/env').canvasSupported) {
 
     Text.prototype.brushVML = function (vmlRoot) {
         var style = this.style;
-        if (style.text) {
+        if (style.text != null) {
             this.drawRectText(vmlRoot, {
                 x: style.x || 0, y: style.y || 0,
                 width: 0, height: 0
@@ -1050,4 +1065,3 @@ if (!require('../core/env').canvasSupported) {
         this.appendRectText(vmlRoot);
     };
 }
-});

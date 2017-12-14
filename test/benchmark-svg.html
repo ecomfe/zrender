@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>SVG Benchmark</title>
+    <script src="../dist/zrender.js"></script>
+    <script src="stats.js"></script>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body style="margin:0px;">
+    <div id="main" style="position: absolute; left: 0; right: 0; top: 0; bottom: 0"></div>
+    <script type="text/javascript">
+        var zr = zrender.init(document.getElementById('main'), {
+            renderer: 'svg'
+        });
+
+        var stats = new Stats();
+        document.body.appendChild(stats.dom);
+
+        var cnt = 1000;
+        var elements = [];
+        var routes = [];
+        var routeCnt = 1000;
+
+        var route = [];
+        for (var i = cnt - 1; i >= 0; --i) {
+            var x = zr.getWidth() / cnt * i;
+            var y = zr.getHeight() / cnt * i;
+            var rect = new zrender.Rect({
+                shape: {
+                    width: 10,
+                    height: 10,
+                    x: x,
+                    y: y
+                },
+                silent: true
+            });
+            elements.push(rect);
+            zr.add(rect);
+            route.push([x, y]);
+        }
+        routes.push(route);
+
+        var w = zr.getWidth();
+        var h = zr.getHeight();
+        for (var r = 1; r < routeCnt; ++r) {
+            var route = [];
+            for (var i = cnt - 1; i >= 0; --i) {
+                var x = routes[r - 1][i][0] + Math.round(Math.random() * 10 - 5);
+                var y = routes[r - 1][i][1] + Math.round(Math.random() * 10 - 5);
+                if (x < 0 || x > w) {
+                    x = Math.round(w * Math.random());
+                }
+                if (y < 0 || y < h) {
+                    y = Math.round(h * Math.random());
+                }
+                route.push([x, y]);
+            }
+            routes.push(route);
+        }
+        var rId = 0;
+
+        tick();
+
+        function tick() {
+            requestAnimationFrame(tick);
+
+            stats.begin();
+
+            for (var i = 0; i < cnt; ++i) {
+                elements[i].shape.x = routes[rId][i][0];
+                elements[i].shape.y = routes[rId][i][1];
+                elements[i].dirty(true);
+            }
+            ++rId;
+            if (rId === routeCnt) {
+                rId = 0;
+            }
+
+            stats.end();
+        }
+
+    </script>
+</body>
+</html>

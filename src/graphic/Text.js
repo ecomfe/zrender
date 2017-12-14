@@ -1,126 +1,89 @@
+import Displayable from './Displayable';
+import * as zrUtil from '../core/util';
+import * as textContain from '../contain/text';
+import * as textHelper from './helper/text';
+
 /**
- * Text element
- * @module zrender/graphic/Text
- *
- * TODO Wrapping
- *
- * Text not support gradient
+ * @alias zrender/graphic/Text
+ * @extends module:zrender/graphic/Displayable
+ * @constructor
+ * @param {Object} opts
  */
+var Text = function (opts) { // jshint ignore:line
+    Displayable.call(this, opts);
+};
 
-define(function (require) {
+Text.prototype = {
 
-    var Displayable = require('./Displayable');
-    var zrUtil = require('../core/util');
-    var textContain = require('../contain/text');
+    constructor: Text,
 
-    /**
-     * @alias zrender/graphic/Text
-     * @extends module:zrender/graphic/Displayable
-     * @constructor
-     * @param {Object} opts
-     */
-    var Text = function (opts) {
-        Displayable.call(this, opts);
-    };
+    type: 'text',
 
-    Text.prototype = {
+    brush: function (ctx, prevEl) {
+        var style = this.style;
 
-        constructor: Text,
+        // Optimize, avoid normalize every time.
+        this.__dirty && textHelper.normalizeTextStyle(style, true);
 
-        type: 'text',
+        // Use props with prefix 'text'.
+        style.fill = style.stroke = style.shadowBlur = style.shadowColor =
+            style.shadowOffsetX = style.shadowOffsetY = null;
 
-        brush: function (ctx, prevEl) {
-            var style = this.style;
-            var x = style.x || 0;
-            var y = style.y || 0;
-            // Convert to string
-            var text = style.text;
+        var text = style.text;
+        // Convert to string
+        text != null && (text += '');
 
-            // Convert to string
-            text != null && (text += '');
+        // Always bind style
+        style.bind(ctx, this, prevEl);
 
-            // Always bind style
-            style.bind(ctx, this, prevEl);
-
-            if (text) {
-
-                this.setTransform(ctx);
-
-                var textBaseline;
-                var textAlign = style.textAlign;
-                var font = style.textFont || style.font;
-                if (style.textVerticalAlign) {
-                    var rect = textContain.getBoundingRect(
-                        text, font, style.textAlign, 'top'
-                    );
-                    // Ignore textBaseline
-                    textBaseline = 'middle';
-                    switch (style.textVerticalAlign) {
-                        case 'middle':
-                            y -= rect.height / 2 - rect.lineHeight / 2;
-                            break;
-                        case 'bottom':
-                            y -= rect.height - rect.lineHeight / 2;
-                            break;
-                        default:
-                            y += rect.lineHeight / 2;
-                    }
-                }
-                else {
-                    textBaseline = style.textBaseline;
-                }
-
-                // TODO Invalid font
-                ctx.font = font || '12px sans-serif';
-                ctx.textAlign = textAlign || 'left';
-                // Use canvas default left textAlign. Giving invalid value will cause state not change
-                if (ctx.textAlign !== textAlign) {
-                    ctx.textAlign = 'left';
-                }
-                ctx.textBaseline = textBaseline || 'alphabetic';
-                // Use canvas default alphabetic baseline
-                if (ctx.textBaseline !== textBaseline) {
-                    ctx.textBaseline = 'alphabetic';
-                }
-
-                var lineHeight = textContain.measureText('国', ctx.font).width;
-
-                var textLines = text.split('\n');
-                for (var i = 0; i < textLines.length; i++) {
-                    style.hasFill() && ctx.fillText(textLines[i], x, y);
-                    style.hasStroke() && ctx.strokeText(textLines[i], x, y);
-                    y += lineHeight;
-                }
-
-                this.restoreTransform(ctx);
-            }
-        },
-
-        getBoundingRect: function () {
-            if (!this._rect) {
-                var style = this.style;
-                var textVerticalAlign = style.textVerticalAlign;
-                var rect = textContain.getBoundingRect(
-                    style.text + '', style.textFont || style.font, style.textAlign,
-                    textVerticalAlign ? 'top' : style.textBaseline
-                );
-                switch (textVerticalAlign) {
-                    case 'middle':
-                        rect.y -= rect.height / 2;
-                        break;
-                    case 'bottom':
-                        rect.y -= rect.height;
-                        break;
-                }
-                rect.x += style.x || 0;
-                rect.y += style.y || 0;
-                this._rect = rect;
-            }
-            return this._rect;
+        if (!textHelper.needDrawText(text, style)) {
+            return;
         }
-    };
 
-    zrUtil.inherits(Text, Displayable);
+        this.setTransform(ctx);
 
-    return Text;
-});
+        textHelper.renderText(this, ctx, text, style);
+
+        this.restoreTransform(ctx);
+    },
+
+    getBoundingRect: function () {
+        var style = this.style;
+
+        // Optimize, avoid normalize every time.
+        this.__dirty && textHelper.normalizeTextStyle(style, true);
+
+        if (!this._rect) {
+            var text = style.text;
+            text != null ? (text += '') : (text = '');
+
+            var rect = textContain.getBoundingRect(
+                style.text + '',
+                style.font,
+                style.textAlign,
+                style.textVerticalAlign,
+                style.textPadding,
+                style.rich
+            );
+
+            rect.x += style.x || 0;
+            rect.y += style.y || 0;
+
+            if (textHelper.getStroke(style.textStroke, style.textStrokeWidth)) {
+                var w = style.textStrokeWidth;
+                rect.x -= w / 2;
+                rect.y -= w / 2;
+                rect.width += w;
+                rect.height += w;
+            }
+
+            this._rect = rect;
+        }
+
+        return this._rect;
+    }
+};
+
+zrUtil.inherits(Text, Displayable);
+
+export default Text;

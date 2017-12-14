@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+</head>
+<body style="margin:0px;">
+    <canvas id="main" width="500" height="300"></canvas>
+    <script type="text/javascript">
+        var canvas = document.getElementById('main');
+        var width = window.innerWidth;
+        var height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+        var ctx = canvas.getContext('2d');
+
+        function doRender() {
+            for (var i = 0; i < 3000; i++) {
+                ctx.save();
+                ctx.fillStyle = 'red';
+                ctx.beginPath();
+                var x = Math.random() * width;
+                var y = Math.random() * height;
+                ctx.moveTo(x + 10, y);
+                ctx.arc(x, y, 10, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+        console.profile('render');
+        console.time('render');
+        doRender();
+        console.timeEnd('render');
+        console.profileEnd('render');
+    </script>
+</body>
+</html>

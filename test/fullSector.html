@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <script src="../dist/zrender.js"></script>
+</head>
+<body>
+    <div id="main" style="width:1000px;height:500px;"></div>
+    <script type="text/javascript">
+        var zr = zrender.init(document.getElementById('main'));
+
+        var curve = new zrender.Sector({
+            position: [0, 0],
+            scale: [1, 1],
+            shape: {
+                r: 100,
+                r0: 0,
+                cx: 100,
+                cy: 100,
+                startAngle: -1.5707963267948966,
+                endAngle: 4.71238898038469
+            }
+        });
+
+        zr.add(curve);
+
+        curve.animateTo({
+            shape: {
+                percent: 0
+            }
+        });
+    </script>
+    <div id="main" style="width:1000px;height:600px;"></div>
+</body>
+</html>

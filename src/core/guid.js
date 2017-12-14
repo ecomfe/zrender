@@ -4,10 +4,8 @@
  * @author errorrik (errorrik@gmail.com)
  */
 
-define(function() {
-    var idStart = 0x0907;
+var idStart = 0x0907;
 
-    return function () {
-        return idStart++;
-    };
-});
+export default function () {
+    return idStart++;
+}

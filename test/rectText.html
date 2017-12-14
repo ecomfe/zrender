@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <script src="../dist/zrender.js"></script>
+</head>
+<body>
+
+    <button onclick="startTextRotation();">Start textRotation</button>
+    <button onclick="stopTextRotation();">Stop textRotation</button>
+    <br>
+    <button onclick="addBackgroundAndPadding();">Add textBackground and textPadding: [15, 20, 5, 10]</button>
+    <button onclick="addTextDistance();">Add textDistance: 15</button>
+    <button onclick="setTextPosition();">Set textPosition: [10, 20]</button>
+    <br>
+    <select onchange="changeTextAlign(this.options[this.options.selectedIndex].value);">
+        <option value ="">textAlign: default</option>
+        <option value ="left">textAlign: left</option>
+        <option value ="center">textAlign: center</option>
+        <option value="right">textAlign: right</option>
+    </select>
+    <select onchange="changeTextVerticalAlign(this.options[this.options.selectedIndex].value);">
+        <option value ="">textVerticalAlign: default</option>
+        <option value ="top">textVerticalAlign: top</option>
+        <option value ="middle">textVerticalAlign: middle</option>
+        <option value="bottom">textVerticalAlign: bottom</option>
+    </select>
+    <div id="main1" style="width:1000px;height:700px;"></div>
+    <br>
+    <br>
+    <div id="main2" style="width:1500px;height:2800px;margin:0;"></div>
+
+
+
+    <script type="text/javascript">
+
+
+    var posList = [
+        'left', 'right', 'top', 'bottom',
+        'inside',
+        'insideTop', 'insideLeft', 'insideRight', 'insideBottom',
+        'insideTopLeft', 'insideTopRight', 'insideBottomLeft', 'insideBottomRight'
+    ];
+        var zr1 = zrender.init(document.getElementById('main1'));
+        var shapes1 = [];
+
+        zrender.util.each(posList, function (textPos, idx) {
+            var text = textPos;
+            if (text.length < 8) {
+                text = text + text;
+            }
+            if (text.length > 8) {
+                text = text.substr(0, 8) + '\n' + text.substr(8, text.length - 1);
+            }
+            var shape = new zrender.Rect({
+                position: [(idx % 4) * 220, 150 * Math.floor(idx / 4)],
+                scale: [1, 1],
+                style: {
+                    fill: 'red',
+                    text: text,
+                    textPosition: textPos
+                },
+                shape: {
+                    x: 100,
+                    y: 50,
+                    width: 150,
+                    height: 100
+                }
+            });
+            shapes1.push(shape);
+            zr1.add(shape);
+        });
+
+
+
+        var zr2 = zrender.init(document.getElementById('main2'));
+        var shapes2 = [];
+
+        zrender.util.each(posList, function (textPos, idx) {
+            var text = textPos;
+
+            var shape = new zrender.Rect({
+                position: [(idx % 2) * 500, 350 * Math.floor(idx / 2)],
+                style: {
+                    fill: '#eeaaff',
+                    text: [
+                        '{j|' + text + '}',
+                        '我是 Rect Text, textDistance: 20',
+                        '整体的 textAlign textVerticalAlign 取默认值'
+                    ].join('\n'),
+                    textFill: 'red',
+                    font: '10px Arial',
+                    // textVerticalAlign: 'bottom',
+                    // textAlign: 'right',
+                    rich: {
+                        j: {
+                            font: '16px Arial',
+                            textFill: '#922889',
+                            textVerticalAlign: 'top'
+                        }
+                    },
+                    textPosition: textPos
+                },
+                shape: {
+                    x: 300,
+                    y: 200,
+                    width: 400,
+                    height: 220
+                }
+            });
+            shapes2.push(shape);
+            zr2.add(shape);
+        });
+
+
+        var timer;
+
+        window.startTextRotation = function () {
+            var rotation = 0;
+            window.stopTextRotation();
+
+            timer = setInterval(function () {
+                rotation += 0.01;
+                rotation %= Math.PI * 2;
+                for (var i = 0; i < shapes1.length; i++) {
+                    var shape = shapes1[i];
+                    shape.attr({
+                        style: {
+                            textRotation: rotation
+                        }
+                    });
+                }
+                for (var i = 0; i < shapes2.length; i++) {
+                    var shape = shapes2[i];
+                    shape.attr({
+                        style: {
+                            textRotation: rotation
+                        }
+                    });
+                }
+            }, 20);
+        };
+
+        window.stopTextRotation = function () {
+            clearInterval(timer);
+        };
+
+        window.addBackgroundAndPadding = function () {
+            for (var i = 0; i < shapes1.length; i++) {
+                var shape = shapes1[i];
+                shape.attr({
+                    style: {
+                        textBorderRadius: 3,
+                        textBackgroundColor: 'rgba(0, 255, 0, 0.3)',
+                        textBorderColor: '#191933',
+                        textBorderWidth: 2,
+                        textBoxShadowBlur: 5,
+                        textBoxShadowColor: '#1099ee',
+                        textBoxShadowOffsetX: 2,
+                        textBoxShadowOffsetY: 5,
+                        textPadding: [15, 20, 5, 10]
+                    }
+                });
+            }
+            for (var i = 0; i < shapes2.length; i++) {
+                var shape = shapes2[i];
+                shape.attr({
+                    style: {
+                        textBorderRadius: 8,
+                        textBackgroundColor: 'rgba(0, 255, 0, 0.3)',
+                        textBorderColor: '#191933',
+                        textBorderWidth: 2,
+                        textBoxShadowBlur: 5,
+                        textBoxShadowColor: '#1099ee',
+                        textBoxShadowOffsetX: 2,
+                        textBoxShadowOffsetY: 5,
+                        textPadding: [15, 20, 5, 10]
+                    }
+                });
+            }
+        };
+
+        window.addTextDistance = function () {
+            for (var i = 0; i < shapes1.length; i++) {
+                var shape = shapes1[i];
+                shape.attr({
+                    style: {
+                        textDistance: 15
+                    }
+                });
+            }
+            for (var i = 0; i < shapes2.length; i++) {
+                var shape = shapes2[i];
+                shape.attr({
+                    style: {
+                        textDistance: 15
+                    }
+                });
+            }
+        };
+
+        window.setTextPosition = function () {
+            for (var i = 0; i < shapes1.length; i++) {
+                var shape = shapes1[i];
+                shape.attr({
+                    style: {
+                        textPosition: [10, 20]
+                    }
+                });
+            }
+            for (var i = 0; i < shapes2.length; i++) {
+                var shape = shapes2[i];
+                shape.attr({
+                    style: {
+                        textPosition: [10, 20]
+                    }
+                });
+            }
+        };
+
+        window.changeTextAlign = function (textAlign) {
+            !textAlign && (textAlign = null);
+            for (var i = 0; i < shapes1.length; i++) {
+                var shape = shapes1[i];
+                shape.attr({
+                    style: {
+                        textAlign: textAlign
+                    }
+                });
+            }
+            for (var i = 0; i < shapes2.length; i++) {
+                var shape = shapes2[i];
+                shape.attr({
+                    style: {
+                        textAlign: textAlign
+                    }
+                });
+            }
+        };
+
+        window.changeTextVerticalAlign = function (textVerticalAlign) {
+            !textVerticalAlign && (textVerticalAlign = null);
+            for (var i = 0; i < shapes1.length; i++) {
+                var shape = shapes1[i];
+                shape.attr({
+                    style: {
+                        textVerticalAlign: textVerticalAlign
+                    }
+                });
+            }
+            for (var i = 0; i < shapes2.length; i++) {
+                var shape = shapes2[i];
+                shape.attr({
+                    style: {
+                        textVerticalAlign: textVerticalAlign
+                    }
+                });
+            }
+        };
+
+
+    </script>
+
+
+</body>
+</html>

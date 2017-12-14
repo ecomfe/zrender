@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Image</title>
+    <script src="../dist/zrender.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+    <div id="main" style="width:1000px;height:800px;"></div>
+    <script type="text/javascript">
+    // 初始化zrender
+    var zr = zrender.init(document.getElementById('main'), {
+        renderer: 'svg'
+    });
+
+    var gradient1 = new zrender.LinearGradient();
+    gradient1.addColorStop(0, 'red');
+    gradient1.addColorStop(0.7, 'rgb(255, 255, 0)');
+    gradient1.addColorStop(1, '#0f0');
+
+    var rect = new zrender.Rect({
+        shape: {
+            x: 10,
+            y: 10,
+            width: 80,
+            height: 80
+        },
+        style: {
+            fill: gradient1
+        }
+    });
+    zr.add(rect);
+
+    setTimeout(function () {
+        rect.style.fill = {
+            type: 'linear',
+            x: 0,
+            x2: 1,
+            y: 0,
+            y2: 1,
+            colorStops: [{
+                offset: 0,
+                color: '#00f'
+            }, {
+                offset: 1,
+                color: '#f0f'
+            }]
+        };
+        rect.dirty();
+    }, 8000);
+
+    setTimeout(function () {
+        gradient1.colorStops[0].color = '#f0f';
+        rect.dirty();
+    }, 1000);
+
+    setTimeout(function () {
+        zr.remove(rect);
+    }, 3000);
+
+    setTimeout(function () {
+        zr.add(rect);
+    }, 5000);
+
+    var gradient2 = new zrender.LinearGradient();
+    gradient2.addColorStop(0, 'blue');
+    gradient2.addColorStop(1, 'yellow');
+    gradient2.x2 = 0;
+    gradient2.y2 = 1;
+
+    var circle = new zrender.Circle({
+        shape: {
+            cx: 150,
+            cy: 50,
+            r: 40
+        },
+        style: {
+            fill: 'none',
+            stroke: gradient2
+        }
+    });
+    zr.add(circle);
+
+    setTimeout(function () {
+        zr.remove(circle);
+    }, 2000);
+
+    setTimeout(function () {
+        zr.add(circle);
+    }, 4000);
+
+    var ring = new zrender.Ring({
+        shape: {
+            cx: 250,
+            cy: 50,
+            r: 40,
+            r0: 30
+        },
+        style: {
+            fill: gradient1
+        }
+    });
+    zr.add(ring);
+
+    setTimeout(function () {
+        zr.remove(ring);
+    }, 4000);
+
+    setTimeout(function () {
+        zr.add(ring);
+    }, 6000);
+
+    var sector = new zrender.Sector({
+        shape: {
+            cx: 350,
+            cy: 50,
+            r: 40,
+            r0: 30,
+            startAngle: Math.PI / 6,
+            endAngle: Math.PI
+        }
+    });
+    zr.add(sector);
+
+    var gradient3 = new zrender.RadialGradient();
+    gradient3.addColorStop(0, 'red');
+    gradient3.addColorStop(1, 'green');
+
+    var drop = new zrender.Droplet({
+        shape: {
+            cx: 350,
+            cy: 50,
+            width: 20,
+            height: 30
+        },
+        style: {
+            fill: gradient3
+        }
+    });
+    zr.add(drop);
+
+    var curve = new zrender.BezierCurve({
+        shape: {
+            x1: 400,
+            y1: 0,
+            x2: 500,
+            y2: 100,
+            cpx1: 450,
+            cpy1: 0,
+            cpx2: 500,
+            cpy2: 50
+        }
+    });
+    zr.add(curve);
+
+    var ellipse = new zrender.Ellipse({
+        shape: {
+            cx: 550,
+            cy: 50,
+            rx: 20,
+            ry: 30
+        }
+    });
+    zr.add(ellipse);
+
+    var heart = new zrender.Heart({
+        shape: {
+            cx: 650,
+            cy: 25,
+            width: 50,
+            height: 60
+        }
+    });
+    zr.add(heart);
+
+    var rose = new zrender.Rose({
+        shape: {
+            cx: 750,
+            cy: 50,
+            r: [50],
+            k: 0.2,
+            n: 5
+        }
+    });
+    zr.add(rose);
+
+    var trochoid = new zrender.Trochoid({
+        shape: {
+            cx: 850,
+            cy: 50,
+            r: 30,
+            r0: 5,
+            d: 10
+        }
+    });
+    zr.add(trochoid);
+
+    var isogon = new zrender.Isogon({
+        shape: {
+            x: 50,
+            y: 150,
+            r: 50,
+            n: 7
+        }
+    });
+    zr.add(isogon);
+
+    var line = new zrender.Line({
+        shape: {
+            x1: 100,
+            y1: 100,
+            x2: 200,
+            y2: 200
+        }
+    });
+    zr.add(line);
+
+    var polygon = new zrender.Polygon({
+        shape: {
+            points: [
+                [200, 100],
+                [200, 120],
+                [250, 150],
+                [280, 200],
+                [300, 100]
+            ]
+        }
+    });
+    zr.add(polygon);
+
+    var polyline = new zrender.Polyline({
+        shape: {
+            points: [
+                [300, 100],
+                [300, 120],
+                [350, 150],
+                [380, 200],
+                [400, 100]
+            ]
+        }
+    });
+    zr.add(polyline);
+
+    var star = new zrender.Star({
+        shape: {
+            cx: 450,
+            cy: 150,
+            n: 5,
+            r0: 20,
+            r: 50
+        }
+    });
+    zr.add(star);
+    </script>
+
+</body>
+</html>

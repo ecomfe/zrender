@@ -2,21 +2,18 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <script type="text/javascript" src="esl.js"></script>
+    <script src="lib/rollup.browser.js"></script>
+    <script src="lib/requireES.js"></script>
+    <script src="lib/config.js"></script>
 </head>
 <body>
     <script type="text/javascript">
-    require.config({
-        packages: [
-            {
-                name: 'zrender',
-                location: '../src',
-                main: 'zrender'
-            }
-        ]
-    });
 
-    require(['zrender', 'zrender/graphic/shape/Sector', 'zrender/vml/vml'], function(zrender, SectorShape){
+    requireES([
+        'zrender/src/zrender',
+        'zrender/src/graphic/shape/Sector',
+        'zrender/src/vml/vml'
+    ], function(zrender, SectorShape){
         // 初始化zrender
         var zr = zrender.init(document.getElementById('main'));
 

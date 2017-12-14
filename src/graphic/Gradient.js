@@ -1,26 +1,26 @@
-define(function (require) {
 
-    /**
-     * @param {Array.<Object>} colorStops
-     */
-    var Gradient = function (colorStops) {
+/**
+ * @param {Array.<Object>} colorStops
+ */
+var Gradient = function (colorStops) {
 
-        this.colorStops = colorStops || [];
-    };
+    this.colorStops = colorStops || [];
 
-    Gradient.prototype = {
+};
 
-        constructor: Gradient,
+Gradient.prototype = {
 
-        addColorStop: function (offset, color) {
-            this.colorStops.push({
+    constructor: Gradient,
 
-                offset: offset,
+    addColorStop: function (offset, color) {
+        this.colorStops.push({
 
-                color: color
-            });
-        }
-    };
+            offset: offset,
 
-    return Gradient;
-});
+            color: color
+        });
+    }
+
+};
+
+export default Gradient;

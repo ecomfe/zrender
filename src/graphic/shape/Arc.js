@@ -2,48 +2,48 @@
  * 圆弧
  * @module zrender/graphic/shape/Arc
  */
- define(function (require) {
 
-    return require('../Path').extend({
+import Path from '../Path';
 
-        type: 'arc',
+export default Path.extend({
 
-        shape: {
+    type: 'arc',
 
-            cx: 0,
+    shape: {
 
-            cy: 0,
+        cx: 0,
 
-            r: 0,
+        cy: 0,
 
-            startAngle: 0,
+        r: 0,
 
-            endAngle: Math.PI * 2,
+        startAngle: 0,
 
-            clockwise: true
-        },
+        endAngle: Math.PI * 2,
 
-        style: {
+        clockwise: true
+    },
 
-            stroke: '#000',
+    style: {
 
-            fill: null
-        },
+        stroke: '#000',
 
-        buildPath: function (ctx, shape) {
+        fill: null
+    },
 
-            var x = shape.cx;
-            var y = shape.cy;
-            var r = Math.max(shape.r, 0);
-            var startAngle = shape.startAngle;
-            var endAngle = shape.endAngle;
-            var clockwise = shape.clockwise;
+    buildPath: function (ctx, shape) {
 
-            var unitX = Math.cos(startAngle);
-            var unitY = Math.sin(startAngle);
+        var x = shape.cx;
+        var y = shape.cy;
+        var r = Math.max(shape.r, 0);
+        var startAngle = shape.startAngle;
+        var endAngle = shape.endAngle;
+        var clockwise = shape.clockwise;
 
-            ctx.moveTo(unitX * r + x, unitY * r + y);
-            ctx.arc(x, y, r, startAngle, endAngle, !clockwise);
-        }
-    });
+        var unitX = Math.cos(startAngle);
+        var unitY = Math.sin(startAngle);
+
+        ctx.moveTo(unitX * r + x, unitY * r + y);
+        ctx.arc(x, y, r, startAngle, endAngle, !clockwise);
+    }
 });

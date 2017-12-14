@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Text Rotation</title>
+    <script src="../dist/zrender.js"></script>
+</head>
+<body>
+    <div id="main" style="width:1000px;height:600px;"></div>
+    <script type="text/javascript">
+        // 初始化zrender
+        var zr = zrender.init(document.getElementById('main'));
+        var text1 = new zrender.Text({
+            style: {
+                text: 'aaaaaa'
+            },
+            position: [100, 100]
+        });
+        var text2 = new zrender.Text({
+            style: {
+                text: 'aaaaaa'
+            },
+            position: [300, 100]
+        });
+        text1.animateTo({
+            rotation: Math.PI
+        }, 2000);
+        text2.animateTo({
+            rotation: -Math.PI
+        }, 2000);
+        zr.add(text1);
+        zr.add(text2);
+    </script>
+</body>
+</html>

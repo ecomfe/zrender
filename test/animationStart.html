@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Animation</title>
+    <script src="../dist/zrender.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+
+    <h2>Move mouse. It is expected that animation start immediately without lag.</h2>
+    <div>
+        Circles: <input id="count" value="1800" /> &nbsp;&nbsp;
+        Throttle Rate: <input id="throttle-rate" value="50" />
+        <button id="ok">OK</button>
+    </div>
+    <div id="main" style="width:800px;height:600px;"></div>
+
+    <script type="text/javascript">
+
+        refresh();
+        var zr;
+        var throttleRate;
+        var count;
+
+        function refresh() {
+            count = +document.getElementById('count').value;
+            throttleRate = +document.getElementById('throttle-rate').value;
+
+            zr && zr.dispose();
+
+            init();
+        }
+
+        function init() {
+            zr = zrender.init(document.getElementById('main'));
+
+            var lastTrigger = +new Date();
+            var timer;
+            var record = window.record = [];
+            var recordLimit = 300;
+            var lastTick = 0;
+
+            // zr.animation.on('frame', function () {
+            //     if (record.length > recordLimit) {
+            //         record.length = 0;
+            //     }
+            //     var now = +new Date();
+            //     var gap = now - lastTick;
+            //     record.push(gap < 30 ? '-' : gap);
+            //     lastTick = now;
+            // }, this);
+
+            var gradient = new zrender.LinearGradient();
+            gradient.addColorStop(0, 'red');
+            gradient.addColorStop(1, 'black');
+
+            var viewWidth = zr.getWidth();
+            var viewHeight = zr.getHeight();
+            var center = [viewWidth / 2, viewHeight / 2];
+            var baseRadius = Math.min(viewWidth, viewHeight) * 0.3;
+            var els = [];
+
+            for (var i = 0; i < count; i++) {
+                var theta = Math.random() * Math.PI * 2;
+                var circle = new zrender.Circle({
+                    position: [
+                        center[0] + (baseRadius + Math.random() * 60) * Math.cos(theta),
+                        center[1] + (baseRadius + Math.random() * 60) * Math.sin(theta)
+                    ],
+                    shape: {
+                        cx: 0,
+                        cy: 0,
+                        r: 3
+                    },
+                    style: {
+                        fill: gradient
+                    },
+                    onclick: (function (i) {
+                        return function () {
+                            alert(i);
+                        }
+                    })(i)
+                });
+                circle.___ii = i;
+                els.push(circle);
+                zr.add(circle);
+            }
+
+            var update = throttle(function (point) {
+                for (var i = 0; i < els.length; i++) {
+                    var el = els[i];
+                    var dist = Math.pow(
+                        Math.pow(point[0] - el.position[0], 2)
+                        + Math.pow(point[1] - el.position[1], 2),
+                        0.5
+                    );
+
+                    if (dist < 0.1) {
+                        return;
+                    }
+
+                    var ratio = (baseRadius + Math.random() * 60) / dist;
+                    var targetPostion = [
+                        point[0] + (el.position[0] - point[0]) * ratio,
+                        point[1] + (el.position[1] - point[1]) * ratio
+                    ];
+
+                    // el.animateTo({
+                    //     position: targetPostion
+                    // }, 3000, 0, 'elasticOut');
+
+                    // el.stopAnimation().animate('')
+                    //     .all(3000, {
+                    //         position: targetPostion
+                    //     })
+                    //     .start('elasticOut');
+
+                    el.stopAnimation().animate('')
+                        .when(3000, {
+                            position: targetPostion
+                        })
+                        .start('elasticOut');
+                }
+            }, throttleRate);
+
+            zr.on('mousemove', function (e) {
+                update([e.offsetX, e.offsetY]);
+            });
+        }
+
+
+        function throttle(fn, delay, debounce) {
+            var currCall;
+            var lastCall = 0;
+            var lastExec = 0;
+            var timer = null;
+            var diff;
+            var scope;
+            var args;
+            var debounceNextCall;
+
+            delay = delay || 0;
+
+            function exec() {
+                lastExec = (new Date()).getTime();
+                timer = null;
+                fn.apply(scope, args || []);
+            }
+
+            var cb = function () {
+                currCall = (new Date()).getTime();
+                scope = this;
+                args = arguments;
+                var thisDelay = debounceNextCall || delay;
+                var thisDebounce = debounceNextCall || debounce;
+                debounceNextCall = null;
+                diff = currCall - (thisDebounce ? lastCall : lastExec) - thisDelay;
+
+                clearTimeout(timer);
+
+                if (thisDebounce) {
+                    timer = setTimeout(exec, thisDelay);
+                }
+                else {
+                    if (diff >= 0) {
+                        exec();
+                    }
+                    else {
+                        timer = setTimeout(exec, -diff);
+                    }
+                }
+
+                lastCall = currCall;
+            };
+
+            return cb;
+        }
+    </script>
+
+</body>
+</html>

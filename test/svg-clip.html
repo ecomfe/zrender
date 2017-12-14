@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Image</title>
+    <script src="../dist/zrender.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+    <div id="main" style="width:1000px;height:800px;"></div>
+
+    <script type="text/javascript">
+    // 初始化zrender
+    var zr = zrender.init(document.getElementById('main'), {
+        renderer: 'svg'
+    });
+
+    var rect = new zrender.Rect({
+        shape: {
+            x: 10,
+            y: 10,
+            width: 80,
+            height: 80
+        }
+    });
+
+    var circle = new zrender.Circle({
+        shape: {
+            cx: 80,
+            cy: 30,
+            r: 40
+        }
+    });
+    rect.setClipPath(circle);
+    zr.add(rect);
+
+    setTimeout(function () {
+        rect.removeClipPath();
+    }, 6000);
+
+    setTimeout(function () {
+        rect.setClipPath(circle);
+    }, 12000);
+
+    var rect2 = new zrender.Rect({
+        shape: {
+            x: 100,
+            y: 10,
+            width: 80,
+            height: 80
+        }
+    });
+    rect2.setClipPath(circle);
+    zr.add(rect2);
+
+    setTimeout(function () {
+        rect2.removeClipPath();
+    }, 9000);
+
+    setTimeout(function () {
+        heart.removeClipPath();
+    }, 3000);
+
+    var ring = new zrender.Ring({
+        shape: {
+            cx: 250,
+            cy: 50,
+            r: 40,
+            r0: 30
+        }
+    });
+
+    var heart = new zrender.Heart({
+        shape: {
+            cx: 250,
+            cy: 25,
+            width: 50,
+            height: 60
+        }
+    });
+    heart.setClipPath(ring);
+    zr.add(heart);
+
+    setTimeout(function () {
+        heart.removeClipPath();
+    }, 3000);
+
+
+    var image = new zrender.Image({
+        style: {
+            x: 310,
+            y: 10,
+            image: 'test.png',
+            width: 80,
+            height: 80
+        }
+    });
+
+    var imgClip = new zrender.Circle({
+        shape: {
+            cx: 380,
+            cy: 30,
+            r: 40
+        }
+    });
+    image.setClipPath(imgClip);
+
+    zr.add(image);
+
+
+    var text = new zrender.Text({
+        style: {
+            x: 400,
+            y: 10,
+            text: 'Hello',
+            font: '50px serif'
+        }
+    });
+
+    var textClip = new zrender.Rect({
+        shape: {
+            x: 420,
+            y: 20,
+            width: 80,
+            height: 30
+        }
+    });
+    text.setClipPath(textClip);
+
+    zr.add(text);
+
+
+    var text2 = new zrender.Rect({
+        shape: {
+            x: 20,
+            y: 20,
+            width: 200,
+            height: 100
+        },
+        style: {
+            text: 'XXXXXXXXXXXXXXXXX\nXXXXXXXXXXXXXXXXX\nXXXXXXXXXXXXXXXXX\nXXXXXXXXXXXXXXXXX\nXXXXXXXXXXXXXXXXX\nXXXXXXXXXXXXXXXXX\n',
+            fill: 'transparent',
+            textFill: 'red',
+            font: '20px serif'
+        },
+        position: [400, 20]
+    });
+    var text2Clip1 = new zrender.Rect({
+        shape: {
+            x: 20,
+            y: 20,
+            width: 100,
+            height: 80
+        }
+    });
+    var text2Clip2 = new zrender.Rect({
+        shape: {
+            x: 140,
+            y: 20,
+            width: 80,
+            height: 60
+        }
+    });
+
+    var bound = new zrender.Circle({
+        shape: {
+            cx: 120,
+            cy: 70,
+            r: 80
+        },
+        style: {
+            fill: '#ff0'
+        }
+    });
+
+    var group = new zrender.CompoundPath({
+        shape: {
+            paths: [text2Clip1, text2Clip2]
+        },
+        style: {
+            fill: '#0f0'
+        }
+    });
+
+    group.setClipPath(bound);
+
+    text2.setClipPath(group);
+
+    zr.add(text2);
+
+    var parent = new zrender.Rect({
+        shape: {
+            x: 10,
+            y: 10,
+            width: 100,
+            height: 100
+        },
+        position: [20, 200],
+        rotation: Math.PI / 6,
+        style: {
+            fill: 'red'
+        }
+    });
+    zr.add(parent);
+
+    var child = new zrender.Circle({
+        shape: {
+            cx: 110,
+            cy: 110,
+            r: 100
+        },
+        position: [40, 40]
+    });
+    parent.setClipPath(child);
+    </script>
+
+</body>
+</html>

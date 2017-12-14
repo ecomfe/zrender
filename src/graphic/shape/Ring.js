@@ -2,27 +2,27 @@
  * 圆环
  * @module zrender/graphic/shape/Ring
  */
-define(function (require) {
 
-    return require('../Path').extend({
+import Path from '../Path';
 
-        type: 'ring',
+export default Path.extend({
 
-        shape: {
-            cx: 0,
-            cy: 0,
-            r: 0,
-            r0: 0
-        },
+    type: 'ring',
 
-        buildPath: function (ctx, shape) {
-            var x = shape.cx;
-            var y = shape.cy;
-            var PI2 = Math.PI * 2;
-            ctx.moveTo(x + shape.r, y);
-            ctx.arc(x, y, shape.r, 0, PI2, false);
-            ctx.moveTo(x + shape.r0, y);
-            ctx.arc(x, y, shape.r0, 0, PI2, true);
-        }
-    });
+    shape: {
+        cx: 0,
+        cy: 0,
+        r: 0,
+        r0: 0
+    },
+
+    buildPath: function (ctx, shape) {
+        var x = shape.cx;
+        var y = shape.cy;
+        var PI2 = Math.PI * 2;
+        ctx.moveTo(x + shape.r, y);
+        ctx.arc(x, y, shape.r, 0, PI2, false);
+        ctx.moveTo(x + shape.r0, y);
+        ctx.arc(x, y, shape.r0, 0, PI2, true);
+    }
 });

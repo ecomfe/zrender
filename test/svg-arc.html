@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Image</title>
+    <script src="../dist/zrender.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+    <div id="main" style="width:1000px;height:800px;"></div>
+
+    <script type="text/javascript">
+
+    // 初始化zrender
+    var zr = zrender.init(document.getElementById('main'), {
+        renderer: 'svg'
+    });
+
+    for (var i = 0; i < 8; ++i) {
+        var s = 0 + Math.PI / 4 * i;
+        for (var j = 0; j < 8; ++j) {
+            var e = Math.PI / 4 * j;
+            var arc = new zrender.Arc({
+                shape: {
+                    cx: 50 + 100 * i,
+                    cy: 50 + 100 * j,
+                    r: 20
+                },
+                style: {
+                    stroke: '#aaa'
+                }
+            });
+            zr.add(arc);
+            var arc = new zrender.Arc({
+                shape: {
+                    cx: 50 + 100 * i,
+                    cy: 50 + 100 * j,
+                    r: 20,
+                    startAngle: s,
+                    endAngle: e,
+                    clockwise: true
+                },
+                style: {
+                    stroke: '#f00'
+                }
+            });
+            zr.add(arc);
+        }
+    }
+    </script>
+
+</body>
+</html>

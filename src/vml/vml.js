@@ -1,4 +1,5 @@
-define(function (require) {
-    require('./graphic');
-    require('../zrender').registerPainter('vml', require('./Painter'));
-});
+import './graphic';
+import {registerPainter} from '../zrender';
+import Painter from './Painter';
+
+registerPainter('vml', Painter);

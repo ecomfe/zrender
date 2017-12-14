@@ -3,21 +3,18 @@
 <head>
     <meta charset="utf-8" />
     <title>Image</title>
-    <script type="text/javascript" src="../doc/asset/js/esl/esl.js"></script>
+    <script src="lib/rollup.browser.js"></script>
+    <script src="lib/requireES.js"></script>
+    <script src="lib/config.js"></script>
 </head>
 <body>
     <script type="text/javascript">
-    require.config({
-        packages: [
-            {
-                name: 'zrender',
-                location: '../src',
-                main: 'zrender'
-            }
-        ]
-    });
 
-    require(["zrender", 'zrender/graphic/Image', 'zrender/graphic/States'], function(zrender, ImageShape, States){
+    requireES([
+        'zrender/src/zrender',
+        'zrender/src/graphic/Image',
+        'zrender/src/graphic/States'
+    ], function(zrender, ImageShape, States){
 
         // 初始化zrender
         var zr = zrender.init(document.getElementById("Main"), {
@@ -32,7 +29,7 @@
                     style: {
                         x: 0,
                         y: 0,
-                        image: "test.jpeg"
+                        image: 'test.png'
                     },
                     onmouseover: function () {
                         this.states.transitionState('hover');

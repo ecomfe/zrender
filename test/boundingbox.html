@@ -3,23 +3,16 @@
 <head>
     <meta charset="utf-8" />
     <title>包围盒计算测试</title>
-    <script type="text/javascript" src="esl.js"></script>
+    <script src="lib/rollup.browser.js"></script>
+    <script src="lib/requireES.js"></script>
+    <script src="lib/config.js"></script>
 </head>
 <body>
     <div id="Main"></div>
 </body>
     <script type="text/javascript">
-    require.config({
-        packages: [
-            {
-                name: 'zrender',
-                location: '../src',
-                main: 'zrender'
-            }
-        ]
-    });
 
-    require(['zrender', 'zrender/core/PathProxy'], function(zrender, PathProxy) {
+    requireES(['zrender/src/zrender', 'zrender/src/core/PathProxy'], function(zrender, PathProxy) {
         var canvas = document.createElement('canvas')
         document.getElementById("Main").appendChild(canvas);
         canvas.width = 1024;

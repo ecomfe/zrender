@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <title>Progressive</title>
-    <script type="text/javascript" src="esl.js"></script>
+    <script src="../dist/zrender.js"></script>
 </head>
 <body>
     <style>
@@ -13,18 +13,8 @@
             background: red;
         }
     </style>
+    <div id="main"></div>
     <script type="text/javascript">
-    require.config({
-        packages: [
-            {
-                name: 'zrender',
-                location: '../src',
-                main: 'zrender'
-            }
-        ]
-    });
-
-    require(['zrender', 'zrender/graphic/shape/BezierCurve'], function(zrender, BezierCurveShape){
         // 初始化zrender
         var zr = zrender.init(document.getElementById('main'));
 
@@ -44,7 +34,7 @@
             var checkpoint = !(i % 2000);
             var checkpointIdx = Math.round(i / 2000);
             var el;
-            zr.add(el = new BezierCurveShape({
+            zr.add(el = new zrender.BezierCurve({
                 shape: {
                     x1: x1,
                     y1: y1,
@@ -77,8 +67,6 @@
                 zr.removeHover(this);
             });
         }
-    });
     </script>
-    <div id="main"></div>
 </body>
 </html>

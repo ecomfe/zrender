@@ -2,57 +2,57 @@
  * 玫瑰线
  * @module zrender/graphic/shape/Rose
  */
-define(function (require) {
 
-    var sin = Math.sin;
-    var cos = Math.cos;
-    var radian = Math.PI / 180;
+import Path from '../Path';
 
-    return require('../Path').extend({
+var sin = Math.sin;
+var cos = Math.cos;
+var radian = Math.PI / 180;
 
-        type: 'rose',
+export default Path.extend({
 
-        shape: {
-            cx: 0,
-            cy: 0,
-            r: [],
-            k: 0,
-            n: 1
-        },
+    type: 'rose',
 
-        style: {
-            stroke: '#000',
-            fill: null
-        },
+    shape: {
+        cx: 0,
+        cy: 0,
+        r: [],
+        k: 0,
+        n: 1
+    },
 
-        buildPath: function (ctx, shape) {
-            var x;
-            var y;
-            var R = shape.r;
-            var r;
-            var k = shape.k;
-            var n = shape.n;
+    style: {
+        stroke: '#000',
+        fill: null
+    },
 
-            var x0 = shape.cx;
-            var y0 = shape.cy;
+    buildPath: function (ctx, shape) {
+        var x;
+        var y;
+        var R = shape.r;
+        var r;
+        var k = shape.k;
+        var n = shape.n;
 
-            ctx.moveTo(x0, y0);
+        var x0 = shape.cx;
+        var y0 = shape.cy;
 
-            for (var i = 0, len = R.length; i < len ; i++) {
-                r = R[i];
+        ctx.moveTo(x0, y0);
 
-                for (var j = 0; j <= 360 * n; j++) {
-                    x = r
-                         * sin(k / n * j % 360 * radian)
-                         * cos(j * radian) 
-                         + x0;
-                    y = r
-                         * sin(k / n * j % 360 * radian)
-                         * sin(j * radian)
-                         + y0;
-                    ctx.lineTo(x, y);
-                }
+        for (var i = 0, len = R.length; i < len ; i++) {
+            r = R[i];
+
+            for (var j = 0; j <= 360 * n; j++) {
+                x = r
+                        * sin(k / n * j % 360 * radian)
+                        * cos(j * radian)
+                        + x0;
+                y = r
+                        * sin(k / n * j % 360 * radian)
+                        * sin(j * radian)
+                        + y0;
+                ctx.lineTo(x, y);
             }
         }
-    });
+    }
 });
