@@ -260,7 +260,7 @@ define(function (require) {
                 // In case click triggered before mouseup
                 this._upel = hovered;
             }
-            else if (name === 'mosueup') {
+            else if (name === 'mouseup') {
                 this._upel = hovered;
             }
             else if (name === 'click') {
