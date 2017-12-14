@@ -82,8 +82,11 @@ IncrementalDisplayble.prototype.brush = function (ctx, prevEl) {
     for (var i = 0; i < this._temporaryDisplayables.length; i++) {
         this._temporaryDisplayables[i].brush(ctx, i === 0 ? null : this._temporaryDisplayables[i - 1]);
     }
+
     this._temporaryDisplayables = [];
     this._needsClear = false;
+
+    this.onDisplaybleFlushed && this.onDisplaybleFlushed();
 };
 
 var m = [];
