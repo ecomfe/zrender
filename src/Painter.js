@@ -172,7 +172,7 @@ var Painter = function (root, storage, opts) {
 
     /**
      * @type {Object.<string, Object>}
-     * @type {private}
+     * @private
      */
     this._layerConfig = {};
 
