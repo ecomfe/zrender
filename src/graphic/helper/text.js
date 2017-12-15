@@ -10,6 +10,7 @@ import {
 import * as textContain from '../../contain/text';
 import * as roundRectHelper from './roundRect';
 import * as imageHelper from './image';
+import fixShadow from './fixShadow';
 
 // TODO: Have not support 'start', 'end' yet.
 var VALID_TEXT_ALIGN = {left: 1, right: 1, center: 1};
@@ -417,7 +418,8 @@ function setCtx(ctx, prop, value) {
     // FIXME ??? performance try
     // if (ctx.__currentValues[prop] !== value) {
         // ctx[prop] = ctx.__currentValues[prop] = value;
-    ctx[prop] = value;
+
+    ctx[prop] = fixShadow(ctx, prop, value);
     // }
     return ctx[prop];
 }

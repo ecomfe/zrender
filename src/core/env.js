@@ -8,31 +8,39 @@
 
 var env = {};
 
-if (typeof navigator === 'undefined') {
-    if (wx && wx.version) {
-        // In Weixin Application
-        env = {
-            browser: {},
-            os: {},
-            node: false,
-            wxa: true, // Weixin Application
-            canvasSupported: true,
-            svgSupported: false,
-            touchEventsSupported: true
-        }
+if (wx && wx.version) {
+    // In Weixin Application
+    env = {
+        browser: {},
+        os: {},
+        node: false,
+        wxa: true, // Weixin Application
+        canvasSupported: true,
+        svgSupported: false,
+        touchEventsSupported: true
     }
-    else {
-        // In node
-        env = {
-            browser: {},
-            os: {},
-            node: true,
-            wxa: false,
-            // Assume canvas is supported
-            canvasSupported: true,
-            svgSupported: true
-        };
-    }
+}
+else if (typeof document === 'undefined' && typeof self !== 'undefined') {
+    // In worker
+    env = {
+        browser: {},
+        os: {},
+        node: false,
+        worker: true,
+        canvasSupported: true
+    };
+}
+else if (typeof navigator === 'undefined') {
+    // In node
+    env = {
+        browser: {},
+        os: {},
+        node: true,
+        worker: false,
+        // Assume canvas is supported
+        canvasSupported: true,
+        svgSupported: true
+    };
 }
 else {
     env = detect(navigator.userAgent);
@@ -130,7 +138,6 @@ function detect(ua) {
         // canvasSupported : !(browser.ie && parseFloat(browser.version) < 9)
         canvasSupported: !!document.createElement('canvas').getContext,
         svgSupported: typeof SVGRect !== 'undefined',
-        // @see <http://stackoverflow.com/questions/4817029/whats-the-best-way-to-detect-a-touch-screen-device-using-javascript>
         // works on most browsers
         // IE10/11 does not support touch event, and MS Edge supports them but not by
         // default, so we dont check navigator.maxTouchPoints for them here.

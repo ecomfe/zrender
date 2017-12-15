@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Image</title>
+    <script src="../dist/zrender.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+    <div id="main" style="width:1000px;height:800px;"></div>
+    <script type="text/javascript">
+    // 初始化zrender
+    var zr = zrender.init(document.getElementById('main'), {
+        renderer: 'svg'
+    });
+
+    var rect = new zrender.Rect({
+        shape: {
+            x: 60,
+            y: 60,
+            width: 50,
+            height: 50
+        },
+        style: {
+            fill: 'red',
+            shadowBlur: 5,
+            shadowColor: 'blue',
+            shadowOffsetX: 10,
+            shadowOffsetY: 10
+        }
+    });
+    zr.add(rect);
+    </script>
+
+</body>
+</html>

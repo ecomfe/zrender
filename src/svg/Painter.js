@@ -12,6 +12,7 @@ import ZText from '../graphic/Text';
 import arrayDiff from '../core/arrayDiff2';
 import GradientManager from './helper/GradientManager';
 import ClippathManager from './helper/ClippathManager';
+import ShadowManager from './helper/ShadowManager';
 import {each} from '../core/util';
 import {
     path as svgPath,
@@ -95,11 +96,11 @@ var SVGPainter = function (root, storage, opts) {
     svgRoot.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
     svgRoot.setAttribute('version', '1.1');
     svgRoot.setAttribute('baseProfile', 'full');
-    svgRoot.style['user-select'] = 'none';
-    svgRoot.style.cssText = 'position:absolute;left:0;top:0;';
+    svgRoot.style.cssText = 'user-select:none;position:absolute;left:0;top:0;';
 
     this.gradientManager = new GradientManager(svgRoot);
     this.clipPathManager = new ClippathManager(svgRoot);
+    this.shadowManager = new ShadowManager(svgRoot);
 
     var viewport = document.createElement('div');
     viewport.style.cssText = 'overflow:hidden;position:relative';
@@ -147,6 +148,7 @@ SVGPainter.prototype = {
     _paintList: function (list) {
         this.gradientManager.markAllUnused();
         this.clipPathManager.markAllUnused();
+        this.shadowManager.markAllUnused();
 
         var svgRoot = this._svgRoot;
         var visibleList = this._visibleList;
@@ -157,6 +159,8 @@ SVGPainter.prototype = {
         for (i = 0; i < listLen; i++) {
             var displayable = list[i];
             var svgProxy = getSvgProxy(displayable);
+            var svgElement = getSvgElement(displayable)
+                || getTextSvgElement(displayable);
             if (!displayable.invisible) {
                 if (displayable.__dirty) {
                     svgProxy && svgProxy.brush(displayable);
@@ -164,12 +168,15 @@ SVGPainter.prototype = {
                     // Update clipPath
                     this.clipPathManager.update(displayable);
 
-                    // Update gradient
+                    // Update gradient and shadow
                     if (displayable.style) {
                         this.gradientManager
                             .update(displayable.style.fill);
                         this.gradientManager
                             .update(displayable.style.stroke);
+
+                        this.shadowManager
+                            .update(svgElement, displayable);
                     }
 
                     displayable.__dirty = false;
@@ -223,6 +230,8 @@ SVGPainter.prototype = {
 
                     this.gradientManager
                         .addWithoutUpdate(svgElement, displayable);
+                    this.shadowManager
+                        .addWithoutUpdate(prevSvgElement, displayable);
                     this.clipPathManager.markUsed(displayable);
                 }
             }
@@ -239,6 +248,10 @@ SVGPainter.prototype = {
                     this.gradientManager
                         .addWithoutUpdate(svgElement, displayable);
 
+                    this.shadowManager.markUsed(displayable);
+                    this.shadowManager
+                        .addWithoutUpdate(svgElement, displayable);
+
                     this.clipPathManager.markUsed(displayable);
                 }
             }
@@ -246,6 +259,7 @@ SVGPainter.prototype = {
 
         this.gradientManager.removeUnused();
         this.clipPathManager.removeUnused();
+        this.shadowManager.removeUnused();
 
         this._visibleList = newVisibleList;
     },
@@ -301,7 +315,7 @@ SVGPainter.prototype = {
 
         viewport.style.display = '';
 
-        if (this._width !== width && this._height !== height) {
+        if (this._width !== width || this._height !== height) {
             this._width = width;
             this._height = height;
 

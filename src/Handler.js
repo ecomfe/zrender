@@ -64,10 +64,7 @@ var Handler = function(storage, painter, proxy, painterRoot) {
     /**
      * Proxy of event. can be Dom, WebGLSurface, etc.
      */
-    this.proxy = proxy;
-
-    // Attach handler
-    proxy.handler = this;
+    this.proxy = null;
 
     /**
      * {target, topTarget, x, y}
@@ -97,14 +94,27 @@ var Handler = function(storage, painter, proxy, painterRoot) {
 
     Draggable.call(this);
 
-    util.each(handlerNames, function (name) {
-        proxy.on && proxy.on(name, this[name], this);
-    }, this);
+    this.setHandlerProxy(proxy);
 };
 
 Handler.prototype = {
 
     constructor: Handler,
+
+    setHandlerProxy: function (proxy) {
+        if (this.proxy) {
+            this.proxy.dispose();
+        }
+
+        if (proxy) {
+            util.each(handlerNames, function (name) {
+                proxy.on && proxy.on(name, this[name], this);
+            }, this);
+            // Attach handler
+            proxy.handler = this;
+        }
+        this.proxy = proxy;
+    },
 
     mousemove: function (event) {
         var x = event.zrX;
@@ -290,7 +300,7 @@ util.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick', 'contextme
             // In case click triggered before mouseup
             this._upEl = hoveredTarget;
         }
-        else if (name === 'mosueup') {
+        else if (name === 'mouseup') {
             this._upEl = hoveredTarget;
         }
         else if (name === 'click') {
