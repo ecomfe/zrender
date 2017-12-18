@@ -179,6 +179,7 @@ var Painter = function (root, storage, opts) {
         // Create layer if only one given canvas
         // Device pixel ratio is fixed to 1 because given canvas has its specified width and height
         var mainLayer = new Layer(root, this, 1);
+        mainLayer.__builtin__ = true;
         mainLayer.initContext();
         // FIXME Use canvas width and height
         // mainLayer.resize(width, height);
