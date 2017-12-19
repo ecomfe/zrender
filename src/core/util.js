@@ -578,8 +578,9 @@ export function isPrimitive(obj) {
  * @param {Object} obj Only apply `ownProperty`.
  */
 function HashMap(obj) {
+    var isArr = isArray(obj);
     obj && each(obj, function (value, key) {
-        this.set(key, value);
+        isArr ? this.set(value, 1) : this.set(key, value);
     }, this);
 }
 
