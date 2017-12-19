@@ -471,6 +471,15 @@ export function isBuiltInObject(value) {
  * @param {*} value
  * @return {boolean}
  */
+export function isTypedArray(value) {
+    return !!TYPED_ARRAY[objToString.call(value)];
+}
+
+/**
+ * @memberOf module:zrender/core/util
+ * @param {*} value
+ * @return {boolean}
+ */
 export function isDom(value) {
     return typeof value === 'object'
         && typeof value.nodeType === 'number'
