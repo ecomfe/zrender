@@ -8,7 +8,7 @@
 
 var env = {};
 
-if (wx && wx.version) {
+if (typeof wx !== 'undefined' && wx.version) {
     // In Weixin Application
     env = {
         browser: {},
