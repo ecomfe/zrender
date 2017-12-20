@@ -630,4 +630,17 @@ export function createHashMap(obj) {
     return new HashMap(obj);
 }
 
+export function concatArray(a, b) {
+    var newArray = new a.constructor(a.length + b.length);
+    for (var i = 0; i < a.length; i++) {
+        newArray[i] = a[i];
+    }
+    var offset = a.length;
+    for (i = 0; i < b.length; i++) {
+        newArray[i + offset] = b[i];
+    }
+    return newArray;
+}
+
+
 export function noop() {}
