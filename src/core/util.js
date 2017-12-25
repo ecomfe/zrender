@@ -563,7 +563,10 @@ export function assert(condition, message) {
  * @return {string} trimed string
  */
 export function trim(str) {
-    if (typeof str.trim === 'function') {
+    if (str == null) {
+        return null;
+    }
+    else if (typeof str.trim === 'function') {
         return str.trim();
     }
     else {
