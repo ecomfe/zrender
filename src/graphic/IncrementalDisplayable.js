@@ -54,6 +54,15 @@ IncrementalDisplayble.prototype.addDisplayables = function (displayables, notPer
     }
 };
 
+IncrementalDisplayble.prototype.eachPendingDisplayable = function  (cb) {
+    for (var i = this._cursor; i < this._displayables.length; i++) {
+        cb && cb(this._displayables[i]);
+    }
+    for (var i = 0; i < this._temporaryDisplayables.length; i++) {
+        cb && cb(this._temporaryDisplayables[i]);
+    }
+};
+
 IncrementalDisplayble.prototype.update = function () {
     this.updateTransform();
     for (var i = this._cursor; i < this._displayables.length; i++) {

@@ -154,6 +154,11 @@ var Painter = function (root, storage, opts) {
      */
     this._layerConfig = {};
 
+    /**
+     * zrender will do compositing when root is a canvas and have multiple zlevels.
+     */
+    this._needsManuallyCompositing = false;
+
     if (!singleCanvas) {
         this._width = this._getSize(0);
         this._height = this._getSize(1);
@@ -349,6 +354,22 @@ Painter.prototype = {
         this._updateLayerStatus(list);
 
         this._doPaintList(list, paintAll);
+
+        if (this._needsManuallyCompositing) {
+            this._compositeManually();
+        }
+    },
+
+    _compositeManually: function () {
+        var ctx = this.getLayer(0).ctx;
+        var width = this._domRoot.width;
+        var height = this._domRoot.height;
+        // PENDING, If only builtin layer?
+        this.eachBuiltinLayer(function (layer) {
+            if (layer.virtual) {
+                ctx.drawImage(layer.dom, 0, 0, width, height);
+            }
+        });
     },
 
     _doPaintList: function (list, paintAll) {
@@ -378,8 +399,8 @@ Painter.prototype = {
 
             if (layer.__startIndex === layer.__drawIndex) {
                 if (layer.isIncremental) {
-                    var firstEL = list[layer.__drawIndex];
-                    if (firstEL && firstEL.needsClear()) {
+                    var firstEl = list[layer.__drawIndex];
+                    if (firstEl && firstEl.needsClear()) {
                         layer.clear();
                     }
                 }
@@ -447,13 +468,10 @@ Painter.prototype = {
     /**
      * 获取 zlevel 所在层，如果不存在则会创建一个新的层
      * @param {number} zlevel
+     * @param {boolean} virtual Virtual layer will not be inserted into dom.
      * @return {module:zrender/Layer}
      */
-    getLayer: function (zlevel) {
-        if (this._singleCanvas) {
-            return this._layers[0];
-        }
-
+    getLayer: function (zlevel, virtual) {
         var layer = this._layers[zlevel];
         if (!layer) {
             // Create a new layer
@@ -463,6 +481,10 @@ Painter.prototype = {
 
             if (this._layerConfig[zlevel]) {
                 util.merge(layer, this._layerConfig[zlevel], true);
+            }
+
+            if (virtual) {
+                layer.virtual = virtual;
             }
 
             this.insertLayer(zlevel, layer);
@@ -600,21 +622,31 @@ Painter.prototype = {
             }
         }
 
+        if (this._singleCanvas) {
+            for (var i = 1; i < list.length; i++) {
+                var el = list[i];
+                if (el.zlevel !== list[i - 1].zlevel || el.isIncremental) {
+                    this._needsManuallyCompositing = true;
+                    break;
+                }
+            }
+        }
+
         var prevLayer = null;
         // TODO
         var incrementalLayerLevel = 0.001;
         var incrementalLayerCount = 0;
         for (var i = 0; i < list.length; i++) {
             var el = list[i];
-            var zlevel = this._singleCanvas ? 0 : el.zlevel;
+            var zlevel = el.zlevel;
             var layer;
             if (el.isIncremental) {
-                layer = this.getLayer(zlevel + incrementalLayerLevel);
+                layer = this.getLayer(zlevel + incrementalLayerLevel, this._needsManuallyCompositing);
                 layer.isIncremental = true;
                 incrementalLayerCount = 1;
             }
             else {
-                layer = this.getLayer(zlevel + incrementalLayerCount > 0 ? 0.01 : 0);
+                layer = this.getLayer(zlevel + incrementalLayerCount > 0 ? 0.01 : 0, this._needsManuallyCompositing);
             }
 
             if (!layer.__builtin__) {
@@ -785,9 +817,11 @@ Painter.prototype = {
      */
     getRenderedCanvas: function (opts) {
         opts = opts || {};
-        if (this._singleCanvas) {
+        if (this._singleCanvas && !this._compositeManually) {
             return this._layers[0].dom;
         }
+
+        this.refresh();
 
         var imageLayer = new Layer('image', this, opts.pixelRatio || this.dpr);
         imageLayer.initContext();
@@ -795,43 +829,19 @@ Painter.prototype = {
         imageLayer.clearColor = opts.backgroundColor;
         imageLayer.clear();
 
-        var displayList = this.storage.getDisplayList(true);
-
-        var scope = {};
-        var zlevel;
-
-        var self = this;
-        function findAndDrawOtherLayer(smaller, larger) {
-            var zlevelList = self._zlevelList;
-            if (smaller == null) {
-                smaller = -Infinity;
+        var width = imageLayer.dom.width;
+        var height = imageLayer.dom.height;
+        var ctx = imageLayer.ctx;
+        this.eachLayer(function (layer) {
+            if (layer.__builtin__) {
+                ctx.drawImage(layer.dom, 0, 0, width, height);
             }
-            var intermediateLayer;
-            for (var i = 0; i < zlevelList.length; i++) {
-                var z = zlevelList[i];
-                var layer = self._layers[z];
-                if (!layer.__builtin__ && z > smaller && z < larger) {
-                    intermediateLayer = layer;
-                    break;
-                }
-            }
-            if (intermediateLayer && intermediateLayer.renderToCanvas) {
+            else if (layer.renderToCanvas) {
                 imageLayer.ctx.save();
-                intermediateLayer.renderToCanvas(imageLayer.ctx);
+                layer.renderToCanvas(imageLayer.ctx);
                 imageLayer.ctx.restore();
             }
-        }
-        for (var i = 0; i < displayList.length; i++) {
-            var el = displayList[i];
-
-            if (el.zlevel !== zlevel) {
-                findAndDrawOtherLayer(zlevel, el.zlevel);
-                zlevel = el.zlevel;
-            }
-            this._doPaintEl(el, imageLayer, true, scope);
-        }
-
-        findAndDrawOtherLayer(zlevel, Infinity);
+        });
 
         return imageLayer.dom;
     },
