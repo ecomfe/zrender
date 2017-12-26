@@ -821,27 +821,37 @@ Painter.prototype = {
             return this._layers[0].dom;
         }
 
-        this.refresh();
-
         var imageLayer = new Layer('image', this, opts.pixelRatio || this.dpr);
         imageLayer.initContext();
-
         imageLayer.clearColor = opts.backgroundColor;
         imageLayer.clear();
 
-        var width = imageLayer.dom.width;
-        var height = imageLayer.dom.height;
-        var ctx = imageLayer.ctx;
-        this.eachLayer(function (layer) {
-            if (layer.__builtin__) {
-                ctx.drawImage(layer.dom, 0, 0, width, height);
+        if (opts.pixelRatio <= this.dpr) {
+            this.refresh();
+
+            var width = imageLayer.dom.width;
+            var height = imageLayer.dom.height;
+            var ctx = imageLayer.ctx;
+            this.eachLayer(function (layer) {
+                if (layer.__builtin__) {
+                    ctx.drawImage(layer.dom, 0, 0, width, height);
+                }
+                else if (layer.renderToCanvas) {
+                    imageLayer.ctx.save();
+                    layer.renderToCanvas(imageLayer.ctx);
+                    imageLayer.ctx.restore();
+                }
+            });
+        }
+        else {
+            // PENDING, echarts-gl and incremental rendering.
+            var scope = {};
+            var displayList = this.storage.getDisplayList(true);
+            for (var i = 0; i < displayList.length; i++) {
+                var el = displayList[i];
+                this._doPaintEl(el, imageLayer, true, scope);
             }
-            else if (layer.renderToCanvas) {
-                imageLayer.ctx.save();
-                layer.renderToCanvas(imageLayer.ctx);
-                imageLayer.ctx.restore();
-            }
-        });
+        }
 
         return imageLayer.dom;
     },
