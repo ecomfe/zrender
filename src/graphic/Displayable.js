@@ -144,7 +144,9 @@ Displayable.prototype = {
     /**
      * @type {boolean}
      */
-    isIncremental: false,
+    incremental: false,
+    // inplace is used with incremental
+    inplace: false,
 
     beforeBrush: function (ctx) {},
 

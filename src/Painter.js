@@ -9,6 +9,8 @@ import Image from './graphic/Image';
 
 var HOVER_LAYER_ZLEVEL = 1e5;
 
+var CANVAS_ZLEVEL = 314159;
+
 function parseInt10(val) {
     return parseInt(val, 10);
 }
@@ -188,8 +190,9 @@ var Painter = function (root, storage, opts) {
         mainLayer.initContext();
         // FIXME Use canvas width and height
         // mainLayer.resize(width, height);
-        layers[0] = mainLayer;
-        zlevelList.push(0);
+        layers[CANVAS_ZLEVEL] = mainLayer;
+        // Not use common zlevel.
+        zlevelList.push(CANVAS_ZLEVEL);
 
         this._domRoot = root;
     }
@@ -361,9 +364,10 @@ Painter.prototype = {
     },
 
     _compositeManually: function () {
-        var ctx = this.getLayer(0).ctx;
+        var ctx = this.getLayer(CANVAS_ZLEVEL).ctx;
         var width = this._domRoot.width;
         var height = this._domRoot.height;
+        ctx.clearRect(0, 0, width, height);
         // PENDING, If only builtin layer?
         this.eachBuiltinLayer(function (layer) {
             if (layer.virtual) {
@@ -391,20 +395,30 @@ Painter.prototype = {
             var scope = {};
             ctx.save();
 
-            if (layer.__startIndex === layer.__drawIndex) {
-                if (layer.incremental) {
-                    if (layer.__needsClear) {
-                        layer.clear();
-                    }
-                }
-                else {
+            if (layer.incremental) {
+                if (layer.__needsClear) {
                     layer.clear();
                 }
             }
-            for (var i = layer.__drawIndex; i < layer.__endIndex; i++) {
+            else {
+                if (layer.__drawIndex === layer.__startIndex) {
+                    layer.clear();
+                }
+            }
+            var start = layer.__drawIndex;
+            var increaseDrawIndex = true;
+            for (var i = start; i < layer.__endIndex; i++) {
                 var el = list[i];
                 this._doPaintEl(el, layer, paintAll, scope);
                 el.__dirty = false;
+
+                // PENDING
+                if (el.incremental && el.inplace) {
+                    increaseDrawIndex = false;
+                }
+                if (increaseDrawIndex) {
+                    layer.__drawIndex = i;
+                }
             }
             ctx.restore();
         }
@@ -639,6 +653,7 @@ Painter.prototype = {
                 // Needs clear if any element needs clear
                 if (el.needsClear) {
                     layer.__needsClear = true;
+                    el.needsClear = false;
                 }
                 incrementalLayerCount = 1;
             }
@@ -655,7 +670,10 @@ Painter.prototype = {
                 if (layer.__startIndex !== i) {
                     layer.__dirty = true;
                 }
-                layer.__startIndex = layer.__drawIndex = i;
+                layer.__startIndex = i;
+                if (!layer.incremental || layer.__needsClear) {
+                    layer.__drawIndex = i;
+                }
                 updatePrevLayer(i);
                 prevLayer = layer;
             }
@@ -815,7 +833,7 @@ Painter.prototype = {
     getRenderedCanvas: function (opts) {
         opts = opts || {};
         if (this._singleCanvas && !this._compositeManually) {
-            return this._layers[0].dom;
+            return this._layers[CANVAS_ZLEVEL].dom;
         }
 
         var imageLayer = new Layer('image', this, opts.pixelRatio || this.dpr);

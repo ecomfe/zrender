@@ -24,6 +24,7 @@ function IncrementalDisplayble(opts) {
 }
 
 IncrementalDisplayble.prototype.incremental = true;
+IncrementalDisplayble.prototype.inplace = true;
 
 IncrementalDisplayble.prototype.clearDisplaybles = function () {
     this._displayables = [];
