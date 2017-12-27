@@ -384,12 +384,6 @@ Painter.prototype = {
                 layerList.push(layer);
             }
         }
-        // if (layerList > 1) {
-        //     // PENDING
-        //     layerList.sort(function (a, b) {
-        //         return a.getElementCount() - b.getElementCount();
-        //     });
-        // }
 
         for (var k = 0; k < layerList.length; k++) {
             var layer = layerList[k];
@@ -398,9 +392,8 @@ Painter.prototype = {
             ctx.save();
 
             if (layer.__startIndex === layer.__drawIndex) {
-                if (layer.isIncremental) {
-                    var firstEl = list[layer.__drawIndex];
-                    if (firstEl && firstEl.needsClear()) {
+                if (layer.incremental) {
+                    if (layer.__needsClear) {
                         layer.clear();
                     }
                 }
@@ -610,7 +603,7 @@ Painter.prototype = {
     _updateLayerStatus: function (list) {
 
         this.eachBuiltinLayer(function (layer, z) {
-            layer.__dirty = layer.__used = false;
+            layer.__dirty = layer.__used = layer.__needsClear = false;
         });
 
         function updatePrevLayer(idx) {
@@ -625,7 +618,7 @@ Painter.prototype = {
         if (this._singleCanvas) {
             for (var i = 1; i < list.length; i++) {
                 var el = list[i];
-                if (el.zlevel !== list[i - 1].zlevel || el.isIncremental) {
+                if (el.zlevel !== list[i - 1].zlevel || el.incremental) {
                     this._needsManuallyCompositing = true;
                     break;
                 }
@@ -640,9 +633,13 @@ Painter.prototype = {
             var el = list[i];
             var zlevel = el.zlevel;
             var layer;
-            if (el.isIncremental) {
+            if (el.incremental) {
                 layer = this.getLayer(zlevel + incrementalLayerLevel, this._needsManuallyCompositing);
-                layer.isIncremental = true;
+                layer.incremental = true;
+                // Needs clear if any element needs clear
+                if (el.needsClear) {
+                    layer.__needsClear = true;
+                }
                 incrementalLayerCount = 1;
             }
             else {

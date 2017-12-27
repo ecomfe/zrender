@@ -20,21 +20,17 @@ function IncrementalDisplayble(opts) {
 
     this._cursor = 0;
 
-    this._needsClear = true;
+    this.needsClear = true;
 }
 
-IncrementalDisplayble.prototype.isIncremental = true;
-
-IncrementalDisplayble.prototype.needsClear = function () {
-    return this._needsClear;
-};
+IncrementalDisplayble.prototype.incremental = true;
 
 IncrementalDisplayble.prototype.clearDisplaybles = function () {
     this._displayables = [];
     this._temporaryDisplayables = [];
     this._cursor = 0;
     this.dirty();
-    this._needsClear = true;
+    this.needsClear = true;
 };
 
 IncrementalDisplayble.prototype.addDisplayable = function (displayable, notPersistent) {
@@ -93,7 +89,7 @@ IncrementalDisplayble.prototype.brush = function (ctx, prevEl) {
     }
 
     this._temporaryDisplayables = [];
-    this._needsClear = false;
+    this.needsClear = false;
 };
 
 var m = [];

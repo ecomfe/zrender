@@ -122,7 +122,9 @@ Layer.prototype = {
     __startIndex: 0,
     __endIndex: 0,
 
-    isIncremental: false,
+    __needsClear: true,
+
+    incremental: false,
 
     getElementCount: function () {
         return this.__endIndex - this.__startIndex;
