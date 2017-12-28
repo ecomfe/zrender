@@ -8,7 +8,6 @@ import requestAnimationFrame from './animation/requestAnimationFrame';
 import Image from './graphic/Image';
 
 var HOVER_LAYER_ZLEVEL = 1e5;
-
 var CANVAS_ZLEVEL = 314159;
 
 function parseInt10(val) {
@@ -759,7 +758,7 @@ Painter.prototype = {
             this._width = width;
             this._height = height;
 
-            this.getLayer(0).resize(width, height);
+            this.getLayer(CANVAS_ZLEVEL).resize(width, height);
         }
         else {
             var domRoot = this._domRoot;
