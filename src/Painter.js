@@ -478,6 +478,9 @@ Painter.prototype = {
      * @return {module:zrender/Layer}
      */
     getLayer: function (zlevel, virtual) {
+        if (this._singleCanvas && !this._needsManuallyCompositing) {
+            zlevel = CANVAS_ZLEVEL;
+        }
         var layer = this._layers[zlevel];
         if (!layer) {
             // Create a new layer
