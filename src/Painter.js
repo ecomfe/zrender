@@ -394,31 +394,20 @@ Painter.prototype = {
             var scope = {};
             ctx.save();
 
-            if (layer.incremental) {
-                if (layer.__needsClear) {
-                    layer.clear();
-                }
-            }
-            else {
-                if (layer.__drawIndex === layer.__startIndex) {
-                    layer.clear();
-                }
-            }
             var start = layer.__drawIndex;
-            var increaseDrawIndex = true;
+            if (start === layer.__startIndex) {
+                var firstEl = list[start];
+                if (!firstEl.incremental || !firstEl.notClear) {
+                    layer.clear();
+                }
+            }
             for (var i = start; i < layer.__endIndex; i++) {
                 var el = list[i];
                 this._doPaintEl(el, layer, paintAll, scope);
                 el.__dirty = false;
-
-                // PENDING
-                if (el.incremental && el.inplace) {
-                    increaseDrawIndex = false;
-                }
-                if (increaseDrawIndex) {
-                    layer.__drawIndex = i;
-                }
             }
+            layer.__drawIndex = i;
+
             ctx.restore();
         }
     },
@@ -619,7 +608,7 @@ Painter.prototype = {
     _updateLayerStatus: function (list) {
 
         this.eachBuiltinLayer(function (layer, z) {
-            layer.__dirty = layer.__used = layer.__needsClear = false;
+            layer.__dirty = layer.__used = false;
         });
 
         function updatePrevLayer(idx) {
@@ -652,11 +641,6 @@ Painter.prototype = {
             if (el.incremental) {
                 layer = this.getLayer(zlevel + incrementalLayerLevel, this._needsManuallyCompositing);
                 layer.incremental = true;
-                // Needs clear if any element needs clear
-                if (el.needsClear) {
-                    layer.__needsClear = true;
-                    el.needsClear = false;
-                }
                 incrementalLayerCount = 1;
             }
             else {
@@ -673,13 +657,23 @@ Painter.prototype = {
                     layer.__dirty = true;
                 }
                 layer.__startIndex = i;
-                if (!layer.incremental || layer.__needsClear) {
+                if (!layer.incremental) {
                     layer.__drawIndex = i;
+                }
+                else {
+                    // Mark layer draw index needs to update.
+                    layer.__drawIndex = -1;
                 }
                 updatePrevLayer(i);
                 prevLayer = layer;
             }
-            layer.__dirty = layer.__dirty || el.__dirty;
+            if (el.__dirty) {
+                layer.__dirty = true;
+                if (layer.incremental && layer.__drawIndex < 0) {
+                    // Start draw from the first dirty element.
+                    layer.__drawIndex = i;
+                }
+            }
         }
 
         updatePrevLayer(i);

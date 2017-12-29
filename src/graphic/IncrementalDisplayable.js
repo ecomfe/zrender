@@ -2,8 +2,8 @@
  * Displayable for incremental rendering. It will be rendered in a separate layer
  * IncrementalDisplay have too main methods. `clearDisplayables` and `addDisplayables`
  * addDisplayables will render the added displayables incremetally.
- * clearDisplayables will clear the layer.
- * Notice: Added displaybles can't be modified and removed.
+ *
+ * It use a not clearFlag to tell the painter don't clear the layer if it's the first element.
  */
 import { inherits } from '../core/util';
 import Displayble from './Displayable';
@@ -20,18 +20,18 @@ function IncrementalDisplayble(opts) {
 
     this._cursor = 0;
 
-    this.needsClear = true;
+    this.notClear = true;
 }
 
 IncrementalDisplayble.prototype.incremental = true;
-IncrementalDisplayble.prototype.inplace = true;
 
 IncrementalDisplayble.prototype.clearDisplaybles = function () {
     this._displayables = [];
     this._temporaryDisplayables = [];
     this._cursor = 0;
     this.dirty();
-    this.needsClear = true;
+
+    this.notClear = false;
 };
 
 IncrementalDisplayble.prototype.addDisplayable = function (displayable, notPersistent) {
@@ -90,7 +90,8 @@ IncrementalDisplayble.prototype.brush = function (ctx, prevEl) {
     }
 
     this._temporaryDisplayables = [];
-    this.needsClear = false;
+
+    this.notClear = true;
 };
 
 var m = [];
