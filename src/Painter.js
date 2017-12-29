@@ -394,12 +394,17 @@ Painter.prototype = {
             var scope = {};
             ctx.save();
 
-            var start = layer.__drawIndex;
+            var start = paintAll ? layer.__startIndex : layer.__drawIndex;
+
             if (start === layer.__startIndex) {
                 var firstEl = list[start];
-                if (!firstEl.incremental || !firstEl.notClear) {
+                if (!firstEl.incremental || !firstEl.notClear || paintAll) {
                     layer.clear();
                 }
+            }
+            if (start === -1) {
+                console.error('For some unknown reason. drawIndex is -1');
+                start = layer.__startIndex;
             }
             for (var i = start; i < layer.__endIndex; i++) {
                 var el = list[i];
