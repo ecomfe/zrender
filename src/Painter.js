@@ -89,6 +89,7 @@ function createRoot(width, height) {
     return domRoot;
 }
 
+
 /**
  * @alias module:zrender/Painter
  * @constructor
@@ -247,7 +248,9 @@ Painter.prototype = {
 
         var zlevelList = this._zlevelList;
 
-        this._paintList(list, paintAll);
+        this._redrawId = Math.random();
+
+        this._paintList(list, paintAll, this._redrawId);
 
         // Paint custum layers
         for (var i = 0; i < zlevelList.length; i++) {
@@ -347,18 +350,26 @@ Painter.prototype = {
         return this.getLayer(HOVER_LAYER_ZLEVEL);
     },
 
-    _paintList: function (list, paintAll) {
-
-        if (paintAll == null) {
-            paintAll = false;
+    _paintList: function (list, paintAll, redrawId) {
+        if (this._redrawId !== redrawId) {
+            return;
         }
+
+        paintAll = paintAll || false;
 
         this._updateLayerStatus(list);
 
-        this._doPaintList(list, paintAll);
+        var finished = this._doPaintList(list, paintAll);
 
         if (this._needsManuallyCompositing) {
             this._compositeManually();
+        }
+
+        if (!finished) {
+            var self = this;
+            requestAnimationFrame(function () {
+                self._paintList(list, paintAll, redrawId);
+            });
         }
     },
 
@@ -388,6 +399,8 @@ Painter.prototype = {
             }
         }
 
+        var finished = true;
+
         for (var k = 0; k < layerList.length; k++) {
             var layer = layerList[k];
             var ctx = layer.ctx;
@@ -395,6 +408,9 @@ Painter.prototype = {
             ctx.save();
 
             var start = paintAll ? layer.__startIndex : layer.__drawIndex;
+
+            var useTimer = !paintAll && layer.incremental && Date.now;
+            var startTime = useTimer && Date.now();
 
             if (start === layer.__startIndex) {
                 var firstEl = list[start];
@@ -410,11 +426,27 @@ Painter.prototype = {
                 var el = list[i];
                 this._doPaintEl(el, layer, paintAll, scope);
                 el.__dirty = false;
+
+                if (useTimer) {
+                    // Date.now can be executed in 13,025,305 ops/second.
+                    var dTime = Date.now() - startTime;
+                    // Give 15 millisecond to draw.
+                    // The rest elements will be drawn in the next frame.
+                    if (dTime > 15) {
+                        break;
+                    }
+                }
             }
             layer.__drawIndex = i;
 
+            if (layer.__drawIndex < layer.__endIndex) {
+                finished = false;
+            }
+
             ctx.restore();
         }
+
+        return finished;
     },
 
     _doPaintEl: function (el, currentLayer, forcePaint, scope) {
@@ -643,6 +675,7 @@ Painter.prototype = {
             var el = list[i];
             var zlevel = el.zlevel;
             var layer;
+            // PENDING If change one incremental element style ?
             if (el.incremental) {
                 layer = this.getLayer(zlevel + incrementalLayerLevel, this._needsManuallyCompositing);
                 layer.incremental = true;

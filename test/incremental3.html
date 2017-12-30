@@ -22,12 +22,10 @@
             }
         }));
 
-        var incrementalDisplayable = new zrender.IncrementalDisplayable();
-        zr.add(incrementalDisplayable);
-
         var countText = new zrender.Text({
+            zlevel: 1,
             style: {
-                text: 0,
+                text: 10000,
                 x: 10,
                 y: 10,
                 textFont: '40px sans-serif',
@@ -38,28 +36,24 @@
         });
         zr.add(countText);
 
-        zr.animation.on('frame', function ()  {
-            for (var i = 0; i < 2000; i++) {
-                var circleShape = new zrender.Circle({
-                    shape: {
-                        r: 1 + Math.random() * 1
-                    },
-                    style: {
-                        fill: '#121',
-                        blend: 'lighter'
-                    },
-                    position: [Math.random() * zr.getWidth(), Math.random() * zr.getHeight()]
-                });
-                incrementalDisplayable.addDisplayable(circleShape, true);
-            }
+        var group = new zrender.Group();
+        zr.add(group);
+        for (var i = 0; i < 10000; i++) {
+            var circleShape = new zrender.Circle({
+                shape: {
+                    r: 5 + Math.random() * 5
+                },
+                style: {
+                    fill: '#121',
+                    blend: 'lighter'
+                },
+                incremental: true,
+                position: [Math.random() * zr.getWidth(), Math.random() * zr.getHeight()]
+            });
+            group.add(circleShape);
+        }
 
-            countText.style.text += 2000;
-            countText.dirty();
-        });
-
-        setInterval(function () {
-            incrementalDisplayable.clearDisplaybles();
-        }, 5000);
+        countText.dirty();
     </script>
 </body>
 </html>
