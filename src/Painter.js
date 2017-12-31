@@ -10,6 +10,9 @@ import Image from './graphic/Image';
 var HOVER_LAYER_ZLEVEL = 1e5;
 var CANVAS_ZLEVEL = 314159;
 
+var EL_AFTER_INCREMENTAL_INC = 0.01;
+var INCREMENTAL_INC = 0.001;
+
 function parseInt10(val) {
     return parseInt(val, 10);
 }
@@ -437,6 +440,7 @@ Painter.prototype = {
                     }
                 }
             }
+
             layer.__drawIndex = i;
 
             if (layer.__drawIndex < layer.__endIndex) {
@@ -669,7 +673,6 @@ Painter.prototype = {
 
         var prevLayer = null;
         // TODO
-        var incrementalLayerLevel = 0.001;
         var incrementalLayerCount = 0;
         for (var i = 0; i < list.length; i++) {
             var el = list[i];
@@ -677,12 +680,12 @@ Painter.prototype = {
             var layer;
             // PENDING If change one incremental element style ?
             if (el.incremental) {
-                layer = this.getLayer(zlevel + incrementalLayerLevel, this._needsManuallyCompositing);
+                layer = this.getLayer(zlevel + INCREMENTAL_INC, this._needsManuallyCompositing);
                 layer.incremental = true;
                 incrementalLayerCount = 1;
             }
             else {
-                layer = this.getLayer(zlevel + incrementalLayerCount > 0 ? 0.01 : 0, this._needsManuallyCompositing);
+                layer = this.getLayer(zlevel + incrementalLayerCount > 0 ? EL_AFTER_INCREMENTAL_INC : 0, this._needsManuallyCompositing);
             }
 
             if (!layer.__builtin__) {
@@ -757,10 +760,12 @@ Painter.prototype = {
                 util.merge(layerConfig[zlevel], config, true);
             }
 
-            var layer = this._layers[zlevel];
-
-            if (layer) {
-                util.merge(layer, layerConfig[zlevel], true);
+            for (var i = 0; i < this._zlevelList.length; i++) {
+                var _zlevel = this._zlevelList[i];
+                if (_zlevel === zlevel || _zlevel === zlevel + EL_AFTER_INCREMENTAL_INC) {
+                    var layer = this._layers[_zlevel];
+                    util.merge(layer, layerConfig[zlevel], true);
+                }
             }
         }
     },

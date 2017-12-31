@@ -8,7 +8,7 @@ var ArrayCtor = typeof Float32Array === 'undefined'
    : Float32Array;
 
 /**
- * 创建一个单位矩阵
+ * Create a identity matrix.
  * @return {Float32Array|Array.<number>}
  */
 export function create() {
@@ -158,4 +158,14 @@ export function invert(out, a) {
     out[4] = (ac * aty - ad * atx) * det;
     out[5] = (ab * atx - aa * aty) * det;
     return out;
+}
+
+/**
+ * Clone a new matrix.
+ * @param {Float32Array|Array.<number>} a
+ */
+export function clone(a) {
+    var b = create();
+    copy(b, a);
+    return b;
 }
