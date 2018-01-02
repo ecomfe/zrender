@@ -415,7 +415,11 @@ Painter.prototype = {
             var useTimer = !paintAll && layer.incremental && Date.now;
             var startTime = useTimer && Date.now();
 
-            if (start === layer.__startIndex) {
+            // All elements in this layer are cleared.
+            if (layer.__startIndex === layer.__endIndex) {
+                layer.clear();
+            }
+            else if (start === layer.__startIndex) {
                 var firstEl = list[start];
                 if (!firstEl.incremental || !firstEl.notClear || paintAll) {
                     layer.clear();
