@@ -588,9 +588,15 @@ export function isPrimitive(obj) {
  */
 function HashMap(obj) {
     var isArr = isArray(obj);
-    obj && each(obj, function (value, key) {
-        isArr ? this.set(value, key) : this.set(key, value);
-    }, this);
+    var thisMap = this;
+
+    (obj instanceof HashMap)
+        ? obj.each(visit)
+        : (obj && each(obj, visit));
+
+    function visit(value, key) {
+        isArr ? thisMap.set(value, key) : thisMap.set(key, value);
+    }
 }
 
 // Add prefix to avoid conflict with Object.prototype.
