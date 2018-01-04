@@ -369,7 +369,7 @@ handlerDomProxyProto.dispose = function () {
 };
 
 handlerDomProxyProto.setCursor = function (cursorStyle) {
-    this.dom.style.cursor = cursorStyle || 'default';
+    this.dom.style && (this.dom.style.cursor = cursorStyle || 'default');
 };
 
 zrUtil.mixin(HandlerDomProxy, Eventful);

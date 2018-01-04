@@ -4,7 +4,8 @@ import {
     getContext,
     extend,
     retrieve2,
-    retrieve3
+    retrieve3,
+    trim
 } from '../core/util';
 
 var textWidthCache = {};
@@ -670,11 +671,12 @@ function pushTokens(block, str, styleName) {
 export function makeFont(style) {
     // FIXME in node-canvas fontWeight is before fontStyle
     // Use `fontSize` `fontFamily` to check whether font properties are defined.
-    return (style.fontSize || style.fontFamily) && [
+    var font = (style.fontSize || style.fontFamily) && [
         style.fontStyle,
         style.fontWeight,
         (style.fontSize || 12) + 'px',
         // If font properties are defined, `fontFamily` should not be ignored.
         style.fontFamily || 'sans-serif'
-    ].join(' ') || style.textFont || style.font;
+    ].join(' ');
+    return font && trim(font) || style.textFont || style.font;
 }

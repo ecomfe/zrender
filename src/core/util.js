@@ -570,6 +570,23 @@ export function assert(condition, message) {
     }
 }
 
+/**
+ * @memberOf module:zrender/core/util
+ * @param {string} str string to be trimed
+ * @return {string} trimed string
+ */
+export function trim(str) {
+    if (str == null) {
+        return null;
+    }
+    else if (typeof str.trim === 'function') {
+        return str.trim();
+    }
+    else {
+        return str.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
+    }
+}
+
 var primitiveKey = '__ec_primitive__';
 /**
  * Set an object as primitive to be ignored traversing children in clone or merge

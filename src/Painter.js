@@ -6,6 +6,7 @@ import timsort from './core/timsort';
 import Layer from './Layer';
 import requestAnimationFrame from './animation/requestAnimationFrame';
 import Image from './graphic/Image';
+import env from './core/env';
 
 var HOVER_LAYER_ZLEVEL = 1e5;
 var CANVAS_ZLEVEL = 314159;
@@ -155,7 +156,7 @@ var Painter = function (root, storage, opts) {
 
     /**
      * @type {Object.<string, Object>}
-     * @type {private}
+     * @private
      */
     this._layerConfig = {};
 
@@ -452,6 +453,15 @@ Painter.prototype = {
             }
 
             ctx.restore();
+        }
+
+        if (env.wxa) {
+            // Flush for weixin application
+            util.each(this._layers, function (layer) {
+                if (layer && layer.ctx && layer.ctx.draw) {
+                    layer.ctx.draw();
+                }
+            });
         }
 
         return finished;

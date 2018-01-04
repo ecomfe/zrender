@@ -292,7 +292,7 @@ util.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick', 'contextme
             // In case click triggered before mouseup
             this._upEl = hoveredTarget;
         }
-        else if (name === 'mosueup') {
+        else if (name === 'mouseup') {
             this._upEl = hoveredTarget;
         }
         else if (name === 'click') {

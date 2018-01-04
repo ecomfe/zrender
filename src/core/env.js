@@ -8,7 +8,19 @@
 
 var env = {};
 
-if (typeof document === 'undefined' && typeof self !== 'undefined') {
+if (typeof wx !== 'undefined' && wx.version) {
+    // In Weixin Application
+    env = {
+        browser: {},
+        os: {},
+        node: false,
+        wxa: true, // Weixin Application
+        canvasSupported: true,
+        svgSupported: false,
+        touchEventsSupported: true
+    }
+}
+else if (typeof document === 'undefined' && typeof self !== 'undefined') {
     // In worker
     env = {
         browser: {},

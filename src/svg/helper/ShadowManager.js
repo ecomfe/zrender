@@ -144,14 +144,14 @@ ShadowManager.prototype.updateDom = function (displayable, dom) {
     // TODO: textBoxShadowBlur is not supported yet
     var offsetX, offsetY, blur, color;
     if (style.shadowBlur || style.shadowOffsetX || style.shadowOffsetY) {
-        offsetX = style.shadowOffsetX;
-        offsetY = style.shadowOffsetY;
+        offsetX = style.shadowOffsetX || 0;
+        offsetY = style.shadowOffsetY || 0;
         blur = style.shadowBlur;
         color = style.shadowColor;
     }
     else if (style.textShadowBlur) {
-        offsetX = style.textShadowOffsetX;
-        offsetY = style.textShadowOffsetY;
+        offsetX = style.textShadowOffsetX || 0;
+        offsetY = style.textShadowOffsetY || 0;
         blur = style.textShadowBlur;
         color = style.textShadowColor;
     }

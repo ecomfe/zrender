@@ -159,7 +159,7 @@ function pathDataToString(path) {
                 var clockwise = data[i++];
 
                 var dThetaPositive = Math.abs(dTheta);
-                var isCircle = isAroundZero(dThetaPositive % PI2)
+                var isCircle = isAroundZero(dThetaPositive - PI2)
                     && !isAroundZero(dThetaPositive);
 
                 var large = false;
