@@ -11,11 +11,13 @@ import * as zrUtil from '../../core/util';
  *
  * @class
  * @extends Definable
+ * @param   {number}     zrId    zrender instance id
  * @param   {SVGElement} svgRoot root of SVG document
  */
-function ShadowManager(svgRoot) {
+function ShadowManager(zrId, svgRoot) {
     Definable.call(
         this,
+        zrId,
         svgRoot,
         ['filter'],
         '__filter_in_use__',
@@ -82,7 +84,8 @@ ShadowManager.prototype.add = function (displayable) {
     // id should remain the same, and other attributes should be
     // updated.
     style._shadowDomId = style._shadowDomId || this.nextId++;
-    dom.setAttribute('id', 'zr-shadow-' + style._shadowDomId);
+    dom.setAttribute('id', 'zr' + this._zrId
+        + '-shadow-' + style._shadowDomId);
 
     this.updateDom(displayable, dom);
     this.addDom(dom);

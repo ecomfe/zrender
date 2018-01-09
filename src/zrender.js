@@ -125,7 +125,7 @@ var ZRender = function (id, dom, opts) {
     else if (!rendererType || !painterCtors[rendererType]) {
         rendererType = 'canvas';
     }
-    var painter = new painterCtors[rendererType](dom, storage, opts);
+    var painter = new painterCtors[rendererType](dom, storage, opts, id);
 
     this.storage = storage;
     this.painter = painter;
