@@ -99,7 +99,8 @@ function bindStyle(svgEl, style, isText) {
             ? style.host.getLineScale()
             : 1;
         attr(svgEl, 'stroke-width', strokeWidth / strokeScale);
-        attr(svgEl, 'paint-order', 'stroke');
+        // stroke then fill for text; fill then stroke for others
+        attr(svgEl, 'paint-order', isText ? 'stroke' : 'fill');
         attr(svgEl, 'stroke-opacity', style.opacity);
         var lineDash = style.lineDash;
         if (lineDash) {
