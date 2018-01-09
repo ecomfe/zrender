@@ -139,7 +139,7 @@ Definable.prototype.addDom = function (dom) {
  */
 Definable.prototype.removeDom = function (element) {
     var defs = this.getDefs(false);
-    if (defs) {
+    if (defs && element[this._domName]) {
         defs.removeChild(element[this._domName]);
         element[this._domName] = null;
     }
