@@ -12,10 +12,11 @@ import * as matrix from '../../core/matrix';
  *
  * @class
  * @extends Definable
+ * @param   {number}     zrId    zrender instance id
  * @param   {SVGElement} svgRoot root of SVG document
  */
-function ClippathManager(svgRoot) {
-    Definable.call(this, svgRoot, 'clipPath', '__clippath_in_use__');
+function ClippathManager(zrId, svgRoot) {
+    Definable.call(this, zrId, svgRoot, 'clipPath', '__clippath_in_use__');
 }
 
 
@@ -80,7 +81,7 @@ ClippathManager.prototype.updateDom = function (
         }
         else {
             // New <clipPath>
-            id = 'zr-clip-' + this.nextId;
+            id = 'zr' + this._zrId + '-clip-' + this.nextId;
             ++this.nextId;
             clipPathEl = this.createElement('clipPath');
             clipPathEl.setAttribute('id', id);

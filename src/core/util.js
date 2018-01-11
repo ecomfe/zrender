@@ -40,6 +40,11 @@ var nativeReduce = arrayProto.reduce;
 var methods = {};
 
 export function $override(name, fn) {
+    // Clear ctx instance for different environment
+    if (name === 'createCanvas') {
+        _ctx = null;
+    }
+
     methods[name] = fn;
 }
 

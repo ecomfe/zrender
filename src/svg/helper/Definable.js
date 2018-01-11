@@ -24,18 +24,20 @@ var MARK_USED = '1';
  * e.g., gradients, clip path, etc.
  *
  * @class
+ * @param {number}          zrId      zrender instance id
  * @param {SVGElement}      svgRoot   root of SVG document
  * @param {string|string[]} tagNames  possible tag names
  * @param {string}          markLabel label name to make if the element
  *                                    is used
  */
 function Definable(
+    zrId,
     svgRoot,
     tagNames,
     markLabel,
     domName
 ) {
-
+    this._zrId = zrId;
     this._svgRoot = svgRoot;
     this._tagNames = typeof tagNames === 'string' ? [tagNames] : tagNames;
     this._markLabel = markLabel;
@@ -139,7 +141,7 @@ Definable.prototype.addDom = function (dom) {
  */
 Definable.prototype.removeDom = function (element) {
     var defs = this.getDefs(false);
-    if (defs) {
+    if (defs && element[this._domName]) {
         defs.removeChild(element[this._domName]);
         element[this._domName] = null;
     }

@@ -86,7 +86,7 @@ function getSvgElement(displayable) {
  * @param {module:zrender/Storage} storage
  * @param {Object} opts
  */
-var SVGPainter = function (root, storage, opts) {
+var SVGPainter = function (root, storage, opts, zrId) {
 
     this.root = root;
     this.storage = storage;
@@ -98,9 +98,9 @@ var SVGPainter = function (root, storage, opts) {
     svgRoot.setAttribute('baseProfile', 'full');
     svgRoot.style.cssText = 'user-select:none;position:absolute;left:0;top:0;';
 
-    this.gradientManager = new GradientManager(svgRoot);
-    this.clipPathManager = new ClippathManager(svgRoot);
-    this.shadowManager = new ShadowManager(svgRoot);
+    this.gradientManager = new GradientManager(zrId, svgRoot);
+    this.clipPathManager = new ClippathManager(zrId, svgRoot);
+    this.shadowManager = new ShadowManager(zrId, svgRoot);
 
     var viewport = document.createElement('div');
     viewport.style.cssText = 'overflow:hidden;position:relative';

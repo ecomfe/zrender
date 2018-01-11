@@ -12,11 +12,13 @@ import zrLog from '../../core/log';
  *
  * @class
  * @extends Definable
+ * @param   {number}     zrId    zrender instance id
  * @param   {SVGElement} svgRoot root of SVG document
  */
-function GradientManager(svgRoot) {
+function GradientManager(zrId, svgRoot) {
     Definable.call(
         this,
+        zrId,
         svgRoot,
         ['linearGradient', 'radialGradient'],
         '__gradient_in_use__'
@@ -99,7 +101,8 @@ GradientManager.prototype.add = function (gradient) {
     // id should remain the same, and other attributes should be
     // updated.
     gradient.id = gradient.id || this.nextId++;
-    dom.setAttribute('id', 'zr-gradient-' + gradient.id);
+    dom.setAttribute('id', 'zr' + this._zrId
+        + '-gradient-' + gradient.id);
 
     this.updateDom(gradient, dom);
     this.addDom(dom);
