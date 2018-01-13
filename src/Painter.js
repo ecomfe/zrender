@@ -699,7 +699,7 @@ Painter.prototype = {
                 incrementalLayerCount = 1;
             }
             else {
-                layer = this.getLayer(zlevel + incrementalLayerCount > 0 ? EL_AFTER_INCREMENTAL_INC : 0, this._needsManuallyCompositing);
+                layer = this.getLayer(zlevel + (incrementalLayerCount > 0 ? EL_AFTER_INCREMENTAL_INC : 0), this._needsManuallyCompositing);
             }
 
             if (!layer.__builtin__) {
