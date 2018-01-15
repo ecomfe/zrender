@@ -40,6 +40,11 @@ var nativeReduce = arrayProto.reduce;
 var methods = {};
 
 export function $override(name, fn) {
+    // Clear ctx instance for different environment
+    if (name === 'createCanvas') {
+        _ctx = null;
+    }
+
     methods[name] = fn;
 }
 
@@ -617,8 +622,6 @@ function HashMap(obj) {
 }
 
 // Add prefix to avoid conflict with Object.prototype.
-var HASH_MAP_PREFIX = '_ec_';
-var HASH_MAP_PREFIX_LENGTH = 4;
 
 HashMap.prototype = {
     constructor: HashMap,
@@ -626,26 +629,24 @@ HashMap.prototype = {
     // (We usually treat `null` and `undefined` as the same, different
     // from ES6 Map).
     get: function (key) {
-        return this[HASH_MAP_PREFIX + key];
+        return this.hasOwnProperty(key) ? this[key] : null;
     },
     set: function (key, value) {
-        this[HASH_MAP_PREFIX + key] = value;
         // Comparing with invocation chaining, `return value` is more commonly
         // used in this case: `var someVal = map.set('a', genVal());`
-        return value;
+        return (this[key] = value);
     },
     // Although util.each can be performed on this hashMap directly, user
     // should not use the exposed keys, who are prefixed.
     each: function (cb, context) {
         context !== void 0 && (cb = bind(cb, context));
-        for (var prefixedKey in this) {
-            this.hasOwnProperty(prefixedKey)
-                && cb(this[prefixedKey], prefixedKey.slice(HASH_MAP_PREFIX_LENGTH));
+        for (var key in this) {
+            this.hasOwnProperty(key) && cb(this[key], key);
         }
     },
     // Do not use this method if performance sensitive.
     removeKey: function (key) {
-        delete this[HASH_MAP_PREFIX + key];
+        delete this[key];
     }
 };
 
