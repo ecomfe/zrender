@@ -739,6 +739,10 @@ Painter.prototype = {
                 layer.__dirty = true;
                 layer.__startIndex = layer.__endIndex = layer.__drawIndex = 0;
             }
+            // For incremental layer. In case start index changed and no elements are dirty.
+            if (layer.__dirty && layer.__drawIndex < 0) {
+                layer.__drawIndex = layer.__startIndex;
+            }
         });
     },
 
