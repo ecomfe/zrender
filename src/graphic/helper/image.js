@@ -50,7 +50,12 @@ export function createOrUpdateImage(newImageOrSrc, image, hostEl, cb, cbPayload)
             !isImageReady(image) && cachedImgObj.pending.push(pendingWrap);
         }
         else {
-            !image && (image = new Image());
+
+            //如果image本身就存在于cache中，则直接复用会导致cache里的映射关系错乱
+            if(!image || globalImageCache.get(image.__zrImageSrc)){
+                image = new Image();
+            }
+
             image.onload = imageOnLoad;
 
             globalImageCache.put(
