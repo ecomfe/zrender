@@ -26,7 +26,19 @@ var guid = function () {
 
 var env = {};
 
-if (typeof document === 'undefined' && typeof self !== 'undefined') {
+if (typeof wx !== 'undefined') {
+    // In Weixin Application
+    env = {
+        browser: {},
+        os: {},
+        node: false,
+        wxa: true, // Weixin Application
+        canvasSupported: true,
+        svgSupported: false,
+        touchEventsSupported: true
+    };
+}
+else if (typeof document === 'undefined' && typeof self !== 'undefined') {
     // In worker
     env = {
         browser: {},
@@ -200,6 +212,11 @@ var nativeReduce = arrayProto.reduce;
 var methods = {};
 
 function $override(name, fn) {
+    // Clear ctx instance for different environment
+    if (name === 'createCanvas') {
+        _ctx = null;
+    }
+
     methods[name] = fn;
 }
 
@@ -631,6 +648,15 @@ function isBuiltInObject(value) {
  * @param {*} value
  * @return {boolean}
  */
+function isTypedArray(value) {
+    return !!TYPED_ARRAY[objToString.call(value)];
+}
+
+/**
+ * @memberOf module:zrender/core/util
+ * @param {*} value
+ * @return {boolean}
+ */
 function isDom(value) {
     return typeof value === 'object'
         && typeof value.nodeType === 'number'
@@ -721,6 +747,23 @@ function assert(condition, message) {
     }
 }
 
+/**
+ * @memberOf module:zrender/core/util
+ * @param {string} str string to be trimed
+ * @return {string} trimed string
+ */
+function trim(str) {
+    if (str == null) {
+        return null;
+    }
+    else if (typeof str.trim === 'function') {
+        return str.trim();
+    }
+    else {
+        return str.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
+    }
+}
+
 var primitiveKey = '__ec_primitive__';
 /**
  * Set an object as primitive to be ignored traversing children in clone or merge
@@ -738,14 +781,19 @@ function isPrimitive(obj) {
  * @param {Object} obj Only apply `ownProperty`.
  */
 function HashMap(obj) {
-    obj && each(obj, function (value, key) {
-        this.set(key, value);
-    }, this);
+    var isArr = isArray(obj);
+    var thisMap = this;
+
+    (obj instanceof HashMap)
+        ? obj.each(visit)
+        : (obj && each(obj, visit));
+
+    function visit(value, key) {
+        isArr ? thisMap.set(value, key) : thisMap.set(key, value);
+    }
 }
 
 // Add prefix to avoid conflict with Object.prototype.
-var HASH_MAP_PREFIX = '_ec_';
-var HASH_MAP_PREFIX_LENGTH = 4;
 
 HashMap.prototype = {
     constructor: HashMap,
@@ -753,32 +801,43 @@ HashMap.prototype = {
     // (We usually treat `null` and `undefined` as the same, different
     // from ES6 Map).
     get: function (key) {
-        return this[HASH_MAP_PREFIX + key];
+        return this.hasOwnProperty(key) ? this[key] : null;
     },
     set: function (key, value) {
-        this[HASH_MAP_PREFIX + key] = value;
         // Comparing with invocation chaining, `return value` is more commonly
         // used in this case: `var someVal = map.set('a', genVal());`
-        return value;
+        return (this[key] = value);
     },
     // Although util.each can be performed on this hashMap directly, user
     // should not use the exposed keys, who are prefixed.
     each: function (cb, context) {
         context !== void 0 && (cb = bind(cb, context));
-        for (var prefixedKey in this) {
-            this.hasOwnProperty(prefixedKey)
-                && cb(this[prefixedKey], prefixedKey.slice(HASH_MAP_PREFIX_LENGTH));
+        for (var key in this) {
+            this.hasOwnProperty(key) && cb(this[key], key);
         }
     },
     // Do not use this method if performance sensitive.
     removeKey: function (key) {
-        delete this[HASH_MAP_PREFIX + key];
+        delete this[key];
     }
 };
 
 function createHashMap(obj) {
     return new HashMap(obj);
 }
+
+function concatArray(a, b) {
+    var newArray = new a.constructor(a.length + b.length);
+    for (var i = 0; i < a.length; i++) {
+        newArray[i] = a[i];
+    }
+    var offset = a.length;
+    for (i = 0; i < b.length; i++) {
+        newArray[i + offset] = b[i];
+    }
+    return newArray;
+}
+
 
 function noop() {}
 
@@ -808,6 +867,7 @@ var util = (Object.freeze || Object)({
 	isString: isString,
 	isObject: isObject,
 	isBuiltInObject: isBuiltInObject,
+	isTypedArray: isTypedArray,
 	isDom: isDom,
 	eqNaN: eqNaN,
 	retrieve: retrieve,
@@ -816,9 +876,11 @@ var util = (Object.freeze || Object)({
 	slice: slice,
 	normalizeCssArray: normalizeCssArray,
 	assert: assert,
+	trim: trim,
 	setAsPrimitive: setAsPrimitive,
 	isPrimitive: isPrimitive,
 	createHashMap: createHashMap,
+	concatArray: concatArray,
 	noop: noop
 });
 
@@ -1720,7 +1782,7 @@ each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick', 'contextmenu'],
             // In case click triggered before mouseup
             this._upEl = hoveredTarget;
         }
-        else if (name === 'mosueup') {
+        else if (name === 'mouseup') {
             this._upEl = hoveredTarget;
         }
         else if (name === 'click') {
@@ -1777,7 +1839,7 @@ var ArrayCtor$1 = typeof Float32Array === 'undefined'
    : Float32Array;
 
 /**
- * 创建一个单位矩阵
+ * Create a identity matrix.
  * @return {Float32Array|Array.<number>}
  */
 function create$1() {
@@ -1929,6 +1991,15 @@ function invert(out, a) {
     return out;
 }
 
+/**
+ * Clone a new matrix.
+ * @param {Float32Array|Array.<number>} a
+ */
+function clone$2(a) {
+    var b = create$1();
+    copy$1(b, a);
+    return b;
+}
 
 var matrix = (Object.freeze || Object)({
 	create: create$1,
@@ -1938,7 +2009,8 @@ var matrix = (Object.freeze || Object)({
 	translate: translate,
 	rotate: rotate,
 	scale: scale$1,
-	invert: invert
+	invert: invert,
+	clone: clone$2
 });
 
 /**
@@ -5793,8 +5865,6 @@ Storage.prototype = {
 
     constructor: Storage,
 
-    _needsUpdateList: true,
-
     /**
      * @param  {Function} cb
      *
@@ -5828,9 +5898,7 @@ Storage.prototype = {
      * @param {boolean} [includeIgnore=false] 是否包含 ignore 的数组
      */
     updateDisplayList: function (includeIgnore) {
-        if (this._needsUpdateList) {
-            this._displayListLen = 0;
-        }
+        this._displayListLen = 0;
 
         var roots = this._roots;
         var displayList = this._displayList;
@@ -5838,13 +5906,9 @@ Storage.prototype = {
             this._updateAndAddDisplayable(roots[i], null, includeIgnore);
         }
 
-        if (this._needsUpdateList) {
-            displayList.length = this._displayListLen;
-        }
+        displayList.length = this._displayListLen;
 
         env$1.canvasSupported && sort(displayList, shapeCompareFunc);
-
-        this._needsUpdateList = false;
     },
 
     _updateAndAddDisplayable: function (el, clipPaths, includeIgnore) {
@@ -5911,9 +5975,7 @@ Storage.prototype = {
         else {
             el.__clipPaths = clipPaths;
 
-            if (this._needsUpdateList) {
-                this._displayList[this._displayListLen++] = el;
-            }
+            this._displayList[this._displayListLen++] = el;
         }
     },
 
@@ -5977,7 +6039,6 @@ Storage.prototype = {
         if (el) {
             el.__storage = this;
             el.dirty(false);
-            this._needsUpdateList = true;    
         }
         return this;
     },
@@ -5985,7 +6046,6 @@ Storage.prototype = {
     delFromStorage: function (el) {
         if (el) {
             el.__storage = null;
-            this._needsUpdateList = true;
         }
 
         return this;
@@ -6526,17 +6586,19 @@ function createDom(id, painter, dpr) {
     var height = painter.getHeight();
 
     var newDomStyle = newDom.style;
-    // 没append呢，请原谅我这样写，清晰~
-    newDomStyle.position = 'absolute';
-    newDomStyle.left = 0;
-    newDomStyle.top = 0;
-    newDomStyle.width = width + 'px';
-    newDomStyle.height = height + 'px';
+    if (newDomStyle) {  // In node or some other non-browser environment
+        newDomStyle.position = 'absolute';
+        newDomStyle.left = 0;
+        newDomStyle.top = 0;
+        newDomStyle.width = width + 'px';
+        newDomStyle.height = height + 'px';
+
+        newDom.setAttribute('data-zr-dom-id', id);
+    }
+
     newDom.width = width * dpr;
     newDom.height = height * dpr;
 
-    // id不作为索引用，避免可能造成的重名，定义为私有属性
-    newDom.setAttribute('data-zr-dom-id', id);
     return newDom;
 }
 
@@ -6620,7 +6682,7 @@ Layer.prototype = {
     __startIndex: 0,
     __endIndex: 0,
 
-    isIncremental: false,
+    incremental: false,
 
     getElementCount: function () {
         return this.__endIndex - this.__startIndex;
@@ -7497,13 +7559,14 @@ function pushTokens(block, str, styleName) {
 function makeFont(style) {
     // FIXME in node-canvas fontWeight is before fontStyle
     // Use `fontSize` `fontFamily` to check whether font properties are defined.
-    return (style.fontSize || style.fontFamily) && [
+    var font = (style.fontSize || style.fontFamily) && [
         style.fontStyle,
         style.fontWeight,
         (style.fontSize || 12) + 'px',
         // If font properties are defined, `fontFamily` should not be ignored.
         style.fontFamily || 'sans-serif'
-    ].join(' ') || style.textFont || style.font;
+    ].join(' ');
+    return font && trim(font) || style.textFont || style.font;
 }
 
 function buildPath(ctx, shape) {
@@ -8253,7 +8316,9 @@ Displayable.prototype = {
     /**
      * @type {boolean}
      */
-    isIncremental: false,
+    incremental: false,
+    // inplace is used with incremental
+    inplace: false,
 
     beforeBrush: function (ctx) {},
 
@@ -8481,6 +8546,12 @@ ZImage.prototype = {
 
 inherits(ZImage, Displayable);
 
+var HOVER_LAYER_ZLEVEL = 1e5;
+var CANVAS_ZLEVEL = 314159;
+
+var EL_AFTER_INCREMENTAL_INC = 0.01;
+var INCREMENTAL_INC = 0.001;
+
 function parseInt10(val) {
     return parseInt(val, 10);
 }
@@ -8560,6 +8631,7 @@ function createRoot(width, height) {
     return domRoot;
 }
 
+
 /**
  * @alias module:zrender/Painter
  * @constructor
@@ -8622,9 +8694,14 @@ var Painter = function (root, storage, opts) {
 
     /**
      * @type {Object.<string, Object>}
-     * @type {private}
+     * @private
      */
     this._layerConfig = {};
+
+    /**
+     * zrender will do compositing when root is a canvas and have multiple zlevels.
+     */
+    this._needsManuallyCompositing = false;
 
     if (!singleCanvas) {
         this._width = this._getSize(0);
@@ -8651,11 +8728,13 @@ var Painter = function (root, storage, opts) {
         // Create layer if only one given canvas
         // Device pixel ratio is fixed to 1 because given canvas has its specified width and height
         var mainLayer = new Layer(root, this, 1);
+        mainLayer.__builtin__ = true;
         mainLayer.initContext();
         // FIXME Use canvas width and height
         // mainLayer.resize(width, height);
-        layers[0] = mainLayer;
-        zlevelList.push(0);
+        layers[CANVAS_ZLEVEL] = mainLayer;
+        // Not use common zlevel.
+        zlevelList.push(CANVAS_ZLEVEL);
 
         this._domRoot = root;
     }
@@ -8711,7 +8790,9 @@ Painter.prototype = {
 
         var zlevelList = this._zlevelList;
 
-        this._paintList(list, paintAll);
+        this._redrawId = Math.random();
+
+        this._paintList(list, paintAll, this._redrawId);
 
         // Paint custum layers
         for (var i = 0; i < zlevelList.length; i++) {
@@ -8776,7 +8857,7 @@ Painter.prototype = {
         // Use a extream large zlevel
         // FIXME?
         if (!hoverLayer) {
-            hoverLayer = this._hoverlayer = this.getLayer(1e5);
+            hoverLayer = this._hoverlayer = this.getLayer(HOVER_LAYER_ZLEVEL);
         }
 
         var scope = {};
@@ -8808,18 +8889,43 @@ Painter.prototype = {
     },
 
     getHoverLayer: function () {
-        return this._hoverlayer;
+        return this.getLayer(HOVER_LAYER_ZLEVEL);
     },
 
-    _paintList: function (list, paintAll) {
-
-        if (paintAll == null) {
-            paintAll = false;
+    _paintList: function (list, paintAll, redrawId) {
+        if (this._redrawId !== redrawId) {
+            return;
         }
+
+        paintAll = paintAll || false;
 
         this._updateLayerStatus(list);
 
-        this._doPaintList(list, paintAll);
+        var finished = this._doPaintList(list, paintAll);
+
+        if (this._needsManuallyCompositing) {
+            this._compositeManually();
+        }
+
+        if (!finished) {
+            var self = this;
+            requestAnimationFrame(function () {
+                self._paintList(list, paintAll, redrawId);
+            });
+        }
+    },
+
+    _compositeManually: function () {
+        var ctx = this.getLayer(CANVAS_ZLEVEL).ctx;
+        var width = this._domRoot.width;
+        var height = this._domRoot.height;
+        ctx.clearRect(0, 0, width, height);
+        // PENDING, If only builtin layer?
+        this.eachBuiltinLayer(function (layer) {
+            if (layer.virtual) {
+                ctx.drawImage(layer.dom, 0, 0, width, height);
+            }
+        });
     },
 
     _doPaintList: function (list, paintAll) {
@@ -8834,12 +8940,8 @@ Painter.prototype = {
                 layerList.push(layer);
             }
         }
-        // if (layerList > 1) {
-        //     // PENDING
-        //     layerList.sort(function (a, b) {
-        //         return a.getElementCount() - b.getElementCount();
-        //     });
-        // }
+
+        var finished = true;
 
         for (var k = 0; k < layerList.length; k++) {
             var layer = layerList[k];
@@ -8847,24 +8949,60 @@ Painter.prototype = {
             var scope = {};
             ctx.save();
 
-            if (layer.__startIndex === layer.__drawIndex) {
-                if (layer.isIncremental) {
-                    var firstEL = list[layer.__drawIndex];
-                    if (firstEL && firstEL.needsClear()) {
-                        layer.clear();
-                    }
-                }
-                else {
+            var start = paintAll ? layer.__startIndex : layer.__drawIndex;
+
+            var useTimer = !paintAll && layer.incremental && Date.now;
+            var startTime = useTimer && Date.now();
+
+            // All elements in this layer are cleared.
+            if (layer.__startIndex === layer.__endIndex) {
+                layer.clear();
+            }
+            else if (start === layer.__startIndex) {
+                var firstEl = list[start];
+                if (!firstEl.incremental || !firstEl.notClear || paintAll) {
                     layer.clear();
                 }
             }
-            for (var i = layer.__drawIndex; i < layer.__endIndex; i++) {
+            if (start === -1) {
+                console.error('For some unknown reason. drawIndex is -1');
+                start = layer.__startIndex;
+            }
+            for (var i = start; i < layer.__endIndex; i++) {
                 var el = list[i];
                 this._doPaintEl(el, layer, paintAll, scope);
                 el.__dirty = false;
+
+                if (useTimer) {
+                    // Date.now can be executed in 13,025,305 ops/second.
+                    var dTime = Date.now() - startTime;
+                    // Give 15 millisecond to draw.
+                    // The rest elements will be drawn in the next frame.
+                    if (dTime > 15) {
+                        break;
+                    }
+                }
             }
+
+            layer.__drawIndex = i;
+
+            if (layer.__drawIndex < layer.__endIndex) {
+                finished = false;
+            }
+
             ctx.restore();
         }
+
+        if (env$1.wxa) {
+            // Flush for weixin application
+            each(this._layers, function (layer) {
+                if (layer && layer.ctx && layer.ctx.draw) {
+                    layer.ctx.draw();
+                }
+            });
+        }
+
+        return finished;
     },
 
     _doPaintEl: function (el, currentLayer, forcePaint, scope) {
@@ -8918,21 +9056,26 @@ Painter.prototype = {
     /**
      * 获取 zlevel 所在层，如果不存在则会创建一个新的层
      * @param {number} zlevel
+     * @param {boolean} virtual Virtual layer will not be inserted into dom.
      * @return {module:zrender/Layer}
      */
-    getLayer: function (zlevel) {
-        if (this._singleCanvas) {
-            return this._layers[0];
+    getLayer: function (zlevel, virtual) {
+        if (this._singleCanvas && !this._needsManuallyCompositing) {
+            zlevel = CANVAS_ZLEVEL;
         }
-
         var layer = this._layers[zlevel];
         if (!layer) {
             // Create a new layer
             layer = new Layer('zr_' + zlevel, this, this.dpr);
+            layer.zlevel = zlevel;
             layer.__builtin__ = true;
 
             if (this._layerConfig[zlevel]) {
                 merge(layer, this._layerConfig[zlevel], true);
+            }
+
+            if (virtual) {
+                layer.virtual = virtual;
             }
 
             this.insertLayer(zlevel, layer);
@@ -9070,21 +9213,31 @@ Painter.prototype = {
             }
         }
 
+        if (this._singleCanvas) {
+            for (var i = 1; i < list.length; i++) {
+                var el = list[i];
+                if (el.zlevel !== list[i - 1].zlevel || el.incremental) {
+                    this._needsManuallyCompositing = true;
+                    break;
+                }
+            }
+        }
+
         var prevLayer = null;
-        // TODO
-        var incrementalLayerLevel = 0.001;
         var incrementalLayerCount = 0;
         for (var i = 0; i < list.length; i++) {
             var el = list[i];
-            var zlevel = this._singleCanvas ? 0 : el.zlevel;
+            var zlevel = el.zlevel;
             var layer;
-            if (el.isIncremental) {
-                layer = this.getLayer(zlevel + incrementalLayerLevel);
-                layer.isIncremental = true;
+            // PENDING If change one incremental element style ?
+            // TODO Where there are non-incremental elements between incremental elements.
+            if (el.incremental) {
+                layer = this.getLayer(zlevel + INCREMENTAL_INC, this._needsManuallyCompositing);
+                layer.incremental = true;
                 incrementalLayerCount = 1;
             }
             else {
-                layer = this.getLayer(zlevel + incrementalLayerCount > 0 ? 0.01 : 0);
+                layer = this.getLayer(zlevel + (incrementalLayerCount > 0 ? EL_AFTER_INCREMENTAL_INC : 0), this._needsManuallyCompositing);
             }
 
             if (!layer.__builtin__) {
@@ -9096,11 +9249,24 @@ Painter.prototype = {
                 if (layer.__startIndex !== i) {
                     layer.__dirty = true;
                 }
-                layer.__startIndex = layer.__drawIndex = i;
+                layer.__startIndex = i;
+                if (!layer.incremental) {
+                    layer.__drawIndex = i;
+                }
+                else {
+                    // Mark layer draw index needs to update.
+                    layer.__drawIndex = -1;
+                }
                 updatePrevLayer(i);
                 prevLayer = layer;
             }
-            layer.__dirty = layer.__dirty || el.__dirty;
+            if (el.__dirty) {
+                layer.__dirty = true;
+                if (layer.incremental && layer.__drawIndex < 0) {
+                    // Start draw from the first dirty element.
+                    layer.__drawIndex = i;
+                }
+            }
         }
 
         updatePrevLayer(i);
@@ -9110,6 +9276,10 @@ Painter.prototype = {
             if (!layer.__used && layer.getElementCount() > 0) {
                 layer.__dirty = true;
                 layer.__startIndex = layer.__endIndex = layer.__drawIndex = 0;
+            }
+            // For incremental layer. In case start index changed and no elements are dirty.
+            if (layer.__dirty && layer.__drawIndex < 0) {
+                layer.__drawIndex = layer.__startIndex;
             }
         });
     },
@@ -9146,10 +9316,12 @@ Painter.prototype = {
                 merge(layerConfig[zlevel], config, true);
             }
 
-            var layer = this._layers[zlevel];
-
-            if (layer) {
-                merge(layer, layerConfig[zlevel], true);
+            for (var i = 0; i < this._zlevelList.length; i++) {
+                var _zlevel = this._zlevelList[i];
+                if (_zlevel === zlevel || _zlevel === zlevel + EL_AFTER_INCREMENTAL_INC) {
+                    var layer = this._layers[_zlevel];
+                    merge(layer, layerConfig[zlevel], true);
+                }
             }
         }
     },
@@ -9182,7 +9354,7 @@ Painter.prototype = {
             this._width = width;
             this._height = height;
 
-            this.getLayer(0).resize(width, height);
+            this.getLayer(CANVAS_ZLEVEL).resize(width, height);
         }
         else {
             var domRoot = this._domRoot;
@@ -9255,53 +9427,41 @@ Painter.prototype = {
      */
     getRenderedCanvas: function (opts) {
         opts = opts || {};
-        if (this._singleCanvas) {
-            return this._layers[0].dom;
+        if (this._singleCanvas && !this._compositeManually) {
+            return this._layers[CANVAS_ZLEVEL].dom;
         }
 
         var imageLayer = new Layer('image', this, opts.pixelRatio || this.dpr);
         imageLayer.initContext();
-
         imageLayer.clearColor = opts.backgroundColor;
         imageLayer.clear();
 
-        var displayList = this.storage.getDisplayList(true);
+        if (opts.pixelRatio <= this.dpr) {
+            this.refresh();
 
-        var scope = {};
-        var zlevel;
-
-        var self = this;
-        function findAndDrawOtherLayer(smaller, larger) {
-            var zlevelList = self._zlevelList;
-            if (smaller == null) {
-                smaller = -Infinity;
-            }
-            var intermediateLayer;
-            for (var i = 0; i < zlevelList.length; i++) {
-                var z = zlevelList[i];
-                var layer = self._layers[z];
-                if (!layer.__builtin__ && z > smaller && z < larger) {
-                    intermediateLayer = layer;
-                    break;
+            var width = imageLayer.dom.width;
+            var height = imageLayer.dom.height;
+            var ctx = imageLayer.ctx;
+            this.eachLayer(function (layer) {
+                if (layer.__builtin__) {
+                    ctx.drawImage(layer.dom, 0, 0, width, height);
                 }
-            }
-            if (intermediateLayer && intermediateLayer.renderToCanvas) {
-                imageLayer.ctx.save();
-                intermediateLayer.renderToCanvas(imageLayer.ctx);
-                imageLayer.ctx.restore();
+                else if (layer.renderToCanvas) {
+                    imageLayer.ctx.save();
+                    layer.renderToCanvas(imageLayer.ctx);
+                    imageLayer.ctx.restore();
+                }
+            });
+        }
+        else {
+            // PENDING, echarts-gl and incremental rendering.
+            var scope = {};
+            var displayList = this.storage.getDisplayList(true);
+            for (var i = 0; i < displayList.length; i++) {
+                var el = displayList[i];
+                this._doPaintEl(el, imageLayer, true, scope);
             }
         }
-        for (var i = 0; i < displayList.length; i++) {
-            var el = displayList[i];
-
-            if (el.zlevel !== zlevel) {
-                findAndDrawOtherLayer(zlevel, el.zlevel);
-                zlevel = el.zlevel;
-            }
-            this._doPaintEl(el, imageLayer, true, scope);
-        }
-
-        findAndDrawOtherLayer(zlevel, Infinity);
 
         return imageLayer.dom;
     },
@@ -9682,6 +9842,8 @@ Animation.prototype = {
 
         this.onframe(delta);
 
+        // Frame should before stage update. Upper application
+        // depends on the sequence (e.g., echarts-stream)
         this.trigger('frame', delta);
 
         if (this.stage.update) {
@@ -10253,7 +10415,7 @@ handlerDomProxyProto.dispose = function () {
 };
 
 handlerDomProxyProto.setCursor = function (cursorStyle) {
-    this.dom.style.cursor = cursorStyle || 'default';
+    this.dom.style && (this.dom.style.cursor = cursorStyle || 'default');
 };
 
 mixin(HandlerDomProxy, Eventful);
@@ -10279,7 +10441,7 @@ var instances = {};    // ZRender实例map索引
 /**
  * @type {string}
  */
-var version = '3.7.4';
+var version = '4.0.0';
 
 /**
  * Initializing a zrender instance
@@ -10376,7 +10538,7 @@ var ZRender = function (id, dom, opts) {
     else if (!rendererType || !painterCtors[rendererType]) {
         rendererType = 'canvas';
     }
-    var painter = new painterCtors[rendererType](dom, storage, opts);
+    var painter = new painterCtors[rendererType](dom, storage, opts, id);
 
     this.storage = storage;
     this.painter = painter;
@@ -13750,8 +13912,8 @@ inherits(Text, Displayable);
  * Displayable for incremental rendering. It will be rendered in a separate layer
  * IncrementalDisplay have too main methods. `clearDisplayables` and `addDisplayables`
  * addDisplayables will render the added displayables incremetally.
- * clearDisplayables will clear the layer.
- * Notice: Added displaybles can't be modified and removed.
+ *
+ * It use a not clearFlag to tell the painter don't clear the layer if it's the first element.
  */
 // TODO Style override ?
 function IncrementalDisplayble(opts) {
@@ -13764,21 +13926,18 @@ function IncrementalDisplayble(opts) {
 
     this._cursor = 0;
 
-    this._needsClear = true;
+    this.notClear = true;
 }
 
-IncrementalDisplayble.prototype.isIncremental = true;
-
-IncrementalDisplayble.prototype.needsClear = function () {
-    return this._needsClear;
-};
+IncrementalDisplayble.prototype.incremental = true;
 
 IncrementalDisplayble.prototype.clearDisplaybles = function () {
     this._displayables = [];
     this._temporaryDisplayables = [];
     this._cursor = 0;
     this.dirty();
-    this._needsClear = true;
+
+    this.notClear = false;
 };
 
 IncrementalDisplayble.prototype.addDisplayable = function (displayable, notPersistent) {
@@ -13795,6 +13954,15 @@ IncrementalDisplayble.prototype.addDisplayables = function (displayables, notPer
     notPersistent = notPersistent || false;
     for (var i = 0; i < displayables.length; i++) {
         this.addDisplayable(displayables[i], notPersistent);
+    }
+};
+
+IncrementalDisplayble.prototype.eachPendingDisplayable = function  (cb) {
+    for (var i = this._cursor; i < this._displayables.length; i++) {
+        cb && cb(this._displayables[i]);
+    }
+    for (var i = 0; i < this._temporaryDisplayables.length; i++) {
+        cb && cb(this._temporaryDisplayables[i]);
     }
 };
 
@@ -13819,15 +13987,23 @@ IncrementalDisplayble.prototype.update = function () {
 IncrementalDisplayble.prototype.brush = function (ctx, prevEl) {
     // Render persistant displayables.
     for (var i = this._cursor; i < this._displayables.length; i++) {
-        this._displayables[i].brush(ctx, i === this._cursor ? null : this._displayables[i - 1]);
+        var displayable = this._temporaryDisplayables[i];
+        displayable.beforeBrush && displayable.beforeBrush(ctx);
+        displayable.brush(ctx, i === this._cursor ? null : this._displayables[i - 1]);
+        displayable.afterBrush && displayable.afterBrush(ctx);
     }
     this._cursor = i;
     // Render temporary displayables.
     for (var i = 0; i < this._temporaryDisplayables.length; i++) {
-        this._temporaryDisplayables[i].brush(ctx, i === 0 ? null : this._temporaryDisplayables[i - 1]);
+        var displayable = this._temporaryDisplayables[i];
+        displayable.beforeBrush && displayable.beforeBrush(ctx);
+        displayable.brush(ctx, i === 0 ? null : this._temporaryDisplayables[i - 1]);
+        displayable.afterBrush && displayable.afterBrush(ctx);
     }
+
     this._temporaryDisplayables = [];
-    this._needsClear = false;
+
+    this.notClear = true;
 };
 
 var m = [];
@@ -15112,7 +15288,8 @@ function bindStyle(svgEl, style, isText) {
             ? style.host.getLineScale()
             : 1;
         attr(svgEl, 'stroke-width', strokeWidth / strokeScale);
-        attr(svgEl, 'paint-order', 'stroke');
+        // stroke then fill for text; fill then stroke for others
+        attr(svgEl, 'paint-order', isText ? 'stroke' : 'fill');
         attr(svgEl, 'stroke-opacity', style.opacity);
         var lineDash = style.lineDash;
         if (lineDash) {
@@ -15172,7 +15349,7 @@ function pathDataToString(path) {
                 var clockwise = data[i++];
 
                 var dThetaPositive = Math.abs(dTheta);
-                var isCircle = isAroundZero$1(dThetaPositive % PI2$4)
+                var isCircle = isAroundZero$1(dThetaPositive - PI2$4)
                     && !isAroundZero$1(dThetaPositive);
 
                 var large = false;
@@ -15713,18 +15890,20 @@ var MARK_USED = '1';
  * e.g., gradients, clip path, etc.
  *
  * @class
+ * @param {number}          zrId      zrender instance id
  * @param {SVGElement}      svgRoot   root of SVG document
  * @param {string|string[]} tagNames  possible tag names
  * @param {string}          markLabel label name to make if the element
  *                                    is used
  */
 function Definable(
+    zrId,
     svgRoot,
     tagNames,
     markLabel,
     domName
 ) {
-
+    this._zrId = zrId;
     this._svgRoot = svgRoot;
     this._tagNames = typeof tagNames === 'string' ? [tagNames] : tagNames;
     this._markLabel = markLabel;
@@ -15828,7 +16007,7 @@ Definable.prototype.addDom = function (dom) {
  */
 Definable.prototype.removeDom = function (element) {
     var defs = this.getDefs(false);
-    if (defs) {
+    if (defs && element[this._domName]) {
         defs.removeChild(element[this._domName]);
         element[this._domName] = null;
     }
@@ -15959,11 +16138,13 @@ Definable.prototype.getSvgElement = function (displayable) {
  *
  * @class
  * @extends Definable
+ * @param   {number}     zrId    zrender instance id
  * @param   {SVGElement} svgRoot root of SVG document
  */
-function GradientManager(svgRoot) {
+function GradientManager(zrId, svgRoot) {
     Definable.call(
         this,
+        zrId,
         svgRoot,
         ['linearGradient', 'radialGradient'],
         '__gradient_in_use__'
@@ -16046,7 +16227,8 @@ GradientManager.prototype.add = function (gradient) {
     // id should remain the same, and other attributes should be
     // updated.
     gradient.id = gradient.id || this.nextId++;
-    dom.setAttribute('id', 'zr-gradient-' + gradient.id);
+    dom.setAttribute('id', 'zr' + this._zrId
+        + '-gradient-' + gradient.id);
 
     this.updateDom(gradient, dom);
     this.addDom(dom);
@@ -16159,10 +16341,11 @@ GradientManager.prototype.markUsed = function (displayable) {
  *
  * @class
  * @extends Definable
+ * @param   {number}     zrId    zrender instance id
  * @param   {SVGElement} svgRoot root of SVG document
  */
-function ClippathManager(svgRoot) {
-    Definable.call(this, svgRoot, 'clipPath', '__clippath_in_use__');
+function ClippathManager(zrId, svgRoot) {
+    Definable.call(this, zrId, svgRoot, 'clipPath', '__clippath_in_use__');
 }
 
 
@@ -16227,7 +16410,7 @@ ClippathManager.prototype.updateDom = function (
         }
         else {
             // New <clipPath>
-            id = 'zr-clip-' + this.nextId;
+            id = 'zr' + this._zrId + '-clip-' + this.nextId;
             ++this.nextId;
             clipPathEl = this.createElement('clipPath');
             clipPathEl.setAttribute('id', id);
@@ -16324,11 +16507,13 @@ ClippathManager.prototype.markUsed = function (displayable) {
  *
  * @class
  * @extends Definable
+ * @param   {number}     zrId    zrender instance id
  * @param   {SVGElement} svgRoot root of SVG document
  */
-function ShadowManager(svgRoot) {
+function ShadowManager(zrId, svgRoot) {
     Definable.call(
         this,
+        zrId,
         svgRoot,
         ['filter'],
         '__filter_in_use__',
@@ -16395,7 +16580,8 @@ ShadowManager.prototype.add = function (displayable) {
     // id should remain the same, and other attributes should be
     // updated.
     style._shadowDomId = style._shadowDomId || this.nextId++;
-    dom.setAttribute('id', 'zr-shadow-' + style._shadowDomId);
+    dom.setAttribute('id', 'zr' + this._zrId
+        + '-shadow-' + style._shadowDomId);
 
     this.updateDom(displayable, dom);
     this.addDom(dom);
@@ -16457,14 +16643,14 @@ ShadowManager.prototype.updateDom = function (displayable, dom) {
     // TODO: textBoxShadowBlur is not supported yet
     var offsetX, offsetY, blur, color;
     if (style.shadowBlur || style.shadowOffsetX || style.shadowOffsetY) {
-        offsetX = style.shadowOffsetX;
-        offsetY = style.shadowOffsetY;
+        offsetX = style.shadowOffsetX || 0;
+        offsetY = style.shadowOffsetY || 0;
         blur = style.shadowBlur;
         color = style.shadowColor;
     }
     else if (style.textShadowBlur) {
-        offsetX = style.textShadowOffsetX;
-        offsetY = style.textShadowOffsetY;
+        offsetX = style.textShadowOffsetX || 0;
+        offsetY = style.textShadowOffsetY || 0;
         blur = style.textShadowBlur;
         color = style.textShadowColor;
     }
@@ -16583,7 +16769,7 @@ function getSvgElement(displayable) {
  * @param {module:zrender/Storage} storage
  * @param {Object} opts
  */
-var SVGPainter = function (root, storage, opts) {
+var SVGPainter = function (root, storage, opts, zrId) {
 
     this.root = root;
     this.storage = storage;
@@ -16595,9 +16781,9 @@ var SVGPainter = function (root, storage, opts) {
     svgRoot.setAttribute('baseProfile', 'full');
     svgRoot.style.cssText = 'user-select:none;position:absolute;left:0;top:0;';
 
-    this.gradientManager = new GradientManager(svgRoot);
-    this.clipPathManager = new ClippathManager(svgRoot);
-    this.shadowManager = new ShadowManager(svgRoot);
+    this.gradientManager = new GradientManager(zrId, svgRoot);
+    this.clipPathManager = new ClippathManager(zrId, svgRoot);
+    this.shadowManager = new ShadowManager(zrId, svgRoot);
 
     var viewport = document.createElement('div');
     viewport.style.cssText = 'overflow:hidden;position:relative';
@@ -16812,7 +16998,7 @@ SVGPainter.prototype = {
 
         viewport.style.display = '';
 
-        if (this._width !== width && this._height !== height) {
+        if (this._width !== width || this._height !== height) {
             this._width = width;
             this._height = height;
 

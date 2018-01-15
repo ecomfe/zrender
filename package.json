@@ -1,6 +1,6 @@
 {
   "name": "zrender",
-  "version": "3.7.4",
+  "version": "4.0.0",
   "description": "A lightweight canvas library.",
   "keywords": [
     "canvas",
