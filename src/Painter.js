@@ -686,13 +686,13 @@ Painter.prototype = {
         }
 
         var prevLayer = null;
-        // TODO
         var incrementalLayerCount = 0;
         for (var i = 0; i < list.length; i++) {
             var el = list[i];
             var zlevel = el.zlevel;
             var layer;
             // PENDING If change one incremental element style ?
+            // TODO Where there are non-incremental elements between incremental elements.
             if (el.incremental) {
                 layer = this.getLayer(zlevel + INCREMENTAL_INC, this._needsManuallyCompositing);
                 layer.incremental = true;
@@ -738,6 +738,10 @@ Painter.prototype = {
             if (!layer.__used && layer.getElementCount() > 0) {
                 layer.__dirty = true;
                 layer.__startIndex = layer.__endIndex = layer.__drawIndex = 0;
+            }
+            // For incremental layer. In case start index changed and no elements are dirty.
+            if (layer.__dirty && layer.__drawIndex < 0) {
+                layer.__drawIndex = layer.__startIndex;
             }
         });
     },
