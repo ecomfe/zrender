@@ -452,6 +452,11 @@ Painter.prototype = {
                 finished = false;
             }
 
+            if (scope.prevElClipPaths) {
+                // Needs restore the state. If last drawn element is in the clipping area.
+                ctx.restore();
+            }
+
             ctx.restore();
         }
 
@@ -487,13 +492,13 @@ Painter.prototype = {
             var clipPaths = el.__clipPaths;
 
             // Optimize when clipping on group with several elements
-            if (scope.prevClipLayer !== currentLayer
+            if (!scope.prevElClipPaths
                 || isClipPathChanged(clipPaths, scope.prevElClipPaths)
             ) {
                 // If has previous clipping state, restore from it
                 if (scope.prevElClipPaths) {
-                    scope.prevClipLayer.ctx.restore();
-                    scope.prevClipLayer = scope.prevElClipPaths = null;
+                    currentLayer.ctx.restore();
+                    scope.prevElClipPaths = null;
 
                     // Reset prevEl since context has been restored
                     scope.prevEl = null;
@@ -502,7 +507,6 @@ Painter.prototype = {
                 if (clipPaths) {
                     ctx.save();
                     doClip(clipPaths, ctx);
-                    scope.prevClipLayer = currentLayer;
                     scope.prevElClipPaths = clipPaths;
                 }
             }

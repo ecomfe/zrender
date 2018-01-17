@@ -343,7 +343,6 @@ function createPathOptions(str, opts) {
 
     opts.applyTransform = function (m) {
         transformPath(pathProxy, m);
-
         this.dirty(true);
     };
 
