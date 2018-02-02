@@ -9672,11 +9672,12 @@ function normalizeEvent(el, e, calculate) {
 }
 
 function addEventListener(el, name, handler) {
+    var opts = name === 'mousewheel' ? {passive: true} : undefined;
     if (isDomLevel2) {
-        el.addEventListener(name, handler);
+        el.addEventListener(name, handler, opts);
     }
     else {
-        el.attachEvent('on' + name, handler);
+        el.attachEvent('on' + name, handler, opts);
     }
 }
 
@@ -9806,7 +9807,6 @@ Animation.prototype = {
     },
 
     _update: function() {
-
         var time = new Date().getTime() - this._pausedTime;
         var delta = time - this._time;
         var clips = this._clips;
@@ -9846,8 +9846,9 @@ Animation.prototype = {
 
         this.onframe(delta);
 
-        // Frame should before stage update. Upper application
-        // depends on the sequence (e.g., echarts-stream)
+        // 'frame' should be triggered before stage, because upper application
+        // depends on the sequence (e.g., echarts-stream and finish
+        // event judge)
         this.trigger('frame', delta);
 
         if (this.stage.update) {
@@ -9873,7 +9874,7 @@ Animation.prototype = {
     },
 
     /**
-     * 开始运行动画
+     * Start animation.
      */
     start: function () {
 
@@ -9882,15 +9883,16 @@ Animation.prototype = {
 
         this._startLoop();
     },
+
     /**
-     * 停止运行动画
+     * Stop animation.
      */
     stop: function () {
         this._running = false;
     },
 
     /**
-     * Pause
+     * Pause animation.
      */
     pause: function () {
         if (!this._paused) {
@@ -9900,7 +9902,7 @@ Animation.prototype = {
     },
 
     /**
-     * Resume
+     * Resume animation.
      */
     resume: function () {
         if (this._paused) {
@@ -9910,20 +9912,27 @@ Animation.prototype = {
     },
 
     /**
-     * 清除所有动画片段
+     * Clear animation.
      */
     clear: function () {
         this._clips = [];
     },
+
     /**
-     * 对一个目标创建一个animator对象，可以指定目标中的属性使用动画
+     * Whether animation finished.
+     */
+    isFinished: function () {
+        return !this._clips.length;
+    },
+
+    /**
+     * Creat animator for a target, whose props can be animated.
+     *
      * @param  {Object} target
      * @param  {Object} options
-     * @param  {boolean} [options.loop=false] 是否循环播放动画
-     * @param  {Function} [options.getter=null]
-     *         如果指定getter函数，会通过getter函数取属性值
-     * @param  {Function} [options.setter=null]
-     *         如果指定setter函数，会通过setter函数设置属性值
+     * @param  {boolean} [options.loop=false] Whether loop animation.
+     * @param  {Function} [options.getter=null] Get value from target.
+     * @param  {Function} [options.setter=null] Set value to target.
      * @return {module:zrender/animation/Animation~Animator}
      */
     // TODO Gap
@@ -10658,12 +10667,18 @@ ZRender.prototype = {
      * Perform all refresh
      */
     flush: function () {
+        var triggerRendered;
+
         if (this._needsRefresh) {
+            triggerRendered = true;
             this.refreshImmediately();
         }
         if (this._needsRefreshHover) {
+            triggerRendered = true;
             this.refreshHoverImmediately();
         }
+
+        triggerRendered && this.trigger('rendered');
     },
 
     /**

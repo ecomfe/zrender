@@ -104,11 +104,12 @@ export function normalizeEvent(el, e, calculate) {
 }
 
 export function addEventListener(el, name, handler) {
+    var opts = name === 'mousewheel' ? {passive: true} : undefined;
     if (isDomLevel2) {
-        el.addEventListener(name, handler);
+        el.addEventListener(name, handler, opts);
     }
     else {
-        el.attachEvent('on' + name, handler);
+        el.attachEvent('on' + name, handler, opts);
     }
 }
 
