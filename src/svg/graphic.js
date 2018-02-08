@@ -349,24 +349,6 @@ var svgTextDrawRectText = function (el, rect, textRect) {
         el.__textSvgEl = textSvgEl;
     }
 
-    bindStyle(textSvgEl, style, true);
-    if (el instanceof Text || el.style.transformText) {
-        // Transform text with element
-        setTransform(textSvgEl, el.transform);
-    }
-    else {
-        if (el.transform) {
-            tmpRect.copy(rect);
-            tmpRect.applyTransform(el.transform);
-            rect = tmpRect;
-        }
-        else {
-            var pos = el.transformCoordToGlobal(rect.x, rect.y);
-            rect.x = pos[0];
-            rect.y = pos[1];
-        }
-    }
-
     var x;
     var y;
     var textPosition = style.textPosition;
@@ -417,6 +399,38 @@ var svgTextDrawRectText = function (el, rect, textRect) {
     // Make baseline top
     attr(textSvgEl, 'x', x);
     attr(textSvgEl, 'y', y);
+
+    bindStyle(textSvgEl, style, true);
+    if (el instanceof Text || el.style.transformText) {
+        // Transform text with element
+        setTransform(textSvgEl, el.transform);
+    }
+    else {
+        if (el.transform) {
+            tmpRect.copy(rect);
+            tmpRect.applyTransform(el.transform);
+            rect = tmpRect;
+        }
+        else {
+            var pos = el.transformCoordToGlobal(rect.x, rect.y);
+            rect.x = pos[0];
+            rect.y = pos[1];
+        }
+
+        // Text rotation, but no element transform
+        var origin = style.textOrigin;
+        if (origin === 'center') {
+            x = textRect.width / 2 + x;
+            y = textRect.height / 2 + y;
+        }
+        else if (origin) {
+            x = origin[0] + x;
+            y = origin[1] + y;
+        }
+        var rotate = -style.textRotation * 180 / Math.PI;
+        attr(textSvgEl, 'transform', 'rotate(' + rotate + ','
+            + x + ',' + y + ')');
+    }
 
     var textLines = text.split('\n');
     var nTextLines = textLines.length;
