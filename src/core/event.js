@@ -105,7 +105,8 @@ export function normalizeEvent(el, e, calculate) {
 
 export function addEventListener(el, name, handler) {
     if (isDomLevel2) {
-        el.addEventListener(name, handler);
+        var opts = name === 'mousewheel' ? {passive: true} : undefined;
+        el.addEventListener(name, handler, opts);
     }
     else {
         el.attachEvent('on' + name, handler);
