@@ -110,7 +110,10 @@ export function normalizeEvent(el, e, calculate) {
  */
 export function addEventListener(el, name, handler) {
     if (isDomLevel2) {
-        // Reproduct the console warning: in chrome dev tool, set console log level: verbose,
+        // Reproduct the console warning:
+        // [Violation] Added non-passive event listener to a scroll-blocking <some> event.
+        // Consider marking event handler as 'passive' to make the page more responsive.
+        // Just set console log level: verbose in chrome dev tool.
         // then the warning log will be printed when addEventListener called.
         // See https://github.com/WICG/EventListenerOptions/blob/gh-pages/explainer.md
         // We have not yet found a neat way to using passive. Because in zrender the dom event
