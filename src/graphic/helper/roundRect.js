@@ -70,17 +70,11 @@ export function buildPath(ctx, shape) {
     }
     ctx.moveTo(x + r1, y);
     ctx.lineTo(x + width - r2, y);
-    r2 !== 0 && ctx.quadraticCurveTo(
-        x + width, y, x + width, y + r2
-    );
+    r2 !== 0 && ctx.arc(x + width - r2, y + r2, r2, -Math.PI / 2, 0);
     ctx.lineTo(x + width, y + height - r3);
-    r3 !== 0 && ctx.quadraticCurveTo(
-        x + width, y + height, x + width - r3, y + height
-    );
+    r3 !== 0 && ctx.arc(x + width - r3, y + height - r3, r3, 0, Math.PI / 2);
     ctx.lineTo(x + r4, y + height);
-    r4 !== 0 && ctx.quadraticCurveTo(
-        x, y + height, x, y + height - r4
-    );
+    r4 !== 0 && ctx.arc(x + r4, y + height - r4, r4, Math.PI / 2, Math.PI);
     ctx.lineTo(x, y + r1);
-    r1 !== 0 && ctx.quadraticCurveTo(x, y, x + r1, y);
+    r1 !== 0 && ctx.arc(x + r1, y + r1, r1, Math.PI, Math.PI * 1.5);
 }
