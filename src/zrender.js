@@ -28,7 +28,7 @@ var instances = {};    // ZRender实例map索引
 /**
  * @type {string}
  */
-export var version = '4.0.1';
+export var version = '4.0.2';
 
 /**
  * Initializing a zrender instance
