@@ -175,21 +175,27 @@ var Painter = function (root, storage, opts) {
         root.appendChild(domRoot);
     }
     else {
-        if (opts.width != null) {
-            root.width = opts.width;
-        }
-        if (opts.height != null) {
-            root.height = opts.height;
-        }
-        // Use canvas width and height directly
         var width = root.width;
         var height = root.height;
+
+        if (opts.width != null) {
+            width = opts.width;
+        }
+        if (opts.height != null) {
+            height = opts.height;
+        }
+        this.dpr = opts.devicePixelRatio || 1;
+
+        // Use canvas width and height directly
+        root.width = width * this.dpr;
+        root.height = height * this.dpr;
+
         this._width = width;
         this._height = height;
 
         // Create layer if only one given canvas
-        // Device pixel ratio is fixed to 1 because given canvas has its specified width and height
-        var mainLayer = new Layer(root, this, 1);
+        // Device can be specified to create a high dpi image.
+        var mainLayer = new Layer(root, this, this.dpr);
         mainLayer.__builtin__ = true;
         mainLayer.initContext();
         // FIXME Use canvas width and height
