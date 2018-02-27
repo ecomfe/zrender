@@ -205,7 +205,20 @@ ZRender.prototype = {
      * @param {number} [config.lastFrameAlpha=0.7] Motion blur factor. Larger value cause longer trailer
     */
     configLayer: function (zLevel, config) {
-        this.painter.configLayer(zLevel, config);
+        if (this.painter.configLayer) {
+            this.painter.configLayer(zLevel, config);
+        }
+        this._needsRefresh = true;
+    },
+
+    /**
+     * Set background color
+     * @param {string} backgroundColor
+     */
+    setBackgroundColor: function (backgroundColor) {
+        if (this.painter.setBackgroundColor) {
+            this.painter.setBackgroundColor(backgroundColor);
+        }
         this._needsRefresh = true;
     },
 

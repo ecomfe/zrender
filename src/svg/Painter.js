@@ -145,6 +145,11 @@ SVGPainter.prototype = {
         this._paintList(list);
     },
 
+    setBackgroundColor: function (backgroundColor) {
+        // TODO gradient
+        this._viewport.style.background = backgroundColor;
+    },
+
     _paintList: function (list) {
         this.gradientManager.markAllUnused();
         this.clipPathManager.markAllUnused();

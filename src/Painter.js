@@ -416,14 +416,15 @@ Painter.prototype = {
             var useTimer = !paintAll && layer.incremental && Date.now;
             var startTime = useTimer && Date.now();
 
+            var clearColor = k === 0 ? this._backgroundColor : null;
             // All elements in this layer are cleared.
             if (layer.__startIndex === layer.__endIndex) {
-                layer.clear();
+                layer.clear(false, clearColor);
             }
             else if (start === layer.__startIndex) {
                 var firstEl = list[start];
                 if (!firstEl.incremental || !firstEl.notClear || paintAll) {
-                    layer.clear();
+                    layer.clear(false, clearColor);
                 }
             }
             if (start === -1) {
@@ -762,6 +763,10 @@ Painter.prototype = {
         layer.clear();
     },
 
+    setBackgroundColor: function (backgroundColor) {
+        this._backgroundColor = backgroundColor;
+    },
+
     /**
      * 修改指定zlevel的绘制参数
      *
@@ -899,8 +904,7 @@ Painter.prototype = {
 
         var imageLayer = new Layer('image', this, opts.pixelRatio || this.dpr);
         imageLayer.initContext();
-        imageLayer.clearColor = opts.backgroundColor;
-        imageLayer.clear();
+        imageLayer.clear(false, opts.backgroundColor || this._backgroundColor);
 
         if (opts.pixelRatio <= this.dpr) {
             this.refresh();
