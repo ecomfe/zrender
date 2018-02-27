@@ -155,8 +155,10 @@ Layer.prototype = {
         var domStyle = dom.style;
         var domBack = this.domBack;
 
-        domStyle.width = width + 'px';
-        domStyle.height = height + 'px';
+        if (domStyle) {
+            domStyle.width = width + 'px';
+            domStyle.height = height + 'px';
+        }
 
         dom.width = width * dpr;
         dom.height = height * dpr;
