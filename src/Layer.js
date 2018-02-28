@@ -155,8 +155,10 @@ Layer.prototype = {
         var domStyle = dom.style;
         var domBack = this.domBack;
 
-        domStyle.width = width + 'px';
-        domStyle.height = height + 'px';
+        if (domStyle) {
+            domStyle.width = width + 'px';
+            domStyle.height = height + 'px';
+        }
 
         dom.width = width * dpr;
         dom.height = height * dpr;
@@ -173,15 +175,16 @@ Layer.prototype = {
 
     /**
      * 清空该层画布
-     * @param {boolean} clearAll Clear all with out motion blur
+     * @param {boolean} [clearAll]=false Clear all with out motion blur
+     * @param {Color} [clearColor]
      */
-    clear: function (clearAll) {
+    clear: function (clearAll, clearColor) {
         var dom = this.dom;
         var ctx = this.ctx;
         var width = dom.width;
         var height = dom.height;
 
-        var clearColor = this.clearColor;
+        var clearColor = clearColor || this.clearColor;
         var haveMotionBLur = this.motionBlur && !clearAll;
         var lastFrameAlpha = this.lastFrameAlpha;
 
@@ -201,7 +204,7 @@ Layer.prototype = {
         }
 
         ctx.clearRect(0, 0, width, height);
-        if (clearColor) {
+        if (clearColor && clearColor !== 'transparent') {
             var clearColorGradientOrPattern;
             // Gradient
             if (clearColor.colorStops) {

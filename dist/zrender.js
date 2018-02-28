@@ -167,8 +167,25 @@ function detect(ua) {
             // Although IE 10 supports pointer event, it use old style and is different from the
             // standard. So we exclude that. (IE 10 is hardly used on touch device)
             && (browser.edge || (browser.ie && browser.version >= 11))
+        // passiveSupported: detectPassiveSupport()
     };
 }
+
+// See https://github.com/WICG/EventListenerOptions/blob/gh-pages/explainer.md#feature-detection
+// function detectPassiveSupport() {
+//     // Test via a getter in the options object to see if the passive property is accessed
+//     var supportsPassive = false;
+//     try {
+//         var opts = Object.defineProperty({}, 'passive', {
+//             get: function() {
+//                 supportsPassive = true;
+//             }
+//         });
+//         window.addEventListener('testPassive', function() {}, opts);
+//     } catch (e) {
+//     }
+//     return supportsPassive;
+// }
 
 /**
  * @module zrender/core/util
@@ -6107,6 +6124,12 @@ function createLinearGradient(ctx, obj, rect) {
         y2 = y2 * rect.height + rect.y;
     }
 
+    // Fix NaN when rect is Infinity
+    x = isNaN(x) ? 0 : x;
+    x2 = isNaN(x2) ? 1 : x2;
+    y = isNaN(y) ? 0 : y;
+    y2 = isNaN(y2) ? 0 : y2;
+
     var canvasGradient = ctx.createLinearGradient(x, y, x2, y2);
 
     return canvasGradient;
@@ -7640,19 +7663,13 @@ function buildPath(ctx, shape) {
     }
     ctx.moveTo(x + r1, y);
     ctx.lineTo(x + width - r2, y);
-    r2 !== 0 && ctx.quadraticCurveTo(
-        x + width, y, x + width, y + r2
-    );
+    r2 !== 0 && ctx.arc(x + width - r2, y + r2, r2, -Math.PI / 2, 0);
     ctx.lineTo(x + width, y + height - r3);
-    r3 !== 0 && ctx.quadraticCurveTo(
-        x + width, y + height, x + width - r3, y + height
-    );
+    r3 !== 0 && ctx.arc(x + width - r3, y + height - r3, r3, 0, Math.PI / 2);
     ctx.lineTo(x + r4, y + height);
-    r4 !== 0 && ctx.quadraticCurveTo(
-        x, y + height, x, y + height - r4
-    );
+    r4 !== 0 && ctx.arc(x + r4, y + height - r4, r4, Math.PI / 2, Math.PI);
     ctx.lineTo(x, y + r1);
-    r1 !== 0 && ctx.quadraticCurveTo(x, y, x + r1, y);
+    r1 !== 0 && ctx.arc(x + r1, y + r1, r1, Math.PI, Math.PI * 1.5);
 }
 
 // TODO: Have not support 'start', 'end' yet.
@@ -9671,8 +9688,34 @@ function normalizeEvent(el, e, calculate) {
     return e;
 }
 
+/**
+ * @param {HTMLElement} el
+ * @param {string} name
+ * @param {Function} handler
+ */
 function addEventListener(el, name, handler) {
     if (isDomLevel2) {
+        // Reproduct the console warning:
+        // [Violation] Added non-passive event listener to a scroll-blocking <some> event.
+        // Consider marking event handler as 'passive' to make the page more responsive.
+        // Just set console log level: verbose in chrome dev tool.
+        // then the warning log will be printed when addEventListener called.
+        // See https://github.com/WICG/EventListenerOptions/blob/gh-pages/explainer.md
+        // We have not yet found a neat way to using passive. Because in zrender the dom event
+        // listener delegate all of the upper events of element. Some of those events need
+        // to prevent default. For example, the feature `preventDefaultMouseMove` of echarts.
+        // Before passive can be adopted, these issues should be considered:
+        // (1) Whether and how a zrender user specifies an event listener passive. And by default,
+        // passive or not.
+        // (2) How to tread that some zrender event listener is passive, and some is not. If
+        // we use other way but not preventDefault of mousewheel and touchmove, browser
+        // compatibility should be handled.
+
+        // var opts = (env.passiveSupported && name === 'mousewheel')
+        //     ? {passive: true}
+        //     // By default, the third param of el.addEventListener is `capture: false`.
+        //     : void 0;
+        // el.addEventListener(name, handler /* , opts */);
         el.addEventListener(name, handler);
     }
     else {
@@ -9806,7 +9849,6 @@ Animation.prototype = {
     },
 
     _update: function() {
-
         var time = new Date().getTime() - this._pausedTime;
         var delta = time - this._time;
         var clips = this._clips;
@@ -9846,8 +9888,9 @@ Animation.prototype = {
 
         this.onframe(delta);
 
-        // Frame should before stage update. Upper application
-        // depends on the sequence (e.g., echarts-stream)
+        // 'frame' should be triggered before stage, because upper application
+        // depends on the sequence (e.g., echarts-stream and finish
+        // event judge)
         this.trigger('frame', delta);
 
         if (this.stage.update) {
@@ -9873,7 +9916,7 @@ Animation.prototype = {
     },
 
     /**
-     * 开始运行动画
+     * Start animation.
      */
     start: function () {
 
@@ -9882,15 +9925,16 @@ Animation.prototype = {
 
         this._startLoop();
     },
+
     /**
-     * 停止运行动画
+     * Stop animation.
      */
     stop: function () {
         this._running = false;
     },
 
     /**
-     * Pause
+     * Pause animation.
      */
     pause: function () {
         if (!this._paused) {
@@ -9900,7 +9944,7 @@ Animation.prototype = {
     },
 
     /**
-     * Resume
+     * Resume animation.
      */
     resume: function () {
         if (this._paused) {
@@ -9910,20 +9954,27 @@ Animation.prototype = {
     },
 
     /**
-     * 清除所有动画片段
+     * Clear animation.
      */
     clear: function () {
         this._clips = [];
     },
+
     /**
-     * 对一个目标创建一个animator对象，可以指定目标中的属性使用动画
+     * Whether animation finished.
+     */
+    isFinished: function () {
+        return !this._clips.length;
+    },
+
+    /**
+     * Creat animator for a target, whose props can be animated.
+     *
      * @param  {Object} target
      * @param  {Object} options
-     * @param  {boolean} [options.loop=false] 是否循环播放动画
-     * @param  {Function} [options.getter=null]
-     *         如果指定getter函数，会通过getter函数取属性值
-     * @param  {Function} [options.setter=null]
-     *         如果指定setter函数，会通过setter函数设置属性值
+     * @param  {boolean} [options.loop=false] Whether loop animation.
+     * @param  {Function} [options.getter=null] Get value from target.
+     * @param  {Function} [options.setter=null] Set value to target.
      * @return {module:zrender/animation/Animation~Animator}
      */
     // TODO Gap
@@ -10445,7 +10496,7 @@ var instances = {};    // ZRender实例map索引
 /**
  * @type {string}
  */
-var version = '4.0.1';
+var version = '4.0.2';
 
 /**
  * Initializing a zrender instance
@@ -10658,12 +10709,18 @@ ZRender.prototype = {
      * Perform all refresh
      */
     flush: function () {
+        var triggerRendered;
+
         if (this._needsRefresh) {
+            triggerRendered = true;
             this.refreshImmediately();
         }
         if (this._needsRefreshHover) {
+            triggerRendered = true;
             this.refreshHoverImmediately();
         }
+
+        triggerRendered && this.trigger('rendered');
     },
 
     /**
@@ -15536,24 +15593,6 @@ var svgTextDrawRectText = function (el, rect, textRect) {
         el.__textSvgEl = textSvgEl;
     }
 
-    bindStyle(textSvgEl, style, true);
-    if (el instanceof Text || el.style.transformText) {
-        // Transform text with element
-        setTransform(textSvgEl, el.transform);
-    }
-    else {
-        if (el.transform) {
-            tmpRect$2.copy(rect);
-            tmpRect$2.applyTransform(el.transform);
-            rect = tmpRect$2;
-        }
-        else {
-            var pos = el.transformCoordToGlobal(rect.x, rect.y);
-            rect.x = pos[0];
-            rect.y = pos[1];
-        }
-    }
-
     var x;
     var y;
     var textPosition = style.textPosition;
@@ -15604,6 +15643,38 @@ var svgTextDrawRectText = function (el, rect, textRect) {
     // Make baseline top
     attr(textSvgEl, 'x', x);
     attr(textSvgEl, 'y', y);
+
+    bindStyle(textSvgEl, style, true);
+    if (el instanceof Text || el.style.transformText) {
+        // Transform text with element
+        setTransform(textSvgEl, el.transform);
+    }
+    else {
+        if (el.transform) {
+            tmpRect$2.copy(rect);
+            tmpRect$2.applyTransform(el.transform);
+            rect = tmpRect$2;
+        }
+        else {
+            var pos = el.transformCoordToGlobal(rect.x, rect.y);
+            rect.x = pos[0];
+            rect.y = pos[1];
+        }
+
+        // Text rotation, but no element transform
+        var origin = style.textOrigin;
+        if (origin === 'center') {
+            x = textRect.width / 2 + x;
+            y = textRect.height / 2 + y;
+        }
+        else if (origin) {
+            x = origin[0] + x;
+            y = origin[1] + y;
+        }
+        var rotate = -style.textRotation * 180 / Math.PI;
+        attr(textSvgEl, 'transform', 'rotate(' + rotate + ','
+            + x + ',' + y + ')');
+    }
 
     var textLines = text.split('\n');
     var nTextLines = textLines.length;
