@@ -267,7 +267,8 @@ Painter.prototype = {
             var z = zlevelList[i];
             var layer = this._layers[z];
             if (!layer.__builtin__ && layer.refresh) {
-                layer.refresh();
+                var clearColor = i === 0 ? this._backgroundColor : null;
+                layer.refresh(clearColor);
             }
         }
 
@@ -422,7 +423,8 @@ Painter.prototype = {
             var useTimer = !paintAll && layer.incremental && Date.now;
             var startTime = useTimer && Date.now();
 
-            var clearColor = k === 0 ? this._backgroundColor : null;
+            var clearColor = layer.zlevel === this._zlevelList[0]
+                ? this._backgroundColor : null;
             // All elements in this layer are cleared.
             if (layer.__startIndex === layer.__endIndex) {
                 layer.clear(false, clearColor);
