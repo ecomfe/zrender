@@ -376,6 +376,12 @@ export function lift(color, level) {
             else {
                 colorArr[i] = ((255 - colorArr[i]) * level + colorArr[i]) | 0;
             }
+            if (colorArr[i] > 255) {
+                colorArr[i] = 255;
+            }
+            else if (color[i] < 0) {
+                colorArr[i] = 0;
+            }
         }
         return stringify(colorArr, colorArr.length === 4 ? 'rgba' : 'rgb');
     }
