@@ -3315,6 +3315,12 @@ function lift(color, level) {
             else {
                 colorArr[i] = ((255 - colorArr[i]) * level + colorArr[i]) | 0;
             }
+            if (colorArr[i] > 255) {
+                colorArr[i] = 255;
+            }
+            else if (color[i] < 0) {
+                colorArr[i] = 0;
+            }
         }
         return stringify(colorArr, colorArr.length === 4 ? 'rgba' : 'rgb');
     }
@@ -6738,8 +6744,10 @@ Layer.prototype = {
         var domStyle = dom.style;
         var domBack = this.domBack;
 
-        domStyle.width = width + 'px';
-        domStyle.height = height + 'px';
+        if (domStyle) {
+            domStyle.width = width + 'px';
+            domStyle.height = height + 'px';
+        }
 
         dom.width = width * dpr;
         dom.height = height * dpr;
@@ -6756,15 +6764,16 @@ Layer.prototype = {
 
     /**
      * 清空该层画布
-     * @param {boolean} clearAll Clear all with out motion blur
+     * @param {boolean} [clearAll]=false Clear all with out motion blur
+     * @param {Color} [clearColor]
      */
-    clear: function (clearAll) {
+    clear: function (clearAll, clearColor) {
         var dom = this.dom;
         var ctx = this.ctx;
         var width = dom.width;
         var height = dom.height;
 
-        var clearColor = this.clearColor;
+        var clearColor = clearColor || this.clearColor;
         var haveMotionBLur = this.motionBlur && !clearAll;
         var lastFrameAlpha = this.lastFrameAlpha;
 
@@ -6784,7 +6793,7 @@ Layer.prototype = {
         }
 
         ctx.clearRect(0, 0, width, height);
-        if (clearColor) {
+        if (clearColor && clearColor !== 'transparent') {
             var clearColorGradientOrPattern;
             // Gradient
             if (clearColor.colorStops) {
@@ -8730,21 +8739,27 @@ var Painter = function (root, storage, opts) {
         root.appendChild(domRoot);
     }
     else {
-        if (opts.width != null) {
-            root.width = opts.width;
-        }
-        if (opts.height != null) {
-            root.height = opts.height;
-        }
-        // Use canvas width and height directly
         var width = root.width;
         var height = root.height;
+
+        if (opts.width != null) {
+            width = opts.width;
+        }
+        if (opts.height != null) {
+            height = opts.height;
+        }
+        this.dpr = opts.devicePixelRatio || 1;
+
+        // Use canvas width and height directly
+        root.width = width * this.dpr;
+        root.height = height * this.dpr;
+
         this._width = width;
         this._height = height;
 
         // Create layer if only one given canvas
-        // Device pixel ratio is fixed to 1 because given canvas has its specified width and height
-        var mainLayer = new Layer(root, this, 1);
+        // Device can be specified to create a high dpi image.
+        var mainLayer = new Layer(root, this, this.dpr);
         mainLayer.__builtin__ = true;
         mainLayer.initContext();
         // FIXME Use canvas width and height
@@ -8816,7 +8831,8 @@ Painter.prototype = {
             var z = zlevelList[i];
             var layer = this._layers[z];
             if (!layer.__builtin__ && layer.refresh) {
-                layer.refresh();
+                var clearColor = i === 0 ? this._backgroundColor : null;
+                layer.refresh(clearColor);
             }
         }
 
@@ -8971,14 +8987,16 @@ Painter.prototype = {
             var useTimer = !paintAll && layer.incremental && Date.now;
             var startTime = useTimer && Date.now();
 
+            var clearColor = layer.zlevel === this._zlevelList[0]
+                ? this._backgroundColor : null;
             // All elements in this layer are cleared.
             if (layer.__startIndex === layer.__endIndex) {
-                layer.clear();
+                layer.clear(false, clearColor);
             }
             else if (start === layer.__startIndex) {
                 var firstEl = list[start];
                 if (!firstEl.incremental || !firstEl.notClear || paintAll) {
-                    layer.clear();
+                    layer.clear(false, clearColor);
                 }
             }
             if (start === -1) {
@@ -9317,6 +9335,10 @@ Painter.prototype = {
         layer.clear();
     },
 
+    setBackgroundColor: function (backgroundColor) {
+        this._backgroundColor = backgroundColor;
+    },
+
     /**
      * 修改指定zlevel的绘制参数
      *
@@ -9454,8 +9476,7 @@ Painter.prototype = {
 
         var imageLayer = new Layer('image', this, opts.pixelRatio || this.dpr);
         imageLayer.initContext();
-        imageLayer.clearColor = opts.backgroundColor;
-        imageLayer.clear();
+        imageLayer.clear(false, opts.backgroundColor || this._backgroundColor);
 
         if (opts.pixelRatio <= this.dpr) {
             this.refresh();
@@ -10496,7 +10517,7 @@ var instances = {};    // ZRender实例map索引
 /**
  * @type {string}
  */
-var version = '4.0.2';
+var version = '4.0.3';
 
 /**
  * Initializing a zrender instance
@@ -10673,7 +10694,20 @@ ZRender.prototype = {
      * @param {number} [config.lastFrameAlpha=0.7] Motion blur factor. Larger value cause longer trailer
     */
     configLayer: function (zLevel, config) {
-        this.painter.configLayer(zLevel, config);
+        if (this.painter.configLayer) {
+            this.painter.configLayer(zLevel, config);
+        }
+        this._needsRefresh = true;
+    },
+
+    /**
+     * Set background color
+     * @param {string} backgroundColor
+     */
+    setBackgroundColor: function (backgroundColor) {
+        if (this.painter.setBackgroundColor) {
+            this.painter.setBackgroundColor(backgroundColor);
+        }
         this._needsRefresh = true;
     },
 
@@ -16902,6 +16936,11 @@ SVGPainter.prototype = {
         this._paintList(list);
     },
 
+    setBackgroundColor: function (backgroundColor) {
+        // TODO gradient
+        this._viewport.style.background = backgroundColor;
+    },
+
     _paintList: function (list) {
         this.gradientManager.markAllUnused();
         this.clipPathManager.markAllUnused();
@@ -17138,10 +17177,10 @@ SVGPainter.prototype = {
         }
     },
 
-    pathToSvg: function () {
+    pathToDataUrl: function () {
         this.refresh();
         var html = this._svgRoot.outerHTML;
-        return 'data:img/svg+xml;utf-8,' + unescape(html);
+        return 'data:image/svg+xml;charset=UTF-8,' + html;
     }
 };
 
