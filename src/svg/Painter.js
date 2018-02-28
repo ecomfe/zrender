@@ -386,10 +386,10 @@ SVGPainter.prototype = {
         }
     },
 
-    pathToSvg: function () {
+    pathToDataUrl: function () {
         this.refresh();
         var html = this._svgRoot.outerHTML;
-        return 'data:img/svg+xml;utf-8,' + unescape(html);
+        return 'data:image/svg+xml;charset=UTF-8,' + html;
     }
 };
 
