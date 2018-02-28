@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Use SVG as image source</title>
+    <script src="../dist/zrender.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        #img {
+            border: 1px solid #999;
+            position: absolute;
+            top: 0;
+            left: 50%;
+        }
+    </style>
+</head>
+<body>
+    <div id="main" style="width:1000px;height:800px;"></div>
+    <img id="img">
+    <script type="text/javascript">
+    var zr = zrender.init(document.getElementById('main'), {
+        renderer: 'svg'
+    });
+
+    var rect = new zrender.Rect({
+        shape: {
+            x: 60,
+            y: 60,
+            width: 50,
+            height: 50
+        },
+        style: {
+            fill: 'red',
+            shadowBlur: 5,
+            shadowColor: 'blue',
+            shadowOffsetX: 10,
+            shadowOffsetY: 10
+        }
+    });
+    zr.add(rect);
+
+    var svgPath = zr.painter.pathToDataUrl();
+    console.log(svgPath);
+
+    var img = document.getElementById('img');
+    img.setAttribute('src', svgPath);
+    </script>
+
+</body>
+</html>
