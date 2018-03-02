@@ -201,6 +201,7 @@ var Painter = function (root, storage, opts) {
         // FIXME Use canvas width and height
         // mainLayer.resize(width, height);
         layers[CANVAS_ZLEVEL] = mainLayer;
+        mainLayer.zlevel = CANVAS_ZLEVEL;
         // Not use common zlevel.
         zlevelList.push(CANVAS_ZLEVEL);
 
