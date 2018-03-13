@@ -77,6 +77,8 @@ transformableProto.updateTransform = function () {
     var m = this.transform;
     if (!(needLocalTransform || parentHasTransform)) {
         m && mIdentity(m);
+        this.invTransform = this.invTransform || matrix.create();
+        mIdentity(this.invTransform);
         return;
     }
 
