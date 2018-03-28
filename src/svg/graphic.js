@@ -427,7 +427,7 @@ var svgTextDrawRectText = function (el, rect, textRect) {
             x = origin[0] + x;
             y = origin[1] + y;
         }
-        var rotate = -style.textRotation * 180 / Math.PI;
+        var rotate = -(style.textRotation || 0) * 180 / Math.PI;
         attr(textSvgEl, 'transform', 'rotate(' + rotate + ','
             + x + ',' + y + ')');
     }
