@@ -49,6 +49,9 @@ function setTransform(svgEl, m) {
 function attr(el, key, val) {
     if (!val || val.type !== 'linear' && val.type !== 'radial') {
         // Don't set attribute for gradient, since it need new dom nodes
+        if (typeof val === 'string' && val.indexOf('NaN') > -1) {
+            console.log(val);
+        }
         el.setAttribute(key, val);
     }
 }
