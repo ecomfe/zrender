@@ -39,22 +39,26 @@ export default Path.extend({
         var endAngle = shape.endAngle;
         var clockwise = shape.clockwise;
 
-        var unitX = Math.cos(startAngle);
-        var unitY = Math.sin(startAngle);
+        var cos = Math.cos, sin = Math.sin;
 
-        ctx.moveTo(unitX * r0 + x, unitY * r0 + y);
+        var c1 = cos(startAngle), c2 = cos(endAngle),
+            s1 = sin(startAngle), s2 = sin(endAngle);
 
-        ctx.lineTo(unitX * r + x, unitY * r + y);
+        // circular
+        if(Math.abs(startAngle - endAngle) >= Math.PI * 2) {
+            ctx.moveTo(c1 * r + x, s1 * r + y);
+            ctx.arc(x, y, r, startAngle, endAngle, !clockwise);
+            if(r0 !== 0) {
+                ctx.moveTo(c2 * r0 + x, s2 * r0 + y);
+                ctx.arc(x, y, r0, endAngle, startAngle, clockwise);
+            }
+        } else {
+            ctx.moveTo(c1 * r0 + x, s1 * r0 + y);
+            ctx.lineTo(c1 * r + x, s1 * r + y);
+            ctx.arc(x, y, r, startAngle, endAngle, !clockwise);
+            ctx.lineTo(c2 * r0 + x, s2 * r0 + y);
 
-        ctx.arc(x, y, r, startAngle, endAngle, !clockwise);
-
-        ctx.lineTo(
-            Math.cos(endAngle) * r0 + x,
-            Math.sin(endAngle) * r0 + y
-        );
-
-        if (r0 !== 0) {
-            ctx.arc(x, y, r0, endAngle, startAngle, clockwise);
+            (r0 !== 0) && ctx.arc(x, y, r0, endAngle, startAngle, clockwise);
         }
 
         ctx.closePath();
