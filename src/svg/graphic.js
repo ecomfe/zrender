@@ -49,6 +49,9 @@ function setTransform(svgEl, m) {
 function attr(el, key, val) {
     if (!val || val.type !== 'linear' && val.type !== 'radial') {
         // Don't set attribute for gradient, since it need new dom nodes
+        if (typeof val === 'string' && val.indexOf('NaN') > -1) {
+            console.log(val);
+        }
         el.setAttribute(key, val);
     }
 }
@@ -427,7 +430,7 @@ var svgTextDrawRectText = function (el, rect, textRect) {
             x = origin[0] + x;
             y = origin[1] + y;
         }
-        var rotate = -style.textRotation * 180 / Math.PI;
+        var rotate = -(style.textRotation || 0) * 180 / Math.PI;
         attr(textSvgEl, 'transform', 'rotate(' + rotate + ','
             + x + ',' + y + ')');
     }
