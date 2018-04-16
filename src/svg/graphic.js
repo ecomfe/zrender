@@ -5,6 +5,7 @@
 import {createElement} from './core';
 import PathProxy from '../core/PathProxy';
 import BoundingRect from '../core/BoundingRect';
+import * as matrix from '../core/matrix';
 import * as textContain from '../contain/text';
 import * as textHelper from '../graphic/helper/text';
 import Text from '../graphic/Text';
@@ -430,9 +431,11 @@ var svgTextDrawRectText = function (el, rect, textRect) {
             x = origin[0] + x;
             y = origin[1] + y;
         }
-        var rotate = -(style.textRotation || 0) * 180 / Math.PI;
-        attr(textSvgEl, 'transform', 'rotate(' + rotate + ','
-            + x + ',' + y + ')');
+        var rotate = -style.textRotation || 0;
+        var transform = matrix.create();
+        // Apply textRotate to element matrix
+        matrix.rotate(transform, el.transform, rotate);
+        setTransform(textSvgEl, transform);
     }
 
     var textLines = text.split('\n');
