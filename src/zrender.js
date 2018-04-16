@@ -236,7 +236,6 @@ ZRender.prototype = {
          */
         this._needsRefresh = false;
         // var end = new Date();
-
         // var log = document.getElementById('log');
         // if (log) {
         //     log.innerHTML = log.innerHTML + '<br>' + (end - start);

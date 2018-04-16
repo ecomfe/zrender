@@ -81,7 +81,7 @@ IncrementalDisplayble.prototype.update = function () {
 IncrementalDisplayble.prototype.brush = function (ctx, prevEl) {
     // Render persistant displayables.
     for (var i = this._cursor; i < this._displayables.length; i++) {
-        var displayable = this._temporaryDisplayables[i];
+        var displayable = this._displayables[i];
         displayable.beforeBrush && displayable.beforeBrush(ctx);
         displayable.brush(ctx, i === this._cursor ? null : this._displayables[i - 1]);
         displayable.afterBrush && displayable.afterBrush(ctx);
