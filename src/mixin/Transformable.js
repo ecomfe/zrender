@@ -130,7 +130,7 @@ transformableProto.restoreTransform = function (ctx) {
 };
 
 var tmpTransform = [];
-
+var originTransform = matrix.create();
 /**
  * 分解`transform`矩阵到`position`, `rotation`, `scale`
  */
@@ -143,6 +143,15 @@ transformableProto.decomposeTransform = function () {
     if (parent && parent.transform) {
         // Get local transform and decompose them to position, scale, rotation
         matrix.mul(tmpTransform, parent.invTransform, m);
+        m = tmpTransform;
+    }
+    var origin = this.origin;
+    if (origin && (origin[0] || origin[1])) {
+        originTransform[4] = origin[0];
+        originTransform[5] = origin[1];
+        matrix.mul(tmpTransform, m, originTransform);
+        tmpTransform[4] -= origin[0];
+        tmpTransform[5] -= origin[0];
         m = tmpTransform;
     }
     var sx = m[0] * m[0] + m[1] * m[1];
