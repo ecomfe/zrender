@@ -151,7 +151,7 @@ transformableProto.decomposeTransform = function () {
         originTransform[5] = origin[1];
         matrix.mul(tmpTransform, m, originTransform);
         tmpTransform[4] -= origin[0];
-        tmpTransform[5] -= origin[0];
+        tmpTransform[5] -= origin[1];
         m = tmpTransform;
     }
     var sx = m[0] * m[0] + m[1] * m[1];
