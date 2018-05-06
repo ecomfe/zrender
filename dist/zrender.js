@@ -26,7 +26,7 @@ var guid = function () {
 
 var env = {};
 
-if (typeof wx !== 'undefined') {
+if (typeof wx === 'object' && typeof wx.getSystemInfoSync === 'function') {
     // In Weixin Application
     env = {
         browser: {},
@@ -8765,6 +8765,7 @@ var Painter = function (root, storage, opts) {
         // FIXME Use canvas width and height
         // mainLayer.resize(width, height);
         layers[CANVAS_ZLEVEL] = mainLayer;
+        mainLayer.zlevel = CANVAS_ZLEVEL;
         // Not use common zlevel.
         zlevelList.push(CANVAS_ZLEVEL);
 
@@ -10517,7 +10518,7 @@ var instances = {};    // ZRender实例map索引
 /**
  * @type {string}
  */
-var version = '4.0.3';
+var version = '4.0.4';
 
 /**
  * Initializing a zrender instance
@@ -10725,7 +10726,6 @@ ZRender.prototype = {
          */
         this._needsRefresh = false;
         // var end = new Date();
-
         // var log = document.getElementById('log');
         // if (log) {
         //     log.innerHTML = log.innerHTML + '<br>' + (end - start);
@@ -12621,7 +12621,8 @@ function windingLine(x0, y0, x1, y1, x, y) {
 
     var x_ = t * (x1 - x0) + x0;
 
-    return x_ > x ? dir : 0;
+    // If (x, y) on the line, considered as "contain".
+    return x_ === x ? Infinity : x_ > x ? dir : 0;
 }
 
 var CMD$1 = PathProxy.CMD;
@@ -14081,7 +14082,7 @@ IncrementalDisplayble.prototype.update = function () {
 IncrementalDisplayble.prototype.brush = function (ctx, prevEl) {
     // Render persistant displayables.
     for (var i = this._cursor; i < this._displayables.length; i++) {
-        var displayable = this._temporaryDisplayables[i];
+        var displayable = this._displayables[i];
         displayable.beforeBrush && displayable.beforeBrush(ctx);
         displayable.brush(ctx, i === this._cursor ? null : this._displayables[i - 1]);
         displayable.afterBrush && displayable.afterBrush(ctx);
@@ -15332,6 +15333,9 @@ function setTransform(svgEl, m) {
 function attr(el, key, val) {
     if (!val || val.type !== 'linear' && val.type !== 'radial') {
         // Don't set attribute for gradient, since it need new dom nodes
+        if (typeof val === 'string' && val.indexOf('NaN') > -1) {
+            console.log(val);
+        }
         el.setAttribute(key, val);
     }
 }
@@ -15705,9 +15709,11 @@ var svgTextDrawRectText = function (el, rect, textRect) {
             x = origin[0] + x;
             y = origin[1] + y;
         }
-        var rotate = -style.textRotation * 180 / Math.PI;
-        attr(textSvgEl, 'transform', 'rotate(' + rotate + ','
-            + x + ',' + y + ')');
+        var rotate$$1 = -style.textRotation || 0;
+        var transform = create$1();
+        // Apply textRotate to element matrix
+        rotate(transform, el.transform, rotate$$1);
+        setTransform(textSvgEl, transform);
     }
 
     var textLines = text.split('\n');
