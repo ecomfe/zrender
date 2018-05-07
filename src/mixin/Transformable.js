@@ -131,6 +131,35 @@ transformableProto.restoreTransform = function (ctx) {
 
 var tmpTransform = [];
 var originTransform = matrix.create();
+
+transformableProto.setLocalTransform = function (m) {
+    if (!m) {
+        // TODO return or set identity?
+        return;
+    }
+    var sx = m[0] * m[0] + m[1] * m[1];
+    var sy = m[2] * m[2] + m[3] * m[3];
+    var position = this.position;
+    var scale = this.scale;
+    if (isNotAroundZero(sx - 1)) {
+        sx = Math.sqrt(sx);
+    }
+    if (isNotAroundZero(sy - 1)) {
+        sy = Math.sqrt(sy);
+    }
+    if (m[0] < 0) {
+        sx = -sx;
+    }
+    if (m[3] < 0) {
+        sy = -sy;
+    }
+
+    position[0] = m[4];
+    position[1] = m[5];
+    scale[0] = sx;
+    scale[1] = sy;
+    this.rotation = Math.atan2(-m[1] / sy, m[0] / sx);
+};
 /**
  * 分解`transform`矩阵到`position`, `rotation`, `scale`
  */
@@ -154,27 +183,8 @@ transformableProto.decomposeTransform = function () {
         tmpTransform[5] -= origin[1];
         m = tmpTransform;
     }
-    var sx = m[0] * m[0] + m[1] * m[1];
-    var sy = m[2] * m[2] + m[3] * m[3];
-    var position = this.position;
-    var scale = this.scale;
-    if (isNotAroundZero(sx - 1)) {
-        sx = Math.sqrt(sx);
-    }
-    if (isNotAroundZero(sy - 1)) {
-        sy = Math.sqrt(sy);
-    }
-    if (m[0] < 0) {
-        sx = -sx;
-    }
-    if (m[3] < 0) {
-        sy = -sy;
-    }
-    position[0] = m[4];
-    position[1] = m[5];
-    scale[0] = sx;
-    scale[1] = sy;
-    this.rotation = Math.atan2(-m[1] / sy, m[0] / sx);
+
+    this.setLocalTransform(m);
 };
 
 /**

@@ -78,7 +78,7 @@ function processArc(x1, y1, x2, y2, fa, fs, rx, ry, psiDeg, cmd, path) {
 
 function createPathProxyFromString(data) {
     if (!data) {
-        return [];
+        return new PathProxy();
     }
 
     // command string
