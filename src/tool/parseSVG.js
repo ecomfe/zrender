@@ -306,8 +306,10 @@ var nodeParsers = {
         var dy = xmlNode.getAttribute('dy') || 0;
 
         var g = new Group();
+
         inheritStyle(parentGroup, g);
         parseAttributes(xmlNode, g, this._defs);
+
 
         this._textX += dx;
         this._textY += dy;
@@ -423,13 +425,14 @@ function parseAttributes(xmlNode, el, defs) {
     if (xmlNode.nodeType === 1) {
         parseTransformAttribute(xmlNode, el);
 
+        extend(zrStyle, _parseStyleAttribute(xmlNode));
+
         for (var svgAttrName in attributesMap) {
             var attrValue = xmlNode.getAttribute(svgAttrName);
             if (attrValue != null) {
                 zrStyle[attributesMap[svgAttrName]] = attrValue;
             }
         }
-        defaults(zrStyle, _parseStyleAttribute(xmlNode));
     }
 
     el.style = el.style || new Style();
