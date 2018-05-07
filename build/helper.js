@@ -146,10 +146,11 @@ exports.travelSrcDir = function (srcDir, cb) {
  * @param {string} [opt]
  * @param {string} [opt.inputPath] Absolute input path.
  * @param {string} [opt.outputPath] Absolute output path.
+ * @param {string} [opt.preamble]
  * @param {Function} [opt.transform]
  * @param {Function} [opt.reserveDEV]
  */
-exports.prePulishSrc = function ({inputPath, outputPath, transform, reserveDEV}) {
+exports.prePulishSrc = function ({inputPath, outputPath, preamble, transform, reserveDEV}) {
     assert(inputPath && outputPath);
 
     console.log(
@@ -171,6 +172,10 @@ exports.prePulishSrc = function ({inputPath, outputPath, transform, reserveDEV})
 
     if (transform) {
         code = transform({code, inputPath, outputPath});
+    }
+
+    if (preamble) {
+        code = preamble + code;
     }
 
     fsExtra.ensureFileSync(outputPath);
