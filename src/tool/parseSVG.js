@@ -448,6 +448,12 @@ function parseAttributes(xmlNode, el, defs) {
     if (zrStyle.textBaseline === 'alphabetic') {
         zrStyle.textBaseline = 'bottom';
     }
+    if (zrStyle.textAlign === 'start') {
+        zrStyle.textAlign = 'left';
+    }
+    if (zrStyle.textAlign === 'end') {
+        zrStyle.textAlign = 'right';
+    }
 
     each(['lineDashOffset', 'lineCap', 'lineJoin',
         'fontWeight', 'fontFamily', 'fontStyle', 'textAlign', 'textBaseline'], function (propName) {
