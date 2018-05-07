@@ -413,7 +413,7 @@ var attributesMap = {
     'font-weight': 'fontWeight',
 
     'text-align': 'textAlign',
-    'alignment-baseline': 'textVerticalAlign'
+    'alignment-baseline': 'textBaseline'
 };
 
 function parseAttributes(xmlNode, el, defs) {
@@ -442,12 +442,15 @@ function parseAttributes(xmlNode, el, defs) {
         zrStyle[propName] != null && elStyle.set(propName, parseFloat(zrStyle[propName]));
     });
 
-    if (!zrStyle.textVerticalAlign || zrStyle.textVerticalAlign === 'auto') {
-        zrStyle.textVerticalAlign = 'alphabetic';
+    if (!zrStyle.textBaseline || zrStyle.textBaseline === 'auto') {
+        zrStyle.textBaseline = 'alphabetic';
+    }
+    if (zrStyle.textBaseline === 'alphabetic') {
+        zrStyle.textBaseline = 'bottom';
     }
 
     each(['lineDashOffset', 'lineCap', 'lineJoin',
-        'fontWeight', 'fontFamily', 'fontStyle', 'textAlign', 'textVerticalAlign'], function (propName) {
+        'fontWeight', 'fontFamily', 'fontStyle', 'textAlign', 'textBaseline'], function (propName) {
         zrStyle[propName] != null && elStyle.set(propName, zrStyle[propName]);
     });
 
