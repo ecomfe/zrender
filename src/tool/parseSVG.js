@@ -41,19 +41,24 @@ SVGParser.prototype.parse = function (xml, callback) {
     this._root = root;
     // parse view port
     var viewBox = svg.getAttribute('viewBox') || '';
-    var viewBoxArr = viewBox.split(/\s+/);
 
     var width = parseFloat(svg.getAttribute('width') || 0);
     var height = parseFloat(svg.getAttribute('height') || 0);
 
-    var x = parseFloat(viewBoxArr[0] || 0);
-    var y = parseFloat(viewBoxArr[1] || 0);
-    var vWidth = parseFloat(viewBoxArr[2]);
-    var vHeight = parseFloat(viewBoxArr[3]);
+    if (viewBox) {
+        var viewBoxArr = viewBox.split(/\s+/);
+        var x = parseFloat(viewBoxArr[0] || 0);
+        var y = parseFloat(viewBoxArr[1] || 0);
+        var vWidth = parseFloat(viewBoxArr[2]);
+        var vHeight = parseFloat(viewBoxArr[3]);
 
-    if (width && height && vWidth && vHeight) {
-        root.scale = [width / vWidth, height / vHeight];
-        root.position = [x * root.scale[0], y * root.scale[1]];
+        var scale = Math.min(width / vWidth, height / vHeight);
+        // preserveAspectRatio 'xMidYMid'
+        root.scale = [scale, scale];
+        root.position = [
+            x * root.scale[0] + (width - vWidth * scale) / 2,
+            y * root.scale[1] + (height - vHeight * scale) / 2
+        ];
     }
 
     var child = svg.firstChild;
