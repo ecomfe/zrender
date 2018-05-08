@@ -25,51 +25,64 @@ function SVGParser() {
     this._isText = false;
 }
 
-SVGParser.prototype.parse = function (xml, callback) {
+SVGParser.prototype.parse = function (xml) {
+    var svg;
+
     if (typeof(xml) === 'string') {
         var parser = new DOMParser();
         var doc = parser.parseFromString(xml, 'text/xml');
-        var svg = doc.firstChild;
+        svg = doc.firstChild;
         // nodeName of <!DOCTYPE svg> is also 'svg'.
         while (svg.nodeName.toLowerCase() !== 'svg' || svg.nodeType !== 1) {
             svg = svg.nextSibling;
         }
     }
     else {
-        var svg = xml;
+        svg = xml;
     }
+
+    if (!svg) {
+        throw new Error('Illegal svg');
+    }
+
     var root = new Group();
     this._root = root;
     // parse view port
     var viewBox = svg.getAttribute('viewBox') || '';
 
-    // Set width/height on group just for output.
-    var width = root.width = parseFloat(svg.getAttribute('width') || 0);
-    var height = root.height = parseFloat(svg.getAttribute('height') || 0);
+    var width = parseFloat(svg.getAttribute('width') || 0);
+    var height = parseFloat(svg.getAttribute('height') || 0);
+    var elRoot = root;
 
     if (viewBox) {
-        var viewBoxArr = viewBox.split(/\s+/);
+        var viewBoxArr = viewBox.replace(/,/g, ' ').split(/\s+/);
         var x = parseFloat(viewBoxArr[0] || 0);
         var y = parseFloat(viewBoxArr[1] || 0);
         var vWidth = parseFloat(viewBoxArr[2]);
         var vHeight = parseFloat(viewBoxArr[3]);
 
-        var scale = Math.min(width / vWidth, height / vHeight);
+        // Keep the output group no transform, avoiding trouble for outer usage.
+        root.add(elRoot = new Group());
+        var scaleX = width / vWidth;
+        var scaleY = height / vHeight;
+        var scale = Math.min(scaleX, scaleY);
         // preserveAspectRatio 'xMidYMid'
-        root.scale = [scale, scale];
-        root.position = [
-            x * root.scale[0] + (width - vWidth * scale) / 2,
-            y * root.scale[1] + (height - vHeight * scale) / 2
+        elRoot.scale = [scale, scale];
+        elRoot.position = [
+            -(x + vWidth / 2) * scale + width / 2,
+            -(y + vHeight / 2) * scale + height / 2
         ];
     }
 
     var child = svg.firstChild;
     while (child) {
-        this._parseNode(child, root);
+        this._parseNode(child, elRoot);
         child = child.nextSibling;
     }
 
-    callback && callback(root);
+    // Set width/height on group just for output the viewport size.
+    root.width = width;
+    root.height = height;
 
     return root;
 };
@@ -575,7 +588,7 @@ function _parseStyleAttribute(xmlNode) {
 }
 
 
-export function parseSVG(xml, callback) {
+export function parseSVG(xml) {
     var parser = new SVGParser();
-    return parser.parse(xml, callback);
+    return parser.parse(xml);
 }
