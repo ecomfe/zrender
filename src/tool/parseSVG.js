@@ -80,6 +80,11 @@ SVGParser.prototype.parse = function (xml) {
         child = child.nextSibling;
     }
 
+    // The viewport should clip contents.
+    root.setClipPath(new Rect({
+        shape: {x: 0, y: 0, width: width, height: height}
+    }));
+
     // Set width/height on group just for output the viewport size.
     root.width = width;
     root.height = height;
