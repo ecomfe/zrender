@@ -30,7 +30,8 @@ SVGParser.prototype.parse = function (xml, callback) {
         var parser = new DOMParser();
         var doc = parser.parseFromString(xml, 'text/xml');
         var svg = doc.firstChild;
-        while (svg.nodeName.toLowerCase() !== 'svg') {
+        // nodeName of <!DOCTYPE svg> is also 'svg'.
+        while (svg.nodeName.toLowerCase() !== 'svg' || svg.nodeType !== 1) {
             svg = svg.nextSibling;
         }
     }
