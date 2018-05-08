@@ -28,7 +28,8 @@ function SVGParser() {
     this._isText = false;
 }
 
-SVGParser.prototype.parse = function (xml) {
+SVGParser.prototype.parse = function (xml, opt) {
+    opt = opt || {};
     var svg;
 
     if (typeof(xml) === 'string') {
@@ -53,8 +54,10 @@ SVGParser.prototype.parse = function (xml) {
     // parse view port
     var viewBox = svg.getAttribute('viewBox') || '';
 
-    var width = parseFloat(svg.getAttribute('width') || 0);
-    var height = parseFloat(svg.getAttribute('height') || 0);
+    // If width/height not specified, means "100%".
+    // TODO: Other percent value not supported yet.
+    var width = parseFloat(svg.getAttribute('width') || opt.width || 0);
+    var height = parseFloat(svg.getAttribute('height') || opt.height || 0);
     var elRoot = root;
 
     if (viewBox) {
@@ -598,8 +601,13 @@ function _parseStyleAttribute(xmlNode) {
     return {};
 }
 
-
-export function parseSVG(xml) {
+/**
+ * @param {string|XMLElement} xml
+ * @param {Object} [opt]
+ * @param {number} [opt.width] Default width if svg width not specified or is a percent value.
+ * @param {number} [opt.height] Default height if svg height not specified or is a percent value.
+ */
+export function parseSVG(xml, opt) {
     var parser = new SVGParser();
-    return parser.parse(xml);
+    return parser.parse(xml, opt);
 }
