@@ -17,6 +17,9 @@ import * as matrix from '../core/matrix';
 import { createFromString } from './path';
 import { extend, defaults, trim, each } from '../core/util';
 
+// Most of the values can be separated by comma and/or white space.
+var DILIMITER_REG = /[\s|,]+/;
+
 function SVGParser() {
     this._defs = {};
     this._root = null;
@@ -55,7 +58,7 @@ SVGParser.prototype.parse = function (xml) {
     var elRoot = root;
 
     if (viewBox) {
-        var viewBoxArr = viewBox.replace(/,/g, ' ').split(/\s+/);
+        var viewBoxArr = viewBox.split(DILIMITER_REG);
         var x = parseFloat(viewBoxArr[0] || 0);
         var y = parseFloat(viewBoxArr[1] || 0);
         var vWidth = parseFloat(viewBoxArr[2]);
@@ -406,7 +409,7 @@ function inheritStyle(parent, child) {
 }
 
 function parsePoints(pointsString) {
-    var list = trim(pointsString).replace(/,/g, ' ').split(/\s+/);
+    var list = trim(pointsString).split(DILIMITER_REG);
     var points = [];
 
     for (var i = 0; i < list.length; i+=2) {
@@ -486,12 +489,13 @@ function parseAttributes(xmlNode, el, defs) {
     }
 
     each(['lineDashOffset', 'lineCap', 'lineJoin',
-        'fontWeight', 'fontFamily', 'fontStyle', 'textAlign', 'textBaseline'], function (propName) {
+        'fontWeight', 'fontFamily', 'fontStyle', 'textAlign', 'textBaseline'
+    ], function (propName) {
         zrStyle[propName] != null && elStyle.set(propName, zrStyle[propName]);
     });
 
-    if (elStyle.lineDash) {
-        el.style.lineDash = trim(elStyle.lineDash).split(/\s*,\s*/);
+    if (zrStyle.lineDash) {
+        el.style.lineDash = trim(zrStyle.lineDash).split(DILIMITER_REG);
     }
 
     if (elStyle[elStrokeProp] && elStyle[elStrokeProp] !== 'none') {
@@ -534,23 +538,23 @@ function parseTransformAttribute(xmlNode, node) {
             m = m || matrix.create();
             switch(type) {
                 case 'translate':
-                    value = trim(value).split(/\s+/);
+                    value = trim(value).split(DILIMITER_REG);
                     matrix.translate(m, m, [parseFloat(value[0]), parseFloat(value[1] || 0)]);
                     break;
                 case 'scale':
-                    value = trim(value).split(/\s+/);
+                    value = trim(value).split(DILIMITER_REG);
                     matrix.scale(m, m, [parseFloat(value[0]), parseFloat(value[1] || value[0])]);
                     break;
                 case 'rotate':
-                    value = trim(value).split(/\s+/);
+                    value = trim(value).split(DILIMITER_REG);
                     matrix.rotate(m, m, value[0]);
                     break;
                 case 'skew':
-                    value = trim(value).split(/\s+/);
+                    value = trim(value).split(DILIMITER_REG);
                     console.warn('Skew transform is not supported yet');
                     break;
                 case 'matrix':
-                    var value = trim(value).split(/\s+/);
+                    var value = trim(value).split(DILIMITER_REG);
                     m[0] = parseFloat(value[0]);
                     m[1] = parseFloat(value[1]);
                     m[2] = parseFloat(value[2]);
