@@ -61,23 +61,26 @@ SVGParser.prototype.parse = function (xml, opt) {
     var elRoot = root;
 
     if (viewBox) {
-        var viewBoxArr = viewBox.split(DILIMITER_REG);
-        var x = parseFloat(viewBoxArr[0] || 0);
-        var y = parseFloat(viewBoxArr[1] || 0);
-        var vWidth = parseFloat(viewBoxArr[2]);
-        var vHeight = parseFloat(viewBoxArr[3]);
+        var viewBoxArr = trim(viewBox).split(DILIMITER_REG);
+        // Some invalid case like viewBox: 'none'.
+        if (viewBoxArr.length === 4) {
+            var x = parseFloat(viewBoxArr[0] || 0);
+            var y = parseFloat(viewBoxArr[1] || 0);
+            var vWidth = parseFloat(viewBoxArr[2]);
+            var vHeight = parseFloat(viewBoxArr[3]);
 
-        // Keep the output group no transform, avoiding trouble for outer usage.
-        root.add(elRoot = new Group());
-        var scaleX = width / vWidth;
-        var scaleY = height / vHeight;
-        var scale = Math.min(scaleX, scaleY);
-        // preserveAspectRatio 'xMidYMid'
-        elRoot.scale = [scale, scale];
-        elRoot.position = [
-            -(x + vWidth / 2) * scale + width / 2,
-            -(y + vHeight / 2) * scale + height / 2
-        ];
+            // Keep the output group no transform, avoiding trouble for outer usage.
+            root.add(elRoot = new Group());
+            var scaleX = width / vWidth;
+            var scaleY = height / vHeight;
+            var scale = Math.min(scaleX, scaleY);
+            // preserveAspectRatio 'xMidYMid'
+            elRoot.scale = [scale, scale];
+            elRoot.position = [
+                -(x + vWidth / 2) * scale + width / 2,
+                -(y + vHeight / 2) * scale + height / 2
+            ];
+        }
     }
 
     var child = svg.firstChild;
@@ -101,6 +104,10 @@ SVGParser.prototype.parse = function (xml, opt) {
 SVGParser.prototype._parseNode = function (xmlNode, parentGroup) {
 
     var nodeName = xmlNode.nodeName.toLowerCase();
+
+    // TODO
+    // support <style>...</style> in svg, where nodeName is 'style',
+    // CSS classes is defined globally wherever the style tags are declared.
 
     if (nodeName === 'defs') {
         // define flag
