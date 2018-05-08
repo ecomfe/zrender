@@ -421,12 +421,12 @@ function parsePoints(pointsString) {
 }
 
 var attributesMap = {
-    // TODO fillOpacity
-    // TODO strokeOpacity
     'fill': 'fill',
     'stroke': 'stroke',
     'stroke-width': 'lineWidth',
     'opacity': 'opacity',
+    'fill-opacity': 'fillOpacity',
+    'stroke-opacity': 'strokeOpacity',
     'stroke-dasharray': 'lineDash',
     'stroke-dashoffset': 'lineDashOffset',
     'stroke-linecap': 'lineCap',
@@ -470,7 +470,9 @@ function parseAttributes(xmlNode, el, defs) {
     zrStyle.fill != null && elStyle.set(elFillProp, getPaint(zrStyle.fill, defs));
     zrStyle.stroke != null && elStyle.set(elStrokeProp, getPaint(zrStyle.stroke, defs));
 
-    each(['lineWidth', 'opacity', 'miterLimit', 'fontSize'], function (propName) {
+    each([
+        'lineWidth', 'opacity', 'fillOpacity', 'strokeOpacity', 'miterLimit', 'fontSize'
+    ], function (propName) {
         var elPropName = (propName === 'lineWidth' && isTextEl) ? 'textStrokeWidth' : propName;
         zrStyle[propName] != null && elStyle.set(elPropName, parseFloat(zrStyle[propName]));
     });

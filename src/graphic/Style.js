@@ -83,6 +83,20 @@ Style.prototype = {
     opacity: 1,
 
     /**
+     * Do not support blend (as SVG does) when both `fillOpacity`
+     * and `opacity` set. `fillOpacity` has higher priority.
+     * @type {number}
+     */
+    fillOpacity: null,
+
+    /**
+     * Do not support blend (as SVG does) when both `strokeOpacity`
+     * and `opacity` set. `strokeOpacity` has higher priority.
+     * @type {number}
+     */
+    strokeOpacity: null,
+
+    /**
      * @type {Array.<number>}
      */
     lineDash: null,
