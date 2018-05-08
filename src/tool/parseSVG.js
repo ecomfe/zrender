@@ -42,8 +42,9 @@ SVGParser.prototype.parse = function (xml, callback) {
     // parse view port
     var viewBox = svg.getAttribute('viewBox') || '';
 
-    var width = parseFloat(svg.getAttribute('width') || 0);
-    var height = parseFloat(svg.getAttribute('height') || 0);
+    // Set width/height on group just for output.
+    var width = root.width = parseFloat(svg.getAttribute('width') || 0);
+    var height = root.height = parseFloat(svg.getAttribute('height') || 0);
 
     if (viewBox) {
         var viewBoxArr = viewBox.split(/\s+/);
@@ -418,28 +419,36 @@ var attributesMap = {
 
 function parseAttributes(xmlNode, el, defs) {
     var zrStyle = el.__inheritedStyle || {};
+    var isTextEl = el.type === 'text';
 
     // TODO Shadow
     if (xmlNode.nodeType === 1) {
         parseTransformAttribute(xmlNode, el);
 
         for (var svgAttrName in attributesMap) {
-            var attrValue = xmlNode.getAttribute(svgAttrName);
-            if (attrValue != null) {
-                zrStyle[attributesMap[svgAttrName]] = attrValue;
+            if (attributesMap.hasOwnProperty(svgAttrName)) {
+                var attrValue = xmlNode.getAttribute(svgAttrName);
+                if (attrValue != null) {
+                    zrStyle[attributesMap[svgAttrName]] = attrValue;
+                }
             }
         }
+
         defaults(zrStyle, _parseStyleAttribute(xmlNode));
     }
+
+    var elFillProp = isTextEl ? 'textFill' : 'fill';
+    var elStrokeProp = isTextEl ? 'textStroke' : 'stroke';
 
     el.style = el.style || new Style();
     var elStyle = el.style;
 
-    zrStyle.fill != null && elStyle.set('fill', getPaint(zrStyle.fill, defs));
-    zrStyle.stroke != null && elStyle.set('stroke', getPaint(zrStyle.stroke, defs));
+    zrStyle.fill != null && elStyle.set(elFillProp, getPaint(zrStyle.fill, defs));
+    zrStyle.stroke != null && elStyle.set(elStrokeProp, getPaint(zrStyle.stroke, defs));
 
     each(['lineWidth', 'opacity', 'miterLimit', 'fontSize'], function (propName) {
-        zrStyle[propName] != null && elStyle.set(propName, parseFloat(zrStyle[propName]));
+        var elPropName = (propName === 'lineWidth' && isTextEl) ? 'textStrokeWidth' : propName;
+        zrStyle[propName] != null && elStyle.set(elPropName, parseFloat(zrStyle[propName]));
     });
 
     if (!zrStyle.textBaseline || zrStyle.textBaseline === 'auto') {
@@ -464,9 +473,9 @@ function parseAttributes(xmlNode, el, defs) {
         el.style.lineDash = trim(elStyle.lineDash).split(/\s*,\s*/);
     }
 
-    if (elStyle.stroke && elStyle.stroke !== 'none') {
+    if (elStyle[elStrokeProp] && elStyle[elStrokeProp] !== 'none') {
         // enable stroke
-        el.stroke = true;
+        el[elStrokeProp] = true;
     }
 
     el.__inheritedStyle = zrStyle;
@@ -553,7 +562,7 @@ function _parseStyleAttribute(xmlNode) {
 
         var obj = {};
         for (var svgAttrName in attributesMap) {
-            if (styleList[svgAttrName] != null) {
+            if (attributesMap.hasOwnProperty(svgAttrName) && styleList[svgAttrName] != null) {
                 obj[attributesMap[svgAttrName]] = styleList[svgAttrName];
             }
         }
