@@ -307,8 +307,10 @@ var nodeParsers = {
         var dy = xmlNode.getAttribute('dy') || 0;
 
         var g = new Group();
+
         inheritStyle(parentGroup, g);
         parseAttributes(xmlNode, g, this._defs);
+
 
         this._textX += dx;
         this._textY += dy;
@@ -425,6 +427,8 @@ function parseAttributes(xmlNode, el, defs) {
     if (xmlNode.nodeType === 1) {
         parseTransformAttribute(xmlNode, el);
 
+        extend(zrStyle, _parseStyleAttribute(xmlNode));
+
         for (var svgAttrName in attributesMap) {
             if (attributesMap.hasOwnProperty(svgAttrName)) {
                 var attrValue = xmlNode.getAttribute(svgAttrName);
@@ -433,8 +437,6 @@ function parseAttributes(xmlNode, el, defs) {
                 }
             }
         }
-
-        defaults(zrStyle, _parseStyleAttribute(xmlNode));
     }
 
     var elFillProp = isTextEl ? 'textFill' : 'fill';
