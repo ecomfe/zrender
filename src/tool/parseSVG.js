@@ -9,10 +9,10 @@ import Path from '../graphic/Path';
 import Polygon from '../graphic/shape/Polygon';
 import Polyline from '../graphic/shape/Polyline';
 import LinearGradient from '../graphic/LinearGradient';
-import RadialGradient from '../graphic/RadialGradient';
-import Pattern from '../graphic/Pattern';
+// import RadialGradient from '../graphic/RadialGradient';
+// import Pattern from '../graphic/Pattern';
 import Style from '../graphic/Style';
-import * as vector from '../core/vector';
+// import * as vector from '../core/vector';
 import * as matrix from '../core/matrix';
 import { createFromString } from './path';
 import { extend, defaults, trim, each } from '../core/util';
@@ -59,27 +59,42 @@ SVGParser.prototype.parse = function (xml, opt) {
     var width = parseFloat(svg.getAttribute('width') || opt.width || 0);
     var height = parseFloat(svg.getAttribute('height') || opt.height || 0);
     var elRoot = root;
+    var viewBoxRect;
+    var viewBoxScale;
+    var viewBoxPosition;
 
     if (viewBox) {
         var viewBoxArr = trim(viewBox).split(DILIMITER_REG);
         // Some invalid case like viewBox: 'none'.
-        if (viewBoxArr.length === 4) {
-            var x = parseFloat(viewBoxArr[0] || 0);
-            var y = parseFloat(viewBoxArr[1] || 0);
-            var vWidth = parseFloat(viewBoxArr[2]);
-            var vHeight = parseFloat(viewBoxArr[3]);
+        if (viewBoxArr.length >= 4) {
+            viewBoxRect = {
+                x: parseFloat(viewBoxArr[0] || 0),
+                y: parseFloat(viewBoxArr[1] || 0),
+                width: parseFloat(viewBoxArr[2]),
+                height: parseFloat(viewBoxArr[3])
+            };
 
-            // Keep the output group no transform, avoiding trouble for outer usage.
+            // If set transform on the output group, it probably bring trouble when
+            // some users only intend to show the clipped content inside the viewBox,
+            // but not intend to transform the output group. So we keep the output
+            // group no transform. If the user intend to use the viewBox as a
+            // camera, just set `opt.ignoreViewBox` as `true` and set transfrom
+            // manually according to the viewBox info in the output of this method.
             root.add(elRoot = new Group());
-            var scaleX = width / vWidth;
-            var scaleY = height / vHeight;
+            var scaleX = width / viewBoxRect.width;
+            var scaleY = height / viewBoxRect.height;
             var scale = Math.min(scaleX, scaleY);
             // preserveAspectRatio 'xMidYMid'
-            elRoot.scale = [scale, scale];
-            elRoot.position = [
-                -(x + vWidth / 2) * scale + width / 2,
-                -(y + vHeight / 2) * scale + height / 2
+            viewBoxScale = [scale, scale];
+            viewBoxPosition = [
+                -(viewBoxRect.x + viewBoxRect.width / 2) * scale + width / 2,
+                -(viewBoxRect.y + viewBoxRect.height / 2) * scale + height / 2
             ];
+
+            if (!opt.ignoreViewBox) {
+                elRoot.scale = viewBoxScale.slice();
+                elRoot.position = viewBoxPosition.slice();
+            }
         }
     }
 
@@ -89,16 +104,21 @@ SVGParser.prototype.parse = function (xml, opt) {
         child = child.nextSibling;
     }
 
-    // The viewport should clip contents.
+    // Some shapes might be overflow the viewport, which should be
+    // clipped despite whether the viewBox is used, as the SVG does.
     root.setClipPath(new Rect({
         shape: {x: 0, y: 0, width: width, height: height}
     }));
 
     // Set width/height on group just for output the viewport size.
-    root.width = width;
-    root.height = height;
-
-    return root;
+    return {
+        root: root,
+        width: width,
+        height: height,
+        viewBoxRect: viewBoxRect,
+        viewBoxScale: viewBoxScale,
+        viewBoxPosition: viewBoxPosition
+    };
 };
 
 SVGParser.prototype._parseNode = function (xmlNode, parentGroup) {
@@ -294,10 +314,8 @@ var nodeParsers = {
     },
     'image': function(xmlNode, parentGroup) {
         var img = new ZImage();
-        // if (parentGroup) {
-        //     inheritStyle(parentGroup, img);
-        // }
-        // parseAttributes(xmlNode, img, this._defs);
+        inheritStyle(parentGroup, img);
+        parseAttributes(xmlNode, img, this._defs);
 
         img.setStyle({
             image: xmlNode.getAttribute('xlink:href'),
@@ -559,7 +577,7 @@ function parseTransformAttribute(xmlNode, node) {
                     break;
                 case 'rotate':
                     value = trim(value).split(DILIMITER_REG);
-                    matrix.rotate(m, m, value[0]);
+                    matrix.rotate(m, m, parseFloat(value[0]));
                     break;
                 case 'skew':
                     value = trim(value).split(DILIMITER_REG);
@@ -613,6 +631,16 @@ function _parseStyleAttribute(xmlNode) {
  * @param {Object} [opt]
  * @param {number} [opt.width] Default width if svg width not specified or is a percent value.
  * @param {number} [opt.height] Default height if svg height not specified or is a percent value.
+ * @param {boolean} [opt.ignoreViewBox]
+ * @return {Object} result:
+ * {
+ *     root: Group, The root of the the result tree of zrender shapes,
+ *     width: number, the viewport width of the SVG,
+ *     height: number, the viewport height of the SVG,
+ *     viewBoxRect: {x, y, width, height}, the declared viewBox rect of the SVG, if exists,
+ *     viewBoxScale: the scale calculated by viewBox and viewport, if exists,
+ *     viewBoxPosition: the position calculated by viewBox and viewport, is exists.
+ * }
  */
 export function parseSVG(xml, opt) {
     var parser = new SVGParser();

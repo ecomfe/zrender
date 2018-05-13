@@ -20,9 +20,9 @@
         fetch('./asset/Tehran_topo.svg')
             .then(response => response.text())
             .then(zrender.parseSVG)
-            .then(group => {
-                group.scale = [0.4, 0.4];
-                zr.add(group);
+            .then(result => {
+                result.root.scale = [0.4, 0.4];
+                zr.add(result.root);
             });
     </script>
 </body>
