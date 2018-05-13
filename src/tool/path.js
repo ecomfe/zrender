@@ -98,11 +98,15 @@ function createPathProxyFromString(data) {
     //     cs = cs.replace(new RegExp(cc[n], 'g'), '|' + cc[n]);
     // }
 
+    // data = data.replace(/-/g, ',-');
+
     // create array
     // var arr = cs.split('|');
     // init context point
     var cpx = 0;
     var cpy = 0;
+    var subpathX = cpx;
+    var subpathY = cpy;
     var prevCmd;
 
     var path = new PathProxy();
@@ -157,6 +161,8 @@ function createPathProxyFromString(data) {
                     cpy += p[off++];
                     cmd = CMD.M;
                     path.addData(cmd, cpx, cpy);
+                    subpathX = cpx;
+                    subpathY = cpy;
                     cmdStr = 'l';
                     break;
                 case 'M':
@@ -164,6 +170,8 @@ function createPathProxyFromString(data) {
                     cpy = p[off++];
                     cmd = CMD.M;
                     path.addData(cmd, cpx, cpy);
+                    subpathX = cpx;
+                    subpathY = cpy;
                     cmdStr = 'L';
                     break;
                 case 'h':
@@ -317,6 +325,9 @@ function createPathProxyFromString(data) {
         if (cmdStr === 'z' || cmdStr === 'Z') {
             cmd = CMD.Z;
             path.addData(cmd);
+            // z may be in the middle of the path.
+            cpx = subpathX;
+            cpy = subpathY;
         }
 
         prevCmd = cmd;

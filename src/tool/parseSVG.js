@@ -224,8 +224,8 @@ var nodeParsers = {
     },
     'rect': function(xmlNode, parentGroup) {
         var rect = new Rect();
-        parseAttributes(xmlNode, rect, this._defs);
         inheritStyle(parentGroup, rect);
+        parseAttributes(xmlNode, rect, this._defs);
 
         rect.setShape({
             x: parseFloat(xmlNode.getAttribute('x') || 0),
