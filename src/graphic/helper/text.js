@@ -349,7 +349,7 @@ function drawBackground(hostEl, ctx, style, x, y, width, height) {
 
         if (style.fillOpacity != null) {
             var originalGlobalAlpha = ctx.globalAlpha;
-            ctx.globalAlpha = style.fillOpacity;
+            ctx.globalAlpha = style.fillOpacity * style.opacity;
             ctx.fill();
             ctx.globalAlpha = originalGlobalAlpha;
         }
@@ -374,7 +374,7 @@ function drawBackground(hostEl, ctx, style, x, y, width, height) {
 
         if (style.strokeOpacity != null) {
             var originalGlobalAlpha = ctx.globalAlpha;
-            ctx.globalAlpha = style.strokeOpacity;
+            ctx.globalAlpha = style.strokeOpacity * style.opacity;
             ctx.stroke();
             ctx.globalAlpha = originalGlobalAlpha;
         }

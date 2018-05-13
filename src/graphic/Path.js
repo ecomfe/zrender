@@ -118,7 +118,7 @@ Path.prototype = {
         if (hasFill) {
             if (style.fillOpacity != null) {
                 var originalGlobalAlpha = ctx.globalAlpha;
-                ctx.globalAlpha = style.fillOpacity;
+                ctx.globalAlpha = style.fillOpacity * style.opacity;
                 path.fill(ctx);
                 ctx.globalAlpha = originalGlobalAlpha;
             }
@@ -135,7 +135,7 @@ Path.prototype = {
         if (hasStroke) {
             if (style.strokeOpacity != null) {
                 var originalGlobalAlpha = ctx.globalAlpha;
-                ctx.globalAlpha = style.strokeOpacity;
+                ctx.globalAlpha = style.strokeOpacity * style.opacity;
                 path.stroke(ctx);
                 ctx.globalAlpha = originalGlobalAlpha;
             }

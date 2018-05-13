@@ -477,7 +477,7 @@ function parseAttributes(xmlNode, el, defs) {
     if (xmlNode.nodeType === 1) {
         parseTransformAttribute(xmlNode, el);
 
-        extend(zrStyle, _parseStyleAttribute(xmlNode));
+        extend(zrStyle, parseStyleAttribute(xmlNode));
 
         for (var svgAttrName in attributesMap) {
             if (attributesMap.hasOwnProperty(svgAttrName)) {
@@ -599,31 +599,30 @@ function parseTransformAttribute(xmlNode, node) {
 
 }
 
-var styleRegex = /(\S*?):(.*?);/g;
-function _parseStyleAttribute(xmlNode) {
+// Value may contain space.
+var styleRegex = /([^\s:;]+)\s*:\s*([^:;]+)/g;
+function parseStyleAttribute(xmlNode) {
     var style = xmlNode.getAttribute('style');
+    var result = {};
 
-    if (style) {
-        style = trim(style);
-        // last property in the style list can ignore comma.
-        if (!(style.lastIndexOf(';') === style.length - 1)) {
-            style = style + ';';
-        }
-        var styleList = {};
-        style = style.replace(/\s*([;:])\s*/g, '$1');
-        style.replace(styleRegex, function(str, key, val) {
-            styleList[key] = val;
-        });
-
-        var obj = {};
-        for (var svgAttrName in attributesMap) {
-            if (attributesMap.hasOwnProperty(svgAttrName) && styleList[svgAttrName] != null) {
-                obj[attributesMap[svgAttrName]] = styleList[svgAttrName];
-            }
-        }
-        return obj;
+    if (!style) {
+        return result;
     }
-    return {};
+
+    var styleList = {};
+    styleRegex.lastIndex = 0;
+    var styleRegResult;
+    while ((styleRegResult = styleRegex.exec(style)) != null) {
+        styleList[styleRegResult[1]] = styleRegResult[2];
+    }
+
+    for (var svgAttrName in attributesMap) {
+        if (attributesMap.hasOwnProperty(svgAttrName) && styleList[svgAttrName] != null) {
+            result[attributesMap[svgAttrName]] = styleList[svgAttrName];
+        }
+    }
+
+    return result;
 }
 
 /**
