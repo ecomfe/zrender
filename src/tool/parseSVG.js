@@ -18,7 +18,7 @@ import { createFromString } from './path';
 import { extend, defaults, trim, each } from '../core/util';
 
 // Most of the values can be separated by comma and/or white space.
-var DILIMITER_REG = /[\s|,]+/;
+var DILIMITER_REG = /[\s,]+/;
 
 function SVGParser() {
     this._defs = {};
