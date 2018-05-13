@@ -7,12 +7,6 @@ import transformPath from './transformPath';
 //     'm', 'M', 'l', 'L', 'v', 'V', 'h', 'H', 'z', 'Z',
 //     'c', 'C', 'q', 'Q', 't', 'T', 's', 'S', 'a', 'A'
 // ];
-var commandReg = /([mlvhzcqtsa])([^mlvhzcqtsa]*)/ig;
-// Consider case:
-// continuous commas or spaces should be seen as one comma.
-// value can be like '2e-4'.
-var valueSplitReg = /[\s,]+/;
-// var valueReg = /[\s,]*([^\s,]+)/ig;
 
 var mathSqrt = Math.sqrt;
 var mathSin = Math.sin;
@@ -82,6 +76,17 @@ function processArc(x1, y1, x2, y2, fa, fs, rx, ry, psiDeg, cmd, path) {
     path.addData(cmd, cx, cy, rx, ry, theta, dTheta, psi, fs);
 }
 
+
+var commandReg = /([mlvhzcqtsa])([^mlvhzcqtsa]*)/ig;
+// Consider case:
+// (1) delimiter can be comma or space, where continuous commas
+// or spaces should be seen as one comma.
+// (2) value can be like:
+// '2e-4', 'l.5.9' (ignore 0), 'M-10-10', 'l-2.43e-1,34.9983',
+// 'l-.5E1,54', '121-23-44-11' (no delimiter)
+var numberReg = /-?([0-9]*\.)?[0-9]+([eE]-?[0-9]+)?/g;
+// var valueSplitReg = /[\s,]+/;
+
 function createPathProxyFromString(data) {
     if (!data) {
         return new PathProxy();
@@ -112,20 +117,32 @@ function createPathProxyFromString(data) {
     var path = new PathProxy();
     var CMD = PathProxy.CMD;
 
-    commandReg.lastIndex = 0;
-    var cmdResult;
-    while ((cmdResult = commandReg.exec(data)) != null) {
-        var cmdStr = cmdResult[1];
-        var cmdContent = cmdResult[2];
+    // commandReg.lastIndex = 0;
+    // var cmdResult;
+    // while ((cmdResult = commandReg.exec(data)) != null) {
+    //     var cmdStr = cmdResult[1];
+    //     var cmdContent = cmdResult[2];
+
+    var cmdList = data.match(commandReg);
+    for (var l = 0; l < cmdList.length; l++) {
+        var cmdText = cmdList[l];
+        var cmdStr = cmdText.charAt(0);
+
         var cmd;
 
         // String#split is faster a little bit than String#replace or RegExp#exec.
-        var p = cmdContent.split(valueSplitReg);
-        var pLen = 0;
-        for (var i = 0; i < p.length; i++) {
-            // '' and other invalid str => NaN
-            var val = parseFloat(p[i]);
-            !isNaN(val) && (p[pLen++] = val);
+        // var p = cmdContent.split(valueSplitReg);
+        // var pLen = 0;
+        // for (var i = 0; i < p.length; i++) {
+        //     // '' and other invalid str => NaN
+        //     var val = parseFloat(p[i]);
+        //     !isNaN(val) && (p[pLen++] = val);
+        // }
+
+        var p = cmdText.match(numberReg) || [];
+        var pLen = p.length;
+        for (var i = 0; i < pLen; i++) {
+            p[i] = parseFloat(p[i]);
         }
 
         var off = 0;
