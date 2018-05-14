@@ -98,6 +98,9 @@ SVGParser.prototype.parse = function (xml, opt) {
         }
     }
 
+    // Apply inline style on svg element.
+    parseAttributes(svg, elRoot, null, true);
+
     var child = svg.firstChild;
     while (child) {
         this._parseNode(child, elRoot);
@@ -137,6 +140,7 @@ SVGParser.prototype._parseNode = function (xmlNode, parentGroup) {
         this._isText = true;
     }
 
+    var el;
     if (this._isDefine) {
         var parser = defineParsers[nodeName];
         if (parser) {
@@ -150,7 +154,7 @@ SVGParser.prototype._parseNode = function (xmlNode, parentGroup) {
     else {
         var parser = nodeParsers[nodeName];
         if (parser) {
-            var el = parser.call(this, xmlNode, parentGroup);
+            el = parser.call(this, xmlNode, parentGroup);
             parentGroup.add(el);
         }
     }
@@ -373,6 +377,8 @@ var nodeParsers = {
         // path.style.globalCompositeOperation = 'xor';
         var d = xmlNode.getAttribute('d') || '';
 
+        // Performance sensitive.
+
         var path = createFromString(d);
 
         inheritStyle(parentGroup, path);
@@ -469,7 +475,7 @@ var attributesMap = {
     'alignment-baseline': 'textBaseline'
 };
 
-function parseAttributes(xmlNode, el, defs) {
+function parseAttributes(xmlNode, el, defs, onlyInlineStyle) {
     var zrStyle = el.__inheritedStyle || {};
     var isTextEl = el.type === 'text';
 
@@ -479,11 +485,13 @@ function parseAttributes(xmlNode, el, defs) {
 
         extend(zrStyle, parseStyleAttribute(xmlNode));
 
-        for (var svgAttrName in attributesMap) {
-            if (attributesMap.hasOwnProperty(svgAttrName)) {
-                var attrValue = xmlNode.getAttribute(svgAttrName);
-                if (attrValue != null) {
-                    zrStyle[attributesMap[svgAttrName]] = attrValue;
+        if (!onlyInlineStyle) {
+            for (var svgAttrName in attributesMap) {
+                if (attributesMap.hasOwnProperty(svgAttrName)) {
+                    var attrValue = xmlNode.getAttribute(svgAttrName);
+                    if (attrValue != null) {
+                        zrStyle[attributesMap[svgAttrName]] = attrValue;
+                    }
                 }
             }
         }
@@ -542,7 +550,7 @@ function getPaint(str, defs) {
     // if (str === 'none') {
     //     return;
     // }
-    var urlMatch = urlRegex.exec(str);
+    var urlMatch = defs && str && str.match(urlRegex);
     if (urlMatch) {
         var url = trim(urlMatch[1]);
         var def = defs[url];

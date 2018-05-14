@@ -260,7 +260,7 @@
             var clz = caseList[i].tag ? 'tag-' + caseList[i].tag : '';
             var hint = encodeHTML(caseList[i].hint ? caseList[i].hint : '');
             html.push(
-                '<li title="' + hint + '" class="' + clz + '"><a href="#' + i + '">' + name + '</a></li>'
+                '<li title="' + hint + '" class="' + clz + '"><a href="#' + (i + 1) + '">' + name + '</a></li>'
             );
         }
         var container = document.getElementById('list');
@@ -283,7 +283,7 @@
         window.addEventListener('hashchange', enterCase);
 
         function enterCase() {
-            var caseIndex = (location.hash || '').replace(/^#/, '') || 0;
+            var caseIndex = +((location.hash || '').replace(/^#/, '') || 0) - 1;
             var caseItem = caseList[caseIndex];
             if (caseItem) {
                 var url = encodeHTML((caseItem.baseURL ? caseItem.baseURL + '/' : '') + caseItem.name);
