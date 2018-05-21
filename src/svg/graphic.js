@@ -419,6 +419,7 @@ var svgTextDrawRectText = function (el, rect, textRect) {
             var pos = el.transformCoordToGlobal(rect.x, rect.y);
             rect.x = pos[0];
             rect.y = pos[1];
+            el.transform = matrix.identity(matrix.create());
         }
 
         // Text rotation, but no element transform
