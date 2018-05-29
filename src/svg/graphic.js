@@ -61,7 +61,7 @@ function attrXLink(el, key, val) {
     el.setAttributeNS('http://www.w3.org/1999/xlink', key, val);
 }
 
-function bindStyle(svgEl, style, isText) {
+function bindStyle(svgEl, style, isText, el) {
     if (pathHasFill(style, isText)) {
         var fill = isText ? style.textFill : style.fill;
         fill = fill === 'transparent' ? NONE : fill;
@@ -100,7 +100,7 @@ function bindStyle(svgEl, style, isText) {
             ? style.textStrokeWidth
             : style.lineWidth;
         var strokeScale = !isText && style.strokeNoScale
-            ? style.host.getLineScale()
+            ? el.getLineScale()
             : 1;
         attr(svgEl, 'stroke-width', strokeWidth / strokeScale);
         // stroke then fill for text; fill then stroke for others
@@ -268,7 +268,7 @@ svgPath.brush = function (el) {
         }
     }
 
-    bindStyle(svgEl, style);
+    bindStyle(svgEl, style, false, el);
     setTransform(svgEl, el.transform);
 
     if (style.text != null) {
@@ -404,7 +404,7 @@ var svgTextDrawRectText = function (el, rect, textRect) {
     attr(textSvgEl, 'x', x);
     attr(textSvgEl, 'y', y);
 
-    bindStyle(textSvgEl, style, true);
+    bindStyle(textSvgEl, style, true, el);
     if (el instanceof Text || el.style.transformText) {
         // Transform text with element
         setTransform(textSvgEl, el.transform);

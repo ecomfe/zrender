@@ -9,9 +9,8 @@ var STYLE_COMMON_PROPS = [
 // var SHADOW_PROPS = STYLE_COMMON_PROPS.slice(0, 4);
 // var LINE_PROPS = STYLE_COMMON_PROPS.slice(4);
 
-var Style = function (opts, host) {
+var Style = function (opts) {
     this.extendFrom(opts, false);
-    this.host = host;
 };
 
 function createLinearGradient(ctx, obj, rect) {
@@ -61,11 +60,6 @@ function createRadialGradient(ctx, obj, rect) {
 Style.prototype = {
 
     constructor: Style,
-
-    /**
-     * @type {module:zrender/graphic/Displayable}
-     */
-    host: null,
 
     /**
      * @type {string}
