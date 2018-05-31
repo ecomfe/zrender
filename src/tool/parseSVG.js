@@ -227,8 +227,6 @@ SVGParser.prototype._parseText = function (xmlNode, parentGroup) {
     return text;
 };
 
-export default SVGParser;
-
 var nodeParsers = {
     'g': function(xmlNode, parentGroup) {
         var g = new Group();
