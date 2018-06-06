@@ -69,6 +69,7 @@ transformableProto.needLocalTransform = function () {
         || isNotAroundZero(this.scale[1] - 1);
 };
 
+var scaleTmp = [];
 transformableProto.updateTransform = function () {
     var parent = this.parent;
     var parentHasTransform = parent && parent.transform;
@@ -100,6 +101,20 @@ transformableProto.updateTransform = function () {
     }
     // 保存这个变换矩阵
     this.transform = m;
+
+    var globalScaleRatio = this.globalScaleRatio;
+    if (globalScaleRatio != null && globalScaleRatio !== 1) {
+        this.getGlobalScale(scaleTmp);
+        var relX = scaleTmp[0] < 0 ? -1 : 1;
+        var relY = scaleTmp[0] < 0 ? -1 : 1;
+        var sx = ((scaleTmp[0] - relX) * globalScaleRatio + relX) / scaleTmp[0] || 0;
+        var sy = ((scaleTmp[1] - relY) * globalScaleRatio + relY) / scaleTmp[1] || 0;
+
+        m[0] *= sx ;
+        m[1] *= sx;
+        m[2] *= sy;
+        m[3] *= sy;
+    }
 
     this.invTransform = this.invTransform || matrix.create();
     matrix.invert(this.invTransform, m);
@@ -191,20 +206,23 @@ transformableProto.decomposeTransform = function () {
  * Get global scale
  * @return {Array.<number>}
  */
-transformableProto.getGlobalScale = function () {
+transformableProto.getGlobalScale = function (out) {
     var m = this.transform;
+    out = out || [];
     if (!m) {
-        return [1, 1];
+        out[0] = 1;
+        out[1] = 1;
+        return out;
     }
-    var sx = Math.sqrt(m[0] * m[0] + m[1] * m[1]);
-    var sy = Math.sqrt(m[2] * m[2] + m[3] * m[3]);
+    out[0] = Math.sqrt(m[0] * m[0] + m[1] * m[1]);
+    out[1] = Math.sqrt(m[2] * m[2] + m[3] * m[3]);
     if (m[0] < 0) {
-        sx = -sx;
+        out[0] = -out[0];
     }
     if (m[3] < 0) {
-        sy = -sy;
+        out[1] = -out[1];
     }
-    return [sx, sy];
+    return out;
 };
 /**
  * 变换坐标位置到 shape 的局部坐标空间
