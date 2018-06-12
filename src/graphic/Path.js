@@ -115,14 +115,34 @@ Path.prototype = {
             this.path.rebuildPath(ctx);
         }
 
-        hasFill && path.fill(ctx);
+        if (hasFill) {
+            if (style.fillOpacity != null) {
+                var originalGlobalAlpha = ctx.globalAlpha;
+                ctx.globalAlpha = style.fillOpacity * style.opacity;
+                path.fill(ctx);
+                ctx.globalAlpha = originalGlobalAlpha;
+            }
+            else {
+                path.fill(ctx);
+            }
+        }
 
         if (lineDash && ctxLineDash) {
             ctx.setLineDash(lineDash);
             ctx.lineDashOffset = lineDashOffset;
         }
 
-        hasStroke && path.stroke(ctx);
+        if (hasStroke) {
+            if (style.strokeOpacity != null) {
+                var originalGlobalAlpha = ctx.globalAlpha;
+                ctx.globalAlpha = style.strokeOpacity * style.opacity;
+                path.stroke(ctx);
+                ctx.globalAlpha = originalGlobalAlpha;
+            }
+            else {
+                path.stroke(ctx);
+            }
+        }
 
         if (lineDash && ctxLineDash) {
             // PENDING
@@ -133,7 +153,7 @@ Path.prototype = {
         // Draw rect text
         if (style.text != null) {
             // Only restore transform when needs draw text.
-            this.restoreTransform(ctx);    
+            this.restoreTransform(ctx);
             this.drawRectText(ctx, this.getBoundingRect());
         }
     },

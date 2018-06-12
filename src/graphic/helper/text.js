@@ -348,7 +348,16 @@ function drawBackground(hostEl, ctx, style, x, y, width, height) {
 
     if (isPlainBg) {
         setCtx(ctx, 'fillStyle', textBackgroundColor);
-        ctx.fill();
+
+        if (style.fillOpacity != null) {
+            var originalGlobalAlpha = ctx.globalAlpha;
+            ctx.globalAlpha = style.fillOpacity * style.opacity;
+            ctx.fill();
+            ctx.globalAlpha = originalGlobalAlpha;
+        }
+        else {
+            ctx.fill();
+        }
     }
     else if (isFunction(textBackgroundColor)) {
         setCtx(ctx, 'fillStyle', textBackgroundColor(style));
@@ -368,7 +377,16 @@ function drawBackground(hostEl, ctx, style, x, y, width, height) {
     if (textBorderWidth && textBorderColor) {
         setCtx(ctx, 'lineWidth', textBorderWidth);
         setCtx(ctx, 'strokeStyle', textBorderColor);
-        ctx.stroke();
+
+        if (style.strokeOpacity != null) {
+            var originalGlobalAlpha = ctx.globalAlpha;
+            ctx.globalAlpha = style.strokeOpacity * style.opacity;
+            ctx.stroke();
+            ctx.globalAlpha = originalGlobalAlpha;
+        }
+        else {
+            ctx.stroke();
+        }
     }
 }
 

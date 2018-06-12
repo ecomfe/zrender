@@ -86,7 +86,7 @@ function bindStyle(svgEl, style, isText, el) {
         }
 
         attr(svgEl, 'fill', fill);
-        attr(svgEl, 'fill-opacity', style.opacity);
+        attr(svgEl, 'fill-opacity', style.fillOpacity != null ? style.fillOpacity : style.opacity);
     }
     else {
         attr(svgEl, 'fill', NONE);
@@ -105,7 +105,7 @@ function bindStyle(svgEl, style, isText, el) {
         attr(svgEl, 'stroke-width', strokeWidth / strokeScale);
         // stroke then fill for text; fill then stroke for others
         attr(svgEl, 'paint-order', isText ? 'stroke' : 'fill');
-        attr(svgEl, 'stroke-opacity', style.opacity);
+        attr(svgEl, 'stroke-opacity', style.strokeOpacity != null ? style.strokeOpacity : style.opacity);
         var lineDash = style.lineDash;
         if (lineDash) {
             attr(svgEl, 'stroke-dasharray', style.lineDash.join(','));

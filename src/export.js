@@ -7,6 +7,7 @@ import * as matrix from './core/matrix';
 import * as vector from './core/vector';
 import * as colorTool from './tool/color';
 import * as pathTool from './tool/path';
+import {parseSVG} from './tool/parseSVG';
 
 
 export {default as Group} from './container/Group';
@@ -43,3 +44,5 @@ export {vector};
 export {colorTool as color};
 export {pathTool as path};
 export {zrUtil as util};
+
+export {parseSVG};
