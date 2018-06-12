@@ -9,11 +9,16 @@
     <script type="text/javascript">
 
         var tags = ['bug', 'pending', 'performance'];
+        var caseList = [];
+
+        caseList.push(
+            {name: 'airport.svg', baseURL: '../../echarts-private/baidu-airport/data', tag: ''}
+        );
 
         // <https://github.com/ecomfe/vis-data> is requried
         // in the same directory as zrender.
         var baseURL = '../../vis-data/map/svg';
-        var caseList = [
+        [
             {name: 'geo-topo/Battle_of_Towton_-_Initial_deployment.svg', tag: 'pending', hint: 'tspan/text incorrect place'},
             {name: 'geo-topo/Battle_of_Yarmuk_Terrain.svg', tag: ''},
             {name: 'geo-topo/China-Today_oil_reserves_and_demand-en.svg', tag: 'bug'},
@@ -38,7 +43,6 @@
             {name: 'geo-area/Republics_of_the_USSR.svg', tag: ''},
             {name: 'geo-area/us.svg', tag: ''},
             {name: 'geo-area/Weimar_Republic_states_map.svg', tag: ''},
-            {name: 'area/airport.svg', tag: ''},
             {name: 'area/baidu-building.svg', tag: ''},
             {name: 'area/GUMC_Map_Fellowship-Hall.svg', tag: ''},
             {name: 'area/GUMC_Map_Main-Building.svg', tag: ''},
@@ -70,10 +74,10 @@
             {name: 'subway/Beijing-Subway-Plan_en.svg', tag: ''},
             {name: 'subway/New_York_Subway_Map_Alargule.svg', tag: ''},
             {name: 'subway/Tokyo_Subway.svg', tag: ''},
-            {name: 'subway/TTC_subway_map_2023.svg', tag: ''},
-        ].map(function (item) {
-            item.baseURL = baseURL;
-            return item;
+            {name: 'subway/TTC_subway_map_2023.svg', tag: ''}
+        ].forEach(function (item) {
+            item.baseURL = item.baseURL || baseURL;
+            caseList.push(item);
         });
 
         // Local cases
