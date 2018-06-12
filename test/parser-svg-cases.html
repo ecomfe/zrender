@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>SVG Compare</title>
+    <script src="../dist/zrender.js"></script>
+
+
+    <script type="text/javascript">
+
+        var tags = ['bug', 'pending', 'performance'];
+        var caseList = [];
+
+        caseList.push(
+            {name: 'airport.svg', baseURL: '../../echarts-private/baidu-airport/data', tag: ''}
+        );
+
+        // <https://github.com/ecomfe/vis-data> is requried
+        // in the same directory as zrender.
+        var baseURL = '../../vis-data/map/svg';
+        [
+            {name: 'geo-topo/Battle_of_Towton_-_Initial_deployment.svg', tag: 'pending', hint: 'tspan/text incorrect place'},
+            {name: 'geo-topo/Battle_of_Yarmuk_Terrain.svg', tag: ''},
+            {name: 'geo-topo/China-Today_oil_reserves_and_demand-en.svg', tag: 'bug'},
+            {name: 'geo-topo/European_Union_color_topographic_map.svg', tag: ''},
+            {name: 'geo-topo/Iran_topo_hr.svg', tag: 'pending', hint: 'text style is in <style>'},
+            {name: 'geo-topo/Map_of_Iceland.svg', tag: ''},
+            {name: 'geo-topo/Santorini-topo.svg', tag: ''},
+            {name: 'geo-topo/Tehran-topo-viewBox-xMidYMid-meet.svg', tag: ''},
+            {name: 'geo-topo/Tehran-topo.svg', tag: ''},
+            {name: 'geo-topo/Topomap_schwanewede_OHZ.svg', tag: ''},
+            {name: 'geo-topo/Washington_topographic_map-fr-large.svg', tag: 'performance'},
+            {name: 'geo-area/76366-funny-map-of-the-battlefield-vector.svg', tag: ''},
+            {name: 'geo-area/africa.svg', tag: ''},
+            {name: 'geo-area/Austria-Hungary_map.svg', tag: ''},
+            {name: 'geo-area/Blank_map_europe_coloured.svg', tag: ''},
+            {name: 'geo-area/europe.svg', tag: ''},
+            {name: 'geo-area/Hellerick_triaxial_boreal_projection.svg', tag: ''},
+            {name: 'geo-area/Indonesia_regions_map.svg', tag: ''},
+            {name: 'geo-area/Map-USA-Regions02.svg', tag: ''},
+            {name: 'geo-area/Map_of_region_of_Tuscany,_Italy,_with_provinces-en.svg', tag: ''},
+            {name: 'geo-area/Oceans_and_seas_boundaries_map-en.svg', tag: ''},
+            {name: 'geo-area/Republics_of_the_USSR.svg', tag: ''},
+            {name: 'geo-area/us.svg', tag: ''},
+            {name: 'geo-area/Weimar_Republic_states_map.svg', tag: ''},
+            {name: 'area/baidu-building.svg', tag: ''},
+            {name: 'area/GUMC_Map_Fellowship-Hall.svg', tag: ''},
+            {name: 'area/GUMC_Map_Main-Building.svg', tag: ''},
+            {name: 'area/GUMC_Map_The-Cottage.svg', tag: ''},
+            {name: 'area/hmnss.svg', tag: ''},
+            {name: 'area/interactive-map.svg', tag: ''},
+            {name: 'area/ksia-ext-plan-min.svg', tag: ''},
+            {name: 'area/MacOdrum-LV1-floorplan-web.svg', tag: ''},
+            {name: 'area/MacOdrum-LV2-floorplan-web.svg', tag: ''},
+            {name: 'area/MacOdrum-LV3-floorplan-web.svg', tag: ''},
+            {name: 'area/MacOdrum-LV4-floorplan-web.svg', tag: ''},
+            {name: 'area/MacOdrum-LV5-floorplan-web.svg', tag: ''},
+            {name: 'area/Map_of_FEKT_building.svg', tag: ''},
+            {name: 'area/McCarran_Rent_A_Car_Center_2.svg', tag: ''},
+            {name: 'area/OrtiaExtPlan2-min.svg', tag: ''},
+            {name: 'others/body-female.svg', tag: ''},
+            {name: 'others/body-male.svg', tag: ''},
+            {name: 'others/box-styleEl-viewBox-no-wh.svg', tag: ''},
+            {name: 'others/football.svg', tag: ''},
+            {name: 'others/tiger.svg', tag: ''},
+            {name: 'seats/Airbus_A300B4-622R_seat_configuration_chart.svg', tag: ''},
+            {name: 'seats/DC-10-30_seat_configuration_chart.svg', tag: ''},
+            {name: 'seats/Ethiopian_Airlines_Flight_961_seating_plan.svg', tag: ''},
+            {name: 'seats/oracle-seating-map-2017-2.svg', tag: ''},
+            {name: 'seats/seatmap-1.svg', tag: ''},
+            {name: 'seats/seatmap-2.svg', tag: ''},
+            {name: 'seats/seatmap-3.svg', tag: ''},
+            {name: 'seats/seatmap-4.svg', tag: ''},
+            {name: 'subway/Beijing-Subway-Plan_en.svg', tag: ''},
+            {name: 'subway/New_York_Subway_Map_Alargule.svg', tag: ''},
+            {name: 'subway/Tokyo_Subway.svg', tag: ''},
+            {name: 'subway/TTC_subway_map_2023.svg', tag: ''}
+        ].forEach(function (item) {
+            item.baseURL = item.baseURL || baseURL;
+            caseList.push(item);
+        });
+
+        // Local cases
+        caseList.unshift(
+            {name: 'data/svg/path1.svg'}
+        );
+
+    </script>
+
+</head>
+<body>
+    <style>
+        html, body {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            background: #999;
+        }
+        .cases-list {
+            padding-top: 15px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 100px;
+            overflow: auto;
+            font-size: 13px;
+            background: #fff;
+        }
+        .cases-list ul {
+            padding-left: 22px;
+            list-style-type: decimal;
+        }
+        .cases-list ul div {
+            cursor: pointer;
+            word-wrap: break-word;
+        }
+        .cases-list .main-desc {
+            padding-left: 12px;
+        }
+        #main {
+            position: absolute;
+            margin: 0;
+            padding: 0;
+            top: 0;
+            left: 102px;
+            right: 0;
+            height: 100%;
+            overflow: hidden;
+            border-left: 1px solid #333;
+        }
+        .left-title {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 49.5%;
+            height: 20px;
+            line-height: 20px;
+            text-align: center;
+            color: #fff;
+            font-size: 12px;
+        }
+        .right-title {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 49.5%;
+            height: 20px;
+            line-height: 20px;
+            text-align: center;
+            color: #fff;
+            font-size: 12px;
+        }
+        .left {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            width: 49.5%;
+            height: 100%;
+            border: 0px solid #999;
+            overflow: auto;
+            background: #ccc;
+        }
+        .right {
+            position: absolute;
+            top: 20px;
+            right: 0;
+            width: 49.5%;
+            height: 100%;
+            border: 0px solid #999;
+            transform-origin: left top;
+            background: #ccc;
+        }
+        #zr {
+            width: 100%;
+            height: 100%;
+        }
+        .scale {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+        }
+        .scale div {
+            position: absolute;
+            left: -15px;
+            top: -15px;
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+            text-align: center;
+            box-shadow: 0 0 5px #000;
+            border-radius: 15px;
+            cursor: move;
+            background: #000;
+            color: yellow;
+            font-size: 12px;
+            user-select: none;
+        }
+        .scale #scale {
+            background: none;
+            box-shadow: none;
+        }
+        .scale div.scaling {
+            left: -1000px;
+            top: -1000px;
+            width: 2000px;
+            height: 2000px;
+        }
+        #right-mask {
+            background: transparent;
+        }
+
+        .tags-desc-item {
+            display: inline-block;
+            padding: 2px 3px;
+            font-size: 12px;
+        }
+        .tag-pending {
+            background: #ccc;
+        }
+        .tag-bug {
+            background: rgb(233, 155, 155);
+        }
+        .tag-performance {
+            background: rgb(168, 197, 241);
+        }
+    </style>
+
+
+    <div class="cases-list">
+        <div class="main-desc">
+            <div id="tags-desc"></div><br>
+            Click the list:
+        </div>
+        <ul id="list"></ul>
+    </div>
+
+    <div id="main">
+        <div class="left-title">zrender.parseSVG</div>
+        <div class="right-title">Orginal SVG</div>
+        <div id="zrContainer" class="left">
+            <div id="zr"></div>
+        </div>
+        <iframe id="original" class="right" src="about:blank;"></iframe>
+        <div id="right-mask" style="display:none" class="right" src="about:blank;"></div>
+        <div class="scale"><div>scale</div><div id="scale"></div></div>
+    </div>
+
+    <script type="text/javascript">
+
+        var tagsDescHTML = [];
+        for (var i = 0; i < tags.length; i++) {
+            var tagItemName = encodeHTML(tags[i]);
+            tagsDescHTML.push('<div class="tags-desc-item tag-' + tagItemName + '">' + tagItemName + '</div>');
+        }
+        document.getElementById('tags-desc').innerHTML = tagsDescHTML.join('');
+
+        var html = [];
+        for (var i = 0; i < caseList.length; i++) {
+            var name = encodeHTML(caseList[i].name);
+            var clz = caseList[i].tag ? 'tag-' + caseList[i].tag : '';
+            var hint = encodeHTML(caseList[i].hint ? caseList[i].hint : '');
+            html.push(
+                '<li title="' + hint + '" class="' + clz + '"><a href="#' + (i + 1) + '">' + name + '</a></li>'
+            );
+        }
+        var container = document.getElementById('list');
+        container.innerHTML = html.join('');
+
+
+        var elOrigianl = document.getElementById('original');
+        var zrContainer = document.getElementById('zrContainer');
+        var zrEl = document.getElementById('zr');
+        var scaleEl = document.getElementById('scale');
+        var rightMask = document.getElementById('right-mask');
+        var mainGroup;
+        var zr;
+        var svgEl;
+        var startScale;
+        var currentScale = 1;
+        var svgPath;
+
+
+        window.addEventListener('hashchange', enterCase);
+
+        function enterCase() {
+            var caseIndex = +((location.hash || '').replace(/^#/, '') || 0) - 1;
+            var caseItem = caseList[caseIndex];
+            if (caseItem) {
+                var url = encodeHTML((caseItem.baseURL ? caseItem.baseURL + '/' : '') + caseItem.name);
+                renderSVG(url);
+            }
+        }
+
+        function renderSVG(path) {
+            svgPath = path.trim();
+            elOrigianl.src = path + '?' + +new Date();
+        }
+
+        elOrigianl.onload = function () {
+            var constentDoc = elOrigianl.contentDocument;
+            svgEl = constentDoc.getElementsByTagName('svg')[0];
+            constentDoc.addEventListener('scroll', onOriginalScroll);
+
+            // fetch(svgPath)
+            //     .then(response => response.text())
+            //     .then(renderZrSVG);
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', svgPath, true);
+            xhr.responseType = 'text';
+            xhr.onload = function (e) {
+                try {
+                    renderZrSVG(this.responseText);
+                }
+                catch (err) {
+                    tipLoadError();
+                    throw err;
+                }
+            };
+            xhr.onerror = tipLoadError;
+            xhr.send();
+
+            function tipLoadError() {
+                alert('Load SVG fail. <https://github.com/ecomfe/vis-data> is required at the same level of zrender directory.');
+            }
+        };
+
+        function renderZrSVG(text) {
+            if (zr) {
+                zr.dispose();
+            }
+
+            console && console.time && console.time('[ParseTime]');
+            // console.profile('a');
+            var result = zrender.parseSVG(text, {
+                width: svgEl.clientWidth,
+                height: svgEl.clientHeight
+            });
+            // console.profileEnd('a');
+            console && console.timeEnd && console.timeEnd('[ParseTime]');
+
+            mainGroup = result.root;
+            zr = zrender.init(zrEl, getZrSize(result.width, result.height));
+            zr.add(mainGroup);
+        };
+
+        function onOriginalScroll(e) {
+            zrContainer.scrollLeft = svgEl.scrollLeft;
+            zrContainer.scrollTop = svgEl.scrollTop;
+        }
+
+        function onZrScroll(e) {
+            if (svgEl) {
+                svgEl.scrollLeft = zrContainer.scrollLeft;
+                svgEl.scrollTop = zrContainer.scrollTop;
+            }
+        }
+
+        function getZrSize(w, h) {
+            // Enlarge a bit for clip test.
+            return {
+                width: w + 1000,
+                height: h + 1000
+            }
+        }
+
+        zrContainer.addEventListener('scroll', onZrScroll);
+
+        scaleEl.addEventListener('mousedown', function (e) {
+            if (!zr) {
+                return;
+            }
+            rightMask.style.display = '';
+            startScale = currentScale;
+            scaleEl.className += ' scaling';
+        });
+
+        document.addEventListener('mousemove', function (e) {
+            if (!zr) {
+                return;
+            }
+            if (startScale == null) {
+                return;
+            }
+            var dx = e.offsetX - scaleEl.offsetWidth / 2;
+            var dy = e.offsetY - scaleEl.offsetHeight / 2;
+            var delta = Math.pow(dx * dx + dy * dy, .5);
+            dy < 0 && (delta *= -1);
+            currentScale = (1 + delta / 200) * startScale;
+            svgEl.style.transform = `scale(${currentScale},${currentScale})`;
+            svgEl.style.transformOrigin = '0 0';
+            mainGroup.scale = [currentScale, currentScale];
+            mainGroup.dirty();
+
+            var rect = svgEl.getBoundingClientRect();
+            zr.resize(getZrSize(rect.width, rect.height));
+        });
+
+        document.addEventListener('mouseup', function () {
+            startScale = null;
+            rightMask.style.display = 'none';
+            scaleEl.className = scaleEl.className.replace('scaling', '');
+        });
+
+        function encodeHTML(source) {
+            return String(source)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        enterCase();
+
+    </script>
+
+</body>
+</html>

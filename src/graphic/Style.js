@@ -77,6 +77,16 @@ Style.prototype = {
     opacity: 1,
 
     /**
+     * @type {number}
+     */
+    fillOpacity: null,
+
+    /**
+     * @type {number}
+     */
+    strokeOpacity: null,
+
+    /**
      * @type {Array.<number>}
      */
     lineDash: null,

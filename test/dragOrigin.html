@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Drag on Object with Origin</title>
+    <script src="../dist/zrender.js"></script>
+</head>
+<body>
+    <div id="main" style="width:1000px;height:500px;"></div>
+    <script type="text/javascript">
+        var zr = zrender.init(document.getElementById('main'));
+        const image = new zrender.Image({
+            draggable: true,
+            rotation: 2,
+            origin: [50, 50],
+            style: {
+                image: './test.png',
+                height: 100,
+                width: 100
+            }
+        })
+
+        const group = new zrender.Group({
+            position: [100, 100]
+        })
+        const image2 = new zrender.Image({
+            draggable: true,
+            rotation: 2,
+            origin: [50, 50],
+            style: {
+                image: './test.png',
+                height: 100,
+                width: 100
+            }
+        })
+
+        zr.add(image);
+        zr.add(group);
+        group.add(image2);
+    </script>
+</body>
+</html>

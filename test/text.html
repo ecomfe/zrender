@@ -491,6 +491,57 @@
             draggable: true
         }));
 
+
+
+
+
+
+
+        function getDotStyle(color) {
+            return {
+                textWidth: 12,
+                textHeight: 12,
+                textBorderRadius: 6,
+                textBackgroundColor: color
+            }
+        }
+        function genarateTooltipStyle(seriesName, items, colorList) {
+            var text = [seriesName];
+            var rich = {};
+            for (var i = 0; i < items.length; i++) {
+                text.push('{dot' + i + '|} ' + items[i]);
+                rich['dot' + i] = getDotStyle(colorList[i]);
+            }
+            return {text: text.join('\n'), rich: rich};
+        }
+        var styles = genarateTooltipStyle(
+            'Some series',
+            [
+                'C: 1223 km',
+                'D: 12 km',
+                'Q: 2323 km',
+                'Z: 4.23 km',
+                'A: 23 km'
+            ],
+            ['#c23531','#2f4554', '#61a0a8', '#d48265', '#91c7ae','#749f83',  '#ca8622', '#bda29a','#6e7074', '#546570', '#c4ccd3']
+        );
+
+        zr.add(new Text({
+            rotation: -0.1,
+            position: [800, 1100],
+            style: {
+                text: styles.text,
+                textFill: '#333',
+                font: '18px Arial',
+                textBorderRadius: 10,
+                textBorderColor: '#191933',
+                textBorderWidth: 2,
+                textPadding: [20, 30, 40, 50],
+                rich: styles.rich
+            },
+            draggable: true
+        }));
+
     });
     </script>
 </body>
