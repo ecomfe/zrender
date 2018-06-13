@@ -279,17 +279,18 @@ Painter.prototype = {
     },
 
     addHover: function (el, hoverStyle) {
-        if (el.__hoverMir) {
-            return;
+        var elMirror = el.__hoverMir;
+        if (!elMirror) {
+            elMirror = new el.constructor({
+                style: el.style,
+                shape: el.shape
+            });
+            elMirror.__from = el;
+            el.__hoverMir = elMirror;
+            this._hoverElements.push(elMirror);
         }
-        var elMirror = new el.constructor({
-            style: el.style,
-            shape: el.shape
-        });
-        elMirror.__from = el;
-        el.__hoverMir = elMirror;
+
         elMirror.setStyle(hoverStyle);
-        this._hoverElements.push(elMirror);
     },
 
     removeHover: function (el) {
