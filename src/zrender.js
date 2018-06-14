@@ -274,8 +274,9 @@ ZRender.prototype = {
      */
     addHover: function (el, style) {
         if (this.painter.addHover) {
-            this.painter.addHover(el, style);
+            var elMirror = this.painter.addHover(el, style);
             this.refreshHover();
+            return elMirror;
         }
     },
 

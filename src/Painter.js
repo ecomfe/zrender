@@ -284,12 +284,17 @@ Painter.prototype = {
         }
         var elMirror = new el.constructor({
             style: el.style,
-            shape: el.shape
+            shape: el.shape,
+            z: el.z,
+            z2: el.z2,
+            silent: el.silent
         });
         elMirror.__from = el;
         el.__hoverMir = elMirror;
-        elMirror.setStyle(hoverStyle);
+        hoverStyle && elMirror.setStyle(hoverStyle);
         this._hoverElements.push(elMirror);
+
+        return elMirror;
     },
 
     removeHover: function (el) {
@@ -355,6 +360,7 @@ Painter.prototype = {
                 this._doPaintEl(el, hoverLayer, true, scope);
             }
         }
+
         hoverLayer.ctx.restore();
     },
 
