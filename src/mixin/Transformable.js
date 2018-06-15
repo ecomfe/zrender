@@ -106,11 +106,11 @@ transformableProto.updateTransform = function () {
     if (globalScaleRatio != null && globalScaleRatio !== 1) {
         this.getGlobalScale(scaleTmp);
         var relX = scaleTmp[0] < 0 ? -1 : 1;
-        var relY = scaleTmp[0] < 0 ? -1 : 1;
+        var relY = scaleTmp[1] < 0 ? -1 : 1;
         var sx = ((scaleTmp[0] - relX) * globalScaleRatio + relX) / scaleTmp[0] || 0;
         var sy = ((scaleTmp[1] - relY) * globalScaleRatio + relY) / scaleTmp[1] || 0;
 
-        m[0] *= sx ;
+        m[0] *= sx;
         m[1] *= sx;
         m[2] *= sy;
         m[3] *= sy;
