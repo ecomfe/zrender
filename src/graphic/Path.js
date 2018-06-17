@@ -262,7 +262,7 @@ Path.prototype = {
             this._rect = null;
         }
 
-        this.__dirty = true;
+        this.__dirty = this.__dirtyText = true;
 
         this.__zr && this.__zr.refresh();
 

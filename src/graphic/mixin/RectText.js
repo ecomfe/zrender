@@ -37,6 +37,9 @@ RectText.prototype = {
         }
 
         // FIXME
+        // Do not provide prevEl to `textHelper.renderText` for ctx prop cache,
+        // but use `ctx.save()` and `ctx.restore()`. Because the cache for rect
+        // text propably break the cache for its host elements.
         ctx.save();
 
         // Transform rect to view space

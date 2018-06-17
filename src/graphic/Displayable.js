@@ -206,7 +206,7 @@ Displayable.prototype = {
      * Mark displayable element dirty and refresh next frame
      */
     dirty: function () {
-        this.__dirty = true;
+        this.__dirty = this.__dirtyText = true;
 
         this._rect = null;
 

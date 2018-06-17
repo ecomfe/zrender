@@ -15,6 +15,14 @@ import fixShadow from './fixShadow';
 // TODO: Have not support 'start', 'end' yet.
 var VALID_TEXT_ALIGN = {left: 1, right: 1, center: 1};
 var VALID_TEXT_VERTICAL_ALIGN = {top: 1, bottom: 1, middle: 1};
+// Different from `STYLE_COMMON_PROPS` of `graphic/Style`,
+// the default value of shadowColor is `'transparent'`.
+var SHADOW_STYLE_COMMON_PROPS = [
+    ['textShadowBlur', 'shadowBlur', 0],
+    ['textShadowOffsetX', 'shadowOffsetX', 0],
+    ['textShadowOffsetY', 'shadowOffsetY', 0],
+    ['textShadowColor', 'shadowColor', 'transparent']
+]
 
 /**
  * @param {module:zrender/graphic/Style} style
@@ -57,22 +65,42 @@ function normalizeStyle(style) {
  * @param {module:zrender/graphic/Style} style
  * @param {Object|boolean} [rect] {x, y, width, height}
  *                  If set false, rect text is not used.
+ * @param {Element} [prevEl] For ctx prop cache.
  */
-export function renderText(hostEl, ctx, text, style, rect) {
+export function renderText(hostEl, ctx, text, style, rect, prevEl) {
     style.rich
         ? renderRichText(hostEl, ctx, text, style, rect)
-        : renderPlainText(hostEl, ctx, text, style, rect);
+        : renderPlainText(hostEl, ctx, text, style, rect, prevEl);
 }
 
-function renderPlainText(hostEl, ctx, text, style, rect) {
-    var font = setCtx(ctx, 'font', style.font || textContain.DEFAULT_FONT);
+// Avoid setting to ctx according to prevEl if possible for
+// performance in scenarios of large amount text.
+function renderPlainText(hostEl, ctx, text, style, rect, prevEl) {
+    'use strict';
+
+    var prevStyle = prevEl && prevEl.style;
+    // Some cache only available on textEl.
+    var isPrevTextEl = prevStyle && prevEl.type === 'text';
+
+    var styleFont = style.font || textContain.DEFAULT_FONT;
+    if (!isPrevTextEl || styleFont !== (prevStyle.font || textContain.DEFAULT_FONT)) {
+        ctx.font = styleFont;
+    }
+    // Use the final font from context-2d, because the final
+    // font might not be the style.font when it is illegal.
+    // But get `ctx.font` might be time consuming.
+    var computedFont = hostEl.__computedFont;
+    if (hostEl.__styleFont !== styleFont) {
+        hostEl.__styleFont = styleFont;
+        computedFont = hostEl.__computedFont = ctx.font;
+    }
 
     var textPadding = style.textPadding;
 
     var contentBlock = hostEl.__textCotentBlock;
-    if (!contentBlock || hostEl.__dirty) {
+    if (!contentBlock || hostEl.__dirtyText) {
         contentBlock = hostEl.__textCotentBlock = textContain.parsePlainText(
-            text, font, textPadding, style.truncate
+            text, computedFont, textPadding, style.truncate
         );
     }
 
@@ -84,7 +112,7 @@ function renderPlainText(hostEl, ctx, text, style, rect) {
     var boxPos = getBoxPosition(outerHeight, style, rect);
     var baseX = boxPos.baseX;
     var baseY = boxPos.baseY;
-    var textAlign = boxPos.textAlign;
+    var textAlign = boxPos.textAlign || 'left';
     var textVerticalAlign = boxPos.textVerticalAlign;
 
     // Origin of textRotation should be the base point of text drawing.
@@ -97,7 +125,7 @@ function renderPlainText(hostEl, ctx, text, style, rect) {
     var needDrawBg = needDrawBackground(style);
     if (needDrawBg || textPadding) {
         // Consider performance, do not call getTextWidth util necessary.
-        var textWidth = textContain.getWidth(text, font);
+        var textWidth = textContain.getWidth(text, computedFont);
         var outerWidth = textWidth;
         textPadding && (outerWidth += textPadding[1] + textPadding[3]);
         var boxX = textContain.adjustTextX(baseX, outerWidth, textAlign);
@@ -110,44 +138,69 @@ function renderPlainText(hostEl, ctx, text, style, rect) {
         }
     }
 
-    setCtx(ctx, 'textAlign', textAlign || 'left');
+    // Always set textAlign and textBase line, because it is difficute to calculate
+    // textAlign from prevEl, and we dont sure whether textAlign will be reset if
+    // font set happened.
+    ctx.textAlign = textAlign;
     // Force baseline to be "middle". Otherwise, if using "top", the
     // text will offset downward a little bit in font "Microsoft YaHei".
-    setCtx(ctx, 'textBaseline', 'middle');
+    ctx.textBaseline = 'middle';
 
     // Always set shadowBlur and shadowOffset to avoid leak from displayable.
-    setCtx(ctx, 'shadowBlur', style.textShadowBlur || 0);
-    setCtx(ctx, 'shadowColor', style.textShadowColor || 'transparent');
-    setCtx(ctx, 'shadowOffsetX', style.textShadowOffsetX || 0);
-    setCtx(ctx, 'shadowOffsetY', style.textShadowOffsetY || 0);
+    for (var i = 0; i < SHADOW_STYLE_COMMON_PROPS.length; i++) {
+        var propItem = SHADOW_STYLE_COMMON_PROPS[i];
+        var styleProp = propItem[0];
+        var ctxProp = propItem[1];
+        var val = style[styleProp];
+        if (!isPrevTextEl || val !== prevStyle[styleProp]) {
+            ctx[ctxProp] = fixShadow(ctx, ctxProp, val || propItem[2]);
+        }
+    }
 
     // `textBaseline` is set as 'middle'.
     textY += lineHeight / 2;
 
     var textStrokeWidth = style.textStrokeWidth;
+    var textStrokeWidthPrev = isPrevTextEl ? prevStyle.textStrokeWidth : null;
+    var strokeWidthChanged = !isPrevTextEl || textStrokeWidth !== textStrokeWidthPrev;
+    var strokeChanged = !isPrevTextEl || strokeWidthChanged || style.textStroke !== prevStyle.textStroke;
     var textStroke = getStroke(style.textStroke, textStrokeWidth);
     var textFill = getFill(style.textFill);
 
     if (textStroke) {
-        setCtx(ctx, 'lineWidth', textStrokeWidth);
-        setCtx(ctx, 'strokeStyle', textStroke);
+        if (strokeWidthChanged) {
+            ctx.lineWidth = textStrokeWidth;
+        }
+        if (strokeChanged) {
+            ctx.strokeStyle = textStroke;
+        }
     }
     if (textFill) {
-        setCtx(ctx, 'fillStyle', textFill);
+        if (!isPrevTextEl || style.textFill !== prevStyle.textFill) {
+            ctx.fillStyle = textFill;
+        }
     }
 
-    for (var i = 0; i < textLines.length; i++) {
+    // Optimize simply, in most cases only one line exists.
+    if (textLines.length === 1) {
         // Fill after stroke so the outline will not cover the main part.
-        textStroke && ctx.strokeText(textLines[i], textX, textY);
-        textFill && ctx.fillText(textLines[i], textX, textY);
-        textY += lineHeight;
+        textStroke && ctx.strokeText(textLines[0], textX, textY);
+        textFill && ctx.fillText(textLines[0], textX, textY);
+    }
+    else {
+        for (var i = 0; i < textLines.length; i++) {
+            // Fill after stroke so the outline will not cover the main part.
+            textStroke && ctx.strokeText(textLines[i], textX, textY);
+            textFill && ctx.fillText(textLines[i], textX, textY);
+            textY += lineHeight;
+        }
     }
 }
 
 function renderRichText(hostEl, ctx, text, style, rect) {
     var contentBlock = hostEl.__textCotentBlock;
 
-    if (!contentBlock || hostEl.__dirty) {
+    if (!contentBlock || hostEl.__dirtyText) {
         contentBlock = hostEl.__textCotentBlock = textContain.parseRichText(text, style);
     }
 
