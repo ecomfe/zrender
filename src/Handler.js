@@ -2,6 +2,7 @@ import * as util from './core/util';
 import * as vec2 from './core/vector';
 import Draggable from './mixin/Draggable';
 import Eventful from './mixin/Eventful';
+import * as eventTool from './core/event';
 
 var SILENT = 'silent';
 
@@ -22,8 +23,13 @@ function makeEventPacket(eveType, targetInfo, event) {
         pinchScale: event.pinchScale,
         wheelDelta: event.zrDelta,
         zrByTouch: event.zrByTouch,
-        which: event.which
+        which: event.which,
+        stop: stopEvent
     };
+}
+
+function stopEvent(event) {
+    eventTool.stop(this.event);
 }
 
 function EmptyProxy () {}
