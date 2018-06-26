@@ -86,7 +86,7 @@ function bindStyle(svgEl, style, isText, el) {
         }
 
         attr(svgEl, 'fill', fill);
-        attr(svgEl, 'fill-opacity', style.fillOpacity != null ? style.fillOpacity : style.opacity);
+        attr(svgEl, 'fill-opacity', style.fillOpacity != null ? style.fillOpacity * style.opacity : style.opacity);
     }
     else {
         attr(svgEl, 'fill', NONE);
