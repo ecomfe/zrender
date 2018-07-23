@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <title>SVG Compare</title>
     <script src="../dist/zrender.js"></script>
+    <script src="./lib/roamable.js"></script>
 
 
     <script type="text/javascript">
@@ -246,7 +247,6 @@
         </div>
         <iframe id="original" class="right" src="about:blank;"></iframe>
         <div id="right-mask" style="display:none" class="right" src="about:blank;"></div>
-        <div class="scale"><div>scale</div><div id="scale"></div></div>
     </div>
 
     <script type="text/javascript">
@@ -273,16 +273,18 @@
 
         var elOrigianl = document.getElementById('original');
         var zrContainer = document.getElementById('zrContainer');
-        var zrEl = document.getElementById('zr');
         var scaleEl = document.getElementById('scale');
         var rightMask = document.getElementById('right-mask');
         var mainGroup;
-        var zr;
         var svgEl;
         var startScale;
         var currentScale = 1;
         var svgPath;
 
+        var zr = zrender.init(document.getElementById('zr'));
+        window.addEventListener('resize', function () {
+            zr.resize();
+        });
 
         window.addEventListener('hashchange', enterCase);
 
@@ -303,11 +305,6 @@
         elOrigianl.onload = function () {
             var constentDoc = elOrigianl.contentDocument;
             svgEl = constentDoc.getElementsByTagName('svg')[0];
-            constentDoc.addEventListener('scroll', onOriginalScroll);
-
-            // fetch(svgPath)
-            //     .then(response => response.text())
-            //     .then(renderZrSVG);
 
             var xhr = new XMLHttpRequest();
             xhr.open('GET', svgPath, true);
@@ -330,10 +327,6 @@
         };
 
         function renderZrSVG(text) {
-            if (zr) {
-                zr.dispose();
-            }
-
             console && console.time && console.time('[ParseTime]');
             // console.profile('a');
             var result = zrender.parseSVG(text, {
@@ -344,67 +337,18 @@
             console && console.timeEnd && console.timeEnd('[ParseTime]');
 
             mainGroup = result.root;
-            zr = zrender.init(zrEl, getZrSize(result.width, result.height));
+            zr.clear();
             zr.add(mainGroup);
+            roamable(false);
+            roamable(zr, mainGroup, zrRoamHandler);
         };
 
-        function onOriginalScroll(e) {
-            zrContainer.scrollLeft = svgEl.scrollLeft;
-            zrContainer.scrollTop = svgEl.scrollTop;
-        }
-
-        function onZrScroll(e) {
+        function zrRoamHandler() {
             if (svgEl) {
-                svgEl.scrollLeft = zrContainer.scrollLeft;
-                svgEl.scrollTop = zrContainer.scrollTop;
+                svgEl.style.transform = `translate(${mainGroup.position[0]}px, ${mainGroup.position[1]}px) scale(${mainGroup.scale[0]},${mainGroup.scale[1]})`;
+                svgEl.style.transformOrigin = '0 0';
             }
         }
-
-        function getZrSize(w, h) {
-            // Enlarge a bit for clip test.
-            return {
-                width: w + 1000,
-                height: h + 1000
-            }
-        }
-
-        zrContainer.addEventListener('scroll', onZrScroll);
-
-        scaleEl.addEventListener('mousedown', function (e) {
-            if (!zr) {
-                return;
-            }
-            rightMask.style.display = '';
-            startScale = currentScale;
-            scaleEl.className += ' scaling';
-        });
-
-        document.addEventListener('mousemove', function (e) {
-            if (!zr) {
-                return;
-            }
-            if (startScale == null) {
-                return;
-            }
-            var dx = e.offsetX - scaleEl.offsetWidth / 2;
-            var dy = e.offsetY - scaleEl.offsetHeight / 2;
-            var delta = Math.pow(dx * dx + dy * dy, .5);
-            dy < 0 && (delta *= -1);
-            currentScale = (1 + delta / 200) * startScale;
-            svgEl.style.transform = `scale(${currentScale},${currentScale})`;
-            svgEl.style.transformOrigin = '0 0';
-            mainGroup.scale = [currentScale, currentScale];
-            mainGroup.dirty();
-
-            var rect = svgEl.getBoundingClientRect();
-            zr.resize(getZrSize(rect.width, rect.height));
-        });
-
-        document.addEventListener('mouseup', function () {
-            startScale = null;
-            rightMask.style.display = 'none';
-            scaleEl.className = scaleEl.className.replace('scaling', '');
-        });
 
         function encodeHTML(source) {
             return String(source)

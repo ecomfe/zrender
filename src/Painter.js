@@ -284,12 +284,17 @@ Painter.prototype = {
         }
         var elMirror = new el.constructor({
             style: el.style,
-            shape: el.shape
+            shape: el.shape,
+            z: el.z,
+            z2: el.z2,
+            silent: el.silent
         });
         elMirror.__from = el;
         el.__hoverMir = elMirror;
-        elMirror.setStyle(hoverStyle);
+        hoverStyle && elMirror.setStyle(hoverStyle);
         this._hoverElements.push(elMirror);
+
+        return elMirror;
     },
 
     removeHover: function (el) {
@@ -355,6 +360,7 @@ Painter.prototype = {
                 this._doPaintEl(el, hoverLayer, true, scope);
             }
         }
+
         hoverLayer.ctx.restore();
     },
 
@@ -443,7 +449,7 @@ Painter.prototype = {
             for (var i = start; i < layer.__endIndex; i++) {
                 var el = list[i];
                 this._doPaintEl(el, layer, paintAll, scope);
-                el.__dirty = false;
+                el.__dirty = el.__dirtyText = false;
 
                 if (useTimer) {
                     // Date.now can be executed in 13,025,305 ops/second.

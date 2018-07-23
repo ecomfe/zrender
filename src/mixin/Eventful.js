@@ -1,5 +1,5 @@
 /**
- * 事件扩展
+ * Event Mixin
  * @module zrender/mixin/Eventful
  * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
  *         pissang (https://www.github.com/pissang)
@@ -8,12 +8,24 @@
 var arrySlice = Array.prototype.slice;
 
 /**
- * 事件分发器
+ * Event dispatcher.
+ *
  * @alias module:zrender/mixin/Eventful
  * @constructor
+ * @param {Object} [eventProcessor] The object eventProcessor is the scope when
+ *        `eventProcessor.xxx` called.
+ * @param {Function} [eventProcessor.normalizeQuery]
+ *        param: {string|Object} Raw query.
+ *        return: {string|Object} Normalized query.
+ * @param {Function} [eventProcessor.filter] Event will be dispatched only
+ *        if it returns `true`.
+ *        param: {string} eventType
+ *        param: {string|Object} query
+ *        return: {boolean}
  */
-var Eventful = function () {
+var Eventful = function (eventProcessor) {
     this._$handlers = {};
+    this._$eventProcessor = eventProcessor;
 };
 
 Eventful.prototype = {
@@ -21,18 +33,27 @@ Eventful.prototype = {
     constructor: Eventful,
 
     /**
-     * 单次触发绑定，trigger后销毁
+     * The handler can only be triggered once, then removed.
      *
-     * @param {string} event 事件名
-     * @param {Function} handler 响应函数
+     * @param {string} event The event name.
+     * @param {string|Object} [query] Condition used on event filter.
+     * @param {Function} handler The event handler.
      * @param {Object} context
      */
-    one: function (event, handler, context) {
+    one: function (event, query, handler, context) {
         var _h = this._$handlers;
+
+        if (typeof query === 'function') {
+            context = handler;
+            handler = query;
+            query = null;
+        }
 
         if (!handler || !event) {
             return this;
         }
+
+        query = normalizeQuery(this, query);
 
         if (!_h[event]) {
             _h[event] = [];
@@ -47,6 +68,7 @@ Eventful.prototype = {
         _h[event].push({
             h: handler,
             one: true,
+            query: query,
             ctx: context || this
         });
 
@@ -54,17 +76,27 @@ Eventful.prototype = {
     },
 
     /**
-     * 绑定事件
-     * @param {string} event 事件名
-     * @param {Function} handler 事件处理函数
+     * Bind a handler.
+     *
+     * @param {string} event The event name.
+     * @param {string|Object} [query] Condition used on event filter.
+     * @param {Function} handler The event handler.
      * @param {Object} [context]
      */
-    on: function (event, handler, context) {
+    on: function (event, query, handler, context) {
         var _h = this._$handlers;
+
+        if (typeof query === 'function') {
+            context = handler;
+            handler = query;
+            query = null;
+        }
 
         if (!handler || !event) {
             return this;
         }
+
+        query = normalizeQuery(this, query);
 
         if (!_h[event]) {
             _h[event] = [];
@@ -79,6 +111,7 @@ Eventful.prototype = {
         _h[event].push({
             h: handler,
             one: false,
+            query: query,
             ctx: context || this
         });
 
@@ -86,7 +119,8 @@ Eventful.prototype = {
     },
 
     /**
-     * 是否绑定了事件
+     * Whether any handler has bound.
+     *
      * @param  {string}  event
      * @return {boolean}
      */
@@ -96,9 +130,10 @@ Eventful.prototype = {
     },
 
     /**
-     * 解绑事件
-     * @param {string} event 事件名
-     * @param {Function} [handler] 事件处理函数
+     * Unbind a event.
+     *
+     * @param {string} event The event name.
+     * @param {Function} [handler] The event handler.
      */
     off: function (event, handler) {
         var _h = this._$handlers;
@@ -112,7 +147,7 @@ Eventful.prototype = {
             if (_h[event]) {
                 var newList = [];
                 for (var i = 0, l = _h[event].length; i < l; i++) {
-                    if (_h[event][i]['h'] != handler) {
+                    if (_h[event][i].h != handler) {
                         newList.push(_h[event][i]);
                     }
                 }
@@ -131,14 +166,15 @@ Eventful.prototype = {
     },
 
     /**
-     * 事件分发
+     * Dispatch a event.
      *
-     * @param {string} type 事件类型
+     * @param {string} type The event name.
      */
     trigger: function (type) {
         if (this._$handlers[type]) {
             var args = arguments;
             var argLen = args.length;
+            var eventProcessor = this._$eventProcessor;
 
             if (argLen > 3) {
                 args = arrySlice.call(args, 1);
@@ -147,24 +183,34 @@ Eventful.prototype = {
             var _h = this._$handlers[type];
             var len = _h.length;
             for (var i = 0; i < len;) {
+                var hItem = _h[i];
+                if (eventProcessor
+                    && eventProcessor.filter
+                    && hItem.query != null
+                    && !eventProcessor.filter(type, hItem.query)
+                ) {
+                    i++;
+                    continue;
+                }
+
                 // Optimize advise from backbone
                 switch (argLen) {
                     case 1:
-                        _h[i]['h'].call(_h[i]['ctx']);
+                        hItem.h.call(hItem.ctx);
                         break;
                     case 2:
-                        _h[i]['h'].call(_h[i]['ctx'], args[1]);
+                        hItem.h.call(hItem.ctx, args[1]);
                         break;
                     case 3:
-                        _h[i]['h'].call(_h[i]['ctx'], args[1], args[2]);
+                        hItem.h.call(hItem.ctx, args[1], args[2]);
                         break;
                     default:
                         // have more than 2 given arguments
-                        _h[i]['h'].apply(_h[i]['ctx'], args);
+                        hItem.h.apply(hItem.ctx, args);
                         break;
                 }
 
-                if (_h[i]['one']) {
+                if (hItem.one) {
                     _h.splice(i, 1);
                     len--;
                 }
@@ -178,13 +224,15 @@ Eventful.prototype = {
     },
 
     /**
-     * 带有context的事件分发, 最后一个参数是事件回调的context
-     * @param {string} type 事件类型
+     * Dispatch a event with context, which is specified at the last parameter.
+     *
+     * @param {string} type The event name.
      */
     triggerWithContext: function (type) {
         if (this._$handlers[type]) {
             var args = arguments;
             var argLen = args.length;
+            var eventProcessor = this._$eventProcessor;
 
             if (argLen > 4) {
                 args = arrySlice.call(args, 1, args.length - 1);
@@ -194,24 +242,34 @@ Eventful.prototype = {
             var _h = this._$handlers[type];
             var len = _h.length;
             for (var i = 0; i < len;) {
+                var hItem = _h[i];
+                if (eventProcessor
+                    && eventProcessor.filter
+                    && hItem.query != null
+                    && !eventProcessor.filter(type, hItem.query)
+                ) {
+                    i++;
+                    continue;
+                }
+
                 // Optimize advise from backbone
                 switch (argLen) {
                     case 1:
-                        _h[i]['h'].call(ctx);
+                        hItem.h.call(ctx);
                         break;
                     case 2:
-                        _h[i]['h'].call(ctx, args[1]);
+                        hItem.h.call(ctx, args[1]);
                         break;
                     case 3:
-                        _h[i]['h'].call(ctx, args[1], args[2]);
+                        hItem.h.call(ctx, args[1], args[2]);
                         break;
                     default:
                         // have more than 2 given arguments
-                        _h[i]['h'].apply(ctx, args);
+                        hItem.h.apply(ctx, args);
                         break;
                 }
 
-                if (_h[i]['one']) {
+                if (hItem.one) {
                     _h.splice(i, 1);
                     len--;
                 }
@@ -225,7 +283,18 @@ Eventful.prototype = {
     }
 };
 
-// 对象可以通过 onxxxx 绑定事件
+function normalizeQuery(host, query) {
+    var eventProcessor = host._$eventProcessor;
+    if (query != null && eventProcessor && eventProcessor.normalizeQuery) {
+        query = eventProcessor.normalizeQuery(query);
+    }
+    return query;
+}
+
+// ----------------------
+// The events in zrender
+// ----------------------
+
 /**
  * @event module:zrender/mixin/Eventful#onclick
  * @type {Function}

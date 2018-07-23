@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Text</title>
+    <script src="../dist/zrender.js"></script>
+    <script src="./lib/roamable.js"></script>
+</head>
+<body style="margin:0">
+    <div style="text-align:center; margin: 10px; font-family: sans-serif">TEXT ROAM TEST</div>
+    <div id="main" style="width:1200px;height:2200px;margin:0;"></div>
+
+    <script type="text/javascript">
+
+    var showBoundingRect;
+
+    var textNodeCount = 2000;
+    // var textNodeCount = 2;
+    var textXCountMax = 50;
+    var fontSize = '14';
+
+    var svg = `<?xml version="1.0" encoding="UTF-8"?>
+        <svg width="8700px" height="3800px" viewBox="0 0 8700 3800" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="background: #F2F2F2;">
+            <title>allText</title>
+            <defs></defs>
+            ${genSVGPaths()}
+            <g id="allText" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+            ${genSVGText(textNodeCount)}
+            </g>
+        </svg>`;
+
+    // Avoid only render texts on roam.
+    function genSVGPaths() {
+        return `
+            <g transform="translate(-90, -120)" fill="#BFC8DA">
+                <path d="M106.5,179.5 L106.5,152 L0.5,151.5 L0.5,0 L253.5,0 L253.5,152 L121.5,152 L121.5,179.5 L193.5,179.5 L193.5,196 L130.5,196 L131.5,836.5 L161.5,836.5 L162.5,875.5 C155.5,879.5 147.5,881.5 139.5,883.5 C131.5,885.5 123.5,886.5 114.5,886.5 C106.5,886.5 97.5,885.5 89.5,883.5 C81.5,881.5 74.5,879.5 66.5,875.5 L68.5,836.5 L98.5,836.5 L98.5,196 L43.5,196 L44.5,179.5 L106.5,179.5 Z" id="Fill-195"></path>
+                <polygon id="Fill-199" points="436.5 40.5 436.5 34.5 430.5 34.5 430.5 28.5 423.5 28.5 423.5 14.5 280.5 14.5 280.5 16.5 253.5 16.5 253.5 20.5 280.5 20.5 280.5 31.5 306.5 31.5 306.5 50.5 448.5 50.5 448.5 44.5 484.5 44.5 484.5 40.5"></polygon>
+                <polygon id="Fill-201" points="300.5 117.5 305.5 117.5 305.5 115.5 433.5 115.5 433.5 117.5 438.5 117.5 438.5 136.5 510.5 82.5 515.5 86.5 441.5 143.5 253.5 143.5 253.5 136.5 300.5 136.5"></polygon>
+            </g>`;
+    }
+
+    function genSVGText() {
+        var txts = [];
+        var baseX = 100;
+        var baseY = 100;
+        var xStep = 40;
+        var yStep = 20;
+
+        for (var i = 0; i < textNodeCount; i++) {
+            var x = baseX + (i % textXCountMax) * xStep;
+            var y = baseY + Math.floor(i / textXCountMax) * yStep;
+            var text = Math.round(Math.random() * 1000) % 1000;
+
+            txts.push(
+                `<text id="${i}" font-family="PingFangSC-Regular, PingFang SC" font-size="${fontSize}" font-weight="normal" letter-spacing="0.4" fill="#1854e1">
+                    <tspan x="${x}" y="${y}">${text}</tspan>
+                </text>`
+            );
+        }
+
+        return txts.join('');
+    }
+
+    var zr = zrender.init(document.getElementById('main'));
+
+    var result = zrender.parseSVG(svg);
+
+    var zrEl = document.getElementById('main');
+    mainGroup = result.root;
+    zr = zrender.init(zrEl);
+    zr.add(mainGroup);
+
+    roamable(zr, mainGroup);
+
+</script>
+</body>
+</html>
