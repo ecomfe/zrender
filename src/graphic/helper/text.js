@@ -5,7 +5,8 @@ import {
     each,
     normalizeCssArray,
     isString,
-    isObject
+    isObject,
+    isFunction
 } from '../../core/util';
 import * as textContain from '../../contain/text';
 import * as roundRectHelper from './roundRect';
@@ -305,6 +306,7 @@ function applyTextRotation(ctx, style, rect, x, y) {
 
 function placeToken(hostEl, ctx, token, style, lineHeight, lineTop, x, textAlign) {
     var tokenStyle = style.rich[token.styleName] || {};
+    tokenStyle.text = token.text;
 
     // 'ctx.textBaseline' is always set as 'middle', for sake of
     // the bias of "Microsoft YaHei".
@@ -370,7 +372,7 @@ function needDrawBackground(style) {
         || (style.textBorderWidth && style.textBorderColor);
 }
 
-// style: {textBackgroundColor, textBorderWidth, textBorderColor, textBorderRadius}
+// style: {textBackgroundColor, textBorderWidth, textBorderColor, textBorderRadius, text}
 // shape: {x, y, width, height}
 function drawBackground(hostEl, ctx, style, x, y, width, height) {
     var textBackgroundColor = style.textBackgroundColor;
@@ -409,6 +411,10 @@ function drawBackground(hostEl, ctx, style, x, y, width, height) {
         else {
             ctx.fill();
         }
+    }
+    else if (isFunction(textBackgroundColor)) {
+        setCtx(ctx, 'fillStyle', textBackgroundColor(style));
+        ctx.fill();
     }
     else if (isObject(textBackgroundColor)) {
         var image = textBackgroundColor.image;
