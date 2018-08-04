@@ -435,7 +435,9 @@ var svgTextDrawRectText = function (el, rect, textRect) {
         var rotate = -style.textRotation || 0;
         var transform = matrix.create();
         // Apply textRotate to element matrix
-        matrix.rotate(transform, el.transform, rotate);
+        if (el.transform) {
+            matrix.rotate(transform, el.transform, rotate);
+        }
         setTransform(textSvgEl, transform);
     }
 
