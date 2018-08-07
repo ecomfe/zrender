@@ -435,7 +435,10 @@ var svgTextDrawRectText = function (el, rect, textRect) {
         var rotate = -style.textRotation || 0;
         var transform = matrix.create();
         // Apply textRotate to element matrix
-        matrix.rotate(transform, el.transform, rotate);
+        matrix.rotate(transform, transform, rotate);
+
+        var pos = [el.transform[4], el.transform[5]];
+        matrix.translate(transform, transform, pos);
         setTransform(textSvgEl, transform);
     }
 
@@ -457,7 +460,7 @@ var svgTextDrawRectText = function (el, rect, textRect) {
     }
 
     var dy = 0;
-    if (verticalAlign === 'baseline') {
+    if (verticalAlign === 'after-edge') {
         dy = -textRect.height + lineHeight;
         textPadding && (dy -= textPadding[2]);
     }
@@ -516,7 +519,7 @@ function getVerticalAlignForSvg(verticalAlign) {
         return 'middle';
     }
     else if (verticalAlign === 'bottom') {
-        return 'baseline';
+        return 'after-edge';
     }
     else {
         return 'hanging';
