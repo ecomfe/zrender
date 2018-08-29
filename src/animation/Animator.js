@@ -476,7 +476,7 @@ Animator.prototype = {
                 continue;
             }
 
-            if (!tracks[propName]) {
+            if (!tracks.hasOwnProperty(propName)) {
                 tracks[propName] = [];
                 // Invalid value
                 var value = this._getter(this._target, propName);
