@@ -6,12 +6,6 @@
     "canvas",
     "2d"
   ],
-  "contributors": [
-    {
-      "name": "erik",
-      "email": "errorrik@gmail.com"
-    }
-  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/ecomfe/zrender.git"
