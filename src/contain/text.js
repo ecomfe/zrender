@@ -247,7 +247,7 @@ export function adjustTextPositionOnRect(textPosition, rect, distance) {
  * @param  {string} text
  * @param  {string} containerWidth
  * @param  {string} font
- * @param  {number} [ellipsis='...']
+ * @param  {number} [ellipsis='…']
  * @param  {Object} [options]
  * @param  {number} [options.maxIterations=3]
  * @param  {number} [options.minChar=0] If truncate result are less
@@ -265,7 +265,7 @@ export function truncateText(text, containerWidth, font, ellipsis, options) {
     options = prepareTruncateOptions(containerWidth, font, ellipsis, options);
 
     // FIXME
-    // It is not appropriate that every line has '...' when truncate multiple lines.
+    // It is not appropriate that every line has '…' when truncate multiple lines.
     for (var i = 0, len = textLines.length; i < len; i++) {
         textLines[i] = truncateSingleLine(textLines[i], options);
     }
@@ -277,7 +277,7 @@ function prepareTruncateOptions(containerWidth, font, ellipsis, options) {
     options = extend({}, options);
 
     options.font = font;
-    var ellipsis = retrieve2(ellipsis, '...');
+    var ellipsis = retrieve2(ellipsis, '…');
     options.maxIterations = retrieve2(options.maxIterations, 2);
     var minChar = options.minChar = retrieve2(options.minChar, 0);
     // FIXME
@@ -288,14 +288,14 @@ function prepareTruncateOptions(containerWidth, font, ellipsis, options) {
     var ascCharWidth = options.ascCharWidth = getWidth('a', font);
     options.placeholder = retrieve2(options.placeholder, '');
 
-    // Example 1: minChar: 3, text: 'asdfzxcv', truncate result: 'asdf', but not: 'a...'.
-    // Example 2: minChar: 3, text: '维度', truncate result: '维', but not: '...'.
+    // Example 1: minChar: 3, text: 'asdfzxcv', truncate result: 'asdf', but not: 'a…'.
+    // Example 2: minChar: 3, text: '维度', truncate result: '维', but not: '…'.
     var contentWidth = containerWidth = Math.max(0, containerWidth - 1); // Reserve some gap.
     for (var i = 0; i < minChar && contentWidth >= ascCharWidth; i++) {
         contentWidth -= ascCharWidth;
     }
 
-    var ellipsisWidth = getWidth(ellipsis);
+    var ellipsisWidth = getWidth(ellipsis, font);
     if (ellipsisWidth > contentWidth) {
         ellipsis = '';
         ellipsisWidth = 0;
@@ -422,7 +422,7 @@ export function parsePlainText(text, font, padding, truncate) {
             );
 
             // FIXME
-            // It is not appropriate that every line has '...' when truncate multiple lines.
+            // It is not appropriate that every line has '…' when truncate multiple lines.
             for (var i = 0, len = lines.length; i < len; i++) {
                 lines[i] = truncateSingleLine(lines[i], options);
             }
@@ -462,8 +462,8 @@ export function parsePlainText(text, font, padding, truncate) {
  *              font,
  *              textAlign,
  *              textVerticalAlign
- *          }], [...], ...]
- *      }, ...]
+ *          }], […], …]
+ *      }, …]
  * }
  * If styleName is undefined, it is plain text.
  */
