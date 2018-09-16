@@ -5,8 +5,7 @@ import {
     each,
     normalizeCssArray,
     isString,
-    isObject,
-    isFunction
+    isObject
 } from '../../core/util';
 import * as textContain from '../../contain/text';
 import * as roundRectHelper from './roundRect';
@@ -411,10 +410,6 @@ function drawBackground(hostEl, ctx, style, x, y, width, height) {
         else {
             ctx.fill();
         }
-    }
-    else if (isFunction(textBackgroundColor)) {
-        setCtx(ctx, 'fillStyle', textBackgroundColor(style));
-        ctx.fill();
     }
     else if (isObject(textBackgroundColor)) {
         var image = textBackgroundColor.image;
