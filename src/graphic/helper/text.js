@@ -22,7 +22,7 @@ var SHADOW_STYLE_COMMON_PROPS = [
     ['textShadowOffsetX', 'shadowOffsetX', 0],
     ['textShadowOffsetY', 'shadowOffsetY', 0],
     ['textShadowColor', 'shadowColor', 'transparent']
-]
+];
 
 /**
  * @param {module:zrender/graphic/Style} style
@@ -176,7 +176,7 @@ function renderPlainText(hostEl, ctx, text, style, rect, prevEl) {
         }
     }
     if (textFill) {
-        if (!isPrevTextEl || style.textFill !== prevStyle.textFill) {
+        if (!isPrevTextEl || style.textFill !== prevStyle.textFill || prevStyle.textBackgroundColor) {
             ctx.fillStyle = textFill;
         }
     }

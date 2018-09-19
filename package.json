@@ -1,16 +1,10 @@
 {
   "name": "zrender",
-  "version": "4.0.4",
+  "version": "4.0.5",
   "description": "A lightweight canvas library.",
   "keywords": [
     "canvas",
     "2d"
-  ],
-  "contributors": [
-    {
-      "name": "erik",
-      "email": "errorrik@gmail.com"
-    }
   ],
   "repository": {
     "type": "git",

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Text</title>
+    <script src="lib/rollup.browser.js"></script>
+    <script src="lib/requireES.js"></script>
+    <script src="lib/config.js"></script>
+</head>
+<body style="margin:0">
+
+    <div style="margin: 20px;"></div>
+    <div id="main" style="width:1200px;height:2200px;margin:0;"></div>
+
+    <script type="text/javascript">
+
+    var showBoundingRect;
+
+    requireES([
+        'zrender/src/zrender',
+        'zrender/src/graphic/Text',
+        'zrender/src/graphic/shape/Line',
+        'zrender/src/graphic/shape/Rect',
+        'zrender/src/vml/vml'
+    ], function(zrender, Text, Line, Rect){
+
+        var zr = zrender.init(document.getElementById('main'));
+
+        zr.add(new Text({
+            style: {
+                x: 50,
+                y: 20,
+                textBackgroundColor: '#876543',
+                textPadding: 5,
+                text: 'Has textBackgroundColor',
+                textFill: '#fff'
+            }
+        }));
+
+        zr.add(new Text({
+            style: {
+                x: 50,
+                y: 70,
+                textBackgroundColor: '#456789',
+                textPadding: 5,
+                text: 'Has textBackgroundColor, the same `fill` with previous text, should draw text normally',
+                textFill: '#fff'
+            }
+        }));
+
+    });
+    </script>
+</body>
+</html>

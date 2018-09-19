@@ -228,14 +228,14 @@ SVGParser.prototype._parseText = function (xmlNode, parentGroup) {
 };
 
 var nodeParsers = {
-    'g': function(xmlNode, parentGroup) {
+    'g': function (xmlNode, parentGroup) {
         var g = new Group();
         inheritStyle(parentGroup, g);
         parseAttributes(xmlNode, g, this._defs);
 
         return g;
     },
-    'rect': function(xmlNode, parentGroup) {
+    'rect': function (xmlNode, parentGroup) {
         var rect = new Rect();
         inheritStyle(parentGroup, rect);
         parseAttributes(xmlNode, rect, this._defs);
@@ -252,7 +252,7 @@ var nodeParsers = {
 
         return rect;
     },
-    'circle': function(xmlNode, parentGroup) {
+    'circle': function (xmlNode, parentGroup) {
         var circle = new Circle();
         inheritStyle(parentGroup, circle);
         parseAttributes(xmlNode, circle, this._defs);
@@ -265,7 +265,7 @@ var nodeParsers = {
 
         return circle;
     },
-    'line': function(xmlNode, parentGroup) {
+    'line': function (xmlNode, parentGroup) {
         var line = new Line();
         inheritStyle(parentGroup, line);
         parseAttributes(xmlNode, line, this._defs);
@@ -279,7 +279,7 @@ var nodeParsers = {
 
         return line;
     },
-    'ellipse': function(xmlNode, parentGroup) {
+    'ellipse': function (xmlNode, parentGroup) {
         var ellipse = new Ellipse();
         inheritStyle(parentGroup, ellipse);
         parseAttributes(xmlNode, ellipse, this._defs);
@@ -292,7 +292,7 @@ var nodeParsers = {
         });
         return ellipse;
     },
-    'polygon': function(xmlNode, parentGroup) {
+    'polygon': function (xmlNode, parentGroup) {
         var points = xmlNode.getAttribute('points');
         if (points) {
             points = parsePoints(points);
@@ -308,7 +308,7 @@ var nodeParsers = {
 
         return polygon;
     },
-    'polyline': function(xmlNode, parentGroup) {
+    'polyline': function (xmlNode, parentGroup) {
         var path = new Path();
         inheritStyle(parentGroup, path);
         parseAttributes(xmlNode, path, this._defs);
@@ -325,7 +325,7 @@ var nodeParsers = {
 
         return polyline;
     },
-    'image': function(xmlNode, parentGroup) {
+    'image': function (xmlNode, parentGroup) {
         var img = new ZImage();
         inheritStyle(parentGroup, img);
         parseAttributes(xmlNode, img, this._defs);
@@ -340,7 +340,7 @@ var nodeParsers = {
 
         return img;
     },
-    'text': function(xmlNode, parentGroup) {
+    'text': function (xmlNode, parentGroup) {
         var x = xmlNode.getAttribute('x') || 0;
         var y = xmlNode.getAttribute('y') || 0;
         var dx = xmlNode.getAttribute('dx') || 0;
@@ -380,7 +380,7 @@ var nodeParsers = {
 
         return g;
     },
-    'path': function(xmlNode, parentGroup) {
+    'path': function (xmlNode, parentGroup) {
         // TODO svg fill rule
         // https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/fill-rule
         // path.style.globalCompositeOperation = 'xor';
@@ -399,11 +399,11 @@ var nodeParsers = {
 
 var defineParsers = {
 
-    'lineargradient': function(xmlNode) {
-        var x1 = parseInt(xmlNode.getAttribute('x1') || 0);
-        var y1 = parseInt(xmlNode.getAttribute('y1') || 0);
-        var x2 = parseInt(xmlNode.getAttribute('x2') || 10);
-        var y2 = parseInt(xmlNode.getAttribute('y2') || 0);
+    'lineargradient': function (xmlNode) {
+        var x1 = parseInt(xmlNode.getAttribute('x1') || 0, 10);
+        var y1 = parseInt(xmlNode.getAttribute('y1') || 0, 10);
+        var x2 = parseInt(xmlNode.getAttribute('x2') || 10, 10);
+        var y2 = parseInt(xmlNode.getAttribute('y2') || 0, 10);
 
         var gradient = new LinearGradient(x1, y1, x2, y2);
 
@@ -412,7 +412,7 @@ var defineParsers = {
         return gradient;
     },
 
-    'radialgradient': function(xmlNode) {
+    'radialgradient': function (xmlNode) {
 
     }
 };
@@ -425,9 +425,9 @@ function _parseGradientColorStops(xmlNode, gradient) {
         if (stop.nodeType === 1) {
             var offset = stop.getAttribute('offset');
             if (offset.indexOf('%') > 0) {  // percentage
-                offset = parseInt(offset) / 100;
+                offset = parseInt(offset, 10) / 100;
             }
-            else if(offset) {    // number from 0 to 1
+            else if (offset) {    // number from 0 to 1
                 offset = parseFloat(offset);
             }
             else {
@@ -455,9 +455,9 @@ function parsePoints(pointsString) {
     var list = trim(pointsString).split(DILIMITER_REG);
     var points = [];
 
-    for (var i = 0; i < list.length; i+=2) {
+    for (var i = 0; i < list.length; i += 2) {
         var x = parseFloat(list[i]);
-        var y = parseFloat(list[i+1]);
+        var y = parseFloat(list[i + 1]);
         points.push([x, y]);
     }
     return points;
@@ -576,14 +576,14 @@ function parseTransformAttribute(xmlNode, node) {
         transform = transform.replace(/,/g, ' ');
         var m = null;
         var transformOps = [];
-        transform.replace(transformRegex, function(str, type, value) {
+        transform.replace(transformRegex, function (str, type, value) {
             transformOps.push(type, value);
         });
-        for(var i = transformOps.length - 1; i > 0; i-=2) {
+        for (var i = transformOps.length - 1; i > 0; i -= 2) {
             var value = transformOps[i];
-            var type = transformOps[i-1];
+            var type = transformOps[i - 1];
             m = m || matrix.create();
-            switch(type) {
+            switch (type) {
                 case 'translate':
                     value = trim(value).split(DILIMITER_REG);
                     matrix.translate(m, m, [parseFloat(value[0]), parseFloat(value[1] || 0)]);
