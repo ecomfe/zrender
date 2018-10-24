@@ -295,7 +295,7 @@ function prepareTruncateOptions(containerWidth, font, ellipsis, options) {
         contentWidth -= ascCharWidth;
     }
 
-    var ellipsisWidth = getWidth(ellipsis);
+    var ellipsisWidth = getWidth(ellipsis, font);
     if (ellipsisWidth > contentWidth) {
         ellipsis = '';
         ellipsisWidth = 0;
