@@ -128,7 +128,7 @@ Eventful.prototype = {
      */
     isSilent: function (event) {
         var _h = this._$handlers;
-        return _h[event] && _h[event].length;
+        return !_h[event] || !_h[event].length;
     },
 
     /**
