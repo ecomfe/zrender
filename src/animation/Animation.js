@@ -47,7 +47,7 @@ var Animation = function (options) {
 
     this.stage = options.stage || {};
 
-    this.onframe = options.onframe || function() {};
+    this.onframe = options.onframe || function () {};
 
     // private properties
     this._clips = [];
@@ -90,7 +90,7 @@ Animation.prototype = {
      * 删除动画片段
      * @param {module:zrender/animation/Clip} clip
      */
-    removeClip: function(clip) {
+    removeClip: function (clip) {
         var idx = util.indexOf(this._clips, clip);
         if (idx >= 0) {
             this._clips.splice(idx, 1);
@@ -109,7 +109,7 @@ Animation.prototype = {
         animator.animation = null;
     },
 
-    _update: function() {
+    _update: function () {
         var time = new Date().getTime() - this._pausedTime;
         var delta = time - this._time;
         var clips = this._clips;

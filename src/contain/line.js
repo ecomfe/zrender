@@ -29,7 +29,7 @@ export function containStroke(x0, y0, x1, y1, lineWidth, x, y) {
 
     if (x0 !== x1) {
         _a = (y0 - y1) / (x0 - x1);
-        _b = (x0 * y1 - x1 * y0) / (x0 - x1) ;
+        _b = (x0 * y1 - x1 * y0) / (x0 - x1);
     }
     else {
         return Math.abs(x - x0) <= _l / 2;

@@ -14,7 +14,7 @@ export default Path.extend({
         width: 0, height: 0
     },
 
-    buildPath : function (ctx, shape) {
+    buildPath: function (ctx, shape) {
         var x = shape.cx;
         var y = shape.cy;
         var a = shape.width;

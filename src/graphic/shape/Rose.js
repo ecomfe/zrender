@@ -39,7 +39,7 @@ export default Path.extend({
 
         ctx.moveTo(x0, y0);
 
-        for (var i = 0, len = R.length; i < len ; i++) {
+        for (var i = 0, len = R.length; i < len; i++) {
             r = R[i];
 
             for (var j = 0; j <= 360 * n; j++) {

@@ -13,13 +13,13 @@ var mathSin = Math.sin;
 var mathCos = Math.cos;
 var PI = Math.PI;
 
-var vMag = function(v) {
+var vMag = function (v) {
     return Math.sqrt(v[0] * v[0] + v[1] * v[1]);
 };
-var vRatio = function(u, v) {
+var vRatio = function (u, v) {
     return (u[0] * v[0] + u[1] * v[1]) / (vMag(u) * vMag(v));
 };
-var vAngle = function(u, v) {
+var vAngle = function (u, v) {
     return (u[0] * v[1] < u[1] * v[0] ? -1 : 1)
             * Math.acos(vRatio(u, v));
 };

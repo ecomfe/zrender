@@ -12,7 +12,7 @@ import ZText from '../../graphic/Text';
 import {
     path as svgPath,
     image as svgImage,
-    text as svgText,
+    text as svgText
 } from '../graphic';
 
 

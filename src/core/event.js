@@ -85,7 +85,7 @@ export function normalizeEvent(el, e, calculate) {
         e.zrDelta = (e.wheelDelta) ? e.wheelDelta / 120 : -(e.detail || 0) / 3;
     }
     else {
-        var touch = eventType != 'touchend'
+        var touch = eventType !== 'touchend'
             ? e.targetTouches[0]
             : e.changedTouches[0];
         touch && clientToLocal(el, touch, e, calculate);

@@ -37,7 +37,7 @@ if (!env.canvasSupported) {
 
     var initRootElStyle = function (el) {
         el.style.cssText = 'position:absolute;left:0;top:0;width:1px;height:1px;';
-        el.coordsize = Z + ','  + Z;
+        el.coordsize = Z + ',' + Z;
         el.coordorigin = '0,0';
     };
 
@@ -165,7 +165,7 @@ if (!env.canvasSupported) {
                 // We need to sort the color stops in ascending order by offset,
                 // otherwise IE won't interpret it correctly.
                 var stops = fill.colorStops.slice();
-                stops.sort(function(cs1, cs2) {
+                stops.sort(function (cs1, cs2) {
                     return cs1.offset - cs2.offset;
                 });
 
@@ -231,7 +231,7 @@ if (!env.canvasSupported) {
     };
 
     var updateFillAndStroke = function (vmlEl, type, style, zrEl) {
-        var isFill = type == 'fill';
+        var isFill = type === 'fill';
         var el = vmlEl.getElementsByTagName(type)[0];
         // Stroke must have lineWidth
         if (style[type] != null && style[type] !== 'none' && (isFill || (!isFill && style.lineWidth))) {
@@ -660,7 +660,7 @@ if (!env.canvasSupported) {
         var imageELStyle = imageEl.style;
         if (hasCrop) {
             // Needs know image original width and height
-            if (! (ow && oh)) {
+            if (!(ow && oh)) {
                 var tmpImage = new Image();
                 var self = this;
                 tmpImage.onload = function () {
@@ -683,7 +683,7 @@ if (!env.canvasSupported) {
                 imageELStyle.height = round(scaleY * oh * dh / sh) + 'px';
             }
 
-            if (! cropEl) {
+            if (!cropEl) {
                 cropEl = vmlCore.doc.createElement('div');
                 cropEl.style.overflow = 'hidden';
                 this._cropEl = cropEl;
@@ -694,10 +694,10 @@ if (!env.canvasSupported) {
             cropElStyle.filter = imageTransformPrefix + '.Matrix(Dx='
                     + (-sx * dw / sw * scaleX) + ',Dy=' + (-sy * dh / sh * scaleY) + ')';
 
-            if (! cropEl.parentNode) {
+            if (!cropEl.parentNode) {
                 vmlEl.appendChild(cropEl);
             }
-            if (imageEl.parentNode != cropEl) {
+            if (imageEl.parentNode !== cropEl) {
                 cropEl.appendChild(imageEl);
             }
         }
@@ -805,7 +805,8 @@ if (!env.canvasSupported) {
 
         try {
             textMeasureEl.style.font = textFont;
-        } catch (ex) {
+        }
+        catch (ex) {
             // Ignore failures to set to invalid font.
         }
         textMeasureEl.innerHTML = '';
@@ -984,8 +985,8 @@ if (!env.canvasSupported) {
 
             skewEl.on = true;
 
-            skewEl.matrix = m[0].toFixed(3) + comma + m[2].toFixed(3) + comma +
-            m[1].toFixed(3) + comma + m[3].toFixed(3) + ',0,0';
+            skewEl.matrix = m[0].toFixed(3) + comma + m[2].toFixed(3) + comma
+                            + m[1].toFixed(3) + comma + m[3].toFixed(3) + ',0,0';
 
             // Text position
             skewEl.offset = (round(coords[0]) || 0) + ',' + (round(coords[1]) || 0);

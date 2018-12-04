@@ -78,7 +78,7 @@ export function cubicRootAt(p0, p1, p2, p3, val, roots) {
     // Evaluate roots of cubic functions
     var a = p3 + 3 * (p1 - p2) - p0;
     var b = 3 * (p2 - p1 * 2 + p0);
-    var c = 3 * (p1  - p0);
+    var c = 3 * (p1 - p0);
     var d = p0 - val;
 
     var A = b * b - 3 * a * c;
@@ -175,7 +175,7 @@ export function cubicExtrema(p0, p1, p2, p3, extrema) {
     if (isAroundZero(a)) {
         if (isNotAroundZero(b)) {
             var t1 = -c / b;
-            if (t1 >= 0 && t1 <=1) {
+            if (t1 >= 0 && t1 <= 1) {
                 extrema[n++] = t1;
             }
         }

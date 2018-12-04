@@ -144,7 +144,7 @@ BoundingRect.prototype = {
         var by0 = b.y;
         var by1 = b.y + b.height;
 
-        return ! (ax1 < bx0 || bx1 < ax0 || ay1 < by0 || by1 < ay0);
+        return !(ax1 < bx0 || bx1 < ax0 || ay1 < by0 || by1 < ay0);
     },
 
     contain: function (x, y) {

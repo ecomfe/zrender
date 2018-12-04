@@ -13,7 +13,6 @@ import arrayDiff from '../core/arrayDiff2';
 import GradientManager from './helper/GradientManager';
 import ClippathManager from './helper/ClippathManager';
 import ShadowManager from './helper/ShadowManager';
-import {each} from '../core/util';
 import {
     path as svgPath,
     image as svgImage,
@@ -243,9 +242,9 @@ SVGPainter.prototype = {
             else if (!item.removed) {
                 for (var k = 0; k < item.count; k++) {
                     var displayable = newVisibleList[item.indices[k]];
-                    prevSvgElement
-                        = svgElement
-                        = getTextSvgElement(displayable)
+                    prevSvgElement =
+                        svgElement =
+                        getTextSvgElement(displayable)
                         || getSvgElement(displayable)
                         || prevSvgElement;
 
@@ -374,10 +373,10 @@ SVGPainter.prototype = {
     dispose: function () {
         this.root.innerHTML = '';
 
-        this._svgRoot
-            = this._viewport
-            = this.storage
-            = null;
+        this._svgRoot =
+            this._viewport =
+            this.storage =
+            null;
     },
 
     clear: function () {
@@ -401,7 +400,7 @@ function createMethodNotSupport(method) {
 }
 
 // Unsuppoted methods
-each([
+util.each([
     'getLayer', 'insertLayer', 'eachLayer', 'eachBuiltinLayer',
     'eachOtherLayer', 'getLayers', 'modLayer', 'delLayer', 'clearLayer',
     'toDataURL', 'pathToImage'

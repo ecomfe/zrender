@@ -28,7 +28,7 @@ export default Path.extend({
             x, y + b
         );
         ctx.bezierCurveTo(
-            x - a *  2, y + b / 3,
+            x - a * 2, y + b / 3,
             x - a / 2, y - b * 2 / 3,
             x, y
         );
