@@ -39,7 +39,9 @@ Text.prototype = {
         // style.bind(ctx, this, prevEl);
 
         if (!textHelper.needDrawText(text, style)) {
-            return;
+            // KeepPrevEl, because the current el.style is not applied
+            // and should not be used as cache.
+            return true;
         }
 
         this.setTransform(ctx);

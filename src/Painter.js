@@ -528,8 +528,10 @@ Painter.prototype = {
             }
             el.beforeBrush && el.beforeBrush(ctx);
 
-            el.brush(ctx, scope.prevEl || null);
-            scope.prevEl = el;
+            var keepPrevEl = el.brush(ctx, scope.prevEl || null);
+            if (keepPrevEl !== true) {
+                scope.prevEl = el;
+            }
 
             el.afterBrush && el.afterBrush(ctx);
         }
