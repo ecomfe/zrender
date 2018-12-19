@@ -629,6 +629,7 @@ PathProxy.prototype = {
                     var startAngle = data[i++];
                     var endAngle = data[i++] + startAngle;
                     // TODO Arc 旋转
+                    i += 1;
                     var anticlockwise = 1 - data[i++];
 
                     if (i === 1) {
