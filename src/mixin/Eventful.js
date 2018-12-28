@@ -264,12 +264,21 @@ function on(eventful, event, query, handler, context, isOnce) {
         }
     }
 
-    _h[event].push({
+    var wrap = {
         h: handler,
         one: isOnce,
         query: query,
-        ctx: context || eventful
-    });
+        ctx: context || eventful,
+        // FIXME
+        // Do not publish this feature util it is proved that it makes sense.
+        callAtLast: handler.zrEventfulCallAtLast
+    };
+
+    var lastIndex = _h[event].length - 1;
+    var lastWrap = _h[event][lastIndex];
+    (lastWrap && lastWrap.callAtLast)
+        ? _h[event].splice(lastIndex, 0, wrap)
+        : _h[event].push(wrap);
 
     return eventful;
 }
