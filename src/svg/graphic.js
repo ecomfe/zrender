@@ -254,6 +254,7 @@ svgPath.brush = function (el) {
 
     if (el.__dirtyPath) {
         path.beginPath();
+        path.subPixelOptimize = false;
         el.buildPath(path, el.shape);
         el.__dirtyPath = false;
 

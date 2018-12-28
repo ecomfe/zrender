@@ -1,4 +1,13 @@
 
+/**
+ * @param {Object} ctx
+ * @param {Object} shape
+ * @param {number} shape.x
+ * @param {number} shape.y
+ * @param {number} shape.width
+ * @param {number} shape.height
+ * @param {number} shape.r
+ */
 export function buildPath(ctx, shape) {
     var x = shape.x;
     var y = shape.y;

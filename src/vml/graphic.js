@@ -486,6 +486,7 @@ if (!env.canvasSupported) {
         var path = this.path || (this.path = new PathProxy());
         if (this.__dirtyPath) {
             path.beginPath();
+            path.subPixelOptimize = false;
             this.buildPath(path, this.shape);
             path.toStatic();
             this.__dirtyPath = false;
