@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>draggable 测试</title>
+    <script src="../dist/zrender.js"></script>
+</head>
+<body>
+    <p>测试以下情况的 draggable 拖动效果是否正确，也就是是否总是（1）选中位于上方的元素（2）正确拖动位置（3）鼠标在 hover 到图形时才变成 pointer</p>
+    <h2>width="500px" height="250px" style="width:500px;height:250px;"</h2>
+    <canvas id="main1" width="500px" height="250px" style="width:500px;height:250px;"></canvas>
+
+    <h2>width="1000px" height="500px" style="width:500px;height:250px;"</h2>
+    <canvas id="main2" width="1000px" height="500px" style="width:500px;height:250px;"></canvas>
+
+    <h2>width="1000px" height="1000px" style="width:500px;height:250px;"</h2>
+    <canvas id="main3" width="1000px" height="1000px" style="width:500px;height:250px;"></canvas>
+
+    <script type="text/javascript">
+        text('main1');
+        text('main2');
+        text('main3');
+
+        function text(canvasId) {
+            var zr = zrender.init(document.getElementById(canvasId), {
+            });
+            var w = zr.getWidth();
+            var h = zr.getHeight();
+
+            var img1 = new Image();
+            img1.onload = function () {
+                var rect = new zrender.Image({
+                    style: {
+                        image: img1,
+                        x: 50,
+                        y: 50,
+                        width: 300,
+                        height: 300
+                    },
+                    rotation: Math.PI / 6,
+                    origin: [50, 100],
+                    draggable: true,
+                    z: 0
+                });
+                zr.add(rect);
+            };
+            img1.src = 'https://via.placeholder.com/300.png/00f/fff';
+
+            var img2 = new Image();
+            img2.onload = function () {
+                var rect = new zrender.Image({
+                    style: {
+                        image: img2,
+                        x: 250,
+                        y: 250,
+                        width: 300,
+                        height: 300
+                    },
+                    rotation: Math.PI / 6,
+                    origin: [50, 100],
+                    draggable: true,
+                    z: 1
+                });
+                zr.add(rect);
+            };
+            img2.src = 'https://via.placeholder.com/300.png/f00/fff';
+        }
+    </script>
+</body>
+</html>
