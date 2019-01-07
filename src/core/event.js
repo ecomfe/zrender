@@ -55,6 +55,9 @@ export function clientToLocal(el, e, out, calculate) {
         defaultGetZrXY(el, e, out);
     }
 
+    out.zrX *= el.width / el.clientWidth;
+    out.zrY *= el.height / el.clientHeight;
+
     return out;
 }
 
