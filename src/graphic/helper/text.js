@@ -108,7 +108,7 @@ function renderPlainText(hostEl, ctx, text, style, rect, prevEl) {
     var outerHeight = contentBlock.outerHeight;
 
     var textLines = contentBlock.lines;
-    var lineHeight = contentBlock.lineHeight;
+    var lineHeight = retrieve2(style.textLineHeight, contentBlock.lineHeight);
 
     var boxPos = getBoxPosition(outerHeight, style, rect);
     var baseX = boxPos.baseX;
