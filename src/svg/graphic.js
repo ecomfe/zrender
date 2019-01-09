@@ -374,7 +374,7 @@ var svgTextDrawRectText = function (el, rect, textRect) {
     var verticalAlign = getVerticalAlignForSvg(style.textVerticalAlign);
 
     textRect = textContain.getBoundingRect(text, font, align,
-        verticalAlign);
+        verticalAlign, style.textPadding, style.textLineHeight);
 
     var lineHeight = textRect.lineHeight;
     // Text position represented by coord

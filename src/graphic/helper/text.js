@@ -97,18 +97,19 @@ function renderPlainText(hostEl, ctx, text, style, rect, prevEl) {
     }
 
     var textPadding = style.textPadding;
+    var textLineHeight = style.textLineHeight;
 
     var contentBlock = hostEl.__textCotentBlock;
     if (!contentBlock || hostEl.__dirtyText) {
         contentBlock = hostEl.__textCotentBlock = textContain.parsePlainText(
-            text, computedFont, textPadding, style.truncate
+            text, computedFont, textPadding, textLineHeight, style.truncate
         );
     }
 
     var outerHeight = contentBlock.outerHeight;
 
     var textLines = contentBlock.lines;
-    var lineHeight = retrieve2(style.textLineHeight, contentBlock.lineHeight);
+    var lineHeight = contentBlock.lineHeight;
 
     var boxPos = getBoxPosition(outerHeight, style, rect);
     var baseX = boxPos.baseX;
