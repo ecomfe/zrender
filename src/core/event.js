@@ -182,10 +182,14 @@ export function isMiddleOrRightButtonOnMouseUpDown(e) {
     return e.which === 2 || e.which === 3;
 }
 
-// export function notLeftMouse(e) {
-//     // If e.which is undefined, considered as left mouse event.
-//     return e.which > 1;
-// }
+/**
+ * To be removed.
+ * @deprecated
+ */
+export function notLeftMouse(e) {
+    // If e.which is undefined, considered as left mouse event.
+    return e.which > 1;
+}
 
 
 // 做向上兼容
