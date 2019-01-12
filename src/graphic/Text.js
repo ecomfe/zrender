@@ -67,6 +67,7 @@ Text.prototype = {
                 style.textAlign,
                 style.textVerticalAlign,
                 style.textPadding,
+                textContain.getLineHeight(style.font),
                 style.rich
             );
 
