@@ -69,7 +69,7 @@ Clip.prototype = {
         percent = Math.min(percent, 1);
 
         var easing = this.easing;
-        var easingFunc = typeof easing == 'string' ? easingFuncs[easing] : easing;
+        var easingFunc = typeof easing === 'string' ? easingFuncs[easing] : easing;
         var schedule = typeof easingFunc === 'function'
             ? easingFunc(percent)
             : percent;
@@ -77,9 +77,9 @@ Clip.prototype = {
         this.fire('frame', schedule);
 
         // 结束
-        if (percent == 1) {
+        if (percent === 1) {
             if (this.loop) {
-                this.restart (globalTime);
+                this.restart(globalTime);
                 // 重新开始周期
                 // 抛出而不是直接调用事件直到 stage.update 后再统一调用这些事件
                 return 'restart';

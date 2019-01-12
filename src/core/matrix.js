@@ -5,7 +5,7 @@
 
 var ArrayCtor = typeof Float32Array === 'undefined'
     ? Array
-   : Float32Array;
+    : Float32Array;
 
 /**
  * Create a identity matrix.

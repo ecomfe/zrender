@@ -50,9 +50,6 @@ function setTransform(svgEl, m) {
 function attr(el, key, val) {
     if (!val || val.type !== 'linear' && val.type !== 'radial') {
         // Don't set attribute for gradient, since it need new dom nodes
-        if (typeof val === 'string' && val.indexOf('NaN') > -1) {
-            console.log(val);
-        }
         el.setAttribute(key, val);
     }
 }
@@ -257,6 +254,7 @@ svgPath.brush = function (el) {
 
     if (el.__dirtyPath) {
         path.beginPath();
+        path.subPixelOptimize = false;
         el.buildPath(path, el.shape);
         el.__dirtyPath = false;
 
@@ -290,7 +288,7 @@ svgImage.brush = function (el) {
         var src = image.src;
         image = src;
     }
-    if (! image) {
+    if (!image) {
         return;
     }
 
@@ -301,7 +299,7 @@ svgImage.brush = function (el) {
     var dh = style.height;
 
     var svgEl = el.__svgEl;
-    if (! svgEl) {
+    if (!svgEl) {
         svgEl = createElement('image');
         el.__svgEl = svgEl;
     }
@@ -348,7 +346,7 @@ var svgTextDrawRectText = function (el, rect, textRect) {
     }
 
     var textSvgEl = el.__textSvgEl;
-    if (! textSvgEl) {
+    if (!textSvgEl) {
         textSvgEl = createElement('text');
         el.__textSvgEl = textSvgEl;
     }
@@ -374,7 +372,7 @@ var svgTextDrawRectText = function (el, rect, textRect) {
     var verticalAlign = getVerticalAlignForSvg(style.textVerticalAlign);
 
     textRect = textContain.getBoundingRect(text, font, align,
-        verticalAlign);
+        verticalAlign, style.textPadding, style.textLineHeight);
 
     var lineHeight = textRect.lineHeight;
     // Text position represented by coord
@@ -446,7 +444,7 @@ var svgTextDrawRectText = function (el, rect, textRect) {
     var nTextLines = textLines.length;
     var textAnchor = align;
     // PENDING
-    if (textAnchor === 'left')  {
+    if (textAnchor === 'left') {
         textAnchor = 'start';
         textPadding && (x += textPadding[3]);
     }
@@ -479,7 +477,7 @@ var svgTextDrawRectText = function (el, rect, textRect) {
         for (var i = 0; i < nTextLines; i++) {
             // Using cached tspan elements
             var tspan = tspanList[i];
-            if (! tspan) {
+            if (!tspan) {
                 tspan = tspanList[i] = createElement('tspan');
                 textSvgEl.appendChild(tspan);
                 attr(tspan, 'alignment-baseline', verticalAlign);

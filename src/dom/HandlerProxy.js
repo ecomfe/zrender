@@ -105,8 +105,8 @@ var domHandlers = {
         event = normalizeEvent(this.dom, event);
 
         var element = event.toElement || event.relatedTarget;
-        if (element != this.dom) {
-            while (element && element.nodeType != 9) {
+        if (element !== this.dom) {
+            while (element && element.nodeType !== 9) {
                 // 忽略包含在root中的dom引起的mouseOut
                 if (element === this.dom) {
                     return;

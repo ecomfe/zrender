@@ -46,7 +46,7 @@ var mathSin = Math.sin;
 var mathSqrt = Math.sqrt;
 var mathAbs = Math.abs;
 
-var hasTypedArray = typeof Float32Array != 'undefined';
+var hasTypedArray = typeof Float32Array !== 'undefined';
 
 /**
  * @alias module:zrender/core/PathProxy
@@ -336,7 +336,7 @@ PathProxy.prototype = {
 
         var len = data.length;
 
-        if (! (this.data && this.data.length == len) && hasTypedArray) {
+        if (!(this.data && this.data.length === len) && hasTypedArray) {
             this.data = new Float32Array(len);
         }
 
@@ -444,7 +444,7 @@ PathProxy.prototype = {
         y -= offset * dy;
 
         while ((dx > 0 && x <= x1) || (dx < 0 && x >= x1)
-        || (dx == 0 && ((dy > 0 && y <= y1) || (dy < 0 && y >= y1)))) {
+        || (dx === 0 && ((dy > 0 && y <= y1) || (dy < 0 && y >= y1)))) {
             idx = this._dashIdx;
             dash = lineDash[idx];
             x += dx * dash;
@@ -574,7 +574,7 @@ PathProxy.prototype = {
         for (var i = 0; i < data.length;) {
             var cmd = data[i++];
 
-            if (i == 1) {
+            if (i === 1) {
                 // 如果第一个命令是 L, C, Q
                 // 则 previous point 同绘制命令的第一个 point
                 //
@@ -629,10 +629,10 @@ PathProxy.prototype = {
                     var startAngle = data[i++];
                     var endAngle = data[i++] + startAngle;
                     // TODO Arc 旋转
-                    var psi = data[i++];
+                    i += 1;
                     var anticlockwise = 1 - data[i++];
 
-                    if (i == 1) {
+                    if (i === 1) {
                         // 直接使用 arc 命令
                         // 第一个命令起点还未定义
                         x0 = mathCos(startAngle) * rx + cx;
@@ -692,7 +692,7 @@ PathProxy.prototype = {
         for (var i = 0; i < len;) {
             var cmd = d[i++];
 
-            if (i == 1) {
+            if (i === 1) {
                 // 如果第一个命令是 L, C, Q
                 // 则 previous point 同绘制命令的第一个 point
                 //
@@ -758,7 +758,7 @@ PathProxy.prototype = {
                         ctx.arc(cx, cy, r, theta, endAngle, 1 - fs);
                     }
 
-                    if (i == 1) {
+                    if (i === 1) {
                         // 直接使用 arc 命令
                         // 第一个命令起点还未定义
                         x0 = mathCos(theta) * rx + cx;

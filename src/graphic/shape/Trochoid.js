@@ -37,7 +37,7 @@ export default Path.extend({
         var d = shape.d;
         var offsetX = shape.cx;
         var offsetY = shape.cy;
-        var delta = shape.location == 'out' ? 1 : -1;
+        var delta = shape.location === 'out' ? 1 : -1;
 
         if (shape.location && R <= r) {
             return;
@@ -63,7 +63,7 @@ export default Path.extend({
         do {
             theta = Math.PI / 180 * i;
             x2 = (R + delta * r) * cos(theta)
-                    - delta * d * cos((R / r +  delta) * theta)
+                    - delta * d * cos((R / r + delta) * theta)
                     + offsetX;
             y2 = (R + delta * r) * sin(theta)
                     - d * sin((R / r + delta) * theta)

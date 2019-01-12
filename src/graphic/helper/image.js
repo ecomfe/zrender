@@ -50,7 +50,7 @@ export function createOrUpdateImage(newImageOrSrc, image, hostEl, cb, cbPayload)
             !isImageReady(image) && cachedImgObj.pending.push(pendingWrap);
         }
         else {
-            !image && (image = new Image());
+            image = new Image();
             image.onload = image.onerror = imageOnLoad;
 
             globalImageCache.put(

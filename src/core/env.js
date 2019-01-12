@@ -19,7 +19,7 @@ if (typeof wx === 'object' && typeof wx.getSystemInfoSync === 'function') {
         svgSupported: false,
         touchEventsSupported: true,
         domSupported: false
-    }
+    };
 }
 else if (typeof document === 'undefined' && typeof self !== 'undefined') {
     // In worker

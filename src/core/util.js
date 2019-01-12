@@ -65,7 +65,7 @@ export function $override(name, fn) {
  * @return {*} new
  */
 export function clone(source) {
-    if (source == null || typeof source != 'object') {
+    if (source == null || typeof source !== 'object') {
         return source;
     }
 
@@ -269,13 +269,13 @@ export function mixin(target, source, overlay) {
  * @param {Array|TypedArray} data
  */
 export function isArrayLike(data) {
-    if (! data) {
+    if (!data) {
         return;
     }
-    if (typeof data == 'string') {
+    if (typeof data === 'string') {
         return false;
     }
-    return typeof data.length == 'number';
+    return typeof data.length === 'number';
 }
 
 /**
@@ -459,7 +459,7 @@ export function isObject(value) {
     // Avoid a V8 JIT bug in Chrome 19-20.
     // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
     var type = typeof value;
-    return type === 'function' || (!!value && type == 'object');
+    return type === 'function' || (!!value && type === 'object');
 }
 
 /**

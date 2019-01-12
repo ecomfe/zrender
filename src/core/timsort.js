@@ -450,7 +450,7 @@ function TimSort(array, compare) {
         }
     }
 
-    function mergeHigh (start1, length1, start2, length2) {
+    function mergeHigh(start1, length1, start2, length2) {
         var i = 0;
 
         for (i = 0; i < length2; i++) {

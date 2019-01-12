@@ -1,6 +1,6 @@
 /**
  * Displayable for incremental rendering. It will be rendered in a separate layer
- * IncrementalDisplay have too main methods. `clearDisplayables` and `addDisplayables`
+ * IncrementalDisplay have two main methods. `clearDisplayables` and `addDisplayables`
  * addDisplayables will render the added displayables incremetally.
  *
  * It use a not clearFlag to tell the painter don't clear the layer if it's the first element.
@@ -51,7 +51,7 @@ IncrementalDisplayble.prototype.addDisplayables = function (displayables, notPer
     }
 };
 
-IncrementalDisplayble.prototype.eachPendingDisplayable = function  (cb) {
+IncrementalDisplayble.prototype.eachPendingDisplayable = function (cb) {
     for (var i = this._cursor; i < this._displayables.length; i++) {
         cb && cb(this._displayables[i]);
     }

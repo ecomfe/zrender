@@ -5,8 +5,7 @@ import {
     each,
     normalizeCssArray,
     isString,
-    isObject,
-    isFunction
+    isObject
 } from '../../core/util';
 import * as textContain from '../../contain/text';
 import * as roundRectHelper from './roundRect';
@@ -97,11 +96,12 @@ function renderPlainText(hostEl, ctx, text, style, rect, prevEl) {
     }
 
     var textPadding = style.textPadding;
+    var textLineHeight = style.textLineHeight;
 
     var contentBlock = hostEl.__textCotentBlock;
     if (!contentBlock || hostEl.__dirtyText) {
         contentBlock = hostEl.__textCotentBlock = textContain.parsePlainText(
-            text, computedFont, textPadding, style.truncate
+            text, computedFont, textPadding, textLineHeight, style.truncate
         );
     }
 
@@ -413,10 +413,6 @@ function drawBackground(hostEl, ctx, style, x, y, width, height) {
         else {
             ctx.fill();
         }
-    }
-    else if (isFunction(textBackgroundColor)) {
-        setCtx(ctx, 'fillStyle', textBackgroundColor(style));
-        ctx.fill();
     }
     else if (isObject(textBackgroundColor)) {
         var image = textBackgroundColor.image;

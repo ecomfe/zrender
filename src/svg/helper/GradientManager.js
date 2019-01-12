@@ -6,6 +6,7 @@
 import Definable from './Definable';
 import * as zrUtil from '../../core/util';
 import zrLog from '../../core/log';
+import * as colorTool from '../../tool/color';
 
 /**
  * Manages SVG gradient elements.
@@ -177,7 +178,25 @@ GradientManager.prototype.updateDom = function (gradient, dom) {
     for (var i = 0, len = colors.length; i < len; ++i) {
         var stop = this.createElement('stop');
         stop.setAttribute('offset', colors[i].offset * 100 + '%');
-        stop.setAttribute('stop-color', colors[i].color);
+
+        var color = colors[i].color;
+        if (color.indexOf('rgba' > -1)) {
+            // Fix Safari bug that stop-color not recognizing alpha #9014
+            var opacity = colorTool.parse(color)[3];
+            var hex = colorTool.toHex(color);
+
+            // stop-color cannot be color, since:
+            // The opacity value used for the gradient calculation is the
+            // *product* of the value of stop-opacity and the opacity of the
+            // value of stop-color.
+            // See https://www.w3.org/TR/SVG2/pservers.html#StopOpacityProperty
+            stop.setAttribute('stop-color', '#' + hex);
+            stop.setAttribute('stop-opacity', opacity);
+        }
+        else {
+            stop.setAttribute('stop-color', colors[i].color);
+        }
+
         dom.appendChild(stop);
     }
 

@@ -65,14 +65,14 @@ export function getWidth(text, font) {
  * @param {Object} [truncate]
  * @return {Object} {x, y, width, height, lineHeight}
  */
-export function getBoundingRect(text, font, textAlign, textVerticalAlign, textPadding, rich, truncate) {
+export function getBoundingRect(text, font, textAlign, textVerticalAlign, textPadding, textLineHeight, rich, truncate) {
     return rich
-        ? getRichTextRect(text, font, textAlign, textVerticalAlign, textPadding, rich, truncate)
-        : getPlainTextRect(text, font, textAlign, textVerticalAlign, textPadding, truncate);
+        ? getRichTextRect(text, font, textAlign, textVerticalAlign, textPadding, rich, textLineHeight, truncate)
+        : getPlainTextRect(text, font, textAlign, textVerticalAlign, textPadding, textLineHeight, truncate);
 }
 
-function getPlainTextRect(text, font, textAlign, textVerticalAlign, textPadding, truncate) {
-    var contentBlock = parsePlainText(text, font, textPadding, truncate);
+function getPlainTextRect(text, font, textAlign, textVerticalAlign, textPadding, textLineHeight, truncate) {
+    var contentBlock = parsePlainText(text, font, textPadding, textLineHeight, truncate);
     var outerWidth = getWidth(text, font);
     if (textPadding) {
         outerWidth += textPadding[1] + textPadding[3];
@@ -88,13 +88,14 @@ function getPlainTextRect(text, font, textAlign, textVerticalAlign, textPadding,
     return rect;
 }
 
-function getRichTextRect(text, font, textAlign, textVerticalAlign, textPadding, rich, truncate) {
+function getRichTextRect(text, font, textAlign, textVerticalAlign, textPadding, textLineHeight, rich, truncate) {
     var contentBlock = parseRichText(text, {
         rich: rich,
         truncate: truncate,
         font: font,
         textAlign: textAlign,
-        textPadding: textPadding
+        textPadding: textPadding,
+        textLineHeight: textLineHeight
     });
     var outerWidth = contentBlock.outerWidth;
     var outerHeight = contentBlock.outerHeight;
@@ -295,7 +296,7 @@ function prepareTruncateOptions(containerWidth, font, ellipsis, options) {
         contentWidth -= ascCharWidth;
     }
 
-    var ellipsisWidth = getWidth(ellipsis);
+    var ellipsisWidth = getWidth(ellipsis, font);
     if (ellipsisWidth > contentWidth) {
         ellipsis = '';
         ellipsisWidth = 0;
@@ -326,7 +327,7 @@ function truncateSingleLine(textLine, options) {
         return textLine;
     }
 
-    for (var j = 0;; j++) {
+    for (var j = 0; ; j++) {
         if (lineWidth <= contentWidth || j >= options.maxIterations) {
             textLine += options.ellipsis;
             break;
@@ -394,10 +395,10 @@ methods.measureText = function (text, font) {
  * @return {Object} block: {lineHeight, lines, height, outerHeight}
  *  Notice: for performance, do not calculate outerWidth util needed.
  */
-export function parsePlainText(text, font, padding, truncate) {
+export function parsePlainText(text, font, padding, textLineHeight, truncate) {
     text != null && (text += '');
 
-    var lineHeight = getLineHeight(font);
+    var lineHeight = retrieve2(textLineHeight, getLineHeight(font));
     var lines = text ? text.split('\n') : [];
     var height = lines.length * lineHeight;
     var outerHeight = height;

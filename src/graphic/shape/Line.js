@@ -4,6 +4,10 @@
  */
 
 import Path from '../Path';
+import {subPixelOptimizeLine} from '../helper/subPixelOptimize';
+
+// Avoid create repeatly.
+var subPixelOptimizeOutputShape = {};
 
 export default Path.extend({
 
@@ -26,10 +30,25 @@ export default Path.extend({
     },
 
     buildPath: function (ctx, shape) {
-        var x1 = shape.x1;
-        var y1 = shape.y1;
-        var x2 = shape.x2;
-        var y2 = shape.y2;
+        var x1;
+        var y1;
+        var x2;
+        var y2;
+
+        if (this.subPixelOptimize) {
+            subPixelOptimizeLine(subPixelOptimizeOutputShape, shape, this.style);
+            x1 = subPixelOptimizeOutputShape.x1;
+            y1 = subPixelOptimizeOutputShape.y1;
+            x2 = subPixelOptimizeOutputShape.x2;
+            y2 = subPixelOptimizeOutputShape.y2;
+        }
+        else {
+            x1 = shape.x1;
+            y1 = shape.y1;
+            x2 = shape.x2;
+            y2 = shape.y2;
+        }
+
         var percent = shape.percent;
 
         if (percent === 0) {

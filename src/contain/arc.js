@@ -41,7 +41,8 @@ export function containStroke(
         var tmp = startAngle;
         startAngle = normalizeRadian(endAngle);
         endAngle = normalizeRadian(tmp);
-    } else {
+    }
+    else {
         startAngle = normalizeRadian(startAngle);
         endAngle = normalizeRadian(endAngle);
     }

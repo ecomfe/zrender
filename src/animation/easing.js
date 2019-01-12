@@ -212,13 +212,14 @@ var easing = {
             return 1;
         }
         if (!a || a < 1) {
-            a = 1; s = p / 4;
+            a = 1;
+            s = p / 4;
         }
         else {
             s = p * Math.asin(1 / a) / (2 * Math.PI);
         }
-        return -(a * Math.pow(2, 10 * (k -= 1)) *
-                    Math.sin((k - s) * (2 * Math.PI) / p));
+        return -(a * Math.pow(2, 10 * (k -= 1))
+                    * Math.sin((k - s) * (2 * Math.PI) / p));
     },
     /**
     * @param {number} k
@@ -235,13 +236,14 @@ var easing = {
             return 1;
         }
         if (!a || a < 1) {
-            a = 1; s = p / 4;
+            a = 1;
+            s = p / 4;
         }
         else {
             s = p * Math.asin(1 / a) / (2 * Math.PI);
         }
-        return (a * Math.pow(2, -10 * k) *
-                Math.sin((k - s) * (2 * Math.PI) / p) + 1);
+        return (a * Math.pow(2, -10 * k)
+                    * Math.sin((k - s) * (2 * Math.PI) / p) + 1);
     },
     /**
     * @param {number} k
@@ -258,7 +260,8 @@ var easing = {
             return 1;
         }
         if (!a || a < 1) {
-            a = 1; s = p / 4;
+            a = 1;
+            s = p / 4;
         }
         else {
             s = p * Math.asin(1 / a) / (2 * Math.PI);

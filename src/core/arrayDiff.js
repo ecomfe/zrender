@@ -90,12 +90,12 @@ function hirschberg(arr0, arr1, i0, i1, j0, j1, equal, score0, score1) {
     var len1 = j1 - j0;
     var i;
     var j;
-    if (! len0) {
+    if (!len0) {
         for (j = 0; j < len1; j++) {
             append(out, '+', j + j0);
         }
     }
-    else if (! len1) {
+    else if (!len1) {
         for (i = 0; i < len0; i++) {
             append(out, '-', i + i0);
         }
@@ -104,7 +104,7 @@ function hirschberg(arr0, arr1, i0, i1, j0, j1, equal, score0, score1) {
         var a = arr0[i0];
         var matched = false;
         for (j = 0; j < len1; j++) {
-            if (equal(a, arr1[j + j0]) && ! matched) {
+            if (equal(a, arr1[j + j0]) && !matched) {
                 matched = true;
                 // Equal and update use the index in first array
                 append(out, '=', i0, j + j0);
@@ -118,7 +118,7 @@ function hirschberg(arr0, arr1, i0, i1, j0, j1, equal, score0, score1) {
                 // }
             }
         }
-        if (! matched) {
+        if (!matched) {
             append(out, '-', i0);
         }
     }
@@ -126,7 +126,7 @@ function hirschberg(arr0, arr1, i0, i1, j0, j1, equal, score0, score1) {
         var b = arr1[j0];
         var matched = false;
         for (i = 0; i < len0; i++) {
-            if (equal(b, arr0[i + i0]) && ! matched) {
+            if (equal(b, arr0[i + i0]) && !matched) {
                 matched = true;
                 append(out, '=', i + i0, j0);
             }
@@ -139,7 +139,7 @@ function hirschberg(arr0, arr1, i0, i1, j0, j1, equal, score0, score1) {
                 // }
             }
         }
-        if (! matched) {
+        if (!matched) {
             append(out, '+', j0);
         }
     }
@@ -181,14 +181,14 @@ function arrayDiff(arr0, arr1, equal) {
     var lenMin = Math.min(len0, len1);
     var head = [];
     for (i = 0; i < lenMin; i++) {
-        if (! equal(arr0[i], arr1[i])) {
+        if (!equal(arr0[i], arr1[i])) {
             break;
         }
         append(head, '=', i, i);
     }
 
     for (j = 0; j < lenMin; j++) {
-        if (! equal(arr0[len0 - j - 1], arr1[len1 - j - 1])) {
+        if (!equal(arr0[len0 - j - 1], arr1[len1 - j - 1])) {
             break;
         }
     }

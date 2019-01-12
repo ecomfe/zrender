@@ -45,7 +45,7 @@ function interpolateString(p0, p1, percent) {
  */
 function interpolateArray(p0, p1, percent, out, arrDim) {
     var len = p0.length;
-    if (arrDim == 1) {
+    if (arrDim === 1) {
         for (var i = 0; i < len; i++) {
             out[i] = interpolateNumber(p0[i], p1[i], percent);
         }
@@ -151,7 +151,7 @@ function catmullRomInterpolateArray(
     p0, p1, p2, p3, t, t2, t3, out, arrDim
 ) {
     var len = p0.length;
-    if (arrDim == 1) {
+    if (arrDim === 1) {
         for (var i = 0; i < len; i++) {
             out[i] = catmullRomInterpolate(
                 p0[i], p1[i], p2[i], p3[i], t, t2, t3
@@ -240,7 +240,7 @@ function createTrackClip(animator, easing, oneTrackDone, keyframes, propName, fo
 
     var trackMaxTime;
     // Sort keyframe as ascending
-    keyframes.sort(function(a, b) {
+    keyframes.sort(function (a, b) {
         return a.time - b.time;
     });
 
@@ -264,7 +264,7 @@ function createTrackClip(animator, easing, oneTrackDone, keyframes, propName, fo
         prevValue = value;
 
         // Try converting a string to a color array
-        if (typeof value == 'string') {
+        if (typeof value === 'string') {
             var colorArray = color.parse(value);
             if (colorArray) {
                 value = colorArray;
@@ -442,7 +442,7 @@ function createTrackClip(animator, easing, oneTrackDone, keyframes, propName, fo
  * @param {Function} getter
  * @param {Function} setter
  */
-var Animator = function(target, loop, getter, setter) {
+var Animator = function (target, loop, getter, setter) {
     this._tracks = {};
     this._target = target;
 
@@ -469,7 +469,7 @@ Animator.prototype = {
      * @param  {Object} props 关键帧的属性值，key-value表示
      * @return {module:zrender/animation/Animator}
      */
-    when: function(time /* ms */, props) {
+    when: function (time /* ms */, props) {
         var tracks = this._tracks;
         for (var propName in props) {
             if (!props.hasOwnProperty(propName)) {
@@ -554,7 +554,7 @@ Animator.prototype = {
         var self = this;
         var clipCount = 0;
 
-        var oneTrackDone = function() {
+        var oneTrackDone = function () {
             clipCount--;
             if (!clipCount) {
                 self._doneCallback();
@@ -634,7 +634,7 @@ Animator.prototype = {
      * @param  {Function} cb
      * @return {module:zrender/animation/Animator}
      */
-    done: function(cb) {
+    done: function (cb) {
         if (cb) {
             this._doneList.push(cb);
         }

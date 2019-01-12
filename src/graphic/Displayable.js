@@ -24,8 +24,8 @@ function Displayable(opts) {
     // Extend properties
     for (var name in opts) {
         if (
-            opts.hasOwnProperty(name) &&
-            name !== 'style'
+            opts.hasOwnProperty(name)
+                && name !== 'style'
         ) {
             this[name] = opts[name];
         }

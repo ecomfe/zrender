@@ -27,7 +27,7 @@ var transitionProperties = ['position', 'rotation', 'scale', 'style', 'shape'];
  * @module zrender/graphic/States~TransitionObject
  */
 var TransitionObject = function (opts) {
-    if (typeof opts == 'string') {
+    if (typeof opts === 'string') {
         this._fromStr(opts);
     }
     else if (opts) {
@@ -181,7 +181,7 @@ GraphicStates.prototype = {
 
     setState: function (name, silent) {
         if (name === this._currentState
-            && ! this.transiting()
+            && !this.transiting()
         ) {
             return;
         }
@@ -191,7 +191,7 @@ GraphicStates.prototype = {
         if (state) {
             this._stopTransition();
 
-            if (! silent) {
+            if (!silent) {
                 var prevState = this._states[this._currentState];
                 if (prevState) {
                     prevState.onleave && prevState.onleave.call(this);
@@ -229,7 +229,7 @@ GraphicStates.prototype = {
                     }
                     if (
                         // Not initial state
-                        name != this._initialState
+                        name !== this._initialState
                         // Not copied from initial state in _extendFromInitial method
                         && initialState.style !== state.style
                     ) {
@@ -256,7 +256,7 @@ GraphicStates.prototype = {
     transitionState: function (target, done) {
         if (
             target === this._currentState
-            && ! this.transiting()
+            && !this.transiting()
         ) {
             return;
         }

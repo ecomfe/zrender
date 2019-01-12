@@ -35,6 +35,12 @@ Path.prototype = {
 
     strokeContainThreshold: 5,
 
+    /**
+     * See `module:zrender/src/graphic/helper/subPixelOptimize`.
+     * @type {boolean}
+     */
+    subPixelOptimize: false,
+
     brush: function (ctx, prevEl) {
         var style = this.style;
         var path = this.path || pathProxyForDraw;
@@ -354,7 +360,7 @@ Path.extend = function (defaults) {
             var thisShape = this.shape;
             for (var name in defaultShape) {
                 if (
-                    ! thisShape.hasOwnProperty(name)
+                    !thisShape.hasOwnProperty(name)
                     && defaultShape.hasOwnProperty(name)
                 ) {
                     thisShape[name] = defaultShape[name];
