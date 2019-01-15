@@ -372,6 +372,10 @@ handlerDomProxyProto.setCursor = function (cursorStyle) {
     this.dom.style && (this.dom.style.cursor = cursorStyle || 'default');
 };
 
+handlerDomProxyProto.processGesture = function (event, stage) {
+    processGesture(this, event, stage);
+};
+
 zrUtil.mixin(HandlerDomProxy, Eventful);
 
 export default HandlerDomProxy;
