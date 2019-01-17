@@ -455,6 +455,8 @@ export function lerp(normalizedValue, colors, fullOutput) {
     var rightIndex = Math.ceil(value);
     var leftColor = parse(colors[leftIndex]);
     var rightColor = parse(colors[rightIndex]);
+    if (!leftColor || !rightColor) return;
+
     var dv = value - leftIndex;
 
     var color = stringify(
