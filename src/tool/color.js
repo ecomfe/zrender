@@ -380,7 +380,7 @@ export function lift(color, level) {
             if (colorArr[i] > 255) {
                 colorArr[i] = 255;
             }
-            else if (color[i] < 0) {
+            else if (colorArr[i] < 0) {
                 colorArr[i] = 0;
             }
         }
