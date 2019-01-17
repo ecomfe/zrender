@@ -647,7 +647,7 @@ function buildExport({exportName, namespace, propName, localName}) {
     // FIXME
     // Does `PRIORITY`, `LOCATION_PARAMS` recognised as babel-template placeholder?
     // We have to do this for workaround temporarily.
-    if (/^[A-Z_]+$/.test(localName)) {
+    if (/^[A-Z0-9_]+$/.test(localName)) {
         opt[localName] = localName;
     }
 
