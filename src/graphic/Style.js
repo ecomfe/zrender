@@ -363,7 +363,7 @@ Style.prototype = {
         var prevStyle = prevEl && prevEl.style;
         // If no prevStyle, it means first draw.
         // Only apply cache if the last time cachced by this function.
-        var checkCache = !prevStyle || ctx.__attrCachedBy !== ContextCachedBy.STYLE_BIND;
+        var notCheckCache = !prevStyle || ctx.__attrCachedBy !== ContextCachedBy.STYLE_BIND;
 
         ctx.__attrCachedBy = ContextCachedBy.STYLE_BIND;
 
@@ -371,24 +371,24 @@ Style.prototype = {
             var prop = STYLE_COMMON_PROPS[i];
             var styleName = prop[0];
 
-            if (checkCache || style[styleName] !== prevStyle[styleName]) {
+            if (notCheckCache || style[styleName] !== prevStyle[styleName]) {
                 // FIXME Invalid property value will cause style leak from previous element.
                 ctx[styleName] =
                     fixShadow(ctx, styleName, style[styleName] || prop[1]);
             }
         }
 
-        if ((checkCache || style.fill !== prevStyle.fill)) {
+        if ((notCheckCache || style.fill !== prevStyle.fill)) {
             ctx.fillStyle = style.fill;
         }
-        if ((checkCache || style.stroke !== prevStyle.stroke)) {
+        if ((notCheckCache || style.stroke !== prevStyle.stroke)) {
             ctx.strokeStyle = style.stroke;
         }
-        if ((checkCache || style.opacity !== prevStyle.opacity)) {
+        if ((notCheckCache || style.opacity !== prevStyle.opacity)) {
             ctx.globalAlpha = style.opacity == null ? 1 : style.opacity;
         }
 
-        if ((checkCache || style.blend !== prevStyle.blend)) {
+        if ((notCheckCache || style.blend !== prevStyle.blend)) {
             ctx.globalCompositeOperation = style.blend || 'source-over';
         }
         if (this.hasStroke()) {
