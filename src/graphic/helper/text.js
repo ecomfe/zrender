@@ -13,6 +13,8 @@ import * as imageHelper from './image';
 import fixShadow from './fixShadow';
 import {ContextCachedBy, WILL_BE_RESTORED} from '../constant';
 
+var DEFAULT_FONT = textContain.DEFAULT_FONT;
+
 // TODO: Have not support 'start', 'end' yet.
 var VALID_TEXT_ALIGN = {left: 1, right: 1, center: 1};
 var VALID_TEXT_VERTICAL_ALIGN = {top: 1, bottom: 1, middle: 1};
@@ -89,7 +91,7 @@ function renderPlainText(hostEl, ctx, text, style, rect, prevEl) {
     if (prevEl !== WILL_BE_RESTORED) {
         if (prevEl) {
             prevStyle = prevEl.style;
-            checkCache = !needDrawBg && cachedByMe;
+            checkCache = !needDrawBg && cachedByMe && prevStyle;
         }
 
         // Prevent from using cache in `Style::bind`, because of the case:
@@ -103,15 +105,21 @@ function renderPlainText(hostEl, ctx, text, style, rect, prevEl) {
         ctx.__attrCachedBy = ContextCachedBy.NONE;
     }
 
-    var styleFont = style.font || textContain.DEFAULT_FONT;
-    // Only `Text` el set `font` and keep it (`RectText` will restore).
-    // Here make font cache checked for both `RectText` and `Text`.
-    if (styleFont !== ctx.__fontCache) {
+    var styleFont = style.font || DEFAULT_FONT;
+    // PENDING
+    // Only `Text` el set `font` and keep it (`RectText` will restore). So theoretically
+    // we can make font cache on ctx, which can cache for text el that are discontinuous.
+    // But layer save/restore needed to be considered.
+    // if (styleFont !== ctx.__fontCache) {
+    //     ctx.font = styleFont;
+    //     if (prevEl !== WILL_BE_RESTORED) {
+    //         ctx.__fontCache = styleFont;
+    //     }
+    // }
+    if (!checkCache || styleFont !== (prevStyle.font || DEFAULT_FONT)) {
         ctx.font = styleFont;
-        if (prevEl !== WILL_BE_RESTORED) {
-            ctx.__fontCache = styleFont;
-        }
     }
+
     // Use the final font from context-2d, because the final
     // font might not be the style.font when it is illegal.
     // But get `ctx.font` might be time consuming.
@@ -382,7 +390,7 @@ function placeToken(hostEl, ctx, token, style, lineHeight, lineTop, x, textAlign
     // text will offset downward a little bit in font "Microsoft YaHei".
     setCtx(ctx, 'textBaseline', 'middle');
 
-    setCtx(ctx, 'font', token.font || textContain.DEFAULT_FONT);
+    setCtx(ctx, 'font', token.font || DEFAULT_FONT);
 
     var textStroke = getStroke(tokenStyle.textStroke || style.textStroke, textStrokeWidth);
     var textFill = getFill(tokenStyle.textFill || style.textFill);
