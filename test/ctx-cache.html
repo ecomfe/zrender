@@ -43,9 +43,9 @@
             color: yellow;
             font-size: 20px;
             font-weight: bold;
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
-            padding-top: 5px;
-            margin-top: 5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 5px;
+            margin-bottom: 5px;
         }
         .fail {
             color: red;
@@ -100,7 +100,7 @@
                 zrender.init(div)
             ];
 
-            printResult();
+            delayGetResult(wrap);
 
             return wrap;
 
@@ -129,20 +129,36 @@
                 };
             }
 
-            function printResult() {
+            function delayGetResult(wrap) {
                 setTimeout(function () {
-                    var html = ['<div>'];
-                    console.log(JSON.stringify(log, 4, null));
-                    html.push(getHTMLLog('[Real Log]:', log));
-                    html.push(getHTMLLog('[Expect]:', opt.expectLog));
-                    html.push('<div>');
-                    titleEl.innerHTML += html.join('');
+                    renderResult('Round 1');
 
-                    var theSame = logTheSame(log, opt.expectLog);
-                    var clz = 'title-consequence ' + (!theSame ? 'fail' : '');
-                    titleEl.innerHTML += '<div class="' + clz + '">' + (theSame ? 'OK. The Same' : 'Not Same !!!') + '</div>';
+                    log.length = 0;
+                    wrap.zrList.forEach(function (zr) {
+                        zr.storage.traverse(function (el) {
+                            !el.isGroup && el.dirty();
+                        });
+                    });
+                    setTimeout(function () {
+                        renderResult('Round 2 (after dirty and repainted)');
+                    }, 1000);
+
                 }, 1000);
             };
+
+            function renderResult(round) {
+                console.log(JSON.stringify(log, 4, null));
+                var html = ['<div>'];
+                html.push('<div>' + round + '</div>');
+                html.push(getHTMLLog('[Real Log]:', log));
+                html.push(getHTMLLog('[Expect]:', opt.expectLog));
+                html.push('<div>');
+                titleEl.innerHTML += html.join('');
+
+                var theSame = logTheSame(log, opt.expectLog);
+                var clz = 'title-consequence ' + (!theSame ? 'fail' : '');
+                titleEl.innerHTML += '<div class="' + clz + '">' + (theSame ? 'OK. The Same' : 'Not Same !!!') + '</div>';
+            }
 
             function getHTMLLog(head, logArr) {
                 var html = [];
@@ -356,11 +372,13 @@
                 // el2
                 ['font', '14px Arial'],
                 ['fillStyle', 'red'],
-                // el3 (font cache from el2)
+                // el3
                 ['fillStyle', 'blue'],
                 ['strokeStyle', null],
+                ['font', '14px Arial'],
                 ['fillStyle', 'red'],
-                // el4 (font cache from el2)
+                // el4
+                ['font', '14px Arial'],
                 ['fillStyle', 'red'],
                 // el5 (font cache from el2, fillStyle cache from el4)
             ]
@@ -421,7 +439,8 @@
                 ['strokeStyle', null],
                 ['font', '24px Arial'],
                 ['fillStyle', 'blue'],
-                // el3 (font cached from el1)
+                // el3
+                ['font', '14px Arial'],
                 ['fillStyle', 'red']
             ]
         }).zrList.forEach(function (zr, idx) {
@@ -470,7 +489,8 @@
                 // el3 (rect fillStyle cached from el2)
                 ['font', '24px Arial'],
                 ['fillStyle', 'blue'],
-                // el4 (font cached from el1)
+                // el4
+                ['font', '14px Arial'],
                 ['fillStyle', 'red']
             ]
         }).zrList.forEach(function (zr, idx) {
