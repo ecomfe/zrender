@@ -390,7 +390,7 @@ var svgTextDrawRectText = function (el, rect, textRect) {
         align = newPos.textAlign;
     }
 
-    attr(textSvgEl, 'alignment-baseline', verticalAlign);
+    attr(textSvgEl, 'dominant-baseline', verticalAlign);
 
     if (font) {
         textSvgEl.style.font = font;
@@ -458,11 +458,11 @@ var svgTextDrawRectText = function (el, rect, textRect) {
     }
 
     var dy = 0;
-    if (verticalAlign === 'after-edge') {
+    if (verticalAlign === TEXT_VERTICAL_BOTTOM) {
         dy = -textRect.height + lineHeight;
         textPadding && (dy -= textPadding[2]);
     }
-    else if (verticalAlign === 'middle') {
+    else if (verticalAlign === TEXT_VERTICAL_MIDDLE) {
         dy = (-textRect.height + lineHeight) / 2;
         textPadding && (y += (textPadding[0] - textPadding[2]) / 2);
     }
@@ -480,7 +480,7 @@ var svgTextDrawRectText = function (el, rect, textRect) {
             if (!tspan) {
                 tspan = tspanList[i] = createElement('tspan');
                 textSvgEl.appendChild(tspan);
-                attr(tspan, 'alignment-baseline', verticalAlign);
+                attr(tspan, 'dominant-baseline', verticalAlign);
                 attr(tspan, 'text-anchor', textAnchor);
             }
             else {
@@ -512,15 +512,18 @@ var svgTextDrawRectText = function (el, rect, textRect) {
     }
 };
 
+var TEXT_VERTICAL_MIDDLE = 'middle';
+var TEXT_VERTICAL_BOTTOM = 'ideographic';
+var TEXT_VERTICAL_TOP = 'hanging';
 function getVerticalAlignForSvg(verticalAlign) {
     if (verticalAlign === 'middle') {
-        return 'middle';
+        return TEXT_VERTICAL_MIDDLE;
     }
     else if (verticalAlign === 'bottom') {
-        return 'after-edge';
+        return TEXT_VERTICAL_BOTTOM;
     }
     else {
-        return 'hanging';
+        return TEXT_VERTICAL_TOP;
     }
 }
 
