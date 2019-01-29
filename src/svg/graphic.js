@@ -369,7 +369,7 @@ var svgTextDrawRectText = function (el, rect, textRect) {
         ].join(' ')
         || textContain.DEFAULT_FONT;
 
-    var verticalAlign = getVerticalAlignForSvg(style.textVerticalAlign);
+    var verticalAlign = style.textVerticalAlign;
 
     textRect = textContain.getBoundingRect(text, font, align,
         verticalAlign, style.textPadding, style.textLineHeight);
@@ -386,11 +386,11 @@ var svgTextDrawRectText = function (el, rect, textRect) {
         );
         x = newPos.x;
         y = newPos.y;
-        verticalAlign = getVerticalAlignForSvg(newPos.textVerticalAlign);
+        verticalAlign = newPos.textVerticalAlign;
         align = newPos.textAlign;
     }
 
-    attr(textSvgEl, 'dominant-baseline', verticalAlign);
+    setVerticalAlign(textSvgEl, verticalAlign);
 
     if (font) {
         textSvgEl.style.font = font;
@@ -458,11 +458,11 @@ var svgTextDrawRectText = function (el, rect, textRect) {
     }
 
     var dy = 0;
-    if (verticalAlign === TEXT_VERTICAL_BOTTOM) {
+    if (verticalAlign === 'bottom') {
         dy = -textRect.height + lineHeight;
         textPadding && (dy -= textPadding[2]);
     }
-    else if (verticalAlign === TEXT_VERTICAL_MIDDLE) {
+    else if (verticalAlign === 'middle') {
         dy = (-textRect.height + lineHeight) / 2;
         textPadding && (y += (textPadding[0] - textPadding[2]) / 2);
     }
@@ -480,7 +480,7 @@ var svgTextDrawRectText = function (el, rect, textRect) {
             if (!tspan) {
                 tspan = tspanList[i] = createElement('tspan');
                 textSvgEl.appendChild(tspan);
-                attr(tspan, 'dominant-baseline', verticalAlign);
+                setVerticalAlign(tspan, verticalAlign);
                 attr(tspan, 'text-anchor', textAnchor);
             }
             else {
@@ -512,18 +512,21 @@ var svgTextDrawRectText = function (el, rect, textRect) {
     }
 };
 
-var TEXT_VERTICAL_MIDDLE = 'middle';
-var TEXT_VERTICAL_BOTTOM = 'ideographic';
-var TEXT_VERTICAL_TOP = 'hanging';
-function getVerticalAlignForSvg(verticalAlign) {
-    if (verticalAlign === 'middle') {
-        return TEXT_VERTICAL_MIDDLE;
-    }
-    else if (verticalAlign === 'bottom') {
-        return TEXT_VERTICAL_BOTTOM;
-    }
-    else {
-        return TEXT_VERTICAL_TOP;
+function setVerticalAlign(textSvgEl, verticalAlign) {
+    switch (verticalAlign) {
+        case 'middle':
+            attr(textSvgEl, 'dominant-baseline', 'middle');
+            attr(textSvgEl, 'alignment-baseline', 'middle');
+            break;
+
+        case 'bottom':
+            attr(textSvgEl, 'dominant-baseline', 'ideographic');
+            attr(textSvgEl, 'alignment-baseline', 'ideographic');
+            break;
+
+        default:
+            attr(textSvgEl, 'dominant-baseline', 'hanging');
+            attr(textSvgEl, 'alignment-baseline', 'hanging');
     }
 }
 
