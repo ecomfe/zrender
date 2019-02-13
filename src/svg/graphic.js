@@ -63,25 +63,6 @@ function bindStyle(svgEl, style, isText, el) {
         var fill = isText ? style.textFill : style.fill;
         fill = fill === 'transparent' ? NONE : fill;
 
-        /**
-         * FIXME:
-         * This is a temporary fix for Chrome's clipping bug
-         * that happens when a clip-path is referring another one.
-         * This fix should be used before Chrome's bug is fixed.
-         * For an element that has clip-path, and fill is none,
-         * set it to be "rgba(0, 0, 0, 0.002)" will hide the element.
-         * Otherwise, it will show black fill color.
-         * 0.002 is used because this won't work for alpha values smaller
-         * than 0.002.
-         *
-         * See
-         * https://bugs.chromium.org/p/chromium/issues/detail?id=659790
-         * for more information.
-         */
-        if (svgEl.getAttribute('clip-path') !== 'none' && fill === NONE) {
-            fill = 'rgba(0, 0, 0, 0.002)';
-        }
-
         attr(svgEl, 'fill', fill);
         attr(svgEl, 'fill-opacity', style.fillOpacity != null ? style.fillOpacity * style.opacity : style.opacity);
     }

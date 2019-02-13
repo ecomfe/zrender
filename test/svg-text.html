@@ -20,215 +20,257 @@
     var zr = zrender.init(document.getElementById('main'), {
         renderer: 'svg'
     });
+    const lists = [
+      'a111',
+      'b111',
+      'c1111',
+      'd11111',
+      'e111111',
+      'f111111',
+      'g1111',
+    ];
 
-    showBoundingRect = function () {
-        zr.storage.traverse(function (el) {
-            if (el.type === 'text') {
-                var rect = el.getBoundingRect();
-                zr.add(new zrender.Rect({
-                    shape: {
-                        x: rect.x, y: rect.y, width: rect.width, height: rect.height
-                    },
-                    position: el.position.slice(),
-                    rotation: el.rotation,
-                    scale: el.scale.slice(),
-                    origin: el.origin && el.origin.slice(),
-                    style: {
-                        fill: null,
-                        stroke: 'blue',
-                        lineWidth: 1
-                    }
-                }));
-            }
-        });
-    }
+    const xAxisGroup = new zrender.Group();
+    xAxisGroup.position[0] = 20;
+    xAxisGroup.position[1] = 40;
 
-    var zrWidth = zr.getWidth();
-    var zrHeight = zr.getHeight();
-    var unit = 100;
+    const partWidth = 50;
 
-    for (var i = 0; i < 100 && i * unit < zrWidth; i++) {
-        zr.add(new zrender.Line({
-            shape: {
-                x1: i * unit,
-                y1: 0,
-                x2: i * unit,
-                y2: zrHeight
-            },
-            style: {
-                fill: null,
-                stroke: '#ddd'
-            },
-            silent: true
-        }));
-    }
-
-    for (var i = 0; i < 100 && i * unit < zrHeight; i++) {
-        zr.add(new zrender.Line({
-            shape: {
-                x1: 0,
-                y1: i * unit,
-                x2: zrWidth,
-                y2: i * unit
-            },
-            style: {
-                fill: null,
-                stroke: '#ddd'
-            },
-            silent: true
-        }));
-    }
-
-    zr.add(new zrender.Text({
-        style: {
-            x: 0,
-            y: 0,
-            text: '国国国国\n国国国国国\n国国国国国国',
-            width: 50,
-            height: 50,
-            textFill: '#c0f',
-            textFont: '18px Microsoft Yahei'
-        },
-        draggable: true
-    }));
-
-    zr.add(new zrender.Text({
-        position : [100, 100],
-        style: {
-            x: 0,
-            y: 0,
-            text: 'position\n[100, 100]\ntextStrokeWidth: 10',
-            width: 50,
-            height: 50,
-            textFill: 'green',
-            textStroke: 'red',
-            textStrokeWidth: 10,
-            textFont: '18px Microsoft Yahei'
-        },
-        draggable: true
-    }));
-
-    zr.add(new zrender.Text({
-        position : [200, 100],
-        rotation: 2,
-        scale: [.5, .5],
-        style: {
-            x: 0,
-            y: 0,
-            text: 'position\n[200, 100],\nrotation: 2\nscale: 0.5',
-            width: 50,
-            height: 50,
-            textFill: '#c0f',
-            textFont: '18px Microsoft Yahei'
-        },
-        draggable: true
-    }));
-
-    zr.add(new zrender.Rect({
-        position : [300, 100],
+    lists.forEach((title, index) => {
+      const TextEle = new zrender.Rect({
+        cursor: 'default',
         shape: {
-            x: 0, y: 0, width: 200, height: 16
+          x: partWidth * index,
+          y: 0,
+          width: partWidth,
+          height: 20,
         },
         style: {
-            fill: '#333'
-        }
-    }));
-    zr.add(new zrender.Text({
-        position : [300, 100],
-        style: {
-            x: 0,
-            y: 0,
-            text: '微软雅黑 no offset gg',
-            textFill: '#fff',
-            textFont: '16px Microsoft Yahei'
-        }
-    }));
+          text: title,
+          textAlign: 'right',
+          textRotation: Math.PI / 3,
+          textOrigin: 'center',
+          textFill: '#000',
+          textVerticalAlign: 'middle',
+          fontSize: 10,
+          stroke: '#ccc',
+          fill: 'none',
+        },
+      });
 
-    zr.add(new zrender.Text({
-        position : [400, 50],
-        style: {
-            x: 0,
-            y: 0,
-            text: 'position: [400, 50]\ntextAlign: right\ntextVerticalAlign: middle',
-            textFill: '#456',
-            textAlign: 'right',
-            textVerticalAlign: 'middle'
-        }
-    }));
+      xAxisGroup.add(TextEle);
+    });
 
-    zr.add(new zrender.Text({
-        position : [500, 50],
-        style: {
-            x: 0,
-            y: 0,
-            text: 'position: [500, 50]\ntextAlign: center\ntextVerticalAlign: bottom',
-            textFill: '#456',
-            textAlign: 'center',
-            textVerticalAlign: 'bottom'
-        }
-    }));
+    zr.add(xAxisGroup);
 
-    zr.add(new zrender.Text({
-        position : [600, 0],
-        style: {
-            x: 0,
-            y: 0,
-            text: '阴影阴影\nshadow',
-            textFill: '#456',
-            font: '18px Arial',
-            textShadowBlur: 3,
-            textShadowColor: '#893e95',
-            textShadowOffsetX: 5,
-            textShadowOffsetY: 10
-        }
-    }));
+    // showBoundingRect = function () {
+    //     zr.storage.traverse(function (el) {
+    //         if (el.type === 'text') {
+    //             var rect = el.getBoundingRect();
+    //             zr.add(new zrender.Rect({
+    //                 shape: {
+    //                     x: rect.x, y: rect.y, width: rect.width, height: rect.height
+    //                 },
+    //                 position: el.position.slice(),
+    //                 rotation: el.rotation,
+    //                 scale: el.scale.slice(),
+    //                 origin: el.origin && el.origin.slice(),
+    //                 style: {
+    //                     fill: null,
+    //                     stroke: 'blue',
+    //                     lineWidth: 1
+    //                 }
+    //             }));
+    //         }
+    //     });
+    // }
 
-    zr.add(new zrender.Text({
-        position : [700, 0],
-        style: {
-            x: 0,
-            y: 0,
-            text: '有文字背景没有框背景和 textPadding: 10 \nshadow',
-            textFill: '#f00',
-            font: '18px Arial',
-            textPadding: 10,
-            textBackgroundColor: 'rgba(124, 0, 123, 0.4)',
-            textShadowBlur: 3,
-            textShadowColor: '#893e95',
-            textShadowOffsetX: 5,
-            textShadowOffsetY: 10
-        }
-    }));
+    // var zrWidth = zr.getWidth();
+    // var zrHeight = zr.getHeight();
+    // var unit = 100;
 
-    zr.add(new zrender.Text({
-        position : [600, 100],
-        rotation: -Math.PI / 16,
-        style: {
-            x: 0,
-            y: 0,
-            text: [
-                '有文字背景也有框背景',
-                'textBorderWidth: 2 和 textBorderRadius: 5',
-                'textPadding: [10, 20, 30, 40]',
-                'rotation: -Math.PI / 16'
-            ].join('\n'),
-            textFill: '#0f0',
-            font: '18px Arial',
-            textPadding: [10, 20, 30, 40],
-            textBackgroundColor: 'rgba(124, 0, 123, 0.4)',
-            textBorderColor: '#112233',
-            textBorderWidth: 2,
-            textBorderRadius: 5,
-            textShadowBlur: 2,
-            textShadowColor: '#893e95',
-            textShadowOffsetX: 2,
-            textShadowOffsetY: 4,
-            textBoxShadowBlur: 5,
-            textBoxShadowColor: '#1099ee',
-            textBoxShadowOffsetX: 5,
-            textBoxShadowOffsetY: 10
-        }
-    }));
+    // for (var i = 0; i < 100 && i * unit < zrWidth; i++) {
+    //     zr.add(new zrender.Line({
+    //         shape: {
+    //             x1: i * unit,
+    //             y1: 0,
+    //             x2: i * unit,
+    //             y2: zrHeight
+    //         },
+    //         style: {
+    //             fill: null,
+    //             stroke: '#ddd'
+    //         },
+    //         silent: true
+    //     }));
+    // }
+
+    // for (var i = 0; i < 100 && i * unit < zrHeight; i++) {
+    //     zr.add(new zrender.Line({
+    //         shape: {
+    //             x1: 0,
+    //             y1: i * unit,
+    //             x2: zrWidth,
+    //             y2: i * unit
+    //         },
+    //         style: {
+    //             fill: null,
+    //             stroke: '#ddd'
+    //         },
+    //         silent: true
+    //     }));
+    // }
+
+    // zr.add(new zrender.Text({
+    //     style: {
+    //         x: 0,
+    //         y: 0,
+    //         text: '国国国国\n国国国国国\n国国国国国国',
+    //         width: 50,
+    //         height: 50,
+    //         textFill: '#c0f',
+    //         textFont: '18px Microsoft Yahei'
+    //     },
+    //     draggable: true
+    // }));
+
+    // zr.add(new zrender.Text({
+    //     position : [100, 100],
+    //     style: {
+    //         x: 0,
+    //         y: 0,
+    //         text: 'position\n[100, 100]\ntextStrokeWidth: 10',
+    //         width: 50,
+    //         height: 50,
+    //         textFill: 'green',
+    //         textStroke: 'red',
+    //         textStrokeWidth: 10,
+    //         textFont: '18px Microsoft Yahei'
+    //     },
+    //     draggable: true
+    // }));
+
+    // zr.add(new zrender.Text({
+    //     position : [200, 100],
+    //     rotation: 2,
+    //     scale: [.5, .5],
+    //     style: {
+    //         x: 0,
+    //         y: 0,
+    //         text: 'position\n[200, 100],\nrotation: 2\nscale: 0.5',
+    //         width: 50,
+    //         height: 50,
+    //         textFill: '#c0f',
+    //         textFont: '18px Microsoft Yahei'
+    //     },
+    //     draggable: true
+    // }));
+
+    // zr.add(new zrender.Rect({
+    //     position : [300, 100],
+    //     shape: {
+    //         x: 0, y: 0, width: 200, height: 16
+    //     },
+    //     style: {
+    //         fill: '#333'
+    //     }
+    // }));
+    // zr.add(new zrender.Text({
+    //     position : [300, 100],
+    //     style: {
+    //         x: 0,
+    //         y: 0,
+    //         text: '微软雅黑 no offset gg',
+    //         textFill: '#fff',
+    //         textFont: '16px Microsoft Yahei'
+    //     }
+    // }));
+
+    // zr.add(new zrender.Text({
+    //     position : [400, 50],
+    //     style: {
+    //         x: 0,
+    //         y: 0,
+    //         text: 'position: [400, 50]\ntextAlign: right\ntextVerticalAlign: middle',
+    //         textFill: '#456',
+    //         textAlign: 'right',
+    //         textVerticalAlign: 'middle'
+    //     }
+    // }));
+
+    // zr.add(new zrender.Text({
+    //     position : [500, 50],
+    //     style: {
+    //         x: 0,
+    //         y: 0,
+    //         text: 'position: [500, 50]\ntextAlign: center\ntextVerticalAlign: bottom',
+    //         textFill: '#456',
+    //         textAlign: 'center',
+    //         textVerticalAlign: 'bottom'
+    //     }
+    // }));
+
+    // zr.add(new zrender.Text({
+    //     position : [600, 0],
+    //     style: {
+    //         x: 0,
+    //         y: 0,
+    //         text: '阴影阴影\nshadow',
+    //         textFill: '#456',
+    //         font: '18px Arial',
+    //         textShadowBlur: 3,
+    //         textShadowColor: '#893e95',
+    //         textShadowOffsetX: 5,
+    //         textShadowOffsetY: 10
+    //     }
+    // }));
+
+    // zr.add(new zrender.Text({
+    //     position : [700, 0],
+    //     style: {
+    //         x: 0,
+    //         y: 0,
+    //         text: '有文字背景没有框背景和 textPadding: 10 \nshadow',
+    //         textFill: '#f00',
+    //         font: '18px Arial',
+    //         textPadding: 10,
+    //         textBackgroundColor: 'rgba(124, 0, 123, 0.4)',
+    //         textShadowBlur: 3,
+    //         textShadowColor: '#893e95',
+    //         textShadowOffsetX: 5,
+    //         textShadowOffsetY: 10
+    //     }
+    // }));
+
+    // zr.add(new zrender.Text({
+    //     position : [600, 100],
+    //     rotation: -Math.PI / 16,
+    //     style: {
+    //         x: 0,
+    //         y: 0,
+    //         text: [
+    //             '有文字背景也有框背景',
+    //             'textBorderWidth: 2 和 textBorderRadius: 5',
+    //             'textPadding: [10, 20, 30, 40]',
+    //             'rotation: -Math.PI / 16'
+    //         ].join('\n'),
+    //         textFill: '#0f0',
+    //         font: '18px Arial',
+    //         textPadding: [10, 20, 30, 40],
+    //         textBackgroundColor: 'rgba(124, 0, 123, 0.4)',
+    //         textBorderColor: '#112233',
+    //         textBorderWidth: 2,
+    //         textBorderRadius: 5,
+    //         textShadowBlur: 2,
+    //         textShadowColor: '#893e95',
+    //         textShadowOffsetX: 2,
+    //         textShadowOffsetY: 4,
+    //         textBoxShadowBlur: 5,
+    //         textBoxShadowColor: '#1099ee',
+    //         textBoxShadowOffsetX: 5,
+    //         textBoxShadowOffsetY: 10
+    //     }
+    // }));
 
     // zr.add(new zrender.Text({
     //     style: {
