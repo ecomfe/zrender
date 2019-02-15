@@ -88,7 +88,7 @@ function getPlainTextRect(text, font, textAlign, textVerticalAlign, textPadding,
     return rect;
 }
 
-function getRichTextRect(text, font, textAlign, textVerticalAlign, textPadding, textLineHeight, rich, truncate) {
+function getRichTextRect(text, font, textAlign, textVerticalAlign, textPadding, rich, textLineHeight, truncate) {
     var contentBlock = parseRichText(text, {
         rich: rich,
         truncate: truncate,
