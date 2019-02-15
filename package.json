@@ -13,7 +13,8 @@
   "scripts": {
     "prepublish": "node build/build.js --prepublish",
     "build": "node build/build.js --release",
-    "dev": "node build/build.js --watch"
+    "dev": "node build/build.js --watch",
+    "test": "node build/build.js"
   },
   "license": "BSD",
   "devDependencies": {
