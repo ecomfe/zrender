@@ -860,7 +860,9 @@ if (!env.canvasSupported) {
         var font = fontStyle.style + ' ' + fontStyle.variant + ' ' + fontStyle.weight + ' '
             + fontStyle.size + 'px "' + fontStyle.family + '"';
 
-        textRect = textRect || textContain.getBoundingRect(text, font, align, verticalAlign, style.textPadding, style.textLineHeight);
+        textRect = textRect || textContain.getBoundingRect(
+            text, font, align, verticalAlign, style.textPadding, style.textLineHeight
+        );
 
         // Transform rect to view space
         var m = this.transform;
