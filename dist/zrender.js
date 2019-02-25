@@ -7466,7 +7466,7 @@ function getWidth(text, font) {
  */
 function getBoundingRect(text, font, textAlign, textVerticalAlign, textPadding, textLineHeight, rich, truncate) {
     return rich
-        ? getRichTextRect(text, font, textAlign, textVerticalAlign, textPadding, rich, textLineHeight, truncate)
+        ? getRichTextRect(text, font, textAlign, textVerticalAlign, textPadding, textLineHeight, rich, truncate)
         : getPlainTextRect(text, font, textAlign, textVerticalAlign, textPadding, textLineHeight, truncate);
 }
 
@@ -10836,7 +10836,7 @@ var instances = {};    // ZRender实例map索引
 /**
  * @type {string}
  */
-var version = '4.0.6';
+var version = '4.0.7';
 
 /**
  * Initializing a zrender instance
@@ -14311,6 +14311,7 @@ Text.prototype = {
                 style.textAlign,
                 style.textVerticalAlign,
                 style.textPadding,
+                style.textLineHeight,
                 style.rich
             );
 
@@ -16851,8 +16852,10 @@ var svgTextDrawRectText = function (el, rect, textRect) {
 
     var verticalAlign = getVerticalAlignForSvg(style.textVerticalAlign);
 
-    textRect = getBoundingRect(text, font, align,
-        verticalAlign, style.textPadding, style.textLineHeight);
+    textRect = getBoundingRect(
+        text, font, align,
+        verticalAlign, style.textPadding, style.textLineHeight
+    );
 
     var lineHeight = textRect.lineHeight;
     // Text position represented by coord
@@ -19322,7 +19325,9 @@ if (!env$1.canvasSupported) {
         var font = fontStyle.style + ' ' + fontStyle.variant + ' ' + fontStyle.weight + ' '
             + fontStyle.size + 'px "' + fontStyle.family + '"';
 
-        textRect = textRect || getBoundingRect(text, font, align, verticalAlign, style.textPadding, style.textLineHeight);
+        textRect = textRect || getBoundingRect(
+            text, font, align, verticalAlign, style.textPadding, style.textLineHeight
+        );
 
         // Transform rect to view space
         var m = this.transform;
