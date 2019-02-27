@@ -255,7 +255,11 @@ function animateToShallow(animatable, path, source, target, time, delay, reverse
             }
             else {
                 if (reverse) {
+                  if (name === 'position' || name === 'scale' || name === 'origin') {
+                    objShallow[name] = [source[name][0], source[name][1]];
+                  } else {
                     objShallow[name] = source[name];
+                  }
                     setAttrByPath(animatable, path, name, target[name]);
                 }
                 else {
