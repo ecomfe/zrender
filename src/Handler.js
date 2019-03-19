@@ -233,8 +233,9 @@ Handler.prototype = {
         var eventPacket = makeEventPacket(eventName, targetInfo, event);
 
         while (el) {
-            el[eventHandler]
-                && (eventPacket.cancelBubble = el[eventHandler].call(el, eventPacket));
+            if (el[eventHandler]) {
+                eventPacket.cancelBubble = el[eventHandler](eventPacket) || eventPacket.cancelBubble;
+            }
 
             el.trigger(eventName, eventPacket);
 
