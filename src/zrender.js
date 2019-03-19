@@ -130,7 +130,7 @@ var ZRender = function (id, dom, opts) {
     this.storage = storage;
     this.painter = painter;
 
-    var handlerProxy = (!env.node && !env.worker) ? new HandlerProxy(painter.getViewportRoot(), painter.root) : null;
+    var handlerProxy = !env.node ? new HandlerProxy(painter.getViewportRoot(), painter.root) : null;
     this.handler = new Handler(storage, painter, handlerProxy, painter.root);
 
     /**
@@ -450,4 +450,3 @@ ZRender.prototype = {
         delInstance(this.id);
     }
 };
-

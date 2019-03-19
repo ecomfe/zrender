@@ -6,7 +6,7 @@ import Eventful from '../mixin/Eventful';
 import env from './env';
 import {isCanvasEl, transformCoordWithViewport} from './dom';
 
-var isDomLevel2 = (typeof window !== 'undefined') && !!window.addEventListener;
+var isDomLevel2 = typeof addEventListener === 'function';
 
 var MOUSE_EVENT_REG = /^(?:mouse|pointer|contextmenu|drag|drop)|click/;
 var _calcOut = [];
