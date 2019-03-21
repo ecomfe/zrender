@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>polygonhashole</title>
+    <script src="../dist/zrender.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        html,
+        body,
+        #main {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="main"></div>
+    <script type="text/javascript">
+
+
+        var main = document.getElementById('main');
+
+        main.onclick = function (e) {
+            console.log([e.x, e.y]);
+        }
+
+        // 初始化zrender
+        var zr = zrender.init(main);
+
+        var polygon = new zrender.Polygon({
+            shape: {
+                points: [
+                    [
+                        [118, 49],
+                        [173, 80],
+                        [205, 60],
+                        [240, 107],
+                        [218, 151],
+                        [253, 181],
+                        [233, 247],
+                        [173, 290],
+                        [124, 268],
+                        [56, 295],
+                        [56, 239],
+                        [18, 203],
+                        [36, 151],
+                        [19, 103],
+                        [17, 60],
+                        [118, 49]
+                    ],
+                    [
+                        [107, 118]
+                        , [176, 129]
+                        , [195, 195]
+                        , [161, 232]
+                        , [109, 240]
+                        , [71, 164]
+                    ].reverse()
+
+                ],
+                // smooth: true,
+                hole: true
+            },
+            draggable: true,
+            style: {
+                fill: 'black',
+                lineWidth: 5,
+                text: 'polygon',
+                textPosition: 'inside'
+            }
+        });
+        zr.add(polygon);
+
+
+
+        fetch('data/polygonhasholedata.json').then(res => res.json()).then(json => {
+                const polygon = new zrender.Polygon({
+                    shape: {
+                        points: json,
+                        hole: true
+                    },
+                    draggable: true,
+                    style: {
+                        fill: 'green',
+                        lineWidth: 5,
+                        text: 'taihu lake',
+                        textPosition: 'inside'
+                    }
+                });
+                zr.add(polygon);
+        })
+
+
+        // polygon.animate('')
+        //     .when(200, {
+        //         position: [200, 0]
+        //     })
+        //     .start();
+        // polygon.animate('', true)
+        //     .when(1000, {
+        //         position: [200, 0]
+        //     })
+        //     .when(2000, {
+        //         position: [200, 200]
+        //     })
+        //     .when(3000, {
+        //         position: [0, 200]
+        //     })
+        //     .when(4000, {
+        //         position: [100, 100]
+        //     })
+        //     .start();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>polygon</title>
+    <script src="../dist/zrender.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        html,
+        body,
+        #main {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="main"></div>
+    <script type="text/javascript">
+
+
+        var main = document.getElementById('main');
+
+        main.onclick = function (e) {
+            console.log([e.x, e.y]);
+        }
+
+        // 初始化zrender
+        var zr = zrender.init(main);
+
+        var gradient = new zrender.LinearGradient();
+        gradient.addColorStop(0, 'red');
+        gradient.addColorStop(1, 'black');
+
+
+        var polygon = new zrender.Polygon({
+            shape: {
+                points:
+                    [
+                        [507, 179],
+                        [589, 179],
+                        [641, 255],
+                        [658, 335],
+                        [634, 408],
+                        [692, 436],
+                        [705, 512],
+                        [635, 559],
+                        [582, 581],
+                        [346, 576],
+                        [288, 495],
+                        [302, 389],
+                        [323, 300],
+                        [336, 222],
+                        [388, 155],
+                        [465, 113],
+                        [507, 179]
+                    ],
+
+                smooth: true,
+            },
+            draggable: true,
+            style: {
+                fill: gradient,
+                lineWidth: 5,
+                text: 'polygon',
+                textPosition: 'inside'
+            }
+        });
+        zr.add(polygon);
+
+        polygon.animate('')
+            .when(200, {
+                position: [200, 0]
+            })
+            .start();
+        polygon.animate('', true)
+            .when(1000, {
+                position: [200, 0]
+            })
+            .when(2000, {
+                position: [200, 200]
+            })
+            .when(3000, {
+                position: [0, 200]
+            })
+            .when(4000, {
+                position: [100, 100]
+            })
+            .start();
+
+
+        fetch('data/polygondata.json').then(res => res.json()).then(json => {
+            const polygon = new zrender.Polygon({
+                shape: {
+                    points: json[0]
+                },
+                draggable: true,
+                style: {
+                    fill: 'green',
+                    lineWidth: 5,
+                    text: 'dushuhu lake',
+                    textPosition: 'inside'
+                }
+            });
+            zr.add(polygon);
+        })
+    </script>
+</body>
+
+</html>
