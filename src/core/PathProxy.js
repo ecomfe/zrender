@@ -12,7 +12,7 @@ import * as curve from './curve';
 import * as vec2 from './vector';
 import * as bbox from './bbox';
 import BoundingRect from './BoundingRect';
-import {devicePixelRatio as dpr} from '../config';
+import { devicePixelRatio as dpr } from '../config';
 
 var CMD = {
     M: 1,
@@ -277,8 +277,14 @@ PathProxy.prototype = {
      * @param {CanvasRenderingContext2D} ctx
      * @return {module:zrender/core/PathProxy}
      */
-    fill: function (ctx) {
-        ctx && ctx.fill();
+    fill: function (ctx, hole) {
+        if (ctx) {
+            if (hole) {
+                ctx.fill('evenodd');
+            } else {
+                ctx.fill();
+            }
+        }
         this.toStatic();
     },
 
@@ -444,7 +450,7 @@ PathProxy.prototype = {
         y -= offset * dy;
 
         while ((dx > 0 && x <= x1) || (dx < 0 && x >= x1)
-        || (dx === 0 && ((dy > 0 && y <= y1) || (dy < 0 && y >= y1)))) {
+            || (dx === 0 && ((dy > 0 && y <= y1) || (dy < 0 && y >= y1)))) {
             idx = this._dashIdx;
             dash = lineDash[idx];
             x += dx * dash;

@@ -125,11 +125,11 @@ Path.prototype = {
             if (style.fillOpacity != null) {
                 var originalGlobalAlpha = ctx.globalAlpha;
                 ctx.globalAlpha = style.fillOpacity * style.opacity;
-                path.fill(ctx);
+                path.fill(ctx, this.shape.hole);
                 ctx.globalAlpha = originalGlobalAlpha;
             }
             else {
-                path.fill(ctx);
+                path.fill(ctx, this.shape.hole);
             }
         }
 
@@ -166,7 +166,7 @@ Path.prototype = {
 
     // When bundling path, some shape may decide if use moveTo to begin a new subpath or closePath
     // Like in circle
-    buildPath: function (ctx, shapeCfg, inBundle) {},
+    buildPath: function (ctx, shapeCfg, inBundle) { },
 
     createPathProxy: function () {
         this.path = new PathProxy();
