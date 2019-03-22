@@ -32,7 +32,7 @@
 
         var polygon = new zrender.Polygon({
             shape: {
-                points: [
+                points: [  // Three dimensional array  length >1
                     [
                         [118, 49],
                         [173, 80],
@@ -62,7 +62,6 @@
 
                 ],
                 // smooth: true,
-                hole: true
             },
             draggable: true,
             style: {
@@ -79,8 +78,7 @@
         fetch('data/polygonhasholedata.json').then(res => res.json()).then(json => {
                 const polygon = new zrender.Polygon({
                     shape: {
-                        points: json,
-                        hole: true
+                        points: json, // Three dimensional array  length >1
                     },
                     draggable: true,
                     style: {

@@ -37,7 +37,7 @@
 
         var polygon = new zrender.Polygon({
             shape: {
-                points:
+                points:   // two dimensional array
                     [
                         [507, 179],
                         [589, 179],
@@ -70,37 +70,37 @@
         });
         zr.add(polygon);
 
-        polygon.animate('')
-            .when(200, {
-                position: [200, 0]
-            })
-            .start();
-        polygon.animate('', true)
-            .when(1000, {
-                position: [200, 0]
-            })
-            .when(2000, {
-                position: [200, 200]
-            })
-            .when(3000, {
-                position: [0, 200]
-            })
-            .when(4000, {
-                position: [100, 100]
-            })
-            .start();
+        // polygon.animate('')
+        //     .when(200, {
+        //         position: [200, 0]
+        //     })
+        //     .start();
+        // polygon.animate('', true)
+        //     .when(1000, {
+        //         position: [200, 0]
+        //     })
+        //     .when(2000, {
+        //         position: [200, 200]
+        //     })
+        //     .when(3000, {
+        //         position: [0, 200]
+        //     })
+        //     .when(4000, {
+        //         position: [100, 100]
+        //     })
+        //     .start();
 
 
-        fetch('data/polygondata.json').then(res => res.json()).then(json => {
+        fetch('data/polygonhasholedata.json').then(res => res.json()).then(json => {
             const polygon = new zrender.Polygon({
                 shape: {
-                    points: json[0]
+                    points: [json[0]]   // Three dimensional array  length =1
                 },
                 draggable: true,
                 style: {
                     fill: 'green',
                     lineWidth: 5,
-                    text: 'dushuhu lake',
+                    text: 'taihu lake',
                     textPosition: 'inside'
                 }
             });
