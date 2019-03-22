@@ -41,7 +41,7 @@ function buildRing(ctx, points, shape, closePath) {
 
 export function buildPath(ctx, shape, closePath) {
     var points = shape.points;
-    var hole = shape.hole;
+    var hole = false;
     // Three dimensional array
     /**
      *      [
@@ -55,8 +55,14 @@ export function buildPath(ctx, shape, closePath) {
            ]
      */
     if (Array.isArray(points[0][0])) {
-        hole = true;
+        if (points.length > 1) {
+            hole = true;
+        } else {
+            points = points[0];
+        }
     }
+    shape.hole = hole;
+
     if (hole) {
         points.forEach(function (ring) {
             buildRing(ctx, ring, shape, closePath);
