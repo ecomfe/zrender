@@ -35,6 +35,9 @@ Path.prototype = {
 
     strokeContainThreshold: 5,
 
+    // This item default to be false. but in map series,
+    // in order to improve performance, this will be true,
+    // so the shorty segment won't be drew.
     segmentIgnoreThreshold: false,
 
     /**
