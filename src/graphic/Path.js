@@ -35,6 +35,8 @@ Path.prototype = {
 
     strokeContainThreshold: 5,
 
+    segmentIgnoreThreshold: false,
+
     /**
      * See `module:zrender/src/graphic/helper/subPixelOptimize`.
      * @type {boolean}
@@ -90,7 +92,7 @@ Path.prototype = {
 
         // Update path sx, sy
         var scale = this.getGlobalScale();
-        path.setScale(scale[0], scale[1]);
+        this.segmentIgnoreThreshold !== false && path.setScale(scale[0], scale[1]);
 
         // Proxy context
         // Rebuild path in following 2 cases
