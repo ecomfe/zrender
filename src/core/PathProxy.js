@@ -97,9 +97,11 @@ PathProxy.prototype = {
     /**
      * @readOnly
      */
-    setScale: function (sx, sy) {
-        this._ux = mathAbs(1 / dpr / sx) || 0;
-        this._uy = mathAbs(1 / dpr / sy) || 0;
+    setScale: function (sx, sy, segmentIgnoreThreshold) {
+        // Compat. Previously there is no segmentIgnoreThreshold.
+        segmentIgnoreThreshold = segmentIgnoreThreshold || 0;
+        this._ux = mathAbs(segmentIgnoreThreshold / dpr / sx) || 0;
+        this._uy = mathAbs(segmentIgnoreThreshold / dpr / sy) || 0;
     },
 
     getContext: function () {
