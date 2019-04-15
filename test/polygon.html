@@ -100,7 +100,7 @@
         fetch('data/polygonhasholedata.json').then(res => res.json()).then(json => {
             var polygon = new zrender.Polygon({
                 shape: {
-                    points: json[0] // Three dimensional array  length =1
+                    points: json[0] 
                 }
             });
             compath.shape.paths.push(polygon);
