@@ -2,11 +2,10 @@
 import smoothSpline from './smoothSpline';
 import smoothBezier from './smoothBezier';
 
-
-
-function buildRing(ctx, points, shape, closePath) {
+export function buildPath(ctx, shape, closePath) {
+    var points = shape.points;
+    var smooth = shape.smooth;
     if (points && points.length >= 2) {
-        var smooth = shape.smooth;
         if (smooth && smooth !== 'spline') {
             var controlPoints = smoothBezier(
                 points, smooth, closePath, shape.smoothConstraint
@@ -35,39 +34,5 @@ function buildRing(ctx, points, shape, closePath) {
         }
 
         closePath && ctx.closePath();
-    }
-}
-
-
-export function buildPath(ctx, shape, closePath) {
-    var points = shape.points;
-    var hole = false;
-    // Three dimensional array
-    /**
-     *      [
-             [
-                 [],[],[],[],... out ring
-             ],
-             [
-                [],[],[],[],... hole
-             ],
-             ... holes
-           ]
-     */
-    if (Array.isArray(points[0][0])) {
-        if (points.length > 1) {
-            hole = true;
-        } else {
-            points = points[0];
-        }
-    }
-    shape.hole = hole;
-
-    if (hole) {
-        points.forEach(function (ring) {
-            buildRing(ctx, ring, shape, closePath);
-        });
-    } else {
-        buildRing(ctx, points, shape, closePath);
     }
 }
