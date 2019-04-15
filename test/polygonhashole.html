@@ -19,8 +19,6 @@
 <body>
     <div id="main"></div>
     <script type="text/javascript">
-
-
         var main = document.getElementById('main');
 
         main.onclick = function (e) {
@@ -29,88 +27,163 @@
 
         // 初始化zrender
         var zr = zrender.init(main);
+        var data = [
+            [
+                [118, 49],
+                [173, 80],
+                [205, 60],
+                [240, 107],
+                [218, 151],
+                [253, 181],
+                [233, 247],
+                [173, 290],
+                [124, 268],
+                [56, 295],
+                [56, 239],
+                [18, 203],
+                [36, 151],
+                [19, 103],
+                [17, 60],
+                [118, 49]
+            ],
+            [
+                [107, 118],
+                [176, 129],
+                [195, 195],
+                [161, 232],
+                [109, 240],
+                [71, 164]
+            ].reverse()
+        ];
 
-        var polygon = new zrender.Polygon({
+        function getPolygons(offsetx) {
+            offsetx = offsetx || 1;
+            var xys = [];
+            data.forEach(function (d) {
+                d = d.map(function (_d) {
+                    var copydata = [_d[0], _d[1]];
+                    copydata[0] += (offsetx);
+                    return copydata;
+                })
+                xys.push(d);
+            });
+            var polygons = xys.map(function (d) {
+                return new zrender.Polygon({
+                    shape: {
+                        points: d
+                    }
+                });
+            })
+            return polygons;
+        }
+
+        // https://github.com/ecomfe/zrender/pull/451
+        // new CompoundPath({
+        //             shape: {
+        //                 paths: [
+        //                     // exterior
+        //                     new Polygon({
+        //                             shape: {
+        //                                 points: [
+        //                                     [],
+        //                                     [],
+        //                                     [], ...
+        //                                 ]
+        //                             }
+        //                         },
+        //                         // hole0
+        //                         new Polygon({
+        //                                 shape: {
+        //                                     points: [
+        //                                         [],
+        //                                         [],
+        //                                         [], ...
+        //                                     ]
+        //                                 }
+        //                             },
+        //                             // hole1
+        //                             new Polygon({
+        //                                     shape: {
+        //                                         points: [
+        //                                             [],
+        //                                             [],
+        //                                             [], ...
+        //                                         ]
+        //                                     }
+        //                                 },
+        //                                 ...
+        //                             ]
+        //                         }
+        //                     })
+
+        //compoundPath test，polygon has hole
+        var compath = new zrender.CompoundPath({
             shape: {
-                points: [  // Three dimensional array  length >1
-                    [
-                        [118, 49],
-                        [173, 80],
-                        [205, 60],
-                        [240, 107],
-                        [218, 151],
-                        [253, 181],
-                        [233, 247],
-                        [173, 290],
-                        [124, 268],
-                        [56, 295],
-                        [56, 239],
-                        [18, 203],
-                        [36, 151],
-                        [19, 103],
-                        [17, 60],
-                        [118, 49]
-                    ],
-                    [
-                        [107, 118]
-                        , [176, 129]
-                        , [195, 195]
-                        , [161, 232]
-                        , [109, 240]
-                        , [71, 164]
-                    ].reverse()
+                paths: []
+            },
+            draggable: true,
+            style: {
+                fill: 'red',
+                lineWidth: 5,
+                // text: 'taihu lake',
+                textPosition: 'inside'
+            }
+        });
+        var polygons = getPolygons();
+        polygons.forEach(function (polygon) {
+            compath.shape.paths.push(polygon);
+        });
+        zr.add(compath);
 
-                ],
-                // smooth: true,
+
+        //compoundPath test，polygon has holes,holes.length>1
+        var compath1 = new zrender.CompoundPath({
+            shape: {
+                paths: []
+            },
+            draggable: true,
+            style: {
+                fill: 'green',
+                lineWidth: 5,
+                text: 'taihu lake',
+                textPosition: 'inside'
+            }
+        });
+
+        fetch('data/polygonhasholedata.json').then(res => res.json()).then(json => {
+            json.forEach(function (xys) {
+                var polygon = new zrender.Polygon({
+                    shape: {
+                        points: xys,
+                    }
+                });
+                compath1.shape.paths.push(polygon);
+            });
+            zr.add(compath1);
+        })
+
+
+
+        //compoundPath test，multipolygon has holes
+        var compath2 = new zrender.CompoundPath({
+            shape: {
+                paths: []
             },
             draggable: true,
             style: {
                 fill: 'black',
                 lineWidth: 5,
-                text: 'polygon',
+                text: 'multipolygon',
                 textPosition: 'inside'
             }
         });
-        zr.add(polygon);
-
-
-
-        fetch('data/polygonhasholedata.json').then(res => res.json()).then(json => {
-                const polygon = new zrender.Polygon({
-                    shape: {
-                        points: json, // Three dimensional array  length >1
-                    },
-                    draggable: true,
-                    style: {
-                        fill: 'green',
-                        lineWidth: 5,
-                        text: 'taihu lake',
-                        textPosition: 'inside'
-                    }
-                });
-                zr.add(polygon);
-        })
-
-
-        // polygon.animate('')
-        //     .when(200, {
-        //         position: [200, 0]
-        //     })
-        //     .start();
-        // polygon.animate('', true)
-        //     .when(1000, {
-        //         position: [200, 0]
-        //     })
-        //     .when(2000, {
-        //         position: [200, 200]
-        //     })
-        //     .when(3000, {
-        //         position: [0, 200]
-        //     })
-        //     .when(4000, {
-        //         position: [100, 100]
-        //     })
-        //     .start();
+        [1000, 1400].forEach(function (offsetx) {
+            var polygons = getPolygons(offsetx);
+            polygons.forEach(function (polygon) {
+                compath2.shape.paths.push(polygon);
+            });
+        });
+        zr.add(compath2);
     </script>
 </body>
 

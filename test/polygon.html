@@ -19,8 +19,6 @@
 <body>
     <div id="main"></div>
     <script type="text/javascript">
-
-
         var main = document.getElementById('main');
 
         main.onclick = function (e) {
@@ -34,10 +32,10 @@
         gradient.addColorStop(0, 'red');
         gradient.addColorStop(1, 'black');
 
-
+        // simple polygon test
         var polygon = new zrender.Polygon({
             shape: {
-                points:   // two dimensional array
+                points: // two dimensional array
                     [
                         [507, 179],
                         [589, 179],
@@ -70,41 +68,57 @@
         });
         zr.add(polygon);
 
-        // polygon.animate('')
-        //     .when(200, {
-        //         position: [200, 0]
-        //     })
-        //     .start();
-        // polygon.animate('', true)
-        //     .when(1000, {
-        //         position: [200, 0]
-        //     })
-        //     .when(2000, {
-        //         position: [200, 200]
-        //     })
-        //     .when(3000, {
-        //         position: [0, 200]
-        //     })
-        //     .when(4000, {
-        //         position: [100, 100]
-        //     })
-        //     .start();
+        //compoundPath test,single polygon no hole
+        var compath = new zrender.CompoundPath({
+            shape: {
+                paths: []
+            },
+            draggable: true,
+            style: {
+                fill: 'green',
+                lineWidth: 5,
+                text: 'taihu lake',
+                textPosition: 'inside'
+            }
+        });
+
+        // multi polygon ,every polygon not has hole
+        var compath1 = new zrender.CompoundPath({
+            shape: {
+                paths: []
+            },
+            draggable: true,
+            style: {
+                fill: 'red',
+                lineWidth: 5,
+                text: 'taihu lake',
+                textPosition: 'inside'
+            }
+        });
 
 
         fetch('data/polygonhasholedata.json').then(res => res.json()).then(json => {
-            const polygon = new zrender.Polygon({
+            var polygon = new zrender.Polygon({
                 shape: {
-                    points: [json[0]]   // Three dimensional array  length =1
-                },
-                draggable: true,
-                style: {
-                    fill: 'green',
-                    lineWidth: 5,
-                    text: 'taihu lake',
-                    textPosition: 'inside'
+                    points: json[0] // Three dimensional array  length =1
                 }
             });
-            zr.add(polygon);
+            compath.shape.paths.push(polygon);
+            zr.add(compath);
+
+            json.slice(1, json.length).forEach(function (xys) {
+                var data = xys.map(function (xy) {
+                    xy[0] += 400;
+                    return xy;
+                });
+                var polygon = new zrender.Polygon({
+                    shape: {
+                        points: data
+                    }
+                });
+                compath1.shape.paths.push(polygon);
+            });
+            zr.add(compath1);
         })
     </script>
 </body>
