@@ -279,14 +279,8 @@ PathProxy.prototype = {
      * @param {CanvasRenderingContext2D} ctx
      * @return {module:zrender/core/PathProxy}
      */
-    fill: function (ctx, hole) {
-        if (ctx) {
-            if (hole) {
-                ctx.fill('evenodd');
-            } else {
-                ctx.fill();
-            }
-        }
+    fill: function (ctx, fillRule) {
+        ctx && ctx.fill(fillRule || 'nonzero');
         this.toStatic();
     },
 

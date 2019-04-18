@@ -130,11 +130,11 @@ Path.prototype = {
             if (style.fillOpacity != null) {
                 var originalGlobalAlpha = ctx.globalAlpha;
                 ctx.globalAlpha = style.fillOpacity * style.opacity;
-                path.fill(ctx, this.shape.hole);
+                path.fill(ctx, this.shape.fillRule);
                 ctx.globalAlpha = originalGlobalAlpha;
             }
             else {
-                path.fill(ctx, this.shape.hole);
+                path.fill(ctx, this.shape.fillRule);
             }
         }
 
