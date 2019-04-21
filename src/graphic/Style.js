@@ -88,7 +88,12 @@ Style.prototype = {
     strokeOpacity: null,
 
     /**
-     * @type {Array.<number>}
+     * `true` is not supported.
+     * `false`/`null`/`undefined` are the same.
+     * `false` is used to remove lineDash in some 
+     * case that `null`/`undefined` can not be set. 
+     * (e.g., emphasis.lineStyle in echarts)
+     * @type {Array.<number>|boolean}
      */
     lineDash: null,
 

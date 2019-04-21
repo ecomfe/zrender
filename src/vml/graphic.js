@@ -222,7 +222,7 @@ if (!env.canvasSupported) {
         // if (style.lineCap != null) {
         //     el.endcap = style.lineCap;
         // }
-        if (style.lineDash != null) {
+        if (style.lineDash) {
             el.dashstyle = style.lineDash.join(' ');
         }
         if (style.stroke != null && !(style.stroke instanceof Gradient)) {
@@ -1020,7 +1020,7 @@ if (!env.canvasSupported) {
         updateFillAndStroke(textVmlEl, 'stroke', {
             stroke: style.textStroke,
             opacity: style.opacity,
-            lineDash: style.lineDash
+            lineDash: style.lineDash || null // style.lineDash can be `false`.
         }, this);
 
         textVmlEl.style.zIndex = getZIndex(this.zlevel, this.z, this.z2);
