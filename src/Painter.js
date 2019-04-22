@@ -49,23 +49,19 @@ function isDisplayableCulled(el, width, height) {
 }
 
 function isClipPathChanged(clipPaths, prevClipPaths) {
-    var clipPathsLen = clipPaths ? clipPaths.length : 0;
-    var prevClipPathsLen = prevClipPaths ? prevClipPaths.length : 0;
-
-    if (clipPaths === prevClipPaths 
-        // It is the same when being `null` or `undefined` or an empty array.
-        || (clipPathsLen === 0 && prevClipPathsLen === 0)
-    ) { 
-        return;
+    // displayable.__clipPaths can only be `null`/`undefined` or an non-empty array.
+    if (clipPaths === prevClipPaths) { 
+        return false;
     }
-    if (!clipPaths || !prevClipPaths || (clipPathsLen !== prevClipPathsLen)) {
+    if (!clipPaths || !prevClipPaths || (clipPaths.length !== prevClipPaths.length)) {
         return true;
     }
-    for (var i = 0; i < clipPathsLen; i++) {
+    for (var i = 0; i < clipPaths.length; i++) {
         if (clipPaths[i] !== prevClipPaths[i]) {
             return true;
         }
     }
+    return false;
 }
 
 function doClip(clipPaths, ctx) {
@@ -516,14 +512,14 @@ Painter.prototype = {
             // Optimize when clipping on group with several elements
             if (!prevElClipPaths || isClipPathChanged(clipPaths, prevElClipPaths)) {
                 // If has previous clipping state, restore from it
-                if (prevElClipPaths && prevElClipPaths.length) {
+                if (prevElClipPaths) {
                     ctx.restore();
                     scope.prevElClipPaths = null;
                     // Reset prevEl since context has been restored
                     scope.prevEl = null;
                 }
                 // New clipping state
-                if (clipPaths && clipPaths.length) {
+                if (clipPaths) {
                     ctx.save();
                     doClip(clipPaths, ctx);
                     scope.prevElClipPaths = clipPaths;

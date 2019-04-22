@@ -38,7 +38,9 @@ function Displayable(opts) {
 
     this._rect = null;
     // Shapes for cascade clipping.
-    this.__clipPaths = [];
+    // Can only be `null`/`undefined` or an non-empty array, MUST NOT be an empty array.
+    // because it is easy to only using null to check whether clipPaths changed.
+    this.__clipPaths = null;
 
     // FIXME Stateful must be mixined after style is setted
     // Stateful.call(this, opts);
