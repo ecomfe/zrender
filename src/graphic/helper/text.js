@@ -311,12 +311,16 @@ function drawRichText(hostEl, ctx, contentBlock, style, rect) {
             rightIndex--;
         }
 
-        // The other tokens are placed as textAlign 'center' if there is enough space.
         lineXLeft += (contentWidth - (lineXLeft - xLeft) - (xRight - lineXRight) - usedWidth) / 2;
         while (leftIndex <= rightIndex) {
             token = tokens[leftIndex];
-            // Consider width specified by user, use 'center' rather than 'left'.
-            placeToken(hostEl, ctx, token, style, lineHeight, lineTop, lineXLeft + token.width / 2, 'center');
+            token.textAlign = token.textAlign || 'center';
+            var offset = (token.textAlign === 'center' || !token.textAlign)
+                ? token.width / 2
+                : token.textAlign === 'right'
+                ? token.width
+                : 0;
+            placeToken(hostEl, ctx, token, style, lineHeight, lineTop, lineXLeft + offset, token.textAlign);
             lineXLeft += token.width;
             leftIndex++;
         }
