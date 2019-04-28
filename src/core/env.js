@@ -8,33 +8,23 @@
 
 var env = {};
 
-/**
- * get mini app api
- *
- * @see https://smartprogram.baidu.com/docs/develop/api/device_sys/#swan-getSystemInfoSync/
- * @see https://developers.weixin.qq.com/miniprogram/dev/api/wx.getSystemInfoSync.html
- * @return {boolean} result
- */
-function getMiniApp() {
-    var wx = wx || null;
-    var swan = swan || null;
-    return wx || swan;
+var miniAppEnv = {
+    browser: {},
+    os: {},
+    node: false,
+    canvasSupported: true,
+    svgSupported: false,
+    touchEventsSupported: true,
+    domSupported: false
+};
+
+if (typeof wx === 'object' && typeof wx.getSystemInfoSync === 'function') {
+    miniAppEnv.wxa = true;
+    env = miniAppEnv;
 }
-
-var miniApp = getMiniApp();
-
-if (typeof miniApp === 'object' && typeof miniApp.getSystemInfoSync === 'function') {
-    // In Mini Application
-    env = {
-        browser: {},
-        os: {},
-        node: false,
-        miniApp: true, // mini app
-        canvasSupported: true,
-        svgSupported: false,
-        touchEventsSupported: true,
-        domSupported: false
-    };
+else if (typeof swan === 'object' && typeof swan.getSystemInfoSync === 'function') {
+    miniAppEnv.swan = true;
+    env = miniAppEnv;
 }
 else if (typeof document === 'undefined' && typeof self !== 'undefined') {
     // In worker

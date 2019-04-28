@@ -477,7 +477,7 @@ Painter.prototype = {
             ctx.restore();
         }
 
-        if (env.miniApp) {
+        if (env.wxa || env.swan) {
             // Flush for mini application
             util.each(this._layers, function (layer) {
                 if (layer && layer.ctx && layer.ctx.draw) {
