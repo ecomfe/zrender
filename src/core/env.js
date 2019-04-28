@@ -8,13 +8,28 @@
 
 var env = {};
 
-if (typeof wx === 'object' && typeof wx.getSystemInfoSync === 'function') {
-    // In Weixin Application
+/**
+ * get mini app api
+ *
+ * @see https://smartprogram.baidu.com/docs/develop/api/device_sys/#swan-getSystemInfoSync/
+ * @see https://developers.weixin.qq.com/miniprogram/dev/api/wx.getSystemInfoSync.html
+ * @return {boolean} result
+ */
+function getMiniApp() {
+    var wx = wx || null;
+    var swan = swan || null;
+    return wx || swan;
+}
+
+var miniApp = getMiniApp();
+
+if (typeof miniApp === 'object' && typeof miniApp.getSystemInfoSync === 'function') {
+    // In Mini Application
     env = {
         browser: {},
         os: {},
         node: false,
-        wxa: true, // Weixin Application
+        miniApp: true, // mini app
         canvasSupported: true,
         svgSupported: false,
         touchEventsSupported: true,
