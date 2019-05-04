@@ -1,7 +1,5 @@
 /**
- * 事件辅助类
- * @module zrender/core/event
- * @author Kener (@Kener-林峰, kener.linfeng@gmail.com)
+ * Utilities for mouse or touch events.
  */
 
 import Eventful from '../mixin/Eventful';
@@ -16,7 +14,17 @@ function getBoundingClientRect(el) {
     return el.getBoundingClientRect ? el.getBoundingClientRect() : {left: 0, top: 0};
 }
 
-// `calculate` is optional, default false
+/**
+ * Get the `zrX` and `zrY`, which are relative to the top-left of
+ * the input `el`.
+ * CSS transform is supported.
+ *
+ * @param {HTMLElement} el DOM element.
+ * @param {Event} e Mouse event or touch event.
+ * @param {Object} out Get `out.zrX` and `out.zrY` as the result.
+ * @param {boolean} [calculate=false] Whether to force calculate
+ *        the coordinates but not use ones provided by browser.
+ */
 export function clientToLocal(el, e, out, calculate) {
     out = out || {};
 
@@ -66,8 +74,21 @@ function defaultGetZrXY(el, e, out) {
 }
 
 /**
- * 如果存在第三方嵌入的一些dom触发的事件，或touch事件，需要转换一下事件坐标.
- * `calculate` is optional, default false.
+ * Normalize the coordinates of the input event.
+ *
+ * Get the `e.zrX` and `e.zrY`, which are relative to the top-left of
+ * the input `el`. CSS transform is supported.
+ * Get `e.zrDelta` if using mouse wheel.
+ * Get `e.which`, see the comment inside this function.
+ *
+ * Do not calculate repeatly if `zrX` and `zrY` already exist.
+ * CSS transform is supported.
+ *
+ * @param {HTMLElement} el DOM element.
+ * @param {Event} [e] Mouse event or touch event. For lagency IE,
+ *        do not need to input it and `window.event` is used.
+ * @param {boolean} [calculate=false] Whether to force calculate
+ *        the coordinates but not use ones provided by browser.
  */
 export function normalizeEvent(el, e, calculate) {
 
@@ -93,7 +114,7 @@ export function normalizeEvent(el, e, calculate) {
 
     // Add which for click: 1 === left; 2 === middle; 3 === right; otherwise: 0;
     // See jQuery: https://github.com/jquery/jquery/blob/master/src/event.js
-    // If e.which has been defined, if may be readonly,
+    // If e.which has been defined, it may be readonly,
     // see: https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/which
     var button = e.button;
     if (e.which == null && button !== undefined && MOUSE_EVENT_REG.test(e.type)) {
@@ -153,12 +174,10 @@ export function removeEventListener(el, name, handler) {
 
 /**
  * preventDefault and stopPropagation.
- * Notice: do not do that in zrender. Upper application
- * do that if necessary.
+ * Notice: do not use this method in zrender. It can only be
+ * used by upper applications if necessary.
  *
- * @memberOf module:zrender/core/event
- * @method
- * @param {Event} e : event对象
+ * @param {Event} e A mouse or touch event.
  */
 export var stop = isDomLevel2
     ? function (e) {
@@ -192,5 +211,5 @@ export function notLeftMouse(e) {
 }
 
 
-// 做向上兼容
+// For backwork compatibility
 export {Eventful as Dispatcher};
