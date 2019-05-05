@@ -59,10 +59,11 @@ export function clientToLocal(el, e, out, calculate) {
 }
 
 function defaultGetZrXY(el, e, out) {
-    // This well-known method below does not support css transform.
     var box = getBoundingClientRect(el);
-    out.zrX = e.clientX - box.left;
-    out.zrY = e.clientY - box.top;
+    var scaleX = box.width / el.offsetWidth;
+    var scaleY = box.height / el.offsetHeight;
+    out.zrX = (e.clientX - box.left - el.clientLeft) / scaleX;
+    out.zrY = (e.clientY - box.top - el.clientTop) / scaleY;
 }
 
 /**
