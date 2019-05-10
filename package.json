@@ -16,12 +16,12 @@
     "dev": "node build/build.js --watch",
     "test": "node build/build.js"
   },
-  "license": "BSD",
+  "license": "BSD-3-Clause",
   "devDependencies": {
-    "@babel/core": "7.0.0-beta.31",
-    "@babel/helper-module-transforms": "7.0.0-beta.31",
-    "@babel/helper-simple-access": "7.0.0-beta.31",
-    "@babel/template": "7.0.0-beta.31",
+    "@babel/core": "^7.3.4",
+    "@babel/helper-module-transforms": "^7.2.2",
+    "@babel/helper-simple-access": "^7.1.0",
+    "@babel/template": "^7.2.2",
     "@babel/types": "7.0.0-beta.31",
     "assert": "1.4.1",
     "commander": "2.11.0",
