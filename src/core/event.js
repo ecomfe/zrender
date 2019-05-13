@@ -307,5 +307,5 @@ export function notLeftMouse(e) {
 }
 
 
-// For backwork compatibility
+// For backwark compatibility
 export {Eventful as Dispatcher};
