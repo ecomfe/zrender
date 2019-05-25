@@ -672,12 +672,29 @@ function pushTokens(block, str, styleName) {
 export function makeFont(style) {
     // FIXME in node-canvas fontWeight is before fontStyle
     // Use `fontSize` `fontFamily` to check whether font properties are defined.
-    var font = (style.fontSize || style.fontFamily) && [
-        style.fontStyle,
-        style.fontWeight,
-        (style.fontSize || 12) + 'px',
-        // If font properties are defined, `fontFamily` should not be ignored.
-        style.fontFamily || 'sans-serif'
-    ].join(' ');
+    var font;
+    var fontSize;
+    if (style.fontSize || style.fontFamily) {
+        if (typeof style.fontSize === 'string'
+            && (style.fontSize.indexOf('px') !== -1
+            || style.fontSize.indexOf('rem') !== -1)) {
+            fontSize = style.fontSize;
+        }
+        else if (typeof style.fontSize === 'string'
+            && (style.fontSize.indexOf('px') === -1
+            || style.fontSize.indexOf('rem') === -1)) {
+            fontSize = style.fontSize + 'px'
+        }
+        else if (style.fontSize == null) {
+            fontSize = '12px';
+        }
+        font = [
+            style.fontStyle,
+            style.fontWeight,
+            fontSize,
+            // If font properties are defined, `fontFamily` should not be ignored.
+            style.fontFamily || 'sans-serif'
+        ].join(' ')
+    }
     return font && trim(font) || style.textFont || style.font;
 }
