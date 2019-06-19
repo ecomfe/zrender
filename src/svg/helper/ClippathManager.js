@@ -156,7 +156,8 @@ ClippathManager.prototype.updateDom = function (
  */
 ClippathManager.prototype.markUsed = function (displayable) {
     var that = this;
-    if (displayable.__clipPaths && displayable.__clipPaths.length > 0) {
+    // displayable.__clipPaths can only be `null`/`undefined` or an non-empty array.
+    if (displayable.__clipPaths) {
         zrUtil.each(displayable.__clipPaths, function (clipPath) {
             if (clipPath._dom) {
                 Definable.prototype.markUsed.call(that, clipPath._dom);

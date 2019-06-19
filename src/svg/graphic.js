@@ -62,26 +62,6 @@ function bindStyle(svgEl, style, isText, el) {
     if (pathHasFill(style, isText)) {
         var fill = isText ? style.textFill : style.fill;
         fill = fill === 'transparent' ? NONE : fill;
-
-        /**
-         * FIXME:
-         * This is a temporary fix for Chrome's clipping bug
-         * that happens when a clip-path is referring another one.
-         * This fix should be used before Chrome's bug is fixed.
-         * For an element that has clip-path, and fill is none,
-         * set it to be "rgba(0, 0, 0, 0.002)" will hide the element.
-         * Otherwise, it will show black fill color.
-         * 0.002 is used because this won't work for alpha values smaller
-         * than 0.002.
-         *
-         * See
-         * https://bugs.chromium.org/p/chromium/issues/detail?id=659790
-         * for more information.
-         */
-        if (svgEl.getAttribute('clip-path') !== 'none' && fill === NONE) {
-            fill = 'rgba(0, 0, 0, 0.002)';
-        }
-
         attr(svgEl, 'fill', fill);
         attr(svgEl, 'fill-opacity', style.fillOpacity != null ? style.fillOpacity * style.opacity : style.opacity);
     }
@@ -369,7 +349,7 @@ var svgTextDrawRectText = function (el, rect, textRect) {
         ].join(' ')
         || textContain.DEFAULT_FONT;
 
-    var verticalAlign = getVerticalAlignForSvg(style.textVerticalAlign);
+    var verticalAlign = style.textVerticalAlign;
 
     textRect = textContain.getBoundingRect(
         text, font, align,
@@ -388,11 +368,11 @@ var svgTextDrawRectText = function (el, rect, textRect) {
         );
         x = newPos.x;
         y = newPos.y;
-        verticalAlign = getVerticalAlignForSvg(newPos.textVerticalAlign);
+        verticalAlign = newPos.textVerticalAlign;
         align = newPos.textAlign;
     }
 
-    attr(textSvgEl, 'alignment-baseline', verticalAlign);
+    setVerticalAlign(textSvgEl, verticalAlign);
 
     if (font) {
         textSvgEl.style.font = font;
@@ -460,7 +440,7 @@ var svgTextDrawRectText = function (el, rect, textRect) {
     }
 
     var dy = 0;
-    if (verticalAlign === 'after-edge') {
+    if (verticalAlign === 'bottom') {
         dy = -textRect.height + lineHeight;
         textPadding && (dy -= textPadding[2]);
     }
@@ -482,7 +462,7 @@ var svgTextDrawRectText = function (el, rect, textRect) {
             if (!tspan) {
                 tspan = tspanList[i] = createElement('tspan');
                 textSvgEl.appendChild(tspan);
-                attr(tspan, 'alignment-baseline', verticalAlign);
+                setVerticalAlign(tspan, verticalAlign);
                 attr(tspan, 'text-anchor', textAnchor);
             }
             else {
@@ -514,15 +494,21 @@ var svgTextDrawRectText = function (el, rect, textRect) {
     }
 };
 
-function getVerticalAlignForSvg(verticalAlign) {
-    if (verticalAlign === 'middle') {
-        return 'middle';
-    }
-    else if (verticalAlign === 'bottom') {
-        return 'after-edge';
-    }
-    else {
-        return 'hanging';
+function setVerticalAlign(textSvgEl, verticalAlign) {
+    switch (verticalAlign) {
+        case 'middle':
+            attr(textSvgEl, 'dominant-baseline', 'middle');
+            attr(textSvgEl, 'alignment-baseline', 'middle');
+            break;
+
+        case 'bottom':
+            attr(textSvgEl, 'dominant-baseline', 'ideographic');
+            attr(textSvgEl, 'alignment-baseline', 'ideographic');
+            break;
+
+        default:
+            attr(textSvgEl, 'dominant-baseline', 'hanging');
+            attr(textSvgEl, 'alignment-baseline', 'hanging');
     }
 }
 

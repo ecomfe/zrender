@@ -1,7 +1,9 @@
 ZRender
 =======
 
-A lightweight canvas library which providing 2d draw for [ECharts](https://github.com/ecomfe/echarts)
+A lightweight canvas library which providing 2d draw for [ECharts](https://github.com/ecomfe/echarts).
+
+[![Build Status](https://travis-ci.com/ecomfe/zrender.svg?branch=master)](https://travis-ci.com/ecomfe/zrender) [![](https://img.shields.io/npm/dw/zrender.svg?label=npm%20downloads&style=flat)](https://www.npmjs.com/package/zrender) ![Commits Since 4.0.0](https://img.shields.io/github/commits-since/ecomfe/zrender/4.0.0.svg?colorB=%234c1&style=flat)
 
 ## Document
 
