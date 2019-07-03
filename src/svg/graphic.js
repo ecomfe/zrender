@@ -353,14 +353,15 @@ var svgTextDrawRectText = function (el, rect, textRect) {
 
     textRect = textContain.getBoundingRect(
         text, font, align,
-        verticalAlign, style.textPadding, style.textLineHeight
+        verticalAlign, style.textPadding, style.textLineHeight,
+        false, style.truncate
     );
 
     var lineHeight = textRect.lineHeight;
     // Text position represented by coord
     if (textPosition instanceof Array) {
-        x = rect.x + textPosition[0];
-        y = rect.y + textPosition[1];
+        x = rect.x + textHelper.parsePercent(textPosition[0], rect.width);
+        y = rect.y + textHelper.parsePercent(textPosition[1], rect.height);
     }
     else {
         var newPos = textContain.adjustTextPositionOnRect(
@@ -422,7 +423,10 @@ var svgTextDrawRectText = function (el, rect, textRect) {
         setTransform(textSvgEl, transform);
     }
 
-    var textLines = text.split('\n');
+    var contentBlock = textContain.parsePlainText(
+        text, font, textPadding, lineHeight, style.truncate);
+
+    var textLines = contentBlock.lines;
     var nTextLines = textLines.length;
     var textAnchor = align;
     // PENDING
