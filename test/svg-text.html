@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <title>Text</title>
+    <script src="./lib/config.js"></script>
     <script src="../dist/zrender.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
@@ -18,7 +19,7 @@
     var showBoundingRect;
 
     var zr = zrender.init(document.getElementById('main'), {
-        renderer: 'svg'
+        renderer: window.__ZRENDER__DEFAULT__RENDERER__ || 'svg'
     });
 
     showBoundingRect = function () {

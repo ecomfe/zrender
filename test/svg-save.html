@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <title>Use SVG as image source</title>
+    <script src="./lib/config.js"></script>
     <script src="../dist/zrender.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
@@ -19,7 +20,7 @@
     <img id="img">
     <script type="text/javascript">
     var zr = zrender.init(document.getElementById('main'), {
-        renderer: 'svg'
+        renderer: window.__ZRENDER__DEFAULT__RENDERER__ || 'svg'
     });
 
     var rect = new zrender.Rect({

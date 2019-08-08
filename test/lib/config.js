@@ -5,6 +5,12 @@
     // `true` by default for debugging.
     sourceMap == null && (sourceMap = true);
 
+    // Set default renderer in dev mode from hash.
+    var matchResult = location.href.match(/[?&]__RENDERER__=(canvas|svg)(&|$)/);
+    if (matchResult) {
+        window.__ZRENDER__DEFAULT__RENDERER__ = matchResult[1];
+    }
+
     if (typeof require !== 'undefined') {
         require.config({
             baseUrl: baseUrl,
