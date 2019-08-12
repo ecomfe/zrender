@@ -25,7 +25,7 @@ function Displayable(opts) {
     for (var name in opts) {
         if (
             opts.hasOwnProperty(name)
-                && name !== 'style'
+            && name !== 'style'
         ) {
             this[name] = opts[name];
         }
@@ -153,23 +153,23 @@ Displayable.prototype = {
      */
     globalScaleRatio: 1,
 
-    beforeBrush: function (ctx) {},
+    beforeBrush: function (ctx) { },
 
-    afterBrush: function (ctx) {},
+    afterBrush: function (ctx) { },
 
     /**
      * 图形绘制方法
      * @param {CanvasRenderingContext2D} ctx
      */
     // Interface
-    brush: function (ctx, prevEl) {},
+    brush: function (ctx, prevEl) { },
 
     /**
      * 获取最小包围盒
      * @return {module:zrender/core/BoundingRect}
      */
     // Interface
-    getBoundingRect: function () {},
+    getBoundingRect: function () { },
 
     /**
      * 判断坐标 x, y 是否在图形上
@@ -200,7 +200,14 @@ Displayable.prototype = {
     rectContain: function (x, y) {
         var coord = this.transformCoordToLocal(x, y);
         var rect = this.getBoundingRect();
-        return rect.contain(coord[0], coord[1]);
+        var contain = rect.contain(coord[0], coord[1]);
+        if (contain
+            && (typeof this.findDataIndex == 'function')
+            && (this.findDataIndex(coord[0], coord[1]) < 0)
+        ) {
+            contain = false;
+        }
+        return contain;
     },
 
     /**
