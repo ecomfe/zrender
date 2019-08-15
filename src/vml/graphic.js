@@ -875,7 +875,6 @@ if (!env.canvasSupported) {
 
         if (!fromTextEl) {
             var textPosition = style.textPosition;
-            var distance = style.textDistance;
             // Text position represented by coord
             if (textPosition instanceof Array) {
                 x = rect.x + parsePercent(textPosition[0], rect.width);
@@ -884,9 +883,9 @@ if (!env.canvasSupported) {
                 align = align || 'left';
             }
             else {
-                var res = textContain.adjustTextPositionOnRect(
-                    textPosition, rect, distance
-                );
+                var res = this.interpretTextPosition
+                    ? this.interpretTextPosition({}, style, rect)
+                    : textContain.interpretTextPosition({}, style, rect);
                 x = res.x;
                 y = res.y;
 
