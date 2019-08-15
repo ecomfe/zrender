@@ -308,21 +308,43 @@ svgImage.brush = function (el) {
  **************************************************/
 var svgText = {};
 export {svgText as text};
-var tmpRect = new BoundingRect();
+var _tmpTextHostRect = new BoundingRect();
+var _tmpTextBoxPos = {};
+var _tmpTextTransform = [];
+var TEXT_ALIGN_TO_ANCHRO = {
+    left: 'start',
+    right: 'end',
+    center: 'middle',
+    middle: 'middle'
+};
 
-var svgTextDrawRectText = function (el, rect, textRect) {
+/**
+ * @param {module:zrender/Element} el
+ * @param {Object|boolean} [hostRect] {x, y, width, height}
+ *        If set false, rect text is not used.
+ */
+var svgTextDrawRectText = function (el, hostRect) {
     var style = el.style;
+    var elTransform = el.transform;
+    var needTransformTextByHostEl = el instanceof Text || style.transformText;
 
     el.__dirty && textHelper.normalizeTextStyle(style, true);
 
     var text = style.text;
     // Convert to string
-    if (text == null) {
-        // Draw no text only when text is set to null, but not ''
+    text != null && (text += '');
+    if (!textHelper.needDrawText(text, style)) {
         return;
     }
-    else {
-        text += '';
+    // render empty text for svg if no text but need draw text.
+    text == null && (text = '');
+
+    // Follow the setting in the canvas renderer, if not transform the
+    // text, transform the hostRect, by which the text is located.
+    if (!needTransformTextByHostEl && elTransform) {
+        _tmpTextHostRect.copy(hostRect);
+        _tmpTextHostRect.applyTransform(elTransform);
+        hostRect = _tmpTextHostRect;
     }
 
     var textSvgEl = el.__textSvgEl;
@@ -331,185 +353,143 @@ var svgTextDrawRectText = function (el, rect, textRect) {
         el.__textSvgEl = textSvgEl;
     }
 
-    var x;
-    var y;
-    var textPosition = style.textPosition;
-    var distance = style.textDistance;
-    var align = style.textAlign || 'left';
-
-    if (typeof style.fontSize === 'number') {
-        style.fontSize += 'px';
-    }
-    var font = style.font
-        || [
-            style.fontStyle || '',
-            style.fontWeight || '',
-            style.fontSize || '',
-            style.fontFamily || ''
-        ].join(' ')
-        || textContain.DEFAULT_FONT;
-
-    var verticalAlign = style.textVerticalAlign;
-
-    textRect = textContain.getBoundingRect(
-        text, font, align,
-        verticalAlign, style.textPadding, style.textLineHeight
-    );
-
-    var lineHeight = textRect.lineHeight;
-    // Text position represented by coord
-    if (textPosition instanceof Array) {
-        x = rect.x + textPosition[0];
-        y = rect.y + textPosition[1];
-    }
-    else {
-        var newPos = textContain.adjustTextPositionOnRect(
-            textPosition, rect, distance
-        );
-        x = newPos.x;
-        y = newPos.y;
-        verticalAlign = newPos.textVerticalAlign;
-        align = newPos.textAlign;
-    }
-
-    setVerticalAlign(textSvgEl, verticalAlign);
-
-    if (font) {
-        textSvgEl.style.font = font;
+    // style.font has been normalized by `normalizeTextStyle`.
+    var textSvgElStyle = textSvgEl.style;
+    var font = style.font || textContain.DEFAULT_FONT;
+    var computedFont = textSvgEl.__computedFont;
+    if (font !== textSvgEl.__styleFont) {
+        textSvgElStyle.font = textSvgEl.__styleFont = font;
+        // The computedFont might not be the orginal font if it is illegal font.
+        computedFont = textSvgEl.__computedFont = textSvgElStyle.font;
     }
 
     var textPadding = style.textPadding;
+    var textLineHeight = style.textLineHeight;
 
-    // Make baseline top
-    attr(textSvgEl, 'x', x);
-    attr(textSvgEl, 'y', y);
+    var contentBlock = el.__textCotentBlock;
+    if (!contentBlock || el.__dirtyText) {
+        contentBlock = el.__textCotentBlock = textContain.parsePlainText(
+            text, computedFont, textPadding, textLineHeight, style.truncate
+        );
+    }
+
+    var outerHeight = contentBlock.outerHeight;
+    var textLines = contentBlock.lines;
+    var nTextLines = textLines.length;
+    var lineHeight = contentBlock.lineHeight;
+
+    textHelper.getTextBoxPosition(_tmpTextBoxPos, el, style, hostRect);
+    var baseX = _tmpTextBoxPos.baseX;
+    var baseY = _tmpTextBoxPos.baseY;
+    var textAlign = _tmpTextBoxPos.textAlign || 'left';
+    var textVerticalAlign = _tmpTextBoxPos.textVerticalAlign;
+
+    setTextTransform(
+        textSvgEl, needTransformTextByHostEl, elTransform, style, hostRect, baseX, baseY
+    );
+
+    var boxY = textContain.adjustTextY(baseY, outerHeight, textVerticalAlign);
+    var textX = baseX;
+    var textY = boxY;
+
+    // TODO needDrawBg
+    if (textPadding) {
+        textX = getTextXForPadding(baseX, textAlign, textPadding);
+        textY += textPadding[0];
+    }
+
+    // `textBaseline` is set as 'middle'.
+    textY += lineHeight / 2;
 
     bindStyle(textSvgEl, style, true, el);
-    if (el instanceof Text || el.style.transformText) {
-        // Transform text with element
-        setTransform(textSvgEl, el.transform);
-    }
-    else {
-        if (el.transform) {
-            tmpRect.copy(rect);
-            tmpRect.applyTransform(el.transform);
-            rect = tmpRect;
-        }
-        else {
-            var pos = el.transformCoordToGlobal(rect.x, rect.y);
-            rect.x = pos[0];
-            rect.y = pos[1];
-            el.transform = matrix.identity(matrix.create());
-        }
 
-        // Text rotation, but no element transform
-        var origin = style.textOrigin;
-        if (origin === 'center') {
-            x = textRect.width / 2 + x;
-            y = textRect.height / 2 + y;
-        }
-        else if (origin) {
-            x = origin[0] + x;
-            y = origin[1] + y;
-        }
-        var rotate = -style.textRotation || 0;
-        var transform = matrix.create();
-        // Apply textRotate to element matrix
-        matrix.rotate(transform, transform, rotate);
-
-        var pos = [el.transform[4], el.transform[5]];
-        matrix.translate(transform, transform, pos);
-        setTransform(textSvgEl, transform);
-    }
-
-    var textLines = text.split('\n');
-    var nTextLines = textLines.length;
-    var textAnchor = align;
-    // PENDING
-    if (textAnchor === 'left') {
-        textAnchor = 'start';
-        textPadding && (x += textPadding[3]);
-    }
-    else if (textAnchor === 'right') {
-        textAnchor = 'end';
-        textPadding && (x -= textPadding[1]);
-    }
-    else if (textAnchor === 'center') {
-        textAnchor = 'middle';
-        textPadding && (x += (textPadding[3] - textPadding[1]) / 2);
-    }
-
-    var dy = 0;
-    if (verticalAlign === 'bottom') {
-        dy = -textRect.height + lineHeight;
-        textPadding && (dy -= textPadding[2]);
-    }
-    else if (verticalAlign === 'middle') {
-        dy = (-textRect.height + lineHeight) / 2;
-        textPadding && (y += (textPadding[0] - textPadding[2]) / 2);
-    }
-    else {
-        textPadding && (dy += textPadding[0]);
-    }
+    // FIXME
+    // Add a <style> to reset all of the text font as inherit?
+    // otherwise the outer <style> may set the unexpected style.
 
     // Font may affect position of each tspan elements
-    if (el.__text !== text || el.__textFont !== font) {
-        var tspanList = el.__tspanList || [];
-        el.__tspanList = tspanList;
-        for (var i = 0; i < nTextLines; i++) {
+    var tspanList = el.__tspanList || (el.__tspanList = []);
+    if (el.__text !== text) {
+        el.__text = text;
+        var idx = 0;
+        for (; idx < nTextLines; idx++) {
             // Using cached tspan elements
-            var tspan = tspanList[i];
+            var tspan = tspanList[idx];
             if (!tspan) {
-                tspan = tspanList[i] = createElement('tspan');
+                tspan = tspanList[idx] = createElement('tspan');
                 textSvgEl.appendChild(tspan);
-                setVerticalAlign(tspan, verticalAlign);
-                attr(tspan, 'text-anchor', textAnchor);
             }
             else {
                 tspan.innerHTML = '';
             }
-            attr(tspan, 'x', x);
-            attr(tspan, 'y', y + i * lineHeight + dy);
-            tspan.appendChild(document.createTextNode(textLines[i]));
+            tspan.appendChild(document.createTextNode(textLines[idx]));
+            updateTextLocation(tspan, textAlign, textX, textY + idx * lineHeight);
         }
-        // Remove unsed tspan elements
-        for (; i < tspanList.length; i++) {
-            textSvgEl.removeChild(tspanList[i]);
-        }
-        tspanList.length = nTextLines;
-
-        el.__text = text;
-        el.__textFont = font;
-    }
-    else if (el.__tspanList.length) {
-        // Update span x and y
-        var len = el.__tspanList.length;
-        for (var i = 0; i < len; ++i) {
-            var tspan = el.__tspanList[i];
-            if (tspan) {
-                attr(tspan, 'x', x);
-                attr(tspan, 'y', y + i * lineHeight + dy);
+        // Remove unused tspan elements
+        if (tspanList.length > nTextLines) {
+            for (; idx < tspanList.length; idx++) {
+                textSvgEl.removeChild(tspanList[idx]);
             }
+            tspanList.length = nTextLines;
+        }
+    }
+    else if (el.__dirtyText, tspanList.length) {
+        for (var idx = 0; idx < tspanList.length; ++idx) {
+            var tspan = tspanList[idx];
+            updateTextLocation(tspan, textAlign, textX, textY + idx * lineHeight);
         }
     }
 };
 
-function setVerticalAlign(textSvgEl, verticalAlign) {
-    switch (verticalAlign) {
-        case 'middle':
-            attr(textSvgEl, 'dominant-baseline', 'middle');
-            attr(textSvgEl, 'alignment-baseline', 'middle');
-            break;
+function setTextTransform(textSvgEl, needTransformTextByHostEl, elTransform, style, hostRect, baseX, baseY) {
+    matrix.identity(_tmpTextTransform);
 
-        case 'bottom':
-            attr(textSvgEl, 'dominant-baseline', 'ideographic');
-            attr(textSvgEl, 'alignment-baseline', 'ideographic');
-            break;
-
-        default:
-            attr(textSvgEl, 'dominant-baseline', 'hanging');
-            attr(textSvgEl, 'alignment-baseline', 'hanging');
+    if (needTransformTextByHostEl && elTransform) {
+        matrix.copy(_tmpTextTransform, elTransform);
     }
+
+    // textRotation only apply in RectText.
+    var textRotation = style.textRotation;
+    if (hostRect && textRotation) {
+        var origin = style.textOrigin;
+        if (origin === 'center') {
+            baseX = hostRect.width / 2 + hostRect.x;
+            baseY = hostRect.height / 2 + hostRect.y;
+        }
+        else if (origin) {
+            baseX = origin[0] + hostRect.x;
+            baseY = origin[1] + hostRect.y;
+        }
+
+        _tmpTextTransform[4] -= baseX;
+        _tmpTextTransform[5] -= baseY;
+        // Positive: anticlockwise
+        matrix.rotate(_tmpTextTransform, _tmpTextTransform, textRotation);
+        _tmpTextTransform[4] += baseX;
+        _tmpTextTransform[5] += baseY;
+    }
+    // See the definition in `Style.js#textOrigin`, the default
+    // origin is from the result of `getTextBoxPosition`.
+
+    setTransform(textSvgEl, _tmpTextTransform);
+}
+
+// FIXME merge the same code with `helper/text.js#getTextXForPadding`;
+function getTextXForPadding(x, textAlign, textPadding) {
+    return textAlign === 'right'
+        ? (x - textPadding[1])
+        : textAlign === 'center'
+        ? (x + textPadding[3] / 2 - textPadding[1] / 2)
+        : (x + textPadding[3]);
+}
+
+function updateTextLocation(tspan, textAlign, x, y) {
+    // Consider different font display differently in vertial align, we always
+    // set vertialAlign as 'middle', and use 'y' to locate text vertically.
+    attr(tspan, 'dominant-baseline', 'middle');
+    attr(tspan, 'text-anchor', TEXT_ALIGN_TO_ANCHRO[textAlign]);
+    attr(tspan, 'x', x);
+    attr(tspan, 'y', y);
 }
 
 svgText.drawRectText = svgTextDrawRectText;
@@ -517,11 +497,6 @@ svgText.drawRectText = svgTextDrawRectText;
 svgText.brush = function (el) {
     var style = el.style;
     if (style.text != null) {
-        // 强制设置 textPosition
-        style.textPosition = [0, 0];
-        svgTextDrawRectText(el, {
-            x: style.x || 0, y: style.y || 0,
-            width: 0, height: 0
-        }, el.getBoundingRect());
+        svgTextDrawRectText(el, false);
     }
 };

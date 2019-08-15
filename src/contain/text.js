@@ -143,15 +143,17 @@ export function adjustTextY(y, height, textVerticalAlign) {
 
 /**
  * @public
+ * @param {Object} [out]
  * @param {stirng} textPosition
  * @param {Object} rect {x, y, width, height}
  * @param {number} distance
  * @return {Object} {x, y, textAlign, textVerticalAlign}
  */
-export function adjustTextPositionOnRect(textPosition, rect, distance) {
+export function adjustTextPositionOnRect(out, textPosition, rect, distance) {
 
     var x = rect.x;
     var y = rect.y;
+    distance = distance || 0;
 
     var height = rect.height;
     var width = rect.width;
@@ -233,12 +235,13 @@ export function adjustTextPositionOnRect(textPosition, rect, distance) {
             break;
     }
 
-    return {
-        x: x,
-        y: y,
-        textAlign: textAlign,
-        textVerticalAlign: textVerticalAlign
-    };
+    out = out || {};
+    out.x = x;
+    out.y = y;
+    out.textAlign = textAlign;
+    out.textVerticalAlign = textVerticalAlign;
+
+    return out;
 }
 
 /**
