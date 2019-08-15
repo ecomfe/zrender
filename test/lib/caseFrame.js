@@ -23,6 +23,8 @@
  */
 (function () {
 
+    var testHelper = window.testHelper;
+
     var CSS_BASE = '.case-frame';
     var SELECTOR_CASES_LIST_CONTAINER = CSS_BASE + ' .cases-list ul';
     var SELECTOR_CASES_ITEM = 'li a';
@@ -58,6 +60,7 @@
     var pagePaths;
     var baseURL;
     var listFilters;
+    var _storage;
 
     /**
      * @public
@@ -82,14 +85,38 @@
         baseURL = opt.baseURL || '.';
         listFilters = opt.filters || [];
 
-        window.addEventListener('hashchange', updateView, true);
-
-        updateView();
+        testHelper.initURLStorage(updateView);
     };
 
     function renderHTML(dom) {
         dom.className = 'case-frame';
         dom.innerHTML = HTML;
+    }
+
+    function updateView() {
+        updateStorage();
+        updateRendererSelector();
+        updateDistSelector();
+        updateListSelectedHint();
+        updateListFilter();
+        updateList();
+        updatePage();
+        updatePageHint('short');
+    }
+
+    function updateStorage() {
+        _storage = testHelper.getAllFromURL();
+        var originPagePath = _storage.pagePath;
+        // Default value.
+        _storage.renderer = _storage.renderer || 'canvas';
+        _storage.dist = _storage.dist || 'dist';
+        _storage.listFilterName = _storage.listFilterName || null;
+        _storage.pageURLSearchParamMap = _storage.pageURLSearchParamMap || {};
+        _storage.pageURLHashParamMap = _storage.pageURLHashParamMap || {};
+        _storage.pagePathInfo = makeStatePagePathInfo(originPagePath);
+        _storage.pagePath = _storage.pagePathInfo.pagePath;
+
+        updatePageURL();
     }
 
     function updateRendererSelector() {
@@ -99,12 +126,14 @@
             var el = rendererSelectors[i];
             el.disabled = !!globalOpt.disableRendererSelector;
             testHelper.off(el, 'click');
-            testHelper.on(el, 'click', function (e) {
-                setState('renderer', e.target.value);
-            });
+            testHelper.on(el, 'click', onClick);
         }
 
-        var renderer = getState('renderer');
+        function onClick(e) {
+            testHelper.updateToHash('renderer', e.target.value);
+        }
+
+        var renderer = _storage.renderer;
 
         for (var i = 0; i < rendererSelectors.length; i++) {
             var el = rendererSelectors[i];
@@ -117,14 +146,18 @@
         for (var i = 0; i < hints.length; i++) {
             var hint = hints[i];
             testHelper.off(hint, 'mouseover');
-            testHelper.on(hint, 'mouseover', function (e) {
-                updatePageHint('full');
-                this.select();
-            });
+            testHelper.on(hint, 'mouseover', onMouseOver);
             testHelper.off(hint, 'mouseout');
-            testHelper.on(hint, 'mouseout', function (e) {
-                updatePageHint('short');
-            });
+            testHelper.on(hint, 'mouseout', onMouseOut);
+        }
+
+        function onMouseOver(e) {
+            updatePageHint('full', _storage);
+            this.select();
+        }
+
+        function onMouseOut(e) {
+            updatePageHint('short', _storage);
         }
     }
 
@@ -136,10 +169,10 @@
         testHelper.off(distSelector, 'change');
         testHelper.on(distSelector, 'change', function (e) {
             var selector = e.target;
-            setState('dist', selector.options[selector.selectedIndex].value);
+            testHelper.updateToHash('dist', selector.options[selector.selectedIndex].value);
         });
 
-        var dist = getState('dist');
+        var dist = _storage.dist;
 
         var options = distSelector.options;
         for (var i = 0; i < options.length; i++) {
@@ -169,10 +202,10 @@
         testHelper.off(filterSelector, 'change');
         testHelper.on(filterSelector, 'change', function (e) {
             var selector = e.target;
-            setState('listFilterName', selector.options[selector.selectedIndex].value);
+            testHelper.updateToHash('listFilterName', selector.options[selector.selectedIndex].value);
         });
 
-        var currentFilterName = getState('listFilterName');
+        var currentFilterName = _storage.listFilterName;
         var options = filterSelector.options;
         for (var i = 0; i < options.length; i++) {
             if (options[i].value === currentFilterName) {
@@ -181,39 +214,8 @@
         }
     }
 
-    // prop: renderer, dist, pagePath
-    function getState(prop) {
-        return stateGetters[prop](getCurrentPageURL());
-    }
-
-    var stateGetters = {
-        // 'canvas', 'svg'
-        renderer: function (pageURL) {
-            var matchResult = (pageURL || '').match(/[?&]__RENDERER__=(canvas|svg)(&|$)/);
-            return matchResult && matchResult[1] || 'canvas';
-        },
-        // 'dist', 'webpack', 'webpackold'
-        dist: function (pageURL) {
-            var matchResult = (pageURL || '').match(
-                /[?&]__ECDIST__=(webpack-req-ec|webpack-req-eclibec|webpackold-req-ec|webpackold-req-eclibec)(&|$)/
-            );
-            return matchResult && matchResult[1] || 'dist';
-        },
-        listFilterName: function (pageURL) {
-            var matchResult = (pageURL || '').match(/[?&]__FILTER__=([a-zA-Z0-9_-]*)(&|$)/);
-            return matchResult && matchResult[1] || null;
-        },
-        // {index, pagePath} or null
-        pagePathInfo: getStatePagePathInfo,
-        pagePath: function (pageURL) {
-            return getStatePagePathInfo(pageURL).pagePath;
-        }
-    };
-
-    function getStatePagePathInfo(pageURL) {
-        var matchResult = (pageURL || '').match(/^[^?&]*/);
-        var pagePath = matchResult && matchResult[0];
-        var index;
+    function makeStatePagePathInfo(pagePath) {
+        var index = -1;
         if (pagePath) {
             for (var i = 0; i < pagePaths.length; i++) {
                 if (pagePaths[i] === pagePath) {
@@ -224,49 +226,11 @@
         return {index: index, pagePath: pagePath};
     }
 
-    function setState(prop, value) {
-        var curr = {
-            renderer: getState('renderer'),
-            dist: getState('dist'),
-            pagePath: getState('pagePath'),
-            listFilterName: getState('listFilterName')
-        };
-        curr[prop] = value;
-
-        var newPageURL = makePageURL(curr);
-
-        location.hash = '#' + encodeURIComponent(newPageURL);
-    }
-
-    function makePageURL(curr) {
-        return curr.pagePath + '?' + [
-            '__RENDERER__=' + curr.renderer,
-            '__ECDIST__=' + curr.dist,
-            '__FILTER__=' + curr.listFilterName
-        ].join('&');
-    }
-
-    function updateView() {
-        updateRendererSelector();
-        updateDistSelector();
-        updateListSelectedHint();
-        updateListFilter();
-        updateList();
-        updatePage();
-        updatePageHint('short');
-    }
-
-    function getCurrentPageURL() {
-        return decodeURIComponent(
-            (location.hash || '').replace(/^#/, '')
-        );
-    }
-
     function updateList() {
         var html = [];
 
         var filter;
-        var listFilterName = getState('listFilterName');
+        var listFilterName = _storage.listFilterName;
         if (listFilters && listFilterName) {
             for (var i = 0; i < listFilters.length; i++) {
                 if (listFilters[i].name === listFilterName) {
@@ -305,17 +269,22 @@
         for (var i = 0; i < liList.length; i++) {
             let liEl = liList[i];
             testHelper.off(liEl, 'click');
-            testHelper.on(liEl, 'click', function (e) {
-                setState('pagePath', e.currentTarget.innerHTML);
-                e.preventDefault();
-                return false;
+            testHelper.on(liEl, 'click', onLiClick);
+        }
+
+        function onLiClick(e) {
+            testHelper.updateToHash({
+                pagePath: e.currentTarget.innerHTML,
+                pageURLSearchParamMap: {},
+                pageURLHashParamMap: {}
             });
+            e.preventDefault();
+            return false;
         }
     }
 
     function updatePage() {
-        var pageURL = getCurrentPageURL();
-        var pagePathInfo = getState('pagePathInfo');
+        var pagePathInfo = _storage.pagePathInfo;
 
         var liList = document.querySelectorAll(SELECTOR_CASES_LIST_CONTAINER + ' li');
         for (var i = 0; i < liList.length; i++) {
@@ -323,115 +292,73 @@
             el.style.background = pagePathInfo.index === i ? 'rgb(170, 224, 245)' : 'none';
         }
 
-        var src = pagePathInfo.pagePath ? baseURL + '/' + pageURL : 'about:blank';
         var contentIframe = document.querySelector(SELECTOR_CONTENT_IFRAME);
-        contentIframe.src = src;
+        contentIframe.onload = handlePageOnLoad;
+        var src = makeSrc();
+        if (contentIframe.__currentSrc !== src) {
+            contentIframe.__currentSrc = src;
+            contentIframe.src = src;
+        }
+    }
+
+    function updatePageURL() {
+        _storage.pageURL = _storage.pagePath
+            ? _storage.pagePath
+                + '?' + [
+                    '__RENDERER__=' + _storage.renderer,
+                    '__ECDIST__=' + _storage.dist
+                ].join('&') + testHelper.makeSearchStorageSegment(_storage.pageURLSearchParamMap)
+                + '#' + testHelper.makeHashStorageSegment(_storage.pageURLHashParamMap)
+            : '';
+    }
+
+    function makeSrc() {
+        return _storage.pagePath ? baseURL + '/' + _storage.pageURL : 'about:blank';
+    }
+
+    function handlePageOnLoad() {
+        var contentWindow = this.contentWindow;
+        contentWindow.addEventListener('hashchange', handlePageURLChange.bind(null, contentWindow), true);
+        handlePageURLChange(contentWindow);
+    }
+
+    function handlePageURLChange(contentWindow) {
+        var contentURLStorage = contentWindow.zrTestURLStorage;
+        if (!contentURLStorage) {
+            return;
+        }
+
+        var childHashParams = contentURLStorage.getAllFromHash();
+        var childSearchParams = contentURLStorage.getAllFromSearch();
+        _storage.pageURLHashParamMap = childHashParams;
+        _storage.pageURLSearchParamMap = childSearchParams;
+
+        updatePageURL();
+
+        var contentIframe = document.querySelector(SELECTOR_CONTENT_IFRAME);
+        contentIframe.__currentSrc = makeSrc();
+
+        testHelper.updateToHash({
+            pageURLHashParamMap: childHashParams,
+            pageURLSearchParamMap: childSearchParams
+        });
     }
 
     // type: 'full' or 'short'
     function updatePageHint(type) {
-        var pagePathInfo = getState('pagePathInfo');
+        var pagePathInfo = _storage.pagePathInfo;
 
         var newValue = !pagePathInfo.pagePath
             ? ''
             : type === 'short'
-            ? (pagePathInfo.index != null ? (pagePathInfo.index + 1) + '. ' : '')
+            ? (pagePathInfo.index !== -1 ? (pagePathInfo.index + 1) + '. ' : '')
                 + (pagePathInfo.pagePath || '')
-            : testHelper.dir() + '/' + pagePathInfo.pagePath;
+            : testHelper.dir() + '/' + _storage.pageURL;
 
         var infoPanelCurrent = document.querySelector(SELECTOR_CURRENT);
         infoPanelCurrent.value = newValue;
     }
 
-
-    // ----------------------------------------------------------------
-    // testHelper
-    // ----------------------------------------------------------------
-
-    var testHelper = {
-
-        on: function (el, eventType, listener) {
-            var listeners = el.__listeners || (el.__listeners = []);
-            listeners.push(listener);
-            el.addEventListener(eventType, listener, true);
-        },
-
-        off: function (el, eventType) {
-            var listeners = el.__listeners;
-            if (listeners) {
-                for (var i = 0; i < listeners.length; i++) {
-                    var listener = listeners[i];
-                    el.removeEventListener(eventType, listener);
-                }
-            }
-        },
-
-        encodeHTML: function (source) {
-            return String(source)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-        },
-
-        dir: function () {
-            return location.origin + testHelper.resolve(location.pathname, '..');
-        },
-
-        // Nodejs `path.resolve`.
-        resolve: function () {
-            var resolvedPath = '';
-            var resolvedAbsolute;
-
-            for (var i = arguments.length - 1; i >= 0 && !resolvedAbsolute; i--) {
-                var path = arguments[i];
-                if (path) {
-                    resolvedPath = path + '/' + resolvedPath;
-                    resolvedAbsolute = path[0] === '/';
-                }
-            }
-
-            if (!resolvedAbsolute) {
-                throw new Error('At least one absolute path should be input.');
-            }
-
-            // Normalize the path
-            resolvedPath = testHelper._normalizePathArray(resolvedPath.split('/'), false).join('/');
-
-            return '/' + resolvedPath;
-        },
-
-        // resolves . and .. elements in a path array with directory names there
-        // must be no slashes or device names (c:\) in the array
-        // (so also no leading and trailing slashes - it does not distinguish
-        // relative and absolute paths)
-        _normalizePathArray: function (parts, allowAboveRoot) {
-            var res = [];
-            for (var i = 0; i < parts.length; i++) {
-                var p = parts[i];
-
-                // ignore empty parts
-                if (!p || p === '.') {
-                    continue;
-                }
-
-                if (p === '..') {
-                    if (res.length && res[res.length - 1] !== '..') {
-                        res.pop();
-                    }
-                    else if (allowAboveRoot) {
-                        res.push('..');
-                    }
-                }
-                else {
-                    res.push(p);
-                }
-            }
-
-            return res;
-        }
-    };
 
 
     // ------------------------------------------------------
