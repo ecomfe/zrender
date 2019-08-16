@@ -505,9 +505,9 @@ function getBoxPosition(out, hostEl, style, rect) {
             baseY = rect.y + parsePercent(textPosition[1], rect.height);
         }
         else {
-            var res = (hostEl && hostEl.interpretTextPosition)
-                ? hostEl.interpretTextPosition(_tmpTextPositionResult, style, rect)
-                : textContain.interpretTextPosition(_tmpTextPositionResult, style, rect);
+            var res = (hostEl && hostEl.calculateTextPosition)
+                ? hostEl.calculateTextPosition(_tmpTextPositionResult, style, rect)
+                : textContain.calculateTextPosition(_tmpTextPositionResult, style, rect);
             baseX = res.x;
             baseY = res.y;
             // Default align and baseline when has textPosition

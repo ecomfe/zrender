@@ -142,14 +142,14 @@ export function adjustTextY(y, height, textVerticalAlign) {
 }
 
 /**
- * Follow same interface to `Displayable.prototype.interpretTextPosition`.
+ * Follow same interface to `Displayable.prototype.calculateTextPosition`.
  * @public
  * @param {Obejct} [out] Prepared out object. If not input, auto created in the method.
  * @param {module:zrender/graphic/Style} style where `textPosition` and `textDistance` are visited.
  * @param {Object} rect {x, y, width, height} Rect of the host elment, according to which the text positioned.
  * @return {Object} The input `out`. Set: {x, y, textAlign, textVerticalAlign}
  */
-export function interpretTextPosition(out, style, rect) {
+export function calculateTextPosition(out, style, rect) {
     var textPosition = style.textPosition;
     var distance = style.textDistance;
 
@@ -256,7 +256,7 @@ export function interpretTextPosition(out, style, rect) {
  */
 export function adjustTextPositionOnRect(textPosition, rect, distance) {
     var dummyStyle = {textPosition: textPosition, textDistance: distance};
-    return interpretTextPosition({}, dummyStyle, rect);
+    return calculateTextPosition({}, dummyStyle, rect);
 }
 
 /**

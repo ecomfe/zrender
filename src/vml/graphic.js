@@ -883,9 +883,9 @@ if (!env.canvasSupported) {
                 align = align || 'left';
             }
             else {
-                var res = this.interpretTextPosition
-                    ? this.interpretTextPosition({}, style, rect)
-                    : textContain.interpretTextPosition({}, style, rect);
+                var res = this.calculateTextPosition
+                    ? this.calculateTextPosition({}, style, rect)
+                    : textContain.calculateTextPosition({}, style, rect);
                 x = res.x;
                 y = res.y;
 

@@ -363,9 +363,9 @@ var svgTextDrawRectText = function (el, rect, textRect) {
         y = rect.y + textPosition[1];
     }
     else {
-        var newPos = el.interpretTextPosition
-            ? el.interpretTextPosition(tmpTextPositionResult, style, rect)
-            : textContain.interpretTextPosition(tmpTextPositionResult, style, rect);
+        var newPos = el.calculateTextPosition
+            ? el.calculateTextPosition(tmpTextPositionResult, style, rect)
+            : textContain.calculateTextPosition(tmpTextPositionResult, style, rect);
         x = newPos.x;
         y = newPos.y;
         verticalAlign = newPos.textVerticalAlign;
