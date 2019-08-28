@@ -28,7 +28,7 @@ var instances = {};    // ZRender实例map索引
 /**
  * @type {string}
  */
-export var version = '4.0.7';
+export var version = '4.1.0';
 
 /**
  * Initializing a zrender instance
@@ -234,7 +234,7 @@ ZRender.prototype = {
         this.painter.refresh();
         // Avoid trigger zr.refresh in Element#beforeUpdate hook
         this._needsRefresh = this._needsRefreshHover = false;
-        
+
         // var end = new Date();
         // var log = document.getElementById('log');
         // if (log) {
