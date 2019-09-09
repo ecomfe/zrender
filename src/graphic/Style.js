@@ -361,6 +361,12 @@ Style.prototype = {
     blend: null,
 
     /**
+     * https://developer.mozilla.org/zh-CN/docs/Web/API/CanvasRenderingContext2D/filter
+     * @type {string}
+     */
+    filter: 'none',
+
+    /**
      * @param {CanvasRenderingContext2D} ctx
      */
     bind: function (ctx, el, prevEl) {
@@ -395,6 +401,9 @@ Style.prototype = {
 
         if ((notCheckCache || style.blend !== prevStyle.blend)) {
             ctx.globalCompositeOperation = style.blend || 'source-over';
+        }
+        if ((notCheckCache || style.filter !== prevStyle.filter)) {
+            ctx.filter = style.filter;
         }
         if (this.hasStroke()) {
             var lineWidth = style.lineWidth;
