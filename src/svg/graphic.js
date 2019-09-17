@@ -309,6 +309,7 @@ svgImage.brush = function (el) {
 var svgText = {};
 export {svgText as text};
 var tmpRect = new BoundingRect();
+var tmpTextPositionResult = {};
 
 var svgTextDrawRectText = function (el, rect, textRect) {
     var style = el.style;
@@ -334,7 +335,6 @@ var svgTextDrawRectText = function (el, rect, textRect) {
     var x;
     var y;
     var textPosition = style.textPosition;
-    var distance = style.textDistance;
     var align = style.textAlign || 'left';
 
     if (typeof style.fontSize === 'number') {
@@ -364,9 +364,9 @@ var svgTextDrawRectText = function (el, rect, textRect) {
         y = rect.y + textHelper.parsePercent(textPosition[1], rect.height);
     }
     else {
-        var newPos = textContain.adjustTextPositionOnRect(
-            textPosition, rect, distance
-        );
+        var newPos = el.calculateTextPosition
+            ? el.calculateTextPosition(tmpTextPositionResult, style, rect)
+            : textContain.calculateTextPosition(tmpTextPositionResult, style, rect);
         x = newPos.x;
         y = newPos.y;
         verticalAlign = newPos.textVerticalAlign;
