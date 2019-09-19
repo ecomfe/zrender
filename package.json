@@ -14,7 +14,8 @@
     "prepublish": "node build/build.js --prepublish",
     "build": "node build/build.js --release",
     "dev": "node build/build.js --watch",
-    "test": "node build/build.js"
+    "test": "node build/build.js",
+    "lint": "./node_modules/.bin/eslint src"
   },
   "license": "BSD-3-Clause",
   "devDependencies": {
@@ -28,6 +29,7 @@
     "fs-extra": "4.0.2",
     "jsdiff": "1.1.1",
     "rollup": "0.50.0",
-    "rollup-plugin-uglify": "2.0.1"
+    "rollup-plugin-uglify": "2.0.1",
+    "eslint": "6.3.0"
   }
 }
