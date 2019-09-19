@@ -1,5 +1,5 @@
 import Animator from '../animation/Animator';
-import log from '../core/log';
+import logError from '../core/log';
 import {
     isString,
     isFunction,
@@ -62,7 +62,7 @@ Animatable.prototype = {
         }
 
         if (!target) {
-            log(
+            logError(
                 'Property "'
                 + path
                 + '" is not existed in element '
