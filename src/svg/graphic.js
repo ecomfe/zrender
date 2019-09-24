@@ -142,18 +142,20 @@ function pathDataToString(path) {
 
                 var dThetaPositive = Math.abs(dTheta);
                 var isCircle = isAroundZero(dThetaPositive - PI2)
-                    && !isAroundZero(dThetaPositive);
+                    || (clockwise ? dTheta >= PI2 : -dTheta >= PI2);
+
+                // Mapping to 0~2PI
+                var unifiedTheta = dTheta > 0 ? dTheta % PI2 : (dTheta % PI2 + PI2);
 
                 var large = false;
-                if (dThetaPositive >= PI2) {
+                if (isCircle) {
                     large = true;
                 }
                 else if (isAroundZero(dThetaPositive)) {
                     large = false;
                 }
                 else {
-                    large = (dTheta > -PI && dTheta < 0 || dTheta > PI)
-                        === !!clockwise;
+                    large = (unifiedTheta >= PI) === !!clockwise;
                 }
 
                 var x0 = round4(cx + rx * mathCos(theta));
