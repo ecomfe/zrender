@@ -5,7 +5,7 @@
 
 import Definable from './Definable';
 import * as zrUtil from '../../core/util';
-import zrLog from '../../core/log';
+import logError from '../../core/log';
 import * as colorTool from '../../tool/color';
 
 /**
@@ -92,7 +92,7 @@ GradientManager.prototype.add = function (gradient) {
         dom = this.createElement('radialGradient');
     }
     else {
-        zrLog('Illegal gradient type.');
+        logError('Illegal gradient type.');
         return null;
     }
 
@@ -157,7 +157,7 @@ GradientManager.prototype.updateDom = function (gradient, dom) {
         dom.setAttribute('r', gradient.r);
     }
     else {
-        zrLog('Illegal gradient type.');
+        logError('Illegal gradient type.');
         return;
     }
 

@@ -12,10 +12,9 @@ if (typeof window !== 'undefined') {
  */
 
 /**
- * debug日志选项：catchBrushException为true下有效
- * 0 : 不生成debug数据，发布用
- * 1 : 异常抛出，调试用
- * 2 : 控制台输出，调试用
+ * Debug log mode:
+ * 0: Do nothing, for release.
+ * 1: console.error, for debug.
  */
 export var debugMode = 0;
 

@@ -145,7 +145,10 @@ ShadowManager.prototype.updateDom = function (displayable, dom) {
     var scaleY = displayable.scale ? (displayable.scale[1] || 1) : 1;
 
     // TODO: textBoxShadowBlur is not supported yet
-    var offsetX, offsetY, blur, color;
+    var offsetX;
+    var offsetY;
+    var blur;
+    var color;
     if (style.shadowBlur || style.shadowOffsetX || style.shadowOffsetY) {
         offsetX = style.shadowOffsetX || 0;
         offsetY = style.shadowOffsetY || 0;

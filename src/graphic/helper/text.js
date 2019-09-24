@@ -562,7 +562,7 @@ export function getFill(fill) {
         : fill;
 }
 
-function parsePercent(value, maxValue) {
+export function parsePercent(value, maxValue) {
     if (typeof value === 'string') {
         if (value.lastIndexOf('%') >= 0) {
             return parseFloat(value) / 100 * maxValue;
