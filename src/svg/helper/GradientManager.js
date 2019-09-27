@@ -41,7 +41,9 @@ GradientManager.prototype.addWithoutUpdate = function (
     svgElement,
     displayable
 ) {
-    if (displayable && displayable.style) {
+    var isText = svgElement instanceof SVGTextElement;
+    // TODO: support gradient on text
+    if (!isText && displayable && displayable.style) {
         var that = this;
         zrUtil.each(['fill', 'stroke'], function (fillOrStroke) {
             if (displayable.style[fillOrStroke]
