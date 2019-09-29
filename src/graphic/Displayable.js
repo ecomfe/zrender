@@ -53,7 +53,7 @@ Displayable.prototype = {
     type: 'displayable',
 
     /**
-     * Displayable 是否为脏，Painter 中会根据该标记判断是否需要是否需要重新绘制
+     * Displayable 是否为脏，Painter 中会根据该标记判断是否需要重新绘制
      * Dirty flag. From which painter will determine if this displayable object needs brush
      * @name module:zrender/graphic/Displayable#__dirty
      * @type {boolean}
