@@ -1,19 +1,5 @@
 import env from '../../core/env';
-
-// Fix weird bug in some version of IE11 (like 11.0.9600.178**),
-// where exception "unexpected call to method or property access"
-// might be thrown when calling ctx.fill or ctx.stroke after a path
-// whose area size is zero is drawn and ctx.clip() is called and
-// shadowBlur is set. See #4572, #3112, #5777.
-// (e.g.,
-//  ctx.moveTo(10, 10);
-//  ctx.lineTo(20, 10);
-//  ctx.closePath();
-//  ctx.clip();
-//  ctx.shadowBlur = 10;
-//  ...
-//  ctx.fill();
-// )
+import * as util from '../../core/util';
 
 var shadowTemp = [
     ['shadowBlur', 0],
@@ -22,7 +8,27 @@ var shadowTemp = [
     ['shadowOffsetY', 0]
 ];
 
-export default function (orignalBrush) {
+/**
+ * Fix weird bug in some version of IE11 (like 11.0.9600.178**),
+ * where exception "unexpected call to method or property access"
+ * might be thrown when calling ctx.fill or ctx.stroke after a path
+ * whose area size is zero is drawn and ctx.clip() is called and
+ * shadowBlur is set. See #4572, #3112, #5777.
+ * (e.g.,
+ *  ctx.moveTo(10, 10);
+ *  ctx.lineTo(20, 10);
+ *  ctx.closePath();
+ *  ctx.clip();
+ *  ctx.shadowBlur = 10;
+ *  ...
+ *  ctx.fill();
+ * )
+ *
+ * @param {Function} orignalBrush     original brush function
+ * @param {Function} [conditionCheck] callback function to decide whether
+ *                                    to do the fix
+ */
+export default function (orignalBrush, conditionCheck) {
 
     // version string can be: '11.0'
     return (env.browser.ie && env.browser.version >= 11)
@@ -38,10 +44,18 @@ export default function (orignalBrush) {
                     var shape = clipPath && clipPath.shape;
                     var type = clipPath && clipPath.type;
 
-                    if (shape && (
-                        (type === 'sector' && shape.startAngle === shape.endAngle)
-                        || (type === 'rect' && (!shape.width || !shape.height))
-                    )) {
+                    var useFix;
+                    if (util.isFunction(conditionCheck)) {
+                        useFix = conditionCheck(shape);
+                    }
+                    else {
+                        useFix = shape && (
+                            (type === 'sector' && shape.startAngle === shape.endAngle)
+                            || (type === 'rect' && (!shape.width || !shape.height))
+                        );
+                    }
+
+                    if (useFix) {
                         for (var j = 0; j < shadowTemp.length; j++) {
                             // It is save to put shadowTemp static, because shadowTemp
                             // will be all modified each item brush called.
