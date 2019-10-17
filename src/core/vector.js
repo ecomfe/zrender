@@ -1,3 +1,4 @@
+/* global Float32Array */
 
 var ArrayCtor = typeof Float32Array === 'undefined'
     ? Array

@@ -26,8 +26,8 @@ var SHADOW_STYLE_COMMON_PROPS = [
     ['textShadowOffsetY', 'shadowOffsetY', 0],
     ['textShadowColor', 'shadowColor', 'transparent']
 ];
-var _tmpTextBoxPos = {};
-var _tmpAdjustedTextPosOnRect = {};
+var _tmpTextPositionResult = {};
+var _tmpBoxPositionResult = {};
 
 /**
  * @param {module:zrender/graphic/Style} style
@@ -146,11 +146,11 @@ function renderPlainText(hostEl, ctx, text, style, rect, prevEl) {
     var textLines = contentBlock.lines;
     var lineHeight = contentBlock.lineHeight;
 
-    getTextBoxPosition(_tmpTextBoxPos, hostEl, style, rect);
-    var baseX = _tmpTextBoxPos.baseX;
-    var baseY = _tmpTextBoxPos.baseY;
-    var textAlign = _tmpTextBoxPos.textAlign || 'left';
-    var textVerticalAlign = _tmpTextBoxPos.textVerticalAlign;
+    var boxPos = getBoxPosition(_tmpBoxPositionResult, hostEl, style, rect);
+    var baseX = boxPos.baseX;
+    var baseY = boxPos.baseY;
+    var textAlign = boxPos.textAlign || 'left';
+    var textVerticalAlign = boxPos.textVerticalAlign;
 
     // Origin of textRotation should be the base point of text drawing.
     applyTextRotation(ctx, style, rect, baseX, baseY);
@@ -257,11 +257,11 @@ function drawRichText(hostEl, ctx, contentBlock, style, rect) {
     var outerHeight = contentBlock.outerHeight;
     var textPadding = style.textPadding;
 
-    getTextBoxPosition(_tmpTextBoxPos, hostEl, style, rect);
-    var baseX = _tmpTextBoxPos.baseX;
-    var baseY = _tmpTextBoxPos.baseY;
-    var textAlign = _tmpTextBoxPos.textAlign;
-    var textVerticalAlign = _tmpTextBoxPos.textVerticalAlign;
+    var boxPos = getBoxPosition(_tmpBoxPositionResult, hostEl, style, rect);
+    var baseX = boxPos.baseX;
+    var baseY = boxPos.baseY;
+    var textAlign = boxPos.textAlign;
+    var textVerticalAlign = boxPos.textVerticalAlign;
 
     // Origin of textRotation should be the base point of text drawing.
     applyTextRotation(ctx, style, rect, baseX, baseY);
@@ -490,7 +490,7 @@ function onBgImageLoaded(image, textBackgroundColor) {
     textBackgroundColor.image = image;
 }
 
-export function getTextBoxPosition(out, hostEl, style, rect) {
+export function getBoxPosition(out, hostEl, style, rect) {
     var baseX = style.x || 0;
     var baseY = style.y || 0;
     var textAlign = style.textAlign;
@@ -505,14 +505,14 @@ export function getTextBoxPosition(out, hostEl, style, rect) {
             baseY = rect.y + parsePercent(textPosition[1], rect.height);
         }
         else {
-            textContain.adjustTextPositionOnRect(
-                _tmpAdjustedTextPosOnRect, textPosition, rect, style.textDistance
-            );
-            baseX = _tmpAdjustedTextPosOnRect.x;
-            baseY = _tmpAdjustedTextPosOnRect.y;
+            var res = (hostEl && hostEl.calculateTextPosition)
+                ? hostEl.calculateTextPosition(_tmpTextPositionResult, style, rect)
+                : textContain.calculateTextPosition(_tmpTextPositionResult, style, rect);
+            baseX = res.x;
+            baseY = res.y;
             // Default align and baseline when has textPosition
-            textAlign = textAlign || _tmpAdjustedTextPosOnRect.textAlign;
-            textVerticalAlign = textVerticalAlign || _tmpAdjustedTextPosOnRect.textVerticalAlign;
+            textAlign = textAlign || res.textAlign;
+            textVerticalAlign = textVerticalAlign || res.textVerticalAlign;
         }
 
         // textOffset is only support in RectText, otherwise
@@ -532,6 +532,7 @@ export function getTextBoxPosition(out, hostEl, style, rect) {
 
     return out;
 }
+
 
 function setCtx(ctx, prop, value) {
     ctx[prop] = fixShadow(ctx, prop, value);
@@ -561,7 +562,7 @@ export function getFill(fill) {
         : fill;
 }
 
-function parsePercent(value, maxValue) {
+export function parsePercent(value, maxValue) {
     if (typeof value === 'string') {
         if (value.lastIndexOf('%') >= 0) {
             return parseFloat(value) / 100 * maxValue;

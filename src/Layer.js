@@ -71,8 +71,8 @@ var Layer = function (id, painter, dpr) {
         domStyle['user-select'] = 'none';
         domStyle['-webkit-touch-callout'] = 'none';
         domStyle['-webkit-tap-highlight-color'] = 'rgba(0,0,0,0)';
-        domStyle['padding'] = 0;
-        domStyle['margin'] = 0;
+        domStyle['padding'] = 0; // eslint-disable-line dot-notation
+        domStyle['margin'] = 0; // eslint-disable-line dot-notation
         domStyle['border-width'] = 0;
     }
 

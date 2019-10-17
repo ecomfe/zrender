@@ -5,7 +5,7 @@
 
 import {createElement} from './core';
 import * as util from '../core/util';
-import zrLog from '../core/log';
+import logError from '../core/log';
 import Path from '../graphic/Path';
 import ZImage from '../graphic/Image';
 import ZText from '../graphic/Text';
@@ -58,11 +58,11 @@ function prepend(parent, child) {
     }
 }
 
-function append(parent, child) {
-    if (checkParentAvailable(parent, child)) {
-        parent.appendChild(child);
-    }
-}
+// function append(parent, child) {
+//     if (checkParentAvailable(parent, child)) {
+//         parent.appendChild(child);
+//     }
+// }
 
 function remove(parent, child) {
     if (child && parent && child.parentNode === parent) {
@@ -242,11 +242,9 @@ SVGPainter.prototype = {
             else if (!item.removed) {
                 for (var k = 0; k < item.count; k++) {
                     var displayable = newVisibleList[item.indices[k]];
-                    prevSvgElement =
-                        svgElement =
-                        getTextSvgElement(displayable)
-                        || getSvgElement(displayable)
-                        || prevSvgElement;
+                    prevSvgElement = getTextSvgElement(displayable)
+                        || getSvgElement(displayable) || prevSvgElement;
+                    svgElement = getSvgElement(displayable) || getTextSvgElement(displayable);
 
                     this.gradientManager.markUsed(displayable);
                     this.gradientManager
@@ -395,7 +393,7 @@ SVGPainter.prototype = {
 // Not supported methods
 function createMethodNotSupport(method) {
     return function () {
-        zrLog('In SVG mode painter not support method "' + method + '"');
+        logError('In SVG mode painter not support method "' + method + '"');
     };
 }
 

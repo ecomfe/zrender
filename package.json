@@ -1,6 +1,6 @@
 {
   "name": "zrender",
-  "version": "4.0.7",
+  "version": "4.1.1",
   "description": "A lightweight canvas library.",
   "keywords": [
     "canvas",
@@ -14,20 +14,22 @@
     "prepublish": "node build/build.js --prepublish",
     "build": "node build/build.js --release",
     "dev": "node build/build.js --watch",
-    "test": "node build/build.js"
+    "test": "node build/build.js",
+    "lint": "./node_modules/.bin/eslint src"
   },
   "license": "BSD-3-Clause",
   "devDependencies": {
-    "@babel/core": "^7.3.4",
-    "@babel/helper-module-transforms": "^7.2.2",
-    "@babel/helper-simple-access": "^7.1.0",
-    "@babel/template": "^7.2.2",
+    "@babel/core": "7.3.4",
+    "@babel/helper-module-transforms": "7.2.2",
+    "@babel/helper-simple-access": "7.1.0",
+    "@babel/template": "7.2.2",
     "@babel/types": "7.0.0-beta.31",
     "assert": "1.4.1",
     "commander": "2.11.0",
     "fs-extra": "4.0.2",
     "jsdiff": "1.1.1",
     "rollup": "0.50.0",
-    "rollup-plugin-uglify": "2.0.1"
+    "rollup-plugin-uglify": "2.0.1",
+    "eslint": "6.3.0"
   }
 }

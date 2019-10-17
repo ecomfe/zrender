@@ -112,7 +112,7 @@ var domHandlers = {
 
         this._lastTouchMoment = new Date();
 
-        this.handler.processGesture(this, event, 'start');
+        this.handler.processGesture(event, 'start');
 
         // In touch device, trigger `mousemove`(`mouseover`) should
         // be triggered, and must before `mousedown` triggered.
@@ -136,7 +136,7 @@ var domHandlers = {
         // mouse event in upper applicatoin.
         event.zrByTouch = true;
 
-        this.handler.processGesture(this, event, 'change');
+        this.handler.processGesture(event, 'change');
 
         // Mouse move should always be triggered no matter whether
         // there is gestrue event, because mouse move and pinch may
@@ -159,7 +159,7 @@ var domHandlers = {
         // mouse event in upper applicatoin.
         event.zrByTouch = true;
 
-        this.handler.processGesture(this, event, 'end');
+        this.handler.processGesture(event, 'end');
 
         domHandlers.mouseup.call(this, event);
 

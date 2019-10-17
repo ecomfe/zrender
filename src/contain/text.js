@@ -142,14 +142,16 @@ export function adjustTextY(y, height, textVerticalAlign) {
 }
 
 /**
+ * Follow same interface to `Displayable.prototype.calculateTextPosition`.
  * @public
- * @param {Object} [out]
- * @param {stirng} textPosition
- * @param {Object} rect {x, y, width, height}
- * @param {number} distance
- * @return {Object} {x, y, textAlign, textVerticalAlign}
+ * @param {Obejct} [out] Prepared out object. If not input, auto created in the method.
+ * @param {module:zrender/graphic/Style} style where `textPosition` and `textDistance` are visited.
+ * @param {Object} rect {x, y, width, height} Rect of the host elment, according to which the text positioned.
+ * @return {Object} The input `out`. Set: {x, y, textAlign, textVerticalAlign}
  */
-export function adjustTextPositionOnRect(out, textPosition, rect, distance) {
+export function calculateTextPosition(out, style, rect) {
+    var textPosition = style.textPosition;
+    var distance = style.textDistance;
 
     var x = rect.x;
     var y = rect.y;
@@ -242,6 +244,20 @@ export function adjustTextPositionOnRect(out, textPosition, rect, distance) {
     out.textVerticalAlign = textVerticalAlign;
 
     return out;
+}
+
+/**
+ * To be removed. But still do not remove in case that some one has imported it.
+ * @deprecated
+ * @public
+ * @param {stirng} textPosition
+ * @param {Object} rect {x, y, width, height}
+ * @param {number} distance
+ * @return {Object} {x, y, textAlign, textVerticalAlign}
+ */
+export function adjustTextPositionOnRect(textPosition, rect, distance) {
+    var dummyStyle = {textPosition: textPosition, textDistance: distance};
+    return calculateTextPosition({}, dummyStyle, rect);
 }
 
 /**

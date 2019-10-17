@@ -8,6 +8,8 @@
 
 // TODO getTotalLength, getPointAtLength
 
+/* global Float32Array */
+
 import * as curve from './curve';
 import * as vec2 from './vector';
 import * as bbox from './bbox';
@@ -685,9 +687,12 @@ PathProxy.prototype = {
      */
     rebuildPath: function (ctx) {
         var d = this.data;
-        var x0, y0;
-        var xi, yi;
-        var x, y;
+        var x0;
+        var y0;
+        var xi;
+        var yi;
+        var x;
+        var y;
         var ux = this._ux;
         var uy = this._uy;
         var len = this._len;

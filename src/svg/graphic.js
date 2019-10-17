@@ -142,18 +142,20 @@ function pathDataToString(path) {
 
                 var dThetaPositive = Math.abs(dTheta);
                 var isCircle = isAroundZero(dThetaPositive - PI2)
-                    && !isAroundZero(dThetaPositive);
+                    || (clockwise ? dTheta >= PI2 : -dTheta >= PI2);
+
+                // Mapping to 0~2PI
+                var unifiedTheta = dTheta > 0 ? dTheta % PI2 : (dTheta % PI2 + PI2);
 
                 var large = false;
-                if (dThetaPositive >= PI2) {
+                if (isCircle) {
                     large = true;
                 }
                 else if (isAroundZero(dThetaPositive)) {
                     large = false;
                 }
                 else {
-                    large = (dTheta > -PI && dTheta < 0 || dTheta > PI)
-                        === !!clockwise;
+                    large = (unifiedTheta >= PI) === !!clockwise;
                 }
 
                 var x0 = round4(cx + rx * mathCos(theta));
@@ -378,7 +380,7 @@ var svgTextDrawRectText = function (el, hostRect) {
     var nTextLines = textLines.length;
     var lineHeight = contentBlock.lineHeight;
 
-    textHelper.getTextBoxPosition(_tmpTextBoxPos, el, style, hostRect);
+    textHelper.getBoxPosition(_tmpTextBoxPos, el, style, hostRect);
     var baseX = _tmpTextBoxPos.baseX;
     var baseY = _tmpTextBoxPos.baseY;
     var textAlign = _tmpTextBoxPos.textAlign || 'left';
@@ -469,7 +471,7 @@ function setTextTransform(textSvgEl, needTransformTextByHostEl, elTransform, sty
         _tmpTextTransform[5] += baseY;
     }
     // See the definition in `Style.js#textOrigin`, the default
-    // origin is from the result of `getTextBoxPosition`.
+    // origin is from the result of `getBoxPosition`.
 
     setTransform(textSvgEl, _tmpTextTransform);
 }
