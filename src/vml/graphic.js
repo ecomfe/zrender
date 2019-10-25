@@ -66,15 +66,7 @@ if (!env.canvasSupported) {
         return (parseFloat(zlevel) || 0) * ZLEVEL_BASE + (parseFloat(z) || 0) * Z_BASE + z2;
     };
 
-    var parsePercent = function (value, maxValue) {
-        if (typeof value === 'string') {
-            if (value.lastIndexOf('%') >= 0) {
-                return parseFloat(value) / 100 * maxValue;
-            }
-            return parseFloat(value);
-        }
-        return value;
-    };
+    var parsePercent = textHelper.parsePercent;
 
     /***************************************************
      * PATH
