@@ -390,7 +390,7 @@
             });
 
             zrender.util.each(posList, function (textPos, idx) {
-                var text = textPos;
+                var text = textPos + '中文';
                 var shape = new zrender.Rect({
                     position: [(idx % 3) * 220, 120 * Math.floor(idx / 3)],
                     scale: [1, 1],
