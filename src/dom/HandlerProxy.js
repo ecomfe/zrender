@@ -281,6 +281,8 @@ function HandlerDomProxy(dom) {
 
     this._handlers = {};
 
+    this._mountedHandlerNames = [];
+
     initDomHandler(this);
 
     if (env.pointerEventsSupported) { // Only IE11+/Edge
@@ -325,13 +327,14 @@ function HandlerDomProxy(dom) {
     function mountHandlers(handlerNames, instance) {
         zrUtil.each(handlerNames, function (name) {
             addEventListener(dom, eventNameFix(name), instance._handlers[name]);
+            instance._mountedHandlerNames.push(name);
         }, instance);
     }
 }
 
 var handlerDomProxyProto = HandlerDomProxy.prototype;
 handlerDomProxyProto.dispose = function () {
-    var handlerNames = mouseHandlerNames.concat(touchHandlerNames);
+    var handlerNames = this._mountedHandlerNames;
 
     for (var i = 0; i < handlerNames.length; i++) {
         var name = handlerNames[i];
