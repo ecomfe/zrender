@@ -80,10 +80,16 @@ function doClip(clipPaths, ctx) {
 function createRoot(width, height) {
     var domRoot = document.createElement('div');
 
-    // domRoot.onselectstart = returnFalse; // 避免页面选中的尴尬
+    // domRoot.onselectstart = returnFalse; // Avoid page selected
     domRoot.style.cssText = [
         'position:relative',
-        'overflow:hidden',
+        // IOS13 safari probably has a compositing bug (z order of the canvas and the consequent
+        // dom does not act as expected) when some of the parent dom has
+        // `-webkit-overflow-scrolling: touch;` and the webpage is longer than one screen and
+        // the canvas is not at the top part of the page.
+        // Check `https://bugs.webkit.org/show_bug.cgi?id=203681` for more details. We remove
+        // this `overflow:hidden` to avoid the bug.
+        // 'overflow:hidden',
         'width:' + width + 'px',
         'height:' + height + 'px',
         'padding:0',
