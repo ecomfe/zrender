@@ -232,10 +232,11 @@ SVGPainter.prototype = {
                     prevSvgElement = textSvgElement || svgElement
                         || prevSvgElement;
 
+                    // zrender.Text only create textSvgElement.
                     this.gradientManager
-                        .addWithoutUpdate(svgElement, displayable);
+                        .addWithoutUpdate(svgElement || textSvgElement, displayable);
                     this.shadowManager
-                        .addWithoutUpdate(svgElement, displayable);
+                        .addWithoutUpdate(svgElement || textSvgElement, displayable);
                     this.clipPathManager.markUsed(displayable);
                 }
             }
@@ -244,15 +245,17 @@ SVGPainter.prototype = {
                     var displayable = newVisibleList[item.indices[k]];
                     prevSvgElement = getTextSvgElement(displayable)
                         || getSvgElement(displayable) || prevSvgElement;
-                    svgElement = getSvgElement(displayable) || getTextSvgElement(displayable);
+
+                    var svgElement = getSvgElement(displayable);
+                    var textSvgElement = getTextSvgElement(displayable);
 
                     this.gradientManager.markUsed(displayable);
                     this.gradientManager
-                        .addWithoutUpdate(svgElement, displayable);
+                        .addWithoutUpdate(svgElement || textSvgElement, displayable);
 
                     this.shadowManager.markUsed(displayable);
                     this.shadowManager
-                        .addWithoutUpdate(svgElement, displayable);
+                        .addWithoutUpdate(svgElement || textSvgElement, displayable);
 
                     this.clipPathManager.markUsed(displayable);
                 }
