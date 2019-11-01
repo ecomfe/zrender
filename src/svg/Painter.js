@@ -244,7 +244,7 @@ SVGPainter.prototype = {
                     var displayable = newVisibleList[item.indices[k]];
                     prevSvgElement = getTextSvgElement(displayable)
                         || getSvgElement(displayable) || prevSvgElement;
-                    svgElement = getSvgElement(displayable) || getTextSvgElement(displayable);
+                    svgElement = getTextSvgElement(displayable) || getSvgElement(displayable);
 
                     this.gradientManager.markUsed(displayable);
                     this.gradientManager
