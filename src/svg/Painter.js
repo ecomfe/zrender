@@ -235,7 +235,7 @@ SVGPainter.prototype = {
                     this.gradientManager
                         .addWithoutUpdate(svgElement, displayable);
                     this.shadowManager
-                        .addWithoutUpdate(prevSvgElement, displayable);
+                        .addWithoutUpdate(svgElement, displayable);
                     this.clipPathManager.markUsed(displayable);
                 }
             }
