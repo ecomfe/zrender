@@ -155,6 +155,7 @@ export function calculateTextPosition(out, style, rect) {
 
     var x = rect.x;
     var y = rect.y;
+    distance = distance || 0;
 
     var height = rect.height;
     var width = rect.width;
