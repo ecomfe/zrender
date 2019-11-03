@@ -376,8 +376,6 @@ var svgTextDrawRectText = function (el, hostRect) {
     }
 
     var outerHeight = contentBlock.outerHeight;
-    var textLines = contentBlock.lines;
-    var nTextLines = textLines.length;
     var lineHeight = contentBlock.lineHeight;
 
     textHelper.getBoxPosition(_tmpTextBoxPos, el, style, hostRect);
@@ -410,35 +408,47 @@ var svgTextDrawRectText = function (el, hostRect) {
     // otherwise the outer <style> may set the unexpected style.
 
     // Font may affect position of each tspan elements
+    var canCacheByTextString = contentBlock.canCacheByTextString;
     var tspanList = el.__tspanList || (el.__tspanList = []);
-    if (el.__text !== text) {
+    var tspanOriginLen = tspanList.length;
+
+    // Optimize for most cases, just compare text string to determine change.
+    if (canCacheByTextString && el.__canCacheByTextString && el.__text === text) {
+        if (el.__dirtyText && tspanOriginLen) {
+            for (var idx = 0; idx < tspanOriginLen; ++idx) {
+                updateTextLocation(tspanList[idx], textAlign, textX, textY + idx * lineHeight);
+            }
+        }
+    }
+    else {
         el.__text = text;
+        el.__canCacheByTextString = canCacheByTextString;
+        var textLines = contentBlock.lines;
+        var nTextLines = textLines.length;
+
         var idx = 0;
         for (; idx < nTextLines; idx++) {
             // Using cached tspan elements
             var tspan = tspanList[idx];
+            var singleLineText = textLines[idx];
+
             if (!tspan) {
                 tspan = tspanList[idx] = createElement('tspan');
                 textSvgEl.appendChild(tspan);
+                tspan.appendChild(document.createTextNode(singleLineText));
             }
-            else {
+            else if (tspan.__zrText !== singleLineText) {
                 tspan.innerHTML = '';
+                tspan.appendChild(document.createTextNode(singleLineText));
             }
-            tspan.appendChild(document.createTextNode(textLines[idx]));
             updateTextLocation(tspan, textAlign, textX, textY + idx * lineHeight);
         }
         // Remove unused tspan elements
-        if (tspanList.length > nTextLines) {
-            for (; idx < tspanList.length; idx++) {
+        if (tspanOriginLen > nTextLines) {
+            for (; idx < tspanOriginLen; idx++) {
                 textSvgEl.removeChild(tspanList[idx]);
             }
             tspanList.length = nTextLines;
-        }
-    }
-    else if (el.__dirtyText, tspanList.length) {
-        for (var idx = 0; idx < tspanList.length; ++idx) {
-            var tspan = tspanList[idx];
-            updateTextLocation(tspan, textAlign, textX, textY + idx * lineHeight);
         }
     }
 };
