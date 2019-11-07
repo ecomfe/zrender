@@ -24,6 +24,8 @@ var guid = function () {
  * @desc thanks zepto.
  */
 
+/* global wx */
+
 var env = {};
 
 if (typeof wx === 'object' && typeof wx.getSystemInfoSync === 'function') {
@@ -438,7 +440,9 @@ function inherits(clazz, baseClazz) {
     clazz.prototype = new F();
 
     for (var prop in clazzPrototype) {
-        clazz.prototype[prop] = clazzPrototype[prop];
+        if (clazzPrototype.hasOwnProperty(prop)) {
+            clazz.prototype[prop] = clazzPrototype[prop];
+        }
     }
     clazz.prototype.constructor = clazz;
     clazz.superClass = baseClazz;
@@ -690,6 +694,7 @@ function isDom(value) {
  * @return {boolean}
  */
 function eqNaN(value) {
+    /* eslint-disable-next-line no-self-compare */
     return value !== value;
 }
 
@@ -834,9 +839,11 @@ HashMap.prototype = {
     // should not use the exposed keys, who are prefixed.
     each: function (cb, context) {
         context !== void 0 && (cb = bind(cb, context));
+        /* eslint-disable guard-for-in */
         for (var key in this.data) {
             this.data.hasOwnProperty(key) && cb(this.data[key], key);
         }
+        /* eslint-enable guard-for-in */
     },
     // Do not use this method if performance sensitive.
     removeKey: function (key) {
@@ -905,6 +912,8 @@ var util = (Object.freeze || Object)({
 	concatArray: concatArray,
 	noop: noop
 });
+
+/* global Float32Array */
 
 var ArrayCtor = typeof Float32Array === 'undefined'
     ? Array
@@ -2462,6 +2471,8 @@ mixin(Handler, Draggable);
  * @exports zrender/tool/matrix
  */
 
+/* global Float32Array */
+
 var ArrayCtor$1 = typeof Float32Array === 'undefined'
     ? Array
     : Float32Array;
@@ -3720,11 +3731,17 @@ function lerpNumber(a, b, p) {
 }
 
 function setRgba(out, r, g, b, a) {
-    out[0] = r; out[1] = g; out[2] = b; out[3] = a;
+    out[0] = r;
+    out[1] = g;
+    out[2] = b;
+    out[3] = a;
     return out;
 }
 function copyRgba(out, a) {
-    out[0] = a[0]; out[1] = a[1]; out[2] = a[2]; out[3] = a[3];
+    out[0] = a[0];
+    out[1] = a[1];
+    out[2] = a[2];
+    out[3] = a[3];
     return out;
 }
 
@@ -4799,35 +4816,23 @@ if (typeof window !== 'undefined') {
  */
 
 /**
- * debug日志选项：catchBrushException为true下有效
- * 0 : 不生成debug数据，发布用
- * 1 : 异常抛出，调试用
- * 2 : 控制台输出，调试用
+ * Debug log mode:
+ * 0: Do nothing, for release.
+ * 1: console.error, for debug.
  */
 var debugMode = 0;
 
 // retina 屏幕优化
 var devicePixelRatio = dpr;
 
-var log = function () {
+var logError = function () {
 };
 
 if (debugMode === 1) {
-    log = function () {
-        for (var k in arguments) {
-            throw new Error(arguments[k]);
-        }
-    };
-}
-else if (debugMode > 1) {
-    log = function () {
-        for (var k in arguments) {
-            console.log(arguments[k]);
-        }
-    };
+    logError = console.error;
 }
 
-var zrLog = log;
+var logError$1 = logError;
 
 /**
  * @alias modue:zrender/mixin/Animatable
@@ -4883,7 +4888,7 @@ Animatable.prototype = {
         }
 
         if (!target) {
-            zrLog(
+            logError$1(
                 'Property "'
                 + path
                 + '" is not existed in element '
@@ -6104,7 +6109,10 @@ function TimSort(array, compare) {
         while (stackSize > 1) {
             var n = stackSize - 2;
 
-            if (n >= 1 && runLength[n - 1] <= runLength[n] + runLength[n + 1] || n >= 2 && runLength[n - 2] <= runLength[n] + runLength[n - 1]) {
+            if (
+                (n >= 1 && runLength[n - 1] <= runLength[n] + runLength[n + 1])
+                || (n >= 2 && runLength[n - 2] <= runLength[n] + runLength[n - 1])
+            ) {
                 if (runLength[n - 1] < runLength[n + 1]) {
                     n--;
                 }
@@ -6194,7 +6202,9 @@ function TimSort(array, compare) {
         }
 
         var _minGallop = minGallop;
-        var count1, count2, exit;
+        var count1;
+        var count2;
+        var exit;
 
         while (1) {
             count1 = 0;
@@ -6877,8 +6887,8 @@ Style.prototype = {
     /**
      * `true` is not supported.
      * `false`/`null`/`undefined` are the same.
-     * `false` is used to remove lineDash in some 
-     * case that `null`/`undefined` can not be set. 
+     * `false` is used to remove lineDash in some
+     * case that `null`/`undefined` can not be set.
      * (e.g., emphasis.lineStyle in echarts)
      * @type {Array.<number>|boolean}
      */
@@ -7082,23 +7092,31 @@ Style.prototype = {
 
     /**
      * Whether transform text.
-     * Only useful in Path and Image element
+     * Only available in Path and Image element,
+     * where the text is called as `RectText`.
      * @type {boolean}
      */
     transformText: false,
 
     /**
-     * Text rotate around position of Path or Image
-     * Only useful in Path and Image element and transformText is false.
+     * Text rotate around position of Path or Image.
+     * The origin of the rotation can be specified by `textOrigin`.
+     * Only available in Path and Image element,
+     * where the text is called as `RectText`.
      */
     textRotation: 0,
 
     /**
-     * Text origin of text rotation, like [10, 40].
-     * Based on x, y of rect.
-     * Useful in label rotation of circular symbol.
-     * By default, this origin is textPosition.
-     * Can be 'center'.
+     * Text origin of text rotation.
+     * Useful in the case like label rotation of circular symbol.
+     * Only available in Path and Image element, where the text is called
+     * as `RectText` and the element is called as "host element".
+     * The value can be:
+     * + If specified as a coordinate like `[10, 40]`, it is the `[x, y]`
+     * base on the left-top corner of the rect of its host element.
+     * + If specified as a string `center`, it is the center of the rect of
+     * its host element.
+     * + By default, this origin is the `textPosition`.
      * @type {string|Array.<number>}
      */
     textOrigin: null,
@@ -7358,8 +7376,8 @@ var Layer = function (id, painter, dpr) {
         domStyle['user-select'] = 'none';
         domStyle['-webkit-touch-callout'] = 'none';
         domStyle['-webkit-tap-highlight-color'] = 'rgba(0,0,0,0)';
-        domStyle['padding'] = 0;
-        domStyle['margin'] = 0;
+        domStyle['padding'] = 0; // eslint-disable-line dot-notation
+        domStyle['margin'] = 0; // eslint-disable-line dot-notation
         domStyle['border-width'] = 0;
     }
 
@@ -7773,6 +7791,7 @@ function calculateTextPosition(out, style, rect) {
 
     var x = rect.x;
     var y = rect.y;
+    distance = distance || 0;
 
     var height = rect.height;
     var width = rect.width;
@@ -8025,8 +8044,11 @@ methods$1.measureText = function (text, font) {
  * @param {string} text
  * @param {string} font
  * @param {Object} [truncate]
- * @return {Object} block: {lineHeight, lines, height, outerHeight}
+ * @return {Object} block: {lineHeight, lines, height, outerHeight, canCacheByTextString}
  *  Notice: for performance, do not calculate outerWidth util needed.
+ *  `canCacheByTextString` means the result `lines` is only determined by the input `text`.
+ *  Thus we can simply comparing the `input` text to determin whether the result changed,
+ *  without travel the result `lines`.
  */
 function parsePlainText(text, font, padding, textLineHeight, truncate) {
     text != null && (text += '');
@@ -8035,12 +8057,14 @@ function parsePlainText(text, font, padding, textLineHeight, truncate) {
     var lines = text ? text.split('\n') : [];
     var height = lines.length * lineHeight;
     var outerHeight = height;
+    var canCacheByTextString = true;
 
     if (padding) {
         outerHeight += padding[0] + padding[2];
     }
 
     if (text && truncate) {
+        canCacheByTextString = false;
         var truncOuterHeight = truncate.outerHeight;
         var truncOuterWidth = truncate.outerWidth;
         if (truncOuterHeight != null && outerHeight > truncOuterHeight) {
@@ -8067,7 +8091,8 @@ function parsePlainText(text, font, padding, textLineHeight, truncate) {
         lines: lines,
         height: height,
         outerHeight: outerHeight,
-        lineHeight: lineHeight
+        lineHeight: lineHeight,
+        canCacheByTextString: canCacheByTextString
     };
 }
 
@@ -9047,7 +9072,6 @@ RectText.prototype = {
 };
 
 /**
- * 可绘制的图形基类
  * Base class of all displayable graphic objects
  * @module zrender/graphic/Displayable
  */
@@ -9096,16 +9120,15 @@ Displayable.prototype = {
     type: 'displayable',
 
     /**
-     * Displayable 是否为脏，Painter 中会根据该标记判断是否需要是否需要重新绘制
-     * Dirty flag. From which painter will determine if this displayable object needs brush
+     * Dirty flag. From which painter will determine if this displayable object needs brush.
      * @name module:zrender/graphic/Displayable#__dirty
      * @type {boolean}
      */
     __dirty: true,
 
     /**
-     * 图形是否可见，为true时不绘制图形，但是仍能触发鼠标事件
-     * If ignore drawing of the displayable object. Mouse event will still be triggered
+     * Whether the displayable object is visible. when it is true, the displayable object
+     * is not drawn, but the mouse event can still trigger the object.
      * @name module:/zrender/graphic/Displayable#invisible
      * @type {boolean}
      * @default false
@@ -9127,7 +9150,7 @@ Displayable.prototype = {
     z2: 0,
 
     /**
-     * z层level，决定绘画在哪层canvas中
+     * The z level determines the displayable object can be drawn in which layer canvas.
      * @name module:/zrender/graphic/Displayable#zlevel
      * @type {number}
      * @default 0
@@ -9135,7 +9158,7 @@ Displayable.prototype = {
     zlevel: 0,
 
     /**
-     * 是否可拖拽
+     * Whether it can be dragged.
      * @name module:/zrender/graphic/Displayable#draggable
      * @type {boolean}
      * @default false
@@ -9143,7 +9166,7 @@ Displayable.prototype = {
     draggable: false,
 
     /**
-     * 是否正在拖拽
+     * Whether is it dragging.
      * @name module:/zrender/graphic/Displayable#draggable
      * @type {boolean}
      * @default false
@@ -9151,7 +9174,7 @@ Displayable.prototype = {
     dragging: false,
 
     /**
-     * 是否相应鼠标事件
+     * Whether to respond to mouse events.
      * @name module:/zrender/graphic/Displayable#silent
      * @type {boolean}
      * @default false
@@ -9201,21 +9224,20 @@ Displayable.prototype = {
     afterBrush: function (ctx) {},
 
     /**
-     * 图形绘制方法
+     * Graphic drawing method.
      * @param {CanvasRenderingContext2D} ctx
      */
     // Interface
     brush: function (ctx, prevEl) {},
 
     /**
-     * 获取最小包围盒
+     * Get the minimum bounding box.
      * @return {module:zrender/core/BoundingRect}
      */
     // Interface
     getBoundingRect: function () {},
 
     /**
-     * 判断坐标 x, y 是否在图形上
      * If displayable element contain coord x, y
      * @param  {number} x
      * @param  {number} y
@@ -9234,7 +9256,6 @@ Displayable.prototype = {
     },
 
     /**
-     * 判断坐标 x, y 是否在图形的包围盒上
      * If bounding rect of element contain coord x, y
      * @param  {number} x
      * @param  {number} y
@@ -9247,7 +9268,6 @@ Displayable.prototype = {
     },
 
     /**
-     * 标记图形元素为脏，并且在下一帧重绘
      * Mark displayable element dirty and refresh next frame
      */
     dirty: function () {
@@ -9259,11 +9279,10 @@ Displayable.prototype = {
     },
 
     /**
-     * 图形是否会触发事件
      * If displayable object binded any event
      * @return {boolean}
      */
-    // TODO, 通过 bind 绑定的事件
+    // TODO, events bound by bind
     // isSilent: function () {
     //     return !(
     //         this.hoverable || this.draggable
@@ -9485,7 +9504,7 @@ function isDisplayableCulled(el, width, height) {
 
 function isClipPathChanged(clipPaths, prevClipPaths) {
     // displayable.__clipPaths can only be `null`/`undefined` or an non-empty array.
-    if (clipPaths === prevClipPaths) { 
+    if (clipPaths === prevClipPaths) {
         return false;
     }
     if (!clipPaths || !prevClipPaths || (clipPaths.length !== prevClipPaths.length)) {
@@ -9515,10 +9534,16 @@ function doClip(clipPaths, ctx) {
 function createRoot(width, height) {
     var domRoot = document.createElement('div');
 
-    // domRoot.onselectstart = returnFalse; // 避免页面选中的尴尬
+    // domRoot.onselectstart = returnFalse; // Avoid page selected
     domRoot.style.cssText = [
         'position:relative',
-        'overflow:hidden',
+        // IOS13 safari probably has a compositing bug (z order of the canvas and the consequent
+        // dom does not act as expected) when some of the parent dom has
+        // `-webkit-overflow-scrolling: touch;` and the webpage is longer than one screen and
+        // the canvas is not at the top part of the page.
+        // Check `https://bugs.webkit.org/show_bug.cgi?id=203681` for more details. We remove
+        // this `overflow:hidden` to avoid the bug.
+        // 'overflow:hidden',
         'width:' + width + 'px',
         'height:' + height + 'px',
         'padding:0',
@@ -10014,12 +10039,12 @@ Painter.prototype = {
         var domRoot = this._domRoot;
 
         if (layersMap[zlevel]) {
-            zrLog('ZLevel ' + zlevel + ' has been used already');
+            logError$1('ZLevel ' + zlevel + ' has been used already');
             return;
         }
         // Check if is a valid layer
         if (!isLayerValid(layer)) {
-            zrLog('Layer of zlevel ' + zlevel + ' is not valid');
+            logError$1('Layer of zlevel ' + zlevel + ' is not valid');
             return;
         }
 
@@ -10153,11 +10178,14 @@ Painter.prototype = {
                 incrementalLayerCount = 1;
             }
             else {
-                layer = this.getLayer(zlevel + (incrementalLayerCount > 0 ? EL_AFTER_INCREMENTAL_INC : 0), this._needsManuallyCompositing);
+                layer = this.getLayer(
+                    zlevel + (incrementalLayerCount > 0 ? EL_AFTER_INCREMENTAL_INC : 0),
+                    this._needsManuallyCompositing
+                );
             }
 
             if (!layer.__builtin__) {
-                zrLog('ZLevel ' + zlevel + ' has been used by unkown layer ' + layer.id);
+                logError$1('ZLevel ' + zlevel + ' has been used by unkown layer ' + layer.id);
             }
 
             if (layer !== prevLayer) {
@@ -10842,7 +10870,7 @@ var domHandlers = {
 
         this._lastTouchMoment = new Date();
 
-        this.handler.processGesture(this, event, 'start');
+        this.handler.processGesture(event, 'start');
 
         // In touch device, trigger `mousemove`(`mouseover`) should
         // be triggered, and must before `mousedown` triggered.
@@ -10866,7 +10894,7 @@ var domHandlers = {
         // mouse event in upper applicatoin.
         event.zrByTouch = true;
 
-        this.handler.processGesture(this, event, 'change');
+        this.handler.processGesture(event, 'change');
 
         // Mouse move should always be triggered no matter whether
         // there is gestrue event, because mouse move and pinch may
@@ -10889,7 +10917,7 @@ var domHandlers = {
         // mouse event in upper applicatoin.
         event.zrByTouch = true;
 
-        this.handler.processGesture(this, event, 'end');
+        this.handler.processGesture(event, 'end');
 
         domHandlers.mouseup.call(this, event);
 
@@ -11096,7 +11124,7 @@ var instances = {};    // ZRender实例map索引
 /**
  * @type {string}
  */
-var version = '4.1.0';
+var version = '4.1.2';
 
 /**
  * Initializing a zrender instance
@@ -12237,6 +12265,8 @@ function fromArc(
 
 // TODO getTotalLength, getPointAtLength
 
+/* global Float32Array */
+
 var CMD = {
     M: 1,
     L: 2,
@@ -12908,9 +12938,12 @@ PathProxy.prototype = {
      */
     rebuildPath: function (ctx) {
         var d = this.data;
-        var x0, y0;
-        var xi, yi;
-        var x, y;
+        var x0;
+        var y0;
+        var xi;
+        var yi;
+        var x;
+        var y;
         var ux = this._ux;
         var uy = this._uy;
         var len$$1 = this._len;
@@ -16895,18 +16928,20 @@ function pathDataToString(path) {
 
                 var dThetaPositive = Math.abs(dTheta);
                 var isCircle = isAroundZero$1(dThetaPositive - PI2$4)
-                    && !isAroundZero$1(dThetaPositive);
+                    || (clockwise ? dTheta >= PI2$4 : -dTheta >= PI2$4);
+
+                // Mapping to 0~2PI
+                var unifiedTheta = dTheta > 0 ? dTheta % PI2$4 : (dTheta % PI2$4 + PI2$4);
 
                 var large = false;
-                if (dThetaPositive >= PI2$4) {
+                if (isCircle) {
                     large = true;
                 }
                 else if (isAroundZero$1(dThetaPositive)) {
                     large = false;
                 }
                 else {
-                    large = (dTheta > -PI$3 && dTheta < 0 || dTheta > PI$3)
-                        === !!clockwise;
+                    large = (unifiedTheta >= PI$3) === !!clockwise;
                 }
 
                 var x0 = round4(cx + rx * mathCos$3(theta));
@@ -17056,22 +17091,43 @@ svgImage.brush = function (el) {
  * TEXT
  **************************************************/
 var svgText = {};
-var tmpRect$2 = new BoundingRect();
-var tmpTextPositionResult = {};
+var _tmpTextHostRect = new BoundingRect();
+var _tmpTextBoxPos = {};
+var _tmpTextTransform = [];
+var TEXT_ALIGN_TO_ANCHRO = {
+    left: 'start',
+    right: 'end',
+    center: 'middle',
+    middle: 'middle'
+};
 
-var svgTextDrawRectText = function (el, rect, textRect) {
+/**
+ * @param {module:zrender/Element} el
+ * @param {Object|boolean} [hostRect] {x, y, width, height}
+ *        If set false, rect text is not used.
+ */
+var svgTextDrawRectText = function (el, hostRect) {
     var style = el.style;
+    var elTransform = el.transform;
+    var needTransformTextByHostEl = el instanceof Text || style.transformText;
 
     el.__dirty && normalizeTextStyle(style, true);
 
     var text = style.text;
     // Convert to string
-    if (text == null) {
-        // Draw no text only when text is set to null, but not ''
+    text != null && (text += '');
+    if (!needDrawText(text, style)) {
         return;
     }
-    else {
-        text += '';
+    // render empty text for svg if no text but need draw text.
+    text == null && (text = '');
+
+    // Follow the setting in the canvas renderer, if not transform the
+    // text, transform the hostRect, by which the text is located.
+    if (!needTransformTextByHostEl && elTransform) {
+        _tmpTextHostRect.copy(hostRect);
+        _tmpTextHostRect.applyTransform(elTransform);
+        hostRect = _tmpTextHostRect;
     }
 
     var textSvgEl = el.__textSvgEl;
@@ -17080,184 +17136,153 @@ var svgTextDrawRectText = function (el, rect, textRect) {
         el.__textSvgEl = textSvgEl;
     }
 
-    var x;
-    var y;
-    var textPosition = style.textPosition;
-    var align = style.textAlign || 'left';
-
-    if (typeof style.fontSize === 'number') {
-        style.fontSize += 'px';
-    }
-    var font = style.font
-        || [
-            style.fontStyle || '',
-            style.fontWeight || '',
-            style.fontSize || '',
-            style.fontFamily || ''
-        ].join(' ')
-        || DEFAULT_FONT$1;
-
-    var verticalAlign = style.textVerticalAlign;
-
-    textRect = getBoundingRect(
-        text, font, align,
-        verticalAlign, style.textPadding, style.textLineHeight
-    );
-
-    var lineHeight = textRect.lineHeight;
-    // Text position represented by coord
-    if (textPosition instanceof Array) {
-        x = rect.x + textPosition[0];
-        y = rect.y + textPosition[1];
-    }
-    else {
-        var newPos = el.calculateTextPosition
-            ? el.calculateTextPosition(tmpTextPositionResult, style, rect)
-            : calculateTextPosition(tmpTextPositionResult, style, rect);
-        x = newPos.x;
-        y = newPos.y;
-        verticalAlign = newPos.textVerticalAlign;
-        align = newPos.textAlign;
-    }
-
-    setVerticalAlign(textSvgEl, verticalAlign);
-
-    if (font) {
-        textSvgEl.style.font = font;
+    // style.font has been normalized by `normalizeTextStyle`.
+    var textSvgElStyle = textSvgEl.style;
+    var font = style.font || DEFAULT_FONT$1;
+    var computedFont = textSvgEl.__computedFont;
+    if (font !== textSvgEl.__styleFont) {
+        textSvgElStyle.font = textSvgEl.__styleFont = font;
+        // The computedFont might not be the orginal font if it is illegal font.
+        computedFont = textSvgEl.__computedFont = textSvgElStyle.font;
     }
 
     var textPadding = style.textPadding;
+    var textLineHeight = style.textLineHeight;
 
-    // Make baseline top
-    attr(textSvgEl, 'x', x);
-    attr(textSvgEl, 'y', y);
+    var contentBlock = el.__textCotentBlock;
+    if (!contentBlock || el.__dirtyText) {
+        contentBlock = el.__textCotentBlock = parsePlainText(
+            text, computedFont, textPadding, textLineHeight, style.truncate
+        );
+    }
+
+    var outerHeight = contentBlock.outerHeight;
+    var lineHeight = contentBlock.lineHeight;
+
+    getBoxPosition(_tmpTextBoxPos, el, style, hostRect);
+    var baseX = _tmpTextBoxPos.baseX;
+    var baseY = _tmpTextBoxPos.baseY;
+    var textAlign = _tmpTextBoxPos.textAlign || 'left';
+    var textVerticalAlign = _tmpTextBoxPos.textVerticalAlign;
+
+    setTextTransform(
+        textSvgEl, needTransformTextByHostEl, elTransform, style, hostRect, baseX, baseY
+    );
+
+    var boxY = adjustTextY(baseY, outerHeight, textVerticalAlign);
+    var textX = baseX;
+    var textY = boxY;
+
+    // TODO needDrawBg
+    if (textPadding) {
+        textX = getTextXForPadding$1(baseX, textAlign, textPadding);
+        textY += textPadding[0];
+    }
+
+    // `textBaseline` is set as 'middle'.
+    textY += lineHeight / 2;
 
     bindStyle(textSvgEl, style, true, el);
-    if (el instanceof Text || el.style.transformText) {
-        // Transform text with element
-        setTransform(textSvgEl, el.transform);
-    }
-    else {
-        if (el.transform) {
-            tmpRect$2.copy(rect);
-            tmpRect$2.applyTransform(el.transform);
-            rect = tmpRect$2;
-        }
-        else {
-            var pos = el.transformCoordToGlobal(rect.x, rect.y);
-            rect.x = pos[0];
-            rect.y = pos[1];
-            el.transform = identity(create$1());
-        }
 
-        // Text rotation, but no element transform
-        var origin = style.textOrigin;
-        if (origin === 'center') {
-            x = textRect.width / 2 + x;
-            y = textRect.height / 2 + y;
-        }
-        else if (origin) {
-            x = origin[0] + x;
-            y = origin[1] + y;
-        }
-        var rotate$$1 = -style.textRotation || 0;
-        var transform = create$1();
-        // Apply textRotate to element matrix
-        rotate(transform, transform, rotate$$1);
-
-        var pos = [el.transform[4], el.transform[5]];
-        translate(transform, transform, pos);
-        setTransform(textSvgEl, transform);
-    }
-
-    var textLines = text.split('\n');
-    var nTextLines = textLines.length;
-    var textAnchor = align;
-    // PENDING
-    if (textAnchor === 'left') {
-        textAnchor = 'start';
-        textPadding && (x += textPadding[3]);
-    }
-    else if (textAnchor === 'right') {
-        textAnchor = 'end';
-        textPadding && (x -= textPadding[1]);
-    }
-    else if (textAnchor === 'center') {
-        textAnchor = 'middle';
-        textPadding && (x += (textPadding[3] - textPadding[1]) / 2);
-    }
-
-    var dy = 0;
-    if (verticalAlign === 'bottom') {
-        dy = -textRect.height + lineHeight;
-        textPadding && (dy -= textPadding[2]);
-    }
-    else if (verticalAlign === 'middle') {
-        dy = (-textRect.height + lineHeight) / 2;
-        textPadding && (y += (textPadding[0] - textPadding[2]) / 2);
-    }
-    else {
-        textPadding && (dy += textPadding[0]);
-    }
+    // FIXME
+    // Add a <style> to reset all of the text font as inherit?
+    // otherwise the outer <style> may set the unexpected style.
 
     // Font may affect position of each tspan elements
-    if (el.__text !== text || el.__textFont !== font) {
-        var tspanList = el.__tspanList || [];
-        el.__tspanList = tspanList;
-        for (var i = 0; i < nTextLines; i++) {
-            // Using cached tspan elements
-            var tspan = tspanList[i];
-            if (!tspan) {
-                tspan = tspanList[i] = createElement('tspan');
-                textSvgEl.appendChild(tspan);
-                setVerticalAlign(tspan, verticalAlign);
-                attr(tspan, 'text-anchor', textAnchor);
-            }
-            else {
-                tspan.innerHTML = '';
-            }
-            attr(tspan, 'x', x);
-            attr(tspan, 'y', y + i * lineHeight + dy);
-            tspan.appendChild(document.createTextNode(textLines[i]));
-        }
-        // Remove unsed tspan elements
-        for (; i < tspanList.length; i++) {
-            textSvgEl.removeChild(tspanList[i]);
-        }
-        tspanList.length = nTextLines;
+    var canCacheByTextString = contentBlock.canCacheByTextString;
+    var tspanList = el.__tspanList || (el.__tspanList = []);
+    var tspanOriginLen = tspanList.length;
 
-        el.__text = text;
-        el.__textFont = font;
-    }
-    else if (el.__tspanList.length) {
-        // Update span x and y
-        var len = el.__tspanList.length;
-        for (var i = 0; i < len; ++i) {
-            var tspan = el.__tspanList[i];
-            if (tspan) {
-                attr(tspan, 'x', x);
-                attr(tspan, 'y', y + i * lineHeight + dy);
+    // Optimize for most cases, just compare text string to determine change.
+    if (canCacheByTextString && el.__canCacheByTextString && el.__text === text) {
+        if (el.__dirtyText && tspanOriginLen) {
+            for (var idx = 0; idx < tspanOriginLen; ++idx) {
+                updateTextLocation(tspanList[idx], textAlign, textX, textY + idx * lineHeight);
             }
+        }
+    }
+    else {
+        el.__text = text;
+        el.__canCacheByTextString = canCacheByTextString;
+        var textLines = contentBlock.lines;
+        var nTextLines = textLines.length;
+
+        var idx = 0;
+        for (; idx < nTextLines; idx++) {
+            // Using cached tspan elements
+            var tspan = tspanList[idx];
+            var singleLineText = textLines[idx];
+
+            if (!tspan) {
+                tspan = tspanList[idx] = createElement('tspan');
+                textSvgEl.appendChild(tspan);
+                tspan.appendChild(document.createTextNode(singleLineText));
+            }
+            else if (tspan.__zrText !== singleLineText) {
+                tspan.innerHTML = '';
+                tspan.appendChild(document.createTextNode(singleLineText));
+            }
+            updateTextLocation(tspan, textAlign, textX, textY + idx * lineHeight);
+        }
+        // Remove unused tspan elements
+        if (tspanOriginLen > nTextLines) {
+            for (; idx < tspanOriginLen; idx++) {
+                textSvgEl.removeChild(tspanList[idx]);
+            }
+            tspanList.length = nTextLines;
         }
     }
 };
 
-function setVerticalAlign(textSvgEl, verticalAlign) {
-    switch (verticalAlign) {
-        case 'middle':
-            attr(textSvgEl, 'dominant-baseline', 'middle');
-            attr(textSvgEl, 'alignment-baseline', 'middle');
-            break;
+function setTextTransform(textSvgEl, needTransformTextByHostEl, elTransform, style, hostRect, baseX, baseY) {
+    identity(_tmpTextTransform);
 
-        case 'bottom':
-            attr(textSvgEl, 'dominant-baseline', 'ideographic');
-            attr(textSvgEl, 'alignment-baseline', 'ideographic');
-            break;
-
-        default:
-            attr(textSvgEl, 'dominant-baseline', 'hanging');
-            attr(textSvgEl, 'alignment-baseline', 'hanging');
+    if (needTransformTextByHostEl && elTransform) {
+        copy$1(_tmpTextTransform, elTransform);
     }
+
+    // textRotation only apply in RectText.
+    var textRotation = style.textRotation;
+    if (hostRect && textRotation) {
+        var origin = style.textOrigin;
+        if (origin === 'center') {
+            baseX = hostRect.width / 2 + hostRect.x;
+            baseY = hostRect.height / 2 + hostRect.y;
+        }
+        else if (origin) {
+            baseX = origin[0] + hostRect.x;
+            baseY = origin[1] + hostRect.y;
+        }
+
+        _tmpTextTransform[4] -= baseX;
+        _tmpTextTransform[5] -= baseY;
+        // Positive: anticlockwise
+        rotate(_tmpTextTransform, _tmpTextTransform, textRotation);
+        _tmpTextTransform[4] += baseX;
+        _tmpTextTransform[5] += baseY;
+    }
+    // See the definition in `Style.js#textOrigin`, the default
+    // origin is from the result of `getBoxPosition`.
+
+    setTransform(textSvgEl, _tmpTextTransform);
+}
+
+// FIXME merge the same code with `helper/text.js#getTextXForPadding`;
+function getTextXForPadding$1(x, textAlign, textPadding) {
+    return textAlign === 'right'
+        ? (x - textPadding[1])
+        : textAlign === 'center'
+        ? (x + textPadding[3] / 2 - textPadding[1] / 2)
+        : (x + textPadding[3]);
+}
+
+function updateTextLocation(tspan, textAlign, x, y) {
+    // Consider different font display differently in vertial align, we always
+    // set vertialAlign as 'middle', and use 'y' to locate text vertically.
+    attr(tspan, 'dominant-baseline', 'middle');
+    attr(tspan, 'text-anchor', TEXT_ALIGN_TO_ANCHRO[textAlign]);
+    attr(tspan, 'x', x);
+    attr(tspan, 'y', y);
 }
 
 svgText.drawRectText = svgTextDrawRectText;
@@ -17265,12 +17290,7 @@ svgText.drawRectText = svgTextDrawRectText;
 svgText.brush = function (el) {
     var style = el.style;
     if (style.text != null) {
-        // 强制设置 textPosition
-        style.textPosition = [0, 0];
-        svgTextDrawRectText(el, {
-            x: style.x || 0, y: style.y || 0,
-            width: 0, height: 0
-        }, el.getBoundingRect());
+        svgTextDrawRectText(el, false);
     }
 };
 
@@ -17791,7 +17811,7 @@ GradientManager.prototype.add = function (gradient) {
         dom = this.createElement('radialGradient');
     }
     else {
-        zrLog('Illegal gradient type.');
+        logError$1('Illegal gradient type.');
         return null;
     }
 
@@ -17856,7 +17876,7 @@ GradientManager.prototype.updateDom = function (gradient, dom) {
         dom.setAttribute('r', gradient.r);
     }
     else {
-        zrLog('Illegal gradient type.');
+        logError$1('Illegal gradient type.');
         return;
     }
 
@@ -18130,16 +18150,15 @@ ShadowManager.prototype.addWithoutUpdate = function (
     displayable
 ) {
     if (displayable && hasShadow(displayable.style)) {
-        var style = displayable.style;
 
         // Create dom in <defs> if not exists
         var dom;
-        if (style._shadowDom) {
+        if (displayable._shadowDom) {
             // Gradient exists
-            dom = style._shadowDom;
+            dom = displayable._shadowDom;
 
             var defs = this.getDefs(true);
-            if (!defs.contains(style._shadowDom)) {
+            if (!defs.contains(displayable._shadowDom)) {
                 // _shadowDom is no longer in defs, recreate
                 this.addDom(dom);
             }
@@ -18165,16 +18184,15 @@ ShadowManager.prototype.addWithoutUpdate = function (
  */
 ShadowManager.prototype.add = function (displayable) {
     var dom = this.createElement('filter');
-    var style = displayable.style;
 
     // Set dom id with shadow id, since each shadow instance
     // will have no more than one dom element.
     // id may exists before for those dirty elements, in which case
     // id should remain the same, and other attributes should be
     // updated.
-    style._shadowDomId = style._shadowDomId || this.nextId++;
+    displayable._shadowDomId = displayable._shadowDomId || this.nextId++;
     dom.setAttribute('id', 'zr' + this._zrId
-        + '-shadow-' + style._shadowDomId);
+        + '-shadow-' + displayable._shadowDomId);
 
     this.updateDom(displayable, dom);
     this.addDom(dom);
@@ -18192,13 +18210,13 @@ ShadowManager.prototype.update = function (svgElement, displayable) {
     var style = displayable.style;
     if (hasShadow(style)) {
         var that = this;
-        Definable.prototype.update.call(this, displayable, function (style) {
-            that.updateDom(displayable, style._shadowDom);
+        Definable.prototype.update.call(this, displayable, function () {
+            that.updateDom(displayable, displayable._shadowDom);
         });
     }
     else {
         // Remove shadow
-        this.remove(svgElement, style);
+        this.remove(svgElement, displayable);
     }
 };
 
@@ -18206,9 +18224,9 @@ ShadowManager.prototype.update = function (svgElement, displayable) {
 /**
  * Remove DOM and clear parent filter
  */
-ShadowManager.prototype.remove = function (svgElement, style) {
-    if (style._shadowDomId != null) {
-        this.removeDom(style);
+ShadowManager.prototype.remove = function (svgElement, displayable) {
+    if (displayable._shadowDomId != null) {
+        this.removeDom(svgElement);
         svgElement.style.filter = '';
     }
 };
@@ -18234,7 +18252,10 @@ ShadowManager.prototype.updateDom = function (displayable, dom) {
     var scaleY = displayable.scale ? (displayable.scale[1] || 1) : 1;
 
     // TODO: textBoxShadowBlur is not supported yet
-    var offsetX, offsetY, blur, color;
+    var offsetX;
+    var offsetY;
+    var blur;
+    var color;
     if (style.shadowBlur || style.shadowOffsetX || style.shadowOffsetY) {
         offsetX = style.shadowOffsetX || 0;
         offsetY = style.shadowOffsetY || 0;
@@ -18274,7 +18295,7 @@ ShadowManager.prototype.updateDom = function (displayable, dom) {
 
     // Store dom element in shadow, to avoid creating multiple
     // dom instances for the same shadow element
-    style._shadowDom = dom;
+    displayable._shadowDom = dom;
 };
 
 /**
@@ -18283,9 +18304,8 @@ ShadowManager.prototype.updateDom = function (displayable, dom) {
  * @param {Displayable} displayable displayable element
  */
 ShadowManager.prototype.markUsed = function (displayable) {
-    var style = displayable.style;
-    if (style && style._shadowDom) {
-        Definable.prototype.markUsed.call(this, style._shadowDom);
+    if (displayable._shadowDom) {
+        Definable.prototype.markUsed.call(this, displayable._shadowDom);
     }
 };
 
@@ -18340,6 +18360,12 @@ function prepend(parent, child) {
             : parent.appendChild(child);
     }
 }
+
+// function append(parent, child) {
+//     if (checkParentAvailable(parent, child)) {
+//         parent.appendChild(child);
+//     }
+// }
 
 function remove(parent, child) {
     if (child && parent && child.parentNode === parent) {
@@ -18509,29 +18535,30 @@ SVGPainter.prototype = {
                     prevSvgElement = textSvgElement || svgElement
                         || prevSvgElement;
 
+                    // zrender.Text only create textSvgElement.
                     this.gradientManager
-                        .addWithoutUpdate(svgElement, displayable);
+                        .addWithoutUpdate(svgElement || textSvgElement, displayable);
                     this.shadowManager
-                        .addWithoutUpdate(prevSvgElement, displayable);
+                        .addWithoutUpdate(svgElement || textSvgElement, displayable);
                     this.clipPathManager.markUsed(displayable);
                 }
             }
             else if (!item.removed) {
                 for (var k = 0; k < item.count; k++) {
                     var displayable = newVisibleList[item.indices[k]];
-                    prevSvgElement =
-                        svgElement =
-                        getTextSvgElement(displayable)
-                        || getSvgElement(displayable)
-                        || prevSvgElement;
+                    prevSvgElement = getTextSvgElement(displayable)
+                        || getSvgElement(displayable) || prevSvgElement;
+
+                    var svgElement = getSvgElement(displayable);
+                    var textSvgElement = getTextSvgElement(displayable);
 
                     this.gradientManager.markUsed(displayable);
                     this.gradientManager
-                        .addWithoutUpdate(svgElement, displayable);
+                        .addWithoutUpdate(svgElement || textSvgElement, displayable);
 
                     this.shadowManager.markUsed(displayable);
                     this.shadowManager
-                        .addWithoutUpdate(svgElement, displayable);
+                        .addWithoutUpdate(svgElement || textSvgElement, displayable);
 
                     this.clipPathManager.markUsed(displayable);
                 }
@@ -18672,7 +18699,7 @@ SVGPainter.prototype = {
 // Not supported methods
 function createMethodNotSupport(method) {
     return function () {
-        zrLog('In SVG mode painter not support method "' + method + '"');
+        logError$1('In SVG mode painter not support method "' + method + '"');
     };
 }
 
@@ -18768,7 +18795,7 @@ if (!env$1.canvasSupported) {
         return 'rgb(' + [r, g, b].join(',') + ')';
     };
 
-    var append$1 = function (parent, child) {
+    var append = function (parent, child) {
         if (child && parent && child.parentNode !== parent) {
             parent.appendChild(child);
         }
@@ -18785,15 +18812,7 @@ if (!env$1.canvasSupported) {
         return (parseFloat(zlevel) || 0) * ZLEVEL_BASE + (parseFloat(z) || 0) * Z_BASE + z2;
     };
 
-    var parsePercent$1 = function (value, maxValue) {
-        if (typeof value === 'string') {
-            if (value.lastIndexOf('%') >= 0) {
-                return parseFloat(value) / 100 * maxValue;
-            }
-            return parseFloat(value);
-        }
-        return value;
-    };
+    var parsePercent$1 = parsePercent;
 
     /***************************************************
      * PATH
@@ -18964,7 +18983,7 @@ if (!env$1.canvasSupported) {
             }
 
             isFill ? updateFillNode(el, style, zrEl) : updateStrokeNode(el, style);
-            append$1(vmlEl, el);
+            append(vmlEl, el);
         }
         else {
             vmlEl[isFill ? 'filled' : 'stroked'] = 'false';
@@ -19216,7 +19235,7 @@ if (!env$1.canvasSupported) {
         vmlEl.style.zIndex = getZIndex(this.zlevel, this.z, this.z2);
 
         // Append to root
-        append$1(vmlRoot, vmlEl);
+        append(vmlRoot, vmlEl);
 
         // Text
         if (style.text != null) {
@@ -19233,7 +19252,7 @@ if (!env$1.canvasSupported) {
     };
 
     Path.prototype.onAdd = function (vmlRoot) {
-        append$1(vmlRoot, this._vmlEl);
+        append(vmlRoot, this._vmlEl);
         this.appendRectText(vmlRoot);
     };
 
@@ -19445,7 +19464,7 @@ if (!env$1.canvasSupported) {
         vmlEl.style.zIndex = getZIndex(this.zlevel, this.z, this.z2);
 
         // Append to root
-        append$1(vmlRoot, vmlEl);
+        append(vmlRoot, vmlEl);
 
         // Text
         if (style.text != null) {
@@ -19464,7 +19483,7 @@ if (!env$1.canvasSupported) {
     };
 
     ZImage.prototype.onAdd = function (vmlRoot) {
-        append$1(vmlRoot, this._vmlEl);
+        append(vmlRoot, this._vmlEl);
         this.appendRectText(vmlRoot);
     };
 
@@ -19537,7 +19556,7 @@ if (!env$1.canvasSupported) {
         };
     });
 
-    var tmpRect$3 = new BoundingRect();
+    var tmpRect$2 = new BoundingRect();
 
     var drawRectText = function (vmlRoot, rect, textRect, fromTextEl) {
 
@@ -19587,9 +19606,9 @@ if (!env$1.canvasSupported) {
         var m = this.transform;
         // Ignore transform for text in other element
         if (m && !fromTextEl) {
-            tmpRect$3.copy(rect);
-            tmpRect$3.applyTransform(m);
-            rect = tmpRect$3;
+            tmpRect$2.copy(rect);
+            tmpRect$2.applyTransform(m);
+            rect = tmpRect$2;
         }
 
         if (!fromTextEl) {
@@ -19685,9 +19704,9 @@ if (!env$1.canvasSupported) {
             textVmlEl.from = '0 0';
             textVmlEl.to = '1000 0.05';
 
-            append$1(textVmlEl, skewEl);
-            append$1(textVmlEl, pathEl);
-            append$1(textVmlEl, textPathEl);
+            append(textVmlEl, skewEl);
+            append(textVmlEl, pathEl);
+            append(textVmlEl, textPathEl);
 
             this._textVmlEl = textVmlEl;
         }
@@ -19744,7 +19763,7 @@ if (!env$1.canvasSupported) {
         textVmlEl.style.zIndex = getZIndex(this.zlevel, this.z, this.z2);
 
         // Attached to root
-        append$1(vmlRoot, textVmlEl);
+        append(vmlRoot, textVmlEl);
     };
 
     var removeRectText = function (vmlRoot) {
@@ -19753,7 +19772,7 @@ if (!env$1.canvasSupported) {
     };
 
     var appendRectText = function (vmlRoot) {
-        append$1(vmlRoot, this._textVmlEl);
+        append(vmlRoot, this._textVmlEl);
     };
 
     var list = [RectText, Displayable, ZImage, Path, Text];
@@ -19973,7 +19992,7 @@ VMLPainter.prototype = {
 // Not supported methods
 function createMethodNotSupport$1(method) {
     return function () {
-        zrLog('In IE8.0 VML mode painter not support method "' + method + '"');
+        logError$1('In IE8.0 VML mode painter not support method "' + method + '"');
     };
 }
 
