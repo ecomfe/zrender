@@ -168,6 +168,18 @@ function preparePointerTransformer(markers, saved) {
 }
 
 /**
+ * Find native event compat for legency IE.
+ * Should be called at the begining of a native event listener.
+ *
+ * @param {Event} [e] Mouse event or touch event or pointer event.
+ *        For lagency IE, we use `window.event` is used.
+ * @return {Event} The native event.
+ */
+export function getNativeEvent(e) {
+    return e || window.event;
+}
+
+/**
  * Normalize the coordinates of the input event.
  *
  * Get the `e.zrX` and `e.zrY`, which are relative to the top-left of
@@ -181,14 +193,14 @@ function preparePointerTransformer(markers, saved) {
  * between the result coords and the parameters `el` and `calculate`.
  *
  * @param {HTMLElement} el DOM element.
- * @param {Event} [e] Mouse event or touch event. For lagency IE,
- *        do not need to input it and `window.event` is used.
+ * @param {Event} [e] See `getNativeEvent`.
  * @param {boolean} [calculate=false] Whether to force calculate
  *        the coordinates but not use ones provided by browser.
+ * @return {UIEvent} The normalized native UIEvent.
  */
 export function normalizeEvent(el, e, calculate) {
 
-    e = e || window.event;
+    e = getNativeEvent(e);
 
     if (e.zrX != null) {
         return e;
