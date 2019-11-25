@@ -514,6 +514,8 @@ function removeOldTextNode(el) {
     if (el && el.__textSvgEl) {
         el.__textSvgEl.parentNode.removeChild(el.__textSvgEl);
         el.__textSvgEl = null;
+        el.__tspanList = [];
+        el.__text = null;
     }
 }
 
