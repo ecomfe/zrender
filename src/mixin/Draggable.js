@@ -3,9 +3,10 @@
 function Draggable() {
 
     this.on('mousedown', this._dragStart, this);
-    this.on('mousemove', this._drag, this);
-    this.on('mouseup', this._dragEnd, this);
-    this.on('globalout', this._dragEnd, this);
+    // this.on('mousemove', this._drag, this);
+    // this.on('mouseup', this._dragEnd, this);
+    // this.on('globalout', this._dragEnd, this);
+
     // this._dropTarget = null;
     // this._draggingTarget = null;
 
@@ -24,6 +25,9 @@ Draggable.prototype = {
             draggingTarget.dragging = true;
             this._x = e.offsetX;
             this._y = e.offsetY;
+
+            this.on('pagemousemove', this._drag, this);
+            this.on('pagemouseup', this._dragEnd, this);
 
             this.dispatchToElement(param(draggingTarget, e), 'dragstart', e.event);
         }
@@ -65,6 +69,9 @@ Draggable.prototype = {
         if (draggingTarget) {
             draggingTarget.dragging = false;
         }
+
+        this.off('pagemousemove', this._drag);
+        this.off('pagemouseup', this._dragEnd);
 
         this.dispatchToElement(param(draggingTarget, e), 'dragend', e.event);
 

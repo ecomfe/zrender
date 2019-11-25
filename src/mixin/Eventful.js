@@ -22,7 +22,9 @@ var arrySlice = Array.prototype.slice;
  *        param: {string} eventType
  *        param: {string|Object} query
  *        return: {boolean}
- * @param {Function} [eventProcessor.afterTrigger] Call after all handlers called.
+ * @param {Function} [eventProcessor.afterTrigger] Called after all handlers called.
+ *        param: {string} eventType
+ * @param {Function} [eventProcessor.afterListenerChanged] Called when any listener added or removed.
  *        param: {string} eventType
  */
 var Eventful = function (eventProcessor) {
@@ -72,8 +74,10 @@ Eventful.prototype = {
     /**
      * Unbind a event.
      *
-     * @param {string} event The event name.
+     * @param {string} [event] The event name.
+     *        If no `event` input, "off" all listeners.
      * @param {Function} [handler] The event handler.
+     *        If no `handler` input, "off" all listeners of the `event`.
      */
     off: function (event, handler) {
         var _h = this._$handlers;
@@ -101,6 +105,8 @@ Eventful.prototype = {
         else {
             delete _h[event];
         }
+
+        callListenerChanged(this, event);
 
         return this;
     },
@@ -231,6 +237,33 @@ Eventful.prototype = {
     }
 };
 
+
+// -----------------------------------------------------------------------
+// [Static Inner Methods]
+// These APIs can not be mounted to `Eventful` class, becuase `Eventful`
+// is a widely-used mixin, where adding new API might has name conflict
+// issue. So we expose these APIs as static methods.
+// -----------------------------------------------------------------------
+
+/**
+ * Count listeners of the given `eventType`.
+ * @param {Eventful} eventful
+ * @param {string} eventType
+ * @return {number} The number of the event listeners.
+ */
+Eventful.countListener = function (eventful, eventType) {
+    var _h = eventful._$handlers[eventType];
+    return _h ? _h.length : 0;
+};
+
+
+function callListenerChanged(eventful, eventType) {
+    var eventProcessor = eventful._$eventProcessor;
+    if (eventProcessor && eventProcessor.afterListenerChanged) {
+        eventProcessor.afterListenerChanged(eventType);
+    }
+}
+
 function normalizeQuery(host, query) {
     var eventProcessor = host._$eventProcessor;
     if (query != null && eventProcessor && eventProcessor.normalizeQuery) {
@@ -279,6 +312,8 @@ function on(eventful, event, query, handler, context, isOnce) {
     (lastWrap && lastWrap.callAtLast)
         ? _h[event].splice(lastIndex, 0, wrap)
         : _h[event].push(wrap);
+
+    callListenerChanged(eventful, event);
 
     return eventful;
 }
@@ -354,6 +389,16 @@ function on(eventful, event, query, handler, context, isOnce) {
  */
 /**
  * @event module:zrender/mixin/Eventful#ondrop
+ * @type {Function}
+ * @default null
+ */
+/**
+ * @event module:zrender/mixin/Eventful#onpagemousemove
+ * @type {Function}
+ * @default null
+ */
+/**
+ * @event module:zrender/mixin/Eventful#onpagemouseup
  * @type {Function}
  * @default null
  */
