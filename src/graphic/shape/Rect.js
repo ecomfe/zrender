@@ -58,5 +58,13 @@ export default Path.extend({
         }
         ctx.closePath();
         return;
+    },
+
+    highlight: function () {
+        this.trigger('emphasis');
+    },
+
+    downplay: function () {
+        this.trigger('normal');
     }
 });
