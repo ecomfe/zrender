@@ -238,25 +238,6 @@ Eventful.prototype = {
 };
 
 
-// -----------------------------------------------------------------------
-// [Static Inner Methods]
-// These APIs can not be mounted to `Eventful` class, becuase `Eventful`
-// is a widely-used mixin, where adding new API might has name conflict
-// issue. So we expose these APIs as static methods.
-// -----------------------------------------------------------------------
-
-/**
- * Count listeners of the given `eventType`.
- * @param {Eventful} eventful
- * @param {string} eventType
- * @return {number} The number of the event listeners.
- */
-Eventful.countListener = function (eventful, eventType) {
-    var _h = eventful._$handlers[eventType];
-    return _h ? _h.length : 0;
-};
-
-
 function callListenerChanged(eventful, eventType) {
     var eventProcessor = eventful._$eventProcessor;
     if (eventProcessor && eventProcessor.afterListenerChanged) {
