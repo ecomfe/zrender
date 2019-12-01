@@ -6,7 +6,6 @@ import * as eventTool from './core/event';
 import GestureMgr from './core/GestureMgr';
 
 var SILENT = 'silent';
-var countListener = Eventful.countListener;
 
 function makeEventPacket(eveType, targetInfo, event) {
     return {
@@ -390,10 +389,10 @@ function isHover(displayable, x, y) {
 }
 
 function afterListenerChanged(handlerInstance) {
-    var listenerLen = countListener(handlerInstance, 'pagemousemove')
-        + countListener(handlerInstance, 'pagemouseup');
+    var allSilent = handlerInstance.isSilent('pagemousemove')
+        && handlerInstance.isSilent('pagemouseup');
     var proxy = handlerInstance.proxy;
-    proxy && proxy.enablePageEvent && proxy.enablePageEvent(!!listenerLen);
+    proxy && proxy.togglePageEvent && proxy.togglePageEvent(!allSilent);
 }
 
 util.mixin(Handler, Eventful);

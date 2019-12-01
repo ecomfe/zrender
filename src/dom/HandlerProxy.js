@@ -482,7 +482,9 @@ handlerDomProxyProto.setCursor = function (cursorStyle) {
  * listeners when do not need them to escape unexpected side-effect.
  * @param {boolean} enableOrDisable `true`: enable page event. `false`: disable page event.
  */
-handlerDomProxyProto.enablePageEvent = function (enableOrDisable) {
+handlerDomProxyProto.togglePageEvent = function (enableOrDisable) {
+    zrUtil.assert(enableOrDisable != null);
+
     if (pageEventSupported && (this._pageEventEnabled ^ enableOrDisable)) {
         this._pageEventEnabled = enableOrDisable;
 
