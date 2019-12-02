@@ -24,6 +24,7 @@ function makeEventPacket(eveType, targetInfo, event) {
         pinchScale: event.pinchScale,
         wheelDelta: event.zrDelta,
         zrByTouch: event.zrByTouch,
+        zrIsFromLocal: event.zrIsFromLocal,
         which: event.which,
         stop: stopEvent
     };
@@ -36,10 +37,13 @@ function stopEvent(event) {
 function EmptyProxy() {}
 EmptyProxy.prototype.dispose = function () {};
 
+
 var handlerNames = [
     'click', 'dblclick', 'mousewheel', 'mouseout',
-    'mouseup', 'mousedown', 'mousemove', 'contextmenu'
+    'mouseup', 'mousedown', 'mousemove', 'contextmenu',
+    'pagemousemove', 'pagemouseup'
 ];
+
 /**
  * @alias module:zrender/Handler
  * @constructor
@@ -50,7 +54,9 @@ var handlerNames = [
  * @param {HTMLElement} painterRoot painter.root (not painter.getViewportRoot()).
  */
 var Handler = function (storage, painter, proxy, painterRoot) {
-    Eventful.call(this);
+    Eventful.call(this, {
+        afterListenerChanged: util.bind(afterListenerChanged, null, this)
+    });
 
     this.storage = storage;
 
@@ -176,6 +182,10 @@ Handler.prototype = {
 
         !innerDom && this.trigger('globalout', {event: event});
     },
+
+    pagemousemove: util.curry(pageEventHandler, 'pagemousemove'),
+
+    pagemouseup: util.curry(pageEventHandler, 'pagemouseup'),
 
     /**
      * Resize
@@ -352,6 +362,10 @@ util.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick', 'contextme
     };
 });
 
+function pageEventHandler(pageEventName, event) {
+    this.trigger(pageEventName, makeEventPacket(pageEventName, {}, event));
+}
+
 function isHover(displayable, x, y) {
     if (displayable[displayable.rectHover ? 'rectContain' : 'contain'](x, y)) {
         var el = displayable;
@@ -372,6 +386,13 @@ function isHover(displayable, x, y) {
     }
 
     return false;
+}
+
+function afterListenerChanged(handlerInstance) {
+    var allSilent = handlerInstance.isSilent('pagemousemove')
+        && handlerInstance.isSilent('pagemouseup');
+    var proxy = handlerInstance.proxy;
+    proxy && proxy.togglePageEvent && proxy.togglePageEvent(!allSilent);
 }
 
 util.mixin(Handler, Eventful);

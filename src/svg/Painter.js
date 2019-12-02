@@ -243,8 +243,8 @@ SVGPainter.prototype = {
             else if (!item.removed) {
                 for (var k = 0; k < item.count; k++) {
                     var displayable = newVisibleList[item.indices[k]];
-                    prevSvgElement = getTextSvgElement(displayable)
-                        || getSvgElement(displayable) || prevSvgElement;
+                    var svgElement = getSvgElement(displayable);
+                    var textSvgElement = getTextSvgElement(displayable);
 
                     var svgElement = getSvgElement(displayable);
                     var textSvgElement = getTextSvgElement(displayable);
@@ -258,6 +258,12 @@ SVGPainter.prototype = {
                         .addWithoutUpdate(svgElement || textSvgElement, displayable);
 
                     this.clipPathManager.markUsed(displayable);
+
+                    if (textSvgElement) { // Insert text.
+                        insertAfter(svgRoot, textSvgElement, svgElement);
+                    }
+                    prevSvgElement = svgElement
+                        || textSvgElement || prevSvgElement;
                 }
             }
         }
