@@ -512,7 +512,10 @@ function updateTextLocation(tspan, textAlign, x, y) {
 
 function removeOldTextNode(el) {
     if (el && el.__textSvgEl) {
-        el.__textSvgEl.parentNode.removeChild(el.__textSvgEl);
+        // textSvgEl may has no parentNode if el has been removed temporary.
+        if (el.__textSvgEl.parentNode) {
+            el.__textSvgEl.parentNode.removeChild(el.__textSvgEl);
+        }
         el.__textSvgEl = null;
         el.__tspanList = [];
         el.__text = null;
