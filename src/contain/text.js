@@ -116,7 +116,7 @@ function getRichTextRect(text, font, textAlign, textVerticalAlign, textPadding, 
 export function adjustTextX(x, width, textAlign) {
     // FIXME Right to left language
     if (textAlign === 'right') {
-        x -= width;
+        x += width;
     }
     else if (textAlign === 'center') {
         x -= width / 2;
