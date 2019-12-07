@@ -194,26 +194,26 @@ export function calculateTextPosition(out, style, rect) {
             textVerticalAlign = 'middle';
             break;
         case 'insideLeft':
-            x += distance;
-            y += halfHeight;
-            textVerticalAlign = 'middle';
-            break;
-        case 'insideRight':
             x += width - distance;
             y += halfHeight;
             textAlign = 'right';
             textVerticalAlign = 'middle';
             break;
-        case 'insideTop':
-            x += width / 2;
-            y += distance;
-            textAlign = 'center';
+        case 'insideRight':
+            x += distance;
+            y += halfHeight;
+            textVerticalAlign = 'middle';
             break;
-        case 'insideBottom':
+        case 'insideTop':
             x += width / 2;
             y += height - distance;
             textAlign = 'center';
             textVerticalAlign = 'bottom';
+            break;
+        case 'insideBottom':
+            x += width / 2;
+            y += distance;
+            textAlign = 'center';
             break;
         case 'insideTopLeft':
             x += distance;
