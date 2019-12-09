@@ -216,8 +216,8 @@ function gallopRight(value, array, start, length, hint, compare) {
 function TimSort(array, compare) {
     var minGallop = DEFAULT_MIN_GALLOPING;
     var length = 0;
-    var tmpStorageLength = DEFAULT_TMP_STORAGE_LENGTH;
-    var stackLength = 0;
+    // var tmpStorageLength = DEFAULT_TMP_STORAGE_LENGTH;
+    // var stackLength = 0;
     var runStart;
     var runLength;
     var stackSize = 0;
@@ -225,12 +225,12 @@ function TimSort(array, compare) {
     length = array.length;
 
     if (length < 2 * DEFAULT_TMP_STORAGE_LENGTH) {
-        tmpStorageLength = length >>> 1;
+        // tmpStorageLength = length >>> 1;
     }
 
     var tmp = [];
 
-    stackLength = length < 120 ? 5 : length < 1542 ? 10 : length < 119151 ? 19 : 40;
+    // stackLength = length < 120 ? 5 : length < 1542 ? 10 : length < 119151 ? 19 : 40;
 
     runStart = [];
     runLength = [];
