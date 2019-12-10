@@ -24,8 +24,6 @@ var arrySlice = Array.prototype.slice;
  *        return: {boolean}
  * @param {Function} [eventProcessor.afterTrigger] Called after all handlers called.
  *        param: {string} eventType
- * @param {Function} [eventProcessor.afterListenerChanged] Called when any listener added or removed.
- *        param: {string} eventType
  */
 var Eventful = function (eventProcessor) {
     this._$handlers = {};
@@ -105,8 +103,6 @@ Eventful.prototype = {
         else {
             delete _h[event];
         }
-
-        callListenerChanged(this, event);
 
         return this;
     },
@@ -238,13 +234,6 @@ Eventful.prototype = {
 };
 
 
-function callListenerChanged(eventful, eventType) {
-    var eventProcessor = eventful._$eventProcessor;
-    if (eventProcessor && eventProcessor.afterListenerChanged) {
-        eventProcessor.afterListenerChanged(eventType);
-    }
-}
-
 function normalizeQuery(host, query) {
     var eventProcessor = host._$eventProcessor;
     if (query != null && eventProcessor && eventProcessor.normalizeQuery) {
@@ -293,8 +282,6 @@ function on(eventful, event, query, handler, context, isOnce) {
     (lastWrap && lastWrap.callAtLast)
         ? _h[event].splice(lastIndex, 0, wrap)
         : _h[event].push(wrap);
-
-    callListenerChanged(eventful, event);
 
     return eventful;
 }
@@ -370,16 +357,6 @@ function on(eventful, event, query, handler, context, isOnce) {
  */
 /**
  * @event module:zrender/mixin/Eventful#ondrop
- * @type {Function}
- * @default null
- */
-/**
- * @event module:zrender/mixin/Eventful#onpagemousemove
- * @type {Function}
- * @default null
- */
-/**
- * @event module:zrender/mixin/Eventful#onpagemouseup
  * @type {Function}
  * @default null
  */
