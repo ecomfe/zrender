@@ -5,6 +5,66 @@ import Eventful from './mixin/Eventful';
 import * as eventTool from './core/event';
 import GestureMgr from './core/GestureMgr';
 
+
+/**
+ * [The interface between `Handler` and `HandlerProxy`]:
+ *
+ * The default `HandlerProxy` only support the common standard web environment
+ * (e.g., standalone browser, headless browser, embed browser in mobild APP, ...).
+ * But `HandlerProxy` can be replaced to support more non-standard environment
+ * (e.g., mini app), or to support more feature that the default `HandlerProxy`
+ * not provided (like echarts-gl did).
+ * So the interface between `Handler` and `HandlerProxy` should be stable. Do not
+ * make break changes util inevitable. The interface include the public methods
+ * of `Handler` and the events listed in `handlerNames` below, by which `HandlerProxy`
+ * drives `Handler`.
+ */
+
+/**
+ * [Drag outside]:
+ *
+ * That is, triggering `mousemove` and `mouseup` event when the pointer is out of the
+ * zrender area when dragging. That is important for the improvement of the user experience
+ * when dragging something near the boundary without being terminated unexpectedly.
+ *
+ * We originally consider to introduce new events like `pagemovemove` and `pagemouseup`
+ * to resolve this issue. But some drawbacks of it is described in
+ * https://github.com/ecomfe/zrender/pull/536#issuecomment-560286899
+ *
+ * Instead, we referenced the specifications:
+ * https://www.w3.org/TR/touch-events/#the-touchmove-event
+ * https://www.w3.org/TR/2014/WD-DOM-Level-3-Events-20140925/#event-type-mousemove
+ * where the the mousemove/touchmove can be continue to fire if the user began a drag
+ * operation and the pointer has left the boundary. (for the mouse event, browsers
+ * only do it on `document` and when the pointer has left the boundary of the browser.)
+ *
+ * So the default `HandlerProxy` supports this feature similarly: if it is in the dragging
+ * state (see `pointerCapture` in `HandlerProxy`), the `mousemove` and `mouseup` continue
+ * to fire until release the pointer. That is implemented by listen to those event on
+ * `document`.
+ * If we implement some other `HandlerProxy` only for touch device, that would be easier.
+ * The touch event support this feature by default.
+ *
+ * Note:
+ * There might be some cases that the mouse event can not be
+ * received on `document`. For example,
+ * (A) `useCapture` is not supported and some user defined event listeners on the ancestor
+ * of zr dom throw Error .
+ * (B) `useCapture` is not supported Some user defined event listeners on the ancestor of
+ * zr dom call `stopPropagation`.
+ * In these cases, the `mousemove` event might be keep triggered event
+ * if the mouse is released. We try to reduce the side-effect in those cases.
+ * That is, do nothing (especially, `findHover`) in those cases. See `isOutsideBoundary`.
+ *
+ * Note:
+ * If `HandlerProxy` listens to `document` with `useCapture`, `HandlerProxy` needs to
+ * make sure `stopPropagation` and `preventDefault` doing nothing if and only if the event
+ * target is not zrender dom. Becuase it is dangerous to enable users to call them in
+ * `document` capture phase to prevent the propagation to any listener of the webpage.
+ * But they are needed to work when the pointer inside the zrender dom.
+ */
+
+
 var SILENT = 'silent';
 
 function makeEventPacket(eveType, targetInfo, event) {
@@ -24,13 +84,12 @@ function makeEventPacket(eveType, targetInfo, event) {
         pinchScale: event.pinchScale,
         wheelDelta: event.zrDelta,
         zrByTouch: event.zrByTouch,
-        zrIsFromLocal: event.zrIsFromLocal,
         which: event.which,
         stop: stopEvent
     };
 }
 
-function stopEvent(event) {
+function stopEvent() {
     eventTool.stop(this.event);
 }
 
@@ -40,8 +99,7 @@ EmptyProxy.prototype.dispose = function () {};
 
 var handlerNames = [
     'click', 'dblclick', 'mousewheel', 'mouseout',
-    'mouseup', 'mousedown', 'mousemove', 'contextmenu',
-    'pagemousemove', 'pagemouseup'
+    'mouseup', 'mousedown', 'mousemove', 'contextmenu'
 ];
 
 /**
@@ -54,9 +112,7 @@ var handlerNames = [
  * @param {HTMLElement} painterRoot painter.root (not painter.getViewportRoot()).
  */
 var Handler = function (storage, painter, proxy, painterRoot) {
-    Eventful.call(this, {
-        afterListenerChanged: util.bind(afterListenerChanged, null, this)
-    });
+    Eventful.call(this);
 
     this.storage = storage;
 
@@ -102,7 +158,6 @@ var Handler = function (storage, painter, proxy, painterRoot) {
      */
     this._gestureMgr;
 
-
     Draggable.call(this);
 
     this.setHandlerProxy(proxy);
@@ -131,6 +186,8 @@ Handler.prototype = {
         var x = event.zrX;
         var y = event.zrY;
 
+        var isOutside = isOutsideBoundary(this, x, y);
+
         var lastHovered = this._hovered;
         var lastHoveredTarget = lastHovered.target;
 
@@ -143,7 +200,7 @@ Handler.prototype = {
             lastHoveredTarget = lastHovered.target;
         }
 
-        var hovered = this._hovered = this.findHover(x, y);
+        var hovered = this._hovered = isOutside ? {x: x, y: y} : this.findHover(x, y);
         var hoveredTarget = hovered.target;
 
         var proxy = this.proxy;
@@ -164,28 +221,19 @@ Handler.prototype = {
     },
 
     mouseout: function (event) {
-        this.dispatchToElement(this._hovered, 'mouseout', event);
+        var eventControl = event.zrEventControl;
+        var zrIsToLocalDOM = event.zrIsToLocalDOM;
 
-        // There might be some doms created by upper layer application
-        // at the same level of painter.getViewportRoot() (e.g., tooltip
-        // dom created by echarts), where 'globalout' event should not
-        // be triggered when mouse enters these doms. (But 'mouseout'
-        // should be triggered at the original hovered element as usual).
-        var element = event.toElement || event.relatedTarget;
-        var innerDom;
-        do {
-            element = element && element.parentNode;
+        if (eventControl !== 'only_globalout') {
+            this.dispatchToElement(this._hovered, 'mouseout', event);
         }
-        while (element && element.nodeType !== 9 && !(
-            innerDom = element === this.painterRoot
-        ));
 
-        !innerDom && this.trigger('globalout', {event: event});
+        if (eventControl !== 'no_globalout') {
+            // FIXME: if the pointer moving from the extra doms to realy "outside",
+            // the `globalout` should have been triggered. But currently not.
+            !zrIsToLocalDOM && this.trigger('globalout', {type: 'globalout', event: event});
+        }
     },
-
-    pagemousemove: util.curry(pageEventHandler, 'pagemousemove'),
-
-    pagemouseup: util.curry(pageEventHandler, 'pagemouseup'),
 
     /**
      * Resize
@@ -330,9 +378,18 @@ Handler.prototype = {
 // Common handlers
 util.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick', 'contextmenu'], function (name) {
     Handler.prototype[name] = function (event) {
-        // Find hover again to avoid click event is dispatched manually. Or click is triggered without mouseover
-        var hovered = this.findHover(event.zrX, event.zrY);
-        var hoveredTarget = hovered.target;
+        var x = event.zrX;
+        var y = event.zrY;
+        var isOutside = isOutsideBoundary(this, x, y);
+
+        var hovered;
+        var hoveredTarget;
+
+        if (name !== 'mouseup' || !isOutside) {
+            // Find hover again to avoid click event is dispatched manually. Or click is triggered without mouseover
+            hovered = this.findHover(x, y);
+            hoveredTarget = hovered.target;
+        }
 
         if (name === 'mousedown') {
             this._downEl = hoveredTarget;
@@ -362,10 +419,6 @@ util.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick', 'contextme
     };
 });
 
-function pageEventHandler(pageEventName, event) {
-    this.trigger(pageEventName, makeEventPacket(pageEventName, {}, event));
-}
-
 function isHover(displayable, x, y) {
     if (displayable[displayable.rectHover ? 'rectContain' : 'contain'](x, y)) {
         var el = displayable;
@@ -388,11 +441,12 @@ function isHover(displayable, x, y) {
     return false;
 }
 
-function afterListenerChanged(handlerInstance) {
-    var allSilent = handlerInstance.isSilent('pagemousemove')
-        && handlerInstance.isSilent('pagemouseup');
-    var proxy = handlerInstance.proxy;
-    proxy && proxy.togglePageEvent && proxy.togglePageEvent(!allSilent);
+/**
+ * See [Drag outside].
+ */
+function isOutsideBoundary(handlerInstance, x, y) {
+    var painter = handlerInstance.painter;
+    return x < 0 || x > painter.getWidth() || y < 0 || y > painter.getHeight();
 }
 
 util.mixin(Handler, Eventful);

@@ -271,9 +271,35 @@ export function addEventListener(el, name, handler) {
     }
 }
 
+/**
+ * Do not modify the originally `addEventListener` method above becuase
+ * being worried about some users have been calling the `addEventListener`
+ * with extra parameters (e.g., in some callback of Array map/each).
+ * The extra parameters might used as `useCapture` unexpectedly.
+ */
+export function addEventListener2(el, name, handler, opt) {
+    if (isDomLevel2) {
+        el.addEventListener(name, handler, opt);
+    }
+    else {
+        // For simplicity, do not implement `setCapture` for IE9-.
+        el.attachEvent('on' + name, handler);
+    }
+}
+
 export function removeEventListener(el, name, handler) {
     if (isDomLevel2) {
         el.removeEventListener(name, handler);
+    }
+    else {
+        el.detachEvent('on' + name, handler);
+    }
+}
+
+// See `addEventListener2`
+export function removeEventListener2(el, name, handler, opt) {
+    if (isDomLevel2) {
+        el.removeEventListener(name, handler, opt);
     }
     else {
         el.detachEvent('on' + name, handler);

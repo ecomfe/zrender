@@ -148,12 +148,17 @@ function detect(ua) {
         // default, so we dont check navigator.maxTouchPoints for them here.
         touchEventsSupported: 'ontouchstart' in window && !browser.ie && !browser.edge,
         // <http://caniuse.com/#search=pointer%20event>.
-        pointerEventsSupported: 'onpointerdown' in window
-            // Firefox supports pointer but not by default, only MS browsers are reliable on pointer
+        pointerEventsSupported:
+            // (1) Firefox supports pointer but not by default, only MS browsers are reliable on pointer
             // events currently. So we dont use that on other browsers unless tested sufficiently.
-            // Although IE 10 supports pointer event, it use old style and is different from the
+            // For example, in iOS 13 Mobile Chromium 78, if the touching behavior starts page
+            // scroll, the `pointermove` event can not be fired any more. That will break some
+            // features like "pan horizontally to move something and pan vertically to page scroll".
+            // The horizontal pan probably be interrupted by the casually triggered page scroll.
+            // (2) Although IE 10 supports pointer event, it use old style and is different from the
             // standard. So we exclude that. (IE 10 is hardly used on touch device)
-            && (browser.edge || (browser.ie && browser.version >= 11)),
+            'onpointerdown' in window
+                && (browser.edge || (browser.ie && browser.version >= 11)),
         // passiveSupported: detectPassiveSupport()
         domSupported: typeof document !== 'undefined'
     };
