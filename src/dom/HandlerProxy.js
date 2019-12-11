@@ -2,8 +2,8 @@
 /* global document */
 
 import {
-    addEventListener2,
-    removeEventListener2,
+    addEventListener,
+    removeEventListener,
     normalizeEvent,
     getNativeEvent
 } from '../core/event';
@@ -460,14 +460,14 @@ function mountGlobalDOMEventListeners(instance, scope) {
 function mountSingleDOMEventListener(scope, nativeEventName, listener, opt) {
     scope.mounted[nativeEventName] = listener;
     scope.listenerOpts[nativeEventName] = opt;
-    addEventListener2(scope.domTarget, eventNameFix(nativeEventName), listener, opt);
+    addEventListener(scope.domTarget, eventNameFix(nativeEventName), listener, opt);
 }
 
 function unmountDOMEventListeners(scope) {
     var mounted = scope.mounted;
     for (var nativeEventName in mounted) {
         if (mounted.hasOwnProperty(nativeEventName)) {
-            removeEventListener2(
+            removeEventListener(
                 scope.domTarget, eventNameFix(nativeEventName), mounted[nativeEventName],
                 scope.listenerOpts[nativeEventName]
             );
