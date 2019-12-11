@@ -240,8 +240,11 @@ export function normalizeEvent(el, e, calculate) {
  * @param {HTMLElement} el
  * @param {string} name
  * @param {Function} handler
+ * @param {Object|boolean} opt If boolean, means `opt.capture`
+ * @param {boolean} [opt.capture=false]
+ * @param {boolean} [opt.passive=false]
  */
-export function addEventListener(el, name, handler) {
+export function addEventListener(el, name, handler, opt) {
     if (isDomLevel2) {
         // Reproduct the console warning:
         // [Violation] Added non-passive event listener to a scroll-blocking <some> event.
@@ -264,21 +267,6 @@ export function addEventListener(el, name, handler) {
         //     // By default, the third param of el.addEventListener is `capture: false`.
         //     : void 0;
         // el.addEventListener(name, handler /* , opts */);
-        el.addEventListener(name, handler);
-    }
-    else {
-        el.attachEvent('on' + name, handler);
-    }
-}
-
-/**
- * Do not modify the originally `addEventListener` method above becuase
- * being worried about some users have been calling the `addEventListener`
- * with extra parameters (e.g., in some callback of Array map/each).
- * The extra parameters might used as `useCapture` unexpectedly.
- */
-export function addEventListener2(el, name, handler, opt) {
-    if (isDomLevel2) {
         el.addEventListener(name, handler, opt);
     }
     else {
@@ -287,17 +275,14 @@ export function addEventListener2(el, name, handler, opt) {
     }
 }
 
-export function removeEventListener(el, name, handler) {
-    if (isDomLevel2) {
-        el.removeEventListener(name, handler);
-    }
-    else {
-        el.detachEvent('on' + name, handler);
-    }
-}
-
-// See `addEventListener2`
-export function removeEventListener2(el, name, handler, opt) {
+/**
+ * Parameter are the same as `addEventListener`.
+ *
+ * Notice that if a listener is registered twice, one with capture and one without,
+ * remove each one separately. Removal of a capturing listener does not affect a
+ * non-capturing version of the same listener, and vice versa.
+ */
+export function removeEventListener(el, name, handler, opt) {
     if (isDomLevel2) {
         el.removeEventListener(name, handler, opt);
     }
