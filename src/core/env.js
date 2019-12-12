@@ -7,16 +7,18 @@
  */
 
 /* global wx */
+/* global my */
+/* global tt */
 
 var env = {};
 
-if (typeof wx === 'object' && typeof wx.getSystemInfoSync === 'function') {
+if (isMiniProgramEnv()) {
     // In Weixin Application
     env = {
         browser: {},
         os: {},
         node: false,
-        wxa: true, // Weixin Application
+        mpa: true, // miniprogram Application
         canvasSupported: true,
         svgSupported: false,
         touchEventsSupported: true,
@@ -157,6 +159,17 @@ function detect(ua) {
         // passiveSupported: detectPassiveSupport()
         domSupported: typeof document !== 'undefined'
     };
+}
+
+/**
+ * Detect is in miniprogram environment
+ */
+function isMiniProgramEnv() {
+    return (
+        (typeof wx === 'object' && typeof wx.getSystemInfoSync === 'function')
+        || (typeof my === 'object' && typeof my.getSystemInfoSync === 'function')
+        || (typeof tt === 'object' && typeof tt.getSystemInfoSync === 'function')
+    );
 }
 
 // See https://github.com/WICG/EventListenerOptions/blob/gh-pages/explainer.md#feature-detection

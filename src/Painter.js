@@ -483,8 +483,8 @@ Painter.prototype = {
             ctx.restore();
         }
 
-        if (env.wxa) {
-            // Flush for weixin application
+        if (env.mpa) {
+            // Flush for miniprogram application
             util.each(this._layers, function (layer) {
                 if (layer && layer.ctx && layer.ctx.draw) {
                     layer.ctx.draw();
