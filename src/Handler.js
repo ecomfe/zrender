@@ -3,6 +3,7 @@ import * as vec2 from './core/vector';
 import Draggable from './mixin/Draggable';
 import Eventful from './mixin/Eventful';
 import * as eventTool from './core/event';
+import GestureMgr from './core/GestureMgr';
 
 var SILENT = 'silent';
 
@@ -23,6 +24,7 @@ function makeEventPacket(eveType, targetInfo, event) {
         pinchScale: event.pinchScale,
         wheelDelta: event.zrDelta,
         zrByTouch: event.zrByTouch,
+        zrIsFromLocal: event.zrIsFromLocal,
         which: event.which,
         stop: stopEvent
     };
@@ -35,10 +37,13 @@ function stopEvent(event) {
 function EmptyProxy() {}
 EmptyProxy.prototype.dispose = function () {};
 
+
 var handlerNames = [
     'click', 'dblclick', 'mousewheel', 'mouseout',
-    'mouseup', 'mousedown', 'mousemove', 'contextmenu'
+    'mouseup', 'mousedown', 'mousemove', 'contextmenu',
+    'pagemousemove', 'pagemouseup'
 ];
+
 /**
  * @alias module:zrender/Handler
  * @constructor
@@ -49,7 +54,9 @@ var handlerNames = [
  * @param {HTMLElement} painterRoot painter.root (not painter.getViewportRoot()).
  */
 var Handler = function (storage, painter, proxy, painterRoot) {
-    Eventful.call(this);
+    Eventful.call(this, {
+        afterListenerChanged: util.bind(afterListenerChanged, null, this)
+    });
 
     this.storage = storage;
 
@@ -88,6 +95,12 @@ var Handler = function (storage, painter, proxy, painterRoot) {
      * @type {number}
      */
     this._lastY;
+
+    /**
+     * @private
+     * @type {module:zrender/core/GestureMgr}
+     */
+    this._gestureMgr;
 
 
     Draggable.call(this);
@@ -169,6 +182,10 @@ Handler.prototype = {
 
         !innerDom && this.trigger('globalout', {event: event});
     },
+
+    pagemousemove: util.curry(pageEventHandler, 'pagemousemove'),
+
+    pagemouseup: util.curry(pageEventHandler, 'pagemouseup'),
 
     /**
      * Resize
@@ -282,6 +299,31 @@ Handler.prototype = {
         }
 
         return out;
+    },
+
+    processGesture: function (event, stage) {
+        if (!this._gestureMgr) {
+            this._gestureMgr = new GestureMgr();
+        }
+        var gestureMgr = this._gestureMgr;
+
+        stage === 'start' && gestureMgr.clear();
+
+        var gestureInfo = gestureMgr.recognize(
+            event,
+            this.findHover(event.zrX, event.zrY, null).target,
+            this.proxy.dom
+        );
+
+        stage === 'end' && gestureMgr.clear();
+
+        // Do not do any preventDefault here. Upper application do that if necessary.
+        if (gestureInfo) {
+            var type = gestureInfo.type;
+            event.gestureEvent = type;
+
+            this.dispatchToElement({target: gestureInfo.target}, type, gestureInfo.event);
+        }
     }
 };
 
@@ -320,6 +362,10 @@ util.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick', 'contextme
     };
 });
 
+function pageEventHandler(pageEventName, event) {
+    this.trigger(pageEventName, makeEventPacket(pageEventName, {}, event));
+}
+
 function isHover(displayable, x, y) {
     if (displayable[displayable.rectHover ? 'rectContain' : 'contain'](x, y)) {
         var el = displayable;
@@ -340,6 +386,13 @@ function isHover(displayable, x, y) {
     }
 
     return false;
+}
+
+function afterListenerChanged(handlerInstance) {
+    var allSilent = handlerInstance.isSilent('pagemousemove')
+        && handlerInstance.isSilent('pagemouseup');
+    var proxy = handlerInstance.proxy;
+    proxy && proxy.togglePageEvent && proxy.togglePageEvent(!allSilent);
 }
 
 util.mixin(Handler, Eventful);

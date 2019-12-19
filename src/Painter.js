@@ -1,6 +1,6 @@
 import {devicePixelRatio} from './config';
 import * as util from './core/util';
-import log from './core/log';
+import logError from './core/log';
 import BoundingRect from './core/BoundingRect';
 import timsort from './core/timsort';
 import Layer from './Layer';
@@ -49,10 +49,10 @@ function isDisplayableCulled(el, width, height) {
 }
 
 function isClipPathChanged(clipPaths, prevClipPaths) {
-    if (clipPaths === prevClipPaths) { // Can both be null or undefined
+    // displayable.__clipPaths can only be `null`/`undefined` or an non-empty array.
+    if (clipPaths === prevClipPaths) {
         return false;
     }
-
     if (!clipPaths || !prevClipPaths || (clipPaths.length !== prevClipPaths.length)) {
         return true;
     }
@@ -61,6 +61,7 @@ function isClipPathChanged(clipPaths, prevClipPaths) {
             return true;
         }
     }
+    return false;
 }
 
 function doClip(clipPaths, ctx) {
@@ -79,10 +80,16 @@ function doClip(clipPaths, ctx) {
 function createRoot(width, height) {
     var domRoot = document.createElement('div');
 
-    // domRoot.onselectstart = returnFalse; // 避免页面选中的尴尬
+    // domRoot.onselectstart = returnFalse; // Avoid page selected
     domRoot.style.cssText = [
         'position:relative',
-        'overflow:hidden',
+        // IOS13 safari probably has a compositing bug (z order of the canvas and the consequent
+        // dom does not act as expected) when some of the parent dom has
+        // `-webkit-overflow-scrolling: touch;` and the webpage is longer than one screen and
+        // the canvas is not at the top part of the page.
+        // Check `https://bugs.webkit.org/show_bug.cgi?id=203681` for more details. We remove
+        // this `overflow:hidden` to avoid the bug.
+        // 'overflow:hidden',
         'width:' + width + 'px',
         'height:' + height + 'px',
         'padding:0',
@@ -506,16 +513,14 @@ Painter.prototype = {
         ) {
 
             var clipPaths = el.__clipPaths;
+            var prevElClipPaths = scope.prevElClipPaths;
 
             // Optimize when clipping on group with several elements
-            if (!scope.prevElClipPaths
-                || isClipPathChanged(clipPaths, scope.prevElClipPaths)
-            ) {
+            if (!prevElClipPaths || isClipPathChanged(clipPaths, prevElClipPaths)) {
                 // If has previous clipping state, restore from it
-                if (scope.prevElClipPaths) {
-                    currentLayer.ctx.restore();
+                if (prevElClipPaths) {
+                    ctx.restore();
                     scope.prevElClipPaths = null;
-
                     // Reset prevEl since context has been restored
                     scope.prevEl = null;
                 }
@@ -528,10 +533,8 @@ Painter.prototype = {
             }
             el.beforeBrush && el.beforeBrush(ctx);
 
-            var keepPrevEl = el.brush(ctx, scope.prevEl || null);
-            if (keepPrevEl !== true) {
-                scope.prevEl = el;
-            }
+            el.brush(ctx, scope.prevEl || null);
+            scope.prevEl = el;
 
             el.afterBrush && el.afterBrush(ctx);
         }
@@ -582,12 +585,12 @@ Painter.prototype = {
         var domRoot = this._domRoot;
 
         if (layersMap[zlevel]) {
-            log('ZLevel ' + zlevel + ' has been used already');
+            logError('ZLevel ' + zlevel + ' has been used already');
             return;
         }
         // Check if is a valid layer
         if (!isLayerValid(layer)) {
-            log('Layer of zlevel ' + zlevel + ' is not valid');
+            logError('Layer of zlevel ' + zlevel + ' is not valid');
             return;
         }
 
@@ -721,11 +724,14 @@ Painter.prototype = {
                 incrementalLayerCount = 1;
             }
             else {
-                layer = this.getLayer(zlevel + (incrementalLayerCount > 0 ? EL_AFTER_INCREMENTAL_INC : 0), this._needsManuallyCompositing);
+                layer = this.getLayer(
+                    zlevel + (incrementalLayerCount > 0 ? EL_AFTER_INCREMENTAL_INC : 0),
+                    this._needsManuallyCompositing
+                );
             }
 
             if (!layer.__builtin__) {
-                log('ZLevel ' + zlevel + ' has been used by unkown layer ' + layer.id);
+                logError('ZLevel ' + zlevel + ' has been used by unkown layer ' + layer.id);
             }
 
             if (layer !== prevLayer) {

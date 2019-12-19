@@ -130,11 +130,17 @@ function lerpNumber(a, b, p) {
 }
 
 function setRgba(out, r, g, b, a) {
-    out[0] = r; out[1] = g; out[2] = b; out[3] = a;
+    out[0] = r;
+    out[1] = g;
+    out[2] = b;
+    out[3] = a;
     return out;
 }
 function copyRgba(out, a) {
-    out[0] = a[0]; out[1] = a[1]; out[2] = a[2]; out[3] = a[3];
+    out[0] = a[0];
+    out[1] = a[1];
+    out[2] = a[2];
+    out[3] = a[3];
     return out;
 }
 

@@ -5,6 +5,7 @@
 
 import * as textHelper from '../helper/text';
 import BoundingRect from '../../core/BoundingRect';
+import {WILL_BE_RESTORED} from '../constant';
 
 var tmpRect = new BoundingRect();
 
@@ -56,7 +57,7 @@ RectText.prototype = {
         }
 
         // transformText and textRotation can not be used at the same time.
-        textHelper.renderText(this, ctx, text, style, rect);
+        textHelper.renderText(this, ctx, text, style, rect, WILL_BE_RESTORED);
 
         ctx.restore();
     }

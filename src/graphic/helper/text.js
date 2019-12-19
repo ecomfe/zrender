@@ -11,6 +11,9 @@ import * as textContain from '../../contain/text';
 import * as roundRectHelper from './roundRect';
 import * as imageHelper from './image';
 import fixShadow from './fixShadow';
+import {ContextCachedBy, WILL_BE_RESTORED} from '../constant';
+
+var DEFAULT_FONT = textContain.DEFAULT_FONT;
 
 // TODO: Have not support 'start', 'end' yet.
 var VALID_TEXT_ALIGN = {left: 1, right: 1, center: 1};
@@ -23,6 +26,8 @@ var SHADOW_STYLE_COMMON_PROPS = [
     ['textShadowOffsetY', 'shadowOffsetY', 0],
     ['textShadowColor', 'shadowColor', 'transparent']
 ];
+var _tmpTextPositionResult = {};
+var _tmpBoxPositionResult = {};
 
 /**
  * @param {module:zrender/graphic/Style} style
@@ -65,11 +70,11 @@ function normalizeStyle(style) {
  * @param {module:zrender/graphic/Style} style
  * @param {Object|boolean} [rect] {x, y, width, height}
  *                  If set false, rect text is not used.
- * @param {Element} [prevEl] For ctx prop cache.
+ * @param {Element|module:zrender/graphic/helper/constant.WILL_BE_RESTORED} [prevEl] For ctx prop cache.
  */
 export function renderText(hostEl, ctx, text, style, rect, prevEl) {
     style.rich
-        ? renderRichText(hostEl, ctx, text, style, rect)
+        ? renderRichText(hostEl, ctx, text, style, rect, prevEl)
         : renderPlainText(hostEl, ctx, text, style, rect, prevEl);
 }
 
@@ -78,14 +83,45 @@ export function renderText(hostEl, ctx, text, style, rect, prevEl) {
 function renderPlainText(hostEl, ctx, text, style, rect, prevEl) {
     'use strict';
 
-    // Only use cache when the previous el is painted in the method.
-    var prevStyle = prevEl && prevEl.style;
-    var checkCache = prevStyle && prevEl.type === 'text' && !prevStyle.rich;
+    var needDrawBg = needDrawBackground(style);
 
-    var styleFont = style.font || textContain.DEFAULT_FONT;
-    if (!checkCache || styleFont !== (prevStyle.font || textContain.DEFAULT_FONT)) {
+    var prevStyle;
+    var checkCache = false;
+    var cachedByMe = ctx.__attrCachedBy === ContextCachedBy.PLAIN_TEXT;
+
+    // Only take and check cache for `Text` el, but not RectText.
+    if (prevEl !== WILL_BE_RESTORED) {
+        if (prevEl) {
+            prevStyle = prevEl.style;
+            checkCache = !needDrawBg && cachedByMe && prevStyle;
+        }
+
+        // Prevent from using cache in `Style::bind`, because of the case:
+        // ctx property is modified by other properties than `Style::bind`
+        // used, and Style::bind is called next.
+        ctx.__attrCachedBy = needDrawBg ? ContextCachedBy.NONE : ContextCachedBy.PLAIN_TEXT;
+    }
+    // Since this will be restored, prevent from using these props to check cache in the next
+    // entering of this method. But do not need to clear other cache like `Style::bind`.
+    else if (cachedByMe) {
+        ctx.__attrCachedBy = ContextCachedBy.NONE;
+    }
+
+    var styleFont = style.font || DEFAULT_FONT;
+    // PENDING
+    // Only `Text` el set `font` and keep it (`RectText` will restore). So theoretically
+    // we can make font cache on ctx, which can cache for text el that are discontinuous.
+    // But layer save/restore needed to be considered.
+    // if (styleFont !== ctx.__fontCache) {
+    //     ctx.font = styleFont;
+    //     if (prevEl !== WILL_BE_RESTORED) {
+    //         ctx.__fontCache = styleFont;
+    //     }
+    // }
+    if (!checkCache || styleFont !== (prevStyle.font || DEFAULT_FONT)) {
         ctx.font = styleFont;
     }
+
     // Use the final font from context-2d, because the final
     // font might not be the style.font when it is illegal.
     // But get `ctx.font` might be time consuming.
@@ -110,7 +146,7 @@ function renderPlainText(hostEl, ctx, text, style, rect, prevEl) {
     var textLines = contentBlock.lines;
     var lineHeight = contentBlock.lineHeight;
 
-    var boxPos = getBoxPosition(outerHeight, style, rect);
+    var boxPos = getBoxPosition(_tmpBoxPositionResult, hostEl, style, rect);
     var baseX = boxPos.baseX;
     var baseY = boxPos.baseY;
     var textAlign = boxPos.textAlign || 'left';
@@ -123,7 +159,6 @@ function renderPlainText(hostEl, ctx, text, style, rect, prevEl) {
     var textX = baseX;
     var textY = boxY;
 
-    var needDrawBg = needDrawBackground(style);
     if (needDrawBg || textPadding) {
         // Consider performance, do not call getTextWidth util necessary.
         var textWidth = textContain.getWidth(text, computedFont);
@@ -179,7 +214,7 @@ function renderPlainText(hostEl, ctx, text, style, rect, prevEl) {
         }
     }
     if (textFill) {
-        if (!checkCache || style.textFill !== prevStyle.textFill || prevStyle.textBackgroundColor) {
+        if (!checkCache || style.textFill !== prevStyle.textFill) {
             ctx.fillStyle = textFill;
         }
     }
@@ -200,7 +235,13 @@ function renderPlainText(hostEl, ctx, text, style, rect, prevEl) {
     }
 }
 
-function renderRichText(hostEl, ctx, text, style, rect) {
+function renderRichText(hostEl, ctx, text, style, rect, prevEl) {
+    // Do not do cache for rich text because of the complexity.
+    // But `RectText` this will be restored, do not need to clear other cache like `Style::bind`.
+    if (prevEl !== WILL_BE_RESTORED) {
+        ctx.__attrCachedBy = ContextCachedBy.NONE;
+    }
+
     var contentBlock = hostEl.__textCotentBlock;
 
     if (!contentBlock || hostEl.__dirtyText) {
@@ -216,7 +257,7 @@ function drawRichText(hostEl, ctx, contentBlock, style, rect) {
     var outerHeight = contentBlock.outerHeight;
     var textPadding = style.textPadding;
 
-    var boxPos = getBoxPosition(outerHeight, style, rect);
+    var boxPos = getBoxPosition(_tmpBoxPositionResult, hostEl, style, rect);
     var baseX = boxPos.baseX;
     var baseY = boxPos.baseY;
     var textAlign = boxPos.textAlign;
@@ -351,7 +392,7 @@ function placeToken(hostEl, ctx, token, style, lineHeight, lineTop, x, textAlign
     // text will offset downward a little bit in font "Microsoft YaHei".
     setCtx(ctx, 'textBaseline', 'middle');
 
-    setCtx(ctx, 'font', token.font || textContain.DEFAULT_FONT);
+    setCtx(ctx, 'font', token.font || DEFAULT_FONT);
 
     var textStroke = getStroke(tokenStyle.textStroke || style.textStroke, textStrokeWidth);
     var textFill = getFill(tokenStyle.textFill || style.textFill);
@@ -370,8 +411,10 @@ function placeToken(hostEl, ctx, token, style, lineHeight, lineTop, x, textAlign
 }
 
 function needDrawBackground(style) {
-    return style.textBackgroundColor
-        || (style.textBorderWidth && style.textBorderColor);
+    return !!(
+        style.textBackgroundColor
+        || (style.textBorderWidth && style.textBorderColor)
+    );
 }
 
 // style: {textBackgroundColor, textBorderWidth, textBorderColor, textBorderRadius, text}
@@ -447,7 +490,7 @@ function onBgImageLoaded(image, textBackgroundColor) {
     textBackgroundColor.image = image;
 }
 
-function getBoxPosition(blockHeiht, style, rect) {
+export function getBoxPosition(out, hostEl, style, rect) {
     var baseX = style.x || 0;
     var baseY = style.y || 0;
     var textAlign = style.textAlign;
@@ -462,9 +505,9 @@ function getBoxPosition(blockHeiht, style, rect) {
             baseY = rect.y + parsePercent(textPosition[1], rect.height);
         }
         else {
-            var res = textContain.adjustTextPositionOnRect(
-                textPosition, rect, style.textDistance
-            );
+            var res = (hostEl && hostEl.calculateTextPosition)
+                ? hostEl.calculateTextPosition(_tmpTextPositionResult, style, rect)
+                : textContain.calculateTextPosition(_tmpTextPositionResult, style, rect);
             baseX = res.x;
             baseY = res.y;
             // Default align and baseline when has textPosition
@@ -481,13 +524,15 @@ function getBoxPosition(blockHeiht, style, rect) {
         }
     }
 
-    return {
-        baseX: baseX,
-        baseY: baseY,
-        textAlign: textAlign,
-        textVerticalAlign: textVerticalAlign
-    };
+    out = out || {};
+    out.baseX = baseX;
+    out.baseY = baseY;
+    out.textAlign = textAlign;
+    out.textVerticalAlign = textVerticalAlign;
+
+    return out;
 }
+
 
 function setCtx(ctx, prop, value) {
     ctx[prop] = fixShadow(ctx, prop, value);
@@ -517,7 +562,7 @@ export function getFill(fill) {
         : fill;
 }
 
-function parsePercent(value, maxValue) {
+export function parsePercent(value, maxValue) {
     if (typeof value === 'string') {
         if (value.lastIndexOf('%') >= 0) {
             return parseFloat(value) / 100 * maxValue;

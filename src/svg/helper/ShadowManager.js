@@ -41,16 +41,15 @@ ShadowManager.prototype.addWithoutUpdate = function (
     displayable
 ) {
     if (displayable && hasShadow(displayable.style)) {
-        var style = displayable.style;
 
         // Create dom in <defs> if not exists
         var dom;
-        if (style._shadowDom) {
+        if (displayable._shadowDom) {
             // Gradient exists
-            dom = style._shadowDom;
+            dom = displayable._shadowDom;
 
             var defs = this.getDefs(true);
-            if (!defs.contains(style._shadowDom)) {
+            if (!defs.contains(displayable._shadowDom)) {
                 // _shadowDom is no longer in defs, recreate
                 this.addDom(dom);
             }
@@ -76,16 +75,15 @@ ShadowManager.prototype.addWithoutUpdate = function (
  */
 ShadowManager.prototype.add = function (displayable) {
     var dom = this.createElement('filter');
-    var style = displayable.style;
 
     // Set dom id with shadow id, since each shadow instance
     // will have no more than one dom element.
     // id may exists before for those dirty elements, in which case
     // id should remain the same, and other attributes should be
     // updated.
-    style._shadowDomId = style._shadowDomId || this.nextId++;
+    displayable._shadowDomId = displayable._shadowDomId || this.nextId++;
     dom.setAttribute('id', 'zr' + this._zrId
-        + '-shadow-' + style._shadowDomId);
+        + '-shadow-' + displayable._shadowDomId);
 
     this.updateDom(displayable, dom);
     this.addDom(dom);
@@ -103,13 +101,13 @@ ShadowManager.prototype.update = function (svgElement, displayable) {
     var style = displayable.style;
     if (hasShadow(style)) {
         var that = this;
-        Definable.prototype.update.call(this, displayable, function (style) {
-            that.updateDom(displayable, style._shadowDom);
+        Definable.prototype.update.call(this, displayable, function () {
+            that.updateDom(displayable, displayable._shadowDom);
         });
     }
     else {
         // Remove shadow
-        this.remove(svgElement, style);
+        this.remove(svgElement, displayable);
     }
 };
 
@@ -117,9 +115,9 @@ ShadowManager.prototype.update = function (svgElement, displayable) {
 /**
  * Remove DOM and clear parent filter
  */
-ShadowManager.prototype.remove = function (svgElement, style) {
-    if (style._shadowDomId != null) {
-        this.removeDom(style);
+ShadowManager.prototype.remove = function (svgElement, displayable) {
+    if (displayable._shadowDomId != null) {
+        this.removeDom(svgElement);
         svgElement.style.filter = '';
     }
 };
@@ -145,7 +143,10 @@ ShadowManager.prototype.updateDom = function (displayable, dom) {
     var scaleY = displayable.scale ? (displayable.scale[1] || 1) : 1;
 
     // TODO: textBoxShadowBlur is not supported yet
-    var offsetX, offsetY, blur, color;
+    var offsetX;
+    var offsetY;
+    var blur;
+    var color;
     if (style.shadowBlur || style.shadowOffsetX || style.shadowOffsetY) {
         offsetX = style.shadowOffsetX || 0;
         offsetY = style.shadowOffsetY || 0;
@@ -185,7 +186,7 @@ ShadowManager.prototype.updateDom = function (displayable, dom) {
 
     // Store dom element in shadow, to avoid creating multiple
     // dom instances for the same shadow element
-    style._shadowDom = dom;
+    displayable._shadowDom = dom;
 };
 
 /**
@@ -194,9 +195,8 @@ ShadowManager.prototype.updateDom = function (displayable, dom) {
  * @param {Displayable} displayable displayable element
  */
 ShadowManager.prototype.markUsed = function (displayable) {
-    var style = displayable.style;
-    if (style && style._shadowDom) {
-        Definable.prototype.markUsed.call(this, style._shadowDom);
+    if (displayable._shadowDom) {
+        Definable.prototype.markUsed.call(this, displayable._shadowDom);
     }
 };
 

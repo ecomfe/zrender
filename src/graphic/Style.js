@@ -1,5 +1,6 @@
 
 import fixShadow from './helper/fixShadow';
+import {ContextCachedBy} from './constant';
 
 var STYLE_COMMON_PROPS = [
     ['shadowBlur', 0], ['shadowOffsetX', 0], ['shadowOffsetY', 0], ['shadowColor', '#000'],
@@ -87,7 +88,12 @@ Style.prototype = {
     strokeOpacity: null,
 
     /**
-     * @type {Array.<number>}
+     * `true` is not supported.
+     * `false`/`null`/`undefined` are the same.
+     * `false` is used to remove lineDash in some
+     * case that `null`/`undefined` can not be set.
+     * (e.g., emphasis.lineStyle in echarts)
+     * @type {Array.<number>|boolean}
      */
     lineDash: null,
 
@@ -289,23 +295,31 @@ Style.prototype = {
 
     /**
      * Whether transform text.
-     * Only useful in Path and Image element
+     * Only available in Path and Image element,
+     * where the text is called as `RectText`.
      * @type {boolean}
      */
     transformText: false,
 
     /**
-     * Text rotate around position of Path or Image
-     * Only useful in Path and Image element and transformText is false.
+     * Text rotate around position of Path or Image.
+     * The origin of the rotation can be specified by `textOrigin`.
+     * Only available in Path and Image element,
+     * where the text is called as `RectText`.
      */
     textRotation: 0,
 
     /**
-     * Text origin of text rotation, like [10, 40].
-     * Based on x, y of rect.
-     * Useful in label rotation of circular symbol.
-     * By default, this origin is textPosition.
-     * Can be 'center'.
+     * Text origin of text rotation.
+     * Useful in the case like label rotation of circular symbol.
+     * Only available in Path and Image element, where the text is called
+     * as `RectText` and the element is called as "host element".
+     * The value can be:
+     * + If specified as a coordinate like `[10, 40]`, it is the `[x, y]`
+     * base on the left-top corner of the rect of its host element.
+     * + If specified as a string `center`, it is the center of the rect of
+     * its host element.
+     * + By default, this origin is the `textPosition`.
      * @type {string|Array.<number>}
      */
     textOrigin: null,
@@ -360,30 +374,34 @@ Style.prototype = {
     bind: function (ctx, el, prevEl) {
         var style = this;
         var prevStyle = prevEl && prevEl.style;
-        var firstDraw = !prevStyle;
+        // If no prevStyle, it means first draw.
+        // Only apply cache if the last time cachced by this function.
+        var notCheckCache = !prevStyle || ctx.__attrCachedBy !== ContextCachedBy.STYLE_BIND;
+
+        ctx.__attrCachedBy = ContextCachedBy.STYLE_BIND;
 
         for (var i = 0; i < STYLE_COMMON_PROPS.length; i++) {
             var prop = STYLE_COMMON_PROPS[i];
             var styleName = prop[0];
 
-            if (firstDraw || style[styleName] !== prevStyle[styleName]) {
+            if (notCheckCache || style[styleName] !== prevStyle[styleName]) {
                 // FIXME Invalid property value will cause style leak from previous element.
                 ctx[styleName] =
                     fixShadow(ctx, styleName, style[styleName] || prop[1]);
             }
         }
 
-        if ((firstDraw || style.fill !== prevStyle.fill)) {
+        if ((notCheckCache || style.fill !== prevStyle.fill)) {
             ctx.fillStyle = style.fill;
         }
-        if ((firstDraw || style.stroke !== prevStyle.stroke)) {
+        if ((notCheckCache || style.stroke !== prevStyle.stroke)) {
             ctx.strokeStyle = style.stroke;
         }
-        if ((firstDraw || style.opacity !== prevStyle.opacity)) {
+        if ((notCheckCache || style.opacity !== prevStyle.opacity)) {
             ctx.globalAlpha = style.opacity == null ? 1 : style.opacity;
         }
 
-        if ((firstDraw || style.blend !== prevStyle.blend)) {
+        if ((notCheckCache || style.blend !== prevStyle.blend)) {
             ctx.globalCompositeOperation = style.blend || 'source-over';
         }
         if (this.hasStroke()) {

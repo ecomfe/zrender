@@ -66,15 +66,7 @@ if (!env.canvasSupported) {
         return (parseFloat(zlevel) || 0) * ZLEVEL_BASE + (parseFloat(z) || 0) * Z_BASE + z2;
     };
 
-    var parsePercent = function (value, maxValue) {
-        if (typeof value === 'string') {
-            if (value.lastIndexOf('%') >= 0) {
-                return parseFloat(value) / 100 * maxValue;
-            }
-            return parseFloat(value);
-        }
-        return value;
-    };
+    var parsePercent = textHelper.parsePercent;
 
     /***************************************************
      * PATH
@@ -222,7 +214,7 @@ if (!env.canvasSupported) {
         // if (style.lineCap != null) {
         //     el.endcap = style.lineCap;
         // }
-        if (style.lineDash != null) {
+        if (style.lineDash) {
             el.dashstyle = style.lineDash.join(' ');
         }
         if (style.stroke != null && !(style.stroke instanceof Gradient)) {
@@ -860,7 +852,9 @@ if (!env.canvasSupported) {
         var font = fontStyle.style + ' ' + fontStyle.variant + ' ' + fontStyle.weight + ' '
             + fontStyle.size + 'px "' + fontStyle.family + '"';
 
-        textRect = textRect || textContain.getBoundingRect(text, font, align, verticalAlign, style.textPadding, style.textLineHeight);
+        textRect = textRect || textContain.getBoundingRect(
+            text, font, align, verticalAlign, style.textPadding, style.textLineHeight
+        );
 
         // Transform rect to view space
         var m = this.transform;
@@ -873,7 +867,6 @@ if (!env.canvasSupported) {
 
         if (!fromTextEl) {
             var textPosition = style.textPosition;
-            var distance = style.textDistance;
             // Text position represented by coord
             if (textPosition instanceof Array) {
                 x = rect.x + parsePercent(textPosition[0], rect.width);
@@ -882,9 +875,9 @@ if (!env.canvasSupported) {
                 align = align || 'left';
             }
             else {
-                var res = textContain.adjustTextPositionOnRect(
-                    textPosition, rect, distance
-                );
+                var res = this.calculateTextPosition
+                    ? this.calculateTextPosition({}, style, rect)
+                    : textContain.calculateTextPosition({}, style, rect);
                 x = res.x;
                 y = res.y;
 
@@ -1018,7 +1011,7 @@ if (!env.canvasSupported) {
         updateFillAndStroke(textVmlEl, 'stroke', {
             stroke: style.textStroke,
             opacity: style.opacity,
-            lineDash: style.lineDash
+            lineDash: style.lineDash || null // style.lineDash can be `false`.
         }, this);
 
         textVmlEl.style.zIndex = getZIndex(this.zlevel, this.z, this.z2);

@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <script src="lib/facePrint.js"></script>
+        <script src="../dist/zrender.js"></script>
+    </head>
+    <body>
+        <style>
+            html {
+                position: static;
+            }
+            body {
+                position: static;
+                background: #ffe;
+            }
+            .chart {
+                position: relative;
+                width: 500px;
+                height: 300px;
+                border: 10px solid rgba(0,0,0,0.5);
+                margin: 30px auto 30px auto;
+            }
+            select {
+                font-size: 16px;
+                color: rgb(107, 8, 8);
+            }
+            .try-box {
+                position: relative;
+                background: green;
+                padding: 0;
+                border-width: 0;
+                line-height: 1;
+                text-align: center;
+                font-size: 12px;
+                color: yellow;
+                /* box-sizing: content-box; */
+            }
+            .try-box-check {
+                position: absolute;
+                background: grey;
+                padding: 0;
+                border-width: 0;
+                line-height: 1;
+                text-align: center;
+                font-size: 12px;
+            }
+            .pointer-marker {
+                position: absolute;
+                width: 6px;
+                height: 6px;
+                margin: -3px 0 0 -3px;
+                padding: 0;
+                background: orange;
+            }
+        </style>
+
+        <div style="position: fixed; right: 5px; bottom: 15px; z-index: 999999;">
+            <!-- <button id="showBoundingRectBtn">Draw Bounding Rect</button> -->
+            <select id="switchCaseMode">
+                <option value="zrevt">zrender (click and draw something on iOS)</option>
+                <option value="4point">4 point Perspective Transform</option>
+                <option value="2d">2D Transform (CSS 3D is not supported)</option>
+            </select>
+        </div>
+        <div id="boundingRectPainter"
+            style="display: none; z-index: 99; position: absolute; left: 0; top: 0; width: 100%; height: 100%">
+        </div>
+
+
+
+
+        <div id="allTries" style="display:none">
+            <div style="position: fixed; bottom: 0; left: 3px; font-size: 10px">
+                Click the green rect, should show orange rect under the pointer.
+            </div>
+
+            <div id="try0" style="
+                    perspective: 171px;
+                "
+            >
+                <div class="try-box"
+                    style="
+                        width: 150px; height: 100px;
+                        left: 100px; top: 300px;
+                        /* margin: 20px; */
+                        position: absolute;
+                        transform: translateX(50px) rotateY(28deg) rotateX(18deg);
+                        transform-style: preserve-3d;
+                        transform-origin: 0 0;
+                    "
+                >normal transform 3d
+                </div>
+            </div>
+
+            <div id="try1" style="">
+                <div class="try-box"
+                    style="
+                        width: 200px; height: 150px;
+                        left: 100px; top: 300px;
+                        margin: 20px;
+                        transform: translate(100px, 100px) scale(0.8, 0.5) rotate(35deg);
+                    "
+                >normal transform 2d
+                </div>
+            </div>
+
+            <div id="try2" style="">
+                <div class="try-box"
+                    style="
+                        width: 200px; height: 150px;
+                        left: 100px; top: 300px;
+                        margin: 20px;
+                        transform: translate(-50px, 50px) scale(-0.8, 0.5) rotate(-25deg);
+                    "
+                >transform 2d with nagative value
+                </div>
+            </div>
+
+            <div id="try3" style="">
+                <div style="
+                    transform: translate(50px, 360px) scale(-0.8, 0.5) rotate(-25deg);
+                ">
+                    <div class="try-box"
+                        style="
+                            width: 200px; height: 150px;
+                            left: 100px; top: 300px;
+                            margin: 20px;
+                            transform: translate(40px, -200px) scale(1.3, 3) rotate(65deg);
+                        "
+                    >nested transform 2d
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+
+
+
+
+
+        <script>
+
+            var CASE_MODE = {
+                CASE_4POINT: '4point',
+                CASE_2D: '2d',
+                CASE_ZREVT: 'zrevt'
+            };
+
+            var $getCaseMode;
+            var $drawRect;
+
+            (function () {
+                var caseModeReg = /__zr__cssTransform__case__([a-zA-Z0-9]+)__/;
+                var boundingRectPainter = document.getElementById('boundingRectPainter');
+
+                document.addEventListener('click', function (e) {
+                    console.log(e.clientX, e.clientY);
+                    facePrint({clientX: e.clientX, clientY: e.clientY});
+                })
+
+                $getCaseMode = function () {
+                    return getCaseModeOnURL() || CASE_MODE.CASE_ZREVT;
+                }
+                function getCaseModeOnURL() {
+                    var result = location.href.match(caseModeReg);
+                    return result && result[1];
+                }
+                function setCaseMode(caseMode) {
+                    var currentCaseModeOnURL = getCaseModeOnURL();
+                    var newCaseModeTag = '__zr__cssTransform__case__' + caseMode + '__';
+                    if (currentCaseModeOnURL) {
+                        location.href = location.href.replace(caseModeReg, newCaseModeTag);
+                    }
+                    else {
+                        location.href += (location.href.indexOf('#') >= 0 ? '' : '#') + newCaseModeTag
+                    }
+                }
+
+                $drawRect = function (rect) {
+                    var rectDom = document.createElement('div');
+                    rectDom.style.cssText = [
+                        'left: ' + rect.left.toFixed(0) + 'px',
+                        'top: ' + rect.top.toFixed(0) + 'px',
+                        'width: ' + rect.width.toFixed(0) + 'px',
+                        'height: ' + rect.height.toFixed(0) + 'px',
+                        'position: absolute',
+                        'border: 1px solid red',
+                        'margin: 0',
+                        'padding: 0',
+                        ''
+                    ].join(';');
+                    boundingRectPainter.appendChild(rectDom);
+                }
+
+                initTryBtns();
+                function initTryBtns() {
+
+                    // var showBoundingRectBtn = document.getElementById('showBoundingRectBtn');
+                    // showBoundingRectBtn.addEventListener('click', function () {
+                    //     boundingRectPainter.style.display = boundingRectPainter.style.display === 'none'
+                    //         ? 'block'
+                    //         : 'none';
+                    // });
+
+                    var switchCaseMode = document.getElementById('switchCaseMode');
+                    switchCaseMode.addEventListener('change', function () {
+                        setCaseMode(this.value);
+                        location.reload();
+                    });
+                    var currentCaseMode = $getCaseMode();
+                    var selOptions = switchCaseMode.querySelectorAll('option');
+                    for (var i = 0; i < selOptions.length; i++) {
+                        var option = selOptions[i];
+                        if (option.getAttribute('value') === currentCaseMode) {
+                            option.setAttribute('selected', 'selected');
+                        }
+                    }
+                }
+            })();
+        </script>
+
+
+        <script>
+            var $calculateZrXYStrategies = {};
+
+
+
+            $calculateZrXYStrategies[CASE_MODE.CASE_2D] = function () {
+                var markers;
+
+                function calculateZrXY(tryBox, e, out) {
+                    if (!markers) {
+                        markers = initTryCoordinatesMarker(tryBox);
+                    }
+
+                    var boxWidth = Math.abs(markers[1].offsetLeft - markers[0].offsetLeft);
+                    var boxHeight = Math.abs(markers[2].offsetTop - markers[0].offsetTop);
+
+                    var rectOrigin = markers[0].getBoundingClientRect();
+                    var rectEndpointX = markers[1].getBoundingClientRect();
+                    var rectEndpointY = markers[2].getBoundingClientRect();
+
+                    var ox = rectOrigin.left;
+                    var oy = rectOrigin.top;
+                    var eoXx = rectEndpointX.left - ox;
+                    var eoXy = rectEndpointX.top - oy;
+                    var eoYx = rectEndpointY.left - ox;
+                    var eoYy = rectEndpointY.top - oy;
+                    var px = e.clientX;
+                    var py = e.clientY;
+
+                    var den = eoYx * eoXy - eoYy * eoXx;
+                    var zrX = 0;
+                    var zrY = 0;
+                    if (den) {
+                        zrX = (py * eoYx - px * eoYy + ox * eoYy - oy * eoYx) / den * boxWidth;
+                        zrY = (px * eoXy - py * eoXx + oy * eoXx - ox * eoXy) / den * boxHeight;
+                    }
+
+                    out.zrX = zrX;
+                    out.zrY = zrY;
+                }
+                return calculateZrXY;
+            };
+
+
+            // The algoritm is learnt from
+            // https://franklinta.com/2014/09/08/computing-css-matrix3d-transforms/
+            // And we made some optimization for matrix inversion.
+            // Other similar approaches:
+            // cv::getPerspectiveTransform, "Direct Linear Transformation".
+            $calculateZrXYStrategies[CASE_MODE.CASE_4POINT] = function () {
+
+                var markers;
+                var LN2 = Math.log(2);
+
+                function determinant(rows, rank, rowStart, rowMask, colMask, detCache) {
+                    var cacheKey = rowMask + '-' + colMask;
+                    var fullRank = rows.length;
+
+                    if (detCache.hasOwnProperty(cacheKey)) {
+                        return detCache[cacheKey];
+                    }
+
+                    if (rank == 1) {
+                        // In this case the colMask must be like: `11101111`. We can find the place of `0`.
+                        var colStart = Math.round(Math.log(((1 << fullRank) - 1) & ~colMask) / LN2);
+                        return rows[rowStart][colStart];
+                    }
+
+                    var subRowMask = rowMask | (1 << rowStart);
+                    var subRowStart = rowStart + 1;
+                    while (rowMask & (1 << subRowStart)) {
+                        subRowStart++;
+                    }
+
+                    var sum = 0;
+                    for (var j = 0, colLocalIdx = 0; j < fullRank; j++) {
+                        var colTag = 1 << j;
+                        if (!(colTag & colMask)) {
+                            sum += (colLocalIdx % 2 ? -1 : 1) * rows[rowStart][j]
+                                // det(subMatrix(0, j))
+                                * determinant(rows, rank - 1, subRowStart, subRowMask, colMask | colTag, detCache);
+                            colLocalIdx++;
+                        }
+                    }
+
+                    detCache[cacheKey] = sum;
+
+                    return sum;
+                }
+
+                function buildFourPointsTransformer(src, dest) {
+                    var mA = [
+                        [src[0], src[1], 1, 0, 0, 0, -dest[0] * src[0], -dest[0] * src[1]],
+                        [0, 0, 0, src[0], src[1], 1, -dest[1] * src[0], -dest[1] * src[1]],
+                        [src[2], src[3], 1, 0, 0, 0, -dest[2] * src[2], -dest[2] * src[3]],
+                        [0, 0, 0, src[2], src[3], 1, -dest[3] * src[2], -dest[3] * src[3]],
+                        [src[4], src[5], 1, 0, 0, 0, -dest[4] * src[4], -dest[4] * src[5]],
+                        [0, 0, 0, src[4], src[5], 1, -dest[5] * src[4], -dest[5] * src[5]],
+                        [src[6], src[7], 1, 0, 0, 0, -dest[6] * src[6], -dest[6] * src[7]],
+                        [0, 0, 0, src[6], src[7], 1, -dest[7] * src[6], -dest[7] * src[7]]
+                    ];
+
+                    var detCache = {};
+                    var det = determinant(mA, 8, 0, 0, 0, detCache);
+                    if (det === 0) {
+                        return;
+                    }
+
+                    // `invert(mA) * dest`, that is, `adj(mA) / det * dest`.
+                    var vh = [];
+                    for (var i = 0; i < 8; i++) {
+                        for (var j = 0; j < 8; j++) {
+                            vh[j] == null && (vh[j] = 0);
+                            vh[j] += ((i + j) % 2 ? -1 : 1)
+                                // det(subMatrix(i, j))
+                                * determinant(mA, 7, i === 0 ? 1 : 0, 1 << i, 1 << j, detCache)
+                                / det * dest[i];
+                        }
+                    }
+
+                    return function (srcPoint) {
+                        var pk = srcPoint[0] * vh[6] + srcPoint[1] * vh[7] + 1;
+                        return [
+                            (srcPoint[0] * vh[0] + srcPoint[1] * vh[1] + vh[2]) / pk,
+                            (srcPoint[0] * vh[3] + srcPoint[1] * vh[4] + vh[5]) / pk
+                        ];
+                    }
+                }
+
+                function calculateZrXY(tryBox, e, out) {
+                    if (!markers) {
+                        markers = initTryCoordinatesMarker(tryBox);
+                    }
+
+                    var timeA = performance.now();
+
+                    var srcMarkers = [];
+                    var destMarkers = [];
+
+                    for (var i = 0; i < markers.length; i++) {
+                        var marker = markers[i];
+                        var rect = markers[i].getBoundingClientRect();
+                        var ii = 2 * i;
+                        srcMarkers[ii] = rect.left;
+                        srcMarkers[ii + 1] = rect.top;
+                        destMarkers[ii] = marker.offsetLeft;
+                        destMarkers[ii + 1] = marker.offsetTop;
+                    }
+                    timeA = {timeA: performance.now() - timeA};
+                    facePrint(timeA);
+                    console.log('timeA', timeA.timeA);
+
+                    var timeB = performance.now();
+
+                    var timeA = {timeA: performance.now() - timeA};
+
+                    var transformer = buildFourPointsTransformer(srcMarkers, destMarkers);
+                    var result = transformer([e.clientX, e.clientY]);
+
+                    out.zrX = result[0];
+                    out.zrY = result[1];
+
+                    var timeB = {timeB: performance.now() - timeB};
+                    facePrint(timeB);
+                    console.log('timeB', timeB.timeB);
+                }
+
+                return calculateZrXY;
+            };
+
+
+            function initTryCoordinatesMarker(tryBox) {
+                var time = performance.now();
+
+                var markers = [];
+                var propLR = ['left', 'right'];
+                var propTB = ['top', 'bottom'];
+
+                for (var i = 0; i < 4; i++) {
+                    var marker = document.createElement('div');
+                    var stl = marker.style;
+                    var idxLR = i % 2;
+                    var idxTB = (i >> 1) % 2;
+                    stl.cssText = [
+                        'position:absolute',
+                        'background:red',
+                        'width:0',
+                        'height:0',
+                        // 'width: 5px',
+                        // 'height: 5px',
+                        propLR[idxLR] + ':0',
+                        propTB[idxTB] + ':0',
+                        propLR[1 - idxLR] + ':auto',
+                        propTB[1 - idxTB] + ':auto',
+                        ''
+                    ].join('!important;');
+                    tryBox.appendChild(marker);
+                    markers.push(marker);
+                }
+
+                time = {timePrepare: performance.now() - time};
+                facePrint(time);
+                console.log('timePrepare', time);
+
+                return markers;
+            }
+
+            function getBoxSize(tryBox) {
+                return {
+                    width: tryBox.offsetWidth,
+                    height: tryBox.offsetHeight
+                };
+            }
+        </script>
+
+
+
+
+
+
+        <script>
+            initAllTry();
+            function initAllTry() {
+                var allTries = document.getElementById('allTries');
+                allTries.style.display = 'block';
+
+                initSingleTry(document.getElementById('try0'));
+                initSingleTry(document.getElementById('try1'));
+                initSingleTry(document.getElementById('try2'));
+                initSingleTry(document.getElementById('try3'));
+
+                function initSingleTry(tryDom) {
+                    var tryBox = tryDom.querySelector('.try-box');
+                    var caseMode = $getCaseMode();
+
+                    if (caseMode === CASE_MODE.CASE_ZREVT) {
+                        var zr = zrender.init(tryBox, {
+                            renderer: 'canvas'
+                        });
+                        var drawing = false;
+                        zr.on('click', function (e) {
+                            var size = 10;
+                            zr.add(new zrender.Rect({
+                                shape: {
+                                    x: e.offsetX - size / 2,
+                                    y: e.offsetY - size / 2,
+                                    width: size,
+                                    height: size
+                                },
+                                style: {
+                                    fill: 'orange'
+                                }
+                            }));
+                        });
+                        zr.on('mousedown', function (e) {
+                            drawing = new zrender.Polyline({
+                                shape: {
+                                    points: [[e.offsetX, e.offsetY]]
+                                },
+                                style: {
+                                    stroke: '#91ff01',
+                                    lineWidth: 3
+                                }
+                            });
+                            zr.add(drawing);
+                        });
+                        zr.on('mousemove', function (e) {
+                            if (drawing) {
+                                drawing.shape.points.push([e.offsetX, e.offsetY]);
+                                drawing.dirty();
+                                e.stop();
+                            }
+                        });
+                        zr.on('mouseup', stopDrawing);
+                        zr.on('globalout', stopDrawing);
+                        function stopDrawing() {
+                            drawing = false;
+                        }
+                    }
+                    else {
+                        var calculateZrXY = $calculateZrXYStrategies[caseMode]();
+
+                        tryBox.addEventListener('click', function (e) {
+                            var out = {};
+                            calculateZrXY(tryBox, e, out);
+                            facePrint(out);
+                            drawPointer(tryBox, out);
+                        });
+                    }
+
+                    // var boxSize = getBoxSize(tryBox);
+                    // facePrint({
+                    //     m: 'inner',
+                    //     boxSizeWidth: boxSize.width,
+                    //     boxSizeHeight: boxSize.height,
+                    //     boxClientLeft: tryBox.clientLeft,
+                    //     boxClientTop: tryBox.clientTop,
+                    //     boxOffsetLeft: tryBox.offsetLeft,
+                    //     boxOffsetTop: tryBox.offsetTop
+                    // });
+                    // $drawRect({left:0 ,top: 0, width: 100, height: 100})
+                }
+
+                function drawPointer(tryBox, localCoord) {
+                    var pointerMarker = document.createElement('div');
+                    pointerMarker.classList.add('pointer-marker');
+                    pointerMarker.style.left = localCoord.zrX.toFixed(0) + 'px';
+                    pointerMarker.style.top = localCoord.zrY.toFixed(0) + 'px';
+                    tryBox.appendChild(pointerMarker);
+                }
+            }
+        </script>
+
+
+
+
+
+
+
+
+    </body>
+</html>

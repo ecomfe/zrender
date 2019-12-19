@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Text</title>
+    <!-- <script src="lib/rollup.browser.js"></script> -->
+    <!-- <script src="lib/requireES.js"></script> -->
+    <!-- <script src="lib/config.js"></script> -->
+    <script src="../dist/zrender.js"></script>
+
+    <style>
+        .title {
+            background: green;
+            padding: 20px;
+            min-height: 20px;
+            padding: 10px;
+            font-size: 12px;
+            font-family: 'Courier New', Courier, monospace;
+            color: #fff;
+        }
+        .title-all-head {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+        .title-cell {
+            display: inline-block;
+            min-width: 100px;
+            padding: 2px;
+        }
+        .title-block {
+            display: inline-block;
+            vertical-align: top;
+            min-width: 200px;
+            margin: 0;
+            padding: 0;
+        }
+        .title-block-head {
+            color: #ccc;
+            height: 20px;
+        }
+        .title-consequence {
+            color: yellow;
+            font-size: 20px;
+            font-weight: bold;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 5px;
+            margin-bottom: 5px;
+        }
+        .fail {
+            color: red;
+        }
+    </style>
+</head>
+<body style="margin:0">
+
+    <div id="main0"></div>
+    <div id="main1"></div>
+    <div id="main2"></div>
+    <div id="main3"></div>
+    <div id="main4"></div>
+    <div id="main5"></div>
+    <div id="main6"></div>
+    <div id="main7"></div>
+    <div id="main8"></div>
+    <div id="main9"></div>
+    <div id="main10"></div>
+
+
+    <script type="text/javascript">
+
+        function createCase(zrender, domId, opt) {
+            var dom = document.getElementById(domId);
+            var wrap = {};
+            var log = [];
+
+            if (!dom) {
+                return {zrList: []};
+            }
+
+            var titleEl = document.createElement('div');
+            titleEl.classList.add('title');
+            if (opt.title != null) {
+                titleEl.innerHTML = '<div class="title-all-head">' + encodeHTML(opt.title) + '</div>';
+            }
+            dom.appendChild(titleEl);
+
+            var canvas = document.createElement('canvas');
+            canvas.style.width = canvas.style.height = '20px';
+            injectCanvas(canvas);
+            dom.appendChild(canvas);
+
+            var div = document.createElement('div');
+            div.style.width = '1000px';
+            div.style.height = '150px';
+            dom.appendChild(div);
+
+            wrap.zrList = [
+                zrender.init(canvas),
+                zrender.init(div)
+            ];
+
+            delayGetResult(wrap);
+
+            return wrap;
+
+            function injectCanvas(canvas) {
+                var originalGetContext = canvas.getContext;
+                var props = opt.logProps;
+                canvas.getContext = function () {
+                    var ctx = originalGetContext.apply(this, arguments);
+                    if (!ctx) {
+                        return ctx;
+                    }
+                    props.forEach(function (prop) {
+                        var prefix = '___$$$';
+                        Object.defineProperty(ctx, prop, {
+                            get: function () {
+                                return this[prefix + prop];
+                            },
+                            set: function (val) {
+                                console.log('a', val);
+                                return log.push([prop, val]);
+                                this[prefix + prop] = value;
+                            }
+                        });
+                    });
+                    return ctx;
+                };
+            }
+
+            function delayGetResult(wrap) {
+                setTimeout(function () {
+                    renderResult('Round 1');
+
+                    log.length = 0;
+                    wrap.zrList.forEach(function (zr) {
+                        zr.storage.traverse(function (el) {
+                            !el.isGroup && el.dirty();
+                        });
+                    });
+                    setTimeout(function () {
+                        renderResult('Round 2 (after dirty and repainted)');
+                    }, 1000);
+
+                }, 1000);
+            };
+
+            function renderResult(round) {
+                console.log(JSON.stringify(log, 4, null));
+                var html = ['<div>'];
+                html.push('<div>' + round + '</div>');
+                html.push(getHTMLLog('[Real Log]:', log));
+                html.push(getHTMLLog('[Expect]:', opt.expectLog));
+                html.push('<div>');
+                titleEl.innerHTML += html.join('');
+
+                var theSame = logTheSame(log, opt.expectLog);
+                var clz = 'title-consequence ' + (!theSame ? 'fail' : '');
+                titleEl.innerHTML += '<div class="' + clz + '">' + (theSame ? 'OK. The Same' : 'Not Same !!!') + '</div>';
+            }
+
+            function getHTMLLog(head, logArr) {
+                var html = [];
+                html.push('<div class="title-block"><div class="title-block-head">' + encodeHTML(head) + '</div>');
+                logArr && logArr.forEach(function (line) {
+                    html.push('<div>');
+                    line.forEach(function (item) {
+                        html.push('<span class="title-cell">', encodeHTML(item), '</span>');
+                    });
+                    html.push('</div>');
+                });
+                html.push('</div>');
+                return html.join('');
+            }
+
+            function logTheSame(log1, log2) {
+                if (log1.length !== log2.length) {
+                    return false;
+                }
+                for (var i = 0; i < log1.length; i++) {
+                    var item1 = log1[i];
+                    var item2 = log2[i];
+                    if (!item1 || !item2 || item1.length !== item2.length) {
+                        return false;
+                    }
+                    for (var j = 0; j < item1.length; j++) {
+                        var c1 = item1[j];
+                        var c2 = item2[j];
+                        if (c1 !== c2 && !(c1 == null && c2 == null)) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+
+            function encodeHTML(source) {
+                return String(source)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+        }
+    </script>
+
+
+
+
+
+
+
+
+    <script type="text/javascript">
+
+        var Text = zrender.Text;
+        var Rect = zrender.Rect;
+
+        var wrap = createCase(zrender, 'main0', {
+            title: 'Only green Rect * 3, no text, should cache',
+            logProps: ['fillStyle', 'strokeStyle'],
+            expectLog: [
+                ['fillStyle', 'blue'],
+                ['strokeStyle', 'red']
+            ]
+        }).zrList.forEach(function (zr) {
+            var unit = 100;
+            for (var i = 0; i < 3; i++) {
+                zr.add(new Rect({
+                    shape: {x: i * unit, y: 0, width: 50, height: 50},
+                    style: {
+                        fill: 'blue',
+                        stroke: 'red'
+                    }
+                }));
+            }
+        });
+
+        var wrap = createCase(zrender, 'main1', {
+            title: 'Rect text and rect one by one, only cache rect',
+            logProps: ['fillStyle', 'strokeStyle'],
+            expectLog: [
+                ['fillStyle', 'blue'],
+                ['strokeStyle', 'red'],
+                ['fillStyle', 'yellow'],
+                ['fillStyle', 'yellow'],
+                ['fillStyle', 'yellow']
+            ]
+        }).zrList.forEach(function (zr) {
+            var unit = 100;
+            for (var i = 0; i < 3; i++) {
+                zr.add(new Rect({
+                    shape: {x: i * unit, y: 0, width: 50, height: 50},
+                    style: {
+                        fill: 'blue',
+                        stroke: 'red',
+                        text: 'asdf_' + i,
+                        textFill: 'yellow'
+                    }
+                }));
+            }
+        });
+
+        var wrap = createCase(zrender, 'main2', {
+            title: 'textStroke the same as stroke (red)',
+            logProps: ['fillStyle', 'strokeStyle'],
+            expectLog: [
+                ['fillStyle', 'blue'],
+                ['strokeStyle', 'red'],
+                ['strokeStyle', 'red'],
+                ['fillStyle', 'blue'],
+                ['strokeStyle', 'red'],
+                ['fillStyle', 'blue'],
+                ['strokeStyle', 'red'],
+                ['fillStyle', 'blue'],
+            ]
+        }).zrList.forEach(function (zr) {
+            var unit = 100;
+            for (var i = 0; i < 3; i++) {
+                zr.add(new Rect({
+                    shape: {x: i * unit, y: 0, width: 50, height: 50},
+                    style: {
+                        fill: 'blue',
+                        stroke: 'red',
+                        text: 'asdf_' + i,
+                        textFill: 'blue',
+                        textStrokeWidth: 4,
+                        textStroke: 'red'
+                    }
+                }));
+            }
+        });
+
+
+
+        var wrap = createCase(zrender, 'main3', {
+            title: 'blue, red, blue (no text)',
+            logProps: ['fillStyle', 'strokeStyle'],
+            expectLog: [
+                ['fillStyle', 'blue'],
+                ['strokeStyle', null],
+                ['fillStyle', 'red'],
+                ['fillStyle', 'blue']
+            ]
+        }).zrList.forEach(function (zr) {
+            zr.add(new Rect({
+                shape: {x: 0, y: 0, width: 50, height: 50},
+                style: {
+                    fill: 'blue'
+                }
+            }));
+            zr.add(new Rect({
+                shape: {x: 100, y: 0, width: 50, height: 50},
+                style: {
+                    fill: 'red'
+                }
+            }));
+            zr.add(new Rect({
+                shape: {x: 200, y: 0, width: 50, height: 50},
+                style: {
+                    fill: 'blue'
+                }
+            }));
+        });
+
+
+
+        var wrap = createCase(zrender, 'main4', {
+            title: 'Only the first has red text',
+            logProps: ['fillStyle', 'strokeStyle'],
+            expectLog: [
+                ['fillStyle', 'blue'],
+                ['strokeStyle', null],
+                ['fillStyle', 'red'],
+            ]
+        }).zrList.forEach(function (zr) {
+            zr.add(new Rect({
+                shape: {x: 0, y: 0, width: 50, height: 50},
+                style: {
+                    fill: 'blue',
+                    textFill: 'red',
+                    text: 'asdf',
+                }
+            }));
+            zr.add(new Rect({
+                shape: {x: 100, y: 0, width: 50, height: 50},
+                style: {
+                    fill: 'blue'
+                }
+            }));
+            zr.add(new Rect({
+                shape: {x: 200, y: 0, width: 50, height: 50},
+                style: {
+                    fill: 'blue'
+                }
+            }));
+        });
+
+
+
+
+
+        var wrap = createCase(zrender, 'main5', {
+            title: 'should be: blue rect, red text, blue rect with red text, red text, red text',
+            logProps: ['fillStyle', 'strokeStyle', 'font'],
+            expectLog: [
+                // el1
+                ['fillStyle', 'blue'],
+                ['strokeStyle', null],
+                // el2
+                ['font', '14px Arial'],
+                ['fillStyle', 'red'],
+                // el3
+                ['fillStyle', 'blue'],
+                ['strokeStyle', null],
+                ['font', '14px Arial'],
+                ['fillStyle', 'red'],
+                // el4
+                ['font', '14px Arial'],
+                ['fillStyle', 'red'],
+                // el5 (font cache from el2, fillStyle cache from el4)
+            ]
+        }).zrList.forEach(function (zr, idx) {
+            zr.add(new Rect({
+                shape: {x: 0, y: 0, width: 50, height: 50},
+                style: {
+                    fill: 'blue'
+                }
+            }));
+            zr.add(new Text({
+                style: {
+                    x: 100, y: 0,
+                    font: '14px Arial',
+                    textFill: 'red',
+                    text: 'red100'
+                }
+            }));
+            zr.add(new Rect({
+                shape: {x: 200, y: 0, width: 50, height: 50},
+                style: {
+                    fill: 'blue',
+                    font: '14px Arial',
+                    textFill: 'red',
+                    text: 'red200'
+                }
+            }));
+            zr.add(new Text({
+                style: {
+                    x: 300, y: 0,
+                    font: '14px Arial',
+                    textFill: 'red',
+                    text: 'red300'
+                }
+            }));
+            zr.add(new Text({
+                style: {
+                    x: 400, y: 0,
+                    font: '14px Arial',
+                    textFill: 'red',
+                    text: 'red400'
+                }
+            }));
+        });
+
+
+
+
+
+        var wrap = createCase(zrender, 'main6', {
+            logProps: ['fillStyle', 'strokeStyle', 'font'],
+            expectLog: [
+                // el1
+                ['font', '14px Arial'],
+                ['fillStyle', 'red'],
+                // el2
+                ['fillStyle', 'red'],
+                ['strokeStyle', null],
+                ['font', '24px Arial'],
+                ['fillStyle', 'blue'],
+                // el3
+                ['font', '14px Arial'],
+                ['fillStyle', 'red']
+            ]
+        }).zrList.forEach(function (zr, idx) {
+            zr.add(new Text({
+                style: {
+                    x: 0, y: 0,
+                    font: '14px Arial',
+                    textFill: 'red',
+                    text: 'red000,14px'
+                }
+            }));
+            zr.add(new Rect({
+                shape: {x: 100, y: 0, width: 50, height: 50},
+                style: {
+                    fill: 'red',
+                    font: '24px Arial',
+                    textFill: 'blue',
+                    text: 'blue100,24px'
+                }
+            }));
+            zr.add(new Text({
+                style: {
+                    x: 200, y: 0,
+                    font: '14px Arial',
+                    textFill: 'red',
+                    text: 'red200,14px'
+                }
+            }));
+        });
+
+
+
+
+        var wrap = createCase(zrender, 'main7', {
+            title: 'Can not cache RectFont because of save/restore.',
+            logProps: ['fillStyle', 'strokeStyle', 'font'],
+            expectLog: [
+                // el1
+                ['font', '14px Arial'],
+                ['fillStyle', 'red'],
+                // el2
+                ['fillStyle', 'red'],
+                ['strokeStyle', null],
+                ['font', '24px Arial'],
+                ['fillStyle', 'blue'],
+                // el3 (rect fillStyle cached from el2)
+                ['font', '24px Arial'],
+                ['fillStyle', 'blue'],
+                // el4
+                ['font', '14px Arial'],
+                ['fillStyle', 'red']
+            ]
+        }).zrList.forEach(function (zr, idx) {
+            zr.add(new Text({
+                style: {
+                    x: 0, y: 0,
+                    font: '14px Arial',
+                    textFill: 'red',
+                    text: 'red000,14px'
+                }
+            }));
+            zr.add(new Rect({
+                shape: {x: 100, y: 0, width: 50, height: 50},
+                style: {
+                    fill: 'red',
+                    font: '24px Arial',
+                    textFill: 'blue',
+                    text: 'blue100,24px'
+                }
+            }));
+            zr.add(new Rect({
+                shape: {x: 200, y: 0, width: 50, height: 50},
+                style: {
+                    fill: 'red',
+                    font: '24px Arial',
+                    textFill: 'blue',
+                    text: 'blue200,24px'
+                }
+            }));
+            zr.add(new Text({
+                style: {
+                    x: 300, y: 0,
+                    font: '14px Arial',
+                    textFill: 'red',
+                    text: 'red300,14px'
+                }
+            }));
+        });
+
+
+
+        var wrap = createCase(zrender, 'main7', {
+            title: 'Can not cache RectFont because of save/restore.',
+            logProps: ['fillStyle', 'strokeStyle', 'font', 'globalAlpha'],
+            expectLog: [
+                // el1
+                ['fillStyle', 'red'],
+                ['strokeStyle', null],
+                ['globalAlpha', .5],
+                // el2
+                ['font', '14px Arial'],
+                ['globalAlpha', .5],
+                ['fillStyle', 'red'],
+                // el3 (font cached from el2)
+                ['globalAlpha', .5],
+                ['fillStyle', 'red'],
+                // el4
+                ['strokeStyle', null],
+                ['globalAlpha', .5],
+                // el5 (fillStyle cached from el4, globalAlpha cached from el4)
+            ]
+        }).zrList.forEach(function (zr, idx) {
+            zr.add(new Rect({
+                shape: {x: 0, y: 0, width: 50, height: 50},
+                style: {
+                    fill: 'red',
+                    opacity: .5
+                }
+            }));
+            zr.add(new Text({
+                style: {
+                    x: 100, y: 0,
+                    font: '14px Arial',
+                    textFill: 'red',
+                    text: 'red100,14px',
+                    opacity: .5
+                }
+            }));
+            zr.add(new Text({
+                style: {
+                    x: 200, y: 0,
+                    font: '14px Arial',
+                    textFill: 'red',
+                    text: 'red200,14px',
+                    opacity: .5
+                }
+            }));
+            zr.add(new Rect({
+                shape: {x: 300, y: 0, width: 50, height: 50},
+                style: {
+                    fill: 'red',
+                    opacity: .5
+                }
+            }));
+            zr.add(new Rect({
+                shape: {x: 400, y: 0, width: 50, height: 50},
+                style: {
+                    fill: 'red',
+                    opacity: .5
+                }
+            }));
+        });
+
+
+
+
+
+        var wrap = createCase(zrender, 'main8', {
+            title: 'Can not cache because of backgroundColor.',
+            logProps: ['fillStyle', 'strokeStyle'],
+            expectLog: [
+                // el1
+                ['fillStyle', 'red'],
+                // el2
+                ['fillStyle', 'blue'],
+                ['fillStyle', 'red'],
+                // el3
+                ['fillStyle', 'red'],
+            ]
+        }).zrList.forEach(function (zr, idx) {
+            zr.add(new Text({
+                style: {
+                    x: 0, y: 0,
+                    textFill: 'red',
+                    text: '8red000',
+                    opacity: .5
+                }
+            }));
+            zr.add(new Text({
+                style: {
+                    x: 100, y: 0,
+                    font: '14px Arial',
+                    textFill: 'red',
+                    text: '8red100',
+                    opacity: .5,
+                    textBackgroundColor: 'blue'
+                }
+            }));
+            zr.add(new Text({
+                style: {
+                    x: 200, y: 0,
+                    textFill: 'red',
+                    text: '8red200',
+                    opacity: .5
+                }
+            }));
+        });
+
+
+
+
+
+
+
+        var wrap = createCase(zrender, 'main9', {
+            title: 'Can not cache because of rich. But RectRich do not effect the cache of Rect.',
+            logProps: ['fillStyle', 'strokeStyle'],
+            expectLog: [
+                // el1
+                ['fillStyle', 'red'],
+                // el2
+                ['fillStyle', 'red'],
+                // el3
+                ['fillStyle', 'red'],
+                // el4
+                ['fillStyle', 'blue'],
+                ['strokeStyle', null],
+                // el5 (rect fillStyle cached from el4)
+                ['fillStyle', 'red'],
+                // el5 (rect fillStyle cached from el4)
+                ['fillStyle', 'red'],
+            ]
+        }).zrList.forEach(function (zr, idx) {
+            zr.add(new Text({
+                style: {
+                    x: 0, y: 0,
+                    textFill: 'red',
+                    text: '9red000',
+                    opacity: .5
+                }
+            }));
+            zr.add(new Text({
+                style: {
+                    x: 100, y: 0,
+                    font: '14px Arial',
+                    textFill: 'red',
+                    text: '9red100,rich',
+                    opacity: .5,
+                    rich: {}
+                }
+            }));
+            zr.add(new Text({
+                style: {
+                    x: 200, y: 0,
+                    textFill: 'red',
+                    text: '9red200',
+                    opacity: .5
+                }
+            }));
+            zr.add(new Rect({
+                shape: {x: 300, y: 0, width: 50, height: 50},
+                style: {
+                    fill: 'blue',
+                    textFill: 'red',
+                    text: '9red300',
+                    opacity: .5,
+                    // rich: {}
+                }
+            }));
+            zr.add(new Rect({
+                shape: {x: 400, y: 0, width: 50, height: 50},
+                style: {
+                    fill: 'blue',
+                    textFill: 'red',
+                    text: '9red400',
+                    opacity: .5,
+                    // rich: {}
+                }
+            }));
+        });
+
+
+
+
+
+
+        var wrap = createCase(zrender, 'main10', {
+            title: 'The 2nd text el do not needed be draw',
+            logProps: ['fillStyle', 'strokeStyle'],
+            expectLog: [
+                // el1
+                ['fillStyle', 'red'],
+                // el3
+                ['fillStyle', 'blue'],
+            ]
+        }).zrList.forEach(function (zr, idx) {
+            zr.add(new Text({
+                style: {
+                    x: 0, y: 0,
+                    textFill: 'red',
+                    text: '10red000'
+                }
+            }));
+            zr.add(new Text({
+                style: {
+                    x: 100, y: 0,
+                    font: '14px Arial',
+                    textFill: 'blue',
+                    text: '' // do not draw
+                }
+            }));
+            zr.add(new Text({
+                style: {
+                    x: 200, y: 0,
+                    textFill: 'blue',
+                    text: '10blue200'
+                }
+            }));
+        });
+
+
+
+
+
+
+
+
+    </script>
+
+
+
+
+
+</body>
+</html>
