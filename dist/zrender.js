@@ -166,12 +166,17 @@ function detect(ua) {
         // default, so we dont check navigator.maxTouchPoints for them here.
         touchEventsSupported: 'ontouchstart' in window && !browser.ie && !browser.edge,
         // <http://caniuse.com/#search=pointer%20event>.
-        pointerEventsSupported: 'onpointerdown' in window
-            // Firefox supports pointer but not by default, only MS browsers are reliable on pointer
+        pointerEventsSupported:
+            // (1) Firefox supports pointer but not by default, only MS browsers are reliable on pointer
             // events currently. So we dont use that on other browsers unless tested sufficiently.
-            // Although IE 10 supports pointer event, it use old style and is different from the
+            // For example, in iOS 13 Mobile Chromium 78, if the touching behavior starts page
+            // scroll, the `pointermove` event can not be fired any more. That will break some
+            // features like "pan horizontally to move something and pan vertically to page scroll".
+            // The horizontal pan probably be interrupted by the casually triggered page scroll.
+            // (2) Although IE 10 supports pointer event, it use old style and is different from the
             // standard. So we exclude that. (IE 10 is hardly used on touch device)
-            && (browser.edge || (browser.ie && browser.version >= 11)),
+            'onpointerdown' in window
+                && (browser.edge || (browser.ie && browser.version >= 11)),
         // passiveSupported: detectPassiveSupport()
         domSupported: typeof document !== 'undefined'
     };
@@ -1220,7 +1225,11 @@ function Draggable() {
     this.on('mousedown', this._dragStart, this);
     this.on('mousemove', this._drag, this);
     this.on('mouseup', this._dragEnd, this);
-    this.on('globalout', this._dragEnd, this);
+    // `mosuemove` and `mouseup` can be continue to fire when dragging.
+    // See [Drag outside] in `Handler.js`. So we do not need to trigger
+    // `_dragEnd` when globalout. That would brings better user experience.
+    // this.on('globalout', this._dragEnd, this);
+
     // this._dropTarget = null;
     // this._draggingTarget = null;
 
@@ -1321,7 +1330,7 @@ var arrySlice = Array.prototype.slice;
  *        param: {string} eventType
  *        param: {string|Object} query
  *        return: {boolean}
- * @param {Function} [eventProcessor.afterTrigger] Call after all handlers called.
+ * @param {Function} [eventProcessor.afterTrigger] Called after all handlers called.
  *        param: {string} eventType
  */
 var Eventful = function (eventProcessor) {
@@ -1371,8 +1380,10 @@ Eventful.prototype = {
     /**
      * Unbind a event.
      *
-     * @param {string} event The event name.
+     * @param {string} [event] The event name.
+     *        If no `event` input, "off" all listeners.
      * @param {Function} [handler] The event handler.
+     *        If no `handler` input, "off" all listeners of the `event`.
      */
     off: function (event, handler) {
         var _h = this._$handlers;
@@ -1529,6 +1540,7 @@ Eventful.prototype = {
         return this;
     }
 };
+
 
 function normalizeQuery(host, query) {
     var eventProcessor = host._$eventProcessor;
@@ -1848,6 +1860,18 @@ function preparePointerTransformer(markers, saved) {
 }
 
 /**
+ * Find native event compat for legency IE.
+ * Should be called at the begining of a native event listener.
+ *
+ * @param {Event} [e] Mouse event or touch event or pointer event.
+ *        For lagency IE, we use `window.event` is used.
+ * @return {Event} The native event.
+ */
+function getNativeEvent(e) {
+    return e || window.event;
+}
+
+/**
  * Normalize the coordinates of the input event.
  *
  * Get the `e.zrX` and `e.zrY`, which are relative to the top-left of
@@ -1861,14 +1885,14 @@ function preparePointerTransformer(markers, saved) {
  * between the result coords and the parameters `el` and `calculate`.
  *
  * @param {HTMLElement} el DOM element.
- * @param {Event} [e] Mouse event or touch event. For lagency IE,
- *        do not need to input it and `window.event` is used.
+ * @param {Event} [e] See `getNativeEvent`.
  * @param {boolean} [calculate=false] Whether to force calculate
  *        the coordinates but not use ones provided by browser.
+ * @return {UIEvent} The normalized native UIEvent.
  */
 function normalizeEvent(el, e, calculate) {
 
-    e = e || window.event;
+    e = getNativeEvent(e);
 
     if (e.zrX != null) {
         return e;
@@ -1908,8 +1932,11 @@ function normalizeEvent(el, e, calculate) {
  * @param {HTMLElement} el
  * @param {string} name
  * @param {Function} handler
+ * @param {Object|boolean} opt If boolean, means `opt.capture`
+ * @param {boolean} [opt.capture=false]
+ * @param {boolean} [opt.passive=false]
  */
-function addEventListener(el, name, handler) {
+function addEventListener(el, name, handler, opt) {
     if (isDomLevel2) {
         // Reproduct the console warning:
         // [Violation] Added non-passive event listener to a scroll-blocking <some> event.
@@ -1932,16 +1959,24 @@ function addEventListener(el, name, handler) {
         //     // By default, the third param of el.addEventListener is `capture: false`.
         //     : void 0;
         // el.addEventListener(name, handler /* , opts */);
-        el.addEventListener(name, handler);
+        el.addEventListener(name, handler, opt);
     }
     else {
+        // For simplicity, do not implement `setCapture` for IE9-.
         el.attachEvent('on' + name, handler);
     }
 }
 
-function removeEventListener(el, name, handler) {
+/**
+ * Parameter are the same as `addEventListener`.
+ *
+ * Notice that if a listener is registered twice, one with capture and one without,
+ * remove each one separately. Removal of a capturing listener does not affect a
+ * non-capturing version of the same listener, and vice versa.
+ */
+function removeEventListener(el, name, handler, opt) {
     if (isDomLevel2) {
-        el.removeEventListener(name, handler);
+        el.removeEventListener(name, handler, opt);
     }
     else {
         el.detachEvent('on' + name, handler);
@@ -2094,6 +2129,65 @@ var recognizers = {
     // Only pinch currently.
 };
 
+/**
+ * [The interface between `Handler` and `HandlerProxy`]:
+ *
+ * The default `HandlerProxy` only support the common standard web environment
+ * (e.g., standalone browser, headless browser, embed browser in mobild APP, ...).
+ * But `HandlerProxy` can be replaced to support more non-standard environment
+ * (e.g., mini app), or to support more feature that the default `HandlerProxy`
+ * not provided (like echarts-gl did).
+ * So the interface between `Handler` and `HandlerProxy` should be stable. Do not
+ * make break changes util inevitable. The interface include the public methods
+ * of `Handler` and the events listed in `handlerNames` below, by which `HandlerProxy`
+ * drives `Handler`.
+ */
+
+/**
+ * [Drag outside]:
+ *
+ * That is, triggering `mousemove` and `mouseup` event when the pointer is out of the
+ * zrender area when dragging. That is important for the improvement of the user experience
+ * when dragging something near the boundary without being terminated unexpectedly.
+ *
+ * We originally consider to introduce new events like `pagemovemove` and `pagemouseup`
+ * to resolve this issue. But some drawbacks of it is described in
+ * https://github.com/ecomfe/zrender/pull/536#issuecomment-560286899
+ *
+ * Instead, we referenced the specifications:
+ * https://www.w3.org/TR/touch-events/#the-touchmove-event
+ * https://www.w3.org/TR/2014/WD-DOM-Level-3-Events-20140925/#event-type-mousemove
+ * where the the mousemove/touchmove can be continue to fire if the user began a drag
+ * operation and the pointer has left the boundary. (for the mouse event, browsers
+ * only do it on `document` and when the pointer has left the boundary of the browser.)
+ *
+ * So the default `HandlerProxy` supports this feature similarly: if it is in the dragging
+ * state (see `pointerCapture` in `HandlerProxy`), the `mousemove` and `mouseup` continue
+ * to fire until release the pointer. That is implemented by listen to those event on
+ * `document`.
+ * If we implement some other `HandlerProxy` only for touch device, that would be easier.
+ * The touch event support this feature by default.
+ *
+ * Note:
+ * There might be some cases that the mouse event can not be
+ * received on `document`. For example,
+ * (A) `useCapture` is not supported and some user defined event listeners on the ancestor
+ * of zr dom throw Error .
+ * (B) `useCapture` is not supported Some user defined event listeners on the ancestor of
+ * zr dom call `stopPropagation`.
+ * In these cases, the `mousemove` event might be keep triggered event
+ * if the mouse is released. We try to reduce the side-effect in those cases.
+ * That is, do nothing (especially, `findHover`) in those cases. See `isOutsideBoundary`.
+ *
+ * Note:
+ * If `HandlerProxy` listens to `document` with `useCapture`, `HandlerProxy` needs to
+ * make sure `stopPropagation` and `preventDefault` doing nothing if and only if the event
+ * target is not zrender dom. Becuase it is dangerous to enable users to call them in
+ * `document` capture phase to prevent the propagation to any listener of the webpage.
+ * But they are needed to work when the pointer inside the zrender dom.
+ */
+
+
 var SILENT = 'silent';
 
 function makeEventPacket(eveType, targetInfo, event) {
@@ -2118,17 +2212,19 @@ function makeEventPacket(eveType, targetInfo, event) {
     };
 }
 
-function stopEvent(event) {
+function stopEvent() {
     stop(this.event);
 }
 
 function EmptyProxy() {}
 EmptyProxy.prototype.dispose = function () {};
 
+
 var handlerNames = [
     'click', 'dblclick', 'mousewheel', 'mouseout',
     'mouseup', 'mousedown', 'mousemove', 'contextmenu'
 ];
+
 /**
  * @alias module:zrender/Handler
  * @constructor
@@ -2185,7 +2281,6 @@ var Handler = function (storage, painter, proxy, painterRoot) {
      */
     this._gestureMgr;
 
-
     Draggable.call(this);
 
     this.setHandlerProxy(proxy);
@@ -2214,6 +2309,8 @@ Handler.prototype = {
         var x = event.zrX;
         var y = event.zrY;
 
+        var isOutside = isOutsideBoundary(this, x, y);
+
         var lastHovered = this._hovered;
         var lastHoveredTarget = lastHovered.target;
 
@@ -2226,7 +2323,7 @@ Handler.prototype = {
             lastHoveredTarget = lastHovered.target;
         }
 
-        var hovered = this._hovered = this.findHover(x, y);
+        var hovered = this._hovered = isOutside ? {x: x, y: y} : this.findHover(x, y);
         var hoveredTarget = hovered.target;
 
         var proxy = this.proxy;
@@ -2247,23 +2344,18 @@ Handler.prototype = {
     },
 
     mouseout: function (event) {
-        this.dispatchToElement(this._hovered, 'mouseout', event);
+        var eventControl = event.zrEventControl;
+        var zrIsToLocalDOM = event.zrIsToLocalDOM;
 
-        // There might be some doms created by upper layer application
-        // at the same level of painter.getViewportRoot() (e.g., tooltip
-        // dom created by echarts), where 'globalout' event should not
-        // be triggered when mouse enters these doms. (But 'mouseout'
-        // should be triggered at the original hovered element as usual).
-        var element = event.toElement || event.relatedTarget;
-        var innerDom;
-        do {
-            element = element && element.parentNode;
+        if (eventControl !== 'only_globalout') {
+            this.dispatchToElement(this._hovered, 'mouseout', event);
         }
-        while (element && element.nodeType !== 9 && !(
-            innerDom = element === this.painterRoot
-        ));
 
-        !innerDom && this.trigger('globalout', {event: event});
+        if (eventControl !== 'no_globalout') {
+            // FIXME: if the pointer moving from the extra doms to realy "outside",
+            // the `globalout` should have been triggered. But currently not.
+            !zrIsToLocalDOM && this.trigger('globalout', {type: 'globalout', event: event});
+        }
     },
 
     /**
@@ -2409,9 +2501,18 @@ Handler.prototype = {
 // Common handlers
 each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick', 'contextmenu'], function (name) {
     Handler.prototype[name] = function (event) {
-        // Find hover again to avoid click event is dispatched manually. Or click is triggered without mouseover
-        var hovered = this.findHover(event.zrX, event.zrY);
-        var hoveredTarget = hovered.target;
+        var x = event.zrX;
+        var y = event.zrY;
+        var isOutside = isOutsideBoundary(this, x, y);
+
+        var hovered;
+        var hoveredTarget;
+
+        if (name !== 'mouseup' || !isOutside) {
+            // Find hover again to avoid click event is dispatched manually. Or click is triggered without mouseover
+            hovered = this.findHover(x, y);
+            hoveredTarget = hovered.target;
+        }
 
         if (name === 'mousedown') {
             this._downEl = hoveredTarget;
@@ -2461,6 +2562,14 @@ function isHover(displayable, x, y) {
     }
 
     return false;
+}
+
+/**
+ * See [Drag outside].
+ */
+function isOutsideBoundary(handlerInstance, x, y) {
+    var painter = handlerInstance.painter;
+    return x < 0 || x > painter.getWidth() || y < 0 || y > painter.getHeight();
 }
 
 mixin(Handler, Eventful);
@@ -10766,29 +10875,54 @@ Animation.prototype = {
 
 mixin(Animation, Eventful);
 
+/* global document */
+
 var TOUCH_CLICK_DELAY = 300;
 
-var mouseHandlerNames = [
-    'click', 'dblclick', 'mousewheel', 'mouseout',
-    'mouseup', 'mousedown', 'mousemove', 'contextmenu'
-];
+var globalEventSupported = env$1.domSupported;
 
-var touchHandlerNames = [
-    'touchstart', 'touchend', 'touchmove'
-];
 
-var pointerEventNames = {
-    pointerdown: 1, pointerup: 1, pointermove: 1, pointerout: 1
+var localNativeListenerNames = (function () {
+    var mouseHandlerNames = [
+        'click', 'dblclick', 'mousewheel', 'mouseout',
+        'mouseup', 'mousedown', 'mousemove', 'contextmenu'
+    ];
+    var touchHandlerNames = [
+        'touchstart', 'touchend', 'touchmove'
+    ];
+    var pointerEventNameMap = {
+        pointerdown: 1, pointerup: 1, pointermove: 1, pointerout: 1
+    };
+    var pointerHandlerNames = map(mouseHandlerNames, function (name) {
+        var nm = name.replace('mouse', 'pointer');
+        return pointerEventNameMap.hasOwnProperty(nm) ? nm : name;
+    });
+
+    return {
+        mouse: mouseHandlerNames,
+        touch: touchHandlerNames,
+        pointer: pointerHandlerNames
+    };
+})();
+
+var globalNativeListenerNames = {
+    mouse: ['mousemove', 'mouseup'],
+    pointer: ['pointermove', 'pointerup']
 };
 
-var pointerHandlerNames = map(mouseHandlerNames, function (name) {
-    var nm = name.replace('mouse', 'pointer');
-    return pointerEventNames[nm] ? nm : name;
-});
 
 function eventNameFix(name) {
     return (name === 'mousewheel' && env$1.browser.firefox) ? 'DOMMouseScroll' : name;
 }
+
+function isPointerFromTouch(event) {
+    var pointerType = event.pointerType;
+    return pointerType === 'pen' || pointerType === 'touch';
+}
+
+// function useMSGuesture(handlerProxy, event) {
+//     return isPointerFromTouch(event) && !!handlerProxy._msGesture;
+// }
 
 // function onMSGestureChange(proxy, event) {
 //     if (event.translationX || event.translationY) {
@@ -10809,117 +10943,174 @@ function eventNameFix(name) {
  * 1. Mobile browsers dispatch mouse events 300ms after touchend.
  * 2. Chrome for Android dispatch mousedown for long-touch about 650ms
  * Result: Blocking Mouse Events for 700ms.
+ *
+ * @param {DOMHandlerScope} scope
  */
-function setTouchTimer(instance) {
-    instance._touching = true;
-    clearTimeout(instance._touchTimer);
-    instance._touchTimer = setTimeout(function () {
-        instance._touching = false;
+function setTouchTimer(scope) {
+    scope.touching = true;
+    if (scope.touchTimer != null) {
+        clearTimeout(scope.touchTimer);
+        scope.touchTimer = null;
+    }
+    scope.touchTimer = setTimeout(function () {
+        scope.touching = false;
+        scope.touchTimer = null;
     }, 700);
 }
 
+// Mark touch, which is useful in distinguish touch and
+// mouse event in upper applicatoin.
+function markTouch(event) {
+    event && (event.zrByTouch = true);
+}
 
-var domHandlers = {
-    /**
-     * Mouse move handler
-     * @inner
-     * @param {Event} event
-     */
+
+// function markTriggeredFromLocal(event) {
+//     event && (event.__zrIsFromLocal = true);
+// }
+
+// function isTriggeredFromLocal(instance, event) {
+//     return !!(event && event.__zrIsFromLocal);
+// }
+
+function normalizeGlobalEvent(instance, event) {
+    // offsetX, offsetY still need to be calculated. They are necessary in the event
+    // handlers of the upper applications. Set `true` to force calculate them.
+    return normalizeEvent(instance.dom, new FakeGlobalEvent(instance, event), true);
+}
+
+/**
+ * Detect whether the given el is in `painterRoot`.
+ */
+function isLocalEl(instance, el) {
+    var isLocal = false;
+    do {
+        el = el && el.parentNode;
+    }
+    while (el && el.nodeType !== 9 && !(
+        isLocal = el === instance.painterRoot
+    ));
+    return isLocal;
+}
+
+/**
+ * Make a fake event but not change the original event,
+ * becuase the global event probably be used by other
+ * listeners not belonging to zrender.
+ * @class
+ */
+function FakeGlobalEvent(instance, event) {
+    this.type = event.type;
+    this.target = this.currentTarget = instance.dom;
+    this.pointerType = event.pointerType;
+    // Necessray for the force calculation of zrX, zrY
+    this.clientX = event.clientX;
+    this.clientY = event.clientY;
+    // Because we do not mount global listeners to touch events,
+    // we do not copy `targetTouches` and `changedTouches` here.
+}
+var fakeGlobalEventProto = FakeGlobalEvent.prototype;
+// we make the default methods on the event do nothing,
+// otherwise it is dangerous. See more details in
+// [Drag outside] in `Handler.js`.
+fakeGlobalEventProto.stopPropagation =
+    fakeGlobalEventProto.stopImmediatePropagation =
+    fakeGlobalEventProto.preventDefault = noop;
+
+
+/**
+ * Local DOM Handlers
+ * @this {HandlerProxy}
+ */
+var localDOMHandlers = {
+
+    mousedown: function (event) {
+        event = normalizeEvent(this.dom, event);
+
+        this._mayPointerCapture = [event.zrX, event.zrY];
+
+        this.trigger('mousedown', event);
+    },
+
     mousemove: function (event) {
         event = normalizeEvent(this.dom, event);
+
+        var downPoint = this._mayPointerCapture;
+        if (downPoint && (event.zrX !== downPoint[0] || event.zrY !== downPoint[1])) {
+            togglePointerCapture(this, true);
+        }
 
         this.trigger('mousemove', event);
     },
 
-    /**
-     * Mouse out handler
-     * @inner
-     * @param {Event} event
-     */
+    mouseup: function (event) {
+        event = normalizeEvent(this.dom, event);
+
+        togglePointerCapture(this, false);
+
+        this.trigger('mouseup', event);
+    },
+
     mouseout: function (event) {
         event = normalizeEvent(this.dom, event);
 
-        var element = event.toElement || event.relatedTarget;
-        if (element !== this.dom) {
-            while (element && element.nodeType !== 9) {
-                // 忽略包含在root中的dom引起的mouseOut
-                if (element === this.dom) {
-                    return;
-                }
-
-                element = element.parentNode;
-            }
+        // Similarly to the browser did on `document` and touch event,
+        // `globalout` will be delayed to final pointer cature release.
+        if (this._pointerCapturing) {
+            event.zrEventControl = 'no_globalout';
         }
+
+        // There might be some doms created by upper layer application
+        // at the same level of painter.getViewportRoot() (e.g., tooltip
+        // dom created by echarts), where 'globalout' event should not
+        // be triggered when mouse enters these doms. (But 'mouseout'
+        // should be triggered at the original hovered element as usual).
+        var element = event.toElement || event.relatedTarget;
+        event.zrIsToLocalDOM = isLocalEl(this, element);
 
         this.trigger('mouseout', event);
     },
 
-    /**
-     * Touch开始响应函数
-     * @inner
-     * @param {Event} event
-     */
     touchstart: function (event) {
         // Default mouse behaviour should not be disabled here.
         // For example, page may needs to be slided.
         event = normalizeEvent(this.dom, event);
 
-        // Mark touch, which is useful in distinguish touch and
-        // mouse event in upper applicatoin.
-        event.zrByTouch = true;
+        markTouch(event);
 
         this._lastTouchMoment = new Date();
 
         this.handler.processGesture(event, 'start');
 
-        // In touch device, trigger `mousemove`(`mouseover`) should
-        // be triggered, and must before `mousedown` triggered.
-        domHandlers.mousemove.call(this, event);
-
-        domHandlers.mousedown.call(this, event);
-
-        setTouchTimer(this);
+        // For consistent event listener for both touch device and mouse device,
+        // we simulate "mouseover-->mousedown" in touch device. So we trigger
+        // `mousemove` here (to trigger `mouseover` inside), and then trigger
+        // `mousedown`.
+        localDOMHandlers.mousemove.call(this, event);
+        localDOMHandlers.mousedown.call(this, event);
     },
 
-    /**
-     * Touch移动响应函数
-     * @inner
-     * @param {Event} event
-     */
     touchmove: function (event) {
-
         event = normalizeEvent(this.dom, event);
 
-        // Mark touch, which is useful in distinguish touch and
-        // mouse event in upper applicatoin.
-        event.zrByTouch = true;
+        markTouch(event);
 
         this.handler.processGesture(event, 'change');
 
         // Mouse move should always be triggered no matter whether
         // there is gestrue event, because mouse move and pinch may
         // be used at the same time.
-        domHandlers.mousemove.call(this, event);
-
-        setTouchTimer(this);
+        localDOMHandlers.mousemove.call(this, event);
     },
 
-    /**
-     * Touch结束响应函数
-     * @inner
-     * @param {Event} event
-     */
     touchend: function (event) {
-
         event = normalizeEvent(this.dom, event);
 
-        // Mark touch, which is useful in distinguish touch and
-        // mouse event in upper applicatoin.
-        event.zrByTouch = true;
+        markTouch(event);
 
         this.handler.processGesture(event, 'end');
 
-        domHandlers.mouseup.call(this, event);
+        localDOMHandlers.mouseup.call(this, event);
 
         // Do not trigger `mouseout` here, in spite of `mousemove`(`mouseover`) is
         // triggered in `touchstart`. This seems to be illogical, but by this mechanism,
@@ -10932,14 +11123,12 @@ var domHandlers = {
         // click event should always be triggered no matter whether
         // there is gestrue event. System click can not be prevented.
         if (+new Date() - this._lastTouchMoment < TOUCH_CLICK_DELAY) {
-            domHandlers.click.call(this, event);
+            localDOMHandlers.click.call(this, event);
         }
-
-        setTouchTimer(this);
     },
 
     pointerdown: function (event) {
-        domHandlers.mousedown.call(this, event);
+        localDOMHandlers.mousedown.call(this, event);
 
         // if (useMSGuesture(this, event)) {
         //     this._msGesture.addPointer(event.pointerId);
@@ -10953,12 +11142,12 @@ var domHandlers = {
         // upper application. So, we dont support mousemove on MS touch
         // device yet.
         if (!isPointerFromTouch(event)) {
-            domHandlers.mousemove.call(this, event);
+            localDOMHandlers.mousemove.call(this, event);
         }
     },
 
     pointerup: function (event) {
-        domHandlers.mouseup.call(this, event);
+        localDOMHandlers.mouseup.call(this, event);
     },
 
     pointerout: function (event) {
@@ -10966,80 +11155,77 @@ var domHandlers = {
         // (IE11+/Edge on MS Surface) after click event triggered,
         // which is inconsistent with the mousout behavior we defined
         // in touchend. So we unify them.
-        // (check domHandlers.touchend for detailed explanation)
+        // (check localDOMHandlers.touchend for detailed explanation)
         if (!isPointerFromTouch(event)) {
-            domHandlers.mouseout.call(this, event);
+            localDOMHandlers.mouseout.call(this, event);
         }
     }
+
 };
 
-function isPointerFromTouch(event) {
-    var pointerType = event.pointerType;
-    return pointerType === 'pen' || pointerType === 'touch';
-}
-
-// function useMSGuesture(handlerProxy, event) {
-//     return isPointerFromTouch(event) && !!handlerProxy._msGesture;
-// }
-
-// Common handlers
-each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick', 'contextmenu'], function (name) {
-    domHandlers[name] = function (event) {
+/**
+ * Othere DOM UI Event handlers for zr dom.
+ * @this {HandlerProxy}
+ */
+each(['click', 'mousewheel', 'dblclick', 'contextmenu'], function (name) {
+    localDOMHandlers[name] = function (event) {
         event = normalizeEvent(this.dom, event);
         this.trigger(name, event);
     };
 });
 
+
 /**
- * 为控制类实例初始化dom 事件处理函数
+ * DOM UI Event handlers for global page.
  *
- * @inner
- * @param {module:zrender/Handler} instance 控制类实例
+ * [Caution]:
+ * those handlers should both support in capture phase and bubble phase!
+ *
+ * @this {HandlerProxy}
  */
-function initDomHandler(instance) {
-    each(touchHandlerNames, function (name) {
-        instance._handlers[name] = bind(domHandlers[name], instance);
-    });
+var globalDOMHandlers = {
 
-    each(pointerHandlerNames, function (name) {
-        instance._handlers[name] = bind(domHandlers[name], instance);
-    });
+    pointermove: function (event) {
+        // FIXME
+        // pointermove is so sensitive that it always triggered when
+        // tap(click) on touch screen, which affect some judgement in
+        // upper application. So, we dont support mousemove on MS touch
+        // device yet.
+        if (!isPointerFromTouch(event)) {
+            globalDOMHandlers.mousemove.call(this, event);
+        }
+    },
 
-    each(mouseHandlerNames, function (name) {
-        instance._handlers[name] = makeMouseHandler(domHandlers[name], instance);
-    });
+    pointerup: function (event) {
+        globalDOMHandlers.mouseup.call(this, event);
+    },
 
-    function makeMouseHandler(fn, instance) {
-        return function () {
-            if (instance._touching) {
-                return;
-            }
-            return fn.apply(instance, arguments);
-        };
+    mousemove: function (event) {
+        this.trigger('mousemove', event);
+    },
+
+    mouseup: function (event) {
+        var pointerCaptureReleasing = this._pointerCapturing;
+
+        togglePointerCapture(this, false);
+
+        this.trigger('mouseup', event);
+
+        if (pointerCaptureReleasing) {
+            event.zrEventControl = 'only_globalout';
+            this.trigger('mouseout', event);
+        }
     }
-}
+
+};
 
 
-function HandlerDomProxy(dom) {
-    Eventful.call(this);
-
-    this.dom = dom;
-
-    /**
-     * @private
-     * @type {boolean}
-     */
-    this._touching = false;
-
-    /**
-     * @private
-     * @type {number}
-     */
-    this._touchTimer;
-
-    this._handlers = {};
-
-    initDomHandler(this);
+/**
+ * @param {HandlerProxy} instance
+ * @param {DOMHandlerScope} scope
+ */
+function mountLocalDOMEventListeners(instance, scope) {
+    var domHandlers = scope.domHandlers;
 
     if (env$1.pointerEventsSupported) { // Only IE11+/Edge
         // 1. On devices that both enable touch and mouse (e.g., MS Surface and lenovo X240),
@@ -11048,7 +11234,12 @@ function HandlerDomProxy(dom) {
         // 2. On MS Surface, it probablely only trigger mousedown but no mouseup when tap on
         // screen, which do not occurs in pointer event.
         // So we use pointer event to both detect touch gesture and mouse behavior.
-        mountHandlers(pointerHandlerNames, this);
+        each(localNativeListenerNames.pointer, function (nativeEventName) {
+            mountSingleDOMEventListener(scope, nativeEventName, function (event) {
+                // markTriggeredFromLocal(event);
+                domHandlers[nativeEventName].call(instance, event);
+            });
+        });
 
         // FIXME
         // Note: MS Gesture require CSS touch-action set. But touch-action is not reliable,
@@ -11067,7 +11258,13 @@ function HandlerDomProxy(dom) {
     }
     else {
         if (env$1.touchEventsSupported) {
-            mountHandlers(touchHandlerNames, this);
+            each(localNativeListenerNames.touch, function (nativeEventName) {
+                mountSingleDOMEventListener(scope, nativeEventName, function (event) {
+                    // markTriggeredFromLocal(event);
+                    domHandlers[nativeEventName].call(instance, event);
+                    setTouchTimer(scope);
+                });
+            });
             // Handler of 'mouseout' event is needed in touch mode, which will be mounted below.
             // addEventListener(root, 'mouseout', this._mouseoutHandler);
         }
@@ -11077,29 +11274,152 @@ function HandlerDomProxy(dom) {
         // mouse event can not be handle in those devices.
         // 2. On MS Surface, Chrome will trigger both touch event and mouse event. How to prevent
         // mouseevent after touch event triggered, see `setTouchTimer`.
-        mountHandlers(mouseHandlerNames, this);
-    }
-
-    function mountHandlers(handlerNames, instance) {
-        each(handlerNames, function (name) {
-            addEventListener(dom, eventNameFix(name), instance._handlers[name]);
-        }, instance);
+        each(localNativeListenerNames.mouse, function (nativeEventName) {
+            mountSingleDOMEventListener(scope, nativeEventName, function (event) {
+                event = getNativeEvent(event);
+                if (!scope.touching) {
+                    // markTriggeredFromLocal(event);
+                    domHandlers[nativeEventName].call(instance, event);
+                }
+            });
+        });
     }
 }
 
-var handlerDomProxyProto = HandlerDomProxy.prototype;
-handlerDomProxyProto.dispose = function () {
-    var handlerNames = mouseHandlerNames.concat(touchHandlerNames);
+/**
+ * @param {HandlerProxy} instance
+ * @param {DOMHandlerScope} scope
+ */
+function mountGlobalDOMEventListeners(instance, scope) {
+    // Only IE11+/Edge. See the comment in `mountLocalDOMEventListeners`.
+    if (env$1.pointerEventsSupported) {
+        each(globalNativeListenerNames.pointer, mount);
+    }
+    // Touch event has implemented "drag outside" so we do not mount global listener for touch event.
+    // (see https://www.w3.org/TR/touch-events/#the-touchmove-event)
+    // We do not consider "both-support-touch-and-mouse device" for this feature (see the comment of
+    // `mountLocalDOMEventListeners`) to avoid bugs util some requirements come.
+    else if (!env$1.touchEventsSupported) {
+        each(globalNativeListenerNames.mouse, mount);
+    }
 
-    for (var i = 0; i < handlerNames.length; i++) {
-        var name = handlerNames[i];
-        removeEventListener(this.dom, eventNameFix(name), this._handlers[name]);
+    function mount(nativeEventName) {
+        function nativeEventListener(event) {
+            event = getNativeEvent(event);
+            // See the reason in [Drag outside] in `Handler.js`
+            // This checking supports both `useCapture` or not.
+            // PENDING: if there is performance issue in some devices,
+            // we probably can not use `useCapture` and change a easier
+            // to judes whether local (mark).
+            if (!isLocalEl(instance, event.target)) {
+                event = normalizeGlobalEvent(instance, event);
+                scope.domHandlers[nativeEventName].call(instance, event);
+            }
+        }
+        mountSingleDOMEventListener(
+            scope, nativeEventName, nativeEventListener,
+            {capture: true} // See [Drag Outside] in `Handler.js`
+        );
+    }
+}
+
+function mountSingleDOMEventListener(scope, nativeEventName, listener, opt) {
+    scope.mounted[nativeEventName] = listener;
+    scope.listenerOpts[nativeEventName] = opt;
+    addEventListener(scope.domTarget, eventNameFix(nativeEventName), listener, opt);
+}
+
+function unmountDOMEventListeners(scope) {
+    var mounted = scope.mounted;
+    for (var nativeEventName in mounted) {
+        if (mounted.hasOwnProperty(nativeEventName)) {
+            removeEventListener(
+                scope.domTarget, eventNameFix(nativeEventName), mounted[nativeEventName],
+                scope.listenerOpts[nativeEventName]
+            );
+        }
+    }
+    scope.mounted = {};
+}
+
+/**
+ * See [Drag Outside] in `Handler.js`.
+ * @implement
+ * @param {boolean} isPointerCapturing Should never be `null`/`undefined`.
+ *        `true`: start to capture pointer if it is not capturing.
+ *        `false`: end the capture if it is capturing.
+ */
+function togglePointerCapture(instance, isPointerCapturing) {
+    instance._mayPointerCapture = null;
+
+    if (globalEventSupported && (instance._pointerCapturing ^ isPointerCapturing)) {
+        instance._pointerCapturing = isPointerCapturing;
+
+        var globalHandlerScope = instance._globalHandlerScope;
+        isPointerCapturing
+            ? mountGlobalDOMEventListeners(instance, globalHandlerScope)
+            : unmountDOMEventListeners(globalHandlerScope);
+    }
+}
+
+/**
+ * @inner
+ * @class
+ */
+function DOMHandlerScope(domTarget, domHandlers) {
+    this.domTarget = domTarget;
+    this.domHandlers = domHandlers;
+
+    // Key: eventName, value: mounted handler funcitons.
+    // Used for unmount.
+    this.mounted = {};
+    this.listenerOpts = {};
+
+    this.touchTimer = null;
+    this.touching = false;
+}
+
+/**
+ * @public
+ * @class
+ */
+function HandlerDomProxy(dom, painterRoot) {
+    Eventful.call(this);
+
+    this.dom = dom;
+    this.painterRoot = painterRoot;
+
+    this._localHandlerScope = new DOMHandlerScope(dom, localDOMHandlers);
+
+    if (globalEventSupported) {
+        this._globalHandlerScope = new DOMHandlerScope(document, globalDOMHandlers);
+    }
+
+    /**
+     * @type {boolean}
+     */
+    this._pointerCapturing = false;
+    /**
+     * @type {Array.<number>} [x, y] or null.
+     */
+    this._mayPointerCapture = null;
+
+    mountLocalDOMEventListeners(this, this._localHandlerScope);
+}
+
+var handlerDomProxyProto = HandlerDomProxy.prototype;
+
+handlerDomProxyProto.dispose = function () {
+    unmountDOMEventListeners(this._localHandlerScope);
+    if (globalEventSupported) {
+        unmountDOMEventListeners(this._globalHandlerScope);
     }
 };
 
 handlerDomProxyProto.setCursor = function (cursorStyle) {
     this.dom.style && (this.dom.style.cursor = cursorStyle || 'default');
 };
+
 
 mixin(HandlerDomProxy, Eventful);
 
@@ -11124,7 +11444,7 @@ var instances = {};    // ZRender实例map索引
 /**
  * @type {string}
  */
-var version = '4.1.2';
+var version = '4.2.0';
 
 /**
  * Initializing a zrender instance
@@ -11226,7 +11546,7 @@ var ZRender = function (id, dom, opts) {
     this.storage = storage;
     this.painter = painter;
 
-    var handerProxy = (!env$1.node && !env$1.worker) ? new HandlerDomProxy(painter.getViewportRoot()) : null;
+    var handerProxy = (!env$1.node && !env$1.worker) ? new HandlerDomProxy(painter.getViewportRoot(), painter.root) : null;
     this.handler = new Handler(storage, painter, handerProxy, painter.root);
 
     /**
@@ -17038,6 +17358,9 @@ svgPath.brush = function (el) {
     if (style.text != null) {
         svgTextDrawRectText(el, el.getBoundingRect());
     }
+    else {
+        removeOldTextNode(el);
+    }
 };
 
 /***************************************************
@@ -17084,6 +17407,9 @@ svgImage.brush = function (el) {
 
     if (style.text != null) {
         svgTextDrawRectText(el, el.getBoundingRect());
+    }
+    else {
+        removeOldTextNode(el);
     }
 };
 
@@ -17285,12 +17611,27 @@ function updateTextLocation(tspan, textAlign, x, y) {
     attr(tspan, 'y', y);
 }
 
+function removeOldTextNode(el) {
+    if (el && el.__textSvgEl) {
+        // textSvgEl may has no parentNode if el has been removed temporary.
+        if (el.__textSvgEl.parentNode) {
+            el.__textSvgEl.parentNode.removeChild(el.__textSvgEl);
+        }
+        el.__textSvgEl = null;
+        el.__tspanList = [];
+        el.__text = null;
+    }
+}
+
 svgText.drawRectText = svgTextDrawRectText;
 
 svgText.brush = function (el) {
     var style = el.style;
     if (style.text != null) {
         svgTextDrawRectText(el, false);
+    }
+    else {
+        removeOldTextNode(el);
     }
 };
 
@@ -18546,8 +18887,8 @@ SVGPainter.prototype = {
             else if (!item.removed) {
                 for (var k = 0; k < item.count; k++) {
                     var displayable = newVisibleList[item.indices[k]];
-                    prevSvgElement = getTextSvgElement(displayable)
-                        || getSvgElement(displayable) || prevSvgElement;
+                    var svgElement = getSvgElement(displayable);
+                    var textSvgElement = getTextSvgElement(displayable);
 
                     var svgElement = getSvgElement(displayable);
                     var textSvgElement = getTextSvgElement(displayable);
@@ -18561,6 +18902,12 @@ SVGPainter.prototype = {
                         .addWithoutUpdate(svgElement || textSvgElement, displayable);
 
                     this.clipPathManager.markUsed(displayable);
+
+                    if (textSvgElement) { // Insert text.
+                        insertAfter(svgRoot, textSvgElement, svgElement);
+                    }
+                    prevSvgElement = svgElement
+                        || textSvgElement || prevSvgElement;
                 }
             }
         }

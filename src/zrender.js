@@ -28,7 +28,7 @@ var instances = {};    // ZRender实例map索引
 /**
  * @type {string}
  */
-export var version = '4.1.2';
+export var version = '4.2.0';
 
 /**
  * Initializing a zrender instance
@@ -130,7 +130,7 @@ var ZRender = function (id, dom, opts) {
     this.storage = storage;
     this.painter = painter;
 
-    var handerProxy = (!env.node && !env.worker) ? new HandlerProxy(painter.getViewportRoot()) : null;
+    var handerProxy = (!env.node && !env.worker) ? new HandlerProxy(painter.getViewportRoot(), painter.root) : null;
     this.handler = new Handler(storage, painter, handerProxy, painter.root);
 
     /**
