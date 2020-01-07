@@ -18,7 +18,7 @@ var round = Math.round;
  * @param {number} [inputShape.x2]
  * @param {number} [inputShape.y2]
  * @param {Object} [style]
- * @param {number} [style.lineWidth]
+ * @param {number} [style.lineWidth] If `null`/`undefined`/`0`, do not optimize.
  */
 export function subPixelOptimizeLine(outputShape, inputShape, style) {
     if (!inputShape) {
@@ -61,7 +61,7 @@ export function subPixelOptimizeLine(outputShape, inputShape, style) {
  * @param {number} [inputShape.width]
  * @param {number} [inputShape.height]
  * @param {Object} [style]
- * @param {number} [style.lineWidth]
+ * @param {number} [style.lineWidth] If `null`/`undefined`/`0`, do not optimize.
  */
 export function subPixelOptimizeRect(outputShape, inputShape, style) {
     if (!inputShape) {
@@ -99,11 +99,14 @@ export function subPixelOptimizeRect(outputShape, inputShape, style) {
  * Sub pixel optimize for canvas
  *
  * @param {number} position Coordinate, such as x, y
- * @param {number} lineWidth Should be nonnegative integer.
+ * @param {number} lineWidth If `null`/`undefined`/`0`, do not optimize.
  * @param {boolean=} positiveOrNegative Default false (negative).
  * @return {number} Optimized position.
  */
 export function subPixelOptimize(position, lineWidth, positiveOrNegative) {
+    if (!lineWidth) {
+        return position;
+    }
     // Assure that (position + lineWidth / 2) is near integer edge,
     // otherwise line will be fuzzy in canvas.
     var doubledPosition = round(position * 2);
