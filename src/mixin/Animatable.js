@@ -9,7 +9,7 @@ import {
 } from '../core/util';
 
 /**
- * @alias modue:zrender/mixin/Animatable
+ * @alias module:zrender/mixin/Animatable
  * @constructor
  */
 var Animatable = function () {
