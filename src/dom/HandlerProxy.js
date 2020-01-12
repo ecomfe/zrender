@@ -117,13 +117,16 @@ function normalizeGlobalEvent(instance, event) {
  * Detect whether the given el is in `painterRoot`.
  */
 function isLocalEl(instance, el) {
+    var elTmp = el;
     var isLocal = false;
-    do {
-        el = el && el.parentNode;
+    while (elTmp && elTmp.nodeType !== 9
+        && !(
+            isLocal = elTmp.domBelongToZr
+                || (elTmp !== el && elTmp === instance.painterRoot)
+        )
+    ) {
+        elTmp = elTmp.parentNode;
     }
-    while (el && el.nodeType !== 9 && !(
-        isLocal = el === instance.painterRoot
-    ));
     return isLocal;
 }
 
