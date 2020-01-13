@@ -1,5 +1,5 @@
 /**
- * 动画主类, 调度和管理所有动画控制器
+ * Animation main class, dispatch and manage all animation controllers
  *
  */
 // TODO Additive animation
@@ -68,13 +68,13 @@ export default class Animation extends Eventful {
     }
 
     /**
-     * 添加 clip
+     * Add clip
      */
     addClip(clip: Clip<any>) {
         this._clips.push(clip);
     }
     /**
-     * 添加 animator
+     * Add animator
      */
     addAnimator(animator: Animator<any>) {
         animator.animation = this;
@@ -84,7 +84,7 @@ export default class Animation extends Eventful {
         }
     }
     /**
-     * 删除动画片段
+     * Delete animation clip
      */
     removeClip(clip: Clip<any>) {
         const idx = util.indexOf(this._clips, clip);
@@ -94,7 +94,7 @@ export default class Animation extends Eventful {
     }
 
     /**
-     * 删除动画片段
+     * Delete animation clip
      */
     removeAnimator(animator: Animator<any>) {
         const clips = animator.getClips();

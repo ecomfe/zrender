@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <script src="lib/facePrint.js"></script>
+        <script src="lib/rollup.browser.js"></script>
+        <script src="lib/requireES.js"></script>
+        <script src="lib/config.js"></script>
+    </head>
+    <body>
+        <style>
+            html {
+                position: static;
+                perspective: 371px;
+            }
+            body {
+                position: static;
+                background: #ffe;
+                transform: scale3d(0.7, 0.8, 1) rotateY(-18deg) rotateZ(-32deg);
+                transform-style: preserve-3d;
+            }
+            .chart {
+                position: relative;
+                width: 500px;
+                height: 300px;
+                border: 10px solid rgba(0,0,0,0.5);
+                margin: 30px auto 30px auto;
+            }
+            select {
+                font-size: 16px;
+                color: rgb(107, 8, 8);
+            }
+            .try-box {
+                position: relative;
+                background: green;
+                padding: 0;
+                border-width: 0;
+                line-height: 1;
+                text-align: center;
+                font-size: 12px;
+                color: yellow;
+                /* box-sizing: content-box; */
+            }
+            .try-box-check {
+                position: absolute;
+                background: grey;
+                padding: 0;
+                border-width: 0;
+                line-height: 1;
+                text-align: center;
+                font-size: 12px;
+            }
+            .pointer-marker {
+                position: absolute;
+                width: 6px;
+                height: 6px;
+                margin: -3px 0 0 -3px;
+                padding: 0;
+                background: orange;
+            }
+        </style>
+
+        <div id="boundingRectPainter"
+            style="display: none; z-index: 99; position: absolute; left: 0; top: 0; width: 100%; height: 100%">
+        </div>
+
+        <div style="position: fixed; top: 0; left: 3px; font-size: 16px">
+            Test: convert zrX/zrY to body left/top (the document.body is CSS transformed): <br>
+            Click the green rect, should show orange rect under the pointer.
+        </div>
+
+        <div id="allTries" style="display:none">
+
+            <div id="try0" style="
+                    perspective: 171px;
+                "
+            >
+                <div class="try-box"
+                    style="
+                        width: 150px; height: 100px;
+                        left: 100px; top: 300px;
+                        /* margin: 20px; */
+                        position: absolute;
+                        transform: translateX(50px) rotateY(28deg) rotateX(18deg);
+                        transform-style: preserve-3d;
+                        transform-origin: 0 0;
+                    "
+                >normal transform 3d
+                </div>
+            </div>
+
+
+            <div id="try2" style="">
+                <div class="try-box"
+                    style="
+                        width: 200px; height: 150px;
+                        left: 100px; top: 300px;
+                        margin: 20px;
+                        transform: translate(-50px, 50px) scale(-0.8, 0.5) rotate(-25deg);
+                    "
+                >transform 2d with nagative value
+                </div>
+            </div>
+
+            <div id="try3" style="">
+                <div style="
+                    transform: translate(50px, 360px) scale(-0.8, 0.5) rotate(-25deg);
+                ">
+                    <div class="try-box"
+                        style="
+                            width: 200px; height: 150px;
+                            left: 100px; top: 300px;
+                            margin: 20px;
+                            transform: translate(40px, -200px) scale(1.3, 3) rotate(65deg);
+                        "
+                    >nested transform 2d
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+
+
+
+
+
+        <script>
+
+            var $drawRect;
+
+            (function () {
+                var boundingRectPainter = document.getElementById('boundingRectPainter');
+
+                document.addEventListener('click', function (e) {
+                    console.log(e.clientX, e.clientY, e.target);
+                    facePrint({clientX: e.clientX, clientY: e.clientY});
+                })
+
+                $drawRect = function (rect) {
+                    var rectDom = document.createElement('div');
+                    rectDom.style.cssText = [
+                        'left: ' + rect.left.toFixed(0) + 'px',
+                        'top: ' + rect.top.toFixed(0) + 'px',
+                        'width: ' + rect.width.toFixed(0) + 'px',
+                        'height: ' + rect.height.toFixed(0) + 'px',
+                        'position: absolute',
+                        'border: 1px solid red',
+                        'margin: 0',
+                        'padding: 0',
+                        ''
+                    ].join(';');
+                    boundingRectPainter.appendChild(rectDom);
+                }
+
+            })();
+        </script>
+
+
+
+        <script>
+            requireES(
+                [
+                    'zrender/src/zrender',
+                    'zrender/src/core/dom',
+                    'zrender/src/graphic/shape/Polyline',
+                    'zrender/src/graphic/shape/Rect'
+                ],
+                initAllTry
+            );
+
+            function initAllTry(zrender, domUtil, Polyline, Rect) {
+                var allTries = document.getElementById('allTries');
+                allTries.style.display = 'block';
+
+                initSingleTry(document.getElementById('try0'));
+                initSingleTry(document.getElementById('try2'));
+                initSingleTry(document.getElementById('try3'));
+
+                function initSingleTry(tryDom) {
+                    var tryBox = tryDom.querySelector('.try-box');
+
+                    var zr = zrender.init(tryBox, {
+                        renderer: 'canvas'
+                    });
+                    zr.on('click', function (e) {
+                        console.log('handle click');
+                        drawPointer(zr, e);
+                    });
+                }
+
+                function drawPointer(zr, zrEvent) {
+                    var zrX = zrEvent.offsetX;
+                    var zrY = zrEvent.offsetY;
+                    var bodyCoord = [];
+                    domUtil.transformLocalCoord(
+                        bodyCoord, zr.painter.getViewportRoot(), document.body, zrX, zrY
+                    );
+
+                    var pointerMarker = document.createElement('div');
+                    pointerMarker.classList.add('pointer-marker');
+                    pointerMarker.style.left = bodyCoord[0] + 'px';
+                    pointerMarker.style.top = bodyCoord[1] + 'px';
+                    document.body.appendChild(pointerMarker);
+                }
+            }
+        </script>
+
+
+
+
+
+
+
+
+    </body>
+</html>

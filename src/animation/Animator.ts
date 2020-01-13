@@ -267,7 +267,7 @@ export default class Animator<T> {
     }
 
     /**
-     * 设置动画关键帧
+     * Set Animation keyframe
      * @param time 关键帧时间，单位是ms
      * @param props 关键帧的属性值，key-value表示
      * @return {module:zrender/animation/Animator}
@@ -345,7 +345,7 @@ export default class Animator<T> {
         }
     }
     /**
-     * 开始执行动画
+     * Start the animation
      * @param easing
      *         动画缓动函数，详见{@link module:zrender/animation/easing}
      * @param  forceAnimate
@@ -406,7 +406,7 @@ export default class Animator<T> {
         return this;
     }
     /**
-     * 停止动画
+     * Stop animation
      * @param {boolean} forwardToLast If move to last frame before stop
      */
     stop(forwardToLast: boolean) {
@@ -423,7 +423,7 @@ export default class Animator<T> {
         clipList.length = 0;
     }
     /**
-     * 设置动画延迟开始的时间
+     * Set when animation delay starts
      * @param time 单位ms
      */
     delay(time: number) {
@@ -431,7 +431,7 @@ export default class Animator<T> {
         return this;
     }
     /**
-     * 添加动画结束的回调
+     * Add callback for animation end
      * @param cb
      */
     done(cb: DoneCallback) {

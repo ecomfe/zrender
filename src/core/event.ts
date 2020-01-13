@@ -4,13 +4,12 @@
 
 import Eventful from './Eventful';
 import env from './env';
-import {buildTransformer} from './fourPointsTransform';
 import { ZRRawEvent } from './types';
+import {isCanvasEl, transformCoordWithViewport} from './dom';
 
 var isDomLevel2 = (typeof window !== 'undefined') && !!window.addEventListener;
 
 var MOUSE_EVENT_REG = /^(?:mouse|pointer|contextmenu|drag|drop)|click/;
-var EVENT_SAVED_PROP = '___zrEVENTSAVED';
 var _calcOut: number[] = [];
 
 type FirefoxMouseEvent = {
@@ -90,11 +89,11 @@ function calculateZrXY(
     out: {zrX?: number, zrY?: number}
 ) {
     // BlackBerry 5, iOS 3 (original iPhone) don't have getBoundingRect.
-    if (el.getBoundingClientRect && env.domSupported) {
-        const ex = (e as MouseEvent).clientX;
-        const ey = (<MouseEvent>e).clientY;
+    if (env.domSupported && el.getBoundingClientRect) {
+        var ex = (e as MouseEvent).clientX;
+        var ey = (e as MouseEvent).clientY;
 
-        if (el.nodeName.toUpperCase() === 'CANVAS') {
+        if (isCanvasEl(el)) {
             // Original approach, which do not support CSS transform.
             // marker can not be locationed in a canvas container
             // (getBoundingClientRect is always 0). We do not support
@@ -106,11 +105,7 @@ function calculateZrXY(
             return;
         }
         else {
-            // TODO
-            const saved = (el as any)[EVENT_SAVED_PROP] || ((el as any)[EVENT_SAVED_PROP] = {});
-            const transformer = preparePointerTransformer(prepareCoordMarkers(el, saved), saved);
-            if (transformer) {
-                transformer(_calcOut, ex, ey);
+            if (transformCoordWithViewport(_calcOut, el, ex, ey)) {
                 out.zrX = _calcOut[0];
                 out.zrY = _calcOut[1];
                 return;
@@ -118,76 +113,6 @@ function calculateZrXY(
         }
     }
     out.zrX = out.zrY = 0;
-}
-
-type SavedInfo = {
-    markers?: HTMLDivElement[]
-    transformer?: ReturnType<typeof buildTransformer>
-    srcCoords?: number[]
-}
-
-function prepareCoordMarkers(el: HTMLElement, saved: SavedInfo) {
-    let markers = saved.markers;
-    if (markers) {
-        return markers;
-    }
-
-    markers = saved.markers = [];
-    const propLR = ['left', 'right'];
-    const propTB = ['top', 'bottom'];
-
-    for (let i = 0; i < 4; i++) {
-        const marker = document.createElement('div');
-        const stl = marker.style;
-        const idxLR = i % 2;
-        const idxTB = (i >> 1) % 2;
-        stl.cssText = [
-            'position:absolute',
-            'visibility: hidden',
-            'padding: 0',
-            'margin: 0',
-            'border-width: 0',
-            'width:0',
-            'height:0',
-            // 'width: 5px',
-            // 'height: 5px',
-            propLR[idxLR] + ':0',
-            propTB[idxTB] + ':0',
-            propLR[1 - idxLR] + ':auto',
-            propTB[1 - idxTB] + ':auto',
-            ''
-        ].join('!important;');
-        el.appendChild(marker);
-        markers.push(marker);
-    }
-
-    return markers;
-}
-
-function preparePointerTransformer(markers: HTMLDivElement[], saved: SavedInfo) {
-    const transformer = saved.transformer;
-    const oldSrcCoords = saved.srcCoords;
-    const srcCoords = [];
-    const destCoords = [];
-    let useOld = true;
-
-    for (let i = 0; i < 4; i++) {
-        const rect = markers[i].getBoundingClientRect();
-        const ii = 2 * i;
-        const x = rect.left;
-        const y = rect.top;
-        srcCoords.push(x, y);
-        useOld = useOld && oldSrcCoords && x === oldSrcCoords[ii] && y === oldSrcCoords[ii + 1];
-        destCoords.push(markers[i].offsetLeft, markers[i].offsetTop);
-    }
-
-    // Cache to avoid time consuming of `buildTransformer`.
-    return useOld
-        ? transformer
-        : (
-            saved.srcCoords = srcCoords,
-            saved.transformer = buildTransformer(srcCoords, destCoords)
-        );
 }
 
 /**

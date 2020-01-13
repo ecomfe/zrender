@@ -20,5 +20,8 @@
     },
     "include": [
         "src/**/*.ts"
+    ],
+    "exclude": [
+        "src/vml/*.ts"
     ]
 }

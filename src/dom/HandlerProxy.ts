@@ -16,6 +16,10 @@ import Handler from '../Handler';
 
 type DomHandlersMap = Dictionary<(this: HandlerDomProxy, event: ZRRawEvent) => void>
 
+type DomExtended = Node & {
+    domBelongToZr: boolean
+}
+
 const TOUCH_CLICK_DELAY = 300;
 
 const globalEventSupported = env.domSupported;
@@ -127,13 +131,16 @@ function normalizeGlobalEvent(instance: HandlerDomProxy, event: ZRRawEvent) {
  * Detect whether the given el is in `painterRoot`.
  */
 function isLocalEl(instance: HandlerDomProxy, el: Node) {
-    let isLocal = false;
-    do {
-        el = el && el.parentNode;
+    var elTmp = el;
+    var isLocal = false;
+    while (elTmp && elTmp.nodeType !== 9
+        && !(
+            isLocal = (elTmp as DomExtended).domBelongToZr
+                || (elTmp !== el && elTmp === instance.painterRoot)
+        )
+    ) {
+        elTmp = elTmp.parentNode;
     }
-    while (el && el.nodeType !== 9 && !(
-        isLocal = el === instance.painterRoot
-    ));
     return isLocal;
 }
 

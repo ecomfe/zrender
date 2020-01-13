@@ -83,6 +83,8 @@ export function buildTransformer(src: number[], dest: number[]) {
     const detCache = {};
     const det = determinant(mA, 8, 0, 0, 0, detCache);
     if (det === 0) {
+        // can not make transformer when and only when
+        // any three of the markers are collinear.
         return;
     }
 
