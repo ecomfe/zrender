@@ -435,9 +435,15 @@ export default class Path extends Displayable {
             }
         }
 
-        Sub.prototype.buildPath = defaultProps.buildPath;
-        Sub.prototype.beforeBrush = defaultProps.beforeBrush;
-        Sub.prototype.afterBrush = defaultProps.afterBrush;
+        // TODO Legacy usage. Extend functions
+        for (let key in defaultProps) {
+            if (typeof (defaultProps as any)[key] === 'function') {
+                (Sub.prototype as any)[key] = (defaultProps as any)[key];
+            }
+        }
+        // Sub.prototype.buildPath = defaultProps.buildPath;
+        // Sub.prototype.beforeBrush = defaultProps.beforeBrush;
+        // Sub.prototype.afterBrush = defaultProps.afterBrush;
 
         return Sub;
     }

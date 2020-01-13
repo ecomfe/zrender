@@ -512,7 +512,7 @@ function drawBackground(
             ctx.fill();
         }
     }
-    else if ((textBackgroundColor as {image: ImageLike}).image) {
+    else if (textBackgroundColor && (textBackgroundColor as {image: ImageLike}).image) {
         let image = (textBackgroundColor as {image: ImageLike}).image;
 
         image = imageHelper.createOrUpdateImage(

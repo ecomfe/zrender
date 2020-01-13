@@ -341,6 +341,7 @@ function prepareTruncateOptions(
     ellipsis: string,
     options: InnerTruncateOption
 ): InnerPreparedTruncateOption {
+    options = options || {};
     let preparedOpts = extend({}, options) as InnerPreparedTruncateOption;
 
     preparedOpts.font = font;
