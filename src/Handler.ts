@@ -287,6 +287,8 @@ class Handler extends Eventful {
         topTarget?: Element
     }, eventName: ElementEventName, event: ZRRawEvent) {
 
+        targetInfo = targetInfo || {};
+
         let el = targetInfo.target as Element;
         if (el && el.silent) {
             return;

@@ -235,8 +235,9 @@ export function indexOf(array: any[], value: any): number {
  */
 export function inherits(clazz: Function, baseClazz: Function) {
     const clazzPrototype = clazz.prototype;
-    class F {}
-    clazz.prototype = new F();
+    function F() {}
+    F.prototype = baseClazz.prototype;
+    clazz.prototype = new (F as any)();
 
     for (let prop in clazzPrototype) {
         if (clazzPrototype.hasOwnProperty(prop)) {
@@ -490,7 +491,7 @@ type SliceTypes = Parameters<typeof nativeSlice>;
  * @return {Array}
  */
 export function slice(...args: SliceTypes) {
-    return nativeSlice.apply(args);
+    return Function.call.apply(nativeSlice, args as any[]);
 }
 
 /**

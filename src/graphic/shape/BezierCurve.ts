@@ -50,16 +50,21 @@ export default class BezierCurve extends Path {
 
     type = 'bezier-curve'
 
-    shape = new BezierCurveShape()
+    shape: BezierCurveShape
 
     constructor(opts?: PathOption & {
         shape: BezierCurveShape
     }) {
         super(opts);
-        this.setStyle({
-            stroke: '#000',
-            fill: null
-        });
+        // Set default style.
+        if (!opts?.style?.stroke) {
+            this.style.stroke = '#000';
+        }
+        if (!opts?.style?.fill) {
+            this.style.fill = null;
+        }
+
+        this._defaultsShape(new BezierCurveShape());
     }
 
     buildPath(ctx: PathProxy, shape: BezierCurveShape) {

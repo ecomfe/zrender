@@ -116,7 +116,10 @@ export default class Displayable extends Element {
     __text: string
 
     constructor(opts?: DisplayableOption) {
-        super(opts);
+        super();
+
+        this.attr(opts);
+
         if (!this.style) {
             // Create an empty style object.
             this.useStyle({});

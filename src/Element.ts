@@ -121,9 +121,8 @@ export default class Element extends Transformable {
      */
     private _clipPath: Path = null
 
-    constructor(opts: ElementOption) {
-        super()
-        this.attr(opts);
+    constructor() {
+        super();
     }
 
     /**
@@ -223,7 +222,7 @@ export default class Element extends Transformable {
                 }
             }
         }
-
+        this.dirty(false);
         return this;
     }
 

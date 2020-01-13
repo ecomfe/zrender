@@ -50,7 +50,7 @@ export function subPixelOptimizeLine(
 
     var lineWidth = style && style.lineWidth;
     if (!lineWidth) {
-        return;
+        return outputShape as LineShape;
     }
 
     if (round(x1 * 2) === round(x2 * 2)) {
@@ -59,6 +59,8 @@ export function subPixelOptimizeLine(
     if (round(y1 * 2) === round(y2 * 2)) {
         outputShape.y1 = outputShape.y2 = subPixelOptimize(y1, lineWidth, true);
     }
+
+    return outputShape as LineShape;
 }
 
 /**
@@ -90,7 +92,7 @@ export function subPixelOptimizeRect(
 
     var lineWidth = style && style.lineWidth;
     if (!lineWidth) {
-        return;
+        return outputShape as RectShape;
     }
 
     outputShape.x = subPixelOptimize(originX, lineWidth, true);
@@ -103,6 +105,8 @@ export function subPixelOptimizeRect(
         subPixelOptimize(originY + originHeight, lineWidth, false) - outputShape.y,
         originHeight === 0 ? 0 : 1
     );
+
+    return outputShape as RectShape;
 }
 
 /**

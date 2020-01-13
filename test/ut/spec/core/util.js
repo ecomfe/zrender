@@ -2,7 +2,7 @@ describe('zrUtil', function() {
 
     var utHelper = window.utHelper;
 
-    var testCase = utHelper.prepare(['zrender/src/core/util']);
+    var testCase = utHelper.prepare(['zrender/esm/core/util']);
 
     describe('merge', function () {
 

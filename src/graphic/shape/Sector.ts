@@ -3,7 +3,7 @@
  * @module zrender/graphic/shape/Sector
  */
 
-import Path from '../Path';
+import Path, { PathOption } from '../Path';
 import fixClipWithShadow from '../helper/fixClipWithShadow';
 import PathProxy from '../../core/PathProxy';
 
@@ -21,24 +21,25 @@ export default class Sector extends Path {
 
     type = 'sector'
 
-    shape: SectorShape = {
-
-        cx: 0,
-
-        cy: 0,
-
-        r0: 0,
-
-        r: 0,
-
-        startAngle: 0,
-
-        endAngle: Math.PI * 2,
-
-        clockwise: true
-    }
+    shape: SectorShape;
 
     brush = fixClipWithShadow(Path.prototype.brush)
+
+    constructor(opts?: PathOption & {
+        shape: SectorShape
+    }) {
+        super(opts);
+
+        this._defaultsShape({
+            cx: 0,
+            cy: 0,
+            r0: 0,
+            r: 0,
+            startAngle: 0,
+            endAngle: Math.PI * 2,
+            clockwise: true
+        });
+    }
 
     buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: SectorShape) {
 

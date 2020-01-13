@@ -26,16 +26,20 @@ export default class Line extends Path {
 
     type = 'line'
 
-    shape =  new LineShape()
+    shape: LineShape
 
     constructor(opts?: PathOption & {
         shape: LineShape
     }) {
         super(opts);
-        this.setStyle({
-            stroke: '#000',
-            fill: null
-        });
+        // Set default style.
+        if (!opts?.style?.stroke) {
+            this.style.stroke = '#000';
+        }
+        if (!opts?.style?.fill) {
+            this.style.fill = null;
+        }
+        this._defaultsShape(new LineShape());
     }
 
     buildPath(ctx: PathProxy, shape: LineShape) {

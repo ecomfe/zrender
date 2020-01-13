@@ -4,13 +4,12 @@ import * as zrUtil from '../core/util';
 import PathProxy from '../core/PathProxy';
 import * as pathContain from '../contain/path';
 import Pattern, { PatternObject } from './Pattern';
-import Gradient, { GradientObject } from './Gradient';
+import { GradientObject } from './Gradient';
 import Style, { StyleOption } from './Style';
 import { LinearGradientObject } from './LinearGradient';
 import { RadialGradientObject } from './RadialGradient';
 import { Dictionary, PropType } from '../core/types';
-import BoundingRect, { RectLike } from '../core/BoundingRect';
-import { buildPath } from './helper/roundRect';
+import BoundingRect from '../core/BoundingRect';
 
 var getCanvasPattern = Pattern.prototype.getCanvasPattern;
 
@@ -61,6 +60,22 @@ export default class Path extends Displayable {
     // Must have an initial value on shape.
     // It will be assigned by default value.
     shape: Dictionary<any>
+
+    constructor(opts?: PathOption) {
+        super(opts);
+        // TODO
+        if (opts) {
+            if (opts.strokeContainThreshold != null) {
+                this.strokeContainThreshold = opts.strokeContainThreshold;
+            }
+            if (opts.segmentIgnoreThreshold != null) {
+                this.segmentIgnoreThreshold = opts.segmentIgnoreThreshold;
+            }
+            if (opts.subPixelOptimize != null) {
+                this.subPixelOptimize = opts.subPixelOptimize;
+            }
+        }
+    }
 
     brush(ctx: CanvasRenderingContext2D, prevEl?: Displayable) {
         const style = this.style;
@@ -356,6 +371,14 @@ export default class Path extends Displayable {
             : 1;
     }
 
+    // Defaults shape value
+    protected _defaultsShape(defaultShapeObj: Dictionary<any>) {
+        if (!this.shape) {
+            this.shape = {};
+        }
+        zrUtil.defaults(this.shape, defaultShapeObj);
+    }
+
     /**
      * 扩展一个 Path element, 比如星形，圆等。
      * Extend a path element
@@ -393,23 +416,18 @@ export default class Path extends Displayable {
             constructor(opts?: SubPathOption) {
                 super(opts);
 
-                if (defaultProps.style) {
-                    // Extend default style
-                    this.style.extendFrom(defaultProps.style, false);
+                for (let key in defaultProps.style) {
+                    if (!(opts && opts.style && (key in opts.style))) {
+                        this.style.set(
+                            key as keyof StyleOption,
+                            defaultProps.style[key as keyof StyleOption]
+                        );
+                    }
                 }
 
-                // Extend default shape
-                const defaultShape = defaultProps.shape;
-                if (defaultShape) {
-                    this.shape = this.shape || {} as ShapeType;
-                    const thisShape = this.shape;
-                    for (let name in defaultShape) {
-                        if (
-                            !thisShape.hasOwnProperty(name)
-                            && defaultShape.hasOwnProperty(name)
-                        ) {
-                            thisShape[name] = defaultShape[name];
-                        }
+                for (let key in defaultProps.shape) {
+                    if (!(opts && opts.shape && (key in opts.shape))) {
+                        this.setShape(key, defaultProps.shape[key]);
                     }
                 }
 

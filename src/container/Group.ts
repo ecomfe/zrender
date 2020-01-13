@@ -38,7 +38,9 @@ export default class Group extends Element {
     __storage: Storage
 
     constructor(opts?: GroupOption) {
-        super(opts);
+        super();
+
+        this.attr(opts);
     }
 
     children() {

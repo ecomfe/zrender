@@ -20,9 +20,6 @@ function diff<T>(oldArr: T[], newArr: T[], equals: EqualFunc<T>): DiffComponent[
             return a === b;
         };
     }
-    this.equals = equals;
-
-    var self = this;
 
     oldArr = oldArr.slice();
     newArr = newArr.slice();
@@ -34,7 +31,7 @@ function diff<T>(oldArr: T[], newArr: T[], equals: EqualFunc<T>): DiffComponent[
     var bestPath: DiffPath[] = [{ newPos: -1, components: [] }];
 
     // Seed editLength = 0, i.e. the content starts with the same values
-    var oldPos = extractCommon<T>(bestPath[0], newArr, oldArr, 0);
+    var oldPos = extractCommon<T>(bestPath[0], newArr, oldArr, 0, equals);
     if (bestPath[0].newPos + 1 >= newLen && oldPos + 1 >= oldLen) {
         var indices = [];
         for (let i = 0; i < newArr.length; i++) {
@@ -82,7 +79,7 @@ function diff<T>(oldArr: T[], newArr: T[], equals: EqualFunc<T>): DiffComponent[
                 pushComponent(basePath.components, true, false);
             }
 
-            oldPos = extractCommon<T>(basePath, newArr, oldArr, diagonalPath);
+            oldPos = extractCommon<T>(basePath, newArr, oldArr, diagonalPath, equals);
 
             // If we have hit the end of both strings, then we are done
             if (basePath.newPos + 1 >= newLen && oldPos + 1 >= oldLen) {
@@ -105,14 +102,14 @@ function diff<T>(oldArr: T[], newArr: T[], equals: EqualFunc<T>): DiffComponent[
     }
 }
 
-function extractCommon<T>(basePath: DiffPath, newArr: T[], oldArr: T[], diagonalPath: number) {
+function extractCommon<T>(basePath: DiffPath, newArr: T[], oldArr: T[], diagonalPath: number, equals: EqualFunc<T>) {
     var newLen = newArr.length;
     var oldLen = oldArr.length;
     var newPos = basePath.newPos;
     var oldPos = newPos - diagonalPath;
     var commonCount = 0;
 
-    while (newPos + 1 < newLen && oldPos + 1 < oldLen && this.equals(newArr[newPos + 1], oldArr[oldPos + 1])) {
+    while (newPos + 1 < newLen && oldPos + 1 < oldLen && equals(newArr[newPos + 1], oldArr[oldPos + 1])) {
         newPos++;
         oldPos++;
         commonCount++;

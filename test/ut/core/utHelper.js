@@ -47,7 +47,7 @@
                 if (!(requireId instanceof Array)) {
                     requireId = requireId != null ? [] : [requireId];
                 }
-                requireId = ['zrender/src/zrender'].concat(requireId);
+                requireId = ['zrender/esm/zrender'].concat(requireId);
 
                 window.it(name, function (done) {
 

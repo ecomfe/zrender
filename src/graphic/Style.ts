@@ -334,7 +334,7 @@ export default class Style extends StyleOption {
     constructor(opts?: StyleOption) {
         super()
         if (opts) {
-            this.extendFrom(opts, false);
+            this.extendFrom(opts, true);
         }
     }
 

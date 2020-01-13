@@ -15,7 +15,7 @@
     <div id="main"></div>
     <script type="text/javascript">
         var zr = zrender.init(document.getElementById('main'));
-
+        console.profile('init');
         for (var i = 0; i < 200; i++) {
             for (var j = 0; j < 200; j++) {
                 var image = new zrender.Image({
@@ -24,7 +24,7 @@
                     style: {
                         x: 0,
                         y: 0,
-                        image: 'test.png',
+                        image: 'asset/test.png',
                         width: 20,
                         height: 20
                     },
@@ -33,6 +33,7 @@
                 zr.add(image);
             }
         }
+        console.profileEnd('init');
     </script>
 </body>
 </html>
