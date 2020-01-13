@@ -12,9 +12,10 @@ A lightweight canvas library which providing 2d draw for [ECharts](https://githu
 ## TODO List
 
 - [ ] Switch to TypeScript
-    - [ ] Add typings
-    - [ ] Generate lib modules
+    - [x] Add typings
+    - [x] Generate lib modules
     - [ ] Be able to run in ECharts
+    - [ ] Generate .d.ts
 
 - [ ] Optimize style
     - [ ] Remove all text attributes.

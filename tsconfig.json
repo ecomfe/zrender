@@ -1,11 +1,22 @@
 {
     "compilerOptions": {
         "target": "ES3",
-        "module": "ES2015",
+        "module": "CommonJS",
         "noImplicitAny": true,
         "strictBindCallApply": true,
         "removeComments": true,
-        "sourceMap": true
+        "sourceMap": false,
+
+        // "declaration": true,
+        // "declarationMap": true,
+
+        "allowJs": true,
+
+        // Compile to lib
+        "rootDir": "src",
+        "outDir": "lib",
+
+        "importHelpers": true
     },
     "include": [
         "src/**/*.ts"

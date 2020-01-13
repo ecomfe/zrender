@@ -11,23 +11,23 @@
     "url": "https://github.com/ecomfe/zrender.git"
   },
   "scripts": {
-    "prepublish": "node build/build.js --prepublish",
-    "build": "node build/build.js --release",
-    "dev": "node build/build.js --watch",
-    "test": "node build/build.js",
-    "lint": "./node_modules/.bin/eslint src"
+    "prepublish": "npm run build",
+    "build": "node build/build.js && node_modules/.bin/tsc",
+    "dev": "node_modules/.bin/tsc -w"
   },
   "license": "BSD-3-Clause",
+  "dependencies": {
+    "tslib": "^1.10.0"
+  },
   "devDependencies": {
+    "@microsoft/api-extractor": "^7.7.2",
     "@typescript-eslint/eslint-plugin": "^2.15.0",
-    "assert": "1.4.1",
     "commander": "2.11.0",
     "eslint": "6.3.0",
     "fs-extra": "4.0.2",
     "rollup": "^1.28.0",
     "rollup-plugin-typescript2": "^0.25.3",
     "rollup-plugin-uglify": "^6.0.4",
-    "tslib": "^1.10.0",
     "typescript": "^3.7.4"
   }
 }

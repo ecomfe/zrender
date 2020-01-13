@@ -5,7 +5,15 @@ const path = require('path');
 
 rollup.rollup({
     input: path.resolve(__dirname, '../index.ts'),
-    plugins: [typescript()]
+    plugins: [typescript({
+        tsconfigOverride: {
+            compilerOptions: {
+                // Rollup don't use CommonJS by default.
+                module: 'ES2015',
+                sourceMap: true
+            }
+        }
+    })]
 }).then(bundle => {
     bundle.write({
         format: 'umd',
@@ -14,3 +22,5 @@ rollup.rollup({
         name: 'zrender'
     });
 });
+
+
