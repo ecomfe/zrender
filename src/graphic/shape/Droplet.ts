@@ -1,6 +1,5 @@
 /**
  * 水滴形状
- * @module zrender/graphic/shape/Droplet
  */
 
 import Path from '../Path';
@@ -10,15 +9,17 @@ export default Path.extend({
     type: 'droplet',
 
     shape: {
-        cx: 0, cy: 0,
-        width: 0, height: 0
+        cx: 0,
+        cy: 0,
+        width: 0,
+        height: 0
     },
 
     buildPath: function (ctx, shape) {
-        var x = shape.cx;
-        var y = shape.cy;
-        var a = shape.width;
-        var b = shape.height;
+        const x = shape.cx;
+        const y = shape.cy;
+        const a = shape.width;
+        const b = shape.height;
 
         ctx.moveTo(x, y + a);
         ctx.bezierCurveTo(

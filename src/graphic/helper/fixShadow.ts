@@ -1,3 +1,4 @@
+import { ZRCanvasRenderingContext } from "../../core/types";
 
 var SHADOW_PROPS = {
     'shadowBlur': 1,
@@ -11,9 +12,13 @@ var SHADOW_PROPS = {
     'textBoxShadowOffsetY': 1
 };
 
-export default function (ctx, propName, value) {
+export default function (
+    ctx: CanvasRenderingContext2D,
+    propName: string,
+    value: number
+) {
     if (SHADOW_PROPS.hasOwnProperty(propName)) {
-        return value *= ctx.dpr;
+        return value *= (ctx as ZRCanvasRenderingContext).dpr;
     }
     return value;
 }

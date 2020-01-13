@@ -17,23 +17,18 @@ var extremity = vec2.create();
 
 /**
  * 从顶点数组中计算出最小包围盒，写入`min`和`max`中
- * @module zrender/core/bbox
- * @param {Array<Object>} points 顶点数组
- * @param {number} min
- * @param {number} max
  */
-export function fromPoints(points, min, max) {
+export function fromPoints(points: ArrayLike<number>[], min: vec2.VectorArray, max: vec2.VectorArray) {
     if (points.length === 0) {
         return;
     }
-    var p = points[0];
-    var left = p[0];
-    var right = p[0];
-    var top = p[1];
-    var bottom = p[1];
-    var i;
+    let p = points[0];
+    let left = p[0];
+    let right = p[0];
+    let top = p[1];
+    let bottom = p[1];
 
-    for (i = 1; i < points.length; i++) {
+    for (let i = 1; i < points.length; i++) {
         p = points[i];
         left = mathMin(left, p[0]);
         right = mathMax(right, p[0]);
@@ -47,58 +42,41 @@ export function fromPoints(points, min, max) {
     max[1] = bottom;
 }
 
-/**
- * @memberOf module:zrender/core/bbox
- * @param {number} x0
- * @param {number} y0
- * @param {number} x1
- * @param {number} y1
- * @param {Array.<number>} min
- * @param {Array.<number>} max
- */
-export function fromLine(x0, y0, x1, y1, min, max) {
+export function fromLine(
+    x0: number, y0: number, x1: number, y1: number,
+    min: vec2.VectorArray, max: vec2.VectorArray
+) {
     min[0] = mathMin(x0, x1);
     min[1] = mathMin(y0, y1);
     max[0] = mathMax(x0, x1);
     max[1] = mathMax(y0, y1);
 }
 
-var xDim = [];
-var yDim = [];
+var xDim: number[] = [];
+var yDim: number[] = [];
 /**
  * 从三阶贝塞尔曲线(p0, p1, p2, p3)中计算出最小包围盒，写入`min`和`max`中
- * @memberOf module:zrender/core/bbox
- * @param {number} x0
- * @param {number} y0
- * @param {number} x1
- * @param {number} y1
- * @param {number} x2
- * @param {number} y2
- * @param {number} x3
- * @param {number} y3
- * @param {Array.<number>} min
- * @param {Array.<number>} max
  */
 export function fromCubic(
-    x0, y0, x1, y1, x2, y2, x3, y3, min, max
+    x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number,
+    min: vec2.VectorArray, max: vec2.VectorArray
 ) {
-    var cubicExtrema = curve.cubicExtrema;
-    var cubicAt = curve.cubicAt;
-    var i;
-    var n = cubicExtrema(x0, x1, x2, x3, xDim);
+    const cubicExtrema = curve.cubicExtrema;
+    const cubicAt = curve.cubicAt;
+    let n = cubicExtrema(x0, x1, x2, x3, xDim);
     min[0] = Infinity;
     min[1] = Infinity;
     max[0] = -Infinity;
     max[1] = -Infinity;
 
-    for (i = 0; i < n; i++) {
-        var x = cubicAt(x0, x1, x2, x3, xDim[i]);
+    for (let i = 0; i < n; i++) {
+        const x = cubicAt(x0, x1, x2, x3, xDim[i]);
         min[0] = mathMin(x, min[0]);
         max[0] = mathMax(x, max[0]);
     }
     n = cubicExtrema(y0, y1, y2, y3, yDim);
-    for (i = 0; i < n; i++) {
-        var y = cubicAt(y0, y1, y2, y3, yDim[i]);
+    for (let i = 0; i < n; i++) {
+        const y = cubicAt(y0, y1, y2, y3, yDim[i]);
         min[1] = mathMin(y, min[1]);
         max[1] = mathMax(y, max[1]);
     }
@@ -116,31 +94,25 @@ export function fromCubic(
 
 /**
  * 从二阶贝塞尔曲线(p0, p1, p2)中计算出最小包围盒，写入`min`和`max`中
- * @memberOf module:zrender/core/bbox
- * @param {number} x0
- * @param {number} y0
- * @param {number} x1
- * @param {number} y1
- * @param {number} x2
- * @param {number} y2
- * @param {Array.<number>} min
- * @param {Array.<number>} max
  */
-export function fromQuadratic(x0, y0, x1, y1, x2, y2, min, max) {
-    var quadraticExtremum = curve.quadraticExtremum;
-    var quadraticAt = curve.quadraticAt;
+export function fromQuadratic(
+    x0: number, y0: number, x1: number, y1: number, x2: number, y2: number,
+    min: vec2.VectorArray, max: vec2.VectorArray
+) {
+    const quadraticExtremum = curve.quadraticExtremum;
+    const quadraticAt = curve.quadraticAt;
     // Find extremities, where derivative in x dim or y dim is zero
-    var tx =
+    const tx =
         mathMax(
             mathMin(quadraticExtremum(x0, x1, x2), 1), 0
         );
-    var ty =
+    const ty =
         mathMax(
             mathMin(quadraticExtremum(y0, y1, y2), 1), 0
         );
 
-    var x = quadraticAt(x0, x1, x2, tx);
-    var y = quadraticAt(y0, y1, y2, ty);
+    const x = quadraticAt(x0, x1, x2, tx);
+    const y = quadraticAt(y0, y1, y2, ty);
 
     min[0] = mathMin(x0, x2, x);
     min[1] = mathMin(y0, y2, y);
@@ -150,25 +122,15 @@ export function fromQuadratic(x0, y0, x1, y1, x2, y2, min, max) {
 
 /**
  * 从圆弧中计算出最小包围盒，写入`min`和`max`中
- * @method
- * @memberOf module:zrender/core/bbox
- * @param {number} x
- * @param {number} y
- * @param {number} rx
- * @param {number} ry
- * @param {number} startAngle
- * @param {number} endAngle
- * @param {number} anticlockwise
- * @param {Array.<number>} min
- * @param {Array.<number>} max
  */
 export function fromArc(
-    x, y, rx, ry, startAngle, endAngle, anticlockwise, min, max
+    x: number, y: number, rx: number, ry: number, startAngle: number, endAngle: number, anticlockwise: boolean,
+    min: vec2.VectorArray, max: vec2.VectorArray
 ) {
-    var vec2Min = vec2.min;
-    var vec2Max = vec2.max;
+    const vec2Min = vec2.min;
+    const vec2Max = vec2.max;
 
-    var diff = Math.abs(startAngle - endAngle);
+    const diff = Math.abs(startAngle - endAngle);
 
 
     if (diff % PI2 < 1e-4 && diff > 1e-4) {
@@ -206,14 +168,14 @@ export function fromArc(
         startAngle += PI2;
     }
     if (anticlockwise) {
-        var tmp = endAngle;
+        const tmp = endAngle;
         endAngle = startAngle;
         startAngle = tmp;
     }
 
-    // var number = 0;
-    // var step = (anticlockwise ? -Math.PI : Math.PI) / 2;
-    for (var angle = 0; angle < endAngle; angle += Math.PI / 2) {
+    // const number = 0;
+    // const step = (anticlockwise ? -Math.PI : Math.PI) / 2;
+    for (let angle = 0; angle < endAngle; angle += Math.PI / 2) {
         if (angle > startAngle) {
             extremity[0] = mathCos(angle) * rx + x;
             extremity[1] = mathSin(angle) * ry + y;

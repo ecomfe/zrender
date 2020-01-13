@@ -1,9 +1,11 @@
-import Path from '../graphic/Path';
+import Path, { PathOption } from '../graphic/Path';
 import PathProxy from '../core/PathProxy';
 import transformPath from './transformPath';
+import { VectorArray } from '../core/vector';
+import { MatrixArray } from '../core/matrix';
 
 // command chars
-// var cc = [
+// const cc = [
 //     'm', 'M', 'l', 'L', 'v', 'V', 'h', 'H', 'z', 'Z',
 //     'c', 'C', 'q', 'Q', 't', 'T', 's', 'S', 'a', 'A'
 // ];
@@ -13,52 +15,55 @@ var mathSin = Math.sin;
 var mathCos = Math.cos;
 var PI = Math.PI;
 
-var vMag = function (v) {
+function vMag(v: VectorArray): number {
     return Math.sqrt(v[0] * v[0] + v[1] * v[1]);
 };
-var vRatio = function (u, v) {
+function vRatio(u: VectorArray, v: VectorArray): number {
     return (u[0] * v[0] + u[1] * v[1]) / (vMag(u) * vMag(v));
 };
-var vAngle = function (u, v) {
+function vAngle(u: VectorArray, v: VectorArray): number {
     return (u[0] * v[1] < u[1] * v[0] ? -1 : 1)
             * Math.acos(vRatio(u, v));
 };
 
-function processArc(x1, y1, x2, y2, fa, fs, rx, ry, psiDeg, cmd, path) {
-    var psi = psiDeg * (PI / 180.0);
-    var xp = mathCos(psi) * (x1 - x2) / 2.0
+function processArc(
+    x1: number, y1: number, x2: number, y2: number, fa: number, fs: number,
+    rx: number, ry: number, psiDeg: number, cmd: number, path: PathProxy
+) {
+    const psi = psiDeg * (PI / 180.0);
+    const xp = mathCos(psi) * (x1 - x2) / 2.0
                 + mathSin(psi) * (y1 - y2) / 2.0;
-    var yp = -1 * mathSin(psi) * (x1 - x2) / 2.0
+    const yp = -1 * mathSin(psi) * (x1 - x2) / 2.0
                 + mathCos(psi) * (y1 - y2) / 2.0;
 
-    var lambda = (xp * xp) / (rx * rx) + (yp * yp) / (ry * ry);
+    const lambda = (xp * xp) / (rx * rx) + (yp * yp) / (ry * ry);
 
     if (lambda > 1) {
         rx *= mathSqrt(lambda);
         ry *= mathSqrt(lambda);
     }
 
-    var f = (fa === fs ? -1 : 1)
+    const f = (fa === fs ? -1 : 1)
         * mathSqrt((((rx * rx) * (ry * ry))
                 - ((rx * rx) * (yp * yp))
                 - ((ry * ry) * (xp * xp))) / ((rx * rx) * (yp * yp)
                 + (ry * ry) * (xp * xp))
             ) || 0;
 
-    var cxp = f * rx * yp / ry;
-    var cyp = f * -ry * xp / rx;
+    const cxp = f * rx * yp / ry;
+    const cyp = f * -ry * xp / rx;
 
-    var cx = (x1 + x2) / 2.0
+    const cx = (x1 + x2) / 2.0
                 + mathCos(psi) * cxp
                 - mathSin(psi) * cyp;
-    var cy = (y1 + y2) / 2.0
+    const cy = (y1 + y2) / 2.0
             + mathSin(psi) * cxp
             + mathCos(psi) * cyp;
 
-    var theta = vAngle([ 1, 0 ], [ (xp - cxp) / rx, (yp - cyp) / ry ]);
-    var u = [ (xp - cxp) / rx, (yp - cyp) / ry ];
-    var v = [ (-1 * xp - cxp) / rx, (-1 * yp - cyp) / ry ];
-    var dTheta = vAngle(u, v);
+    const theta = vAngle([ 1, 0 ], [ (xp - cxp) / rx, (yp - cyp) / ry ]);
+    const u = [ (xp - cxp) / rx, (yp - cyp) / ry ];
+    const v = [ (-1 * xp - cxp) / rx, (-1 * yp - cyp) / ry ];
+    let dTheta = vAngle(u, v);
 
     if (vRatio(u, v) <= -1) {
         dTheta = PI;
@@ -85,19 +90,19 @@ var commandReg = /([mlvhzcqtsa])([^mlvhzcqtsa]*)/ig;
 // '2e-4', 'l.5.9' (ignore 0), 'M-10-10', 'l-2.43e-1,34.9983',
 // 'l-.5E1,54', '121-23-44-11' (no delimiter)
 var numberReg = /-?([0-9]*\.)?[0-9]+([eE]-?[0-9]+)?/g;
-// var valueSplitReg = /[\s,]+/;
+// const valueSplitReg = /[\s,]+/;
 
-function createPathProxyFromString(data) {
+function createPathProxyFromString(data: string) {
     if (!data) {
         return new PathProxy();
     }
 
-    // var data = data.replace(/-/g, ' -')
+    // const data = data.replace(/-/g, ' -')
     //     .replace(/  /g, ' ')
     //     .replace(/ /g, ',')
     //     .replace(/,,/g, ',');
 
-    // var n;
+    // const n;
     // create pipes so that we can split the data
     // for (n = 0; n < cc.length; n++) {
     //     cs = cs.replace(new RegExp(cc[n], 'g'), '|' + cc[n]);
@@ -106,59 +111,63 @@ function createPathProxyFromString(data) {
     // data = data.replace(/-/g, ',-');
 
     // create array
-    // var arr = cs.split('|');
+    // const arr = cs.split('|');
     // init context point
-    var cpx = 0;
-    var cpy = 0;
-    var subpathX = cpx;
-    var subpathY = cpy;
-    var prevCmd;
+    let cpx = 0;
+    let cpy = 0;
+    let subpathX = cpx;
+    let subpathY = cpy;
+    let prevCmd;
 
-    var path = new PathProxy();
-    var CMD = PathProxy.CMD;
+    const path = new PathProxy();
+    const CMD = PathProxy.CMD;
 
     // commandReg.lastIndex = 0;
-    // var cmdResult;
+    // const cmdResult;
     // while ((cmdResult = commandReg.exec(data)) != null) {
-    //     var cmdStr = cmdResult[1];
-    //     var cmdContent = cmdResult[2];
+    //     const cmdStr = cmdResult[1];
+    //     const cmdContent = cmdResult[2];
 
-    var cmdList = data.match(commandReg);
-    for (var l = 0; l < cmdList.length; l++) {
-        var cmdText = cmdList[l];
-        var cmdStr = cmdText.charAt(0);
+    const cmdList = data.match(commandReg);
+    for (let l = 0; l < cmdList.length; l++) {
+        const cmdText = cmdList[l];
+        let cmdStr = cmdText.charAt(0);
 
-        var cmd;
+        let cmd;
 
         // String#split is faster a little bit than String#replace or RegExp#exec.
-        // var p = cmdContent.split(valueSplitReg);
-        // var pLen = 0;
-        // for (var i = 0; i < p.length; i++) {
+        // const p = cmdContent.split(valueSplitReg);
+        // const pLen = 0;
+        // for (let i = 0; i < p.length; i++) {
         //     // '' and other invalid str => NaN
-        //     var val = parseFloat(p[i]);
+        //     const val = parseFloat(p[i]);
         //     !isNaN(val) && (p[pLen++] = val);
         // }
 
-        var p = cmdText.match(numberReg) || [];
-        var pLen = p.length;
-        for (var i = 0; i < pLen; i++) {
-            p[i] = parseFloat(p[i]);
+
+        // Following code will convert string to number. So convert type to number here
+        const p = cmdText.match(numberReg) as any[] as number[] || [];
+        const pLen = p.length;
+        for (let i = 0; i < pLen; i++) {
+            p[i] = parseFloat(p[i] as any as string);
         }
 
-        var off = 0;
+        let off = 0;
         while (off < pLen) {
-            var ctlPtx;
-            var ctlPty;
+            let ctlPtx;
+            let ctlPty;
 
-            var rx;
-            var ry;
-            var psi;
-            var fa;
-            var fs;
+            let rx;
+            let ry;
+            let psi;
+            let fa;
+            let fs;
 
-            var x1 = cpx;
-            var y1 = cpy;
+            let x1 = cpx;
+            let y1 = cpy;
 
+            let len: number;
+            let pathData: number[] | Float32Array;
             // convert l, H, h, V, and v to L
             switch (cmdStr) {
                 case 'l':
@@ -233,8 +242,8 @@ function createPathProxyFromString(data) {
                 case 'S':
                     ctlPtx = cpx;
                     ctlPty = cpy;
-                    var len = path.len();
-                    var pathData = path.data;
+                    len = path.len();
+                    pathData = path.data;
                     if (prevCmd === CMD.C) {
                         ctlPtx += cpx - pathData[len - 4];
                         ctlPty += cpy - pathData[len - 3];
@@ -249,8 +258,8 @@ function createPathProxyFromString(data) {
                 case 's':
                     ctlPtx = cpx;
                     ctlPty = cpy;
-                    var len = path.len();
-                    var pathData = path.data;
+                    len = path.len();
+                    pathData = path.data;
                     if (prevCmd === CMD.C) {
                         ctlPtx += cpx - pathData[len - 4];
                         ctlPty += cpy - pathData[len - 3];
@@ -281,8 +290,8 @@ function createPathProxyFromString(data) {
                 case 'T':
                     ctlPtx = cpx;
                     ctlPty = cpy;
-                    var len = path.len();
-                    var pathData = path.data;
+                    len = path.len();
+                    pathData = path.data;
                     if (prevCmd === CMD.Q) {
                         ctlPtx += cpx - pathData[len - 4];
                         ctlPty += cpy - pathData[len - 3];
@@ -295,8 +304,8 @@ function createPathProxyFromString(data) {
                 case 't':
                     ctlPtx = cpx;
                     ctlPty = cpy;
-                    var len = path.len();
-                    var pathData = path.data;
+                    len = path.len();
+                    pathData = path.data;
                     if (prevCmd === CMD.Q) {
                         ctlPtx += cpx - pathData[len - 4];
                         ctlPty += cpy - pathData[len - 3];
@@ -355,26 +364,36 @@ function createPathProxyFromString(data) {
     return path;
 }
 
+interface SVGPathOption extends PathOption {
+    applyTransform?: (m: MatrixArray) => void
+}
+class SVGPath extends Path {
+    applyTransform(m: MatrixArray) {}
+}
+
+function isPathProxy(path: PathProxy | CanvasRenderingContext2D): path is PathProxy {
+    return (path as PathProxy).setData != null
+}
 // TODO Optimize double memory cost problem
-function createPathOptions(str, opts) {
-    var pathProxy = createPathProxyFromString(str);
+function createPathOptions(str: string, opts: SVGPathOption) {
+    const pathProxy = createPathProxyFromString(str);
     opts = opts || {};
-    opts.buildPath = function (path) {
-        if (path.setData) {
+    opts.buildPath = function (path: PathProxy | CanvasRenderingContext2D) {
+        if (isPathProxy(path)) {
             path.setData(pathProxy.data);
             // Svg and vml renderer don't have context
-            var ctx = path.getContext();
+            const ctx = path.getContext();
             if (ctx) {
                 path.rebuildPath(ctx);
             }
         }
         else {
-            var ctx = path;
+            const ctx = path;
             pathProxy.rebuildPath(ctx);
         }
     };
 
-    opts.applyTransform = function (m) {
+    opts.applyTransform = function (m: MatrixArray) {
         transformPath(pathProxy, m);
         this.dirty(true);
     };
@@ -385,19 +404,28 @@ function createPathOptions(str, opts) {
 /**
  * Create a Path object from path string data
  * http://www.w3.org/TR/SVG/paths.html#PathData
- * @param  {Object} opts Other options
+ * @param  opts Other options
  */
-export function createFromString(str, opts) {
-    return new Path(createPathOptions(str, opts));
+export function createFromString(str: string, opts?: SVGPathOption): SVGPath {
+    // PENDING
+    return new SVGPath(createPathOptions(str, opts));
 }
 
 /**
  * Create a Path class from path string data
- * @param  {string} str
- * @param  {Object} opts Other options
+ * @param  str
+ * @param  opts Other options
  */
-export function extendFromString(str, opts) {
-    return Path.extend(createPathOptions(str, opts));
+export function extendFromString(str: string, defaultOpts?: SVGPathOption): typeof SVGPath {
+    defaultOpts = createPathOptions(str, defaultOpts);
+    class Sub extends SVGPath {
+        constructor(opts: SVGPathOption) {
+            super(opts);
+            this.applyTransform = defaultOpts.applyTransform
+            this.buildPath = defaultOpts.buildPath;
+        }
+    }
+    return Sub;
 }
 
 /**
@@ -406,11 +434,11 @@ export function extendFromString(str, opts) {
 // TODO Apply transform
 // TODO stroke dash
 // TODO Optimize double memory cost problem
-export function mergePath(pathEls, opts) {
-    var pathList = [];
-    var len = pathEls.length;
-    for (var i = 0; i < len; i++) {
-        var pathEl = pathEls[i];
+export function mergePath(pathEls: Path[], opts: PathOption) {
+    const pathList: PathProxy[] = [];
+    const len = pathEls.length;
+    for (let i = 0; i < len; i++) {
+        const pathEl = pathEls[i];
         if (!pathEl.path) {
             pathEl.createPathProxy();
         }
@@ -420,15 +448,17 @@ export function mergePath(pathEls, opts) {
         pathList.push(pathEl.path);
     }
 
-    var pathBundle = new Path(opts);
+    const pathBundle = new Path(opts);
     // Need path proxy.
     pathBundle.createPathProxy();
-    pathBundle.buildPath = function (path) {
-        path.appendPath(pathList);
-        // Svg and vml renderer don't have context
-        var ctx = path.getContext();
-        if (ctx) {
-            path.rebuildPath(ctx);
+    pathBundle.buildPath = function (path: PathProxy | CanvasRenderingContext2D) {
+        if (isPathProxy(path)) {
+            path.appendPath(pathList);
+            // Svg and vml renderer don't have context
+            const ctx = path.getContext();
+            if (ctx) {
+                path.rebuildPath(ctx);
+            }
         }
     };
 

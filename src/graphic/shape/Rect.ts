@@ -7,10 +7,20 @@ import Path from '../Path';
 import * as roundRectHelper from '../helper/roundRect';
 import {subPixelOptimizeRect} from '../helper/subPixelOptimize';
 
+interface RectShape {
+
+    r?: number | number[],
+
+    x: number,
+    y: number,
+    width: number,
+    height: number
+}
+
 // Avoid create repeatly.
 var subPixelOptimizeOutputShape = {};
 
-export default Path.extend({
+export default Path.extend<RectShape, {}>({
 
     type: 'rect',
 
@@ -29,19 +39,19 @@ export default Path.extend({
     },
 
     buildPath: function (ctx, shape) {
-        var x;
-        var y;
-        var width;
-        var height;
+        let x;
+        let y;
+        let width;
+        let height;
 
         if (this.subPixelOptimize) {
-            subPixelOptimizeRect(subPixelOptimizeOutputShape, shape, this.style);
-            x = subPixelOptimizeOutputShape.x;
-            y = subPixelOptimizeOutputShape.y;
-            width = subPixelOptimizeOutputShape.width;
-            height = subPixelOptimizeOutputShape.height;
-            subPixelOptimizeOutputShape.r = shape.r;
-            shape = subPixelOptimizeOutputShape;
+            const optimizedShape = subPixelOptimizeRect(subPixelOptimizeOutputShape, shape, this.style);
+            x = optimizedShape.x;
+            y = optimizedShape.y;
+            width = optimizedShape.width;
+            height = optimizedShape.height;
+            optimizedShape.r = shape.r;
+            shape = optimizedShape;
         }
         else {
             x = shape.x;

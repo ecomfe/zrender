@@ -2,55 +2,56 @@
 
 import Path from './Path';
 
-export default Path.extend({
+interface CompoundPathShape {
+    paths: Path[]
+}
 
-    type: 'compound',
+export default class CompoundPath extends Path {
 
-    shape: {
+    type = 'compound'
 
-        paths: null
-    },
+    shape: CompoundPathShape
 
-    _updatePathDirty: function () {
-        var dirtyPath = this.__dirtyPath;
-        var paths = this.shape.paths;
-        for (var i = 0; i < paths.length; i++) {
+    private _updatePathDirty() {
+        const paths = this.shape.paths;
+        let dirtyPath = this.__dirtyPath;
+        for (let i = 0; i < paths.length; i++) {
             // Mark as dirty if any subpath is dirty
             dirtyPath = dirtyPath || paths[i].__dirtyPath;
         }
         this.__dirtyPath = dirtyPath;
         this.__dirty = this.__dirty || dirtyPath;
-    },
+    }
 
-    beforeBrush: function () {
+    beforeBrush() {
         this._updatePathDirty();
-        var paths = this.shape.paths || [];
-        var scale = this.getGlobalScale();
+        const paths = this.shape.paths || [];
+        const scale = this.getGlobalScale();
         // Update path scale
-        for (var i = 0; i < paths.length; i++) {
+        for (let i = 0; i < paths.length; i++) {
             if (!paths[i].path) {
                 paths[i].createPathProxy();
             }
             paths[i].path.setScale(scale[0], scale[1], paths[i].segmentIgnoreThreshold);
         }
-    },
+    }
 
-    buildPath: function (ctx, shape) {
-        var paths = shape.paths || [];
-        for (var i = 0; i < paths.length; i++) {
+    buildPath(ctx: CanvasRenderingContext2D, shape: CompoundPathShape) {
+        const paths = shape.paths || [];
+        for (let i = 0; i < paths.length; i++) {
             paths[i].buildPath(ctx, paths[i].shape, true);
         }
-    },
+    }
 
-    afterBrush: function () {
-        var paths = this.shape.paths || [];
-        for (var i = 0; i < paths.length; i++) {
+    afterBrush() {
+        const paths = this.shape.paths || [];
+        for (let i = 0; i < paths.length; i++) {
             paths[i].__dirtyPath = false;
         }
-    },
+    }
 
-    getBoundingRect: function () {
-        this._updatePathDirty();
+    getBoundingRect() {
+        this._updatePathDirty.call(this);
         return Path.prototype.getBoundingRect.call(this);
     }
-});
+}

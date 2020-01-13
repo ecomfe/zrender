@@ -1,23 +1,21 @@
+import PathProxy from "../../core/PathProxy";
 
-/**
- * @param {Object} ctx
- * @param {Object} shape
- * @param {number} shape.x
- * @param {number} shape.y
- * @param {number} shape.width
- * @param {number} shape.height
- * @param {number} shape.r
- */
-export function buildPath(ctx, shape) {
-    var x = shape.x;
-    var y = shape.y;
-    var width = shape.width;
-    var height = shape.height;
-    var r = shape.r;
-    var r1;
-    var r2;
-    var r3;
-    var r4;
+export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
+    x: number
+    y: number
+    width: number
+    height: number
+    r?: number | number[]
+}) {
+    let x = shape.x;
+    let y = shape.y;
+    let width = shape.width;
+    let height = shape.height;
+    let r = shape.r;
+    let r1;
+    let r2;
+    let r3;
+    let r4;
 
     // Convert width and height to positive for better borderRadius
     if (width < 0) {
@@ -56,7 +54,7 @@ export function buildPath(ctx, shape) {
         r1 = r2 = r3 = r4 = 0;
     }
 
-    var total;
+    let total;
     if (r1 + r2 > width) {
         total = r1 + r2;
         r1 *= width / total;

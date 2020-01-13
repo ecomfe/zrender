@@ -1,17 +1,30 @@
 
-var Pattern = function (image, repeat) {
-    // Should do nothing more in this constructor. Because gradient can be
-    // declard by `color: {image: ...}`, where this constructor will not be called.
+type CanvasPatternRepeat = 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat'
 
-    this.image = image;
-    this.repeat = repeat;
+export interface PatternObject {
+    type: 'pattern'
 
-    // Can be cloned
-    this.type = 'pattern';
-};
+    image: HTMLImageElement
+    repeat: CanvasPatternRepeat
+}
 
-Pattern.prototype.getCanvasPattern = function (ctx) {
-    return ctx.createPattern(this.image, this.repeat || 'repeat');
-};
+class Pattern {
+
+    type = 'pattern'
+
+    image: HTMLImageElement
+    repeat: CanvasPatternRepeat
+
+    constructor(image: HTMLImageElement, repeat: CanvasPatternRepeat) {
+        // Should do nothing more in this constructor. Because gradient can be
+        // declard by `color: {image: ...}`, where this constructor will not be called.
+        this.image = image;
+        this.repeat = repeat
+    }
+
+    getCanvasPattern(ctx: CanvasRenderingContext2D) {
+        return ctx.createPattern(this.image, this.repeat || 'repeat');
+    }
+}
 
 export default Pattern;

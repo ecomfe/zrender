@@ -14,6 +14,7 @@ import {
     image as svgImage,
     text as svgText
 } from '../graphic';
+import Displayable from '../../graphic/Displayable';
 
 
 var MARK_UNUSED = '0';
@@ -22,245 +23,248 @@ var MARK_USED = '1';
 /**
  * Manages elements that can be defined in <defs> in SVG,
  * e.g., gradients, clip path, etc.
- *
- * @class
- * @param {number}          zrId      zrender instance id
- * @param {SVGElement}      svgRoot   root of SVG document
- * @param {string|string[]} tagNames  possible tag names
- * @param {string}          markLabel label name to make if the element
- *                                    is used
  */
-function Definable(
-    zrId,
-    svgRoot,
-    tagNames,
-    markLabel,
-    domName
-) {
-    this._zrId = zrId;
-    this._svgRoot = svgRoot;
-    this._tagNames = typeof tagNames === 'string' ? [tagNames] : tagNames;
-    this._markLabel = markLabel;
-    this._domName = domName || '_dom';
+export default class Definable {
 
-    this.nextId = 0;
-}
+    nextId = 0
+
+    protected _zrId: number
+    protected _svgRoot: SVGElement
+    protected _tagNames: string[]
+    protected _markLabel: string
+    protected _domName: string = '_dom'
+
+    constructor(
+        zrId: number,   // zrender instance id
+        svgRoot: SVGElement,        // root of SVG document
+        tagNames: string | string[],    // possible tag names
+        markLabel: string,  // label name to make if the element
+        domName?: string
+    ) {
+        this._zrId = zrId;
+        this._svgRoot = svgRoot;
+        this._tagNames = typeof tagNames === 'string' ? [tagNames] : tagNames;
+        this._markLabel = markLabel;
+
+        if (domName) {
+            this._domName = domName;
+        }
+    }
+
+    createElement = createElement
 
 
-Definable.prototype.createElement = createElement;
-
-
-/**
- * Get the <defs> tag for svgRoot; optionally creates one if not exists.
- *
- * @param {boolean} isForceCreating if need to create when not exists
- * @return {SVGDefsElement} SVG <defs> element, null if it doesn't
- * exist and isForceCreating is false
- */
-Definable.prototype.getDefs = function (isForceCreating) {
-    var svgRoot = this._svgRoot;
-    var defs = this._svgRoot.getElementsByTagName('defs');
-    if (defs.length === 0) {
-        // Not exist
-        if (isForceCreating) {
-            defs = svgRoot.insertBefore(
-                this.createElement('defs'), // Create new tag
-                svgRoot.firstChild // Insert in the front of svg
-            );
-            if (!defs.contains) {
-                // IE doesn't support contains method
-                defs.contains = function (el) {
-                    var children = defs.children;
-                    if (!children) {
-                        return false;
-                    }
-                    for (var i = children.length - 1; i >= 0; --i) {
-                        if (children[i] === el) {
-                            return true;
+    /**
+     * Get the <defs> tag for svgRoot; optionally creates one if not exists.
+     *
+     * @param isForceCreating if need to create when not exists
+     * @return SVG <defs> element, null if it doesn't
+     * exist and isForceCreating is false
+     */
+    getDefs(isForceCreating?: boolean): SVGDefsElement {
+        let svgRoot = this._svgRoot;
+        let defs = this._svgRoot.getElementsByTagName('defs');
+        if (defs.length === 0) {
+            // Not exist
+            if (isForceCreating) {
+                let defs = svgRoot.insertBefore(
+                    this.createElement('defs'), // Create new tag
+                    svgRoot.firstChild // Insert in the front of svg
+                ) as SVGDefsElement;
+                if (!defs.contains) {
+                    // IE doesn't support contains method
+                    defs.contains = function (el) {
+                        const children = defs.children;
+                        if (!children) {
+                            return false;
                         }
-                    }
-                    return false;
-                };
+                        for (let i = children.length - 1; i >= 0; --i) {
+                            if (children[i] === el) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    };
+                }
+                return defs;
             }
-            return defs;
+            else {
+                return null;
+            }
         }
         else {
-            return null;
+            return defs[0];
         }
     }
-    else {
-        return defs[0];
-    }
-};
 
 
-/**
- * Update DOM element if necessary.
- *
- * @param {Object|string} element style element. e.g., for gradient,
- *                                it may be '#ccc' or {type: 'linear', ...}
- * @param {Function|undefined} onUpdate update callback
- */
-Definable.prototype.update = function (element, onUpdate) {
-    if (!element) {
-        return;
-    }
+    /**
+     * Update DOM element if necessary.
+     *
+     * @param element style element. e.g., for gradient,
+     *                                it may be '#ccc' or {type: 'linear', ...}
+     * @param onUpdate update callback
+     */
+    doUpdate<T>(target: T, onUpdate?: (target: T) => void) {
+        if (!target) {
+            return;
+        }
 
-    var defs = this.getDefs(false);
-    if (element[this._domName] && defs.contains(element[this._domName])) {
-        // Update DOM
-        if (typeof onUpdate === 'function') {
-            onUpdate(element);
+        const defs = this.getDefs(false);
+        if ((target as any)[this._domName] && defs.contains((target as any)[this._domName])) {
+            // Update DOM
+            if (typeof onUpdate === 'function') {
+                onUpdate(target);
+            }
+        }
+        else {
+            // No previous dom, create new
+            const dom = this.add(target);
+            if (dom) {
+                (target as any)[this._domName] = dom;
+            }
         }
     }
-    else {
-        // No previous dom, create new
-        var dom = this.add(element);
+
+    add(target: any): SVGElement { return null; }
+
+    /**
+     * Add gradient dom to defs
+     *
+     * @param dom DOM to be added to <defs>
+     */
+    addDom(dom: SVGElement) {
+        const defs = this.getDefs(true);
+        defs.appendChild(dom);
+    }
+
+
+    /**
+     * Remove DOM of a given element.
+     *
+     * @param target Target where to attach the dom
+     */
+    removeDom<T>(target: T) {
+        const defs = this.getDefs(false);
+        if (defs && (target as any)[this._domName]) {
+            defs.removeChild((target as any)[this._domName]);
+            (target as any)[this._domName] = null;
+        }
+    }
+
+
+    /**
+     * Get DOMs of this element.
+     *
+     * @return doms of this defineable elements in <defs>
+     */
+    getDoms() {
+        const defs = this.getDefs(false);
+        if (!defs) {
+            // No dom when defs is not defined
+            return [];
+        }
+
+        let doms: SVGElement[] = [];
+        zrUtil.each(this._tagNames, function (tagName) {
+            const tags = defs.getElementsByTagName(tagName);
+            // Note that tags is HTMLCollection, which is array-like
+            // rather than real array.
+            // So `doms.concat(tags)` add tags as one object.
+            doms = doms.concat([].slice.call(tags));
+        });
+
+        return doms;
+    }
+
+
+    /**
+     * Mark DOMs to be unused before painting, and clear unused ones at the end
+     * of the painting.
+     */
+    markAllUnused() {
+        const doms = this.getDoms();
+        const that = this;
+        zrUtil.each(doms, function (dom) {
+            (dom as any)[that._markLabel] = MARK_UNUSED;
+        });
+    }
+
+
+    /**
+     * Mark a single DOM to be used.
+     *
+     * @param dom DOM to mark
+     */
+    markDomUsed(dom: SVGElement) {
         if (dom) {
-            element[this._domName] = dom;
+            (dom as any)[this._markLabel] = MARK_USED;
+        }
+    };
+
+
+    /**
+     * Remove unused DOMs defined in <defs>
+     */
+    removeUnused() {
+        const defs = this.getDefs(false);
+        if (!defs) {
+            // Nothing to remove
+            return;
+        }
+
+        const doms = this.getDoms();
+        const that = this;
+        zrUtil.each(doms, function (dom) {
+            if ((dom as any)[that._markLabel] !== MARK_USED) {
+                // Remove gradient
+                defs.removeChild(dom);
+            }
+        });
+    }
+
+
+    /**
+     * Get SVG proxy.
+     *
+     * @param displayable displayable element
+     * @return svg proxy of given element
+     */
+    getSvgProxy(displayable: Displayable) {
+        if (displayable instanceof Path) {
+            return svgPath;
+        }
+        else if (displayable instanceof ZImage) {
+            return svgImage;
+        }
+        else if (displayable instanceof ZText) {
+            return svgText;
+        }
+        else {
+            return svgPath;
         }
     }
-};
 
 
-/**
- * Add gradient dom to defs
- *
- * @param {SVGElement} dom DOM to be added to <defs>
- */
-Definable.prototype.addDom = function (dom) {
-    var defs = this.getDefs(true);
-    defs.appendChild(dom);
-};
-
-
-/**
- * Remove DOM of a given element.
- *
- * @param {SVGElement} element element to remove dom
- */
-Definable.prototype.removeDom = function (element) {
-    var defs = this.getDefs(false);
-    if (defs && element[this._domName]) {
-        defs.removeChild(element[this._domName]);
-        element[this._domName] = null;
-    }
-};
-
-
-/**
- * Get DOMs of this element.
- *
- * @return {HTMLDomElement} doms of this defineable elements in <defs>
- */
-Definable.prototype.getDoms = function () {
-    var defs = this.getDefs(false);
-    if (!defs) {
-        // No dom when defs is not defined
-        return [];
+    /**
+     * Get text SVG element.
+     *
+     * @param displayable displayable element
+     * @return SVG element of text
+     */
+    getTextSvgElement(displayable: Displayable): SVGElement {
+        return displayable.__textSvgEl;
     }
 
-    var doms = [];
-    zrUtil.each(this._tagNames, function (tagName) {
-        var tags = defs.getElementsByTagName(tagName);
-        // Note that tags is HTMLCollection, which is array-like
-        // rather than real array.
-        // So `doms.concat(tags)` add tags as one object.
-        doms = doms.concat([].slice.call(tags));
-    });
 
-    return doms;
-};
-
-
-/**
- * Mark DOMs to be unused before painting, and clear unused ones at the end
- * of the painting.
- */
-Definable.prototype.markAllUnused = function () {
-    var doms = this.getDoms();
-    var that = this;
-    zrUtil.each(doms, function (dom) {
-        dom[that._markLabel] = MARK_UNUSED;
-    });
-};
-
-
-/**
- * Mark a single DOM to be used.
- *
- * @param {SVGElement} dom DOM to mark
- */
-Definable.prototype.markUsed = function (dom) {
-    if (dom) {
-        dom[this._markLabel] = MARK_USED;
-    }
-};
-
-
-/**
- * Remove unused DOMs defined in <defs>
- */
-Definable.prototype.removeUnused = function () {
-    var defs = this.getDefs(false);
-    if (!defs) {
-        // Nothing to remove
-        return;
+    /**
+     * Get SVG element.
+     *
+     * @param displayable displayable element
+     * @return SVG element
+     */
+    getSvgElement(displayable: Displayable): SVGElement {
+        return displayable.__svgEl;
     }
 
-    var doms = this.getDoms();
-    var that = this;
-    zrUtil.each(doms, function (dom) {
-        if (dom[that._markLabel] !== MARK_USED) {
-            // Remove gradient
-            defs.removeChild(dom);
-        }
-    });
-};
-
-
-/**
- * Get SVG proxy.
- *
- * @param {Displayable} displayable displayable element
- * @return {Path|Image|Text} svg proxy of given element
- */
-Definable.prototype.getSvgProxy = function (displayable) {
-    if (displayable instanceof Path) {
-        return svgPath;
-    }
-    else if (displayable instanceof ZImage) {
-        return svgImage;
-    }
-    else if (displayable instanceof ZText) {
-        return svgText;
-    }
-    else {
-        return svgPath;
-    }
-};
-
-
-/**
- * Get text SVG element.
- *
- * @param {Displayable} displayable displayable element
- * @return {SVGElement} SVG element of text
- */
-Definable.prototype.getTextSvgElement = function (displayable) {
-    return displayable.__textSvgEl;
-};
-
-
-/**
- * Get SVG element.
- *
- * @param {Displayable} displayable displayable element
- * @return {SVGElement} SVG element
- */
-Definable.prototype.getSvgElement = function (displayable) {
-    return displayable.__svgEl;
-};
-
-
-export default Definable;
+}

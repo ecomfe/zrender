@@ -4,75 +4,83 @@ import {
     retrieve3,
     each,
     normalizeCssArray,
-    isString,
-    isObject
+    isString
 } from '../../core/util';
 import * as textContain from '../../contain/text';
 import * as roundRectHelper from './roundRect';
 import * as imageHelper from './image';
 import fixShadow from './fixShadow';
 import {ContextCachedBy, WILL_BE_RESTORED} from '../constant';
+import { StyleOption } from '../Style';
+import Displayable from '../Displayable';
+import { RectLike } from '../../core/BoundingRect';
+import { PropType, ImageLike, Dictionary, AllPropTypes, ZRCanvasRenderingContext } from '../../core/types';
+import { PatternObject } from '../Pattern';
+import { GradientObject } from '../Gradient';
 
-var DEFAULT_FONT = textContain.DEFAULT_FONT;
+type CalculateTextPositionResult = ReturnType<typeof textContain.calculateTextPosition>
+
+type TextBoxPosition = CalculateTextPositionResult & {
+    baseX: number
+    baseY: number
+}
+
+const DEFAULT_FONT = textContain.DEFAULT_FONT;
 
 // TODO: Have not support 'start', 'end' yet.
-var VALID_TEXT_ALIGN = {left: 1, right: 1, center: 1};
-var VALID_TEXT_VERTICAL_ALIGN = {top: 1, bottom: 1, middle: 1};
+const VALID_TEXT_ALIGN = {left: true, right: 1, center: 1};
+const VALID_TEXT_VERTICAL_ALIGN = {top: 1, bottom: 1, middle: 1};
 // Different from `STYLE_COMMON_PROPS` of `graphic/Style`,
 // the default value of shadowColor is `'transparent'`.
-var SHADOW_STYLE_COMMON_PROPS = [
+const SHADOW_STYLE_COMMON_PROPS = [
     ['textShadowBlur', 'shadowBlur', 0],
     ['textShadowOffsetX', 'shadowOffsetX', 0],
     ['textShadowOffsetY', 'shadowOffsetY', 0],
     ['textShadowColor', 'shadowColor', 'transparent']
 ];
-var _tmpTextPositionResult = {};
-var _tmpBoxPositionResult = {};
+const _tmpTextPositionResult = {} as TextBoxPosition;
+const _tmpBoxPositionResult = {} as TextBoxPosition;
 
-/**
- * @param {module:zrender/graphic/Style} style
- * @return {module:zrender/graphic/Style} The input style.
- */
-export function normalizeTextStyle(style) {
+export function normalizeTextStyle(style: StyleOption): StyleOption {
     normalizeStyle(style);
     each(style.rich, normalizeStyle);
     return style;
 }
 
-function normalizeStyle(style) {
+function normalizeStyle(style: StyleOption) {
     if (style) {
 
         style.font = textContain.makeFont(style);
 
-        var textAlign = style.textAlign;
+        let textAlign = style.textAlign;
+        // 'middle' is invalid, convert it to 'center'
         textAlign === 'middle' && (textAlign = 'center');
         style.textAlign = (
             textAlign == null || VALID_TEXT_ALIGN[textAlign]
         ) ? textAlign : 'left';
 
         // Compatible with textBaseline.
-        var textVerticalAlign = style.textVerticalAlign || style.textBaseline;
+        let textVerticalAlign = style.textVerticalAlign || style.textBaseline;
         textVerticalAlign === 'center' && (textVerticalAlign = 'middle');
         style.textVerticalAlign = (
             textVerticalAlign == null || VALID_TEXT_VERTICAL_ALIGN[textVerticalAlign]
         ) ? textVerticalAlign : 'top';
 
-        var textPadding = style.textPadding;
+        const textPadding = style.textPadding;
         if (textPadding) {
             style.textPadding = normalizeCssArray(style.textPadding);
         }
     }
 }
 
-/**
- * @param {CanvasRenderingContext2D} ctx
- * @param {string} text
- * @param {module:zrender/graphic/Style} style
- * @param {Object|boolean} [rect] {x, y, width, height}
- *                  If set false, rect text is not used.
- * @param {Element|module:zrender/graphic/helper/constant.WILL_BE_RESTORED} [prevEl] For ctx prop cache.
- */
-export function renderText(hostEl, ctx, text, style, rect, prevEl) {
+export function renderText(
+    hostEl: Displayable,
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    style: StyleOption,
+    rect: RectLike,
+    prevEl?: Displayable | typeof WILL_BE_RESTORED
+) {
     style.rich
         ? renderRichText(hostEl, ctx, text, style, rect, prevEl)
         : renderPlainText(hostEl, ctx, text, style, rect, prevEl);
@@ -80,34 +88,41 @@ export function renderText(hostEl, ctx, text, style, rect, prevEl) {
 
 // Avoid setting to ctx according to prevEl if possible for
 // performance in scenarios of large amount text.
-function renderPlainText(hostEl, ctx, text, style, rect, prevEl) {
+function renderPlainText(
+    hostEl: Displayable,
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    style: StyleOption,
+    rect: RectLike,
+    prevEl?: Displayable | typeof WILL_BE_RESTORED
+) {
     'use strict';
 
-    var needDrawBg = needDrawBackground(style);
+    const needDrawBg = needDrawBackground(style);
 
-    var prevStyle;
-    var checkCache = false;
-    var cachedByMe = ctx.__attrCachedBy === ContextCachedBy.PLAIN_TEXT;
+    const cachedByMe = (ctx as ZRCanvasRenderingContext).__attrCachedBy === ContextCachedBy.PLAIN_TEXT;
+    let prevStyle;
+    let checkCache = false;
 
     // Only take and check cache for `Text` el, but not RectText.
     if (prevEl !== WILL_BE_RESTORED) {
         if (prevEl) {
             prevStyle = prevEl.style;
-            checkCache = !needDrawBg && cachedByMe && prevStyle;
+            checkCache = !needDrawBg && cachedByMe && !!prevStyle;
         }
 
         // Prevent from using cache in `Style::bind`, because of the case:
         // ctx property is modified by other properties than `Style::bind`
         // used, and Style::bind is called next.
-        ctx.__attrCachedBy = needDrawBg ? ContextCachedBy.NONE : ContextCachedBy.PLAIN_TEXT;
+        (ctx as ZRCanvasRenderingContext).__attrCachedBy = needDrawBg ? ContextCachedBy.NONE : ContextCachedBy.PLAIN_TEXT;
     }
     // Since this will be restored, prevent from using these props to check cache in the next
     // entering of this method. But do not need to clear other cache like `Style::bind`.
     else if (cachedByMe) {
-        ctx.__attrCachedBy = ContextCachedBy.NONE;
+        (ctx as ZRCanvasRenderingContext).__attrCachedBy = ContextCachedBy.NONE;
     }
 
-    var styleFont = style.font || DEFAULT_FONT;
+    const styleFont = style.font || DEFAULT_FONT;
     // PENDING
     // Only `Text` el set `font` and keep it (`RectText` will restore). So theoretically
     // we can make font cache on ctx, which can cache for text el that are discontinuous.
@@ -125,46 +140,46 @@ function renderPlainText(hostEl, ctx, text, style, rect, prevEl) {
     // Use the final font from context-2d, because the final
     // font might not be the style.font when it is illegal.
     // But get `ctx.font` might be time consuming.
-    var computedFont = hostEl.__computedFont;
+    let computedFont: string = hostEl.__computedFont;
     if (hostEl.__styleFont !== styleFont) {
         hostEl.__styleFont = styleFont;
         computedFont = hostEl.__computedFont = ctx.font;
     }
 
-    var textPadding = style.textPadding;
-    var textLineHeight = style.textLineHeight;
+    const textPadding = style.textPadding as number[];
+    const textLineHeight = style.textLineHeight;
 
-    var contentBlock = hostEl.__textCotentBlock;
+    let contentBlock = hostEl.__textCotentBlock as textContain.PlainTextContentBlock;
     if (!contentBlock || hostEl.__dirtyText) {
         contentBlock = hostEl.__textCotentBlock = textContain.parsePlainText(
             text, computedFont, textPadding, textLineHeight, style.truncate
         );
     }
 
-    var outerHeight = contentBlock.outerHeight;
+    let outerHeight = contentBlock.outerHeight;
 
-    var textLines = contentBlock.lines;
-    var lineHeight = contentBlock.lineHeight;
+    const textLines = contentBlock.lines;
+    const lineHeight = contentBlock.lineHeight;
 
-    var boxPos = getBoxPosition(_tmpBoxPositionResult, hostEl, style, rect);
-    var baseX = boxPos.baseX;
-    var baseY = boxPos.baseY;
-    var textAlign = boxPos.textAlign || 'left';
-    var textVerticalAlign = boxPos.textVerticalAlign;
+    const boxPos = getBoxPosition(_tmpBoxPositionResult, hostEl, style, rect);
+    const baseX = boxPos.baseX;
+    const baseY = boxPos.baseY;
+    const textAlign = boxPos.textAlign || 'left';
+    const textVerticalAlign = boxPos.textVerticalAlign;
 
     // Origin of textRotation should be the base point of text drawing.
     applyTextRotation(ctx, style, rect, baseX, baseY);
 
-    var boxY = textContain.adjustTextY(baseY, outerHeight, textVerticalAlign);
-    var textX = baseX;
-    var textY = boxY;
+    const boxY = textContain.adjustTextY(baseY, outerHeight, textVerticalAlign);
+    let textX = baseX;
+    let textY = boxY;
 
     if (needDrawBg || textPadding) {
         // Consider performance, do not call getTextWidth util necessary.
-        var textWidth = textContain.getWidth(text, computedFont);
-        var outerWidth = textWidth;
+        const textWidth = textContain.getWidth(text, computedFont);
+        let outerWidth = textWidth;
         textPadding && (outerWidth += textPadding[1] + textPadding[3]);
-        var boxX = textContain.adjustTextX(baseX, outerWidth, textAlign);
+        const boxX = textContain.adjustTextX(baseX, outerWidth, textAlign);
 
         needDrawBg && drawBackground(hostEl, ctx, style, boxX, boxY, outerWidth, outerHeight);
 
@@ -177,7 +192,7 @@ function renderPlainText(hostEl, ctx, text, style, rect, prevEl) {
     // Always set textAlign and textBase line, because it is difficute to calculate
     // textAlign from prevEl, and we dont sure whether textAlign will be reset if
     // font set happened.
-    ctx.textAlign = textAlign;
+    ctx.textAlign = textAlign as CanvasTextAlign;
     // Force baseline to be "middle". Otherwise, if using "top", the
     // text will offset downward a little bit in font "Microsoft YaHei".
     ctx.textBaseline = 'middle';
@@ -185,37 +200,37 @@ function renderPlainText(hostEl, ctx, text, style, rect, prevEl) {
     ctx.globalAlpha = style.opacity || 1;
 
     // Always set shadowBlur and shadowOffset to avoid leak from displayable.
-    for (var i = 0; i < SHADOW_STYLE_COMMON_PROPS.length; i++) {
-        var propItem = SHADOW_STYLE_COMMON_PROPS[i];
-        var styleProp = propItem[0];
-        var ctxProp = propItem[1];
-        var val = style[styleProp];
+    for (let i = 0; i < SHADOW_STYLE_COMMON_PROPS.length; i++) {
+        const propItem = SHADOW_STYLE_COMMON_PROPS[i];
+        const styleProp = propItem[0] as keyof StyleOption;
+        const ctxProp = propItem[1];
+        const val = style[styleProp];
         if (!checkCache || val !== prevStyle[styleProp]) {
-            ctx[ctxProp] = fixShadow(ctx, ctxProp, val || propItem[2]);
+            (ctx as any)[ctxProp] = fixShadow(ctx, ctxProp as string, (val || propItem[2]) as number);
         }
     }
 
     // `textBaseline` is set as 'middle'.
     textY += lineHeight / 2;
 
-    var textStrokeWidth = style.textStrokeWidth;
-    var textStrokeWidthPrev = checkCache ? prevStyle.textStrokeWidth : null;
-    var strokeWidthChanged = !checkCache || textStrokeWidth !== textStrokeWidthPrev;
-    var strokeChanged = !checkCache || strokeWidthChanged || style.textStroke !== prevStyle.textStroke;
-    var textStroke = getStroke(style.textStroke, textStrokeWidth);
-    var textFill = getFill(style.textFill);
+    const textStrokeWidth = style.textStrokeWidth;
+    const textStrokeWidthPrev = checkCache ? prevStyle.textStrokeWidth : null;
+    const strokeWidthChanged = !checkCache || textStrokeWidth !== textStrokeWidthPrev;
+    const strokeChanged = !checkCache || strokeWidthChanged || style.textStroke !== prevStyle.textStroke;
+    const textStroke = getStroke(style.textStroke, textStrokeWidth);
+    const textFill = getFill(style.textFill);
 
     if (textStroke) {
         if (strokeWidthChanged) {
             ctx.lineWidth = textStrokeWidth;
         }
         if (strokeChanged) {
-            ctx.strokeStyle = textStroke;
+            ctx.strokeStyle = textStroke as string;
         }
     }
     if (textFill) {
         if (!checkCache || style.textFill !== prevStyle.textFill) {
-            ctx.fillStyle = textFill;
+            ctx.fillStyle = textFill as string;
         }
     }
 
@@ -226,7 +241,7 @@ function renderPlainText(hostEl, ctx, text, style, rect, prevEl) {
         textFill && ctx.fillText(textLines[0], textX, textY);
     }
     else {
-        for (var i = 0; i < textLines.length; i++) {
+        for (let i = 0; i < textLines.length; i++) {
             // Fill after stroke so the outline will not cover the main part.
             textStroke && ctx.strokeText(textLines[i], textX, textY);
             textFill && ctx.fillText(textLines[i], textX, textY);
@@ -235,14 +250,25 @@ function renderPlainText(hostEl, ctx, text, style, rect, prevEl) {
     }
 }
 
-function renderRichText(hostEl, ctx, text, style, rect, prevEl) {
+type RichTextContentBlockType = ReturnType<typeof textContain.parseRichText>
+type RichTextLineType = PropType<RichTextContentBlockType, 'lines'>[0]
+type RichTextTokenType = PropType<RichTextLineType, 'tokens'>[0]
+
+function renderRichText(
+    hostEl: Displayable,
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    style: StyleOption,
+    rect: RectLike,
+    prevEl?: Displayable | typeof WILL_BE_RESTORED
+) {
     // Do not do cache for rich text because of the complexity.
     // But `RectText` this will be restored, do not need to clear other cache like `Style::bind`.
     if (prevEl !== WILL_BE_RESTORED) {
-        ctx.__attrCachedBy = ContextCachedBy.NONE;
+        (ctx as ZRCanvasRenderingContext).__attrCachedBy = ContextCachedBy.NONE;
     }
-
-    var contentBlock = hostEl.__textCotentBlock;
+    // TODO
+    let contentBlock = hostEl.__textCotentBlock as RichTextContentBlockType;
 
     if (!contentBlock || hostEl.__dirtyText) {
         contentBlock = hostEl.__textCotentBlock = textContain.parseRichText(text, style);
@@ -251,47 +277,53 @@ function renderRichText(hostEl, ctx, text, style, rect, prevEl) {
     drawRichText(hostEl, ctx, contentBlock, style, rect);
 }
 
-function drawRichText(hostEl, ctx, contentBlock, style, rect) {
-    var contentWidth = contentBlock.width;
-    var outerWidth = contentBlock.outerWidth;
-    var outerHeight = contentBlock.outerHeight;
-    var textPadding = style.textPadding;
+function drawRichText(
+    hostEl: Displayable,
+    ctx: CanvasRenderingContext2D,
+    contentBlock: RichTextContentBlockType,
+    style: StyleOption,
+    rect: RectLike
+) {
+    const contentWidth = contentBlock.width;
+    const outerWidth = contentBlock.outerWidth;
+    const outerHeight = contentBlock.outerHeight;
+    const textPadding = style.textPadding as number[];
 
-    var boxPos = getBoxPosition(_tmpBoxPositionResult, hostEl, style, rect);
-    var baseX = boxPos.baseX;
-    var baseY = boxPos.baseY;
-    var textAlign = boxPos.textAlign;
-    var textVerticalAlign = boxPos.textVerticalAlign;
+    const boxPos = getBoxPosition(_tmpBoxPositionResult, hostEl, style, rect);
+    const baseX = boxPos.baseX;
+    const baseY = boxPos.baseY;
+    const textAlign = boxPos.textAlign;
+    const textVerticalAlign = boxPos.textVerticalAlign;
 
     // Origin of textRotation should be the base point of text drawing.
     applyTextRotation(ctx, style, rect, baseX, baseY);
 
-    var boxX = textContain.adjustTextX(baseX, outerWidth, textAlign);
-    var boxY = textContain.adjustTextY(baseY, outerHeight, textVerticalAlign);
-    var xLeft = boxX;
-    var lineTop = boxY;
+    const boxX = textContain.adjustTextX(baseX, outerWidth, textAlign);
+    const boxY = textContain.adjustTextY(baseY, outerHeight, textVerticalAlign);
+    let xLeft = boxX;
+    let lineTop = boxY;
     if (textPadding) {
         xLeft += textPadding[3];
         lineTop += textPadding[0];
     }
-    var xRight = xLeft + contentWidth;
+    const xRight = xLeft + contentWidth;
 
     needDrawBackground(style) && drawBackground(
         hostEl, ctx, style, boxX, boxY, outerWidth, outerHeight
     );
 
-    for (var i = 0; i < contentBlock.lines.length; i++) {
-        var line = contentBlock.lines[i];
-        var tokens = line.tokens;
-        var tokenCount = tokens.length;
-        var lineHeight = line.lineHeight;
-        var usedWidth = line.width;
+    for (let i = 0; i < contentBlock.lines.length; i++) {
+        const line = contentBlock.lines[i];
+        const tokens = line.tokens;
+        const tokenCount = tokens.length;
+        const lineHeight = line.lineHeight;
 
-        var leftIndex = 0;
-        var lineXLeft = xLeft;
-        var lineXRight = xRight;
-        var rightIndex = tokenCount - 1;
-        var token;
+        let usedWidth = line.width;
+        let leftIndex = 0;
+        let lineXLeft = xLeft;
+        let lineXRight = xRight;
+        let rightIndex = tokenCount - 1;
+        let token;
 
         while (
             leftIndex < tokenCount
@@ -327,10 +359,16 @@ function drawRichText(hostEl, ctx, contentBlock, style, rect) {
     }
 }
 
-function applyTextRotation(ctx, style, rect, x, y) {
+function applyTextRotation(
+    ctx: CanvasRenderingContext2D,
+    style: StyleOption,
+    rect: RectLike,
+    x: number,
+    y: number
+) {
     // textRotation only apply in RectText.
     if (rect && style.textRotation) {
-        var origin = style.textOrigin;
+        const origin = style.textOrigin;
         if (origin === 'center') {
             x = rect.width / 2 + rect.x;
             y = rect.height / 2 + rect.y;
@@ -347,14 +385,23 @@ function applyTextRotation(ctx, style, rect, x, y) {
     }
 }
 
-function placeToken(hostEl, ctx, token, style, lineHeight, lineTop, x, textAlign) {
-    var tokenStyle = style.rich[token.styleName] || {};
+function placeToken(
+    hostEl: Displayable,
+    ctx: CanvasRenderingContext2D,
+    token: RichTextTokenType,
+    style: StyleOption,
+    lineHeight: number,
+    lineTop: number,
+    x: number,
+    textAlign: string
+) {
+    const tokenStyle = style.rich[token.styleName] || {};
     tokenStyle.text = token.text;
 
     // 'ctx.textBaseline' is always set as 'middle', for sake of
     // the bias of "Microsoft YaHei".
-    var textVerticalAlign = token.textVerticalAlign;
-    var y = lineTop + lineHeight / 2;
+    const textVerticalAlign = token.textVerticalAlign;
+    let y = lineTop + lineHeight / 2;
     if (textVerticalAlign === 'top') {
         y = lineTop + token.height / 2;
     }
@@ -376,7 +423,7 @@ function placeToken(hostEl, ctx, token, style, lineHeight, lineTop, x, textAlign
         token.height
     );
 
-    var textPadding = token.textPadding;
+    const textPadding = token.textPadding;
     if (textPadding) {
         x = getTextXForPadding(x, textAlign, textPadding);
         y -= token.height / 2 - textPadding[2] - token.textHeight / 2;
@@ -394,23 +441,23 @@ function placeToken(hostEl, ctx, token, style, lineHeight, lineTop, x, textAlign
 
     setCtx(ctx, 'font', token.font || DEFAULT_FONT);
 
-    var textStroke = getStroke(tokenStyle.textStroke || style.textStroke, textStrokeWidth);
-    var textFill = getFill(tokenStyle.textFill || style.textFill);
-    var textStrokeWidth = retrieve2(tokenStyle.textStrokeWidth, style.textStrokeWidth);
+    const textStrokeWidth = retrieve2(tokenStyle.textStrokeWidth, style.textStrokeWidth);
+    const textStroke = getStroke(tokenStyle.textStroke || style.textStroke, textStrokeWidth);
+    const textFill = getFill(tokenStyle.textFill || style.textFill);
 
     // Fill after stroke so the outline will not cover the main part.
     if (textStroke) {
         setCtx(ctx, 'lineWidth', textStrokeWidth);
-        setCtx(ctx, 'strokeStyle', textStroke);
+        setCtx(ctx, 'strokeStyle', textStroke as string);
         ctx.strokeText(token.text, x, y);
     }
     if (textFill) {
-        setCtx(ctx, 'fillStyle', textFill);
+        setCtx(ctx, 'fillStyle', textFill as string);
         ctx.fillText(token.text, x, y);
     }
 }
 
-function needDrawBackground(style) {
+function needDrawBackground(style: StyleOption): boolean {
     return !!(
         style.textBackgroundColor
         || (style.textBorderWidth && style.textBorderColor)
@@ -419,11 +466,19 @@ function needDrawBackground(style) {
 
 // style: {textBackgroundColor, textBorderWidth, textBorderColor, textBorderRadius, text}
 // shape: {x, y, width, height}
-function drawBackground(hostEl, ctx, style, x, y, width, height) {
-    var textBackgroundColor = style.textBackgroundColor;
-    var textBorderWidth = style.textBorderWidth;
-    var textBorderColor = style.textBorderColor;
-    var isPlainBg = isString(textBackgroundColor);
+function drawBackground(
+    hostEl: Displayable,
+    ctx: CanvasRenderingContext2D,
+    style: StyleOption,
+    x: number,
+    y: number,
+    width: number,
+    height: number
+) {
+    const textBackgroundColor = style.textBackgroundColor;
+    const textBorderWidth = style.textBorderWidth;
+    const textBorderColor = style.textBorderColor;
+    const isPlainBg = isString(textBackgroundColor);
 
     setCtx(ctx, 'shadowBlur', style.textBoxShadowBlur || 0);
     setCtx(ctx, 'shadowColor', style.textBoxShadowColor || 'transparent');
@@ -432,7 +487,7 @@ function drawBackground(hostEl, ctx, style, x, y, width, height) {
 
     if (isPlainBg || (textBorderWidth && textBorderColor)) {
         ctx.beginPath();
-        var textBorderRadius = style.textBorderRadius;
+        const textBorderRadius = style.textBorderRadius;
         if (!textBorderRadius) {
             ctx.rect(x, y, width, height);
         }
@@ -445,10 +500,10 @@ function drawBackground(hostEl, ctx, style, x, y, width, height) {
     }
 
     if (isPlainBg) {
-        setCtx(ctx, 'fillStyle', textBackgroundColor);
+        setCtx(ctx, 'fillStyle', textBackgroundColor as string);
 
         if (style.fillOpacity != null) {
-            var originalGlobalAlpha = ctx.globalAlpha;
+            const originalGlobalAlpha = ctx.globalAlpha;
             ctx.globalAlpha = style.fillOpacity * style.opacity;
             ctx.fill();
             ctx.globalAlpha = originalGlobalAlpha;
@@ -457,8 +512,8 @@ function drawBackground(hostEl, ctx, style, x, y, width, height) {
             ctx.fill();
         }
     }
-    else if (isObject(textBackgroundColor)) {
-        var image = textBackgroundColor.image;
+    else if ((textBackgroundColor as {image: ImageLike}).image) {
+        let image = (textBackgroundColor as {image: ImageLike}).image;
 
         image = imageHelper.createOrUpdateImage(
             image, null, hostEl, onBgImageLoaded, textBackgroundColor
@@ -473,7 +528,7 @@ function drawBackground(hostEl, ctx, style, x, y, width, height) {
         setCtx(ctx, 'strokeStyle', textBorderColor);
 
         if (style.strokeOpacity != null) {
-            var originalGlobalAlpha = ctx.globalAlpha;
+            const originalGlobalAlpha = ctx.globalAlpha;
             ctx.globalAlpha = style.strokeOpacity * style.opacity;
             ctx.stroke();
             ctx.globalAlpha = originalGlobalAlpha;
@@ -484,28 +539,35 @@ function drawBackground(hostEl, ctx, style, x, y, width, height) {
     }
 }
 
-function onBgImageLoaded(image, textBackgroundColor) {
+function onBgImageLoaded(image: ImageLike, textBackgroundColor: {
+    image: ImageLike
+}) {
     // Replace image, so that `contain/text.js#parseRichText`
     // will get correct result in next tick.
     textBackgroundColor.image = image;
 }
 
-export function getBoxPosition(out, hostEl, style, rect) {
-    var baseX = style.x || 0;
-    var baseY = style.y || 0;
-    var textAlign = style.textAlign;
-    var textVerticalAlign = style.textVerticalAlign;
+export function getBoxPosition(
+    out: Partial<TextBoxPosition>,
+    hostEl: Displayable,
+    style: StyleOption,
+    rect: RectLike
+) {
+    let baseX = style.x || 0;
+    let baseY = style.y || 0;
+    let textAlign = style.textAlign;
+    let textVerticalAlign = style.textVerticalAlign;
 
     // Text position represented by coord
     if (rect) {
-        var textPosition = style.textPosition;
+        const textPosition = style.textPosition;
         if (textPosition instanceof Array) {
             // Percent
             baseX = rect.x + parsePercent(textPosition[0], rect.width);
             baseY = rect.y + parsePercent(textPosition[1], rect.height);
         }
         else {
-            var res = (hostEl && hostEl.calculateTextPosition)
+            const res = (hostEl && hostEl.calculateTextPosition)
                 ? hostEl.calculateTextPosition(_tmpTextPositionResult, style, rect)
                 : textContain.calculateTextPosition(_tmpTextPositionResult, style, rect);
             baseX = res.x;
@@ -517,14 +579,14 @@ export function getBoxPosition(out, hostEl, style, rect) {
 
         // textOffset is only support in RectText, otherwise
         // we have to adjust boundingRect for textOffset.
-        var textOffset = style.textOffset;
+        const textOffset = style.textOffset;
         if (textOffset) {
             baseX += textOffset[0];
             baseY += textOffset[1];
         }
     }
 
-    out = out || {};
+    out = out || {} as TextBoxPosition;
     out.baseX = baseX;
     out.baseY = baseY;
     out.textAlign = textAlign;
@@ -534,35 +596,42 @@ export function getBoxPosition(out, hostEl, style, rect) {
 }
 
 
-function setCtx(ctx, prop, value) {
-    ctx[prop] = fixShadow(ctx, prop, value);
+function setCtx(
+    ctx: CanvasRenderingContext2D,
+    prop: keyof CanvasRenderingContext2D,
+    value: AllPropTypes<CanvasRenderingContext2D>
+) {
+    (ctx as any)[prop] = fixShadow(ctx, prop, value as number);
     return ctx[prop];
 }
 
 /**
- * @param {string} [stroke] If specified, do not check style.textStroke.
- * @param {string} [lineWidth] If specified, do not check style.textStroke.
- * @param {number} style
+ * @param stroke If specified, do not check style.textStroke.
+ * @param lineWidth If specified, do not check style.textStroke.
  */
-export function getStroke(stroke, lineWidth) {
+export function getStroke(
+    stroke?: PropType<StyleOption, 'textStroke'>,
+    lineWidth?: number
+) {
     return (stroke == null || lineWidth <= 0 || stroke === 'transparent' || stroke === 'none')
         ? null
-        // TODO pattern and gradient?
-        : (stroke.image || stroke.colorStops)
+        : ((stroke as PatternObject).image || (stroke as GradientObject).colorStops)
         ? '#000'
         : stroke;
 }
 
-export function getFill(fill) {
+export function getFill(
+    fill?: PropType<StyleOption, 'textStroke'>
+) {
     return (fill == null || fill === 'none')
         ? null
         // TODO pattern and gradient?
-        : (fill.image || fill.colorStops)
+        : ((fill as PatternObject).image || (fill as GradientObject).colorStops)
         ? '#000'
         : fill;
 }
 
-export function parsePercent(value, maxValue) {
+export function parsePercent(value: number | string, maxValue: number): number{
     if (typeof value === 'string') {
         if (value.lastIndexOf('%') >= 0) {
             return parseFloat(value) / 100 * maxValue;
@@ -572,7 +641,7 @@ export function parsePercent(value, maxValue) {
     return value;
 }
 
-function getTextXForPadding(x, textAlign, textPadding) {
+function getTextXForPadding(x: number, textAlign: string, textPadding: number[]): number {
     return textAlign === 'right'
         ? (x - textPadding[1])
         : textAlign === 'center'
@@ -580,14 +649,9 @@ function getTextXForPadding(x, textAlign, textPadding) {
         : (x + textPadding[3]);
 }
 
-/**
- * @param {string} text
- * @param {module:zrender/Style} style
- * @return {boolean}
- */
-export function needDrawText(text, style) {
+export function needDrawText(text: string, style: StyleOption): boolean {
     return text != null
-        && (text
+        && !!(text
             || style.textBackgroundColor
             || (style.textBorderWidth && style.textBorderColor)
             || style.textPadding

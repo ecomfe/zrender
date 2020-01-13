@@ -1,6 +1,5 @@
 /**
  * 椭圆形状
- * @module zrender/graphic/shape/Ellipse
  */
 
 import Path from '../Path';
@@ -15,13 +14,13 @@ export default Path.extend({
     },
 
     buildPath: function (ctx, shape) {
-        var k = 0.5522848;
-        var x = shape.cx;
-        var y = shape.cy;
-        var a = shape.rx;
-        var b = shape.ry;
-        var ox = a * k; // 水平控制点偏移量
-        var oy = b * k; // 垂直控制点偏移量
+        const k = 0.5522848;
+        const x = shape.cx;
+        const y = shape.cy;
+        const a = shape.rx;
+        const b = shape.ry;
+        const ox = a * k; // 水平控制点偏移量
+        const oy = b * k; // 垂直控制点偏移量
         // 从椭圆的左端点开始顺时针绘制四条三次贝塞尔曲线
         ctx.moveTo(x - a, y);
         ctx.bezierCurveTo(x - a, y - oy, x - ox, y - b, x, y - b);

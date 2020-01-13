@@ -8,225 +8,158 @@
 * https://github.com/ecomfe/zrender/blob/master/LICENSE.txt
 */
 
-import guid from './core/guid';
 import env from './core/env';
 import * as zrUtil from './core/util';
 import Handler from './Handler';
 import Storage from './Storage';
-import Painter from './Painter';
+import {PainterBase} from './PainterBase';
 import Animation from './animation/Animation';
 import HandlerProxy from './dom/HandlerProxy';
+import Element, {ElementEventCallback} from './Element';
+import CanvasPainter from './canvas/Painter';
+import { Dictionary, ElementEventName } from './core/types';
+import { LayerConfig } from './canvas/Layer';
+import { GradientObject } from './graphic/Gradient';
+import { PatternObject } from './graphic/Pattern';
+import { StyleOption } from './graphic/Style';
+import Displayable from './graphic/Displayable';
+import { Path } from './export';
+import { EventCallback } from './core/Eventful';
 
-var useVML = !env.canvasSupported;
+const useVML = !env.canvasSupported;
 
-var painterCtors = {
-    canvas: Painter
+const painterCtors: Dictionary<typeof PainterBase> = {
+    canvas: CanvasPainter
 };
 
-var instances = {};    // ZRender实例map索引
+let instances: { [key: number]: ZRender } = {};
 
-/**
- * @type {string}
- */
-export var version = '4.2.0';
 
-/**
- * Initializing a zrender instance
- * @param {HTMLElement} dom
- * @param {Object} [opts]
- * @param {string} [opts.renderer='canvas'] 'canvas' or 'svg'
- * @param {number} [opts.devicePixelRatio]
- * @param {number|string} [opts.width] Can be 'auto' (the same as null/undefined)
- * @param {number|string} [opts.height] Can be 'auto' (the same as null/undefined)
- * @return {module:zrender/ZRender}
- */
-export function init(dom, opts) {
-    var zr = new ZRender(guid(), dom, opts);
-    instances[zr.id] = zr;
-    return zr;
-}
-
-/**
- * Dispose zrender instance
- * @param {module:zrender/ZRender} zr
- */
-export function dispose(zr) {
-    if (zr) {
-        zr.dispose();
-    }
-    else {
-        for (var key in instances) {
-            if (instances.hasOwnProperty(key)) {
-                instances[key].dispose();
-            }
-        }
-        instances = {};
-    }
-
-    return this;
-}
-
-/**
- * Get zrender instance by id
- * @param {string} id zrender instance id
- * @return {module:zrender/ZRender}
- */
-export function getInstance(id) {
-    return instances[id];
-}
-
-export function registerPainter(name, Ctor) {
-    painterCtors[name] = Ctor;
-}
-
-function delInstance(id) {
+function delInstance(id: number) {
     delete instances[id];
 }
 
-/**
- * @module zrender/ZRender
- */
-/**
- * @constructor
- * @alias module:zrender/ZRender
- * @param {string} id
- * @param {HTMLElement} dom
- * @param {Object} opts
- * @param {string} [opts.renderer='canvas'] 'canvas' or 'svg'
- * @param {number} [opts.devicePixelRatio]
- * @param {number} [opts.width] Can be 'auto' (the same as null/undefined)
- * @param {number} [opts.height] Can be 'auto' (the same as null/undefined)
- */
-var ZRender = function (id, dom, opts) {
 
-    opts = opts || {};
+class ZRender {
 
-    /**
-     * @type {HTMLDomElement}
-     */
-    this.dom = dom;
+    dom: HTMLElement
 
-    /**
-     * @type {string}
-     */
-    this.id = id;
+    id: number
 
-    var self = this;
-    var storage = new Storage();
+    storage: Storage
+    painter: PainterBase
+    handler: Handler
+    animation: Animation
 
-    var rendererType = opts.renderer;
-    // TODO WebGL
-    if (useVML) {
-        if (!painterCtors.vml) {
-            throw new Error('You need to require \'zrender/vml/vml\' to support IE8');
+    private _needsRefresh = true
+    private _needsRefreshHover = true
+
+    constructor(id: number, dom: HTMLElement, opts?: ZRenderInitOpt) {
+        opts = opts || {};
+
+        /**
+         * @type {HTMLDomElement}
+         */
+        this.dom = dom;
+
+        this.id = id;
+
+        const self = this;
+        const storage = new Storage();
+
+        let rendererType = opts.renderer;
+        // TODO WebGL
+        if (useVML) {
+            if (!painterCtors.vml) {
+                throw new Error('You need to require \'zrender/vml/vml\' to support IE8');
+            }
+            rendererType = 'vml';
         }
-        rendererType = 'vml';
-    }
-    else if (!rendererType || !painterCtors[rendererType]) {
-        rendererType = 'canvas';
-    }
-    var painter = new painterCtors[rendererType](dom, storage, opts, id);
-
-    this.storage = storage;
-    this.painter = painter;
-
-    var handerProxy = (!env.node && !env.worker) ? new HandlerProxy(painter.getViewportRoot(), painter.root) : null;
-    this.handler = new Handler(storage, painter, handerProxy, painter.root);
-
-    /**
-     * @type {module:zrender/animation/Animation}
-     */
-    this.animation = new Animation({
-        stage: {
-            update: zrUtil.bind(this.flush, this)
+        else if (!rendererType || !painterCtors[rendererType]) {
+            rendererType = 'canvas';
         }
-    });
-    this.animation.start();
+        const painter = new painterCtors[rendererType](dom, storage, opts, id);
 
-    /**
-     * @type {boolean}
-     * @private
-     */
-    this._needsRefresh;
+        this.storage = storage;
+        this.painter = painter;
 
-    // 修改 storage.delFromStorage, 每次删除元素之前删除动画
-    // FIXME 有点ugly
-    var oldDelFromStorage = storage.delFromStorage;
-    var oldAddToStorage = storage.addToStorage;
+        const handerProxy = (!env.node && !env.worker)
+            ? new HandlerProxy(painter.getViewportRoot(), painter.root)
+            : null;
+        this.handler = new Handler(storage, painter, handerProxy, painter.root);
 
-    storage.delFromStorage = function (el) {
-        oldDelFromStorage.call(storage, el);
+        /**
+         * @type {module:zrender/animation/Animation}
+         */
+        this.animation = new Animation({
+            stage: {
+                update: zrUtil.bind(this.flush, this)
+            }
+        });
+        this.animation.start();
 
-        el && el.removeSelfFromZr(self);
-    };
 
-    storage.addToStorage = function (el) {
-        oldAddToStorage.call(storage, el);
+        // 修改 storage.delFromStorage, 每次删除元素之前删除动画
+        // FIXME 有点ugly
+        const oldDelFromStorage = storage.delFromStorage;
+        const oldAddToStorage = storage.addToStorage;
 
-        el.addSelfToZr(self);
-    };
-};
+        storage.delFromStorage = function (el) {
+            oldDelFromStorage.call(storage, el);
+            el && el.removeSelfFromZr(self);
+            return this;
+        };
 
-ZRender.prototype = {
-
-    constructor: ZRender,
-    /**
-     * 获取实例唯一标识
-     * @return {string}
-     */
-    getId: function () {
-        return this.id;
-    },
+        storage.addToStorage = function (el) {
+            oldAddToStorage.call(storage, el);
+            el.addSelfToZr(self);
+            return this;
+        };
+    }
 
     /**
      * 添加元素
-     * @param  {module:zrender/Element} el
      */
-    add: function (el) {
+    add(el: Element) {
         this.storage.addRoot(el);
         this._needsRefresh = true;
-    },
+    }
 
     /**
      * 删除元素
-     * @param  {module:zrender/Element} el
      */
-    remove: function (el) {
+    remove(el: Element) {
         this.storage.delRoot(el);
         this._needsRefresh = true;
-    },
+    }
 
     /**
      * Change configuration of layer
-     * @param {string} zLevel
-     * @param {Object} config
-     * @param {string} [config.clearColor=0] Clear color
-     * @param {string} [config.motionBlur=false] If enable motion blur
-     * @param {number} [config.lastFrameAlpha=0.7] Motion blur factor. Larger value cause longer trailer
     */
-    configLayer: function (zLevel, config) {
-        if (this.painter.configLayer) {
-            this.painter.configLayer(zLevel, config);
+    configLayer(zLevel: number, config: LayerConfig) {
+        if ((this.painter as CanvasPainter).configLayer) {
+            (this.painter as CanvasPainter).configLayer(zLevel, config);
         }
         this._needsRefresh = true;
-    },
+    }
 
     /**
      * Set background color
-     * @param {string} backgroundColor
      */
-    setBackgroundColor: function (backgroundColor) {
-        if (this.painter.setBackgroundColor) {
-            this.painter.setBackgroundColor(backgroundColor);
+    setBackgroundColor(
+        backgroundColor: string | GradientObject | PatternObject
+    ) {
+        if ((this.painter as CanvasPainter).setBackgroundColor) {
+            (this.painter as CanvasPainter).setBackgroundColor(backgroundColor);
         }
         this._needsRefresh = true;
-    },
+    }
 
     /**
      * Repaint the canvas immediately
      */
-    refreshImmediately: function () {
-        // var start = new Date();
+    refreshImmediately() {
+        // const start = new Date();
 
         // Clear needsRefresh ahead to avoid something wrong happens in refresh
         // Or it will cause zrender refreshes again and again.
@@ -235,25 +168,25 @@ ZRender.prototype = {
         // Avoid trigger zr.refresh in Element#beforeUpdate hook
         this._needsRefresh = this._needsRefreshHover = false;
 
-        // var end = new Date();
-        // var log = document.getElementById('log');
+        // const end = new Date();
+        // const log = document.getElementById('log');
         // if (log) {
         //     log.innerHTML = log.innerHTML + '<br>' + (end - start);
         // }
-    },
+    }
 
     /**
      * Mark and repaint the canvas in the next frame of browser
      */
-    refresh: function () {
+    refresh() {
         this._needsRefresh = true;
-    },
+    }
 
     /**
      * Perform all refresh
      */
-    flush: function () {
-        var triggerRendered;
+    flush() {
+        let triggerRendered;
 
         if (this._needsRefresh) {
             triggerRendered = true;
@@ -265,91 +198,91 @@ ZRender.prototype = {
         }
 
         triggerRendered && this.trigger('rendered');
-    },
+    }
 
     /**
      * Add element to hover layer
-     * @param  {module:zrender/Element} el
+     * @param el
      * @param {Object} style
      */
-    addHover: function (el, style) {
-        if (this.painter.addHover) {
-            var elMirror = this.painter.addHover(el, style);
+    addHover(el: Displayable, style: StyleOption) {
+        if ((this.painter as CanvasPainter).addHover) {
+            const elMirror = (this.painter as CanvasPainter).addHover(el, style);
             this.refreshHover();
             return elMirror;
         }
-    },
+    }
 
     /**
      * Add element from hover layer
-     * @param  {module:zrender/Element} el
      */
-    removeHover: function (el) {
-        if (this.painter.removeHover) {
-            this.painter.removeHover(el);
+    removeHover(el: Displayable) {
+        if ((this.painter as CanvasPainter).removeHover) {
+            (this.painter as CanvasPainter).removeHover(el);
             this.refreshHover();
         }
-    },
+    }
 
     /**
      * Clear all hover elements in hover layer
-     * @param  {module:zrender/Element} el
      */
-    clearHover: function () {
-        if (this.painter.clearHover) {
-            this.painter.clearHover();
+    clearHover() {
+        if ((this.painter as CanvasPainter).clearHover) {
+            (this.painter as CanvasPainter).clearHover();
             this.refreshHover();
         }
-    },
+    }
 
     /**
      * Refresh hover in next frame
      */
-    refreshHover: function () {
+    refreshHover() {
         this._needsRefreshHover = true;
-    },
+    }
 
     /**
      * Refresh hover immediately
      */
-    refreshHoverImmediately: function () {
+    refreshHoverImmediately() {
         this._needsRefreshHover = false;
-        this.painter.refreshHover && this.painter.refreshHover();
-    },
+        if ((this.painter as CanvasPainter).refreshHover) {
+            (this.painter as CanvasPainter).refreshHover();
+        }
+    }
 
     /**
      * Resize the canvas.
      * Should be invoked when container size is changed
-     * @param {Object} [opts]
-     * @param {number|string} [opts.width] Can be 'auto' (the same as null/undefined)
-     * @param {number|string} [opts.height] Can be 'auto' (the same as null/undefined)
      */
-    resize: function (opts) {
+    resize(opts?: {
+        width?: number| string
+        height?: number | string
+    }) {
         opts = opts || {};
         this.painter.resize(opts.width, opts.height);
         this.handler.resize();
-    },
+    }
 
     /**
      * Stop and clear all animation immediately
      */
-    clearAnimation: function () {
+    clearAnimation() {
         this.animation.clear();
-    },
+    }
 
     /**
      * Get container width
      */
-    getWidth: function () {
+    getWidth(): number {
         return this.painter.getWidth();
-    },
+    }
 
     /**
      * Get container height
      */
-    getHeight: function () {
+    getHeight(): number {
         return this.painter.getHeight();
-    },
+    }
 
     /**
      * Export the canvas as Base64 URL
@@ -366,75 +299,72 @@ ZRender.prototype = {
     /**
      * Converting a path to image.
      * It has much better performance of drawing image rather than drawing a vector path.
-     * @param {module:zrender/graphic/Path} e
-     * @param {number} width
-     * @param {number} height
      */
-    pathToImage: function (e, dpr) {
-        return this.painter.pathToImage(e, dpr);
-    },
+    pathToImage(e: Path, dpr: number) {
+        if ((this.painter as CanvasPainter).pathToImage) {
+            return (this.painter as CanvasPainter).pathToImage(e, dpr);
+        }
+    }
 
     /**
      * Set default cursor
-     * @param {string} [cursorStyle='default'] 例如 crosshair
+     * @param cursorStyle='default' 例如 crosshair
      */
-    setCursorStyle: function (cursorStyle) {
+    setCursorStyle(cursorStyle: string) {
         this.handler.setCursorStyle(cursorStyle);
-    },
+    }
 
     /**
      * Find hovered element
-     * @param {number} x
-     * @param {number} y
-     * @return {Object} {target, topTarget}
+     * @param x
+     * @param y
+     * @return {target, topTarget}
      */
-    findHover: function (x, y) {
+    findHover(x: number, y: number): {
+        target: Element
+        topTarget: Element
+    } {
         return this.handler.findHover(x, y);
-    },
+    }
 
-    /**
-     * Bind event
-     *
-     * @param {string} eventName Event name
-     * @param {Function} eventHandler Handler function
-     * @param {Object} [context] Context object
-     */
-    on: function (eventName, eventHandler, context) {
+    on(eventName: ElementEventName, eventHandler: ElementEventCallback, context?: Object): void
+    on(eventName: string, eventHandler: EventCallback, context?: Object): void
+    on(eventName: string, eventHandler: EventCallback, context?: Object) {
         this.handler.on(eventName, eventHandler, context);
-    },
+    }
 
     /**
      * Unbind event
-     * @param {string} eventName Event name
-     * @param {Function} [eventHandler] Handler function
+     * @param eventName Event name
+     * @param eventHandler Handler function
      */
-    off: function (eventName, eventHandler) {
+    off(eventName?: string, eventHandler?: EventCallback) {
         this.handler.off(eventName, eventHandler);
-    },
+    }
 
     /**
      * Trigger event manually
      *
-     * @param {string} eventName Event name
-     * @param {event=} event Event object
+     * @param eventName Event name
+     * @param event Event object
      */
-    trigger: function (eventName, event) {
+    trigger(eventName: string, event?: Object) {
         this.handler.trigger(eventName, event);
-    },
+    }
 
 
     /**
      * Clear all objects and the canvas.
      */
-    clear: function () {
-        this.storage.delRoot();
+    clear() {
+        this.storage.delAllRoots();
         this.painter.clear();
-    },
+    }
 
     /**
      * Dispose self.
      */
-    dispose: function () {
+    dispose() {
         this.animation.stop();
 
         this.clear();
@@ -449,5 +379,59 @@ ZRender.prototype = {
 
         delInstance(this.id);
     }
-};
+}
 
+
+export interface ZRenderInitOpt {
+    renderer?: string   // 'canvas' or 'svg
+    devicePixelRatio?: number
+    width?: number | string // 10, 10px, 'auto'
+    height?: number | string
+}
+
+/**
+ * Initializing a zrender instance
+ */
+export function init(dom: HTMLElement, opts?: ZRenderInitOpt) {
+    const zr = new ZRender(zrUtil.guid(), dom, opts);
+    instances[zr.id] = zr;
+    return zr;
+}
+
+/**
+ * Dispose zrender instance
+ */
+export function dispose(zr: ZRender) {
+    zr.dispose();
+}
+
+/**
+ * Dispose all zrender instances
+ */
+export function disposeAll() {
+    for (let key in instances) {
+        if (instances.hasOwnProperty(key)) {
+            instances[key].dispose();
+        }
+    }
+    instances = {};
+}
+
+/**
+ * Get zrender instance by id
+ */
+export function getInstance(id: number): ZRender {
+    return instances[id];
+}
+
+export function registerPainter(name: string, Ctor: typeof PainterBase) {
+    painterCtors[name] = Ctor;
+}
+
+/**
+ * @type {string}
+ */
+export const version = '4.2.0';
+
+
+export interface ZRenderType extends ZRender {};

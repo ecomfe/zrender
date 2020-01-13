@@ -27,22 +27,22 @@ export default Path.extend({
     },
 
     buildPath: function (ctx, shape) {
-        var x;
-        var y;
-        var R = shape.r;
-        var r;
-        var k = shape.k;
-        var n = shape.n;
+        const R = shape.r;
+        const k = shape.k;
+        const n = shape.n;
+        const x0 = shape.cx;
+        const y0 = shape.cy;
+        let x;
+        let y;
+        let r;
 
-        var x0 = shape.cx;
-        var y0 = shape.cy;
 
         ctx.moveTo(x0, y0);
 
-        for (var i = 0, len = R.length; i < len; i++) {
+        for (let i = 0, len = R.length; i < len; i++) {
             r = R[i];
 
-            for (var j = 0; j <= 360 * n; j++) {
+            for (let j = 0; j <= 360 * n; j++) {
                 x = r
                         * sin(k / n * j % 360 * radian)
                         * cos(j * radian)

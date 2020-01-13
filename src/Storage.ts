@@ -1,12 +1,15 @@
 import * as util from './core/util';
 import env from './core/env';
 import Group from './container/Group';
+import Element from './Element';
 
 // Use timsort because in most case elements are partially sorted
 // https://jsfiddle.net/pissang/jr4x7mdm/8/
 import timsort from './core/timsort';
+import Displayable from './graphic/Displayable';
+import { Path } from './export';
 
-function shapeCompareFunc(a, b) {
+function shapeCompareFunc(a: Displayable, b: Displayable) {
     if (a.zlevel === b.zlevel) {
         if (a.z === b.z) {
             // if (a.z2 === b.z2) {
@@ -21,70 +24,61 @@ function shapeCompareFunc(a, b) {
     }
     return a.zlevel - b.zlevel;
 }
-/**
- * 内容仓库 (M)
- * @alias module:zrender/Storage
- * @constructor
- */
-var Storage = function () { // jshint ignore:line
-    this._roots = [];
 
-    this._displayList = [];
+export default class Storage {
 
-    this._displayListLen = 0;
-};
+    private _roots: Element[] = []
 
-Storage.prototype = {
+    private _displayList: Displayable[] = []
 
-    constructor: Storage,
+    private _displayListLen = 0
 
-    /**
-     * @param  {Function} cb
-     *
-     */
-    traverse: function (cb, context) {
-        for (var i = 0; i < this._roots.length; i++) {
+    traverse<T>(
+        cb: (this: T, el: Element) => void,
+        context: T
+    ) {
+        for (let i = 0; i < this._roots.length; i++) {
             this._roots[i].traverse(cb, context);
         }
-    },
+    }
 
     /**
      * 返回所有图形的绘制队列
-     * @param {boolean} [update=false] 是否在返回前更新该数组
-     * @param {boolean} [includeIgnore=false] 是否包含 ignore 的数组, 在 update 为 true 的时候有效
-     *
-     * 详见{@link module:zrender/graphic/Displayable.prototype.updateDisplayList}
-     * @return {Array.<module:zrender/graphic/Displayable>}
+     * @param update 是否在返回前更新该数组
+     * @param includeIgnore 是否包含 ignore 的数组, 在 update 为 true 的时候有效
      */
-    getDisplayList: function (update, includeIgnore) {
+    getDisplayList(update?: boolean, includeIgnore?: boolean): Displayable[] {
         includeIgnore = includeIgnore || false;
         if (update) {
             this.updateDisplayList(includeIgnore);
         }
         return this._displayList;
-    },
+    }
 
     /**
      * 更新图形的绘制队列。
      * 每次绘制前都会调用，该方法会先深度优先遍历整个树，更新所有Group和Shape的变换并且把所有可见的Shape保存到数组中，
      * 最后根据绘制的优先级（zlevel > z > 插入顺序）排序得到绘制队列
-     * @param {boolean} [includeIgnore=false] 是否包含 ignore 的数组
      */
-    updateDisplayList: function (includeIgnore) {
+    updateDisplayList(includeIgnore?: boolean) {
         this._displayListLen = 0;
 
-        var roots = this._roots;
-        var displayList = this._displayList;
-        for (var i = 0, len = roots.length; i < len; i++) {
+        const roots = this._roots;
+        const displayList = this._displayList;
+        for (let i = 0, len = roots.length; i < len; i++) {
             this._updateAndAddDisplayable(roots[i], null, includeIgnore);
         }
 
         displayList.length = this._displayListLen;
 
         env.canvasSupported && timsort(displayList, shapeCompareFunc);
-    },
+    }
 
-    _updateAndAddDisplayable: function (el, clipPaths, includeIgnore) {
+    private _updateAndAddDisplayable(
+        el: Element,
+        clipPaths: Path[],
+        includeIgnore?: boolean
+    ) {
 
         if (el.ignore && !includeIgnore) {
             return;
@@ -100,7 +94,7 @@ Storage.prototype = {
 
         el.afterUpdate();
 
-        var userSetClipPath = el.clipPath;
+        const userSetClipPath = el.getClipPath();
         if (userSetClipPath) {
 
             // FIXME 效率影响
@@ -111,8 +105,8 @@ Storage.prototype = {
                 clipPaths = [];
             }
 
-            var currentClipPath = userSetClipPath;
-            var parentClipPath = el;
+            let currentClipPath = userSetClipPath;
+            let parentClipPath = el;
             // Recursively add clip path
             while (currentClipPath) {
                 // clipPath 的变换是基于使用这个 clipPath 的元素
@@ -122,15 +116,15 @@ Storage.prototype = {
                 clipPaths.push(currentClipPath);
 
                 parentClipPath = currentClipPath;
-                currentClipPath = currentClipPath.clipPath;
+                currentClipPath = currentClipPath.getClipPath();
             }
         }
 
         if (el.isGroup) {
-            var children = el._children;
+            const children = (el as Group).children();
 
-            for (var i = 0; i < children.length; i++) {
-                var child = children[i];
+            for (let i = 0; i < children.length; i++) {
+                const child = children[i];
 
                 // Force to mark as dirty if group is dirty
                 // FIXME __dirtyPath ?
@@ -146,17 +140,17 @@ Storage.prototype = {
 
         }
         else {
-            el.__clipPaths = clipPaths;
+            // Element is displayable
+            (el as Displayable).__clipPaths = clipPaths;
 
-            this._displayList[this._displayListLen++] = el;
+            this._displayList[this._displayListLen++] = el as Displayable;
         }
-    },
+    }
 
     /**
      * 添加图形(Shape)或者组(Group)到根节点
-     * @param {module:zrender/Element} el
      */
-    addRoot: function (el) {
+    addRoot(el: Element) {
         if (el.__storage === this) {
             return;
         }
@@ -167,38 +161,23 @@ Storage.prototype = {
 
         this.addToStorage(el);
         this._roots.push(el);
-    },
+    }
 
     /**
      * 删除指定的图形(Shape)或者组(Group)
-     * @param {string|Array.<string>} [el] 如果为空清空整个Storage
+     * @param el
      */
-    delRoot: function (el) {
-        if (el == null) {
-            // 不指定el清空
-            for (var i = 0; i < this._roots.length; i++) {
-                var root = this._roots[i];
-                if (root instanceof Group) {
-                    root.delChildrenFromStorage(this);
-                }
-            }
-
-            this._roots = [];
-            this._displayList = [];
-            this._displayListLen = 0;
-
-            return;
-        }
+    delRoot(el: Element | Element[]) {
 
         if (el instanceof Array) {
-            for (var i = 0, l = el.length; i < l; i++) {
+            for (let i = 0, l = el.length; i < l; i++) {
                 this.delRoot(el[i]);
             }
             return;
         }
 
 
-        var idx = util.indexOf(this._roots, el);
+        const idx = util.indexOf(this._roots, el);
         if (idx >= 0) {
             this.delFromStorage(el);
             this._roots.splice(idx, 1);
@@ -206,33 +185,47 @@ Storage.prototype = {
                 el.delChildrenFromStorage(this);
             }
         }
-    },
+    }
 
-    addToStorage: function (el) {
+    delAllRoots() {
+        // 不指定el清空
+        for (let i = 0; i < this._roots.length; i++) {
+            const root = this._roots[i];
+            if (root instanceof Group) {
+                root.delChildrenFromStorage(this);
+            }
+        }
+
+        this._roots = [];
+        this._displayList = [];
+        this._displayListLen = 0;
+
+        return;
+    }
+
+    addToStorage(el: Element) {
         if (el) {
             el.__storage = this;
             el.dirty(false);
         }
         return this;
-    },
+    }
 
-    delFromStorage: function (el) {
+    delFromStorage(el: Element) {
         if (el) {
             el.__storage = null;
         }
 
         return this;
-    },
+    }
 
     /**
      * 清空并且释放Storage
      */
-    dispose: function () {
-        this._renderList =
+    dispose() {
+        this._displayList = null;
         this._roots = null;
-    },
+    }
 
-    displayableSortFunc: shapeCompareFunc
-};
-
-export default Storage;
+    displayableSortFunc = shapeCompareFunc
+}

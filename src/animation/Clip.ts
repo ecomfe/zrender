@@ -13,40 +13,74 @@
  * TODO pause
  */
 
-import easingFuncs from './easing';
+import easingFuncs, {easingType} from './easing';
 
-function Clip(options) {
+type OnframeCallback<T> = (target: T, percent: number) => void;
+type ondestroyCallback<T> = (target: T) => void
+type onrestartCallback<T> = (target: T) => void
 
-    this._target = options.target;
+export type DeferredEventTypes = 'destroy' | 'restart'
+type DeferredEventKeys = 'ondestroy' | 'onrestart'
 
-    // 生命周期
-    this._life = options.life || 1000;
-    // 延时
-    this._delay = options.delay || 0;
-    // 开始时间
-    // this._startTime = new Date().getTime() + this._delay;// 单位毫秒
-    this._initialized = false;
+export interface ClipOption<T> {
+    target: T
+    life?: number
+    delay?: number
+    loop?: boolean
+    gap?: number
+    easing?: easingType
 
-    // 是否循环
-    this.loop = options.loop == null ? false : options.loop;
-
-    this.gap = options.gap || 0;
-
-    this.easing = options.easing || 'Linear';
-
-    this.onframe = options.onframe;
-    this.ondestroy = options.ondestroy;
-    this.onrestart = options.onrestart;
-
-    this._pausedTime = 0;
-    this._paused = false;
+    onframe?: OnframeCallback<T>
+    ondestroy?: ondestroyCallback<T>
+    onrestart?: onrestartCallback<T>
 }
 
-Clip.prototype = {
+export default class Clip<T> {
 
-    constructor: Clip,
+    private _target: T
+    // 生命周期
+    private _life: number
+    // 延时
+    private _delay: number
 
-    step: function (globalTime, deltaTime) {
+    private _initialized: boolean = false
+    // 开始时间
+    private _startTime = 0 // 开始时间单位毫秒
+
+    private _pausedTime = 0
+    private _paused = false
+
+    private _needsRemove = false
+
+    loop: boolean
+    gap: number
+    easing: easingType
+    onframe: OnframeCallback<T>
+    ondestroy: ondestroyCallback<T>
+    onrestart: onrestartCallback<T>
+
+    constructor(opts: ClipOption<T>) {
+
+        this._target = opts.target;
+        this._life = opts.life || 1000;
+
+        this._delay = opts.delay || 0;
+
+        // this._startTime = new Date().getTime() + this._delay;
+
+        // 是否循环
+        this.loop = opts.loop == null ? false : opts.loop;
+
+        this.gap = opts.gap || 0;
+
+        this.easing = opts.easing || 'linear';
+
+        this.onframe = opts.onframe;
+        this.ondestroy = opts.ondestroy;
+        this.onrestart = opts.onrestart;
+    }
+
+    step(globalTime: number, deltaTime: number): DeferredEventTypes {
         // Set startTime on first step, or _startTime may has milleseconds different between clips
         // PENDING
         if (!this._initialized) {
@@ -59,7 +93,7 @@ Clip.prototype = {
             return;
         }
 
-        var percent = (globalTime - this._startTime - this._pausedTime) / this._life;
+        let percent = (globalTime - this._startTime - this._pausedTime) / this._life;
 
         // 还没开始
         if (percent < 0) {
@@ -68,13 +102,14 @@ Clip.prototype = {
 
         percent = Math.min(percent, 1);
 
-        var easing = this.easing;
-        var easingFunc = typeof easing === 'string' ? easingFuncs[easing] : easing;
-        var schedule = typeof easingFunc === 'function'
+        const easing = this.easing;
+        const easingFunc = typeof easing === 'string'
+            ? easingFuncs[easing as keyof typeof easingFuncs] : easing;
+        const schedule = typeof easingFunc === 'function'
             ? easingFunc(percent)
             : percent;
 
-        this.fire('frame', schedule);
+        this.onframe && this.onframe(this._target, schedule);
 
         // 结束
         if (percent === 1) {
@@ -92,30 +127,32 @@ Clip.prototype = {
         }
 
         return null;
-    },
+    }
 
-    restart: function (globalTime) {
-        var remainder = (globalTime - this._startTime - this._pausedTime) % this._life;
+    restart(globalTime: number) {
+        const remainder = (globalTime - this._startTime - this._pausedTime) % this._life;
         this._startTime = globalTime - remainder + this.gap;
         this._pausedTime = 0;
 
         this._needsRemove = false;
-    },
+    }
 
-    fire: function (eventType, arg) {
-        eventType = 'on' + eventType;
-        if (this[eventType]) {
-            this[eventType](this._target, arg);
+    fire(eventType: DeferredEventTypes) {
+        let onEventType: DeferredEventKeys = ('on' + eventType) as DeferredEventKeys;
+        if (this[onEventType]) {
+            this[onEventType](this._target);
         }
-    },
+    }
 
-    pause: function () {
+    pause() {
         this._paused = true;
-    },
+    }
 
-    resume: function () {
+    resume() {
         this._paused = false;
     }
-};
 
-export default Clip;
+    needsRemove(): boolean {
+        return this._needsRemove;
+    }
+}

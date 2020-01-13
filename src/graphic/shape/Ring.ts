@@ -17,9 +17,9 @@ export default Path.extend({
     },
 
     buildPath: function (ctx, shape) {
-        var x = shape.cx;
-        var y = shape.cy;
-        var PI2 = Math.PI * 2;
+        const x = shape.cx;
+        const y = shape.cy;
+        const PI2 = Math.PI * 2;
         ctx.moveTo(x + shape.r, y);
         ctx.arc(x, y, shape.r, 0, PI2, false);
         ctx.moveTo(x + shape.r0, y);

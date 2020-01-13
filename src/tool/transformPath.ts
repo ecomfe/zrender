@@ -1,27 +1,28 @@
 import PathProxy from '../core/PathProxy';
-import {applyTransform as v2ApplyTransform} from '../core/vector';
+import {applyTransform as v2ApplyTransform, VectorArray} from '../core/vector';
+import { MatrixArray } from '../core/matrix';
 
-var CMD = PathProxy.CMD;
+const CMD = PathProxy.CMD;
 
-var points = [[], [], []];
-var mathSqrt = Math.sqrt;
-var mathAtan2 = Math.atan2;
+const points: VectorArray[] = [[], [], []];
+const mathSqrt = Math.sqrt;
+const mathAtan2 = Math.atan2;
 
-export default function (path, m) {
-    var data = path.data;
-    var cmd;
-    var nPoint;
-    var i;
-    var j;
-    var k;
-    var p;
+export default function (path: PathProxy, m: MatrixArray) {
+    let data = path.data;
+    let cmd;
+    let nPoint: number;
+    let i: number;
+    let j: number;
+    let k: number;
+    let p: VectorArray;
 
-    var M = CMD.M;
-    var C = CMD.C;
-    var L = CMD.L;
-    var R = CMD.R;
-    var A = CMD.A;
-    var Q = CMD.Q;
+    const M = CMD.M;
+    const C = CMD.C;
+    const L = CMD.L;
+    const R = CMD.R;
+    const A = CMD.A;
+    const Q = CMD.Q;
 
     for (i = 0, j = 0; i < data.length;) {
         cmd = data[i++];
@@ -42,11 +43,11 @@ export default function (path, m) {
                 nPoint = 2;
                 break;
             case A:
-                var x = m[4];
-                var y = m[5];
-                var sx = mathSqrt(m[0] * m[0] + m[1] * m[1]);
-                var sy = mathSqrt(m[2] * m[2] + m[3] * m[3]);
-                var angle = mathAtan2(-m[1] / sy, m[0] / sx);
+                const x = m[4];
+                const y = m[5];
+                const sx = mathSqrt(m[0] * m[0] + m[1] * m[1]);
+                const sy = mathSqrt(m[2] * m[2] + m[3] * m[3]);
+                const angle = mathAtan2(-m[1] / sy, m[0] / sx);
                 // cx
                 data[i] *= sx;
                 data[i++] += x;
@@ -82,7 +83,7 @@ export default function (path, m) {
         }
 
         for (k = 0; k < nPoint; k++) {
-            var p = points[k];
+            let p = points[k];
             p[0] = data[i++];
             p[1] = data[i++];
 

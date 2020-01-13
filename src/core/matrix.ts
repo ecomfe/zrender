@@ -5,16 +5,18 @@
 
 /* global Float32Array */
 
-var ArrayCtor = typeof Float32Array === 'undefined'
+import {VectorArray} from './vector'
+
+const ArrayCtor = typeof Float32Array === 'undefined'
     ? Array
     : Float32Array;
 
+export type MatrixArray = Float32Array | number[]
 /**
  * Create a identity matrix.
- * @return {Float32Array|Array.<number>}
  */
-export function create() {
-    var out = new ArrayCtor(6);
+export function create(): MatrixArray {
+    const out = new ArrayCtor(6);
     identity(out);
 
     return out;
@@ -22,9 +24,8 @@ export function create() {
 
 /**
  * 设置矩阵为单位矩阵
- * @param {Float32Array|Array.<number>} out
  */
-export function identity(out) {
+export function identity(out: MatrixArray): MatrixArray {
     out[0] = 1;
     out[1] = 0;
     out[2] = 0;
@@ -36,10 +37,8 @@ export function identity(out) {
 
 /**
  * 复制矩阵
- * @param {Float32Array|Array.<number>} out
- * @param {Float32Array|Array.<number>} m
  */
-export function copy(out, m) {
+export function copy(out: MatrixArray, m: MatrixArray): MatrixArray {
     out[0] = m[0];
     out[1] = m[1];
     out[2] = m[2];
@@ -51,20 +50,17 @@ export function copy(out, m) {
 
 /**
  * 矩阵相乘
- * @param {Float32Array|Array.<number>} out
- * @param {Float32Array|Array.<number>} m1
- * @param {Float32Array|Array.<number>} m2
  */
-export function mul(out, m1, m2) {
+export function mul(out: MatrixArray, m1: MatrixArray, m2: MatrixArray): MatrixArray {
     // Consider matrix.mul(m, m2, m);
     // where out is the same as m2.
-    // So use temp variable to escape error.
-    var out0 = m1[0] * m2[0] + m1[2] * m2[1];
-    var out1 = m1[1] * m2[0] + m1[3] * m2[1];
-    var out2 = m1[0] * m2[2] + m1[2] * m2[3];
-    var out3 = m1[1] * m2[2] + m1[3] * m2[3];
-    var out4 = m1[0] * m2[4] + m1[2] * m2[5] + m1[4];
-    var out5 = m1[1] * m2[4] + m1[3] * m2[5] + m1[5];
+    // So use temp constiable to escape error.
+    const out0 = m1[0] * m2[0] + m1[2] * m2[1];
+    const out1 = m1[1] * m2[0] + m1[3] * m2[1];
+    const out2 = m1[0] * m2[2] + m1[2] * m2[3];
+    const out3 = m1[1] * m2[2] + m1[3] * m2[3];
+    const out4 = m1[0] * m2[4] + m1[2] * m2[5] + m1[4];
+    const out5 = m1[1] * m2[4] + m1[3] * m2[5] + m1[5];
     out[0] = out0;
     out[1] = out1;
     out[2] = out2;
@@ -76,11 +72,8 @@ export function mul(out, m1, m2) {
 
 /**
  * 平移变换
- * @param {Float32Array|Array.<number>} out
- * @param {Float32Array|Array.<number>} a
- * @param {Float32Array|Array.<number>} v
  */
-export function translate(out, a, v) {
+export function translate(out: MatrixArray, a: MatrixArray, v: VectorArray): MatrixArray {
     out[0] = a[0];
     out[1] = a[1];
     out[2] = a[2];
@@ -92,19 +85,16 @@ export function translate(out, a, v) {
 
 /**
  * 旋转变换
- * @param {Float32Array|Array.<number>} out
- * @param {Float32Array|Array.<number>} a
- * @param {number} rad
  */
-export function rotate(out, a, rad) {
-    var aa = a[0];
-    var ac = a[2];
-    var atx = a[4];
-    var ab = a[1];
-    var ad = a[3];
-    var aty = a[5];
-    var st = Math.sin(rad);
-    var ct = Math.cos(rad);
+export function rotate(out: MatrixArray, a: MatrixArray, rad: number): MatrixArray {
+    const aa = a[0];
+    const ac = a[2];
+    const atx = a[4];
+    const ab = a[1];
+    const ad = a[3];
+    const aty = a[5];
+    const st = Math.sin(rad);
+    const ct = Math.cos(rad);
 
     out[0] = aa * ct + ab * st;
     out[1] = -aa * st + ab * ct;
@@ -117,13 +107,10 @@ export function rotate(out, a, rad) {
 
 /**
  * 缩放变换
- * @param {Float32Array|Array.<number>} out
- * @param {Float32Array|Array.<number>} a
- * @param {Float32Array|Array.<number>} v
  */
-export function scale(out, a, v) {
-    var vx = v[0];
-    var vy = v[1];
+export function scale(out: MatrixArray, a: MatrixArray, v: VectorArray): MatrixArray {
+    const vx = v[0];
+    const vy = v[1];
     out[0] = a[0] * vx;
     out[1] = a[1] * vy;
     out[2] = a[2] * vx;
@@ -135,19 +122,17 @@ export function scale(out, a, v) {
 
 /**
  * 求逆矩阵
- * @param {Float32Array|Array.<number>} out
- * @param {Float32Array|Array.<number>} a
  */
-export function invert(out, a) {
+export function invert(out: MatrixArray, a: MatrixArray): MatrixArray {
 
-    var aa = a[0];
-    var ac = a[2];
-    var atx = a[4];
-    var ab = a[1];
-    var ad = a[3];
-    var aty = a[5];
+    const aa = a[0];
+    const ac = a[2];
+    const atx = a[4];
+    const ab = a[1];
+    const ad = a[3];
+    const aty = a[5];
 
-    var det = aa * ad - ab * ac;
+    let det = aa * ad - ab * ac;
     if (!det) {
         return null;
     }
@@ -164,10 +149,9 @@ export function invert(out, a) {
 
 /**
  * Clone a new matrix.
- * @param {Float32Array|Array.<number>} a
  */
-export function clone(a) {
-    var b = create();
+export function clone(a: MatrixArray): MatrixArray {
+    const b = create();
     copy(b, a);
     return b;
 }

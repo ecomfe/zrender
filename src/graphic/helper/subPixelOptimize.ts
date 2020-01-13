@@ -1,3 +1,5 @@
+import { StyleOption } from "../Style";
+
 /**
  * Sub-pixel optimize for canvas rendering, prevent from blur
  * when rendering a thin vertical/horizontal line.
@@ -5,32 +7,43 @@
 
 var round = Math.round;
 
+type LineShape = {
+    x1: number
+    y1: number
+    x2: number
+    y2: number
+}
+
+type RectShape = {
+    x: number
+    y: number
+    width: number
+    height: number
+    r?: number | number[]
+}
 /**
  * Sub pixel optimize line for canvas
  *
- * @param {Object} outputShape The modification will be performed on `outputShape`.
+ * @param outputShape The modification will be performed on `outputShape`.
  *                 `outputShape` and `inputShape` can be the same object.
  *                 `outputShape` object can be used repeatly, because all of
  *                 the `x1`, `x2`, `y1`, `y2` will be assigned in this method.
- * @param {Object} [inputShape]
- * @param {number} [inputShape.x1]
- * @param {number} [inputShape.y1]
- * @param {number} [inputShape.x2]
- * @param {number} [inputShape.y2]
- * @param {Object} [style]
- * @param {number} [style.lineWidth]
  */
-export function subPixelOptimizeLine(outputShape, inputShape, style) {
-    var lineWidth = style && style.lineWidth;
+export function subPixelOptimizeLine(
+    outputShape: Partial<LineShape>,
+    inputShape: LineShape,
+    style: Pick<StyleOption, 'lineWidth'>
+): LineShape {
+    const lineWidth = style && style.lineWidth;
 
     if (!inputShape || !lineWidth) {
         return;
     }
 
-    var x1 = inputShape.x1;
-    var x2 = inputShape.x2;
-    var y1 = inputShape.y1;
-    var y2 = inputShape.y2;
+    const x1 = inputShape.x1;
+    const x2 = inputShape.x2;
+    const y1 = inputShape.y1;
+    const y2 = inputShape.y2;
 
     if (round(x1 * 2) === round(x2 * 2)) {
         outputShape.x1 = outputShape.x2 = subPixelOptimize(x1, lineWidth, true);
@@ -51,29 +64,26 @@ export function subPixelOptimizeLine(outputShape, inputShape, style) {
 /**
  * Sub pixel optimize rect for canvas
  *
- * @param {Object} outputShape The modification will be performed on `outputShape`.
+ * @param outputShape The modification will be performed on `outputShape`.
  *                 `outputShape` and `inputShape` can be the same object.
  *                 `outputShape` object can be used repeatly, because all of
  *                 the `x`, `y`, `width`, `height` will be assigned in this method.
- * @param {Object} [inputShape]
- * @param {number} [inputShape.x]
- * @param {number} [inputShape.y]
- * @param {number} [inputShape.width]
- * @param {number} [inputShape.height]
- * @param {Object} [style]
- * @param {number} [style.lineWidth]
  */
-export function subPixelOptimizeRect(outputShape, inputShape, style) {
-    var lineWidth = style && style.lineWidth;
+export function subPixelOptimizeRect(
+    outputShape: Partial<RectShape>,
+    inputShape: RectShape,
+    style: Pick<StyleOption, 'lineWidth'>
+): RectShape {
+    const lineWidth = style && style.lineWidth;
 
     if (!inputShape || !lineWidth) {
         return;
     }
 
-    var originX = inputShape.x;
-    var originY = inputShape.y;
-    var originWidth = inputShape.width;
-    var originHeight = inputShape.height;
+    const originX = inputShape.x;
+    const originY = inputShape.y;
+    const originWidth = inputShape.width;
+    const originHeight = inputShape.height;
 
     outputShape.x = subPixelOptimize(originX, lineWidth, true);
     outputShape.y = subPixelOptimize(originY, lineWidth, true);
@@ -90,15 +100,19 @@ export function subPixelOptimizeRect(outputShape, inputShape, style) {
 /**
  * Sub pixel optimize for canvas
  *
- * @param {number} position Coordinate, such as x, y
- * @param {number} lineWidth Should be nonnegative integer.
- * @param {boolean=} positiveOrNegative Default false (negative).
- * @return {number} Optimized position.
+ * @param position Coordinate, such as x, y
+ * @param lineWidth Should be nonnegative integer.
+ * @param positiveOrNegative Default false (negative).
+ * @return Optimized position.
  */
-export function subPixelOptimize(position, lineWidth, positiveOrNegative) {
+export function subPixelOptimize(
+    position: number,
+    lineWidth?: number,
+    positiveOrNegative?: boolean
+) {
     // Assure that (position + lineWidth / 2) is near integer edge,
     // otherwise line will be fuzzy in canvas.
-    var doubledPosition = round(position * 2);
+    const doubledPosition = round(position * 2);
     return (doubledPosition + round(lineWidth)) % 2 === 0
         ? doubledPosition / 2
         : (doubledPosition + (positiveOrNegative ? 1 : -1)) / 2;

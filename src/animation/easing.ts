@@ -3,12 +3,17 @@
  * @see http://sole.github.io/tween.js/examples/03_graphs.html
  * @exports zrender/animation/easing
  */
+
+type easingFunc = (percent: number) => number;
+
+export type easingType = keyof typeof easing | easingFunc | 'spline';
+
 var easing = {
     /**
     * @param {number} k
     * @return {number}
     */
-    linear: function (k) {
+    linear: function (k: number) {
         return k;
     },
 
@@ -16,21 +21,21 @@ var easing = {
     * @param {number} k
     * @return {number}
     */
-    quadraticIn: function (k) {
+    quadraticIn: function (k: number) {
         return k * k;
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    quadraticOut: function (k) {
+    quadraticOut: function (k: number) {
         return k * (2 - k);
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    quadraticInOut: function (k) {
+    quadraticInOut: function (k: number) {
         if ((k *= 2) < 1) {
             return 0.5 * k * k;
         }
@@ -42,21 +47,21 @@ var easing = {
     * @param {number} k
     * @return {number}
     */
-    cubicIn: function (k) {
+    cubicIn: function (k: number) {
         return k * k * k;
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    cubicOut: function (k) {
+    cubicOut: function (k: number) {
         return --k * k * k + 1;
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    cubicInOut: function (k) {
+    cubicInOut: function (k: number) {
         if ((k *= 2) < 1) {
             return 0.5 * k * k * k;
         }
@@ -68,21 +73,21 @@ var easing = {
     * @param {number} k
     * @return {number}
     */
-    quarticIn: function (k) {
+    quarticIn: function (k: number) {
         return k * k * k * k;
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    quarticOut: function (k) {
+    quarticOut: function (k: number) {
         return 1 - (--k * k * k * k);
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    quarticInOut: function (k) {
+    quarticInOut: function (k: number) {
         if ((k *= 2) < 1) {
             return 0.5 * k * k * k * k;
         }
@@ -94,21 +99,21 @@ var easing = {
     * @param {number} k
     * @return {number}
     */
-    quinticIn: function (k) {
+    quinticIn: function (k: number) {
         return k * k * k * k * k;
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    quinticOut: function (k) {
+    quinticOut: function (k: number) {
         return --k * k * k * k * k + 1;
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    quinticInOut: function (k) {
+    quinticInOut: function (k: number) {
         if ((k *= 2) < 1) {
             return 0.5 * k * k * k * k * k;
         }
@@ -120,21 +125,21 @@ var easing = {
     * @param {number} k
     * @return {number}
     */
-    sinusoidalIn: function (k) {
+    sinusoidalIn: function (k: number) {
         return 1 - Math.cos(k * Math.PI / 2);
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    sinusoidalOut: function (k) {
+    sinusoidalOut: function (k: number) {
         return Math.sin(k * Math.PI / 2);
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    sinusoidalInOut: function (k) {
+    sinusoidalInOut: function (k: number) {
         return 0.5 * (1 - Math.cos(Math.PI * k));
     },
 
@@ -143,21 +148,21 @@ var easing = {
     * @param {number} k
     * @return {number}
     */
-    exponentialIn: function (k) {
+    exponentialIn: function (k: number) {
         return k === 0 ? 0 : Math.pow(1024, k - 1);
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    exponentialOut: function (k) {
+    exponentialOut: function (k: number) {
         return k === 1 ? 1 : 1 - Math.pow(2, -10 * k);
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    exponentialInOut: function (k) {
+    exponentialInOut: function (k: number) {
         if (k === 0) {
             return 0;
         }
@@ -175,21 +180,21 @@ var easing = {
     * @param {number} k
     * @return {number}
     */
-    circularIn: function (k) {
+    circularIn: function (k: number) {
         return 1 - Math.sqrt(1 - k * k);
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    circularOut: function (k) {
+    circularOut: function (k: number) {
         return Math.sqrt(1 - (--k * k));
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    circularInOut: function (k) {
+    circularInOut: function (k: number) {
         if ((k *= 2) < 1) {
             return -0.5 * (Math.sqrt(1 - k * k) - 1);
         }
@@ -201,10 +206,10 @@ var easing = {
     * @param {number} k
     * @return {number}
     */
-    elasticIn: function (k) {
-        var s;
-        var a = 0.1;
-        var p = 0.4;
+    elasticIn: function (k: number) {
+        let s;
+        let a = 0.1;
+        let p = 0.4;
         if (k === 0) {
             return 0;
         }
@@ -225,10 +230,10 @@ var easing = {
     * @param {number} k
     * @return {number}
     */
-    elasticOut: function (k) {
-        var s;
-        var a = 0.1;
-        var p = 0.4;
+    elasticOut: function (k: number) {
+        let s;
+        let a = 0.1;
+        let p = 0.4;
         if (k === 0) {
             return 0;
         }
@@ -249,10 +254,10 @@ var easing = {
     * @param {number} k
     * @return {number}
     */
-    elasticInOut: function (k) {
-        var s;
-        var a = 0.1;
-        var p = 0.4;
+    elasticInOut: function (k: number) {
+        let s;
+        let a = 0.1;
+        let p = 0.4;
         if (k === 0) {
             return 0;
         }
@@ -280,24 +285,24 @@ var easing = {
     * @param {number} k
     * @return {number}
     */
-    backIn: function (k) {
-        var s = 1.70158;
+    backIn: function (k: number) {
+        let s = 1.70158;
         return k * k * ((s + 1) * k - s);
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    backOut: function (k) {
-        var s = 1.70158;
+    backOut: function (k: number) {
+        let s = 1.70158;
         return --k * k * ((s + 1) * k + s) + 1;
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    backInOut: function (k) {
-        var s = 1.70158 * 1.525;
+    backInOut: function (k: number) {
+        let s = 1.70158 * 1.525;
         if ((k *= 2) < 1) {
             return 0.5 * (k * k * ((s + 1) * k - s));
         }
@@ -309,14 +314,14 @@ var easing = {
     * @param {number} k
     * @return {number}
     */
-    bounceIn: function (k) {
+    bounceIn: function (k: number) {
         return 1 - easing.bounceOut(1 - k);
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    bounceOut: function (k) {
+    bounceOut: function (k: number) {
         if (k < (1 / 2.75)) {
             return 7.5625 * k * k;
         }
@@ -334,7 +339,7 @@ var easing = {
     * @param {number} k
     * @return {number}
     */
-    bounceInOut: function (k) {
+    bounceInOut: function (k: number) {
         if (k < 0.5) {
             return easing.bounceIn(k * 2) * 0.5;
         }

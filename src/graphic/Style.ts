@@ -1,24 +1,29 @@
 
 import fixShadow from './helper/fixShadow';
 import {ContextCachedBy} from './constant';
+import { RectLike } from '../core/BoundingRect';
+import Displayable from './Displayable';
+import { VectorArray } from '../core/vector';
+import { Dictionary, PropType, TextVerticalAlign, ImageLike, TextAlign, ZRCanvasRenderingContext } from '../core/types';
+import { LinearGradientObject } from './LinearGradient';
+import { RadialGradientObject } from './RadialGradient';
+import Path from './Path';
+import { PatternObject } from './Pattern';
+import { GradientObject } from './Gradient';
 
 var STYLE_COMMON_PROPS = [
     ['shadowBlur', 0], ['shadowOffsetX', 0], ['shadowOffsetY', 0], ['shadowColor', '#000'],
     ['lineCap', 'butt'], ['lineJoin', 'miter'], ['miterLimit', 10]
 ];
 
-// var SHADOW_PROPS = STYLE_COMMON_PROPS.slice(0, 4);
-// var LINE_PROPS = STYLE_COMMON_PROPS.slice(4);
+// const SHADOW_PROPS = STYLE_COMMON_PROPS.slice(0, 4);
+// const LINE_PROPS = STYLE_COMMON_PROPS.slice(4);
 
-var Style = function (opts) {
-    this.extendFrom(opts, false);
-};
-
-function createLinearGradient(ctx, obj, rect) {
-    var x = obj.x == null ? 0 : obj.x;
-    var x2 = obj.x2 == null ? 1 : obj.x2;
-    var y = obj.y == null ? 0 : obj.y;
-    var y2 = obj.y2 == null ? 0 : obj.y2;
+function createLinearGradient(ctx: CanvasRenderingContext2D, obj: LinearGradientObject, rect: RectLike) {
+    let x = obj.x == null ? 0 : obj.x;
+    let x2 = obj.x2 == null ? 1 : obj.x2;
+    let y = obj.y == null ? 0 : obj.y;
+    let y2 = obj.y2 == null ? 0 : obj.y2;
 
     if (!obj.global) {
         x = x * rect.width + rect.x;
@@ -33,59 +38,132 @@ function createLinearGradient(ctx, obj, rect) {
     y = isNaN(y) ? 0 : y;
     y2 = isNaN(y2) ? 0 : y2;
 
-    var canvasGradient = ctx.createLinearGradient(x, y, x2, y2);
+    const canvasGradient = ctx.createLinearGradient(x, y, x2, y2);
 
     return canvasGradient;
 }
 
-function createRadialGradient(ctx, obj, rect) {
-    var width = rect.width;
-    var height = rect.height;
-    var min = Math.min(width, height);
+function createRadialGradient(ctx: CanvasRenderingContext2D, obj: RadialGradientObject, rect: RectLike) {
+    const width = rect.width;
+    const height = rect.height;
+    const min = Math.min(width, height);
 
-    var x = obj.x == null ? 0.5 : obj.x;
-    var y = obj.y == null ? 0.5 : obj.y;
-    var r = obj.r == null ? 0.5 : obj.r;
+    let x = obj.x == null ? 0.5 : obj.x;
+    let y = obj.y == null ? 0.5 : obj.y;
+    let r = obj.r == null ? 0.5 : obj.r;
     if (!obj.global) {
         x = x * width + rect.x;
         y = y * height + rect.y;
         r = r * min;
     }
 
-    var canvasGradient = ctx.createRadialGradient(x, y, 0, x, y, r);
+    const canvasGradient = ctx.createRadialGradient(x, y, 0, x, y, r);
 
     return canvasGradient;
 }
 
+export class TextStyleOption {
 
-Style.prototype = {
-
-    constructor: Style,
-
+    // TODO Text is assigned inside zrender
+    text?: string
+    // TODO Text not support PatternObject | LinearGradientObject | RadialGradientObject yet.
+    textFill?: string | PatternObject | LinearGradientObject | RadialGradientObject
+    textStroke?: string | PatternObject | LinearGradientObject | RadialGradientObject
     /**
-     * @type {string}
+     * textStroke may be set as some color as a default
+     * value in upper applicaion, where the default value
+     * of textStrokeWidth should be 0 to make sure that
+     * user can choose to do not use text stroke.
      */
-    fill: '#000',
+    textStrokeWidth?: number
 
     /**
-     * @type {string}
+     * If `fontSize` or `fontFamily` exists, `font` will be reset by
+     * `fontSize`, `fontStyle`, `fontWeight`, `fontFamily`.
+     * So do not visit it directly in upper application (like echarts),
+     * but use `contain/text#makeFont` instead.
      */
-    stroke: null,
+    font?: string
+    /**
+     * The same as font. Use font please.
+     * @deprecated
+     */
+    textFont?: string
+
 
     /**
+     * It helps merging respectively, rather than parsing an entire font string.
+     */
+    fontStyle?: string
+    /**
+     * It helps merging respectively, rather than parsing an entire font string.
+     */
+    fontWeight?: string
+    /**
+     * It helps merging respectively, rather than parsing an entire font string.
+     */
+    fontFamily?: string
+    /**
+     * It helps merging respectively, rather than parsing an entire font string.
+     * Should be 12 but not '12px'.
      * @type {number}
      */
-    opacity: 1,
+    fontSize?: number
+
+    textAlign?: TextAlign
+    textVerticalAlign?: TextVerticalAlign
+    /**
+     * Use textVerticalAlign instead
+     * @deprecated
+     */
+    textBaseline?: TextVerticalAlign
+
+    textLineHeight?: number
+    textWidth?: number | string
+    /**
+     * Only for textBackground.
+     */
+    textHeight?: number
+    /**
+     * Reserved for special functinality, like 'hr'.
+     */
+    textTag?: string
+
+    textShadowColor?: string
+    textShadowBlur?: number
+    textShadowOffsetX?: number
+    textShadowOffsetY?: number
+
+    textBackgroundColor?: string | {
+        image: ImageLike | string
+    }
 
     /**
-     * @type {number}
+     * Can be `2` or `[2, 4]` or `[2, 3, 4, 5]`
      */
-    fillOpacity: null,
+    textPadding?: number | number[]
 
-    /**
-     * @type {number}
-     */
-    strokeOpacity: null,
+    textBorderColor?: string
+    textBorderWidth?: number
+    textBorderRadius?: number | number[]
+
+    textBoxShadowColor?: string
+    textBoxShadowBlur?: number
+    textBoxShadowOffsetX?: number
+    textBoxShadowOffsetY?: number
+}
+
+export class StyleOption extends TextStyleOption {
+    // For text and image
+    x?: number
+    y?: number
+
+    fill?: string | PatternObject | LinearGradientObject | RadialGradientObject
+    stroke?: string | PatternObject | LinearGradientObject | RadialGradientObject
+
+    opacity?: number
+    fillOpacity?: number
+    strokeOpacity?: number
 
     /**
      * `true` is not supported.
@@ -93,213 +171,45 @@ Style.prototype = {
      * `false` is used to remove lineDash in some
      * case that `null`/`undefined` can not be set.
      * (e.g., emphasis.lineStyle in echarts)
-     * @type {Array.<number>|boolean}
      */
-    lineDash: null,
+    lineDash?: false | number[]
+    lineDashOffset?: number
 
-    /**
-     * @type {number}
-     */
-    lineDashOffset: 0,
+    shadowBlur?: number
+    shadowOffsetX?: number
+    shadowOffsetY?: number
+    shadowColor?: string
 
-    /**
-     * @type {number}
-     */
-    shadowBlur: 0,
+    lineWidth?: number
+    lineCap?: CanvasLineCap
+    lineJoin?: CanvasLineJoin
 
-    /**
-     * @type {number}
-     */
-    shadowOffsetX: 0,
+    miterLimit?: number
+    strokeNoScale?: boolean
 
-    /**
-     * @type {number}
-     */
-    shadowOffsetY: 0,
-
-    /**
-     * @type {number}
-     */
-    lineWidth: 1,
-
-    /**
-     * If stroke ignore scale
-     * @type {Boolean}
-     */
-    strokeNoScale: false,
-
+    // Option about text
     // Bounding rect text configuration
     // Not affected by element transform
-    /**
-     * @type {string}
-     */
-    text: null,
-
-    /**
-     * If `fontSize` or `fontFamily` exists, `font` will be reset by
-     * `fontSize`, `fontStyle`, `fontWeight`, `fontFamily`.
-     * So do not visit it directly in upper application (like echarts),
-     * but use `contain/text#makeFont` instead.
-     * @type {string}
-     */
-    font: null,
-
-    /**
-     * The same as font. Use font please.
-     * @deprecated
-     * @type {string}
-     */
-    textFont: null,
-
-    /**
-     * It helps merging respectively, rather than parsing an entire font string.
-     * @type {string}
-     */
-    fontStyle: null,
-
-    /**
-     * It helps merging respectively, rather than parsing an entire font string.
-     * @type {string}
-     */
-    fontWeight: null,
-
-    /**
-     * It helps merging respectively, rather than parsing an entire font string.
-     * Should be 12 but not '12px'.
-     * @type {number}
-     */
-    fontSize: null,
-
-    /**
-     * It helps merging respectively, rather than parsing an entire font string.
-     * @type {string}
-     */
-    fontFamily: null,
-
-    /**
-     * Reserved for special functinality, like 'hr'.
-     * @type {string}
-     */
-    textTag: null,
-
-    /**
-     * @type {string}
-     */
-    textFill: '#000',
-
-    /**
-     * @type {string}
-     */
-    textStroke: null,
-
-    /**
-     * @type {number}
-     */
-    textWidth: null,
-
-    /**
-     * Only for textBackground.
-     * @type {number}
-     */
-    textHeight: null,
-
-    /**
-     * textStroke may be set as some color as a default
-     * value in upper applicaion, where the default value
-     * of textStrokeWidth should be 0 to make sure that
-     * user can choose to do not use text stroke.
-     * @type {number}
-     */
-    textStrokeWidth: 0,
-
-    /**
-     * @type {number}
-     */
-    textLineHeight: null,
-
+    text?: string
     /**
      * 'inside', 'left', 'right', 'top', 'bottom'
      * [x, y]
      * Based on x, y of rect.
-     * @type {string|Array.<number>}
-     * @default 'inside'
      */
-    textPosition: 'inside',
-
+    textPosition?: string | number[]
     /**
      * If not specified, use the boundingRect of a `displayable`.
-     * @type {Object}
      */
-    textRect: null,
-
-    /**
-     * [x, y]
-     * @type {Array.<number>}
-     */
-    textOffset: null,
-
-    /**
-     * @type {string}
-     */
-    textAlign: null,
-
-    /**
-     * @type {string}
-     */
-    textVerticalAlign: null,
-
-    /**
-     * @type {number}
-     */
-    textDistance: 5,
-
-    /**
-     * @type {string}
-     */
-    textShadowColor: 'transparent',
-
-    /**
-     * @type {number}
-     */
-    textShadowBlur: 0,
-
-    /**
-     * @type {number}
-     */
-    textShadowOffsetX: 0,
-
-    /**
-     * @type {number}
-     */
-    textShadowOffsetY: 0,
-
-    /**
-     * @type {string}
-     */
-    textBoxShadowColor: 'transparent',
-
-    /**
-     * @type {number}
-     */
-    textBoxShadowBlur: 0,
-
-    /**
-     * @type {number}
-     */
-    textBoxShadowOffsetX: 0,
-
-    /**
-     * @type {number}
-     */
-    textBoxShadowOffsetY: 0,
+    textRect?: RectLike
+    textOffset?: number[]
+    textDistance?: number
 
     /**
      * Whether transform text.
      * Only available in Path and Image element,
      * where the text is called as `RectText`.
-     * @type {boolean}
      */
-    transformText: false,
+    transformText?: boolean
 
     /**
      * Text rotate around position of Path or Image.
@@ -307,7 +217,7 @@ Style.prototype = {
      * Only available in Path and Image element,
      * where the text is called as `RectText`.
      */
-    textRotation: 0,
+    textRotation?: number
 
     /**
      * Text origin of text rotation.
@@ -320,82 +230,139 @@ Style.prototype = {
      * + If specified as a string `center`, it is the center of the rect of
      * its host element.
      * + By default, this origin is the `textPosition`.
-     * @type {string|Array.<number>}
      */
-    textOrigin: null,
+    textOrigin?: 'center' | VectorArray
 
-    /**
-     * @type {string}
-     */
-    textBackgroundColor: null,
-
-    /**
-     * @type {string}
-     */
-    textBorderColor: null,
-
-    /**
-     * @type {number}
-     */
-    textBorderWidth: 0,
-
-    /**
-     * @type {number}
-     */
-    textBorderRadius: 0,
-
-    /**
-     * Can be `2` or `[2, 4]` or `[2, 3, 4, 5]`
-     * @type {number|Array.<number>}
-     */
-    textPadding: null,
+    // TODO Support number?
+    textPadding?: number | number[]
 
     /**
      * Text styles for rich text.
-     * @type {Object}
      */
-    rich: null,
+    rich?: Dictionary<TextStyleOption>
 
-    /**
-     * {outerWidth, outerHeight, ellipsis, placeholder}
-     * @type {Object}
-     */
-    truncate: null,
+    truncate?: {
+        outerWidth?: number
+        outerHeight?: number
+        ellipsis?: string
+        placeholder?: string
+        minChar?: number
+    }
 
     /**
      * https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/globalCompositeOperation
-     * @type {string}
      */
-    blend: null,
+    blend?: string
+}
 
-    /**
-     * @param {CanvasRenderingContext2D} ctx
-     */
-    bind: function (ctx, el, prevEl) {
-        var style = this;
-        var prevStyle = prevEl && prevEl.style;
+
+
+// Provide optional
+// type TextStyleOption = Partial<TextStylelImpl>
+// type StyleOption = Partial<StyleImpl>
+
+type StyleKey = keyof StyleOption
+
+type StyleValueType = PropType<StyleOption, StyleKey>
+// type StyleValueType = number | string | number[] | boolean
+//     | VectorArray | Dictionary<TextStyleOption> | RectLike
+//     | PatternObject | CanvasGradient
+//     | CanvasLineCap | CanvasLineJoin
+
+
+export default class Style extends StyleOption {
+
+    fill: string | LinearGradientObject | RadialGradientObject | PatternObject = '#000'
+    stroke: string | LinearGradientObject | RadialGradientObject | PatternObject = null
+
+    opacity = 1
+
+    lineDashOffset = 0
+
+    shadowBlur = 0
+
+    shadowOffsetX = 0
+
+    shadowOffsetY = 0
+
+    shadowColor = '#fff'
+
+    lineWidth = 1
+
+    lineCap: CanvasLineCap = 'butt'
+
+    lineJoin: CanvasLineJoin
+
+    miterLimit = 10
+
+    strokeNoScale = false
+
+    textWidth: number | string
+
+    textHeight: number
+
+    textStrokeWidth = 0
+
+    textPosition: string | number[] = 'inside'
+
+    textDistance = 5
+
+    textShadowColor = 'transparent'
+
+    textShadowBlur = 0
+
+    textShadowOffsetX = 0
+
+    textShadowOffsetY = 0
+
+    textBoxShadowColor = 'transparent'
+
+    textBoxShadowBlur = 0
+
+    textBoxShadowOffsetX = 0
+
+    textBoxShadowOffsetY = 0
+
+    transformText: boolean
+
+    textRotation = 0
+
+    textBorderWidth = 0
+
+    textBorderRadius = 0
+
+    constructor(opts?: StyleOption) {
+        super()
+        if (opts) {
+            this.extendFrom(opts, false);
+        }
+    }
+
+    bind(ctx: CanvasRenderingContext2D, el: Displayable, prevEl: Displayable) {
+        const style = this;
+        const prevStyle = prevEl && prevEl.style;
         // If no prevStyle, it means first draw.
         // Only apply cache if the last time cachced by this function.
-        var notCheckCache = !prevStyle || ctx.__attrCachedBy !== ContextCachedBy.STYLE_BIND;
+        const notCheckCache = !prevStyle || (ctx as any).__attrCachedBy !== ContextCachedBy.STYLE_BIND;
 
-        ctx.__attrCachedBy = ContextCachedBy.STYLE_BIND;
+        (ctx as ZRCanvasRenderingContext).__attrCachedBy = ContextCachedBy.STYLE_BIND;
 
-        for (var i = 0; i < STYLE_COMMON_PROPS.length; i++) {
-            var prop = STYLE_COMMON_PROPS[i];
-            var styleName = prop[0];
+        for (let i = 0; i < STYLE_COMMON_PROPS.length; i++) {
+            const prop = STYLE_COMMON_PROPS[i];
+            const styleName = prop[0];
 
-            if (notCheckCache || style[styleName] !== prevStyle[styleName]) {
+            if (notCheckCache || style[styleName as StyleKey] !== prevStyle[styleName as StyleKey]) {
                 // FIXME Invalid property value will cause style leak from previous element.
-                ctx[styleName] =
-                    fixShadow(ctx, styleName, style[styleName] || prop[1]);
+                (ctx as any)[styleName] =
+                    fixShadow(ctx, styleName as string, (style[styleName as StyleKey] || prop[1]) as number);
             }
         }
 
         if ((notCheckCache || style.fill !== prevStyle.fill)) {
-            ctx.fillStyle = style.fill;
+            ctx.fillStyle = style.fill as string;
         }
         if ((notCheckCache || style.stroke !== prevStyle.stroke)) {
-            ctx.strokeStyle = style.stroke;
+            ctx.strokeStyle = style.stroke as string;
         }
         if ((notCheckCache || style.opacity !== prevStyle.opacity)) {
             ctx.globalAlpha = style.opacity == null ? 1 : style.opacity;
@@ -405,95 +372,82 @@ Style.prototype = {
             ctx.globalCompositeOperation = style.blend || 'source-over';
         }
         if (this.hasStroke()) {
-            var lineWidth = style.lineWidth;
+            const lineWidth = style.lineWidth;
             ctx.lineWidth = lineWidth / (
-                (this.strokeNoScale && el && el.getLineScale) ? el.getLineScale() : 1
+                (this.strokeNoScale && el && (<Path>el).getLineScale) ? (<Path>el).getLineScale() : 1
             );
         }
-    },
+    }
 
-    hasFill: function () {
-        var fill = this.fill;
+    hasFill() {
+        const fill = this.fill;
         return fill != null && fill !== 'none';
-    },
+    }
 
-    hasStroke: function () {
-        var stroke = this.stroke;
+    hasStroke() {
+        const stroke = this.stroke;
         return stroke != null && stroke !== 'none' && this.lineWidth > 0;
-    },
+    }
 
     /**
      * Extend from other style
      * @param {zrender/graphic/Style} otherStyle
      * @param {boolean} overwrite true: overwrirte any way.
      *                            false: overwrite only when !target.hasOwnProperty
-     *                            others: overwrite when property is not null/undefined.
+     *                            null/undefined: overwrite when property is not null/undefined.
      */
-    extendFrom: function (otherStyle, overwrite) {
+    extendFrom(otherStyle: StyleOption, overwrite?: boolean) {
         if (otherStyle) {
-            for (var name in otherStyle) {
+            for (let name in otherStyle) {
                 if (otherStyle.hasOwnProperty(name)
                     && (overwrite === true
                         || (
                             overwrite === false
                                 ? !this.hasOwnProperty(name)
-                                : otherStyle[name] != null
+                                : otherStyle[name as StyleKey] != null
                         )
                     )
                 ) {
-                    this[name] = otherStyle[name];
+                    // FIXME as any
+                    (this as any)[name] = otherStyle[name as StyleKey];
                 }
             }
         }
-    },
+    }
 
     /**
      * Batch setting style with a given object
-     * @param {Object|string} obj
-     * @param {*} [obj]
      */
-    set: function (obj, value) {
+    set(obj: StyleOption | StyleKey, value?: StyleValueType) {
         if (typeof obj === 'string') {
-            this[obj] = value;
+            (this as any)[obj] = value;
         }
         else {
             this.extendFrom(obj, true);
         }
-    },
+    }
 
     /**
      * Clone
      * @return {zrender/graphic/Style} [description]
      */
-    clone: function () {
-        var newStyle = new this.constructor();
+    clone() {
+        const newStyle = new Style();
         newStyle.extendFrom(this, true);
         return newStyle;
-    },
+    }
 
-    getGradient: function (ctx, obj, rect) {
-        var method = obj.type === 'radial' ? createRadialGradient : createLinearGradient;
-        var canvasGradient = method(ctx, obj, rect);
-        var colorStops = obj.colorStops;
-        for (var i = 0; i < colorStops.length; i++) {
+    static getGradient(ctx: CanvasRenderingContext2D, obj: GradientObject, rect: RectLike) {
+        const canvasGradient = obj.type === 'radial'
+            ? createRadialGradient(ctx, obj as RadialGradientObject, rect)
+            : createLinearGradient(ctx, obj as LinearGradientObject, rect);
+
+        const colorStops = obj.colorStops;
+        for (let i = 0; i < colorStops.length; i++) {
             canvasGradient.addColorStop(
                 colorStops[i].offset, colorStops[i].color
             );
         }
         return canvasGradient;
     }
-
 };
-
-var styleProto = Style.prototype;
-for (var i = 0; i < STYLE_COMMON_PROPS.length; i++) {
-    var prop = STYLE_COMMON_PROPS[i];
-    if (!(prop[0] in styleProto)) {
-        styleProto[prop[0]] = prop[1];
-    }
-}
-
-// Provide for others
-Style.getGradient = styleProto.getGradient;
-
-export default Style;

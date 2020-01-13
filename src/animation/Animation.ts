@@ -1,32 +1,32 @@
 /**
  * 动画主类, 调度和管理所有动画控制器
  *
- * @module zrender/animation/Animation
- * @author pissang(https://github.com/pissang)
  */
 // TODO Additive animation
 // http://iosoteric.com/additive-animations-animatewithduration-in-ios-8/
 // https://developer.apple.com/videos/wwdc2014/#236
 
 import * as util from '../core/util';
-import {Dispatcher} from '../core/event';
+import Eventful from '../core/Eventful';
 import requestAnimationFrame from './requestAnimationFrame';
-import Animator from './Animator';
+import Animator, {AnimationPropSetter, AnimationPropGetter} from './Animator';
+import Clip, {DeferredEventTypes} from './Clip';
+import { Dictionary } from '../core/types';
 
-/**
- * @typedef {Object} IZRenderStage
- * @property {Function} update
- */
 
+interface Stage {
+    update?: () => void
+}
+type OnframeCallback = (deltaTime: number) => void
+
+interface AnimationOption {
+    stage?: Stage
+    onframe?: OnframeCallback
+}
 /**
- * @alias module:zrender/animation/Animation
- * @constructor
- * @param {Object} [options]
- * @param {Function} [options.onframe]
- * @param {IZRenderStage} [options.stage]
  * @example
- *     var animation = new Animation();
- *     var obj = {
+ *     const animation = new Animation();
+ *     const obj = {
  *         x: 100,
  *         y: 100
  *     };
@@ -41,85 +41,80 @@ import Animator from './Animator';
  *         })
  *         .start('spline');
  */
-var Animation = function (options) {
 
-    options = options || {};
+export default class Animation extends Eventful {
 
-    this.stage = options.stage || {};
+    stage: Stage
 
-    this.onframe = options.onframe || function () {};
+    onframe: OnframeCallback
 
-    // private properties
-    this._clips = [];
+    private _clips: Clip<any>[] = []
+    private _running: boolean = false
 
-    this._running = false;
+    private _time: number = 0
+    private _pausedTime: number = 0
+    private _pauseStart: number = 0
 
-    this._time;
+    private _paused = false;
 
-    this._pausedTime;
+    constructor(opts: AnimationOption) {
+        super();
 
-    this._pauseStart;
+        opts = opts || {};
 
-    this._paused = false;
+        this.stage = opts.stage || {};
 
-    Dispatcher.call(this);
-};
+        this.onframe = opts.onframe || function () {};
+    }
 
-Animation.prototype = {
-
-    constructor: Animation,
     /**
      * 添加 clip
-     * @param {module:zrender/animation/Clip} clip
      */
-    addClip: function (clip) {
+    addClip(clip: Clip<any>) {
         this._clips.push(clip);
-    },
+    }
     /**
      * 添加 animator
-     * @param {module:zrender/animation/Animator} animator
      */
-    addAnimator: function (animator) {
+    addAnimator(animator: Animator<any>) {
         animator.animation = this;
-        var clips = animator.getClips();
-        for (var i = 0; i < clips.length; i++) {
+        const clips = animator.getClips();
+        for (let i = 0; i < clips.length; i++) {
             this.addClip(clips[i]);
         }
-    },
+    }
     /**
      * 删除动画片段
-     * @param {module:zrender/animation/Clip} clip
      */
-    removeClip: function (clip) {
-        var idx = util.indexOf(this._clips, clip);
+    removeClip(clip: Clip<any>) {
+        const idx = util.indexOf(this._clips, clip);
         if (idx >= 0) {
             this._clips.splice(idx, 1);
         }
-    },
+    }
 
     /**
      * 删除动画片段
-     * @param {module:zrender/animation/Animator} animator
      */
-    removeAnimator: function (animator) {
-        var clips = animator.getClips();
-        for (var i = 0; i < clips.length; i++) {
+    removeAnimator(animator: Animator<any>) {
+        const clips = animator.getClips();
+        for (let i = 0; i < clips.length; i++) {
             this.removeClip(clips[i]);
         }
         animator.animation = null;
-    },
+    }
 
-    _update: function () {
-        var time = new Date().getTime() - this._pausedTime;
-        var delta = time - this._time;
-        var clips = this._clips;
-        var len = clips.length;
+    _update() {
+        const time = new Date().getTime() - this._pausedTime;
+        const delta = time - this._time;
+        const clips = this._clips;
+        let len = clips.length;
 
-        var deferredEvents = [];
-        var deferredClips = [];
-        for (var i = 0; i < len; i++) {
-            var clip = clips[i];
-            var e = clip.step(time, delta);
+        const deferredEvents: DeferredEventTypes[] = [];
+        const deferredClips = [];
+        for (let i = 0; i < len; i++) {
+            const clip = clips[i];
+            const e = clip.step(time, delta);
             // Throw out the events need to be called after
             // stage.update, like destroy
             if (e) {
@@ -129,8 +124,8 @@ Animation.prototype = {
         }
 
         // Remove the finished clip
-        for (var i = 0; i < len;) {
-            if (clips[i]._needsRemove) {
+        for (let i = 0; i < len;) {
+            if (clips[i].needsRemove()) {
                 clips[i] = clips[len - 1];
                 clips.pop();
                 len--;
@@ -141,7 +136,7 @@ Animation.prototype = {
         }
 
         len = deferredEvents.length;
-        for (var i = 0; i < len; i++) {
+        for (let i = 0; i < len; i++) {
             deferredClips[i].fire(deferredEvents[i]);
         }
 
@@ -157,10 +152,10 @@ Animation.prototype = {
         if (this.stage.update) {
             this.stage.update();
         }
-    },
+    }
 
-    _startLoop: function () {
-        var self = this;
+    _startLoop() {
+        const self = this;
 
         this._running = true;
 
@@ -174,75 +169,72 @@ Animation.prototype = {
         }
 
         requestAnimationFrame(step);
-    },
+    }
 
     /**
      * Start animation.
      */
-    start: function () {
+    start() {
 
         this._time = new Date().getTime();
         this._pausedTime = 0;
 
         this._startLoop();
-    },
+    }
 
     /**
      * Stop animation.
      */
-    stop: function () {
+    stop() {
         this._running = false;
-    },
+    }
 
     /**
      * Pause animation.
      */
-    pause: function () {
+    pause() {
         if (!this._paused) {
             this._pauseStart = new Date().getTime();
             this._paused = true;
         }
-    },
+    }
 
     /**
      * Resume animation.
      */
-    resume: function () {
+    resume() {
         if (this._paused) {
             this._pausedTime += (new Date().getTime()) - this._pauseStart;
             this._paused = false;
         }
-    },
+    }
 
     /**
      * Clear animation.
      */
-    clear: function () {
+    clear() {
         this._clips = [];
-    },
+    }
 
     /**
      * Whether animation finished.
      */
-    isFinished: function () {
+    isFinished() {
         return !this._clips.length;
-    },
+    }
 
     /**
      * Creat animator for a target, whose props can be animated.
-     *
-     * @param  {Object} target
-     * @param  {Object} options
-     * @param  {boolean} [options.loop=false] Whether loop animation.
-     * @param  {Function} [options.getter=null] Get value from target.
-     * @param  {Function} [options.setter=null] Set value to target.
-     * @return {module:zrender/animation/Animation~Animator}
      */
     // TODO Gap
-    animate: function (target, options) {
+    animate<T>(target: T, options: {
+        loop?: boolean  // Whether loop animation.
+        getter?: AnimationPropGetter<T>    // Get value from target.
+        setter?: AnimationPropSetter<T>    // Set value to target.
+    }) {
         options = options || {};
 
-        var animator = new Animator(
+        const animator = new Animator(
             target,
             options.loop,
             options.getter,
@@ -253,8 +245,4 @@ Animation.prototype = {
 
         return animator;
     }
-};
-
-util.mixin(Animation, Dispatcher);
-
-export default Animation;
+}

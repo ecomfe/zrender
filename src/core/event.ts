@@ -2,15 +2,22 @@
  * Utilities for mouse or touch events.
  */
 
-import Eventful from '../mixin/Eventful';
+import Eventful from './Eventful';
 import env from './env';
 import {buildTransformer} from './fourPointsTransform';
+import { ZRRawEvent } from './types';
 
 var isDomLevel2 = (typeof window !== 'undefined') && !!window.addEventListener;
 
 var MOUSE_EVENT_REG = /^(?:mouse|pointer|contextmenu|drag|drop)|click/;
 var EVENT_SAVED_PROP = '___zrEVENTSAVED';
-var _calcOut = [];
+var _calcOut: number[] = [];
+
+type FirefoxMouseEvent = {
+    layerX: number
+    layerY: number
+}
+
 
 /**
  * Get the `zrX` and `zrY`, which are relative to the top-left of
@@ -29,13 +36,18 @@ var _calcOut = [];
  * The force `calculate` can be used in case like:
  * When mousemove event triggered on ec tooltip, `e.target` is not `el`(zr painter.dom).
  *
- * @param {HTMLElement} el DOM element.
- * @param {Event} e Mouse event or touch event.
- * @param {Object} out Get `out.zrX` and `out.zrY` as the result.
- * @param {boolean} [calculate=false] Whether to force calculate
+ * @param  el DOM element.
+ * @param  e Mouse event or touch event.
+ * @param  out Get `out.zrX` and `out.zrY` as the result.
+ * @param  calculate Whether to force calculate
  *        the coordinates but not use ones provided by browser.
  */
-export function clientToLocal(el, e, out, calculate) {
+export function clientToLocal(
+    el: HTMLElement,
+    e: ZRRawEvent | FirefoxMouseEvent | Touch,
+    out: {zrX?: number, zrY?: number},
+    calculate?: boolean
+) {
     out = out || {};
 
     // According to the W3C Working Draft, offsetX and offsetY should be relative
@@ -46,7 +58,7 @@ export function clientToLocal(el, e, out, calculate) {
     // In zr painter.dom, padding edge equals to border edge.
 
     if (calculate || !env.canvasSupported) {
-        calculateZrXY(el, e, out);
+        calculateZrXY(el, e as ZRRawEvent, out);
     }
     // Caution: In FireFox, layerX/layerY Mouse position relative to the closest positioned
     // ancestor element, so we should make sure el is positioned (e.g., not position:static).
@@ -55,28 +67,32 @@ export function clientToLocal(el, e, out, calculate) {
     // BTW2, (ev.offsetY || ev.pageY - $(ev.target).offset().top) is not correct in preserve-3d.
     // <https://bugs.jquery.com/ticket/8523#comment:14>
     // BTW3, In ff, offsetX/offsetY is always 0.
-    else if (env.browser.firefox && e.layerX != null && e.layerX !== e.offsetX) {
-        out.zrX = e.layerX;
-        out.zrY = e.layerY;
+    else if (env.browser.firefox && (e as FirefoxMouseEvent).layerX != null && (e as FirefoxMouseEvent).layerX !== (e as MouseEvent).offsetX) {
+        out.zrX = (e as FirefoxMouseEvent).layerX;
+        out.zrY = (e as FirefoxMouseEvent).layerY;
     }
     // For IE6+, chrome, safari, opera. (When will ff support offsetX?)
-    else if (e.offsetX != null) {
-        out.zrX = e.offsetX;
-        out.zrY = e.offsetY;
+    else if ((e as MouseEvent).offsetX != null) {
+        out.zrX = (e as MouseEvent).offsetX;
+        out.zrY = (e as MouseEvent).offsetY;
     }
     // For some other device, e.g., IOS safari.
     else {
-        calculateZrXY(el, e, out);
+        calculateZrXY(el, e as ZRRawEvent, out);
     }
 
     return out;
 }
 
-function calculateZrXY(el, e, out) {
+function calculateZrXY(
+    el: HTMLElement,
+    e: ZRRawEvent,
+    out: {zrX?: number, zrY?: number}
+) {
     // BlackBerry 5, iOS 3 (original iPhone) don't have getBoundingRect.
     if (el.getBoundingClientRect && env.domSupported) {
-        var ex = e.clientX;
-        var ey = e.clientY;
+        const ex = (e as MouseEvent).clientX;
+        const ey = (<MouseEvent>e).clientY;
 
         if (el.nodeName.toUpperCase() === 'CANVAS') {
             // Original approach, which do not support CSS transform.
@@ -84,14 +100,15 @@ function calculateZrXY(el, e, out) {
             // (getBoundingClientRect is always 0). We do not support
             // that input a pre-created canvas to zr while using css
             // transform in iOS.
-            var box = el.getBoundingClientRect();
+            const box = el.getBoundingClientRect();
             out.zrX = ex - box.left;
             out.zrY = ey - box.top;
             return;
         }
         else {
-            var saved = el[EVENT_SAVED_PROP] || (el[EVENT_SAVED_PROP] = {});
-            var transformer = preparePointerTransformer(prepareCoordMarkers(el, saved), saved);
+            // TODO
+            const saved = (el as any)[EVENT_SAVED_PROP] || ((el as any)[EVENT_SAVED_PROP] = {});
+            const transformer = preparePointerTransformer(prepareCoordMarkers(el, saved), saved);
             if (transformer) {
                 transformer(_calcOut, ex, ey);
                 out.zrX = _calcOut[0];
@@ -103,21 +120,27 @@ function calculateZrXY(el, e, out) {
     out.zrX = out.zrY = 0;
 }
 
-function prepareCoordMarkers(el, saved) {
-    var markers = saved.markers;
+type SavedInfo = {
+    markers?: HTMLDivElement[]
+    transformer?: ReturnType<typeof buildTransformer>
+    srcCoords?: number[]
+}
+
+function prepareCoordMarkers(el: HTMLElement, saved: SavedInfo) {
+    let markers = saved.markers;
     if (markers) {
         return markers;
     }
 
     markers = saved.markers = [];
-    var propLR = ['left', 'right'];
-    var propTB = ['top', 'bottom'];
+    const propLR = ['left', 'right'];
+    const propTB = ['top', 'bottom'];
 
-    for (var i = 0; i < 4; i++) {
-        var marker = document.createElement('div');
-        var stl = marker.style;
-        var idxLR = i % 2;
-        var idxTB = (i >> 1) % 2;
+    for (let i = 0; i < 4; i++) {
+        const marker = document.createElement('div');
+        const stl = marker.style;
+        const idxLR = i % 2;
+        const idxTB = (i >> 1) % 2;
         stl.cssText = [
             'position:absolute',
             'visibility: hidden',
@@ -141,20 +164,20 @@ function prepareCoordMarkers(el, saved) {
     return markers;
 }
 
-function preparePointerTransformer(markers, saved) {
-    var transformer = saved.transformer;
-    var oldSrcCoords = saved.srcCoords;
-    var useOld = true;
-    var srcCoords = [];
-    var destCoords = [];
+function preparePointerTransformer(markers: HTMLDivElement[], saved: SavedInfo) {
+    const transformer = saved.transformer;
+    const oldSrcCoords = saved.srcCoords;
+    const srcCoords = [];
+    const destCoords = [];
+    let useOld = true;
 
-    for (var i = 0; i < 4; i++) {
-        var rect = markers[i].getBoundingClientRect();
-        var ii = 2 * i;
-        var x = rect.left;
-        var y = rect.top;
+    for (let i = 0; i < 4; i++) {
+        const rect = markers[i].getBoundingClientRect();
+        const ii = 2 * i;
+        const x = rect.left;
+        const y = rect.top;
         srcCoords.push(x, y);
-        useOld &= oldSrcCoords && x === oldSrcCoords[ii] && y === oldSrcCoords[ii + 1];
+        useOld = useOld && oldSrcCoords && x === oldSrcCoords[ii] && y === oldSrcCoords[ii + 1];
         destCoords.push(markers[i].offsetLeft, markers[i].offsetTop);
     }
 
@@ -171,12 +194,13 @@ function preparePointerTransformer(markers, saved) {
  * Find native event compat for legency IE.
  * Should be called at the begining of a native event listener.
  *
- * @param {Event} [e] Mouse event or touch event or pointer event.
+ * @param e Mouse event or touch event or pointer event.
  *        For lagency IE, we use `window.event` is used.
- * @return {Event} The native event.
+ * @return The native event.
  */
-export function getNativeEvent(e) {
-    return e || window.event;
+export function getNativeEvent(e: ZRRawEvent): ZRRawEvent {
+    return e
+        || (window.event as any);   // For IE
 }
 
 /**
@@ -192,13 +216,17 @@ export function getNativeEvent(e) {
  * Notice: see comments in `clientToLocal`. check the relationship
  * between the result coords and the parameters `el` and `calculate`.
  *
- * @param {HTMLElement} el DOM element.
- * @param {Event} [e] See `getNativeEvent`.
- * @param {boolean} [calculate=false] Whether to force calculate
+ * @param el DOM element.
+ * @param e See `getNativeEvent`.
+ * @param calculate Whether to force calculate
  *        the coordinates but not use ones provided by browser.
- * @return {UIEvent} The normalized native UIEvent.
+ * @return The normalized native UIEvent.
  */
-export function normalizeEvent(el, e, calculate) {
+export function normalizeEvent(
+    el: HTMLElement,
+    e: ZRRawEvent,
+    calculate?: boolean
+) {
 
     e = getNativeEvent(e);
 
@@ -206,17 +234,17 @@ export function normalizeEvent(el, e, calculate) {
         return e;
     }
 
-    var eventType = e.type;
-    var isTouch = eventType && eventType.indexOf('touch') >= 0;
+    const eventType = e.type;
+    const isTouch = eventType && eventType.indexOf('touch') >= 0;
 
     if (!isTouch) {
         clientToLocal(el, e, e, calculate);
-        e.zrDelta = (e.wheelDelta) ? e.wheelDelta / 120 : -(e.detail || 0) / 3;
+        e.zrDelta = ((e as any).wheelDelta) ? (e as any).wheelDelta / 120 : -(e.detail || 0) / 3;
     }
     else {
-        var touch = eventType !== 'touchend'
-            ? e.targetTouches[0]
-            : e.changedTouches[0];
+        const touch = eventType !== 'touchend'
+            ? (<TouchEvent>e).targetTouches[0]
+            : (<TouchEvent>e).changedTouches[0];
         touch && clientToLocal(el, touch, e, calculate);
     }
 
@@ -224,9 +252,9 @@ export function normalizeEvent(el, e, calculate) {
     // See jQuery: https://github.com/jquery/jquery/blob/master/src/event.js
     // If e.which has been defined, it may be readonly,
     // see: https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/which
-    var button = e.button;
+    const button = (<MouseEvent>e).button;
     if (e.which == null && button !== undefined && MOUSE_EVENT_REG.test(e.type)) {
-        e.which = (button & 1 ? 1 : (button & 2 ? 3 : (button & 4 ? 2 : 0)));
+        (e as any).which = (button & 1 ? 1 : (button & 2 ? 3 : (button & 4 ? 2 : 0)));
     }
     // [Caution]: `e.which` from browser is not always reliable. For example,
     // when press left button and `mousemove (pointermove)` in Edge, the `e.which`
@@ -236,15 +264,22 @@ export function normalizeEvent(el, e, calculate) {
     return e;
 }
 
+type AddEventListenerParams = Parameters<typeof HTMLElement.prototype.addEventListener>
+type RemoveEventListenerParams = Parameters<typeof HTMLElement.prototype.removeEventListener>
 /**
- * @param {HTMLElement} el
- * @param {string} name
- * @param {Function} handler
- * @param {Object|boolean} opt If boolean, means `opt.capture`
- * @param {boolean} [opt.capture=false]
- * @param {boolean} [opt.passive=false]
+ * @param  el
+ * @param  name
+ * @param  handler
+ * @param  opt If boolean, means `opt.capture`
+ * @param  opt.capture
+ * @param  opt.passive
  */
-export function addEventListener(el, name, handler, opt) {
+export function addEventListener (
+    el: HTMLElement | HTMLDocument,
+    name: AddEventListenerParams[0],
+    handler: AddEventListenerParams[1],
+    opt: AddEventListenerParams[2]
+) {
     if (isDomLevel2) {
         // Reproduct the console warning:
         // [Violation] Added non-passive event listener to a scroll-blocking <some> event.
@@ -262,7 +297,7 @@ export function addEventListener(el, name, handler, opt) {
         // we use other way but not preventDefault of mousewheel and touchmove, browser
         // compatibility should be handled.
 
-        // var opts = (env.passiveSupported && name === 'mousewheel')
+        // const opts = (env.passiveSupported && name === 'mousewheel')
         //     ? {passive: true}
         //     // By default, the third param of el.addEventListener is `capture: false`.
         //     : void 0;
@@ -271,7 +306,7 @@ export function addEventListener(el, name, handler, opt) {
     }
     else {
         // For simplicity, do not implement `setCapture` for IE9-.
-        el.attachEvent('on' + name, handler);
+        (el as any).attachEvent('on' + name, handler);
     }
 }
 
@@ -282,12 +317,17 @@ export function addEventListener(el, name, handler, opt) {
  * remove each one separately. Removal of a capturing listener does not affect a
  * non-capturing version of the same listener, and vice versa.
  */
-export function removeEventListener(el, name, handler, opt) {
+export function removeEventListener(
+    el: HTMLElement | HTMLDocument,
+    name: RemoveEventListenerParams[0],
+    handler: RemoveEventListenerParams[1],
+    opt: RemoveEventListenerParams[2]
+) {
     if (isDomLevel2) {
-        el.removeEventListener(name, handler, opt);
+        el.removeEventListener(name, handler);
     }
     else {
-        el.detachEvent('on' + name, handler);
+        (el as any).detachEvent('on' + name, handler);
     }
 }
 
@@ -298,13 +338,13 @@ export function removeEventListener(el, name, handler, opt) {
  *
  * @param {Event} e A mouse or touch event.
  */
-export var stop = isDomLevel2
-    ? function (e) {
+export const stop = isDomLevel2
+    ? function (e: MouseEvent | TouchEvent | PointerEvent) {
         e.preventDefault();
         e.stopPropagation();
         e.cancelBubble = true;
     }
-    : function (e) {
+    : function (e: MouseEvent | TouchEvent | PointerEvent) {
         e.returnValue = false;
         e.cancelBubble = true;
     };
@@ -316,7 +356,7 @@ export var stop = isDomLevel2
  * @param {MouseEvent} e
  * @return {boolean}
  */
-export function isMiddleOrRightButtonOnMouseUpDown(e) {
+export function isMiddleOrRightButtonOnMouseUpDown(e: MouseEvent) {
     return e.which === 2 || e.which === 3;
 }
 
@@ -324,7 +364,7 @@ export function isMiddleOrRightButtonOnMouseUpDown(e) {
  * To be removed.
  * @deprecated
  */
-export function notLeftMouse(e) {
+export function notLeftMouse(e: MouseEvent) {
     // If e.which is undefined, considered as left mouse event.
     return e.which > 1;
 }

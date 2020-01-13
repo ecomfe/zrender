@@ -28,24 +28,24 @@ export default Path.extend({
     },
 
     buildPath: function (ctx, shape) {
-        var x1;
-        var y1;
-        var x2;
-        var y2;
-        var R = shape.r;
-        var r = shape.r0;
-        var d = shape.d;
-        var offsetX = shape.cx;
-        var offsetY = shape.cy;
-        var delta = shape.location === 'out' ? 1 : -1;
+        const R = shape.r;
+        const r = shape.r0;
+        const d = shape.d;
+        const offsetX = shape.cx;
+        const offsetY = shape.cy;
+        const delta = shape.location === 'out' ? 1 : -1;
+        let x1;
+        let y1;
+        let x2;
+        let y2;
 
         if (shape.location && R <= r) {
             return;
         }
 
-        var num = 0;
-        var i = 1;
-        var theta;
+        let num = 0;
+        let i = 1;
+        let theta;
 
         x1 = (R + delta * r) * cos(0)
             - delta * d * cos(0) + offsetX;

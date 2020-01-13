@@ -1,9 +1,16 @@
 import * as util from './core/util';
 import * as vec2 from './core/vector';
 import Draggable from './mixin/Draggable';
-import Eventful from './mixin/Eventful';
+import Eventful from './core/Eventful';
 import * as eventTool from './core/event';
-import GestureMgr from './core/GestureMgr';
+import {GestureMgr} from './core/GestureMgr';
+import Displayable from './graphic/Displayable';
+import {PainterBase} from './PainterBase';
+import HandlerDomProxy, { HandlerProxyInterface } from './dom/HandlerProxy';
+import { ZRRawEvent, ZRPinchEvent, ElementEventName, ElementEventNameWithOn } from './core/types';
+import Storage from './Storage';
+import Element, {ElementEvent} from './Element';
+import CanvasPainter from './canvas/Painter';
 
 
 /**
@@ -67,7 +74,10 @@ import GestureMgr from './core/GestureMgr';
 
 var SILENT = 'silent';
 
-function makeEventPacket(eveType, targetInfo, event) {
+function makeEventPacket(eveType: ElementEventName, targetInfo: {
+    target?: Element
+    topTarget?: Element
+}, event: ZRRawEvent): ElementEvent {
     return {
         type: eveType,
         event: event,
@@ -78,10 +88,10 @@ function makeEventPacket(eveType, targetInfo, event) {
         cancelBubble: false,
         offsetX: event.zrX,
         offsetY: event.zrY,
-        gestureEvent: event.gestureEvent,
-        pinchX: event.pinchX,
-        pinchY: event.pinchY,
-        pinchScale: event.pinchScale,
+        gestureEvent: (event as ZRPinchEvent).gestureEvent,
+        pinchX: (event as ZRPinchEvent).pinchX,
+        pinchY: (event as ZRPinchEvent).pinchY,
+        pinchScale: (event as ZRPinchEvent).pinchScale,
         wheelDelta: event.zrDelta,
         zrByTouch: event.zrByTouch,
         which: event.which,
@@ -93,103 +103,96 @@ function stopEvent() {
     eventTool.stop(this.event);
 }
 
-function EmptyProxy() {}
-EmptyProxy.prototype.dispose = function () {};
+class EmptyProxy extends Eventful {
+    handler: Handler = null
+    dispose() {}
+    setCursor() {}
+}
 
+class HoveredResult {
+    x: number
+    y: number
+    target: Displayable
+    topTarget: Displayable
+    constructor(x?: number, y?: number) {
+        this.x = x;
+        this.y = y;
+    }
+}
 
 var handlerNames = [
     'click', 'dblclick', 'mousewheel', 'mouseout',
     'mouseup', 'mousedown', 'mousemove', 'contextmenu'
 ];
 
-/**
- * @alias module:zrender/Handler
- * @constructor
- * @extends module:zrender/mixin/Eventful
- * @param {module:zrender/Storage} storage Storage instance.
- * @param {module:zrender/Painter} painter Painter instance.
- * @param {module:zrender/dom/HandlerProxy} proxy HandlerProxy instance.
- * @param {HTMLElement} painterRoot painter.root (not painter.getViewportRoot()).
- */
-var Handler = function (storage, painter, proxy, painterRoot) {
-    Eventful.call(this);
+type HandlerName = 'click' |'dblclick' |'mousewheel' |'mouseout' |
+    'mouseup' |'mousedown' |'mousemove' |'contextmenu';
 
-    this.storage = storage;
 
-    this.painter = painter;
+// TODO draggable
+class Handler extends Eventful {
 
-    this.painterRoot = painterRoot;
+    storage: Storage
+    painter: PainterBase
+    painterRoot: HTMLElement
 
-    proxy = proxy || new EmptyProxy();
+    proxy: HandlerProxyInterface
 
-    /**
-     * Proxy of event. can be Dom, WebGLSurface, etc.
-     */
-    this.proxy = null;
+    private _hovered = new HoveredResult(0, 0)
 
-    /**
-     * {target, topTarget, x, y}
-     * @private
-     * @type {Object}
-     */
-    this._hovered = {};
+    private _gestureMgr: GestureMgr
 
-    /**
-     * @private
-     * @type {Date}
-     */
-    this._lastTouchMoment;
+    private _draggingMgr: Draggable
 
-    /**
-     * @private
-     * @type {number}
-     */
-    this._lastX;
+    constructor(
+        storage: Storage,
+        painter: PainterBase,
+        proxy: HandlerProxyInterface,
+        painterRoot: HTMLElement
+    ) {
+        super();
 
-    /**
-     * @private
-     * @type {number}
-     */
-    this._lastY;
+        this.storage = storage;
 
-    /**
-     * @private
-     * @type {module:zrender/core/GestureMgr}
-     */
-    this._gestureMgr;
+        this.painter = painter;
 
-    Draggable.call(this);
+        this.painterRoot = painterRoot;
 
-    this.setHandlerProxy(proxy);
-};
+        proxy = proxy || new EmptyProxy();
 
-Handler.prototype = {
+        /**
+         * Proxy of event. can be Dom, WebGLSurface, etc.
+         */
+        this.proxy = null;
 
-    constructor: Handler,
+        this.setHandlerProxy(proxy);
 
-    setHandlerProxy: function (proxy) {
+        this._draggingMgr = new Draggable(this);
+    }
+
+    setHandlerProxy(proxy: HandlerProxyInterface) {
         if (this.proxy) {
             this.proxy.dispose();
         }
 
         if (proxy) {
             util.each(handlerNames, function (name) {
-                proxy.on && proxy.on(name, this[name], this);
+                proxy.on && proxy.on(name, this[name as HandlerName], this);
             }, this);
             // Attach handler
             proxy.handler = this;
         }
         this.proxy = proxy;
-    },
+    }
 
-    mousemove: function (event) {
-        var x = event.zrX;
-        var y = event.zrY;
+    mousemove(event: ZRRawEvent) {
+        const x = event.zrX;
+        const y = event.zrY;
 
-        var isOutside = isOutsideBoundary(this, x, y);
+        const isOutside = isOutsideBoundary(this, x, y);
 
-        var lastHovered = this._hovered;
-        var lastHoveredTarget = lastHovered.target;
+        let lastHovered = this._hovered;
+        let lastHoveredTarget = lastHovered.target;
 
         // If lastHoveredTarget is removed from zr (detected by '__zr') by some API call
         // (like 'setOption' or 'dispatchAction') in event handlers, we should find
@@ -200,10 +203,10 @@ Handler.prototype = {
             lastHoveredTarget = lastHovered.target;
         }
 
-        var hovered = this._hovered = isOutside ? {x: x, y: y} : this.findHover(x, y);
-        var hoveredTarget = hovered.target;
+        const hovered = this._hovered = isOutside ? new HoveredResult(x, y) : this.findHover(x, y);
+        const hoveredTarget = hovered.target;
 
-        var proxy = this.proxy;
+        const proxy = this.proxy;
         proxy.setCursor && proxy.setCursor(hoveredTarget ? hoveredTarget.cursor : 'default');
 
         // Mouse out on previous hovered element
@@ -218,11 +221,11 @@ Handler.prototype = {
         if (hoveredTarget && hoveredTarget !== lastHoveredTarget) {
             this.dispatchToElement(hovered, 'mouseover', event);
         }
-    },
+    }
 
-    mouseout: function (event) {
-        var eventControl = event.zrEventControl;
-        var zrIsToLocalDOM = event.zrIsToLocalDOM;
+    mouseout(event: ZRRawEvent) {
+        const eventControl = event.zrEventControl;
+        const zrIsToLocalDOM = event.zrIsToLocalDOM;
 
         if (eventControl !== 'only_globalout') {
             this.dispatchToElement(this._hovered, 'mouseout', event);
@@ -233,45 +236,43 @@ Handler.prototype = {
             // the `globalout` should have been triggered. But currently not.
             !zrIsToLocalDOM && this.trigger('globalout', {type: 'globalout', event: event});
         }
-    },
+    }
 
     /**
      * Resize
      */
-    resize: function (event) {
-        this._hovered = {};
-    },
+    resize() {
+        this._hovered = new HoveredResult(0, 0);
+    }
 
     /**
      * Dispatch event
-     * @param {string} eventName
-     * @param {event=} eventArgs
      */
-    dispatch: function (eventName, eventArgs) {
-        var handler = this[eventName];
+    dispatch(eventName: HandlerName, eventArgs?: any) {
+        const handler = this[eventName];
         handler && handler.call(this, eventArgs);
-    },
+    }
 
     /**
      * Dispose
      */
-    dispose: function () {
+    dispose() {
 
         this.proxy.dispose();
 
-        this.storage =
-        this.proxy =
+        this.storage = null
+        this.proxy = null
         this.painter = null;
-    },
+    }
 
     /**
      * 设置默认的cursor style
-     * @param {string} [cursorStyle='default'] 例如 crosshair
+     * @param cursorStyle 例如 crosshair，默认为 'default'
      */
-    setCursorStyle: function (cursorStyle) {
-        var proxy = this.proxy;
+    setCursorStyle(cursorStyle: string) {
+        const proxy = this.proxy;
         proxy.setCursor && proxy.setCursor(cursorStyle);
-    },
+    }
 
     /**
      * 事件分发代理
@@ -281,18 +282,21 @@ Handler.prototype = {
      * @param {string} eventName 事件名称
      * @param {Object} event 事件对象
      */
-    dispatchToElement: function (targetInfo, eventName, event) {
-        targetInfo = targetInfo || {};
-        var el = targetInfo.target;
+    dispatchToElement(targetInfo: {
+        target?: Element
+        topTarget?: Element
+    }, eventName: ElementEventName, event: ZRRawEvent) {
+
+        let el = targetInfo.target as Element;
         if (el && el.silent) {
             return;
         }
-        var eventHandler = 'on' + eventName;
-        var eventPacket = makeEventPacket(eventName, targetInfo, event);
+        const eventKey = ('on' + eventName) as ElementEventNameWithOn;
+        const eventPacket = makeEventPacket(eventName, targetInfo, event);
 
         while (el) {
-            el[eventHandler]
-                && (eventPacket.cancelBubble = el[eventHandler].call(el, eventPacket));
+            el[eventKey]
+                && (eventPacket.cancelBubble = !!el[eventKey].call(el, eventPacket));
 
             el.trigger(eventName, eventPacket);
 
@@ -308,31 +312,25 @@ Handler.prototype = {
             this.trigger(eventName, eventPacket);
             // 分发事件到用户自定义层
             // 用户有可能在全局 click 事件中 dispose，所以需要判断下 painter 是否存在
-            this.painter && this.painter.eachOtherLayer(function (layer) {
-                if (typeof (layer[eventHandler]) === 'function') {
-                    layer[eventHandler].call(layer, eventPacket);
-                }
-                if (layer.trigger) {
-                    layer.trigger(eventName, eventPacket);
-                }
-            });
+            if (this.painter && (this.painter as CanvasPainter).eachOtherLayer) {
+                (this.painter as CanvasPainter).eachOtherLayer(function (layer) {
+                    if (typeof (layer[eventKey]) === 'function') {
+                        layer[eventKey].call(layer, eventPacket);
+                    }
+                    if (layer.trigger) {
+                        layer.trigger(eventName, eventPacket);
+                    }
+                });
+            }
         }
-    },
+    }
 
-    /**
-     * @private
-     * @param {number} x
-     * @param {number} y
-     * @param {module:zrender/graphic/Displayable} exclude
-     * @return {model:zrender/Element}
-     * @method
-     */
-    findHover: function (x, y, exclude) {
-        var list = this.storage.getDisplayList();
-        var out = {x: x, y: y};
+    findHover(x: number, y: number, exclude?: Displayable): HoveredResult {
+        const list = this.storage.getDisplayList();
+        const out = new HoveredResult(x, y);
 
-        for (var i = list.length - 1; i >= 0; i--) {
-            var hoverCheckResult;
+        for (let i = list.length - 1; i >= 0; i--) {
+            let hoverCheckResult;
             if (list[i] !== exclude
                 // getDisplayList may include ignored item in VML mode
                 && !list[i].ignore
@@ -347,43 +345,52 @@ Handler.prototype = {
         }
 
         return out;
-    },
+    }
 
-    processGesture: function (event, stage) {
+    processGesture(event: ZRRawEvent, stage?: 'start' | 'end' | 'change') {
         if (!this._gestureMgr) {
             this._gestureMgr = new GestureMgr();
         }
-        var gestureMgr = this._gestureMgr;
+        const gestureMgr = this._gestureMgr;
 
         stage === 'start' && gestureMgr.clear();
 
-        var gestureInfo = gestureMgr.recognize(
+        const gestureInfo = gestureMgr.recognize(
             event,
             this.findHover(event.zrX, event.zrY, null).target,
-            this.proxy.dom
+            (this.proxy as HandlerDomProxy).dom
         );
 
         stage === 'end' && gestureMgr.clear();
 
         // Do not do any preventDefault here. Upper application do that if necessary.
         if (gestureInfo) {
-            var type = gestureInfo.type;
-            event.gestureEvent = type;
+            const type = gestureInfo.type;
+            (event as ZRPinchEvent).gestureEvent = type;
 
-            this.dispatchToElement({target: gestureInfo.target}, type, gestureInfo.event);
+            let res = new HoveredResult();
+            res.target = gestureInfo.target;
+            this.dispatchToElement(res, type as ElementEventName, gestureInfo.event as ZRRawEvent);
         }
     }
-};
+
+    click: (event: ZRRawEvent) => void
+    mousedown: (event: ZRRawEvent) => void
+    mouseup: (event: ZRRawEvent) => void
+    mousewheel: (event: ZRRawEvent) => void
+    dblclick: (event: ZRRawEvent) => void
+    contextmenu: (event: ZRRawEvent) => void
+}
 
 // Common handlers
-util.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick', 'contextmenu'], function (name) {
+util.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick', 'contextmenu'], function (name: HandlerName) {
     Handler.prototype[name] = function (event) {
-        var x = event.zrX;
-        var y = event.zrY;
-        var isOutside = isOutsideBoundary(this, x, y);
+        const x = event.zrX;
+        const y = event.zrY;
+        const isOutside = isOutsideBoundary(this, x, y);
 
-        var hovered;
-        var hoveredTarget;
+        let hovered;
+        let hoveredTarget;
 
         if (name !== 'mouseup' || !isOutside) {
             // Find hover again to avoid click event is dispatched manually. Or click is triggered without mouseover
@@ -419,15 +426,16 @@ util.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick', 'contextme
     };
 });
 
-function isHover(displayable, x, y) {
+function isHover(displayable: Displayable, x: number, y: number) {
     if (displayable[displayable.rectHover ? 'rectContain' : 'contain'](x, y)) {
-        var el = displayable;
-        var isSilent;
+        let el: Element = displayable;
+        let isSilent;
         while (el) {
+            let clipPath = el.getClipPath();
             // If clipped by ancestor.
             // FIXME: If clipPath has neither stroke nor fill,
             // el.clipPath.contain(x, y) will always return false.
-            if (el.clipPath && !el.clipPath.contain(x, y)) {
+            if (clipPath && !clipPath.contain(x, y)) {
                 return false;
             }
             if (el.silent) {
@@ -444,12 +452,9 @@ function isHover(displayable, x, y) {
 /**
  * See [Drag outside].
  */
-function isOutsideBoundary(handlerInstance, x, y) {
-    var painter = handlerInstance.painter;
+function isOutsideBoundary(handlerInstance: Handler, x: number, y: number) {
+    const painter = handlerInstance.painter;
     return x < 0 || x > painter.getWidth() || y < 0 || y > painter.getHeight();
 }
-
-util.mixin(Handler, Eventful);
-util.mixin(Handler, Draggable);
 
 export default Handler;

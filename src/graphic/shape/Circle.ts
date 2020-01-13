@@ -1,6 +1,5 @@
 /**
  * 圆形
- * @module zrender/shape/Circle
  */
 
 import Path from '../Path';

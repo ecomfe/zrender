@@ -1,35 +1,28 @@
-/**
- * @module zrender/Layer
- * @author pissang(https://www.github.com/pissang)
- */
-
-import * as util from './core/util';
-import {devicePixelRatio} from './config';
-import Style from './graphic/Style';
-import Pattern from './graphic/Pattern';
+import * as util from '../core/util';
+import {devicePixelRatio} from '../config';
+import Style from '../graphic/Style';
+import Pattern, { PatternObject } from '../graphic/Pattern';
+import CanvasPainter from './Painter';
+import { GradientObject } from '../graphic/Gradient';
+import Displayable from '../graphic/Displayable';
+import { ZRCanvasRenderingContext } from '../core/types';
+import Eventful from '../core/Eventful';
+import { ElementEventCallback } from '../Element';
 
 function returnFalse() {
     return false;
 }
 
-/**
- * 创建dom
- *
- * @inner
- * @param {string} id dom id 待用
- * @param {Painter} painter painter instance
- * @param {number} number
- */
-function createDom(id, painter, dpr) {
-    var newDom = util.createCanvas();
-    var width = painter.getWidth();
-    var height = painter.getHeight();
+function createDom(id: string, painter: CanvasPainter, dpr: number) {
+    const newDom = util.createCanvas();
+    const width = painter.getWidth();
+    const height = painter.getHeight();
 
-    var newDomStyle = newDom.style;
+    const newDomStyle = newDom.style;
     if (newDomStyle) {  // In node or some other non-browser environment
         newDomStyle.position = 'absolute';
-        newDomStyle.left = 0;
-        newDomStyle.top = 0;
+        newDomStyle.left = '0';
+        newDomStyle.top = '0';
         newDomStyle.width = width + 'px';
         newDomStyle.height = height + 'px';
 
@@ -42,99 +35,115 @@ function createDom(id, painter, dpr) {
     return newDom;
 }
 
-/**
- * @alias module:zrender/Layer
- * @constructor
- * @extends module:zrender/mixin/Transformable
- * @param {string} id
- * @param {module:zrender/Painter} painter
- * @param {number} [dpr]
- */
-var Layer = function (id, painter, dpr) {
-    var dom;
-    dpr = dpr || devicePixelRatio;
-    if (typeof id === 'string') {
-        dom = createDom(id, painter, dpr);
-    }
-    // Not using isDom because in node it will return false
-    else if (util.isObject(id)) {
-        dom = id;
-        id = dom.id;
-    }
-    this.id = id;
-    this.dom = dom;
+export interface LayerConfig {
+    // 每次清空画布的颜色
+    clearColor?: string | GradientObject | PatternObject
+    // 是否开启动态模糊
+    motionBlur?: boolean
+    // 在开启动态模糊的时候使用，与上一帧混合的alpha值，值越大尾迹越明显
+    lastFrameAlpha?: number
+};
 
-    var domStyle = dom.style;
-    if (domStyle) { // Not in node
-        dom.onselectstart = returnFalse; // 避免页面选中的尴尬
-        domStyle['-webkit-user-select'] = 'none';
-        domStyle['user-select'] = 'none';
-        domStyle['-webkit-touch-callout'] = 'none';
-        domStyle['-webkit-tap-highlight-color'] = 'rgba(0,0,0,0)';
-        domStyle['padding'] = 0; // eslint-disable-line dot-notation
-        domStyle['margin'] = 0; // eslint-disable-line dot-notation
-        domStyle['border-width'] = 0;
-    }
+export default class Layer extends Eventful {
 
-    this.domBack = null;
-    this.ctxBack = null;
+    id: string
 
-    this.painter = painter;
+    dom: HTMLCanvasElement
+    domBack: HTMLCanvasElement
 
-    this.config = null;
+    ctx: CanvasRenderingContext2D
+    ctxBack: CanvasRenderingContext2D
+
+    painter: CanvasPainter
 
     // Configs
     /**
      * 每次清空画布的颜色
-     * @type {string}
-     * @default 0
      */
-    this.clearColor = 0;
+    clearColor: string | GradientObject | PatternObject
     /**
      * 是否开启动态模糊
-     * @type {boolean}
-     * @default false
      */
-    this.motionBlur = false;
+    motionBlur = false
     /**
      * 在开启动态模糊的时候使用，与上一帧混合的alpha值，值越大尾迹越明显
-     * @type {number}
-     * @default 0.7
      */
-    this.lastFrameAlpha = 0.7;
-
+    lastFrameAlpha = 0.7
     /**
      * Layer dpr
-     * @type {number}
      */
-    this.dpr = dpr;
-};
+    dpr = 1
 
-Layer.prototype = {
+    /**
+     * Virtual layer will not be inserted into dom.
+     */
+    virtual = false
 
-    constructor: Layer,
+    config = {}
 
-    __dirty: true,
+    incremental = false
 
-    __used: false,
+    zlevel = 0
 
-    __drawIndex: 0,
-    __startIndex: 0,
-    __endIndex: 0,
+    __dirty = true
 
-    incremental: false,
+    __used = false
 
-    getElementCount: function () {
+    __drawIndex = 0
+    __startIndex = 0
+    __endIndex = 0
+
+    __builtin__: boolean
+
+    constructor(id: string | HTMLCanvasElement, painter: CanvasPainter, dpr?: number) {
+        super();
+
+        let dom;
+        dpr = dpr || devicePixelRatio;
+        if (typeof id === 'string') {
+            dom = createDom(id, painter, dpr);
+        }
+        // Not using isDom because in node it will return false
+        else if (util.isObject(id)) {
+            dom = id;
+            id = dom.id;
+        }
+        this.id = id as string;
+        this.dom = dom;
+
+        const domStyle = dom.style;
+        if (domStyle) { // Not in node
+            dom.onselectstart = returnFalse; // 避免页面选中的尴尬
+            domStyle.webkitUserSelect = 'none';
+            domStyle.userSelect = 'none';
+            domStyle.webkitTapHighlightColor = 'rgba(0,0,0,0)';
+            (domStyle as any)['-webkit-touch-callout'] = 'none';
+            domStyle.padding = '0';
+            domStyle.margin = '0';
+            domStyle.borderWidth = '0';
+        }
+
+        this.domBack = null;
+        this.ctxBack = null;
+
+        this.painter = painter;
+
+        this.config = null;
+
+        this.dpr = dpr;
+    }
+
+    getElementCount() {
         return this.__endIndex - this.__startIndex;
-    },
+    }
 
-    initContext: function () {
+    initContext() {
         this.ctx = this.dom.getContext('2d');
-        this.ctx.dpr = this.dpr;
-    },
+        (this.ctx as ZRCanvasRenderingContext).dpr = this.dpr;
+    }
 
-    createBackBuffer: function () {
-        var dpr = this.dpr;
+    createBackBuffer() {
+        const dpr = this.dpr;
 
         this.domBack = createDom('back-' + this.id, this.painter, dpr);
         this.ctxBack = this.domBack.getContext('2d');
@@ -142,18 +151,14 @@ Layer.prototype = {
         if (dpr !== 1) {
             this.ctxBack.scale(dpr, dpr);
         }
-    },
+    }
 
-    /**
-     * @param  {number} width
-     * @param  {number} height
-     */
-    resize: function (width, height) {
-        var dpr = this.dpr;
+    resize(width: number, height: number) {
+        const dpr = this.dpr;
 
-        var dom = this.dom;
-        var domStyle = dom.style;
-        var domBack = this.domBack;
+        const dom = this.dom;
+        const domStyle = dom.style;
+        const domBack = this.domBack;
 
         if (domStyle) {
             domStyle.width = width + 'px';
@@ -171,24 +176,22 @@ Layer.prototype = {
                 this.ctxBack.scale(dpr, dpr);
             }
         }
-    },
+    }
 
     /**
      * 清空该层画布
-     * @param {boolean} [clearAll]=false Clear all with out motion blur
-     * @param {Color} [clearColor]
      */
-    clear: function (clearAll, clearColor) {
-        var dom = this.dom;
-        var ctx = this.ctx;
-        var width = dom.width;
-        var height = dom.height;
+    clear(clearAll?: boolean, clearColor?: string | GradientObject | PatternObject) {
+        const dom = this.dom;
+        const ctx = this.ctx;
+        const width = dom.width;
+        const height = dom.height;
 
-        var clearColor = clearColor || this.clearColor;
-        var haveMotionBLur = this.motionBlur && !clearAll;
-        var lastFrameAlpha = this.lastFrameAlpha;
+        clearColor = clearColor || this.clearColor;
+        const haveMotionBLur = this.motionBlur && !clearAll;
+        const lastFrameAlpha = this.lastFrameAlpha;
 
-        var dpr = this.dpr;
+        const dpr = this.dpr;
 
         if (haveMotionBLur) {
             if (!this.domBack) {
@@ -205,37 +208,62 @@ Layer.prototype = {
 
         ctx.clearRect(0, 0, width, height);
         if (clearColor && clearColor !== 'transparent') {
-            var clearColorGradientOrPattern;
+            let clearColorGradientOrPattern;
             // Gradient
-            if (clearColor.colorStops) {
+            if (util.isGradientObject(clearColor)) {
                 // Cache canvas gradient
-                clearColorGradientOrPattern = clearColor.__canvasGradient || Style.getGradient(ctx, clearColor, {
-                    x: 0,
-                    y: 0,
-                    width: width,
-                    height: height
-                });
+                clearColorGradientOrPattern = clearColor.__canvasGradient
+                    || Style.getGradient(ctx, clearColor, {
+                        x: 0,
+                        y: 0,
+                        width: width,
+                        height: height
+                    });
 
                 clearColor.__canvasGradient = clearColorGradientOrPattern;
             }
             // Pattern
-            else if (clearColor.image) {
+            else if (util.isPatternObject(clearColor)) {
                 clearColorGradientOrPattern = Pattern.prototype.getCanvasPattern.call(clearColor, ctx);
             }
             ctx.save();
-            ctx.fillStyle = clearColorGradientOrPattern || clearColor;
+            ctx.fillStyle = clearColorGradientOrPattern || (clearColor as string);
             ctx.fillRect(0, 0, width, height);
             ctx.restore();
         }
 
         if (haveMotionBLur) {
-            var domBack = this.domBack;
+            const domBack = this.domBack;
             ctx.save();
             ctx.globalAlpha = lastFrameAlpha;
             ctx.drawImage(domBack, 0, 0, width, height);
             ctx.restore();
         }
     }
-};
 
-export default Layer;
+    // Iterface of refresh
+    refresh: (clearColor?: string | GradientObject | PatternObject) => void
+
+    // Interface of renderToCanvas in getRenderedCanvas
+    renderToCanvas: (ctx: CanvasRenderingContext2D) => void
+
+
+    // Events
+    onclick: ElementEventCallback
+    ondblclick: ElementEventCallback
+    onmouseover: ElementEventCallback
+    onmouseout: ElementEventCallback
+    onmousemove: ElementEventCallback
+    onmousewheel: ElementEventCallback
+    onmousedown: ElementEventCallback
+    onmouseup: ElementEventCallback
+    oncontextmenu: ElementEventCallback
+
+    ondrag: ElementEventCallback
+    ondragstart: ElementEventCallback
+    ondragend: ElementEventCallback
+    ondragenter: ElementEventCallback
+    ondragleave: ElementEventCallback
+    ondragover: ElementEventCallback
+    ondrop: ElementEventCallback
+}

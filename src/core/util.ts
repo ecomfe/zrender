@@ -1,45 +1,46 @@
-/**
- * @module zrender/core/util
- */
+import { Dictionary, ArrayLike } from "./types";
+import { GradientObject } from "../graphic/Gradient";
+import { PatternObject } from "../graphic/Pattern";
+
 
 // 用于处理merge时无法遍历Date等对象的问题
-var BUILTIN_OBJECT = {
-    '[object Function]': 1,
-    '[object RegExp]': 1,
-    '[object Date]': 1,
-    '[object Error]': 1,
-    '[object CanvasGradient]': 1,
-    '[object CanvasPattern]': 1,
+const BUILTIN_OBJECT: {[key: string]: boolean} = {
+    '[object Function]': true,
+    '[object RegExp]': true,
+    '[object Date]': true,
+    '[object Error]': true,
+    '[object CanvasGradient]': true,
+    '[object CanvasPattern]': true,
     // For node-canvas
-    '[object Image]': 1,
-    '[object Canvas]': 1
+    '[object Image]': true,
+    '[object Canvas]': true
 };
 
-var TYPED_ARRAY = {
-    '[object Int8Array]': 1,
-    '[object Uint8Array]': 1,
-    '[object Uint8ClampedArray]': 1,
-    '[object Int16Array]': 1,
-    '[object Uint16Array]': 1,
-    '[object Int32Array]': 1,
-    '[object Uint32Array]': 1,
-    '[object Float32Array]': 1,
-    '[object Float64Array]': 1
+const TYPED_ARRAY: {[key: string]: boolean}  = {
+    '[object Int8Array]': true,
+    '[object Uint8Array]': true,
+    '[object Uint8ClampedArray]': true,
+    '[object Int16Array]': true,
+    '[object Uint16Array]': true,
+    '[object Int32Array]': true,
+    '[object Uint32Array]': true,
+    '[object Float32Array]': true,
+    '[object Float64Array]': true
 };
 
-var objToString = Object.prototype.toString;
+const objToString = Object.prototype.toString;
 
-var arrayProto = Array.prototype;
-var nativeForEach = arrayProto.forEach;
-var nativeFilter = arrayProto.filter;
-var nativeSlice = arrayProto.slice;
-var nativeMap = arrayProto.map;
-var nativeReduce = arrayProto.reduce;
+const arrayProto = Array.prototype;
+const nativeForEach = arrayProto.forEach;
+const nativeFilter = arrayProto.filter;
+const nativeSlice = arrayProto.slice;
+const nativeMap = arrayProto.map;
+const nativeReduce = arrayProto.reduce;
 
 // Avoid assign to an exported variable, for transforming to cjs.
-var methods = {};
+const methods: {[key: string]: Function} = {};
 
-export function $override(name, fn) {
+export function $override(name: string, fn: Function) {
     // Clear ctx instance for different environment
     if (name === 'createCanvas') {
         _ctx = null;
@@ -48,6 +49,19 @@ export function $override(name, fn) {
     methods[name] = fn;
 }
 
+var idStart = 0x0907;
+/**
+ * Generate unique id
+ */
+export function guid(): number {
+    return idStart++;
+}
+
+export function logError(...args: string[]) {
+    if (typeof console !== 'undefined') {
+        console.error.apply(args);
+    }
+}
 /**
  * Those data types can be cloned:
  *     Plain object, Array, TypedArray, number, string, null, undefined.
@@ -61,34 +75,34 @@ export function $override(name, fn) {
  * (There might be a large number of date in `series.data`).
  * So date should not be modified in and out of echarts.
  *
- * @param {*} source
- * @return {*} new
+ * @param source
+ * @return new
  */
-export function clone(source) {
+export function clone(source: any): any {
     if (source == null || typeof source !== 'object') {
         return source;
     }
 
-    var result = source;
-    var typeStr = objToString.call(source);
+    let result = source;
+    const typeStr = <string>objToString.call(source);
 
     if (typeStr === '[object Array]') {
         if (!isPrimitive(source)) {
             result = [];
-            for (var i = 0, len = source.length; i < len; i++) {
+            for (let i = 0, len = source.length; i < len; i++) {
                 result[i] = clone(source[i]);
             }
         }
     }
     else if (TYPED_ARRAY[typeStr]) {
         if (!isPrimitive(source)) {
-            var Ctor = source.constructor;
+            const Ctor = source.constructor;
             if (source.constructor.from) {
                 result = Ctor.from(source);
             }
             else {
                 result = new Ctor(source.length);
-                for (var i = 0, len = source.length; i < len; i++) {
+                for (let i = 0, len = source.length; i < len; i++) {
                     result[i] = clone(source[i]);
                 }
             }
@@ -96,7 +110,7 @@ export function clone(source) {
     }
     else if (!BUILTIN_OBJECT[typeStr] && !isPrimitive(source) && !isDom(source)) {
         result = {};
-        for (var key in source) {
+        for (let key in source) {
             if (source.hasOwnProperty(key)) {
                 result[key] = clone(source[key]);
             }
@@ -106,23 +120,17 @@ export function clone(source) {
     return result;
 }
 
-/**
- * @memberOf module:zrender/core/util
- * @param {*} target
- * @param {*} source
- * @param {boolean} [overwrite=false]
- */
-export function merge(target, source, overwrite) {
+export function merge(target: any, source: any, overwrite: boolean) {
     // We should escapse that source is string
     // and enter for ... in ...
     if (!isObject(source) || !isObject(target)) {
         return overwrite ? clone(source) : target;
     }
 
-    for (var key in source) {
+    for (let key in source) {
         if (source.hasOwnProperty(key)) {
-            var targetProp = target[key];
-            var sourceProp = source[key];
+            const targetProp = target[key];
+            const sourceProp = source[key];
 
             if (isObject(sourceProp)
                 && isObject(targetProp)
@@ -141,7 +149,7 @@ export function merge(target, source, overwrite) {
             else if (overwrite || !(key in target)) {
                 // 否则只处理overwrite为true，或者在目标对象中没有此属性的情况
                 // NOTE，在 target[key] 不存在的时候也是直接覆盖
-                target[key] = clone(source[key], true);
+                target[key] = clone(source[key]);
             }
         }
     }
@@ -150,25 +158,20 @@ export function merge(target, source, overwrite) {
 }
 
 /**
- * @param {Array} targetAndSources The first item is target, and the rests are source.
- * @param {boolean} [overwrite=false]
- * @return {*} target
+ * @param targetAndSources The first item is target, and the rests are source.
+ * @param overwrite
+ * @return Merged result
  */
-export function mergeAll(targetAndSources, overwrite) {
-    var result = targetAndSources[0];
-    for (var i = 1, len = targetAndSources.length; i < len; i++) {
+export function mergeAll(targetAndSources: any[], overwrite: boolean): any {
+    let result = targetAndSources[0];
+    for (let i = 1, len = targetAndSources.length; i < len; i++) {
         result = merge(result, targetAndSources[i], overwrite);
     }
     return result;
 }
 
-/**
- * @param {*} target
- * @param {*} source
- * @memberOf module:zrender/core/util
- */
-export function extend(target, source) {
-    for (var key in source) {
+export function extend(target: Dictionary<any>, source: Dictionary<any>): Object {
+    for (let key in source) {
         if (source.hasOwnProperty(key)) {
             target[key] = source[key];
         }
@@ -176,14 +179,8 @@ export function extend(target, source) {
     return target;
 }
 
-/**
- * @param {*} target
- * @param {*} source
- * @param {boolean} [overlay=false]
- * @memberOf module:zrender/core/util
- */
-export function defaults(target, source, overlay) {
-    for (var key in source) {
+export function defaults(target: Dictionary<any>, source: Dictionary<any>, overlay?: boolean) {
+    for (let key in source) {
         if (source.hasOwnProperty(key)
             && (overlay ? source[key] != null : target[key] == null)
         ) {
@@ -193,18 +190,18 @@ export function defaults(target, source, overlay) {
     return target;
 }
 
-export var createCanvas = function () {
+export const createCanvas = function (): HTMLCanvasElement {
     return methods.createCanvas();
 };
 
-methods.createCanvas = function () {
+methods.createCanvas = function (): HTMLCanvasElement {
     return document.createElement('canvas');
 };
 
 // FIXME
-var _ctx;
+var _ctx: CanvasRenderingContext2D;
 
-export function getContext() {
+export function getContext(): CanvasRenderingContext2D {
     if (!_ctx) {
         // Use util.createCanvas instead of createCanvas
         // because createCanvas may be overwritten in different environment
@@ -215,14 +212,13 @@ export function getContext() {
 
 /**
  * 查询数组中元素的index
- * @memberOf module:zrender/core/util
  */
-export function indexOf(array, value) {
+export function indexOf(array: any[], value: any): number {
     if (array) {
         if (array.indexOf) {
             return array.indexOf(value);
         }
-        for (var i = 0, len = array.length; i < len; i++) {
+        for (let i = 0, len = array.length; i < len; i++) {
             if (array[i] === value) {
                 return i;
             }
@@ -234,45 +230,37 @@ export function indexOf(array, value) {
 /**
  * 构造类继承关系
  *
- * @memberOf module:zrender/core/util
- * @param {Function} clazz 源类
- * @param {Function} baseClazz 基类
+ * @param clazz 源类
+ * @param baseClazz 基类
  */
-export function inherits(clazz, baseClazz) {
-    var clazzPrototype = clazz.prototype;
-    function F() {}
-    F.prototype = baseClazz.prototype;
+export function inherits(clazz: Function, baseClazz: Function) {
+    const clazzPrototype = clazz.prototype;
+    class F {}
     clazz.prototype = new F();
 
-    for (var prop in clazzPrototype) {
+    for (let prop in clazzPrototype) {
         if (clazzPrototype.hasOwnProperty(prop)) {
             clazz.prototype[prop] = clazzPrototype[prop];
         }
     }
     clazz.prototype.constructor = clazz;
-    clazz.superClass = baseClazz;
+    (<any>clazz).superClass = baseClazz;
 }
 
-/**
- * @memberOf module:zrender/core/util
- * @param {Object|Function} target
- * @param {Object|Function} sorce
- * @param {boolean} overlay
- */
-export function mixin(target, source, overlay) {
+export function mixin(target: Object | Function, source: Object | Function) {
     target = 'prototype' in target ? target.prototype : target;
     source = 'prototype' in source ? source.prototype : source;
 
-    defaults(target, source, overlay);
+    defaults(target, source);
 }
 
 /**
  * Consider typed array.
- * @param {Array|TypedArray} data
+ * @param data
  */
-export function isArrayLike(data) {
+export function isArrayLike(data: any): data is ArrayLike<any> {
     if (!data) {
-        return;
+        return false;
     }
     if (typeof data === 'string') {
         return false;
@@ -282,27 +270,27 @@ export function isArrayLike(data) {
 
 /**
  * 数组或对象遍历
- * @memberOf module:zrender/core/util
- * @param {Object|Array} obj
- * @param {Function} cb
- * @param {*} [context]
  */
-export function each(obj, cb, context) {
-    if (!(obj && cb)) {
+export function each<T, Context>(
+    arr: Dictionary<T> | T[],
+    cb: (this: Context, value: T, index?: number | string, arr?: Dictionary<T> | T[]) => void,
+    context?: Context
+) {
+    if (!(arr && cb)) {
         return;
     }
-    if (obj.forEach && obj.forEach === nativeForEach) {
-        obj.forEach(cb, context);
+    if (arr.forEach && arr.forEach === nativeForEach) {
+        arr.forEach(cb, context);
     }
-    else if (obj.length === +obj.length) {
-        for (var i = 0, len = obj.length; i < len; i++) {
-            cb.call(context, obj[i], i, obj);
+    else if (arr.length === +arr.length) {
+        for (let i = 0, len = arr.length; i < len; i++) {
+            cb.call(context, (<T[]>arr)[i], i, arr);
         }
     }
     else {
-        for (var key in obj) {
-            if (obj.hasOwnProperty(key)) {
-                cb.call(context, obj[key], key, obj);
+        for (let key in arr) {
+            if (arr.hasOwnProperty(key)) {
+                cb.call(context, (<Dictionary<T>>arr)[key], key, arr);
             }
         }
     }
@@ -310,71 +298,64 @@ export function each(obj, cb, context) {
 
 /**
  * 数组映射
- * @memberOf module:zrender/core/util
- * @param {Array} obj
- * @param {Function} cb
- * @param {*} [context]
- * @return {Array}
+ * @typeparam T Type in Array
+ * @typeparam R Type Returned
+ * @return
  */
-export function map(obj, cb, context) {
-    if (!(obj && cb)) {
+export function map<T, R, Context>(
+    arr: T[],
+    cb: (this: Context, val: T, index?: number, arr?: T[]) => R,
+    context?: Context
+): R[] {
+    if (!(arr && cb)) {
         return;
     }
-    if (obj.map && obj.map === nativeMap) {
-        return obj.map(cb, context);
+    if (arr.map && arr.map === nativeMap) {
+        return arr.map(cb, context);
     }
     else {
-        var result = [];
-        for (var i = 0, len = obj.length; i < len; i++) {
-            result.push(cb.call(context, obj[i], i, obj));
+        const result = [];
+        for (let i = 0, len = arr.length; i < len; i++) {
+            result.push(cb.call(context, arr[i], i, arr));
         }
         return result;
     }
 }
 
-/**
- * @memberOf module:zrender/core/util
- * @param {Array} obj
- * @param {Function} cb
- * @param {Object} [memo]
- * @param {*} [context]
- * @return {Array}
- */
-export function reduce(obj, cb, memo, context) {
-    if (!(obj && cb)) {
+export function reduce<T, S, Context>(
+    arr: T[],
+    cb: (this: Context, previousValue: S, currentValue: T, currentIndex?: number, arr?: T[]) => S,
+    memo?: S,
+    context?: Context
+): S {
+    if (!(arr && cb)) {
         return;
     }
-    if (obj.reduce && obj.reduce === nativeReduce) {
-        return obj.reduce(cb, memo, context);
+    for (let i = 0, len = arr.length; i < len; i++) {
+        memo = cb.call(context, memo, arr[i], i, arr);
     }
-    else {
-        for (var i = 0, len = obj.length; i < len; i++) {
-            memo = cb.call(context, memo, obj[i], i, obj);
-        }
-        return memo;
-    }
+    return memo;
 }
 
 /**
  * 数组过滤
- * @memberOf module:zrender/core/util
- * @param {Array} obj
- * @param {Function} cb
- * @param {*} [context]
- * @return {Array}
  */
-export function filter(obj, cb, context) {
-    if (!(obj && cb)) {
+export function filter<T, Context>(
+    arr: T[],
+    cb: (this: Context, value: T, index?: number, arr?: T[]) => boolean,
+    context?: Context
+): T[] {
+    if (!(arr && cb)) {
         return;
     }
-    if (obj.filter && obj.filter === nativeFilter) {
-        return obj.filter(cb, context);
+    if (arr.filter && arr.filter === nativeFilter) {
+        return arr.filter(cb, context);
     }
     else {
-        var result = [];
-        for (var i = 0, len = obj.length; i < len; i++) {
-            if (cb.call(context, obj[i], i, obj)) {
-                result.push(obj[i]);
+        const result = [];
+        for (let i = 0, len = arr.length; i < len; i++) {
+            if (cb.call(context, arr[i], i, arr)) {
+                result.push(arr[i]);
             }
         }
         return result;
@@ -383,122 +364,93 @@ export function filter(obj, cb, context) {
 
 /**
  * 数组项查找
- * @memberOf module:zrender/core/util
- * @param {Array} obj
- * @param {Function} cb
- * @param {*} [context]
- * @return {*}
  */
-export function find(obj, cb, context) {
-    if (!(obj && cb)) {
+export function find<T, Context>(
+    arr: T[],
+    cb: (this: Context, value: T, index?: number, arr?: T[]) => boolean,
+    context?: Context
+): T {
+    if (!(arr && cb)) {
         return;
     }
-    for (var i = 0, len = obj.length; i < len; i++) {
-        if (cb.call(context, obj[i], i, obj)) {
-            return obj[i];
+    for (let i = 0, len = arr.length; i < len; i++) {
+        if (cb.call(context, arr[i], i, arr)) {
+            return arr[i];
         }
     }
 }
 
-/**
- * @memberOf module:zrender/core/util
- * @param {Function} func
- * @param {*} context
- * @return {Function}
- */
-export function bind(func, context) {
-    var args = nativeSlice.call(arguments, 2);
-    return function () {
+export function bind<Context>(func: Function, context: Context, ...args: any[]) {
+    return function (this: Context) {
         return func.apply(context, args.concat(nativeSlice.call(arguments)));
     };
 }
 
-/**
- * @memberOf module:zrender/core/util
- * @param {Function} func
- * @return {Function}
- */
-export function curry(func) {
-    var args = nativeSlice.call(arguments, 1);
+export function curry(func: Function, ...args: any[]) {
     return function () {
         return func.apply(this, args.concat(nativeSlice.call(arguments)));
     };
 }
 
 /**
- * @memberOf module:zrender/core/util
- * @param {*} value
+ * @param value
  * @return {boolean}
  */
-export function isArray(value) {
+export function isArray(value: any): value is Array<any> {
     return objToString.call(value) === '[object Array]';
 }
 
 /**
- * @memberOf module:zrender/core/util
- * @param {*} value
+ * @param value
  * @return {boolean}
  */
-export function isFunction(value) {
+export function isFunction(value: any): value is Function {
     return typeof value === 'function';
 }
 
 /**
- * @memberOf module:zrender/core/util
- * @param {*} value
+ * @param value
  * @return {boolean}
  */
-export function isString(value) {
+export function isString(value: any): value is String {
     return objToString.call(value) === '[object String]';
 }
 
-/**
- * @memberOf module:zrender/core/util
- * @param {*} value
- * @return {boolean}
- */
-export function isObject(value) {
+export function isObject(value: any): value is Object {
     // Avoid a V8 JIT bug in Chrome 19-20.
     // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
-    var type = typeof value;
+    const type = typeof value;
     return type === 'function' || (!!value && type === 'object');
 }
 
-/**
- * @memberOf module:zrender/core/util
- * @param {*} value
- * @return {boolean}
- */
-export function isBuiltInObject(value) {
+export function isBuiltInObject(value: any): boolean {
     return !!BUILTIN_OBJECT[objToString.call(value)];
 }
 
-/**
- * @memberOf module:zrender/core/util
- * @param {*} value
- * @return {boolean}
- */
-export function isTypedArray(value) {
+export function isTypedArray(value: any): boolean {
     return !!TYPED_ARRAY[objToString.call(value)];
 }
 
-/**
- * @memberOf module:zrender/core/util
- * @param {*} value
- * @return {boolean}
- */
-export function isDom(value) {
+export function isDom(value: any): value is HTMLElement {
     return typeof value === 'object'
         && typeof value.nodeType === 'number'
         && typeof value.ownerDocument === 'object';
 }
 
+export function isGradientObject(value: any): value is GradientObject {
+    return (value as GradientObject).colorStops != null;
+}
+
+export function isPatternObject(value: any): value is PatternObject {
+    return (value as PatternObject).image != null;
+}
+
 /**
  * Whether is exactly NaN. Notice isNaN('a') returns true.
- * @param {*} value
+ * @param value
  * @return {boolean}
  */
-export function eqNaN(value) {
+export function eqNaN(value: any): boolean {
     /* eslint-disable-next-line no-self-compare */
     return value !== value;
 }
@@ -506,24 +458,23 @@ export function eqNaN(value) {
 /**
  * If value1 is not null, then return value1, otherwise judget rest of values.
  * Low performance.
- * @memberOf module:zrender/core/util
- * @return {*} Final value
+ * @return Final value
  */
-export function retrieve(values) {
-    for (var i = 0, len = arguments.length; i < len; i++) {
-        if (arguments[i] != null) {
-            return arguments[i];
+export function retrieve<T>(...args: T[]): T {
+    for (let i = 0, len = args.length; i < len; i++) {
+        if (args[i] != null) {
+            return args[i];
         }
     }
 }
 
-export function retrieve2(value0, value1) {
+export function retrieve2<T, R>(value0: T, value1: R) {
     return value0 != null
         ? value0
         : value1;
 }
 
-export function retrieve3(value0, value1, value2) {
+export function retrieve3<T, R, W>(value0: T, value1: R, value2: W) {
     return value0 != null
         ? value0
         : value1 != null
@@ -531,15 +482,15 @@ export function retrieve3(value0, value1, value2) {
         : value2;
 }
 
+type SliceTypes = Parameters<typeof nativeSlice>;
 /**
- * @memberOf module:zrender/core/util
  * @param {Array} arr
  * @param {number} startIndex
  * @param {number} endIndex
  * @return {Array}
  */
-export function slice() {
-    return Function.call.apply(nativeSlice, arguments);
+export function slice(...args: SliceTypes) {
+    return nativeSlice.apply(args);
 }
 
 /**
@@ -548,14 +499,12 @@ export function slice() {
  *  3 => [3, 3, 3, 3]
  *  [4, 2] => [4, 2, 4, 2]
  *  [4, 3, 2] => [4, 3, 2, 3]
- * @param {number|Array.<number>} val
- * @return {Array.<number>}
  */
-export function normalizeCssArray(val) {
+export function normalizeCssArray(val: number | number[]) {
     if (typeof (val) === 'number') {
         return [val, val, val, val];
     }
-    var len = val.length;
+    const len = val.length;
     if (len === 2) {
         // vertical | horizontal
         return [val[0], val[1], val[0], val[1]];
@@ -567,23 +516,17 @@ export function normalizeCssArray(val) {
     return val;
 }
 
-/**
- * @memberOf module:zrender/core/util
- * @param {boolean} condition
- * @param {string} message
- */
-export function assert(condition, message) {
+export function assert(condition: boolean, message: string) {
     if (!condition) {
         throw new Error(message);
     }
 }
 
 /**
- * @memberOf module:zrender/core/util
- * @param {string} str string to be trimed
- * @return {string} trimed string
+ * @param str string to be trimed
+ * @return trimed string
  */
-export function trim(str) {
+export function trim(str: string): string {
     if (str == null) {
         return null;
     }
@@ -599,11 +542,11 @@ var primitiveKey = '__ec_primitive__';
 /**
  * Set an object as primitive to be ignored traversing children in clone or merge
  */
-export function setAsPrimitive(obj) {
+export function setAsPrimitive(obj: any) {
     obj[primitiveKey] = true;
 }
 
-export function isPrimitive(obj) {
+export function isPrimitive(obj: any): boolean {
     return obj[primitiveKey];
 }
 
@@ -611,62 +554,67 @@ export function isPrimitive(obj) {
  * @constructor
  * @param {Object} obj Only apply `ownProperty`.
  */
-function HashMap(obj) {
-    var isArr = isArray(obj);
-    // Key should not be set on this, otherwise
-    // methods get/set/... may be overrided.
-    this.data = {};
-    var thisMap = this;
+class HashMap<T> {
 
-    (obj instanceof HashMap)
-        ? obj.each(visit)
-        : (obj && each(obj, visit));
+    data: {[key: string]: T} = {}
 
-    function visit(value, key) {
-        isArr ? thisMap.set(value, key) : thisMap.set(key, value);
+    constructor(obj: HashMap<T> | Dictionary<T> | T[]) {
+        const isArr = isArray(obj);
+        // Key should not be set on this, otherwise
+        // methods get/set/... may be overrided.
+        this.data = {};
+        const thisMap = this;
+
+        (obj instanceof HashMap)
+            ? obj.each(visit)
+            : (obj && each(obj, visit));
+
+        function visit(value: any, key: any) {
+            isArr ? thisMap.set(value, key) : thisMap.set(key, value);
+        }
     }
-}
 
-HashMap.prototype = {
-    constructor: HashMap,
     // Do not provide `has` method to avoid defining what is `has`.
     // (We usually treat `null` and `undefined` as the same, different
     // from ES6 Map).
-    get: function (key) {
+    get(key: string): T {
         return this.data.hasOwnProperty(key) ? this.data[key] : null;
-    },
-    set: function (key, value) {
+    }
+    set(key: string, value: T) {
         // Comparing with invocation chaining, `return value` is more commonly
         // used in this case: `var someVal = map.set('a', genVal());`
         return (this.data[key] = value);
-    },
+    }
     // Although util.each can be performed on this hashMap directly, user
     // should not use the exposed keys, who are prefixed.
-    each: function (cb, context) {
+    each(
+        cb: (value?: T, key?: string) => void,
+        context?: any
+    ) {
         context !== void 0 && (cb = bind(cb, context));
         /* eslint-disable guard-for-in */
-        for (var key in this.data) {
+        for (let key in this.data) {
             this.data.hasOwnProperty(key) && cb(this.data[key], key);
         }
         /* eslint-enable guard-for-in */
-    },
+    }
     // Do not use this method if performance sensitive.
-    removeKey: function (key) {
+    removeKey(key: string) {
         delete this.data[key];
     }
-};
-
-export function createHashMap(obj) {
-    return new HashMap(obj);
 }
 
-export function concatArray(a, b) {
-    var newArray = new a.constructor(a.length + b.length);
-    for (var i = 0; i < a.length; i++) {
+export function createHashMap<T>(obj: HashMap<T> | Dictionary<T> | T[]) {
+    return new HashMap<T>(obj);
+}
+
+export function concatArray<T, R>(a: ArrayLike<T>, b: ArrayLike<R>): ArrayLike<T | R> {
+    const newArray = new (a as any).constructor(a.length + b.length);
+    for (let i = 0; i < a.length; i++) {
         newArray[i] = a[i];
     }
-    var offset = a.length;
-    for (i = 0; i < b.length; i++) {
+    const offset = a.length;
+    for (let i = 0; i < b.length; i++) {
         newArray[i + offset] = b[i];
     }
     return newArray;

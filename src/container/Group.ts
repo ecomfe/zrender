@@ -2,9 +2,9 @@
  * Group是一个容器，可以插入子节点，Group的变换也会被应用到子节点上
  * @module zrender/graphic/Group
  * @example
- *     var Group = require('zrender/container/Group');
- *     var Circle = require('zrender/graphic/shape/Circle');
- *     var g = new Group();
+ *     const Group = require('zrender/container/Group');
+ *     const Circle = require('zrender/graphic/shape/Circle');
+ *     const g = new Group();
  *     g.position[0] = 100;
  *     g.position[1] = 100;
  *     g.add(new Circle({
@@ -18,95 +18,60 @@
  */
 
 import * as zrUtil from '../core/util';
-import Element from '../Element';
+import Element, { ElementOption } from '../Element';
 import BoundingRect from '../core/BoundingRect';
+import Storage from '../Storage';
+import { MatrixArray } from '../core/matrix';
+import Displayable from '../graphic/Displayable';
 
-/**
- * @alias module:zrender/graphic/Group
- * @constructor
- * @extends module:zrender/mixin/Transformable
- * @extends module:zrender/mixin/Eventful
- */
-var Group = function (opts) {
+export interface GroupOption extends ElementOption {
+}
 
-    opts = opts || {};
+export default class Group extends Element {
 
-    Element.call(this, opts);
+    isGroup = true
 
-    for (var key in opts) {
-        if (opts.hasOwnProperty(key)) {
-            this[key] = opts[key];
-        }
+    type = 'group'
+
+    private _children: Element[] = []
+
+    __storage: Storage
+
+    constructor(opts?: GroupOption) {
+        super(opts);
     }
 
-    this._children = [];
-
-    this.__storage = null;
-
-    this.__dirty = true;
-};
-
-Group.prototype = {
-
-    constructor: Group,
-
-    isGroup: true,
-
-    /**
-     * @type {string}
-     */
-    type: 'group',
-
-    /**
-     * 所有子孙元素是否响应鼠标事件
-     * @name module:/zrender/container/Group#silent
-     * @type {boolean}
-     * @default false
-     */
-    silent: false,
-
-    /**
-     * @return {Array.<module:zrender/Element>}
-     */
-    children: function () {
-        return this._children.slice();
-    },
+    children() {
+        return this._children;
+    }
 
     /**
      * 获取指定 index 的儿子节点
-     * @param  {number} idx
-     * @return {module:zrender/Element}
      */
-    childAt: function (idx) {
+    childAt(idx: number): Element {
         return this._children[idx];
-    },
+    }
 
     /**
      * 获取指定名字的儿子节点
-     * @param  {string} name
-     * @return {module:zrender/Element}
      */
-    childOfName: function (name) {
-        var children = this._children;
-        for (var i = 0; i < children.length; i++) {
+    childOfName(name: string): Element {
+        const children = this._children;
+        for (let i = 0; i < children.length; i++) {
             if (children[i].name === name) {
                 return children[i];
             }
-            }
-    },
+        }
+    }
 
-    /**
-     * @return {number}
-     */
-    childCount: function () {
+    childCount(): number {
         return this._children.length;
-    },
+    }
 
     /**
      * 添加子节点到最后
-     * @param {module:zrender/Element} child
      */
-    add: function (child) {
+    add(child: Element): Group {
         if (child && child !== this && child.parent !== this) {
 
             this._children.push(child);
@@ -115,19 +80,17 @@ Group.prototype = {
         }
 
         return this;
-    },
+    }
 
     /**
      * 添加子节点在 nextSibling 之前
-     * @param {module:zrender/Element} child
-     * @param {module:zrender/Element} nextSibling
      */
-    addBefore: function (child, nextSibling) {
+    addBefore(child: Element, nextSibling: Element) {
         if (child && child !== this && child.parent !== this
             && nextSibling && nextSibling.parent === this) {
 
-            var children = this._children;
-            var idx = children.indexOf(nextSibling);
+            const children = this._children;
+            const idx = children.indexOf(nextSibling);
 
             if (idx >= 0) {
                 children.splice(idx, 0, child);
@@ -136,18 +99,19 @@ Group.prototype = {
         }
 
         return this;
-    },
+    }
 
-    _doAdd: function (child) {
+    _doAdd(child: Element) {
         if (child.parent) {
-            child.parent.remove(child);
+            // Parent must be a group
+            (child.parent as Group).remove(child);
         }
 
         child.parent = this;
 
-        var storage = this.__storage;
-        var zr = this.__zr;
-        if (storage && storage !== child.__storage) {
+        const storage = this.__storage;
+        const zr = this.__zr;
+        if (storage && storage !== (child as Group).__storage) {    // Only group has __storage
 
             storage.addToStorage(child);
 
@@ -157,18 +121,18 @@ Group.prototype = {
         }
 
         zr && zr.refresh();
-    },
+    }
 
     /**
      * 移除子节点
-     * @param {module:zrender/Element} child
+     * @param child
      */
-    remove: function (child) {
-        var zr = this.__zr;
-        var storage = this.__storage;
-        var children = this._children;
+    remove(child: Element) {
+        const zr = this.__zr;
+        const storage = this.__storage;
+        const children = this._children;
 
-        var idx = zrUtil.indexOf(children, child);
+        const idx = zrUtil.indexOf(children, child);
         if (idx < 0) {
             return this;
         }
@@ -188,18 +152,16 @@ Group.prototype = {
         zr && zr.refresh();
 
         return this;
-    },
+    }
 
     /**
      * 移除所有子节点
      */
-    removeAll: function () {
-        var children = this._children;
-        var storage = this.__storage;
-        var child;
-        var i;
-        for (i = 0; i < children.length; i++) {
-            child = children[i];
+    removeAll() {
+        const children = this._children;
+        const storage = this.__storage;
+        for (let i = 0; i < children.length; i++) {
+            const child = children[i];
             if (storage) {
                 storage.delFromStorage(child);
                 if (child instanceof Group) {
@@ -211,30 +173,32 @@ Group.prototype = {
         children.length = 0;
 
         return this;
-    },
+    }
 
     /**
      * 遍历所有子节点
-     * @param  {Function} cb
-     * @param  {}   context
      */
-    eachChild: function (cb, context) {
-        var children = this._children;
-        for (var i = 0; i < children.length; i++) {
-            var child = children[i];
+    eachChild<T>(
+        cb: (this: T, el: Element, index: number) => void,
+        context: T
+    ) {
+        const children = this._children;
+        for (let i = 0; i < children.length; i++) {
+            const child = children[i];
             cb.call(context, child, i);
         }
         return this;
-    },
+    }
 
     /**
      * 深度优先遍历所有子孙节点
-     * @param  {Function} cb
-     * @param  {}   context
      */
-    traverse: function (cb, context) {
-        for (var i = 0; i < this._children.length; i++) {
-            var child = this._children[i];
+    traverse<T>(
+        cb: (this: T, el: Element) => void,
+        context: T
+    ) {
+        for (let i = 0; i < this._children.length; i++) {
+            const child = this._children[i];
             cb.call(context, child);
 
             if (child.type === 'group') {
@@ -242,52 +206,50 @@ Group.prototype = {
             }
         }
         return this;
-    },
+    }
 
-    addChildrenToStorage: function (storage) {
-        for (var i = 0; i < this._children.length; i++) {
-            var child = this._children[i];
+    addChildrenToStorage(storage: Storage) {
+        for (let i = 0; i < this._children.length; i++) {
+            const child = this._children[i];
             storage.addToStorage(child);
             if (child instanceof Group) {
                 child.addChildrenToStorage(storage);
             }
         }
-    },
+    }
 
-    delChildrenFromStorage: function (storage) {
-        for (var i = 0; i < this._children.length; i++) {
-            var child = this._children[i];
+    delChildrenFromStorage(storage: Storage) {
+        for (let i = 0; i < this._children.length; i++) {
+            const child = this._children[i];
             storage.delFromStorage(child);
             if (child instanceof Group) {
                 child.delChildrenFromStorage(storage);
             }
         }
-    },
+    }
 
-    dirty: function () {
+    dirty() {
         this.__dirty = true;
         this.__zr && this.__zr.refresh();
         return this;
-    },
+    }
 
-    /**
-     * @return {module:zrender/core/BoundingRect}
-     */
-    getBoundingRect: function (includeChildren) {
+    getBoundingRect(includeChildren?: Element[]): BoundingRect {
         // TODO Caching
-        var rect = null;
-        var tmpRect = new BoundingRect(0, 0, 0, 0);
-        var children = includeChildren || this._children;
-        var tmpMat = [];
+        const tmpRect = new BoundingRect(0, 0, 0, 0);
+        const children = includeChildren || this._children;
+        const tmpMat: MatrixArray = [];
+        let rect = null;
 
-        for (var i = 0; i < children.length; i++) {
-            var child = children[i];
-            if (child.ignore || child.invisible) {
+        for (let i = 0; i < children.length; i++) {
+            const child = children[i];
+            // Only displayable can be invisble
+            if (child.ignore || (child as Displayable).invisible) {
                 continue;
             }
 
-            var childRect = child.getBoundingRect();
-            var transform = child.getLocalTransform(tmpMat);
+            const childRect = child.getBoundingRect();
+            const transform = child.getLocalTransform(tmpMat);
             // TODO
             // The boundingRect cacluated by transforming original
             // rect may be bigger than the actual bundingRect when rotation
@@ -308,8 +270,4 @@ Group.prototype = {
         }
         return rect || tmpRect;
     }
-};
-
-zrUtil.inherits(Group, Element);
-
-export default Group;
+}

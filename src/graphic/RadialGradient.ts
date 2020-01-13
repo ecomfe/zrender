@@ -1,39 +1,48 @@
 import * as zrUtil from '../core/util';
-import Gradient from './Gradient';
+import {Gradient, GradientColorStop, GradientObject} from './Gradient';
 
+export interface RadialGradientObject extends GradientObject {
+    type: 'radial'
+
+    x: number
+    y: number
+    r: number
+    global: boolean
+}
 /**
- * x, y, r are all percent from 0 to 1
- * @param {number} [x=0.5]
- * @param {number} [y=0.5]
- * @param {number} [r=0.5]
- * @param {Array.<Object>} [colorStops]
- * @param {boolean} [globalCoord=false]
+ * x, y, r are all percent from 0 to 1 when globalCoord is false
  */
-var RadialGradient = function (x, y, r, colorStops, globalCoord) {
-    // Should do nothing more in this constructor. Because gradient can be
-    // declard by `color: {type: 'radial', colorStops: ...}`, where
-    // this constructor will not be called.
+class RadialGradient extends Gradient {
 
-    this.x = x == null ? 0.5 : x;
+    type = 'radial'
 
-    this.y = y == null ? 0.5 : y;
+    x: number
+    y: number
+    r: number
+    global: boolean
 
-    this.r = r == null ? 0.5 : r;
+    constructor(
+        x: number, y: number, r: number,
+        colorStops?: GradientColorStop[], globalCoord?: boolean
+    ) {
+        super(colorStops)
+        // Should do nothing more in this constructor. Because gradient can be
+        // declard by `color: {type: 'radial', colorStops: ...}`, where
+        // this constructor will not be called.
+        this.x = x == null ? 0.5 : x;
 
-    // Can be cloned
-    this.type = 'radial';
+        this.y = y == null ? 0.5 : y;
 
-    // If use global coord
-    this.global = globalCoord || false;
+        this.r = r == null ? 0.5 : r;
 
-    Gradient.call(this, colorStops);
-};
+        // Can be cloned
+        this.type = 'radial';
 
-RadialGradient.prototype = {
+        // If use global coord
+        this.global = globalCoord || false;
 
-    constructor: RadialGradient
-};
-
-zrUtil.inherits(RadialGradient, Gradient);
+        Gradient.call(this, colorStops);
+    }
+}
 
 export default RadialGradient;

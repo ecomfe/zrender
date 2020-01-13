@@ -1,9 +1,5 @@
 /**
  * 贝塞尔平滑曲线
- * @module zrender/shape/util/smoothBezier
- * @author pissang (https://www.github.com/pissang)
- *         Kener (@Kener-林峰, kener.linfeng@gmail.com)
- *         errorrik (errorrik@gmail.com)
  */
 
 import {
@@ -13,35 +9,40 @@ import {
     distance as v2Distance,
     add as v2Add,
     clone as v2Clone,
-    sub as v2Sub
+    sub as v2Sub,
+    VectorArray
 } from '../../core/vector';
 
 /**
  * 贝塞尔平滑曲线
- * @alias module:zrender/shape/util/smoothBezier
- * @param {Array} points 线段顶点数组
- * @param {number} smooth 平滑等级, 0-1
- * @param {boolean} isLoop
- * @param {Array} constraint 将计算出来的控制点约束在一个包围盒内
+ * @param points 线段顶点数组
+ * @param smooth 平滑等级, 0-1
+ * @param isLoop
+ * @param constraint 将计算出来的控制点约束在一个包围盒内
  *                           比如 [[0, 0], [100, 100]], 这个包围盒会与
  *                           整个折线的包围盒做一个并集用来约束控制点。
- * @param {Array} 计算出来的控制点数组
+ * @param 计算出来的控制点数组
  */
-export default function (points, smooth, isLoop, constraint) {
-    var cps = [];
+export default function (
+    points: VectorArray[],
+    smooth?: number,
+    isLoop?: boolean,
+    constraint?: VectorArray[]
+) {
+    const cps = [];
 
-    var v = [];
-    var v1 = [];
-    var v2 = [];
-    var prevPoint;
-    var nextPoint;
+    const v: VectorArray = [];
+    const v1: VectorArray = [];
+    const v2: VectorArray = [];
+    let prevPoint;
+    let nextPoint;
 
-    var min;
-    var max;
+    let min;
+    let max;
     if (constraint) {
         min = [Infinity, Infinity];
         max = [-Infinity, -Infinity];
-        for (var i = 0, len = points.length; i < len; i++) {
+        for (let i = 0, len = points.length; i < len; i++) {
             v2Min(min, min, points[i]);
             v2Max(max, max, points[i]);
         }
@@ -50,8 +51,8 @@ export default function (points, smooth, isLoop, constraint) {
         v2Max(max, max, constraint[1]);
     }
 
-    for (var i = 0, len = points.length; i < len; i++) {
-        var point = points[i];
+    for (let i = 0, len = points.length; i < len; i++) {
+        const point = points[i];
 
         if (isLoop) {
             prevPoint = points[i ? i - 1 : len - 1];
@@ -73,9 +74,9 @@ export default function (points, smooth, isLoop, constraint) {
         // use degree to scale the handle length
         v2Scale(v, v, smooth);
 
-        var d0 = v2Distance(point, prevPoint);
-        var d1 = v2Distance(point, nextPoint);
-        var sum = d0 + d1;
+        let d0 = v2Distance(point, prevPoint);
+        let d1 = v2Distance(point, nextPoint);
+        const sum = d0 + d1;
         if (sum !== 0) {
             d0 /= sum;
             d1 /= sum;
@@ -83,8 +84,8 @@ export default function (points, smooth, isLoop, constraint) {
 
         v2Scale(v1, v, -d0);
         v2Scale(v2, v, d1);
-        var cp0 = v2Add([], point, v1);
-        var cp1 = v2Add([], point, v2);
+        const cp0 = v2Add([], point, v1);
+        const cp1 = v2Add([], point, v2);
         if (constraint) {
             v2Max(cp0, cp0, min);
             v2Min(cp0, cp0, max);

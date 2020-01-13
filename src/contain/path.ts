@@ -7,26 +7,31 @@ import {normalizeRadian} from './util';
 import * as curve from '../core/curve';
 import windingLine from './windingLine';
 
-var CMD = PathProxy.CMD;
-var PI2 = Math.PI * 2;
+const CMD = PathProxy.CMD;
+const PI2 = Math.PI * 2;
 
-var EPSILON = 1e-4;
+const EPSILON = 1e-4;
 
-function isAroundEqual(a, b) {
+type PathData = Float32Array | number[];
+
+function isAroundEqual(a: number, b: number) {
     return Math.abs(a - b) < EPSILON;
 }
 
 // 临时数组
-var roots = [-1, -1, -1];
-var extrema = [-1, -1];
+const roots = [-1, -1, -1];
+const extrema = [-1, -1];
 
 function swapExtrema() {
-    var tmp = extrema[0];
+    const tmp = extrema[0];
     extrema[0] = extrema[1];
     extrema[1] = tmp;
 }
 
-function windingCubic(x0, y0, x1, y1, x2, y2, x3, y3, x, y) {
+function windingCubic(
+    x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number,
+    x: number, y: number
+): number {
     // Quick reject
     if (
         (y > y0 && y > y1 && y > y2 && y > y3)
@@ -34,22 +39,22 @@ function windingCubic(x0, y0, x1, y1, x2, y2, x3, y3, x, y) {
     ) {
         return 0;
     }
-    var nRoots = curve.cubicRootAt(y0, y1, y2, y3, y, roots);
+    const nRoots = curve.cubicRootAt(y0, y1, y2, y3, y, roots);
     if (nRoots === 0) {
         return 0;
     }
     else {
-        var w = 0;
-        var nExtrema = -1;
-        var y0_;
-        var y1_;
-        for (var i = 0; i < nRoots; i++) {
-            var t = roots[i];
+        let w = 0;
+        let nExtrema = -1;
+        let y0_;
+        let y1_;
+        for (let i = 0; i < nRoots; i++) {
+            let t = roots[i];
 
             // Avoid winding error when intersection point is the connect point of two line of polygon
-            var unit = (t === 0 || t === 1) ? 0.5 : 1;
+            let unit = (t === 0 || t === 1) ? 0.5 : 1;
 
-            var x_ = curve.cubicAt(x0, x1, x2, x3, t);
+            let x_ = curve.cubicAt(x0, x1, x2, x3, t);
             if (x_ < x) { // Quick reject
                 continue;
             }
@@ -89,7 +94,10 @@ function windingCubic(x0, y0, x1, y1, x2, y2, x3, y3, x, y) {
     }
 }
 
-function windingQuadratic(x0, y0, x1, y1, x2, y2, x, y) {
+function windingQuadratic(
+    x0: number, y0: number, x1: number, y1: number, x2: number, y2: number,
+    x: number, y: number
+): number {
     // Quick reject
     if (
         (y > y0 && y > y1 && y > y2)
@@ -97,20 +105,20 @@ function windingQuadratic(x0, y0, x1, y1, x2, y2, x, y) {
     ) {
         return 0;
     }
-    var nRoots = curve.quadraticRootAt(y0, y1, y2, y, roots);
+    const nRoots = curve.quadraticRootAt(y0, y1, y2, y, roots);
     if (nRoots === 0) {
         return 0;
     }
     else {
-        var t = curve.quadraticExtremum(y0, y1, y2);
+        const t = curve.quadraticExtremum(y0, y1, y2);
         if (t >= 0 && t <= 1) {
-            var w = 0;
-            var y_ = curve.quadraticAt(y0, y1, y2, t);
-            for (var i = 0; i < nRoots; i++) {
+            let w = 0;
+            let y_ = curve.quadraticAt(y0, y1, y2, t);
+            for (let i = 0; i < nRoots; i++) {
                 // Remove one endpoint.
-                var unit = (roots[i] === 0 || roots[i] === 1) ? 0.5 : 1;
+                let unit = (roots[i] === 0 || roots[i] === 1) ? 0.5 : 1;
 
-                var x_ = curve.quadraticAt(x0, x1, x2, roots[i]);
+                let x_ = curve.quadraticAt(x0, x1, x2, roots[i]);
                 if (x_ < x) {   // Quick reject
                     continue;
                 }
@@ -125,9 +133,9 @@ function windingQuadratic(x0, y0, x1, y1, x2, y2, x, y) {
         }
         else {
             // Remove one endpoint.
-            var unit = (roots[0] === 0 || roots[0] === 1) ? 0.5 : 1;
+            const unit = (roots[0] === 0 || roots[0] === 1) ? 0.5 : 1;
 
-            var x_ = curve.quadraticAt(x0, x1, x2, roots[0]);
+            const x_ = curve.quadraticAt(x0, x1, x2, roots[0]);
             if (x_ < x) {   // Quick reject
                 return 0;
             }
@@ -139,17 +147,18 @@ function windingQuadratic(x0, y0, x1, y1, x2, y2, x, y) {
 // TODO
 // Arc 旋转
 function windingArc(
-    cx, cy, r, startAngle, endAngle, anticlockwise, x, y
+    cx: number, cy: number, r: number, startAngle: number, endAngle: number, anticlockwise: boolean,
+    x: number, y: number
 ) {
     y -= cy;
     if (y > r || y < -r) {
         return 0;
     }
-    var tmp = Math.sqrt(r * r - y * y);
+    const tmp = Math.sqrt(r * r - y * y);
     roots[0] = -tmp;
     roots[1] = tmp;
 
-    var diff = Math.abs(startAngle - endAngle);
+    const diff = Math.abs(startAngle - endAngle);
     if (diff < 1e-4) {
         return 0;
     }
@@ -157,7 +166,7 @@ function windingArc(
         // Is a circle
         startAngle = 0;
         endAngle = PI2;
-        var dir = anticlockwise ? 1 : -1;
+        const dir = anticlockwise ? 1 : -1;
         if (x >= roots[0] + cx && x <= roots[1] + cx) {
             return dir;
         }
@@ -167,7 +176,7 @@ function windingArc(
     }
 
     if (anticlockwise) {
-        var tmp = startAngle;
+        const tmp = startAngle;
         startAngle = normalizeRadian(endAngle);
         endAngle = normalizeRadian(tmp);
     }
@@ -179,12 +188,12 @@ function windingArc(
         endAngle += PI2;
     }
 
-    var w = 0;
-    for (var i = 0; i < 2; i++) {
-        var x_ = roots[i];
+    let w = 0;
+    for (let i = 0; i < 2; i++) {
+        const x_ = roots[i];
         if (x_ + cx > x) {
-            var angle = Math.atan2(y, x_);
-            var dir = anticlockwise ? 1 : -1;
+            let angle = Math.atan2(y, x_);
+            let dir = anticlockwise ? 1 : -1;
             if (angle < 0) {
                 angle = PI2 + angle;
             }
@@ -202,15 +211,19 @@ function windingArc(
     return w;
 }
 
-function containPath(data, lineWidth, isStroke, x, y) {
-    var w = 0;
-    var xi = 0;
-    var yi = 0;
-    var x0 = 0;
-    var y0 = 0;
+function containPath(
+    data: PathData, lineWidth: number, isStroke: boolean, x: number, y: number
+): boolean {
+    let w = 0;
+    let xi = 0;
+    let yi = 0;
+    let x0 = 0;
+    let y0 = 0;
+    let x1
+    let y1;
 
-    for (var i = 0; i < data.length;) {
-        var cmd = data[i++];
+    for (let i = 0; i < data.length;) {
+        const cmd = data[i++];
         // Begin a new subpath
         if (cmd === CMD.M && i > 1) {
             // Close previous subpath
@@ -297,17 +310,17 @@ function containPath(data, lineWidth, isStroke, x, y) {
                 break;
             case CMD.A:
                 // TODO Arc 判断的开销比较大
-                var cx = data[i++];
-                var cy = data[i++];
-                var rx = data[i++];
-                var ry = data[i++];
-                var theta = data[i++];
-                var dTheta = data[i++];
+                const cx = data[i++];
+                const cy = data[i++];
+                const rx = data[i++];
+                const ry = data[i++];
+                const theta = data[i++];
+                const dTheta = data[i++];
                 // TODO Arc 旋转
                 i += 1;
-                var anticlockwise = 1 - data[i++];
-                var x1 = Math.cos(theta) * rx + cx;
-                var y1 = Math.sin(theta) * ry + cy;
+                const anticlockwise = !!(1 - data[i++]);
+                x1 = Math.cos(theta) * rx + cx;
+                y1 = Math.sin(theta) * ry + cy;
                 // 不是直接使用 arc 命令
                 if (i > 1) {
                     w += windingLine(xi, yi, x1, y1, x, y);
@@ -318,7 +331,7 @@ function containPath(data, lineWidth, isStroke, x, y) {
                     y0 = y1;
                 }
                 // zr 使用scale来模拟椭圆, 这里也对x做一定的缩放
-                var _x = (x - cx) * ry / rx + cx;
+                const _x = (x - cx) * ry / rx + cx;
                 if (isStroke) {
                     if (arc.containStroke(
                         cx, cy, ry, theta, theta + dTheta, anticlockwise,
@@ -339,10 +352,10 @@ function containPath(data, lineWidth, isStroke, x, y) {
             case CMD.R:
                 x0 = xi = data[i++];
                 y0 = yi = data[i++];
-                var width = data[i++];
-                var height = data[i++];
-                var x1 = x0 + width;
-                var y1 = y0 + height;
+                const width = data[i++];
+                const height = data[i++];
+                x1 = x0 + width;
+                y1 = y0 + height;
                 if (isStroke) {
                     if (line.containStroke(x0, y0, x1, y0, lineWidth, x, y)
                         || line.containStroke(x1, y0, x1, y1, lineWidth, x, y)
@@ -386,10 +399,10 @@ function containPath(data, lineWidth, isStroke, x, y) {
     return w !== 0;
 }
 
-export function contain(pathData, x, y) {
+export function contain(pathData: PathData, x: number, y: number): boolean {
     return containPath(pathData, 0, false, x, y);
 }
 
-export function containStroke(pathData, lineWidth, x, y) {
+export function containStroke(pathData: PathData, lineWidth: number, x: number, y: number): boolean {
     return containPath(pathData, lineWidth, true, x, y);
 }

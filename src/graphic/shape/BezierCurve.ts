@@ -1,9 +1,8 @@
 /**
  * 贝塞尔曲线
- * @module zrender/shape/BezierCurve
  */
 
-import Path from '../Path';
+import Path, { PathOption } from '../Path';
 import * as vec2 from '../../core/vector';
 import {
     quadraticSubdivide,
@@ -13,12 +12,26 @@ import {
     quadraticDerivativeAt,
     cubicDerivativeAt
 } from '../../core/curve';
+import PathProxy from '../../core/PathProxy';
 
-var out = [];
+var out: number[] = [];
 
-function someVectorAt(shape, t, isTangent) {
-    var cpx2 = shape.cpx2;
-    var cpy2 = shape.cpy2;
+class BezierCurveShape {
+    x1: number = 0
+    y1: number = 0
+    x2: number = 0
+    y2: number = 0
+    cpx1: number = 0
+    cpy1: number = 0
+    cpx2?: number
+    cpy2?: number
+    // Curve show percent, for animating
+    percent: number = 1
+}
+
+function someVectorAt(shape: BezierCurveShape, t: number, isTangent: boolean) {
+    const cpx2 = shape.cpx2;
+    const cpy2 = shape.cpy2;
     if (cpx2 === null || cpy2 === null) {
         return [
             (isTangent ? cubicDerivativeAt : cubicAt)(shape.x1, shape.cpx1, shape.cpx2, shape.x2, t),
@@ -33,39 +46,32 @@ function someVectorAt(shape, t, isTangent) {
     }
 }
 
-export default Path.extend({
+export default class BezierCurve extends Path {
 
-    type: 'bezier-curve',
+    type = 'bezier-curve'
 
-    shape: {
-        x1: 0,
-        y1: 0,
-        x2: 0,
-        y2: 0,
-        cpx1: 0,
-        cpy1: 0,
-        // cpx2: 0,
-        // cpy2: 0
+    shape = new BezierCurveShape()
 
-        // Curve show percent, for animating
-        percent: 1
-    },
+    constructor(opts?: PathOption & {
+        shape: BezierCurveShape
+    }) {
+        super(opts);
+        this.setStyle({
+            stroke: '#000',
+            fill: null
+        });
+    }
 
-    style: {
-        stroke: '#000',
-        fill: null
-    },
-
-    buildPath: function (ctx, shape) {
-        var x1 = shape.x1;
-        var y1 = shape.y1;
-        var x2 = shape.x2;
-        var y2 = shape.y2;
-        var cpx1 = shape.cpx1;
-        var cpy1 = shape.cpy1;
-        var cpx2 = shape.cpx2;
-        var cpy2 = shape.cpy2;
-        var percent = shape.percent;
+    buildPath(ctx: PathProxy, shape: BezierCurveShape) {
+        let x1 = shape.x1;
+        let y1 = shape.y1;
+        let x2 = shape.x2;
+        let y2 = shape.y2;
+        let cpx1 = shape.cpx1;
+        let cpy1 = shape.cpy1;
+        let cpx2 = shape.cpx2;
+        let cpy2 = shape.cpy2;
+        let percent = shape.percent;
         if (percent === 0) {
             return;
         }
@@ -112,24 +118,20 @@ export default Path.extend({
                 x2, y2
             );
         }
-    },
+    }
 
     /**
      * Get point at percent
-     * @param  {number} t
-     * @return {Array.<number>}
      */
-    pointAt: function (t) {
+    pointAt(t: number) {
         return someVectorAt(this.shape, t, false);
-    },
+    }
 
     /**
      * Get tangent at percent
-     * @param  {number} t
-     * @return {Array.<number>}
      */
-    tangentAt: function (t) {
-        var p = someVectorAt(this.shape, t, true);
+    tangentAt(t: number) {
+        const p = someVectorAt(this.shape, t, true);
         return vec2.normalize(p, p);
     }
-});
+};

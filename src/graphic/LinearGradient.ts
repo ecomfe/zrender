@@ -1,42 +1,54 @@
 import * as zrUtil from '../core/util';
-import Gradient from './Gradient';
+import {Gradient, GradientObject, GradientColorStop} from './Gradient';
 
+export interface LinearGradientObject extends GradientObject {
+    type: 'linear'
+
+    x: number
+    y: number
+    x2: number
+    y2: number
+
+    global: boolean
+}
 /**
- * x, y, x2, y2 are all percent from 0 to 1
- * @param {number} [x=0]
- * @param {number} [y=0]
- * @param {number} [x2=1]
- * @param {number} [y2=0]
- * @param {Array.<Object>} colorStops
- * @param {boolean} [globalCoord=false]
+ * x, y, x2, y2 are all percent from 0 to 1 when globalCoord is false
  */
-var LinearGradient = function (x, y, x2, y2, colorStops, globalCoord) {
-    // Should do nothing more in this constructor. Because gradient can be
-    // declard by `color: {type: 'linear', colorStops: ...}`, where
-    // this constructor will not be called.
 
-    this.x = x == null ? 0 : x;
+export default class LinearGradient extends Gradient {
 
-    this.y = y == null ? 0 : y;
+    type = 'linear'
 
-    this.x2 = x2 == null ? 1 : x2;
+    x: number
+    y: number
+    x2: number
+    y2: number
 
-    this.y2 = y2 == null ? 0 : y2;
+    global: boolean
 
-    // Can be cloned
-    this.type = 'linear';
+    constructor(
+        x: number, y: number, x2: number, y2: number,
+        colorStops?: GradientColorStop[], globalCoord?: boolean
+    ) {
 
-    // If use global coord
-    this.global = globalCoord || false;
+        super(colorStops);
 
-    Gradient.call(this, colorStops);
+        // Should do nothing more in this constructor. Because gradient can be
+        // declard by `color: {type: 'linear', colorStops: ...}`, where
+        // this constructor will not be called.
+
+        this.x = x == null ? 0 : x;
+
+        this.y = y == null ? 0 : y;
+
+        this.x2 = x2 == null ? 1 : x2;
+
+        this.y2 = y2 == null ? 0 : y2;
+
+        // Can be cloned
+        this.type = 'linear';
+
+        // If use global coord
+        this.global = globalCoord || false;
+    }
 };
-
-LinearGradient.prototype = {
-
-    constructor: LinearGradient
-};
-
-zrUtil.inherits(LinearGradient, Gradient);
-
-export default LinearGradient;

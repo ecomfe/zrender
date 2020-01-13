@@ -4,15 +4,22 @@
 
 import Path from '../Path';
 import * as polyHelper from '../helper/poly';
+import { VectorArray } from '../../core/vector';
 
-export default Path.extend({
+interface PolylineShape {
+    points: VectorArray[]
+    smooth?: number | 'spline'
+    smoothConstraint?: VectorArray[]
+}
+
+export default Path.extend<PolylineShape, {}>({
 
     type: 'polyline',
 
     shape: {
         points: null,
 
-        smooth: false,
+        smooth: 0,
 
         smoothConstraint: null
     },

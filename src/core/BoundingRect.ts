@@ -9,107 +9,75 @@ var v2ApplyTransform = vec2.applyTransform;
 var mathMin = Math.min;
 var mathMax = Math.max;
 
-/**
- * @alias module:echarts/core/BoundingRect
- */
-function BoundingRect(x, y, width, height) {
+var lt: vec2.VectorArray = [];
+var rb: vec2.VectorArray = [];
+var lb: vec2.VectorArray = [];
+var rt: vec2.VectorArray = [];
 
-    if (width < 0) {
-        x = x + width;
-        width = -width;
-    }
-    if (height < 0) {
-        y = y + height;
-        height = -height;
-    }
+class BoundingRect {
 
-    /**
-     * @type {number}
-     */
-    this.x = x;
-    /**
-     * @type {number}
-     */
-    this.y = y;
-    /**
-     * @type {number}
-     */
-    this.width = width;
-    /**
-     * @type {number}
-     */
-    this.height = height;
-}
+    x: number
 
-BoundingRect.prototype = {
+    y: number
 
-    constructor: BoundingRect,
+    width: number
 
-    /**
-     * @param {module:echarts/core/BoundingRect} other
-     */
-    union: function (other) {
-        var x = mathMin(other.x, this.x);
-        var y = mathMin(other.y, this.y);
+    height: number
 
-        this.width = mathMax(
-                other.x + other.width,
-                this.x + this.width
-            ) - x;
-        this.height = mathMax(
-                other.y + other.height,
-                this.y + this.height
-            ) - y;
+    constructor(x?: number, y?: number, width?: number, height?: number) {
         this.x = x;
         this.y = y;
-    },
+        this.width = width;
+        this.height = height;
+    }
 
-    /**
-     * @param {Array.<number>} m
-     * @methods
-     */
-    applyTransform: (function () {
-        var lt = [];
-        var rb = [];
-        var lb = [];
-        var rt = [];
-        return function (m) {
-            // In case usage like this
-            // el.getBoundingRect().applyTransform(el.transform)
-            // And element has no transform
-            if (!m) {
-                return;
-            }
-            lt[0] = lb[0] = this.x;
-            lt[1] = rt[1] = this.y;
-            rb[0] = rt[0] = this.x + this.width;
-            rb[1] = lb[1] = this.y + this.height;
+    union(other: BoundingRect) {
+        const x = mathMin(other.x, this.x);
+        const y = mathMin(other.y, this.y);
 
-            v2ApplyTransform(lt, lt, m);
-            v2ApplyTransform(rb, rb, m);
-            v2ApplyTransform(lb, lb, m);
-            v2ApplyTransform(rt, rt, m);
+        this.width = mathMax(
+            other.x + other.width,
+            this.x + this.width
+        ) - x;
+        this.height = mathMax(
+            other.y + other.height,
+            this.y + this.height
+        ) - y;
+        this.x = x;
+        this.y = y;
+    }
 
-            this.x = mathMin(lt[0], rb[0], lb[0], rt[0]);
-            this.y = mathMin(lt[1], rb[1], lb[1], rt[1]);
-            var maxX = mathMax(lt[0], rb[0], lb[0], rt[0]);
-            var maxY = mathMax(lt[1], rb[1], lb[1], rt[1]);
-            this.width = maxX - this.x;
-            this.height = maxY - this.y;
-        };
-    })(),
+    applyTransform(m: matrix.MatrixArray) {
+        // In case usage like this
+        // el.getBoundingRect().applyTransform(el.transform)
+        // And element has no transform
+        if (!m) {
+            return;
+        }
+        lt[0] = lb[0] = this.x;
+        lt[1] = rt[1] = this.y;
+        rb[0] = rt[0] = this.x + this.width;
+        rb[1] = lb[1] = this.y + this.height;
 
-    /**
-     * Calculate matrix of transforming from self to target rect
-     * @param  {module:zrender/core/BoundingRect} b
-     * @return {Array.<number>}
-     */
-    calculateTransform: function (b) {
-        var a = this;
-        var sx = b.width / a.width;
-        var sy = b.height / a.height;
+        v2ApplyTransform(lt, lt, m);
+        v2ApplyTransform(rb, rb, m);
+        v2ApplyTransform(lb, lb, m);
+        v2ApplyTransform(rt, rt, m);
 
-        var m = matrix.create();
+        this.x = mathMin(lt[0], rb[0], lb[0], rt[0]);
+        this.y = mathMin(lt[1], rb[1], lb[1], rt[1]);
+        const maxX = mathMax(lt[0], rb[0], lb[0], rt[0]);
+        const maxY = mathMax(lt[1], rb[1], lb[1], rt[1]);
+        this.width = maxX - this.x;
+        this.height = maxY - this.y;
+    }
+
+    calculateTransform(b: RectLike): matrix.MatrixArray {
+        const a = this;
+        const sx = b.width / a.width;
+        const sy = b.height / a.height;
+
+        const m = matrix.create();
 
         // 矩阵右乘
         matrix.translate(m, m, [-a.x, -a.y]);
@@ -117,13 +85,9 @@ BoundingRect.prototype = {
         matrix.translate(m, m, [b.x, b.y]);
 
         return m;
-    },
+    }
 
-    /**
-     * @param {(module:echarts/core/BoundingRect|Object)} b
-     * @return {boolean}
-     */
-    intersect: function (b) {
+    intersect(b: RectLike): boolean {
         if (!b) {
             return false;
         }
@@ -133,46 +97,43 @@ BoundingRect.prototype = {
             b = BoundingRect.create(b);
         }
 
-        var a = this;
-        var ax0 = a.x;
-        var ax1 = a.x + a.width;
-        var ay0 = a.y;
-        var ay1 = a.y + a.height;
+        const a = this;
+        const ax0 = a.x;
+        const ax1 = a.x + a.width;
+        const ay0 = a.y;
+        const ay1 = a.y + a.height;
 
-        var bx0 = b.x;
-        var bx1 = b.x + b.width;
-        var by0 = b.y;
-        var by1 = b.y + b.height;
+        const bx0 = b.x;
+        const bx1 = b.x + b.width;
+        const by0 = b.y;
+        const by1 = b.y + b.height;
 
         return !(ax1 < bx0 || bx1 < ax0 || ay1 < by0 || by1 < ay0);
-    },
+    }
 
-    contain: function (x, y) {
-        var rect = this;
+    contain(x: number, y: number): boolean {
+        const rect = this;
         return x >= rect.x
             && x <= (rect.x + rect.width)
             && y >= rect.y
             && y <= (rect.y + rect.height);
-    },
+    }
 
-    /**
-     * @return {module:echarts/core/BoundingRect}
-     */
-    clone: function () {
+    clone() {
         return new BoundingRect(this.x, this.y, this.width, this.height);
-    },
+    }
 
     /**
      * Copy from another rect
      */
-    copy: function (other) {
+    copy(other: RectLike) {
         this.x = other.x;
         this.y = other.y;
         this.width = other.width;
         this.height = other.height;
-    },
+    }
 
-    plain: function () {
+    plain() {
         return {
             x: this.x,
             y: this.y,
@@ -180,18 +141,18 @@ BoundingRect.prototype = {
             height: this.height
         };
     }
-};
 
-/**
- * @param {Object|module:zrender/core/BoundingRect} rect
- * @param {number} rect.x
- * @param {number} rect.y
- * @param {number} rect.width
- * @param {number} rect.height
- * @return {module:zrender/core/BoundingRect}
- */
-BoundingRect.create = function (rect) {
-    return new BoundingRect(rect.x, rect.y, rect.width, rect.height);
-};
+    static create(rect: RectLike): BoundingRect {
+        return new BoundingRect(rect.x, rect.y, rect.width, rect.height);
+    }
+}
+
+
+export type RectLike = {
+    x: number
+    y: number
+    width: number
+    height: number
+}
 
 export default BoundingRect;

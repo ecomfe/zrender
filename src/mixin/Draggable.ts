@@ -1,28 +1,49 @@
-// TODO Draggable for group
-// FIXME Draggable on element which has parent rotation or scale
-function Draggable() {
+import Handler from "../Handler";
+import Element, { ElementEvent } from '../Element';
+import Displayable from "../graphic/Displayable";
 
-    this.on('mousedown', this._dragStart, this);
-    this.on('mousemove', this._drag, this);
-    this.on('mouseup', this._dragEnd, this);
-    // `mosuemove` and `mouseup` can be continue to fire when dragging.
-    // See [Drag outside] in `Handler.js`. So we do not need to trigger
-    // `_dragEnd` when globalout. That would brings better user experience.
-    // this.on('globalout', this._dragEnd, this);
+class Param {
 
-    // this._dropTarget = null;
-    // this._draggingTarget = null;
+    target: Element
+    topTarget: Element
 
-    // this._x = 0;
-    // this._y = 0;
+    constructor(target: Element, e?: ElementEvent) {
+        this.target = target
+        this.topTarget = e && e.topTarget
+    }
 }
 
-Draggable.prototype = {
+// FIXME Draggable on element which has parent rotation or scale
+export default class Draggable {
 
-    constructor: Draggable,
+    handler: Handler
 
-    _dragStart: function (e) {
-        var draggingTarget = e.target;
+    _draggingTarget: Element
+    _dropTarget: Element
+
+    _x: number
+    _y: number
+
+    constructor(handler: Handler) {
+        this.handler = handler;
+
+        handler.on('mousedown', this._dragStart, this);
+        handler.on('mousemove', this._drag, this);
+        handler.on('mouseup', this._dragEnd, this);
+        // `mosuemove` and `mouseup` can be continue to fire when dragging.
+        // See [Drag outside] in `Handler.js`. So we do not need to trigger
+        // `_dragEnd` when globalout. That would brings better user experience.
+        // this.on('globalout', this._dragEnd, this);
+
+        // this._dropTarget = null;
+        // this._draggingTarget = null;
+
+        // this._x = 0;
+        // this._y = 0;
+    }
+
+    _dragStart (e: ElementEvent) {
+        let draggingTarget = e.target;
         // Find if there is draggable in the ancestor
         while (draggingTarget && !draggingTarget.draggable) {
             draggingTarget = draggingTarget.parent;
@@ -33,61 +54,65 @@ Draggable.prototype = {
             this._x = e.offsetX;
             this._y = e.offsetY;
 
-            this.dispatchToElement(param(draggingTarget, e), 'dragstart', e.event);
+            this.handler.dispatchToElement(
+                new Param(draggingTarget, e), 'dragstart', e.event
+            );
         }
-    },
+    }
 
-    _drag: function (e) {
-        var draggingTarget = this._draggingTarget;
+    _drag (e: ElementEvent) {
+        const draggingTarget = this._draggingTarget;
         if (draggingTarget) {
 
-            var x = e.offsetX;
-            var y = e.offsetY;
+            const x = e.offsetX;
+            const y = e.offsetY;
 
-            var dx = x - this._x;
-            var dy = y - this._y;
+            const dx = x - this._x;
+            const dy = y - this._y;
             this._x = x;
             this._y = y;
 
             draggingTarget.drift(dx, dy, e);
-            this.dispatchToElement(param(draggingTarget, e), 'drag', e.event);
+            this.handler.dispatchToElement(
+                new Param(draggingTarget, e), 'drag', e.event
+            );
 
-            var dropTarget = this.findHover(x, y, draggingTarget).target;
-            var lastDropTarget = this._dropTarget;
+            const dropTarget = this.handler.findHover(
+                x, y, draggingTarget as Displayable // PENDING
+            ).target;
+            const lastDropTarget = this._dropTarget;
             this._dropTarget = dropTarget;
 
             if (draggingTarget !== dropTarget) {
                 if (lastDropTarget && dropTarget !== lastDropTarget) {
-                    this.dispatchToElement(param(lastDropTarget, e), 'dragleave', e.event);
+                    this.handler.dispatchToElement(
+                        new Param(lastDropTarget, e), 'dragleave', e.event
+                    );
                 }
                 if (dropTarget && dropTarget !== lastDropTarget) {
-                    this.dispatchToElement(param(dropTarget, e), 'dragenter', e.event);
+                    this.handler.dispatchToElement(
+                        new Param(dropTarget, e), 'dragenter', e.event
+                    );
                 }
             }
         }
-    },
+    }
 
-    _dragEnd: function (e) {
-        var draggingTarget = this._draggingTarget;
+    _dragEnd (e: ElementEvent) {
+        const draggingTarget = this._draggingTarget;
 
         if (draggingTarget) {
             draggingTarget.dragging = false;
         }
 
-        this.dispatchToElement(param(draggingTarget, e), 'dragend', e.event);
+        this.handler.dispatchToElement(new Param(draggingTarget, e), 'dragend', e.event);
 
         if (this._dropTarget) {
-            this.dispatchToElement(param(this._dropTarget, e), 'drop', e.event);
+            this.handler.dispatchToElement(new Param(this._dropTarget, e), 'drop', e.event);
         }
 
         this._draggingTarget = null;
         this._dropTarget = null;
     }
 
-};
-
-function param(target, e) {
-    return {target: target, topTarget: e && e.topTarget};
 }
-
-export default Draggable;

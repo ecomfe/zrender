@@ -1,26 +1,38 @@
+// TODO Should GradientObject been LinearGradientObject | RadialGradientObject
+export interface GradientObject {
 
-/**
- * @param {Array.<Object>} colorStops
- */
-var Gradient = function (colorStops) {
+    id?: number
 
-    this.colorStops = colorStops || [];
+    type: string
 
-};
+    colorStops: GradientColorStop[]
 
-Gradient.prototype = {
+    __canvasGradient: CanvasGradient
+}
 
-    constructor: Gradient,
+export interface GradientColorStop {
+    offset: number
+    color: string
+}
 
-    addColorStop: function (offset, color) {
-        this.colorStops.push({
+export class Gradient {
 
-            offset: offset,
+    id?: number
 
-            color: color
-        });
+    type: string
+
+    colorStops: GradientColorStop[]
+
+    __canvasGradient: CanvasGradient
+
+    constructor(colorStops: GradientColorStop[]) {
+        this.colorStops = colorStops || [];
     }
 
-};
-
-export default Gradient;
+    addColorStop(offset: number, color: string) {
+        this.colorStops.push({
+            offset,
+            color
+        });
+    }
+}

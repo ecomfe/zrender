@@ -2,22 +2,15 @@ import {quadraticProjectPoint} from '../core/curve';
 
 /**
  * 二次贝塞尔曲线描边包含判断
- * @param  {number}  x0
- * @param  {number}  y0
- * @param  {number}  x1
- * @param  {number}  y1
- * @param  {number}  x2
- * @param  {number}  y2
- * @param  {number}  lineWidth
- * @param  {number}  x
- * @param  {number}  y
- * @return {boolean}
  */
-export function containStroke(x0, y0, x1, y1, x2, y2, lineWidth, x, y) {
+export function containStroke(
+    x0: number, y0: number, x1: number, y1: number, x2: number, y2: number,
+    lineWidth: number, x: number, y: number
+): boolean {
     if (lineWidth === 0) {
         return false;
     }
-    var _l = lineWidth;
+    const _l = lineWidth;
     // Quick reject
     if (
         (y > y0 + _l && y > y1 + _l && y > y2 + _l)
@@ -27,7 +20,7 @@ export function containStroke(x0, y0, x1, y1, x2, y2, lineWidth, x, y) {
     ) {
         return false;
     }
-    var d = quadraticProjectPoint(
+    const d = quadraticProjectPoint(
         x0, y0, x1, y1, x2, y2,
         x, y, null
     );

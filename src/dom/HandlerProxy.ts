@@ -8,27 +8,32 @@ import {
     getNativeEvent
 } from '../core/event';
 import * as zrUtil from '../core/util';
-import Eventful from '../mixin/Eventful';
+import Eventful from '../core/Eventful';
 import env from '../core/env';
+import { Dictionary, ZRRawEvent, ZRRawMouseEvent } from '../core/types';
+import { VectorArray } from '../core/vector';
+import Handler from '../Handler';
 
-var TOUCH_CLICK_DELAY = 300;
+type DomHandlersMap = Dictionary<(this: HandlerDomProxy, event: ZRRawEvent) => void>
 
-var globalEventSupported = env.domSupported;
+const TOUCH_CLICK_DELAY = 300;
+
+const globalEventSupported = env.domSupported;
 
 
-var localNativeListenerNames = (function () {
-    var mouseHandlerNames = [
+const localNativeListenerNames = (function () {
+    const mouseHandlerNames = [
         'click', 'dblclick', 'mousewheel', 'mouseout',
         'mouseup', 'mousedown', 'mousemove', 'contextmenu'
     ];
-    var touchHandlerNames = [
+    const touchHandlerNames = [
         'touchstart', 'touchend', 'touchmove'
     ];
-    var pointerEventNameMap = {
+    const pointerEventNameMap = {
         pointerdown: 1, pointerup: 1, pointermove: 1, pointerout: 1
     };
-    var pointerHandlerNames = zrUtil.map(mouseHandlerNames, function (name) {
-        var nm = name.replace('mouse', 'pointer');
+    const pointerHandlerNames = zrUtil.map(mouseHandlerNames, function (name) {
+        const nm = name.replace('mouse', 'pointer');
         return pointerEventNameMap.hasOwnProperty(nm) ? nm : name;
     });
 
@@ -45,12 +50,12 @@ var globalNativeListenerNames = {
 };
 
 
-function eventNameFix(name) {
+function eventNameFix(name: string) {
     return (name === 'mousewheel' && env.browser.firefox) ? 'DOMMouseScroll' : name;
 }
 
-function isPointerFromTouch(event) {
-    var pointerType = event.pointerType;
+function isPointerFromTouch(event: ZRRawEvent) {
+    const pointerType = (event as any).pointerType;
     return pointerType === 'pen' || pointerType === 'touch';
 }
 
@@ -80,7 +85,7 @@ function isPointerFromTouch(event) {
  *
  * @param {DOMHandlerScope} scope
  */
-function setTouchTimer(scope) {
+function setTouchTimer(scope: DOMHandlerScope) {
     scope.touching = true;
     if (scope.touchTimer != null) {
         clearTimeout(scope.touchTimer);
@@ -94,7 +99,7 @@ function setTouchTimer(scope) {
 
 // Mark touch, which is useful in distinguish touch and
 // mouse event in upper applicatoin.
-function markTouch(event) {
+function markTouch(event: ZRRawEvent) {
     event && (event.zrByTouch = true);
 }
 
@@ -107,17 +112,22 @@ function markTouch(event) {
 //     return !!(event && event.__zrIsFromLocal);
 // }
 
-function normalizeGlobalEvent(instance, event) {
+function normalizeGlobalEvent(instance: HandlerDomProxy, event: ZRRawEvent) {
     // offsetX, offsetY still need to be calculated. They are necessary in the event
     // handlers of the upper applications. Set `true` to force calculate them.
-    return normalizeEvent(instance.dom, new FakeGlobalEvent(instance, event), true);
+    return normalizeEvent(
+        instance.dom,
+        // TODO ANY TYPE
+        new FakeGlobalEvent(instance, event) as any as ZRRawEvent,
+        true
+    );
 }
 
 /**
  * Detect whether the given el is in `painterRoot`.
  */
-function isLocalEl(instance, el) {
-    var isLocal = false;
+function isLocalEl(instance: HandlerDomProxy, el: Node) {
+    let isLocal = false;
     do {
         el = el && el.parentNode;
     }
@@ -133,64 +143,74 @@ function isLocalEl(instance, el) {
  * listeners not belonging to zrender.
  * @class
  */
-function FakeGlobalEvent(instance, event) {
-    this.type = event.type;
-    this.target = this.currentTarget = instance.dom;
-    this.pointerType = event.pointerType;
-    // Necessray for the force calculation of zrX, zrY
-    this.clientX = event.clientX;
-    this.clientY = event.clientY;
-    // Because we do not mount global listeners to touch events,
-    // we do not copy `targetTouches` and `changedTouches` here.
+class FakeGlobalEvent {
+    type: string
+    target: HTMLElement
+    currentTarget: HTMLElement
+
+    pointerType: string
+    clientX: number
+    clientY: number
+
+    constructor(instance: HandlerDomProxy, event: ZRRawEvent) {
+        this.type = event.type;
+        this.target = this.currentTarget = instance.dom;
+        this.pointerType = (event as any).pointerType;
+        // Necessray for the force calculation of zrX, zrY
+        this.clientX = event.clientX;
+        this.clientY = event.clientY;
+        // Because we do not mount global listeners to touch events,
+        // we do not copy `targetTouches` and `changedTouches` here.
+    }
+
+    // we make the default methods on the event do nothing,
+    // otherwise it is dangerous. See more details in
+    // [Drag outside] in `Handler.js`.
+    stopPropagation = zrUtil.noop
+    stopImmediatePropagation = zrUtil.noop
+    preventDefault = zrUtil.noop
 }
-var fakeGlobalEventProto = FakeGlobalEvent.prototype;
-// we make the default methods on the event do nothing,
-// otherwise it is dangerous. See more details in
-// [Drag outside] in `Handler.js`.
-fakeGlobalEventProto.stopPropagation =
-    fakeGlobalEventProto.stopImmediatePropagation =
-    fakeGlobalEventProto.preventDefault = zrUtil.noop;
 
 
 /**
  * Local DOM Handlers
  * @this {HandlerProxy}
  */
-var localDOMHandlers = {
+var localDOMHandlers: DomHandlersMap = {
 
-    mousedown: function (event) {
+    mousedown: function(event: ZRRawEvent) {
         event = normalizeEvent(this.dom, event);
 
-        this._mayPointerCapture = [event.zrX, event.zrY];
+        this.__mayPointerCapture = [event.zrX, event.zrY];
 
         this.trigger('mousedown', event);
     },
 
-    mousemove: function (event) {
+    mousemove: function(event: ZRRawEvent) {
         event = normalizeEvent(this.dom, event);
 
-        var downPoint = this._mayPointerCapture;
+        const downPoint = this.__mayPointerCapture;
         if (downPoint && (event.zrX !== downPoint[0] || event.zrY !== downPoint[1])) {
-            togglePointerCapture(this, true);
+            this.__togglePointerCapture(true);
         }
 
         this.trigger('mousemove', event);
     },
 
-    mouseup: function (event) {
+    mouseup: function(event: ZRRawEvent) {
         event = normalizeEvent(this.dom, event);
 
-        togglePointerCapture(this, false);
+        this.__togglePointerCapture(false);
 
         this.trigger('mouseup', event);
     },
 
-    mouseout: function (event) {
+    mouseout: function(event: ZRRawEvent) {
         event = normalizeEvent(this.dom, event);
 
         // Similarly to the browser did on `document` and touch event,
         // `globalout` will be delayed to final pointer cature release.
-        if (this._pointerCapturing) {
+        if (this.__pointerCapturing) {
             event.zrEventControl = 'no_globalout';
         }
 
@@ -199,20 +219,20 @@ var localDOMHandlers = {
         // dom created by echarts), where 'globalout' event should not
         // be triggered when mouse enters these doms. (But 'mouseout'
         // should be triggered at the original hovered element as usual).
-        var element = event.toElement || event.relatedTarget;
+        const element = (event as any).toElement || event.relatedTarget;
         event.zrIsToLocalDOM = isLocalEl(this, element);
 
         this.trigger('mouseout', event);
     },
 
-    touchstart: function (event) {
+    touchstart: function(event: ZRRawEvent) {
         // Default mouse behaviour should not be disabled here.
         // For example, page may needs to be slided.
         event = normalizeEvent(this.dom, event);
 
         markTouch(event);
 
-        this._lastTouchMoment = new Date();
+        this.__lastTouchMoment = new Date();
 
         this.handler.processGesture(event, 'start');
 
@@ -224,7 +244,7 @@ var localDOMHandlers = {
         localDOMHandlers.mousedown.call(this, event);
     },
 
-    touchmove: function (event) {
+    touchmove: function(event: ZRRawEvent) {
         event = normalizeEvent(this.dom, event);
 
         markTouch(event);
@@ -237,7 +257,7 @@ var localDOMHandlers = {
         localDOMHandlers.mousemove.call(this, event);
     },
 
-    touchend: function (event) {
+    touchend: function(event: ZRRawEvent) {
         event = normalizeEvent(this.dom, event);
 
         markTouch(event);
@@ -256,12 +276,12 @@ var localDOMHandlers = {
 
         // click event should always be triggered no matter whether
         // there is gestrue event. System click can not be prevented.
-        if (+new Date() - this._lastTouchMoment < TOUCH_CLICK_DELAY) {
+        if (+new Date() - (+this.__lastTouchMoment) < TOUCH_CLICK_DELAY) {
             localDOMHandlers.click.call(this, event);
         }
     },
 
-    pointerdown: function (event) {
+    pointerdown: function(event: ZRRawEvent) {
         localDOMHandlers.mousedown.call(this, event);
 
         // if (useMSGuesture(this, event)) {
@@ -269,7 +289,7 @@ var localDOMHandlers = {
         // }
     },
 
-    pointermove: function (event) {
+    pointermove: function(event: ZRRawEvent) {
         // FIXME
         // pointermove is so sensitive that it always triggered when
         // tap(click) on touch screen, which affect some judgement in
@@ -280,11 +300,11 @@ var localDOMHandlers = {
         }
     },
 
-    pointerup: function (event) {
+    pointerup: function(event: ZRRawEvent) {
         localDOMHandlers.mouseup.call(this, event);
     },
 
-    pointerout: function (event) {
+    pointerout: function(event: ZRRawEvent) {
         // pointerout will be triggered when tap on touch screen
         // (IE11+/Edge on MS Surface) after click event triggered,
         // which is inconsistent with the mousout behavior we defined
@@ -314,12 +334,10 @@ zrUtil.each(['click', 'mousewheel', 'dblclick', 'contextmenu'], function (name) 
  *
  * [Caution]:
  * those handlers should both support in capture phase and bubble phase!
- *
- * @this {HandlerProxy}
  */
-var globalDOMHandlers = {
+var globalDOMHandlers: DomHandlersMap = {
 
-    pointermove: function (event) {
+    pointermove: function (event: ZRRawEvent) {
         // FIXME
         // pointermove is so sensitive that it always triggered when
         // tap(click) on touch screen, which affect some judgement in
@@ -330,18 +348,18 @@ var globalDOMHandlers = {
         }
     },
 
-    pointerup: function (event) {
+    pointerup: function (event: ZRRawEvent) {
         globalDOMHandlers.mouseup.call(this, event);
     },
 
-    mousemove: function (event) {
+    mousemove: function (event: ZRRawEvent) {
         this.trigger('mousemove', event);
     },
 
-    mouseup: function (event) {
-        var pointerCaptureReleasing = this._pointerCapturing;
+    mouseup: function (event: ZRRawEvent) {
+        const pointerCaptureReleasing = this.__pointerCapturing;
 
-        togglePointerCapture(this, false);
+        this.__togglePointerCapture(false);
 
         this.trigger('mouseup', event);
 
@@ -354,12 +372,8 @@ var globalDOMHandlers = {
 };
 
 
-/**
- * @param {HandlerProxy} instance
- * @param {DOMHandlerScope} scope
- */
-function mountLocalDOMEventListeners(instance, scope) {
-    var domHandlers = scope.domHandlers;
+function mountLocalDOMEventListeners(instance: HandlerDomProxy, scope: DOMHandlerScope) {
+    const domHandlers = scope.domHandlers;
 
     if (env.pointerEventsSupported) { // Only IE11+/Edge
         // 1. On devices that both enable touch and mouse (e.g., MS Surface and lenovo X240),
@@ -409,7 +423,7 @@ function mountLocalDOMEventListeners(instance, scope) {
         // 2. On MS Surface, Chrome will trigger both touch event and mouse event. How to prevent
         // mouseevent after touch event triggered, see `setTouchTimer`.
         zrUtil.each(localNativeListenerNames.mouse, function (nativeEventName) {
-            mountSingleDOMEventListener(scope, nativeEventName, function (event) {
+            mountSingleDOMEventListener(scope, nativeEventName, function (event: ZRRawEvent) {
                 event = getNativeEvent(event);
                 if (!scope.touching) {
                     // markTriggeredFromLocal(event);
@@ -420,11 +434,7 @@ function mountLocalDOMEventListeners(instance, scope) {
     }
 }
 
-/**
- * @param {HandlerProxy} instance
- * @param {DOMHandlerScope} scope
- */
-function mountGlobalDOMEventListeners(instance, scope) {
+function mountGlobalDOMEventListeners(instance: HandlerDomProxy, scope: DOMHandlerScope) {
     // Only IE11+/Edge. See the comment in `mountLocalDOMEventListeners`.
     if (env.pointerEventsSupported) {
         zrUtil.each(globalNativeListenerNames.pointer, mount);
@@ -437,15 +447,15 @@ function mountGlobalDOMEventListeners(instance, scope) {
         zrUtil.each(globalNativeListenerNames.mouse, mount);
     }
 
-    function mount(nativeEventName) {
-        function nativeEventListener(event) {
+    function mount(nativeEventName: string) {
+        function nativeEventListener(event: ZRRawEvent) {
             event = getNativeEvent(event);
             // See the reason in [Drag outside] in `Handler.js`
             // This checking supports both `useCapture` or not.
             // PENDING: if there is performance issue in some devices,
             // we probably can not use `useCapture` and change a easier
             // to judes whether local (mark).
-            if (!isLocalEl(instance, event.target)) {
+            if (!isLocalEl(instance, event.target as Node)) {
                 event = normalizeGlobalEvent(instance, event);
                 scope.domHandlers[nativeEventName].call(instance, event);
             }
@@ -457,15 +467,20 @@ function mountGlobalDOMEventListeners(instance, scope) {
     }
 }
 
-function mountSingleDOMEventListener(scope, nativeEventName, listener, opt) {
+function mountSingleDOMEventListener(
+    scope: DOMHandlerScope,
+    nativeEventName: string,
+    listener: EventListener,
+    opt?: boolean | AddEventListenerOptions
+) {
     scope.mounted[nativeEventName] = listener;
     scope.listenerOpts[nativeEventName] = opt;
     addEventListener(scope.domTarget, eventNameFix(nativeEventName), listener, opt);
 }
 
-function unmountDOMEventListeners(scope) {
-    var mounted = scope.mounted;
-    for (var nativeEventName in mounted) {
+function unmountDOMEventListeners(scope: DOMHandlerScope) {
+    const mounted = scope.mounted;
+    for (let nativeEventName in mounted) {
         if (mounted.hasOwnProperty(nativeEventName)) {
             removeEventListener(
                 scope.domTarget, eventNameFix(nativeEventName), mounted[nativeEventName],
@@ -476,85 +491,101 @@ function unmountDOMEventListeners(scope) {
     scope.mounted = {};
 }
 
-/**
- * See [Drag Outside] in `Handler.js`.
- * @implement
- * @param {boolean} isPointerCapturing Should never be `null`/`undefined`.
- *        `true`: start to capture pointer if it is not capturing.
- *        `false`: end the capture if it is capturing.
- */
-function togglePointerCapture(instance, isPointerCapturing) {
-    instance._mayPointerCapture = null;
 
-    if (globalEventSupported && (instance._pointerCapturing ^ isPointerCapturing)) {
-        instance._pointerCapturing = isPointerCapturing;
-
-        var globalHandlerScope = instance._globalHandlerScope;
-        isPointerCapturing
-            ? mountGlobalDOMEventListeners(instance, globalHandlerScope)
-            : unmountDOMEventListeners(globalHandlerScope);
-    }
-}
-
-/**
- * @inner
- * @class
- */
-function DOMHandlerScope(domTarget, domHandlers) {
-    this.domTarget = domTarget;
-    this.domHandlers = domHandlers;
+class DOMHandlerScope {
+    domTarget: HTMLElement | HTMLDocument
+    domHandlers: DomHandlersMap
 
     // Key: eventName, value: mounted handler funcitons.
     // Used for unmount.
-    this.mounted = {};
-    this.listenerOpts = {};
+    mounted: Dictionary<EventListener> = {};
 
-    this.touchTimer = null;
-    this.touching = false;
+    listenerOpts: Dictionary<boolean | AddEventListenerOptions> = {};
+
+    touchTimer: ReturnType<typeof setTimeout>;
+    touching = false;
+
+    constructor(
+        domTarget: HTMLElement | HTMLDocument,
+        domHandlers: DomHandlersMap
+    ) {
+        this.domTarget = domTarget;
+        this.domHandlers = domHandlers;
+
+    }
 }
 
-/**
- * @public
- * @class
- */
-function HandlerDomProxy(dom, painterRoot) {
-    Eventful.call(this);
 
-    this.dom = dom;
-    this.painterRoot = painterRoot;
+export default class HandlerDomProxy extends Eventful {
 
-    this._localHandlerScope = new DOMHandlerScope(dom, localDOMHandlers);
+    dom: HTMLElement
+    painterRoot: HTMLElement
 
-    if (globalEventSupported) {
-        this._globalHandlerScope = new DOMHandlerScope(document, globalDOMHandlers);
+    handler: Handler
+
+    __lastTouchMoment: Date
+
+    __localHandlerScope: DOMHandlerScope
+    __globalHandlerScope: DOMHandlerScope
+
+    __pointerCapturing = false
+
+    // [x, y]
+    __mayPointerCapture: VectorArray
+
+
+    constructor(dom: HTMLElement, painterRoot: HTMLElement) {
+        super();
+
+        this.dom = dom;
+        this.painterRoot = painterRoot;
+
+        this.__localHandlerScope = new DOMHandlerScope(dom, localDOMHandlers);
+
+        if (globalEventSupported) {
+            this.__globalHandlerScope = new DOMHandlerScope(document, globalDOMHandlers);
+        }
+
+        mountLocalDOMEventListeners(this, this.__localHandlerScope);
+    }
+
+    dispose() {
+        unmountDOMEventListeners(this.__localHandlerScope);
+        if (globalEventSupported) {
+            unmountDOMEventListeners(this.__globalHandlerScope);
+        }
+    }
+
+    setCursor(cursorStyle: string) {
+        this.dom.style && (this.dom.style.cursor = cursorStyle || 'default');
     }
 
     /**
-     * @type {boolean}
+     * See [Drag Outside] in `Handler.js`.
+     * @implement
+     * @param isPointerCapturing Should never be `null`/`undefined`.
+     *        `true`: start to capture pointer if it is not capturing.
+     *        `false`: end the capture if it is capturing.
      */
-    this._pointerCapturing = false;
-    /**
-     * @type {Array.<number>} [x, y] or null.
-     */
-    this._mayPointerCapture = null;
 
-    mountLocalDOMEventListeners(this, this._localHandlerScope);
+    __togglePointerCapture(isPointerCapturing?: boolean) {
+        this.__mayPointerCapture = null;
+
+        if (globalEventSupported
+            && ((+this.__pointerCapturing) ^ (+isPointerCapturing))
+        ) {
+            this.__pointerCapturing = isPointerCapturing;
+
+            const globalHandlerScope = this.__globalHandlerScope;
+            isPointerCapturing
+                ? mountGlobalDOMEventListeners(this, globalHandlerScope)
+                : unmountDOMEventListeners(globalHandlerScope);
+        }
+    }
 }
 
-var handlerDomProxyProto = HandlerDomProxy.prototype;
-
-handlerDomProxyProto.dispose = function () {
-    unmountDOMEventListeners(this._localHandlerScope);
-    if (globalEventSupported) {
-        unmountDOMEventListeners(this._globalHandlerScope);
-    }
-};
-
-handlerDomProxyProto.setCursor = function (cursorStyle) {
-    this.dom.style && (this.dom.style.cursor = cursorStyle || 'default');
-};
-
-
-zrUtil.mixin(HandlerDomProxy, Eventful);
-
-export default HandlerDomProxy;
+export interface HandlerProxyInterface extends Eventful {
+    handler: Handler
+    dispose: () => void
+    setCursor: (cursorStyle?: string) => void
+}

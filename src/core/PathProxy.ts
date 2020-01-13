@@ -1,12 +1,9 @@
 /**
  * Path 代理，可以在`buildPath`中用于替代`ctx`, 会保存每个path操作的命令到pathCommands属性中
  * 可以用于 isInsidePath 判断以及获取boundingRect
- *
- * @module zrender/core/PathProxy
- * @author Yi Shen (http://www.github.com/pissang)
  */
 
-// TODO getTotalLength, getPointAtLength
+// TODO getTotalLength, getPointAtLength, arcTo
 
 /* global Float32Array */
 
@@ -27,7 +24,7 @@ var CMD = {
     R: 7
 };
 
-// var CMD_MEM_SIZE = {
+// const CMD_MEM_SIZE = {
 //     M: 3,
 //     L: 3,
 //     C: 7,
@@ -37,10 +34,14 @@ var CMD = {
 //     Z: 1
 // };
 
-var min = [];
-var max = [];
-var min2 = [];
-var max2 = [];
+interface ExtendedCanvasRenderingContext2D extends CanvasRenderingContext2D {
+    dpr?: number
+}
+
+var min: number[] = [];
+var max: number[] = [];
+var min2: number[] = [];
+var max2: number[] = [];
 var mathMin = Math.min;
 var mathMax = Math.max;
 var mathCos = Math.cos;
@@ -50,71 +51,64 @@ var mathAbs = Math.abs;
 
 var hasTypedArray = typeof Float32Array !== 'undefined';
 
-/**
- * @alias module:zrender/core/PathProxy
- * @constructor
- */
-var PathProxy = function (notSaveData) {
+export default class PathProxy {
 
-    this._saveData = !(notSaveData || false);
+    dpr = 1
 
-    if (this._saveData) {
-        /**
-         * Path data. Stored as flat array
-         * @type {Array.<Object>}
-         */
-        this.data = [];
-    }
+    data: number[] | Float32Array
 
-    this._ctx = null;
-};
+    private _saveData = false
 
-/**
- * 快速计算Path包围盒（并不是最小包围盒）
- * @return {Object}
- */
-PathProxy.prototype = {
+    private _ctx: ExtendedCanvasRenderingContext2D
 
-    constructor: PathProxy,
+    private _xi = 0
+    private _yi = 0
 
-    _xi: 0,
-    _yi: 0,
-
-    _x0: 0,
-    _y0: 0,
+    private _x0 = 0
+    private _y0 = 0
     // Unit x, Unit y. Provide for avoiding drawing that too short line segment
-    _ux: 0,
-    _uy: 0,
+    private _ux = 0
+    private _uy = 0
 
-    _len: 0,
+    private _len = 0
 
-    _lineDash: null,
+    private _lineDash: number[] = null
 
-    _dashOffset: 0,
+    private _needsDash: boolean = false
 
-    _dashIdx: 0,
+    private _dashOffset = 0
 
-    _dashSum: 0,
+    private _dashIdx = 0
+
+    private _dashSum = 0
+
+    static CMD = CMD
+
+    constructor(notSaveData?: boolean) {
+        this._saveData = !(notSaveData || false);
+
+        if (this._saveData) {
+            this.data = [];
+        }
+
+        this._ctx = null;
+    }
 
     /**
      * @readOnly
      */
-    setScale: function (sx, sy, segmentIgnoreThreshold) {
+    setScale(sx: number, sy: number, segmentIgnoreThreshold?: number) {
         // Compat. Previously there is no segmentIgnoreThreshold.
         segmentIgnoreThreshold = segmentIgnoreThreshold || 0;
         this._ux = mathAbs(segmentIgnoreThreshold / dpr / sx) || 0;
         this._uy = mathAbs(segmentIgnoreThreshold / dpr / sy) || 0;
-    },
+    }
 
-    getContext: function () {
+    getContext(): ExtendedCanvasRenderingContext2D {
         return this._ctx;
-    },
+    }
 
-    /**
-     * @param  {CanvasRenderingContext2D} ctx
-     * @return {module:zrender/core/PathProxy}
-     */
-    beginPath: function (ctx) {
+    beginPath(ctx?: ExtendedCanvasRenderingContext2D) {
 
         this._ctx = ctx;
 
@@ -134,14 +128,14 @@ PathProxy.prototype = {
         }
 
         return this;
-    },
+    }
 
     /**
      * @param  {number} x
      * @param  {number} y
      * @return {module:zrender/core/PathProxy}
      */
-    moveTo: function (x, y) {
+    moveTo(x: number, y: number) {
         this.addData(CMD.M, x, y);
         this._ctx && this._ctx.moveTo(x, y);
 
@@ -156,15 +150,10 @@ PathProxy.prototype = {
         this._yi = y;
 
         return this;
-    },
+    }
 
-    /**
-     * @param  {number} x
-     * @param  {number} y
-     * @return {module:zrender/core/PathProxy}
-     */
-    lineTo: function (x, y) {
-        var exceedUnit = mathAbs(x - this._xi) > this._ux
+    lineTo(x: number, y: number) {
+        const exceedUnit = mathAbs(x - this._xi) > this._ux
             || mathAbs(y - this._yi) > this._uy
             // Force draw the first segment
             || this._len < 5;
@@ -172,7 +161,7 @@ PathProxy.prototype = {
         this.addData(CMD.L, x, y);
 
         if (this._ctx && exceedUnit) {
-            this._needsDash() ? this._dashedLineTo(x, y)
+            this._needsDash ? this._dashedLineTo(x, y)
                 : this._ctx.lineTo(x, y);
         }
         if (exceedUnit) {
@@ -181,56 +170,31 @@ PathProxy.prototype = {
         }
 
         return this;
-    },
+    }
 
-    /**
-     * @param  {number} x1
-     * @param  {number} y1
-     * @param  {number} x2
-     * @param  {number} y2
-     * @param  {number} x3
-     * @param  {number} y3
-     * @return {module:zrender/core/PathProxy}
-     */
-    bezierCurveTo: function (x1, y1, x2, y2, x3, y3) {
+    bezierCurveTo(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number) {
         this.addData(CMD.C, x1, y1, x2, y2, x3, y3);
         if (this._ctx) {
-            this._needsDash() ? this._dashedBezierTo(x1, y1, x2, y2, x3, y3)
+            this._needsDash ? this._dashedBezierTo(x1, y1, x2, y2, x3, y3)
                 : this._ctx.bezierCurveTo(x1, y1, x2, y2, x3, y3);
         }
         this._xi = x3;
         this._yi = y3;
         return this;
-    },
+    }
 
-    /**
-     * @param  {number} x1
-     * @param  {number} y1
-     * @param  {number} x2
-     * @param  {number} y2
-     * @return {module:zrender/core/PathProxy}
-     */
-    quadraticCurveTo: function (x1, y1, x2, y2) {
+    quadraticCurveTo(x1: number, y1: number, x2: number, y2: number) {
         this.addData(CMD.Q, x1, y1, x2, y2);
         if (this._ctx) {
-            this._needsDash() ? this._dashedQuadraticTo(x1, y1, x2, y2)
+            this._needsDash ? this._dashedQuadraticTo(x1, y1, x2, y2)
                 : this._ctx.quadraticCurveTo(x1, y1, x2, y2);
         }
         this._xi = x2;
         this._yi = y2;
         return this;
-    },
+    }
 
-    /**
-     * @param  {number} cx
-     * @param  {number} cy
-     * @param  {number} r
-     * @param  {number} startAngle
-     * @param  {number} endAngle
-     * @param  {boolean} anticlockwise
-     * @return {module:zrender/core/PathProxy}
-     */
-    arc: function (cx, cy, r, startAngle, endAngle, anticlockwise) {
+    arc(cx: number, cy: number, r: number, startAngle: number, endAngle: number, anticlockwise?: boolean) {
         this.addData(
             CMD.A, cx, cy, r, r, startAngle, endAngle - startAngle, 0, anticlockwise ? 0 : 1
         );
@@ -239,203 +203,176 @@ PathProxy.prototype = {
         this._xi = mathCos(endAngle) * r + cx;
         this._yi = mathSin(endAngle) * r + cy;
         return this;
-    },
+    }
 
     // TODO
-    arcTo: function (x1, y1, x2, y2, radius) {
+    arcTo(x1: number, y1: number, x2: number, y2: number, radius: number) {
         if (this._ctx) {
             this._ctx.arcTo(x1, y1, x2, y2, radius);
         }
         return this;
-    },
+    }
 
     // TODO
-    rect: function (x, y, w, h) {
+    rect(x: number, y: number, w: number, h: number) {
         this._ctx && this._ctx.rect(x, y, w, h);
         this.addData(CMD.R, x, y, w, h);
         return this;
-    },
+    }
 
     /**
      * @return {module:zrender/core/PathProxy}
      */
-    closePath: function () {
+    closePath() {
         this.addData(CMD.Z);
 
-        var ctx = this._ctx;
-        var x0 = this._x0;
-        var y0 = this._y0;
+        const ctx = this._ctx;
+        const x0 = this._x0;
+        const y0 = this._y0;
         if (ctx) {
-            this._needsDash() && this._dashedLineTo(x0, y0);
+            this._needsDash && this._dashedLineTo(x0, y0);
             ctx.closePath();
         }
 
         this._xi = x0;
         this._yi = y0;
         return this;
-    },
+    }
 
-    /**
-     * Context 从外部传入，因为有可能是 rebuildPath 完之后再 fill。
-     * stroke 同样
-     * @param {CanvasRenderingContext2D} ctx
-     * @return {module:zrender/core/PathProxy}
-     */
-    fill: function (ctx) {
+    fill(ctx: CanvasRenderingContext2D) {
         ctx && ctx.fill();
         this.toStatic();
-    },
+    }
 
-    /**
-     * @param {CanvasRenderingContext2D} ctx
-     * @return {module:zrender/core/PathProxy}
-     */
-    stroke: function (ctx) {
+    stroke(ctx: CanvasRenderingContext2D) {
         ctx && ctx.stroke();
         this.toStatic();
-    },
+    }
 
     /**
      * 必须在其它绘制命令前调用
      * Must be invoked before all other path drawing methods
-     * @return {module:zrender/core/PathProxy}
      */
-    setLineDash: function (lineDash) {
+    setLineDash(lineDash: number[] | false) {
         if (lineDash instanceof Array) {
             this._lineDash = lineDash;
 
             this._dashIdx = 0;
 
-            var lineDashSum = 0;
-            for (var i = 0; i < lineDash.length; i++) {
+            let lineDashSum = 0;
+            for (let i = 0; i < lineDash.length; i++) {
                 lineDashSum += lineDash[i];
             }
             this._dashSum = lineDashSum;
+
+            this._needsDash = true;
+        }
+        else {
+            // Clear
+            this._lineDash = null;
+            this._needsDash = false;
         }
         return this;
-    },
+    }
 
     /**
      * 必须在其它绘制命令前调用
      * Must be invoked before all other path drawing methods
-     * @return {module:zrender/core/PathProxy}
      */
-    setLineDashOffset: function (offset) {
+    setLineDashOffset(offset: number) {
         this._dashOffset = offset;
         return this;
-    },
+    }
 
-    /**
-     *
-     * @return {boolean}
-     */
-    len: function () {
+    len() {
         return this._len;
-    },
+    }
 
-    /**
-     * 直接设置 Path 数据
-     */
-    setData: function (data) {
+    setData(data: Float32Array | number[]) {
 
-        var len = data.length;
+        const len = data.length;
 
         if (!(this.data && this.data.length === len) && hasTypedArray) {
             this.data = new Float32Array(len);
         }
 
-        for (var i = 0; i < len; i++) {
+        for (let i = 0; i < len; i++) {
             this.data[i] = data[i];
         }
 
         this._len = len;
-    },
+    }
 
-    /**
-     * 添加子路径
-     * @param {module:zrender/core/PathProxy|Array.<module:zrender/core/PathProxy>} path
-     */
-    appendPath: function (path) {
+    appendPath(path: PathProxy | PathProxy[]) {
         if (!(path instanceof Array)) {
             path = [path];
         }
-        var len = path.length;
-        var appendSize = 0;
-        var offset = this._len;
-        for (var i = 0; i < len; i++) {
+        const len = path.length;
+        let appendSize = 0;
+        let offset = this._len;
+        for (let i = 0; i < len; i++) {
             appendSize += path[i].len();
         }
         if (hasTypedArray && (this.data instanceof Float32Array)) {
             this.data = new Float32Array(offset + appendSize);
         }
-        for (var i = 0; i < len; i++) {
-            var appendPathData = path[i].data;
-            for (var k = 0; k < appendPathData.length; k++) {
+        for (let i = 0; i < len; i++) {
+            const appendPathData = path[i].data;
+            for (let k = 0; k < appendPathData.length; k++) {
                 this.data[offset++] = appendPathData[k];
             }
         }
         this._len = offset;
-    },
+    }
 
     /**
      * 填充 Path 数据。
      * 尽量复用而不申明新的数组。大部分图形重绘的指令数据长度都是不变的。
      */
-    addData: function (cmd) {
+    addData(cmd: number, a?: number, b?: number, c?: number, d?: number, e?: number, f?: number, g?: number, h?: number) {
         if (!this._saveData) {
             return;
         }
 
-        var data = this.data;
+        let data = this.data;
         if (this._len + arguments.length > data.length) {
             // 因为之前的数组已经转换成静态的 Float32Array
             // 所以不够用时需要扩展一个新的动态数组
             this._expandData();
             data = this.data;
         }
-        for (var i = 0; i < arguments.length; i++) {
+        for (let i = 0; i < arguments.length; i++) {
             data[this._len++] = arguments[i];
         }
+    }
 
-        this._prevCmd = cmd;
-    },
-
-    _expandData: function () {
+    _expandData() {
         // Only if data is Float32Array
         if (!(this.data instanceof Array)) {
-            var newData = [];
-            for (var i = 0; i < this._len; i++) {
+            const newData = [];
+            for (let i = 0; i < this._len; i++) {
                 newData[i] = this.data[i];
             }
             this.data = newData;
         }
-    },
+    }
 
-    /**
-     * If needs js implemented dashed line
-     * @return {boolean}
-     * @private
-     */
-    _needsDash: function () {
-        return this._lineDash;
-    },
+    _dashedLineTo(x1: number, y1: number) {
+        const dashSum = this._dashSum;
+        const lineDash = this._lineDash;
+        const ctx = this._ctx;
+        let offset = this._dashOffset;
 
-    _dashedLineTo: function (x1, y1) {
-        var dashSum = this._dashSum;
-        var offset = this._dashOffset;
-        var lineDash = this._lineDash;
-        var ctx = this._ctx;
-
-        var x0 = this._xi;
-        var y0 = this._yi;
-        var dx = x1 - x0;
-        var dy = y1 - y0;
-        var dist = mathSqrt(dx * dx + dy * dy);
-        var x = x0;
-        var y = y0;
-        var dash;
-        var nDash = lineDash.length;
-        var idx;
+        let x0 = this._xi;
+        let y0 = this._yi;
+        let dx = x1 - x0;
+        let dy = y1 - y0;
+        let dist = mathSqrt(dx * dx + dy * dy);
+        let x = x0;
+        let y = y0;
+        let nDash = lineDash.length;
+        let dash;
+        let idx;
         dx /= dist;
         dy /= dist;
 
@@ -467,29 +404,31 @@ PathProxy.prototype = {
         dx = x - x1;
         dy = y - y1;
         this._dashOffset = -mathSqrt(dx * dx + dy * dy);
-    },
+    }
 
     // Not accurate dashed line to
-    _dashedBezierTo: function (x1, y1, x2, y2, x3, y3) {
-        var dashSum = this._dashSum;
-        var offset = this._dashOffset;
-        var lineDash = this._lineDash;
-        var ctx = this._ctx;
+    _dashedBezierTo(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number) {
+        const cubicAt = curve.cubicAt;
+        const ctx = this._ctx;
 
-        var x0 = this._xi;
-        var y0 = this._yi;
-        var t;
-        var dx;
-        var dy;
-        var cubicAt = curve.cubicAt;
-        var bezierLen = 0;
-        var idx = this._dashIdx;
-        var nDash = lineDash.length;
+        let dashSum = this._dashSum;
+        let offset = this._dashOffset;
+        let lineDash = this._lineDash;
 
-        var x;
-        var y;
+        let x0 = this._xi;
+        let y0 = this._yi;
+        let bezierLen = 0;
+        let idx = this._dashIdx;
+        let nDash = lineDash.length;
 
-        var tmpLen = 0;
+        let t;
+        let dx;
+        let dy;
+
+        let x;
+        let y;
+
+        let tmpLen = 0;
 
         if (offset < 0) {
             // Convert to positive offset
@@ -534,49 +473,50 @@ PathProxy.prototype = {
         dx = x3 - x;
         dy = y3 - y;
         this._dashOffset = -mathSqrt(dx * dx + dy * dy);
-    },
+    }
 
-    _dashedQuadraticTo: function (x1, y1, x2, y2) {
+    _dashedQuadraticTo(x1: number, y1: number, x2: number, y2: number) {
         // Convert quadratic to cubic using degree elevation
-        var x3 = x2;
-        var y3 = y2;
+        const x3 = x2;
+        const y3 = y2;
         x2 = (x2 + 2 * x1) / 3;
         y2 = (y2 + 2 * y1) / 3;
         x1 = (this._xi + 2 * x1) / 3;
         y1 = (this._yi + 2 * y1) / 3;
 
         this._dashedBezierTo(x1, y1, x2, y2, x3, y3);
-    },
+    }
 
     /**
      * 转成静态的 Float32Array 减少堆内存占用
      * Convert dynamic array to static Float32Array
      */
-    toStatic: function () {
-        var data = this.data;
+    toStatic() {
+        const data = this.data;
         if (data instanceof Array) {
             data.length = this._len;
             if (hasTypedArray) {
                 this.data = new Float32Array(data);
             }
         }
-    },
+    }
 
     /**
      * @return {module:zrender/core/BoundingRect}
      */
-    getBoundingRect: function () {
+    getBoundingRect() {
         min[0] = min[1] = min2[0] = min2[1] = Number.MAX_VALUE;
         max[0] = max[1] = max2[0] = max2[1] = -Number.MAX_VALUE;
 
-        var data = this.data;
-        var xi = 0;
-        var yi = 0;
-        var x0 = 0;
-        var y0 = 0;
+        const data = this.data;
+        let xi = 0;
+        let yi = 0;
+        let x0 = 0;
+        let y0 = 0;
 
-        for (var i = 0; i < data.length;) {
-            var cmd = data[i++];
+        let i;
+        for (i = 0; i < data.length;) {
+            const cmd = data[i++] as number;
 
             if (i === 1) {
                 // 如果第一个命令是 L, C, Q
@@ -626,15 +566,15 @@ PathProxy.prototype = {
                     break;
                 case CMD.A:
                     // TODO Arc 判断的开销比较大
-                    var cx = data[i++];
-                    var cy = data[i++];
-                    var rx = data[i++];
-                    var ry = data[i++];
-                    var startAngle = data[i++];
-                    var endAngle = data[i++] + startAngle;
+                    const cx = data[i++];
+                    const cy = data[i++];
+                    const rx = data[i++];
+                    const ry = data[i++];
+                    const startAngle = data[i++];
+                    const endAngle = data[i++] + startAngle;
                     // TODO Arc 旋转
                     i += 1;
-                    var anticlockwise = 1 - data[i++];
+                    const anticlockwise = 1 - data[i++];
 
                     if (i === 1) {
                         // 直接使用 arc 命令
@@ -645,7 +585,7 @@ PathProxy.prototype = {
 
                     bbox.fromArc(
                         cx, cy, rx, ry, startAngle, endAngle,
-                        anticlockwise, min2, max2
+                        !!anticlockwise, min2, max2
                     );
 
                     xi = mathCos(endAngle) * rx + cx;
@@ -654,8 +594,8 @@ PathProxy.prototype = {
                 case CMD.R:
                     x0 = xi = data[i++];
                     y0 = yi = data[i++];
-                    var width = data[i++];
-                    var height = data[i++];
+                    const width = data[i++];
+                    const height = data[i++];
                     // Use fromLine
                     bbox.fromLine(x0, y0, x0 + width, y0 + height, min2, max2);
                     break;
@@ -678,26 +618,26 @@ PathProxy.prototype = {
         return new BoundingRect(
             min[0], min[1], max[0] - min[0], max[1] - min[1]
         );
-    },
+    }
 
     /**
      * Rebuild path from current data
      * Rebuild path will not consider javascript implemented line dash.
      * @param {CanvasRenderingContext2D} ctx
      */
-    rebuildPath: function (ctx) {
-        var d = this.data;
-        var x0;
-        var y0;
-        var xi;
-        var yi;
-        var x;
-        var y;
-        var ux = this._ux;
-        var uy = this._uy;
-        var len = this._len;
-        for (var i = 0; i < len;) {
-            var cmd = d[i++];
+    rebuildPath(ctx: CanvasRenderingContext2D) {
+        const d = this.data;
+        let x0;
+        let y0;
+        let xi;
+        let yi;
+        let x;
+        let y;
+        let ux = this._ux;
+        let uy = this._uy;
+        let len = this._len;
+        for (let i = 0; i < len;) {
+            const cmd = d[i++];
 
             if (i === 1) {
                 // 如果第一个命令是 L, C, Q
@@ -739,30 +679,30 @@ PathProxy.prototype = {
                     yi = d[i - 1];
                     break;
                 case CMD.A:
-                    var cx = d[i++];
-                    var cy = d[i++];
-                    var rx = d[i++];
-                    var ry = d[i++];
-                    var theta = d[i++];
-                    var dTheta = d[i++];
-                    var psi = d[i++];
-                    var fs = d[i++];
-                    var r = (rx > ry) ? rx : ry;
-                    var scaleX = (rx > ry) ? 1 : rx / ry;
-                    var scaleY = (rx > ry) ? ry / rx : 1;
-                    var isEllipse = Math.abs(rx - ry) > 1e-3;
-                    var endAngle = theta + dTheta;
+                    const cx = d[i++];
+                    const cy = d[i++];
+                    const rx = d[i++];
+                    const ry = d[i++];
+                    const theta = d[i++];
+                    const dTheta = d[i++];
+                    const psi = d[i++];
+                    const fs = d[i++];
+                    const r = (rx > ry) ? rx : ry;
+                    const scaleX = (rx > ry) ? 1 : rx / ry;
+                    const scaleY = (rx > ry) ? ry / rx : 1;
+                    const isEllipse = Math.abs(rx - ry) > 1e-3;
+                    const endAngle = theta + dTheta;
                     if (isEllipse) {
                         ctx.translate(cx, cy);
                         ctx.rotate(psi);
                         ctx.scale(scaleX, scaleY);
-                        ctx.arc(0, 0, r, theta, endAngle, 1 - fs);
+                        ctx.arc(0, 0, r, theta, endAngle, !!(1 - fs));
                         ctx.scale(1 / scaleX, 1 / scaleY);
                         ctx.rotate(-psi);
                         ctx.translate(-cx, -cy);
                     }
                     else {
-                        ctx.arc(cx, cy, r, theta, endAngle, 1 - fs);
+                        ctx.arc(cx, cy, r, theta, endAngle, !!(1 - fs));
                     }
 
                     if (i === 1) {
@@ -786,8 +726,4 @@ PathProxy.prototype = {
             }
         }
     }
-};
-
-PathProxy.CMD = CMD;
-
-export default PathProxy;
+}

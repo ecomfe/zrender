@@ -1,33 +1,61 @@
-import Displayable from './Displayable';
+import Displayable, { DisplayableOption } from './Displayable';
 import BoundingRect from '../core/BoundingRect';
 import * as zrUtil from '../core/util';
 import * as imageHelper from './helper/image';
+import Style, { StyleOption } from './Style';
+import { PropType, AllPropTypes, ImageLike } from '../core/types';
+import { ElementOption } from '../Element';
 
-/**
- * @alias zrender/graphic/Image
- * @extends module:zrender/graphic/Displayable
- * @constructor
- * @param {Object} opts
- */
-function ZImage(opts) {
-    Displayable.call(this, opts);
+class ImageStyle extends Style {
+    image: string | ImageLike
+    width?: number
+    height?: number
+    sx?: number
+    sy?: number
+    sWidth?: number
+    sHeight?: number
 }
 
-ZImage.prototype = {
+// TODO
+class ImageStyleOption extends StyleOption {
+    image: string | ImageLike
+    width?: number
+    height?: number
+    sx?: number
+    sy?: number
+    sWidth?: number
+    sHeight?: number
+}
 
-    constructor: ZImage,
+interface ZImageOption extends DisplayableOption {
+    style?: ImageStyleOption
+}
 
-    type: 'image',
+export default class ZImage extends Displayable {
+    type = 'image'
 
-    brush: function (ctx, prevEl) {
-        var style = this.style;
-        var src = style.image;
+    private _image: ImageLike
+
+    style: ImageStyle
+
+    // FOR SVG RENDERER
+    __imageSrc: string
+
+    onload: (image: ImageLike) => void
+
+    constructor(opts?: ZImageOption) {
+        super(opts);
+    }
+
+    brush(ctx: CanvasRenderingContext2D, prevEl: Displayable) {
+        const style = this.style;
+        const src = <string>style.image;
 
         // Must bind each time
         style.bind(ctx, this, prevEl);
 
-        var image = this._image = imageHelper.createOrUpdateImage(
-            src,
+        const image = this._image = imageHelper.createOrUpdateImage(
+            style.image,
             this._image,
             this,
             this.onload
@@ -45,11 +73,11 @@ ZImage.prototype = {
         // }
         // Else is canvas
 
-        var x = style.x || 0;
-        var y = style.y || 0;
-        var width = style.width;
-        var height = style.height;
-        var aspect = image.width / image.height;
+        const x = style.x || 0;
+        const y = style.y || 0;
+        let width = style.width;
+        let height = style.height;
+        const aspect = image.width / image.height;
         if (width == null && height != null) {
             // Keep image/height ratio
             width = height * aspect;
@@ -66,8 +94,8 @@ ZImage.prototype = {
         this.setTransform(ctx);
 
         if (style.sWidth && style.sHeight) {
-            var sx = style.sx || 0;
-            var sy = style.sy || 0;
+            const sx = style.sx || 0;
+            const sy = style.sy || 0;
             ctx.drawImage(
                 image,
                 sx, sy, style.sWidth, style.sHeight,
@@ -75,10 +103,10 @@ ZImage.prototype = {
             );
         }
         else if (style.sx && style.sy) {
-            var sx = style.sx;
-            var sy = style.sy;
-            var sWidth = width - sx;
-            var sHeight = height - sy;
+            const sx = style.sx;
+            const sy = style.sy;
+            const sWidth = width - sx;
+            const sHeight = height - sy;
             ctx.drawImage(
                 image,
                 sx, sy, sWidth, sHeight,
@@ -95,10 +123,22 @@ ZImage.prototype = {
             this.restoreTransform(ctx);
             this.drawRectText(ctx, this.getBoundingRect());
         }
-    },
+    }
 
-    getBoundingRect: function () {
-        var style = this.style;
+    attr(key: ZImageOption): ZImage
+    attr(key: keyof ZImageOption, value: AllPropTypes<ZImageOption>): ZImage
+    attr(key: (keyof ZImageOption) | ZImageOption, value?: AllPropTypes<ZImageOption>) {
+        // TODO Displayable should overrite `attr` of Element?
+        // TODO Should simply use string?
+        return super.attr(key as keyof ElementOption, value);
+    }
+
+    setStyle(key: (keyof ImageStyleOption) | ImageStyleOption, value?: AllPropTypes<ImageStyleOption>) {
+        return super.setStyle(key, value as AllPropTypes<StyleOption>);
+    }
+
+    getBoundingRect(): BoundingRect {
+        const style = this.style;
         if (!this._rect) {
             this._rect = new BoundingRect(
                 style.x || 0, style.y || 0, style.width || 0, style.height || 0
@@ -106,8 +146,4 @@ ZImage.prototype = {
         }
         return this._rect;
     }
-};
-
-zrUtil.inherits(ZImage, Displayable);
-
-export default ZImage;
+}

@@ -3,44 +3,53 @@
  * @module zrender/graphic/shape/Line
  */
 
-import Path from '../Path';
+import Path, { PathOption } from '../Path';
 import {subPixelOptimizeLine} from '../helper/subPixelOptimize';
+import PathProxy from '../../core/PathProxy';
+import { VectorArray } from '../../core/vector';
 
 // Avoid create repeatly.
 var subPixelOptimizeOutputShape = {};
 
-export default Path.extend({
+class LineShape {
+    // Start point
+    x1: number = 0
+    y1: number = 0
+    // End point
+    x2: number = 0
+    y2: number = 0
 
-    type: 'line',
+    percent: number = 1
+}
 
-    shape: {
-        // Start point
-        x1: 0,
-        y1: 0,
-        // End point
-        x2: 0,
-        y2: 0,
+export default class Line extends Path {
 
-        percent: 1
-    },
+    type = 'line'
 
-    style: {
-        stroke: '#000',
-        fill: null
-    },
+    shape =  new LineShape()
 
-    buildPath: function (ctx, shape) {
-        var x1;
-        var y1;
-        var x2;
-        var y2;
+    constructor(opts?: PathOption & {
+        shape: LineShape
+    }) {
+        super(opts);
+        this.setStyle({
+            stroke: '#000',
+            fill: null
+        });
+    }
+
+    buildPath(ctx: PathProxy, shape: LineShape) {
+        let x1;
+        let y1;
+        let x2;
+        let y2;
 
         if (this.subPixelOptimize) {
-            subPixelOptimizeLine(subPixelOptimizeOutputShape, shape, this.style);
-            x1 = subPixelOptimizeOutputShape.x1;
-            y1 = subPixelOptimizeOutputShape.y1;
-            x2 = subPixelOptimizeOutputShape.x2;
-            y2 = subPixelOptimizeOutputShape.y2;
+            const optimizedShape = subPixelOptimizeLine(subPixelOptimizeOutputShape, shape, this.style);
+            x1 = optimizedShape.x1;
+            y1 = optimizedShape.y1;
+            x2 = optimizedShape.x2;
+            y2 = optimizedShape.y2;
         }
         else {
             x1 = shape.x1;
@@ -49,7 +58,7 @@ export default Path.extend({
             y2 = shape.y2;
         }
 
-        var percent = shape.percent;
+        const percent = shape.percent;
 
         if (percent === 0) {
             return;
@@ -62,18 +71,16 @@ export default Path.extend({
             y2 = y1 * (1 - percent) + y2 * percent;
         }
         ctx.lineTo(x2, y2);
-    },
+    }
 
     /**
      * Get point at percent
-     * @param  {number} percent
-     * @return {Array.<number>}
      */
-    pointAt: function (p) {
-        var shape = this.shape;
+    pointAt(p: number): VectorArray {
+        const shape = this.shape;
         return [
             shape.x1 * (1 - p) + shape.x2 * p,
             shape.y1 * (1 - p) + shape.y2 * p
         ];
     }
-});
+}

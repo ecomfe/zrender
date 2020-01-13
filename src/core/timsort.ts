@@ -1,11 +1,13 @@
 // https://github.com/mziccard/node-timsort
-var DEFAULT_MIN_MERGE = 32;
+const DEFAULT_MIN_MERGE = 32;
 
-var DEFAULT_MIN_GALLOPING = 7;
+const DEFAULT_MIN_GALLOPING = 7;
 
-var DEFAULT_TMP_STORAGE_LENGTH = 256;
+const DEFAULT_TMP_STORAGE_LENGTH = 256;
 
-function minRunLength(n) {
+type CompareFunc<T> =(a: T, b: T) => number
+
+function minRunLength(n: number): number {
     var r = 0;
 
     while (n >= DEFAULT_MIN_MERGE) {
@@ -16,7 +18,7 @@ function minRunLength(n) {
     return n + r;
 }
 
-function makeAscendingRun(array, lo, hi, compare) {
+function makeAscendingRun<T>(array: T[], lo: number, hi: number, compare: CompareFunc<T>) {
     var runHi = lo + 1;
 
     if (runHi === hi) {
@@ -28,7 +30,7 @@ function makeAscendingRun(array, lo, hi, compare) {
             runHi++;
         }
 
-        reverseRun(array, lo, runHi);
+        reverseRun<T>(array, lo, runHi);
     }
     else {
         while (runHi < hi && compare(array[runHi], array[runHi - 1]) >= 0) {
@@ -39,7 +41,7 @@ function makeAscendingRun(array, lo, hi, compare) {
     return runHi - lo;
 }
 
-function reverseRun(array, lo, hi) {
+function reverseRun<T>(array: T[], lo: number, hi: number) {
     hi--;
 
     while (lo < hi) {
@@ -49,7 +51,7 @@ function reverseRun(array, lo, hi) {
     }
 }
 
-function binaryInsertionSort(array, lo, hi, start, compare) {
+function binaryInsertionSort<T>(array: T[], lo: number, hi: number, start: number, compare: CompareFunc<T>) {
     if (start === lo) {
         start++;
     }
@@ -95,7 +97,7 @@ function binaryInsertionSort(array, lo, hi, start, compare) {
     }
 }
 
-function gallopLeft(value, array, start, length, hint, compare) {
+function gallopLeft<T>(value: T, array: T[], start: number, length: number, hint: number, compare: CompareFunc<T>) {
     var lastOffset = 0;
     var maxOffset = 0;
     var offset = 1;
@@ -152,7 +154,7 @@ function gallopLeft(value, array, start, length, hint, compare) {
     return offset;
 }
 
-function gallopRight(value, array, start, length, hint, compare) {
+function gallopRight<T>(value: T, array: T[], start: number, length: number, hint: number, compare: CompareFunc<T>) {
     var lastOffset = 0;
     var maxOffset = 0;
     var offset = 1;
@@ -213,14 +215,14 @@ function gallopRight(value, array, start, length, hint, compare) {
     return offset;
 }
 
-function TimSort(array, compare) {
-    var minGallop = DEFAULT_MIN_GALLOPING;
-    var length = 0;
-    var tmpStorageLength = DEFAULT_TMP_STORAGE_LENGTH;
-    var stackLength = 0;
-    var runStart;
-    var runLength;
-    var stackSize = 0;
+function TimSort<T>(array: T[], compare: CompareFunc<T>) {
+    let minGallop = DEFAULT_MIN_GALLOPING;
+    let length = 0;
+    let tmpStorageLength = DEFAULT_TMP_STORAGE_LENGTH;
+    let stackLength = 0;
+    let runStart: number[];
+    let runLength: number[];
+    let stackSize = 0;
 
     length = array.length;
 
@@ -228,14 +230,14 @@ function TimSort(array, compare) {
         tmpStorageLength = length >>> 1;
     }
 
-    var tmp = [];
+    var tmp: T[] = [];
 
     stackLength = length < 120 ? 5 : length < 1542 ? 10 : length < 119151 ? 19 : 40;
 
     runStart = [];
     runLength = [];
 
-    function pushRun(_runStart, _runLength) {
+    function pushRun(_runStart: number, _runLength: number) {
         runStart[stackSize] = _runStart;
         runLength[stackSize] = _runLength;
         stackSize += 1;
@@ -272,7 +274,7 @@ function TimSort(array, compare) {
         }
     }
 
-    function mergeAt(i) {
+    function mergeAt(i: number) {
         var start1 = runStart[i];
         var length1 = runLength[i];
         var start2 = runStart[i + 1];
@@ -287,7 +289,7 @@ function TimSort(array, compare) {
 
         stackSize--;
 
-        var k = gallopRight(array[start2], array, start1, length1, 0, compare);
+        var k = gallopRight<T>(array[start2], array, start1, length1, 0, compare);
         start1 += k;
         length1 -= k;
 
@@ -295,7 +297,7 @@ function TimSort(array, compare) {
             return;
         }
 
-        length2 = gallopLeft(array[start1 + length1 - 1], array, start2, length2, length2 - 1, compare);
+        length2 = gallopLeft<T>(array[start1 + length1 - 1], array, start2, length2, length2 - 1, compare);
 
         if (length2 === 0) {
             return;
@@ -309,7 +311,7 @@ function TimSort(array, compare) {
         }
     }
 
-    function mergeLow(start1, length1, start2, length2) {
+    function mergeLow(start1: number, length1: number, start2: number, length2: number) {
         var i = 0;
 
         for (i = 0; i < length1; i++) {
@@ -374,7 +376,7 @@ function TimSort(array, compare) {
             }
 
             do {
-                count1 = gallopRight(array[cursor2], tmp, cursor1, length1, 0, compare);
+                count1 = gallopRight<T>(array[cursor2], tmp, cursor1, length1, 0, compare);
 
                 if (count1 !== 0) {
                     for (i = 0; i < count1; i++) {
@@ -397,7 +399,7 @@ function TimSort(array, compare) {
                     break;
                 }
 
-                count2 = gallopLeft(tmp[cursor1], array, cursor2, length2, 0, compare);
+                count2 = gallopLeft<T>(tmp[cursor1], array, cursor2, length2, 0, compare);
 
                 if (count2 !== 0) {
                     for (i = 0; i < count2; i++) {
@@ -455,7 +457,7 @@ function TimSort(array, compare) {
         }
     }
 
-    function mergeHigh(start1, length1, start2, length2) {
+    function mergeHigh(start1: number, length1: number, start2: number, length2: number) {
         var i = 0;
 
         for (i = 0; i < length2; i++) {
@@ -527,7 +529,7 @@ function TimSort(array, compare) {
             }
 
             do {
-                count1 = length1 - gallopRight(tmp[cursor2], array, start1, length1, length1 - 1, compare);
+                count1 = length1 - gallopRight<T>(tmp[cursor2], array, start1, length1, length1 - 1, compare);
 
                 if (count1 !== 0) {
                     dest -= count1;
@@ -553,7 +555,7 @@ function TimSort(array, compare) {
                     break;
                 }
 
-                count2 = length2 - gallopLeft(array[cursor1], tmp, 0, length2, length2 - 1, compare);
+                count2 = length2 - gallopLeft<T>(array[cursor1], tmp, 0, length2, length2 - 1, compare);
 
                 if (count2 !== 0) {
                     dest -= count2;
@@ -623,12 +625,18 @@ function TimSort(array, compare) {
         }
     }
 
-    this.mergeRuns = mergeRuns;
-    this.forceMergeRuns = forceMergeRuns;
-    this.pushRun = pushRun;
+    return {
+        mergeRuns,
+        forceMergeRuns,
+        pushRun
+    };
 }
 
-export default function sort(array, compare, lo, hi) {
+export default function sort<T>(
+    array: T[],
+    compare: CompareFunc<T>,
+    lo?: number, hi?: number
+) {
     if (!lo) {
         lo = 0;
     }
@@ -645,24 +653,24 @@ export default function sort(array, compare, lo, hi) {
     var runLength = 0;
 
     if (remaining < DEFAULT_MIN_MERGE) {
-        runLength = makeAscendingRun(array, lo, hi, compare);
-        binaryInsertionSort(array, lo, hi, lo + runLength, compare);
+        runLength = makeAscendingRun<T>(array, lo, hi, compare);
+        binaryInsertionSort<T>(array, lo, hi, lo + runLength, compare);
         return;
     }
 
-    var ts = new TimSort(array, compare);
+    var ts = TimSort<T>(array, compare);
 
     var minRun = minRunLength(remaining);
 
     do {
-        runLength = makeAscendingRun(array, lo, hi, compare);
+        runLength = makeAscendingRun<T>(array, lo, hi, compare);
         if (runLength < minRun) {
             var force = remaining;
             if (force > minRun) {
                 force = minRun;
             }
 
-            binaryInsertionSort(array, lo, lo + force, lo + runLength, compare);
+            binaryInsertionSort<T>(array, lo, lo + force, lo + runLength, compare);
             runLength = force;
         }
 

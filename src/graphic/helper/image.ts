@@ -1,15 +1,24 @@
 
 import LRU from '../../core/LRU';
+import Element from '../../Element';
+import { ImageLike } from '../../core/types';
 
-var globalImageCache = new LRU(50);
+const globalImageCache = new LRU<CachedImageObj>(50);
 
-/**
- * @param {string|HTMLImageElement|HTMLCanvasElement|Canvas} newImageOrSrc
- * @return {HTMLImageElement|HTMLCanvasElement|Canvas} image
- */
-export function findExistImage(newImageOrSrc) {
+type PendingWrap = {
+    hostEl: Element
+    cb: (image: ImageLike, payload: any) => void
+    cbPayload: any
+}
+
+type CachedImageObj = {
+    image: ImageLike
+    pending: PendingWrap[]
+}
+
+export function findExistImage(newImageOrSrc: string | ImageLike): ImageLike {
     if (typeof newImageOrSrc === 'string') {
-        var cachedImgObj = globalImageCache.get(newImageOrSrc);
+        const cachedImgObj = globalImageCache.get(newImageOrSrc);
         return cachedImgObj && cachedImgObj.image;
     }
     else {
@@ -21,29 +30,35 @@ export function findExistImage(newImageOrSrc) {
  * Caution: User should cache loaded images, but not just count on LRU.
  * Consider if required images more than LRU size, will dead loop occur?
  *
- * @param {string|HTMLImageElement|HTMLCanvasElement|Canvas} newImageOrSrc
- * @param {HTMLImageElement|HTMLCanvasElement|Canvas} image Existent image.
- * @param {module:zrender/Element} [hostEl] For calling `dirty`.
- * @param {Function} [cb] params: (image, cbPayload)
- * @param {Object} [cbPayload] Payload on cb calling.
- * @return {HTMLImageElement|HTMLCanvasElement|Canvas} image
+ * @param newImageOrSrc
+ * @param image Existent image.
+ * @param hostEl For calling `dirty`.
+ * @param cb params: (image, cbPayload)
+ * @param cbPayload Payload on cb calling.
+ * @return image
  */
-export function createOrUpdateImage(newImageOrSrc, image, hostEl, cb, cbPayload) {
+export function createOrUpdateImage<T>(
+    newImageOrSrc: string | ImageLike,
+    image: ImageLike,
+    hostEl: Element,
+    cb: (image: ImageLike, payload: T) => void,
+    cbPayload?: T
+) {
     if (!newImageOrSrc) {
         return image;
     }
     else if (typeof newImageOrSrc === 'string') {
 
         // Image should not be loaded repeatly.
-        if ((image && image.__zrImageSrc === newImageOrSrc) || !hostEl) {
+        if ((image && (image as any).__zrImageSrc === newImageOrSrc) || !hostEl) {
             return image;
         }
 
         // Only when there is no existent image or existent image src
         // is different, this method is responsible for load.
-        var cachedImgObj = globalImageCache.get(newImageOrSrc);
+        const cachedImgObj = globalImageCache.get(newImageOrSrc);
 
-        var pendingWrap = {hostEl: hostEl, cb: cb, cbPayload: cbPayload};
+        const pendingWrap = {hostEl: hostEl, cb: cb, cbPayload: cbPayload};
 
         if (cachedImgObj) {
             image = cachedImgObj.image;
@@ -55,13 +70,13 @@ export function createOrUpdateImage(newImageOrSrc, image, hostEl, cb, cbPayload)
 
             globalImageCache.put(
                 newImageOrSrc,
-                image.__cachedImgObj = {
+                (image as any).__cachedImgObj = {
                     image: image,
                     pending: [pendingWrap]
                 }
             );
 
-            image.src = image.__zrImageSrc = newImageOrSrc;
+            image.src = (image as any).__zrImageSrc = newImageOrSrc;
         }
 
         return image;
@@ -73,19 +88,19 @@ export function createOrUpdateImage(newImageOrSrc, image, hostEl, cb, cbPayload)
 }
 
 function imageOnLoad() {
-    var cachedImgObj = this.__cachedImgObj;
+    const cachedImgObj = this.__cachedImgObj;
     this.onload = this.onerror = this.__cachedImgObj = null;
 
-    for (var i = 0; i < cachedImgObj.pending.length; i++) {
-        var pendingWrap = cachedImgObj.pending[i];
-        var cb = pendingWrap.cb;
+    for (let i = 0; i < cachedImgObj.pending.length; i++) {
+        const pendingWrap = cachedImgObj.pending[i];
+        const cb = pendingWrap.cb;
         cb && cb(this, pendingWrap.cbPayload);
         pendingWrap.hostEl.dirty();
     }
     cachedImgObj.pending.length = 0;
 }
 
-export function isImageReady(image) {
+export function isImageReady(image: ImageLike) {
     return image && image.width && image.height;
 }
 

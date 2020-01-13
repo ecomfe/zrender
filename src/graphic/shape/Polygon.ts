@@ -5,15 +5,23 @@
 
 import Path from '../Path';
 import * as polyHelper from '../helper/poly';
+import { VectorArray } from '../../core/vector';
+import { Dictionary } from '../../core/types';
 
-export default Path.extend({
+interface PolygonShape {
+    points: VectorArray[]
+    smooth?: number | 'spline'
+    smoothConstraint?: VectorArray[]
+}
+
+export default Path.extend<PolygonShape, {}>({
 
     type: 'polygon',
 
     shape: {
         points: null,
 
-        smooth: false,
+        smooth: 0,
 
         smoothConstraint: null
     },

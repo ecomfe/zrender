@@ -4,263 +4,253 @@
  */
 
 
-import * as zrUtil from '../core/util';
-import Style from './Style';
-import Element from '../Element';
-import RectText from './mixin/RectText';
+import Style, {StyleOption} from './Style';
+import Element, {ElementOption} from '../Element';
+import BoundingRect, { RectLike } from '../core/BoundingRect';
+import { Dictionary, PropType, AllPropTypes } from '../core/types';
+import Path from './Path';
+import * as textHelper from './helper/text';
+import {WILL_BE_RESTORED} from './constant';
+import { calculateTextPosition, RichTextContentBlock, PlainTextContentBlock } from '../contain/text';
 
-/**
- * @alias module:zrender/graphic/Displayable
- * @extends module:zrender/Element
- * @extends module:zrender/graphic/mixin/RectText
- */
-function Displayable(opts) {
+type CalculateTextPositionResult = ReturnType<typeof calculateTextPosition>
 
-    opts = opts || {};
+export interface DisplayableOption extends ElementOption {
+    style?: StyleOption
 
-    Element.call(this, opts);
+    zlevel?: number
+    z?: number
+    z2?: number
 
-    // Extend properties
-    for (var name in opts) {
-        if (
-            opts.hasOwnProperty(name)
-                && name !== 'style'
-        ) {
-            this[name] = opts[name];
-        }
-    }
+    culling?: boolean
 
-    /**
-     * @type {module:zrender/graphic/Style}
-     */
-    this.style = new Style(opts.style, this);
+    // TODO list all cursors
+    cursor?: string
 
-    this._rect = null;
-    // Shapes for cascade clipping.
-    // Can only be `null`/`undefined` or an non-empty array, MUST NOT be an empty array.
-    // because it is easy to only using null to check whether clipPaths changed.
-    this.__clipPaths = null;
+    rectHover?: boolean
 
-    // FIXME Stateful must be mixined after style is setted
-    // Stateful.call(this, opts);
+    progressive?: boolean
+
+    incremental?: boolean
 }
 
-Displayable.prototype = {
+type DisplayableKey = keyof DisplayableOption
+type DisplayablePropertyType = PropType<DisplayableOption, DisplayableKey>
 
-    constructor: Displayable,
+const tmpRect = new BoundingRect();
 
-    type: 'displayable',
+export default class Displayable extends Element {
 
-    /**
-     * Dirty flag. From which painter will determine if this displayable object needs brush.
-     * @name module:zrender/graphic/Displayable#__dirty
-     * @type {boolean}
-     */
-    __dirty: true,
+    type = 'displayable'
 
     /**
      * Whether the displayable object is visible. when it is true, the displayable object
      * is not drawn, but the mouse event can still trigger the object.
-     * @name module:/zrender/graphic/Displayable#invisible
-     * @type {boolean}
-     * @default false
      */
-    invisible: false,
+    invisible = false
 
     /**
-     * @name module:/zrender/graphic/Displayable#z
-     * @type {number}
-     * @default 0
      */
-    z: 0,
+    z = 0
 
     /**
-     * @name module:/zrender/graphic/Displayable#z
-     * @type {number}
-     * @default 0
      */
-    z2: 0,
+    z2 = 0
 
     /**
      * The z level determines the displayable object can be drawn in which layer canvas.
-     * @name module:/zrender/graphic/Displayable#zlevel
-     * @type {number}
-     * @default 0
      */
-    zlevel: 0,
-
-    /**
-     * Whether it can be dragged.
-     * @name module:/zrender/graphic/Displayable#draggable
-     * @type {boolean}
-     * @default false
-     */
-    draggable: false,
-
-    /**
-     * Whether is it dragging.
-     * @name module:/zrender/graphic/Displayable#draggable
-     * @type {boolean}
-     * @default false
-     */
-    dragging: false,
-
-    /**
-     * Whether to respond to mouse events.
-     * @name module:/zrender/graphic/Displayable#silent
-     * @type {boolean}
-     * @default false
-     */
-    silent: false,
+    zlevel = 0
 
     /**
      * If enable culling
-     * @type {boolean}
-     * @default false
      */
-    culling: false,
+    culling = false
 
     /**
      * Mouse cursor when hovered
-     * @name module:/zrender/graphic/Displayable#cursor
-     * @type {string}
      */
-    cursor: 'pointer',
+    cursor = 'pointer'
 
     /**
      * If hover area is bounding rect
-     * @name module:/zrender/graphic/Displayable#rectHover
-     * @type {string}
      */
-    rectHover: false,
+    rectHover = false
 
     /**
      * Render the element progressively when the value >= 0,
      * usefull for large data.
-     * @type {boolean}
      */
-    progressive: false,
+    progressive = false
 
     /**
-     * @type {boolean}
+     * For increamental rendering
      */
-    incremental: false,
-    /**
-     * Scale ratio for global scale.
-     * @type {boolean}
-     */
-    globalScaleRatio: 1,
+    incremental = false
 
-    beforeBrush: function (ctx) {},
+    style: Style
 
-    afterBrush: function (ctx) {},
+    protected _rect: BoundingRect = null
+
+    /************* Properties will be inejected in other modules. *******************/
+    // Shapes for cascade clipping.
+    // Can only be `null`/`undefined` or an non-empty array, MUST NOT be an empty array.
+    // because it is easy to only using null to check whether clipPaths changed.
+    __clipPaths: Path[]
+
+    // FOR TEXT
+    __dirtyText = false
+    __textCotentBlock: RichTextContentBlock | PlainTextContentBlock
+    __computedFont: string
+    __styleFont: string
+
+    // FOR HOVER Connections for hovered elements.
+    __hoverMir: Displayable
+    __from: Displayable
+
+    // FOR SVG PAINTER
+    __textSvgEl: SVGElement
+    __svgEl: SVGElement
+    __tspanList: SVGTSpanElement[]
+    __canCacheByTextString: boolean
+    __text: string
+
+    constructor(opts?: DisplayableOption) {
+        super(opts);
+        if (!this.style) {
+            // Create an empty style object.
+            this.useStyle({});
+        }
+    }
+
+    beforeBrush(ctx: CanvasRenderingContext2D) {}
+
+    afterBrush(ctx: CanvasRenderingContext2D) {}
 
     /**
      * Graphic drawing method.
-     * @param {CanvasRenderingContext2D} ctx
      */
     // Interface
-    brush: function (ctx, prevEl) {},
-
-    /**
-     * Get the minimum bounding box.
-     * @return {module:zrender/core/BoundingRect}
-     */
-    // Interface
-    getBoundingRect: function () {},
+    brush(ctx: CanvasRenderingContext2D, prevEl?: Displayable) {}
 
     /**
      * If displayable element contain coord x, y
-     * @param  {number} x
-     * @param  {number} y
-     * @return {boolean}
      */
-    contain: function (x, y) {
+    contain(x: number, y: number) {
         return this.rectContain(x, y);
-    },
+    }
 
-    /**
-     * @param  {Function} cb
-     * @param  {}   context
-     */
-    traverse: function (cb, context) {
+    traverse<T>(
+        cb: (this: T, el: Displayable) => void,
+        context: T
+    ) {
         cb.call(context, this);
-    },
+    }
 
     /**
      * If bounding rect of element contain coord x, y
-     * @param  {number} x
-     * @param  {number} y
-     * @return {boolean}
      */
-    rectContain: function (x, y) {
+    rectContain(x: number, y: number) {
         var coord = this.transformCoordToLocal(x, y);
         var rect = this.getBoundingRect();
         return rect.contain(coord[0], coord[1]);
-    },
+    }
 
     /**
      * Mark displayable element dirty and refresh next frame
      */
-    dirty: function () {
+    dirty(dirtyShape?: boolean) {
         this.__dirty = this.__dirtyText = true;
-
         this._rect = null;
-
         this.__zr && this.__zr.refresh();
-    },
+    }
 
     /**
      * If displayable object binded any event
      * @return {boolean}
      */
-    // TODO, events bound by bind
-    // isSilent: function () {
-    //     return !(
-    //         this.hoverable || this.draggable
-    //         || this.onmousemove || this.onmouseover || this.onmouseout
-    //         || this.onmousedown || this.onmouseup || this.onclick
-    //         || this.ondragenter || this.ondragover || this.ondragleave
-    //         || this.ondrop
-    //     );
-    // },
+
     /**
      * Alias for animate('style')
      * @param {boolean} loop
      */
-    animateStyle: function (loop) {
+    animateStyle(loop: boolean) {
         return this.animate('style', loop);
-    },
+    }
 
-    attrKV: function (key, value) {
+    attrKV(key: DisplayableKey, value: DisplayablePropertyType) {
         if (key !== 'style') {
-            Element.prototype.attrKV.call(this, key, value);
+            super.attrKV(key as keyof ElementOption, value);
         }
         else {
-            this.style.set(value);
+            if (!this.style) {
+                this.useStyle(value as StyleOption);
+            }
+            this.style.set(value as StyleOption);
         }
-    },
+    }
 
-    /**
-     * @param {Object|string} key
-     * @param {*} value
-     */
-    setStyle: function (key, value) {
-        this.style.set(key, value);
+    setStyle(key: StyleOption | string, value?: AllPropTypes<StyleOption>) {
+        this.style.set(key as keyof StyleOption, value);
         this.dirty(false);
         return this;
-    },
+    }
 
     /**
      * Use given style object
-     * @param  {Object} obj
      */
-    useStyle: function (obj) {
-        this.style = new Style(obj, this);
+    useStyle(obj: StyleOption) {
+        this.style = new Style(obj);
         this.dirty(false);
         return this;
-    },
+    }
 
+    /**
+     * Draw text in a rect with specified position.
+     * @param  {CanvasRenderingContext2D} ctx
+     * @param  {Object} rect Displayable rect
+     */
+    drawRectText(ctx: CanvasRenderingContext2D, rect: RectLike) {
+        var style = this.style;
+
+        rect = style.textRect || rect;
+
+        // Optimize, avoid normalize every time.
+        this.__dirty && textHelper.normalizeTextStyle(style);
+
+        var text = style.text;
+
+        // Convert to string
+        text != null && (text += '');
+
+        if (!textHelper.needDrawText(text, style)) {
+            return;
+        }
+
+        // FIXME
+        // Do not provide prevEl to `textHelper.renderText` for ctx prop cache,
+        // but use `ctx.save()` and `ctx.restore()`. Because the cache for rect
+        // text propably break the cache for its host elements.
+        ctx.save();
+
+        // Transform rect to view space
+        var transform = this.transform;
+        if (!style.transformText) {
+            if (transform) {
+                tmpRect.copy(rect);
+                tmpRect.applyTransform(transform);
+                rect = tmpRect;
+            }
+        }
+        else {
+            this.setTransform(ctx);
+        }
+
+        // transformText and textRotation can not be used at the same time.
+        textHelper.renderText(this, ctx, text, style, rect, WILL_BE_RESTORED);
+
+        ctx.restore();
+    }
     /**
      * The string value of `textPosition` needs to be calculated to a real postion.
      * For example, `'inside'` is calculated to `[rect.width/2, rect.height/2]`
@@ -280,12 +270,6 @@ Displayable.prototype = {
      *             textVerticalAlign: string. optional. use style.textVerticalAlign by default.
      *         }
      */
-    calculateTextPosition: null
-};
+    calculateTextPosition: (out: CalculateTextPositionResult, style: StyleOption, rect: RectLike) => CalculateTextPositionResult
 
-zrUtil.inherits(Displayable, Element);
-
-zrUtil.mixin(Displayable, RectText);
-// zrUtil.mixin(Displayable, Stateful);
-
-export default Displayable;
+}

@@ -1,4 +1,4 @@
-import BoundingRect from '../core/BoundingRect';
+import BoundingRect, { RectLike } from '../core/BoundingRect';
 import * as imageHelper from '../graphic/helper/image';
 import {
     getContext,
@@ -7,39 +7,49 @@ import {
     retrieve3,
     trim
 } from '../core/util';
+import { Dictionary, PropType, TextAlign, TextVerticalAlign, ImageLike } from '../core/types';
+import Style, { StyleOption } from '../graphic/Style';
 
-var textWidthCache = {};
-var textWidthCacheCounter = 0;
+let textWidthCache: Dictionary<number> = {};
+let textWidthCacheCounter = 0;
 
-var TEXT_CACHE_MAX = 5000;
-var STYLE_REG = /\{([a-zA-Z0-9_]+)\|([^}]*)\}/g;
+const TEXT_CACHE_MAX = 5000;
+const STYLE_REG = /\{([a-zA-Z0-9_]+)\|([^}]*)\}/g;
 
-export var DEFAULT_FONT = '12px sans-serif';
+export const DEFAULT_FONT = '12px sans-serif';
 
-// Avoid assign to an exported variable, for transforming to cjs.
-var methods = {};
+let methods: {
+    measureText: (text: string, font?: string) => { width: number }
+} = {
+    measureText: function (text: string, font?: string): { width: number } {
+        const ctx = getContext();
+        ctx.font = font || DEFAULT_FONT;
+        return ctx.measureText(text);
+    }
+};
 
-export function $override(name, fn) {
+interface TextBoundingRect extends BoundingRect {
+    lineHeight: number
+}
+
+export function $override(
+    name: keyof typeof methods,
+    fn: PropType<typeof methods, keyof typeof methods>
+) {
     methods[name] = fn;
 }
 
-/**
- * @public
- * @param {string} text
- * @param {string} font
- * @return {number} width
- */
-export function getWidth(text, font) {
+export function getWidth(text: string, font: string): number {
     font = font || DEFAULT_FONT;
-    var key = text + ':' + font;
+    const key = text + ':' + font;
     if (textWidthCache[key]) {
         return textWidthCache[key];
     }
 
-    var textLines = (text + '').split('\n');
-    var width = 0;
+    const textLines = (text + '').split('\n');
+    let width = 0;
 
-    for (var i = 0, l = textLines.length; i < l; i++) {
+    for (let i = 0, l = textLines.length; i < l; i++) {
         // textContain.measureText may be overrided in SVG or VML
         width = Math.max(measureText(textLines[i], font).width, width);
     }
@@ -54,42 +64,58 @@ export function getWidth(text, font) {
     return width;
 }
 
-/**
- * @public
- * @param {string} text
- * @param {string} font
- * @param {string} [textAlign='left']
- * @param {string} [textVerticalAlign='top']
- * @param {Array.<number>} [textPadding]
- * @param {Object} [rich]
- * @param {Object} [truncate]
- * @return {Object} {x, y, width, height, lineHeight}
- */
-export function getBoundingRect(text, font, textAlign, textVerticalAlign, textPadding, textLineHeight, rich, truncate) {
+export function getBoundingRect(
+    text: string,
+    font: string,
+    textAlign: TextAlign,
+    textVerticalAlign: TextVerticalAlign,
+    textPadding: number[],
+    textLineHeight: number,
+    rich: PropType<Style, 'rich'>,
+    truncate: PropType<Style, 'truncate'>
+) {
     return rich
         ? getRichTextRect(text, font, textAlign, textVerticalAlign, textPadding, textLineHeight, rich, truncate)
         : getPlainTextRect(text, font, textAlign, textVerticalAlign, textPadding, textLineHeight, truncate);
 }
 
-function getPlainTextRect(text, font, textAlign, textVerticalAlign, textPadding, textLineHeight, truncate) {
-    var contentBlock = parsePlainText(text, font, textPadding, textLineHeight, truncate);
-    var outerWidth = getWidth(text, font);
+function getPlainTextRect(
+    text: string,
+    font: string,
+    textAlign: TextAlign,
+    textVerticalAlign: TextVerticalAlign,
+    // TODO textPadding should be number | number[] ?
+    textPadding: number[],
+    textLineHeight: number,
+    truncate: PropType<Style, 'truncate'>
+): TextBoundingRect {
+    const contentBlock = parsePlainText(text, font, textPadding, textLineHeight, truncate);
+    let outerWidth = getWidth(text, font);
     if (textPadding) {
         outerWidth += textPadding[1] + textPadding[3];
     }
-    var outerHeight = contentBlock.outerHeight;
+    const outerHeight = contentBlock.outerHeight;
 
-    var x = adjustTextX(0, outerWidth, textAlign);
-    var y = adjustTextY(0, outerHeight, textVerticalAlign);
+    const x = adjustTextX(0, outerWidth, textAlign);
+    const y = adjustTextY(0, outerHeight, textVerticalAlign);
 
-    var rect = new BoundingRect(x, y, outerWidth, outerHeight);
+    const rect = new BoundingRect(x, y, outerWidth, outerHeight) as TextBoundingRect;
     rect.lineHeight = contentBlock.lineHeight;
 
     return rect;
 }
 
-function getRichTextRect(text, font, textAlign, textVerticalAlign, textPadding, textLineHeight, rich, truncate) {
-    var contentBlock = parseRichText(text, {
+function getRichTextRect(
+    text: string,
+    font: string,
+    textAlign: TextAlign,
+    textVerticalAlign: TextVerticalAlign,
+    textPadding: number[],
+    textLineHeight: number,
+    rich: PropType<Style, 'rich'>,
+    truncate: PropType<Style, 'truncate'>
+) {
+    const contentBlock = parseRichText(text, {
         rich: rich,
         truncate: truncate,
         font: font,
@@ -97,23 +123,16 @@ function getRichTextRect(text, font, textAlign, textVerticalAlign, textPadding, 
         textPadding: textPadding,
         textLineHeight: textLineHeight
     });
-    var outerWidth = contentBlock.outerWidth;
-    var outerHeight = contentBlock.outerHeight;
+    const outerWidth = contentBlock.outerWidth;
+    const outerHeight = contentBlock.outerHeight;
 
-    var x = adjustTextX(0, outerWidth, textAlign);
-    var y = adjustTextY(0, outerHeight, textVerticalAlign);
+    const x = adjustTextX(0, outerWidth, textAlign);
+    const y = adjustTextY(0, outerHeight, textVerticalAlign);
 
     return new BoundingRect(x, y, outerWidth, outerHeight);
 }
 
-/**
- * @public
- * @param {number} x
- * @param {number} width
- * @param {string} [textAlign='left']
- * @return {number} Adjusted x.
- */
-export function adjustTextX(x, width, textAlign) {
+export function adjustTextX(x: number, width: number, textAlign: TextAlign): number {
     // FIXME Right to left language
     if (textAlign === 'right') {
         x -= width;
@@ -124,14 +143,7 @@ export function adjustTextX(x, width, textAlign) {
     return x;
 }
 
-/**
- * @public
- * @param {number} y
- * @param {number} height
- * @param {string} [textVerticalAlign='top']
- * @return {number} Adjusted y.
- */
-export function adjustTextY(y, height, textVerticalAlign) {
+export function adjustTextY(y: number, height: number, textVerticalAlign: TextVerticalAlign): number {
     if (textVerticalAlign === 'middle') {
         y -= height / 2;
     }
@@ -141,28 +153,38 @@ export function adjustTextY(y, height, textVerticalAlign) {
     return y;
 }
 
+class TextPositionCalculationResult {
+    x: number
+    y: number
+    textAlign: TextAlign
+    textVerticalAlign: TextVerticalAlign
+}
 /**
  * Follow same interface to `Displayable.prototype.calculateTextPosition`.
  * @public
- * @param {Obejct} [out] Prepared out object. If not input, auto created in the method.
- * @param {module:zrender/graphic/Style} style where `textPosition` and `textDistance` are visited.
- * @param {Object} rect {x, y, width, height} Rect of the host elment, according to which the text positioned.
- * @return {Object} The input `out`. Set: {x, y, textAlign, textVerticalAlign}
+ * @param out Prepared out object. If not input, auto created in the method.
+ * @param style where `textPosition` and `textDistance` are visited.
+ * @param rect {x, y, width, height} Rect of the host elment, according to which the text positioned.
+ * @return The input `out`. Set: {x, y, textAlign, textVerticalAlign}
  */
-export function calculateTextPosition(out, style, rect) {
-    var textPosition = style.textPosition;
-    var distance = style.textDistance;
+export function calculateTextPosition(
+    out: TextPositionCalculationResult,
+    style: StyleOption,
+    rect: RectLike
+): TextPositionCalculationResult {
+    const textPosition = style.textPosition;
+    let distance = style.textDistance;
 
-    var x = rect.x;
-    var y = rect.y;
+    const height = rect.height;
+    const width = rect.width;
+    const halfHeight = height / 2;
+
+    let x = rect.x;
+    let y = rect.y;
     distance = distance || 0;
 
-    var height = rect.height;
-    var width = rect.width;
-    var halfHeight = height / 2;
-
-    var textAlign = 'left';
-    var textVerticalAlign = 'top';
+    let textAlign: TextAlign= 'left';
+    let textVerticalAlign: TextVerticalAlign = 'top';
 
     switch (textPosition) {
         case 'left':
@@ -237,7 +259,7 @@ export function calculateTextPosition(out, style, rect) {
             break;
     }
 
-    out = out || {};
+    out = out || {} as TextPositionCalculationResult;
     out.x = x;
     out.y = y;
     out.textAlign = textAlign;
@@ -249,73 +271,98 @@ export function calculateTextPosition(out, style, rect) {
 /**
  * To be removed. But still do not remove in case that some one has imported it.
  * @deprecated
- * @public
- * @param {stirng} textPosition
- * @param {Object} rect {x, y, width, height}
- * @param {number} distance
- * @return {Object} {x, y, textAlign, textVerticalAlign}
  */
-export function adjustTextPositionOnRect(textPosition, rect, distance) {
-    var dummyStyle = {textPosition: textPosition, textDistance: distance};
-    return calculateTextPosition({}, dummyStyle, rect);
+export function adjustTextPositionOnRect(
+    textPosition: string | number[],
+    rect: RectLike,
+    distance: number
+): TextPositionCalculationResult {
+    const dummyStyle = {textPosition: textPosition, textDistance: distance};
+    return calculateTextPosition(
+        new TextPositionCalculationResult(),
+        dummyStyle,
+        rect
+    );
+}
+
+interface InnerTruncateOption {
+    maxIteration?: number
+    // If truncate result are less than minChar, ellipsis will not show
+    // which is better for user hint in some cases
+    minChar?: number
+    // When all truncated, use the placeholder
+    placeholder?: string
+
+    maxIterations?: number
+
+}
+
+interface InnerPreparedTruncateOption extends Required<InnerTruncateOption> {
+    font: string
+
+    ellipsis: string
+    ellipsisWidth: number
+    contentWidth: number
+
+    containerWidth: number
+    cnCharWidth: number
+    ascCharWidth: number
 }
 
 /**
  * Show ellipsis if overflow.
- *
- * @public
- * @param  {string} text
- * @param  {string} containerWidth
- * @param  {string} font
- * @param  {number} [ellipsis='...']
- * @param  {Object} [options]
- * @param  {number} [options.maxIterations=3]
- * @param  {number} [options.minChar=0] If truncate result are less
- *                  then minChar, ellipsis will not show, which is
- *                  better for user hint in some cases.
- * @param  {number} [options.placeholder=''] When all truncated, use the placeholder.
- * @return {string}
  */
-export function truncateText(text, containerWidth, font, ellipsis, options) {
+export function truncateText(
+    text: string,
+    containerWidth: number,
+    font: string,
+    ellipsis: string,
+    options: InnerTruncateOption
+): string {
     if (!containerWidth) {
         return '';
     }
 
-    var textLines = (text + '').split('\n');
+    const textLines = (text + '').split('\n');
     options = prepareTruncateOptions(containerWidth, font, ellipsis, options);
 
     // FIXME
     // It is not appropriate that every line has '...' when truncate multiple lines.
-    for (var i = 0, len = textLines.length; i < len; i++) {
-        textLines[i] = truncateSingleLine(textLines[i], options);
+    for (let i = 0, len = textLines.length; i < len; i++) {
+        textLines[i] = truncateSingleLine(textLines[i], options as InnerPreparedTruncateOption);
     }
 
     return textLines.join('\n');
 }
 
-function prepareTruncateOptions(containerWidth, font, ellipsis, options) {
-    options = extend({}, options);
+function prepareTruncateOptions(
+    containerWidth: number,
+    font: string,
+    ellipsis: string,
+    options: InnerTruncateOption
+): InnerPreparedTruncateOption {
+    let preparedOpts = extend({}, options) as InnerPreparedTruncateOption;
 
-    options.font = font;
-    var ellipsis = retrieve2(ellipsis, '...');
-    options.maxIterations = retrieve2(options.maxIterations, 2);
-    var minChar = options.minChar = retrieve2(options.minChar, 0);
+    preparedOpts.font = font;
+    ellipsis = retrieve2(ellipsis, '...');
+    preparedOpts.maxIterations = retrieve2(options.maxIterations, 2);
+    const minChar = preparedOpts.minChar = retrieve2(options.minChar, 0);
     // FIXME
     // Other languages?
-    options.cnCharWidth = getWidth('国', font);
+    preparedOpts.cnCharWidth = getWidth('国', font);
     // FIXME
     // Consider proportional font?
-    var ascCharWidth = options.ascCharWidth = getWidth('a', font);
-    options.placeholder = retrieve2(options.placeholder, '');
+    const ascCharWidth = preparedOpts.ascCharWidth = getWidth('a', font);
+    preparedOpts.placeholder = retrieve2(options.placeholder, '');
 
     // Example 1: minChar: 3, text: 'asdfzxcv', truncate result: 'asdf', but not: 'a...'.
     // Example 2: minChar: 3, text: '维度', truncate result: '维', but not: '...'.
-    var contentWidth = containerWidth = Math.max(0, containerWidth - 1); // Reserve some gap.
-    for (var i = 0; i < minChar && contentWidth >= ascCharWidth; i++) {
+    let contentWidth = containerWidth = Math.max(0, containerWidth - 1); // Reserve some gap.
+    for (let i = 0; i < minChar && contentWidth >= ascCharWidth; i++) {
         contentWidth -= ascCharWidth;
     }
 
-    var ellipsisWidth = getWidth(ellipsis, font);
+    let ellipsisWidth = getWidth(ellipsis, font);
     if (ellipsisWidth > contentWidth) {
         ellipsis = '';
         ellipsisWidth = 0;
@@ -323,36 +370,36 @@ function prepareTruncateOptions(containerWidth, font, ellipsis, options) {
 
     contentWidth = containerWidth - ellipsisWidth;
 
-    options.ellipsis = ellipsis;
-    options.ellipsisWidth = ellipsisWidth;
-    options.contentWidth = contentWidth;
-    options.containerWidth = containerWidth;
+    preparedOpts.ellipsis = ellipsis;
+    preparedOpts.ellipsisWidth = ellipsisWidth;
+    preparedOpts.contentWidth = contentWidth;
+    preparedOpts.containerWidth = containerWidth;
 
-    return options;
+    return preparedOpts;
 }
 
-function truncateSingleLine(textLine, options) {
-    var containerWidth = options.containerWidth;
-    var font = options.font;
-    var contentWidth = options.contentWidth;
+function truncateSingleLine(textLine: string, options: InnerPreparedTruncateOption): string {
+    const containerWidth = options.containerWidth;
+    const font = options.font;
+    const contentWidth = options.contentWidth;
 
     if (!containerWidth) {
         return '';
     }
 
-    var lineWidth = getWidth(textLine, font);
+    let lineWidth = getWidth(textLine, font);
 
     if (lineWidth <= containerWidth) {
         return textLine;
     }
 
-    for (var j = 0; ; j++) {
+    for (let j = 0; ; j++) {
         if (lineWidth <= contentWidth || j >= options.maxIterations) {
             textLine += options.ellipsis;
             break;
         }
 
-        var subLength = j === 0
+        const subLength = j === 0
             ? estimateLength(textLine, contentWidth, options.ascCharWidth, options.cnCharWidth)
             : lineWidth > 0
             ? Math.floor(textLine.length * contentWidth / lineWidth)
@@ -369,62 +416,58 @@ function truncateSingleLine(textLine, options) {
     return textLine;
 }
 
-function estimateLength(text, contentWidth, ascCharWidth, cnCharWidth) {
-    var width = 0;
-    var i = 0;
-    for (var len = text.length; i < len && width < contentWidth; i++) {
-        var charCode = text.charCodeAt(i);
+function estimateLength(
+    text: string, contentWidth: number, ascCharWidth: number, cnCharWidth: number
+): number {
+    let width = 0;
+    let i = 0;
+    for (let len = text.length; i < len && width < contentWidth; i++) {
+        const charCode = text.charCodeAt(i);
         width += (0 <= charCode && charCode <= 127) ? ascCharWidth : cnCharWidth;
     }
     return i;
 }
 
-/**
- * @public
- * @param {string} font
- * @return {number} line height
- */
-export function getLineHeight(font) {
+export function getLineHeight(font?: string): number {
     // FIXME A rough approach.
     return getWidth('国', font);
 }
 
-/**
- * @public
- * @param {string} text
- * @param {string} font
- * @return {Object} width
- */
-export function measureText(text, font) {
+export function measureText(text: string, font?: string): {
+    width: number
+} {
     return methods.measureText(text, font);
 }
 
-// Avoid assign to an exported variable, for transforming to cjs.
-methods.measureText = function (text, font) {
-    var ctx = getContext();
-    ctx.font = font || DEFAULT_FONT;
-    return ctx.measureText(text);
-};
-
 /**
- * @public
- * @param {string} text
- * @param {string} font
- * @param {Object} [truncate]
- * @return {Object} block: {lineHeight, lines, height, outerHeight, canCacheByTextString}
- *  Notice: for performance, do not calculate outerWidth util needed.
+ * Notice: for performance, do not calculate outerWidth util needed.
  *  `canCacheByTextString` means the result `lines` is only determined by the input `text`.
  *  Thus we can simply comparing the `input` text to determin whether the result changed,
  *  without travel the result `lines`.
  */
-export function parsePlainText(text, font, padding, textLineHeight, truncate) {
+export interface PlainTextContentBlock {
+    lineHeight: number
+    height: number
+    outerHeight: number
+    canCacheByTextString: boolean
+
+    lines: string[]
+}
+
+export function parsePlainText(
+    text: string,
+    font: string,
+    padding: number[],
+    textLineHeight: number,
+    truncate: PropType<Style, 'truncate'>
+): PlainTextContentBlock {
     text != null && (text += '');
 
-    var lineHeight = retrieve2(textLineHeight, getLineHeight(font));
-    var lines = text ? text.split('\n') : [];
-    var height = lines.length * lineHeight;
-    var outerHeight = height;
-    var canCacheByTextString = true;
+    const lineHeight = retrieve2(textLineHeight, getLineHeight(font));
+    let lines = text ? text.split('\n') : [];
+    let height = lines.length * lineHeight;
+    let outerHeight = height;
+    let canCacheByTextString = true;
 
     if (padding) {
         outerHeight += padding[0] + padding[2];
@@ -432,23 +475,26 @@ export function parsePlainText(text, font, padding, textLineHeight, truncate) {
 
     if (text && truncate) {
         canCacheByTextString = false;
-        var truncOuterHeight = truncate.outerHeight;
-        var truncOuterWidth = truncate.outerWidth;
+        const truncOuterHeight = truncate.outerHeight;
+        const truncOuterWidth = truncate.outerWidth;
         if (truncOuterHeight != null && outerHeight > truncOuterHeight) {
             text = '';
             lines = [];
         }
         else if (truncOuterWidth != null) {
-            var options = prepareTruncateOptions(
+            const options = prepareTruncateOptions(
                 truncOuterWidth - (padding ? padding[1] + padding[3] : 0),
                 font,
                 truncate.ellipsis,
-                {minChar: truncate.minChar, placeholder: truncate.placeholder}
+                {
+                    minChar: truncate.minChar,
+                    placeholder: truncate.placeholder
+                }
             );
 
             // FIXME
             // It is not appropriate that every line has '...' when truncate multiple lines.
-            for (var i = 0, len = lines.length; i < len; i++) {
+            for (let i = 0, len = lines.length; i < len; i++) {
                 lines[i] = truncateSingleLine(lines[i], options);
             }
         }
@@ -463,48 +509,60 @@ export function parsePlainText(text, font, padding, textLineHeight, truncate) {
     };
 }
 
+class RichTextToken {
+    styleName: string
+    text: string
+    width: number
+    height: number
+    textWidth: number | string
+    textHeight: number
+    lineHeight: number
+    font: string
+    textAlign: TextAlign
+    textVerticalAlign: TextVerticalAlign
+
+    textPadding: number[]
+    percentWidth?: string
+
+    isLineHolder: boolean
+}
+class RichTextLine {
+    lineHeight: number
+    width: number
+    tokens: RichTextToken[] = []
+
+    constructor(tokens?: RichTextToken[]) {
+        if (tokens) {
+            this.tokens = tokens;
+        }
+    }
+}
+export class RichTextContentBlock {
+    // width/height of content
+    width: number = 0
+    height: number = 0
+    // outerWidth/outerHeight with padding
+    outerWidth: number = 0
+    outerHeight: number = 0
+    lines: RichTextLine[] = []
+}
 /**
  * For example: 'some text {a|some text}other text{b|some text}xxx{c|}xxx'
  * Also consider 'bbbb{a|xxx\nzzz}xxxx\naaaa'.
- *
- * @public
- * @param {string} text
- * @param {Object} style
- * @return {Object} block
- * {
- *      width,
- *      height,
- *      lines: [{
- *          lineHeight,
- *          width,
- *          tokens: [[{
- *              styleName,
- *              text,
- *              width,      // include textPadding
- *              height,     // include textPadding
- *              textWidth, // pure text width
- *              textHeight, // pure text height
- *              lineHeihgt,
- *              font,
- *              textAlign,
- *              textVerticalAlign
- *          }], [...], ...]
- *      }, ...]
- * }
  * If styleName is undefined, it is plain text.
  */
-export function parseRichText(text, style) {
-    var contentBlock = {lines: [], width: 0, height: 0};
+export function parseRichText(text: string, style: StyleOption) {
+    const contentBlock = new RichTextContentBlock();
 
     text != null && (text += '');
     if (!text) {
         return contentBlock;
     }
 
-    var lastIndex = STYLE_REG.lastIndex = 0;
-    var result;
+    let lastIndex = STYLE_REG.lastIndex = 0;
+    let result;
     while ((result = STYLE_REG.exec(text)) != null) {
-        var matchedIndex = result.index;
+        const matchedIndex = result.index;
         if (matchedIndex > lastIndex) {
             pushTokens(contentBlock, text.substring(lastIndex, matchedIndex));
         }
@@ -516,43 +574,43 @@ export function parseRichText(text, style) {
         pushTokens(contentBlock, text.substring(lastIndex, text.length));
     }
 
-    var lines = contentBlock.lines;
-    var contentHeight = 0;
-    var contentWidth = 0;
+    const lines = contentBlock.lines;
+    let contentHeight = 0;
+    let contentWidth = 0;
     // For `textWidth: 100%`
-    var pendingList = [];
+    let pendingList = [];
 
-    var stlPadding = style.textPadding;
+    const stlPadding = style.textPadding as number[];
 
-    var truncate = style.truncate;
-    var truncateWidth = truncate && truncate.outerWidth;
-    var truncateHeight = truncate && truncate.outerHeight;
+    const truncate = style.truncate;
+    let truncateWidth = truncate && truncate.outerWidth;
+    let truncateHeight = truncate && truncate.outerHeight;
     if (stlPadding) {
         truncateWidth != null && (truncateWidth -= stlPadding[1] + stlPadding[3]);
         truncateHeight != null && (truncateHeight -= stlPadding[0] + stlPadding[2]);
     }
 
     // Calculate layout info of tokens.
-    for (var i = 0; i < lines.length; i++) {
-        var line = lines[i];
-        var lineHeight = 0;
-        var lineWidth = 0;
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        let lineHeight = 0;
+        let lineWidth = 0;
 
-        for (var j = 0; j < line.tokens.length; j++) {
-            var token = line.tokens[j];
-            var tokenStyle = token.styleName && style.rich[token.styleName] || {};
+        for (let j = 0; j < line.tokens.length; j++) {
+            const token = line.tokens[j];
+            const tokenStyle = token.styleName && style.rich[token.styleName] || {};
             // textPadding should not inherit from style.
-            var textPadding = token.textPadding = tokenStyle.textPadding;
+            const textPadding = token.textPadding = tokenStyle.textPadding as number[];
 
             // textFont has been asigned to font by `normalizeStyle`.
-            var font = token.font = tokenStyle.font || style.font;
+            const font = token.font = tokenStyle.font || style.font;
 
             // textHeight can be used when textVerticalAlign is specified in token.
-            var tokenHeight = token.textHeight = retrieve2(
+            let tokenHeight = token.textHeight = retrieve2(
                 // textHeight should not be inherited, consider it can be specified
                 // as box height of the block.
                 tokenStyle.textHeight, getLineHeight(font)
-            );
+            ) ;
             textPadding && (tokenHeight += textPadding[0] + textPadding[2]);
             token.height = tokenHeight;
             token.lineHeight = retrieve3(
@@ -563,12 +621,12 @@ export function parseRichText(text, style) {
             token.textVerticalAlign = tokenStyle && tokenStyle.textVerticalAlign || 'middle';
 
             if (truncateHeight != null && contentHeight + token.lineHeight > truncateHeight) {
-                return {lines: [], width: 0, height: 0};
+                return new RichTextContentBlock();
             }
 
             token.textWidth = getWidth(token.text, font);
-            var tokenWidth = tokenStyle.textWidth;
-            var tokenWidthNotSpecified = tokenWidth == null || tokenWidth === 'auto';
+            let tokenWidth = tokenStyle.textWidth;
+            let tokenWidthNotSpecified = tokenWidth == null || tokenWidth === 'auto';
 
             // Percent width, can be `100%`, can be used in drawing separate
             // line when box width is needed to be auto.
@@ -585,8 +643,8 @@ export function parseRichText(text, style) {
 
                     // FIXME: If image is not loaded and textWidth is not specified, calling
                     // `getBoundingRect()` will not get correct result.
-                    var textBackgroundColor = tokenStyle.textBackgroundColor;
-                    var bgImg = textBackgroundColor && textBackgroundColor.image;
+                    const textBackgroundColor = tokenStyle.textBackgroundColor;
+                    let bgImg = textBackgroundColor && (textBackgroundColor as { image: ImageLike }).image;
 
                     // Use cases:
                     // (1) If image is not loaded, it will be loaded at render phase and call
@@ -606,10 +664,10 @@ export function parseRichText(text, style) {
                     }
                 }
 
-                var paddingW = textPadding ? textPadding[1] + textPadding[3] : 0;
-                tokenWidth += paddingW;
+                const paddingW = textPadding ? textPadding[1] + textPadding[3] : 0;
+                (tokenWidth as number) += paddingW;
 
-                var remianTruncWidth = truncateWidth != null ? truncateWidth - lineWidth : null;
+                const remianTruncWidth = truncateWidth != null ? truncateWidth - lineWidth : null;
 
                 if (remianTruncWidth != null && remianTruncWidth < tokenWidth) {
                     if (!tokenWidthNotSpecified || remianTruncWidth < paddingW) {
@@ -627,7 +685,7 @@ export function parseRichText(text, style) {
                 }
             }
 
-            lineWidth += (token.width = tokenWidth);
+            lineWidth += (token.width = tokenWidth as number);
             tokenStyle && (lineHeight = Math.max(lineHeight, token.lineHeight));
         }
 
@@ -637,17 +695,17 @@ export function parseRichText(text, style) {
         contentWidth = Math.max(contentWidth, lineWidth);
     }
 
-    contentBlock.outerWidth = contentBlock.width = retrieve2(style.textWidth, contentWidth);
-    contentBlock.outerHeight = contentBlock.height = retrieve2(style.textHeight, contentHeight);
+    contentBlock.outerWidth = contentBlock.width = retrieve2(style.textWidth as number, contentWidth);
+    contentBlock.outerHeight = contentBlock.height = retrieve2(style.textHeight as number, contentHeight);
 
     if (stlPadding) {
         contentBlock.outerWidth += stlPadding[1] + stlPadding[3];
         contentBlock.outerHeight += stlPadding[0] + stlPadding[2];
     }
 
-    for (var i = 0; i < pendingList.length; i++) {
-        var token = pendingList[i];
-        var percentWidth = token.percentWidth;
+    for (let i = 0; i < pendingList.length; i++) {
+        const token = pendingList[i];
+        const percentWidth = token.percentWidth;
         // Should not base on outerWidth, because token can not be placed out of padding.
         token.width = parseInt(percentWidth, 10) / 100 * contentWidth;
     }
@@ -655,22 +713,21 @@ export function parseRichText(text, style) {
     return contentBlock;
 }
 
-function pushTokens(block, str, styleName) {
-    var isEmptyStr = str === '';
-    var strs = str.split('\n');
-    var lines = block.lines;
+function pushTokens(block: RichTextContentBlock, str: string, styleName?: string) {
+    const isEmptyStr = str === '';
+    const strs = str.split('\n');
+    const lines = block.lines;
 
-    for (var i = 0; i < strs.length; i++) {
-        var text = strs[i];
-        var token = {
-            styleName: styleName,
-            text: text,
-            isLineHolder: !text && !isEmptyStr
-        };
+    for (let i = 0; i < strs.length; i++) {
+        const text = strs[i];
+        const token = new RichTextToken()
+        token.styleName = styleName;
+        token.text = text;
+        token.isLineHolder = !text && !isEmptyStr
 
         // The first token should be appended to the last line.
         if (!i) {
-            var tokens = (lines[lines.length - 1] || (lines[0] = {tokens: []})).tokens;
+            const tokens = (lines[lines.length - 1] || (lines[0] = new RichTextLine())).tokens;
 
             // Consider cases:
             // (1) ''.split('\n') => ['', '\n', ''], the '' at the first item
@@ -679,7 +736,7 @@ function pushTokens(block, str, styleName) {
             // (3) A redundant '' will affect textAlign in line.
             // (4) tokens with the same tplName should not be merged, because
             // they should be displayed in different box (with border and padding).
-            var tokensLen = tokens.length;
+            const tokensLen = tokens.length;
             (tokensLen === 1 && tokens[0].isLineHolder)
                 ? (tokens[0] = token)
                 // Consider text is '', only insert when it is the "lineHolder" or
@@ -689,15 +746,15 @@ function pushTokens(block, str, styleName) {
         // Other tokens always start a new line.
         else {
             // If there is '', insert it as a placeholder.
-            lines.push({tokens: [token]});
+            lines.push(new RichTextLine([token]))
         }
     }
 }
 
-export function makeFont(style) {
+export function makeFont(style: StyleOption): string {
     // FIXME in node-canvas fontWeight is before fontStyle
     // Use `fontSize` `fontFamily` to check whether font properties are defined.
-    var font = (style.fontSize || style.fontFamily) && [
+    const font = (style.fontSize || style.fontFamily) && [
         style.fontStyle,
         style.fontWeight,
         (style.fontSize || 12) + 'px',

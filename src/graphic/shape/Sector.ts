@@ -5,12 +5,23 @@
 
 import Path from '../Path';
 import fixClipWithShadow from '../helper/fixClipWithShadow';
+import PathProxy from '../../core/PathProxy';
 
-export default Path.extend({
+interface SectorShape {
+    cx: number
+    cy: number
+    r0: number
+    r: number
+    startAngle: number
+    endAngle: number
+    clockwise: boolean
+}
 
-    type: 'sector',
+export default class Sector extends Path {
 
-    shape: {
+    type = 'sector'
+
+    shape: SectorShape = {
 
         cx: 0,
 
@@ -25,22 +36,22 @@ export default Path.extend({
         endAngle: Math.PI * 2,
 
         clockwise: true
-    },
+    }
 
-    brush: fixClipWithShadow(Path.prototype.brush),
+    brush = fixClipWithShadow(Path.prototype.brush)
 
-    buildPath: function (ctx, shape) {
+    buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: SectorShape) {
 
-        var x = shape.cx;
-        var y = shape.cy;
-        var r0 = Math.max(shape.r0 || 0, 0);
-        var r = Math.max(shape.r, 0);
-        var startAngle = shape.startAngle;
-        var endAngle = shape.endAngle;
-        var clockwise = shape.clockwise;
+        const x = shape.cx;
+        const y = shape.cy;
+        const r0 = Math.max(shape.r0 || 0, 0);
+        const r = Math.max(shape.r, 0);
+        const startAngle = shape.startAngle;
+        const endAngle = shape.endAngle;
+        const clockwise = shape.clockwise;
 
-        var unitX = Math.cos(startAngle);
-        var unitY = Math.sin(startAngle);
+        const unitX = Math.cos(startAngle);
+        const unitY = Math.sin(startAngle);
 
         ctx.moveTo(unitX * r0 + x, unitY * r0 + y);
 
@@ -59,4 +70,4 @@ export default Path.extend({
 
         ctx.closePath();
     }
-});
+}

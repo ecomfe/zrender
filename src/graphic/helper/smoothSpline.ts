@@ -1,51 +1,40 @@
 /**
  * Catmull-Rom spline 插值折线
- * @module zrender/shape/util/smoothSpline
- * @author pissang (https://www.github.com/pissang)
- *         Kener (@Kener-林峰, kener.linfeng@gmail.com)
- *         errorrik (errorrik@gmail.com)
  */
 
-import {distance as v2Distance} from '../../core/vector';
+import {distance as v2Distance, VectorArray} from '../../core/vector';
 
-/**
- * @inner
- */
-function interpolate(p0, p1, p2, p3, t, t2, t3) {
-    var v0 = (p2 - p0) * 0.5;
-    var v1 = (p3 - p1) * 0.5;
+function interpolate(
+    p0: number, p1: number, p2: number, p3: number, t: number, t2: number, t3: number
+) {
+    const v0 = (p2 - p0) * 0.5;
+    const v1 = (p3 - p1) * 0.5;
     return (2 * (p1 - p2) + v0 + v1) * t3
             + (-3 * (p1 - p2) - 2 * v0 - v1) * t2
             + v0 * t + p1;
 }
 
-/**
- * @alias module:zrender/shape/util/smoothSpline
- * @param {Array} points 线段顶点数组
- * @param {boolean} isLoop
- * @return {Array}
- */
-export default function (points, isLoop) {
-    var len = points.length;
-    var ret = [];
+export default function (points: VectorArray[], isLoop?: boolean): VectorArray[] {
+    const len = points.length;
+    const ret = [];
 
-    var distance = 0;
-    for (var i = 1; i < len; i++) {
+    let distance = 0;
+    for (let i = 1; i < len; i++) {
         distance += v2Distance(points[i - 1], points[i]);
     }
 
-    var segs = distance / 2;
+    let segs = distance / 2;
     segs = segs < len ? len : segs;
-    for (var i = 0; i < segs; i++) {
-        var pos = i / (segs - 1) * (isLoop ? len : len - 1);
-        var idx = Math.floor(pos);
+    for (let i = 0; i < segs; i++) {
+        const pos = i / (segs - 1) * (isLoop ? len : len - 1);
+        const idx = Math.floor(pos);
 
-        var w = pos - idx;
+        const w = pos - idx;
 
-        var p0;
-        var p1 = points[idx % len];
-        var p2;
-        var p3;
+        let p0;
+        let p1 = points[idx % len];
+        let p2;
+        let p3;
         if (!isLoop) {
             p0 = points[idx === 0 ? idx : idx - 1];
             p2 = points[idx > len - 2 ? len - 1 : idx + 1];
@@ -57,8 +46,8 @@ export default function (points, isLoop) {
             p3 = points[(idx + 2) % len];
         }
 
-        var w2 = w * w;
-        var w3 = w * w2;
+        const w2 = w * w;
+        const w3 = w * w2;
 
         ret.push([
             interpolate(p0[0], p1[0], p2[0], p3[0], w, w2, w3),

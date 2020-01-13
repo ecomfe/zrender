@@ -3,109 +3,118 @@
  */
 
 import * as eventUtil from './event';
+import Element from '../Element';
+import { ZRRawTouchEvent, ZRPinchEvent } from './types';
+import Displayable from '../graphic/Displayable';
 
-var GestureMgr = function () {
+interface TrackItem {
+    points: number[][]
+    touches: Touch[]
+    target: Displayable,
+    event: ZRRawTouchEvent
+}
 
-    /**
-     * @private
-     * @type {Array.<Object>}
-     */
-    this._track = [];
-};
+export class GestureMgr {
 
-GestureMgr.prototype = {
+    private _track: TrackItem[] = []
 
-    constructor: GestureMgr,
+    constructor() {}
 
-    recognize: function (event, target, root) {
+    recognize(event: ZRRawTouchEvent, target: Displayable, root: HTMLElement) {
         this._doTrack(event, target, root);
         return this._recognize(event);
-    },
+    }
 
-    clear: function () {
+    clear() {
         this._track.length = 0;
         return this;
-    },
+    }
 
-    _doTrack: function (event, target, root) {
-        var touches = event.touches;
+    _doTrack(event: ZRRawTouchEvent, target: Displayable, root: HTMLElement) {
+        const touches = event.touches;
 
         if (!touches) {
             return;
         }
 
-        var trackItem = {
+        const trackItem: TrackItem = {
             points: [],
             touches: [],
             target: target,
             event: event
         };
 
-        for (var i = 0, len = touches.length; i < len; i++) {
-            var touch = touches[i];
-            var pos = eventUtil.clientToLocal(root, touch, {});
+        for (let i = 0, len = touches.length; i < len; i++) {
+            const touch = touches[i];
+            const pos = eventUtil.clientToLocal(root, touch, {});
             trackItem.points.push([pos.zrX, pos.zrY]);
             trackItem.touches.push(touch);
         }
 
         this._track.push(trackItem);
-    },
+    }
 
-    _recognize: function (event) {
-        for (var eventName in recognizers) {
+    _recognize(event: ZRRawTouchEvent) {
+        for (let eventName in recognizers) {
             if (recognizers.hasOwnProperty(eventName)) {
-                var gestureInfo = recognizers[eventName](this._track, event);
+                const gestureInfo = recognizers[eventName](this._track, event);
                 if (gestureInfo) {
                     return gestureInfo;
                 }
             }
         }
     }
-};
+}
 
-function dist(pointPair) {
-    var dx = pointPair[1][0] - pointPair[0][0];
-    var dy = pointPair[1][1] - pointPair[0][1];
+function dist(pointPair: number[][]): number {
+    const dx = pointPair[1][0] - pointPair[0][0];
+    const dy = pointPair[1][1] - pointPair[0][1];
 
     return Math.sqrt(dx * dx + dy * dy);
 }
 
-function center(pointPair) {
+function center(pointPair: number[][]): number[] {
     return [
         (pointPair[0][0] + pointPair[1][0]) / 2,
         (pointPair[0][1] + pointPair[1][1]) / 2
     ];
 }
 
-var recognizers = {
+type Recognizer = (tracks: TrackItem[], event: ZRRawTouchEvent) => {
+    type: string
+    target: Displayable
+    event: ZRRawTouchEvent
+}
 
-    pinch: function (track, event) {
-        var trackLen = track.length;
+var recognizers: {[key: string]: Recognizer} = {
+
+    pinch: function (tracks: TrackItem[], event: ZRRawTouchEvent) {
+        const trackLen = tracks.length;
 
         if (!trackLen) {
             return;
         }
 
-        var pinchEnd = (track[trackLen - 1] || {}).points;
-        var pinchPre = (track[trackLen - 2] || {}).points || pinchEnd;
+        const pinchEnd = (tracks[trackLen - 1] || {}).points;
+        const pinchPre = (tracks[trackLen - 2] || {}).points || pinchEnd;
 
         if (pinchPre
             && pinchPre.length > 1
             && pinchEnd
             && pinchEnd.length > 1
         ) {
-            var pinchScale = dist(pinchEnd) / dist(pinchPre);
+            let pinchScale = dist(pinchEnd) / dist(pinchPre);
             !isFinite(pinchScale) && (pinchScale = 1);
 
-            event.pinchScale = pinchScale;
+            (event as ZRPinchEvent).pinchScale = pinchScale;
 
-            var pinchCenter = center(pinchEnd);
-            event.pinchX = pinchCenter[0];
-            event.pinchY = pinchCenter[1];
+            const pinchCenter = center(pinchEnd);
+            (event as ZRPinchEvent).pinchX = pinchCenter[0];
+            (event as ZRPinchEvent).pinchY = pinchCenter[1];
 
             return {
                 type: 'pinch',
-                target: track[0].target,
+                target: tracks[0].target,
                 event: event
             };
         }
@@ -113,5 +122,3 @@ var recognizers = {
 
     // Only pinch currently.
 };
-
-export default GestureMgr;

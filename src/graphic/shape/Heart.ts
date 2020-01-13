@@ -1,6 +1,5 @@
 /**
  * 心形
- * @module zrender/graphic/shape/Heart
  */
 
 import Path from '../Path';
@@ -17,10 +16,10 @@ export default Path.extend({
     },
 
     buildPath: function (ctx, shape) {
-        var x = shape.cx;
-        var y = shape.cy;
-        var a = shape.width;
-        var b = shape.height;
+        const x = shape.cx;
+        const y = shape.cy;
+        const a = shape.width;
+        const b = shape.height;
         ctx.moveTo(x, y);
         ctx.bezierCurveTo(
             x + a / 2, y - b * 2 / 3,
