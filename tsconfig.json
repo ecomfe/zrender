@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "target": "ES3",
+        "module": "ES2015",
+        "noImplicitAny": true,
+        "strictBindCallApply": true,
+        "removeComments": true,
+        "sourceMap": true
+    },
+    "include": [
+        "src/**/*.ts"
+    ]
+}

@@ -9,6 +9,23 @@ A lightweight canvas library which providing 2d draw for [ECharts](https://githu
 
 [https://ecomfe.github.io/zrender-doc/public/](https://ecomfe.github.io/zrender-doc/public/)
 
+## TODO List
+
+- [ ] Switch to TypeScript
+    - [ ] Add typings
+    - [ ] Generate lib modules
+    - [ ] Be able to run in ECharts
+
+- [ ] Optimize style
+    - [ ] Remove all text attributes.
+    - [ ] Generate hash. Faster diff
+
+- [ ] Add TextGroup
+    - [ ] Auto layout texts
+    - [ ] Rich text support
+
+- [ ] Dirty Rectangle
+
 ## License
 
 BSD 3-Clause License
@@ -40,3 +57,5 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
