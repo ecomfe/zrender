@@ -7,7 +7,7 @@ import Definable from './Definable';
 import * as zrUtil from '../../core/util';
 import * as colorTool from '../../tool/color';
 import Displayable from '../../graphic/Displayable';
-import { GradientObject, Gradient } from '../../graphic/Gradient';
+import { GradientObject } from '../../graphic/Gradient';
 import { LinearGradientObject } from '../../graphic/LinearGradient';
 import { RadialGradientObject } from '../../graphic/RadialGradient';
 

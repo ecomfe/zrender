@@ -19,7 +19,7 @@ import { VectorArray } from '../core/vector';
 import { Dictionary } from '../core/types';
 import { PatternObject } from '../graphic/Pattern';
 import LinearGradient, { LinearGradientObject } from '../graphic/LinearGradient';
-import RadialGradient, { RadialGradientObject } from '../graphic/RadialGradient';
+import { RadialGradientObject } from '../graphic/RadialGradient';
 import { GradientObject } from '../graphic/Gradient';
 
 // Most of the values can be separated by comma and/or white space.

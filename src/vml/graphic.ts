@@ -7,7 +7,6 @@ import BoundingRect from '../core/BoundingRect';
 import * as colorTool from '../tool/color';
 import * as textContain from '../contain/text';
 import * as textHelper from '../graphic/helper/text';
-import RectText from '../graphic/mixin/RectText';
 import Displayable from '../graphic/Displayable';
 import ZImage from '../graphic/Image';
 import Text from '../graphic/Text';

@@ -1,5 +1,5 @@
 import * as zrUtil from '../core/util';
-import {Gradient, GradientColorStop, GradientObject} from './Gradient';
+import Gradient, {GradientColorStop, GradientObject} from './Gradient';
 
 export interface RadialGradientObject extends GradientObject {
     type: 'radial'

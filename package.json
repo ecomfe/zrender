@@ -12,8 +12,10 @@
   },
   "scripts": {
     "prepublish": "npm run build",
-    "build": "node build/build.js && node_modules/.bin/tsc",
-    "dev": "node_modules/.bin/tsc -w"
+    "build": "node build/build.js",
+    "dev": "node_modules/.bin/tsc -w -m ES2015 --outDir esm",
+    "build:cjs": "node_modules/.bin/tsc -m CommonJS --outDir lib",
+    "build:esm": "node_modules/.bin/tsc -m ES2015 --outDir esm"
   },
   "license": "BSD-3-Clause",
   "dependencies": {

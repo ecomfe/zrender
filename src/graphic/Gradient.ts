@@ -15,7 +15,7 @@ export interface GradientColorStop {
     color: string
 }
 
-export class Gradient {
+export default class Gradient {
 
     id?: number
 

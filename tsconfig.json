@@ -1,12 +1,13 @@
 {
     "compilerOptions": {
         "target": "ES3",
-        "module": "CommonJS",
         "noImplicitAny": true,
         "strictBindCallApply": true,
         "removeComments": true,
         "sourceMap": false,
 
+        // https://github.com/ezolenko/rollup-plugin-typescript2/issues/12#issuecomment-536173372
+        "moduleResolution": "Node",
         // "declaration": true,
         // "declarationMap": true,
 
@@ -14,7 +15,6 @@
 
         // Compile to lib
         "rootDir": "src",
-        "outDir": "lib",
 
         "importHelpers": true
     },

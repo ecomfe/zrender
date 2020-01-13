@@ -4,7 +4,7 @@ import * as zrUtil from '../core/util';
 import PathProxy from '../core/PathProxy';
 import * as pathContain from '../contain/path';
 import Pattern, { PatternObject } from './Pattern';
-import { GradientObject, Gradient } from './Gradient';
+import Gradient, { GradientObject } from './Gradient';
 import Style, { StyleOption } from './Style';
 import { LinearGradientObject } from './LinearGradient';
 import { RadialGradientObject } from './RadialGradient';
