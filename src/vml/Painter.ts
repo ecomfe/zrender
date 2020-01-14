@@ -1,10 +1,9 @@
+// @ts-nocheck
 /**
  * VML Painter.
- *
- * @module zrender/vml/Painter
  */
 
-import logError from '../core/log';
+import {logError} from '../core/util';
 import * as vmlCore from './core';
 import {each} from '../core/util';
 

@@ -12,8 +12,6 @@
         "declaration": true,
         "declarationMap": false,
 
-        "allowJs": true,
-
         // Compile to lib
         "rootDir": "src",
 
@@ -23,6 +21,5 @@
         "src/**/*.ts"
     ],
     "exclude": [
-        "src/vml/*.ts"
     ]
 }

@@ -1,5 +1,6 @@
 // http://www.w3.org/TR/NOTE-VML
 // TODO Use proxy like svg instead of overwrite brush methods
+// @ts-nocheck
 
 import env from '../core/env';
 import {applyTransform} from '../core/vector';
