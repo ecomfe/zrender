@@ -257,7 +257,6 @@ var svgPath: SVGProxy = {
 
         if (el.__dirtyPath) {
             path.beginPath();
-            el.subPixelOptimize = false;
             el.buildPath(path, el.shape);
             el.__dirtyPath = false;
 

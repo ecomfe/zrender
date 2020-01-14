@@ -129,7 +129,7 @@ export default class Displayable extends Element {
 
         if (defaultStyle) {
             for (let key in defaultStyle) {
-                if (opts && opts.style && opts.style[key as StyleKeys]) {
+                if (!(opts && opts.style && opts.style[key as StyleKeys])) {
                     this.style.set(key as StyleKeys, defaultStyle[key as StyleKeys]);
                 }
             }

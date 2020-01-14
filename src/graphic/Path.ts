@@ -424,22 +424,7 @@ export default class Path extends Displayable {
             extra: ExtraType
 
             constructor(opts?: SubPathOption) {
-                super(opts);
-
-                for (let key in defaultProps.style) {
-                    if (!(opts && opts.style && (key in opts.style))) {
-                        this.style.set(
-                            key as keyof StyleOption,
-                            defaultProps.style[key as keyof StyleOption]
-                        );
-                    }
-                }
-
-                for (let key in defaultProps.shape) {
-                    if (!(opts && opts.shape && (key in opts.shape))) {
-                        this.setShape(key, defaultProps.shape[key]);
-                    }
-                }
+                super(opts, defaultProps.style, defaultProps.shape);
 
                 defaultProps.init && defaultProps.init.call(this, opts);
             }
