@@ -24,7 +24,7 @@ export default class Rose extends Path {
     shape: RoseShape
 
     constructor(opts?: PathOption & {
-        shape?: RoseShape
+        shape?: Partial<RoseShape>
     }) {
         super(opts, {
             fill: null,

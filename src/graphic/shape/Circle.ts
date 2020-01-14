@@ -17,7 +17,7 @@ export default class Circle extends Path {
     shape: CircleShape
 
     constructor(opts?: PathOption & {
-        shape?: CircleShape
+        shape?: Partial<CircleShape>
     }) {
         super(opts, null, new CircleShape())
     }

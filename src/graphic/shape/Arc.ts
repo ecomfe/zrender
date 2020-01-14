@@ -20,7 +20,7 @@ export default class Arc extends Path {
     shape: ArcShape
 
     constructor(opts?: PathOption & {
-        shape?: ArcShape
+        shape?: Partial<ArcShape>
     }) {
         super(opts, {
             stroke: '#000',

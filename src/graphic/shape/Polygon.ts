@@ -20,7 +20,7 @@ export default class Polygon extends Path {
     shape: PolygonShape
 
     constructor(opts?: PathOption & {
-        shape?: PolygonShape
+        shape?: Partial<PolygonShape>
     }) {
         super(opts, null, new PolygonShape())
     }

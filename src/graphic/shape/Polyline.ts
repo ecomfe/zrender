@@ -19,7 +19,7 @@ export default class Polyline extends Path {
     shape: PolylineShape
 
     constructor(opts?: PathOption & {
-        shape?: PolylineShape
+        shape?: Partial<PolylineShape>
     }) {
         super(opts, null, new PolylineShape())
     }

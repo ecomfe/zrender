@@ -25,7 +25,7 @@ export default class Sector extends Path {
     brush = fixClipWithShadow(Path.prototype.brush)
 
     constructor(opts?: PathOption & {
-        shape: SectorShape
+        shape: Partial<SectorShape>
     }) {
         super(opts, null, new SectorShape());
     }

@@ -24,7 +24,7 @@ export default class Trochoid extends Path {
     shape: TrochoidShape
 
     constructor(opts?: PathOption & {
-        shape?: TrochoidShape
+        shape?: Partial<TrochoidShape>
     }) {
         super(opts, {
             stroke: '#000',

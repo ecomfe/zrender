@@ -29,7 +29,7 @@ export default class Line extends Path {
     shape: LineShape
 
     constructor(opts?: PathOption & {
-        shape: LineShape
+        shape?: Partial<LineShape>
     }) {
         super(opts, {
             stroke: '#000',

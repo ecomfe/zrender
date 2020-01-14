@@ -31,7 +31,7 @@ export default class Rect extends Path {
     shape: RectShape
 
     constructor(opts?: PathOption & {
-        shape?: RectShape
+        shape?: Partial<RectShape>
     }) {
         super(opts, null, new RectShape())
     }

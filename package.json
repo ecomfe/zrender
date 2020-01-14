@@ -20,6 +20,9 @@
     "watch:esm": "node_modules/.bin/tsc -w -m ES2015 --outDir esm"
   },
   "license": "BSD-3-Clause",
+  "types": "index.d.ts",
+  "module": "index.esm.js",
+  "main": "index.js",
   "dependencies": {
     "tslib": "^1.10.0"
   },

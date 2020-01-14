@@ -52,7 +52,7 @@ export default class BezierCurve extends Path {
     shape: BezierCurveShape
 
     constructor(opts?: PathOption & {
-        shape?: BezierCurveShape
+        shape?: Partial<BezierCurveShape>
     }) {
         super(opts, {
             stroke: '#000',

@@ -17,7 +17,7 @@ export default class Heart extends Path {
     shape: HeartShape
 
     constructor(opts?: PathOption & {
-        shape?: HeartShape
+        shape?: Partial<HeartShape>
     }) {
         super(opts, null, new HeartShape())
     }

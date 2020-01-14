@@ -18,7 +18,7 @@ export default class Ellipse extends Path {
     shape: EllipseShape
 
     constructor(opts?: PathOption & {
-        shape?: EllipseShape
+        shape?: Partial<EllipseShape>
     }) {
         super(opts, null, new EllipseShape())
     }

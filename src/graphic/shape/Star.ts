@@ -24,7 +24,7 @@ export default class Star extends Path {
     shape: StarShape
 
     constructor(opts?: PathOption & {
-        shape?: StarShape
+        shape?: Partial<StarShape>
     }) {
         super(opts, null, new StarShape())
     }

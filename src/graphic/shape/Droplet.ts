@@ -18,7 +18,7 @@ export default class Droplet extends Path {
     shape: DropletShape
 
     constructor(opts?: PathOption & {
-        shape?: DropletShape
+        shape?: Partial<DropletShape>
     }) {
         super(opts, null, new DropletShape())
     }

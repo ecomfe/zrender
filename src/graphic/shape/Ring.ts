@@ -18,7 +18,7 @@ export default class Ring extends Path {
     shape: RingShape
 
     constructor(opts?: PathOption & {
-        shape?: RingShape
+        shape?: Partial<RingShape>
     }) {
         super(opts, null, new RingShape())
     }

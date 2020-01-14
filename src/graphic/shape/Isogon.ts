@@ -22,7 +22,7 @@ export default class Isogon extends Path {
     shape: IsogonShape
 
     constructor(opts?: PathOption & {
-        shape?: IsogonShape
+        shape?: Partial<IsogonShape>
     }) {
         super(opts, null, new IsogonShape())
     }
