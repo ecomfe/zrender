@@ -8,19 +8,19 @@ import {
     VectorArray
 } from './vector';
 
-var mathPow = Math.pow;
-var mathSqrt = Math.sqrt;
+const mathPow = Math.pow;
+const mathSqrt = Math.sqrt;
 
-var EPSILON = 1e-8;
-var EPSILON_NUMERIC = 1e-4;
+const EPSILON = 1e-8;
+const EPSILON_NUMERIC = 1e-4;
 
-var THREE_SQRT = mathSqrt(3);
-var ONE_THIRD = 1 / 3;
+const THREE_SQRT = mathSqrt(3);
+const ONE_THIRD = 1 / 3;
 
 // 临时变量
-var _v0 = v2Create();
-var _v1 = v2Create();
-var _v2 = v2Create();
+const _v0 = v2Create();
+const _v1 = v2Create();
+const _v2 = v2Create();
 
 function isAroundZero(val: number) {
     return val > -EPSILON && val < EPSILON;

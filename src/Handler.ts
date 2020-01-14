@@ -72,7 +72,7 @@ import CanvasPainter from './canvas/Painter';
  */
 
 
-var SILENT = 'silent';
+const SILENT = 'silent';
 
 function makeEventPacket(eveType: ElementEventName, targetInfo: {
     target?: Element
@@ -120,7 +120,7 @@ class HoveredResult {
     }
 }
 
-var handlerNames = [
+const handlerNames = [
     'click', 'dblclick', 'mousewheel', 'mouseout',
     'mouseup', 'mousedown', 'mousemove', 'contextmenu'
 ];

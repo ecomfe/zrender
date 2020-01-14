@@ -1,4 +1,4 @@
-var arrySlice = Array.prototype.slice;
+const arrySlice = Array.prototype.slice;
 
 // Return true to cancel bubble
 export type EventCallback = (...args: any[]) => boolean | void

@@ -18,7 +18,7 @@ import Displayable from '../Displayable';
 //  ctx.fill();
 // )
 
-var shadowTemp = [
+const shadowTemp = [
     ['shadowBlur', 0],
     ['shadowColor', '#000'],
     ['shadowOffsetX', 0],

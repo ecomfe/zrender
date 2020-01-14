@@ -48,7 +48,7 @@ const localNativeListenerNames = (function () {
     };
 })();
 
-var globalNativeListenerNames = {
+const globalNativeListenerNames = {
     mouse: ['mousemove', 'mouseup'],
     pointer: ['pointermove', 'pointerup']
 };
@@ -131,8 +131,8 @@ function normalizeGlobalEvent(instance: HandlerDomProxy, event: ZRRawEvent) {
  * Detect whether the given el is in `painterRoot`.
  */
 function isLocalEl(instance: HandlerDomProxy, el: Node) {
-    var elTmp = el;
-    var isLocal = false;
+    let elTmp = el;
+    let isLocal = false;
     while (elTmp && elTmp.nodeType !== 9
         && !(
             isLocal = (elTmp as DomExtended).domBelongToZr
@@ -183,7 +183,7 @@ class FakeGlobalEvent {
  * Local DOM Handlers
  * @this {HandlerProxy}
  */
-var localDOMHandlers: DomHandlersMap = {
+const localDOMHandlers: DomHandlersMap = {
 
     mousedown: function(event: ZRRawEvent) {
         event = normalizeEvent(this.dom, event);
@@ -342,7 +342,7 @@ zrUtil.each(['click', 'mousewheel', 'dblclick', 'contextmenu'], function (name) 
  * [Caution]:
  * those handlers should both support in capture phase and bubble phase!
  */
-var globalDOMHandlers: DomHandlersMap = {
+const globalDOMHandlers: DomHandlersMap = {
 
     pointermove: function (event: ZRRawEvent) {
         // FIXME

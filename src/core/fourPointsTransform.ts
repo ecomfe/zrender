@@ -6,7 +6,7 @@
  * "cv::getPerspectiveTransform", "Direct Linear Transformation".
  */
 
-var LN2 = Math.log(2);
+const LN2 = Math.log(2);
 
 function determinant(
     rows: number[][],

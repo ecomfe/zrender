@@ -1,5 +1,5 @@
 
-var PI2 = Math.PI * 2;
+const PI2 = Math.PI * 2;
 
 export function normalizeRadian(angle: number): number {
     angle %= PI2;

@@ -9,7 +9,7 @@ import PathProxy from '../../core/PathProxy';
 import { VectorArray } from '../../core/vector';
 
 // Avoid create repeatly.
-var subPixelOptimizeOutputShape = {};
+const subPixelOptimizeOutputShape = {};
 
 class LineShape {
     // Start point

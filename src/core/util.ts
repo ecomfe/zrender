@@ -37,7 +37,7 @@ const nativeSlice = arrayProto.slice;
 const nativeMap = arrayProto.map;
 const nativeReduce = arrayProto.reduce;
 
-// Avoid assign to an exported variable, for transforming to cjs.
+// Avoid assign to an exported constiable, for transforming to cjs.
 const methods: {[key: string]: Function} = {};
 
 export function $override(name: string, fn: Function) {
@@ -49,7 +49,7 @@ export function $override(name: string, fn: Function) {
     methods[name] = fn;
 }
 
-var idStart = 0x0907;
+let idStart = 0x0907;
 /**
  * Generate unique id
  */
@@ -199,7 +199,7 @@ methods.createCanvas = function (): HTMLCanvasElement {
 };
 
 // FIXME
-var _ctx: CanvasRenderingContext2D;
+let _ctx: CanvasRenderingContext2D;
 
 export function getContext(): CanvasRenderingContext2D {
     if (!_ctx) {
@@ -539,7 +539,7 @@ export function trim(str: string): string {
     }
 }
 
-var primitiveKey = '__ec_primitive__';
+const primitiveKey = '__ec_primitive__';
 /**
  * Set an object as primitive to be ignored traversing children in clone or merge
  */
@@ -583,7 +583,7 @@ class HashMap<T> {
     }
     set(key: string, value: T) {
         // Comparing with invocation chaining, `return value` is more commonly
-        // used in this case: `var someVal = map.set('a', genVal());`
+        // used in this case: `const someVal = map.set('a', genVal());`
         return (this.data[key] = value);
     }
     // Although util.each can be performed on this hashMap directly, user

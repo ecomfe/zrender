@@ -5,9 +5,9 @@
 
 import Path, { PathOption } from '../Path';
 
-var sin = Math.sin;
-var cos = Math.cos;
-var radian = Math.PI / 180;
+const sin = Math.sin;
+const cos = Math.cos;
+const radian = Math.PI / 180;
 
 class RoseShape {
     cx = 0

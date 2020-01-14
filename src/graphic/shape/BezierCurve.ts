@@ -13,7 +13,7 @@ import {
     cubicDerivativeAt
 } from '../../core/curve';
 
-var out: number[] = [];
+const out: number[] = [];
 
 class BezierCurveShape {
     x1 = 0

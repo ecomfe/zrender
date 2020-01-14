@@ -8,7 +8,7 @@ type easingFunc = (percent: number) => number;
 
 export type easingType = keyof typeof easing | easingFunc | 'spline';
 
-var easing = {
+const easing = {
     /**
     * @param {number} k
     * @return {number}

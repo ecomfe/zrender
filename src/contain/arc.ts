@@ -1,7 +1,7 @@
 
 import {normalizeRadian} from './util';
 
-var PI2 = Math.PI * 2;
+const PI2 = Math.PI * 2;
 
 /**
  * 圆弧描边包含判断

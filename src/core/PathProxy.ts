@@ -13,7 +13,7 @@ import * as bbox from './bbox';
 import BoundingRect from './BoundingRect';
 import {devicePixelRatio as dpr} from '../config';
 
-var CMD = {
+const CMD = {
     M: 1,
     L: 2,
     C: 3,
@@ -38,18 +38,18 @@ interface ExtendedCanvasRenderingContext2D extends CanvasRenderingContext2D {
     dpr?: number
 }
 
-var min: number[] = [];
-var max: number[] = [];
-var min2: number[] = [];
-var max2: number[] = [];
-var mathMin = Math.min;
-var mathMax = Math.max;
-var mathCos = Math.cos;
-var mathSin = Math.sin;
-var mathSqrt = Math.sqrt;
-var mathAbs = Math.abs;
+const min: number[] = [];
+const max: number[] = [];
+const min2: number[] = [];
+const max2: number[] = [];
+const mathMin = Math.min;
+const mathMax = Math.max;
+const mathCos = Math.cos;
+const mathSin = Math.sin;
+const mathSqrt = Math.sqrt;
+const mathAbs = Math.abs;
 
-var hasTypedArray = typeof Float32Array !== 'undefined';
+const hasTypedArray = typeof Float32Array !== 'undefined';
 
 export default class PathProxy {
 

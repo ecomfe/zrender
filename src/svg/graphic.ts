@@ -28,18 +28,18 @@ type SVGTSpanElementExtended = SVGTSpanElement & {
     __zrText: string
 }
 
-var CMD = PathProxy.CMD;
-var arrayJoin = Array.prototype.join;
+const CMD = PathProxy.CMD;
+const arrayJoin = Array.prototype.join;
 
-var NONE = 'none';
-var mathRound = Math.round;
-var mathSin = Math.sin;
-var mathCos = Math.cos;
-var PI = Math.PI;
-var PI2 = Math.PI * 2;
-var degree = 180 / PI;
+const NONE = 'none';
+const mathRound = Math.round;
+const mathSin = Math.sin;
+const mathCos = Math.cos;
+const PI = Math.PI;
+const PI2 = Math.PI * 2;
+const degree = 180 / PI;
 
-var EPSILON = 1e-4;
+const EPSILON = 1e-4;
 
 function round4(val: number) {
     return mathRound(val * 1e4) / 1e4;
@@ -240,7 +240,7 @@ function pathDataToString(path: PathProxy) {
     return str.join(' ');
 }
 
-var svgPath: SVGProxy = {
+const svgPath: SVGProxy = {
     brush(el: Path) {
         const style = el.style;
 
@@ -285,7 +285,7 @@ export {svgPath as path};
 /***************************************************
  * IMAGE
  **************************************************/
-var svgImage: SVGProxy = {
+const svgImage: SVGProxy = {
     brush(el: ZImage) {
         const style = el.style;
         let image = style.image;
@@ -337,10 +337,10 @@ export {svgImage as image};
 /***************************************************
  * TEXT
  **************************************************/
-var _tmpTextHostRect = new BoundingRect();
-var _tmpTextBoxPos: Partial<ReturnType<typeof textHelper.getBoxPosition>> = {};
-var _tmpTextTransform: matrix.MatrixArray = [];
-var TEXT_ALIGN_TO_ANCHRO = {
+const _tmpTextHostRect = new BoundingRect();
+const _tmpTextBoxPos: Partial<ReturnType<typeof textHelper.getBoxPosition>> = {};
+const _tmpTextTransform: matrix.MatrixArray = [];
+const TEXT_ALIGN_TO_ANCHRO = {
     left: 'start',
     right: 'end',
     center: 'middle',
@@ -352,7 +352,7 @@ var TEXT_ALIGN_TO_ANCHRO = {
  * @param {Object|boolean} [hostRect] {x, y, width, height}
  *        If set false, rect text is not used.
  */
-var svgTextDrawRectText = function (el: Displayable, hostRect: RectLike) {
+const svgTextDrawRectText = function (el: Displayable, hostRect: RectLike) {
     const style = el.style;
     const elTransform = el.transform;
     const needTransformTextByHostEl = el instanceof Text || style.transformText;
@@ -562,7 +562,7 @@ function removeOldTextNode(el: Displayable) {
 
 svgTextDrawRectText;
 
-var svgText: SVGProxy = {
+const svgText: SVGProxy = {
     brush(el: Displayable) {
         const style = el.style;
         if (style.text != null) {

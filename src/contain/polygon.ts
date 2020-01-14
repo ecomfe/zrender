@@ -1,7 +1,7 @@
 import windingLine from './windingLine';
 import { VectorArray } from '../core/vector';
 
-var EPSILON = 1e-8;
+const EPSILON = 1e-8;
 
 function isAroundEqual(a: number, b: number): boolean {
     return Math.abs(a - b) < EPSILON;

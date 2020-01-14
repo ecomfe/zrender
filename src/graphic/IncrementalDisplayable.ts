@@ -9,7 +9,7 @@ import Displayble from './Displayable';
 import BoundingRect from '../core/BoundingRect';
 import { MatrixArray } from '../core/matrix';
 
-var m: MatrixArray = [];
+const m: MatrixArray = [];
 // TODO Style override ?
 
 export default class IncrementalDisplayble extends Displayble {

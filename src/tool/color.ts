@@ -146,8 +146,8 @@ function copyRgba(out: number[], a: number[]) {
     return out;
 }
 
-var colorCache = new LRU<number[]>(20);
-var lastRemovedArr: number[] = null;
+const colorCache = new LRU<number[]>(20);
+let lastRemovedArr: number[] = null;
 
 function putToCache(colorStr: string, rgbaArr: number[]) {
     // Reuse removed array

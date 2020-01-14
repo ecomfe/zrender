@@ -5,9 +5,9 @@
 
 import Path, { PathOption } from '../Path';
 
-var PI = Math.PI;
-var cos = Math.cos;
-var sin = Math.sin;
+const PI = Math.PI;
+const cos = Math.cos;
+const sin = Math.sin;
 
 class StarShape {
     cx = 0

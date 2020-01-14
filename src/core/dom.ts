@@ -86,9 +86,9 @@ export function transformCoordWithViewport(
     inverse?: boolean
 ) {
     if (el.getBoundingClientRect && env.domSupported && !isCanvasEl(el)) {
-        var saved = (el as any)[EVENT_SAVED_PROP] || ((el as any)[EVENT_SAVED_PROP] = {});
-        var markers = prepareCoordMarkers(el, saved);
-        var transformer = preparePointerTransformer(markers, saved, inverse);
+        const saved = (el as any)[EVENT_SAVED_PROP] || ((el as any)[EVENT_SAVED_PROP] = {});
+        const markers = prepareCoordMarkers(el, saved);
+        const transformer = preparePointerTransformer(markers, saved, inverse);
         if (transformer) {
             transformer(out, inX, inY);
             return true;
@@ -98,20 +98,20 @@ export function transformCoordWithViewport(
 }
 
 function prepareCoordMarkers(el: HTMLElement, saved: SavedInfo) {
-    var markers = saved.markers;
+    let markers = saved.markers;
     if (markers) {
         return markers;
     }
 
     markers = saved.markers = [];
-    var propLR = ['left', 'right'];
-    var propTB = ['top', 'bottom'];
+    const propLR = ['left', 'right'];
+    const propTB = ['top', 'bottom'];
 
-    for (var i = 0; i < 4; i++) {
-        var marker = document.createElement('div');
-        var stl = marker.style;
-        var idxLR = i % 2;
-        var idxTB = (i >> 1) % 2;
+    for (let i = 0; i < 4; i++) {
+        const marker = document.createElement('div');
+        const stl = marker.style;
+        const idxLR = i % 2;
+        const idxTB = (i >> 1) % 2;
         stl.cssText = [
             'position: absolute',
             'visibility: hidden',
@@ -137,18 +137,18 @@ function prepareCoordMarkers(el: HTMLElement, saved: SavedInfo) {
 }
 
 function preparePointerTransformer(markers: HTMLDivElement[], saved: SavedInfo, inverse?: boolean) {
-    var transformerName: 'invTrans' | 'trans' = inverse ? 'invTrans' : 'trans';
-    var transformer = saved[transformerName];
-    var oldSrcCoords = saved.srcCoords;
-    var oldCoordTheSame = true;
-    var srcCoords = [];
-    var destCoords = [];
+    const transformerName: 'invTrans' | 'trans' = inverse ? 'invTrans' : 'trans';
+    const transformer = saved[transformerName];
+    const oldSrcCoords = saved.srcCoords;
+    const srcCoords = [];
+    const destCoords = [];
+    let oldCoordTheSame = true;
 
-    for (var i = 0; i < 4; i++) {
-        var rect = markers[i].getBoundingClientRect();
-        var ii = 2 * i;
-        var x = rect.left;
-        var y = rect.top;
+    for (let i = 0; i < 4; i++) {
+        const rect = markers[i].getBoundingClientRect();
+        const ii = 2 * i;
+        const x = rect.left;
+        const y = rect.top;
         srcCoords.push(x, y);
         oldCoordTheSame = oldCoordTheSame && oldSrcCoords && x === oldSrcCoords[ii] && y === oldSrcCoords[ii + 1];
         destCoords.push(markers[i].offsetLeft, markers[i].offsetTop);

@@ -11,7 +11,7 @@ import Path from './Path';
 import { PatternObject } from './Pattern';
 import { GradientObject } from './Gradient';
 
-var STYLE_COMMON_PROPS = [
+const STYLE_COMMON_PROPS = [
     ['shadowBlur', 0], ['shadowOffsetX', 0], ['shadowOffsetY', 0], ['shadowColor', '#000'],
     ['lineCap', 'butt'], ['lineJoin', 'miter'], ['miterLimit', 10]
 ];

@@ -85,7 +85,7 @@ type Recognizer = (tracks: TrackItem[], event: ZRRawTouchEvent) => {
     event: ZRRawTouchEvent
 }
 
-var recognizers: Dictionary<Recognizer> = {
+const recognizers: Dictionary<Recognizer> = {
 
     pinch: function (tracks: TrackItem[], event: ZRRawTouchEvent) {
         const trackLen = tracks.length;

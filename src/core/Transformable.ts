@@ -3,17 +3,17 @@ import * as vector from './vector';
 import Eventful from './Eventful';
 import { ZRCanvasRenderingContext } from './types';
 
-var mIdentity = matrix.identity;
+const mIdentity = matrix.identity;
 
-var EPSILON = 5e-5;
+const EPSILON = 5e-5;
 
 function isNotAroundZero(val: number) {
     return val > EPSILON || val < -EPSILON;
 }
 
-var scaleTmp: vector.VectorArray = [];
-var tmpTransform: matrix.MatrixArray = [];
-var originTransform = matrix.create();
+const scaleTmp: vector.VectorArray = [];
+const tmpTransform: matrix.MatrixArray = [];
+const originTransform = matrix.create();
 
 class Transformable extends Eventful {
 

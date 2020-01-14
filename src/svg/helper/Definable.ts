@@ -17,8 +17,8 @@ import {
 import Displayable from '../../graphic/Displayable';
 
 
-var MARK_UNUSED = '0';
-var MARK_USED = '1';
+const MARK_UNUSED = '0';
+const MARK_USED = '1';
 
 /**
  * Manages elements that can be defined in <defs> in SVG,

@@ -10,10 +10,10 @@ import { MatrixArray } from '../core/matrix';
 //     'c', 'C', 'q', 'Q', 't', 'T', 's', 'S', 'a', 'A'
 // ];
 
-var mathSqrt = Math.sqrt;
-var mathSin = Math.sin;
-var mathCos = Math.cos;
-var PI = Math.PI;
+const mathSqrt = Math.sqrt;
+const mathSin = Math.sin;
+const mathCos = Math.cos;
+const PI = Math.PI;
 
 function vMag(v: VectorArray): number {
     return Math.sqrt(v[0] * v[0] + v[1] * v[1]);
@@ -82,14 +82,14 @@ function processArc(
 }
 
 
-var commandReg = /([mlvhzcqtsa])([^mlvhzcqtsa]*)/ig;
+const commandReg = /([mlvhzcqtsa])([^mlvhzcqtsa]*)/ig;
 // Consider case:
 // (1) delimiter can be comma or space, where continuous commas
 // or spaces should be seen as one comma.
 // (2) value can be like:
 // '2e-4', 'l.5.9' (ignore 0), 'M-10-10', 'l-2.43e-1,34.9983',
 // 'l-.5E1,54', '121-23-44-11' (no delimiter)
-var numberReg = /-?([0-9]*\.)?[0-9]+([eE]-?[0-9]+)?/g;
+const numberReg = /-?([0-9]*\.)?[0-9]+([eE]-?[0-9]+)?/g;
 // const valueSplitReg = /[\s,]+/;
 
 function createPathProxyFromString(data: string) {

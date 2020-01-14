@@ -15,11 +15,11 @@ import { StyleOption } from '../graphic/Style';
 import {PainterBase} from '../PainterBase';
 import Storage from '../Storage';
 
-var HOVER_LAYER_ZLEVEL = 1e5;
-var CANVAS_ZLEVEL = 314159;
+const HOVER_LAYER_ZLEVEL = 1e5;
+const CANVAS_ZLEVEL = 314159;
 
-var EL_AFTER_INCREMENTAL_INC = 0.01;
-var INCREMENTAL_INC = 0.001;
+const EL_AFTER_INCREMENTAL_INC = 0.01;
+const INCREMENTAL_INC = 0.001;
 
 function parseInt10(val: string) {
     return parseInt(val, 10);
@@ -43,8 +43,8 @@ function isLayerValid(layer: Layer) {
     return true;
 }
 
-var tmpRect = new BoundingRect(0, 0, 0, 0);
-var viewRect = new BoundingRect(0, 0, 0, 0);
+const tmpRect = new BoundingRect(0, 0, 0, 0);
+const viewRect = new BoundingRect(0, 0, 0, 0);
 function isDisplayableCulled(el: Displayable, width: number, height: number) {
     tmpRect.copy(el.getBoundingRect());
     if (el.transform) {

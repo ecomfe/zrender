@@ -164,8 +164,8 @@ export default class Displayable extends Element {
      * If bounding rect of element contain coord x, y
      */
     rectContain(x: number, y: number) {
-        var coord = this.transformCoordToLocal(x, y);
-        var rect = this.getBoundingRect();
+        const coord = this.transformCoordToLocal(x, y);
+        const rect = this.getBoundingRect();
         return rect.contain(coord[0], coord[1]);
     }
 
@@ -224,14 +224,14 @@ export default class Displayable extends Element {
      * @param  {Object} rect Displayable rect
      */
     drawRectText(ctx: CanvasRenderingContext2D, rect: RectLike) {
-        var style = this.style;
+        const style = this.style;
 
         rect = style.textRect || rect;
 
         // Optimize, avoid normalize every time.
         this.__dirty && textHelper.normalizeTextStyle(style);
 
-        var text = style.text;
+        let text = style.text;
 
         // Convert to string
         text != null && (text += '');
@@ -247,7 +247,7 @@ export default class Displayable extends Element {
         ctx.save();
 
         // Transform rect to view space
-        var transform = this.transform;
+        const transform = this.transform;
         if (!style.transformText) {
             if (transform) {
                 tmpRect.copy(rect);

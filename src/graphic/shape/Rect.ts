@@ -22,7 +22,7 @@ class RectShape {
 }
 
 // Avoid create repeatly.
-var subPixelOptimizeOutputShape = {};
+const subPixelOptimizeOutputShape = {};
 
 export default class Rect extends Path {
 

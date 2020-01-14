@@ -5,7 +5,7 @@ import { StyleOption } from "../Style";
  * when rendering a thin vertical/horizontal line.
  */
 
-var round = Math.round;
+const round = Math.round;
 
 type LineShape = {
     x1: number
@@ -48,7 +48,7 @@ export function subPixelOptimizeLine(
     outputShape.y1 = y1;
     outputShape.y2 = y2;
 
-    var lineWidth = style && style.lineWidth;
+    const lineWidth = style && style.lineWidth;
     if (!lineWidth) {
         return outputShape as LineShape;
     }
@@ -90,7 +90,7 @@ export function subPixelOptimizeRect(
     outputShape.width = originWidth;
     outputShape.height = originHeight;
 
-    var lineWidth = style && style.lineWidth;
+    const lineWidth = style && style.lineWidth;
     if (!lineWidth) {
         return outputShape as RectShape;
     }

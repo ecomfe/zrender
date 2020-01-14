@@ -5,15 +5,15 @@
 import * as vec2 from './vector';
 import * as curve from './curve';
 
-var mathMin = Math.min;
-var mathMax = Math.max;
-var mathSin = Math.sin;
-var mathCos = Math.cos;
-var PI2 = Math.PI * 2;
+const mathMin = Math.min;
+const mathMax = Math.max;
+const mathSin = Math.sin;
+const mathCos = Math.cos;
+const PI2 = Math.PI * 2;
 
-var start = vec2.create();
-var end = vec2.create();
-var extremity = vec2.create();
+const start = vec2.create();
+const end = vec2.create();
+const extremity = vec2.create();
 
 /**
  * 从顶点数组中计算出最小包围盒，写入`min`和`max`中
@@ -52,8 +52,8 @@ export function fromLine(
     max[1] = mathMax(y0, y1);
 }
 
-var xDim: number[] = [];
-var yDim: number[] = [];
+const xDim: number[] = [];
+const yDim: number[] = [];
 /**
  * 从三阶贝塞尔曲线(p0, p1, p2, p3)中计算出最小包围盒，写入`min`和`max`中
  */

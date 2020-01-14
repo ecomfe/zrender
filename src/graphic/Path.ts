@@ -11,11 +11,11 @@ import { RadialGradientObject } from './RadialGradient';
 import { Dictionary, PropType } from '../core/types';
 import BoundingRect from '../core/BoundingRect';
 
-var getCanvasPattern = Pattern.prototype.getCanvasPattern;
+const getCanvasPattern = Pattern.prototype.getCanvasPattern;
 
-var abs = Math.abs;
+const abs = Math.abs;
 
-var pathProxyForDraw = new PathProxy(true);
+const pathProxyForDraw = new PathProxy(true);
 
 export interface PathOption extends DisplayableOption{
     strokeContainThreshold?: number

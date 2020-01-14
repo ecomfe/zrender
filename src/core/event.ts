@@ -7,10 +7,10 @@ import env from './env';
 import { ZRRawEvent } from './types';
 import {isCanvasEl, transformCoordWithViewport} from './dom';
 
-var isDomLevel2 = (typeof window !== 'undefined') && !!window.addEventListener;
+const isDomLevel2 = (typeof window !== 'undefined') && !!window.addEventListener;
 
-var MOUSE_EVENT_REG = /^(?:mouse|pointer|contextmenu|drag|drop)|click/;
-var _calcOut: number[] = [];
+const MOUSE_EVENT_REG = /^(?:mouse|pointer|contextmenu|drag|drop)|click/;
+const _calcOut: number[] = [];
 
 type FirefoxMouseEvent = {
     layerX: number
@@ -90,8 +90,8 @@ function calculateZrXY(
 ) {
     // BlackBerry 5, iOS 3 (original iPhone) don't have getBoundingRect.
     if (env.domSupported && el.getBoundingClientRect) {
-        var ex = (e as MouseEvent).clientX;
-        var ey = (e as MouseEvent).clientY;
+        const ex = (e as MouseEvent).clientX;
+        const ey = (e as MouseEvent).clientY;
 
         if (isCanvasEl(el)) {
             // Original approach, which do not support CSS transform.

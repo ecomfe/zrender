@@ -5,14 +5,14 @@
 import * as vec2 from './vector';
 import * as matrix from './matrix';
 
-var v2ApplyTransform = vec2.applyTransform;
-var mathMin = Math.min;
-var mathMax = Math.max;
+const v2ApplyTransform = vec2.applyTransform;
+const mathMin = Math.min;
+const mathMax = Math.max;
 
-var lt: vec2.VectorArray = [];
-var rb: vec2.VectorArray = [];
-var lb: vec2.VectorArray = [];
-var rt: vec2.VectorArray = [];
+const lt: vec2.VectorArray = [];
+const rb: vec2.VectorArray = [];
+const lb: vec2.VectorArray = [];
+const rt: vec2.VectorArray = [];
 
 class BoundingRect {
 

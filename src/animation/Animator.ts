@@ -17,7 +17,7 @@ type Keyframe = {
     value: InterpolatableType
 }
 
-var arraySlice = Array.prototype.slice;
+const arraySlice = Array.prototype.slice;
 
 function interpolateNumber(p0: number, p1: number, percent: number): number {
     return (p1 - p0) * percent + p0;

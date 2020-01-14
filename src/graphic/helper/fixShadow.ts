@@ -1,6 +1,6 @@
 import { ZRCanvasRenderingContext } from "../../core/types";
 
-var SHADOW_PROPS = {
+const SHADOW_PROPS = {
     'shadowBlur': 1,
     'shadowOffsetX': 1,
     'shadowOffsetY': 1,
