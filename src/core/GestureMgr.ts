@@ -3,8 +3,7 @@
  */
 
 import * as eventUtil from './event';
-import Element from '../Element';
-import { ZRRawTouchEvent, ZRPinchEvent } from './types';
+import { ZRRawTouchEvent, ZRPinchEvent, Dictionary } from './types';
 import Displayable from '../graphic/Displayable';
 
 interface TrackItem {
@@ -86,7 +85,7 @@ type Recognizer = (tracks: TrackItem[], event: ZRRawTouchEvent) => {
     event: ZRRawTouchEvent
 }
 
-var recognizers: {[key: string]: Recognizer} = {
+var recognizers: Dictionary<Recognizer> = {
 
     pinch: function (tracks: TrackItem[], event: ZRRawTouchEvent) {
         const trackLen = tracks.length;

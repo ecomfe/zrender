@@ -12,21 +12,20 @@ import {
     quadraticDerivativeAt,
     cubicDerivativeAt
 } from '../../core/curve';
-import PathProxy from '../../core/PathProxy';
 
 var out: number[] = [];
 
 class BezierCurveShape {
-    x1: number = 0
-    y1: number = 0
-    x2: number = 0
-    y2: number = 0
-    cpx1: number = 0
-    cpy1: number = 0
+    x1 = 0
+    y1 = 0
+    x2 = 0
+    y2 = 0
+    cpx1 = 0
+    cpy1 = 0
     cpx2?: number
     cpy2?: number
     // Curve show percent, for animating
-    percent: number = 1
+    percent = 1
 }
 
 function someVectorAt(shape: BezierCurveShape, t: number, isTangent: boolean) {
@@ -53,21 +52,15 @@ export default class BezierCurve extends Path {
     shape: BezierCurveShape
 
     constructor(opts?: PathOption & {
-        shape: BezierCurveShape
+        shape?: BezierCurveShape
     }) {
-        super(opts);
-        // Set default style.
-        if (!opts?.style?.stroke) {
-            this.style.stroke = '#000';
-        }
-        if (!opts?.style?.fill) {
-            this.style.fill = null;
-        }
-
-        this._defaultsShape(new BezierCurveShape());
+        super(opts, {
+            stroke: '#000',
+            fill: null
+        }, new BezierCurveShape());
     }
 
-    buildPath(ctx: PathProxy, shape: BezierCurveShape) {
+    buildPath(ctx: CanvasRenderingContext2D, shape: BezierCurveShape) {
         let x1 = shape.x1;
         let y1 = shape.y1;
         let x2 = shape.x2;

@@ -1,22 +1,29 @@
 /**
  * 圆环
- * @module zrender/graphic/shape/Ring
  */
 
-import Path from '../Path';
+import Path, { PathOption } from '../Path';
 
-export default Path.extend({
+class RingShape {
+    cx = 0
+    cy = 0
+    r = 0
+    r0 = 0
+}
 
-    type: 'ring',
+export default class Ring extends Path {
 
-    shape: {
-        cx: 0,
-        cy: 0,
-        r: 0,
-        r0: 0
-    },
+    type = 'ring'
 
-    buildPath: function (ctx, shape) {
+    shape: RingShape
+
+    constructor(opts?: PathOption & {
+        shape?: RingShape
+    }) {
+        super(opts, null, new RingShape())
+    }
+
+    buildPath(ctx: CanvasRenderingContext2D, shape: RingShape) {
         const x = shape.cx;
         const y = shape.cy;
         const PI2 = Math.PI * 2;
@@ -25,4 +32,4 @@ export default Path.extend({
         ctx.moveTo(x + shape.r0, y);
         ctx.arc(x, y, shape.r0, 0, PI2, true);
     }
-});
+}

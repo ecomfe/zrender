@@ -2,20 +2,28 @@
  * 圆形
  */
 
-import Path from '../Path';
+import Path, { PathOption } from '../Path';
 
-export default Path.extend({
+class CircleShape {
+    cx = 0
+    cy = 0
+    r = 0
+}
 
-    type: 'circle',
+export default class Circle extends Path {
 
-    shape: {
-        cx: 0,
-        cy: 0,
-        r: 0
-    },
+    type = 'Circle'
+
+    shape: CircleShape
+
+    constructor(opts?: PathOption & {
+        shape?: CircleShape
+    }) {
+        super(opts, null, new CircleShape())
+    }
 
 
-    buildPath: function (ctx, shape, inBundle) {
+    buildPath(ctx: CanvasRenderingContext2D, shape: CircleShape, inBundle: boolean) {
         // Better stroking in ShapeBundle
         // Always do it may have performence issue ( fill may be 2x more cost)
         if (inBundle) {
@@ -30,4 +38,4 @@ export default Path.extend({
         // ctx.moveTo(shape.cx + shape.r, shape.cy);
         ctx.arc(shape.cx, shape.cy, shape.r, 0, Math.PI * 2, true);
     }
-});
+};

@@ -2,20 +2,28 @@
  * 水滴形状
  */
 
-import Path from '../Path';
+import Path, { PathOption } from '../Path';
 
-export default Path.extend({
+class DropletShape {
+    cx = 0
+    cy = 0
+    width = 0
+    height = 0
+}
 
-    type: 'droplet',
+export default class Droplet extends Path {
 
-    shape: {
-        cx: 0,
-        cy: 0,
-        width: 0,
-        height: 0
-    },
+    type = 'droplet'
 
-    buildPath: function (ctx, shape) {
+    shape: DropletShape
+
+    constructor(opts?: PathOption & {
+        shape?: DropletShape
+    }) {
+        super(opts, null, new DropletShape())
+    }
+
+    buildPath(ctx: CanvasRenderingContext2D, shape: DropletShape) {
         const x = shape.cx;
         const y = shape.cy;
         const a = shape.width;
@@ -40,4 +48,4 @@ export default Path.extend({
         );
         ctx.closePath();
     }
-});
+}

@@ -2,35 +2,33 @@
  * 圆弧
  */
 
-import Path from '../Path';
+import Path, { PathOption } from '../Path';
 
-export default Path.extend({
+class ArcShape {
+    cx = 0;
+    cy = 0;
+    r = 0;
+    startAngle = 0;
+    endAngle = Math.PI * 2
+    clockwise? = true
+}
 
-    type: 'arc',
+export default class Arc extends Path {
 
-    shape: {
+    type = 'Arc'
 
-        cx: 0,
+    shape: ArcShape
 
-        cy: 0,
+    constructor(opts?: PathOption & {
+        shape?: ArcShape
+    }) {
+        super(opts, {
+            stroke: '#000',
+            fill: null
+        }, new ArcShape());
+    }
 
-        r: 0,
-
-        startAngle: 0,
-
-        endAngle: Math.PI * 2,
-
-        clockwise: true
-    },
-
-    style: {
-
-        stroke: '#000',
-
-        fill: null
-    },
-
-    buildPath: function (ctx, shape) {
+    buildPath(ctx: CanvasRenderingContext2D, shape: ArcShape) {
 
         const x = shape.cx;
         const y = shape.cy;
@@ -45,4 +43,4 @@ export default Path.extend({
         ctx.moveTo(unitX * r + x, unitY * r + y);
         ctx.arc(x, y, r, startAngle, endAngle, !clockwise);
     }
-});
+}

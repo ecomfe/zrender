@@ -2,18 +2,28 @@
  * 椭圆形状
  */
 
-import Path from '../Path';
+import Path, { PathOption } from '../Path';
 
-export default Path.extend({
+class EllipseShape {
+    cx = 0
+    cy = 0
+    rx = 0
+    ry = 0
+}
 
-    type: 'ellipse',
+export default class Ellipse extends Path {
 
-    shape: {
-        cx: 0, cy: 0,
-        rx: 0, ry: 0
-    },
+    type = 'ellipse'
 
-    buildPath: function (ctx, shape) {
+    shape: EllipseShape
+
+    constructor(opts?: PathOption & {
+        shape?: EllipseShape
+    }) {
+        super(opts, null, new EllipseShape())
+    }
+
+    buildPath(ctx: CanvasRenderingContext2D, shape: EllipseShape) {
         const k = 0.5522848;
         const x = shape.cx;
         const y = shape.cy;
@@ -29,4 +39,4 @@ export default Path.extend({
         ctx.bezierCurveTo(x - ox, y + b, x - a, y + oy, x - a, y);
         ctx.closePath();
     }
-});
+}

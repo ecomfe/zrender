@@ -3,30 +3,29 @@
  * @module zrender/shape/Polygon
  */
 
-import Path from '../Path';
+import Path, { PathOption } from '../Path';
 import * as polyHelper from '../helper/poly';
 import { VectorArray } from '../../core/vector';
-import { Dictionary } from '../../core/types';
 
-interface PolygonShape {
-    points: VectorArray[]
-    smooth?: number | 'spline'
-    smoothConstraint?: VectorArray[]
+class PolygonShape {
+    points: VectorArray[] = null
+    smooth?: number | 'spline' = 0
+    smoothConstraint?: VectorArray[] = null
 }
 
-export default Path.extend<PolygonShape, {}>({
+export default class Polygon extends Path {
 
-    type: 'polygon',
+    type = 'ellipse'
 
-    shape: {
-        points: null,
+    shape: PolygonShape
 
-        smooth: 0,
+    constructor(opts?: PathOption & {
+        shape?: PolygonShape
+    }) {
+        super(opts, null, new PolygonShape())
+    }
 
-        smoothConstraint: null
-    },
-
-    buildPath: function (ctx, shape) {
+    buildPath(ctx: CanvasRenderingContext2D, shape: PolygonShape) {
         polyHelper.buildPath(ctx, shape, true);
     }
-});
+};

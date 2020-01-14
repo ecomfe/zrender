@@ -10,7 +10,10 @@ rollup.rollup({
             compilerOptions: {
                 // Rollup don't use CommonJS by default.
                 module: 'ES2015',
-                sourceMap: true
+                sourceMap: true,
+
+                // Use the esm d.ts
+                declaration: false
             }
         }
     })]

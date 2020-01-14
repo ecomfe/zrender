@@ -2,35 +2,29 @@
  * @module zrender/graphic/shape/Polyline
  */
 
-import Path from '../Path';
+import Path, { PathOption } from '../Path';
 import * as polyHelper from '../helper/poly';
 import { VectorArray } from '../../core/vector';
 
-interface PolylineShape {
-    points: VectorArray[]
-    smooth?: number | 'spline'
-    smoothConstraint?: VectorArray[]
+class PolylineShape {
+    points: VectorArray[] = null
+    smooth?: number | 'spline' = 0
+    smoothConstraint?: VectorArray[] = null
 }
 
-export default Path.extend<PolylineShape, {}>({
+export default class Polyline extends Path {
 
-    type: 'polyline',
+    type = 'ellipse'
 
-    shape: {
-        points: null,
+    shape: PolylineShape
 
-        smooth: 0,
+    constructor(opts?: PathOption & {
+        shape?: PolylineShape
+    }) {
+        super(opts, null, new PolylineShape())
+    }
 
-        smoothConstraint: null
-    },
-
-    style: {
-        stroke: '#000',
-
-        fill: null
-    },
-
-    buildPath: function (ctx, shape) {
+    buildPath(ctx: CanvasRenderingContext2D, shape: PolylineShape) {
         polyHelper.buildPath(ctx, shape, false);
     }
-});
+}

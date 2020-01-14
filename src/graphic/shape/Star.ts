@@ -3,25 +3,33 @@
  * @module zrender/graphic/shape/Star
  */
 
-import Path from '../Path';
+import Path, { PathOption } from '../Path';
 
 var PI = Math.PI;
 var cos = Math.cos;
 var sin = Math.sin;
 
-export default Path.extend({
+class StarShape {
+    cx = 0
+    cy = 0
+    n = 3
+    r0: number
+    r = 0
+}
 
-    type: 'star',
+export default class Star extends Path {
 
-    shape: {
-        cx: 0,
-        cy: 0,
-        n: 3,
-        r0: null,
-        r: 0
-    },
+    type = 'star'
 
-    buildPath: function (ctx, shape) {
+    shape: StarShape
+
+    constructor(opts?: PathOption & {
+        shape?: StarShape
+    }) {
+        super(opts, null, new StarShape())
+    }
+
+    buildPath(ctx: CanvasRenderingContext2D, shape: StarShape) {
 
         const n = shape.n;
         if (!n || n < 2) {
@@ -59,4 +67,4 @@ export default Path.extend({
 
         ctx.closePath();
     }
-});
+}

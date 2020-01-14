@@ -3,30 +3,36 @@
  * @module zrender/graphic/shape/Rose
  */
 
-import Path from '../Path';
+import Path, { PathOption } from '../Path';
 
 var sin = Math.sin;
 var cos = Math.cos;
 var radian = Math.PI / 180;
 
-export default Path.extend({
+class RoseShape {
+    cx = 0
+    cy = 0
+    r: number[] = []
+    k = 0
+    n = 1
+}
 
-    type: 'rose',
+export default class Rose extends Path {
 
-    shape: {
-        cx: 0,
-        cy: 0,
-        r: [],
-        k: 0,
-        n: 1
-    },
+    type = 'rose'
 
-    style: {
-        stroke: '#000',
-        fill: null
-    },
+    shape: RoseShape
 
-    buildPath: function (ctx, shape) {
+    constructor(opts?: PathOption & {
+        shape?: RoseShape
+    }) {
+        super(opts, {
+            fill: null,
+            stroke: '#000'
+        }, new RoseShape())
+    }
+
+    buildPath(ctx: CanvasRenderingContext2D, shape: RoseShape) {
         const R = shape.r;
         const k = shape.k;
         const n = shape.n;
@@ -55,4 +61,4 @@ export default Path.extend({
             }
         }
     }
-});
+}

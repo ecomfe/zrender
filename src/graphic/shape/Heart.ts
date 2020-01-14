@@ -2,20 +2,27 @@
  * 心形
  */
 
-import Path from '../Path';
+import Path, { PathOption } from '../Path';
 
-export default Path.extend({
+class HeartShape {
+    cx = 0
+    cy = 0
+    width = 0
+    height = 0
+}
+export default class Heart extends Path {
 
-    type: 'heart',
+    type = 'heart'
 
-    shape: {
-        cx: 0,
-        cy: 0,
-        width: 0,
-        height: 0
-    },
+    shape: HeartShape
 
-    buildPath: function (ctx, shape) {
+    constructor(opts?: PathOption & {
+        shape?: HeartShape
+    }) {
+        super(opts, null, new HeartShape())
+    }
+
+    buildPath(ctx: CanvasRenderingContext2D, shape: HeartShape) {
         const x = shape.cx;
         const y = shape.cy;
         const a = shape.width;
@@ -32,4 +39,4 @@ export default Path.extend({
             x, y
         );
     }
-});
+}

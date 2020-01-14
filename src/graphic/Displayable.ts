@@ -37,6 +37,8 @@ export interface DisplayableOption extends ElementOption {
 type DisplayableKey = keyof DisplayableOption
 type DisplayablePropertyType = PropType<DisplayableOption, DisplayableKey>
 
+type StyleKeys = keyof StyleOption
+
 const tmpRect = new BoundingRect();
 
 export default class Displayable extends Element {
@@ -115,7 +117,7 @@ export default class Displayable extends Element {
     __canCacheByTextString: boolean
     __text: string
 
-    constructor(opts?: DisplayableOption) {
+    constructor(opts?: DisplayableOption, defaultStyle?: StyleOption) {
         super();
 
         this.attr(opts);
@@ -123,6 +125,14 @@ export default class Displayable extends Element {
         if (!this.style) {
             // Create an empty style object.
             this.useStyle({});
+        }
+
+        if (defaultStyle) {
+            for (let key in defaultStyle) {
+                if (opts && opts.style && opts.style[key as StyleKeys]) {
+                    this.style.set(key as StyleKeys, defaultStyle[key as StyleKeys]);
+                }
+            }
         }
     }
 

@@ -3,46 +3,44 @@
  * @module zrender/graphic/shape/Rect
  */
 
-import Path from '../Path';
+import Path, { PathOption } from '../Path';
 import * as roundRectHelper from '../helper/roundRect';
 import {subPixelOptimizeRect} from '../helper/subPixelOptimize';
 
-interface RectShape {
+class RectShape {
+    // 左上、右上、右下、左下角的半径依次为r1、r2、r3、r4
+    // r缩写为1         相当于 [1, 1, 1, 1]
+    // r缩写为[1]       相当于 [1, 1, 1, 1]
+    // r缩写为[1, 2]    相当于 [1, 2, 1, 2]
+    // r缩写为[1, 2, 3] 相当于 [1, 2, 3, 2]
+    r?: number | number[]
 
-    r?: number | number[],
-
-    x: number,
-    y: number,
-    width: number,
-    height: number
+    x = 0
+    y = 0
+    width = 0
+    height = 0
 }
 
 // Avoid create repeatly.
 var subPixelOptimizeOutputShape = {};
 
-export default Path.extend<RectShape, {}>({
+export default class Rect extends Path {
 
-    type: 'rect',
+    type = 'rect'
 
-    shape: {
-        // 左上、右上、右下、左下角的半径依次为r1、r2、r3、r4
-        // r缩写为1         相当于 [1, 1, 1, 1]
-        // r缩写为[1]       相当于 [1, 1, 1, 1]
-        // r缩写为[1, 2]    相当于 [1, 2, 1, 2]
-        // r缩写为[1, 2, 3] 相当于 [1, 2, 3, 2]
-        r: 0,
+    shape: RectShape
 
-        x: 0,
-        y: 0,
-        width: 0,
-        height: 0
-    },
+    constructor(opts?: PathOption & {
+        shape?: RectShape
+    }) {
+        super(opts, null, new RectShape())
+    }
 
-    buildPath: function (ctx, shape) {
-        let x;
-        let y;
-        let width;
-        let height;
+    buildPath(ctx: CanvasRenderingContext2D, shape: RectShape) {
+        let x: number;
+        let y: number;
+        let width: number;
+        let height: number;
 
         if (this.subPixelOptimize) {
             const optimizedShape = subPixelOptimizeRect(subPixelOptimizeOutputShape, shape, this.style);
@@ -67,6 +65,5 @@ export default Path.extend<RectShape, {}>({
             roundRectHelper.buildPath(ctx, shape);
         }
         ctx.closePath();
-        return;
     }
-});
+}

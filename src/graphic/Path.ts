@@ -61,8 +61,10 @@ export default class Path extends Displayable {
     // It will be assigned by default value.
     shape: Dictionary<any>
 
-    constructor(opts?: PathOption) {
-        super(opts);
+    constructor(opts?: PathOption, defaultStyle?: StyleOption, defaultShape?: Dictionary<any>) {
+        super(opts, defaultStyle);
+
+        this._defaultsShape(defaultShape);
         // TODO
         if (opts) {
             if (opts.strokeContainThreshold != null) {
@@ -372,7 +374,7 @@ export default class Path extends Displayable {
     }
 
     // Defaults shape value
-    protected _defaultsShape(defaultShapeObj: Dictionary<any>) {
+    private _defaultsShape(defaultShapeObj: Dictionary<any>) {
         if (!this.shape) {
             this.shape = {};
         }
@@ -382,6 +384,7 @@ export default class Path extends Displayable {
     /**
      * 扩展一个 Path element, 比如星形，圆等。
      * Extend a path element
+     * @DEPRECATED Use class extends
      * @param props
      * @param props.type Path type
      * @param props.init Initialize
@@ -402,7 +405,14 @@ export default class Path extends Displayable {
 
         buildPath: (this: Path, ctx: CanvasRenderingContext2D | PathProxy, shape: ShapeType, inBundle?: boolean) => void
         init?: (this: Path, opts: PathOption) => void // TODO Should be SubPathOption
-    }) {
+    }): {
+        new(opts?: PathOption & {
+            shape?: ShapeType
+        }): Path & {
+            extra?: ExtraType,
+            shape: ShapeType
+        }
+    } {
         interface SubPathOption extends PathOption {
             shape: ShapeType
         }

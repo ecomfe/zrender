@@ -12,7 +12,8 @@
   },
   "scripts": {
     "prepublish": "npm run build",
-    "build": "node build/build.js",
+    "build": "npm run build:bundle && npm run build:cjs && npm run build:esm",
+    "build:bundle": "node build/build.js",
     "build:cjs": "node_modules/.bin/tsc -m CommonJS --outDir lib",
     "build:esm": "node_modules/.bin/tsc -m ES2015 --outDir esm",
 

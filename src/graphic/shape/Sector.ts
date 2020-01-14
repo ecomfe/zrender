@@ -5,43 +5,32 @@
 
 import Path, { PathOption } from '../Path';
 import fixClipWithShadow from '../helper/fixClipWithShadow';
-import PathProxy from '../../core/PathProxy';
 
-interface SectorShape {
-    cx: number
-    cy: number
-    r0: number
-    r: number
-    startAngle: number
-    endAngle: number
-    clockwise: boolean
+class SectorShape {
+    cx: number = 0
+    cy: number = 0
+    r0: number = 0
+    r: number = 0
+    startAngle: number = 0
+    endAngle: number = Math.PI * 2
+    clockwise: boolean = true
 }
 
 export default class Sector extends Path {
 
     type = 'sector'
 
-    shape: SectorShape;
+    shape: SectorShape
 
     brush = fixClipWithShadow(Path.prototype.brush)
 
     constructor(opts?: PathOption & {
         shape: SectorShape
     }) {
-        super(opts);
-
-        this._defaultsShape({
-            cx: 0,
-            cy: 0,
-            r0: 0,
-            r: 0,
-            startAngle: 0,
-            endAngle: Math.PI * 2,
-            clockwise: true
-        });
+        super(opts, null, new SectorShape());
     }
 
-    buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: SectorShape) {
+    buildPath(ctx: CanvasRenderingContext2D, shape: SectorShape) {
 
         const x = shape.cx;
         const y = shape.cy;

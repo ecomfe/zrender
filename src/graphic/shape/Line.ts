@@ -13,13 +13,13 @@ var subPixelOptimizeOutputShape = {};
 
 class LineShape {
     // Start point
-    x1: number = 0
-    y1: number = 0
+    x1 = 0
+    y1 = 0
     // End point
-    x2: number = 0
-    y2: number = 0
+    x2 = 0
+    y2 = 0
 
-    percent: number = 1
+    percent = 1
 }
 
 export default class Line extends Path {
@@ -31,15 +31,10 @@ export default class Line extends Path {
     constructor(opts?: PathOption & {
         shape: LineShape
     }) {
-        super(opts);
-        // Set default style.
-        if (!opts?.style?.stroke) {
-            this.style.stroke = '#000';
-        }
-        if (!opts?.style?.fill) {
-            this.style.fill = null;
-        }
-        this._defaultsShape(new LineShape());
+        super(opts, {
+            stroke: '#000',
+            fill: null
+        }, new LineShape());
     }
 
     buildPath(ctx: PathProxy, shape: LineShape) {

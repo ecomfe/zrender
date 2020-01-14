@@ -2,24 +2,32 @@
  * 正多边形
  */
 
-import Path from '../Path';
+import Path, { PathOption } from '../Path';
 
-var PI = Math.PI;
-var sin = Math.sin;
-var cos = Math.cos;
+const PI = Math.PI;
+const sin = Math.sin;
+const cos = Math.cos;
 
-export default Path.extend({
+class IsogonShape {
+    x = 0
+    y = 0
+    r = 0
+    n = 0
+}
 
-    type: 'isogon',
+export default class Isogon extends Path {
 
-    shape: {
-        x: 0,
-        y: 0,
-        r: 0,
-        n: 0
-    },
+    type = 'isogon'
 
-    buildPath: function (ctx, shape) {
+    shape: IsogonShape
+
+    constructor(opts?: PathOption & {
+        shape?: IsogonShape
+    }) {
+        super(opts, null, new IsogonShape())
+    }
+
+    buildPath(ctx: CanvasRenderingContext2D, shape: IsogonShape) {
         const n = shape.n;
         if (!n || n < 2) {
             return;
@@ -42,4 +50,4 @@ export default Path.extend({
 
         return;
     }
-});
+}

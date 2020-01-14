@@ -3,31 +3,36 @@
  * @module zrender/graphic/shape/Trochold
  */
 
-import Path from '../Path';
+import Path, { PathOption } from '../Path';
 
-var cos = Math.cos;
-var sin = Math.sin;
+const cos = Math.cos;
+const sin = Math.sin;
 
-export default Path.extend({
+class TrochoidShape {
+    cx = 0
+    cy = 0
+    r = 0
+    r0 = 0
+    d = 0
+    location = 'out'
+}
 
-    type: 'trochoid',
+export default class Trochoid extends Path {
 
-    shape: {
-        cx: 0,
-        cy: 0,
-        r: 0,
-        r0: 0,
-        d: 0,
-        location: 'out'
-    },
+    type = 'trochoid'
 
-    style: {
-        stroke: '#000',
+    shape: TrochoidShape
 
-        fill: null
-    },
+    constructor(opts?: PathOption & {
+        shape?: TrochoidShape
+    }) {
+        super(opts, {
+            stroke: '#000',
+            fill: null
+        }, new TrochoidShape())
+    }
 
-    buildPath: function (ctx, shape) {
+    buildPath(ctx: CanvasRenderingContext2D, shape: TrochoidShape) {
         const R = shape.r;
         const r = shape.r0;
         const d = shape.d;
@@ -74,4 +79,4 @@ export default Path.extend({
         while (i <= (r * num) / (R + delta * r) * 360);
 
     }
-});
+}

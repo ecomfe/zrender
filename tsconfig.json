@@ -4,12 +4,13 @@
         "noImplicitAny": true,
         "strictBindCallApply": true,
         "removeComments": true,
-        "sourceMap": false,
+        "sourceMap": true,
 
         // https://github.com/ezolenko/rollup-plugin-typescript2/issues/12#issuecomment-536173372
         "moduleResolution": "Node",
-        // "declaration": true,
-        // "declarationMap": true,
+
+        "declaration": true,
+        "declarationMap": false,
 
         "allowJs": true,
 

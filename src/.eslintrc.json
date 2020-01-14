@@ -3,8 +3,7 @@
   "plugins": ["@typescript-eslint"],
   "env": {
     "browser": true,
-    "node": true,
-    "es6": false
+    "node": true
   },
   "globals": {
     "jQuery": true,
