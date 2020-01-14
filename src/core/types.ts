@@ -64,7 +64,7 @@ export type ElementEventNameWithOn = 'onclick' | 'ondblclick' | 'onmousewheel' |
 
 
 
-// Useful property methods
+// Useful type methods
 export type PropType<TObj, TProp extends keyof TObj> = TObj[TProp];
 
 export type AllPropTypes<T> = PropType<T, keyof T>
