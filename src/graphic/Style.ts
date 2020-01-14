@@ -285,7 +285,7 @@ export default class Style extends StyleOption {
 
     shadowOffsetY = 0
 
-    shadowColor = '#fff'
+    shadowColor = '#000'
 
     lineWidth = 1
 

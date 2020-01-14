@@ -503,7 +503,7 @@ export default class Animator<T> {
             }
 
             // Try converting a string to a color array
-            if (!isValueColor && !isValueColor && typeof value === 'string') {
+            if (typeof value === 'string') {
                 const colorArray = color.parse(value);
                 if (colorArray) {
                     value = colorArray;
