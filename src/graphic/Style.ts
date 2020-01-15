@@ -272,64 +272,64 @@ type StyleValueType = PropType<StyleOption, StyleKey>
 
 export default class Style extends StyleOption {
 
-    fill: string | LinearGradientObject | RadialGradientObject | PatternObject = '#000'
-    stroke: string | LinearGradientObject | RadialGradientObject | PatternObject = null
+    // fill: string | LinearGradientObject | RadialGradientObject | PatternObject = '#000'
+    // stroke: string | LinearGradientObject | RadialGradientObject | PatternObject = null
 
-    opacity = 1
+    // opacity = 1
 
-    lineDashOffset = 0
+    // lineDashOffset = 0
 
-    shadowBlur = 0
+    // shadowBlur = 0
 
-    shadowOffsetX = 0
+    // shadowOffsetX = 0
 
-    shadowOffsetY = 0
+    // shadowOffsetY = 0
 
-    shadowColor = '#000'
+    // shadowColor = '#000'
 
-    lineWidth = 1
+    // lineWidth = 1
 
-    lineCap: CanvasLineCap = 'butt'
+    // lineCap: CanvasLineCap = 'butt'
 
-    lineJoin: CanvasLineJoin
+    // lineJoin: CanvasLineJoin
 
-    miterLimit = 10
+    // miterLimit = 10
 
-    strokeNoScale = false
+    // strokeNoScale = false
 
-    textWidth: number | string
+    // textWidth: number | string
 
-    textHeight: number
+    // textHeight: number
 
-    textStrokeWidth = 0
+    // textStrokeWidth = 0
 
-    textPosition: string | number[] = 'inside'
+    // textPosition: string | number[] = 'inside'
 
-    textDistance = 5
+    // textDistance = 5
 
-    textShadowColor = 'transparent'
+    // textShadowColor = 'transparent'
 
-    textShadowBlur = 0
+    // textShadowBlur = 0
 
-    textShadowOffsetX = 0
+    // textShadowOffsetX = 0
 
-    textShadowOffsetY = 0
+    // textShadowOffsetY = 0
 
-    textBoxShadowColor = 'transparent'
+    // textBoxShadowColor = 'transparent'
 
-    textBoxShadowBlur = 0
+    // textBoxShadowBlur = 0
 
-    textBoxShadowOffsetX = 0
+    // textBoxShadowOffsetX = 0
 
-    textBoxShadowOffsetY = 0
+    // textBoxShadowOffsetY = 0
 
-    transformText: boolean
+    // transformText: boolean
 
-    textRotation = 0
+    // textRotation = 0
 
-    textBorderWidth = 0
+    // textBorderWidth = 0
 
-    textBorderRadius = 0
+    // textBorderRadius = 0
 
     constructor(opts?: StyleOption) {
         super()
@@ -450,4 +450,34 @@ export default class Style extends StyleOption {
         }
         return canvasGradient;
     }
+
+    private static initDefaultProps = (function () {
+        let styleProto = Style.prototype;
+        styleProto.fill = '#000';
+        styleProto.stroke = null;
+        styleProto.opacity = 1;
+        styleProto.lineDashOffset = 0;
+        styleProto.shadowBlur = 0;
+        styleProto.shadowOffsetX = 0;
+        styleProto.shadowOffsetY = 0;
+        styleProto.shadowColor = '#000';
+        styleProto.lineWidth = 1;
+        styleProto.lineCap = 'butt';
+        styleProto.miterLimit = 10;
+        styleProto.strokeNoScale = false;
+        styleProto.textStrokeWidth = 0;
+        styleProto.textPosition = 'inside';
+        styleProto.textDistance = 5;
+        styleProto.textShadowColor = 'transparent';
+        styleProto.textShadowBlur = 0;
+        styleProto.textShadowOffsetX = 0;
+        styleProto.textShadowOffsetY = 0;
+        styleProto.textBoxShadowColor = 'transparent';
+        styleProto.textBoxShadowBlur = 0;
+        styleProto.textBoxShadowOffsetX = 0;
+        styleProto.textBoxShadowOffsetY = 0;
+        styleProto.textRotation = 0;
+        styleProto.textBorderWidth = 0;
+        styleProto.textBorderRadius = 0;
+    })()
 };

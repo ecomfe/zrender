@@ -61,37 +61,37 @@ export default class Element extends Transformable {
     /**
      * Element type
      */
-    type = 'element'
+    type: string
 
     /**
      * Element name
      */
-    name = ''
+    name: string
 
     /**
      * If ignore drawing and events of the element object
      */
-    ignore = false
+    ignore: boolean
 
     /**
      * Whether to respond to mouse events.
      */
-    silent = false
+    silent: boolean
 
     /**
      * 是否是 Group
      */
-    isGroup = false
+    isGroup: boolean
 
     /**
      * Whether it can be dragged.
      */
-    draggable: boolean | string = false
+    draggable: boolean | string
 
     /**
      * Whether is it dragging.
      */
-    dragging = false
+    dragging: boolean
 
     parent: Element
 
@@ -105,12 +105,12 @@ export default class Element extends Transformable {
     /**
      * ZRender instance will be assigned when element is associated with zrender
      */
-    __zr: ZRenderType = null
+    __zr: ZRenderType
 
     /**
      * Dirty flag. From which painter will determine if this displayable object needs brush.
      */
-    __dirty: boolean = true
+    __dirty: boolean
 
     __storage: Storage
 
@@ -119,10 +119,11 @@ export default class Element extends Transformable {
      * 该路径会继承被裁减对象的变换
      * @see http://www.w3.org/TR/2dcontext/#clipping-region
      */
-    private _clipPath: Path = null
+    private _clipPath: Path
 
-    constructor() {
-        super();
+    constructor(opts?: ElementOption) {
+        // Transformable needs position, rotation, scale
+        super(opts);
     }
 
     /**
@@ -493,6 +494,19 @@ export default class Element extends Transformable {
     ondragleave: ElementEventCallback
     ondragover: ElementEventCallback
     ondrop: ElementEventCallback
+
+
+    protected static initDefaultProps = (function () {
+        const elProto = Element.prototype;
+        elProto.type = 'element';
+        elProto.name = '';
+        elProto.ignore = false;
+        elProto.silent = false;
+        elProto.isGroup = false;
+        elProto.draggable = false;
+        elProto.dragging = false;
+        elProto.__dirty = true;
+    })()
 }
 
 function animateTo(

@@ -43,56 +43,43 @@ const tmpRect = new BoundingRect();
 
 export default class Displayable extends Element {
 
-    type = 'displayable'
-
     /**
      * Whether the displayable object is visible. when it is true, the displayable object
      * is not drawn, but the mouse event can still trigger the object.
      */
-    invisible = false
+    invisible: boolean
 
-    /**
-     */
-    z = 0
+    z: number
 
-    /**
-     */
-    z2 = 0
+    z2: number
 
     /**
      * The z level determines the displayable object can be drawn in which layer canvas.
      */
-    zlevel = 0
+    zlevel: number
 
     /**
      * If enable culling
      */
-    culling = false
+    culling: boolean
 
     /**
      * Mouse cursor when hovered
      */
-    cursor = 'pointer'
+    cursor: string
 
     /**
      * If hover area is bounding rect
      */
-    rectHover = false
-
-    /**
-     * Render the element progressively when the value >= 0,
-     * usefull for large data.
-     */
-    progressive = false
-
+    rectHover: boolean
     /**
      * For increamental rendering
      */
-    incremental = false
+    incremental: boolean
 
     style: Style
 
-    protected _rect: BoundingRect = null
+    protected _rect: BoundingRect
 
     /************* Properties will be inejected in other modules. *******************/
     // Shapes for cascade clipping.
@@ -118,7 +105,7 @@ export default class Displayable extends Element {
     __text: string
 
     constructor(opts?: DisplayableOption, defaultStyle?: StyleOption) {
-        super();
+        super(opts);
 
         this.attr(opts);
 
@@ -130,7 +117,7 @@ export default class Displayable extends Element {
         if (defaultStyle) {
             for (let key in defaultStyle) {
                 if (!(opts && opts.style && opts.style[key as StyleKeys])) {
-                    this.style.set(key as StyleKeys, defaultStyle[key as StyleKeys]);
+                    (this.style as any)[key] = defaultStyle[key as StyleKeys];
                 }
             }
         }
@@ -199,7 +186,9 @@ export default class Displayable extends Element {
             if (!this.style) {
                 this.useStyle(value as StyleOption);
             }
-            this.style.set(value as StyleOption);
+            else {
+                this.style.set(value as StyleOption);
+            }
         }
     }
 
@@ -285,4 +274,19 @@ export default class Displayable extends Element {
      */
     calculateTextPosition: (out: CalculateTextPositionResult, style: StyleOption, rect: RectLike) => CalculateTextPositionResult
 
+
+    protected static initDefaultProps = (function () {
+        const dispProto = Displayable.prototype;
+        dispProto.type = 'displayable';
+        dispProto.invisible = false;
+        dispProto.z = 0;
+        dispProto.z2 = 0;
+        dispProto.zlevel = 0;
+        dispProto.culling = false;
+        dispProto.cursor = 'pointer';
+        dispProto.rectHover = false;
+        dispProto.incremental = false;
+        dispProto._rect = null;
+        dispProto.__dirtyText = false;
+    })()
 }

@@ -36,20 +36,18 @@ type PathPropertyType = PropType<PathOption, PathKey>
 
 export default class Path extends Displayable {
 
-    type = 'path'
-
     path: PathProxy
 
-    strokeContainThreshold = 5
+    strokeContainThreshold: number
 
     // This item default to be false. But in map series in echarts,
     // in order to improve performance, it should be set to true,
     // so the shorty segment won't draw.
-    segmentIgnoreThreshold = 0
+    segmentIgnoreThreshold: number
 
-    subPixelOptimize = false
+    subPixelOptimize: boolean
 
-    __dirtyPath: boolean = true
+    __dirtyPath: boolean
     __clipTarget: Element
 
     private _fillGradient: CanvasGradient
@@ -442,4 +440,14 @@ export default class Path extends Displayable {
 
         return Sub;
     }
+
+
+    protected static initDefaultProps = (function () {
+        const pathProto = Path.prototype;
+        pathProto.type = 'path';
+        pathProto.strokeContainThreshold = 5;
+        pathProto.segmentIgnoreThreshold = 0;
+        pathProto.subPixelOptimize = false;
+        pathProto.__dirtyPath = true;
+    })()
 }
