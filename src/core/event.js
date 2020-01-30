@@ -4,12 +4,11 @@
 
 import Eventful from '../mixin/Eventful';
 import env from './env';
-import {buildTransformer} from './fourPointsTransform';
+import {isCanvasEl, transformCoordWithViewport} from './dom';
 
 var isDomLevel2 = (typeof window !== 'undefined') && !!window.addEventListener;
 
 var MOUSE_EVENT_REG = /^(?:mouse|pointer|contextmenu|drag|drop)|click/;
-var EVENT_SAVED_PROP = '___zrEVENTSAVED';
 var _calcOut = [];
 
 /**
@@ -74,11 +73,11 @@ export function clientToLocal(el, e, out, calculate) {
 
 function calculateZrXY(el, e, out) {
     // BlackBerry 5, iOS 3 (original iPhone) don't have getBoundingRect.
-    if (el.getBoundingClientRect && env.domSupported) {
+    if (env.domSupported && el.getBoundingClientRect) {
         var ex = e.clientX;
         var ey = e.clientY;
 
-        if (el.nodeName.toUpperCase() === 'CANVAS') {
+        if (isCanvasEl(el)) {
             // Original approach, which do not support CSS transform.
             // marker can not be locationed in a canvas container
             // (getBoundingClientRect is always 0). We do not support
@@ -90,10 +89,7 @@ function calculateZrXY(el, e, out) {
             return;
         }
         else {
-            var saved = el[EVENT_SAVED_PROP] || (el[EVENT_SAVED_PROP] = {});
-            var transformer = preparePointerTransformer(prepareCoordMarkers(el, saved), saved);
-            if (transformer) {
-                transformer(_calcOut, ex, ey);
+            if (transformCoordWithViewport(_calcOut, el, ex, ey)) {
                 out.zrX = _calcOut[0];
                 out.zrY = _calcOut[1];
                 return;
@@ -101,70 +97,6 @@ function calculateZrXY(el, e, out) {
         }
     }
     out.zrX = out.zrY = 0;
-}
-
-function prepareCoordMarkers(el, saved) {
-    var markers = saved.markers;
-    if (markers) {
-        return markers;
-    }
-
-    markers = saved.markers = [];
-    var propLR = ['left', 'right'];
-    var propTB = ['top', 'bottom'];
-
-    for (var i = 0; i < 4; i++) {
-        var marker = document.createElement('div');
-        var stl = marker.style;
-        var idxLR = i % 2;
-        var idxTB = (i >> 1) % 2;
-        stl.cssText = [
-            'position:absolute',
-            'visibility: hidden',
-            'padding: 0',
-            'margin: 0',
-            'border-width: 0',
-            'width:0',
-            'height:0',
-            // 'width: 5px',
-            // 'height: 5px',
-            propLR[idxLR] + ':0',
-            propTB[idxTB] + ':0',
-            propLR[1 - idxLR] + ':auto',
-            propTB[1 - idxTB] + ':auto',
-            ''
-        ].join('!important;');
-        el.appendChild(marker);
-        markers.push(marker);
-    }
-
-    return markers;
-}
-
-function preparePointerTransformer(markers, saved) {
-    var transformer = saved.transformer;
-    var oldSrcCoords = saved.srcCoords;
-    var useOld = true;
-    var srcCoords = [];
-    var destCoords = [];
-
-    for (var i = 0; i < 4; i++) {
-        var rect = markers[i].getBoundingClientRect();
-        var ii = 2 * i;
-        var x = rect.left;
-        var y = rect.top;
-        srcCoords.push(x, y);
-        useOld &= oldSrcCoords && x === oldSrcCoords[ii] && y === oldSrcCoords[ii + 1];
-        destCoords.push(markers[i].offsetLeft, markers[i].offsetTop);
-    }
-
-    // Cache to avoid time consuming of `buildTransformer`.
-    return useOld
-        ? transformer
-        : (
-            saved.srcCoords = srcCoords,
-            saved.transformer = buildTransformer(srcCoords, destCoords)
-        );
 }
 
 /**

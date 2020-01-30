@@ -1,5 +1,5 @@
 /**
- * 动画主类, 调度和管理所有动画控制器
+ * Animation main class, dispatch and manage all animation controllers
  *
  * @module zrender/animation/Animation
  * @author pissang(https://github.com/pissang)
@@ -69,14 +69,14 @@ Animation.prototype = {
 
     constructor: Animation,
     /**
-     * 添加 clip
+     * Add clip
      * @param {module:zrender/animation/Clip} clip
      */
     addClip: function (clip) {
         this._clips.push(clip);
     },
     /**
-     * 添加 animator
+     * Add animator
      * @param {module:zrender/animation/Animator} animator
      */
     addAnimator: function (animator) {
@@ -87,7 +87,7 @@ Animation.prototype = {
         }
     },
     /**
-     * 删除动画片段
+     * Delete animation clip
      * @param {module:zrender/animation/Clip} clip
      */
     removeClip: function (clip) {
@@ -98,7 +98,7 @@ Animation.prototype = {
     },
 
     /**
-     * 删除动画片段
+     * Delete animation clip
      * @param {module:zrender/animation/Animator} animator
      */
     removeAnimator: function (animator) {

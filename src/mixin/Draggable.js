@@ -23,7 +23,11 @@ Draggable.prototype = {
 
     _dragStart: function (e) {
         var draggingTarget = e.target;
-        if (draggingTarget && draggingTarget.draggable) {
+        // Find if there is draggable in the ancestor
+        while (draggingTarget && !draggingTarget.draggable) {
+            draggingTarget = draggingTarget.parent;
+        }
+        if (draggingTarget) {
             this._draggingTarget = draggingTarget;
             draggingTarget.dragging = true;
             this._x = e.offsetX;
