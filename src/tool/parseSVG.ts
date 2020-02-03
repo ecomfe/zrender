@@ -8,7 +8,6 @@ import Line from '../graphic/shape/Line';
 import Path from '../graphic/Path';
 import Polygon from '../graphic/shape/Polygon';
 import Polyline from '../graphic/shape/Polyline';
-import Style, { StyleOption } from '../graphic/Style';
 import * as matrix from '../core/matrix';
 import { createFromString } from './path';
 import { isString, extend, defaults, trim, each, map } from '../core/util';
@@ -558,17 +557,16 @@ function parseAttributes(
     const elFillProp: 'textFill' | 'fill' = isTextEl ? 'textFill' : 'fill';
     const elStrokeProp: 'textStroke' | 'stroke' = isTextEl ? 'textStroke' : 'stroke';
 
-    disp.style = disp.style || new Style();
-    const elStyle = disp.style;
+    disp.style = disp.style || {};
 
-    zrStyle.fill != null && elStyle.set(elFillProp as 'fill', getPaint(zrStyle.fill, defs));
-    zrStyle.stroke != null && elStyle.set(elStrokeProp as 'stroke', getPaint(zrStyle.stroke, defs));
+    zrStyle.fill != null && disp.setStyle(elFillProp as 'fill', getPaint(zrStyle.fill, defs));
+    zrStyle.stroke != null && disp.setStyle(elStrokeProp as 'stroke', getPaint(zrStyle.stroke, defs));
 
     each([
         'lineWidth', 'opacity', 'fillOpacity', 'strokeOpacity', 'miterLimit', 'fontSize'
     ], function (propName) {
         const elPropName = (propName === 'lineWidth' && isTextEl) ? 'textStrokeWidth' : propName;
-        zrStyle[propName] != null && elStyle.set(elPropName as keyof StyleOption, parseFloat(zrStyle[propName]));
+        zrStyle[propName] != null && disp.setStyle(elPropName, parseFloat(zrStyle[propName]));
     });
 
     if (!zrStyle.textBaseline || zrStyle.textBaseline === 'auto') {
@@ -587,7 +585,7 @@ function parseAttributes(
     each(['lineDashOffset', 'lineCap', 'lineJoin',
         'fontWeight', 'fontFamily', 'fontStyle', 'textAlign', 'textBaseline'
     ], function (propName) {
-        zrStyle[propName] != null && elStyle.set(propName as keyof StyleOption, zrStyle[propName]);
+        zrStyle[propName] != null && disp.setStyle(propName, zrStyle[propName]);
     });
 
     if (zrStyle.lineDash) {
@@ -596,7 +594,7 @@ function parseAttributes(
         });
     }
 
-    if (elStyle[elStrokeProp] && elStyle[elStrokeProp] !== 'none') {
+    if (disp.style[elStrokeProp] && disp.style[elStrokeProp] !== 'none') {
         // TODO
         (el as any)[elStrokeProp] = true;
     }

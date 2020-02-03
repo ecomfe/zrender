@@ -1,19 +1,20 @@
 import {devicePixelRatio} from '../config';
 import * as util from '../core/util';
-import BoundingRect from '../core/BoundingRect';
 import timsort from '../core/timsort';
 import Layer, { LayerConfig } from './Layer';
 import requestAnimationFrame from '../animation/requestAnimationFrame';
-import ZImage from '../graphic/Image';
+import ZImage, { ImageStyleOption } from '../graphic/Image';
 import env from '../core/env';
 import { Path, IncrementalDisplayable } from '../export';
 import Displayable from '../graphic/Displayable';
-import { Dictionary, WXCanvasRenderingContext, ZRCanvasRenderingContext } from '../core/types';
+import { WXCanvasRenderingContext, ZRCanvasRenderingContext } from '../core/types';
 import { GradientObject } from '../graphic/Gradient';
 import { PatternObject } from '../graphic/Pattern';
-import { StyleOption } from '../graphic/Style';
-import {PainterBase} from '../PainterBase';
 import Storage from '../Storage';
+import { brush, BrushScope } from './graphic';
+import ZText, { TextStyleOption } from '../graphic/Text';
+import { PathStyleOption } from '../graphic/Path';
+import { CanvasPainterInterface } from './PainterInterface';
 
 const HOVER_LAYER_ZLEVEL = 1e5;
 const CANVAS_ZLEVEL = 314159;
@@ -41,47 +42,6 @@ function isLayerValid(layer: Layer) {
     }
 
     return true;
-}
-
-const tmpRect = new BoundingRect(0, 0, 0, 0);
-const viewRect = new BoundingRect(0, 0, 0, 0);
-function isDisplayableCulled(el: Displayable, width: number, height: number) {
-    tmpRect.copy(el.getBoundingRect());
-    if (el.transform) {
-        tmpRect.applyTransform(el.transform);
-    }
-    viewRect.width = width;
-    viewRect.height = height;
-    return !tmpRect.intersect(viewRect);
-}
-
-function isClipPathChanged(clipPaths: Path[], prevClipPaths: Path[]) {
-    // displayable.__clipPaths can only be `null`/`undefined` or an non-empty array.
-    if (clipPaths === prevClipPaths) {
-        return false;
-    }
-    if (!clipPaths || !prevClipPaths || (clipPaths.length !== prevClipPaths.length)) {
-        return true;
-    }
-    for (let i = 0; i < clipPaths.length; i++) {
-        if (clipPaths[i] !== prevClipPaths[i]) {
-            return true;
-        }
-    }
-    return false;
-}
-
-function doClip(clipPaths: Path[], ctx: CanvasRenderingContext2D) {
-    for (let i = 0; i < clipPaths.length; i++) {
-        const clipPath = clipPaths[i];
-
-        clipPath.setTransform(ctx);
-        ctx.beginPath();
-        clipPath.buildPath(ctx, clipPath.shape);
-        ctx.clip();
-        // Transform back
-        clipPath.restoreTransform(ctx);
-    }
 }
 
 function createRoot(width: number, height: number) {
@@ -113,12 +73,7 @@ interface CanvasPainterOption {
     height?: number | string
 }
 
-interface PaintingScope {
-    prevElClipPaths?: Path[]
-    prevEl?: Displayable
-}
-
-export default class CanvasPainter implements PainterBase {
+export default class CanvasPainter implements CanvasPainterInterface {
 
     type = 'canvas'
 
@@ -304,7 +259,10 @@ export default class CanvasPainter implements PainterBase {
         return this;
     }
 
-    addHover (el: Displayable, hoverStyle: StyleOption) {
+    addHover(el: Path, style: PathStyleOption): Path
+    addHover(el: ZText, style: TextStyleOption): ZText
+    addHover(el: ZImage, style: ImageStyleOption): ZImage
+    addHover(el: Path | ZText | ZImage, hoverStyle: PathStyleOption | TextStyleOption | ImageStyleOption): Path | ZText | ZImage {
         if (el.__hoverMir) {
             return;
         }
@@ -323,7 +281,7 @@ export default class CanvasPainter implements PainterBase {
         return elMirror;
     }
 
-    removeHover (el: Displayable) {
+    removeHover (el: Path | ZText | ZImage) {
         const elMirror = el.__hoverMir;
         const hoverElements = this._hoverElements;
         const idx = util.indexOf(hoverElements, elMirror);
@@ -361,7 +319,7 @@ export default class CanvasPainter implements PainterBase {
             hoverLayer = this._hoverlayer = this.getLayer(HOVER_LAYER_ZLEVEL);
         }
 
-        const scope: PaintingScope = {};
+        const scope: BrushScope = {};
         hoverLayer.ctx.save();
         for (let i = 0; i < len;) {
             const el = hoverElements[i];
@@ -448,7 +406,10 @@ export default class CanvasPainter implements PainterBase {
         for (let k = 0; k < layerList.length; k++) {
             const layer = layerList[k];
             const ctx = layer.ctx;
-            const scope: PaintingScope = {};
+            const scope: BrushScope = {
+                allClipped: false,
+                prevEl: null
+            };
             ctx.save();
 
             let start = paintAll ? layer.__startIndex : layer.__drawIndex;
@@ -515,48 +476,10 @@ export default class CanvasPainter implements PainterBase {
         return finished;
     }
 
-    private _doPaintEl (el: Displayable, currentLayer: Layer, forcePaint: boolean, scope: PaintingScope) {
+    private _doPaintEl (el: Displayable, currentLayer: Layer, forcePaint: boolean, scope: BrushScope) {
         const ctx = currentLayer.ctx;
-        const m = el.transform;
-        if (
-            (currentLayer.__dirty || forcePaint)
-            // Ignore invisible element
-            && !el.invisible
-            // Ignore transparent element
-            && el.style.opacity !== 0
-            // Ignore scale 0 element, in some environment like node-canvas
-            // Draw a scale 0 element can cause all following draw wrong
-            // And setTransform with scale 0 will cause set back transform failed.
-            && !(m && !m[0] && !m[3])
-            // Ignore culled element
-            && !(el.culling && isDisplayableCulled(el, this._width, this._height))
-        ) {
-
-            const clipPaths = el.__clipPaths;
-            const prevElClipPaths = scope.prevElClipPaths;
-
-            // Optimize when clipping on group with several elements
-            if (!prevElClipPaths || isClipPathChanged(clipPaths, prevElClipPaths)) {
-                // If has previous clipping state, restore from it
-                if (prevElClipPaths) {
-                    ctx.restore();
-                    scope.prevElClipPaths = null;
-                    // Reset prevEl since context has been restored
-                    scope.prevEl = null;
-                }
-                // New clipping state
-                if (clipPaths) {
-                    ctx.save();
-                    doClip(clipPaths, ctx);
-                    scope.prevElClipPaths = clipPaths;
-                }
-            }
-            el.beforeBrush && el.beforeBrush(ctx);
-
-            el.brush(ctx, scope.prevEl || null);
-            scope.prevEl = el;
-
-            el.afterBrush && el.afterBrush(ctx);
+        if (currentLayer.__dirty || forcePaint) {
+            brush(ctx, el, scope);
         }
     }
 
@@ -1000,7 +923,7 @@ export default class CanvasPainter implements PainterBase {
         ) | 0;
     }
 
-    pathToImage (path: Path, dpr?: number) {
+    pathToImage(path: Path, dpr?: number): ZImage {
         dpr = dpr || this.dpr;
 
         const canvas = document.createElement('canvas');
@@ -1010,7 +933,7 @@ export default class CanvasPainter implements PainterBase {
         const shadowBlurSize = style.shadowBlur * dpr;
         const shadowOffsetX = style.shadowOffsetX * dpr;
         const shadowOffsetY = style.shadowOffsetY * dpr;
-        const lineWidth = style.hasStroke() ? style.lineWidth : 0;
+        const lineWidth = path.hasStroke() ? style.lineWidth : 0;
 
         const leftMargin = Math.max(lineWidth / 2, -shadowOffsetX + shadowBlurSize);
         const rightMargin = Math.max(lineWidth / 2, shadowOffsetX + shadowBlurSize);
@@ -1036,11 +959,10 @@ export default class CanvasPainter implements PainterBase {
         path.scale = [1, 1];
         path.updateTransform();
         if (path) {
-            path.brush(ctx);
+            brush(ctx, path, {});
         }
 
-        const ImageShape = ZImage;
-        const imgShape = new ImageShape({
+        const imgShape = new ZImage({
             style: {
                 x: 0,
                 y: 0,

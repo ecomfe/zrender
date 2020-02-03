@@ -3,7 +3,9 @@
  * IncrementalDisplay have two main methods. `clearDisplayables` and `addDisplayables`
  * addDisplayables will render the added displayables incremetally.
  *
- * It use a not clearFlag to tell the painter don't clear the layer if it's the first element.
+ * It use a notClear flag to tell the painter don't clear the layer if it's the first element.
+ *
+ * It's not available for SVG rendering.
  */
 import Displayble from './Displayable';
 import BoundingRect from '../core/BoundingRect';
@@ -23,6 +25,16 @@ export default class IncrementalDisplayble extends Displayble {
 
     private _cursor = 0
 
+    // getCurrentCursor / updateCursorAfterBrush
+    // is used in graphic.ts. It's not provided for developers
+    getCursor() {
+        return this._cursor;
+    }
+    // Update cursor after brush.
+    innerAfterBrush() {
+        this._cursor = this._displayables.length;
+    }
+
     clearDisplaybles() {
         this._displayables = [];
         this._temporaryDisplayables = [];
@@ -30,6 +42,10 @@ export default class IncrementalDisplayble extends Displayble {
         this.dirty();
 
         this.notClear = false;
+    }
+
+    clearTemporalDisplayables() {
+        this._temporaryDisplayables = [];
     }
 
     addDisplayable(displayable: Displayble, notPersistent?: boolean) {
@@ -47,6 +63,14 @@ export default class IncrementalDisplayble extends Displayble {
         for (let i = 0; i < displayables.length; i++) {
             this.addDisplayable(displayables[i], notPersistent);
         }
+    }
+
+    getDisplayables(): Displayble[] {
+        return this._displayables;
+    }
+
+    getTemporalDisplayables(): Displayble[] {
+        return this._temporaryDisplayables;
     }
 
     eachPendingDisplayable(cb: (displayable: Displayble) => void) {
@@ -74,29 +98,6 @@ export default class IncrementalDisplayble extends Displayble {
             displayable.update();
             displayable.parent = null;
         }
-    }
-
-    brush(ctx: CanvasRenderingContext2D) {
-        let i;
-        // Render persistant displayables.
-        for (i = this._cursor; i < this._displayables.length; i++) {
-            const displayable = this._displayables[i];
-            displayable.beforeBrush && displayable.beforeBrush(ctx);
-            displayable.brush(ctx, i === this._cursor ? null : this._displayables[i - 1]);
-            displayable.afterBrush && displayable.afterBrush(ctx);
-        }
-        this._cursor = i;
-        // Render temporary displayables.
-        for (let i = 0; i < this._temporaryDisplayables.length; i++) {
-            const displayable = this._temporaryDisplayables[i];
-            displayable.beforeBrush && displayable.beforeBrush(ctx);
-            displayable.brush(ctx, i === 0 ? null : this._temporaryDisplayables[i - 1]);
-            displayable.afterBrush && displayable.afterBrush(ctx);
-        }
-
-        this._temporaryDisplayables = [];
-
-        this.notClear = true;
     }
 
     getBoundingRect() {

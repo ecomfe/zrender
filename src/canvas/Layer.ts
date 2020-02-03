@@ -1,13 +1,12 @@
 import * as util from '../core/util';
 import {devicePixelRatio} from '../config';
-import Style from '../graphic/Style';
 import Pattern, { PatternObject } from '../graphic/Pattern';
 import CanvasPainter from './Painter';
 import { GradientObject } from '../graphic/Gradient';
-import Displayable from '../graphic/Displayable';
 import { ZRCanvasRenderingContext } from '../core/types';
 import Eventful from '../core/Eventful';
 import { ElementEventCallback } from '../Element';
+import { getCanvasGradient } from './helper';
 
 function returnFalse() {
     return false;
@@ -213,7 +212,7 @@ export default class Layer extends Eventful {
             if (util.isGradientObject(clearColor)) {
                 // Cache canvas gradient
                 clearColorGradientOrPattern = clearColor.__canvasGradient
-                    || Style.getGradient(ctx, clearColor, {
+                    || getCanvasGradient(ctx, clearColor, {
                         x: 0,
                         y: 0,
                         width: width,

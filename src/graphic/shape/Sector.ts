@@ -4,7 +4,6 @@
  */
 
 import Path, { PathOption } from '../Path';
-import fixClipWithShadow from '../helper/fixClipWithShadow';
 
 class SectorShape {
     cx: number = 0
@@ -21,8 +20,6 @@ export default class Sector extends Path {
     type = 'sector'
 
     shape: SectorShape
-
-    brush = fixClipWithShadow(Path.prototype.brush)
 
     constructor(opts?: PathOption & {
         shape: Partial<SectorShape>
@@ -59,5 +56,10 @@ export default class Sector extends Path {
         }
 
         ctx.closePath();
+    }
+
+    isZeroArea() {
+        return this.shape.startAngle === this.shape.endAngle
+            || this.shape.r === this.shape.r0
     }
 }

@@ -29,9 +29,9 @@ export interface GroupOption extends ElementOption {
 
 export default class Group extends Element {
 
-    isGroup = true
+    readonly isGroup = true
 
-    type = 'group'
+    readonly type = 'group'
 
     private _children: Element[] = []
 
@@ -203,7 +203,7 @@ export default class Group extends Element {
             const child = this._children[i];
             cb.call(context, child);
 
-            if (child.type === 'group') {
+            if (child.isGroup) {
                 child.traverse(cb, context);
             }
         }

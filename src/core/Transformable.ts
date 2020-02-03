@@ -1,7 +1,6 @@
 import * as matrix from './matrix';
 import * as vector from './vector';
 import Eventful from './Eventful';
-import { ZRCanvasRenderingContext } from './types';
 
 const mIdentity = matrix.identity;
 
@@ -14,6 +13,7 @@ function isNotAroundZero(val: number) {
 const scaleTmp: vector.VectorArray = [];
 const tmpTransform: matrix.MatrixArray = [];
 const originTransform = matrix.create();
+const abs = Math.abs;
 
 class Transformable extends Eventful {
 
@@ -121,25 +121,6 @@ class Transformable extends Eventful {
         return Transformable.getLocalTransform(this, m);
     }
 
-    /**
-     * 将自己的transform应用到context上
-     * @param {CanvasRenderingContext2D} ctx
-     */
-    setTransform(ctx: CanvasRenderingContext2D) {
-        const m = this.transform;
-        const dpr = (ctx as ZRCanvasRenderingContext).dpr || 1;
-        if (m) {
-            ctx.setTransform(dpr * m[0], dpr * m[1], dpr * m[2], dpr * m[3], dpr * m[4], dpr * m[5]);
-        }
-        else {
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        }
-    }
-
-    restoreTransform(ctx: CanvasRenderingContext2D) {
-        const dpr = (ctx as ZRCanvasRenderingContext).dpr || 1;
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
 
     setLocalTransform(m: vector.VectorArray) {
         if (!m) {
@@ -239,6 +220,18 @@ class Transformable extends Eventful {
             vector.applyTransform(v2, v2, transform);
         }
         return v2;
+    }
+
+
+    getLineScale() {
+        const m = this.transform;
+        // Get the line scale.
+        // Determinant of `m` means how much the area is enlarged by the
+        // transformation. So its square root can be used as a scale factor
+        // for width.
+        return m && abs(m[0] - 1) > 1e-10 && abs(m[3] - 1) > 1e-10
+            ? Math.sqrt(abs(m[0] * m[3] - m[2] * m[1]))
+            : 1;
     }
 
     static getLocalTransform(target: Transformable, m?: matrix.MatrixArray): matrix.MatrixArray {

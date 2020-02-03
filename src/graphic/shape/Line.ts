@@ -44,7 +44,9 @@ export default class Line extends Path {
         let y2;
 
         if (this.subPixelOptimize) {
-            const optimizedShape = subPixelOptimizeLine(subPixelOptimizeOutputShape, shape, this.style);
+            const optimizedShape = subPixelOptimizeLine(
+                subPixelOptimizeOutputShape, shape, this.style
+            );
             x1 = optimizedShape.x1;
             y1 = optimizedShape.y1;
             x2 = optimizedShape.x2;

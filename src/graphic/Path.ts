@@ -4,18 +4,62 @@ import * as zrUtil from '../core/util';
 import PathProxy from '../core/PathProxy';
 import * as pathContain from '../contain/path';
 import Pattern, { PatternObject } from './Pattern';
-import { GradientObject } from './Gradient';
-import Style, { StyleOption } from './Style';
+import { Dictionary, PropType, AllPropTypes } from '../core/types';
+import BoundingRect from '../core/BoundingRect';
 import { LinearGradientObject } from './LinearGradient';
 import { RadialGradientObject } from './RadialGradient';
-import { Dictionary, PropType } from '../core/types';
-import BoundingRect from '../core/BoundingRect';
 
-const getCanvasPattern = Pattern.prototype.getCanvasPattern;
+export interface PathStyleOption {
 
-const abs = Math.abs;
+    fill?: string | PatternObject | LinearGradientObject | RadialGradientObject
+    stroke?: string | PatternObject | LinearGradientObject | RadialGradientObject
 
-const pathProxyForDraw = new PathProxy(true);
+    strokeNoScale?: boolean
+
+    fillOpacity?: number
+    strokeOpacity?: number
+
+    /**
+     * `true` is not supported.
+     * `false`/`null`/`undefined` are the same.
+     * `false` is used to remove lineDash in some
+     * case that `null`/`undefined` can not be set.
+     * (e.g., emphasis.lineStyle in echarts)
+     */
+    lineDash?: false | number[]
+    lineDashOffset?: number
+
+    lineWidth?: number
+    lineCap?: CanvasLineCap
+    lineJoin?: CanvasLineJoin
+
+    miterLimit?: number
+
+    shadowBlur?: number
+    shadowOffsetX?: number
+    shadowOffsetY?: number
+    shadowColor?: string
+    opacity?: number
+    /**
+     * https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/globalCompositeOperation
+     */
+    blend?: string
+}
+
+export const defaultPathStyle: PathStyleOption = {
+    fill: '#000',
+    stroke: null,
+    opacity: 1,
+    lineDashOffset: 0,
+    shadowBlur: 0,
+    shadowOffsetX: 0,
+    shadowOffsetY: 0,
+    shadowColor: '#000',
+    lineWidth: 1,
+    lineCap: 'butt',
+    miterLimit: 10,
+    strokeNoScale: false
+}
 
 export interface PathOption extends DisplayableOption{
     strokeContainThreshold?: number
@@ -34,7 +78,19 @@ export interface PathOption extends DisplayableOption{
 type PathKey = keyof PathOption
 type PathPropertyType = PropType<PathOption, PathKey>
 
-export default class Path extends Displayable {
+
+interface Path {
+
+    attr(key: PathOption): Path
+    attr(key: keyof PathOption, value: AllPropTypes<PathOption>): Path
+
+    setStyle(key: PathStyleOption): Path
+    setStyle(key: keyof PathStyleOption, value: AllPropTypes<PathStyleOption>): Path
+
+    useStyle(obj: PathStyleOption): void
+}
+
+class Path extends Displayable {
 
     path: PathProxy
 
@@ -47,11 +103,10 @@ export default class Path extends Displayable {
 
     subPixelOptimize: boolean
 
+    style: PathStyleOption
+
     __dirtyPath: boolean
     __clipTarget: Element
-
-    private _fillGradient: CanvasGradient
-    private _strokeGradient: CanvasGradient
 
     private _rectWithStroke: BoundingRect
 
@@ -59,7 +114,7 @@ export default class Path extends Displayable {
     // It will be assigned by default value.
     shape: Dictionary<any>
 
-    constructor(opts?: PathOption, defaultStyle?: StyleOption, defaultShape?: Dictionary<any>) {
+    constructor(opts?: PathOption, defaultStyle?: PathStyleOption, defaultShape?: Dictionary<any>) {
         super(opts, defaultStyle);
 
         this._defaultsShape(defaultShape);
@@ -76,130 +131,6 @@ export default class Path extends Displayable {
             }
         }
     }
-
-    brush(ctx: CanvasRenderingContext2D, prevEl?: Displayable) {
-        const style = this.style;
-        const path = this.path || pathProxyForDraw;
-        const hasStroke = style.hasStroke();
-        const hasFill = style.hasFill();
-        const fill = style.fill;
-        const stroke = style.stroke;
-        const hasFillGradient = hasFill && !!(fill as GradientObject).colorStops;
-        const hasStrokeGradient = hasStroke && !!(stroke as GradientObject).colorStops;
-        const hasFillPattern = hasFill && !!(fill as PatternObject).image;
-        const hasStrokePattern = hasStroke && !!(stroke as PatternObject).image;
-
-        style.bind(ctx, this, prevEl);
-        this.setTransform(ctx);
-
-        if (this.__dirty) {
-            let rect;
-            // Update gradient because bounding rect may changed
-            if (hasFillGradient) {
-                rect = rect || this.getBoundingRect();
-                this._fillGradient = Style.getGradient(ctx, fill as (LinearGradientObject | RadialGradientObject), rect);
-            }
-            if (hasStrokeGradient) {
-                rect = rect || this.getBoundingRect();
-                this._strokeGradient = Style.getGradient(ctx, stroke as (LinearGradientObject | RadialGradientObject), rect);
-            }
-        }
-        // Use the gradient or pattern
-        if (hasFillGradient) {
-            // PENDING If may have affect the state
-            ctx.fillStyle = this._fillGradient;
-        }
-        else if (hasFillPattern) {
-            ctx.fillStyle = getCanvasPattern.call(fill, ctx);
-        }
-        if (hasStrokeGradient) {
-            ctx.strokeStyle = this._strokeGradient;
-        }
-        else if (hasStrokePattern) {
-            ctx.strokeStyle = getCanvasPattern.call(stroke, ctx);
-        }
-
-        const lineDash = style.lineDash;
-        const lineDashOffset = style.lineDashOffset;
-
-        const ctxLineDash = !!ctx.setLineDash;
-
-        // Update path sx, sy
-        const scale = this.getGlobalScale();
-        path.setScale(scale[0], scale[1], this.segmentIgnoreThreshold);
-
-        // Proxy context
-        // Rebuild path in following 2 cases
-        // 1. Path is dirty
-        // 2. Path needs javascript implemented lineDash stroking.
-        //    In this case, lineDash information will not be saved in PathProxy
-        if (this.__dirtyPath
-            || (lineDash && !ctxLineDash && hasStroke)
-        ) {
-            path.beginPath(ctx);
-
-            // Setting line dash before build path
-            if (lineDash && !ctxLineDash) {
-                path.setLineDash(lineDash);
-                path.setLineDashOffset(lineDashOffset);
-            }
-
-            this.buildPath(path, this.shape, false);
-
-            // Clear path dirty flag
-            if (this.path) {
-                this.__dirtyPath = false;
-            }
-        }
-        else {
-            // Replay path building
-            ctx.beginPath();
-            this.path.rebuildPath(ctx);
-        }
-
-        if (hasFill) {
-            if (style.fillOpacity != null) {
-                const originalGlobalAlpha = ctx.globalAlpha;
-                ctx.globalAlpha = style.fillOpacity * style.opacity;
-                path.fill(ctx);
-                ctx.globalAlpha = originalGlobalAlpha;
-            }
-            else {
-                path.fill(ctx);
-            }
-        }
-
-        if (lineDash && ctxLineDash) {
-            ctx.setLineDash(lineDash);
-            ctx.lineDashOffset = lineDashOffset;
-        }
-
-        if (hasStroke) {
-            if (style.strokeOpacity != null) {
-                const originalGlobalAlpha = ctx.globalAlpha;
-                ctx.globalAlpha = style.strokeOpacity * style.opacity;
-                path.stroke(ctx);
-                ctx.globalAlpha = originalGlobalAlpha;
-            }
-            else {
-                path.stroke(ctx);
-            }
-        }
-
-        if (lineDash && ctxLineDash) {
-            // PENDING
-            // Remove lineDash
-            ctx.setLineDash([]);
-        }
-
-        // Draw rect text
-        if (style.text != null) {
-            // Only restore transform when needs draw text.
-            this.restoreTransform(ctx);
-            this.drawRectText(ctx, this.getBoundingRect());
-        }
-    }
-
     // When bundling path, some shape may decide if use moveTo to begin a new subpath or closePath
     // Like in circle
     buildPath(
@@ -210,6 +141,18 @@ export default class Path extends Displayable {
 
     createPathProxy() {
         this.path = new PathProxy();
+    }
+
+    hasStroke() {
+        const style = this.style;
+        const stroke = style.stroke;
+        return stroke != null && stroke !== 'none' && style.lineWidth > 0;
+    }
+
+    hasFill() {
+        const style = this.style;
+        const fill = style.fill;
+        return fill != null && fill !== 'none';
     }
 
     getBoundingRect(): BoundingRect {
@@ -230,7 +173,7 @@ export default class Path extends Displayable {
         }
         this._rect = rect;
 
-        if (style.hasStroke()) {
+        if (this.hasStroke()) {
             // Needs update rect with stroke lineWidth when
             // 1. Element changes scale or lineWidth
             // 2. Shape is changed
@@ -243,7 +186,7 @@ export default class Path extends Displayable {
                 let w = style.lineWidth;
 
                 // Only add extra hover lineWidth when there are no fill
-                if (!style.hasFill()) {
+                if (!this.hasFill()) {
                     w = Math.max(w, this.strokeContainThreshold || 4);
                 }
                 // Consider line width
@@ -272,13 +215,13 @@ export default class Path extends Displayable {
 
         if (rect.contain(x, y)) {
             const pathData = this.path.data;
-            if (style.hasStroke()) {
+            if (this.hasStroke()) {
                 let lineWidth = style.lineWidth;
                 let lineScale = style.strokeNoScale ? this.getLineScale() : 1;
                 // Line scale can't be 0;
                 if (lineScale > 1e-10) {
                     // Only add extra hover lineWidth when there are no fill
-                    if (!style.hasFill()) {
+                    if (!this.hasFill()) {
                         lineWidth = Math.max(lineWidth, this.strokeContainThreshold);
                     }
                     if (pathContain.containStroke(
@@ -288,7 +231,7 @@ export default class Path extends Displayable {
                     }
                 }
             }
-            if (style.hasFill()) {
+            if (this.hasFill()) {
                 return pathContain.contain(pathData, x, y);
             }
         }
@@ -360,15 +303,11 @@ export default class Path extends Displayable {
         return this;
     }
 
-    getLineScale() {
-        const m = this.transform;
-        // Get the line scale.
-        // Determinant of `m` means how much the area is enlarged by the
-        // transformation. So its square root can be used as a scale factor
-        // for width.
-        return m && abs(m[0] - 1) > 1e-10 && abs(m[3] - 1) > 1e-10
-            ? Math.sqrt(abs(m[0] * m[3] - m[2] * m[1]))
-            : 1;
+    /**
+     * If path shape is zero area
+     */
+    isZeroArea(): boolean {
+        return false;
     }
 
     // Defaults shape value
@@ -394,7 +333,7 @@ export default class Path extends Displayable {
     static extend<ShapeType extends Dictionary<any>, ExtraType extends Dictionary<any>>(defaultProps: {
         type: string
         shape?: ShapeType
-        style?: StyleOption
+        style?: PathStyleOption
         extra?: ExtraType
 
         beforeBrush?: PropType<Displayable, 'beforeBrush'>
@@ -451,3 +390,5 @@ export default class Path extends Displayable {
         pathProto.__dirtyPath = true;
     })()
 }
+
+export default Path;

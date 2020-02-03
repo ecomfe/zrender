@@ -5,7 +5,7 @@
 
 import Definable from './Definable';
 import * as zrUtil from '../../core/util';
-import { StyleOption } from '../../graphic/Style';
+import { StyleOption } from '../../graphic/style/PathStyle';
 import Displayable from '../../graphic/Displayable';
 
 

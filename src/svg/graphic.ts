@@ -6,13 +6,10 @@ import {createElement} from './core';
 import PathProxy from '../core/PathProxy';
 import BoundingRect, { RectLike } from '../core/BoundingRect';
 import * as matrix from '../core/matrix';
-import * as textHelper from '../graphic/helper/text';
 import Text from '../graphic/Text';
-import { StyleOption } from '../graphic/Style';
 import Displayable from '../graphic/Displayable';
 import { Path } from '../export';
-import { PathOption } from '../graphic/Path';
-import { DEFAULT_FONT, parsePlainText, PlainTextContentBlock, adjustTextY } from '../contain/text';
+import { PathOption, PathStyleOption } from '../graphic/Path';
 import { TextAlign } from '../core/types';
 import ZImage from '../graphic/Image';
 
@@ -49,13 +46,13 @@ function isAroundZero(val: number) {
     return val < EPSILON && val > -EPSILON;
 }
 
-function pathHasFill(style: StyleOption, isText?: boolean) {
-    const fill = isText ? style.textFill : style.fill;
+function pathHasFill(style: PathStyleOption, isText?: boolean) {
+    const fill = style.fill;
     return fill != null && fill !== NONE;
 }
 
-function pathHasStroke(style: StyleOption, isText?: boolean) {
-    const stroke = isText ? style.textStroke : style.stroke;
+function pathHasStroke(style: PathStyleOption, isText?: boolean) {
+    const stroke = style.stroke;
     return stroke != null && stroke !== NONE;
 }
 

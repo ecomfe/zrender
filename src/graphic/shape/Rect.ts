@@ -66,4 +66,8 @@ export default class Rect extends Path {
         }
         ctx.closePath();
     }
+
+    isZeroArea() {
+        return !this.shape.width || !this.shape.height;
+    }
 }

@@ -22,7 +22,8 @@ A lightweight canvas library which providing 2d draw for [ECharts](https://githu
     - [ ] Generate hash. Faster diff
 
 - [ ] Add TextGroup
-    - [ ] Auto layout texts
+    - [ ] layout texts
+    - [ ] Text wrap
     - [ ] Rich text support
 
 - [ ] Dirty Rectangle

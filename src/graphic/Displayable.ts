@@ -3,20 +3,16 @@
  * @module zrender/graphic/Displayable
  */
 
-
-import Style, {StyleOption} from './Style';
 import Element, {ElementOption} from '../Element';
 import BoundingRect, { RectLike } from '../core/BoundingRect';
 import { Dictionary, PropType, AllPropTypes } from '../core/types';
 import Path from './Path';
-import * as textHelper from './helper/text';
-import {WILL_BE_RESTORED} from './constant';
-import { calculateTextPosition, RichTextContentBlock, PlainTextContentBlock } from '../contain/text';
+import { calculateTextPosition, RichTextContentBlock, PlainTextContentBlock } from '../container/helper/text';
 
 type CalculateTextPositionResult = ReturnType<typeof calculateTextPosition>
 
 export interface DisplayableOption extends ElementOption {
-    style?: StyleOption
+    style?: Dictionary<any>
 
     zlevel?: number
     z?: number
@@ -36,10 +32,6 @@ export interface DisplayableOption extends ElementOption {
 
 type DisplayableKey = keyof DisplayableOption
 type DisplayablePropertyType = PropType<DisplayableOption, DisplayableKey>
-
-type StyleKeys = keyof StyleOption
-
-const tmpRect = new BoundingRect();
 
 export default class Displayable extends Element {
 
@@ -77,7 +69,7 @@ export default class Displayable extends Element {
      */
     incremental: boolean
 
-    style: Style
+    style: Dictionary<any>
 
     protected _rect: BoundingRect
 
@@ -104,7 +96,7 @@ export default class Displayable extends Element {
     __canCacheByTextString: boolean
     __text: string
 
-    constructor(opts?: DisplayableOption, defaultStyle?: StyleOption) {
+    constructor(opts?: DisplayableOption, defaultStyle?: Dictionary<any>) {
         super(opts);
 
         this.attr(opts);
@@ -116,22 +108,20 @@ export default class Displayable extends Element {
 
         if (defaultStyle) {
             for (let key in defaultStyle) {
-                if (!(opts && opts.style && opts.style[key as StyleKeys])) {
-                    (this.style as any)[key] = defaultStyle[key as StyleKeys];
+                if (!(opts && opts.style && opts.style[key])) {
+                    (this.style as any)[key] = defaultStyle[key];
                 }
             }
         }
     }
 
-    beforeBrush(ctx: CanvasRenderingContext2D) {}
+    // Hook provided to developers.
+    beforeBrush() {}
+    afterBrush() {}
 
-    afterBrush(ctx: CanvasRenderingContext2D) {}
-
-    /**
-     * Graphic drawing method.
-     */
-    // Interface
-    brush(ctx: CanvasRenderingContext2D, prevEl?: Displayable) {}
+    // Hook provided to inherited classes.
+    innerBeforeBrush() {}
+    innerAfterBrush() {}
 
     /**
      * If displayable element contain coord x, y
@@ -184,16 +174,27 @@ export default class Displayable extends Element {
         }
         else {
             if (!this.style) {
-                this.useStyle(value as StyleOption);
+                this.useStyle(value as Dictionary<any>);
             }
             else {
-                this.style.set(value as StyleOption);
+                this.style.set(value as Dictionary<any>);
             }
         }
     }
 
-    setStyle(key: StyleOption | string, value?: AllPropTypes<StyleOption>) {
-        this.style.set(key as keyof StyleOption, value);
+    setStyle(obj: Dictionary<any>): void
+    setStyle(obj: string, value: any): void
+    setStyle(obj: string | Dictionary<any>, value?: any) {
+        if (typeof obj === 'string') {
+            this.style[obj] = value;
+        }
+        else {
+            for (let key in obj) {
+                if (obj.hasOwnProperty(key)) {
+                    this.style[key] = obj[key];
+                }
+            }
+        }
         this.dirty(false);
         return this;
     }
@@ -201,58 +202,10 @@ export default class Displayable extends Element {
     /**
      * Use given style object
      */
-    useStyle(obj: StyleOption) {
-        this.style = new Style(obj);
-        this.dirty(false);
-        return this;
+    useStyle(obj: Dictionary<any>) {
+        this.style = obj;
     }
 
-    /**
-     * Draw text in a rect with specified position.
-     * @param  {CanvasRenderingContext2D} ctx
-     * @param  {Object} rect Displayable rect
-     */
-    drawRectText(ctx: CanvasRenderingContext2D, rect: RectLike) {
-        const style = this.style;
-
-        rect = style.textRect || rect;
-
-        // Optimize, avoid normalize every time.
-        this.__dirty && textHelper.normalizeTextStyle(style);
-
-        let text = style.text;
-
-        // Convert to string
-        text != null && (text += '');
-
-        if (!textHelper.needDrawText(text, style)) {
-            return;
-        }
-
-        // FIXME
-        // Do not provide prevEl to `textHelper.renderText` for ctx prop cache,
-        // but use `ctx.save()` and `ctx.restore()`. Because the cache for rect
-        // text propably break the cache for its host elements.
-        ctx.save();
-
-        // Transform rect to view space
-        const transform = this.transform;
-        if (!style.transformText) {
-            if (transform) {
-                tmpRect.copy(rect);
-                tmpRect.applyTransform(transform);
-                rect = tmpRect;
-            }
-        }
-        else {
-            this.setTransform(ctx);
-        }
-
-        // transformText and textRotation can not be used at the same time.
-        textHelper.renderText(this, ctx, text, style, rect, WILL_BE_RESTORED);
-
-        ctx.restore();
-    }
     /**
      * The string value of `textPosition` needs to be calculated to a real postion.
      * For example, `'inside'` is calculated to `[rect.width/2, rect.height/2]`
@@ -260,11 +213,11 @@ export default class Displayable extends Element {
      * But some coutom shapes like "pin", "flag" have center that is not exactly
      * `[width/2, height/2]`. So we provide this hook to customize the calculation
      * for those shapes. It will be called if the `style.textPosition` is a string.
-     * @param {Obejct} [out] Prepared out object. If not provided, this method should
+     * @param out Prepared out object. If not provided, this method should
      *        be responsible for creating one.
-     * @param {module:zrender/graphic/Style} style
-     * @param {Object} rect {x, y, width, height}
-     * @return {Obejct} out The same as the input out.
+     * @param style
+     * @param rect {x, y, width, height}
+     * @return out The same as the input out.
      *         {
      *             x: number. mandatory.
      *             y: number. mandatory.
@@ -272,7 +225,7 @@ export default class Displayable extends Element {
      *             textVerticalAlign: string. optional. use style.textVerticalAlign by default.
      *         }
      */
-    calculateTextPosition: (out: CalculateTextPositionResult, style: StyleOption, rect: RectLike) => CalculateTextPositionResult
+    calculateTextPosition: (out: CalculateTextPositionResult, style: Dictionary<any>, rect: RectLike) => CalculateTextPositionResult
 
 
     protected static initDefaultProps = (function () {

@@ -16,29 +16,32 @@ import {PainterBase} from './PainterBase';
 import Animation from './animation/Animation';
 import HandlerProxy from './dom/HandlerProxy';
 import Element, {ElementEventCallback} from './Element';
-import CanvasPainter from './canvas/Painter';
 import { Dictionary, ElementEventName } from './core/types';
-import { LayerConfig } from './canvas/Layer';
+import Layer, { LayerConfig } from './canvas/Layer';
 import { GradientObject } from './graphic/Gradient';
 import { PatternObject } from './graphic/Pattern';
-import { StyleOption } from './graphic/Style';
 import Displayable from './graphic/Displayable';
 import { Path } from './export';
 import { EventCallback } from './core/Eventful';
+import { PathStyleOption } from './graphic/Path';
+import ZText, { TextStyleOption } from './graphic/Text';
+import ZImage, { ImageStyleOption } from './graphic/Image';
+
+// Only import interface to reduce bundling size
+import {CanvasPainterInterface} from './canvas/PainterInterface';
 
 const useVML = !env.canvasSupported;
 
 const painterCtors: Dictionary<typeof PainterBase> = {
-    canvas: CanvasPainter
 };
 
 let instances: { [key: number]: ZRender } = {};
 
 
+
 function delInstance(id: number) {
     delete instances[id];
 }
-
 
 class ZRender {
 
@@ -137,8 +140,8 @@ class ZRender {
      * Change configuration of layer
     */
     configLayer(zLevel: number, config: LayerConfig) {
-        if ((this.painter as CanvasPainter).configLayer) {
-            (this.painter as CanvasPainter).configLayer(zLevel, config);
+        if ((this.painter as CanvasPainterInterface).configLayer) {
+            (this.painter as CanvasPainterInterface).configLayer(zLevel, config);
         }
         this._needsRefresh = true;
     }
@@ -149,8 +152,8 @@ class ZRender {
     setBackgroundColor(
         backgroundColor: string | GradientObject | PatternObject
     ) {
-        if ((this.painter as CanvasPainter).setBackgroundColor) {
-            (this.painter as CanvasPainter).setBackgroundColor(backgroundColor);
+        if ((this.painter as CanvasPainterInterface).setBackgroundColor) {
+            (this.painter as CanvasPainterInterface).setBackgroundColor(backgroundColor);
         }
         this._needsRefresh = true;
     }
@@ -200,14 +203,18 @@ class ZRender {
         triggerRendered && this.trigger('rendered');
     }
 
+    addHover(el: Path, style: PathStyleOption): Path
+    addHover(el: ZText, style: TextStyleOption): ZText
+    addHover(el: ZImage, style: ImageStyleOption): ZImage
     /**
      * Add element to hover layer
-     * @param el
-     * @param {Object} style
      */
-    addHover(el: Displayable, style: StyleOption) {
-        if ((this.painter as CanvasPainter).addHover) {
-            const elMirror = (this.painter as CanvasPainter).addHover(el, style);
+    addHover(el: Path | ZText | ZImage, style: PathStyleOption | TextStyleOption | ImageStyleOption): Path | ZText | ZImage {
+        if ((this.painter as CanvasPainterInterface).addHover) {
+            const elMirror = (this.painter as CanvasPainterInterface).addHover(
+                // TODO
+                el as Path, style as PathStyleOption
+            );
             this.refreshHover();
             return elMirror;
         }
@@ -216,9 +223,9 @@ class ZRender {
     /**
      * Add element from hover layer
      */
-    removeHover(el: Displayable) {
-        if ((this.painter as CanvasPainter).removeHover) {
-            (this.painter as CanvasPainter).removeHover(el);
+    removeHover(el: Path | ZText | ZImage) {
+        if ((this.painter as CanvasPainterInterface).removeHover) {
+            (this.painter as CanvasPainterInterface).removeHover(el);
             this.refreshHover();
         }
     }
@@ -227,8 +234,8 @@ class ZRender {
      * Clear all hover elements in hover layer
      */
     clearHover() {
-        if ((this.painter as CanvasPainter).clearHover) {
-            (this.painter as CanvasPainter).clearHover();
+        if ((this.painter as CanvasPainterInterface).clearHover) {
+            (this.painter as CanvasPainterInterface).clearHover();
             this.refreshHover();
         }
     }
@@ -245,8 +252,8 @@ class ZRender {
      */
     refreshHoverImmediately() {
         this._needsRefreshHover = false;
-        if ((this.painter as CanvasPainter).refreshHover) {
-            (this.painter as CanvasPainter).refreshHover();
+        if ((this.painter as CanvasPainterInterface).refreshHover) {
+            (this.painter as CanvasPainterInterface).refreshHover();
         }
     }
 
@@ -301,8 +308,8 @@ class ZRender {
      * It has much better performance of drawing image rather than drawing a vector path.
      */
     pathToImage(e: Path, dpr: number) {
-        if ((this.painter as CanvasPainter).pathToImage) {
-            return (this.painter as CanvasPainter).pathToImage(e, dpr);
+        if ((this.painter as CanvasPainterInterface).pathToImage) {
+            return (this.painter as CanvasPainterInterface).pathToImage(e, dpr);
         }
     }
 
