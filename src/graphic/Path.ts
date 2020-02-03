@@ -44,6 +44,12 @@ export interface PathStyleOption {
      * https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/globalCompositeOperation
      */
     blend?: string
+
+    /**
+     * Paint order, if do stroke first. Similar to SVG paint-order
+     * https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/paint-order
+     */
+    strokeFirst?: boolean
 }
 
 export const defaultPathStyle: PathStyleOption = {
@@ -58,7 +64,9 @@ export const defaultPathStyle: PathStyleOption = {
     lineWidth: 1,
     lineCap: 'butt',
     miterLimit: 10,
-    strokeNoScale: false
+
+    strokeNoScale: false,
+    strokeFirst: false
 }
 
 export interface PathOption extends DisplayableOption{

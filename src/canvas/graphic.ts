@@ -19,6 +19,33 @@ const pathProxyForDraw = new PathProxy(true);
 
 const getCanvasPattern = Pattern.prototype.getCanvasPattern;
 
+function doFillPath(this: void, ctx: CanvasRenderingContext2D, el: Path) {
+    const style = el.style;
+    if (style.fillOpacity != null) {
+        const originalGlobalAlpha = ctx.globalAlpha;
+        ctx.globalAlpha = style.fillOpacity * style.opacity;
+        ctx.fill();
+        // Set back globalAlpha
+        ctx.globalAlpha = originalGlobalAlpha;
+    }
+    else {
+        ctx.fill();
+    }
+}
+
+function doStrokePath(this: void, ctx: CanvasRenderingContext2D, el: Path) {
+    const style = el.style;
+    if (style.strokeOpacity != null) {
+        const originalGlobalAlpha = ctx.globalAlpha;
+        ctx.globalAlpha = style.strokeOpacity * style.opacity;
+        ctx.stroke();
+        // Set back globalAlpha
+        ctx.globalAlpha = originalGlobalAlpha;
+    }
+    else {
+        ctx.stroke();
+    }
+}
 // Draw Path Elements
 function brushPath(this: void, ctx: CanvasRenderingContext2D, el: Path) {
     const style = el.style;
@@ -87,6 +114,7 @@ function brushPath(this: void, ctx: CanvasRenderingContext2D, el: Path) {
         }
 
         el.buildPath(path, el.shape, false);
+        path.toStatic();
 
         // Clear path dirty flag
         if (el.path) {
@@ -99,32 +127,25 @@ function brushPath(this: void, ctx: CanvasRenderingContext2D, el: Path) {
         el.path.rebuildPath(ctx);
     }
 
-    if (hasFill) {
-        if (style.fillOpacity != null) {
-            const originalGlobalAlpha = ctx.globalAlpha;
-            ctx.globalAlpha = style.fillOpacity * style.opacity;
-            path.fill(ctx);
-            ctx.globalAlpha = originalGlobalAlpha;
-        }
-        else {
-            path.fill(ctx);
-        }
-    }
-
     if (lineDash && ctxLineDash) {
         ctx.setLineDash(lineDash);
         ctx.lineDashOffset = lineDashOffset;
     }
 
-    if (hasStroke) {
-        if (style.strokeOpacity != null) {
-            const originalGlobalAlpha = ctx.globalAlpha;
-            ctx.globalAlpha = style.strokeOpacity * style.opacity;
-            path.stroke(ctx);
-            ctx.globalAlpha = originalGlobalAlpha;
+    if (style.strokeFirst) {
+        if (hasStroke) {
+            doStrokePath(ctx, el);
         }
-        else {
-            path.stroke(ctx);
+        if (hasFill) {
+            doFillPath(ctx, el);
+        }
+    }
+    else {
+        if (hasFill) {
+            doFillPath(ctx, el);
+        }
+        if (hasStroke) {
+            doStrokePath(ctx, el);
         }
     }
 
@@ -207,7 +228,22 @@ function brushText(this: void, ctx: CanvasRenderingContext2D, el: ZText) {
         ctx.textAlign = style.textAlign;
         ctx.textBaseline = style.textBaseline;
 
-        ctx.fillText(text, style.x, style.y);
+        if (style.strokeFirst) {
+            if (el.hasStroke()) {
+                ctx.strokeText(text, style.x, style.y);
+            }
+            if (el.hasFill()) {
+                ctx.fillText(text, style.x, style.y);
+            }
+        }
+        else {
+            if (el.hasFill()) {
+                ctx.fillText(text, style.x, style.y);
+            }
+            if (el.hasStroke()) {
+                ctx.strokeText(text, style.x, style.y);
+            }
+        }
     }
 }
 
@@ -237,6 +273,7 @@ function bindCommonProps(
     if (forceSetAll || style.opacity !== prevStyle.opacity) {
         ctx.globalAlpha = style.opacity == null ? 1 : style.opacity;
     }
+
     if (forceSetAll || style.blend !== prevStyle.blend) {
         ctx.globalCompositeOperation = style.blend || 'source-over';
     }
@@ -280,14 +317,14 @@ function bindPathAndTextCommonStyle(
         ctx.lineWidth = lineWidth / (
             (style.strokeNoScale && el && el.getLineScale) ? el.getLineScale() : 1
         );
+    }
 
-        for (let i = 0; i < STROKE_PROPS.length; i++) {
-            const prop = STROKE_PROPS[i];
-            const propName = prop[0];
-            if (forceSetAll || style[propName] !== prevStyle[propName]) {
-                // FIXME Invalid property value will cause style leak from previous element.
-                (ctx as any)[propName] = style[propName] || prop[1];
-            }
+    for (let i = 0; i < STROKE_PROPS.length; i++) {
+        const prop = STROKE_PROPS[i];
+        const propName = prop[0];
+        if (forceSetAll || style[propName] !== prevStyle[propName]) {
+            // FIXME Invalid property value will cause style leak from previous element.
+            (ctx as any)[propName] = style[propName] || prop[1];
         }
     }
 }

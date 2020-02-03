@@ -90,7 +90,6 @@ export default class Displayable extends Element {
     __from: Displayable
 
     // FOR SVG PAINTER
-    __textSvgEl: SVGElement
     __svgEl: SVGElement
     __tspanList: SVGTSpanElement[]
     __canCacheByTextString: boolean
