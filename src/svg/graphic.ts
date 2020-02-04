@@ -4,25 +4,17 @@
 
 import {createElement} from './core';
 import PathProxy from '../core/PathProxy';
-import BoundingRect, { RectLike } from '../core/BoundingRect';
 import * as matrix from '../core/matrix';
-import Text from '../graphic/Text';
 import Displayable from '../graphic/Displayable';
 import { Path } from '../export';
 import { PathOption, PathStyleOption } from '../graphic/Path';
 import { TextAlign } from '../core/types';
-import ZImage from '../graphic/Image';
+import ZImage, { ImageStyleOption } from '../graphic/Image';
+import { DEFAULT_FONT } from '../contain/text';
+import ZText, { TextStyleOption } from '../graphic/Text';
 
 type SVGProxy = {
     brush: (el: Displayable) => void
-}
-
-type SVGTextElementExtended = SVGTextElement & {
-    __computedFont: string
-    __styleFont: string
-}
-type SVGTSpanElementExtended = SVGTSpanElement & {
-    __zrText: string
 }
 
 const CMD = PathProxy.CMD;
@@ -38,6 +30,8 @@ const degree = 180 / PI;
 
 const EPSILON = 1e-4;
 
+type AllStyleOption = PathStyleOption | TextStyleOption | ImageStyleOption;
+
 function round4(val: number) {
     return mathRound(val * 1e4) / 1e4;
 }
@@ -46,19 +40,31 @@ function isAroundZero(val: number) {
     return val < EPSILON && val > -EPSILON;
 }
 
-function pathHasFill(style: PathStyleOption, isText?: boolean) {
-    const fill = style.fill;
+function pathHasFill(style: AllStyleOption): style is PathStyleOption {
+    const fill = (style as PathStyleOption).fill;
     return fill != null && fill !== NONE;
 }
 
-function pathHasStroke(style: PathStyleOption, isText?: boolean) {
-    const stroke = style.stroke;
+function pathHasStroke(style: AllStyleOption): style is PathStyleOption {
+    const stroke = (style as PathStyleOption).stroke;
     return stroke != null && stroke !== NONE;
 }
 
+function reduceNumberString(n: number, precision: number) {
+    // Avoid large string of matrix
+    // PENDING If have precision issue when scaled
+    return n > 1 ? +n.toFixed(precision) : +n.toPrecision(precision);
+}
 function setTransform(svgEl: SVGElement, m: matrix.MatrixArray) {
     if (m) {
-        attr(svgEl, 'transform', 'matrix(' + arrayJoin.call(m, ',') + ')');
+        attr(svgEl, 'transform', 'matrix(' +
+            reduceNumberString(m[0], 3) + ',' +
+            reduceNumberString(m[1], 3) + ',' +
+            reduceNumberString(m[2], 3) + ',' +
+            reduceNumberString(m[3], 3) + ',' +
+            reduceNumberString(m[4], 4) + ',' +
+            reduceNumberString(m[5], 4)
+         + ')');
     }
 }
 
@@ -73,34 +79,36 @@ function attrXLink(el: SVGElement, key: string, val: string) {
     el.setAttributeNS('http://www.w3.org/1999/xlink', key, val);
 }
 
-function bindStyle(svgEl: SVGElement, style: StyleOption, isText?: boolean, el?: Displayable) {
-    if (pathHasFill(style, isText)) {
-        let fill = isText ? style.textFill : style.fill;
+function bindStyle(svgEl: SVGElement, style: PathStyleOption, el?: Path): void
+function bindStyle(svgEl: SVGElement, style: TextStyleOption, el?: ZText): void
+function bindStyle(svgEl: SVGElement, style: ImageStyleOption, el?: ZImage): void
+function bindStyle(svgEl: SVGElement, style: AllStyleOption, el?: Path | ZText | ZImage) {
+    const opacity = style.opacity == null ? 1 : style.opacity;
+    if (pathHasFill(style)) {
+        let fill = style.fill;
         fill = fill === 'transparent' ? NONE : fill;
         attr(svgEl, 'fill', fill as string);
         attr(svgEl,
             'fill-opacity',
-            (style.fillOpacity != null ? style.fillOpacity * style.opacity : style.opacity) + ''
+            (style.fillOpacity != null ? style.fillOpacity * opacity : opacity) + ''
         );
     }
     else {
         attr(svgEl, 'fill', NONE);
     }
 
-    if (pathHasStroke(style, isText)) {
-        let stroke = isText ? style.textStroke : style.stroke;
+    if (pathHasStroke(style)) {
+        let stroke = style.stroke;
         stroke = stroke === 'transparent' ? NONE : stroke;
         attr(svgEl, 'stroke', stroke as string);
-        const strokeWidth = isText
-            ? style.textStrokeWidth
-            : style.lineWidth;
-        const strokeScale = !isText && style.strokeNoScale
+        const strokeWidth = style.lineWidth;
+        const strokeScale = style.strokeNoScale
             ? (el as Path).getLineScale()
             : 1;
         attr(svgEl, 'stroke-width', strokeWidth / strokeScale + '');
         // stroke then fill for text; fill then stroke for others
-        attr(svgEl, 'paint-order', isText ? 'stroke' : 'fill');
-        attr(svgEl, 'stroke-opacity', (style.strokeOpacity != null ? style.strokeOpacity : style.opacity) + '');
+        attr(svgEl, 'paint-order', style.strokeFirst ? 'stroke' : 'fill');
+        attr(svgEl, 'stroke-opacity', (style.strokeOpacity != null ? style.strokeOpacity * opacity : opacity) + '');
         const lineDash = style.lineDash;
         if (lineDash) {
             attr(svgEl, 'stroke-dasharray', (style.lineDash as number[]).join(','));
@@ -265,15 +273,8 @@ const svgPath: SVGProxy = {
             }
         }
 
-        bindStyle(svgEl, style, false, el);
+        bindStyle(svgEl, style, el);
         setTransform(svgEl, el.transform);
-
-        if (style.text != null) {
-            svgTextDrawRectText(el, el.getBoundingRect());
-        }
-        else {
-            removeOldTextNode(el);
-        }
     }
 };
 
@@ -320,13 +321,6 @@ const svgImage: SVGProxy = {
         attr(svgEl, 'y', y + '');
 
         setTransform(svgEl, el.transform);
-
-        if (style.text != null) {
-            svgTextDrawRectText(el, el.getBoundingRect());
-        }
-        else {
-            removeOldTextNode(el);
-        }
     }
 };
 export {svgImage as image};
@@ -334,202 +328,12 @@ export {svgImage as image};
 /***************************************************
  * TEXT
  **************************************************/
-const _tmpTextHostRect = new BoundingRect();
-const _tmpTextBoxPos: Partial<ReturnType<typeof textHelper.getBoxPosition>> = {};
-const _tmpTextTransform: matrix.MatrixArray = [];
 const TEXT_ALIGN_TO_ANCHRO = {
     left: 'start',
     right: 'end',
     center: 'middle',
     middle: 'middle'
 };
-
-/**
- * @param  el
- * @param {Object|boolean} [hostRect] {x, y, width, height}
- *        If set false, rect text is not used.
- */
-const svgTextDrawRectText = function (el: Displayable, hostRect: RectLike) {
-    const style = el.style;
-    const elTransform = el.transform;
-    const needTransformTextByHostEl = el instanceof Text || style.transformText;
-
-    el.__dirty && textHelper.normalizeTextStyle(style);
-
-    let text = style.text;
-    // Convert to string
-    text != null && (text += '');
-    if (!textHelper.needDrawText(text, style)) {
-        return;
-    }
-    // render empty text for svg if no text but need draw text.
-    text == null && (text = '');
-
-    // Follow the setting in the canvas renderer, if not transform the
-    // text, transform the hostRect, by which the text is located.
-    if (!needTransformTextByHostEl && elTransform) {
-        _tmpTextHostRect.copy(hostRect);
-        _tmpTextHostRect.applyTransform(elTransform);
-        hostRect = _tmpTextHostRect;
-    }
-
-    let textSvgEl = el.__textSvgEl;
-    if (!textSvgEl) {
-        textSvgEl = createElement('text');
-        el.__textSvgEl = textSvgEl;
-    }
-
-    // style.font has been normalized by `normalizeTextStyle`.
-    const textSvgElStyle = textSvgEl.style;
-    const font = style.font || DEFAULT_FONT;
-    let computedFont = (textSvgEl as SVGTextElementExtended).__computedFont;
-    if (font !== (textSvgEl as SVGTextElementExtended).__styleFont) {
-        textSvgElStyle.font = (textSvgEl as SVGTextElementExtended).__styleFont = font;
-        // The computedFont might not be the orginal font if it is illegal font.
-        computedFont = (textSvgEl as SVGTextElementExtended).__computedFont = textSvgElStyle.font;
-    }
-
-    const textPadding = style.textPadding as number[];
-    const textLineHeight = style.textLineHeight;
-
-    let contentBlock = el.__textCotentBlock;
-    if (!contentBlock || el.__dirtyText) {
-        contentBlock = el.__textCotentBlock = parsePlainText(
-            text, computedFont, textPadding, textLineHeight, style.truncate
-        );
-    }
-
-    const outerHeight = contentBlock.outerHeight;
-    const lineHeight = (contentBlock as PlainTextContentBlock).lineHeight;
-
-    textHelper.getBoxPosition(_tmpTextBoxPos, el, style, hostRect);
-    const baseX = _tmpTextBoxPos.baseX;
-    const baseY = _tmpTextBoxPos.baseY;
-    const textAlign = _tmpTextBoxPos.textAlign || 'left';
-    const textVerticalAlign = _tmpTextBoxPos.textVerticalAlign;
-
-    setTextTransform(
-        textSvgEl, needTransformTextByHostEl, elTransform, style, hostRect, baseX, baseY
-    );
-
-    const boxY = adjustTextY(baseY, outerHeight, textVerticalAlign);
-    let textX = baseX;
-    let textY = boxY;
-
-    // TODO needDrawBg
-    if (textPadding) {
-        textX = getTextXForPadding(baseX, textAlign, textPadding);
-        textY += textPadding[0];
-    }
-
-    // `textBaseline` is set as 'middle'.
-    textY += lineHeight / 2;
-
-    bindStyle(textSvgEl, style, true, el);
-
-    // FIXME
-    // Add a <style> to reset all of the text font as inherit?
-    // otherwise the outer <style> may set the unexpected style.
-
-    // Font may affect position of each tspan elements
-    const canCacheByTextString = (contentBlock as PlainTextContentBlock).canCacheByTextString;
-    const tspanList = el.__tspanList || (el.__tspanList = []);
-    const tspanOriginLen = tspanList.length;
-
-    // Optimize for most cases, just compare text string to determine change.
-    if (canCacheByTextString && el.__canCacheByTextString && el.__text === text) {
-        if (el.__dirtyText && tspanOriginLen) {
-            for (let idx = 0; idx < tspanOriginLen; ++idx) {
-                updateTextLocation(tspanList[idx], textAlign, textX, textY + idx * lineHeight);
-            }
-        }
-    }
-    else {
-        el.__text = text;
-        el.__canCacheByTextString = canCacheByTextString;
-        const textLines = contentBlock.lines;
-        const nTextLines = textLines.length;
-
-        let idx = 0;
-        for (; idx < nTextLines; idx++) {
-            // Using cached tspan elements
-            const singleLineText = textLines[idx];
-            let tspan = tspanList[idx];
-
-            if (!tspan) {
-                tspan = tspanList[idx] = createElement('tspan') as SVGTSpanElement;
-                textSvgEl.appendChild(tspan);
-                tspan.appendChild(document.createTextNode(singleLineText as string));
-            }
-            else if ((tspan as SVGTSpanElementExtended).__zrText !== singleLineText) {
-                tspan.innerHTML = '';
-                tspan.appendChild(document.createTextNode(singleLineText as string));
-            }
-            updateTextLocation(tspan, textAlign, textX, textY + idx * lineHeight);
-        }
-        // Remove unused tspan elements
-        if (tspanOriginLen > nTextLines) {
-            for (; idx < tspanOriginLen; idx++) {
-                textSvgEl.removeChild(tspanList[idx]);
-            }
-            tspanList.length = nTextLines;
-        }
-    }
-};
-
-function setTextTransform(
-    textSvgEl: SVGElement,
-    needTransformTextByHostEl: boolean,
-    elTransform: matrix.MatrixArray,
-    style: StyleOption,
-    hostRect: RectLike,
-    baseX: number,
-    baseY: number
-) {
-    matrix.identity(_tmpTextTransform);
-
-    if (needTransformTextByHostEl && elTransform) {
-        matrix.copy(_tmpTextTransform, elTransform);
-    }
-
-    // textRotation only apply in RectText.
-    const textRotation = style.textRotation;
-    if (hostRect && textRotation) {
-        const origin = style.textOrigin;
-        if (origin === 'center') {
-            baseX = hostRect.width / 2 + hostRect.x;
-            baseY = hostRect.height / 2 + hostRect.y;
-        }
-        else if (origin) {
-            baseX = origin[0] + hostRect.x;
-            baseY = origin[1] + hostRect.y;
-        }
-
-        _tmpTextTransform[4] -= baseX;
-        _tmpTextTransform[5] -= baseY;
-        // Positive: anticlockwise
-        matrix.rotate(_tmpTextTransform, _tmpTextTransform, textRotation);
-        _tmpTextTransform[4] += baseX;
-        _tmpTextTransform[5] += baseY;
-    }
-    // See the definition in `Style.js#textOrigin`, the default
-    // origin is from the result of `getBoxPosition`.
-
-    setTransform(textSvgEl, _tmpTextTransform);
-}
-
-// FIXME merge the same code with `helper/text.js#getTextXForPadding`;
-function getTextXForPadding(
-    x: number,
-    textAlign: TextAlign,
-    textPadding: number[]
-): number {
-    return textAlign === 'right'
-        ? (x - textPadding[1])
-        : textAlign === 'center'
-        ? (x + textPadding[3] / 2 - textPadding[1] / 2)
-        : (x + textPadding[3]);
-}
 
 function updateTextLocation(
     tspan: SVGTSpanElement,
@@ -545,29 +349,34 @@ function updateTextLocation(
     attr(tspan, 'y', y + '');
 }
 
-function removeOldTextNode(el: Displayable) {
-    if (el && el.__textSvgEl) {
-        // textSvgEl may has no parentNode if el has been removed temporary.
-        if (el.__textSvgEl.parentNode) {
-            el.__textSvgEl.parentNode.removeChild(el.__textSvgEl);
-        }
-        el.__textSvgEl = null;
-        el.__tspanList = [];
-        el.__text = null;
-    }
-}
-
-svgTextDrawRectText;
-
 const svgText: SVGProxy = {
-    brush(el: Displayable) {
+    brush(el: ZText) {
         const style = el.style;
-        if (style.text != null) {
-            svgTextDrawRectText(el, null);
+
+        let text = style.text;
+        // Convert to string
+        text != null && (text += '');
+        if (!text) {
+            return;
         }
-        else {
-            removeOldTextNode(el);
+
+        let textSvgEl = el.__svgEl as SVGTextElement;
+        if (!textSvgEl) {
+            textSvgEl = createElement('text') as SVGTextElement;
+            el.__svgEl = textSvgEl;
         }
+
+        // style.font has been normalized by `normalizeTextStyle`.
+        const textSvgElStyle = textSvgEl.style;
+        textSvgElStyle.font = style.font || DEFAULT_FONT;
+
+        textSvgEl.setAttribute('x', (style.x || 0) + '');
+        textSvgEl.setAttribute('y', (style.y || 0) + '');
+
+        textSvgEl.textContent = text;
+
+        bindStyle(textSvgEl, style, el);
+        setTransform(textSvgEl, el.transform);
     }
 };
 export {svgText as text};

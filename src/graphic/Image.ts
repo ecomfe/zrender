@@ -1,10 +1,9 @@
-import Displayable, { DisplayableOption } from './Displayable';
+import Displayable, { DisplayableOption, CommonStyleOption, DEFAULT_COMMON_STYLE } from './Displayable';
 import BoundingRect from '../core/BoundingRect';
-import * as zrUtil from '../core/util';
 import { PropType, AllPropTypes, ImageLike } from '../core/types';
-import { ElementOption } from '../Element';
+import { defaults, extend } from '../core/util';
 
-export interface ImageStyleOption {
+export interface ImageStyleOption extends CommonStyleOption {
     image?: string | ImageLike
     width?: number
     height?: number
@@ -14,17 +13,15 @@ export interface ImageStyleOption {
     sy?: number
     sWidth?: number
     sHeight?: number
-
-    shadowBlur?: number
-    shadowOffsetX?: number
-    shadowOffsetY?: number
-    shadowColor?: string
-
-    opacity?: number
-    blend?: string
 }
 
+export const DEFAULT_IMAGE_STYLE: CommonStyleOption = defaults({
+    x: 0,
+    y: 0
+}, DEFAULT_COMMON_STYLE);
 
+class StyleCtor {}
+StyleCtor.prototype = DEFAULT_IMAGE_STYLE;
 interface ImageOption extends DisplayableOption {
     style?: ImageStyleOption
 }
@@ -37,8 +34,6 @@ interface ZImage {
 
     setStyle(key: ImageStyleOption): ZImage
     setStyle(key: keyof ImageStyleOption, value: AllPropTypes<ImageStyleOption>): ZImage
-
-    useStyle(obj: ImageStyleOption): void
 }
 
 class ZImage extends Displayable {
@@ -52,6 +47,11 @@ class ZImage extends Displayable {
     __imageSrc: string
 
     onload: (image: ImageLike) => void
+
+    useStyle(obj: ImageStyleOption) {
+        this.style = new StyleCtor();
+        extend(this.style, obj);
+    }
 
     getBoundingRect(): BoundingRect {
         const style = this.style;

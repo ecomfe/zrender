@@ -11,6 +11,28 @@ import { calculateTextPosition, RichTextContentBlock, PlainTextContentBlock } fr
 
 type CalculateTextPositionResult = ReturnType<typeof calculateTextPosition>
 
+export interface CommonStyleOption {
+    shadowBlur?: number
+    shadowOffsetX?: number
+    shadowOffsetY?: number
+    shadowColor?: string
+
+    opacity?: number
+    /**
+     * https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/globalCompositeOperation
+     */
+    blend?: string
+}
+
+export const DEFAULT_COMMON_STYLE: CommonStyleOption = {
+    shadowBlur: 0,
+    shadowOffsetX: 0,
+    shadowOffsetY: 0,
+    shadowColor: '#000',
+    opacity: 1,
+    blend: 'source-over'
+}
+
 export interface DisplayableOption extends ElementOption {
     style?: Dictionary<any>
 
@@ -91,9 +113,6 @@ export default class Displayable extends Element {
 
     // FOR SVG PAINTER
     __svgEl: SVGElement
-    __tspanList: SVGTSpanElement[]
-    __canCacheByTextString: boolean
-    __text: string
 
     constructor(opts?: DisplayableOption, defaultStyle?: Dictionary<any>) {
         super(opts);

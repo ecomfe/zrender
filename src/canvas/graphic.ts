@@ -1,4 +1,4 @@
-import Displayable from '../graphic/Displayable';
+import Displayable, { DEFAULT_COMMON_STYLE } from '../graphic/Displayable';
 import PathProxy from '../core/PathProxy';
 import { GradientObject } from '../graphic/Gradient';
 import Pattern, { PatternObject } from '../graphic/Pattern';
@@ -21,7 +21,7 @@ const getCanvasPattern = Pattern.prototype.getCanvasPattern;
 
 function doFillPath(this: void, ctx: CanvasRenderingContext2D, el: Path) {
     const style = el.style;
-    if (style.fillOpacity != null) {
+    if (style.fillOpacity != null && style.fillOpacity !== 1) {
         const originalGlobalAlpha = ctx.globalAlpha;
         ctx.globalAlpha = style.fillOpacity * style.opacity;
         ctx.fill();
@@ -35,7 +35,7 @@ function doFillPath(this: void, ctx: CanvasRenderingContext2D, el: Path) {
 
 function doStrokePath(this: void, ctx: CanvasRenderingContext2D, el: Path) {
     const style = el.style;
-    if (style.strokeOpacity != null) {
+    if (style.strokeOpacity != null && style.strokeOpacity !== 1) {
         const originalGlobalAlpha = ctx.globalAlpha;
         ctx.globalAlpha = style.strokeOpacity * style.opacity;
         ctx.stroke();
@@ -271,11 +271,11 @@ function bindCommonProps(
         prevStyle = prevStyle || {};
     }
     if (forceSetAll || style.opacity !== prevStyle.opacity) {
-        ctx.globalAlpha = style.opacity == null ? 1 : style.opacity;
+        ctx.globalAlpha = style.opacity == null ? DEFAULT_COMMON_STYLE.opacity : style.opacity;
     }
 
     if (forceSetAll || style.blend !== prevStyle.blend) {
-        ctx.globalCompositeOperation = style.blend || 'source-over';
+        ctx.globalCompositeOperation = style.blend || DEFAULT_COMMON_STYLE.blend;
     }
     for (let i = 0; i < SHADOW_NUMBER_PROPS.length; i++) {
         const propName = SHADOW_NUMBER_PROPS[i];
@@ -285,7 +285,7 @@ function bindCommonProps(
         }
     }
     if (forceSetAll || style.shadowColor !== prevStyle.shadowColor) {
-        ctx.shadowColor = style.shadowColor || '#000';
+        ctx.shadowColor = style.shadowColor || DEFAULT_COMMON_STYLE.shadowColor;
     }
 }
 

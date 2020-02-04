@@ -4,9 +4,8 @@
  */
 
 import Definable from './Definable';
-import * as zrUtil from '../../core/util';
-import { StyleOption } from '../../graphic/style/PathStyle';
 import Displayable from '../../graphic/Displayable';
+import { PathStyleOption } from '../../graphic/Path';
 
 
 type DisplayableExtended = Displayable & {
@@ -188,10 +187,8 @@ export default class ShadowManager extends Definable {
 }
 
 
-function hasShadow(style: StyleOption) {
+function hasShadow(style: PathStyleOption) {
     // TODO: textBoxShadowBlur is not supported yet
     return style
-        && (style.shadowBlur || style.shadowOffsetX || style.shadowOffsetY
-            || style.textShadowBlur || style.textShadowOffsetX
-            || style.textShadowOffsetY);
+        && (style.shadowBlur || style.shadowOffsetX || style.shadowOffsetY);
 }

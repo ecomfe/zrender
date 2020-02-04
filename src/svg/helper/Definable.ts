@@ -247,17 +247,6 @@ export default class Definable {
 
 
     /**
-     * Get text SVG element.
-     *
-     * @param displayable displayable element
-     * @return SVG element of text
-     */
-    getTextSvgElement(displayable: Displayable): SVGElement {
-        return displayable.__textSvgEl;
-    }
-
-
-    /**
      * Get SVG element.
      *
      * @param displayable displayable element

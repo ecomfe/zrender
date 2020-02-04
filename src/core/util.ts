@@ -170,24 +170,28 @@ export function mergeAll(targetAndSources: any[], overwrite: boolean): any {
     return result;
 }
 
-export function extend(target: Dictionary<any>, source: Dictionary<any>): Object {
+export function extend<T extends Dictionary<any>, S extends Dictionary<any>>(
+    target: T, source: S
+): T & S {
     for (let key in source) {
         if (source.hasOwnProperty(key)) {
-            target[key] = source[key];
+            (target as S & T)[key] = (source as T & S)[key];
         }
     }
-    return target;
+    return target as T & S;
 }
 
-export function defaults(target: Dictionary<any>, source: Dictionary<any>, overlay?: boolean) {
+export function defaults<T extends Dictionary<any>, S extends Dictionary<any>>(
+    target: T, source: S, overlay?: boolean
+): T & S {
     for (let key in source) {
         if (source.hasOwnProperty(key)
-            && (overlay ? source[key] != null : target[key] == null)
+            && (overlay ? source[key] != null : (target as T & S)[key] == null)
         ) {
-            target[key] = source[key];
+            (target as S & T)[key] = (source as T & S)[key];
         }
     }
-    return target;
+    return target as T & S;
 }
 
 export const createCanvas = function (): HTMLCanvasElement {

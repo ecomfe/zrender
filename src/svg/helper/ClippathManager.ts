@@ -32,13 +32,6 @@ export default class ClippathManager extends Definable {
             this.updateDom(svgEl, displayable.__clipPaths, false);
         }
 
-        const textEl = this.getTextSvgElement(displayable);
-        if (textEl) {
-            // Make another clipPath for text, since it's transform
-            // matrix is not the same with svgElement
-            this.updateDom(textEl, displayable.__clipPaths, true);
-        }
-
         this.markUsed(displayable);
     };
 

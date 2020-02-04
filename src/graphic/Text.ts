@@ -1,9 +1,9 @@
 import Displayable, { DisplayableOption } from './Displayable';
-import { getBoundingRect } from '../contain/text';
+import { getBoundingRect, DEFAULT_FONT } from '../contain/text';
 import BoundingRect from '../core/BoundingRect';
-import { PathStyleOption } from './Path';
+import { PathStyleOption, DEFAULT_PATH_STYLE } from './Path';
 import { AllPropTypes } from '../core/types';
-import { trim } from '../core/util';
+import { trim, extend } from '../core/util';
 
 export interface TextStyleOption extends PathStyleOption {
 
@@ -46,27 +46,22 @@ export interface TextStyleOption extends PathStyleOption {
     //  */
     fontSize?: number
 
-    textLineHeight?: number
-    textWidth?: number | string
-    /**
-     * Only for textBackground.
-     */
-    textHeight?: number
-
-    // truncate?: {
-    //     outerWidth?: number
-    //     outerHeight?: number
-    //     ellipsis?: string
-    //     placeholder?: string
-    //     minChar?: number
-    // }
-
-
     textAlign?: CanvasTextAlign
 
     textBaseline?: CanvasTextBaseline
-
 }
+
+export const DEFAULT_TEXT_STYLE: TextStyleOption = extend({
+    strokeFirst: true,
+    font: DEFAULT_FONT,
+    x: 0,
+    y: 0,
+    textAlign: 'left',
+    textBaseline: 'top'
+}, DEFAULT_PATH_STYLE);
+
+class StyleCtor {}
+StyleCtor.prototype = DEFAULT_TEXT_STYLE;
 
 interface TextOption extends DisplayableOption {
     style?: TextOption
@@ -93,8 +88,6 @@ interface ZText {
 
     setStyle(key: TextStyleOption): ZText
     setStyle(key: keyof TextStyleOption, value: AllPropTypes<TextStyleOption>): ZText
-
-    useStyle(obj: TextStyleOption): void
 }
 
 class ZText extends Displayable {
@@ -116,6 +109,11 @@ class ZText extends Displayable {
         const style = this.style;
         const fill = style.fill;
         return fill != null && fill !== 'none';
+    }
+
+    useStyle(obj: TextStyleOption) {
+        this.style = new StyleCtor();
+        extend(this.style, obj);
     }
 
     innerBeforeBrush() {

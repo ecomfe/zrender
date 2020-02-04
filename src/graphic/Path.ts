@@ -1,6 +1,5 @@
-import Displayable, { DisplayableOption } from './Displayable';
+import Displayable, { DisplayableOption, CommonStyleOption, DEFAULT_COMMON_STYLE } from './Displayable';
 import Element from '../Element';
-import * as zrUtil from '../core/util';
 import PathProxy from '../core/PathProxy';
 import * as pathContain from '../contain/path';
 import Pattern, { PatternObject } from './Pattern';
@@ -8,14 +7,12 @@ import { Dictionary, PropType, AllPropTypes } from '../core/types';
 import BoundingRect from '../core/BoundingRect';
 import { LinearGradientObject } from './LinearGradient';
 import { RadialGradientObject } from './RadialGradient';
+import { isObject, defaults, extend } from '../core/util';
 
-export interface PathStyleOption {
-
+export interface PathStyleOption extends CommonStyleOption {
     fill?: string | PatternObject | LinearGradientObject | RadialGradientObject
     stroke?: string | PatternObject | LinearGradientObject | RadialGradientObject
-
     strokeNoScale?: boolean
-
     fillOpacity?: number
     strokeOpacity?: number
 
@@ -34,17 +31,6 @@ export interface PathStyleOption {
     lineJoin?: CanvasLineJoin
 
     miterLimit?: number
-
-    shadowBlur?: number
-    shadowOffsetX?: number
-    shadowOffsetY?: number
-    shadowColor?: string
-    opacity?: number
-    /**
-     * https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/globalCompositeOperation
-     */
-    blend?: string
-
     /**
      * Paint order, if do stroke first. Similar to SVG paint-order
      * https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/paint-order
@@ -52,22 +38,17 @@ export interface PathStyleOption {
     strokeFirst?: boolean
 }
 
-export const defaultPathStyle: PathStyleOption = {
+export const DEFAULT_PATH_STYLE: PathStyleOption = defaults({
     fill: '#000',
     stroke: null,
-    opacity: 1,
     lineDashOffset: 0,
-    shadowBlur: 0,
-    shadowOffsetX: 0,
-    shadowOffsetY: 0,
-    shadowColor: '#000',
     lineWidth: 1,
     lineCap: 'butt',
     miterLimit: 10,
 
     strokeNoScale: false,
-    strokeFirst: false
-}
+    strokeFirst: false,
+}, DEFAULT_COMMON_STYLE);
 
 export interface PathOption extends DisplayableOption{
     strokeContainThreshold?: number
@@ -82,6 +63,10 @@ export interface PathOption extends DisplayableOption{
         inBundle?: boolean
     ) => void
 }
+// USE SyleCtor to make sure default value can be accessed from prototype
+class StyleCtor {}
+StyleCtor.prototype = DEFAULT_PATH_STYLE;
+
 
 type PathKey = keyof PathOption
 type PathPropertyType = PropType<PathOption, PathKey>
@@ -94,10 +79,7 @@ interface Path {
 
     setStyle(key: PathStyleOption): Path
     setStyle(key: keyof PathStyleOption, value: AllPropTypes<PathStyleOption>): Path
-
-    useStyle(obj: PathStyleOption): void
 }
-
 class Path extends Displayable {
 
     path: PathProxy
@@ -153,13 +135,13 @@ class Path extends Displayable {
 
     hasStroke() {
         const style = this.style;
-        const stroke = style.stroke;
+        const stroke = 'stroke' in style ? style.stroke : DEFAULT_PATH_STYLE.stroke;
         return stroke != null && stroke !== 'none' && style.lineWidth > 0;
     }
 
     hasFill() {
         const style = this.style;
-        const fill = style.fill;
+        const fill = 'fill' in style ? style.fill : DEFAULT_PATH_STYLE.fill;
         return fill != null && fill !== 'none';
     }
 
@@ -296,7 +278,7 @@ class Path extends Displayable {
             shape = this.shape = {};
         }
         // Path from string may not have shape
-        if (zrUtil.isObject(key)) {
+        if (isObject(key)) {
             for (let name in key as Dictionary<any>) {
                 if (key.hasOwnProperty(name)) {
                     shape[name] = (key as Dictionary<any>)[name];
@@ -311,6 +293,11 @@ class Path extends Displayable {
         return this;
     }
 
+    useStyle(obj: PathStyleOption) {
+        this.style = new StyleCtor();
+        extend(this.style, obj);
+    }
+
     /**
      * If path shape is zero area
      */
@@ -323,7 +310,7 @@ class Path extends Displayable {
         if (!this.shape) {
             this.shape = {};
         }
-        zrUtil.defaults(this.shape, defaultShapeObj);
+        defaults(this.shape, defaultShapeObj);
     }
 
     /**
