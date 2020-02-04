@@ -62,12 +62,6 @@ function prepend(parent: SVGElement, child: SVGElement) {
     }
 }
 
-// function append(parent, child) {
-//     if (checkParentAvailable(parent, child)) {
-//         parent.appendChild(child);
-//     }
-// }
-
 function remove(parent: SVGElement, child: SVGElement) {
     if (child && parent && child.parentNode === parent) {
         parent.removeChild(child);

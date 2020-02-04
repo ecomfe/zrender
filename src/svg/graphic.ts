@@ -7,10 +7,9 @@ import PathProxy from '../core/PathProxy';
 import * as matrix from '../core/matrix';
 import Displayable from '../graphic/Displayable';
 import { Path } from '../export';
-import { PathOption, PathStyleOption } from '../graphic/Path';
-import { TextAlign } from '../core/types';
+import { PathStyleOption } from '../graphic/Path';
 import ZImage, { ImageStyleOption } from '../graphic/Image';
-import { DEFAULT_FONT } from '../contain/text';
+import { DEFAULT_FONT, adjustTextY, getLineHeight } from '../contain/text';
 import ZText, { TextStyleOption } from '../graphic/Text';
 
 type SVGProxy = {
@@ -328,26 +327,12 @@ export {svgImage as image};
 /***************************************************
  * TEXT
  **************************************************/
-const TEXT_ALIGN_TO_ANCHRO = {
+const TEXT_ALIGN_TO_ANCHOR = {
     left: 'start',
     right: 'end',
     center: 'middle',
     middle: 'middle'
 };
-
-function updateTextLocation(
-    tspan: SVGTSpanElement,
-    textAlign: TextAlign,
-    x: number,
-    y: number
-) {
-    // Consider different font display differently in vertial align, we always
-    // set vertialAlign as 'middle', and use 'y' to locate text vertically.
-    attr(tspan, 'dominant-baseline', 'middle');
-    attr(tspan, 'text-anchor', TEXT_ALIGN_TO_ANCHRO[textAlign]);
-    attr(tspan, 'x', x + '');
-    attr(tspan, 'y', y + '');
-}
 
 const svgText: SVGProxy = {
     brush(el: ZText) {
@@ -366,17 +351,27 @@ const svgText: SVGProxy = {
             el.__svgEl = textSvgEl;
         }
 
+        const font = style.font || DEFAULT_FONT;
+
         // style.font has been normalized by `normalizeTextStyle`.
         const textSvgElStyle = textSvgEl.style;
-        textSvgElStyle.font = style.font || DEFAULT_FONT;
-
-        textSvgEl.setAttribute('x', (style.x || 0) + '');
-        textSvgEl.setAttribute('y', (style.y || 0) + '');
+        textSvgElStyle.font = font;
 
         textSvgEl.textContent = text;
 
         bindStyle(textSvgEl, style, el);
         setTransform(textSvgEl, el.transform);
+
+        // Consider different font display differently in vertial align, we always
+        // set vertialAlign as 'middle', and use 'y' to locate text vertically.
+        const x = style.x || 0;
+        const y = adjustTextY(style.y || 0, getLineHeight(font), style.textBaseline);
+        const textAlign = TEXT_ALIGN_TO_ANCHOR[style.textAlign as keyof typeof TEXT_ALIGN_TO_ANCHOR]
+            || style.textAlign;
+        attr(textSvgEl, 'dominant-baseline', 'middle');
+        attr(textSvgEl, 'text-anchor', textAlign);
+        attr(textSvgEl, 'x', x + '');
+        attr(textSvgEl, 'y', y + '');
     }
 };
 export {svgText as text};
