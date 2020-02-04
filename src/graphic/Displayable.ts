@@ -93,6 +93,8 @@ export default class Displayable extends Element {
 
     style: Dictionary<any>
 
+    __dirtyStyle: boolean
+
     protected _rect: BoundingRect
 
     /************* Properties will be inejected in other modules. *******************/
@@ -100,12 +102,6 @@ export default class Displayable extends Element {
     // Can only be `null`/`undefined` or an non-empty array, MUST NOT be an empty array.
     // because it is easy to only using null to check whether clipPaths changed.
     __clipPaths: Path[]
-
-    // FOR TEXT
-    __dirtyText = false
-    __textCotentBlock: RichTextContentBlock | PlainTextContentBlock
-    __computedFont: string
-    __styleFont: string
 
     // FOR HOVER Connections for hovered elements.
     __hoverMir: Displayable
@@ -166,25 +162,21 @@ export default class Displayable extends Element {
     }
 
     /**
-     * Mark displayable element dirty and refresh next frame
-     */
-    dirty(dirtyShape?: boolean) {
-        this.__dirty = this.__dirtyText = true;
-        this._rect = null;
-        this.__zr && this.__zr.refresh();
-    }
-
-    /**
-     * If displayable object binded any event
-     * @return {boolean}
-     */
-
-    /**
      * Alias for animate('style')
      * @param {boolean} loop
      */
     animateStyle(loop: boolean) {
         return this.animate('style', loop);
+    }
+
+    // Override updateDuringAnimation
+    updateDuringAnimation(targetKey: string) {
+        if (targetKey === 'style') {
+            this.dirtyStyle();
+        }
+        else {
+            this.dirty();
+        }
     }
 
     attrKV(key: DisplayableKey, value: DisplayablePropertyType) {
@@ -214,8 +206,15 @@ export default class Displayable extends Element {
                 }
             }
         }
-        this.dirty(false);
+        this.dirtyStyle();
         return this;
+    }
+
+    dirtyStyle() {
+        this.__dirtyStyle = true;
+        this.dirty();
+        // Clear bounding rect.
+        this._rect = null;
     }
 
     /**
@@ -259,6 +258,7 @@ export default class Displayable extends Element {
         dispProto.rectHover = false;
         dispProto.incremental = false;
         dispProto._rect = null;
-        dispProto.__dirtyText = false;
+
+        dispProto.__dirtyStyle = true;
     })()
 }

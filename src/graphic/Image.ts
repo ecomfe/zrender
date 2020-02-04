@@ -51,6 +51,8 @@ class ZImage extends Displayable {
     useStyle(obj: ImageStyleOption) {
         this.style = new StyleCtor();
         extend(this.style, obj);
+
+        this.dirtyStyle();
     }
 
     getBoundingRect(): BoundingRect {

@@ -149,7 +149,7 @@ export default class Element extends Transformable {
         m[5] += dy;
 
         this.decomposeTransform();
-        this.dirty(false);
+        this.dirty();
     }
 
     /**
@@ -223,7 +223,7 @@ export default class Element extends Transformable {
                 }
             }
         }
-        this.dirty(false);
+        this.dirty();
         return this;
     }
 
@@ -249,7 +249,7 @@ export default class Element extends Transformable {
         clipPath.__zr = zr;
         clipPath.__clipTarget = this;
 
-        this.dirty(false);
+        this.dirty();
     }
 
     removeClipPath() {
@@ -263,11 +263,17 @@ export default class Element extends Transformable {
             clipPath.__clipTarget = null;
             this._clipPath = null;
 
-            this.dirty(false);
+            this.dirty();
         }
     }
 
-    dirty(dirtyPath?: boolean) {}
+    /**
+     * Mark displayable element dirty and refresh next frame
+     */
+    dirty() {
+        this.__dirty = true;
+        this.__zr && this.__zr.refresh();
+    }
 
     /**
      * Add self from zrender instance.
@@ -319,16 +325,16 @@ export default class Element extends Transformable {
      *         .start()
      */
     animate(path: string, loop?: boolean) {
-        const el = this;
+        const el = this as Element;
         const zr = this.__zr;
 
         let target;
-        let animatingShape = false;
+        let targetKey: string;
         if (path) {
             const pathSplitted = path.split('.');
             let prop = <Dictionary<any>>el;
+            targetKey = pathSplitted[0];
             // If animating shape
-            animatingShape = pathSplitted[0] === 'shape';
             for (let i = 0, l = pathSplitted.length; i < l; i++) {
                 if (!prop) {
                     continue;
@@ -357,8 +363,8 @@ export default class Element extends Transformable {
 
         const animator = new Animator(target, loop);
 
-        animator.during(function (target) {
-            el.dirty(animatingShape);
+        animator.during(function () {
+            el.updateDuringAnimation(targetKey);
         }).done(function () {
             // FIXME Animator will not be removed if use `Animator#stop` to stop animation
             animators.splice(zrUtil.indexOf(animators, animator), 1);
@@ -372,6 +378,10 @@ export default class Element extends Transformable {
         }
 
         return animator;
+    }
+
+    updateDuringAnimation(targetKey: string) {
+        this.dirty();
     }
 
     /**
@@ -494,7 +504,6 @@ export default class Element extends Transformable {
     ondragleave: ElementEventCallback
     ondragover: ElementEventCallback
     ondrop: ElementEventCallback
-
 
     protected static initDefaultProps = (function () {
         const elProto = Element.prototype;

@@ -228,27 +228,20 @@ class Path extends Displayable {
         return false;
     }
 
-    /**
-     * @param  {boolean} dirtyPath
-     */
-    dirty(dirtyPath?: boolean) {
-        if (dirtyPath == null) {
-            dirtyPath = true;
-        }
-        // Only mark dirty, not mark clean
-        if (dirtyPath) {
-            this.__dirtyPath = dirtyPath;
-            this._rect = null;
-        }
-
-        this.__dirty = this.__dirtyText = true;
-
-        this.__zr && this.__zr.refresh();
-
+    dirty() {
+        super.dirty();
         // Used as a clipping path
         if (this.__clipTarget) {
             this.__clipTarget.dirty();
         }
+    }
+
+    /**
+     * Shape changed
+     */
+    dirtyShape() {
+        this.__dirtyPath = true;
+        this.dirty();
     }
 
     /**
@@ -257,6 +250,19 @@ class Path extends Displayable {
      */
     animateShape(loop: boolean) {
         return this.animate('shape', loop);
+    }
+
+    // Override updateDuringAnimation
+    updateDuringAnimation(targetKey: string) {
+        if (targetKey === 'style') {
+            this.dirtyStyle();
+        }
+        else if (targetKey === 'shape') {
+            this.dirtyShape();
+        }
+        else {
+            this.dirty();
+        }
     }
 
     // Overwrite attrKV
@@ -288,12 +294,14 @@ class Path extends Displayable {
         else {
             shape[key] = value;
         }
-        this.dirty(true);
+        this.dirtyShape();
 
         return this;
     }
 
     useStyle(obj: PathStyleOption) {
+        this.dirtyStyle();
+
         this.style = new StyleCtor();
         extend(this.style, obj);
     }

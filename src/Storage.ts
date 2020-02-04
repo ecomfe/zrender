@@ -126,7 +126,6 @@ export default class Storage {
                 const child = children[i];
 
                 // Force to mark as dirty if group is dirty
-                // FIXME __dirtyPath ?
                 if (el.__dirty) {
                     child.__dirty = true;
                 }

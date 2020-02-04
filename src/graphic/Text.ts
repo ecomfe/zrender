@@ -112,6 +112,7 @@ class ZText extends Displayable {
     }
 
     useStyle(obj: TextStyleOption) {
+        this.dirtyStyle();
         this.style = new StyleCtor();
         extend(this.style, obj);
     }
