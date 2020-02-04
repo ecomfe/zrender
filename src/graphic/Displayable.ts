@@ -138,6 +138,7 @@ export default class Displayable extends Element {
     afterBrush() {}
 
     // Hook provided to inherited classes.
+    // Executed between beforeBrush / afterBrush
     innerBeforeBrush() {}
     innerAfterBrush() {}
 
@@ -221,7 +222,7 @@ export default class Displayable extends Element {
      * Use given style object
      */
     useStyle(obj: Dictionary<any>) {
-        this.style = obj;
+        throw new Error('Not implemented.');
     }
 
     /**

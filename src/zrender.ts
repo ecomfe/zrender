@@ -27,12 +27,14 @@ import { PathStyleOption } from './graphic/Path';
 import ZText, { TextStyleOption } from './graphic/Text';
 import ZImage, { ImageStyleOption } from './graphic/Image';
 
-// Only import interface to reduce bundling size
-import {CanvasPainterInterface} from './canvas/PainterInterface';
 
 const useVML = !env.canvasSupported;
 
-const painterCtors: Dictionary<typeof PainterBase> = {
+type PainterBaseCtor = {
+    new(dom: HTMLElement, storage: Storage, ...args: any[]): PainterBase
+}
+
+const painterCtors: Dictionary<PainterBaseCtor> = {
 };
 
 let instances: { [key: number]: ZRender } = {};
@@ -140,8 +142,8 @@ class ZRender {
      * Change configuration of layer
     */
     configLayer(zLevel: number, config: LayerConfig) {
-        if ((this.painter as CanvasPainterInterface).configLayer) {
-            (this.painter as CanvasPainterInterface).configLayer(zLevel, config);
+        if (this.painter.configLayer) {
+            this.painter.configLayer(zLevel, config);
         }
         this._needsRefresh = true;
     }
@@ -152,8 +154,8 @@ class ZRender {
     setBackgroundColor(
         backgroundColor: string | GradientObject | PatternObject
     ) {
-        if ((this.painter as CanvasPainterInterface).setBackgroundColor) {
-            (this.painter as CanvasPainterInterface).setBackgroundColor(backgroundColor);
+        if (this.painter.setBackgroundColor) {
+            this.painter.setBackgroundColor(backgroundColor);
         }
         this._needsRefresh = true;
     }
@@ -210,8 +212,8 @@ class ZRender {
      * Add element to hover layer
      */
     addHover(el: Path | ZText | ZImage, style: PathStyleOption | TextStyleOption | ImageStyleOption): Path | ZText | ZImage {
-        if ((this.painter as CanvasPainterInterface).addHover) {
-            const elMirror = (this.painter as CanvasPainterInterface).addHover(
+        if (this.painter.addHover) {
+            const elMirror = this.painter.addHover(
                 // TODO
                 el as Path, style as PathStyleOption
             );
@@ -224,8 +226,8 @@ class ZRender {
      * Add element from hover layer
      */
     removeHover(el: Path | ZText | ZImage) {
-        if ((this.painter as CanvasPainterInterface).removeHover) {
-            (this.painter as CanvasPainterInterface).removeHover(el);
+        if (this.painter.removeHover) {
+            this.painter.removeHover(el);
             this.refreshHover();
         }
     }
@@ -234,8 +236,8 @@ class ZRender {
      * Clear all hover elements in hover layer
      */
     clearHover() {
-        if ((this.painter as CanvasPainterInterface).clearHover) {
-            (this.painter as CanvasPainterInterface).clearHover();
+        if (this.painter.clearHover) {
+            this.painter.clearHover();
             this.refreshHover();
         }
     }
@@ -252,8 +254,8 @@ class ZRender {
      */
     refreshHoverImmediately() {
         this._needsRefreshHover = false;
-        if ((this.painter as CanvasPainterInterface).refreshHover) {
-            (this.painter as CanvasPainterInterface).refreshHover();
+        if (this.painter.refreshHover) {
+            this.painter.refreshHover();
         }
     }
 
@@ -308,8 +310,8 @@ class ZRender {
      * It has much better performance of drawing image rather than drawing a vector path.
      */
     pathToImage(e: Path, dpr: number) {
-        if ((this.painter as CanvasPainterInterface).pathToImage) {
-            return (this.painter as CanvasPainterInterface).pathToImage(e, dpr);
+        if (this.painter.pathToImage) {
+            return this.painter.pathToImage(e, dpr);
         }
     }
 
@@ -431,7 +433,7 @@ export function getInstance(id: number): ZRender {
     return instances[id];
 }
 
-export function registerPainter(name: string, Ctor: typeof PainterBase) {
+export function registerPainter(name: string, Ctor: PainterBaseCtor) {
     painterCtors[name] = Ctor;
 }
 

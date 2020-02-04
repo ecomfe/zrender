@@ -91,7 +91,6 @@ export default class Storage {
             el.update();
 
         }
-
         el.afterUpdate();
 
         const userSetClipPath = el.getClipPath();

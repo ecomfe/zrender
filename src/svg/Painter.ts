@@ -20,6 +20,8 @@ import {
 import Displayable from '../graphic/Displayable';
 import Storage from '../Storage';
 import { GradientObject } from '../graphic/Gradient';
+import { PainterBase } from '../PainterBase';
+import CanvasPainter from '../canvas/Painter';
 
 function parseInt10(val: string) {
     return parseInt(val, 10);
@@ -72,10 +74,6 @@ function remove(parent: SVGElement, child: SVGElement) {
     }
 }
 
-function getTextSvgElement(displayable: Displayable) {
-    return displayable.__textSvgEl;
-}
-
 function getSvgElement(displayable: Displayable) {
     return displayable.__svgEl;
 }
@@ -85,7 +83,7 @@ interface SVGPainterOption {
     height?: number | string
 }
 
-class SVGPainter {
+class SVGPainter implements PainterBase {
 
     type = 'svg'
 
@@ -179,8 +177,7 @@ class SVGPainter {
         for (let i = 0; i < listLen; i++) {
             const displayable = list[i];
             const svgProxy = getSvgProxy(displayable);
-            const svgElement = getSvgElement(displayable)
-                || getTextSvgElement(displayable);
+            const svgElement = getSvgElement(displayable);
             if (!displayable.invisible) {
                 if (displayable.__dirty) {
                     svgProxy && svgProxy.brush(displayable);
@@ -215,9 +212,7 @@ class SVGPainter {
                 for (let k = 0; k < item.count; k++) {
                     const displayable = visibleList[item.indices[k]];
                     const svgElement = getSvgElement(displayable);
-                    const textSvgElement = getTextSvgElement(displayable);
                     remove(svgRoot, svgElement);
-                    remove(svgRoot, textSvgElement);
                 }
             }
         }
@@ -227,31 +222,17 @@ class SVGPainter {
                 for (let k = 0; k < item.count; k++) {
                     const displayable = newVisibleList[item.indices[k]];
                     const svgElement = getSvgElement(displayable);
-                    const textSvgElement = getTextSvgElement(displayable);
                     prevSvgElement
                         ? insertAfter(svgRoot, svgElement, prevSvgElement)
                         : prepend(svgRoot, svgElement);
-                    if (svgElement) {
-                        insertAfter(svgRoot, textSvgElement, svgElement);
-                    }
-                    else if (prevSvgElement) {
-                        insertAfter(
-                            svgRoot, textSvgElement, prevSvgElement
-                        );
-                    }
-                    else {
-                        prepend(svgRoot, textSvgElement);
-                    }
-                    // Insert text
-                    insertAfter(svgRoot, textSvgElement, svgElement);
-                    prevSvgElement = textSvgElement || svgElement
-                        || prevSvgElement;
+
+                    prevSvgElement = svgElement || prevSvgElement;
 
                     // zrender.Text only create textSvgElement.
                     this._gradientManager
-                        .addWithoutUpdate(svgElement || textSvgElement, displayable);
+                        .addWithoutUpdate(svgElement, displayable);
                     this._shadowManager
-                        .addWithoutUpdate(svgElement || textSvgElement, displayable);
+                        .addWithoutUpdate(svgElement, displayable);
                     this._clipPathManager.markUsed(displayable);
                 }
             }
@@ -259,23 +240,19 @@ class SVGPainter {
                 for (let k = 0; k < item.count; k++) {
                     const displayable = newVisibleList[item.indices[k]];
                     const svgElement = getSvgElement(displayable);
-                    const textSvgElement = getTextSvgElement(displayable);
 
                     this._gradientManager.markUsed(displayable);
                     this._gradientManager
-                        .addWithoutUpdate(svgElement || textSvgElement, displayable);
+                        .addWithoutUpdate(svgElement, displayable);
 
                     this._shadowManager.markUsed(displayable);
                     this._shadowManager
-                        .addWithoutUpdate(svgElement || textSvgElement, displayable);
+                        .addWithoutUpdate(svgElement, displayable);
 
                     this._clipPathManager.markUsed(displayable);
 
-                    if (textSvgElement) { // Insert text.
-                        insertAfter(svgRoot, textSvgElement, svgElement);
-                    }
                     prevSvgElement = svgElement
-                        || textSvgElement || prevSvgElement;
+                        || prevSvgElement;
                 }
             }
         }
@@ -409,23 +386,22 @@ class SVGPainter {
         const html = this._svgRoot.outerHTML;
         return 'data:image/svg+xml;charset=UTF-8,' + html;
     }
+
+    addHover = createMethodNotSupport('addHover') as PainterBase['addHover'];
+    removeHover = createMethodNotSupport('removeHover') as PainterBase['removeHover'];
+    clearHover = createMethodNotSupport('clearHover') as PainterBase['clearHover'];
+    refreshHover = createMethodNotSupport('refreshHover') as PainterBase['refreshHover'];
+    pathToImage = createMethodNotSupport('pathToImage') as PainterBase['pathToImage'];
+    configLayer = createMethodNotSupport('configLayer') as PainterBase['configLayer'];
 }
 
 
 // Not supported methods
-function createMethodNotSupport(method: string) {
+function createMethodNotSupport(method: string): any {
     return function () {
         util.logError('In SVG mode painter not support method "' + method + '"');
     };
 }
 
-// Unsuppoted methods
-util.each([
-    'getLayer', 'insertLayer', 'eachLayer', 'eachBuiltinLayer',
-    'eachOtherLayer', 'getLayers', 'modLayer', 'delLayer', 'clearLayer',
-    'toDataURL', 'pathToImage'
-], function (name) {
-    (SVGPainter as any).prototype[name] = createMethodNotSupport(name);
-});
 
 export default SVGPainter;

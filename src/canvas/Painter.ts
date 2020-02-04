@@ -14,7 +14,7 @@ import Storage from '../Storage';
 import { brush, BrushScope } from './graphic';
 import ZText, { TextStyleOption } from '../graphic/Text';
 import { PathStyleOption } from '../graphic/Path';
-import { CanvasPainterInterface } from './PainterInterface';
+import { PainterBase } from '../PainterBase';
 
 const HOVER_LAYER_ZLEVEL = 1e5;
 const CANVAS_ZLEVEL = 314159;
@@ -73,7 +73,7 @@ interface CanvasPainterOption {
     height?: number | string
 }
 
-export default class CanvasPainter implements CanvasPainterInterface {
+export default class CanvasPainter implements PainterBase {
 
     type = 'canvas'
 
