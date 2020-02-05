@@ -9,7 +9,7 @@ import Displayable from '../graphic/Displayable';
 import { Path } from '../export';
 import { PathStyleOption } from '../graphic/Path';
 import ZImage, { ImageStyleOption } from '../graphic/Image';
-import { DEFAULT_FONT, adjustTextY, getLineHeight } from '../contain/text';
+import { DEFAULT_FONT, getLineHeight } from '../contain/text';
 import ZText, { TextStyleOption } from '../graphic/Text';
 
 type SVGProxy = {
@@ -333,6 +333,17 @@ const TEXT_ALIGN_TO_ANCHOR = {
     center: 'middle',
     middle: 'middle'
 };
+
+function adjustTextY(y: number, lineHeight: number, textBaseline: CanvasTextBaseline): number {
+    // TODO Other values.
+    if (textBaseline === 'top') {
+        y += lineHeight / 2;
+    }
+    else if (textBaseline === 'bottom') {
+        y -= lineHeight / 2;
+    }
+    return y;
+}
 
 const svgText: SVGProxy = {
     brush(el: ZText) {

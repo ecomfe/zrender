@@ -19,20 +19,13 @@
 
     var showBoundingRect;
 
-    // requireES([
-    //     'zrender/esm/zrender',
-    //     'zrender/esm/graphic/Text',
-    //     'zrender/esm/graphic/shape/Line',
-    //     'zrender/esm/graphic/shape/Rect',
-    //     'zrender/esm/vml/vml'
-    // ], function(zrender, Text, Line, Rect){
-
-    var Text = zrender.Text;
+    var RichText = zrender.RichText;
     var Line = zrender.Line;
     var Rect = zrender.Rect;
 
     var zr = zrender.init(document.getElementById('main'), {
-        renderer: window.__ZRENDER__DEFAULT__RENDERER__
+        // renderer: window.__ZRENDER__DEFAULT__RENDERER__
+        renderer: 'svg'
     });
 
     showBoundingRect = function () {
@@ -94,7 +87,7 @@
         }));
     }
 
-    zr.add(new Text({
+    zr.add(new RichText({
         style: {
             x: 0,
             y: 0,
@@ -107,7 +100,7 @@
         draggable: true
     }));
 
-    zr.add(new Text({
+    zr.add(new RichText({
         position : [100, 100],
         style: {
             x: 0,
@@ -123,7 +116,7 @@
         draggable: true
     }));
 
-    zr.add(new Text({
+    zr.add(new RichText({
         position : [200, 100],
         rotation: 2,
         scale: [.5, .5],
@@ -139,7 +132,7 @@
         draggable: true
     }));
 
-    zr.add(new Text({
+    zr.add(new RichText({
         position : [100, 200],
         rotation: -1,
         origin: [0, 50],
@@ -167,7 +160,7 @@
             fill: '#333'
         }
     }));
-    zr.add(new Text({
+    zr.add(new RichText({
         position : [300, 100],
         style: {
             x: 0,
@@ -178,7 +171,7 @@
         }
     }));
 
-    zr.add(new Text({
+    zr.add(new RichText({
         position : [400, 50],
         style: {
             x: 0,
@@ -190,7 +183,7 @@
         }
     }));
 
-    zr.add(new Text({
+    zr.add(new RichText({
         position : [500, 50],
         style: {
             x: 0,
@@ -202,7 +195,7 @@
         }
     }));
 
-    zr.add(new Text({
+    zr.add(new RichText({
         position : [600, 0],
         style: {
             x: 0,
@@ -217,7 +210,7 @@
         }
     }));
 
-    zr.add(new Text({
+    zr.add(new RichText({
         position : [700, 0],
         style: {
             x: 0,
@@ -234,7 +227,7 @@
         }
     }));
 
-    zr.add(new Text({
+    zr.add(new RichText({
         position : [600, 100],
         rotation: -Math.PI / 16,
         style: {
@@ -265,7 +258,7 @@
     }));
 
 
-    zr.add(new Text({
+    zr.add(new RichText({
         position : [100, 300],
         style: {
             // Empty text but has background
@@ -278,7 +271,7 @@
     }));
 
 
-    zr.add(new Text({
+    zr.add(new RichText({
         style: {
             x: 200,
             y: 300,
@@ -405,7 +398,7 @@
         draggable: true
     }));
 
-    zr.add(new Text({
+    zr.add(new RichText({
         rotation: -0.1,
         position: [500, 900],
         style: {
@@ -464,7 +457,7 @@
     }));
 
 
-    zr.add(new Text({
+    zr.add(new RichText({
         rotation: -0.1,
         position: [500, 1300],
         style: {
@@ -533,7 +526,7 @@
         ['#c23531','#2f4554', '#61a0a8', '#d48265', '#91c7ae','#749f83',  '#ca8622', '#bda29a','#6e7074', '#546570', '#c4ccd3']
     );
 
-    zr.add(new Text({
+    zr.add(new RichText({
         rotation: -0.1,
         position: [800, 1100],
         style: {

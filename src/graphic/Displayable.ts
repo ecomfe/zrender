@@ -7,9 +7,8 @@ import Element, {ElementOption} from '../Element';
 import BoundingRect, { RectLike } from '../core/BoundingRect';
 import { Dictionary, PropType, AllPropTypes } from '../core/types';
 import Path from './Path';
-import { calculateTextPosition, RichTextContentBlock, PlainTextContentBlock } from '../container/helper/text';
 
-type CalculateTextPositionResult = ReturnType<typeof calculateTextPosition>
+// type CalculateTextPositionResult = ReturnType<typeof calculateTextPosition>
 
 export interface CommonStyleOption {
     shadowBlur?: number
@@ -243,7 +242,7 @@ export default class Displayable extends Element {
      *             textVerticalAlign: string. optional. use style.textVerticalAlign by default.
      *         }
      */
-    calculateTextPosition: (out: CalculateTextPositionResult, style: Dictionary<any>, rect: RectLike) => CalculateTextPositionResult
+    // calculateTextPosition: (out: CalculateTextPositionResult, style: Dictionary<any>, rect: RectLike) => CalculateTextPositionResult
 
 
     protected static initDefaultProps = (function () {

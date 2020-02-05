@@ -67,19 +67,6 @@ interface TextOption extends DisplayableOption {
     style?: TextOption
 }
 
-function makeFont(style: TextStyleOption): string {
-    // FIXME in node-canvas fontWeight is before fontStyle
-    // Use `fontSize` `fontFamily` to check whether font properties are defined.
-    const font = (style.fontSize || style.fontFamily) && [
-        style.fontStyle,
-        style.fontWeight,
-        (style.fontSize || 12) + 'px',
-        // If font properties are defined, `fontFamily` should not be ignored.
-        style.fontFamily || 'sans-serif'
-    ].join(' ');
-    return font && trim(font) || style.textFont || style.font;
-}
-
 interface ZText {
     constructor(opts?: TextOption): void
 
@@ -96,7 +83,7 @@ class ZText extends Displayable {
     style: TextStyleOption
 
     private _normalizeFont() {
-        this.style.font = makeFont(this.style);
+        this.style.font = ZText.makeFont(this.style);
     }
 
     hasStroke() {
@@ -153,6 +140,21 @@ class ZText extends Displayable {
         }
 
         return this._rect;
+    }
+
+    static makeFont(
+        style: Pick<TextStyleOption, 'fontSize' | 'fontFamily' | 'fontStyle' | 'fontWeight' | 'font' | 'textFont'>
+    ): string {
+        // FIXME in node-canvas fontWeight is before fontStyle
+        // Use `fontSize` `fontFamily` to check whether font properties are defined.
+        const font = (style.fontSize || style.fontFamily) && [
+            style.fontStyle,
+            style.fontWeight,
+            (style.fontSize || 12) + 'px',
+            // If font properties are defined, `fontFamily` should not be ignored.
+            style.fontFamily || 'sans-serif'
+        ].join(' ');
+        return font && trim(font) || style.textFont || style.font;
     }
 }
 export default ZText;

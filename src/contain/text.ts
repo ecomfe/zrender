@@ -83,7 +83,7 @@ export function getBoundingRect(
 }
 
 export function adjustTextX(x: number, width: number, textAlign: CanvasTextAlign): number {
-    // FIXME Right to left language
+    // TODO Right to left language
     if (textAlign === 'right') {
         x -= width;
     }
@@ -93,11 +93,11 @@ export function adjustTextX(x: number, width: number, textAlign: CanvasTextAlign
     return x;
 }
 
-export function adjustTextY(y: number, height: number, textVerticalAlign: CanvasTextBaseline): number {
-    if (textVerticalAlign === 'middle') {
+export function adjustTextY(y: number, height: number, textBaseline: CanvasTextBaseline): number {
+    if (textBaseline === 'middle') {
         y -= height / 2;
     }
-    else if (textVerticalAlign === 'bottom') {
+    else if (textBaseline === 'bottom') {
         y -= height;
     }
     return y;

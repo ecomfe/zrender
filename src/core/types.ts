@@ -13,12 +13,14 @@ export type ArrayLike<T> = {
 
 export type ImageLike = HTMLImageElement | HTMLCanvasElement | HTMLVideoElement
 
+// subset of CanvasTextBaseline
 export type TextVerticalAlign = 'top' | 'middle' | 'bottom'
-    | 'center' // DEPRECATED
+    // | 'center' // DEPRECATED
 
 // TODO: Have not support 'start', 'end' yet.
+// subset of CanvasTextAlign
 export type TextAlign = 'left' | 'center' | 'right'
-    | 'middle' // DEPRECATED
+    // | 'middle' // DEPRECATED
 
 export type WXCanvasRenderingContext = CanvasRenderingContext2D & {
     draw: () => void

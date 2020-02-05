@@ -437,7 +437,7 @@ export default class CanvasPainter implements PainterBase {
             for (i = start; i < layer.__endIndex; i++) {
                 const el = list[i];
                 this._doPaintEl(el, layer, paintAll, scope);
-                el.__dirty = el.__dirtyText = false;
+                el.__dirty = false;
 
                 if (useTimer) {
                     // Date.now can be executed in 13,025,305 ops/second.

@@ -75,9 +75,7 @@ export default class Group extends Element {
      */
     add(child: Element): Group {
         if (child && child !== this && child.parent !== this) {
-
             this._children.push(child);
-
             this._doAdd(child);
         }
 
