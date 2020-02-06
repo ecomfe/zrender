@@ -13,38 +13,7 @@ export interface TextStyleOption extends PathStyleOption {
     // TODO Text is assigned inside zrender
     text?: string
 
-    /**
-     * If `fontSize` or `fontFamily` exists, `font` will be reset by
-     * `fontSize`, `fontStyle`, `fontWeight`, `fontFamily`.
-     * So do not visit it directly in upper application (like echarts),
-     * but use `contain/text#makeFont` instead.
-     */
     font?: string
-    /**
-     * The same as font. Use font please.
-     * @deprecated
-     */
-    textFont?: string
-
-    // TODO Put in text group
-    // /**
-    //  * It helps merging respectively, rather than parsing an entire font string.
-    //  */
-    fontStyle?: string
-    // /**
-    //  * It helps merging respectively, rather than parsing an entire font string.
-    //  */
-    fontWeight?: string
-    // /**
-    //  * It helps merging respectively, rather than parsing an entire font string.
-    //  */
-    fontFamily?: string
-    // /**
-    //  * It helps merging respectively, rather than parsing an entire font string.
-    //  * Should be 12 but not '12px'.
-    //  * @type {number}
-    //  */
-    fontSize?: number
 
     textAlign?: CanvasTextAlign
 
@@ -82,10 +51,6 @@ class ZText extends Displayable {
 
     style: TextStyleOption
 
-    private _normalizeFont() {
-        this.style.font = ZText.makeFont(this.style);
-    }
-
     hasStroke() {
         const style = this.style;
         const stroke = style.stroke;
@@ -104,15 +69,8 @@ class ZText extends Displayable {
         extend(this.style, obj);
     }
 
-    innerBeforeBrush() {
-        this._normalizeFont();
-    }
-
     getBoundingRect(): BoundingRect {
         const style = this.style;
-
-        // Optimize, avoid normalize every time.
-        this._normalizeFont();
 
         if (!this._rect) {
             let text = style.text;
@@ -140,21 +98,6 @@ class ZText extends Displayable {
         }
 
         return this._rect;
-    }
-
-    static makeFont(
-        style: Pick<TextStyleOption, 'fontSize' | 'fontFamily' | 'fontStyle' | 'fontWeight' | 'font' | 'textFont'>
-    ): string {
-        // FIXME in node-canvas fontWeight is before fontStyle
-        // Use `fontSize` `fontFamily` to check whether font properties are defined.
-        const font = (style.fontSize || style.fontFamily) && [
-            style.fontStyle,
-            style.fontWeight,
-            (style.fontSize || 12) + 'px',
-            // If font properties are defined, `fontFamily` should not be ignored.
-            style.fontFamily || 'sans-serif'
-        ].join(' ');
-        return font && trim(font) || style.textFont || style.font;
     }
 }
 export default ZText;

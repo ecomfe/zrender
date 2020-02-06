@@ -41,11 +41,6 @@ const nativeReduce = arrayProto.reduce;
 const methods: {[key: string]: Function} = {};
 
 export function $override(name: string, fn: Function) {
-    // Clear ctx instance for different environment
-    if (name === 'createCanvas') {
-        _ctx = null;
-    }
-
     methods[name] = fn;
 }
 
@@ -201,18 +196,6 @@ export const createCanvas = function (): HTMLCanvasElement {
 methods.createCanvas = function (): HTMLCanvasElement {
     return document.createElement('canvas');
 };
-
-// FIXME
-let _ctx: CanvasRenderingContext2D;
-
-export function getContext(): CanvasRenderingContext2D {
-    if (!_ctx) {
-        // Use util.createCanvas instead of createCanvas
-        // because createCanvas may be overwritten in different environment
-        _ctx = createCanvas().getContext('2d');
-    }
-    return _ctx;
-}
 
 /**
  * 查询数组中元素的index

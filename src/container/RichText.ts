@@ -9,7 +9,7 @@ import { TextAlign, TextVerticalAlign, ImageLike, Dictionary, AllPropTypes, Prop
 import Element, { ElementOption } from '../Element';
 import { parseRichText, parsePlainText } from './text/parse';
 import ZText from '../graphic/Text';
-import { retrieve2, isString, each, normalizeCssArray } from '../core/util';
+import { retrieve2, isString, each, normalizeCssArray, trim } from '../core/util';
 import { DEFAULT_FONT, adjustTextX, adjustTextY, getWidth } from '../contain/text';
 import { GradientObject } from '../graphic/Gradient';
 import ZImage from '../graphic/Image';
@@ -49,7 +49,7 @@ interface RichTextStyleOptionPart {
      * The same as font. Use font please.
      * @deprecated
      */
-    // textFont?: string
+    textFont?: string
 
     /**
      * It helps merging respectively, rather than parsing an entire font string.
@@ -496,7 +496,7 @@ export function normalizeTextStyle(style: RichTextStyleOption): RichTextStyleOpt
 
 function normalizeStyle(style: RichTextStyleOptionPart) {
     if (style) {
-        style.font = ZText.makeFont(style);
+        style.font = makeFont(style);
         let textAlign = style.textAlign;
         // 'middle' is invalid, convert it to 'center'
         (textAlign as string) === 'middle' && (textAlign = 'center');
@@ -562,6 +562,21 @@ function needDrawBackground(style: RichTextStyleOptionPart): boolean {
         style.textBackgroundColor
         || (style.textBorderWidth && style.textBorderColor)
     );
+}
+
+function makeFont(
+    style: RichTextStyleOptionPart
+): string {
+    // FIXME in node-canvas fontWeight is before fontStyle
+    // Use `fontSize` `fontFamily` to check whether font properties are defined.
+    const font = (style.fontSize || style.fontFamily) && [
+        style.fontStyle,
+        style.fontWeight,
+        (style.fontSize || 12) + 'px',
+        // If font properties are defined, `fontFamily` should not be ignored.
+        style.fontFamily || 'sans-serif'
+    ].join(' ');
+    return font && trim(font) || style.textFont || style.font;
 }
 
 

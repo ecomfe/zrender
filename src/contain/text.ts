@@ -1,26 +1,31 @@
 import BoundingRect, { RectLike } from '../core/BoundingRect';
-import {
-    getContext
-} from '../core/util';
+import { createCanvas } from '../core/util';
 import { Dictionary, PropType, TextAlign, TextVerticalAlign, BuiltinTextPosition } from '../core/types';
 
 let textWidthCache: Dictionary<number> = {};
 let textWidthCacheCounter = 0;
 
-
 export const DEFAULT_FONT = '12px sans-serif';
 
 const TEXT_CACHE_MAX = 5000;
 
+let _ctx: CanvasRenderingContext2D;
+let _cachedFont: string
+
+function defaultMeasureText(text: string, font?: string): { width: number } {
+    if (!_ctx) {
+        _ctx = createCanvas().getContext('2d');
+    }
+    if (_cachedFont !== font) {
+        _cachedFont = _ctx.font = font || DEFAULT_FONT;
+    }
+    return _ctx.measureText(text);
+}
 
 let methods: {
     measureText: (text: string, font?: string) => { width: number }
 } = {
-    measureText: function (text: string, font?: string): { width: number } {
-        const ctx = getContext();
-        ctx.font = font || DEFAULT_FONT;
-        return ctx.measureText(text);
-    }
+    measureText: defaultMeasureText
 };
 
 export function $override(
