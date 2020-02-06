@@ -1,54 +1,15 @@
 import * as imageHelper from '../../graphic/helper/image';
 import {
-    getContext,
     extend,
     retrieve2,
-    retrieve3,
-    trim,
-    each,
-    normalizeCssArray
+    retrieve3
 } from '../../core/util';
 import { PropType, TextAlign, TextVerticalAlign, ImageLike } from '../../core/types';
 import { RichTextStyleOption } from '../RichText';
 import { getLineHeight, getWidth } from '../../contain/text';
-import ZText from '../../graphic/Text';
 
 const STYLE_REG = /\{([a-zA-Z0-9_]+)\|([^}]*)\}/g;
-const VALID_TEXT_ALIGN = {left: true, right: 1, center: 1};
-const VALID_TEXT_VERTICAL_ALIGN = {top: 1, bottom: 1, middle: 1};
-
 type RichTextStyleOptionPart = PropType<RichTextStyleOption, 'rich'>[string];
-
-export function normalizeTextStyle(style: RichTextStyleOption): RichTextStyleOption {
-    normalizeStyle(style);
-    each(style.rich, normalizeStyle);
-    return style;
-}
-
-function normalizeStyle(style: RichTextStyleOptionPart) {
-    if (style) {
-        style.font = ZText.makeFont(style);
-        let textAlign = style.textAlign;
-        // 'middle' is invalid, convert it to 'center'
-        (textAlign as string) === 'middle' && (textAlign = 'center');
-        style.textAlign = (
-            textAlign == null || VALID_TEXT_ALIGN[textAlign]
-        ) ? textAlign : 'left';
-
-        // Compatible with textBaseline.
-        let textVerticalAlign = style.textVerticalAlign;
-        (textVerticalAlign as string) === 'center' && (textVerticalAlign = 'middle');
-        style.textVerticalAlign = (
-            textVerticalAlign == null || VALID_TEXT_VERTICAL_ALIGN[textVerticalAlign]
-        ) ? textVerticalAlign : 'top';
-
-        // TODO Should not change the orignal value.
-        const textPadding = style.textPadding;
-        if (textPadding) {
-            style.textPadding = normalizeCssArray(style.textPadding);
-        }
-    }
-}
 
 interface InnerTruncateOption {
     maxIteration?: number
@@ -474,10 +435,10 @@ function pushTokens(block: RichTextContentBlock, str: string, styleName?: string
 
     for (let i = 0; i < strs.length; i++) {
         const text = strs[i];
-        const token = new RichTextToken()
+        const token = new RichTextToken();
         token.styleName = styleName;
         token.text = text;
-        token.isLineHolder = !text && !isEmptyStr
+        token.isLineHolder = !text && !isEmptyStr;
 
         // The first token should be appended to the last line.
         if (!i) {
@@ -504,132 +465,3 @@ function pushTokens(block: RichTextContentBlock, str: string, styleName?: string
         }
     }
 }
-
-
-
-
-
-// function parsePercent(value: number | string, maxValue: number): number{
-//     if (typeof value === 'string') {
-//         if (value.lastIndexOf('%') >= 0) {
-//             return parseFloat(value) / 100 * maxValue;
-//         }
-//         return parseFloat(value);
-//     }
-//     return value;
-// }
-
-// class TextPositionCalculationResult {
-//     x: number
-//     y: number
-//     textAlign: TextAlign
-//     textVerticalAlign: TextVerticalAlign
-// }
-/**
- * Follow same interface to `Displayable.prototype.calculateTextPosition`.
- * @public
- * @param out Prepared out object. If not input, auto created in the method.
- * @param style where `textPosition` and `textDistance` are visited.
- * @param rect {x, y, width, height} Rect of the host elment, according to which the text positioned.
- * @return The input `out`. Set: {x, y, textAlign, textVerticalAlign}
- */
-// export function calculateTextPosition(
-//     out: TextPositionCalculationResult,
-//     style: RichTextStyleOption,
-//     rect: RectLike
-// ): TextPositionCalculationResult {
-//     const textPosition = style.textPosition;
-//     let distance = style.textDistance;
-
-//     const height = rect.height;
-//     const width = rect.width;
-//     const halfHeight = height / 2;
-
-//     let x = rect.x;
-//     let y = rect.y;
-//     distance = distance || 0;
-
-//     let textAlign: TextAlign= 'left';
-//     let textVerticalAlign: TextVerticalAlign = 'top';
-
-//     switch (textPosition) {
-//         case 'left':
-//             x -= distance;
-//             y += halfHeight;
-//             textAlign = 'right';
-//             textVerticalAlign = 'middle';
-//             break;
-//         case 'right':
-//             x += distance + width;
-//             y += halfHeight;
-//             textVerticalAlign = 'middle';
-//             break;
-//         case 'top':
-//             x += width / 2;
-//             y -= distance;
-//             textAlign = 'center';
-//             textVerticalAlign = 'bottom';
-//             break;
-//         case 'bottom':
-//             x += width / 2;
-//             y += height + distance;
-//             textAlign = 'center';
-//             break;
-//         case 'inside':
-//             x += width / 2;
-//             y += halfHeight;
-//             textAlign = 'center';
-//             textVerticalAlign = 'middle';
-//             break;
-//         case 'insideLeft':
-//             x += distance;
-//             y += halfHeight;
-//             textVerticalAlign = 'middle';
-//             break;
-//         case 'insideRight':
-//             x += width - distance;
-//             y += halfHeight;
-//             textAlign = 'right';
-//             textVerticalAlign = 'middle';
-//             break;
-//         case 'insideTop':
-//             x += width / 2;
-//             y += distance;
-//             textAlign = 'center';
-//             break;
-//         case 'insideBottom':
-//             x += width / 2;
-//             y += height - distance;
-//             textAlign = 'center';
-//             textVerticalAlign = 'bottom';
-//             break;
-//         case 'insideTopLeft':
-//             x += distance;
-//             y += distance;
-//             break;
-//         case 'insideTopRight':
-//             x += width - distance;
-//             y += distance;
-//             textAlign = 'right';
-//             break;
-//         case 'insideBottomLeft':
-//             x += distance;
-//             y += height - distance;
-//             textVerticalAlign = 'bottom';
-//             break;
-//         case 'insideBottomRight':
-//             x += width - distance;
-//             y += height - distance;
-//             textAlign = 'right';
-//             textVerticalAlign = 'bottom';
-//             break;
-//     }
-
-//     out = out || {} as TextPositionCalculationResult;
-//     out.x = x;
-//     out.y = y;
-//     out.textAlign = textAlign;
-//     out.textVerticalAlign = textVerticalAlign;
-
-//     return out;
-// }

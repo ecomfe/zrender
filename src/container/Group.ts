@@ -35,7 +35,6 @@ export default class Group extends Element {
 
     private _children: Element[] = []
 
-    __storage: Storage
 
     constructor(opts?: GroupOption) {
         super();

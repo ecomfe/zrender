@@ -2,18 +2,18 @@
  * RichText is a container that manages complex text label.
  * It will parse text string and create sub displayble elements respectively.
  */
-import { PatternObject } from '../graphic/Pattern'
-import { LinearGradientObject } from '../graphic/LinearGradient'
-import { RadialGradientObject } from '../graphic/RadialGradient'
-import { TextAlign, TextVerticalAlign, ImageLike, Dictionary, AllPropTypes, PropType } from '../core/types'
-import Element, { ElementOption } from '../Element'
-import { parseRichText, parsePlainText, normalizeTextStyle } from './helper/text'
+import { PatternObject } from '../graphic/Pattern';
+import { LinearGradientObject } from '../graphic/LinearGradient';
+import { RadialGradientObject } from '../graphic/RadialGradient';
+import { TextAlign, TextVerticalAlign, ImageLike, Dictionary, AllPropTypes, PropType } from '../core/types';
+import Element, { ElementOption } from '../Element';
+import { parseRichText, parsePlainText } from './text/parse';
 import ZText from '../graphic/Text';
-import { retrieve3, retrieve2, isString } from '../core/util'
-import { DEFAULT_FONT, adjustTextX, adjustTextY, getWidth } from '../contain/text'
-import { GradientObject } from '../graphic/Gradient'
-import { Rect } from '../export'
-import ZImage from '../graphic/Image'
+import { retrieve2, isString, each, normalizeCssArray } from '../core/util';
+import { DEFAULT_FONT, adjustTextX, adjustTextY, getWidth } from '../contain/text';
+import { GradientObject } from '../graphic/Gradient';
+import ZImage from '../graphic/Image';
+import Rect from '../graphic/shape/Rect';
 
 type RichTextContentBlock = ReturnType<typeof parseRichText>
 type RichTextLine = PropType<RichTextContentBlock, 'lines'>[0]
@@ -485,6 +485,40 @@ class RichText extends Element {
 }
 
 
+const VALID_TEXT_ALIGN = {left: true, right: 1, center: 1};
+const VALID_TEXT_VERTICAL_ALIGN = {top: 1, bottom: 1, middle: 1};
+
+export function normalizeTextStyle(style: RichTextStyleOption): RichTextStyleOption {
+    normalizeStyle(style);
+    each(style.rich, normalizeStyle);
+    return style;
+}
+
+function normalizeStyle(style: RichTextStyleOptionPart) {
+    if (style) {
+        style.font = ZText.makeFont(style);
+        let textAlign = style.textAlign;
+        // 'middle' is invalid, convert it to 'center'
+        (textAlign as string) === 'middle' && (textAlign = 'center');
+        style.textAlign = (
+            textAlign == null || VALID_TEXT_ALIGN[textAlign]
+        ) ? textAlign : 'left';
+
+        // Compatible with textBaseline.
+        let textVerticalAlign = style.textVerticalAlign;
+        (textVerticalAlign as string) === 'center' && (textVerticalAlign = 'middle');
+        style.textVerticalAlign = (
+            textVerticalAlign == null || VALID_TEXT_VERTICAL_ALIGN[textVerticalAlign]
+        ) ? textVerticalAlign : 'top';
+
+        // TODO Should not change the orignal value.
+        const textPadding = style.textPadding;
+        if (textPadding) {
+            style.textPadding = normalizeCssArray(style.textPadding);
+        }
+    }
+}
+
 /**
  * @param stroke If specified, do not check style.textStroke.
  * @param lineWidth If specified, do not check style.textStroke.
@@ -519,6 +553,10 @@ function getTextXForPadding(x: number, textAlign: string, textPadding: number[])
         : (x + textPadding[3]);
 }
 
+/**
+ * If needs draw background
+ * @param style Style of element
+ */
 function needDrawBackground(style: RichTextStyleOptionPart): boolean {
     return !!(
         style.textBackgroundColor

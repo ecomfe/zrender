@@ -4,11 +4,39 @@ import { easingType } from './animation/easing';
 import Animator from './animation/Animator';
 import { ZRenderType } from './zrender';
 import { VectorArray } from './core/vector';
-import { Dictionary, PropType, ElementEventName, ZRRawEvent } from './core/types';
+import { Dictionary, PropType, ElementEventName, ZRRawEvent, BuiltinTextPosition } from './core/types';
 import Path from './graphic/Path';
 import BoundingRect from './core/BoundingRect';
-import Storage from './Storage';
 import {EventQuery, EventCallback} from './core/Eventful';
+import RichText from './container/RichText';
+import { calculateTextPosition, TextPositionCalculationResult } from './contain/text';
+import Storage from './Storage';
+
+interface TextContent {
+    /**
+     * Attached text element.
+     * `position`, `style.textAlign`, `style.textVerticalAlign`
+     * of element will be ignored if textContent.position is set
+     */
+    el?: RichText
+    /**
+     * Position relative to the element bounding rect
+     * Default: 'inside'
+     */
+    position?: BuiltinTextPosition | number[] | string[]
+
+    /**
+     * If use global user space. Which will not apply host's transform
+     */
+    global?: boolean
+
+    /**
+     * Distance to the rect
+     */
+    distance?: number
+
+    // TODO applyClip
+}
 
 export interface ElementEvent {
     type: ElementEventName,
@@ -37,13 +65,14 @@ export interface ElementOption {
     draggable?: boolean
 
     silent?: boolean
-
     // From transform
     position?: VectorArray
     rotation?: number
     scale?: VectorArray
     origin?: VectorArray
     globalScaleRatio?: number
+
+    textContent?: TextContent
 
     extra?: Dictionary<any>
 }
@@ -54,6 +83,8 @@ type ElementPropertyType = PropType<ElementOption, ElementKey>
 type AnimationCallback = () => {}
 
 export type ElementEventCallback = (e: ElementEvent) => boolean | void
+
+let tmpTextPosCalcRes = {} as TextPositionCalculationResult;
 
 export default class Element extends Transformable {
 
@@ -93,7 +124,15 @@ export default class Element extends Transformable {
      */
     dragging: boolean
 
+    /**
+     * Parent element
+     */
     parent: Element
+
+    /**
+     * Attached text content
+     */
+    textContent: TextContent
 
     animators: Animator<any>[] = [];
 
@@ -113,7 +152,6 @@ export default class Element extends Transformable {
     __dirty: boolean
 
     __storage: Storage
-
     /**
      * 用于裁剪的路径(shape)，所有 Group 内的路径在绘制时都会被这个路径裁剪
      * 该路径会继承被裁减对象的变换
@@ -165,6 +203,29 @@ export default class Element extends Transformable {
      */
     update () {
         this.updateTransform();
+
+        // Update textContent
+        const textEl = this.textContent && this.textContent.el;
+        if (textEl) {
+            calculateTextPosition(
+                tmpTextPosCalcRes,
+                this.textContent,
+                this.getBoundingRect()
+            );
+            // TODO Not modify el.position?
+            textEl.position[0] = tmpTextPosCalcRes.x;
+            textEl.position[1] = tmpTextPosCalcRes.y;
+            if (tmpTextPosCalcRes.textAlign) {
+                textEl.style.textAlign = tmpTextPosCalcRes.textAlign;
+            }
+            if (tmpTextPosCalcRes.textVerticalAlign) {
+                textEl.style.textVerticalAlign = tmpTextPosCalcRes.textVerticalAlign;
+            }
+
+            if (!this.textContent.global) {
+                textEl.parent = this;
+            }
+        }
     }
 
     traverse<T> (

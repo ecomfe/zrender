@@ -143,6 +143,13 @@ export default class Storage {
 
             this._displayList[this._displayListLen++] = el as Displayable;
         }
+
+        // Add attached text element
+        // TODO If textContent.el is used by mutiple elements. Or it has been add to zrender
+        const textEl = el.textContent && el.textContent.el;
+        if (textEl) {
+            this._updateAndAddDisplayable(textEl, clipPaths, includeIgnore);
+        }
     }
 
     /**

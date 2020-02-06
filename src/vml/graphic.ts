@@ -6,7 +6,7 @@ import env from '../core/env';
 import {applyTransform} from '../core/vector';
 import BoundingRect from '../core/BoundingRect';
 import * as colorTool from '../tool/color';
-import * as textContain from '../container/helper/text';
+import * as textContain from '../container/text/parse';
 import Displayable from '../graphic/Displayable';
 import ZImage from '../graphic/Image';
 import Text from '../graphic/Text';
