@@ -162,18 +162,14 @@
                 var dist = _storage.textDistance;
                 for (var i = 0; i < _shapes1.length; i++) {
                     var shape = _shapes1[i];
-                    shape.textContent.attr({
-                        style: {
-                            textDistance: clone(dist)
-                        }
+                    shape.setTextLayout({
+                        distance: dist
                     });
                 }
                 for (var i = 0; i < _shapes2.length; i++) {
                     var shape = _shapes2[i];
-                    shape.textContent.attr({
-                        style: {
-                            textDistance: clone(dist)
-                        }
+                    shape.setTextLayout({
+                        distance: dist
                     });
                 }
             };

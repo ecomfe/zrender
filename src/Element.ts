@@ -15,17 +15,19 @@ import Storage from './Storage';
 interface TextLayout {
     /**
      * Position relative to the element bounding rect
-     * Default: 'inside'
+     * @default 'inside'
      */
     position?: BuiltinTextPosition | number[] | string[]
 
     /**
      * Distance to the rect
+     * @default 5
      */
     distance?: number
 
     /**
      * If use local user space. Which will apply host's transform
+     * @default false
      */
     local?: boolean
 
@@ -240,6 +242,8 @@ export default class Element extends Transformable {
             if (tmpTextPosCalcRes.textVerticalAlign) {
                 textEl.style.textVerticalAlign = tmpTextPosCalcRes.textVerticalAlign;
             }
+            // Mark textEl to update transform.
+            textEl.dirty();
         }
     }
 
@@ -259,6 +263,9 @@ export default class Element extends Transformable {
                 target[0] = (value as VectorArray)[0];
                 target[1] = (value as VectorArray)[1];
             }
+        }
+        else if (key === 'textLayout') {
+            this.setTextLayout(value as TextLayout);
         }
         else {
             // TODO https://github.com/microsoft/TypeScript/issues/31663#issuecomment-497113495
@@ -371,6 +378,14 @@ export default class Element extends Transformable {
             this._textContent = null;
             this.dirty();
         }
+    }
+
+    setTextLayout(textLayout: TextLayout) {
+        if (!this.textLayout) {
+            this.textLayout = {};
+        }
+        zrUtil.extend(this.textLayout, textLayout);
+        this.dirty();
     }
 
     /**

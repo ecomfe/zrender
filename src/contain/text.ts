@@ -139,13 +139,13 @@ export function calculateTextPosition(
     out: TextPositionCalculationResult,
     opts: {
         position?: BuiltinTextPosition | number[] | string[]
-        distance?: number
+        distance?: number   // Default 5
         global?: boolean
     },
     rect: RectLike
 ): TextPositionCalculationResult {
     const textPosition = opts.position || 'inside';
-    const distance = opts.distance || 0;
+    const distance = opts.distance != null ? opts.distance : 5;
 
     const height = rect.height;
     const width = rect.width;
