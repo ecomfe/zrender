@@ -187,7 +187,7 @@ export default class Displayable extends Element {
                 this.useStyle(value as Dictionary<any>);
             }
             else {
-                this.style.set(value as Dictionary<any>);
+                this.setStyle(value as Dictionary<any>);
             }
         }
     }

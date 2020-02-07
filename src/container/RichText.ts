@@ -166,6 +166,20 @@ class RichText extends Element {
         super.update();
     }
 
+    attrKV(key: keyof RichTextOption, value: AllPropTypes<RichTextStyleOption>) {
+        if (key !== 'style') {
+            super.attrKV(key as keyof ElementOption, value);
+        }
+        else {
+            if (!this.style) {
+                this.style = value as RichTextStyleOption;
+            }
+            else {
+                this.setStyle(value as RichTextStyleOption);
+            }
+        }
+    }
+
     setStyle(obj: RichTextStyleOption): void
     setStyle(obj: keyof RichTextStyleOption, value: any): void
     setStyle(obj: keyof RichTextStyleOption | RichTextStyleOption, value?: AllPropTypes<RichTextStyleOption>) {
