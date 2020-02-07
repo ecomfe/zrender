@@ -25,6 +25,11 @@ export default class IncrementalDisplayble extends Displayble {
 
     private _cursor = 0
 
+    useStyle() {
+        // Use an empty style
+        // PENDING
+        this.style = {};
+    }
     // getCurrentCursor / updateCursorAfterBrush
     // is used in graphic.ts. It's not provided for developers
     getCursor() {
