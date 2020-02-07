@@ -19,7 +19,7 @@ type RichTextContentBlock = ReturnType<typeof parseRichText>
 type RichTextLine = PropType<RichTextContentBlock, 'lines'>[0]
 type RichTextToken = PropType<RichTextLine, 'tokens'>[0]
 
-// TODO Default value
+// TODO Default value?
 interface RichTextStyleOptionPart {
     // TODO Text is assigned inside zrender
     text?: string
@@ -138,14 +138,14 @@ interface RichText {
 }
 class RichText extends Element {
 
-    private _children: Element[] = []
-
-    private _styleChanged = true
-
     // TODO RichText is Group?
     readonly isGroup = true
 
     style?: RichTextStyleOption
+
+    private _children: Element[] = []
+
+    private _styleChanged = true
 
     constructor(opts?: RichTextOption) {
         super();
@@ -165,7 +165,6 @@ class RichText extends Element {
         }
         super.update();
     }
-
 
     setStyle(obj: RichTextStyleOption): void
     setStyle(obj: keyof RichTextStyleOption, value: any): void
@@ -198,6 +197,106 @@ class RichText extends Element {
         child.parent = this;
         // PENDING addToStorage?
     }
+
+    private _updatePlainTexts() {
+        const style = this.style;
+        const text= style.text || '';
+        const textFont = style.font || DEFAULT_FONT;
+        const textPadding = style.textPadding as number[];
+        const textLineHeight = style.textLineHeight;
+
+        const contentBlock = parsePlainText(
+            text,
+            textFont,
+            // textPadding has been normalized
+            textPadding as number[],
+            textLineHeight,
+            style.truncate
+        );
+        const needDrawBg = needDrawBackground(style);
+
+        let outerHeight = contentBlock.outerHeight;
+
+        const textLines = contentBlock.lines;
+        const lineHeight = contentBlock.lineHeight;
+
+        const baseX = style.x || 0;
+        const baseY = style.y || 0;
+        const textAlign = style.textAlign || 'left';
+        const textVerticalAlign = style.textVerticalAlign;
+
+        const boxY = adjustTextY(baseY, outerHeight, textVerticalAlign);
+        let textX = baseX;
+        let textY = boxY;
+
+        if (needDrawBg || textPadding) {
+            // Consider performance, do not call getTextWidth util necessary.
+            const textWidth = getWidth(text, textFont);
+            let outerWidth = textWidth;
+            textPadding && (outerWidth += textPadding[1] + textPadding[3]);
+            const boxX = adjustTextX(baseX, outerWidth, textAlign);
+
+            needDrawBg && this._renderBackground(style, boxX, boxY, outerWidth, outerHeight);
+
+            if (textPadding) {
+                textX = getTextXForPadding(baseX, textAlign, textPadding);
+                textY += textPadding[0];
+            }
+        }
+
+        // `textBaseline` is set as 'middle'.
+        textY += lineHeight / 2;
+
+        const textStrokeWidth = style.textStrokeWidth;
+        const textStroke = getStroke(style.textStroke, textStrokeWidth);
+        const textFill = getFill(style.textFill);
+
+        const hasStroke = 'textStroke' in style;
+        const hasFill = 'textFill' in style;
+        const hasShadow = style.textShadowBlur > 0;
+
+        for (let i = 0; i < textLines.length; i++) {
+            const el = new ZText();
+            const subElStyle = el.style;
+            subElStyle.text = textLines[i];
+            subElStyle.x = textX;
+            subElStyle.y = textY;
+            // Always set textAlign and textBase line, because it is difficute to calculate
+            // textAlign from prevEl, and we dont sure whether textAlign will be reset if
+            // font set happened.
+            if (textAlign) {
+                subElStyle.textAlign = textAlign;
+            }
+            // Force baseline to be "middle". Otherwise, if using "top", the
+            // text will offset downward a little bit in font "Microsoft YaHei".
+            subElStyle.textBaseline = 'middle';
+            subElStyle.opacity = style.opacity;
+            // Fill after stroke so the outline will not cover the main part.
+            subElStyle.strokeFirst = true;
+
+            if (hasShadow) {
+                subElStyle.shadowBlur = style.textShadowBlur || 0;
+                subElStyle.shadowColor = style.textShadowColor || 'transparent';
+                subElStyle.shadowOffsetX = style.textShadowOffsetX || 0;
+                subElStyle.shadowOffsetY = style.textShadowOffsetY || 0;
+            }
+
+            if (hasStroke) {
+                subElStyle.stroke = textStroke as string;
+                subElStyle.lineWidth = textStrokeWidth;
+            }
+            if (hasFill) {
+                subElStyle.fill = textFill as string;
+            }
+
+            subElStyle.font = textFont;
+
+            textY += lineHeight;
+
+            this._addChild(el);
+        }
+    }
+
 
     private _updateRichTexts() {
         const style = this.style;
@@ -272,93 +371,6 @@ class RichText extends Element {
         }
     }
 
-    private _updatePlainTexts() {
-        const style = this.style;
-        const text= style.text || '';
-        const textFont = style.font || DEFAULT_FONT;
-        const textPadding = style.textPadding as number[];
-        const textLineHeight = style.textLineHeight;
-
-        const contentBlock = parsePlainText(
-            text,
-            textFont,
-            // textPadding has been normalized
-            textPadding as number[],
-            textLineHeight,
-            style.truncate
-        );
-        const needDrawBg = needDrawBackground(style);
-
-        let outerHeight = contentBlock.outerHeight;
-
-        const textLines = contentBlock.lines;
-        const lineHeight = contentBlock.lineHeight;
-
-        const baseX = style.x || 0;
-        const baseY = style.y || 0;
-        const textAlign = style.textAlign || 'left';
-        const textVerticalAlign = style.textVerticalAlign;
-
-        const boxY = adjustTextY(baseY, outerHeight, textVerticalAlign);
-        let textX = baseX;
-        let textY = boxY;
-
-        if (needDrawBg || textPadding) {
-            // Consider performance, do not call getTextWidth util necessary.
-            const textWidth = getWidth(text, textFont);
-            let outerWidth = textWidth;
-            textPadding && (outerWidth += textPadding[1] + textPadding[3]);
-            const boxX = adjustTextX(baseX, outerWidth, textAlign);
-
-            needDrawBg && this._renderBackground(style, boxX, boxY, outerWidth, outerHeight);
-
-            if (textPadding) {
-                textX = getTextXForPadding(baseX, textAlign, textPadding);
-                textY += textPadding[0];
-            }
-        }
-
-        // `textBaseline` is set as 'middle'.
-        textY += lineHeight / 2;
-
-        const textStrokeWidth = style.textStrokeWidth;
-        const textStroke = getStroke(style.textStroke, textStrokeWidth);
-        const textFill = getFill(style.textFill);
-
-        for (let i = 0; i < textLines.length; i++) {
-            const el = new ZText();
-            const subElStyle = el.style;
-            subElStyle.text = textLines[i];
-            subElStyle.x = textX;
-            subElStyle.y = textY;
-            // Always set textAlign and textBase line, because it is difficute to calculate
-            // textAlign from prevEl, and we dont sure whether textAlign will be reset if
-            // font set happened.
-            subElStyle.textAlign = textAlign;
-            // Force baseline to be "middle". Otherwise, if using "top", the
-            // text will offset downward a little bit in font "Microsoft YaHei".
-            subElStyle.textBaseline = 'middle';
-            subElStyle.opacity = style.opacity;
-            // Fill after stroke so the outline will not cover the main part.
-            subElStyle.strokeFirst = true;
-
-            subElStyle.shadowBlur = style.textShadowBlur || style.textShadowBlur || 0;
-            subElStyle.shadowColor = style.textShadowColor || style.textShadowColor || 'transparent';
-            subElStyle.shadowOffsetX = style.textShadowOffsetX || style.textShadowOffsetX || 0;
-            subElStyle.shadowOffsetY = style.textShadowOffsetY || style.textShadowOffsetY || 0;
-
-            subElStyle.lineWidth = textStrokeWidth;
-            subElStyle.stroke = textStroke as string;
-            subElStyle.fill = textFill as string;
-
-            subElStyle.font = textFont;
-
-            textY += lineHeight;
-
-            this._addChild(el);
-        }
-    }
-
     private _placeToken(
         token: RichTextToken,
         style: RichTextStyleOption,
@@ -401,13 +413,21 @@ class RichText extends Element {
 
         const el = new ZText();
         const subElStyle = el.style;
+
+        const hasStroke = 'textStroke' in tokenStyle || 'textStroke' in style;
+        const hasFill = 'textFill' in tokenStyle || 'textFill' in style;
+        const hasShadow = tokenStyle.textShadowBlur > 0
+                    || style.textShadowBlur > 0;
+
         subElStyle.text = token.text;
         subElStyle.x = x;
         subElStyle.y = y;
-        subElStyle.shadowBlur = tokenStyle.textShadowBlur || style.textShadowBlur || 0;
-        subElStyle.shadowColor = tokenStyle.textShadowColor || style.textShadowColor || 'transparent';
-        subElStyle.shadowOffsetX = tokenStyle.textShadowOffsetX || style.textShadowOffsetX || 0;
-        subElStyle.shadowOffsetY = tokenStyle.textShadowOffsetY || style.textShadowOffsetY || 0;
+        if (hasShadow) {
+            subElStyle.shadowBlur = tokenStyle.textShadowBlur || style.textShadowBlur || 0;
+            subElStyle.shadowColor = tokenStyle.textShadowColor || style.textShadowColor || 'transparent';
+            subElStyle.shadowOffsetX = tokenStyle.textShadowOffsetX || style.textShadowOffsetX || 0;
+            subElStyle.shadowOffsetY = tokenStyle.textShadowOffsetY || style.textShadowOffsetY || 0;
+        }
 
         subElStyle.textAlign = textAlign as CanvasTextAlign;
         // Force baseline to be "middle". Otherwise, if using "top", the
@@ -416,9 +436,13 @@ class RichText extends Element {
         subElStyle.font = token.font || DEFAULT_FONT;
 
 
-        subElStyle.lineWidth = retrieve2(tokenStyle.textStrokeWidth, style.textStrokeWidth);
-        subElStyle.stroke = getStroke(tokenStyle.textStroke || style.textStroke, subElStyle.lineWidth) || null;
-        subElStyle.fill = getFill(tokenStyle.textFill || style.textFill) || null;
+        if (hasStroke) {
+            subElStyle.lineWidth = retrieve2(tokenStyle.textStrokeWidth, style.textStrokeWidth);
+            subElStyle.stroke = getStroke(tokenStyle.textStroke || style.textStroke, subElStyle.lineWidth) || null;
+        }
+        if (hasFill) {
+            subElStyle.fill = getFill(tokenStyle.textFill || style.textFill) || null;
+        }
 
         this._addChild(el);
     }

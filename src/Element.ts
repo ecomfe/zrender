@@ -12,13 +12,7 @@ import RichText from './container/RichText';
 import { calculateTextPosition, TextPositionCalculationResult } from './contain/text';
 import Storage from './Storage';
 
-interface TextContent {
-    /**
-     * Attached text element.
-     * `position`, `style.textAlign`, `style.textVerticalAlign`
-     * of element will be ignored if textContent.position is set
-     */
-    el?: RichText
+interface TextLayout {
     /**
      * Position relative to the element bounding rect
      * Default: 'inside'
@@ -26,14 +20,14 @@ interface TextContent {
     position?: BuiltinTextPosition | number[] | string[]
 
     /**
-     * If use global user space. Which will not apply host's transform
-     */
-    global?: boolean
-
-    /**
      * Distance to the rect
      */
     distance?: number
+
+    /**
+     * If use local user space. Which will apply host's transform
+     */
+    local?: boolean
 
     // TODO applyClip
 }
@@ -72,7 +66,10 @@ export interface ElementOption {
     origin?: VectorArray
     globalScaleRatio?: number
 
-    textContent?: TextContent
+    textLayout: TextLayout
+    textContent: RichText
+
+    clipPath: Path
 
     extra?: Dictionary<any>
 }
@@ -85,6 +82,7 @@ type AnimationCallback = () => {}
 export type ElementEventCallback = (e: ElementEvent) => boolean | void
 
 let tmpTextPosCalcRes = {} as TextPositionCalculationResult;
+let tmpBoundingRect = new BoundingRect();
 
 export default class Element extends Transformable {
 
@@ -129,10 +127,6 @@ export default class Element extends Transformable {
      */
     parent: Element
 
-    /**
-     * Attached text content
-     */
-    textContent: TextContent
 
     animators: Animator<any>[] = [];
 
@@ -153,15 +147,35 @@ export default class Element extends Transformable {
 
     __storage: Storage
     /**
-     * 用于裁剪的路径(shape)，所有 Group 内的路径在绘制时都会被这个路径裁剪
-     * 该路径会继承被裁减对象的变换
+     * path to clip the elements and its children, if it is a group.
      * @see http://www.w3.org/TR/2dcontext/#clipping-region
      */
     private _clipPath: Path
 
+    /**
+     * Attached text element.
+     * `position`, `style.textAlign`, `style.textVerticalAlign`
+     * of element will be ignored if textContent.position is set
+     */
+    private _textContent: RichText
+
+    /**
+     * Layout of textContent
+     */
+    textLayout: TextLayout
+
     constructor(opts?: ElementOption) {
         // Transformable needs position, rotation, scale
         super(opts);
+
+        if (opts) {
+            if (opts.textContent) {
+                this.setTextContent(opts.textContent);
+            }
+            if (opts.clipPath) {
+                this.setClipPath(opts.clipPath);
+            }
+        }
     }
 
     /**
@@ -205,13 +219,18 @@ export default class Element extends Transformable {
         this.updateTransform();
 
         // Update textContent
-        const textEl = this.textContent && this.textContent.el;
+        const textEl = this._textContent;
         if (textEl) {
-            calculateTextPosition(
-                tmpTextPosCalcRes,
-                this.textContent,
-                this.getBoundingRect()
-            );
+            const textLayout = this.textLayout;
+            const isLocal = textLayout.local;
+            tmpBoundingRect.copy(this.getBoundingRect());
+            if (!isLocal) {
+                tmpBoundingRect.applyTransform(this.transform);
+            }
+            else {
+                textEl.parent = this;
+            }
+            calculateTextPosition(tmpTextPosCalcRes, textLayout, tmpBoundingRect);
             // TODO Not modify el.position?
             textEl.position[0] = tmpTextPosCalcRes.x;
             textEl.position[1] = tmpTextPosCalcRes.y;
@@ -220,10 +239,6 @@ export default class Element extends Transformable {
             }
             if (tmpTextPosCalcRes.textVerticalAlign) {
                 textEl.style.textVerticalAlign = tmpTextPosCalcRes.textVerticalAlign;
-            }
-
-            if (!this.textContent.global) {
-                textEl.parent = this;
             }
         }
     }
@@ -292,9 +307,6 @@ export default class Element extends Transformable {
         return this._clipPath;
     }
 
-    /**
-     * @param clipPath
-     */
     setClipPath(clipPath: Path) {
         const zr = this.__zr;
         if (zr) {
@@ -328,6 +340,39 @@ export default class Element extends Transformable {
         }
     }
 
+    getTextContent(): RichText {
+        return this._textContent;
+    }
+
+    setTextContent(textEl: RichText) {
+        // Remove previous clip path
+        if (this._textContent && this._textContent !== textEl) {
+            this.removeTextContent();
+        }
+
+        const zr = this.__zr;
+        if (zr) {
+            textEl.addSelfToZr(zr);
+        }
+
+        this._textContent = textEl;
+        textEl.__zr = zr;
+
+        this.dirty();
+    }
+
+    removeTextContent() {
+        const textEl = this._textContent;
+        if (textEl) {
+            if (textEl.__zr) {
+                textEl.removeSelfFromZr(textEl.__zr);
+            }
+            textEl.__zr = null;
+            this._textContent = null;
+            this.dirty();
+        }
+    }
+
     /**
      * Mark displayable element dirty and refresh next frame
      */
@@ -353,6 +398,9 @@ export default class Element extends Transformable {
         if (this._clipPath) {
             this._clipPath.addSelfToZr(zr);
         }
+        if (this._textContent) {
+            this._textContent.addSelfToZr(zr);
+        }
     }
 
     /**
@@ -371,6 +419,9 @@ export default class Element extends Transformable {
 
         if (this._clipPath) {
             this._clipPath.removeSelfFromZr(zr);
+        }
+        if (this._textContent) {
+            this._textContent.removeSelfFromZr(zr);
         }
     }
 
