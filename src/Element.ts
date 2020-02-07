@@ -223,6 +223,9 @@ export default class Element extends Transformable {
         // Update textContent
         const textEl = this._textContent;
         if (textEl) {
+            if (!this.textLayout) {
+                this.textLayout = {};
+            }
             const textLayout = this.textLayout;
             const isLocal = textLayout.local;
             tmpBoundingRect.copy(this.getBoundingRect());

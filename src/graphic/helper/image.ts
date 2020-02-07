@@ -41,7 +41,7 @@ export function createOrUpdateImage<T>(
     newImageOrSrc: string | ImageLike,
     image: ImageLike,
     hostEl: Element,
-    cb: (image: ImageLike, payload: T) => void,
+    cb?: (image: ImageLike, payload: T) => void,
     cbPayload?: T
 ) {
     if (!newImageOrSrc) {

@@ -4,7 +4,7 @@ import { GradientObject } from '../graphic/Gradient';
 import Pattern, { PatternObject } from '../graphic/Pattern';
 import { LinearGradientObject } from '../graphic/LinearGradient';
 import { RadialGradientObject } from '../graphic/RadialGradient';
-import { ZRCanvasRenderingContext } from '../core/types';
+import { ZRCanvasRenderingContext, ImageLike } from '../core/types';
 import BoundingRect from '../core/BoundingRect';
 import { createOrUpdateImage, isImageReady } from '../graphic/helper/image';
 import { getCanvasGradient } from './helper';
@@ -16,8 +16,6 @@ import { IncrementalDisplayable } from '../export';
 import { MatrixArray } from '../core/matrix';
 
 const pathProxyForDraw = new PathProxy(true);
-
-const getCanvasPattern = Pattern.prototype.getCanvasPattern;
 
 function doFillPath(this: void, ctx: CanvasRenderingContext2D, el: Path) {
     const style = el.style;
@@ -46,12 +44,26 @@ function doStrokePath(this: void, ctx: CanvasRenderingContext2D, el: Path) {
         ctx.stroke();
     }
 }
+
+function createCanvasPattern(
+    this: void,
+    ctx: CanvasRenderingContext2D,
+    pattern: PatternObject,
+    el: Displayable
+): CanvasPattern {
+    const image = createOrUpdateImage(pattern.image, pattern.__image, el);
+    if (isImageReady(image)) {
+        return ctx.createPattern(image, pattern.repeat || 'repeat');
+    }
+}
+
 // Draw Path Elements
 function brushPath(this: void, ctx: CanvasRenderingContext2D, el: Path) {
+    let hasStroke = el.hasStroke();
+    let hasFill = el.hasFill();
+
     const style = el.style;
     const path = el.path || pathProxyForDraw;
-    const hasStroke = el.hasStroke();
-    const hasFill = el.hasFill();
     const fill = style.fill;
     const stroke = style.stroke;
     const hasFillGradient = hasFill && !!(fill as GradientObject).colorStops;
@@ -79,13 +91,27 @@ function brushPath(this: void, ctx: CanvasRenderingContext2D, el: Path) {
         ctx.fillStyle = fillGradient;
     }
     else if (hasFillPattern) {
-        ctx.fillStyle = getCanvasPattern.call(fill, ctx);
+        const patternObj = createCanvasPattern(ctx, fill as PatternObject, el);
+        if (patternObj) {
+            ctx.fillStyle = patternObj;
+        }
+        else {
+            // Don't fill if image is not ready
+            hasFill = false;
+        }
     }
     if (hasStrokeGradient) {
         ctx.strokeStyle = strokeGradient;
     }
     else if (hasStrokePattern) {
-        ctx.strokeStyle = getCanvasPattern.call(stroke, ctx);
+        const patternObj = createCanvasPattern(ctx, stroke as PatternObject, el);
+        if (patternObj) {
+            ctx.strokeStyle = patternObj;
+        }
+        else {
+            // Don't stroke if image is not ready
+            hasStroke = false;
+        }
     }
 
     const lineDash = style.lineDash;
@@ -136,7 +162,7 @@ function brushPath(this: void, ctx: CanvasRenderingContext2D, el: Path) {
         if (hasStroke) {
             doStrokePath(ctx, el);
         }
-        if (hasFill) {
+        if (hasStroke) {
             doFillPath(ctx, el);
         }
     }
