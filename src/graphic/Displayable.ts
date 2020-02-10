@@ -112,7 +112,21 @@ export default class Displayable extends Element {
     constructor(opts?: DisplayableOption, defaultStyle?: Dictionary<any>) {
         super(opts);
 
-        this.attr(opts);
+        // this.attr(opts);
+
+        // Extend properties
+        // No deep clone.
+        // So if property value is an object like shape. please do not reuse.
+        for (var name in opts) {
+            if (opts.hasOwnProperty(name)) {
+                if (name === 'style') {
+                    this.useStyle(opts.style);
+                }
+                else {
+                    (this as any)[name] = (opts as Dictionary<any>)[name];
+                }
+            }
+        }
 
         if (!this.style) {
             // Create an empty style object.

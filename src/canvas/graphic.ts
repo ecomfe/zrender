@@ -518,6 +518,7 @@ export function brush(
     el.innerBeforeBrush();
 
     const prevEl = scope.prevEl;
+    // TODO el type changed.
     const forceSetAll = !prevEl;
 
     if (!prevEl || isTransformChanged(m, prevEl.transform)) {

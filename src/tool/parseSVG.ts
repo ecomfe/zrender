@@ -213,26 +213,22 @@ class SVGParser {
                 el = parser.call(this, xmlNode, parentGroup);
                 parentGroup.add(el);
             }
-            else {
-                // No parsers available
-                console.warn('No parser for ' + nodeName);
-                return;
-            }
         }
 
-        let child = xmlNode.firstChild as SVGElement;
-        while (child) {
-            if (child.nodeType === 1) {
-                // el should be a group if it has child.
-                this._parseNode(child, el as Group);
+        if (el) {   // No parsers available
+            let child = xmlNode.firstChild as SVGElement;
+            while (child) {
+                if (child.nodeType === 1) {
+                    // el should be a group if it has child.
+                    this._parseNode(child, el as Group);
+                }
+                // Is text
+                if (child.nodeType === 3 && this._isText) {
+                    this._parseText(child, el as Group);
+                }
+                child = child.nextSibling as SVGElement;
             }
-            // Is text
-            if (child.nodeType === 3 && this._isText) {
-                this._parseText(child, el as Group);
-            }
-            child = child.nextSibling as SVGElement;
         }
-
         // Quit define
         if (nodeName === 'defs') {
             this._isDefine = false;

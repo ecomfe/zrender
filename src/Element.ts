@@ -7,7 +7,7 @@ import { VectorArray } from './core/vector';
 import { Dictionary, PropType, ElementEventName, ZRRawEvent, BuiltinTextPosition } from './core/types';
 import Path from './graphic/Path';
 import BoundingRect from './core/BoundingRect';
-import {EventQuery, EventCallback} from './core/Eventful';
+import Eventful, {EventQuery, EventCallback} from './core/Eventful';
 import RichText from './container/RichText';
 import { calculateTextPosition, TextPositionCalculationResult } from './contain/text';
 import Storage from './Storage';
@@ -86,7 +86,34 @@ export type ElementEventCallback = (e: ElementEvent) => boolean | void
 let tmpTextPosCalcRes = {} as TextPositionCalculationResult;
 let tmpBoundingRect = new BoundingRect();
 
-export default class Element extends Transformable {
+interface Element extends Transformable, Eventful {
+    // Provide more typed event callback params for mouse events.
+    on(event: ElementEventName, handler: ElementEventCallback, context?: object): Element
+    on(event: ElementEventName, query: EventQuery, handler: ElementEventCallback, context?: object): Element
+    // Provide general events handler for other custom events.
+    on(event: string, query?: EventCallback | EventQuery, handler?: EventCallback | Object, context?: Object): Element
+
+    // Mouse events
+    onclick: ElementEventCallback
+    ondblclick: ElementEventCallback
+    onmouseover: ElementEventCallback
+    onmouseout: ElementEventCallback
+    onmousemove: ElementEventCallback
+    onmousewheel: ElementEventCallback
+    onmousedown: ElementEventCallback
+    onmouseup: ElementEventCallback
+    oncontextmenu: ElementEventCallback
+
+    ondrag: ElementEventCallback
+    ondragstart: ElementEventCallback
+    ondragend: ElementEventCallback
+    ondragenter: ElementEventCallback
+    ondragleave: ElementEventCallback
+    ondragover: ElementEventCallback
+    ondrop: ElementEventCallback
+}
+
+class Element {
 
     id: number = zrUtil.guid()
     /**
@@ -168,7 +195,8 @@ export default class Element extends Transformable {
 
     constructor(opts?: ElementOption) {
         // Transformable needs position, rotation, scale
-        super(opts);
+        Transformable.call(this);
+        Eventful.call(this);
 
         if (opts) {
             if (opts.textContent) {
@@ -606,35 +634,6 @@ export default class Element extends Transformable {
         return null;
     }
 
-    // Provide more typed event callback params for mouse events.
-    on(event: ElementEventName, handler: ElementEventCallback, context?: object): Element
-    on(event: ElementEventName, query: EventQuery, handler: ElementEventCallback, context?: object): Element
-    // Provide general events handler for other custom events.
-    on(event: string, query?: EventCallback | EventQuery, handler?: EventCallback | Object, context?: Object): Element
-    on(event: string, query?: EventCallback | EventQuery, handler?: EventCallback | Object, context?: Object): Element {
-        super.on(event, query, handler as EventCallback, context);
-        return this;
-    }
-
-    // Events
-    onclick: ElementEventCallback
-    ondblclick: ElementEventCallback
-    onmouseover: ElementEventCallback
-    onmouseout: ElementEventCallback
-    onmousemove: ElementEventCallback
-    onmousewheel: ElementEventCallback
-    onmousedown: ElementEventCallback
-    onmouseup: ElementEventCallback
-    oncontextmenu: ElementEventCallback
-
-    ondrag: ElementEventCallback
-    ondragstart: ElementEventCallback
-    ondragend: ElementEventCallback
-    ondragenter: ElementEventCallback
-    ondragleave: ElementEventCallback
-    ondragover: ElementEventCallback
-    ondrop: ElementEventCallback
-
     protected static initDefaultProps = (function () {
         const elProto = Element.prototype;
         elProto.type = 'element';
@@ -647,6 +646,9 @@ export default class Element extends Transformable {
         elProto.__dirty = true;
     })()
 }
+
+zrUtil.mixin(Element, Eventful);
+zrUtil.mixin(Element, Transformable);
 
 function animateTo(
     animatable: Element,
@@ -797,3 +799,5 @@ function setAttrByPath(el: Element, path: string, name: string, value: any) {
         el.attr(props as ElementOption);
     }
 }
+
+export default Element;
