@@ -552,20 +552,19 @@ function parseAttributes(
             }
         }
     }
-
     const elFillProp: 'textFill' | 'fill' = isTextEl ? 'textFill' : 'fill';
     const elStrokeProp: 'textStroke' | 'stroke' = isTextEl ? 'textStroke' : 'stroke';
 
     disp.style = disp.style || {};
 
-    zrStyle.fill != null && disp.setStyle(elFillProp as 'fill', getPaint(zrStyle.fill, defs));
-    zrStyle.stroke != null && disp.setStyle(elStrokeProp as 'stroke', getPaint(zrStyle.stroke, defs));
+    zrStyle.fill != null && (disp.style[elFillProp as 'fill'] = getPaint(zrStyle.fill, defs));
+    zrStyle.stroke != null && (disp.style[elStrokeProp as 'stroke'] = getPaint(zrStyle.stroke, defs));
 
     each([
         'lineWidth', 'opacity', 'fillOpacity', 'strokeOpacity', 'miterLimit', 'fontSize'
     ], function (propName) {
         const elPropName = (propName === 'lineWidth' && isTextEl) ? 'textStrokeWidth' : propName;
-        zrStyle[propName] != null && disp.setStyle(elPropName, parseFloat(zrStyle[propName]));
+        zrStyle[propName] != null && (disp.style[elPropName] = parseFloat(zrStyle[propName]));
     });
 
     if (!zrStyle.textBaseline || zrStyle.textBaseline === 'auto') {
@@ -584,7 +583,7 @@ function parseAttributes(
     each(['lineDashOffset', 'lineCap', 'lineJoin',
         'fontWeight', 'fontFamily', 'fontStyle', 'textAlign', 'textBaseline'
     ], function (propName) {
-        zrStyle[propName] != null && disp.setStyle(propName, zrStyle[propName]);
+        zrStyle[propName] != null && (disp.style[propName] = zrStyle[propName]);
     });
 
     if (zrStyle.lineDash) {

@@ -14,6 +14,9 @@ import { DEFAULT_FONT, adjustTextX, adjustTextY, getWidth } from '../contain/tex
 import { GradientObject } from '../graphic/Gradient';
 import ZImage from '../graphic/Image';
 import Rect from '../graphic/shape/Rect';
+import Group from './Group';
+import BoundingRect from '../core/BoundingRect';
+import { MatrixArray } from '../core/matrix';
 
 type RichTextContentBlock = ReturnType<typeof parseRichText>
 type RichTextLine = PropType<RichTextContentBlock, 'lines'>[0]
@@ -146,9 +149,11 @@ class RichText extends Element {
 
     style?: RichTextStyleOption
 
-    private _children: Element[] = []
+    private _children: (ZImage | Rect | ZText)[] = []
 
     private _styleChanged = true
+
+    private _rect: BoundingRect
 
     constructor(opts?: RichTextOption) {
         super();
@@ -201,12 +206,40 @@ class RichText extends Element {
     }
 
     dirtyStyle() {
+        this._rect = null;
         this._styleChanged = true;
         this.dirty();
     }
 
     children() {
         return this._children;
+    }
+
+    getBoundingRect(): BoundingRect {
+        if (!this._rect) {
+            const tmpRect = new BoundingRect(0, 0, 0, 0);
+            const children = this._children;
+            const tmpMat: MatrixArray = [];
+            let rect = null;
+
+            for (let i = 0; i < children.length; i++) {
+                const child = children[i];
+                const childRect = child.getBoundingRect();
+                const transform = child.getLocalTransform(tmpMat);
+                if (transform) {
+                    tmpRect.copy(childRect);
+                    tmpRect.applyTransform(transform);
+                    rect = rect || tmpRect.clone();
+                    rect.union(tmpRect);
+                }
+                else {
+                    rect = rect || childRect.clone();
+                    rect.union(childRect);
+                }
+            }
+            this._rect = rect || tmpRect;
+        }
+        return this._rect;
     }
 
     private _addChild(child: ZText | Rect | ZImage): void {
