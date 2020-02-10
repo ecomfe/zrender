@@ -20,6 +20,7 @@ import { PatternObject } from '../graphic/Pattern';
 import LinearGradient, { LinearGradientObject } from '../graphic/LinearGradient';
 import { RadialGradientObject } from '../graphic/RadialGradient';
 import { GradientObject } from '../graphic/Gradient';
+import ZText, { TextStyleOption } from '../graphic/Text';
 
 // Most of the values can be separated by comma and/or white space.
 const DILIMITER_REG = /[\s,]+/;
@@ -56,6 +57,13 @@ type ElementExtended = Element & {
 }
 type DisplayableExtended = Displayable & {
     __inheritedStyle: Dictionary<string>
+}
+
+type TextStyleOptionExtended = TextStyleOption & {
+    fontSize: number
+    fontFamily: string
+    fontWeight: string
+    fontStyle: string
 }
 /**
  * For big svg string, this method might be time consuming.
@@ -205,12 +213,17 @@ class SVGParser {
                 el = parser.call(this, xmlNode, parentGroup);
                 parentGroup.add(el);
             }
+            else {
+                // No parsers available
+                console.warn('No parser for ' + nodeName);
+                return;
+            }
         }
 
         let child = xmlNode.firstChild as SVGElement;
         while (child) {
             if (child.nodeType === 1) {
-                // el should be agroup if it has child.
+                // el should be a group if it has child.
                 this._parseNode(child, el as Group);
             }
             // Is text
@@ -237,7 +250,7 @@ class SVGParser {
             this._textY += parseFloat(dy as string);
         }
 
-        const text = new RichText({
+        const text = new ZText({
             style: {
                 text: xmlNode.textContent
             },
@@ -247,14 +260,25 @@ class SVGParser {
         inheritStyle(parentGroup, text);
         parseAttributes(xmlNode, text, this._defs);
 
-        const fontSize = text.style.fontSize;
+        const textStyle = text.style as TextStyleOptionExtended
+        const fontSize = textStyle.fontSize;
         if (fontSize && fontSize < 9) {
             // PENDING
-            text.style.fontSize = 9;
+            textStyle.fontSize = 9;
             text.scale = text.scale || [1, 1];
             text.scale[0] *= fontSize / 9;
             text.scale[1] *= fontSize / 9;
         }
+
+        const font = (textStyle.fontSize || textStyle.fontFamily) && [
+            textStyle.fontStyle,
+            textStyle.fontWeight,
+            (textStyle.fontSize || 12) + 'px',
+            // If font properties are defined, `fontFamily` should not be ignored.
+            textStyle.fontFamily || 'sans-serif'
+        ].join(' ');
+        // Make font
+        textStyle.font = font;
 
         const rect = text.getBoundingRect();
         this._textX += rect.width;
@@ -552,13 +576,11 @@ function parseAttributes(
             }
         }
     }
-    const elFillProp: 'textFill' | 'fill' = isTextEl ? 'textFill' : 'fill';
-    const elStrokeProp: 'textStroke' | 'stroke' = isTextEl ? 'textStroke' : 'stroke';
 
     disp.style = disp.style || {};
 
-    zrStyle.fill != null && (disp.style[elFillProp as 'fill'] = getPaint(zrStyle.fill, defs));
-    zrStyle.stroke != null && (disp.style[elStrokeProp as 'stroke'] = getPaint(zrStyle.stroke, defs));
+    zrStyle.fill != null && (disp.style.fill = getPaint(zrStyle.fill, defs));
+    zrStyle.stroke != null && (disp.style.stroke = getPaint(zrStyle.stroke, defs));
 
     each([
         'lineWidth', 'opacity', 'fillOpacity', 'strokeOpacity', 'miterLimit', 'fontSize'
@@ -590,11 +612,6 @@ function parseAttributes(
         disp.style.lineDash = map(trim(zrStyle.lineDash).split(DILIMITER_REG), function (str) {
             return parseFloat(str);
         });
-    }
-
-    if (disp.style[elStrokeProp] && disp.style[elStrokeProp] !== 'none') {
-        // TODO
-        (el as any)[elStrokeProp] = true;
     }
 
     disp.__inheritedStyle = zrStyle;
@@ -635,15 +652,15 @@ function parseTransformAttribute(xmlNode: SVGElement, node: Element) {
             switch (type) {
                 case 'translate':
                     valueArr = trim(value).split(DILIMITER_REG);
-                    matrix.translate(m, m, [parseFloat(value[0]), parseFloat(value[1] || '0')]);
+                    matrix.translate(m, m, [parseFloat(valueArr[0]), parseFloat(valueArr[1] || '0')]);
                     break;
                 case 'scale':
                     valueArr = trim(value).split(DILIMITER_REG);
-                    matrix.scale(m, m, [parseFloat(value[0]), parseFloat(value[1] || value[0])]);
+                    matrix.scale(m, m, [parseFloat(valueArr[0]), parseFloat(valueArr[1] || valueArr[0])]);
                     break;
                 case 'rotate':
                     valueArr = trim(value).split(DILIMITER_REG);
-                    matrix.rotate(m, m, parseFloat(value[0]));
+                    matrix.rotate(m, m, parseFloat(valueArr[0]));
                     break;
                 case 'skew':
                     valueArr = trim(value).split(DILIMITER_REG);
@@ -651,12 +668,12 @@ function parseTransformAttribute(xmlNode: SVGElement, node: Element) {
                     break;
                 case 'matrix':
                     valueArr = trim(value).split(DILIMITER_REG);
-                    m[0] = parseFloat(value[0]);
-                    m[1] = parseFloat(value[1]);
-                    m[2] = parseFloat(value[2]);
-                    m[3] = parseFloat(value[3]);
-                    m[4] = parseFloat(value[4]);
-                    m[5] = parseFloat(value[5]);
+                    m[0] = parseFloat(valueArr[0]);
+                    m[1] = parseFloat(valueArr[1]);
+                    m[2] = parseFloat(valueArr[2]);
+                    m[3] = parseFloat(valueArr[3]);
+                    m[4] = parseFloat(valueArr[4]);
+                    m[5] = parseFloat(valueArr[5]);
                     break;
             }
         }
