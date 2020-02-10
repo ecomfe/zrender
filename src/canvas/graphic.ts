@@ -45,11 +45,11 @@ function doStrokePath(this: void, ctx: CanvasRenderingContext2D, el: Path) {
     }
 }
 
-function createCanvasPattern(
+export function createCanvasPattern(
     this: void,
     ctx: CanvasRenderingContext2D,
     pattern: PatternObject,
-    el: Displayable
+    el: {dirty: () => void}
 ): CanvasPattern {
     const image = createOrUpdateImage(pattern.image, pattern.__image, el);
     if (isImageReady(image)) {

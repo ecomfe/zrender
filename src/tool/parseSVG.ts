@@ -1,6 +1,6 @@
 import Group from '../container/Group';
 import ZImage from '../graphic/Image';
-import Text from '../graphic/Text';
+import RichText from '../container/RichText';
 import Circle from '../graphic/shape/Circle';
 import Rect from '../graphic/shape/Rect';
 import Ellipse from '../graphic/shape/Ellipse';
@@ -237,10 +237,9 @@ class SVGParser {
             this._textY += parseFloat(dy as string);
         }
 
-        const text = new Text({
+        const text = new RichText({
             style: {
-                text: xmlNode.textContent,
-                transformText: true
+                text: xmlNode.textContent
             },
             position: [this._textX || 0, this._textY || 0]
         });

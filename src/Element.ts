@@ -68,10 +68,10 @@ export interface ElementOption {
     origin?: VectorArray
     globalScaleRatio?: number
 
-    textLayout: TextLayout
-    textContent: RichText
+    textLayout?: TextLayout
+    textContent?: RichText
 
-    clipPath: Path
+    clipPath?: Path
 
     extra?: Dictionary<any>
 }

@@ -6,7 +6,7 @@ import { ImageLike } from '../../core/types';
 const globalImageCache = new LRU<CachedImageObj>(50);
 
 type PendingWrap = {
-    hostEl: Element
+    hostEl: {dirty: () => void}
     cb: (image: ImageLike, payload: any) => void
     cbPayload: any
 }
@@ -40,7 +40,7 @@ export function findExistImage(newImageOrSrc: string | ImageLike): ImageLike {
 export function createOrUpdateImage<T>(
     newImageOrSrc: string | ImageLike,
     image: ImageLike,
-    hostEl: Element,
+    hostEl: { dirty: () => void },
     cb?: (image: ImageLike, payload: T) => void,
     cbPayload?: T
 ) {

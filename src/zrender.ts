@@ -20,7 +20,6 @@ import { Dictionary, ElementEventName } from './core/types';
 import Layer, { LayerConfig } from './canvas/Layer';
 import { GradientObject } from './graphic/Gradient';
 import { PatternObject } from './graphic/Pattern';
-import Displayable from './graphic/Displayable';
 import { Path } from './export';
 import { EventCallback } from './core/Eventful';
 import { PathStyleOption } from './graphic/Path';

@@ -27,9 +27,9 @@ interface RichTextStyleOptionPart {
     textFill?: string | PatternObject | LinearGradientObject | RadialGradientObject
     textStroke?: string | PatternObject | LinearGradientObject | RadialGradientObject
 
-    opacity: number
-    fillOpacity: number
-    strokeOpacity: number
+    opacity?: number
+    fillOpacity?: number
+    strokeOpacity?: number
     /**
      * textStroke may be set as some color as a default
      * value in upper applicaion, where the default value
@@ -108,12 +108,15 @@ interface RichTextStyleOptionPart {
     textBoxShadowOffsetY?: number
 }
 export interface RichTextStyleOption extends RichTextStyleOptionPart {
-    x: number,
-    y: number,
+
+    text?: string
+
+    x?: number,
+    y?: number,
     /**
      * If wrap text
      */
-    wrap: false,
+    wrap?: false,
     /**
      * Text styles for rich text.
      */

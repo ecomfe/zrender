@@ -576,6 +576,8 @@ export default class CanvasPainter implements PainterBase {
                 }
             }
         }
+
+        layer.__painter = this;
     }
 
     // Iterate each layer
@@ -613,7 +615,7 @@ export default class CanvasPainter implements PainterBase {
 
     /**
      * 获取所有已创建的层
-     * @param {Array.<module:zrender/Layer>} [prevLayer]
+     * @param prevLayer
      */
     getLayers () {
         return this._layers;

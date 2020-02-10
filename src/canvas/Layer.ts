@@ -7,6 +7,8 @@ import { ZRCanvasRenderingContext } from '../core/types';
 import Eventful from '../core/Eventful';
 import { ElementEventCallback } from '../Element';
 import { getCanvasGradient } from './helper';
+import { createCanvasPattern } from './graphic';
+import { ZRenderType } from '../zrender';
 
 function returnFalse() {
     return false;
@@ -83,6 +85,8 @@ export default class Layer extends Eventful {
     incremental = false
 
     zlevel = 0
+
+    __painter: CanvasPainter
 
     __dirty = true
 
@@ -191,6 +195,7 @@ export default class Layer extends Eventful {
         const lastFrameAlpha = this.lastFrameAlpha;
 
         const dpr = this.dpr;
+        const self = this;
 
         if (haveMotionBLur) {
             if (!this.domBack) {
@@ -223,7 +228,14 @@ export default class Layer extends Eventful {
             }
             // Pattern
             else if (util.isPatternObject(clearColor)) {
-                clearColorGradientOrPattern = Pattern.prototype.getCanvasPattern.call(clearColor, ctx);
+                clearColorGradientOrPattern = createCanvasPattern(
+                    ctx, clearColor, {
+                        dirty: function () {
+                            // TODO
+                            self.__painter.refresh();
+                        }
+                    }
+                );
             }
             ctx.save();
             ctx.fillStyle = clearColorGradientOrPattern || (clearColor as string);

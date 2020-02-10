@@ -5,10 +5,10 @@ import { defaults, extend } from '../core/util';
 
 export interface ImageStyleOption extends CommonStyleOption {
     image?: string | ImageLike
-    width?: number
-    height?: number
     x?: number
     y?: number
+    width?: number
+    height?: number
     sx?: number
     sy?: number
     sWidth?: number
