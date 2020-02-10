@@ -422,8 +422,6 @@ function doClip(clipPaths: Path[], ctx: CanvasRenderingContext2D, scope: BrushSc
         ctx.beginPath();
         clipPath.buildPath(ctx, clipPath.shape);
         ctx.clip();
-        // Transform back
-        restoreTransform(ctx);
     }
     scope.allClipped = allClipped;
 }
@@ -476,22 +474,29 @@ export function brush(
     const clipPaths = el.__clipPaths;
     const prevElClipPaths = scope.prevElClipPaths;
 
+    let forceSetTransform = false;
+    let forceSetStyle = false;
     // Optimize when clipping on group with several elements
     if (!prevElClipPaths || isClipPathChanged(clipPaths, prevElClipPaths)) {
         // If has previous clipping state, restore from it
         if (prevElClipPaths) {
             ctx.restore();
+            // Must set all style and transform because context changed by restore
+            forceSetStyle = forceSetTransform = true;
+
             scope.prevElClipPaths = null;
             scope.allClipped = false;
             // Reset prevEl since context has been restored
             scope.prevEl = null;
         }
         // New clipping state
-        if (clipPaths) {
+        if (clipPaths && clipPaths.length) {
             ctx.save();
             doClip(clipPaths, ctx, scope);
-            scope.prevElClipPaths = clipPaths;
+            // Must set transform because it's changed when clip.
+            forceSetTransform = true;
         }
+        scope.prevElClipPaths = clipPaths;
     }
 
     // Not rendering elements if it's clipped by a zero area path.
@@ -519,22 +524,24 @@ export function brush(
 
     const prevEl = scope.prevEl;
     // TODO el type changed.
-    const forceSetAll = !prevEl;
+    if (!prevEl) {
+        forceSetStyle = forceSetTransform = true;
+    }
 
-    if (!prevEl || isTransformChanged(m, prevEl.transform)) {
+    if (forceSetTransform || isTransformChanged(m, prevEl.transform)) {
         setContextTransform(ctx, el);
     }
 
     if (el instanceof Path) {
-        bindPathAndTextCommonStyle(ctx, el as Path, prevEl as Path, forceSetAll);
+        bindPathAndTextCommonStyle(ctx, el as Path, prevEl as Path, forceSetStyle);
         brushPath(ctx, el as Path);
     }
     else if (el instanceof ZText) {
-        bindPathAndTextCommonStyle(ctx, el as ZText, prevEl as ZText, forceSetAll);
+        bindPathAndTextCommonStyle(ctx, el as ZText, prevEl as ZText, forceSetStyle);
         brushText(ctx, el as ZText);
     }
     else if (el instanceof ZImage) {
-        bindImageStyle(ctx, el as ZImage, prevEl as ZImage, forceSetAll);
+        bindImageStyle(ctx, el as ZImage, prevEl as ZImage, forceSetStyle);
         brushImage(ctx, el as ZImage);
     }
     else if (el instanceof IncrementalDisplayable) {
