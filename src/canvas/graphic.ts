@@ -1,4 +1,4 @@
-import Displayable, { DEFAULT_COMMON_STYLE } from '../graphic/Displayable';
+import Displayable, { DEFAULT_COMMON_STYLE, CommonStyleOption } from '../graphic/Displayable';
 import PathProxy from '../core/PathProxy';
 import { GradientObject } from '../graphic/Gradient';
 import Pattern, { PatternObject } from '../graphic/Pattern';
@@ -393,6 +393,34 @@ function isDisplayableCulled(el: Displayable, width: number, height: number) {
     viewRect.width = width;
     viewRect.height = height;
     return !tmpRect.intersect(viewRect);
+}
+
+export function getPaintRect(el: Displayable) {
+    const elRect = el.getBoundingRect();
+
+    tmpRect.copy(elRect);
+    if (el.transform) {
+        tmpRect.applyTransform(el.transform);
+    }
+
+    const style = el.style as CommonStyleOption;
+    const shadowSize = style.shadowBlur || DEFAULT_COMMON_STYLE.shadowBlur;
+    const shadowOffsetX = style.shadowOffsetX || DEFAULT_COMMON_STYLE.shadowOffsetX;
+    const shadowOffsetY = style.shadowOffsetY || DEFAULT_COMMON_STYLE.shadowOffsetY;
+
+    const shadowRect = new BoundingRect(0, 0, 0, 0);
+    shadowRect.copy(elRect);
+    if (el.transform) {
+        shadowRect.applyTransform(el.transform);
+    }
+    shadowRect.width += shadowSize * 2;
+    shadowRect.height += shadowSize * 2;
+    shadowRect.x += shadowOffsetX - shadowSize;
+    shadowRect.y += shadowOffsetY - shadowSize;
+
+    shadowRect.union(tmpRect);
+
+    return shadowRect;
 }
 
 function isClipPathChanged(clipPaths: Path[], prevClipPaths: Path[]): boolean {

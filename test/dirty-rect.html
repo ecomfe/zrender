@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Dirty Rectangle</title>
+    <script src="../dist/zrender.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+    <div id="main" style="width:1000px;height:800px;"></div>
+    <script type="text/javascript">
+        var zr = zrender.init(document.getElementById('main'), {
+        });
+
+        // var rect = new zrender.Rect({
+        //     shape: {
+        //         x: 0,
+        //         y: 0,
+        //         width: 20,
+        //         height: 10
+        //     },
+        //     style: {
+        //         fill: 'red',
+        //         shadowBlur: 10,
+        //         shadowColor: 'blue',
+        //         shadowOffsetX: 40,
+        //         shadowOffsetY: 20
+        //     },
+        //     position: [100, 100],
+        //     scale: [4, 5],
+        //     rotation: Math.PI / 6
+        // });
+        // zr.add(rect);
+
+        // var rect = new zrender.Rect({
+        //     shape: {
+        //         x: 0,
+        //         y: 0,
+        //         width: 100,
+        //         height: 80
+        //     },
+        //     style: {
+        //         fill: 'green'
+        //     },
+        //     position: [100, 100]
+        // });
+        // zr.add(rect);
+
+        for (var i = 0; i < 100; ++i) {
+            var rect = new zrender.Rect({
+                shape: {
+                    x: 0,
+                    y: 0,
+                    width: 50 * Math.random(),
+                    height: 50 * Math.random()
+                },
+                style: {
+                    fill: 'rgba(200, 0, 0, 0.4)'
+                },
+                position: [800 * Math.random(), 400 * Math.random()]
+            });
+            zr.add(rect);
+        }
+
+        // var outlineOld = new zrender.Rect({
+        //     shape: {
+        //         x: 100,
+        //         y: 60,
+        //         width: 144.28,
+        //         height: 113.3
+        //     },
+        //     style: {
+        //         fill: 'transparent',
+        //         stroke: '#0ff'
+        //     }
+        // });
+        // zr.add(outlineOld);
+
+        // var outlineNew = new zrender.Rect({
+        //     shape: {
+        //         x: 150,
+        //         y: 80,
+        //         width: 144.28,
+        //         height: 113.3
+        //     },
+        //     style: {
+        //         fill: 'transparent',
+        //         stroke: '#0ff'
+        //     }
+        // });
+        // zr.add(outlineNew);
+
+        // setTimeout(function () {
+        //     rect.attr('position', [150, 120])
+        // }, 3000);
+    </script>
+
+</body>
+</html>

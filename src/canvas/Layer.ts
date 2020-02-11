@@ -7,8 +7,10 @@ import { ZRCanvasRenderingContext } from '../core/types';
 import Eventful from '../core/Eventful';
 import { ElementEventCallback } from '../Element';
 import { getCanvasGradient } from './helper';
-import { createCanvasPattern } from './graphic';
+import { createCanvasPattern, getPaintRect } from './graphic';
 import { ZRenderType } from '../zrender';
+import Displayable from '../graphic/Displayable';
+import BoundingRect from '../core/BoundingRect';
 
 function returnFalse() {
     return false;
@@ -86,6 +88,12 @@ export default class Layer extends Eventful {
 
     zlevel = 0
 
+    lastFramePaintRects: BoundingRect[]
+    currentPaintRects: BoundingRect[]
+
+    maxRepaintRectCount = 3
+    mergedRepaintRects: BoundingRect[]
+
     __painter: CanvasPainter
 
     __dirty = true
@@ -134,6 +142,10 @@ export default class Layer extends Eventful {
         this.config = null;
 
         this.dpr = dpr;
+
+        this.lastFramePaintRects = [];
+        this.currentPaintRects = [];
+        this.mergedRepaintRects = [];
     }
 
     getElementCount() {
@@ -154,6 +166,81 @@ export default class Layer extends Eventful {
         if (dpr !== 1) {
             this.ctxBack.scale(dpr, dpr);
         }
+    }
+
+    updateRepaintRects(displayList: Displayable[]) {
+        this._updateRenderingRects(displayList)
+        this.mergedRepaintRects = [];
+
+        const rects = this.lastFramePaintRects.concat(this.currentPaintRects);
+        util.each(rects, rect => {
+            if (this.mergedRepaintRects.length === 0) {
+                // First rect, create new merged rect
+                const boundingRect = new BoundingRect();
+                boundingRect.copy(rect);
+                this.mergedRepaintRects.push(boundingRect);
+            }
+            else {
+                let isMerged = false;
+                const rectArea = rect.width * rect.height;
+                for (let i = 0; i < this.mergedRepaintRects.length; ++i) {
+                    const mergedRect = this.mergedRepaintRects[i];
+                    const mergedArea = mergedRect.width * mergedRect.height;
+
+                    // The rect after merging rect with mergedRect
+                    const pendingRect = new BoundingRect();
+                    pendingRect.copy(mergedRect);
+                    pendingRect.union(rect);
+                    const pendingArea = pendingRect.width * pendingRect.height;
+
+                    if (pendingArea < rectArea + mergedArea) {
+                        // Allow merging when size is smaller if merged
+                        this.mergedRepaintRects[i] = pendingRect;
+                        isMerged = true;
+                        break;
+                    }
+                }
+                if (!isMerged) {
+                    // Create new merged rect if cannot merge with current
+                    const boundingRect = new BoundingRect();
+                    boundingRect.copy(rect);
+                    this.mergedRepaintRects.push(boundingRect);
+                }
+            }
+        });
+
+        // Decrease mergedRepaintRects counts to maxRepaintRectCount
+        const pendingRect = new BoundingRect();
+        while (this.mergedRepaintRects.length > this.maxRepaintRectCount) {
+            let minDeltaArea = Number.MAX_VALUE;
+            let minAId: number = null;
+            let minBId: number = null;
+            for (let i = 0, len = this.mergedRepaintRects.length; i < len; ++i) {
+                for (let j = i + 1; j < len; ++j) {
+                    const aRect = this.mergedRepaintRects[i];
+                    const aArea = aRect.width * aRect.height;
+                    const bRect = this.mergedRepaintRects[j];
+                    const bArea = bRect.width * bRect.height;
+
+                    pendingRect.copy(aRect);
+                    pendingRect.union(bRect);
+                    const pendingArea = pendingRect.width * pendingRect.height;
+                    const deltaArea = pendingArea - aArea - bArea;
+
+                    if (deltaArea < minDeltaArea) {
+                        minDeltaArea = deltaArea;
+                        minAId = i;
+                        minBId = j;
+                    }
+                }
+            }
+
+            // Merge the smallest two
+            this.mergedRepaintRects[minAId].union(this.mergedRepaintRects[minBId]);
+            this.mergedRepaintRects.splice(minBId, 1);
+        }
+        console.log(this.mergedRepaintRects);
+        this._drawRect(this.mergedRepaintRects);
     }
 
     resize(width: number, height: number) {
@@ -277,4 +364,27 @@ export default class Layer extends Eventful {
     ondragleave: ElementEventCallback
     ondragover: ElementEventCallback
     ondrop: ElementEventCallback
+
+
+    private _updateRenderingRects(displayList: Displayable[]) {
+        this.lastFramePaintRects = this.currentPaintRects;
+        this.currentPaintRects = [];
+
+        util.each(displayList, el => {
+            const renderingRect = getPaintRect(el);
+            this.currentPaintRects.push(renderingRect);
+        });
+    }
+
+    private _drawRect(rects: BoundingRect[]) {
+        setTimeout(() => {
+            this.ctx.save();
+            this.ctx.fillStyle = 'none';
+            this.ctx.strokeStyle = '#0ff';
+            util.each(rects, rect => {
+                this.ctx.strokeRect(rect.x * this.dpr, rect.y * this.dpr, rect.width * this.dpr, rect.height * this.dpr);
+            });
+            this.ctx.restore();
+        });
+    }
 }

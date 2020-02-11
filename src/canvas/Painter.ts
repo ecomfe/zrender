@@ -412,6 +412,8 @@ export default class CanvasPainter implements PainterBase {
             };
             ctx.save();
 
+            layer.updateRepaintRects(list);
+
             let start = paintAll ? layer.__startIndex : layer.__drawIndex;
 
             const useTimer = !paintAll && layer.incremental && Date.now;
