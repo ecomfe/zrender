@@ -153,7 +153,7 @@ export default class Storage {
     }
 
     /**
-     * 添加图形(Shape)或者组(Group)到根节点
+     * 添加图形(Displayable)或者组(Group)到根节点
      */
     addRoot(el: Element) {
         if (el.__storage === this) {
@@ -169,7 +169,7 @@ export default class Storage {
     }
 
     /**
-     * 删除指定的图形(Shape)或者组(Group)
+     * 删除指定的图形(Displayable)或者组(Group)
      * @param el
      */
     delRoot(el: Element | Element[]) {

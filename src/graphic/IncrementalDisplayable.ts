@@ -25,6 +25,13 @@ export default class IncrementalDisplayble extends Displayble {
 
     private _cursor = 0
 
+    traverse<T>(
+        cb: (this: T, el: IncrementalDisplayble) => void,
+        context: T
+    ) {
+        cb.call(context, this);
+    }
+
     useStyle() {
         // Use an empty style
         // PENDING
