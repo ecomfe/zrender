@@ -72,7 +72,7 @@ export function getBoundingRect(
     const x = adjustTextX(0, width, textAlign);
     const y = adjustTextY(0, height, textBaseline);
 
-    const rect = new BoundingRect(x, y, outerWidth, outerHeight);
+    const rect = new BoundingRect(x, y, width, height);
 
     return rect;
 }
