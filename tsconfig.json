@@ -15,7 +15,9 @@
         // Compile to lib
         "rootDir": "src",
 
-        "importHelpers": true
+        "importHelpers": true,
+
+        "pretty": true
     },
     "include": [
         "src/**/*.ts"
