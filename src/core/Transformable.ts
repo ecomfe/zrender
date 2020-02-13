@@ -1,6 +1,5 @@
 import * as matrix from './matrix';
 import * as vector from './vector';
-import Eventful from './Eventful';
 
 const mIdentity = matrix.identity;
 
@@ -15,7 +14,10 @@ const tmpTransform: matrix.MatrixArray = [];
 const originTransform = matrix.create();
 const abs = Math.abs;
 
-class Transformable extends Eventful {
+const DEFAULT_POSITION = [0, 0];
+const DEFAULT_SCALE = [1, 1];
+
+class Transformable {
 
     parent: Transformable
 
@@ -35,24 +37,16 @@ class Transformable extends Eventful {
     transform: matrix.MatrixArray
     invTransform: matrix.MatrixArray
 
-    constructor(opts?: {
-        position?: vector.VectorArray
-        rotation?: number
-        scale?: vector.VectorArray
-        origin?: vector.VectorArray
-    }) {
-        super();
-
-        opts = opts || {};
+    constructor() {
         // If there are no given position, rotation, scale
-        this.position = opts.position || [0, 0];
-        this.rotation = opts.rotation || 0;
-        this.scale = opts.scale || [1, 1];
+        this.position = [0, 0];
+        this.rotation = 0;
+        this.scale = [1, 1];
 
         /**
          * 旋转和缩放的原点
          */
-        this.origin = opts.origin || null;
+        this.origin = null;
     }
 
     /**
@@ -239,9 +233,9 @@ class Transformable extends Eventful {
         mIdentity(m);
 
         const origin = target.origin;
-        const scale = target.scale || [1, 1];
+        const scale = target.scale || DEFAULT_SCALE;
         const rotation = target.rotation || 0;
-        const position = target.position || [0, 0];
+        const position = target.position || DEFAULT_POSITION;
 
         if (origin) {
             // Translate to origin

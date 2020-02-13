@@ -299,6 +299,9 @@ class Path extends Displayable {
         return this;
     }
 
+    /**
+     * Replace the style with given new style object.
+     */
     useStyle(obj: PathStyleOption) {
         this.dirtyStyle();
 

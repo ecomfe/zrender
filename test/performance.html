@@ -4,12 +4,13 @@
     <meta charset="utf-8" />
     <title>Performance</title>
     <script src="../dist/zrender.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/zrender@4.2.0/dist/zrender.js"></script> -->
 </head>
 <body>
     <div id="main" style="width:100%;height:400px;border:1px solid green"></div>
     <div>
         <input id="round" value="10"/>次
-        <input id="count" value="1000"/>个图形
+        <input id="count" value="10000"/>个图形
         <select id='shape'>
             <option value='circle'>circle</option>
             <option value='sector'>sector</option>
@@ -334,6 +335,7 @@
             function run(){
                 if (round--) {
                     zr.clear();
+                    var ticket = new Date();
                     for (var i = 0; i < n; i++) {
                         var ShapeClass = ShapeClasses[shapeType];
                         zr.add(new ShapeClass({
@@ -378,7 +380,6 @@
                             silent: true
                         }));
                     }
-                    var ticket = new Date();
                     zr.refreshImmediately();
                     ticket = new Date() - ticket;
                     total += ticket;

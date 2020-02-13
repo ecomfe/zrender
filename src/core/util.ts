@@ -69,9 +69,6 @@ export function logError(...args: string[]) {
  * Caution: do not support clone Date, for performance consideration.
  * (There might be a large number of date in `series.data`).
  * So date should not be modified in and out of echarts.
- *
- * @param source
- * @return new
  */
 export function clone(source: any): any {
     if (source == null || typeof source !== 'object') {
@@ -200,7 +197,7 @@ methods.createCanvas = function (): HTMLCanvasElement {
 /**
  * 查询数组中元素的index
  */
-export function indexOf(array: any[], value: any): number {
+export function indexOf<T>(array: T[], value: T): number {
     if (array) {
         if (array.indexOf) {
             return array.indexOf(value);
@@ -435,8 +432,6 @@ export function isPatternObject(value: any): value is PatternObject {
 
 /**
  * Whether is exactly NaN. Notice isNaN('a') returns true.
- * @param value
- * @return {boolean}
  */
 export function eqNaN(value: any): boolean {
     /* eslint-disable-next-line no-self-compare */
@@ -470,15 +465,9 @@ export function retrieve3<T, R, W>(value0: T, value1: R, value2: W) {
         : value2;
 }
 
-type SliceTypes = Parameters<typeof nativeSlice>;
-/**
- * @param {Array} arr
- * @param {number} startIndex
- * @param {number} endIndex
- * @return {Array}
- */
-export function slice(...args: SliceTypes) {
-    return Function.call.apply(nativeSlice, args as any[]);
+type SliceParams = Parameters<typeof nativeSlice>;
+export function slice<T>(arr: ArrayLike<T>, ...args: SliceParams): T[] {
+    return nativeSlice.apply(arr, args as any[]);
 }
 
 /**
