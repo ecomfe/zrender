@@ -2,19 +2,18 @@
  * RichText is a container that manages complex text label.
  * It will parse text string and create sub displayble elements respectively.
  */
-import { PatternObject } from '../graphic/Pattern';
-import { LinearGradientObject } from '../graphic/LinearGradient';
-import { RadialGradientObject } from '../graphic/RadialGradient';
+import { PatternObject } from './Pattern';
+import { LinearGradientObject } from './LinearGradient';
+import { RadialGradientObject } from './RadialGradient';
 import { TextAlign, TextVerticalAlign, ImageLike, Dictionary, AllPropTypes, PropType } from '../core/types';
 import Element, { ElementOption } from '../Element';
-import { parseRichText, parsePlainText } from './text/parse';
-import ZText from '../graphic/Text';
-import { retrieve2, isString, each, normalizeCssArray, trim } from '../core/util';
+import { parseRichText, parsePlainText } from './helper/parseText';
+import ZText from './Text';
+import { retrieve2, isString, each, normalizeCssArray, trim, bind } from '../core/util';
 import { DEFAULT_FONT, adjustTextX, adjustTextY, getWidth } from '../contain/text';
-import { GradientObject } from '../graphic/Gradient';
-import ZImage from '../graphic/Image';
-import Rect from '../graphic/shape/Rect';
-import Group from './Group';
+import { GradientObject } from './Gradient';
+import ZImage from './Image';
+import Rect from './shape/Rect';
 import BoundingRect from '../core/BoundingRect';
 import { MatrixArray } from '../core/matrix';
 
@@ -69,17 +68,24 @@ interface RichTextStyleOptionPart {
     /**
      * It helps merging respectively, rather than parsing an entire font string.
      * Should be 12 but not '12px'.
-     * @type {number}
      */
     fontSize?: number
 
     textAlign?: TextAlign
     textVerticalAlign?: TextVerticalAlign
 
+    /**
+     * Line height. Default to be text height of '国'
+     */
     textLineHeight?: number
+    /**
+     * Width of text block. Not include padding
+     * Used for background, truncate, wrap
+     */
     textWidth?: number | string
     /**
-     * Only for textBackground.
+     * Height of text block. Not include padding
+     * Used for background, truncate
      */
     textHeight?: number
     /**
@@ -114,24 +120,41 @@ export interface RichTextStyleOption extends RichTextStyleOptionPart {
 
     text?: string
 
-    x?: number,
-    y?: number,
+    x?: number
+    y?: number
+
     /**
-     * If wrap text
+     * Only support number in the top block.
      */
-    wrap?: false,
+    textWidth?: number
     /**
      * Text styles for rich text.
      */
     rich?: Dictionary<RichTextStyleOptionPart>
 
-    truncate?: {
-        outerWidth?: number
-        outerHeight?: number
-        ellipsis?: string
-        placeholder?: string
-        minChar?: number
-    }
+    /**
+     * Strategy when calculated text width exceeds textWidth.
+     * Do nothing if not set
+     */
+    overflow?: 'wrap' | 'truncate'
+
+    /**
+     * Strategy when text lines exceeds textHeight.
+     */
+    lineOverflow?: 'truncate'
+
+    /**
+     * Epllipsis used if text is truncated
+     */
+    ellipsis: string
+    /**
+     * Placeholder used if text is truncated to empty
+     */
+    placeholder: string
+    /**
+     * Min characters for truncating
+     */
+    truncateMinChar: number
 }
 
 interface RichTextOption extends ElementOption {
@@ -144,10 +167,12 @@ interface RichText {
 }
 class RichText extends Element {
 
+    type = 'richtext'
+
     // TODO RichText is Group?
     readonly isGroup = true
 
-    style?: RichTextStyleOption
+    style: RichTextStyleOption
 
     private _children: (ZImage | Rect | ZText)[] = []
 
@@ -158,6 +183,13 @@ class RichText extends Element {
     constructor(opts?: RichTextOption) {
         super();
         this.attr(opts);
+    }
+
+    traverse<T>(
+        cb: (this: T, el: RichText) => void,
+        context: T
+    ) {
+        cb.call(context, this);
     }
 
     update() {
@@ -174,7 +206,7 @@ class RichText extends Element {
         super.update();
     }
 
-    attrKV(key: keyof RichTextOption, value: AllPropTypes<RichTextStyleOption>) {
+    attrKV(key: keyof RichTextOption, value: AllPropTypes<RichTextOption>) {
         if (key !== 'style') {
             super.attrKV(key as keyof ElementOption, value);
         }
@@ -226,6 +258,7 @@ class RichText extends Element {
                 const child = children[i];
                 const childRect = child.getBoundingRect();
                 const transform = child.getLocalTransform(tmpMat);
+
                 if (transform) {
                     tmpRect.copy(childRect);
                     tmpRect.applyTransform(transform);
@@ -242,6 +275,14 @@ class RichText extends Element {
         return this._rect;
     }
 
+    /**
+     * Alias for animate('style')
+     * @param loop
+     */
+    animateStyle(loop: boolean) {
+        return this.animate('style', loop);
+    }
+
     private _addChild(child: ZText | Rect | ZImage): void {
         this._children.push(child);
         child.parent = this;
@@ -250,19 +291,11 @@ class RichText extends Element {
 
     private _updatePlainTexts() {
         const style = this.style;
-        const text= style.text || '';
+        const text = style.text || '';
         const textFont = style.font || DEFAULT_FONT;
         const textPadding = style.textPadding as number[];
-        const textLineHeight = style.textLineHeight;
 
-        const contentBlock = parsePlainText(
-            text,
-            textFont,
-            // textPadding has been normalized
-            textPadding as number[],
-            textLineHeight,
-            style.truncate
-        );
+        const contentBlock = parsePlainText(text, style);
         const needDrawBg = needDrawBackground(style);
 
         let outerHeight = contentBlock.outerHeight;
@@ -429,7 +462,7 @@ class RichText extends Element {
         x: number,
         textAlign: string
     ) {
-        const tokenStyle = style.rich[token.styleName] || {} as RichTextStyleOptionPart;
+        const tokenStyle = style.rich[token.styleName] || {};
         tokenStyle.text = token.text;
 
         // 'ctx.textBaseline' is always set as 'middle', for sake of
@@ -509,6 +542,7 @@ class RichText extends Element {
         const textBorderColor = style.textBorderColor;
         const isPlainBg = isString(textBackgroundColor);
         const textBorderRadius = style.textBorderRadius;
+        const self = this;
 
         let rectEl: Rect;
         let imgEl: ZImage;
@@ -533,6 +567,10 @@ class RichText extends Element {
         }
         else if (textBackgroundColor && (textBackgroundColor as {image: ImageLike}).image) {
             imgEl = new ZImage();
+            imgEl.onload = function () {
+                // Refresh and relayout after image loaded.
+                self.dirtyStyle();
+            }
             const imgStyle = imgEl.style;
             imgStyle.image =  (textBackgroundColor as {image: ImageLike}).image;
             imgStyle.x = x;

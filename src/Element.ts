@@ -8,7 +8,7 @@ import { Dictionary, PropType, ElementEventName, ZRRawEvent, BuiltinTextPosition
 import Path from './graphic/Path';
 import BoundingRect from './core/BoundingRect';
 import Eventful, {EventQuery, EventCallback} from './core/Eventful';
-import RichText from './container/RichText';
+import RichText from './graphic/RichText';
 import { calculateTextPosition, TextPositionCalculationResult } from './contain/text';
 import Storage from './Storage';
 

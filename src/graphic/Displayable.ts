@@ -176,7 +176,7 @@ export default class Displayable extends Element {
 
     /**
      * Alias for animate('style')
-     * @param {boolean} loop
+     * @param loop
      */
     animateStyle(loop: boolean) {
         return this.animate('style', loop);

@@ -1,6 +1,6 @@
 import * as util from './core/util';
 import env from './core/env';
-import Group from './container/Group';
+import Group from './graphic/Group';
 import Element from './Element';
 
 // Use timsort because in most case elements are partially sorted

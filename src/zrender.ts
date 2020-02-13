@@ -17,7 +17,7 @@ import Animation from './animation/Animation';
 import HandlerProxy from './dom/HandlerProxy';
 import Element, {ElementEventCallback} from './Element';
 import { Dictionary, ElementEventName } from './core/types';
-import Layer, { LayerConfig } from './canvas/Layer';
+import { LayerConfig } from './canvas/Layer';
 import { GradientObject } from './graphic/Gradient';
 import { PatternObject } from './graphic/Pattern';
 import { Path } from './export';

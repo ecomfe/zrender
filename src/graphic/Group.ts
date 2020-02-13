@@ -22,7 +22,7 @@ import Element, { ElementOption } from '../Element';
 import BoundingRect from '../core/BoundingRect';
 import Storage from '../Storage';
 import { MatrixArray } from '../core/matrix';
-import Displayable from '../graphic/Displayable';
+import Displayable from './Displayable';
 
 export interface GroupOption extends ElementOption {
 }

@@ -1,4 +1,4 @@
-import * as imageHelper from '../../graphic/helper/image';
+import * as imageHelper from '../helper/image';
 import {
     extend,
     retrieve2,
@@ -20,7 +20,6 @@ interface InnerTruncateOption {
     placeholder?: string
 
     maxIterations?: number
-
 }
 
 interface InnerPreparedTruncateOption extends Required<InnerTruncateOption> {
@@ -155,56 +154,50 @@ function estimateLength(
     return i;
 }
 
-/**
- * Notice: for performance, do not calculate outerWidth util needed.
- *  `canCacheByTextString` means the result `lines` is only determined by the input `text`.
- *  Thus we can simply comparing the `input` text to determin whether the result changed,
- *  without travel the result `lines`.
- */
 export interface PlainTextContentBlock {
     lineHeight: number
     height: number
     outerHeight: number
-    canCacheByTextString: boolean
 
     lines: string[]
 }
 
 export function parsePlainText(
     text: string,
-    font: string,
-    padding: number[],
-    textLineHeight: number,
-    truncate: PropType<RichTextStyleOption, 'truncate'>
+    style?: RichTextStyleOption
 ): PlainTextContentBlock {
     text != null && (text += '');
 
-    const lineHeight = retrieve2(textLineHeight, getLineHeight(font));
+    // textPadding has been normalized
+    const padding = style.textPadding as number[];
+    const font = style.font;
+    const truncate = style.overflow === 'truncate';
+    const lineHeight = retrieve2(style.textLineHeight, getLineHeight(font));
+
     let lines = text ? text.split('\n') : [];
-    let height = lines.length * lineHeight;
+
+    const width = style.textWidth;
+    const height = retrieve2(style.textHeight, lines.length * lineHeight);
     let outerHeight = height;
-    let canCacheByTextString = true;
 
     if (padding) {
         outerHeight += padding[0] + padding[2];
+        outerWidth += padding[1] + padding[3];
     }
 
     if (text && truncate) {
-        canCacheByTextString = false;
-        const truncOuterHeight = truncate.outerHeight;
-        const truncOuterWidth = truncate.outerWidth;
-        if (truncOuterHeight != null && outerHeight > truncOuterHeight) {
+        if (outerHeight != null && outerHeight > outerHeight) {
             text = '';
             lines = [];
         }
-        else if (truncOuterWidth != null) {
+        else if (outerWidth != null) {
             const options = prepareTruncateOptions(
-                truncOuterWidth - (padding ? padding[1] + padding[3] : 0),
+                width,
                 font,
-                truncate.ellipsis,
+                style.ellipsis,
                 {
-                    minChar: truncate.minChar,
-                    placeholder: truncate.placeholder
+                    minChar: style.truncateMinChar,
+                    placeholder: style.placeholder
                 }
             );
 
@@ -220,8 +213,7 @@ export function parsePlainText(
         lines: lines,
         height: height,
         outerHeight: outerHeight,
-        lineHeight: lineHeight,
-        canCacheByTextString: canCacheByTextString
+        lineHeight: lineHeight
     };
 }
 
@@ -291,21 +283,17 @@ export function parseRichText(text: string, style: RichTextStyleOption) {
     }
 
     const lines = contentBlock.lines;
-    let contentHeight = 0;
-    let contentWidth = 0;
-    // For `textWidth: 100%`
+    const topWidth = style.textWidth;
+    const topHeight = style.textHeight;
+
+    let contentHeight = topHeight == null ? 0 : topHeight;
+    let contentWidth = topWidth == null ? 0 : topWidth;
+    // For `textWidth: xx%`
     let pendingList = [];
 
     const stlPadding = style.textPadding as number[];
 
-    const truncate = style.truncate;
-    let truncateWidth = truncate && truncate.outerWidth;
-    let truncateHeight = truncate && truncate.outerHeight;
-    if (stlPadding) {
-        truncateWidth != null && (truncateWidth -= stlPadding[1] + stlPadding[3]);
-        truncateHeight != null && (truncateHeight -= stlPadding[0] + stlPadding[2]);
-    }
-
+    const truncate = style.overflow === 'truncate';
     // Calculate layout info of tokens.
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
@@ -335,8 +323,8 @@ export function parseRichText(text: string, style: RichTextStyleOption) {
             token.textAlign = tokenStyle && tokenStyle.textAlign || style.textAlign;
             token.textVerticalAlign = tokenStyle && tokenStyle.textVerticalAlign || 'middle';
 
-            if (truncateHeight != null && contentHeight + token.lineHeight > truncateHeight) {
-                return new RichTextContentBlock();
+            if (truncate && topHeight != null && contentHeight + token.lineHeight > topHeight) {
+                return contentBlock;
             }
 
             token.textWidth = getWidth(token.text, font);
@@ -382,17 +370,17 @@ export function parseRichText(text: string, style: RichTextStyleOption) {
                 const paddingW = textPadding ? textPadding[1] + textPadding[3] : 0;
                 (tokenWidth as number) += paddingW;
 
-                const remianTruncWidth = truncateWidth != null ? truncateWidth - lineWidth : null;
+                const remainTruncWidth = topWidth != null ? topWidth - lineWidth : null;
 
-                if (remianTruncWidth != null && remianTruncWidth < tokenWidth) {
-                    if (!tokenWidthNotSpecified || remianTruncWidth < paddingW) {
+                if (remainTruncWidth != null && remainTruncWidth < tokenWidth) {
+                    if (!tokenWidthNotSpecified || remainTruncWidth < paddingW) {
                         token.text = '';
                         token.textWidth = tokenWidth = 0;
                     }
                     else {
                         token.text = truncateText(
-                            token.text, remianTruncWidth - paddingW, font, truncate.ellipsis,
-                            {minChar: truncate.minChar}
+                            token.text, remainTruncWidth - paddingW, font, style.ellipsis,
+                            {minChar: style.truncateMinChar}
                         );
                         token.textWidth = getWidth(token.text, font);
                         tokenWidth = token.textWidth + paddingW;
@@ -406,8 +394,13 @@ export function parseRichText(text: string, style: RichTextStyleOption) {
 
         line.width = lineWidth;
         line.lineHeight = lineHeight;
-        contentHeight += lineHeight;
-        contentWidth = Math.max(contentWidth, lineWidth);
+        if (topHeight == null) {
+            contentHeight += lineHeight;
+        }
+        if (topWidth == null) {
+            // Calculate contentWidth automatically
+            contentWidth = Math.max(contentWidth, lineWidth);
+        }
     }
 
     contentBlock.outerWidth = contentBlock.width = retrieve2(style.textWidth as number, contentWidth);
@@ -430,11 +423,11 @@ export function parseRichText(text: string, style: RichTextStyleOption) {
 
 function pushTokens(block: RichTextContentBlock, str: string, styleName?: string) {
     const isEmptyStr = str === '';
-    const strs = str.split('\n');
+    const strLines = str.split('\n');
     const lines = block.lines;
 
-    for (let i = 0; i < strs.length; i++) {
-        const text = strs[i];
+    for (let i = 0; i < strLines.length; i++) {
+        const text = strLines[i];
         const token = new RichTextToken();
         token.styleName = styleName;
         token.text = text;
