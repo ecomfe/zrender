@@ -134,6 +134,14 @@ SVGPainter.prototype = {
         return this._viewport;
     },
 
+    getSvgDom: function () {
+        return this._svgDom;
+    },
+
+    getSvgRoot: function () {
+        return this._svgRoot;
+    },
+
     getViewportRootOffset: function () {
         var viewportRoot = this.getViewportRoot();
         if (viewportRoot) {
