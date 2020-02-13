@@ -1,13 +1,11 @@
 import BoundingRect, { RectLike } from '../core/BoundingRect';
 import { createCanvas } from '../core/util';
 import { Dictionary, PropType, TextAlign, TextVerticalAlign, BuiltinTextPosition } from '../core/types';
+import LRU from '../core/LRU';
 
-let textWidthCache: Dictionary<number> = {};
-let textWidthCacheCounter = 0;
+let textWidthCache: Dictionary<LRU<number>> = {};
 
 export const DEFAULT_FONT = '12px sans-serif';
-
-const TEXT_CACHE_MAX = 5000;
 
 let _ctx: CanvasRenderingContext2D;
 let _cachedFont: string
@@ -37,25 +35,15 @@ export function $override(
 
 export function getWidth(text: string, font: string): number {
     font = font || DEFAULT_FONT;
-    const key = text + ':' + font;
-    if (textWidthCache[key]) {
-        return textWidthCache[key];
+    let cacheOfFont = textWidthCache[font];
+    if (!cacheOfFont) {
+        cacheOfFont = textWidthCache[font] = new LRU(500);
     }
-
-    const textLines = (text + '').split('\n');
-    let width = 0;
-
-    for (let i = 0, l = textLines.length; i < l; i++) {
-        // textContain.measureText may be overrided in SVG or VML
-        width = Math.max(measureText(textLines[i], font).width, width);
+    let width = cacheOfFont.get(text);
+    if (width == null) {
+        width = methods.measureText(text, font).width;
+        cacheOfFont.put(text, width);
     }
-
-    if (textWidthCacheCounter > TEXT_CACHE_MAX) {
-        textWidthCacheCounter = 0;
-        textWidthCache = {};
-    }
-    textWidthCacheCounter++;
-    textWidthCache[key] = width;
 
     return width;
 }
