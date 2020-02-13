@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/astrobench@0.1.2/src/style.css">
+
+    <script src="../test/lib/rollup.browser.js"></script>
+    <script src="../test/lib/requireES.js"></script>
+    <script src="../test/lib/config.js"></script>
+
+    <script src="../test/data/text.js"></script>
+
+    <title>measureText</title>
+</head>
+<body>
+    <div id="astrobench"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/astrobench@0.1.2/dist/astrobench.js"></script>
+
+    <script type="text/javascript">
+        requireES([
+            'zrender/esm/core/LRU'
+        ], function (LRU) {
+
+            function createMeasure() {
+                let ctx = document.createElement('canvas').getContext('2d');
+                let lastFont;
+
+                return function getWidth(text, font) {
+                    if (lastFont !== font) {
+                        ctx.font = font;
+                        lastFont = font;
+                    }
+                    return ctx.measureText(text).width;
+                }
+            }
+
+            function createMeasureSimpleCache() {
+                let textWidthCache = {};
+                let textWidthCacheCounter = 0;
+
+                const getWidth = createMeasure();
+                const TEXT_CACHE_MAX = 5000;
+
+                return function getWidthSimpleCache(text, font) {
+                    const key = text + ':' + font;
+                    if (textWidthCache[key]) {
+                        return textWidthCache[key];
+                    }
+
+                    const width = getWidth(text, font);
+
+                    if (textWidthCacheCounter > TEXT_CACHE_MAX) {
+                        textWidthCacheCounter = 0;
+                        textWidthCache = {};
+                    }
+                    textWidthCacheCounter++;
+                    textWidthCache[key] = width;
+
+                    return width;
+                }
+            }
+            function createMeasureLRUCache() {
+                let textWidthCache = {};
+
+                const getWidth = createMeasure();
+
+                return function getWidthLRUCache(text, font) {
+                    let cacheOfFont = textWidthCache[font];
+                    if (!cacheOfFont) {
+                        cacheOfFont = textWidthCache[font] = new LRU.default(500);
+                    }
+                    let width = cacheOfFont.get(text);
+                    if (width == null) {
+                        width = getWidth(text, font);
+                        cacheOfFont.put(text, width);
+                    }
+
+                    return width;
+                }
+            }
+
+            function createSuite(name, textFrags) {
+                suite(name, function () {
+                    let font = '12px sans-serif';
+                    let basicMeasure;
+                    let measureWithSimpleCache;
+                    let measureWithLRUCache;
+
+                    setup(function () {
+                        basicMeasure = createMeasure();
+                        measureWithSimpleCache = createMeasureSimpleCache();
+                        measureWithLRUCache = createMeasureLRUCache();
+
+                        let testRes1 = basicMeasure('测试', font);
+                        let testRes2 = measureWithSimpleCache('测试', font);
+                        let testRes3 = measureWithLRUCache('测试', font);
+
+                        if (testRes1 !== testRes2 || testRes1 !== testRes3) {
+                            throw new Error(`Result wrong, ${testRes1}, ${testRes2}, ${testRes3}`);
+                        }
+                    });
+
+                    bench('Basic', function () {
+                        for (let i = 0; i < textFrags.length; i++) {
+                            let width = basicMeasure(textFrags[i], font);
+                        }
+                    });
+
+                    bench('Simple Cache', function () {
+                        // TODO 如果 measureWithSimpleCache 调用报错，会报 textFrags is not defined 的错误
+                        for (let i = 0; i < textFrags.length; i++) {
+                            let width = measureWithSimpleCache(textFrags[i], font);
+                        }
+                    });
+
+                    bench('LRU Cache', function () {
+                        for (let i = 0; i < textFrags.length; i++) {
+                            let width = measureWithLRUCache(textFrags[i], font);
+                        }
+                    });
+                });
+            }
+
+            createSuite('English Measure Text(By Words)', LARGE_TEXT_EN.split(' '));
+            createSuite('English Measure Text(By Character)', LARGE_TEXT_EN.split(''));
+            createSuite('Chinese Measure Text', LARGE_TEXT_ZH.split(''));
+        });
+    </script>
+</body>
+</html>

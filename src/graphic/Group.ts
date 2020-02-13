@@ -2,7 +2,7 @@
  * Group是一个容器，可以插入子节点，Group的变换也会被应用到子节点上
  * @module zrender/graphic/Group
  * @example
- *     const Group = require('zrender/container/Group');
+ *     const Group = require('zrender/graphic/Group');
  *     const Circle = require('zrender/graphic/shape/Circle');
  *     const g = new Group();
  *     g.position[0] = 100;
