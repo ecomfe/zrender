@@ -441,6 +441,10 @@ class RichText extends Element {
         }
         const xRight = xLeft + contentWidth;
 
+        if (needDrawBackground(style)) {
+            this._renderBackground(style, boxX, boxY, outerWidth, outerHeight);
+        }
+
         for (let i = 0; i < contentBlock.lines.length; i++) {
             const line = contentBlock.lines[i];
             const tokens = line.tokens;
@@ -551,7 +555,6 @@ class RichText extends Element {
         // text will offset downward a little bit in font "Microsoft YaHei".
         subElStyle.textBaseline = 'middle';
         subElStyle.font = token.font || DEFAULT_FONT;
-
 
         if (hasStroke) {
             subElStyle.lineWidth = retrieve2(tokenStyle.textStrokeWidth, style.textStrokeWidth);

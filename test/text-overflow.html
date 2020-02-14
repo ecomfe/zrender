@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Text Overflow</title>
+    <script src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.js"></script>
     <script src="../dist/zrender.js"></script>
     <script src="lib/config.js"></script>
     <SCript src="data/text.js"></SCript>
@@ -23,16 +24,30 @@
     var zr = zrender.init(document.getElementById('main'), {
         renderer: window.__ZRENDER__DEFAULT__RENDERER__
     });
+    const config = {
+        search: '',
+        width: 400,
+        fontSize: 13
+    }
+
     console.time('render');
     var enText = new zrender.RichText({
         style: {
             text: LARGE_TEXT_EN,
-            textWidth: 200,
+            fontSize: config.fontSize,
+            textWidth: config.width,
             textPadding: 10,
             textBorderColor: '#000',
             textBorderWidth: 1,
 
-            overflow: 'wrap'
+            overflow: 'wrap',
+
+            rich: {
+                highlight: {
+                    // textPadding: 4,
+                    textBackgroundColor: 'yellow'
+                }
+            }
         }
     });
     zr.add(enText);
@@ -40,18 +55,53 @@
     var cnText = new zrender.RichText({
         style: {
             text: LARGE_TEXT_ZH,
-            textWidth: 200,
+            fontSize: config.fontSize,
+            textWidth: config.width,
             textPadding: 10,
             textBorderColor: '#000',
             textBorderWidth: 1,
 
             overflow: 'wrap',
-            x: 300
+            x: config.width + 100,
+
+            rich: {
+                highlight: {
+                    // textPadding: 4,
+                    textBackgroundColor: 'yellow',
+                    fontSize: 16
+                }
+            }
         }
     });
-    zr.add(cnText);
+    // zr.add(cnText);
     zr.refreshImmediately();
     console.timeEnd('render');
+
+    function update() {
+        enText.style.textWidth = cnText.style.textWidth = config.width;
+        cnText.style.x = config.width + 100;
+        enText.style.fontSize = cnText.style.fontSize = config.fontSize;
+
+        if (config.search) {
+            enText.style.text = LARGE_TEXT_EN.replace(
+                new RegExp(config.search, 'g'), `{highlight|${config.search}}`
+            );
+            cnText.style.text = LARGE_TEXT_ZH.replace(
+                new RegExp(config.search, 'g'), `{highlight|${config.search}}`
+            );
+        }
+        else {
+            enText.style.text = LARGE_TEXT_EN;
+            cnText.style.text = LARGE_TEXT_ZH;
+        }
+
+        enText.dirtyStyle();
+        cnText.dirtyStyle();
+    }
+    const gui = new dat.GUI();
+    gui.add(config, 'search').onChange(update);
+    gui.add(config, 'width', 100, 700).onChange(update);
+    gui.add(config, 'fontSize', 12, 30).onChange(update);
     </script>
 </body>
 </html>

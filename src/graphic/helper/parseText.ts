@@ -526,13 +526,10 @@ function pushTokens(
 
 function isLatin(ch: string) {
     let code = ch.charCodeAt(0);
-    return code >= 0x30 && code <= 0x39 // number
-        || code >= 0x41 && code <= 0x5A // A-Z
-        || code >= 0x61 && code <= 0x7A // a-z
-        || code >= 0xA1 && code <= 0xFF // Other latins
+    return code >= 0x21 && code <= 0xFF;
 }
 
-const wordBreakCharsMap = reduce(',&?/;]'.split(''), function (obj, ch) {
+const breakCharMap = reduce(',&?/;] '.split(''), function (obj, ch) {
     obj[ch] = true;
     return obj;
 }, {} as Dictionary<boolean>);
@@ -540,11 +537,11 @@ const wordBreakCharsMap = reduce(',&?/;]'.split(''), function (obj, ch) {
  * If break by word. For latin languages.
  */
 function isWordBreakChar(ch: string) {
-    if (wordBreakCharsMap[ch]) {
+    if (isLatin(ch)) {
+        if (breakCharMap[ch]) {
+            return false;
+        }
         return true;
-    }
-    else {
-        return isLatin(ch);
     }
 }
 
@@ -603,7 +600,7 @@ function wrapText(
                     linesWidths.push(chWidth);
                 }
             }
-            else if (line) {
+            else if (line || lastWord) {
                 if (inWord) {
                     lines.push(line);
                     linesWidths.push(accumWidth - lastWordWidth);
@@ -615,6 +612,7 @@ function wrapText(
                     accumWidth = lastWordWidth;
                 }
                 else {
+                    // Append lastWord if have
                     if (lastWord) {
                         line += lastWord;
                         accumWidth += lastWordWidth;
@@ -622,7 +620,6 @@ function wrapText(
                         lastWordWidth = 0;
                     }
                     lines.push(line);
-
                     linesWidths.push(accumWidth);
 
                     line = ch;
@@ -651,6 +648,26 @@ function wrapText(
             // Append character
             line += ch;
         }
+    }
+
+    if (!lines.length && !line) {
+        line = text;
+        lastWord = '';
+        lastWordWidth = 0;
+    }
+
+    // Append last line.
+    if (lastWord) {
+        line += lastWord;
+    }
+    if (line) {
+        lines.push(line);
+        linesWidths.push(accumWidth);
+    }
+
+    if (lines.length === 1) {
+        // No new line.
+        accumWidth += lastAccumWidth;
     }
 
     return {
