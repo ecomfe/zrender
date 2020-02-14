@@ -73,7 +73,7 @@
             }
         }
     });
-    // zr.add(cnText);
+    zr.add(cnText);
     zr.refreshImmediately();
     console.timeEnd('render');
 
@@ -97,6 +97,10 @@
 
         enText.dirtyStyle();
         cnText.dirtyStyle();
+
+        console.time('render');
+        zr.refreshImmediately();
+        console.timeEnd('render');
     }
     const gui = new dat.GUI();
     gui.add(config, 'search').onChange(update);

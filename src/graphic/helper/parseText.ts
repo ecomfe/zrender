@@ -551,7 +551,6 @@ function wrapText(
     lineWidth: number,
     lastAccumWidth: number
 ) {
-    const characters = text.split('');
     let lines: string[] = [];
     let linesWidths: number[] = [];
     let line = '';
@@ -559,9 +558,9 @@ function wrapText(
     let lastWordWidth = 0;
     let accumWidth = 0;
 
-    for (let i = 0; i < characters.length; i++) {
+    for (let i = 0; i < text.length; i++) {
 
-        const ch = characters[i];
+        const ch = text.charAt(i);
         if (ch === '\n') {
             if (lastWord) {
                 line += lastWord;
