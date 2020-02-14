@@ -447,7 +447,7 @@ function createMethodNotSupport(method) {
 util.each([
     'getLayer', 'insertLayer', 'eachLayer', 'eachBuiltinLayer',
     'eachOtherLayer', 'getLayers', 'modLayer', 'delLayer', 'clearLayer',
-    'toDataURL', 'pathToImage'
+    'pathToImage'
 ], function (name) {
     SVGPainter.prototype[name] = createMethodNotSupport(name);
 });
