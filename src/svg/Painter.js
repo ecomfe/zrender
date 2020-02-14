@@ -163,6 +163,10 @@ SVGPainter.prototype = {
         // TODO gradient
         // Insert a bg rect instead of setting background to viewport.
         // Otherwise, the exported SVG don't have background.
+        if (this._backgroundRoot && this._backgroundNode) {
+            this._backgroundRoot.removeChild(this._backgroundNode);
+        }
+
         var bgNode = createElement('rect');
         bgNode.setAttribute('width', this.getWidth());
         bgNode.setAttribute('height', this.getHeight());
@@ -425,7 +429,7 @@ SVGPainter.prototype = {
         }
     },
 
-    pathToDataUrl: function () {
+    toDataURL: function () {
         this.refresh();
         var html = encodeURIComponent(this._svgDom.outerHTML.replace(/></g, '>\n\r<'));
         return 'data:image/svg+xml;charset=UTF-8,' + html;
