@@ -564,14 +564,14 @@ class HashMap<T> {
     }
     // Although util.each can be performed on this hashMap directly, user
     // should not use the exposed keys, who are prefixed.
-    each(
-        cb: (value?: T, key?: string) => void,
-        context?: any
+    each<Context>(
+        cb: (this: Context, value?: T, key?: string) => void,
+        context?: Context
     ) {
         context !== void 0 && (cb = bind(cb, context));
         /* eslint-disable guard-for-in */
         for (let key in this.data) {
-            this.data.hasOwnProperty(key) && cb(this.data[key], key);
+            this.data.hasOwnProperty(key) && cb.call(context, this.data[key], key);
         }
         /* eslint-enable guard-for-in */
     }

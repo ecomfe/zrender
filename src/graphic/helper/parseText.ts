@@ -2,14 +2,14 @@ import * as imageHelper from '../helper/image';
 import {
     extend,
     retrieve2,
-    retrieve3
+    retrieve3,
+    reduce
 } from '../../core/util';
-import { PropType, TextAlign, TextVerticalAlign, ImageLike } from '../../core/types';
+import { TextAlign, TextVerticalAlign, ImageLike, Dictionary, PropType } from '../../core/types';
 import { RichTextStyleOption } from '../RichText';
-import { getLineHeight, getWidth } from '../../contain/text';
+import { getLineHeight, getWidth, DEFAULT_FONT } from '../../contain/text';
 
 const STYLE_REG = /\{([a-zA-Z0-9_]+)\|([^}]*)\}/g;
-type RichTextStyleOptionPart = PropType<RichTextStyleOption, 'rich'>[string];
 
 interface InnerTruncateOption {
     maxIteration?: number
@@ -159,6 +159,8 @@ export interface PlainTextContentBlock {
     height: number
     outerHeight: number
 
+    width: number
+
     lines: string[]
 }
 
@@ -174,15 +176,25 @@ export function parsePlainText(
     const truncate = style.overflow === 'truncate';
     const lineHeight = retrieve2(style.textLineHeight, getLineHeight(font));
 
-    let lines = text ? text.split('\n') : [];
+    let width = style.textWidth;
+    let lines: string[];
 
-    const width = style.textWidth;
+    if (width != null && style.overflow === 'wrap') {
+        lines = wrapText(text, style.font, width, 0).lines;
+    }
+    else {
+        lines = text ? text.split('\n') : [];
+    }
+
     const height = retrieve2(style.textHeight, lines.length * lineHeight);
-    let outerHeight = height;
 
+    let outerHeight = height;
+    let outerWidth = width;
     if (padding) {
         outerHeight += padding[0] + padding[2];
-        outerWidth += padding[1] + padding[3];
+        if (outerWidth != null) {
+            outerWidth += padding[1] + padding[3];
+        }
     }
 
     if (text && truncate) {
@@ -203,17 +215,27 @@ export function parsePlainText(
 
             // FIXME
             // It is not appropriate that every line has '...' when truncate multiple lines.
-            for (let i = 0, len = lines.length; i < len; i++) {
+            for (let i = 0; i < lines.length; i++) {
                 lines[i] = truncateSingleLine(lines[i], options);
             }
         }
+    }
+
+    if (width == null) {
+        let maxWidth = 0;
+        // Calculate width
+        for (let i = 0; i < lines.length; i++) {
+            maxWidth = Math.max(getWidth(lines[i], font), maxWidth);
+        }
+        width = maxWidth
     }
 
     return {
         lines: lines,
         height: height,
         outerHeight: outerHeight,
-        lineHeight: lineHeight
+        lineHeight: lineHeight,
+        width: width
     };
 }
 
@@ -222,8 +244,6 @@ class RichTextToken {
     text: string
     width: number
     height: number
-    textWidth: number | string
-    textHeight: number
     lineHeight: number
     font: string
     textAlign: TextAlign
@@ -254,6 +274,11 @@ export class RichTextContentBlock {
     outerHeight: number = 0
     lines: RichTextLine[] = []
 }
+
+type WrapInfo = {
+    width: number,
+    accumWidth: number
+}
 /**
  * For example: 'some text {a|some text}other text{b|some text}xxx{c|}xxx'
  * Also consider 'bbbb{a|xxx\nzzz}xxxx\naaaa'.
@@ -267,24 +292,26 @@ export function parseRichText(text: string, style: RichTextStyleOption) {
         return contentBlock;
     }
 
+    const topWidth = style.textWidth;
+    const topHeight = style.textHeight;
+    let wrapInfo: WrapInfo = style.overflow === 'wrap' && topWidth != null
+        ? {width: topWidth, accumWidth: 0}
+        : null;
+
     let lastIndex = STYLE_REG.lastIndex = 0;
     let result;
     while ((result = STYLE_REG.exec(text)) != null) {
         const matchedIndex = result.index;
         if (matchedIndex > lastIndex) {
-            pushTokens(contentBlock, text.substring(lastIndex, matchedIndex));
+            pushTokens(contentBlock, text.substring(lastIndex, matchedIndex), style, wrapInfo);
         }
-        pushTokens(contentBlock, result[2], result[1]);
+        pushTokens(contentBlock, result[2], style, wrapInfo, result[1]);
         lastIndex = STYLE_REG.lastIndex;
     }
 
     if (lastIndex < text.length) {
-        pushTokens(contentBlock, text.substring(lastIndex, text.length));
+        pushTokens(contentBlock, text.substring(lastIndex, text.length), style, wrapInfo);
     }
-
-    const lines = contentBlock.lines;
-    const topWidth = style.textWidth;
-    const topHeight = style.textHeight;
 
     let contentHeight = topHeight == null ? 0 : topHeight;
     let contentWidth = topWidth == null ? 0 : topWidth;
@@ -294,22 +321,25 @@ export function parseRichText(text: string, style: RichTextStyleOption) {
     const stlPadding = style.textPadding as number[];
 
     const truncate = style.overflow === 'truncate';
+    const truncateLine = style.lineOverflow === 'truncate';
+
     // Calculate layout info of tokens.
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
+    for (let i = 0; i < contentBlock.lines.length; i++) {
+        const line = contentBlock.lines[i];
         let lineHeight = 0;
         let lineWidth = 0;
 
         for (let j = 0; j < line.tokens.length; j++) {
             const token = line.tokens[j];
-            const tokenStyle = token.styleName && style.rich[token.styleName] || {} as RichTextStyleOptionPart;
+            const tokenStyle = token.styleName && style.rich[token.styleName] || {};
             // textPadding should not inherit from style.
             const textPadding = token.textPadding = tokenStyle.textPadding as number[];
+            const paddingH = textPadding ? textPadding[1] + textPadding[3] : 0;
 
             const font = token.font = tokenStyle.font || style.font;
 
             // textHeight can be used when textVerticalAlign is specified in token.
-            let tokenHeight = token.textHeight = retrieve2(
+            let tokenHeight = retrieve2(
                 // textHeight should not be inherited, consider it can be specified
                 // as box height of the block.
                 tokenStyle.textHeight, getLineHeight(font)
@@ -323,72 +353,58 @@ export function parseRichText(text: string, style: RichTextStyleOption) {
             token.textAlign = tokenStyle && tokenStyle.textAlign || style.textAlign;
             token.textVerticalAlign = tokenStyle && tokenStyle.textVerticalAlign || 'middle';
 
-            if (truncate && topHeight != null && contentHeight + token.lineHeight > topHeight) {
+            if (truncateLine && topHeight != null && contentHeight + token.lineHeight > topHeight) {
+                // TODO Add ellipsis
                 return contentBlock;
             }
 
-            token.textWidth = getWidth(token.text, font);
-            let tokenWidth = tokenStyle.textWidth;
-            let tokenWidthNotSpecified = tokenWidth == null || tokenWidth === 'auto';
+            let styleTokenWidth = tokenStyle.textWidth;
+            let tokenWidthNotSpecified = styleTokenWidth == null || styleTokenWidth === 'auto';
 
             // Percent width, can be `100%`, can be used in drawing separate
             // line when box width is needed to be auto.
-            if (typeof tokenWidth === 'string' && tokenWidth.charAt(tokenWidth.length - 1) === '%') {
-                token.percentWidth = tokenWidth;
+            if (typeof styleTokenWidth === 'string' && styleTokenWidth.charAt(styleTokenWidth.length - 1) === '%') {
+                token.percentWidth = styleTokenWidth;
                 pendingList.push(token);
-                tokenWidth = 0;
+
                 // Do not truncate in this case, because there is no user case
                 // and it is too complicated.
             }
             else {
                 if (tokenWidthNotSpecified) {
-                    tokenWidth = token.textWidth;
-
                     // FIXME: If image is not loaded and textWidth is not specified, calling
                     // `getBoundingRect()` will not get correct result.
                     const textBackgroundColor = tokenStyle.textBackgroundColor;
                     let bgImg = textBackgroundColor && (textBackgroundColor as { image: ImageLike }).image;
 
-                    // Use cases:
-                    // (1) If image is not loaded, it will be loaded at render phase and call
-                    // `dirty()` and `textBackgroundColor.image` will be replaced with the loaded
-                    // image, and then the right size will be calculated here at the next tick.
-                    // See `graphic/helper/text.js`.
-                    // (2) If image loaded, and `textBackgroundColor.image` is image src string,
-                    // use `imageHelper.findExistImage` to find cached image.
-                    // `imageHelper.findExistImage` will always be called here before
-                    // `imageHelper.createOrUpdateImage` in `graphic/helper/text.js#renderRichText`
-                    // which ensures that image will not be rendered before correct size calcualted.
                     if (bgImg) {
                         bgImg = imageHelper.findExistImage(bgImg);
                         if (imageHelper.isImageReady(bgImg)) {
-                            tokenWidth = Math.max(tokenWidth, bgImg.width * tokenHeight / bgImg.height);
+                            // Update token width from image size.
+                            token.width = Math.max(token.width, bgImg.width * tokenHeight / bgImg.height);
                         }
                     }
                 }
 
-                const paddingW = textPadding ? textPadding[1] + textPadding[3] : 0;
-                (tokenWidth as number) += paddingW;
+                const remainTruncWidth = truncate && topWidth != null
+                    ? topWidth - lineWidth : null;
 
-                const remainTruncWidth = topWidth != null ? topWidth - lineWidth : null;
-
-                if (remainTruncWidth != null && remainTruncWidth < tokenWidth) {
-                    if (!tokenWidthNotSpecified || remainTruncWidth < paddingW) {
+                if (remainTruncWidth != null && remainTruncWidth < token.width) {
+                    if (!tokenWidthNotSpecified || remainTruncWidth < paddingH) {
                         token.text = '';
-                        token.textWidth = tokenWidth = 0;
+                        token.width = 0;
                     }
                     else {
                         token.text = truncateText(
-                            token.text, remainTruncWidth - paddingW, font, style.ellipsis,
+                            token.text, remainTruncWidth - paddingH, font, style.ellipsis,
                             {minChar: style.truncateMinChar}
                         );
-                        token.textWidth = getWidth(token.text, font);
-                        tokenWidth = token.textWidth + paddingW;
+                        token.width = getWidth(token.text, font);
                     }
                 }
             }
 
-            lineWidth += (token.width = tokenWidth as number);
+            lineWidth += token.width + paddingH;
             tokenStyle && (lineHeight = Math.max(lineHeight, token.lineHeight));
         }
 
@@ -403,8 +419,8 @@ export function parseRichText(text: string, style: RichTextStyleOption) {
         }
     }
 
-    contentBlock.outerWidth = contentBlock.width = retrieve2(style.textWidth as number, contentWidth);
-    contentBlock.outerHeight = contentBlock.height = retrieve2(style.textHeight as number, contentHeight);
+    contentBlock.outerWidth = contentBlock.width = retrieve2(topWidth, contentWidth);
+    contentBlock.outerHeight = contentBlock.height = retrieve2(topHeight, contentHeight);
 
     if (stlPadding) {
         contentBlock.outerWidth += stlPadding[1] + stlPadding[3];
@@ -421,10 +437,49 @@ export function parseRichText(text: string, style: RichTextStyleOption) {
     return contentBlock;
 }
 
-function pushTokens(block: RichTextContentBlock, str: string, styleName?: string) {
+type TokenStyle = PropType<RichTextStyleOption, 'rich'>[string];
+
+function pushTokens(
+    block: RichTextContentBlock,
+    str: string,
+    style: RichTextStyleOption,
+    wrapInfo: WrapInfo,
+    styleName?: string
+) {
     const isEmptyStr = str === '';
-    const strLines = str.split('\n');
+    const tokenStyle: TokenStyle = styleName && style.rich[styleName] || {};
     const lines = block.lines;
+    const font = tokenStyle.font || style.font;
+    let newLine = false;
+    let strLines;
+    let linesWidths;
+
+    if (wrapInfo) {
+        const tokenPadding = tokenStyle.textPadding as number[];
+        let tokenPaddingH = tokenPadding ? tokenPadding[1] + tokenPadding[3] : 0;
+        if (tokenStyle.textWidth != null && tokenStyle.textWidth != 'auto') {
+            // Wrap the whole token if tokenWidth if fixed.
+            const outerWidth = parsePercent(tokenStyle.textWidth, wrapInfo.width) + tokenPaddingH;
+            if (lines.length > 0) { // Not first line
+                if (outerWidth + wrapInfo.accumWidth > wrapInfo.width) {
+                    // TODO Support wrap text in token.
+                    strLines = str.split('\n');
+                    newLine = true;
+                }
+            }
+
+            wrapInfo.accumWidth = outerWidth;
+        }
+        else {
+            const res = wrapText(str, font, wrapInfo.width, wrapInfo.accumWidth);
+            wrapInfo.accumWidth = res.accumWidth + tokenPaddingH;
+            linesWidths = res.linesWidths;
+            strLines = res.lines;
+        }
+    }
+    else {
+        strLines = str.split('\n');
+    }
 
     for (let i = 0; i < strLines.length; i++) {
         const text = strLines[i];
@@ -433,8 +488,17 @@ function pushTokens(block: RichTextContentBlock, str: string, styleName?: string
         token.text = text;
         token.isLineHolder = !text && !isEmptyStr;
 
-        // The first token should be appended to the last line.
-        if (!i) {
+        if (typeof tokenStyle.textWidth === 'number') {
+            token.width = tokenStyle.textWidth;
+        }
+        else {
+            token.width = linesWidths
+                ? linesWidths[i] // Caculated width in the wrap
+                : getWidth(text, font);
+        }
+
+        // The first token should be appended to the last line if not new line.
+        if (!i && !newLine) {
             const tokens = (lines[lines.length - 1] || (lines[0] = new RichTextLine())).tokens;
 
             // Consider cases:
@@ -457,4 +521,152 @@ function pushTokens(block: RichTextContentBlock, str: string, styleName?: string
             lines.push(new RichTextLine([token]))
         }
     }
+}
+
+
+function isLatin(ch: string) {
+    let code = ch.charCodeAt(0);
+    return code >= 0x30 && code <= 0x39 // number
+        || code >= 0x41 && code <= 0x5A // A-Z
+        || code >= 0x61 && code <= 0x7A // a-z
+        || code >= 0xA1 && code <= 0xFF // Other latins
+}
+
+const wordBreakCharsMap = reduce(',&?/;]'.split(''), function (obj, ch) {
+    obj[ch] = true;
+    return obj;
+}, {} as Dictionary<boolean>);
+/**
+ * If break by word. For latin languages.
+ */
+function isWordBreakChar(ch: string) {
+    if (wordBreakCharsMap[ch]) {
+        return true;
+    }
+    else {
+        return isLatin(ch);
+    }
+}
+
+function wrapText(
+    text: string,
+    font: string,
+    lineWidth: number,
+    lastAccumWidth: number
+) {
+    const characters = text.split('');
+    let lines: string[] = [];
+    let linesWidths: number[] = [];
+    let line = '';
+    let lastWord = '';
+    let lastWordWidth = 0;
+    let accumWidth = 0;
+
+    for (let i = 0; i < characters.length; i++) {
+
+        const ch = characters[i];
+        if (ch === '\n') {
+            if (lastWord) {
+                line += lastWord;
+                accumWidth += lastWordWidth;
+            }
+            lines.push(line);
+            linesWidths.push(accumWidth);
+            // Reset
+            line = '';
+            lastWord = '';
+            lastWordWidth = 0;
+            accumWidth = 0;
+            continue;
+        }
+
+        const chWidth = getWidth(ch, font);
+        const inWord = isWordBreakChar(ch);
+
+        if (!lines.length
+            ? lastAccumWidth + accumWidth + chWidth > lineWidth
+            : accumWidth + chWidth > lineWidth
+        ) {
+            if (!accumWidth) {  // If nothing appended yet.
+                if (inWord) {
+                    // The word length is too long for lineWidth
+                    // Force break the word
+                    lines.push(lastWord);
+                    linesWidths.push(lastWordWidth);
+
+                    lastWord = ch;
+                    lastWordWidth = chWidth;
+                }
+                else {
+                    // lineWidth is too small for ch
+                    lines.push(ch);
+                    linesWidths.push(chWidth);
+                }
+            }
+            else if (line) {
+                if (inWord) {
+                    lines.push(line);
+                    linesWidths.push(accumWidth - lastWordWidth);
+
+                    // Break the whole word
+                    lastWord += ch;
+                    lastWordWidth += chWidth;
+                    line = '';
+                    accumWidth = lastWordWidth;
+                }
+                else {
+                    if (lastWord) {
+                        line += lastWord;
+                        accumWidth += lastWordWidth;
+                        lastWord = '';
+                        lastWordWidth = 0;
+                    }
+                    lines.push(line);
+
+                    linesWidths.push(accumWidth);
+
+                    line = ch;
+                    accumWidth = chWidth;
+                }
+            }
+
+            continue;
+        }
+
+        accumWidth += chWidth;
+
+        if (inWord) {
+            lastWord += ch;
+            lastWordWidth += chWidth;
+        }
+        else {
+            // Append whole word
+            if (lastWord) {
+                line += lastWord;
+                // Reset
+                lastWord = '';
+                lastWordWidth = 0;
+            }
+
+            // Append character
+            line += ch;
+        }
+    }
+
+    return {
+        // Accum width of last line
+        accumWidth,
+        lines: lines,
+        linesWidths
+    }
+}
+
+function parsePercent(value: string | number, maxValue: number) {
+    if (typeof value === 'string') {
+        if (value.lastIndexOf('%') >= 0) {
+            return parseFloat(value) / 100 * maxValue;
+        }
+        return parseFloat(value);
+    }
+    return value;
 }

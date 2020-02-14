@@ -159,6 +159,14 @@ export interface RichTextStyleOption extends RichTextStyleOptionPart {
 
 interface RichTextOption extends ElementOption {
     style?: RichTextStyleOption
+
+    zlevel?: number
+    z?: number
+    z2?: number
+
+    culling: boolean
+    cursor: string
+
 }
 
 interface RichText {
@@ -168,6 +176,13 @@ interface RichText {
 class RichText extends Element {
 
     type = 'richtext'
+
+    zlevel: number
+    z: number
+    z2: number
+
+    culling: boolean
+    cursor: string
 
     // TODO RichText is Group?
     readonly isGroup = true
@@ -202,6 +217,26 @@ class RichText extends Element {
             this.style.rich
                 ? this._updateRichTexts()
                 : this._updatePlainTexts();
+
+            for (let i = 0 ; i < this._children.length; i++) {
+                const child = this._children[i];
+                // Set common properties.
+                if (this.z != null) {
+                    child.zlevel = this.zlevel;
+                }
+                if (this.z != null) {
+                    child.z = this.z;
+                }
+                if (this.z2 != null) {
+                    child.z2 = this.z2;
+                }
+                if (this.culling != null) {
+                    child.culling = this.culling;
+                }
+                if (this.cursor != null) {
+                    child.cursor = this.cursor;
+                }
+            }
         }
         super.update();
     }
@@ -314,8 +349,7 @@ class RichText extends Element {
 
         if (needDrawBg || textPadding) {
             // Consider performance, do not call getTextWidth util necessary.
-            const textWidth = getWidth(text, textFont);
-            let outerWidth = textWidth;
+            let outerWidth = contentBlock.width;
             textPadding && (outerWidth += textPadding[1] + textPadding[3]);
             const boxX = adjustTextX(baseX, outerWidth, textAlign);
 
@@ -491,7 +525,7 @@ class RichText extends Element {
         const textPadding = token.textPadding;
         if (textPadding) {
             x = getTextXForPadding(x, textAlign, textPadding);
-            y -= token.height / 2 - textPadding[2] - token.textHeight / 2;
+            y -= token.height / 2 - textPadding[2] - token.height / 2;
         }
 
         const el = new ZText();
@@ -549,6 +583,7 @@ class RichText extends Element {
         if (isPlainBg || (textBorderWidth && textBorderColor)) {
             // Background is color
             rectEl = new Rect();
+            rectEl.style.fill = null;
             const rectShape = rectEl.shape;
             rectShape.x = x;
             rectShape.y = y;
@@ -561,7 +596,7 @@ class RichText extends Element {
 
         if (isPlainBg) {
             const rectStyle = rectEl.style;
-            rectStyle.fill = textBackgroundColor as string;
+            rectStyle.fill = textBackgroundColor as string || null;
             rectStyle.opacity = retrieve2(style.opacity, 1);
             rectStyle.fillOpacity = retrieve2(style.fillOpacity, 1);
         }
