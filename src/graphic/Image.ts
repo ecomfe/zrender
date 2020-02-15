@@ -20,12 +20,9 @@ export const DEFAULT_IMAGE_STYLE: CommonStyleOption = defaults({
     y: 0
 }, DEFAULT_COMMON_STYLE);
 
-class StyleCtor {}
-StyleCtor.prototype = DEFAULT_IMAGE_STYLE;
 interface ImageOption extends DisplayableOption {
     style?: ImageStyleOption
 }
-
 
 class ZImage extends Displayable<ImageOption> {
     type = 'image'
@@ -40,10 +37,7 @@ class ZImage extends Displayable<ImageOption> {
     onload: (image: ImageLike) => void
 
     useStyle(obj: ImageStyleOption) {
-        this.style = new StyleCtor();
-        extend(this.style, obj);
-
-        this.dirtyStyle();
+        super.useStyle(obj, DEFAULT_IMAGE_STYLE);
     }
 
     getBoundingRect(): BoundingRect {

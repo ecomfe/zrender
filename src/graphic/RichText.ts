@@ -18,8 +18,8 @@ import BoundingRect from '../core/BoundingRect';
 import { MatrixArray } from '../core/matrix';
 
 type RichTextContentBlock = ReturnType<typeof parseRichText>
-type RichTextLine = PropType<RichTextContentBlock, 'lines'>[0]
-type RichTextToken = PropType<RichTextLine, 'tokens'>[0]
+type RichTextLine = RichTextContentBlock['lines'][0]
+type RichTextToken = RichTextLine['tokens'][0]
 
 // TODO Default value?
 interface RichTextStyleOptionPart {
@@ -676,7 +676,7 @@ function normalizeStyle(style: RichTextStyleOptionPart) {
  * @param lineWidth If specified, do not check style.textStroke.
  */
 function getStroke(
-    stroke?: PropType<RichTextStyleOptionPart, 'stroke'>,
+    stroke?: RichTextStyleOptionPart['stroke'],
     lineWidth?: number
 ) {
     return (stroke == null || lineWidth <= 0 || stroke === 'transparent' || stroke === 'none')
@@ -687,7 +687,7 @@ function getStroke(
 }
 
 function getFill(
-    fill?: PropType<RichTextStyleOptionPart, 'fill'>
+    fill?: RichTextStyleOptionPart['fill']
 ) {
     return (fill == null || fill === 'none')
         ? null

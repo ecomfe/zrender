@@ -85,10 +85,10 @@ let tmpBoundingRect = new BoundingRect();
 
 interface Element<T extends ElementOption = ElementOption> extends Transformable, Eventful {
     // Provide more typed event callback params for mouse events.
-    on(event: ElementEventName, handler: ElementEventCallback, context?: object): Element
-    on(event: ElementEventName, query: EventQuery, handler: ElementEventCallback, context?: object): Element
+    on<Context>(event: ElementEventName, handler: ElementEventCallback, context?: Context): Element
+    on<Context>(event: ElementEventName, query: EventQuery, handler: ElementEventCallback, context?: Context): Element
     // Provide general events handler for other custom events.
-    on(event: string, query?: EventCallback | EventQuery, handler?: EventCallback | Object, context?: Object): Element
+    on<Context>(event: string, query?: EventCallback | EventQuery, handler?: EventCallback | Object, context?: Context): Element
 
     // Mouse events
     onclick: ElementEventCallback

@@ -29,11 +29,8 @@ export const DEFAULT_TEXT_STYLE: TextStyleOption = extend({
     textBaseline: 'top'
 }, DEFAULT_PATH_STYLE);
 
-class StyleCtor {}
-StyleCtor.prototype = DEFAULT_TEXT_STYLE;
-
 interface TextOption extends DisplayableOption {
-    style?: TextOption
+    style?: TextStyleOption
 }
 
 class ZText extends Displayable<TextOption> {
@@ -54,9 +51,7 @@ class ZText extends Displayable<TextOption> {
     }
 
     useStyle(obj: TextStyleOption) {
-        this.dirtyStyle();
-        this.style = new StyleCtor();
-        extend(this.style, obj);
+        super.useStyle(obj, DEFAULT_TEXT_STYLE);
     }
 
     getBoundingRect(): BoundingRect {

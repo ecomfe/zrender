@@ -8,6 +8,7 @@ import BoundingRect, { RectLike } from '../core/BoundingRect';
 import { Dictionary, PropType, AllPropTypes } from '../core/types';
 import Path from './Path';
 import { easingType } from '../animation/easing';
+import { extend, changePrototype } from '../core/util';
 
 // type CalculateTextPositionResult = ReturnType<typeof calculateTextPosition>
 
@@ -208,16 +209,16 @@ class Displayable<T extends DisplayableOption = DisplayableOption> extends Eleme
         }
     }
 
-    setStyle(obj: PropType<T, 'style'>): void
-    setStyle(obj: keyof PropType<T, 'style'>, value: PropType<T, 'style'>): void
-    setStyle(obj: keyof PropType<T, 'style'> | PropType<T, 'style'>, value?: PropType<T, 'style'>) {
+    setStyle(obj: T["style"]): void
+    setStyle(obj: keyof T["style"], value: T["style"]): void
+    setStyle(obj: keyof T["style"] | T["style"], value?: T["style"]) {
         if (typeof obj === 'string') {
             this.style[obj] = value;
         }
         else {
-            for (let key in obj as PropType<T, 'style'>) {
+            for (let key in obj as T["style"]) {
                 if (obj.hasOwnProperty(key)) {
-                    this.style[key] = (obj as PropType<T, 'style'>)[key];
+                    this.style[key] = (obj as T["style"])[key];
                 }
             }
         }
@@ -235,8 +236,15 @@ class Displayable<T extends DisplayableOption = DisplayableOption> extends Eleme
     /**
      * Use given style object
      */
-    useStyle(obj: Dictionary<any>) {
-        throw new Error('Not implemented.');
+    useStyle(obj: T["style"], inherited?: T["style"]) {
+        if (inherited) {
+            // inherited value can be accessed from prototype
+            this.style = changePrototype(obj, inherited);
+        }
+        else {
+            this.style = obj;
+        }
+        this.dirtyStyle();
     }
 
     /**

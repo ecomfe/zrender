@@ -437,7 +437,7 @@ export function parseRichText(text: string, style: RichTextStyleOption) {
     return contentBlock;
 }
 
-type TokenStyle = PropType<RichTextStyleOption, 'rich'>[string];
+type TokenStyle = RichTextStyleOption['rich'][string];
 
 function pushTokens(
     block: RichTextContentBlock,

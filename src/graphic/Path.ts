@@ -64,9 +64,6 @@ export interface PathOption extends DisplayableOption{
         inBundle?: boolean
     ) => void
 }
-// USE SyleCtor to make sure default value can be accessed from prototype
-class StyleCtor {}
-StyleCtor.prototype = DEFAULT_PATH_STYLE;
 
 
 type PathKey = keyof PathOption
@@ -295,10 +292,7 @@ class Path extends Displayable<PathOption> {
      * Replace the style with given new style object.
      */
     useStyle(obj: PathStyleOption) {
-        this.dirtyStyle();
-
-        this.style = new StyleCtor();
-        extend(this.style, obj);
+        super.useStyle(obj, DEFAULT_PATH_STYLE);
     }
 
     /**
@@ -334,9 +328,9 @@ class Path extends Displayable<PathOption> {
         style?: PathStyleOption
         extra?: ExtraType
 
-        beforeBrush?: PropType<Displayable, 'beforeBrush'>
-        afterBrush?: PropType<Displayable, 'afterBrush'>
-        getBoundingRect?: PropType<Displayable, 'getBoundingRect'>
+        beforeBrush?: Displayable['beforeBrush']
+        afterBrush?: Displayable['afterBrush']
+        getBoundingRect?: Displayable['getBoundingRect']
 
         buildPath: (this: Path, ctx: CanvasRenderingContext2D | PathProxy, shape: ShapeType, inBundle?: boolean) => void
         init?: (this: Path, opts: PathOption) => void // TODO Should be SubPathOption
