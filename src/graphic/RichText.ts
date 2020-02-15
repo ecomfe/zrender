@@ -195,6 +195,8 @@ class RichText extends Element {
 
     private _rect: BoundingRect
 
+    private _childCursor: 0
+
     constructor(opts?: RichTextOption) {
         super();
         this.attr(opts);
@@ -210,13 +212,15 @@ class RichText extends Element {
     update() {
         // Update children
         if (this._styleChanged) {
-            // TODO Reuse
-            this._children = [];
+            // Reset child visit cursor
+            this._childCursor = 0;
 
             normalizeTextStyle(this.style);
             this.style.rich
                 ? this._updateRichTexts()
                 : this._updatePlainTexts();
+
+            this._children.length = this._childCursor;
 
             for (let i = 0 ; i < this._children.length; i++) {
                 const child = this._children[i];
@@ -318,10 +322,18 @@ class RichText extends Element {
         return this.animate('style', loop);
     }
 
-    private _addChild(child: ZText | Rect | ZImage): void {
-        this._children.push(child);
+
+    private _getOrCreateChild(Ctor: {new(): ZText}): ZText
+    private _getOrCreateChild(Ctor: {new(): ZImage}): ZImage
+    private _getOrCreateChild(Ctor: {new(): Rect}): Rect
+    private _getOrCreateChild(Ctor: {new(): ZText | Rect | ZImage}): ZText | Rect | ZImage {
+        let child = this._children[this._childCursor];
+        if (!child || !(child instanceof Ctor)) {
+            child = new Ctor();
+        }
+        this._children[this._childCursor++] = child;
         child.parent = this;
-        // PENDING addToStorage?
+        return child;
     }
 
     private _updatePlainTexts() {
@@ -373,7 +385,7 @@ class RichText extends Element {
         const hasShadow = style.textShadowBlur > 0;
 
         for (let i = 0; i < textLines.length; i++) {
-            const el = new ZText();
+            const el = this._getOrCreateChild(ZText);
             const subElStyle = el.style;
             subElStyle.text = textLines[i];
             subElStyle.x = textX;
@@ -409,8 +421,6 @@ class RichText extends Element {
             subElStyle.font = textFont;
 
             textY += lineHeight;
-
-            this._addChild(el);
         }
     }
 
@@ -532,7 +542,7 @@ class RichText extends Element {
             y -= token.height / 2 - textPadding[2] - token.height / 2;
         }
 
-        const el = new ZText();
+        const el = this._getOrCreateChild(ZText);
         const subElStyle = el.style;
 
         const hasStroke = 'textStroke' in tokenStyle || 'textStroke' in style;
@@ -563,8 +573,6 @@ class RichText extends Element {
         if (hasFill) {
             subElStyle.fill = getFill(tokenStyle.textFill || style.textFill) || null;
         }
-
-        this._addChild(el);
     }
 
     private _renderBackground(
@@ -585,7 +593,7 @@ class RichText extends Element {
         let imgEl: ZImage;
         if (isPlainBg || (textBorderWidth && textBorderColor)) {
             // Background is color
-            rectEl = new Rect();
+            rectEl = this._getOrCreateChild(Rect);
             rectEl.style.fill = null;
             const rectShape = rectEl.shape;
             rectShape.x = x;
@@ -593,8 +601,7 @@ class RichText extends Element {
             rectShape.width = width;
             rectShape.height = height;
             rectShape.r = textBorderRadius;
-
-            this._addChild(rectEl);
+            rectEl.dirtyShape();
         }
 
         if (isPlainBg) {
@@ -604,7 +611,7 @@ class RichText extends Element {
             rectStyle.fillOpacity = retrieve2(style.fillOpacity, 1);
         }
         else if (textBackgroundColor && (textBackgroundColor as {image: ImageLike}).image) {
-            imgEl = new ZImage();
+            imgEl = this._getOrCreateChild(ZImage);
             imgEl.onload = function () {
                 // Refresh and relayout after image loaded.
                 self.dirtyStyle();
@@ -615,7 +622,6 @@ class RichText extends Element {
             imgStyle.y = y;
             imgStyle.width = width;
             imgStyle.height = height;
-            this._addChild(imgEl);
         }
 
         if (textBorderWidth && textBorderColor) {
