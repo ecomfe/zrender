@@ -26,17 +26,8 @@ interface ImageOption extends DisplayableOption {
     style?: ImageStyleOption
 }
 
-interface ZImage {
-    constructor(opts?: ImageOption): void
 
-    attr(key: ImageOption): ZImage
-    attr(key: keyof ImageOption, value: AllPropTypes<ImageOption>): ZImage
-
-    setStyle(key: ImageStyleOption): ZImage
-    setStyle(key: keyof ImageStyleOption, value: AllPropTypes<ImageStyleOption>): ZImage
-}
-
-class ZImage extends Displayable {
+class ZImage extends Displayable<ImageOption> {
     type = 'image'
 
     style: ImageStyleOption

@@ -55,6 +55,7 @@ export interface PathOption extends DisplayableOption{
     segmentIgnoreThreshold?: number
     subPixelOptimize?: boolean
 
+    style?: PathStyleOption
     shape?: Dictionary<any>
 
     buildPath?: (
@@ -71,16 +72,7 @@ StyleCtor.prototype = DEFAULT_PATH_STYLE;
 type PathKey = keyof PathOption
 type PathPropertyType = PropType<PathOption, PathKey>
 
-
-interface Path {
-
-    attr(key: PathOption): Path
-    attr(key: keyof PathOption, value: AllPropTypes<PathOption>): Path
-
-    setStyle(key: PathStyleOption): Path
-    setStyle(key: keyof PathStyleOption, value: AllPropTypes<PathStyleOption>): Path
-}
-class Path extends Displayable {
+class Path extends Displayable<PathOption> {
 
     path: PathProxy
 

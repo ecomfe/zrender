@@ -36,17 +36,7 @@ interface TextOption extends DisplayableOption {
     style?: TextOption
 }
 
-interface ZText {
-    constructor(opts?: TextOption): void
-
-    attr(key: TextOption): ZText
-    attr(key: keyof TextOption, value: AllPropTypes<TextOption>): ZText
-
-    setStyle(key: TextStyleOption): ZText
-    setStyle(key: keyof TextStyleOption, value: AllPropTypes<TextStyleOption>): ZText
-}
-
-class ZText extends Displayable {
+class ZText extends Displayable<TextOption> {
     type = 'text'
 
     style: TextStyleOption

@@ -27,7 +27,7 @@ import Displayable from './Displayable';
 export interface GroupOption extends ElementOption {
 }
 
-export default class Group extends Element {
+export default class Group extends Element<GroupOption> {
 
     readonly isGroup = true
 

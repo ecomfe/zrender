@@ -7,6 +7,7 @@ import Element, {ElementOption} from '../Element';
 import BoundingRect, { RectLike } from '../core/BoundingRect';
 import { Dictionary, PropType, AllPropTypes } from '../core/types';
 import Path from './Path';
+import { easingType } from '../animation/easing';
 
 // type CalculateTextPositionResult = ReturnType<typeof calculateTextPosition>
 
@@ -54,7 +55,7 @@ export interface DisplayableOption extends ElementOption {
 type DisplayableKey = keyof DisplayableOption
 type DisplayablePropertyType = PropType<DisplayableOption, DisplayableKey>
 
-export default class Displayable extends Element {
+class Displayable<T extends DisplayableOption = DisplayableOption> extends Element<T> {
 
     /**
      * Whether the displayable object is visible. when it is true, the displayable object
@@ -159,6 +160,7 @@ export default class Displayable extends Element {
     }
 
     traverse<T>(
+        this: Displayable,
         cb: (this: T, el: Displayable) => void,
         context: T
     ) {
@@ -206,16 +208,16 @@ export default class Displayable extends Element {
         }
     }
 
-    setStyle(obj: Dictionary<any>): void
-    setStyle(obj: string, value: any): void
-    setStyle(obj: string | Dictionary<any>, value?: any) {
+    setStyle(obj: PropType<T, 'style'>): void
+    setStyle(obj: keyof PropType<T, 'style'>, value: PropType<T, 'style'>): void
+    setStyle(obj: keyof PropType<T, 'style'> | PropType<T, 'style'>, value?: PropType<T, 'style'>) {
         if (typeof obj === 'string') {
             this.style[obj] = value;
         }
         else {
-            for (let key in obj) {
+            for (let key in obj as PropType<T, 'style'>) {
                 if (obj.hasOwnProperty(key)) {
-                    this.style[key] = obj[key];
+                    this.style[key] = (obj as PropType<T, 'style'>)[key];
                 }
             }
         }
@@ -275,3 +277,5 @@ export default class Displayable extends Element {
         dispProto.__dirtyStyle = true;
     })()
 }
+
+export default Displayable;

@@ -165,16 +165,11 @@ interface RichTextOption extends ElementOption {
     z?: number
     z2?: number
 
-    culling: boolean
-    cursor: string
-
+    culling?: boolean
+    cursor?: string
 }
 
-interface RichText {
-    attr(key: RichTextOption): RichText
-    attr(key: keyof RichTextOption, value: AllPropTypes<RichTextOption>): RichText
-}
-class RichText extends Element {
+class RichText extends Element<RichTextOption> {
 
     type = 'richtext'
 
@@ -203,9 +198,9 @@ class RichText extends Element {
         this.attr(opts);
     }
 
-    traverse<T>(
-        cb: (this: T, el: RichText) => void,
-        context: T
+    traverse<Context>(
+        cb: (this: Context, el: RichText) => void,
+        context: Context
     ) {
         cb.call(context, this);
     }
