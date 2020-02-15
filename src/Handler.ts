@@ -71,7 +71,6 @@ import CanvasPainter from './canvas/Painter';
  * But they are needed to work when the pointer inside the zrender dom.
  */
 
-
 const SILENT = 'silent';
 
 function makeEventPacket(eveType: ElementEventName, targetInfo: {
@@ -99,7 +98,7 @@ function makeEventPacket(eveType: ElementEventName, targetInfo: {
     };
 }
 
-function stopEvent() {
+function stopEvent(this: ElementEvent) {
     eventTool.stop(this.event);
 }
 
@@ -143,6 +142,10 @@ class Handler extends Eventful {
     private _gestureMgr: GestureMgr
 
     private _draggingMgr: Draggable
+
+    _downEl: Element
+    _upEl: Element
+    _downPoint: [number, number]
 
     constructor(
         storage: Storage,

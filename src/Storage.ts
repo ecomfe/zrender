@@ -35,7 +35,7 @@ export default class Storage {
 
     traverse<T>(
         cb: (this: T, el: Element) => void,
-        context: T
+        context?: T
     ) {
         for (let i = 0; i < this._roots.length; i++) {
             this._roots[i].traverse(cb, context);

@@ -265,176 +265,182 @@ class SVGParser {
 
         return text;
     }
+
+    static internalField = (function () {
+
+        nodeParsers = {
+            'g': function (this: SVGParser, xmlNode: SVGElement, parentGroup: Group) {
+                const g = new Group();
+                inheritStyle(parentGroup, g);
+                parseAttributes(xmlNode, g, this._defs);
+
+                return g;
+            },
+            'rect': function (this: SVGParser, xmlNode: SVGElement, parentGroup: Group) {
+                const rect = new Rect();
+                inheritStyle(parentGroup, rect);
+                parseAttributes(xmlNode, rect, this._defs);
+
+                rect.setShape({
+                    x: parseFloat(xmlNode.getAttribute('x') || '0'),
+                    y: parseFloat(xmlNode.getAttribute('y') || '0'),
+                    width: parseFloat(xmlNode.getAttribute('width') || '0'),
+                    height: parseFloat(xmlNode.getAttribute('height') || '0')
+                });
+
+                return rect;
+            },
+            'circle': function (this: SVGParser, xmlNode: SVGElement, parentGroup: Group) {
+                const circle = new Circle();
+                inheritStyle(parentGroup, circle);
+                parseAttributes(xmlNode, circle, this._defs);
+
+                circle.setShape({
+                    cx: parseFloat(xmlNode.getAttribute('cx') || '0'),
+                    cy: parseFloat(xmlNode.getAttribute('cy') || '0'),
+                    r: parseFloat(xmlNode.getAttribute('r') || '0')
+                });
+
+                return circle;
+            },
+            'line': function (this: SVGParser, xmlNode: SVGElement, parentGroup: Group) {
+                const line = new Line();
+                inheritStyle(parentGroup, line);
+                parseAttributes(xmlNode, line, this._defs);
+
+                line.setShape({
+                    x1: parseFloat(xmlNode.getAttribute('x1') || '0'),
+                    y1: parseFloat(xmlNode.getAttribute('y1') || '0'),
+                    x2: parseFloat(xmlNode.getAttribute('x2') || '0'),
+                    y2: parseFloat(xmlNode.getAttribute('y2') || '0')
+                });
+
+                return line;
+            },
+            'ellipse': function (this: SVGParser, xmlNode: SVGElement, parentGroup: Group) {
+                const ellipse = new Ellipse();
+                inheritStyle(parentGroup, ellipse);
+                parseAttributes(xmlNode, ellipse, this._defs);
+
+                ellipse.setShape({
+                    cx: parseFloat(xmlNode.getAttribute('cx') || '0'),
+                    cy: parseFloat(xmlNode.getAttribute('cy') || '0'),
+                    rx: parseFloat(xmlNode.getAttribute('rx') || '0'),
+                    ry: parseFloat(xmlNode.getAttribute('ry') || '0')
+                });
+                return ellipse;
+            },
+            'polygon': function (this: SVGParser, xmlNode: SVGElement, parentGroup: Group) {
+                const pointsStr = xmlNode.getAttribute('points');
+                let pointsArr;
+                if (pointsStr) {
+                    pointsArr = parsePoints(pointsStr);
+                }
+                const polygon = new Polygon({
+                    shape: {
+                        points: pointsArr || []
+                    }
+                });
+
+                inheritStyle(parentGroup, polygon);
+                parseAttributes(xmlNode, polygon, this._defs);
+
+                return polygon;
+            },
+            'polyline': function (this: SVGParser, xmlNode: SVGElement, parentGroup: Group) {
+                const path = new Path();
+                inheritStyle(parentGroup, path);
+                parseAttributes(xmlNode, path, this._defs);
+
+                const pointsStr = xmlNode.getAttribute('points');
+                let pointsArr;
+                if (pointsStr) {
+                    pointsArr = parsePoints(pointsStr);
+                }
+                const polyline = new Polyline({
+                    shape: {
+                        points: pointsArr || []
+                    }
+                });
+
+                return polyline;
+            },
+            'image': function (this: SVGParser, xmlNode: SVGElement, parentGroup: Group) {
+                const img = new ZImage();
+                inheritStyle(parentGroup, img);
+                parseAttributes(xmlNode, img, this._defs);
+
+                img.setStyle({
+                    image: xmlNode.getAttribute('xlink:href'),
+                    x: +xmlNode.getAttribute('x'),
+                    y: +xmlNode.getAttribute('y'),
+                    width: +xmlNode.getAttribute('width'),
+                    height: +xmlNode.getAttribute('height')
+                });
+
+                return img;
+            },
+            'text': function (this: SVGParser, xmlNode: SVGElement, parentGroup: Group) {
+                const x = xmlNode.getAttribute('x') || '0';
+                const y = xmlNode.getAttribute('y') || '0';
+                const dx = xmlNode.getAttribute('dx') || '0';
+                const dy = xmlNode.getAttribute('dy') || '0';
+
+                this._textX = parseFloat(x) + parseFloat(dx);
+                this._textY = parseFloat(y) + parseFloat(dy);
+
+                const g = new Group();
+                inheritStyle(parentGroup, g);
+                parseAttributes(xmlNode, g, this._defs);
+
+                return g;
+            },
+            'tspan': function (this: SVGParser, xmlNode: SVGElement, parentGroup: Group) {
+                const x = xmlNode.getAttribute('x');
+                const y = xmlNode.getAttribute('y');
+                if (x != null) {
+                    // new offset x
+                    this._textX = parseFloat(x);
+                }
+                if (y != null) {
+                    // new offset y
+                    this._textY = parseFloat(y);
+                }
+                const dx = xmlNode.getAttribute('dx') || 0;
+                const dy = xmlNode.getAttribute('dy') || 0;
+
+                const g = new Group();
+
+                inheritStyle(parentGroup, g);
+                parseAttributes(xmlNode, g, this._defs);
+
+                this._textX += dx as number;
+                this._textY += dy as number;
+
+                return g;
+            },
+            'path': function (this: SVGParser, xmlNode: SVGElement, parentGroup: Group) {
+                // TODO svg fill rule
+                // https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/fill-rule
+                // path.style.globalCompositeOperation = 'xor';
+                const d = xmlNode.getAttribute('d') || '';
+
+                // Performance sensitive.
+
+                const path = createFromString(d);
+
+                inheritStyle(parentGroup, path);
+                parseAttributes(xmlNode, path, this._defs);
+
+                return path;
+            }
+        };
+
+
+    })();
 }
 
-const nodeParsers: Dictionary<(xmlNode: SVGElement, parentGroup: Group) => Element> = {
-    'g': function (xmlNode: SVGElement, parentGroup: Group) {
-        const g = new Group();
-        inheritStyle(parentGroup, g);
-        parseAttributes(xmlNode, g, this._defs);
-
-        return g;
-    },
-    'rect': function (xmlNode: SVGElement, parentGroup: Group) {
-        const rect = new Rect();
-        inheritStyle(parentGroup, rect);
-        parseAttributes(xmlNode, rect, this._defs);
-
-        rect.setShape({
-            x: parseFloat(xmlNode.getAttribute('x') || '0'),
-            y: parseFloat(xmlNode.getAttribute('y') || '0'),
-            width: parseFloat(xmlNode.getAttribute('width') || '0'),
-            height: parseFloat(xmlNode.getAttribute('height') || '0')
-        });
-
-        return rect;
-    },
-    'circle': function (xmlNode: SVGElement, parentGroup: Group) {
-        const circle = new Circle();
-        inheritStyle(parentGroup, circle);
-        parseAttributes(xmlNode, circle, this._defs);
-
-        circle.setShape({
-            cx: parseFloat(xmlNode.getAttribute('cx') || '0'),
-            cy: parseFloat(xmlNode.getAttribute('cy') || '0'),
-            r: parseFloat(xmlNode.getAttribute('r') || '0')
-        });
-
-        return circle;
-    },
-    'line': function (xmlNode: SVGElement, parentGroup: Group) {
-        const line = new Line();
-        inheritStyle(parentGroup, line);
-        parseAttributes(xmlNode, line, this._defs);
-
-        line.setShape({
-            x1: parseFloat(xmlNode.getAttribute('x1') || '0'),
-            y1: parseFloat(xmlNode.getAttribute('y1') || '0'),
-            x2: parseFloat(xmlNode.getAttribute('x2') || '0'),
-            y2: parseFloat(xmlNode.getAttribute('y2') || '0')
-        });
-
-        return line;
-    },
-    'ellipse': function (xmlNode: SVGElement, parentGroup: Group) {
-        const ellipse = new Ellipse();
-        inheritStyle(parentGroup, ellipse);
-        parseAttributes(xmlNode, ellipse, this._defs);
-
-        ellipse.setShape({
-            cx: parseFloat(xmlNode.getAttribute('cx') || '0'),
-            cy: parseFloat(xmlNode.getAttribute('cy') || '0'),
-            rx: parseFloat(xmlNode.getAttribute('rx') || '0'),
-            ry: parseFloat(xmlNode.getAttribute('ry') || '0')
-        });
-        return ellipse;
-    },
-    'polygon': function (xmlNode: SVGElement, parentGroup: Group) {
-        const pointsStr = xmlNode.getAttribute('points');
-        let pointsArr;
-        if (pointsStr) {
-            pointsArr = parsePoints(pointsStr);
-        }
-        const polygon = new Polygon({
-            shape: {
-                points: pointsArr || []
-            }
-        });
-
-        inheritStyle(parentGroup, polygon);
-        parseAttributes(xmlNode, polygon, this._defs);
-
-        return polygon;
-    },
-    'polyline': function (xmlNode: SVGElement, parentGroup: Group) {
-        const path = new Path();
-        inheritStyle(parentGroup, path);
-        parseAttributes(xmlNode, path, this._defs);
-
-        const pointsStr = xmlNode.getAttribute('points');
-        let pointsArr;
-        if (pointsStr) {
-            pointsArr = parsePoints(pointsStr);
-        }
-        const polyline = new Polyline({
-            shape: {
-                points: pointsArr || []
-            }
-        });
-
-        return polyline;
-    },
-    'image': function (xmlNode: SVGElement, parentGroup: Group) {
-        const img = new ZImage();
-        inheritStyle(parentGroup, img);
-        parseAttributes(xmlNode, img, this._defs);
-
-        img.setStyle({
-            image: xmlNode.getAttribute('xlink:href'),
-            x: +xmlNode.getAttribute('x'),
-            y: +xmlNode.getAttribute('y'),
-            width: +xmlNode.getAttribute('width'),
-            height: +xmlNode.getAttribute('height')
-        });
-
-        return img;
-    },
-    'text': function (xmlNode: SVGElement, parentGroup: Group) {
-        const x = xmlNode.getAttribute('x') || '0';
-        const y = xmlNode.getAttribute('y') || '0';
-        const dx = xmlNode.getAttribute('dx') || '0';
-        const dy = xmlNode.getAttribute('dy') || '0';
-
-        this._textX = parseFloat(x) + parseFloat(dx);
-        this._textY = parseFloat(y) + parseFloat(dy);
-
-        const g = new Group();
-        inheritStyle(parentGroup, g);
-        parseAttributes(xmlNode, g, this._defs);
-
-        return g;
-    },
-    'tspan': function (xmlNode: SVGElement, parentGroup: Group) {
-        const x = xmlNode.getAttribute('x');
-        const y = xmlNode.getAttribute('y');
-        if (x != null) {
-            // new offset x
-            this._textX = parseFloat(x);
-        }
-        if (y != null) {
-            // new offset y
-            this._textY = parseFloat(y);
-        }
-        const dx = xmlNode.getAttribute('dx') || 0;
-        const dy = xmlNode.getAttribute('dy') || 0;
-
-        const g = new Group();
-
-        inheritStyle(parentGroup, g);
-        parseAttributes(xmlNode, g, this._defs);
-
-
-        this._textX += dx;
-        this._textY += dy;
-
-        return g;
-    },
-    'path': function (xmlNode: SVGElement, parentGroup: Group) {
-        // TODO svg fill rule
-        // https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/fill-rule
-        // path.style.globalCompositeOperation = 'xor';
-        const d = xmlNode.getAttribute('d') || '';
-
-        // Performance sensitive.
-
-        const path = createFromString(d);
-
-        inheritStyle(parentGroup, path);
-        parseAttributes(xmlNode, path, this._defs);
-
-        return path;
-    }
-};
+let nodeParsers: Dictionary<(xmlNode: SVGElement, parentGroup: Group) => Element>;
 
 const defineParsers: Dictionary<(xmlNode: SVGElement) => any> = {
 

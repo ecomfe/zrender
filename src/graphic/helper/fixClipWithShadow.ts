@@ -32,7 +32,7 @@ export default function (orignalBrush: BrushType) {
     // version string can be: '11.0'
     return (env.browser.ie && (env.browser.version as number) >= 11)
 
-        ? function (ctx: CanvasRenderingContext2D, prevEl: Displayable) {
+        ? function (this: Displayable, ctx: CanvasRenderingContext2D, prevEl: Displayable) {
             const clipPaths = this.__clipPaths;
             const style = this.style;
             let modified;
@@ -50,8 +50,8 @@ export default function (orignalBrush: BrushType) {
                         for (let j = 0; j < shadowTemp.length; j++) {
                             // It is save to put shadowTemp static, because shadowTemp
                             // will be all modified each item brush called.
-                            shadowTemp[j][2] = style[shadowTemp[j][0]];
-                            style[shadowTemp[j][0]] = shadowTemp[j][1];
+                            shadowTemp[j][2] = (style as any)[shadowTemp[j][0]];
+                            (style as any)[shadowTemp[j][0]] = shadowTemp[j][1];
                         }
                         modified = true;
                         break;
@@ -63,7 +63,7 @@ export default function (orignalBrush: BrushType) {
 
             if (modified) {
                 for (let j = 0; j < shadowTemp.length; j++) {
-                    style[shadowTemp[j][0]] = shadowTemp[j][2];
+                    (style as any)[shadowTemp[j][0]] = shadowTemp[j][2];
                 }
             }
         }

@@ -75,7 +75,7 @@ export function logError(...args: string[]) {
  * (There might be a large number of date in `series.data`).
  * So date should not be modified in and out of echarts.
  */
-export function clone(source: any): any {
+export function clone<T extends any>(source: T): T {
     if (source == null || typeof source !== 'object') {
         return source;
     }
@@ -85,7 +85,7 @@ export function clone(source: any): any {
 
     if (typeStr === '[object Array]') {
         if (!isPrimitive(source)) {
-            result = [];
+            result = [] as any;
             for (let i = 0, len = source.length; i < len; i++) {
                 result[i] = clone(source[i]);
             }
@@ -94,7 +94,7 @@ export function clone(source: any): any {
     else if (TYPED_ARRAY[typeStr]) {
         if (!isPrimitive(source)) {
             const Ctor = source.constructor;
-            if (source.constructor.from) {
+            if (Ctor.from) {
                 result = Ctor.from(source);
             }
             else {
@@ -106,7 +106,7 @@ export function clone(source: any): any {
         }
     }
     else if (!BUILTIN_OBJECT[typeStr] && !isPrimitive(source) && !isDom(source)) {
-        result = {};
+        result = {} as any;
         for (let key in source) {
             if (source.hasOwnProperty(key)) {
                 result[key] = clone(source[key]);
@@ -117,7 +117,7 @@ export function clone(source: any): any {
     return result;
 }
 
-export function merge(target: any, source: any, overwrite: boolean) {
+export function merge(target: any, source: any, overwrite?: boolean) {
     // We should escapse that source is string
     // and enter for ... in ...
     if (!isObject(source) || !isObject(target)) {
@@ -167,21 +167,21 @@ export function mergeAll(targetAndSources: any[], overwrite: boolean): any {
     return result;
 }
 
-export function extend(target: Dictionary<any>, source: Dictionary<any>): Object {
+export function extend<T extends Dictionary<any>>(target: T, source: Dictionary<any>): T {
     for (let key in source) {
         if (source.hasOwnProperty(key)) {
-            target[key] = source[key];
+            (target as Dictionary<any>)[key] = source[key];
         }
     }
     return target;
 }
 
-export function defaults(target: Dictionary<any>, source: Dictionary<any>, overlay?: boolean) {
+export function defaults<T extends Dictionary<any>>(target: T, source: Dictionary<any>, overlay?: boolean): T {
     for (let key in source) {
         if (source.hasOwnProperty(key)
             && (overlay ? source[key] != null : target[key] == null)
         ) {
-            target[key] = source[key];
+            (target as Dictionary<any>)[key] = source[key];
         }
     }
     return target;
@@ -253,6 +253,32 @@ export function mixin(target: Object | Function, source: Object | Function, over
 }
 
 /**
+ * @usage
+ * ```ts
+ * export class XFeature {
+ *    fn1() { ... }
+ *    fn2() { ... }
+ * }
+ * ```
+ * ```ts
+ * import {XFeature} from './XFeature';
+ * class Target { ... }
+ * interface Target implements XFeature {}
+ * tsMixin(Target, XFeature);
+ * ```
+ * @notice
+ * static member mixin can not be supported.
+ */
+export function tsMixin(derivedCtor: any, baseCtor: any) {
+    var baseProto = baseCtor.prototype;
+    for (var name in baseProto) {
+        if (baseProto.hasOwnProperty(name)) {
+            derivedCtor.prototype[name] = baseProto[name];
+        }
+    }
+}
+
+/**
  * Consider typed array.
  * @param data
  */
@@ -269,9 +295,14 @@ export function isArrayLike(data: any): data is ArrayLike<any> {
 /**
  * 数组或对象遍历
  */
-export function each<T, Context>(
-    arr: Dictionary<T> | T[],
-    cb: (this: Context, value: T, index?: number | string, arr?: Dictionary<T> | T[]) => void,
+export function each<I extends Dictionary<any> | any[], Context>(
+    arr: I,
+    cb: (
+        this: Context,
+        value: I extends Dictionary<infer T> | (infer T)[] ? T : any,
+        index?: I extends any[] ? number : string,
+        arr?: I
+    ) => void,
     context?: Context
 ) {
     if (!(arr && cb)) {
@@ -282,13 +313,13 @@ export function each<T, Context>(
     }
     else if (arr.length === +arr.length) {
         for (let i = 0, len = arr.length; i < len; i++) {
-            cb.call(context, (<T[]>arr)[i], i, arr);
+            cb.call(context, (arr as any[])[i], i as any, arr);
         }
     }
     else {
         for (let key in arr) {
             if (arr.hasOwnProperty(key)) {
-                cb.call(context, (<Dictionary<T>>arr)[key], key, arr);
+                cb.call(context, (arr as Dictionary<any>)[key], key as any, arr);
             }
         }
     }
@@ -340,7 +371,7 @@ export function reduce<T, S, Context>(
  */
 export function filter<T, Context>(
     arr: T[],
-    cb: (this: Context, value: T, index?: number, arr?: T[]) => boolean,
+    cb: (this: Context, value: T, index: number, arr: T[]) => boolean,
     context?: Context
 ): T[] {
     if (!(arr && cb)) {
@@ -378,14 +409,16 @@ export function find<T, Context>(
     }
 }
 
-export function bind<Context>(func: Function, context: Context, ...args: any[]) {
+export function bind<Context, Fn extends (...args: any) => any>(
+    func: Fn, context: Context, ...args: any[]
+): (this: Context, ...args: Parameters<Fn>) => ReturnType<Fn> {
     return function (this: Context) {
         return func.apply(context, args.concat(nativeSlice.call(arguments)));
     };
 }
 
 export function curry(func: Function, ...args: any[]) {
-    return function () {
+    return function (this: any) {
         return func.apply(this, args.concat(nativeSlice.call(arguments)));
     };
 }
@@ -414,7 +447,10 @@ export function isString(value: any): value is String {
     return objToString.call(value) === '[object String]';
 }
 
-export function isObject(value: any): value is Object {
+// Usage: `isObject(xxx)` or `isObject(SomeType)(xxx)`
+// Generic T can be used to avoid "ts type gruards" casting the `value` from its original
+// type `Object` implicitly so that loose its original type info in the subsequent code.
+export function isObject<T = unknown>(value: any): value is (Object & T) {
     // Avoid a V8 JIT bug in Chrome 19-20.
     // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
     const type = typeof value;
@@ -506,7 +542,7 @@ export function normalizeCssArray(val: number | number[]) {
     return val;
 }
 
-export function assert(condition: boolean, message: string) {
+export function assert(condition: any, message?: string) {
     if (!condition) {
         throw new Error(message);
     }
@@ -544,11 +580,11 @@ export function isPrimitive(obj: any): boolean {
  * @constructor
  * @param {Object} obj Only apply `ownProperty`.
  */
-class HashMap<T> {
+export class HashMap<T> {
 
     data: {[key: string]: T} = {}
 
-    constructor(obj: HashMap<T> | Dictionary<T> | T[]) {
+    constructor(obj?: HashMap<T> | Dictionary<T> | any[]) {
         const isArr = isArray(obj);
         // Key should not be set on this, otherwise
         // methods get/set/... may be overrided.
@@ -577,14 +613,14 @@ class HashMap<T> {
     }
     // Although util.each can be performed on this hashMap directly, user
     // should not use the exposed keys, who are prefixed.
-    each(
-        cb: (value?: T, key?: string) => void,
-        context?: any
+    each<Context>(
+        cb: (this: Context, value?: T, key?: string) => void,
+        context?: Context
     ) {
         context !== void 0 && (cb = bind(cb, context));
         /* eslint-disable guard-for-in */
         for (let key in this.data) {
-            this.data.hasOwnProperty(key) && cb(this.data[key], key);
+            this.data.hasOwnProperty(key) && (cb as any)(this.data[key], key);
         }
         /* eslint-enable guard-for-in */
     }
@@ -594,7 +630,7 @@ class HashMap<T> {
     }
 }
 
-export function createHashMap<T>(obj: HashMap<T> | Dictionary<T> | T[]) {
+export function createHashMap<T>(obj?: HashMap<T> | Dictionary<T> | any[]) {
     return new HashMap<T>(obj);
 }
 

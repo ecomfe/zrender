@@ -1,21 +1,26 @@
 const arrySlice = Array.prototype.slice;
 
 // Return true to cancel bubble
-export type EventCallback = (...args: any[]) => boolean | void
-export type EventQuery = string|Object
+export type EventCallback<Ctx = unknown, Impl = unknown> = (
+    this: CbThis<Ctx, Impl>, ...args: any[]
+) => boolean | void
+export type EventQuery = string | Object
 
-type EventHandler = {
-    h: EventCallback
-    ctx: Object
+type ClzThis<Impl> = unknown extends Impl ? Eventful : Impl;
+type CbThis<Ctx, Impl> = unknown extends Ctx ? ClzThis<Impl> : Ctx;
+
+type EventHandler<Ctx, Impl> = {
+    h: EventCallback<Ctx, Impl>
+    ctx: CbThis<Ctx, Impl>
     query: EventQuery
 
     callAtLast: boolean
 }
 
-type EventProcessor = {
-    normalizeQuery: (query: EventQuery) => EventQuery
-    filter: (eventType: string, query: EventQuery) => boolean
-    afterTrigger: (EventTarget: string) => void
+export interface EventProcessor {
+    normalizeQuery?: (query: EventQuery) => EventQuery
+    filter?: (eventType: string, query: EventQuery) => boolean
+    afterTrigger?: (eventType: string) => void
 }
 
 /**
@@ -33,8 +38,8 @@ type EventProcessor = {
  * @param eventProcessor.afterTrigger Called after all handlers called.
  *        param: {string} eventType
  */
-export default class Eventful {
-    private _$handlers: {[key: string]: EventHandler[]} = {}
+export default class Eventful<Impl = unknown> {
+    private _$handlers: {[key: string]: EventHandler<any, Impl>[]} = {}
 
     private _$eventProcessor: EventProcessor
 
@@ -42,8 +47,8 @@ export default class Eventful {
         this._$eventProcessor = eventProcessors || null;
     }
 
-    on(event: string, handler: EventCallback, context?: Object): Eventful
-    on(event: string, query: EventQuery, handler: EventCallback, context?: Object): Eventful
+    on<Ctx>(event: string, handler: EventCallback<Ctx, Impl>, context?: Ctx): ClzThis<Impl>
+    on<Ctx>(event: string, query: EventQuery, handler: EventCallback<Ctx, Impl>, context?: Ctx): ClzThis<Impl>
     /**
      * Bind a handler.
      *
@@ -52,22 +57,22 @@ export default class Eventful {
      * @param handler The event handler.
      * @param context
      */
-    on(
+    on<Ctx>(
         event: string,
-        query: EventQuery|EventCallback,
-        handler?: EventCallback | Object,
-        context?: Object
-    ): Eventful {
+        query: EventQuery | EventCallback<Ctx, Impl>,
+        handler?: EventCallback<Ctx, Impl> | Ctx,
+        context?: Ctx
+    ): ClzThis<Impl> {
         const _h = this._$handlers;
 
         if (typeof query === 'function') {
-            context = handler;
-            handler = query;
+            context = handler as Ctx;
+            handler = query as EventCallback<Ctx, Impl>;
             query = null;
         }
 
         if (!handler || !event) {
-            return this;
+            return this as any;
         }
 
         const eventProcessor = this._$eventProcessor;
@@ -81,14 +86,14 @@ export default class Eventful {
 
         for (let i = 0; i < _h[event].length; i++) {
             if (_h[event][i].h === handler) {
-                return this;
+                return this as any;
             }
         }
 
-        const wrap: EventHandler = {
-            h: handler as EventCallback,
+        const wrap: EventHandler<Ctx, Impl> = {
+            h: handler as EventCallback<Ctx, Impl>,
             query: query,
-            ctx: context || this,
+            ctx: (context || this) as CbThis<Ctx, Impl>,
             // FIXME
             // Do not publish this feature util it is proved that it makes sense.
             callAtLast: (handler as any).zrEventfulCallAtLast
@@ -100,7 +105,7 @@ export default class Eventful {
             ? _h[event].splice(lastIndex, 0, wrap)
             : _h[event].push(wrap);
 
-        return this;
+        return this as any;
     }
 
     /**
@@ -119,12 +124,12 @@ export default class Eventful {
      * @param handler The event handler.
      *        If no `handler` input, "off" all listeners of the `event`.
      */
-    off(eventType?: string, handler?: Function): Eventful {
+    off(eventType?: string, handler?: Function): ClzThis<Impl> {
         const _h = this._$handlers;
 
         if (!eventType) {
             this._$handlers = {};
-            return this;
+            return this as any;
         }
 
         if (handler) {
@@ -146,7 +151,7 @@ export default class Eventful {
             delete _h[eventType];
         }
 
-        return this;
+        return this as any;
     }
 
     /**
@@ -154,7 +159,7 @@ export default class Eventful {
      *
      * @param {string} eventType The event name.
      */
-    trigger(eventType: string, ...args: any[]): Eventful {
+    trigger(eventType: string, ...args: any[]): ClzThis<Impl> {
         const _h = this._$handlers[eventType];
         const eventProcessor = this._$eventProcessor;
 
@@ -195,7 +200,7 @@ export default class Eventful {
         eventProcessor && eventProcessor.afterTrigger
             && eventProcessor.afterTrigger(eventType);
 
-        return this;
+        return this as any;
     }
 
     /**

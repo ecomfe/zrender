@@ -19,6 +19,8 @@ export class PainterBase {
 
     }
 
+    getType: () => string
+
     resize: (width?: number | string, height?: number | string) => void
     refresh: () => void
     clear: () => void
