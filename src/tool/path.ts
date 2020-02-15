@@ -393,9 +393,9 @@ function createPathOptions(str: string, opts: SVGPathOption) {
         }
     };
 
-    opts.applyTransform = function (m: MatrixArray) {
+    opts.applyTransform = function (this: SVGPath, m: MatrixArray) {
         transformPath(pathProxy, m);
-        this.dirty(true);
+        this.dirtyShape();
     };
 
     return opts;

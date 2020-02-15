@@ -87,7 +87,7 @@ export function createOrUpdateImage<T>(
     }
 }
 
-function imageOnLoad() {
+function imageOnLoad(this: any) {
     const cachedImgObj = this.__cachedImgObj;
     this.onload = this.onerror = this.__cachedImgObj = null;
 

@@ -74,3 +74,5 @@ export type ElementEventNameWithOn = 'onclick' | 'ondblclick' | 'onmousewheel' |
 export type PropType<TObj, TProp extends keyof TObj> = TObj[TProp];
 
 export type AllPropTypes<T> = PropType<T, keyof T>
+
+export type FunctionPropertyNames<T> = {[K in keyof T]: T[K] extends Function ? K : never}[keyof T];

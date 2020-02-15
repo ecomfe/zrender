@@ -194,7 +194,7 @@ export default class Group extends Element<GroupOption> {
      */
     traverse<T>(
         cb: (this: T, el: Element) => void,
-        context: T
+        context?: T
     ) {
         for (let i = 0; i < this._children.length; i++) {
             const child = this._children[i];

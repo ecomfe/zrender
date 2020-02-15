@@ -24,6 +24,7 @@ export interface PainterBase {
     clear(): void
 
     getViewportRoot(): HTMLElement
+    getType: () => string
 
     getWidth(): number
     getHeight(): number
