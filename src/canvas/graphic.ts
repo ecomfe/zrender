@@ -1,7 +1,7 @@
 import Displayable, { DEFAULT_COMMON_STYLE } from '../graphic/Displayable';
 import PathProxy from '../core/PathProxy';
 import { GradientObject } from '../graphic/Gradient';
-import Pattern, { PatternObject } from '../graphic/Pattern';
+import { PatternObject } from '../graphic/Pattern';
 import { LinearGradientObject } from '../graphic/LinearGradient';
 import { RadialGradientObject } from '../graphic/RadialGradient';
 import { ZRCanvasRenderingContext, ImageLike } from '../core/types';
@@ -17,7 +17,7 @@ import { MatrixArray } from '../core/matrix';
 
 const pathProxyForDraw = new PathProxy(true);
 
-function doFillPath(this: void, ctx: CanvasRenderingContext2D, el: Path) {
+function doFillPath(ctx: CanvasRenderingContext2D, el: Path) {
     const style = el.style;
     if (style.fillOpacity != null && style.fillOpacity !== 1) {
         const originalGlobalAlpha = ctx.globalAlpha;
@@ -31,7 +31,7 @@ function doFillPath(this: void, ctx: CanvasRenderingContext2D, el: Path) {
     }
 }
 
-function doStrokePath(this: void, ctx: CanvasRenderingContext2D, el: Path) {
+function doStrokePath(ctx: CanvasRenderingContext2D, el: Path) {
     const style = el.style;
     if (style.strokeOpacity != null && style.strokeOpacity !== 1) {
         const originalGlobalAlpha = ctx.globalAlpha;
@@ -58,7 +58,7 @@ export function createCanvasPattern(
 }
 
 // Draw Path Elements
-function brushPath(this: void, ctx: CanvasRenderingContext2D, el: Path) {
+function brushPath(ctx: CanvasRenderingContext2D, el: Path) {
     let hasStroke = el.hasStroke();
     let hasFill = el.hasFill();
 
@@ -183,9 +183,8 @@ function brushPath(this: void, ctx: CanvasRenderingContext2D, el: Path) {
 }
 
 // Draw Image Elements
-function brushImage(this: void, ctx: CanvasRenderingContext2D, el: ZImage) {
+function brushImage(ctx: CanvasRenderingContext2D, el: ZImage) {
     const style = el.style;
-    const src = style.image as string;
 
     const image = el.__image = createOrUpdateImage(
         style.image,
@@ -241,7 +240,7 @@ function brushImage(this: void, ctx: CanvasRenderingContext2D, el: ZImage) {
 }
 
 // Draw Text Elements
-function brushText(this: void, ctx: CanvasRenderingContext2D, el: ZText) {
+function brushText(ctx: CanvasRenderingContext2D, el: ZText) {
 
     const style = el.style;
 
@@ -292,27 +291,33 @@ function bindCommonProps(
     style: AllStyleOption,
     prevStyle: AllStyleOption,
     forceSetAll: boolean
-) {
+): boolean {
+    let styleChanged = false;
     if (!forceSetAll) {
         prevStyle = prevStyle || {};
     }
     if (forceSetAll || style.opacity !== prevStyle.opacity) {
         ctx.globalAlpha = style.opacity == null ? DEFAULT_COMMON_STYLE.opacity : style.opacity;
+        styleChanged = true;
     }
 
     if (forceSetAll || style.blend !== prevStyle.blend) {
         ctx.globalCompositeOperation = style.blend || DEFAULT_COMMON_STYLE.blend;
+        styleChanged = true;
     }
     for (let i = 0; i < SHADOW_NUMBER_PROPS.length; i++) {
         const propName = SHADOW_NUMBER_PROPS[i];
         if (forceSetAll || style[propName] !== prevStyle[propName]) {
             // FIXME Invalid property value will cause style leak from previous element.
             ctx[propName] = (ctx as ZRCanvasRenderingContext).dpr * (style[propName] || 0);
+            styleChanged = true;
         }
     }
     if (forceSetAll || style.shadowColor !== prevStyle.shadowColor) {
         ctx.shadowColor = style.shadowColor || DEFAULT_COMMON_STYLE.shadowColor;
+        styleChanged = true;
     }
+    return styleChanged;
 }
 
 function bindPathAndTextCommonStyle(
@@ -327,16 +332,19 @@ function bindPathAndTextCommonStyle(
         ? null
         : (prevEl && prevEl.style || {})
 
-    bindCommonProps(ctx, style, prevStyle, forceSetAll);
+    let styleChanged = bindCommonProps(ctx, style, prevStyle, forceSetAll);
 
     if (forceSetAll || style.fill !== prevStyle.fill) {
         ctx.fillStyle = style.fill as string;
+        styleChanged = true;
     }
     if (forceSetAll || style.stroke !== prevStyle.stroke) {
         ctx.strokeStyle = style.stroke as string;
+        styleChanged = true;
     }
     if (forceSetAll || style.opacity !== prevStyle.opacity) {
         ctx.globalAlpha = style.opacity == null ? 1 : style.opacity;
+        styleChanged = true;
     }
     if (el.hasStroke()) {
         const lineWidth = style.lineWidth;
@@ -351,6 +359,7 @@ function bindPathAndTextCommonStyle(
         if (forceSetAll || style[propName] !== prevStyle[propName]) {
             // FIXME Invalid property value will cause style leak from previous element.
             (ctx as any)[propName] = style[propName] || prop[1];
+            styleChanged = true;
         }
     }
 }
@@ -375,11 +384,6 @@ function setContextTransform(ctx: CanvasRenderingContext2D, el: Displayable) {
     else {
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
-}
-
-function restoreTransform(ctx: CanvasRenderingContext2D) {
-    const dpr = (ctx as ZRCanvasRenderingContext).dpr || 1;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
 
@@ -445,7 +449,9 @@ function isTransformChanged(m0: MatrixArray, m1: MatrixArray): boolean {
 export type BrushScope = {
     prevElClipPaths?: Path[],
     prevEl?: Displayable
-    allClipped?: boolean
+    allClipped?: boolean,
+    viewWidth: number
+    viewHeight: number
 }
 // Brush different type of elements.
 export function brush(
@@ -461,7 +467,7 @@ export function brush(
         // Ignore transparent element
         || el.style.opacity === 0
         // Ignore culled element
-        || (el.culling && isDisplayableCulled(el, this._width, this._height))
+        || (el.culling && isDisplayableCulled(el, scope.viewWidth, scope.viewHeight))
         // Ignore scale 0 element, in some environment like node-canvas
         // Draw a scale 0 element can cause all following draw wrong
         // And setTransform with scale 0 will cause set back transform failed.
@@ -545,7 +551,7 @@ export function brush(
         brushImage(ctx, el as ZImage);
     }
     else if (el instanceof IncrementalDisplayable) {
-        brushIncremental(ctx, el);
+        brushIncremental(ctx, el, scope);
     }
 
     el.innerAfterBrush();
@@ -554,7 +560,11 @@ export function brush(
     scope.prevEl = el;
 }
 
-function brushIncremental(this: void, ctx: CanvasRenderingContext2D, el: IncrementalDisplayable) {
+function brushIncremental(
+    ctx: CanvasRenderingContext2D,
+    el: IncrementalDisplayable,
+    scope: BrushScope
+) {
     let i;
     let displayables = el.getDisplayables();
     let temporalDisplayables = el.getTemporalDisplayables();
@@ -564,7 +574,9 @@ function brushIncremental(this: void, ctx: CanvasRenderingContext2D, el: Increme
     let innerScope: BrushScope = {
         prevElClipPaths: null,
         prevEl: null,
-        allClipped: false
+        allClipped: false,
+        viewWidth: scope.viewWidth,
+        viewHeight: scope.viewHeight
     }
     // Render persistant displayables.
     for (i = el.getCursor(); i < displayables.length; i++) {

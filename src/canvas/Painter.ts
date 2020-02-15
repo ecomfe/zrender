@@ -319,7 +319,10 @@ export default class CanvasPainter implements PainterBase {
             hoverLayer = this._hoverlayer = this.getLayer(HOVER_LAYER_ZLEVEL);
         }
 
-        const scope: BrushScope = {};
+        const scope: BrushScope = {
+            viewWidth: this._width,
+            viewHeight: this._height
+        };
         hoverLayer.ctx.save();
         for (let i = 0; i < len;) {
             const el = hoverElements[i];
@@ -408,7 +411,9 @@ export default class CanvasPainter implements PainterBase {
             const ctx = layer.ctx;
             const scope: BrushScope = {
                 allClipped: false,
-                prevEl: null
+                prevEl: null,
+                viewWidth: this._width,
+                viewHeight: this._height
             };
             ctx.save();
 
@@ -879,7 +884,10 @@ export default class CanvasPainter implements PainterBase {
         }
         else {
             // PENDING, echarts-gl and incremental rendering.
-            const scope = {};
+            const scope = {
+                viewWidth: this._width,
+                viewHeight: this._height
+            };
             const displayList = this.storage.getDisplayList(true);
             for (let i = 0; i < displayList.length; i++) {
                 const el = displayList[i];
@@ -961,7 +969,10 @@ export default class CanvasPainter implements PainterBase {
         path.scale = [1, 1];
         path.updateTransform();
         if (path) {
-            brush(ctx, path, {});
+            brush(ctx, path, {
+                viewWidth: this._width,
+                viewHeight: this._height
+            });
         }
 
         const imgShape = new ZImage({
