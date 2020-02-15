@@ -581,8 +581,7 @@ function parseAttributes(
     each([
         'lineWidth', 'opacity', 'fillOpacity', 'strokeOpacity', 'miterLimit', 'fontSize'
     ], function (propName) {
-        const elPropName = (propName === 'lineWidth' && isTextEl) ? 'textStrokeWidth' : propName;
-        zrStyle[propName] != null && (disp.style[elPropName] = parseFloat(zrStyle[propName]));
+        zrStyle[propName] != null && (disp.style[propName] = parseFloat(zrStyle[propName]));
     });
 
     if (!zrStyle.textBaseline || zrStyle.textBaseline === 'auto') {

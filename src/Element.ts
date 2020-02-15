@@ -270,8 +270,8 @@ class Element {
             if (tmpTextPosCalcRes.textAlign) {
                 textEl.style.textAlign = tmpTextPosCalcRes.textAlign;
             }
-            if (tmpTextPosCalcRes.textVerticalAlign) {
-                textEl.style.textVerticalAlign = tmpTextPosCalcRes.textVerticalAlign;
+            if (tmpTextPosCalcRes.verticalAlign) {
+                textEl.style.verticalAlign = tmpTextPosCalcRes.verticalAlign;
             }
             // Mark textEl to update transform.
             textEl.dirty();

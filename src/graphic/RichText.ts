@@ -5,7 +5,7 @@
 import { PatternObject } from './Pattern';
 import { LinearGradientObject } from './LinearGradient';
 import { RadialGradientObject } from './RadialGradient';
-import { TextAlign, TextVerticalAlign, ImageLike, Dictionary, AllPropTypes, PropType } from '../core/types';
+import { TextAlign, VerticalAlign, ImageLike, Dictionary, AllPropTypes, PropType } from '../core/types';
 import Element, { ElementOption } from '../Element';
 import { parseRichText, parsePlainText } from './helper/parseText';
 import ZText from './Text';
@@ -26,8 +26,8 @@ interface RichTextStyleOptionPart {
     // TODO Text is assigned inside zrender
     text?: string
     // TODO Text not support PatternObject | LinearGradientObject | RadialGradientObject yet.
-    textFill?: string | PatternObject | LinearGradientObject | RadialGradientObject
-    textStroke?: string | PatternObject | LinearGradientObject | RadialGradientObject
+    fill?: string | PatternObject | LinearGradientObject | RadialGradientObject
+    stroke?: string | PatternObject | LinearGradientObject | RadialGradientObject
 
     opacity?: number
     fillOpacity?: number
@@ -35,10 +35,10 @@ interface RichTextStyleOptionPart {
     /**
      * textStroke may be set as some color as a default
      * value in upper applicaion, where the default value
-     * of textStrokeWidth should be 0 to make sure that
+     * of lineWidth should be 0 to make sure that
      * user can choose to do not use text stroke.
      */
-    textStrokeWidth?: number
+    lineWidth?: number
 
     /**
      * If `fontSize` or `fontFamily` exists, `font` will be reset by
@@ -72,22 +72,22 @@ interface RichTextStyleOptionPart {
     fontSize?: number
 
     textAlign?: TextAlign
-    textVerticalAlign?: TextVerticalAlign
+    verticalAlign?: VerticalAlign
 
     /**
      * Line height. Default to be text height of '国'
      */
-    textLineHeight?: number
+    lineHeight?: number
     /**
      * Width of text block. Not include padding
      * Used for background, truncate, wrap
      */
-    textWidth?: number | string
+    width?: number | string
     /**
      * Height of text block. Not include padding
      * Used for background, truncate
      */
-    textHeight?: number
+    height?: number
     /**
      * Reserved for special functinality, like 'hr'.
      */
@@ -98,23 +98,24 @@ interface RichTextStyleOptionPart {
     textShadowOffsetX?: number
     textShadowOffsetY?: number
 
-    textBackgroundColor?: string | {
+    // Shadow, background, border of text box.
+    backgroundColor?: string | {
         image: ImageLike | string
     }
 
     /**
      * Can be `2` or `[2, 4]` or `[2, 3, 4, 5]`
      */
-    textPadding?: number | number[]
+    padding?: number | number[]
 
-    textBorderColor?: string
-    textBorderWidth?: number
-    textBorderRadius?: number | number[]
+    borderColor?: string
+    borderWidth?: number
+    borderRadius?: number | number[]
 
-    textBoxShadowColor?: string
-    textBoxShadowBlur?: number
-    textBoxShadowOffsetX?: number
-    textBoxShadowOffsetY?: number
+    boxShadowColor?: string
+    boxShadowBlur?: number
+    boxShadowOffsetX?: number
+    boxShadowOffsetY?: number
 }
 export interface RichTextStyleOption extends RichTextStyleOptionPart {
 
@@ -126,7 +127,7 @@ export interface RichTextStyleOption extends RichTextStyleOptionPart {
     /**
      * Only support number in the top block.
      */
-    textWidth?: number
+    width?: number
     /**
      * Text styles for rich text.
      */
@@ -340,7 +341,7 @@ class RichText extends Element {
         const style = this.style;
         const text = style.text || '';
         const textFont = style.font || DEFAULT_FONT;
-        const textPadding = style.textPadding as number[];
+        const textPadding = style.padding as number[];
 
         const contentBlock = parsePlainText(text, style);
         const needDrawBg = needDrawBackground(style);
@@ -353,7 +354,7 @@ class RichText extends Element {
         const baseX = style.x || 0;
         const baseY = style.y || 0;
         const textAlign = style.textAlign || 'left';
-        const textVerticalAlign = style.textVerticalAlign;
+        const textVerticalAlign = style.verticalAlign;
 
         const boxY = adjustTextY(baseY, outerHeight, textVerticalAlign);
         let textX = baseX;
@@ -376,12 +377,12 @@ class RichText extends Element {
         // `textBaseline` is set as 'middle'.
         textY += lineHeight / 2;
 
-        const textStrokeWidth = style.textStrokeWidth;
-        const textStroke = getStroke(style.textStroke, textStrokeWidth);
-        const textFill = getFill(style.textFill);
+        const textStrokeLineWidth = style.lineWidth;
+        const textStroke = getStroke(style.stroke, textStrokeLineWidth);
+        const textFill = getFill(style.fill);
 
-        const hasStroke = 'textStroke' in style;
-        const hasFill = 'textFill' in style;
+        const hasStroke = 'stroke' in style;
+        const hasFill = 'fill' in style;
         const hasShadow = style.textShadowBlur > 0;
 
         for (let i = 0; i < textLines.length; i++) {
@@ -412,7 +413,7 @@ class RichText extends Element {
 
             if (hasStroke) {
                 subElStyle.stroke = textStroke as string;
-                subElStyle.lineWidth = textStrokeWidth;
+                subElStyle.lineWidth = textStrokeLineWidth;
             }
             if (hasFill) {
                 subElStyle.fill = textFill as string;
@@ -434,12 +435,12 @@ class RichText extends Element {
         const contentWidth = contentBlock.width;
         const outerWidth = contentBlock.outerWidth;
         const outerHeight = contentBlock.outerHeight;
-        const textPadding = style.textPadding as number[];
+        const textPadding = style.padding as number[];
 
         const baseX = style.x || 0;
         const baseY = style.y || 0;
         const textAlign = style.textAlign;
-        const textVerticalAlign = style.textVerticalAlign;
+        const textVerticalAlign = style.verticalAlign;
 
         const boxX = adjustTextX(baseX, outerWidth, textAlign);
         const boxY = adjustTextY(baseY, outerHeight, textVerticalAlign);
@@ -545,8 +546,8 @@ class RichText extends Element {
         const el = this._getOrCreateChild(ZText);
         const subElStyle = el.style;
 
-        const hasStroke = 'textStroke' in tokenStyle || 'textStroke' in style;
-        const hasFill = 'textFill' in tokenStyle || 'textFill' in style;
+        const hasStroke = 'stroke' in tokenStyle || 'stroke' in style;
+        const hasFill = 'fill' in tokenStyle || 'fill' in style;
         const hasShadow = tokenStyle.textShadowBlur > 0
                     || style.textShadowBlur > 0;
 
@@ -567,11 +568,11 @@ class RichText extends Element {
         subElStyle.font = token.font || DEFAULT_FONT;
 
         if (hasStroke) {
-            subElStyle.lineWidth = retrieve2(tokenStyle.textStrokeWidth, style.textStrokeWidth);
-            subElStyle.stroke = getStroke(tokenStyle.textStroke || style.textStroke, subElStyle.lineWidth) || null;
+            subElStyle.lineWidth = retrieve2(tokenStyle.lineWidth, style.lineWidth);
+            subElStyle.stroke = getStroke(tokenStyle.stroke || style.stroke, subElStyle.lineWidth) || null;
         }
         if (hasFill) {
-            subElStyle.fill = getFill(tokenStyle.textFill || style.textFill) || null;
+            subElStyle.fill = getFill(tokenStyle.fill || style.fill) || null;
         }
     }
 
@@ -582,11 +583,11 @@ class RichText extends Element {
         width: number,
         height: number
     ) {
-        const textBackgroundColor = style.textBackgroundColor;
-        const textBorderWidth = style.textBorderWidth;
-        const textBorderColor = style.textBorderColor;
+        const textBackgroundColor = style.backgroundColor;
+        const textBorderWidth = style.borderWidth;
+        const textBorderColor = style.borderColor;
         const isPlainBg = isString(textBackgroundColor);
-        const textBorderRadius = style.textBorderRadius;
+        const textBorderRadius = style.borderRadius;
         const self = this;
 
         let rectEl: Rect;
@@ -632,10 +633,10 @@ class RichText extends Element {
         }
 
         const shadowStyle = (rectEl || imgEl).style;
-        shadowStyle.shadowBlur = style.textBoxShadowBlur || 0;
-        shadowStyle.shadowColor = style.textBoxShadowColor || 'transparent';
-        shadowStyle.shadowOffsetX = style.textBoxShadowOffsetX || 0;
-        shadowStyle.shadowOffsetY = style.textBoxShadowOffsetY || 0;
+        shadowStyle.shadowBlur = style.boxShadowBlur || 0;
+        shadowStyle.shadowColor = style.boxShadowColor || 'transparent';
+        shadowStyle.shadowOffsetX = style.boxShadowOffsetX || 0;
+        shadowStyle.shadowOffsetY = style.boxShadowOffsetY || 0;
 
     }
 }
@@ -661,16 +662,16 @@ function normalizeStyle(style: RichTextStyleOptionPart) {
         ) ? textAlign : 'left';
 
         // Compatible with textBaseline.
-        let textVerticalAlign = style.textVerticalAlign;
+        let textVerticalAlign = style.verticalAlign;
         (textVerticalAlign as string) === 'center' && (textVerticalAlign = 'middle');
-        style.textVerticalAlign = (
+        style.verticalAlign = (
             textVerticalAlign == null || VALID_TEXT_VERTICAL_ALIGN[textVerticalAlign]
         ) ? textVerticalAlign : 'top';
 
         // TODO Should not change the orignal value.
-        const textPadding = style.textPadding;
+        const textPadding = style.padding;
         if (textPadding) {
-            style.textPadding = normalizeCssArray(style.textPadding);
+            style.padding = normalizeCssArray(style.padding);
         }
     }
 }
@@ -680,7 +681,7 @@ function normalizeStyle(style: RichTextStyleOptionPart) {
  * @param lineWidth If specified, do not check style.textStroke.
  */
 function getStroke(
-    stroke?: PropType<RichTextStyleOptionPart, 'textStroke'>,
+    stroke?: PropType<RichTextStyleOptionPart, 'stroke'>,
     lineWidth?: number
 ) {
     return (stroke == null || lineWidth <= 0 || stroke === 'transparent' || stroke === 'none')
@@ -691,7 +692,7 @@ function getStroke(
 }
 
 function getFill(
-    fill?: PropType<RichTextStyleOptionPart, 'textFill'>
+    fill?: PropType<RichTextStyleOptionPart, 'fill'>
 ) {
     return (fill == null || fill === 'none')
         ? null
@@ -715,8 +716,8 @@ function getTextXForPadding(x: number, textAlign: string, textPadding: number[])
  */
 function needDrawBackground(style: RichTextStyleOptionPart): boolean {
     return !!(
-        style.textBackgroundColor
-        || (style.textBorderWidth && style.textBorderColor)
+        style.backgroundColor
+        || (style.borderWidth && style.borderColor)
     );
 }
 

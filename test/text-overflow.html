@@ -27,27 +27,28 @@
     const config = {
         search: '',
         width: 400,
-        fontSize: 13
+        fontSize: 13,
+        fixedLineHeight: false,
+        lineHeight: 14
     }
     // LARGE_TEXT_EN = LARGE_TEXT_EN.substr(0, 500);
     // LARGE_TEXT_ZH = LARGE_TEXT_ZH.substr(0, 500);
 
-    console.time('render');
     var enText = new zrender.RichText({
         style: {
             text: LARGE_TEXT_EN,
             fontSize: config.fontSize,
-            textWidth: config.width,
-            textPadding: 10,
-            textBorderColor: '#000',
-            textBorderWidth: 1,
+            width: config.width,
+            padding: 10,
+            borderColor: '#000',
+            borderWidth: 1,
 
             overflow: 'wrap',
 
             rich: {
                 highlight: {
-                    // textPadding: 4,
-                    textBackgroundColor: 'yellow'
+                    // padding: 4,
+                    backgroundColor: 'yellow'
                 }
             }
         }
@@ -58,47 +59,50 @@
         style: {
             text: LARGE_TEXT_ZH,
             fontSize: config.fontSize,
-            textWidth: config.width,
-            textPadding: 10,
-            textBorderColor: '#000',
-            textBorderWidth: 1,
+            width: config.width,
+            padding: 10,
+            borderColor: '#000',
+            borderWidth: 1,
 
             overflow: 'wrap',
             x: config.width + 100,
 
             rich: {
                 highlight: {
-                    // textPadding: 4,
-                    textBackgroundColor: 'yellow',
-                    fontSize: 16
+                    // padding: 4,
+                    backgroundColor: 'yellow',
+                    fontSize: 20
                 }
             }
         }
     });
     zr.add(cnText);
-    zr.refreshImmediately();
-    console.timeEnd('render');
 
+    const TEXTS = [LARGE_TEXT_EN, LARGE_TEXT_ZH];
     function update() {
-        enText.style.textWidth = cnText.style.textWidth = config.width;
+        enText.style.width = cnText.style.width = config.width;
         cnText.style.x = config.width + 100;
-        enText.style.fontSize = cnText.style.fontSize = config.fontSize;
+        [enText, cnText].forEach((text, idx) => {
+            text.style.fontSize = cnText.style.fontSize = config.fontSize;
 
-        if (config.search) {
-            enText.style.text = LARGE_TEXT_EN.replace(
-                new RegExp(config.search, 'g'), `{highlight|${config.search}}`
-            );
-            cnText.style.text = LARGE_TEXT_ZH.replace(
-                new RegExp(config.search, 'g'), `{highlight|${config.search}}`
-            );
-        }
-        else {
-            enText.style.text = LARGE_TEXT_EN;
-            cnText.style.text = LARGE_TEXT_ZH;
-        }
+            if (config.search) {
+                text.style.text = TEXTS[idx].replace(
+                    new RegExp(config.search, 'g'), `{highlight|${config.search}}`
+                );
+            }
+            else {
+                text.style.text = TEXTS[idx];
+            }
 
-        enText.dirtyStyle();
-        cnText.dirtyStyle();
+            if (!config.fixedLineHeight) {
+                text.style.lineHeight = null;
+            }
+            else {
+                text.style.lineHeight = config.lineHeight;
+            }
+
+            text.dirtyStyle();
+        });
 
         console.time('render');
         zr.refreshImmediately();
@@ -108,6 +112,10 @@
     gui.add(config, 'search').onChange(update);
     gui.add(config, 'width', 100, 700).onChange(update);
     gui.add(config, 'fontSize', 12, 30).onChange(update);
+    gui.add(config, 'fixedLineHeight').onChange(update);
+    gui.add(config, 'lineHeight', 12, 50).onChange(update);
+
+    update();
     </script>
 </body>
 </html>

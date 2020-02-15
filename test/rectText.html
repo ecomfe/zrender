@@ -87,7 +87,7 @@
             </script>
         </div>
 
-        <div class="control-block">
+        <!-- <div class="control-block">
             <label>textOrigin:</label>
             <button onclick="updateToURL('textOrigin', 'center');">'center'</button>
             <button onclick="updateToURL('textOrigin', [150, 70]);">[150, 70] (right-bottom-corner)</button>
@@ -109,10 +109,10 @@
                 }
             };
             </script>
-        </div>
+        </div> -->
 
         <div class="control-block">
-            <label>textBackground:</label>
+            <label>background:</label>
             <button onclick="updateToURL('hasBg', 1);">Add</button>
             <button onclick="removeToURL('hasBg');">Remove</button>
             <script>
@@ -122,14 +122,14 @@
                     var shape = _shapes1[i];
                     shape.textContent.attr({
                         style: {
-                            textBorderRadius: 3,
-                            textBackgroundColor: 'rgba(0, 255, 0, 0.3)',
-                            textBorderColor: '#191933',
-                            textBorderWidth: 2,
-                            textBoxShadowBlur: 5,
-                            textBoxShadowColor: '#1099ee',
-                            textBoxShadowOffsetX: 2,
-                            textBoxShadowOffsetY: 5
+                            borderRadius: 3,
+                            backgroundColor: 'rgba(0, 255, 0, 0.3)',
+                            borderColor: '#191933',
+                            borderWidth: 2,
+                            boxShadowBlur: 5,
+                            boxShadowColor: '#1099ee',
+                            boxShadowOffsetX: 2,
+                            boxShadowOffsetY: 5
                         }
                     });
                 }
@@ -137,14 +137,14 @@
                     var shape = _shapes2[i];
                     shape.textContent.attr({
                         style: {
-                            textBorderRadius: 8,
-                            textBackgroundColor: 'rgba(0, 255, 0, 0.3)',
-                            textBorderColor: '#191933',
-                            textBorderWidth: 2,
-                            textBoxShadowBlur: 5,
-                            textBoxShadowColor: '#1099ee',
-                            textBoxShadowOffsetX: 2,
-                            textBoxShadowOffsetY: 5
+                            borderRadius: 8,
+                            backgroundColor: 'rgba(0, 255, 0, 0.3)',
+                            borderColor: '#191933',
+                            borderWidth: 2,
+                            boxShadowBlur: 5,
+                            boxShadowColor: '#1099ee',
+                            boxShadowOffsetX: 2,
+                            boxShadowOffsetY: 5
                         }
                     });
                 }
@@ -186,18 +186,14 @@
                 var textPosition = _storage.textPosition;
                 for (var i = 0; i < _shapes1.length; i++) {
                     var shape = _shapes1[i];
-                    shape.textContent.attr({
-                        style: {
-                            textPosition: textPosition
-                        }
+                    shape.setTextLayout({
+                        position: textPosition
                     });
                 }
                 for (var i = 0; i < _shapes2.length; i++) {
                     var shape = _shapes2[i];
-                    shape.textContent.attr({
-                        style: {
-                            textPosition: textPosition
-                        }
+                    shape.setTextLayout({
+                        position: textPosition
                     });
                 }
             };
@@ -205,17 +201,17 @@
         </div>
 
         <div class="control-block">
-            <label>textPadding:</label>
-            <button onclick="updateToURL('textPadding', [10, 20, 30, 40]);">[10, 20, 30, 40]</button>
-            <button onclick="updateToURL('textPadding', 50);">50</button>
-            <button onclick="removeToURL('textPadding');">Remove</button>
+            <label>padding:</label>
+            <button onclick="updateToURL('padding', [10, 20, 30, 40]);">[10, 20, 30, 40]</button>
+            <button onclick="updateToURL('padding', 50);">50</button>
+            <button onclick="removeToURL('padding');">Remove</button>
             <script>
-            _updaters.textPadding = function () {
+            _updaters.padding = function () {
                 for (var i = 0; i < _shapes1.length; i++) {
                     var shape = _shapes1[i];
                     shape.textContent.attr({
                         style: {
-                            textPadding: clone(_storage.textPadding)
+                            padding: clone(_storage.padding)
                         }
                     });
                 }
@@ -223,7 +219,7 @@
                     var shape = _shapes2[i];
                     shape.textContent.attr({
                         style: {
-                            textPadding: clone(_storage.textPadding)
+                            padding: clone(_storage.padding)
                         }
                     });
                 }
@@ -261,19 +257,19 @@
         </div>
 
         <div class="control-block">
-            <label>textVerticalAlign:</label>
-            <button onclick="updateToURL('textVerticalAlign', 'top');">'top'</button>
-            <button onclick="updateToURL('textVerticalAlign', 'middle');">'middle'</button>
-            <button onclick="updateToURL('textVerticalAlign', 'bottom');">'bottom'</button>
-            <button onclick="removeToURL('textVerticalAlign');">Remove</button>
+            <label>verticalAlign:</label>
+            <button onclick="updateToURL('verticalAlign', 'top');">'top'</button>
+            <button onclick="updateToURL('verticalAlign', 'middle');">'middle'</button>
+            <button onclick="updateToURL('verticalAlign', 'bottom');">'bottom'</button>
+            <button onclick="removeToURL('verticalAlign');">Remove</button>
             <script>
-            _updaters.textVerticalAlign = function (textVerticalAlign) {
-                var textVerticalAlign = _storage.textVerticalAlign;
+            _updaters.verticalAlign = function (verticalAlign) {
+                var verticalAlign = _storage.verticalAlign;
                 for (var i = 0; i < _shapes1.length; i++) {
                     var shape = _shapes1[i];
                     shape.textContent.attr({
                         style: {
-                            textVerticalAlign: textVerticalAlign
+                            verticalAlign: verticalAlign
                         }
                     });
                 }
@@ -281,21 +277,21 @@
                     var shape = _shapes2[i];
                     shape.textContent.attr({
                         style: {
-                            textVerticalAlign: textVerticalAlign
+                            verticalAlign: verticalAlign
                         }
                     });
                 }
             };
             </script>
         </div>
-
+<!--
         <div class="control-block">
             <label>transformText:</label>
             <button onclick="updateToURL('transformText', true);">Enable</button>
             <button onclick="removeToURL('transformText');">Remove</button>
             <script>
             </script>
-        </div>
+        </div> -->
 
         <div class="control-block">
             <label>Add '\n' at char index 3 (only for red rect):</label>
@@ -303,7 +299,7 @@
             <button onclick="removeToURL('addLineBreak');">Remove</button>
             <script>
             _updaters.addLineBreak = function () {
-                var textVerticalAlign = _storage.textVerticalAlign;
+                var verticalAlign = _storage.verticalAlign;
                 for (var i = 0; i < _shapes1.length; i++) {
                     var shape = _shapes1[i];
                     var text = shape.__zr_test_text;
@@ -317,7 +313,7 @@
             };
             </script>
         </div>
-
+<!--
         <div class="control-block">
             <label>Add truncate (only for red rect):</label>
             <button onclick="updateToURL('truncate', {outerWidth: 50, outerHeight: 40, ellipsis: '...'});">{outerWidth: 50, outerHeight: 40, ellipsis: '...'}</button>
@@ -342,7 +338,7 @@
             };
             </script>
         </div>
-
+ -->
     </div>
 
 
@@ -422,15 +418,15 @@
                             text: [
                                 '{j|' + text + '}',
                                 '我是 Rect Text, textDistance: 20',
-                                '整体的 textAlign textVerticalAlign 取默认值'
+                                '整体的 textAlign verticalAlign 取默认值'
                             ].join('\n'),
-                            textFill: 'red',
+                            fill: 'red',
                             font: '10px Arial',
                             rich: {
                                 j: {
                                     font: '16px Arial',
-                                    textFill: '#922889',
-                                    textVerticalAlign: 'top'
+                                    fill: '#922889',
+                                    verticalAlign: 'top'
                                 }
                             }
                         }

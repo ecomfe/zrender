@@ -5,7 +5,7 @@ import {
     retrieve3,
     reduce
 } from '../../core/util';
-import { TextAlign, TextVerticalAlign, ImageLike, Dictionary, PropType } from '../../core/types';
+import { TextAlign, VerticalAlign, ImageLike, Dictionary, PropType } from '../../core/types';
 import { RichTextStyleOption } from '../RichText';
 import { getLineHeight, getWidth, DEFAULT_FONT } from '../../contain/text';
 
@@ -171,12 +171,12 @@ export function parsePlainText(
     text != null && (text += '');
 
     // textPadding has been normalized
-    const padding = style.textPadding as number[];
+    const padding = style.padding as number[];
     const font = style.font;
     const truncate = style.overflow === 'truncate';
-    const lineHeight = retrieve2(style.textLineHeight, getLineHeight(font));
+    const lineHeight = retrieve2(style.lineHeight, getLineHeight(font));
 
-    let width = style.textWidth;
+    let width = style.width;
     let lines: string[];
 
     if (width != null && style.overflow === 'wrap') {
@@ -186,7 +186,7 @@ export function parsePlainText(
         lines = text ? text.split('\n') : [];
     }
 
-    const height = retrieve2(style.textHeight, lines.length * lineHeight);
+    const height = retrieve2(style.height, lines.length * lineHeight);
 
     let outerHeight = height;
     let outerWidth = width;
@@ -247,7 +247,7 @@ class RichTextToken {
     lineHeight: number
     font: string
     textAlign: TextAlign
-    textVerticalAlign: TextVerticalAlign
+    textVerticalAlign: VerticalAlign
 
     textPadding: number[]
     percentWidth?: string
@@ -292,8 +292,8 @@ export function parseRichText(text: string, style: RichTextStyleOption) {
         return contentBlock;
     }
 
-    const topWidth = style.textWidth;
-    const topHeight = style.textHeight;
+    const topWidth = style.width;
+    const topHeight = style.height;
     let wrapInfo: WrapInfo = style.overflow === 'wrap' && topWidth != null
         ? {width: topWidth, accumWidth: 0}
         : null;
@@ -318,7 +318,7 @@ export function parseRichText(text: string, style: RichTextStyleOption) {
     // For `textWidth: xx%`
     let pendingList = [];
 
-    const stlPadding = style.textPadding as number[];
+    const stlPadding = style.padding as number[];
 
     const truncate = style.overflow === 'truncate';
     const truncateLine = style.lineOverflow === 'truncate';
@@ -333,7 +333,7 @@ export function parseRichText(text: string, style: RichTextStyleOption) {
             const token = line.tokens[j];
             const tokenStyle = token.styleName && style.rich[token.styleName] || {};
             // textPadding should not inherit from style.
-            const textPadding = token.textPadding = tokenStyle.textPadding as number[];
+            const textPadding = token.textPadding = tokenStyle.padding as number[];
             const paddingH = textPadding ? textPadding[1] + textPadding[3] : 0;
 
             const font = token.font = tokenStyle.font || style.font;
@@ -342,23 +342,23 @@ export function parseRichText(text: string, style: RichTextStyleOption) {
             let tokenHeight = retrieve2(
                 // textHeight should not be inherited, consider it can be specified
                 // as box height of the block.
-                tokenStyle.textHeight, getLineHeight(font)
+                tokenStyle.height, getLineHeight(font)
             ) ;
             textPadding && (tokenHeight += textPadding[0] + textPadding[2]);
             token.height = tokenHeight;
             token.lineHeight = retrieve3(
-                tokenStyle.textLineHeight, style.textLineHeight, tokenHeight
+                tokenStyle.lineHeight, style.lineHeight, tokenHeight
             );
 
             token.textAlign = tokenStyle && tokenStyle.textAlign || style.textAlign;
-            token.textVerticalAlign = tokenStyle && tokenStyle.textVerticalAlign || 'middle';
+            token.textVerticalAlign = tokenStyle && tokenStyle.verticalAlign || 'middle';
 
             if (truncateLine && topHeight != null && contentHeight + token.lineHeight > topHeight) {
                 // TODO Add ellipsis
                 return contentBlock;
             }
 
-            let styleTokenWidth = tokenStyle.textWidth;
+            let styleTokenWidth = tokenStyle.width;
             let tokenWidthNotSpecified = styleTokenWidth == null || styleTokenWidth === 'auto';
 
             // Percent width, can be `100%`, can be used in drawing separate
@@ -374,7 +374,7 @@ export function parseRichText(text: string, style: RichTextStyleOption) {
                 if (tokenWidthNotSpecified) {
                     // FIXME: If image is not loaded and textWidth is not specified, calling
                     // `getBoundingRect()` will not get correct result.
-                    const textBackgroundColor = tokenStyle.textBackgroundColor;
+                    const textBackgroundColor = tokenStyle.backgroundColor;
                     let bgImg = textBackgroundColor && (textBackgroundColor as { image: ImageLike }).image;
 
                     if (bgImg) {
@@ -455,11 +455,11 @@ function pushTokens(
     let linesWidths;
 
     if (wrapInfo) {
-        const tokenPadding = tokenStyle.textPadding as number[];
+        const tokenPadding = tokenStyle.padding as number[];
         let tokenPaddingH = tokenPadding ? tokenPadding[1] + tokenPadding[3] : 0;
-        if (tokenStyle.textWidth != null && tokenStyle.textWidth != 'auto') {
+        if (tokenStyle.width != null && tokenStyle.width != 'auto') {
             // Wrap the whole token if tokenWidth if fixed.
-            const outerWidth = parsePercent(tokenStyle.textWidth, wrapInfo.width) + tokenPaddingH;
+            const outerWidth = parsePercent(tokenStyle.width, wrapInfo.width) + tokenPaddingH;
             if (lines.length > 0) { // Not first line
                 if (outerWidth + wrapInfo.accumWidth > wrapInfo.width) {
                     // TODO Support wrap text in token.
@@ -488,8 +488,8 @@ function pushTokens(
         token.text = text;
         token.isLineHolder = !text && !isEmptyStr;
 
-        if (typeof tokenStyle.textWidth === 'number') {
-            token.width = tokenStyle.textWidth;
+        if (typeof tokenStyle.width === 'number') {
+            token.width = tokenStyle.width;
         }
         else {
             token.width = linesWidths
