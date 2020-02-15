@@ -51,6 +51,8 @@ export interface DisplayableOption extends ElementOption {
     progressive?: boolean
 
     incremental?: boolean
+
+    batch?: boolean
 }
 
 type DisplayableKey = keyof DisplayableOption

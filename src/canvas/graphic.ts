@@ -291,65 +291,87 @@ type AllStyleOption = PathStyleOption | TextStyleOption | ImageStyleOption;
 // type DrawPropNames = typeof DRAW_PROPS[number][0];
 
 function bindCommonProps(
-    this: void,
     ctx: CanvasRenderingContext2D,
     style: AllStyleOption,
     prevStyle: AllStyleOption,
-    forceSetAll: boolean
+    forceSetAll: boolean,
+    scope: BrushScope
 ): boolean {
     let styleChanged = false;
     if (!forceSetAll) {
         prevStyle = prevStyle || {};
     }
     if (forceSetAll || style.opacity !== prevStyle.opacity) {
+        if (!styleChanged) {
+            flushPathDrawn(ctx, scope);
+            styleChanged = true;
+        }
         ctx.globalAlpha = style.opacity == null ? DEFAULT_COMMON_STYLE.opacity : style.opacity;
-        styleChanged = true;
     }
 
     if (forceSetAll || style.blend !== prevStyle.blend) {
+        if (!styleChanged) {
+            flushPathDrawn(ctx, scope);
+            styleChanged = true;
+        }
         ctx.globalCompositeOperation = style.blend || DEFAULT_COMMON_STYLE.blend;
-        styleChanged = true;
     }
     for (let i = 0; i < SHADOW_NUMBER_PROPS.length; i++) {
         const propName = SHADOW_NUMBER_PROPS[i];
         if (forceSetAll || style[propName] !== prevStyle[propName]) {
+            if (!styleChanged) {
+                flushPathDrawn(ctx, scope);
+                styleChanged = true;
+            }
             // FIXME Invalid property value will cause style leak from previous element.
             ctx[propName] = (ctx as ZRCanvasRenderingContext).dpr * (style[propName] || 0);
-            styleChanged = true;
         }
     }
     if (forceSetAll || style.shadowColor !== prevStyle.shadowColor) {
+        if (!styleChanged) {
+            flushPathDrawn(ctx, scope);
+            styleChanged = true;
+        }
         ctx.shadowColor = style.shadowColor || DEFAULT_COMMON_STYLE.shadowColor;
-        styleChanged = true;
     }
     return styleChanged;
 }
 
 function bindPathAndTextCommonStyle(
-    this: void,
     ctx: CanvasRenderingContext2D,
     el: ZText | Path,
     prevEl: ZText | Path,
-    forceSetAll: boolean
+    forceSetAll: boolean,
+    scope: BrushScope
 ) {
     const style = el.style;
     const prevStyle = forceSetAll
         ? null
         : (prevEl && prevEl.style || {})
 
-    let styleChanged = bindCommonProps(ctx, style, prevStyle, forceSetAll);
+    let styleChanged = bindCommonProps(ctx, style, prevStyle, forceSetAll, scope);
 
     if (forceSetAll || style.fill !== prevStyle.fill) {
+        if (!styleChanged) {
+            // Flush before set
+            flushPathDrawn(ctx, scope);
+            styleChanged = true;
+        }
         ctx.fillStyle = style.fill as string;
-        styleChanged = true;
     }
     if (forceSetAll || style.stroke !== prevStyle.stroke) {
+        if (!styleChanged) {
+            flushPathDrawn(ctx, scope);
+            styleChanged = true;
+        }
         ctx.strokeStyle = style.stroke as string;
-        styleChanged = true;
     }
     if (forceSetAll || style.opacity !== prevStyle.opacity) {
+        if (!styleChanged) {
+            flushPathDrawn(ctx, scope);
+            styleChanged = true;
+        }
         ctx.globalAlpha = style.opacity == null ? 1 : style.opacity;
-        styleChanged = true;
     }
     if (el.hasStroke()) {
         const lineWidth = style.lineWidth;
@@ -357,8 +379,11 @@ function bindPathAndTextCommonStyle(
             (style.strokeNoScale && el && el.getLineScale) ? el.getLineScale() : 1
         );
         if (ctx.lineWidth !== newLineWidth) {
+            if (!styleChanged) {
+                flushPathDrawn(ctx, scope);
+                styleChanged = true;
+            }
             ctx.lineWidth = newLineWidth;
-            styleChanged = true;
         }
     }
 
@@ -366,9 +391,12 @@ function bindPathAndTextCommonStyle(
         const prop = STROKE_PROPS[i];
         const propName = prop[0];
         if (forceSetAll || style[propName] !== prevStyle[propName]) {
+            if (!styleChanged) {
+                flushPathDrawn(ctx, scope);
+                styleChanged = true;
+            }
             // FIXME Invalid property value will cause style leak from previous element.
             (ctx as any)[propName] = style[propName] || prop[1];
-            styleChanged = true;
         }
     }
 
@@ -376,14 +404,14 @@ function bindPathAndTextCommonStyle(
 }
 
 function bindImageStyle(
-    this: void,
     ctx: CanvasRenderingContext2D,
     el: ZImage,
     prevEl: ZImage,
     // forceSetAll must be true if prevEl is null
-    forceSetAll: boolean
+    forceSetAll: boolean,
+    scope: BrushScope
 ) {
-    bindCommonProps(ctx, el.style, prevEl && prevEl.style, forceSetAll);
+    bindCommonProps(ctx, el.style, prevEl && prevEl.style, forceSetAll, scope);
 }
 
 function setContextTransform(ctx: CanvasRenderingContext2D, el: Displayable) {
@@ -496,13 +524,9 @@ function canPathBatch(el: Path) {
 }
 
 function flushPathDrawn(ctx: CanvasRenderingContext2D, scope: BrushScope) {
-    if (scope.batchFill) {
-        ctx.fill();
-    }
-    else if (scope.batchStroke) {
-        ctx.stroke();
-    }
-    // Clear
+    // Force flush all after drawn last element
+    scope.batchFill && ctx.fill();
+    scope.batchStroke && ctx.stroke();
     scope.batchFill = '';
     scope.batchStroke = '';
 }
@@ -589,26 +613,20 @@ export function brush(
         forceSetStyle = forceSetTransform = true;
     }
 
-    let canBatchPath = el.batch;
+    let canBatchPath = el.batch
+        && el instanceof Path   // Only path supports batch
+        && canPathBatch(el as Path);
 
     if (forceSetTransform || isTransformChanged(m, prevEl.transform)) {
         setContextTransform(ctx, el);
-        canBatchPath = false;
-    }
-    if (canBatchPath) {
-        canBatchPath = canPathBatch(el as Path);
+        // Flush
+        flushPathDrawn(ctx, scope);
     }
 
     if (el instanceof Path) {
-        canBatchPath = !bindPathAndTextCommonStyle(ctx, el as Path, prevEl as Path, forceSetStyle)
-                    && canBatchPath;
-        // Flush previous
-        if (!canBatchPath) {
-            flushPathDrawn(ctx, scope);
-            ctx.beginPath();
-        }
+        bindPathAndTextCommonStyle(ctx, el as Path, prevEl as Path, forceSetStyle, scope);
         // Begin path at start
-        else if (!scope.batchFill && !scope.batchStroke) {
+        if (!canBatchPath || (!scope.batchFill && !scope.batchStroke)) {
             ctx.beginPath();
         }
         brushPath(ctx, el as Path, canBatchPath);
@@ -619,16 +637,14 @@ export function brush(
     }
     else {
         // Flush previous
-        if (!canBatchPath) {
-            flushPathDrawn(ctx, scope);
-        }
+        flushPathDrawn(ctx, scope);
 
         if (el instanceof ZText) {
-            bindPathAndTextCommonStyle(ctx, el as ZText, prevEl as ZText, forceSetStyle);
+            bindPathAndTextCommonStyle(ctx, el as ZText, prevEl as ZText, forceSetStyle, scope);
             brushText(ctx, el as ZText);
         }
         else if (el instanceof ZImage) {
-            bindImageStyle(ctx, el as ZImage, prevEl as ZImage, forceSetStyle);
+            bindImageStyle(ctx, el as ZImage, prevEl as ZImage, forceSetStyle, scope);
             brushImage(ctx, el as ZImage);
         }
         else if (el instanceof IncrementalDisplayable) {
@@ -638,7 +654,6 @@ export function brush(
     }
 
     if (canBatchPath && isLast) {
-        // Force flush all after drawn last element
         flushPathDrawn(ctx, scope);
     }
 
