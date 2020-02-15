@@ -589,7 +589,7 @@ export function brush(
         forceSetStyle = forceSetTransform = true;
     }
 
-    let canBatchPath = isPath;
+    let canBatchPath = el.batch;
 
     if (forceSetTransform || isTransformChanged(m, prevEl.transform)) {
         setContextTransform(ctx, el);
