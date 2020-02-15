@@ -622,6 +622,10 @@ export function brush(
         // Flush
         flushPathDrawn(ctx, scope);
     }
+    else if (!canBatchPath) {
+        // Flush previous
+        flushPathDrawn(ctx, scope);
+    }
 
     if (el instanceof Path) {
         bindPathAndTextCommonStyle(ctx, el as Path, prevEl as Path, forceSetStyle, scope);
@@ -636,9 +640,6 @@ export function brush(
         }
     }
     else {
-        // Flush previous
-        flushPathDrawn(ctx, scope);
-
         if (el instanceof ZText) {
             bindPathAndTextCommonStyle(ctx, el as ZText, prevEl as ZText, forceSetStyle, scope);
             brushText(ctx, el as ZText);
