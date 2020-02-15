@@ -229,10 +229,10 @@ export function inherits(clazz: Function, baseClazz: Function) {
         }
     }
     clazz.prototype.constructor = clazz;
-    (<any>clazz).superClass = baseClazz;
+    (clazz as any).superClass = baseClazz;
 }
 
-export function mixin(target: Object | Function, source: Object | Function, override?: boolean) {
+export function mixin<T, S>(target: T | Function, source: S | Function, override?: boolean) {
     target = 'prototype' in target ? target.prototype : target;
     source = 'prototype' in source ? source.prototype : source;
 
