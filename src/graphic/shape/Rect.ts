@@ -64,7 +64,6 @@ export default class Rect extends Path {
         else {
             roundRectHelper.buildPath(ctx, shape);
         }
-        ctx.closePath();
     }
 
     isZeroArea() {

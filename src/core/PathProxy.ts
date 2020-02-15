@@ -104,18 +104,25 @@ export default class PathProxy {
         this._uy = mathAbs(segmentIgnoreThreshold / dpr / sy) || 0;
     }
 
+    setContext(ctx: ExtendedCanvasRenderingContext2D) {
+        this._ctx = ctx;
+        ctx && (this.dpr = ctx.dpr);
+    }
+
     getContext(): ExtendedCanvasRenderingContext2D {
         return this._ctx;
     }
 
-    beginPath(ctx?: ExtendedCanvasRenderingContext2D) {
+    beginPath() {
+        this._ctx && this._ctx.beginPath();
+        this.reset();
+        return this;
+    }
 
-        this._ctx = ctx;
-
-        ctx && ctx.beginPath();
-
-        ctx && (this.dpr = ctx.dpr);
-
+    /**
+     * Reset path data.
+     */
+    reset() {
         // Reset
         if (this._saveData) {
             this._len = 0;
@@ -126,15 +133,8 @@ export default class PathProxy {
 
             this._dashOffset = 0;
         }
-
-        return this;
     }
 
-    /**
-     * @param  {number} x
-     * @param  {number} y
-     * @return {module:zrender/core/PathProxy}
-     */
     moveTo(x: number, y: number) {
         this.addData(CMD.M, x, y);
         this._ctx && this._ctx.moveTo(x, y);

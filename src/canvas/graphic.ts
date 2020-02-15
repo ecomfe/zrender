@@ -58,59 +58,63 @@ export function createCanvasPattern(
 }
 
 // Draw Path Elements
-function brushPath(ctx: CanvasRenderingContext2D, el: Path) {
+function brushPath(ctx: CanvasRenderingContext2D, el: Path, inBatch: boolean) {
     let hasStroke = el.hasStroke();
     let hasFill = el.hasFill();
 
     const style = el.style;
     const path = el.path || pathProxyForDraw;
-    const fill = style.fill;
-    const stroke = style.stroke;
-    const hasFillGradient = hasFill && !!(fill as GradientObject).colorStops;
-    const hasStrokeGradient = hasStroke && !!(stroke as GradientObject).colorStops;
-    const hasFillPattern = hasFill && !!(fill as PatternObject).image;
-    const hasStrokePattern = hasStroke && !!(stroke as PatternObject).image;
 
-    let fillGradient;
-    let strokeGradient;
-    if (el.__dirty) {
-        let rect;
-        // Update gradient because bounding rect may changed
+    if (!inBatch) {
+        const fill = style.fill;
+        const stroke = style.stroke;
+
+        const hasFillGradient = hasFill && !!(fill as GradientObject).colorStops;
+        const hasStrokeGradient = hasStroke && !!(stroke as GradientObject).colorStops;
+        const hasFillPattern = hasFill && !!(fill as PatternObject).image;
+        const hasStrokePattern = hasStroke && !!(stroke as PatternObject).image;
+
+        let fillGradient;
+        let strokeGradient;
+        if (el.__dirty) {
+            let rect;
+            // Update gradient because bounding rect may changed
+            if (hasFillGradient) {
+                rect = rect || el.getBoundingRect();
+                fillGradient = getCanvasGradient(ctx, fill as (LinearGradientObject | RadialGradientObject), rect);
+            }
+            if (hasStrokeGradient) {
+                rect = rect || el.getBoundingRect();
+                strokeGradient = getCanvasGradient(ctx, stroke as (LinearGradientObject | RadialGradientObject), rect);
+            }
+        }
+        // Use the gradient or pattern
         if (hasFillGradient) {
-            rect = rect || el.getBoundingRect();
-            fillGradient = getCanvasGradient(ctx, fill as (LinearGradientObject | RadialGradientObject), rect);
+            // PENDING If may have affect the state
+            ctx.fillStyle = fillGradient;
+        }
+        else if (hasFillPattern) {
+            const patternObj = createCanvasPattern(ctx, fill as PatternObject, el);
+            if (patternObj) {
+                ctx.fillStyle = patternObj;
+            }
+            else {
+                // Don't fill if image is not ready
+                hasFill = false;
+            }
         }
         if (hasStrokeGradient) {
-            rect = rect || el.getBoundingRect();
-            strokeGradient = getCanvasGradient(ctx, stroke as (LinearGradientObject | RadialGradientObject), rect);
+            ctx.strokeStyle = strokeGradient;
         }
-    }
-    // Use the gradient or pattern
-    if (hasFillGradient) {
-        // PENDING If may have affect the state
-        ctx.fillStyle = fillGradient;
-    }
-    else if (hasFillPattern) {
-        const patternObj = createCanvasPattern(ctx, fill as PatternObject, el);
-        if (patternObj) {
-            ctx.fillStyle = patternObj;
-        }
-        else {
-            // Don't fill if image is not ready
-            hasFill = false;
-        }
-    }
-    if (hasStrokeGradient) {
-        ctx.strokeStyle = strokeGradient;
-    }
-    else if (hasStrokePattern) {
-        const patternObj = createCanvasPattern(ctx, stroke as PatternObject, el);
-        if (patternObj) {
-            ctx.strokeStyle = patternObj;
-        }
-        else {
-            // Don't stroke if image is not ready
-            hasStroke = false;
+        else if (hasStrokePattern) {
+            const patternObj = createCanvasPattern(ctx, stroke as PatternObject, el);
+            if (patternObj) {
+                ctx.strokeStyle = patternObj;
+            }
+            else {
+                // Don't stroke if image is not ready
+                hasStroke = false;
+            }
         }
     }
 
@@ -131,7 +135,8 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path) {
     if (el.__dirtyPath
         || (lineDash && !ctxLineDash && hasStroke)
     ) {
-        path.beginPath(ctx);
+        path.setContext(ctx);
+        path.reset();
 
         // Setting line dash before build path
         if (lineDash && !ctxLineDash) {
@@ -139,7 +144,7 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path) {
             path.setLineDashOffset(lineDashOffset);
         }
 
-        el.buildPath(path, el.shape, false);
+        el.buildPath(path, el.shape, inBatch);
         path.toStatic();
 
         // Clear path dirty flag
@@ -148,8 +153,6 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path) {
         }
     }
     else {
-        // Replay path building
-        ctx.beginPath();
         el.path.rebuildPath(ctx);
     }
 
@@ -158,20 +161,22 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path) {
         ctx.lineDashOffset = lineDashOffset;
     }
 
-    if (style.strokeFirst) {
-        if (hasStroke) {
-            doStrokePath(ctx, el);
+    if (!inBatch) {
+        if (style.strokeFirst) {
+            if (hasStroke) {
+                doStrokePath(ctx, el);
+            }
+            if (hasStroke) {
+                doFillPath(ctx, el);
+            }
         }
-        if (hasStroke) {
-            doFillPath(ctx, el);
-        }
-    }
-    else {
-        if (hasFill) {
-            doFillPath(ctx, el);
-        }
-        if (hasStroke) {
-            doStrokePath(ctx, el);
+        else {
+            if (hasFill) {
+                doFillPath(ctx, el);
+            }
+            if (hasStroke) {
+                doStrokePath(ctx, el);
+            }
         }
     }
 
@@ -348,9 +353,13 @@ function bindPathAndTextCommonStyle(
     }
     if (el.hasStroke()) {
         const lineWidth = style.lineWidth;
-        ctx.lineWidth = lineWidth / (
+        const newLineWidth = lineWidth / (
             (style.strokeNoScale && el && el.getLineScale) ? el.getLineScale() : 1
         );
+        if (ctx.lineWidth !== newLineWidth) {
+            ctx.lineWidth = newLineWidth;
+            styleChanged = true;
+        }
     }
 
     for (let i = 0; i < STROKE_PROPS.length; i++) {
@@ -362,6 +371,8 @@ function bindPathAndTextCommonStyle(
             styleChanged = true;
         }
     }
+
+    return styleChanged;
 }
 
 function bindImageStyle(
@@ -415,7 +426,7 @@ function isClipPathChanged(clipPaths: Path[], prevClipPaths: Path[]): boolean {
     return false;
 }
 
-function doClip(clipPaths: Path[], ctx: CanvasRenderingContext2D, scope: BrushScope) {
+function updateClipStatus(clipPaths: Path[], ctx: CanvasRenderingContext2D, scope: BrushScope) {
     let allClipped = false;
     for (let i = 0; i < clipPaths.length; i++) {
         const clipPath = clipPaths[i];
@@ -447,17 +458,61 @@ function isTransformChanged(m0: MatrixArray, m1: MatrixArray): boolean {
 }
 
 export type BrushScope = {
-    prevElClipPaths?: Path[],
-    prevEl?: Displayable
-    allClipped?: boolean,
+    // width / height of viewport
     viewWidth: number
     viewHeight: number
+
+    // Status for clipping
+    prevElClipPaths?: Path[]
+    prevEl?: Displayable
+    allClipped?: boolean    // If the whole element can be clipped
+
+    // Status for batching
+    batchFill?: string
+    batchStroke?: string
 }
+
+// If path can be batched
+function canPathBatch(el: Path) {
+    const style = el.style;
+    // Line dash is dynamically set in brush function.
+    if (style.lineDash) {
+        return false;
+    }
+    const hasFill = el.hasFill();
+    const hasStroke = el.hasStroke();
+    // Can't batch if element is both set fill and stroke. Or both not set
+    if (!(+hasFill ^ +hasStroke)) {
+        return false;
+    }
+    // Can't batch if element is drawn with gradient or pattern.
+    if (hasFill && typeof style.fill !== 'string') {
+        return false;
+    }
+    if (hasStroke && typeof style.stroke !== 'string') {
+        return false;
+    }
+    return true;
+}
+
+function flushPathDrawn(ctx: CanvasRenderingContext2D, scope: BrushScope) {
+    if (scope.batchFill) {
+        ctx.fill();
+    }
+    else if (scope.batchStroke) {
+        ctx.stroke();
+    }
+    // Clear
+    scope.batchFill = '';
+    scope.batchStroke = '';
+}
+
 // Brush different type of elements.
 export function brush(
     ctx: CanvasRenderingContext2D,
     el: Displayable,
-    scope: BrushScope
+    scope: BrushScope,
+    isLast: boolean
 ) {
     const m = el.transform;
 
@@ -498,7 +553,7 @@ export function brush(
         // New clipping state
         if (clipPaths && clipPaths.length) {
             ctx.save();
-            doClip(clipPaths, ctx, scope);
+            updateClipStatus(clipPaths, ctx, scope);
             // Must set transform because it's changed when clip.
             forceSetTransform = true;
         }
@@ -534,24 +589,57 @@ export function brush(
         forceSetStyle = forceSetTransform = true;
     }
 
+    let canBatchPath = isPath;
+
     if (forceSetTransform || isTransformChanged(m, prevEl.transform)) {
         setContextTransform(ctx, el);
+        canBatchPath = false;
+    }
+    if (canBatchPath) {
+        canBatchPath = canPathBatch(el as Path);
     }
 
     if (el instanceof Path) {
-        bindPathAndTextCommonStyle(ctx, el as Path, prevEl as Path, forceSetStyle);
-        brushPath(ctx, el as Path);
+        canBatchPath = !bindPathAndTextCommonStyle(ctx, el as Path, prevEl as Path, forceSetStyle)
+                    && canBatchPath;
+        // Flush previous
+        if (!canBatchPath) {
+            flushPathDrawn(ctx, scope);
+            ctx.beginPath();
+        }
+        // Begin path at start
+        else if (!scope.batchFill && !scope.batchStroke) {
+            ctx.beginPath();
+        }
+        brushPath(ctx, el as Path, canBatchPath);
+        if (canBatchPath) {
+            scope.batchFill = el.style.fill as string || '';
+            scope.batchStroke = el.style.stroke as string || '';
+        }
     }
-    else if (el instanceof ZText) {
-        bindPathAndTextCommonStyle(ctx, el as ZText, prevEl as ZText, forceSetStyle);
-        brushText(ctx, el as ZText);
+    else {
+        // Flush previous
+        if (!canBatchPath) {
+            flushPathDrawn(ctx, scope);
+        }
+
+        if (el instanceof ZText) {
+            bindPathAndTextCommonStyle(ctx, el as ZText, prevEl as ZText, forceSetStyle);
+            brushText(ctx, el as ZText);
+        }
+        else if (el instanceof ZImage) {
+            bindImageStyle(ctx, el as ZImage, prevEl as ZImage, forceSetStyle);
+            brushImage(ctx, el as ZImage);
+        }
+        else if (el instanceof IncrementalDisplayable) {
+            brushIncremental(ctx, el, scope);
+        }
+
     }
-    else if (el instanceof ZImage) {
-        bindImageStyle(ctx, el as ZImage, prevEl as ZImage, forceSetStyle);
-        brushImage(ctx, el as ZImage);
-    }
-    else if (el instanceof IncrementalDisplayable) {
-        brushIncremental(ctx, el, scope);
+
+    if (canBatchPath && isLast) {
+        // Force flush all after drawn last element
+        flushPathDrawn(ctx, scope);
     }
 
     el.innerAfterBrush();
@@ -565,7 +653,6 @@ function brushIncremental(
     el: IncrementalDisplayable,
     scope: BrushScope
 ) {
-    let i;
     let displayables = el.getDisplayables();
     let temporalDisplayables = el.getTemporalDisplayables();
     // Provide an inner scope.
@@ -578,22 +665,24 @@ function brushIncremental(
         viewWidth: scope.viewWidth,
         viewHeight: scope.viewHeight
     }
+    let i;
+    let len;
     // Render persistant displayables.
-    for (i = el.getCursor(); i < displayables.length; i++) {
+    for (i = el.getCursor(), len = displayables.length; i < len; i++) {
         const displayable = displayables[i];
         displayable.beforeBrush && displayable.beforeBrush();
         displayable.innerBeforeBrush();
-        brush(ctx, displayable, innerScope);
+        brush(ctx, displayable, innerScope, i === len - 1);
         displayable.innerAfterBrush();
         displayable.afterBrush && displayable.afterBrush();
         innerScope.prevEl = displayable;
     }
     // Render temporary displayables.
-    for (let i = 0; i < temporalDisplayables.length; i++) {
+    for (let i = 0, len = temporalDisplayables.length - 1; i < len; i++) {
         const displayable = temporalDisplayables[i];
         displayable.beforeBrush && displayable.beforeBrush();
         displayable.innerBeforeBrush();
-        brush(ctx, displayable, innerScope);
+        brush(ctx, displayable, innerScope, i === len - 1);
         displayable.innerAfterBrush();
         displayable.afterBrush && displayable.afterBrush();
         innerScope.prevEl = displayable;

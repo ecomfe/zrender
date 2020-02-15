@@ -91,6 +91,10 @@ class Displayable<T extends DisplayableOption = DisplayableOption> extends Eleme
      * For increamental rendering
      */
     incremental: boolean
+    /**
+     * If element can be batched
+     */
+    batch: boolean
 
     style: Dictionary<any>
 
@@ -280,6 +284,7 @@ class Displayable<T extends DisplayableOption = DisplayableOption> extends Eleme
         dispProto.cursor = 'pointer';
         dispProto.rectHover = false;
         dispProto.incremental = false;
+        dispProto.batch = false;
         dispProto._rect = null;
 
         dispProto.__dirtyStyle = true;

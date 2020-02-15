@@ -344,7 +344,7 @@ export default class CanvasPainter implements PainterBase {
                 el.invTransform = originalEl.invTransform;
                 el.__clipPaths = originalEl.__clipPaths;
                 // el.
-                this._doPaintEl(el, hoverLayer, true, scope);
+                this._doPaintEl(el, hoverLayer, true, scope, i === len - 1);
             }
         }
 
@@ -441,7 +441,7 @@ export default class CanvasPainter implements PainterBase {
             let i: number;
             for (i = start; i < layer.__endIndex; i++) {
                 const el = list[i];
-                this._doPaintEl(el, layer, paintAll, scope);
+                this._doPaintEl(el, layer, paintAll, scope, i === layer.__endIndex - 1);
                 el.__dirty = false;
 
                 if (useTimer) {
@@ -481,10 +481,16 @@ export default class CanvasPainter implements PainterBase {
         return finished;
     }
 
-    private _doPaintEl (el: Displayable, currentLayer: Layer, forcePaint: boolean, scope: BrushScope) {
+    private _doPaintEl (
+        el: Displayable,
+        currentLayer: Layer,
+        forcePaint: boolean,
+        scope: BrushScope,
+        isLast: boolean
+    ) {
         const ctx = currentLayer.ctx;
         if (currentLayer.__dirty || forcePaint) {
-            brush(ctx, el, scope);
+            brush(ctx, el, scope, isLast);
         }
     }
 
@@ -889,9 +895,15 @@ export default class CanvasPainter implements PainterBase {
                 viewHeight: this._height
             };
             const displayList = this.storage.getDisplayList(true);
-            for (let i = 0; i < displayList.length; i++) {
+            for (let i = 0, len = displayList.length; i < len; i++) {
                 const el = displayList[i];
-                this._doPaintEl(el, imageLayer, true, scope);
+                this._doPaintEl(
+                    el,
+                    imageLayer,
+                    true,
+                    scope,
+                    i === len - 1
+                );
             }
         }
 
@@ -972,7 +984,7 @@ export default class CanvasPainter implements PainterBase {
             brush(ctx, path, {
                 viewWidth: this._width,
                 viewHeight: this._height
-            });
+            }, true);
         }
 
         const imgShape = new ZImage({
