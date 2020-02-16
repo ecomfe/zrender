@@ -26,6 +26,8 @@ A lightweight canvas library which providing 2d draw for [ECharts](https://githu
     - [x] Text wrap
     - [x] Rich text support
 
+- [ ] States
+
 - [ ] Dirty Rectangle
 
 ## License

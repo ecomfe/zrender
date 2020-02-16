@@ -33,10 +33,14 @@
             },
             style: {
                 fill: gradient,
-                lineWidth: 5,
-                text:'circle',
-                textPosition:'inside'
-            }
+                lineWidth: 5
+            },
+            textContent: new zrender.RichText({
+                style: {
+                    fill: 'white',
+                    text: 'Circle'
+                }
+            })
         });
         zr.add(circle);
 

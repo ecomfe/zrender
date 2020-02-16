@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/astrobench@0.1.2/src/style.css">
+
+    <script src="../test/lib/rollup.browser.js"></script>
+    <script src="../test/lib/requireES.js"></script>
+    <script src="../test/lib/config.js"></script>
+
+    <script src="../test/data/text.js"></script>
+
+    <title>Color Operation</title>
+</head>
+<body>
+    <div id="astrobench"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/astrobench@0.1.2/dist/astrobench.js"></script>
+
+    <script type="text/javascript">
+        requireES([
+            'zrender/esm/tool/color'
+        ], function (colorTool) {
+            var colorList = ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffbf', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026'];
+
+            suite('Color Operation', function () {
+                bench('color.parse', function () {
+                    let colorToParse = colorList[Math.round(colorList.length - 1)];
+                    colorTool.parse(colorToParse);
+                });
+                bench('color.lift', function () {
+                    let colorToParse = colorList[Math.round(colorList.length - 1)];
+                    colorTool.lift(colorToParse, 0.6);
+                });
+                bench('color.mapToColor', function () {
+                    colorTool.mapToColor(Math.random(), colorList);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
