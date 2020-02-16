@@ -14,8 +14,8 @@ describe('zrUtil', function() {
             expect(zrUtil.merge({a: null}, {a: '121'}, true)).toEqual({a: '121'});
             expect(zrUtil.merge({a: '12'}, {a: null}, true)).toEqual({a: null});
             expect(zrUtil.merge({a: {a: 'asdf'}}, {a: undefined}, true)).toEqual({a: undefined});
-            var b = {b: 'vvv'}; // not same object
-            var result = zrUtil.merge({a: null}, {a: b}, true);
+            const b = {b: 'vvv'}; // not same object
+            const result = zrUtil.merge({a: null}, {a: b}, true);
             expect(result).toEqual({a: {b: 'vvv'}});
             expect(result.a === b).toEqual(false);
         });
@@ -28,8 +28,8 @@ describe('zrUtil', function() {
         it('array', function () {
             expect(zrUtil.merge({a: {a: 'asdf'}}, {a: ['asdf', 'zxcv']}, true)).toEqual({a: ['asdf', 'zxcv']});
             expect(zrUtil.merge({a: {a: [12, 23, 34]}}, {a: {a: [99, 88]}}, false)).toEqual({a: {a: [12, 23, 34]}});
-            var b = [99, 88]; // not same object
-            var result = zrUtil.merge({a: {a: [12, 23, 34]}}, {a: {a: b}}, true);
+            const b = [99, 88]; // not same object
+            const result = zrUtil.merge({a: {a: [12, 23, 34]}}, {a: {a: b}}, true);
             expect(result).toEqual({a: {a: b}});
             expect(result.a.a === b).toEqual(false);
         });
@@ -70,7 +70,7 @@ describe('zrUtil', function() {
         });
 
         it('built-in', function () {
-            var source = [
+            const source = [
                 new Date(),
                 function () {},
                 /asdf/,
@@ -80,8 +80,8 @@ describe('zrUtil', function() {
                 // document.createElement('canvas').getContext('2d').createPattern(new Image(), 'repeat')
             ];
 
-            for (var i = 0; i < source.length; i++) {
-                var d = source[i];
+            for (let i = 0; i < source.length; i++) {
+                const d = source[i];
                 expect(zrUtil.clone(d) === d).toEqual(true);
                 expect(zrUtil.clone({a: d}).a === d).toEqual(true);
                 expect(zrUtil.clone({a: [1, d]}).a[1] === d).toEqual(true);
@@ -89,7 +89,7 @@ describe('zrUtil', function() {
         });
 
         it('TypedArray', function () {
-            var types = [
+            const types = [
                 Int8Array,
                 Uint8Array,
                 Uint8ClampedArray,
@@ -103,7 +103,7 @@ describe('zrUtil', function() {
 
             type TypedArray = InstanceType<typeof types[number]>;
 
-            for (var i = 0; i < types.length; i++) {
+            for (let i = 0; i < types.length; i++) {
                 const d = (new types[i](3));
                 d[0] = 1;
                 d[2] = 2;
@@ -116,12 +116,12 @@ describe('zrUtil', function() {
                 if (a === b) {
                     return false;
                 }
-                var typeStrA = Object.prototype.toString.call(a);
-                var typeStrB = Object.prototype.toString.call(b);
+                const typeStrA = Object.prototype.toString.call(a);
+                const typeStrB = Object.prototype.toString.call(b);
                 if (typeStrA !== typeStrB || a.length !== b.length) {
                     return false;
                 }
-                for (var i = 0; i < a.length; i++) {
+                for (let i = 0; i < a.length; i++) {
                     if (a[i] !== b[i]) {
                         return false;
                     }

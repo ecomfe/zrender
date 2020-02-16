@@ -178,8 +178,8 @@ export default class Group extends Element<GroupOption> {
      * 遍历所有子节点
      */
     eachChild<T>(
-        cb: (this: T, el: Element, index: number) => void,
-        context: T
+        cb: (this: T, el: Element, index?: number) => void,
+        context?: T
     ) {
         const children = this._children;
         for (let i = 0; i < children.length; i++) {

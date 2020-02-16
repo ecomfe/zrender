@@ -10,6 +10,8 @@ import * as pathTool from './tool/path';
 import {parseSVG} from './tool/parseSVG';
 
 
+export {default as Element} from './Element';
+
 export {default as Group} from './graphic/Group';
 export {default as Path} from './graphic/Path';
 export {default as Image} from './graphic/Image';
