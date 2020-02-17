@@ -95,6 +95,7 @@ export default class Displayable extends Element {
     __dirtyStyle: boolean
 
     protected _rect: BoundingRect
+    __prevPaintRect: BoundingRect
 
     /************* Properties will be inejected in other modules. *******************/
     // Shapes for cascade clipping.

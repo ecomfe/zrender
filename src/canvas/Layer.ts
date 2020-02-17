@@ -168,11 +168,58 @@ export default class Layer extends Eventful {
         }
     }
 
-    updateRepaintRects(displayList: Displayable[]) {
-        this._updateRenderingRects(displayList)
+    // createDirtyCells(displayList: Displayable[]): boolean[] {
+    //     const width = this.painter.getWidth();
+    //     const height = this.painter.getHeight();
+    //     const cellCnt = 20;
+    //     const dirtyCells: boolean[] = [];
+
+    //     const markDirty = (rect: BoundingRect) => {
+    //         const xMin = Math.floor(rect.x / width * cellCnt);
+    //         const yMin = Math.floor(rect.y / height * cellCnt);
+    //         const xMax = Math.floor((rect.x + rect.width) / width * cellCnt);
+    //         const yMax = Math.floor((rect.y + rect.height) / height * cellCnt);
+
+    //         for (let x = xMin; x < xMax; ++x) {
+    //             for (let y = yMin; y < yMax; ++y) {
+    //                 const id = x + y * cellCnt;
+    //                 dirtyCells[id] = true;
+    //             }
+    //         }
+    //     };
+
+    //     util.each(displayList, el => {
+    //         if (el.__dirty) {
+    //             const curRect = getPaintRect(el);
+    //             const prevRect = el.__prevPaintRect;
+    //             markDirty(curRect);
+    //             markDirty(prevRect);
+
+    //             el.__prevPaintRect = curRect;
+    //         }
+    //     });
+    //     return dirtyCells;
+    // }
+
+    createRepaintRects(displayList: Displayable[]) {
         this.mergedRepaintRects = [];
 
-        const rects = this.lastFramePaintRects.concat(this.currentPaintRects);
+        const rects: BoundingRect[] = [];
+
+        // Add current and previous bounding rect
+        util.each(displayList, el => {
+            if (el.__dirty) {
+                const curRect = getPaintRect(el);
+                rects.push(curRect);
+
+                const prevRect = el.__prevPaintRect;
+                prevRect && rects.push(prevRect);
+
+                el.__prevPaintRect = curRect;
+            }
+        });
+
+        // Merge
         util.each(rects, rect => {
             if (this.mergedRepaintRects.length === 0) {
                 // First rect, create new merged rect
@@ -364,17 +411,6 @@ export default class Layer extends Eventful {
     ondragleave: ElementEventCallback
     ondragover: ElementEventCallback
     ondrop: ElementEventCallback
-
-
-    private _updateRenderingRects(displayList: Displayable[]) {
-        this.lastFramePaintRects = this.currentPaintRects;
-        this.currentPaintRects = [];
-
-        util.each(displayList, el => {
-            const renderingRect = getPaintRect(el);
-            this.currentPaintRects.push(renderingRect);
-        });
-    }
 
     private _drawRect(rects: BoundingRect[]) {
         setTimeout(() => {

@@ -412,7 +412,7 @@ export default class CanvasPainter implements PainterBase {
             };
             ctx.save();
 
-            layer.updateRepaintRects(list);
+            layer.createRepaintRects(list);
 
             let start = paintAll ? layer.__startIndex : layer.__drawIndex;
 
