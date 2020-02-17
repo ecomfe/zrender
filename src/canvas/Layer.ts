@@ -88,11 +88,7 @@ export default class Layer extends Eventful {
 
     zlevel = 0
 
-    lastFramePaintRects: BoundingRect[]
-    currentPaintRects: BoundingRect[]
-
     maxRepaintRectCount = 3
-    mergedRepaintRects: BoundingRect[]
 
     __painter: CanvasPainter
 
@@ -142,10 +138,6 @@ export default class Layer extends Eventful {
         this.config = null;
 
         this.dpr = dpr;
-
-        this.lastFramePaintRects = [];
-        this.currentPaintRects = [];
-        this.mergedRepaintRects = [];
     }
 
     getElementCount() {
@@ -202,7 +194,7 @@ export default class Layer extends Eventful {
     // }
 
     createRepaintRects(displayList: Displayable[]) {
-        this.mergedRepaintRects = [];
+        const mergedRepaintRects: BoundingRect[] = [];
 
         const rects: BoundingRect[] = [];
 
@@ -221,17 +213,17 @@ export default class Layer extends Eventful {
 
         // Merge
         util.each(rects, rect => {
-            if (this.mergedRepaintRects.length === 0) {
+            if (mergedRepaintRects.length === 0) {
                 // First rect, create new merged rect
                 const boundingRect = new BoundingRect();
                 boundingRect.copy(rect);
-                this.mergedRepaintRects.push(boundingRect);
+                mergedRepaintRects.push(boundingRect);
             }
             else {
                 let isMerged = false;
                 const rectArea = rect.width * rect.height;
-                for (let i = 0; i < this.mergedRepaintRects.length; ++i) {
-                    const mergedRect = this.mergedRepaintRects[i];
+                for (let i = 0; i < mergedRepaintRects.length; ++i) {
+                    const mergedRect = mergedRepaintRects[i];
                     const mergedArea = mergedRect.width * mergedRect.height;
 
                     // The rect after merging rect with mergedRect
@@ -242,7 +234,7 @@ export default class Layer extends Eventful {
 
                     if (pendingArea < rectArea + mergedArea) {
                         // Allow merging when size is smaller if merged
-                        this.mergedRepaintRects[i] = pendingRect;
+                        mergedRepaintRects[i] = pendingRect;
                         isMerged = true;
                         break;
                     }
@@ -251,22 +243,22 @@ export default class Layer extends Eventful {
                     // Create new merged rect if cannot merge with current
                     const boundingRect = new BoundingRect();
                     boundingRect.copy(rect);
-                    this.mergedRepaintRects.push(boundingRect);
+                    mergedRepaintRects.push(boundingRect);
                 }
             }
         });
 
         // Decrease mergedRepaintRects counts to maxRepaintRectCount
         const pendingRect = new BoundingRect();
-        while (this.mergedRepaintRects.length > this.maxRepaintRectCount) {
+        while (mergedRepaintRects.length > this.maxRepaintRectCount) {
             let minDeltaArea = Number.MAX_VALUE;
             let minAId: number = null;
             let minBId: number = null;
-            for (let i = 0, len = this.mergedRepaintRects.length; i < len; ++i) {
+            for (let i = 0, len = mergedRepaintRects.length; i < len; ++i) {
                 for (let j = i + 1; j < len; ++j) {
-                    const aRect = this.mergedRepaintRects[i];
+                    const aRect = mergedRepaintRects[i];
                     const aArea = aRect.width * aRect.height;
-                    const bRect = this.mergedRepaintRects[j];
+                    const bRect = mergedRepaintRects[j];
                     const bArea = bRect.width * bRect.height;
 
                     pendingRect.copy(aRect);
@@ -283,11 +275,13 @@ export default class Layer extends Eventful {
             }
 
             // Merge the smallest two
-            this.mergedRepaintRects[minAId].union(this.mergedRepaintRects[minBId]);
-            this.mergedRepaintRects.splice(minBId, 1);
+            mergedRepaintRects[minAId].union(mergedRepaintRects[minBId]);
+            mergedRepaintRects.splice(minBId, 1);
         }
-        console.log(this.mergedRepaintRects);
-        this._drawRect(this.mergedRepaintRects);
+        console.log(mergedRepaintRects);
+        this._drawRect(mergedRepaintRects);
+
+        return mergedRepaintRects;
     }
 
     resize(width: number, height: number) {
