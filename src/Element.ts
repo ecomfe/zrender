@@ -416,6 +416,8 @@ export default class Element<T extends ElementOption = ElementOption> extends Tr
     // Overload definitions
     animateTo(target: T): void
     animateTo(target: T, callback: AnimationCallback): void
+    animateTo(target: T, time: number, delay: number): void
+    animateTo(target: T, time: number, easing: easingType): void
     animateTo(target: T, time: number, callback: AnimationCallback): void
     animateTo(target: T, time: number, delay: number, callback: AnimationCallback): void
     animateTo(target: T, time: number, easing: easingType, callback: AnimationCallback): void
@@ -443,6 +445,8 @@ export default class Element<T extends ElementOption = ElementOption> extends Tr
     // Overload definitions
     animateFrom(target: T): void
     animateFrom(target: T, callback: AnimationCallback): void
+    animateFrom(target: T, time: number, delay: number): void
+    animateFrom(target: T, time: number, easing: easingType): void
     animateFrom(target: T, time: number, callback: AnimationCallback): void
     animateFrom(target: T, time: number, delay: number, callback: AnimationCallback): void
     animateFrom(target: T, time: number, easing: easingType, callback: AnimationCallback): void
