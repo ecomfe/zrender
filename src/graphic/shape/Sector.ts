@@ -16,7 +16,10 @@ class SectorShape {
     clockwise: boolean = true
 }
 
-export default class Sector extends Path {
+interface SectorOption extends PathOption {
+    shape?: Partial<SectorShape>
+}
+export default class Sector extends Path<SectorOption> {
 
     type = 'sector'
 
@@ -24,9 +27,7 @@ export default class Sector extends Path {
 
     brush = fixClipWithShadow(Path.prototype.brush)
 
-    constructor(opts?: PathOption & {
-        shape: Partial<SectorShape>
-    }) {
+    constructor(opts?: SectorOption) {
         super(opts, null, new SectorShape());
     }
 

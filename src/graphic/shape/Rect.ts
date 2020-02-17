@@ -21,18 +21,19 @@ class RectShape {
     height = 0
 }
 
+interface RectOption extends PathOption {
+    shape?: Partial<RectShape>
+}
 // Avoid create repeatly.
 const subPixelOptimizeOutputShape = {};
 
-export default class Rect extends Path {
+export default class Rect extends Path<RectOption> {
 
     type = 'rect'
 
     shape: RectShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<RectShape>
-    }) {
+    constructor(opts?: RectOption) {
         super(opts, null, new RectShape())
     }
 

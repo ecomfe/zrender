@@ -9,15 +9,14 @@ import * as matrix from '../core/matrix';
 import * as textHelper from '../graphic/helper/text';
 import Text from '../graphic/Text';
 import { StyleOption } from '../graphic/Style';
-import Displayable from '../graphic/Displayable';
-import { Path } from '../export';
-import { PathOption } from '../graphic/Path';
 import { DEFAULT_FONT, parsePlainText, PlainTextContentBlock, adjustTextY } from '../contain/text';
 import { TextAlign } from '../core/types';
 import ZImage from '../graphic/Image';
+import Displayable from '../graphic/Displayable';
+import Path from '../graphic/Path';
 
-type SVGProxy = {
-    brush: (el: Displayable) => void
+export interface SVGProxy<T> {
+    brush(el: T): void
 }
 
 type SVGTextElementExtended = SVGTextElement & {
@@ -240,7 +239,7 @@ function pathDataToString(path: PathProxy) {
     return str.join(' ');
 }
 
-const svgPath: SVGProxy = {
+const svgPath: SVGProxy<Path> = {
     brush(el: Path) {
         const style = el.style;
 
@@ -285,7 +284,7 @@ export {svgPath as path};
 /***************************************************
  * IMAGE
  **************************************************/
-const svgImage: SVGProxy = {
+const svgImage: SVGProxy<ZImage> = {
     brush(el: ZImage) {
         const style = el.style;
         let image = style.image;
@@ -352,7 +351,7 @@ const TEXT_ALIGN_TO_ANCHRO = {
  * @param {Object|boolean} [hostRect] {x, y, width, height}
  *        If set false, rect text is not used.
  */
-const svgTextDrawRectText = function (el: Displayable, hostRect: RectLike) {
+function svgTextDrawRectText(el: Displayable, hostRect: RectLike) {
     const style = el.style;
     const elTransform = el.transform;
     const needTransformTextByHostEl = el instanceof Text || style.transformText;
@@ -562,7 +561,7 @@ function removeOldTextNode(el: Displayable) {
 
 svgTextDrawRectText;
 
-const svgText: SVGProxy = {
+const svgText: SVGProxy<Displayable> = {
     brush(el: Displayable) {
         const style = el.style;
         if (style.text != null) {

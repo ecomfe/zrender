@@ -547,9 +547,9 @@ function onBgImageLoaded(image: ImageLike, textBackgroundColor: {
     textBackgroundColor.image = image;
 }
 
-export function getBoxPosition(
+export function getBoxPosition<T>(
     out: Partial<TextBoxPosition>,
-    hostEl: Displayable,
+    hostEl: Displayable<T>,
     style: StyleOption,
     rect: RectLike
 ) {

@@ -11,15 +11,16 @@ class EllipseShape {
     ry = 0
 }
 
-export default class Ellipse extends Path {
+interface EllipseOption extends PathOption {
+    shape?: Partial<EllipseShape>
+}
+export default class Ellipse extends Path<EllipseOption> {
 
     type = 'ellipse'
 
     shape: EllipseShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<EllipseShape>
-    }) {
+    constructor(opts?: EllipseOption) {
         super(opts, null, new EllipseShape())
     }
 

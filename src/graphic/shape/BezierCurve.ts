@@ -45,15 +45,16 @@ function someVectorAt(shape: BezierCurveShape, t: number, isTangent: boolean) {
     }
 }
 
-export default class BezierCurve extends Path {
+interface BezierCurveOption extends PathOption {
+    shape?: Partial<BezierCurveShape>
+}
+export default class BezierCurve extends Path<BezierCurveOption> {
 
     type = 'bezier-curve'
 
     shape: BezierCurveShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<BezierCurveShape>
-    }) {
+    constructor(opts?: BezierCurveOption) {
         super(opts, {
             stroke: '#000',
             fill: null

@@ -22,15 +22,16 @@ class LineShape {
     percent = 1
 }
 
-export default class Line extends Path {
+interface LineOption extends PathOption {
+    shape?: Partial<LineShape>
+}
+export default class Line extends Path<LineOption> {
 
     type = 'line'
 
     shape: LineShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<LineShape>
-    }) {
+    constructor(opts?: LineOption) {
         super(opts, {
             stroke: '#000',
             fill: null

@@ -11,15 +11,16 @@ class RingShape {
     r0 = 0
 }
 
-export default class Ring extends Path {
+interface RingOption extends PathOption {
+    shape?: Partial<RingShape>
+}
+export default class Ring extends Path<RingOption> {
 
     type = 'ring'
 
     shape: RingShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<RingShape>
-    }) {
+    constructor(opts?: RingOption) {
         super(opts, null, new RingShape())
     }
 

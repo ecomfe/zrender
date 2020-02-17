@@ -17,15 +17,16 @@ class StarShape {
     r = 0
 }
 
-export default class Star extends Path {
+interface StarOption extends PathOption {
+    shape?: Partial<StarShape>
+}
+export default class Star extends Path<StarOption> {
 
     type = 'star'
 
     shape: StarShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<StarShape>
-    }) {
+    constructor(opts?: StarOption) {
         super(opts, null, new StarShape())
     }
 

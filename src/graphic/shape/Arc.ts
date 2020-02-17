@@ -13,15 +13,17 @@ class ArcShape {
     clockwise? = true
 }
 
-export default class Arc extends Path {
+interface ArcOption extends PathOption {
+    shape?: Partial<ArcShape>
+}
+
+export default class Arc extends Path<ArcOption> {
 
     type = 'Arc'
 
     shape: ArcShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<ArcShape>
-    }) {
+    constructor(opts?: ArcOption) {
         super(opts, {
             stroke: '#000',
             fill: null

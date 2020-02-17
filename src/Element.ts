@@ -4,7 +4,7 @@ import { easingType } from './animation/easing';
 import Animator from './animation/Animator';
 import { ZRenderType } from './zrender';
 import { VectorArray } from './core/vector';
-import { Dictionary, PropType, ElementEventName, ZRRawEvent } from './core/types';
+import { Dictionary, PropType, ElementEventName, ZRRawEvent, AllPropTypes } from './core/types';
 import Path from './graphic/Path';
 import BoundingRect from './core/BoundingRect';
 import Storage from './Storage';
@@ -55,7 +55,7 @@ type AnimationCallback = () => {}
 
 export type ElementEventCallback = (e: ElementEvent) => boolean | void
 
-export default class Element extends Transformable {
+export default class Element<T extends ElementOption = ElementOption> extends Transformable {
 
     id: number = zrUtil.guid()
     /**
@@ -167,12 +167,12 @@ export default class Element extends Transformable {
         this.updateTransform();
     }
 
-    traverse<T> (
-        cb: (this: T, el: Element) => void,
-        context: T
+    traverse<Context> (
+        cb: (this: Context, el: Element<T>) => void,
+        context: Context
     ) {}
 
-    protected attrKV(key: ElementKey, value: ElementPropertyType) {
+    protected attrKV(key: string, value: unknown) {
         if (key === 'position' || key === 'scale' || key === 'origin') {
             // Copy the array
             if (value) {
@@ -206,18 +206,18 @@ export default class Element extends Transformable {
         this.__zr && this.__zr.refresh();
     }
 
-    attr(key: ElementKey, value: ElementPropertyType): Element
-    attr(key: ElementOption): Element
+    attr(key: T): Element<T>
+    attr(key: keyof T, value: AllPropTypes<T>): Element<T>
     /**
      * @param {string|Object} key
      * @param {*} value
      */
-    attr(key: ElementKey | ElementOption, value?: ElementPropertyType) {
+    attr(key: keyof T | T, value?: AllPropTypes<T>): Element<T> {
         if (typeof key === 'string') {
             this.attrKV(key, value);
         }
         else if (zrUtil.isObject(key)) {
-            for (let name in key) {
+            for (let name in key as T) {
                 if (key.hasOwnProperty(name)) {
                     this.attrKV(<ElementKey>name, (<any>key)[name]);
                 }
@@ -247,7 +247,8 @@ export default class Element extends Transformable {
 
         this._clipPath = clipPath;
         clipPath.__zr = zr;
-        clipPath.__clipTarget = this;
+        // TODO
+        clipPath.__clipTarget = this as unknown as Element;
 
         this.dirty(false);
     }
@@ -318,7 +319,7 @@ export default class Element extends Transformable {
      *         .done(function(){ // Animation done })
      *         .start()
      */
-    animate(path: string, loop?: boolean) {
+    animate(path?: string, loop?: boolean) {
         const el = this;
         const zr = this.__zr;
 
@@ -413,17 +414,17 @@ export default class Element extends Transformable {
      */
 
     // Overload definitions
-    animateTo(target: Dictionary<any>): void
-    animateTo(target: Dictionary<any>, callback: AnimationCallback): void
-    animateTo(target: Dictionary<any>, time: number, callback: AnimationCallback): void
-    animateTo(target: Dictionary<any>, time: number, delay: number, callback: AnimationCallback): void
-    animateTo(target: Dictionary<any>, time: number, easing: easingType, callback: AnimationCallback): void
-    animateTo(target: Dictionary<any>, time: number, delay: number, easing: easingType, callback: AnimationCallback): void
-    animateTo(target: Dictionary<any>, time: number, delay: number, easing: easingType, callback: AnimationCallback, forceAnimate: boolean): void
+    animateTo(target: T): void
+    animateTo(target: T, callback: AnimationCallback): void
+    animateTo(target: T, time: number, callback: AnimationCallback): void
+    animateTo(target: T, time: number, delay: number, callback: AnimationCallback): void
+    animateTo(target: T, time: number, easing: easingType, callback: AnimationCallback): void
+    animateTo(target: T, time: number, delay: number, easing: easingType, callback: AnimationCallback): void
+    animateTo(target: T, time: number, delay: number, easing: easingType, callback: AnimationCallback, forceAnimate: boolean): void
 
     // TODO Return animation key
     animateTo(
-        target: Dictionary<any>,
+        target: T,
         time?: number | AnimationCallback,  // Time in ms
         delay?: easingType | number | AnimationCallback,
         easing?: easingType | number | AnimationCallback ,
@@ -440,16 +441,16 @@ export default class Element extends Transformable {
      */
 
     // Overload definitions
-    animateFrom(target: Dictionary<any>): void
-    animateFrom(target: Dictionary<any>, callback: AnimationCallback): void
-    animateFrom(target: Dictionary<any>, time: number, callback: AnimationCallback): void
-    animateFrom(target: Dictionary<any>, time: number, delay: number, callback: AnimationCallback): void
-    animateFrom(target: Dictionary<any>, time: number, easing: easingType, callback: AnimationCallback): void
-    animateFrom(target: Dictionary<any>, time: number, delay: number, easing: easingType, callback: AnimationCallback): void
-    animateFrom(target: Dictionary<any>, time: number, delay: number, easing: easingType, callback: AnimationCallback, forceAnimate: boolean): void
+    animateFrom(target: T): void
+    animateFrom(target: T, callback: AnimationCallback): void
+    animateFrom(target: T, time: number, callback: AnimationCallback): void
+    animateFrom(target: T, time: number, delay: number, callback: AnimationCallback): void
+    animateFrom(target: T, time: number, easing: easingType, callback: AnimationCallback): void
+    animateFrom(target: T, time: number, delay: number, easing: easingType, callback: AnimationCallback): void
+    animateFrom(target: T, time: number, delay: number, easing: easingType, callback: AnimationCallback, forceAnimate: boolean): void
 
     animateFrom(
-        target: Dictionary<any>,
+        target: T,
         time?: number | AnimationCallback,
         delay?: easingType | number | AnimationCallback,
         easing?: easingType | number | AnimationCallback ,
@@ -467,11 +468,11 @@ export default class Element extends Transformable {
     }
 
     // Provide more typed event callback params for mouse events.
-    on(event: ElementEventName, handler: ElementEventCallback, context?: object): Element
-    on(event: ElementEventName, query: EventQuery, handler: ElementEventCallback, context?: object): Element
+    on<Context>(event: ElementEventName, handler: ElementEventCallback, context?: Context): Element<T>
+    on<Context>(event: ElementEventName, query: EventQuery, handler: ElementEventCallback, context?: Context): Element<T>
     // Provide general events handler for other custom events.
-    on(event: string, query?: EventCallback | EventQuery, handler?: EventCallback | Object, context?: Object): Element
-    on(event: string, query?: EventCallback | EventQuery, handler?: EventCallback | Object, context?: Object): Element {
+    on<Context>(event: string, query?: EventCallback | EventQuery, handler?: EventCallback | Object, context?: Context): Element<T>
+    on<Context>(event: string, query?: EventCallback | EventQuery, handler?: EventCallback | Object, context?: Context): Element<T> {
         super.on(event, query, handler as EventCallback, context);
         return this;
     }
@@ -509,8 +510,8 @@ export default class Element extends Transformable {
     })()
 }
 
-function animateTo(
-    animatable: Element,
+function animateTo<T>(
+    animatable: Element<T>,
     target: Dictionary<any>,
     time: number | AnimationCallback,
     delay: easingType | number | AnimationCallback,
@@ -592,8 +593,8 @@ function animateTo(
  *      position: [10, 10]
  *  }, 100, 100)
  */
-function animateToShallow(
-    animatable: Element,
+function animateToShallow<T>(
+    animatable: Element<T>,
     path: string,
     source: Dictionary<any>,
     target: Dictionary<any>,
@@ -643,18 +644,18 @@ function animateToShallow(
     }
 }
 
-function setAttrByPath(el: Element, path: string, name: string, value: any) {
+function setAttrByPath<T>(el: Element<T>, path: string, name: string, value: any) {
     let pathArr = path.split('.');
     // Attr directly if not has property
     // FIXME, if some property not needed for element ?
     if (!path) {
-        el.attr(name as ElementKey, value);
+        el.attr(name as keyof T, value);
     }
     else {
         // Only support set shape or style
         const props: Dictionary<any> = {};
         props[path] = {};
         props[path][name] = value;
-        el.attr(props as ElementOption);
+        el.attr(props as T);
     }
 }

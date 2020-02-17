@@ -13,15 +13,16 @@ class PolygonShape {
     smoothConstraint?: VectorArray[] = null
 }
 
-export default class Polygon extends Path {
+interface PolygonOption extends PathOption {
+    shape?: Partial<PolygonShape>
+}
+export default class Polygon extends Path<PolygonOption> {
 
     type = 'ellipse'
 
     shape: PolygonShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<PolygonShape>
-    }) {
+    constructor(opts?: PolygonOption) {
         super(opts, null, new PolygonShape())
     }
 

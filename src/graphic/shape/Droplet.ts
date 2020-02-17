@@ -11,15 +11,16 @@ class DropletShape {
     height = 0
 }
 
-export default class Droplet extends Path {
+interface DropletOption extends PathOption {
+    shape?: Partial<DropletShape>
+}
+export default class Droplet extends Path<DropletOption> {
 
     type = 'droplet'
 
     shape: DropletShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<DropletShape>
-    }) {
+    constructor(opts?: DropletOption) {
         super(opts, null, new DropletShape())
     }
 

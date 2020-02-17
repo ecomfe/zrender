@@ -10,15 +10,16 @@ class CircleShape {
     r = 0
 }
 
-export default class Circle extends Path {
+interface CircleOption extends PathOption {
+    shape?: Partial<CircleShape>
+}
+export default class Circle extends Path<CircleOption> {
 
     type = 'Circle'
 
     shape: CircleShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<CircleShape>
-    }) {
+    constructor(opts?: CircleOption) {
         super(opts, null, new CircleShape())
     }
 

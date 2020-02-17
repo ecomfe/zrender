@@ -34,7 +34,7 @@ export interface PathOption extends DisplayableOption{
 type PathKey = keyof PathOption
 type PathPropertyType = PropType<PathOption, PathKey>
 
-export default class Path extends Displayable {
+export default class Path<T extends PathOption = PathOption> extends Displayable<T> {
 
     path: PathProxy
 
@@ -59,7 +59,7 @@ export default class Path extends Displayable {
     // It will be assigned by default value.
     shape: Dictionary<any>
 
-    constructor(opts?: PathOption, defaultStyle?: StyleOption, defaultShape?: Dictionary<any>) {
+    constructor(opts?: T, defaultStyle?: T['style'], defaultShape?: T['shape']) {
         super(opts, defaultStyle);
 
         this._defaultsShape(defaultShape);
@@ -89,7 +89,8 @@ export default class Path extends Displayable {
         const hasFillPattern = hasFill && !!(fill as PatternObject).image;
         const hasStrokePattern = hasStroke && !!(stroke as PatternObject).image;
 
-        style.bind(ctx, this, prevEl);
+        // TODO
+        style.bind(ctx, this as unknown as Displayable, prevEl);
         this.setTransform(ctx);
 
         if (this.__dirty) {

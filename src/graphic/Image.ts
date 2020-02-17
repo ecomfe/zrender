@@ -1,10 +1,8 @@
 import Displayable, { DisplayableOption } from './Displayable';
 import BoundingRect from '../core/BoundingRect';
-import * as zrUtil from '../core/util';
 import * as imageHelper from './helper/image';
 import Style, { StyleOption } from './Style';
-import { PropType, AllPropTypes, ImageLike } from '../core/types';
-import { ElementOption } from '../Element';
+import { ImageLike } from '../core/types';
 
 class ImageStyle extends Style {
     image: string | ImageLike
@@ -18,7 +16,7 @@ class ImageStyle extends Style {
 
 // TODO
 class ImageStyleOption extends StyleOption {
-    image: string | ImageLike
+    image?: string | ImageLike
     width?: number
     height?: number
     sx?: number
@@ -31,7 +29,7 @@ interface ZImageOption extends DisplayableOption {
     style?: ImageStyleOption
 }
 
-export default class ZImage extends Displayable {
+export default class ZImage extends Displayable<ZImageOption> {
     type = 'image'
 
     private _image: ImageLike
@@ -43,16 +41,12 @@ export default class ZImage extends Displayable {
 
     onload: (image: ImageLike) => void
 
-    constructor(opts?: ZImageOption) {
-        super(opts);
-    }
-
     brush(ctx: CanvasRenderingContext2D, prevEl: Displayable) {
         const style = this.style;
         const src = <string>style.image;
 
         // Must bind each time
-        style.bind(ctx, this, prevEl);
+        style.bind(ctx, this as unknown as Displayable, prevEl);
 
         const image = this._image = imageHelper.createOrUpdateImage(
             style.image,
@@ -123,18 +117,6 @@ export default class ZImage extends Displayable {
             this.restoreTransform(ctx);
             this.drawRectText(ctx, this.getBoundingRect());
         }
-    }
-
-    attr(key: ZImageOption): ZImage
-    attr(key: keyof ZImageOption, value: AllPropTypes<ZImageOption>): ZImage
-    attr(key: (keyof ZImageOption) | ZImageOption, value?: AllPropTypes<ZImageOption>) {
-        // TODO Displayable should overrite `attr` of Element?
-        // TODO Should simply use string?
-        return super.attr(key as keyof ElementOption, value);
-    }
-
-    setStyle(key: (keyof ImageStyleOption) | ImageStyleOption, value?: AllPropTypes<ImageStyleOption>) {
-        return super.setStyle(key, value as AllPropTypes<StyleOption>);
     }
 
     getBoundingRect(): BoundingRect {

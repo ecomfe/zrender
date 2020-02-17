@@ -41,7 +41,7 @@ type StyleKeys = keyof StyleOption
 
 const tmpRect = new BoundingRect();
 
-export default class Displayable extends Element {
+export default class Displayable<T extends DisplayableOption = DisplayableOption> extends Element<T> {
 
     /**
      * Whether the displayable object is visible. when it is true, the displayable object
@@ -79,6 +79,11 @@ export default class Displayable extends Element {
 
     style: Style
 
+    /**
+     * hoverStyle will be set in echarts.
+     */
+    hoverStyle: StyleOption
+
     protected _rect: BoundingRect
 
     /************* Properties will be inejected in other modules. *******************/
@@ -104,7 +109,7 @@ export default class Displayable extends Element {
     __canCacheByTextString: boolean
     __text: string
 
-    constructor(opts?: DisplayableOption, defaultStyle?: StyleOption) {
+    constructor(opts?: T, defaultStyle?: T['style']) {
         super(opts);
 
         this.attr(opts);
@@ -140,9 +145,9 @@ export default class Displayable extends Element {
         return this.rectContain(x, y);
     }
 
-    traverse<T>(
-        cb: (this: T, el: Displayable) => void,
-        context: T
+    traverse<Context>(
+        cb: (this: Context, el: Displayable<T>) => void,
+        context: Context
     ) {
         cb.call(context, this);
     }
@@ -184,15 +189,16 @@ export default class Displayable extends Element {
         }
         else {
             if (!this.style) {
-                this.useStyle(value as StyleOption);
+                this.useStyle(value as T['style']);
             }
             else {
-                this.style.set(value as StyleOption);
+                this.style.set(value as T['style']);
             }
         }
     }
-
-    setStyle(key: StyleOption | string, value?: AllPropTypes<StyleOption>) {
+    setStyle(key: T['style']): Displayable<T>
+    setStyle(key: keyof T['style'], value?: AllPropTypes<T['style']>): Displayable<T>
+    setStyle(key: T['style'] | keyof T['style'], value?: AllPropTypes<T['style']>) {
         this.style.set(key as keyof StyleOption, value);
         this.dirty(false);
         return this;
@@ -201,7 +207,7 @@ export default class Displayable extends Element {
     /**
      * Use given style object
      */
-    useStyle(obj: StyleOption) {
+    useStyle(obj: T['style']) {
         this.style = new Style(obj);
         this.dirty(false);
         return this;
@@ -249,7 +255,7 @@ export default class Displayable extends Element {
         }
 
         // transformText and textRotation can not be used at the same time.
-        textHelper.renderText(this, ctx, text, style, rect, WILL_BE_RESTORED);
+        textHelper.renderText(this as unknown as Displayable, ctx, text, style, rect, WILL_BE_RESTORED);
 
         ctx.restore();
     }

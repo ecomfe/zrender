@@ -17,15 +17,16 @@ class TrochoidShape {
     location = 'out'
 }
 
-export default class Trochoid extends Path {
+interface TrochoidOption extends PathOption {
+    shape?: Partial<TrochoidShape>
+}
+export default class Trochoid extends Path<TrochoidOption> {
 
     type = 'trochoid'
 
     shape: TrochoidShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<TrochoidShape>
-    }) {
+    constructor(opts?: TrochoidOption) {
         super(opts, {
             stroke: '#000',
             fill: null

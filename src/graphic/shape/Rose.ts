@@ -17,15 +17,16 @@ class RoseShape {
     n = 1
 }
 
-export default class Rose extends Path {
+interface RoseOption extends PathOption {
+    shape?: Partial<RoseShape>
+}
+export default class Rose extends Path<RoseOption> {
 
     type = 'rose'
 
     shape: RoseShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<RoseShape>
-    }) {
+    constructor(opts?: RoseOption) {
         super(opts, {
             fill: null,
             stroke: '#000'

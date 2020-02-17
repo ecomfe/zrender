@@ -10,15 +10,17 @@ class HeartShape {
     width = 0
     height = 0
 }
-export default class Heart extends Path {
+
+interface HeartOption extends PathOption {
+    shape?: Partial<HeartShape>
+}
+export default class Heart extends Path<HeartOption> {
 
     type = 'heart'
 
     shape: HeartShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<HeartShape>
-    }) {
+    constructor(opts?: HeartOption) {
         super(opts, null, new HeartShape())
     }
 

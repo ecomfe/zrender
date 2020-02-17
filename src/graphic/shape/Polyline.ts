@@ -12,15 +12,16 @@ class PolylineShape {
     smoothConstraint?: VectorArray[] = null
 }
 
-export default class Polyline extends Path {
+interface PolylineOption extends PathOption {
+    shape?: Partial<PolylineShape>
+}
+export default class Polyline extends Path<PolylineOption> {
 
     type = 'ellipse'
 
     shape: PolylineShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<PolylineShape>
-    }) {
+    constructor(opts?: PolylineOption) {
         super(opts, {
             stroke: '#000',
             fill: null

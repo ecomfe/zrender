@@ -15,15 +15,16 @@ class IsogonShape {
     n = 0
 }
 
-export default class Isogon extends Path {
+interface IsogonOption extends PathOption {
+    shape?: Partial<IsogonShape>
+}
+export default class Isogon extends Path<IsogonOption> {
 
     type = 'isogon'
 
     shape: IsogonShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<IsogonShape>
-    }) {
+    constructor(opts?: IsogonOption) {
         super(opts, null, new IsogonShape())
     }
 
