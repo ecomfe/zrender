@@ -409,6 +409,24 @@ export function find<T, Context>(
     }
 }
 
+/**
+ * Get all object keys
+ */
+
+export function keys<T extends object>(obj: T): (keyof T)[] {
+    type TKeys = keyof T;
+    if (Object.keys) {
+        return Object.keys(obj) as TKeys[];
+    }
+    let keyList: TKeys[] = [];
+    for (let key in obj) {
+        if (obj.hasOwnProperty(key)) {
+            keyList.push(key);
+        }
+    }
+    return keyList;
+}
+
 export function bind<Context, Fn extends (...args: any) => any>(
     func: Fn, context: Context, ...args: any[]
 ): (this: Context, ...args: Parameters<Fn>) => ReturnType<Fn> {
