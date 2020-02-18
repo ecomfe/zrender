@@ -11,7 +11,7 @@ import * as roundRectHelper from './roundRect';
 import * as imageHelper from './image';
 import fixShadow from './fixShadow';
 import {ContextCachedBy, WILL_BE_RESTORED} from '../constant';
-import { StyleOption } from '../Style';
+import { StyleProps } from '../Style';
 import Displayable from '../Displayable';
 import { RectLike } from '../../core/BoundingRect';
 import { PropType, ImageLike, Dictionary, AllPropTypes, ZRCanvasRenderingContext } from '../../core/types';
@@ -41,13 +41,13 @@ const SHADOW_STYLE_COMMON_PROPS = [
 const _tmpTextPositionResult = {} as TextBoxPosition;
 const _tmpBoxPositionResult = {} as TextBoxPosition;
 
-export function normalizeTextStyle(style: StyleOption): StyleOption {
+export function normalizeTextStyle(style: StyleProps): StyleProps {
     normalizeStyle(style);
     each(style.rich, normalizeStyle);
     return style;
 }
 
-function normalizeStyle(style: StyleOption) {
+function normalizeStyle(style: StyleProps) {
     if (style) {
 
         style.font = textContain.makeFont(style);
@@ -77,7 +77,7 @@ export function renderText(
     hostEl: Displayable,
     ctx: CanvasRenderingContext2D,
     text: string,
-    style: StyleOption,
+    style: StyleProps,
     rect: RectLike,
     prevEl?: Displayable | typeof WILL_BE_RESTORED
 ) {
@@ -92,7 +92,7 @@ function renderPlainText(
     hostEl: Displayable,
     ctx: CanvasRenderingContext2D,
     text: string,
-    style: StyleOption,
+    style: StyleProps,
     rect: RectLike,
     prevEl?: Displayable | typeof WILL_BE_RESTORED
 ) {
@@ -202,7 +202,7 @@ function renderPlainText(
     // Always set shadowBlur and shadowOffset to avoid leak from displayable.
     for (let i = 0; i < SHADOW_STYLE_COMMON_PROPS.length; i++) {
         const propItem = SHADOW_STYLE_COMMON_PROPS[i];
-        const styleProp = propItem[0] as keyof StyleOption;
+        const styleProp = propItem[0] as keyof StyleProps;
         const ctxProp = propItem[1];
         const val = style[styleProp];
         if (!checkCache || val !== prevStyle[styleProp]) {
@@ -258,7 +258,7 @@ function renderRichText(
     hostEl: Displayable,
     ctx: CanvasRenderingContext2D,
     text: string,
-    style: StyleOption,
+    style: StyleProps,
     rect: RectLike,
     prevEl?: Displayable | typeof WILL_BE_RESTORED
 ) {
@@ -281,7 +281,7 @@ function drawRichText(
     hostEl: Displayable,
     ctx: CanvasRenderingContext2D,
     contentBlock: RichTextContentBlockType,
-    style: StyleOption,
+    style: StyleProps,
     rect: RectLike
 ) {
     const contentWidth = contentBlock.width;
@@ -361,7 +361,7 @@ function drawRichText(
 
 function applyTextRotation(
     ctx: CanvasRenderingContext2D,
-    style: StyleOption,
+    style: StyleProps,
     rect: RectLike,
     x: number,
     y: number
@@ -389,7 +389,7 @@ function placeToken(
     hostEl: Displayable,
     ctx: CanvasRenderingContext2D,
     token: RichTextTokenType,
-    style: StyleOption,
+    style: StyleProps,
     lineHeight: number,
     lineTop: number,
     x: number,
@@ -457,7 +457,7 @@ function placeToken(
     }
 }
 
-function needDrawBackground(style: StyleOption): boolean {
+function needDrawBackground(style: StyleProps): boolean {
     return !!(
         style.textBackgroundColor
         || (style.textBorderWidth && style.textBorderColor)
@@ -469,7 +469,7 @@ function needDrawBackground(style: StyleOption): boolean {
 function drawBackground(
     hostEl: Displayable,
     ctx: CanvasRenderingContext2D,
-    style: StyleOption,
+    style: StyleProps,
     x: number,
     y: number,
     width: number,
@@ -550,7 +550,7 @@ function onBgImageLoaded(image: ImageLike, textBackgroundColor: {
 export function getBoxPosition<T>(
     out: Partial<TextBoxPosition>,
     hostEl: Displayable<T>,
-    style: StyleOption,
+    style: StyleProps,
     rect: RectLike
 ) {
     let baseX = style.x || 0;
@@ -610,7 +610,7 @@ function setCtx(
  * @param lineWidth If specified, do not check style.textStroke.
  */
 export function getStroke(
-    stroke?: PropType<StyleOption, 'textStroke'>,
+    stroke?: PropType<StyleProps, 'textStroke'>,
     lineWidth?: number
 ) {
     return (stroke == null || lineWidth <= 0 || stroke === 'transparent' || stroke === 'none')
@@ -621,7 +621,7 @@ export function getStroke(
 }
 
 export function getFill(
-    fill?: PropType<StyleOption, 'textStroke'>
+    fill?: PropType<StyleProps, 'textStroke'>
 ) {
     return (fill == null || fill === 'none')
         ? null
@@ -649,7 +649,7 @@ function getTextXForPadding(x: number, textAlign: string, textPadding: number[])
         : (x + textPadding[3]);
 }
 
-export function needDrawText(text: string, style: StyleOption): boolean {
+export function needDrawText(text: string, style: StyleProps): boolean {
     return text != null
         && !!(text
             || style.textBackgroundColor

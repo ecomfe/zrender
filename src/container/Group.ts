@@ -18,13 +18,13 @@
  */
 
 import * as zrUtil from '../core/util';
-import Element, { ElementOption } from '../Element';
+import Element, { ElementProps } from '../Element';
 import BoundingRect from '../core/BoundingRect';
 import Storage from '../Storage';
 import { MatrixArray } from '../core/matrix';
 import Displayable from '../graphic/Displayable';
 
-export interface GroupOption extends ElementOption {
+export interface GroupOption extends ElementProps {
 }
 
 export default class Group extends Element {

@@ -2,7 +2,7 @@
  * 心形
  */
 
-import Path, { PathOption } from '../Path';
+import Path, { PathProps } from '../Path';
 
 class HeartShape {
     cx = 0
@@ -11,16 +11,16 @@ class HeartShape {
     height = 0
 }
 
-interface HeartOption extends PathOption {
+interface HeartProps extends PathProps {
     shape?: Partial<HeartShape>
 }
-export default class Heart extends Path<HeartOption> {
+export default class Heart extends Path<HeartProps> {
 
     type = 'heart'
 
     shape: HeartShape
 
-    constructor(opts?: HeartOption) {
+    constructor(opts?: HeartProps) {
         super(opts, null, new HeartShape())
     }
 

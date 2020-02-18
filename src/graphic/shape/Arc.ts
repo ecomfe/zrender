@@ -2,7 +2,7 @@
  * 圆弧
  */
 
-import Path, { PathOption } from '../Path';
+import Path, { PathProps } from '../Path';
 
 class ArcShape {
     cx = 0;
@@ -13,17 +13,17 @@ class ArcShape {
     clockwise? = true
 }
 
-interface ArcOption extends PathOption {
+interface ArcProps extends PathProps {
     shape?: Partial<ArcShape>
 }
 
-export default class Arc extends Path<ArcOption> {
+export default class Arc extends Path<ArcProps> {
 
     type = 'Arc'
 
     shape: ArcShape
 
-    constructor(opts?: ArcOption) {
+    constructor(opts?: ArcProps) {
         super(opts, {
             stroke: '#000',
             fill: null

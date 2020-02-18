@@ -30,7 +30,7 @@ export interface ElementEvent {
     stop: (this: ElementEvent) => void
 }
 
-export interface ElementOption {
+export interface ElementProps {
     name?: string
     ignore?: boolean
     isGroup?: boolean
@@ -48,14 +48,14 @@ export interface ElementOption {
     extra?: Dictionary<any>
 }
 
-type ElementKey = keyof ElementOption
-type ElementPropertyType = PropType<ElementOption, ElementKey>
+type ElementKey = keyof ElementProps
+type ElementPropertyType = PropType<ElementProps, ElementKey>
 
 type AnimationCallback = () => {}
 
 export type ElementEventCallback = (e: ElementEvent) => boolean | void
 
-export default class Element<T extends ElementOption = ElementOption> extends Transformable {
+export default class Element<T extends ElementProps = ElementProps> extends Transformable {
 
     id: number = zrUtil.guid()
     /**
@@ -121,7 +121,7 @@ export default class Element<T extends ElementOption = ElementOption> extends Tr
      */
     private _clipPath: Path
 
-    constructor(opts?: ElementOption) {
+    constructor(opts?: ElementProps) {
         // Transformable needs position, rotation, scale
         super(opts);
     }
@@ -169,7 +169,7 @@ export default class Element<T extends ElementOption = ElementOption> extends Tr
 
     traverse<Context> (
         cb: (this: Context, el: Element<T>) => void,
-        context: Context
+        context?: Context
     ) {}
 
     protected attrKV(key: string, value: unknown) {

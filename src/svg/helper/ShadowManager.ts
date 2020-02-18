@@ -5,7 +5,7 @@
 
 import Definable from './Definable';
 import * as zrUtil from '../../core/util';
-import { StyleOption } from '../../graphic/Style';
+import { StyleProps } from '../../graphic/Style';
 import Displayable from '../../graphic/Displayable';
 
 
@@ -188,7 +188,7 @@ export default class ShadowManager extends Definable {
 }
 
 
-function hasShadow(style: StyleOption) {
+function hasShadow(style: StyleProps) {
     // TODO: textBoxShadowBlur is not supported yet
     return style
         && (style.shadowBlur || style.shadowOffsetX || style.shadowOffsetY

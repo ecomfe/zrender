@@ -3,7 +3,7 @@
  * @module zrender/graphic/shape/Sector
  */
 
-import Path, { PathOption } from '../Path';
+import Path, { PathProps } from '../Path';
 import fixClipWithShadow from '../helper/fixClipWithShadow';
 
 class SectorShape {
@@ -16,10 +16,10 @@ class SectorShape {
     clockwise: boolean = true
 }
 
-interface SectorOption extends PathOption {
+interface SectorProps extends PathProps {
     shape?: Partial<SectorShape>
 }
-export default class Sector extends Path<SectorOption> {
+export default class Sector extends Path<SectorProps> {
 
     type = 'sector'
 
@@ -27,7 +27,7 @@ export default class Sector extends Path<SectorOption> {
 
     brush = fixClipWithShadow(Path.prototype.brush)
 
-    constructor(opts?: SectorOption) {
+    constructor(opts?: SectorProps) {
         super(opts, null, new SectorShape());
     }
 

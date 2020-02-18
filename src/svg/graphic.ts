@@ -8,7 +8,7 @@ import BoundingRect, { RectLike } from '../core/BoundingRect';
 import * as matrix from '../core/matrix';
 import * as textHelper from '../graphic/helper/text';
 import Text from '../graphic/Text';
-import { StyleOption } from '../graphic/Style';
+import { StyleProps } from '../graphic/Style';
 import { DEFAULT_FONT, parsePlainText, PlainTextContentBlock, adjustTextY } from '../contain/text';
 import { TextAlign } from '../core/types';
 import ZImage from '../graphic/Image';
@@ -48,12 +48,12 @@ function isAroundZero(val: number) {
     return val < EPSILON && val > -EPSILON;
 }
 
-function pathHasFill(style: StyleOption, isText?: boolean) {
+function pathHasFill(style: StyleProps, isText?: boolean) {
     const fill = isText ? style.textFill : style.fill;
     return fill != null && fill !== NONE;
 }
 
-function pathHasStroke(style: StyleOption, isText?: boolean) {
+function pathHasStroke(style: StyleProps, isText?: boolean) {
     const stroke = isText ? style.textStroke : style.stroke;
     return stroke != null && stroke !== NONE;
 }
@@ -75,7 +75,7 @@ function attrXLink(el: SVGElement, key: string, val: string) {
     el.setAttributeNS('http://www.w3.org/1999/xlink', key, val);
 }
 
-function bindStyle(svgEl: SVGElement, style: StyleOption, isText?: boolean, el?: Displayable) {
+function bindStyle(svgEl: SVGElement, style: StyleProps, isText?: boolean, el?: Displayable) {
     if (pathHasFill(style, isText)) {
         let fill = isText ? style.textFill : style.fill;
         fill = fill === 'transparent' ? NONE : fill;
@@ -483,7 +483,7 @@ function setTextTransform(
     textSvgEl: SVGElement,
     needTransformTextByHostEl: boolean,
     elTransform: matrix.MatrixArray,
-    style: StyleOption,
+    style: StyleProps,
     hostRect: RectLike,
     baseX: number,
     baseY: number

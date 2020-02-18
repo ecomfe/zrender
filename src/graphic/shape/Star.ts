@@ -3,7 +3,7 @@
  * @module zrender/graphic/shape/Star
  */
 
-import Path, { PathOption } from '../Path';
+import Path, { PathProps } from '../Path';
 
 const PI = Math.PI;
 const cos = Math.cos;
@@ -17,16 +17,16 @@ class StarShape {
     r = 0
 }
 
-interface StarOption extends PathOption {
+interface StarProps extends PathProps {
     shape?: Partial<StarShape>
 }
-export default class Star extends Path<StarOption> {
+export default class Star extends Path<StarProps> {
 
     type = 'star'
 
     shape: StarShape
 
-    constructor(opts?: StarOption) {
+    constructor(opts?: StarProps) {
         super(opts, null, new StarShape())
     }
 

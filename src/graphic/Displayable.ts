@@ -4,8 +4,8 @@
  */
 
 
-import Style, {StyleOption} from './Style';
-import Element, {ElementOption} from '../Element';
+import Style, {StyleProps} from './Style';
+import Element, {ElementProps} from '../Element';
 import BoundingRect, { RectLike } from '../core/BoundingRect';
 import { Dictionary, PropType, AllPropTypes } from '../core/types';
 import Path from './Path';
@@ -15,8 +15,8 @@ import { calculateTextPosition, RichTextContentBlock, PlainTextContentBlock } fr
 
 type CalculateTextPositionResult = ReturnType<typeof calculateTextPosition>
 
-export interface DisplayableOption extends ElementOption {
-    style?: StyleOption
+export interface DisplayableProps extends ElementProps {
+    style?: StyleProps
 
     zlevel?: number
     z?: number
@@ -34,14 +34,14 @@ export interface DisplayableOption extends ElementOption {
     incremental?: boolean
 }
 
-type DisplayableKey = keyof DisplayableOption
-type DisplayablePropertyType = PropType<DisplayableOption, DisplayableKey>
+type DisplayableKey = keyof DisplayableProps
+type DisplayablePropertyType = PropType<DisplayableProps, DisplayableKey>
 
-type StyleKeys = keyof StyleOption
+type StyleKeys = keyof StyleProps
 
 const tmpRect = new BoundingRect();
 
-export default class Displayable<T extends DisplayableOption = DisplayableOption> extends Element<T> {
+export default class Displayable<T extends DisplayableProps = DisplayableProps> extends Element<T> {
 
     /**
      * Whether the displayable object is visible. when it is true, the displayable object
@@ -79,14 +79,10 @@ export default class Displayable<T extends DisplayableOption = DisplayableOption
 
     style: Style
 
-    /**
-     * hoverStyle will be set in echarts.
-     */
-    hoverStyle: StyleOption
-
     protected _rect: BoundingRect
 
     /************* Properties will be inejected in other modules. *******************/
+
     // Shapes for cascade clipping.
     // Can only be `null`/`undefined` or an non-empty array, MUST NOT be an empty array.
     // because it is easy to only using null to check whether clipPaths changed.
@@ -108,6 +104,18 @@ export default class Displayable<T extends DisplayableOption = DisplayableOption
     __tspanList: SVGTSpanElement[]
     __canCacheByTextString: boolean
     __text: string
+
+    // FOR ECHARTS
+    /**
+     * hoverStyle will be set in echarts.
+     */
+    hoverStyle: StyleProps
+    /**
+     * If use individual hover layer. It is set in echarts
+     */
+    useHoverLayer: boolean
+    highDownSilentOnTouch: boolean
+    highDownOnUpdate: (fromState: 'normal' | 'emphasis', toState: 'normal' | 'emphasis') => void
 
     constructor(opts?: T, defaultStyle?: T['style']) {
         super(opts);
@@ -147,7 +155,7 @@ export default class Displayable<T extends DisplayableOption = DisplayableOption
 
     traverse<Context>(
         cb: (this: Context, el: Displayable<T>) => void,
-        context: Context
+        context?: Context
     ) {
         cb.call(context, this);
     }
@@ -185,7 +193,7 @@ export default class Displayable<T extends DisplayableOption = DisplayableOption
 
     attrKV(key: DisplayableKey, value: DisplayablePropertyType) {
         if (key !== 'style') {
-            super.attrKV(key as keyof ElementOption, value);
+            super.attrKV(key as keyof ElementProps, value);
         }
         else {
             if (!this.style) {
@@ -199,7 +207,7 @@ export default class Displayable<T extends DisplayableOption = DisplayableOption
     setStyle(key: T['style']): Displayable<T>
     setStyle(key: keyof T['style'], value?: AllPropTypes<T['style']>): Displayable<T>
     setStyle(key: T['style'] | keyof T['style'], value?: AllPropTypes<T['style']>) {
-        this.style.set(key as keyof StyleOption, value);
+        this.style.set(key as keyof StyleProps, value);
         this.dirty(false);
         return this;
     }
@@ -278,7 +286,7 @@ export default class Displayable<T extends DisplayableOption = DisplayableOption
      *             textVerticalAlign: string. optional. use style.textVerticalAlign by default.
      *         }
      */
-    calculateTextPosition: (out: CalculateTextPositionResult, style: StyleOption, rect: RectLike) => CalculateTextPositionResult
+    calculateTextPosition: (out: CalculateTextPositionResult, style: StyleProps, rect: RectLike) => CalculateTextPositionResult
 
 
     protected static initDefaultProps = (function () {

@@ -2,7 +2,7 @@
  * @module zrender/graphic/shape/Polyline
  */
 
-import Path, { PathOption } from '../Path';
+import Path, { PathProps } from '../Path';
 import * as polyHelper from '../helper/poly';
 import { VectorArray } from '../../core/vector';
 
@@ -12,16 +12,16 @@ class PolylineShape {
     smoothConstraint?: VectorArray[] = null
 }
 
-interface PolylineOption extends PathOption {
+interface PolylineProps extends PathProps {
     shape?: Partial<PolylineShape>
 }
-export default class Polyline extends Path<PolylineOption> {
+export default class Polyline extends Path<PolylineProps> {
 
     type = 'ellipse'
 
     shape: PolylineShape
 
-    constructor(opts?: PolylineOption) {
+    constructor(opts?: PolylineProps) {
         super(opts, {
             stroke: '#000',
             fill: null

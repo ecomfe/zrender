@@ -21,7 +21,7 @@ import { Dictionary, ElementEventName } from './core/types';
 import { LayerConfig } from './canvas/Layer';
 import { GradientObject } from './graphic/Gradient';
 import { PatternObject } from './graphic/Pattern';
-import { StyleOption } from './graphic/Style';
+import { StyleProps } from './graphic/Style';
 import Displayable from './graphic/Displayable';
 import { Path } from './export';
 import { EventCallback } from './core/Eventful';
@@ -205,7 +205,7 @@ class ZRender {
      * @param el
      * @param {Object} style
      */
-    addHover(el: Displayable, style: StyleOption) {
+    addHover(el: Displayable, style?: StyleProps) {
         if ((this.painter as CanvasPainter).addHover) {
             const elMirror = (this.painter as CanvasPainter).addHover(el, style);
             this.refreshHover();

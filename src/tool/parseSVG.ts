@@ -8,7 +8,7 @@ import Line from '../graphic/shape/Line';
 import Path from '../graphic/Path';
 import Polygon from '../graphic/shape/Polygon';
 import Polyline from '../graphic/shape/Polyline';
-import Style, { StyleOption } from '../graphic/Style';
+import Style, { StyleProps } from '../graphic/Style';
 import * as matrix from '../core/matrix';
 import { createFromString } from './path';
 import { isString, extend, defaults, trim, each, map } from '../core/util';
@@ -574,7 +574,7 @@ function parseAttributes(
         'lineWidth', 'opacity', 'fillOpacity', 'strokeOpacity', 'miterLimit', 'fontSize'
     ], function (propName) {
         const elPropName = (propName === 'lineWidth' && isTextEl) ? 'textStrokeWidth' : propName;
-        zrStyle[propName] != null && elStyle.set(elPropName as keyof StyleOption, parseFloat(zrStyle[propName]));
+        zrStyle[propName] != null && elStyle.set(elPropName as keyof StyleProps, parseFloat(zrStyle[propName]));
     });
 
     if (!zrStyle.textBaseline || zrStyle.textBaseline === 'auto') {
@@ -593,7 +593,7 @@ function parseAttributes(
     each(['lineDashOffset', 'lineCap', 'lineJoin',
         'fontWeight', 'fontFamily', 'fontStyle', 'textAlign', 'textBaseline'
     ], function (propName) {
-        zrStyle[propName] != null && elStyle.set(propName as keyof StyleOption, zrStyle[propName]);
+        zrStyle[propName] != null && elStyle.set(propName as keyof StyleProps, zrStyle[propName]);
     });
 
     if (zrStyle.lineDash) {

@@ -1,7 +1,7 @@
-import Displayable, { DisplayableOption } from './Displayable';
+import Displayable, { DisplayableProps } from './Displayable';
 import BoundingRect from '../core/BoundingRect';
 import * as imageHelper from './helper/image';
-import Style, { StyleOption } from './Style';
+import Style, { StyleProps } from './Style';
 import { ImageLike } from '../core/types';
 
 class ImageStyle extends Style {
@@ -15,7 +15,7 @@ class ImageStyle extends Style {
 }
 
 // TODO
-class ImageStyleOption extends StyleOption {
+class ImageStyleProps extends StyleProps {
     image?: string | ImageLike
     width?: number
     height?: number
@@ -25,8 +25,8 @@ class ImageStyleOption extends StyleOption {
     sHeight?: number
 }
 
-interface ZImageOption extends DisplayableOption {
-    style?: ImageStyleOption,
+interface ZImageOption extends DisplayableProps {
+    style?: ImageStyleProps,
     onload?: (image: ImageLike) => void
 }
 

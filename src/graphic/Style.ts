@@ -62,7 +62,7 @@ function createRadialGradient(ctx: CanvasRenderingContext2D, obj: RadialGradient
     return canvasGradient;
 }
 
-export class TextStyleOption {
+export class TextStyleProps {
 
     // TODO Text is assigned inside zrender
     text?: string
@@ -94,11 +94,11 @@ export class TextStyleOption {
     /**
      * It helps merging respectively, rather than parsing an entire font string.
      */
-    fontStyle?: string
+    fontStyle?: 'normal' | 'italic' | 'oblique'
     /**
      * It helps merging respectively, rather than parsing an entire font string.
      */
-    fontWeight?: string
+    fontWeight?: 'normal' | 'bold' | 'bolder' | 'lighter' | number
     /**
      * It helps merging respectively, rather than parsing an entire font string.
      */
@@ -153,7 +153,7 @@ export class TextStyleOption {
     textBoxShadowOffsetY?: number
 }
 
-export class StyleOption extends TextStyleOption {
+export class StyleProps extends TextStyleProps {
     // For text and image
     x?: number
     y?: number
@@ -239,7 +239,7 @@ export class StyleOption extends TextStyleOption {
     /**
      * Text styles for rich text.
      */
-    rich?: Dictionary<TextStyleOption>
+    rich?: Dictionary<TextStyleProps>
 
     truncate?: {
         outerWidth?: number
@@ -261,16 +261,16 @@ export class StyleOption extends TextStyleOption {
 // type TextStyleOption = Partial<TextStylelImpl>
 // type StyleOption = Partial<StyleImpl>
 
-type StyleKey = keyof StyleOption
+type StyleKey = keyof StyleProps
 
-type StyleValueType = PropType<StyleOption, StyleKey>
+type StyleValueType = PropType<StyleProps, StyleKey>
 // type StyleValueType = number | string | number[] | boolean
 //     | VectorArray | Dictionary<TextStyleOption> | RectLike
 //     | PatternObject | CanvasGradient
 //     | CanvasLineCap | CanvasLineJoin
 
 
-export default class Style extends StyleOption {
+export default class Style extends StyleProps {
 
     // fill: string | LinearGradientObject | RadialGradientObject | PatternObject = '#000'
     // stroke: string | LinearGradientObject | RadialGradientObject | PatternObject = null
@@ -331,7 +331,7 @@ export default class Style extends StyleOption {
 
     // textBorderRadius = 0
 
-    constructor(opts?: StyleOption) {
+    constructor(opts?: StyleProps) {
         super()
         if (opts) {
             this.extendFrom(opts, true);
@@ -396,7 +396,7 @@ export default class Style extends StyleOption {
      *                            false: overwrite only when !target.hasOwnProperty
      *                            null/undefined: overwrite when property is not null/undefined.
      */
-    extendFrom(otherStyle: StyleOption, overwrite?: boolean) {
+    extendFrom(otherStyle: StyleProps, overwrite?: boolean) {
         if (otherStyle) {
             for (let name in otherStyle) {
                 if (otherStyle.hasOwnProperty(name)
@@ -418,7 +418,7 @@ export default class Style extends StyleOption {
     /**
      * Batch setting style with a given object
      */
-    set(obj: StyleOption | StyleKey, value?: StyleValueType) {
+    set(obj: StyleProps | StyleKey, value?: StyleValueType) {
         if (typeof obj === 'string') {
             (this as any)[obj] = value;
         }

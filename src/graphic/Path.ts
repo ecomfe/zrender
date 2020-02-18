@@ -1,11 +1,11 @@
-import Displayable, { DisplayableOption } from './Displayable';
+import Displayable, { DisplayableProps } from './Displayable';
 import Element from '../Element';
 import * as zrUtil from '../core/util';
 import PathProxy from '../core/PathProxy';
 import * as pathContain from '../contain/path';
 import Pattern, { PatternObject } from './Pattern';
 import { GradientObject } from './Gradient';
-import Style, { StyleOption } from './Style';
+import Style, { StyleProps } from './Style';
 import { LinearGradientObject } from './LinearGradient';
 import { RadialGradientObject } from './RadialGradient';
 import { Dictionary, PropType } from '../core/types';
@@ -17,7 +17,7 @@ const abs = Math.abs;
 
 const pathProxyForDraw = new PathProxy(true);
 
-export interface PathOption extends DisplayableOption{
+export interface PathProps extends DisplayableProps{
     strokeContainThreshold?: number
     segmentIgnoreThreshold?: number
     subPixelOptimize?: boolean
@@ -31,10 +31,10 @@ export interface PathOption extends DisplayableOption{
     ) => void
 }
 
-type PathKey = keyof PathOption
-type PathPropertyType = PropType<PathOption, PathKey>
+type PathKey = keyof PathProps
+type PathPropertyType = PropType<PathProps, PathKey>
 
-export default class Path<T extends PathOption = PathOption> extends Displayable<T> {
+export default class Path<T extends PathProps = PathProps> extends Displayable<T> {
 
     path: PathProxy
 
@@ -336,7 +336,7 @@ export default class Path<T extends PathOption = PathOption> extends Displayable
             this._rect = null;
         }
         else {
-            super.attrKV(key as keyof DisplayableOption, value);
+            super.attrKV(key as keyof DisplayableProps, value);
         }
     }
 
@@ -395,7 +395,7 @@ export default class Path<T extends PathOption = PathOption> extends Displayable
     static extend<ShapeType extends Dictionary<any>, ExtraType extends Dictionary<any>>(defaultProps: {
         type: string
         shape?: ShapeType
-        style?: StyleOption
+        style?: StyleProps
         extra?: ExtraType
 
         beforeBrush?: PropType<Displayable, 'beforeBrush'>
@@ -403,16 +403,16 @@ export default class Path<T extends PathOption = PathOption> extends Displayable
         getBoundingRect?: PropType<Displayable, 'getBoundingRect'>
 
         buildPath: (this: Path, ctx: CanvasRenderingContext2D | PathProxy, shape: ShapeType, inBundle?: boolean) => void
-        init?: (this: Path, opts: PathOption) => void // TODO Should be SubPathOption
+        init?: (this: Path, opts: PathProps) => void // TODO Should be SubPathOption
     }): {
-        new(opts?: PathOption & {
+        new(opts?: PathProps & {
             shape?: ShapeType
         }): Path & {
             extra?: ExtraType,
             shape: ShapeType
         }
     } {
-        interface SubPathOption extends PathOption {
+        interface SubPathOption extends PathProps {
             shape: ShapeType
         }
 

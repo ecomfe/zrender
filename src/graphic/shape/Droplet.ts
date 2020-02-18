@@ -2,7 +2,7 @@
  * 水滴形状
  */
 
-import Path, { PathOption } from '../Path';
+import Path, { PathProps } from '../Path';
 
 class DropletShape {
     cx = 0
@@ -11,16 +11,16 @@ class DropletShape {
     height = 0
 }
 
-interface DropletOption extends PathOption {
+interface DropletProps extends PathProps {
     shape?: Partial<DropletShape>
 }
-export default class Droplet extends Path<DropletOption> {
+export default class Droplet extends Path<DropletProps> {
 
     type = 'droplet'
 
     shape: DropletShape
 
-    constructor(opts?: DropletOption) {
+    constructor(opts?: DropletProps) {
         super(opts, null, new DropletShape())
     }
 

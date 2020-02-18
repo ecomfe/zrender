@@ -3,7 +3,7 @@
  * @module zrender/shape/Polygon
  */
 
-import Path, { PathOption } from '../Path';
+import Path, { PathProps } from '../Path';
 import * as polyHelper from '../helper/poly';
 import { VectorArray } from '../../core/vector';
 
@@ -13,16 +13,16 @@ class PolygonShape {
     smoothConstraint?: VectorArray[] = null
 }
 
-interface PolygonOption extends PathOption {
+interface PolygonProps extends PathProps {
     shape?: Partial<PolygonShape>
 }
-export default class Polygon extends Path<PolygonOption> {
+export default class Polygon extends Path<PolygonProps> {
 
     type = 'ellipse'
 
     shape: PolygonShape
 
-    constructor(opts?: PolygonOption) {
+    constructor(opts?: PolygonProps) {
         super(opts, null, new PolygonShape())
     }
 

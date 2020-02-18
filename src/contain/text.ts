@@ -8,7 +8,7 @@ import {
     trim
 } from '../core/util';
 import { Dictionary, PropType, TextAlign, TextVerticalAlign, ImageLike } from '../core/types';
-import Style, { StyleOption } from '../graphic/Style';
+import Style, { StyleProps } from '../graphic/Style';
 
 let textWidthCache: Dictionary<number> = {};
 let textWidthCacheCounter = 0;
@@ -169,7 +169,7 @@ class TextPositionCalculationResult {
  */
 export function calculateTextPosition(
     out: TextPositionCalculationResult,
-    style: StyleOption,
+    style: StyleProps,
     rect: RectLike
 ): TextPositionCalculationResult {
     const textPosition = style.textPosition;
@@ -552,7 +552,7 @@ export class RichTextContentBlock {
  * Also consider 'bbbb{a|xxx\nzzz}xxxx\naaaa'.
  * If styleName is undefined, it is plain text.
  */
-export function parseRichText(text: string, style: StyleOption) {
+export function parseRichText(text: string, style: StyleProps) {
     const contentBlock = new RichTextContentBlock();
 
     text != null && (text += '');
@@ -752,7 +752,7 @@ function pushTokens(block: RichTextContentBlock, str: string, styleName?: string
     }
 }
 
-export function makeFont(style: StyleOption): string {
+export function makeFont(style: StyleProps): string {
     // FIXME in node-canvas fontWeight is before fontStyle
     // Use `fontSize` `fontFamily` to check whether font properties are defined.
     const font = (style.fontSize || style.fontFamily) && [

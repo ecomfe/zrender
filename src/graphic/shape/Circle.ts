@@ -2,7 +2,7 @@
  * 圆形
  */
 
-import Path, { PathOption } from '../Path';
+import Path, { PathProps } from '../Path';
 
 class CircleShape {
     cx = 0
@@ -10,16 +10,16 @@ class CircleShape {
     r = 0
 }
 
-interface CircleOption extends PathOption {
+interface CircleProps extends PathProps {
     shape?: Partial<CircleShape>
 }
-export default class Circle extends Path<CircleOption> {
+export default class Circle extends Path<CircleProps> {
 
     type = 'Circle'
 
     shape: CircleShape
 
-    constructor(opts?: CircleOption) {
+    constructor(opts?: CircleProps) {
         super(opts, null, new CircleShape())
     }
 

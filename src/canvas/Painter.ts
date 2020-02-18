@@ -11,7 +11,7 @@ import Displayable from '../graphic/Displayable';
 import { Dictionary, WXCanvasRenderingContext, ZRCanvasRenderingContext } from '../core/types';
 import { GradientObject } from '../graphic/Gradient';
 import { PatternObject } from '../graphic/Pattern';
-import { StyleOption } from '../graphic/Style';
+import { StyleProps } from '../graphic/Style';
 import {PainterBase} from '../PainterBase';
 import Storage from '../Storage';
 
@@ -304,7 +304,7 @@ export default class CanvasPainter implements PainterBase {
         return this;
     }
 
-    addHover (el: Displayable, hoverStyle: StyleOption) {
+    addHover (el: Displayable, hoverStyle: StyleProps) {
         if (el.__hoverMir) {
             return;
         }
