@@ -26,7 +26,8 @@ class ImageStyleOption extends StyleOption {
 }
 
 interface ZImageOption extends DisplayableOption {
-    style?: ImageStyleOption
+    style?: ImageStyleOption,
+    onload?: (image: ImageLike) => void
 }
 
 export default class ZImage extends Displayable<ZImageOption> {
