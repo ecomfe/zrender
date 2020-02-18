@@ -116,6 +116,14 @@ export default class Displayable<T extends DisplayableProps = DisplayableProps> 
     useHoverLayer: boolean
     highDownSilentOnTouch: boolean
     highDownOnUpdate: (fromState: 'normal' | 'emphasis', toState: 'normal' | 'emphasis') => void
+    /**
+     * Id for mapping animation
+     */
+    anid: string
+    /**
+     * Mapped data index.
+     */
+    dataIndex: number
 
     constructor(opts?: T, defaultStyle?: T['style']) {
         super(opts);

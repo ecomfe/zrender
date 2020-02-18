@@ -117,7 +117,7 @@ class Transformable extends Eventful {
         matrix.invert(this.invTransform, m);
     }
 
-    getLocalTransform(m: matrix.MatrixArray) {
+    getLocalTransform(m?: matrix.MatrixArray) {
         return Transformable.getLocalTransform(this, m);
     }
 

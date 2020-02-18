@@ -15,7 +15,7 @@ class ImageStyle extends Style {
 }
 
 // TODO
-class ImageStyleProps extends StyleProps {
+export class ZImageStyleProps extends StyleProps {
     image?: string | ImageLike
     width?: number
     height?: number
@@ -25,12 +25,12 @@ class ImageStyleProps extends StyleProps {
     sHeight?: number
 }
 
-interface ZImageOption extends DisplayableProps {
-    style?: ImageStyleProps,
+export interface ZImageProps extends DisplayableProps {
+    style?: ZImageStyleProps,
     onload?: (image: ImageLike) => void
 }
 
-export default class ZImage extends Displayable<ZImageOption> {
+export default class ZImage extends Displayable<ZImageProps> {
     type = 'image'
 
     private _image: ImageLike

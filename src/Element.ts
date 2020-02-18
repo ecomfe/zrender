@@ -51,7 +51,7 @@ export interface ElementProps {
 type ElementKey = keyof ElementProps
 type ElementPropertyType = PropType<ElementProps, ElementKey>
 
-type AnimationCallback = () => {}
+type AnimationCallback = () => void;
 
 export type ElementEventCallback = (e: ElementEvent) => boolean | void
 
