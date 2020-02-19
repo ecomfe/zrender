@@ -167,16 +167,22 @@ export function mergeAll(targetAndSources: any[], overwrite: boolean): any {
     return result;
 }
 
-export function extend<T extends Dictionary<any>>(target: T, source: Dictionary<any>): T {
+export function extend<
+    T extends Dictionary<any>,
+    S extends Dictionary<any>
+>(target: T, source: S): T & S {
     for (let key in source) {
         if (source.hasOwnProperty(key)) {
             (target as Dictionary<any>)[key] = source[key];
         }
     }
-    return target;
+    return target as T & S;
 }
 
-export function defaults<T extends Dictionary<any>>(target: T, source: Dictionary<any>, overlay?: boolean): T {
+export function defaults<
+    T extends Dictionary<any>,
+    S extends Dictionary<any>
+>(target: T, source: S, overlay?: boolean): T & S {
     for (let key in source) {
         if (source.hasOwnProperty(key)
             && (overlay ? source[key] != null : target[key] == null)
@@ -184,7 +190,7 @@ export function defaults<T extends Dictionary<any>>(target: T, source: Dictionar
             (target as Dictionary<any>)[key] = source[key];
         }
     }
-    return target;
+    return target as T & S;
 }
 
 export const createCanvas = function (): HTMLCanvasElement {
@@ -435,11 +441,23 @@ export function bind<Context, Fn extends (...args: any) => any>(
     };
 }
 
-export function curry(func: Function, ...args: any[]) {
+type Curry1<F, T1> = F extends (a: T1, ...args: infer A) => infer R ? (...args: A) => R : unknown;
+type Curry2<F, T1, T2> = F extends (a: T1, b: T2, ...args: infer A) => infer R ? (...args: A) => R : unknown;
+type Curry3<F, T1, T2, T3> = F extends (a: T1, b: T2, c: T3, ...args: infer A) => infer R ? (...args: A) => R : unknown;
+type Curry4<F, T1, T2, T3, T4> = F extends (a: T1, b: T2, c: T3, d: T4, ...args: infer A) => infer R ? (...args: A) => R : unknown;
+type CurryFunc = (...arg: any[]) => any
+
+function curry<F extends CurryFunc, T1 extends Parameters<F>[0]>(func: F, a: T1): Curry1<F, T1>
+function curry<F extends CurryFunc, T1 extends Parameters<F>[0], T2 extends Parameters<F>[1]>(func: F, a: T1, b: T2): Curry2<F, T1, T2>
+function curry<F extends CurryFunc, T1 extends Parameters<F>[0], T2 extends Parameters<F>[1], T3 extends Parameters<F>[2]>(func: F, a: T1, b: T2, c: T3): Curry3<F, T1, T2, T3>
+function curry<F extends CurryFunc, T1 extends Parameters<F>[0], T2 extends Parameters<F>[1], T3 extends Parameters<F>[2], T4 extends Parameters<F>[3]>(func: F, a: T1, b: T2, c: T3, d: T4): Curry4<F, T1, T2, T3, T4>
+function curry(func: Function, ...args: any[]): Function {
     return function (this: any) {
         return func.apply(this, args.concat(nativeSlice.call(arguments)));
     };
 }
+
+export {curry};
 
 /**
  * @param value
