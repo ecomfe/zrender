@@ -66,9 +66,9 @@ export function getWidth(text: string, font: string): number {
 
 export function getBoundingRect(
     text: string,
-    font: string,
-    textAlign: TextAlign,
-    textVerticalAlign: TextVerticalAlign,
+    font?: string,
+    textAlign?: TextAlign,
+    textVerticalAlign?: TextVerticalAlign,
     textPadding?: number[],
     textLineHeight?: number,
     rich?: PropType<Style, 'rich'>,
@@ -315,9 +315,9 @@ interface InnerPreparedTruncateOption extends Required<InnerTruncateOption> {
 export function truncateText(
     text: string,
     containerWidth: number,
-    font: string,
-    ellipsis: string,
-    options: InnerTruncateOption
+    font?: string,
+    ellipsis?: string,
+    options?: InnerTruncateOption
 ): string {
     if (!containerWidth) {
         return '';
