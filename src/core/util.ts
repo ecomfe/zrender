@@ -259,32 +259,6 @@ export function mixin<T, S>(target: T | Function, source: S | Function, override
 }
 
 /**
- * @usage
- * ```ts
- * export class XFeature {
- *    fn1() { ... }
- *    fn2() { ... }
- * }
- * ```
- * ```ts
- * import {XFeature} from './XFeature';
- * class Target { ... }
- * interface Target implements XFeature {}
- * tsMixin(Target, XFeature);
- * ```
- * @notice
- * static member mixin can not be supported.
- */
-export function tsMixin(derivedCtor: any, baseCtor: any) {
-    var baseProto = baseCtor.prototype;
-    for (var name in baseProto) {
-        if (baseProto.hasOwnProperty(name)) {
-            derivedCtor.prototype[name] = baseProto[name];
-        }
-    }
-}
-
-/**
  * Consider typed array.
  * @param data
  */

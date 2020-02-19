@@ -69,10 +69,10 @@ export function getBoundingRect(
     font: string,
     textAlign: TextAlign,
     textVerticalAlign: TextVerticalAlign,
-    textPadding: number[],
-    textLineHeight: number,
-    rich: PropType<Style, 'rich'>,
-    truncate: PropType<Style, 'truncate'>
+    textPadding?: number[],
+    textLineHeight?: number,
+    rich?: PropType<Style, 'rich'>,
+    truncate?: PropType<Style, 'truncate'>
 ) {
     return rich
         ? getRichTextRect(text, font, textAlign, textVerticalAlign, textPadding, textLineHeight, rich, truncate)
