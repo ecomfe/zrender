@@ -34,7 +34,7 @@ export interface PathProps extends DisplayableProps{
 type PathKey = keyof PathProps
 type PathPropertyType = PropType<PathProps, PathKey>
 
-export default class Path<T extends PathProps = PathProps> extends Displayable<T> {
+export default class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
 
     path: PathProxy
 
@@ -59,7 +59,7 @@ export default class Path<T extends PathProps = PathProps> extends Displayable<T
     // It will be assigned by default value.
     shape: Dictionary<any>
 
-    constructor(opts?: T, defaultStyle?: T['style'], defaultShape?: T['shape']) {
+    constructor(opts?: Props, defaultStyle?: Props['style'], defaultShape?: Props['shape']) {
         super(opts, defaultStyle);
 
         this._defaultsShape(defaultShape);
@@ -398,9 +398,11 @@ export default class Path<T extends PathProps = PathProps> extends Displayable<T
         style?: StyleProps
         extra?: ExtraType
 
-        beforeBrush?: PropType<Displayable, 'beforeBrush'>
-        afterBrush?: PropType<Displayable, 'afterBrush'>
-        getBoundingRect?: PropType<Displayable, 'getBoundingRect'>
+        beforeBrush?: Displayable['beforeBrush']
+        afterBrush?: Displayable['afterBrush']
+        getBoundingRect?: Displayable['getBoundingRect']
+
+        calculateTextPosition?: Displayable['calculateTextPosition']
 
         buildPath: (this: Path, ctx: CanvasRenderingContext2D | PathProxy, shape: ShapeType, inBundle?: boolean) => void
         init?: (this: Path, opts: PathProps) => void // TODO Should be SubPathOption

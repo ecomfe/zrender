@@ -41,7 +41,7 @@ type StyleKeys = keyof StyleProps
 
 const tmpRect = new BoundingRect();
 
-export default class Displayable<T extends DisplayableProps = DisplayableProps> extends Element<T> {
+export default class Displayable<Props extends DisplayableProps = DisplayableProps> extends Element<Props> {
 
     /**
      * Whether the displayable object is visible. when it is true, the displayable object
@@ -125,7 +125,7 @@ export default class Displayable<T extends DisplayableProps = DisplayableProps> 
      */
     dataIndex: number
 
-    constructor(opts?: T, defaultStyle?: T['style']) {
+    constructor(opts?: Props, defaultStyle?: Props['style']) {
         super(opts);
 
         this.attr(opts);
@@ -162,7 +162,7 @@ export default class Displayable<T extends DisplayableProps = DisplayableProps> 
     }
 
     traverse<Context>(
-        cb: (this: Context, el: Displayable<T>) => void,
+        cb: (this: Context, el: Displayable<Props>) => void,
         context?: Context
     ) {
         cb.call(context, this);
@@ -205,16 +205,16 @@ export default class Displayable<T extends DisplayableProps = DisplayableProps> 
         }
         else {
             if (!this.style) {
-                this.useStyle(value as T['style']);
+                this.useStyle(value as Props['style']);
             }
             else {
-                this.style.set(value as T['style']);
+                this.style.set(value as Props['style']);
             }
         }
     }
-    setStyle(key: T['style']): Displayable<T>
-    setStyle(key: keyof T['style'], value?: AllPropTypes<T['style']>): Displayable<T>
-    setStyle(key: T['style'] | keyof T['style'], value?: AllPropTypes<T['style']>) {
+    setStyle(key: Props['style']): Displayable<Props>
+    setStyle(key: keyof Props['style'], value?: AllPropTypes<Props['style']>): Displayable<Props>
+    setStyle(key: Props['style'] | keyof Props['style'], value?: AllPropTypes<Props['style']>) {
         this.style.set(key as keyof StyleProps, value);
         this.dirty(false);
         return this;
@@ -223,7 +223,7 @@ export default class Displayable<T extends DisplayableProps = DisplayableProps> 
     /**
      * Use given style object
      */
-    useStyle(obj: T['style']) {
+    useStyle(obj: Props['style']) {
         this.style = new Style(obj);
         this.dirty(false);
         return this;

@@ -49,13 +49,12 @@ export interface ElementProps {
 }
 
 type ElementKey = keyof ElementProps
-type ElementPropertyType = PropType<ElementProps, ElementKey>
 
 type AnimationCallback = () => void;
 
 export type ElementEventCallback = (e: ElementEvent) => boolean | void
 
-export default class Element<T extends ElementProps = ElementProps> extends Transformable {
+export default class Element<Props extends ElementProps = ElementProps> extends Transformable {
 
     id: number = zrUtil.guid()
     /**
@@ -168,7 +167,7 @@ export default class Element<T extends ElementProps = ElementProps> extends Tran
     }
 
     traverse<Context> (
-        cb: (this: Context, el: Element<T>) => void,
+        cb: (this: Context, el: Element<Props>) => void,
         context?: Context
     ) {}
 
@@ -206,18 +205,18 @@ export default class Element<T extends ElementProps = ElementProps> extends Tran
         this.__zr && this.__zr.refresh();
     }
 
-    attr(key: T): Element<T>
-    attr(key: keyof T, value: AllPropTypes<T>): Element<T>
+    attr(key: Props): Element<Props>
+    attr(key: keyof Props, value: AllPropTypes<Props>): Element<Props>
     /**
      * @param {string|Object} key
      * @param {*} value
      */
-    attr(key: keyof T | T, value?: AllPropTypes<T>): Element<T> {
+    attr(key: keyof Props | Props, value?: AllPropTypes<Props>): Element<Props> {
         if (typeof key === 'string') {
             this.attrKV(key, value);
         }
         else if (zrUtil.isObject(key)) {
-            for (let name in key as T) {
+            for (let name in key as Props) {
                 if (key.hasOwnProperty(name)) {
                     this.attrKV(<ElementKey>name, (<any>key)[name]);
                 }
@@ -414,19 +413,19 @@ export default class Element<T extends ElementProps = ElementProps> extends Tran
      */
 
     // Overload definitions
-    animateTo(target: T): void
-    animateTo(target: T, callback: AnimationCallback): void
-    animateTo(target: T, time: number, delay: number): void
-    animateTo(target: T, time: number, easing: easingType): void
-    animateTo(target: T, time: number, callback: AnimationCallback): void
-    animateTo(target: T, time: number, delay: number, callback: AnimationCallback): void
-    animateTo(target: T, time: number, easing: easingType, callback: AnimationCallback): void
-    animateTo(target: T, time: number, delay: number, easing: easingType, callback: AnimationCallback): void
-    animateTo(target: T, time: number, delay: number, easing: easingType, callback: AnimationCallback, forceAnimate: boolean): void
+    animateTo(target: Props): void
+    animateTo(target: Props, callback: AnimationCallback): void
+    animateTo(target: Props, time: number, delay: number): void
+    animateTo(target: Props, time: number, easing: easingType): void
+    animateTo(target: Props, time: number, callback: AnimationCallback): void
+    animateTo(target: Props, time: number, delay: number, callback: AnimationCallback): void
+    animateTo(target: Props, time: number, easing: easingType, callback: AnimationCallback): void
+    animateTo(target: Props, time: number, delay: number, easing: easingType, callback: AnimationCallback): void
+    animateTo(target: Props, time: number, delay: number, easing: easingType, callback: AnimationCallback, forceAnimate: boolean): void
 
     // TODO Return animation key
     animateTo(
-        target: T,
+        target: Props,
         time?: number | AnimationCallback,  // Time in ms
         delay?: easingType | number | AnimationCallback,
         easing?: easingType | number | AnimationCallback ,
@@ -443,18 +442,18 @@ export default class Element<T extends ElementProps = ElementProps> extends Tran
      */
 
     // Overload definitions
-    animateFrom(target: T): void
-    animateFrom(target: T, callback: AnimationCallback): void
-    animateFrom(target: T, time: number, delay: number): void
-    animateFrom(target: T, time: number, easing: easingType): void
-    animateFrom(target: T, time: number, callback: AnimationCallback): void
-    animateFrom(target: T, time: number, delay: number, callback: AnimationCallback): void
-    animateFrom(target: T, time: number, easing: easingType, callback: AnimationCallback): void
-    animateFrom(target: T, time: number, delay: number, easing: easingType, callback: AnimationCallback): void
-    animateFrom(target: T, time: number, delay: number, easing: easingType, callback: AnimationCallback, forceAnimate: boolean): void
+    animateFrom(target: Props): void
+    animateFrom(target: Props, callback: AnimationCallback): void
+    animateFrom(target: Props, time: number, delay: number): void
+    animateFrom(target: Props, time: number, easing: easingType): void
+    animateFrom(target: Props, time: number, callback: AnimationCallback): void
+    animateFrom(target: Props, time: number, delay: number, callback: AnimationCallback): void
+    animateFrom(target: Props, time: number, easing: easingType, callback: AnimationCallback): void
+    animateFrom(target: Props, time: number, delay: number, easing: easingType, callback: AnimationCallback): void
+    animateFrom(target: Props, time: number, delay: number, easing: easingType, callback: AnimationCallback, forceAnimate: boolean): void
 
     animateFrom(
-        target: T,
+        target: Props,
         time?: number | AnimationCallback,
         delay?: easingType | number | AnimationCallback,
         easing?: easingType | number | AnimationCallback ,
@@ -472,11 +471,11 @@ export default class Element<T extends ElementProps = ElementProps> extends Tran
     }
 
     // Provide more typed event callback params for mouse events.
-    on<Context>(event: ElementEventName, handler: ElementEventCallback, context?: Context): Element<T>
-    on<Context>(event: ElementEventName, query: EventQuery, handler: ElementEventCallback, context?: Context): Element<T>
+    on<Context>(event: ElementEventName, handler: ElementEventCallback, context?: Context): Element<Props>
+    on<Context>(event: ElementEventName, query: EventQuery, handler: ElementEventCallback, context?: Context): Element<Props>
     // Provide general events handler for other custom events.
-    on<Context>(event: string, query?: EventCallback | EventQuery, handler?: EventCallback | Object, context?: Context): Element<T>
-    on<Context>(event: string, query?: EventCallback | EventQuery, handler?: EventCallback | Object, context?: Context): Element<T> {
+    on<Context>(event: string, query?: EventCallback | EventQuery, handler?: EventCallback | Object, context?: Context): Element<Props>
+    on<Context>(event: string, query?: EventCallback | EventQuery, handler?: EventCallback | Object, context?: Context): Element<Props> {
         super.on(event, query, handler as EventCallback, context);
         return this;
     }
