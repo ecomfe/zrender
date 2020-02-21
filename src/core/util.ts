@@ -117,7 +117,15 @@ export function clone<T extends any>(source: T): T {
     return result;
 }
 
-export function merge(target: any, source: any, overwrite?: boolean) {
+export function merge<
+    T extends Dictionary<any>,
+    S extends Dictionary<any>
+>(target: T, source: S, overwrite?: boolean): T & S;
+export function merge<
+    T extends any,
+    S extends any
+>(target: T, source: S, overwrite?: boolean): T | S;
+export function merge(target: any, source: any, overwrite?: boolean): any {
     // We should escapse that source is string
     // and enter for ... in ...
     if (!isObject(source) || !isObject(target)) {
@@ -275,12 +283,13 @@ export function isArrayLike(data: any): data is ArrayLike<any> {
 /**
  * 数组或对象遍历
  */
-export function each<I extends Dictionary<any> | any[], Context>(
+export function each<I extends Dictionary<any> | any[] | readonly any[] | ArrayLike<any>, Context>(
     arr: I,
     cb: (
         this: Context,
-        value: I extends Dictionary<infer T> | (infer T)[] ? T : any,
-        index?: I extends any[] ? number : string,
+        // Use unknown to avoid to infer to "any", which may disable typo check.
+        value: I extends Dictionary<infer T> | (infer T)[] | readonly (infer T)[] | ArrayLike<infer T> ? T : unknown,
+        index?: I extends any[] | readonly any[] | ArrayLike<any> ? number : string,
         arr?: I
     ) => void,
     context?: Context
@@ -288,8 +297,8 @@ export function each<I extends Dictionary<any> | any[], Context>(
     if (!(arr && cb)) {
         return;
     }
-    if (arr.forEach && arr.forEach === nativeForEach) {
-        arr.forEach(cb, context);
+    if ((arr as any).forEach && (arr as any).forEach === nativeForEach) {
+        (arr as any).forEach(cb, context);
     }
     else if (arr.length === +arr.length) {
         for (let i = 0, len = arr.length; i < len; i++) {
@@ -510,13 +519,13 @@ export function retrieve<T>(...args: T[]): T {
     }
 }
 
-export function retrieve2<T, R>(value0: T, value1: R) {
+export function retrieve2<T, R>(value0: T, value1: R): T | R {
     return value0 != null
         ? value0
         : value1;
 }
 
-export function retrieve3<T, R, W>(value0: T, value1: R, value2: W) {
+export function retrieve3<T, R, W>(value0: T, value1: R, value2: W): T | R | W {
     return value0 != null
         ? value0
         : value1 != null
@@ -613,10 +622,10 @@ export class HashMap<T> {
     // Do not provide `has` method to avoid defining what is `has`.
     // (We usually treat `null` and `undefined` as the same, different
     // from ES6 Map).
-    get(key: string): T {
+    get(key: string | number): T {
         return this.data.hasOwnProperty(key) ? this.data[key] : null;
     }
-    set(key: string, value: T) {
+    set(key: string | number, value: T) {
         // Comparing with invocation chaining, `return value` is more commonly
         // used in this case: `const someVal = map.set('a', genVal());`
         return (this.data[key] = value);
@@ -635,7 +644,7 @@ export class HashMap<T> {
         /* eslint-enable guard-for-in */
     }
     // Do not use this method if performance sensitive.
-    removeKey(key: string) {
+    removeKey(key: string | number) {
         delete this.data[key];
     }
 }
