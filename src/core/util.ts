@@ -416,10 +416,20 @@ export function keys<T extends object>(obj: T): (keyof T)[] {
     return keyList;
 }
 
-export function bind<Context, Fn extends (...args: any) => any>(
-    func: Fn, context: Context, ...args: any[]
-): (this: Context, ...args: Parameters<Fn>) => ReturnType<Fn> {
-    return function (this: Context) {
+type Bind1<F, Ctx> = F extends (...args: infer A) => infer R ? (this: Ctx, ...args: A) => R : unknown;
+type Bind2<F, Ctx, T1> = F extends (a: T1, ...args: infer A) => infer R ? (this: Ctx, ...args: A) => R : unknown;
+type Bind3<F, Ctx, T1, T2> = F extends (a: T1, b: T2, ...args: infer A) => infer R ? (this: Ctx, ...args: A) => R : unknown;
+type Bind4<F, Ctx, T1, T2, T3> = F extends (a: T1, b: T2, c: T3, ...args: infer A) => infer R ? (this: Ctx, ...args: A) => R : unknown;
+type BindFunc = (...arg: any[]) => any
+
+function bind<F extends BindFunc, Ctx>(func: F, ctx: Ctx): Bind1<F, Ctx>
+function bind<F extends BindFunc, Ctx, T1 extends Parameters<F>[0]>(func: F, ctx: Ctx, a: T1): Bind2<F, Ctx, T1>
+function bind<F extends BindFunc, Ctx, T1 extends Parameters<F>[0], T2 extends Parameters<F>[1]>(func: F, ctx: Ctx, a: T1, b: T2): Bind3<F, Ctx, T1, T2>
+function bind<F extends BindFunc, Ctx, T1 extends Parameters<F>[0], T2 extends Parameters<F>[1], T3 extends Parameters<F>[2]>(func: F, ctx: Ctx, a: T1, b: T2, c: T3): Bind4<F, Ctx, T1, T2, T3>
+function bind<Ctx, Fn extends (...args: any) => any>(
+    func: Fn, context: Ctx, ...args: any[]
+): (this: Ctx, ...args: Parameters<Fn>) => ReturnType<Fn> {
+    return function (this: Ctx) {
         return func.apply(context, args.concat(nativeSlice.call(arguments)));
     };
 }
@@ -440,7 +450,7 @@ function curry(func: Function, ...args: any[]): Function {
     };
 }
 
-export {curry};
+export {bind, curry};
 
 /**
  * @param value
