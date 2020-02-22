@@ -17,7 +17,7 @@ export interface LinearGradientObject extends GradientObject {
 
 export default class LinearGradient extends Gradient {
 
-    type = 'linear'
+    type: 'linear'
 
     x: number
     y: number

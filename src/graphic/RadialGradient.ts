@@ -14,7 +14,7 @@ export interface RadialGradientObject extends GradientObject {
  */
 class RadialGradient extends Gradient {
 
-    type = 'radial'
+    type: 'radial'
 
     x: number
     y: number

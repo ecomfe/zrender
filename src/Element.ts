@@ -151,6 +151,13 @@ class Element<Props extends ElementProps = ElementProps> extends Transformable {
      */
     private _clipPath: Path
 
+
+    // FOR ECHARTS
+    /**
+     * Id for mapping animation
+     */
+    anid: string
+
     constructor(opts?: ElementProps) {
         // Transformable needs position, rotation, scale
         super(opts);
@@ -236,13 +243,13 @@ class Element<Props extends ElementProps = ElementProps> extends Transformable {
         this.__zr && this.__zr.refresh();
     }
 
-    attr(key: Props): Element<Props>
-    attr(key: keyof Props, value: AllPropTypes<Props>): Element<Props>
+    attr(key: Props): this
+    attr(key: keyof Props, value: AllPropTypes<Props>): this
     /**
      * @param {string|Object} key
      * @param {*} value
      */
-    attr(key: keyof Props | Props, value?: AllPropTypes<Props>): Element<Props> {
+    attr(key: keyof Props | Props, value?: AllPropTypes<Props>): this {
         if (typeof key === 'string') {
             this.attrKV(key, value);
         }

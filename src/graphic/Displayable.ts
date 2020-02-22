@@ -118,14 +118,6 @@ export default class Displayable<Props extends DisplayableProps = DisplayablePro
     useHoverLayer: boolean
     highDownSilentOnTouch: boolean
     highDownOnUpdate: (fromState: 'normal' | 'emphasis', toState: 'normal' | 'emphasis') => void
-    /**
-     * Id for mapping animation
-     */
-    anid: string
-    /**
-     * Mapped data index.
-     */
-    dataIndex: number
 
     constructor(opts?: Props, defaultStyle?: Props['style']) {
         super(opts);
@@ -214,9 +206,9 @@ export default class Displayable<Props extends DisplayableProps = DisplayablePro
             }
         }
     }
-    setStyle(key: Props['style']): Displayable<Props>
-    setStyle(key: keyof Props['style'], value?: AllPropTypes<Props['style']>): Displayable<Props>
-    setStyle(key: Props['style'] | keyof Props['style'], value?: AllPropTypes<Props['style']>): Displayable<Props> {
+    setStyle(key: Props['style']): this
+    setStyle(key: keyof Props['style'], value?: AllPropTypes<Props['style']>): this
+    setStyle(key: Props['style'] | keyof Props['style'], value?: AllPropTypes<Props['style']>): this {
         this.style.set(key as keyof StyleProps, value);
         this.dirty(false);
         return this;
