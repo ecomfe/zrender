@@ -289,7 +289,7 @@ export function each<I extends Dictionary<any> | any[] | readonly any[] | ArrayL
         this: Context,
         // Use unknown to avoid to infer to "any", which may disable typo check.
         value: I extends Dictionary<infer T> | (infer T)[] | readonly (infer T)[] | ArrayLike<infer T> ? T : unknown,
-        index?: I extends any[] | readonly any[] | ArrayLike<any> ? number : string,
+        index?: I extends any[] | readonly any[] | ArrayLike<any> ? number : keyof I,
         arr?: I
     ) => void,
     context?: Context
