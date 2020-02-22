@@ -30,7 +30,30 @@ export interface ElementEvent {
     stop: (this: ElementEvent) => void
 }
 
-export interface ElementProps {
+export type ElementEventCallback = (e: ElementEvent) => boolean | void
+
+interface ElementEventHandlerProps {
+    // Events
+    onclick: ElementEventCallback
+    ondblclick: ElementEventCallback
+    onmouseover: ElementEventCallback
+    onmouseout: ElementEventCallback
+    onmousemove: ElementEventCallback
+    onmousewheel: ElementEventCallback
+    onmousedown: ElementEventCallback
+    onmouseup: ElementEventCallback
+    oncontextmenu: ElementEventCallback
+
+    ondrag: ElementEventCallback
+    ondragstart: ElementEventCallback
+    ondragend: ElementEventCallback
+    ondragenter: ElementEventCallback
+    ondragleave: ElementEventCallback
+    ondragover: ElementEventCallback
+    ondrop: ElementEventCallback
+
+}
+export interface ElementProps extends Partial<ElementEventHandlerProps> {
     name?: string
     ignore?: boolean
     isGroup?: boolean
@@ -45,6 +68,8 @@ export interface ElementProps {
     origin?: VectorArray
     globalScaleRatio?: number
 
+    drift?: Element['drift']
+
     extra?: Dictionary<any>
 }
 
@@ -52,9 +77,15 @@ type ElementKey = keyof ElementProps
 
 type AnimationCallback = () => void;
 
-export type ElementEventCallback = (e: ElementEvent) => boolean | void
+interface Element<Props extends ElementProps = ElementProps> extends ElementEventHandlerProps {
+    // Provide more typed event callback params for mouse events.
+    on<Context>(event: ElementEventName, handler: ElementEventCallback, context?: Context): Element<Props>
+    on<Context>(event: ElementEventName, query: EventQuery, handler: ElementEventCallback, context?: Context): Element<Props>
+    // Provide general events handler for other custom events.
+    on<Context>(event: string, query?: EventCallback | EventQuery, handler?: EventCallback | Object, context?: Context): Element<Props>
+}
 
-export default class Element<Props extends ElementProps = ElementProps> extends Transformable {
+class Element<Props extends ElementProps = ElementProps> extends Transformable {
 
     id: number = zrUtil.guid()
     /**
@@ -470,35 +501,6 @@ export default class Element<Props extends ElementProps = ElementProps> extends 
         return null;
     }
 
-    // Provide more typed event callback params for mouse events.
-    on<Context>(event: ElementEventName, handler: ElementEventCallback, context?: Context): Element<Props>
-    on<Context>(event: ElementEventName, query: EventQuery, handler: ElementEventCallback, context?: Context): Element<Props>
-    // Provide general events handler for other custom events.
-    on<Context>(event: string, query?: EventCallback | EventQuery, handler?: EventCallback | Object, context?: Context): Element<Props>
-    on<Context>(event: string, query?: EventCallback | EventQuery, handler?: EventCallback | Object, context?: Context): Element<Props> {
-        super.on(event, query, handler as EventCallback, context);
-        return this;
-    }
-
-    // Events
-    onclick: ElementEventCallback
-    ondblclick: ElementEventCallback
-    onmouseover: ElementEventCallback
-    onmouseout: ElementEventCallback
-    onmousemove: ElementEventCallback
-    onmousewheel: ElementEventCallback
-    onmousedown: ElementEventCallback
-    onmouseup: ElementEventCallback
-    oncontextmenu: ElementEventCallback
-
-    ondrag: ElementEventCallback
-    ondragstart: ElementEventCallback
-    ondragend: ElementEventCallback
-    ondragenter: ElementEventCallback
-    ondragleave: ElementEventCallback
-    ondragover: ElementEventCallback
-    ondrop: ElementEventCallback
-
 
     protected static initDefaultProps = (function () {
         const elProto = Element.prototype;
@@ -662,3 +664,6 @@ function setAttrByPath<T>(el: Element<T>, path: string, name: string, value: any
         el.attr(props as T);
     }
 }
+
+
+export default Element;

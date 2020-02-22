@@ -32,6 +32,8 @@ export interface DisplayableProps extends ElementProps {
     progressive?: boolean
 
     incremental?: boolean
+
+    invisible?: boolean
 }
 
 type DisplayableKey = keyof DisplayableProps
@@ -214,7 +216,7 @@ export default class Displayable<Props extends DisplayableProps = DisplayablePro
     }
     setStyle(key: Props['style']): Displayable<Props>
     setStyle(key: keyof Props['style'], value?: AllPropTypes<Props['style']>): Displayable<Props>
-    setStyle(key: Props['style'] | keyof Props['style'], value?: AllPropTypes<Props['style']>) {
+    setStyle(key: Props['style'] | keyof Props['style'], value?: AllPropTypes<Props['style']>): Displayable<Props> {
         this.style.set(key as keyof StyleProps, value);
         this.dirty(false);
         return this;
