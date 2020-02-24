@@ -288,7 +288,7 @@ export function each<I extends Dictionary<any> | any[] | readonly any[] | ArrayL
     cb: (
         this: Context,
         // Use unknown to avoid to infer to "any", which may disable typo check.
-        value: I extends Dictionary<infer T> | (infer T)[] | readonly (infer T)[] | ArrayLike<infer T> ? T : unknown,
+        value: I extends (infer T)[] | readonly (infer T)[] | ArrayLike<infer T> | Dictionary<infer T> ? T : unknown,
         index?: I extends any[] | readonly any[] | ArrayLike<any> ? number : keyof I & string,  // keyof Dictionary will return number | string
         arr?: I
     ) => void,
@@ -416,16 +416,16 @@ export function keys<T extends object>(obj: T): (keyof T)[] {
     return keyList;
 }
 
-type Bind1<F, Ctx> = F extends (...args: infer A) => infer R ? (this: Ctx, ...args: A) => R : unknown;
-type Bind2<F, Ctx, T1> = F extends (a: T1, ...args: infer A) => infer R ? (this: Ctx, ...args: A) => R : unknown;
-type Bind3<F, Ctx, T1, T2> = F extends (a: T1, b: T2, ...args: infer A) => infer R ? (this: Ctx, ...args: A) => R : unknown;
-type Bind4<F, Ctx, T1, T2, T3> = F extends (a: T1, b: T2, c: T3, ...args: infer A) => infer R ? (this: Ctx, ...args: A) => R : unknown;
-type BindFunc = (...arg: any[]) => any
+type Bind1<F, Ctx> = F extends (this: Ctx, ...args: infer A) => infer R ? (this: Ctx, ...args: A) => R : unknown;
+type Bind2<F, Ctx, T1> = F extends (this: Ctx, a: T1, ...args: infer A) => infer R ? (this: Ctx, ...args: A) => R : unknown;
+type Bind3<F, Ctx, T1, T2> = F extends (this: Ctx, a: T1, b: T2, ...args: infer A) => infer R ? (this: Ctx, ...args: A) => R : unknown;
+type Bind4<F, Ctx, T1, T2, T3> = F extends (this: Ctx, a: T1, b: T2, c: T3, ...args: infer A) => infer R ? (this: Ctx, ...args: A) => R : unknown;
+type BindFunc<Ctx> = (this: Ctx, ...arg: any[]) => any
 
-function bind<F extends BindFunc, Ctx>(func: F, ctx: Ctx): Bind1<F, Ctx>
-function bind<F extends BindFunc, Ctx, T1 extends Parameters<F>[0]>(func: F, ctx: Ctx, a: T1): Bind2<F, Ctx, T1>
-function bind<F extends BindFunc, Ctx, T1 extends Parameters<F>[0], T2 extends Parameters<F>[1]>(func: F, ctx: Ctx, a: T1, b: T2): Bind3<F, Ctx, T1, T2>
-function bind<F extends BindFunc, Ctx, T1 extends Parameters<F>[0], T2 extends Parameters<F>[1], T3 extends Parameters<F>[2]>(func: F, ctx: Ctx, a: T1, b: T2, c: T3): Bind4<F, Ctx, T1, T2, T3>
+function bind<F extends BindFunc<Ctx>, Ctx>(func: F, ctx: Ctx): Bind1<F, Ctx>
+function bind<F extends BindFunc<Ctx>, Ctx, T1 extends Parameters<F>[0]>(func: F, ctx: Ctx, a: T1): Bind2<F, Ctx, T1>
+function bind<F extends BindFunc<Ctx>, Ctx, T1 extends Parameters<F>[0], T2 extends Parameters<F>[1]>(func: F, ctx: Ctx, a: T1, b: T2): Bind3<F, Ctx, T1, T2>
+function bind<F extends BindFunc<Ctx>, Ctx, T1 extends Parameters<F>[0], T2 extends Parameters<F>[1], T3 extends Parameters<F>[2]>(func: F, ctx: Ctx, a: T1, b: T2, c: T3): Bind4<F, Ctx, T1, T2, T3>
 function bind<Ctx, Fn extends (...args: any) => any>(
     func: Fn, context: Ctx, ...args: any[]
 ): (this: Ctx, ...args: Parameters<Fn>) => ReturnType<Fn> {
@@ -479,7 +479,7 @@ export function isString(value: any): value is String {
 // Usage: `isObject(xxx)` or `isObject(SomeType)(xxx)`
 // Generic T can be used to avoid "ts type gruards" casting the `value` from its original
 // type `Object` implicitly so that loose its original type info in the subsequent code.
-export function isObject<T = unknown>(value: any): value is (Object & T) {
+export function isObject<T = unknown>(value: T): value is (object & T) {
     // Avoid a V8 JIT bug in Chrome 19-20.
     // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
     const type = typeof value;
