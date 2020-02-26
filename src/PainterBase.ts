@@ -26,6 +26,7 @@ export class PainterBase {
     clear: () => void
 
     getViewportRoot: () => HTMLElement
+    getViewportRootOffset: () => {offsetLeft: number, offsetTop: number}
 
     getWidth: () => number
     getHeight: () => number

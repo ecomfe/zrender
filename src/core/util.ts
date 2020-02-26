@@ -224,10 +224,10 @@ export function getContext(): CanvasRenderingContext2D {
 /**
  * 查询数组中元素的index
  */
-export function indexOf<T>(array: T[], value: T): number {
+export function indexOf<T>(array: T[] | readonly T[] | ArrayLike<T>, value: T): number {
     if (array) {
-        if (array.indexOf) {
-            return array.indexOf(value);
+        if ((array as T[]).indexOf) {
+            return (array as T[]).indexOf(value);
         }
         for (let i = 0, len = array.length; i < len; i++) {
             if (array[i] === value) {
@@ -420,12 +420,14 @@ type Bind1<F, Ctx> = F extends (this: Ctx, ...args: infer A) => infer R ? (this:
 type Bind2<F, Ctx, T1> = F extends (this: Ctx, a: T1, ...args: infer A) => infer R ? (this: Ctx, ...args: A) => R : unknown;
 type Bind3<F, Ctx, T1, T2> = F extends (this: Ctx, a: T1, b: T2, ...args: infer A) => infer R ? (this: Ctx, ...args: A) => R : unknown;
 type Bind4<F, Ctx, T1, T2, T3> = F extends (this: Ctx, a: T1, b: T2, c: T3, ...args: infer A) => infer R ? (this: Ctx, ...args: A) => R : unknown;
+type Bind5<F, Ctx, T1, T2, T3, T4> = F extends (this: Ctx, a: T1, b: T2, c: T3, d: T4, ...args: infer A) => infer R ? (this: Ctx, ...args: A) => R : unknown;
 type BindFunc<Ctx> = (this: Ctx, ...arg: any[]) => any
 
 function bind<F extends BindFunc<Ctx>, Ctx>(func: F, ctx: Ctx): Bind1<F, Ctx>
 function bind<F extends BindFunc<Ctx>, Ctx, T1 extends Parameters<F>[0]>(func: F, ctx: Ctx, a: T1): Bind2<F, Ctx, T1>
 function bind<F extends BindFunc<Ctx>, Ctx, T1 extends Parameters<F>[0], T2 extends Parameters<F>[1]>(func: F, ctx: Ctx, a: T1, b: T2): Bind3<F, Ctx, T1, T2>
 function bind<F extends BindFunc<Ctx>, Ctx, T1 extends Parameters<F>[0], T2 extends Parameters<F>[1], T3 extends Parameters<F>[2]>(func: F, ctx: Ctx, a: T1, b: T2, c: T3): Bind4<F, Ctx, T1, T2, T3>
+function bind<F extends BindFunc<Ctx>, Ctx, T1 extends Parameters<F>[0], T2 extends Parameters<F>[1], T3 extends Parameters<F>[2], T4 extends Parameters<F>[3]>(func: F, ctx: Ctx, a: T1, b: T2, c: T3, d: T4): Bind5<F, Ctx, T1, T2, T3, T4>
 function bind<Ctx, Fn extends (...args: any) => any>(
     func: Fn, context: Ctx, ...args: any[]
 ): (this: Ctx, ...args: Parameters<Fn>) => ReturnType<Fn> {

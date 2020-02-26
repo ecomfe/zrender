@@ -195,8 +195,10 @@ export class StyleProps extends TextStyleProps {
      * 'inside', 'left', 'right', 'top', 'bottom'
      * [x, y]
      * Based on x, y of rect.
+     *
+     * x, y can be both percent string or number px.
      */
-    textPosition?: string | number[]
+    textPosition?: string | (number | string)[]
     /**
      * If not specified, use the boundingRect of a `displayable`.
      */

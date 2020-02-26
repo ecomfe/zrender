@@ -203,7 +203,7 @@ export function addEventListener (
     el: HTMLElement | HTMLDocument,
     name: AddEventListenerParams[0],
     handler: AddEventListenerParams[1],
-    opt: AddEventListenerParams[2]
+    opt?: AddEventListenerParams[2]
 ) {
     if (isDomLevel2) {
         // Reproduct the console warning:
