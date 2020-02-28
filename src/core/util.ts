@@ -416,8 +416,8 @@ export function keys<T extends object>(obj: T): (keyof T)[] {
     return keyList;
 }
 
-export type Bind<F, Ctx> = F extends (this: Ctx, ...args: infer A) => infer R ? (this: Ctx, ...args: A) => R : unknown;
-export type Bind1<F, Ctx, T1> = F extends (this: Ctx, a: T1, ...args: infer A) => infer R ? (this: Ctx, ...args: A) => R : unknown;
+export type Bind1<F, Ctx> = F extends (this: Ctx, ...args: infer A) => infer R ? (this: Ctx, ...args: A) => R : unknown;
+export type Bind2<F, Ctx, T1> = F extends (this: Ctx, a: T1, ...args: infer A) => infer R ? (this: Ctx, ...args: A) => R : unknown;
 export type Bind3<F, Ctx, T1, T2> = F extends (this: Ctx, a: T1, b: T2, ...args: infer A) => infer R ? (this: Ctx, ...args: A) => R : unknown;
 export type Bind4<F, Ctx, T1, T2, T3> = F extends (this: Ctx, a: T1, b: T2, c: T3, ...args: infer A) => infer R ? (this: Ctx, ...args: A) => R : unknown;
 export type Bind5<F, Ctx, T1, T2, T3, T4> = F extends (this: Ctx, a: T1, b: T2, c: T3, d: T4, ...args: infer A) => infer R ? (this: Ctx, ...args: A) => R : unknown;

@@ -278,10 +278,9 @@ export const stop = isDomLevel2
  * This method only works for mouseup and mousedown. The functionality is restricted
  * for fault tolerance, See the `e.which` compatibility above.
  *
- * @param {MouseEvent} e
- * @return {boolean}
+ * params can be MouseEvent or ElementEvent
  */
-export function isMiddleOrRightButtonOnMouseUpDown(e: MouseEvent) {
+export function isMiddleOrRightButtonOnMouseUpDown(e: { which: number }) {
     return e.which === 2 || e.which === 3;
 }
 
