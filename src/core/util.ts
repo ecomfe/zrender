@@ -167,7 +167,7 @@ export function merge(target: any, source: any, overwrite?: boolean): any {
  * @param overwrite
  * @return Merged result
  */
-export function mergeAll(targetAndSources: any[], overwrite: boolean): any {
+export function mergeAll(targetAndSources: any[], overwrite?: boolean): any {
     let result = targetAndSources[0];
     for (let i = 1, len = targetAndSources.length; i < len; i++) {
         result = merge(result, targetAndSources[i], overwrite);

@@ -116,8 +116,6 @@ export default class Displayable<Props extends DisplayableProps = DisplayablePro
      * If use individual hover layer. It is set in echarts
      */
     useHoverLayer: boolean
-    highDownSilentOnTouch: boolean
-    highDownOnUpdate: (fromState: 'normal' | 'emphasis', toState: 'normal' | 'emphasis') => void
 
     constructor(opts?: Props, defaultStyle?: Props['style']) {
         super(opts);
