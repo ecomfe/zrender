@@ -7,7 +7,7 @@
 import Style, {StyleProps} from './Style';
 import Element, {ElementProps} from '../Element';
 import BoundingRect, { RectLike } from '../core/BoundingRect';
-import { Dictionary, PropType, AllPropTypes } from '../core/types';
+import { PropType, AllPropTypes } from '../core/types';
 import Path from './Path';
 import * as textHelper from './helper/text';
 import {WILL_BE_RESTORED} from './constant';

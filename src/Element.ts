@@ -9,6 +9,7 @@ import Path from './graphic/Path';
 import BoundingRect from './core/BoundingRect';
 import Storage from './Storage';
 import {EventQuery, EventCallback} from './core/Eventful';
+import Group from './container/Group';
 
 export interface ElementEvent {
     type: ElementEventName,
@@ -30,27 +31,30 @@ export interface ElementEvent {
     stop: (this: ElementEvent) => void
 }
 
-export type ElementEventCallback = (e: ElementEvent) => boolean | void
+export type ElementEventCallback<Ctx, Impl> = (
+    this: CbThis<Ctx, Impl>, e: ElementEvent
+) => boolean | void
+type CbThis<Ctx, Impl> = unknown extends Ctx ? Impl : 'Ctx';
 
 interface ElementEventHandlerProps {
     // Events
-    onclick: ElementEventCallback
-    ondblclick: ElementEventCallback
-    onmouseover: ElementEventCallback
-    onmouseout: ElementEventCallback
-    onmousemove: ElementEventCallback
-    onmousewheel: ElementEventCallback
-    onmousedown: ElementEventCallback
-    onmouseup: ElementEventCallback
-    oncontextmenu: ElementEventCallback
+    onclick: ElementEventCallback<unknown, Element>
+    ondblclick: ElementEventCallback<unknown, Element>
+    onmouseover: ElementEventCallback<unknown, Element>
+    onmouseout: ElementEventCallback<unknown, Element>
+    onmousemove: ElementEventCallback<unknown, Element>
+    onmousewheel: ElementEventCallback<unknown, Element>
+    onmousedown: ElementEventCallback<unknown, Element>
+    onmouseup: ElementEventCallback<unknown, Element>
+    oncontextmenu: ElementEventCallback<unknown, Element>
 
-    ondrag: ElementEventCallback
-    ondragstart: ElementEventCallback
-    ondragend: ElementEventCallback
-    ondragenter: ElementEventCallback
-    ondragleave: ElementEventCallback
-    ondragover: ElementEventCallback
-    ondrop: ElementEventCallback
+    ondrag: ElementEventCallback<unknown, Element>
+    ondragstart: ElementEventCallback<unknown, Element>
+    ondragend: ElementEventCallback<unknown, Element>
+    ondragenter: ElementEventCallback<unknown, Element>
+    ondragleave: ElementEventCallback<unknown, Element>
+    ondragover: ElementEventCallback<unknown, Element>
+    ondrop: ElementEventCallback<unknown, Element>
 
 }
 export interface ElementProps extends Partial<ElementEventHandlerProps> {
@@ -79,10 +83,11 @@ type AnimationCallback = () => void;
 
 interface Element<Props extends ElementProps = ElementProps> extends ElementEventHandlerProps {
     // Provide more typed event callback params for mouse events.
-    on<Context>(event: ElementEventName, handler: ElementEventCallback, context?: Context): Element<Props>
-    on<Context>(event: ElementEventName, query: EventQuery, handler: ElementEventCallback, context?: Context): Element<Props>
-    // Provide general events handler for other custom events.
-    on<Context>(event: string, query?: EventCallback | EventQuery, handler?: EventCallback | Object, context?: Context): Element<Props>
+    on<Ctx>(event: ElementEventName, handler: ElementEventCallback<Ctx, this>, context?: Ctx): this
+    on<Ctx>(event: string, handler: EventCallback<Ctx, this>, context?: Ctx): this
+
+    on<Ctx>(event: ElementEventName, query: EventQuery, handler: ElementEventCallback<Ctx, this>, context?: Ctx): this
+    on<Ctx>(event: string, query: EventQuery, handler: EventCallback<Ctx, this>, context?: Ctx): this
 }
 
 class Element<Props extends ElementProps = ElementProps> extends Transformable {
@@ -123,7 +128,7 @@ class Element<Props extends ElementProps = ElementProps> extends Transformable {
      */
     dragging: boolean
 
-    parent: Element
+    parent: Group
 
     animators: Animator<any>[] = [];
 
