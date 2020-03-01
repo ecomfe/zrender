@@ -249,21 +249,21 @@ export default class Layer extends Eventful {
 
 
     // Events
-    onclick: ElementEventCallback
-    ondblclick: ElementEventCallback
-    onmouseover: ElementEventCallback
-    onmouseout: ElementEventCallback
-    onmousemove: ElementEventCallback
-    onmousewheel: ElementEventCallback
-    onmousedown: ElementEventCallback
-    onmouseup: ElementEventCallback
-    oncontextmenu: ElementEventCallback
+    onclick: ElementEventCallback<unknown, this>
+    ondblclick: ElementEventCallback<unknown, this>
+    onmouseover: ElementEventCallback<unknown, this>
+    onmouseout: ElementEventCallback<unknown, this>
+    onmousemove: ElementEventCallback<unknown, this>
+    onmousewheel: ElementEventCallback<unknown, this>
+    onmousedown: ElementEventCallback<unknown, this>
+    onmouseup: ElementEventCallback<unknown, this>
+    oncontextmenu: ElementEventCallback<unknown, this>
 
-    ondrag: ElementEventCallback
-    ondragstart: ElementEventCallback
-    ondragend: ElementEventCallback
-    ondragenter: ElementEventCallback
-    ondragleave: ElementEventCallback
-    ondragover: ElementEventCallback
-    ondrop: ElementEventCallback
+    ondrag: ElementEventCallback<unknown, this>
+    ondragstart: ElementEventCallback<unknown, this>
+    ondragend: ElementEventCallback<unknown, this>
+    ondragenter: ElementEventCallback<unknown, this>
+    ondragleave: ElementEventCallback<unknown, this>
+    ondragover: ElementEventCallback<unknown, this>
+    ondrop: ElementEventCallback<unknown, this>
 }

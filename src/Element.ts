@@ -38,25 +38,26 @@ type CbThis<Ctx, Impl> = unknown extends Ctx ? Impl : 'Ctx';
 
 interface ElementEventHandlerProps {
     // Events
-    onclick: ElementEventCallback<unknown, Element>
-    ondblclick: ElementEventCallback<unknown, Element>
-    onmouseover: ElementEventCallback<unknown, Element>
-    onmouseout: ElementEventCallback<unknown, Element>
-    onmousemove: ElementEventCallback<unknown, Element>
-    onmousewheel: ElementEventCallback<unknown, Element>
-    onmousedown: ElementEventCallback<unknown, Element>
-    onmouseup: ElementEventCallback<unknown, Element>
-    oncontextmenu: ElementEventCallback<unknown, Element>
+    onclick: ElementEventCallback<unknown, unknown>
+    ondblclick: ElementEventCallback<unknown, unknown>
+    onmouseover: ElementEventCallback<unknown, unknown>
+    onmouseout: ElementEventCallback<unknown, unknown>
+    onmousemove: ElementEventCallback<unknown, unknown>
+    onmousewheel: ElementEventCallback<unknown, unknown>
+    onmousedown: ElementEventCallback<unknown, unknown>
+    onmouseup: ElementEventCallback<unknown, unknown>
+    oncontextmenu: ElementEventCallback<unknown, unknown>
 
-    ondrag: ElementEventCallback<unknown, Element>
-    ondragstart: ElementEventCallback<unknown, Element>
-    ondragend: ElementEventCallback<unknown, Element>
-    ondragenter: ElementEventCallback<unknown, Element>
-    ondragleave: ElementEventCallback<unknown, Element>
-    ondragover: ElementEventCallback<unknown, Element>
-    ondrop: ElementEventCallback<unknown, Element>
+    ondrag: ElementEventCallback<unknown, unknown>
+    ondragstart: ElementEventCallback<unknown, unknown>
+    ondragend: ElementEventCallback<unknown, unknown>
+    ondragenter: ElementEventCallback<unknown, unknown>
+    ondragleave: ElementEventCallback<unknown, unknown>
+    ondragover: ElementEventCallback<unknown, unknown>
+    ondrop: ElementEventCallback<unknown, unknown>
 
 }
+
 export interface ElementProps extends Partial<ElementEventHandlerProps> {
     name?: string
     ignore?: boolean

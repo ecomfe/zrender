@@ -416,11 +416,13 @@ export function keys<T extends object>(obj: T): (keyof T)[] {
     return keyList;
 }
 
-export type Bind1<F, Ctx> = F extends (this: Ctx, ...args: infer A) => infer R ? (this: Ctx, ...args: A) => R : unknown;
-export type Bind2<F, Ctx, T1> = F extends (this: Ctx, a: T1, ...args: infer A) => infer R ? (this: Ctx, ...args: A) => R : unknown;
-export type Bind3<F, Ctx, T1, T2> = F extends (this: Ctx, a: T1, b: T2, ...args: infer A) => infer R ? (this: Ctx, ...args: A) => R : unknown;
-export type Bind4<F, Ctx, T1, T2, T3> = F extends (this: Ctx, a: T1, b: T2, c: T3, ...args: infer A) => infer R ? (this: Ctx, ...args: A) => R : unknown;
-export type Bind5<F, Ctx, T1, T2, T3, T4> = F extends (this: Ctx, a: T1, b: T2, c: T3, d: T4, ...args: infer A) => infer R ? (this: Ctx, ...args: A) => R : unknown;
+// Remove this type in returned function. Or it will conflicts wicth callback with given context. Like Eventful.
+// According to lib.es5.d.ts
+export type Bind1<F, Ctx> = F extends (this: Ctx, ...args: infer A) => infer R ? (...args: A) => R : unknown;
+export type Bind2<F, Ctx, T1> = F extends (this: Ctx, a: T1, ...args: infer A) => infer R ? (...args: A) => R : unknown;
+export type Bind3<F, Ctx, T1, T2> = F extends (this: Ctx, a: T1, b: T2, ...args: infer A) => infer R ? (...args: A) => R : unknown;
+export type Bind4<F, Ctx, T1, T2, T3> = F extends (this: Ctx, a: T1, b: T2, c: T3, ...args: infer A) => infer R ? (...args: A) => R : unknown;
+export type Bind5<F, Ctx, T1, T2, T3, T4> = F extends (this: Ctx, a: T1, b: T2, c: T3, d: T4, ...args: infer A) => infer R ? (...args: A) => R : unknown;
 type BindFunc<Ctx> = (this: Ctx, ...arg: any[]) => any
 
 function bind<F extends BindFunc<Ctx>, Ctx>(func: F, ctx: Ctx): Bind1<F, Ctx>
@@ -430,7 +432,7 @@ function bind<F extends BindFunc<Ctx>, Ctx, T1 extends Parameters<F>[0], T2 exte
 function bind<F extends BindFunc<Ctx>, Ctx, T1 extends Parameters<F>[0], T2 extends Parameters<F>[1], T3 extends Parameters<F>[2], T4 extends Parameters<F>[3]>(func: F, ctx: Ctx, a: T1, b: T2, c: T3, d: T4): Bind5<F, Ctx, T1, T2, T3, T4>
 function bind<Ctx, Fn extends (...args: any) => any>(
     func: Fn, context: Ctx, ...args: any[]
-): (this: Ctx, ...args: Parameters<Fn>) => ReturnType<Fn> {
+): (...args: Parameters<Fn>) => ReturnType<Fn> {
     return function (this: Ctx) {
         return func.apply(context, args.concat(nativeSlice.call(arguments)));
     };

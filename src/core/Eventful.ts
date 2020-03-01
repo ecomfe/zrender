@@ -1,5 +1,3 @@
-const arrySlice = Array.prototype.slice;
-
 // Return true to cancel bubble
 export type EventCallback<Ctx, Impl> = (
     this: CbThis<Ctx, Impl>, ...args: any[]

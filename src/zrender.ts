@@ -327,10 +327,11 @@ class ZRender {
         return this.handler.findHover(x, y);
     }
 
-    on<Context>(eventName: ElementEventName, eventHandler: ElementEventCallback, context?: Context): void
-    on<Context>(eventName: string, eventHandler: EventCallback, context?: Context): void
-    on<Context>(eventName: string, eventHandler: EventCallback, context?: Context) {
+    on<Ctx>(eventName: ElementEventName, eventHandler: ElementEventCallback<Ctx, unknown>, context?: Ctx): this
+    on<Ctx>(eventName: string, eventHandler: EventCallback<Ctx, unknown>, context?: Ctx): this
+    on<Ctx>(eventName: string, eventHandler: EventCallback<Ctx, unknown>, context?: Ctx): this {
         this.handler.on(eventName, eventHandler, context);
+        return this;
     }
 
     /**
@@ -338,7 +339,7 @@ class ZRender {
      * @param eventName Event name
      * @param eventHandler Handler function
      */
-    off(eventName?: string, eventHandler?: EventCallback) {
+    off(eventName?: string, eventHandler?: EventCallback<unknown, this>) {
         this.handler.off(eventName, eventHandler);
     }
 
