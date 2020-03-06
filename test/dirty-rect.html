@@ -18,8 +18,8 @@
                 shape: {
                     x: 0,
                     y: 0,
-                    width: 50 * Math.random(),
-                    height: 50 * Math.random()
+                    width: 100 * Math.random(),
+                    height: 100 * Math.random()
                 },
                 style: {
                     fill: 'rgba(200, 0, 0, 0.4)'
@@ -30,12 +30,29 @@
             zr.add(rect);
         }
 
-        setInterval(() => {
-            for (var i = 0; i < 2; ++i) {
-                rects[i].attr('position', [800 * Math.random(), 400 * Math.random()]);
-            }
+        var a = new zrender.Rect({
+            shape: {
+                x: 0,
+                y: 0,
+                width: 400,
+                height: 300
+            },
+            style: {
+                fill: 'rgba(0, 200, 0, 0.4)'
+            },
+            position: [100, 100]
+        });
+        zr.add(a);
 
+        setTimeout(() => {
+            zr.remove(a);
         }, 3000);
+        // setInterval(() => {
+        //     for (var i = 0; i < 2; ++i) {
+        //         rects[i].attr('position', [800 * Math.random(), 400 * Math.random()]);
+        //     }
+
+        // }, 3000);
     </script>
 
 </body>

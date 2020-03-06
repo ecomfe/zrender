@@ -439,7 +439,7 @@ function isClipPathChanged(clipPaths: Path[], prevClipPaths: Path[]): boolean {
     return false;
 }
 
-function doClip(clipPaths: Path[], ctx: CanvasRenderingContext2D, scope: BrushScope) {
+export function doClip(clipPaths: Path[], ctx: CanvasRenderingContext2D, scope: BrushScope) {
     let allClipped = false;
     for (let i = 0; i < clipPaths.length; i++) {
         const clipPath = clipPaths[i];

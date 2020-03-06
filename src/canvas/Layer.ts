@@ -93,6 +93,7 @@ export default class Layer extends Eventful {
     __painter: CanvasPainter
 
     __dirty = true
+    __firstTimePaint = true
 
     __used = false
 
@@ -193,9 +194,20 @@ export default class Layer extends Eventful {
     //     return dirtyCells;
     // }
 
-    createRepaintRects(displayList: Displayable[]) {
-        const mergedRepaintRects: BoundingRect[] = [];
+    createRepaintRects(displayList: Displayable[], prevList: Displayable[]) {
+        if (this.__firstTimePaint) {
+            util.each(displayList, el => {
+                if (el.__dirty) {
+                    const curRect = getPaintRect(el);
+                    el.__prevPaintRect = curRect;
+                }
+            });
 
+            this.__firstTimePaint = false;
+            return [];
+        }
+
+        const mergedRepaintRects: BoundingRect[] = [];
         const rects: BoundingRect[] = [];
 
         // Add current and previous bounding rect
@@ -208,6 +220,15 @@ export default class Layer extends Eventful {
                 prevRect && rects.push(prevRect);
 
                 el.__prevPaintRect = curRect;
+            }
+        });
+
+        // Add removed displayables because they need to be cleared
+        util.each(prevList, el => {
+            if (!el.__storage) {
+                // el is removed
+                const prevRect = el.__prevPaintRect;
+                prevRect && rects.push(prevRect);
             }
         });
 
@@ -233,7 +254,7 @@ export default class Layer extends Eventful {
                     const pendingArea = pendingRect.width * pendingRect.height;
 
                     if (pendingArea < rectArea + mergedArea) {
-                        // Allow merging when size is smaller if merged
+                        // Allow merging if size is smaller when merged
                         mergedRepaintRects[i] = pendingRect;
                         isMerged = true;
                         break;
@@ -278,7 +299,7 @@ export default class Layer extends Eventful {
             mergedRepaintRects[minAId].union(mergedRepaintRects[minBId]);
             mergedRepaintRects.splice(minBId, 1);
         }
-        console.log(mergedRepaintRects);
+        // console.log(mergedRepaintRects);
         this._drawRect(mergedRepaintRects);
 
         return mergedRepaintRects;
@@ -312,7 +333,11 @@ export default class Layer extends Eventful {
     /**
      * 清空该层画布
      */
-    clear(clearAll?: boolean, clearColor?: string | GradientObject | PatternObject) {
+    clear(
+        clearAll?: boolean,
+        clearColor?: string | GradientObject | PatternObject,
+        repaintRects?: BoundingRect[]
+    ) {
         const dom = this.dom;
         const ctx = this.ctx;
         const width = dom.width;
@@ -338,45 +363,64 @@ export default class Layer extends Eventful {
             );
         }
 
-        ctx.clearRect(0, 0, width, height);
-        if (clearColor && clearColor !== 'transparent') {
-            let clearColorGradientOrPattern;
-            // Gradient
-            if (util.isGradientObject(clearColor)) {
-                // Cache canvas gradient
-                clearColorGradientOrPattern = clearColor.__canvasGradient
-                    || getCanvasGradient(ctx, clearColor, {
-                        x: 0,
-                        y: 0,
-                        width: width,
-                        height: height
-                    });
+        const doClear = (rect: BoundingRect) => {
+            console.log('clear', rect.x, rect.y, rect.width, rect.height);
+            ctx.clearRect(rect.x, rect.y, rect.width, rect.height);
+            if (clearColor && clearColor !== 'transparent') {
+                let clearColorGradientOrPattern;
+                // Gradient
+                if (util.isGradientObject(clearColor)) {
+                    // Cache canvas gradient
+                    clearColorGradientOrPattern = clearColor.__canvasGradient
+                        || getCanvasGradient(ctx, clearColor, {
+                            x: 0,
+                            y: 0,
+                            width: width,
+                            height: height
+                        });
 
-                clearColor.__canvasGradient = clearColorGradientOrPattern;
-            }
-            // Pattern
-            else if (util.isPatternObject(clearColor)) {
-                clearColorGradientOrPattern = createCanvasPattern(
-                    ctx, clearColor, {
-                        dirty: function () {
-                            // TODO
-                            self.__painter.refresh();
+                    clearColor.__canvasGradient = clearColorGradientOrPattern;
+                }
+                // Pattern
+                else if (util.isPatternObject(clearColor)) {
+                    clearColorGradientOrPattern = createCanvasPattern(
+                        ctx, clearColor, {
+                            dirty: function () {
+                                // TODO
+                                self.__painter.refresh();
+                            }
                         }
-                    }
-                );
+                    );
+                }
+                ctx.save();
+                ctx.fillStyle = clearColorGradientOrPattern || (clearColor as string);
+                ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+                ctx.restore();
             }
-            ctx.save();
-            ctx.fillStyle = clearColorGradientOrPattern || (clearColor as string);
-            ctx.fillRect(0, 0, width, height);
-            ctx.restore();
-        }
 
-        if (haveMotionBLur) {
-            const domBack = this.domBack;
-            ctx.save();
-            ctx.globalAlpha = lastFrameAlpha;
-            ctx.drawImage(domBack, 0, 0, width, height);
-            ctx.restore();
+            if (haveMotionBLur) {
+                const domBack = this.domBack;
+                ctx.save();
+                ctx.globalAlpha = lastFrameAlpha;
+                ctx.drawImage(domBack, rect.x, rect.y, rect.width, rect.height);
+                ctx.restore();
+            }
+        };
+
+        if (!repaintRects || !repaintRects.length) {
+            // Clear the full canvas
+            doClear(new BoundingRect(0, 0, width, height));
+        }
+        else {
+            // Clear the repaint areas
+            util.each(repaintRects, rect => {
+                doClear(new BoundingRect(
+                    rect.x * dpr,
+                    rect.y * dpr,
+                    rect.width * dpr,
+                    rect.height * dpr
+                ));
+            });
         }
     }
 

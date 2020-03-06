@@ -5,16 +5,17 @@ import Layer, { LayerConfig } from './Layer';
 import requestAnimationFrame from '../animation/requestAnimationFrame';
 import ZImage, { ImageStyleOption } from '../graphic/Image';
 import env from '../core/env';
-import { Path, IncrementalDisplayable } from '../export';
+import { Path, IncrementalDisplayable, Rect } from '../export';
 import Displayable from '../graphic/Displayable';
 import { WXCanvasRenderingContext, ZRCanvasRenderingContext } from '../core/types';
 import { GradientObject } from '../graphic/Gradient';
 import { PatternObject } from '../graphic/Pattern';
 import Storage from '../Storage';
-import { brush, BrushScope } from './graphic';
+import { brush, BrushScope, getPaintRect, doClip } from './graphic';
 import ZText, { TextStyleOption } from '../graphic/Text';
 import { PathStyleOption } from '../graphic/Path';
 import { PainterBase } from '../PainterBase';
+import BoundingRect from '../core/BoundingRect';
 
 const HOVER_LAYER_ZLEVEL = 1e5;
 const CANVAS_ZLEVEL = 314159;
@@ -89,6 +90,8 @@ export default class CanvasPainter implements PainterBase {
 
     private _zlevelList: number[] = []
 
+    private _prevDisplayList: Displayable[] = []
+
     private _layers: {[key: number]: Layer} = {} // key is zlevel
 
     private _layerConfig: {[key: number]: LayerConfig} = {} // key is zlevel
@@ -154,6 +157,8 @@ export default class CanvasPainter implements PainterBase {
         this.storage = storage;
 
         const zlevelList: number[] = this._zlevelList;
+
+        this._prevDisplayList = [];
 
         const layers = this._layers;
 
@@ -237,12 +242,13 @@ export default class CanvasPainter implements PainterBase {
     refresh (paintAll?: boolean) {
 
         const list = this.storage.getDisplayList(true);
+        const prevList = this._prevDisplayList;
 
         const zlevelList = this._zlevelList;
 
         this._redrawId = Math.random();
 
-        this._paintList(list, paintAll, this._redrawId);
+        this._paintList(list, prevList, paintAll, this._redrawId);
 
         // Paint custum layers
         for (let i = 0; i < zlevelList.length; i++) {
@@ -255,6 +261,8 @@ export default class CanvasPainter implements PainterBase {
         }
 
         this.refreshHover();
+
+        this._prevDisplayList = list.slice();
 
         return this;
     }
@@ -340,8 +348,7 @@ export default class CanvasPainter implements PainterBase {
                 el.transform = originalEl.transform;
                 el.invTransform = originalEl.invTransform;
                 el.__clipPaths = originalEl.__clipPaths;
-                // el.
-                this._doPaintEl(el, hoverLayer, true, scope);
+                this._doPaintEl(el, hoverLayer, null, true, scope);
             }
         }
 
@@ -352,7 +359,7 @@ export default class CanvasPainter implements PainterBase {
         return this.getLayer(HOVER_LAYER_ZLEVEL);
     }
 
-    private _paintList (list: Displayable[], paintAll: boolean, redrawId?: number) {
+    private _paintList (list: Displayable[], prevList: Displayable[], paintAll: boolean, redrawId?: number) {
         if (this._redrawId !== redrawId) {
             return;
         }
@@ -361,7 +368,7 @@ export default class CanvasPainter implements PainterBase {
 
         this._updateLayerStatus(list);
 
-        const finished = this._doPaintList(list, paintAll);
+        const finished = this._doPaintList(list, prevList, paintAll);
 
         if (this._needsManuallyCompositing) {
             this._compositeManually();
@@ -370,7 +377,7 @@ export default class CanvasPainter implements PainterBase {
         if (!finished) {
             const self = this;
             requestAnimationFrame(function () {
-                self._paintList(list, paintAll, redrawId);
+                self._paintList(list, prevList, paintAll, redrawId);
             });
         }
     }
@@ -388,7 +395,7 @@ export default class CanvasPainter implements PainterBase {
         });
     }
 
-    private _doPaintList (list: Displayable[], paintAll?: boolean) {
+    private _doPaintList (list: Displayable[], prevList: Displayable[], paintAll?: boolean) {
         const layerList = [];
         for (let zi = 0; zi < this._zlevelList.length; zi++) {
             const zlevel = this._zlevelList[zi];
@@ -412,7 +419,7 @@ export default class CanvasPainter implements PainterBase {
             };
             ctx.save();
 
-            layer.createRepaintRects(list);
+            const repaintRects = layer.createRepaintRects(list, prevList);
 
             let start = paintAll ? layer.__startIndex : layer.__drawIndex;
 
@@ -423,12 +430,12 @@ export default class CanvasPainter implements PainterBase {
                 ? this._backgroundColor : null;
             // All elements in this layer are cleared.
             if (layer.__startIndex === layer.__endIndex) {
-                layer.clear(false, clearColor);
+                layer.clear(false, clearColor, repaintRects);
             }
             else if (start === layer.__startIndex) {
                 const firstEl = list[start];
                 if (!firstEl.incremental || !(firstEl as IncrementalDisplayable).notClear || paintAll) {
-                    layer.clear(false, clearColor);
+                    layer.clear(false, clearColor, repaintRects);
                 }
             }
             if (start === -1) {
@@ -436,20 +443,47 @@ export default class CanvasPainter implements PainterBase {
                 start = layer.__startIndex;
             }
             let i: number;
-            for (i = start; i < layer.__endIndex; i++) {
-                const el = list[i];
-                this._doPaintEl(el, layer, paintAll, scope);
-                el.__dirty = false;
+            const repaint = (repaintRect?: BoundingRect) => {
+                for (i = start; i < layer.__endIndex; i++) {
+                    const el = list[i];
+                    this._doPaintEl(el, layer, repaintRect, paintAll, scope);
+                    el.__dirty = false;
 
-                if (useTimer) {
-                    // Date.now can be executed in 13,025,305 ops/second.
-                    const dTime = Date.now() - startTime;
-                    // Give 15 millisecond to draw.
-                    // The rest elements will be drawn in the next frame.
-                    if (dTime > 15) {
-                        break;
+                    if (useTimer) {
+                        // Date.now can be executed in 13,025,305 ops/second.
+                        const dTime = Date.now() - startTime;
+                        // Give 15 millisecond to draw.
+                        // The rest elements will be drawn in the next frame.
+                        if (dTime > 15) {
+                            break;
+                        }
                     }
                 }
+            };
+
+            if (repaintRects.length) {
+                // Set repaintRect as clipPath
+                for (var r = 0; r < repaintRects.length; ++r) {
+                    const rect = repaintRects[r];
+
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.rect(
+                        rect.x * this.dpr,
+                        rect.y * this.dpr,
+                        rect.width * this.dpr,
+                        rect.height * this.dpr
+                    );
+                    ctx.clip();
+
+                    repaint(rect);
+
+                    ctx.restore();
+                }
+            }
+            else {
+                // Paint all once
+                repaint();
             }
 
             layer.__drawIndex = i;
@@ -478,10 +512,28 @@ export default class CanvasPainter implements PainterBase {
         return finished;
     }
 
-    private _doPaintEl (el: Displayable, currentLayer: Layer, forcePaint: boolean, scope: BrushScope) {
+    private _doPaintEl (
+        el: Displayable,
+        currentLayer: Layer,
+        repaintRect: BoundingRect,
+        forcePaint: boolean,
+        scope: BrushScope
+    ) {
         const ctx = currentLayer.ctx;
         if (currentLayer.__dirty || forcePaint) {
-            brush(ctx, el, scope);
+            if (repaintRect) {
+                // If there is repaintRect, only render the intersected ones
+                const repaintRect = getPaintRect(el);
+                if (repaintRect.intersect(repaintRect)) {
+                    console.log('rebrush', el.id);
+                    brush(ctx, el, scope);
+                }
+            }
+            else {
+                // If no repaintRect, all displayables need to be painted once
+                brush(ctx, el, scope);
+                console.log('brush', el.id);
+            }
         }
     }
 
@@ -885,7 +937,7 @@ export default class CanvasPainter implements PainterBase {
             const displayList = this.storage.getDisplayList(true);
             for (let i = 0; i < displayList.length; i++) {
                 const el = displayList[i];
-                this._doPaintEl(el, imageLayer, true, scope);
+                this._doPaintEl(el, imageLayer, null, true, scope);
             }
         }
 
