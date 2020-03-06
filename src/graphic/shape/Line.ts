@@ -38,7 +38,7 @@ export default class Line extends Path<LineProps> {
         }, new LineShape());
     }
 
-    buildPath(ctx: PathProxy, shape: LineShape) {
+    buildPath(ctx: CanvasRenderingContext2D, shape: LineShape) {
         let x1;
         let y1;
         let x2;

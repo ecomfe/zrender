@@ -476,7 +476,7 @@ export function isFunction(value: any): value is Function {
  * @param value
  * @return {boolean}
  */
-export function isString(value: any): value is String {
+export function isString(value: any): value is string {
     return objToString.call(value) === '[object String]';
 }
 
