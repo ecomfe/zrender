@@ -75,6 +75,9 @@ export interface ElementProps extends Partial<ElementEventHandlerProps> {
 
     drift?: Element['drift']
 
+    // For echarts animation.
+    anid?: string
+
     extra?: Dictionary<any>
 }
 
