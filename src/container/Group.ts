@@ -24,7 +24,7 @@ import Storage from '../Storage';
 import { MatrixArray } from '../core/matrix';
 import Displayable from '../graphic/Displayable';
 
-export interface GroupOption extends ElementProps {
+export interface GroupProps extends ElementProps {
 }
 
 export default class Group extends Element {
@@ -37,7 +37,7 @@ export default class Group extends Element {
 
     __storage: Storage
 
-    constructor(opts?: GroupOption) {
+    constructor(opts?: GroupProps) {
         super();
 
         this.attr(opts);

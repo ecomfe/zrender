@@ -288,7 +288,10 @@ export function each<I extends Dictionary<any> | any[] | readonly any[] | ArrayL
     cb: (
         this: Context,
         // Use unknown to avoid to infer to "any", which may disable typo check.
-        value: I extends (infer T)[] | readonly (infer T)[] | ArrayLike<infer T> | Dictionary<infer T> ? T : unknown,
+        value: I extends (infer T)[] | readonly (infer T)[] | ArrayLike<infer T> ? T
+            // Use Dictionary<infer T> may cause infer fail when I is an interface.
+            // So here use a Record to infer type.
+            : I extends Dictionary<any> ? I extends Record<infer K, infer T> ? T : unknown : unknown,
         index?: I extends any[] | readonly any[] | ArrayLike<any> ? number : keyof I & string,  // keyof Dictionary will return number | string
         arr?: I
     ) => void,
@@ -321,8 +324,8 @@ export function each<I extends Dictionary<any> | any[] | readonly any[] | ArrayL
  * @return
  */
 export function map<T, R, Context>(
-    arr: T[],
-    cb: (this: Context, val: T, index?: number, arr?: T[]) => R,
+    arr: readonly T[],
+    cb: (this: Context, val: T, index?: number, arr?: readonly T[]) => R,
     context?: Context
 ): R[] {
     if (!(arr && cb)) {
@@ -341,8 +344,8 @@ export function map<T, R, Context>(
 }
 
 export function reduce<T, S, Context>(
-    arr: T[],
-    cb: (this: Context, previousValue: S, currentValue: T, currentIndex?: number, arr?: T[]) => S,
+    arr: readonly T[],
+    cb: (this: Context, previousValue: S, currentValue: T, currentIndex?: number, arr?: readonly T[]) => S,
     memo?: S,
     context?: Context
 ): S {
@@ -359,8 +362,8 @@ export function reduce<T, S, Context>(
  * 数组过滤
  */
 export function filter<T, Context>(
-    arr: T[],
-    cb: (this: Context, value: T, index: number, arr: T[]) => boolean,
+    arr: readonly T[],
+    cb: (this: Context, value: T, index: number, arr: readonly T[]) => boolean,
     context?: Context
 ): T[] {
     if (!(arr && cb)) {
@@ -384,8 +387,8 @@ export function filter<T, Context>(
  * 数组项查找
  */
 export function find<T, Context>(
-    arr: T[],
-    cb: (this: Context, value: T, index?: number, arr?: T[]) => boolean,
+    arr: readonly T[],
+    cb: (this: Context, value: T, index?: number, arr?: readonly T[]) => boolean,
     context?: Context
 ): T {
     if (!(arr && cb)) {
