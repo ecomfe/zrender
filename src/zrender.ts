@@ -15,7 +15,7 @@ import Storage from './Storage';
 import {PainterBase} from './PainterBase';
 import Animation from './animation/Animation';
 import HandlerProxy from './dom/HandlerProxy';
-import Element, {ElementEventCallback} from './Element';
+import Element, {ElementEventCallback, ElementEvent} from './Element';
 import CanvasPainter from './canvas/Painter';
 import { Dictionary, ElementEventName } from './core/types';
 import { LayerConfig } from './canvas/Layer';
@@ -329,7 +329,8 @@ class ZRender {
 
     on<Ctx>(eventName: ElementEventName, eventHandler: ElementEventCallback<Ctx, unknown>, context?: Ctx): this
     on<Ctx>(eventName: string, eventHandler: EventCallback<Ctx, unknown>, context?: Ctx): this
-    on<Ctx>(eventName: string, eventHandler: EventCallback<Ctx, unknown>, context?: Ctx): this {
+    // eslint-disable-next-line max-len
+    on<Ctx>(eventName: string, eventHandler: EventCallback<Ctx, unknown> | EventCallback<Ctx, unknown, ElementEvent>, context?: Ctx): this {
         this.handler.on(eventName, eventHandler, context);
         return this;
     }
@@ -339,7 +340,8 @@ class ZRender {
      * @param eventName Event name
      * @param eventHandler Handler function
      */
-    off(eventName?: string, eventHandler?: EventCallback<unknown, this>) {
+    // eslint-disable-next-line max-len
+    off(eventName?: string, eventHandler?: EventCallback<unknown, unknown> | EventCallback<unknown, unknown, ElementEvent>) {
         this.handler.off(eventName, eventHandler);
     }
 

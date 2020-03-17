@@ -34,7 +34,7 @@ export interface ElementEvent {
 export type ElementEventCallback<Ctx, Impl> = (
     this: CbThis<Ctx, Impl>, e: ElementEvent
 ) => boolean | void
-type CbThis<Ctx, Impl> = unknown extends Ctx ? Impl : 'Ctx';
+type CbThis<Ctx, Impl> = unknown extends Ctx ? Impl : Ctx;
 
 interface ElementEventHandlerProps {
     // Events
