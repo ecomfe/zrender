@@ -198,6 +198,10 @@ class RichText extends Element<RichTextOption> {
         this.attr(opts);
     }
 
+    childrenRef() {
+        return this._children;
+    }
+
     traverse<Context>(
         cb: (this: Context, el: RichText) => void,
         context: Context
@@ -276,10 +280,6 @@ class RichText extends Element<RichTextOption> {
         this._rect = null;
         this._styleChanged = true;
         this.dirty();
-    }
-
-    children() {
-        return this._children;
     }
 
     getBoundingRect(): BoundingRect {
