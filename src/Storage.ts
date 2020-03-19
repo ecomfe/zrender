@@ -122,7 +122,7 @@ export default class Storage {
         }
 
         if (el.isGroup) {
-            const children = (el as Group).children();
+            const children = (el as Group).childrenRef();
 
             for (let i = 0; i < children.length; i++) {
                 const child = children[i];

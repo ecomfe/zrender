@@ -43,8 +43,18 @@ export default class Group extends Element {
         this.attr(opts);
     }
 
-    children() {
+    /**
+     * Get children reference.
+     */
+    childrenRef() {
         return this._children;
+    }
+
+    /**
+     * Get children copy.
+     */
+    children() {
+        return this._children.slice();
     }
 
     /**
