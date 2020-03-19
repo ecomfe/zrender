@@ -467,6 +467,7 @@ export default class Style extends StyleProps {
         styleProto.lineCap = 'butt';
         styleProto.miterLimit = 10;
         styleProto.strokeNoScale = false;
+        styleProto.textFill = '#000';
         styleProto.textStrokeWidth = 0;
         styleProto.textPosition = 'inside';
         styleProto.textDistance = 5;

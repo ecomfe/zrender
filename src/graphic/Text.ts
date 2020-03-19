@@ -53,7 +53,7 @@ export default class Text extends Displayable {
             text != null ? (text += '') : (text = '');
 
             const rect = textContain.getBoundingRect(
-                style.text + '',
+                text,
                 style.font,
                 style.textAlign,
                 style.textVerticalAlign,
