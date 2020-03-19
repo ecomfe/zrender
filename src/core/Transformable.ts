@@ -111,7 +111,7 @@ class Transformable {
         matrix.invert(this.invTransform, m);
     }
 
-    getLocalTransform(m: matrix.MatrixArray) {
+    getLocalTransform(m?: matrix.MatrixArray) {
         return Transformable.getLocalTransform(this, m);
     }
 
@@ -195,7 +195,7 @@ class Transformable {
     /**
      * 变换坐标位置到 shape 的局部坐标空间
      */
-    transformCoordToLocal(x: number, y: number): vector.VectorArray {
+    transformCoordToLocal(x: number, y: number): number[] {
         const v2 = [x, y];
         const invTransform = this.invTransform;
         if (invTransform) {
@@ -207,7 +207,7 @@ class Transformable {
     /**
      * 变换局部坐标位置到全局坐标空间
      */
-    transformCoordToGlobal(x: number, y: number): vector.VectorArray {
+    transformCoordToGlobal(x: number, y: number): number[] {
         const v2 = [x, y];
         const transform = this.transform;
         if (transform) {

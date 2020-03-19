@@ -2,7 +2,7 @@
  * 椭圆形状
  */
 
-import Path, { PathOption } from '../Path';
+import Path, { PathProps } from '../Path';
 
 class EllipseShape {
     cx = 0
@@ -11,15 +11,16 @@ class EllipseShape {
     ry = 0
 }
 
-export default class Ellipse extends Path {
+interface EllipseProps extends PathProps {
+    shape?: Partial<EllipseShape>
+}
+export default class Ellipse extends Path<EllipseProps> {
 
     type = 'ellipse'
 
     shape: EllipseShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<EllipseShape>
-    }) {
+    constructor(opts?: EllipseProps) {
         super(opts, null, new EllipseShape())
     }
 

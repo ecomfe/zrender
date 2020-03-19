@@ -164,8 +164,8 @@ class FakeGlobalEvent {
         this.target = this.currentTarget = instance.dom;
         this.pointerType = (event as any).pointerType;
         // Necessray for the force calculation of zrX, zrY
-        this.clientX = event.clientX;
-        this.clientY = event.clientY;
+        this.clientX = (event as ZRRawMouseEvent).clientX;
+        this.clientY = (event as ZRRawMouseEvent).clientY;
         // Because we do not mount global listeners to touch events,
         // we do not copy `targetTouches` and `changedTouches` here.
     }
@@ -226,7 +226,7 @@ const localDOMHandlers: DomHandlersMap = {
         // dom created by echarts), where 'globalout' event should not
         // be triggered when mouse enters these doms. (But 'mouseout'
         // should be triggered at the original hovered element as usual).
-        const element = (event as any).toElement || event.relatedTarget;
+        const element = (event as any).toElement || (event as ZRRawMouseEvent).relatedTarget;
         event.zrIsToLocalDOM = isLocalEl(this, element);
 
         this.trigger('mouseout', event);

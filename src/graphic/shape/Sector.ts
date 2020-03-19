@@ -1,21 +1,19 @@
-/**
- * 扇形
- * @module zrender/graphic/shape/Sector
- */
-
 import Path, { PathOption } from '../Path';
 
 class SectorShape {
-    cx: number = 0
-    cy: number = 0
-    r0: number = 0
-    r: number = 0
-    startAngle: number = 0
-    endAngle: number = Math.PI * 2
+    cx = 0
+    cy = 0
+    r0 = 0
+    r = 0
+    startAngle = 0
+    endAngle = Math.PI * 2
     clockwise: boolean = true
 }
 
-export default class Sector extends Path {
+interface SectorProps extends PathOption {
+    shape?: Partial<SectorShape>
+}
+export default class Sector extends Path<SectorProps> {
 
     type = 'sector'
 

@@ -30,6 +30,8 @@ export interface PainterBase {
     getHeight(): number
     dispose(): void
 
+    getViewportRoot: () => HTMLElement
+    getViewportRootOffset: () => {offsetLeft: number, offsetTop: number}
 
     // Following methods won't implemented by every Painter
     addHover(el: Path, style: PathStyleOption): Path

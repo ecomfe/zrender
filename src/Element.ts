@@ -11,6 +11,7 @@ import Eventful, {EventQuery, EventCallback} from './core/Eventful';
 import RichText from './graphic/RichText';
 import { calculateTextPosition, TextPositionCalculationResult } from './contain/text';
 import Storage from './Storage';
+import Group from './graphic/Group';
 
 interface TextLayout {
     /**
@@ -54,7 +55,34 @@ export interface ElementEvent {
     stop: (this: ElementEvent) => void
 }
 
-export interface ElementOption {
+export type ElementEventCallback<Ctx, Impl> = (
+    this: CbThis<Ctx, Impl>, e: ElementEvent
+) => boolean | void
+type CbThis<Ctx, Impl> = unknown extends Ctx ? Impl : Ctx;
+
+interface ElementEventHandlerProps {
+    // Events
+    onclick: ElementEventCallback<unknown, unknown>
+    ondblclick: ElementEventCallback<unknown, unknown>
+    onmouseover: ElementEventCallback<unknown, unknown>
+    onmouseout: ElementEventCallback<unknown, unknown>
+    onmousemove: ElementEventCallback<unknown, unknown>
+    onmousewheel: ElementEventCallback<unknown, unknown>
+    onmousedown: ElementEventCallback<unknown, unknown>
+    onmouseup: ElementEventCallback<unknown, unknown>
+    oncontextmenu: ElementEventCallback<unknown, unknown>
+
+    ondrag: ElementEventCallback<unknown, unknown>
+    ondragstart: ElementEventCallback<unknown, unknown>
+    ondragend: ElementEventCallback<unknown, unknown>
+    ondragenter: ElementEventCallback<unknown, unknown>
+    ondragleave: ElementEventCallback<unknown, unknown>
+    ondragover: ElementEventCallback<unknown, unknown>
+    ondrop: ElementEventCallback<unknown, unknown>
+
+}
+
+export interface ElementOption extends Partial<ElementEventHandlerProps> {
     name?: string
     ignore?: boolean
     isGroup?: boolean
@@ -72,45 +100,29 @@ export interface ElementOption {
     textContent?: RichText
 
     clipPath?: Path
+    drift?: Element['drift']
+
+    // For echarts animation.
+    anid?: string
 
     extra?: Dictionary<any>
 }
 
 type AnimationCallback = () => {}
 
-export type ElementEventCallback = (e: ElementEvent) => boolean | void
-
 let tmpTextPosCalcRes = {} as TextPositionCalculationResult;
 let tmpBoundingRect = new BoundingRect();
 
-interface Element<T extends ElementOption = ElementOption> extends Transformable, Eventful {
+interface Element<Props extends ElementOption = ElementOption> extends Transformable, Eventful {
     // Provide more typed event callback params for mouse events.
-    on<Context>(event: ElementEventName, handler: ElementEventCallback, context?: Context): Element
-    on<Context>(event: ElementEventName, query: EventQuery, handler: ElementEventCallback, context?: Context): Element
-    // Provide general events handler for other custom events.
-    on<Context>(event: string, query?: EventCallback | EventQuery, handler?: EventCallback | Object, context?: Context): Element
+    on<Ctx>(event: ElementEventName, handler: ElementEventCallback<Ctx, this>, context?: Ctx): this
+    on<Ctx>(event: string, handler: EventCallback<Ctx, this>, context?: Ctx): this
 
-    // Mouse events
-    onclick: ElementEventCallback
-    ondblclick: ElementEventCallback
-    onmouseover: ElementEventCallback
-    onmouseout: ElementEventCallback
-    onmousemove: ElementEventCallback
-    onmousewheel: ElementEventCallback
-    onmousedown: ElementEventCallback
-    onmouseup: ElementEventCallback
-    oncontextmenu: ElementEventCallback
-
-    ondrag: ElementEventCallback
-    ondragstart: ElementEventCallback
-    ondragend: ElementEventCallback
-    ondragenter: ElementEventCallback
-    ondragleave: ElementEventCallback
-    ondragover: ElementEventCallback
-    ondrop: ElementEventCallback
+    on<Ctx>(event: ElementEventName, query: EventQuery, handler: ElementEventCallback<Ctx, this>, context?: Ctx): this
+    on<Ctx>(event: string, query: EventQuery, handler: EventCallback<Ctx, this>, context?: Ctx): this
 }
 
-class Element<T extends ElementOption = ElementOption> {
+class Element<Props extends ElementOption = ElementOption> {
 
     id: number = zrUtil.guid()
     /**
@@ -148,11 +160,7 @@ class Element<T extends ElementOption = ElementOption> {
      */
     dragging: boolean
 
-    /**
-     * Parent element
-     */
-    parent: Element
-
+    parent: Group
 
     animators: Animator<any>[] = [];
 
@@ -189,6 +197,12 @@ class Element<T extends ElementOption = ElementOption> {
      * Layout of textContent
      */
     textLayout: TextLayout
+
+    // FOR ECHARTS
+    /**
+     * Id for mapping animation
+     */
+    anid: string
 
     constructor(opts?: ElementOption) {
         // Transformable needs position, rotation, scale
@@ -258,8 +272,8 @@ class Element<T extends ElementOption = ElementOption> {
                 tmpBoundingRect.applyTransform(this.transform);
             }
             else {
-                // TODO as unknown
-                textEl.parent = this as unknown as Element;
+                // TODO parent is always be group for developers. But can be displayble inside.
+                textEl.parent = this as unknown as Group;
             }
             calculateTextPosition(tmpTextPosCalcRes, textLayout, tmpBoundingRect);
             // TODO Not modify el.position?
@@ -276,13 +290,12 @@ class Element<T extends ElementOption = ElementOption> {
         }
     }
 
-    traverse<T> (
-        cb: (this: T, el: Element) => void,
-        context: T
+    traverse<Context> (
+        cb: (this: Context, el: Element<Props>) => void,
+        context?: Context
     ) {}
 
-    // TODO Use T insteadof ElementOption?
-    protected attrKV(key: keyof ElementOption, value: AllPropTypes<ElementOption>) {
+    protected attrKV(key: string, value: unknown) {
         if (key === 'position' || key === 'scale' || key === 'origin') {
             // Copy the array
             if (value) {
@@ -319,18 +332,18 @@ class Element<T extends ElementOption = ElementOption> {
         this.__zr && this.__zr.refresh();
     }
 
-    attr(key: keyof T, value: AllPropTypes<T>): Element<T>
-    attr(key: T): Element<T>
+    attr(key: Props): this
+    attr(key: keyof Props, value: AllPropTypes<Props>): this
     /**
      * @param {string|Object} key
      * @param {*} value
      */
-    attr(key: keyof T | T, value?: AllPropTypes<T>): Element<T> {
+    attr(key: keyof Props | Props, value?: AllPropTypes<Props>): this {
         if (typeof key === 'string') {
             this.attrKV(key as keyof ElementOption, value as AllPropTypes<ElementOption>);
         }
         else if (zrUtil.isObject(key)) {
-            for (let name in (key as T)) {
+            for (let name in key as Props) {
                 if (key.hasOwnProperty(name)) {
                     this.attrKV(name as keyof ElementOption, (key as any)[name]);
                 }
@@ -357,7 +370,7 @@ class Element<T extends ElementOption = ElementOption> {
 
         this._clipPath = clipPath;
         clipPath.__zr = zr;
-        // TODO as unkown
+        // TODO
         clipPath.__clipTarget = this as unknown as Element;
 
         this.dirty();
@@ -482,7 +495,7 @@ class Element<T extends ElementOption = ElementOption> {
      *         .done(function(){ // Animation done })
      *         .start()
      */
-    animate(path: string, loop?: boolean) {
+    animate(path?: string, loop?: boolean) {
         const el = this;
         const zr = this.__zr;
 
@@ -581,18 +594,19 @@ class Element<T extends ElementOption = ElementOption> {
      */
 
     // Overload definitions
-    animateTo(target: T): void
-    animateTo(target: T, callback: AnimationCallback): void
-    animateTo(target: T, time: number, callback: AnimationCallback): void
-    animateTo(target: T, time: number, delay: number, callback: AnimationCallback): void
-    animateTo(target: T, time: number, easing: easingType, callback: AnimationCallback): void
-    animateTo(target: T, time: number, delay: number, easing: easingType, callback: AnimationCallback): void
-    animateTo(target: T, time: number, delay: number, easing: easingType, callback: AnimationCallback, forceAnimate: boolean): void
+    animateTo(target: Props): void
+    animateTo(target: Props, callback: AnimationCallback): void
+    animateTo(target: Props, time: number, delay: number): void
+    animateTo(target: Props, time: number, easing: easingType): void
+    animateTo(target: Props, time: number, callback: AnimationCallback): void
+    animateTo(target: Props, time: number, delay: number, callback: AnimationCallback): void
+    animateTo(target: Props, time: number, easing: easingType, callback: AnimationCallback): void
+    animateTo(target: Props, time: number, delay: number, easing: easingType, callback: AnimationCallback): void
+    animateTo(target: Props, time: number, delay: number, easing: easingType, callback: AnimationCallback, forceAnimate: boolean): void
 
     // TODO Return animation key
     animateTo(
-        this: Element,
-        target: T,
+        target: Props,
         time?: number | AnimationCallback,  // Time in ms
         delay?: easingType | number | AnimationCallback,
         easing?: easingType | number | AnimationCallback ,
@@ -609,17 +623,18 @@ class Element<T extends ElementOption = ElementOption> {
      */
 
     // Overload definitions
-    animateFrom(target: T): void
-    animateFrom(target: T, callback: AnimationCallback): void
-    animateFrom(target: T, time: number, callback: AnimationCallback): void
-    animateFrom(target: T, time: number, delay: number, callback: AnimationCallback): void
-    animateFrom(target: T, time: number, easing: easingType, callback: AnimationCallback): void
-    animateFrom(target: T, time: number, delay: number, easing: easingType, callback: AnimationCallback): void
-    animateFrom(target: T, time: number, delay: number, easing: easingType, callback: AnimationCallback, forceAnimate: boolean): void
+    animateFrom(target: Props): void
+    animateFrom(target: Props, callback: AnimationCallback): void
+    animateFrom(target: Props, time: number, delay: number): void
+    animateFrom(target: Props, time: number, easing: easingType): void
+    animateFrom(target: Props, time: number, callback: AnimationCallback): void
+    animateFrom(target: Props, time: number, delay: number, callback: AnimationCallback): void
+    animateFrom(target: Props, time: number, easing: easingType, callback: AnimationCallback): void
+    animateFrom(target: Props, time: number, delay: number, easing: easingType, callback: AnimationCallback): void
+    animateFrom(target: Props, time: number, delay: number, easing: easingType, callback: AnimationCallback, forceAnimate: boolean): void
 
     animateFrom(
-        this: Element,
-        target: T,
+        target: Props,
         time?: number | AnimationCallback,
         delay?: easingType | number | AnimationCallback,
         easing?: easingType | number | AnimationCallback ,
@@ -652,8 +667,8 @@ class Element<T extends ElementOption = ElementOption> {
 zrUtil.mixin(Element, Eventful);
 zrUtil.mixin(Element, Transformable);
 
-function animateTo(
-    animatable: Element,
+function animateTo<T>(
+    animatable: Element<T>,
     target: Dictionary<any>,
     time: number | AnimationCallback,
     delay: easingType | number | AnimationCallback,
@@ -735,8 +750,8 @@ function animateTo(
  *      position: [10, 10]
  *  }, 100, 100)
  */
-function animateToShallow(
-    animatable: Element,
+function animateToShallow<T>(
+    animatable: Element<T>,
     path: string,
     source: Dictionary<any>,
     target: Dictionary<any>,
@@ -786,18 +801,19 @@ function animateToShallow(
     }
 }
 
-function setAttrByPath(el: Element, path: string, name: string, value: any) {
+function setAttrByPath<T>(el: Element<T>, path: string, name: string, value: any) {
+    let pathArr = path.split('.');
     // Attr directly if not has property
     // FIXME, if some property not needed for element ?
     if (!path) {
-        el.attr(name as keyof ElementOption, value);
+        el.attr(name as keyof T, value);
     }
     else {
         // Only support set shape or style
         const props: Dictionary<any> = {};
         props[path] = {};
         props[path][name] = value;
-        el.attr(props as ElementOption);
+        el.attr(props as T);
     }
 }
 

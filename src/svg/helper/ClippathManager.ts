@@ -7,7 +7,8 @@ import Definable from './Definable';
 import * as zrUtil from '../../core/util';
 import * as matrix from '../../core/matrix';
 import Displayable from '../../graphic/Displayable';
-import { Path } from '../../export';
+import Path from '../../graphic/Path';
+import {SVGProxy} from '../graphic';
 
 type PathExtended = Path & {
     _dom: SVGElement
@@ -101,13 +102,13 @@ export default class ClippathManager extends Definable {
                     clipPath.parent.invTransform,
                     clipPath.transform
                 );
-                svgProxy.brush(clipPath);
+                (svgProxy as SVGProxy<Path>).brush(clipPath);
 
                 // Set back transform of clipPath
                 clipPath.transform = transform;
             }
             else {
-                svgProxy.brush(clipPath);
+                (svgProxy as SVGProxy<Path>).brush(clipPath);
             }
 
             const pathEl = this.getSvgElement(clipPath);

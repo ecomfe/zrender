@@ -3,7 +3,7 @@
  * @module zrender/graphic/shape/Trochold
  */
 
-import Path, { PathOption } from '../Path';
+import Path, { PathProps } from '../Path';
 
 const cos = Math.cos;
 const sin = Math.sin;
@@ -17,15 +17,16 @@ class TrochoidShape {
     location = 'out'
 }
 
-export default class Trochoid extends Path {
+interface TrochoidProps extends PathProps {
+    shape?: Partial<TrochoidShape>
+}
+export default class Trochoid extends Path<TrochoidProps> {
 
     type = 'trochoid'
 
     shape: TrochoidShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<TrochoidShape>
-    }) {
+    constructor(opts?: TrochoidProps) {
         super(opts, {
             stroke: '#000',
             fill: null

@@ -24,7 +24,7 @@ import Storage from '../Storage';
 import { MatrixArray } from '../core/matrix';
 import Displayable from './Displayable';
 
-export interface GroupOption extends ElementOption {
+export interface GroupProps extends ElementOption {
 }
 
 export default class Group extends Element<GroupOption> {
@@ -36,14 +36,24 @@ export default class Group extends Element<GroupOption> {
     private _children: Element[] = []
 
 
-    constructor(opts?: GroupOption) {
+    constructor(opts?: GroupProps) {
         super();
 
         this.attr(opts);
     }
 
-    children() {
+    /**
+     * Get children reference.
+     */
+    childrenRef() {
         return this._children;
+    }
+
+    /**
+     * Get children copy.
+     */
+    children() {
+        return this._children.slice();
     }
 
     /**
@@ -177,9 +187,9 @@ export default class Group extends Element<GroupOption> {
     /**
      * 遍历所有子节点
      */
-    eachChild<T>(
-        cb: (this: T, el: Element, index?: number) => void,
-        context?: T
+    eachChild<Context>(
+        cb: (this: Context, el: Element, index?: number) => void,
+        context?: Context
     ) {
         const children = this._children;
         for (let i = 0; i < children.length; i++) {

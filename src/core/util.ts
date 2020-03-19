@@ -111,7 +111,15 @@ export function clone<T extends any>(source: T): T {
     return result;
 }
 
-export function merge(target: any, source: any, overwrite?: boolean) {
+export function merge<
+    T extends Dictionary<any>,
+    S extends Dictionary<any>
+>(target: T, source: S, overwrite?: boolean): T & S;
+export function merge<
+    T extends any,
+    S extends any
+>(target: T, source: S, overwrite?: boolean): T | S;
+export function merge(target: any, source: any, overwrite?: boolean): any {
     // We should escapse that source is string
     // and enter for ... in ...
     if (!isObject(source) || !isObject(target)) {
@@ -153,7 +161,7 @@ export function merge(target: any, source: any, overwrite?: boolean) {
  * @param overwrite
  * @return Merged result
  */
-export function mergeAll(targetAndSources: any[], overwrite: boolean): any {
+export function mergeAll(targetAndSources: any[], overwrite?: boolean): any {
     let result = targetAndSources[0];
     for (let i = 1, len = targetAndSources.length; i < len; i++) {
         result = merge(result, targetAndSources[i], overwrite);
@@ -161,9 +169,10 @@ export function mergeAll(targetAndSources: any[], overwrite: boolean): any {
     return result;
 }
 
-export function extend<T extends Dictionary<any>, S extends Dictionary<any>>(
-    target: T, source: S
-): T & S {
+export function extend<
+    T extends Dictionary<any>,
+    S extends Dictionary<any>
+>(target: T, source: S): T & S {
     for (let key in source) {
         if (source.hasOwnProperty(key)) {
             (target as S & T)[key] = (source as T & S)[key];
@@ -172,9 +181,10 @@ export function extend<T extends Dictionary<any>, S extends Dictionary<any>>(
     return target as T & S;
 }
 
-export function defaults<T extends Dictionary<any>, S extends Dictionary<any>>(
-    target: T, source: S, overlay?: boolean
-): T & S {
+export function defaults<
+    T extends Dictionary<any>,
+    S extends Dictionary<any>
+>(target: T, source: S, overlay?: boolean): T & S {
     for (let key in source) {
         if (source.hasOwnProperty(key)
             && (overlay ? source[key] != null : (target as T & S)[key] == null)
@@ -196,10 +206,10 @@ methods.createCanvas = function (): HTMLCanvasElement {
 /**
  * 查询数组中元素的index
  */
-export function indexOf<T>(array: T[], value: T): number {
+export function indexOf<T>(array: T[] | readonly T[] | ArrayLike<T>, value: T): number {
     if (array) {
-        if (array.indexOf) {
-            return array.indexOf(value);
+        if ((array as T[]).indexOf) {
+            return (array as T[]).indexOf(value);
         }
         for (let i = 0, len = array.length; i < len; i++) {
             if (array[i] === value) {
@@ -239,32 +249,6 @@ export function mixin<T, S>(target: T | Function, source: S | Function, override
 }
 
 /**
- * @usage
- * ```ts
- * export class XFeature {
- *    fn1() { ... }
- *    fn2() { ... }
- * }
- * ```
- * ```ts
- * import {XFeature} from './XFeature';
- * class Target { ... }
- * interface Target implements XFeature {}
- * tsMixin(Target, XFeature);
- * ```
- * @notice
- * static member mixin can not be supported.
- */
-export function tsMixin(derivedCtor: any, baseCtor: any) {
-    var baseProto = baseCtor.prototype;
-    for (var name in baseProto) {
-        if (baseProto.hasOwnProperty(name)) {
-            derivedCtor.prototype[name] = baseProto[name];
-        }
-    }
-}
-
-/**
  * Consider typed array.
  * @param data
  */
@@ -281,12 +265,16 @@ export function isArrayLike(data: any): data is ArrayLike<any> {
 /**
  * 数组或对象遍历
  */
-export function each<I extends Dictionary<any> | any[], Context>(
+export function each<I extends Dictionary<any> | any[] | readonly any[] | ArrayLike<any>, Context>(
     arr: I,
     cb: (
         this: Context,
-        value: I extends Dictionary<infer T> | (infer T)[] ? T : any,
-        index?: I extends any[] ? number : string,
+        // Use unknown to avoid to infer to "any", which may disable typo check.
+        value: I extends (infer T)[] | readonly (infer T)[] | ArrayLike<infer T> ? T
+            // Use Dictionary<infer T> may cause infer fail when I is an interface.
+            // So here use a Record to infer type.
+            : I extends Dictionary<any> ? I extends Record<infer K, infer T> ? T : unknown : unknown,
+        index?: I extends any[] | readonly any[] | ArrayLike<any> ? number : keyof I & string,  // keyof Dictionary will return number | string
         arr?: I
     ) => void,
     context?: Context
@@ -294,8 +282,8 @@ export function each<I extends Dictionary<any> | any[], Context>(
     if (!(arr && cb)) {
         return;
     }
-    if (arr.forEach && arr.forEach === nativeForEach) {
-        arr.forEach(cb, context);
+    if ((arr as any).forEach && (arr as any).forEach === nativeForEach) {
+        (arr as any).forEach(cb, context);
     }
     else if (arr.length === +arr.length) {
         for (let i = 0, len = arr.length; i < len; i++) {
@@ -318,8 +306,8 @@ export function each<I extends Dictionary<any> | any[], Context>(
  * @return
  */
 export function map<T, R, Context>(
-    arr: T[],
-    cb: (this: Context, val: T, index?: number, arr?: T[]) => R,
+    arr: readonly T[],
+    cb: (this: Context, val: T, index?: number, arr?: readonly T[]) => R,
     context?: Context
 ): R[] {
     if (!(arr && cb)) {
@@ -338,8 +326,8 @@ export function map<T, R, Context>(
 }
 
 export function reduce<T, S, Context>(
-    arr: T[],
-    cb: (this: Context, previousValue: S, currentValue: T, currentIndex?: number, arr?: T[]) => S,
+    arr: readonly T[],
+    cb: (this: Context, previousValue: S, currentValue: T, currentIndex?: number, arr?: readonly T[]) => S,
     memo?: S,
     context?: Context
 ): S {
@@ -356,8 +344,8 @@ export function reduce<T, S, Context>(
  * 数组过滤
  */
 export function filter<T, Context>(
-    arr: T[],
-    cb: (this: Context, value: T, index: number, arr: T[]) => boolean,
+    arr: readonly T[],
+    cb: (this: Context, value: T, index: number, arr: readonly T[]) => boolean,
     context?: Context
 ): T[] {
     if (!(arr && cb)) {
@@ -381,8 +369,8 @@ export function filter<T, Context>(
  * 数组项查找
  */
 export function find<T, Context>(
-    arr: T[],
-    cb: (this: Context, value: T, index?: number, arr?: T[]) => boolean,
+    arr: readonly T[],
+    cb: (this: Context, value: T, index?: number, arr?: readonly T[]) => boolean,
     context?: Context
 ): T {
     if (!(arr && cb)) {
@@ -395,19 +383,63 @@ export function find<T, Context>(
     }
 }
 
-export function bind<Context, Fn extends (...args: any) => any>(
-    func: Fn, context: Context, ...args: any[]
-): (this: Context, ...args: Parameters<Fn>) => ReturnType<Fn> {
-    return function (this: Context) {
+/**
+ * Get all object keys
+ */
+
+export function keys<T extends object>(obj: T): (keyof T)[] {
+    type TKeys = keyof T;
+    if (Object.keys) {
+        return Object.keys(obj) as TKeys[];
+    }
+    let keyList: TKeys[] = [];
+    for (let key in obj) {
+        if (obj.hasOwnProperty(key)) {
+            keyList.push(key);
+        }
+    }
+    return keyList;
+}
+
+// Remove this type in returned function. Or it will conflicts wicth callback with given context. Like Eventful.
+// According to lib.es5.d.ts
+export type Bind1<F, Ctx> = F extends (this: Ctx, ...args: infer A) => infer R ? (...args: A) => R : unknown;
+export type Bind2<F, Ctx, T1> = F extends (this: Ctx, a: T1, ...args: infer A) => infer R ? (...args: A) => R : unknown;
+export type Bind3<F, Ctx, T1, T2> = F extends (this: Ctx, a: T1, b: T2, ...args: infer A) => infer R ? (...args: A) => R : unknown;
+export type Bind4<F, Ctx, T1, T2, T3> = F extends (this: Ctx, a: T1, b: T2, c: T3, ...args: infer A) => infer R ? (...args: A) => R : unknown;
+export type Bind5<F, Ctx, T1, T2, T3, T4> = F extends (this: Ctx, a: T1, b: T2, c: T3, d: T4, ...args: infer A) => infer R ? (...args: A) => R : unknown;
+type BindFunc<Ctx> = (this: Ctx, ...arg: any[]) => any
+
+function bind<F extends BindFunc<Ctx>, Ctx>(func: F, ctx: Ctx): Bind1<F, Ctx>
+function bind<F extends BindFunc<Ctx>, Ctx, T1 extends Parameters<F>[0]>(func: F, ctx: Ctx, a: T1): Bind2<F, Ctx, T1>
+function bind<F extends BindFunc<Ctx>, Ctx, T1 extends Parameters<F>[0], T2 extends Parameters<F>[1]>(func: F, ctx: Ctx, a: T1, b: T2): Bind3<F, Ctx, T1, T2>
+function bind<F extends BindFunc<Ctx>, Ctx, T1 extends Parameters<F>[0], T2 extends Parameters<F>[1], T3 extends Parameters<F>[2]>(func: F, ctx: Ctx, a: T1, b: T2, c: T3): Bind4<F, Ctx, T1, T2, T3>
+function bind<F extends BindFunc<Ctx>, Ctx, T1 extends Parameters<F>[0], T2 extends Parameters<F>[1], T3 extends Parameters<F>[2], T4 extends Parameters<F>[3]>(func: F, ctx: Ctx, a: T1, b: T2, c: T3, d: T4): Bind5<F, Ctx, T1, T2, T3, T4>
+function bind<Ctx, Fn extends (...args: any) => any>(
+    func: Fn, context: Ctx, ...args: any[]
+): (...args: Parameters<Fn>) => ReturnType<Fn> {
+    return function (this: Ctx) {
         return func.apply(context, args.concat(nativeSlice.call(arguments)));
     };
 }
 
-export function curry(func: Function, ...args: any[]) {
+export type Curry1<F, T1> = F extends (a: T1, ...args: infer A) => infer R ? (...args: A) => R : unknown;
+export type Curry2<F, T1, T2> = F extends (a: T1, b: T2, ...args: infer A) => infer R ? (...args: A) => R : unknown;
+export type Curry3<F, T1, T2, T3> = F extends (a: T1, b: T2, c: T3, ...args: infer A) => infer R ? (...args: A) => R : unknown;
+export type Curry4<F, T1, T2, T3, T4> = F extends (a: T1, b: T2, c: T3, d: T4, ...args: infer A) => infer R ? (...args: A) => R : unknown;
+type CurryFunc = (...arg: any[]) => any
+
+function curry<F extends CurryFunc, T1 extends Parameters<F>[0]>(func: F, a: T1): Curry1<F, T1>
+function curry<F extends CurryFunc, T1 extends Parameters<F>[0], T2 extends Parameters<F>[1]>(func: F, a: T1, b: T2): Curry2<F, T1, T2>
+function curry<F extends CurryFunc, T1 extends Parameters<F>[0], T2 extends Parameters<F>[1], T3 extends Parameters<F>[2]>(func: F, a: T1, b: T2, c: T3): Curry3<F, T1, T2, T3>
+function curry<F extends CurryFunc, T1 extends Parameters<F>[0], T2 extends Parameters<F>[1], T3 extends Parameters<F>[2], T4 extends Parameters<F>[3]>(func: F, a: T1, b: T2, c: T3, d: T4): Curry4<F, T1, T2, T3, T4>
+function curry(func: Function, ...args: any[]): Function {
     return function (this: any) {
         return func.apply(this, args.concat(nativeSlice.call(arguments)));
     };
 }
+
+export {bind, curry};
 
 /**
  * @param value
@@ -429,14 +461,14 @@ export function isFunction(value: any): value is Function {
  * @param value
  * @return {boolean}
  */
-export function isString(value: any): value is String {
+export function isString(value: any): value is string {
     return objToString.call(value) === '[object String]';
 }
 
 // Usage: `isObject(xxx)` or `isObject(SomeType)(xxx)`
 // Generic T can be used to avoid "ts type gruards" casting the `value` from its original
 // type `Object` implicitly so that loose its original type info in the subsequent code.
-export function isObject<T = unknown>(value: any): value is (Object & T) {
+export function isObject<T = unknown>(value: T): value is (object & T) {
     // Avoid a V8 JIT bug in Chrome 19-20.
     // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
     const type = typeof value;
@@ -486,13 +518,13 @@ export function retrieve<T>(...args: T[]): T {
     }
 }
 
-export function retrieve2<T, R>(value0: T, value1: R) {
+export function retrieve2<T, R>(value0: T, value1: R): T | R {
     return value0 != null
         ? value0
         : value1;
 }
 
-export function retrieve3<T, R, W>(value0: T, value1: R, value2: W) {
+export function retrieve3<T, R, W>(value0: T, value1: R, value2: W): T | R | W {
     return value0 != null
         ? value0
         : value1 != null
@@ -589,10 +621,10 @@ export class HashMap<T> {
     // Do not provide `has` method to avoid defining what is `has`.
     // (We usually treat `null` and `undefined` as the same, different
     // from ES6 Map).
-    get(key: string): T {
+    get(key: string | number): T {
         return this.data.hasOwnProperty(key) ? this.data[key] : null;
     }
-    set(key: string, value: T) {
+    set(key: string | number, value: T) {
         // Comparing with invocation chaining, `return value` is more commonly
         // used in this case: `const someVal = map.set('a', genVal());`
         return (this.data[key] = value);
@@ -611,7 +643,7 @@ export class HashMap<T> {
         /* eslint-enable guard-for-in */
     }
     // Do not use this method if performance sensitive.
-    removeKey(key: string) {
+    removeKey(key: string | number) {
         delete this.data[key];
     }
 }

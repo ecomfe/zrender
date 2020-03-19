@@ -10,6 +10,7 @@
 import Displayble from './Displayable';
 import BoundingRect from '../core/BoundingRect';
 import { MatrixArray } from '../core/matrix';
+import { Group } from '../export';
 
 const m: MatrixArray = [];
 // TODO Style override ?
@@ -99,14 +100,14 @@ export default class IncrementalDisplayble extends Displayble {
         for (let i = this._cursor; i < this._displayables.length; i++) {
             const displayable = this._displayables[i];
             // PENDING
-            displayable.parent = this;
+            displayable.parent = this as unknown as Group;
             displayable.update();
             displayable.parent = null;
         }
         for (let i = 0; i < this._temporaryDisplayables.length; i++) {
             const displayable = this._temporaryDisplayables[i];
             // PENDING
-            displayable.parent = this;
+            displayable.parent = this as unknown as Group;
             displayable.update();
             displayable.parent = null;
         }

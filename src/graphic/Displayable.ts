@@ -5,7 +5,7 @@
 
 import Element, {ElementOption} from '../Element';
 import BoundingRect, { RectLike } from '../core/BoundingRect';
-import { Dictionary, PropType, AllPropTypes } from '../core/types';
+import { PropType, AllPropTypes, Dictionary } from '../core/types';
 import Path from './Path';
 import { easingType } from '../animation/easing';
 import { extend, changePrototype } from '../core/util';
@@ -53,12 +53,13 @@ export interface DisplayableOption extends ElementOption {
     incremental?: boolean
 
     batch?: boolean
+    invisible?: boolean
 }
 
 type DisplayableKey = keyof DisplayableOption
 type DisplayablePropertyType = PropType<DisplayableOption, DisplayableKey>
 
-class Displayable<T extends DisplayableOption = DisplayableOption> extends Element<T> {
+class Displayable<Props extends DisplayableOption = DisplayableOption> extends Element<Props> {
 
     /**
      * Whether the displayable object is visible. when it is true, the displayable object
@@ -105,6 +106,7 @@ class Displayable<T extends DisplayableOption = DisplayableOption> extends Eleme
     protected _rect: BoundingRect
 
     /************* Properties will be inejected in other modules. *******************/
+
     // Shapes for cascade clipping.
     // Can only be `null`/`undefined` or an non-empty array, MUST NOT be an empty array.
     // because it is easy to only using null to check whether clipPaths changed.
@@ -117,7 +119,17 @@ class Displayable<T extends DisplayableOption = DisplayableOption> extends Eleme
     // FOR SVG PAINTER
     __svgEl: SVGElement
 
-    constructor(opts?: DisplayableOption, defaultStyle?: Dictionary<any>) {
+    // FOR ECHARTS
+    /**
+     * hoverStyle will be set in echarts.
+     */
+    hoverStyle: Dictionary<any>
+    /**
+     * If use individual hover layer. It is set in echarts
+     */
+    useHoverLayer: boolean
+
+    constructor(opts?: Props, defaultStyle?: Props['style']) {
         super(opts);
 
         // this.attr(opts);
@@ -166,10 +178,9 @@ class Displayable<T extends DisplayableOption = DisplayableOption> extends Eleme
         return this.rectContain(x, y);
     }
 
-    traverse<T>(
-        this: Displayable,
-        cb: (this: T, el: Displayable) => void,
-        context: T
+    traverse<Context>(
+        cb: (this: Context, el: Displayable<Props>) => void,
+        context?: Context
     ) {
         cb.call(context, this);
     }
@@ -203,7 +214,7 @@ class Displayable<T extends DisplayableOption = DisplayableOption> extends Eleme
 
     attrKV(key: DisplayableKey, value: DisplayablePropertyType) {
         if (key !== 'style') {
-            super.attrKV(key as keyof ElementOption, value);
+            super.attrKV(key as keyof DisplayableOption, value);
         }
         else {
             if (!this.style) {
@@ -215,16 +226,16 @@ class Displayable<T extends DisplayableOption = DisplayableOption> extends Eleme
         }
     }
 
-    setStyle(obj: T["style"]): void
-    setStyle(obj: keyof T["style"], value: T["style"]): void
-    setStyle(obj: keyof T["style"] | T["style"], value?: T["style"]) {
+    setStyle(obj: Props["style"]): void
+    setStyle(obj: keyof Props["style"], value: Props["style"]): void
+    setStyle(obj: keyof Props["style"] | Props["style"], value?: AllPropTypes<Props["style"]>) {
         if (typeof obj === 'string') {
             this.style[obj] = value;
         }
         else {
-            for (let key in obj as T["style"]) {
+            for (let key in obj as Props["style"]) {
                 if (obj.hasOwnProperty(key)) {
-                    this.style[key] = (obj as T["style"])[key];
+                    this.style[key] = (obj as Props["style"])[key];
                 }
             }
         }
@@ -242,7 +253,7 @@ class Displayable<T extends DisplayableOption = DisplayableOption> extends Eleme
     /**
      * Use given style object
      */
-    useStyle(obj: T["style"], inherited?: T["style"]) {
+    useStyle(obj: Props["style"], inherited?: Props["style"]) {
         if (inherited) {
             // inherited value can be accessed from prototype
             this.style = changePrototype(obj, inherited);

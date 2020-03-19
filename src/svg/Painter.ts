@@ -15,7 +15,8 @@ import ShadowManager from './helper/ShadowManager';
 import {
     path as svgPath,
     image as svgImage,
-    text as svgText
+    text as svgText,
+    SVGProxy
 } from './graphic';
 import Displayable from '../graphic/Displayable';
 import Storage from '../Storage';
@@ -173,7 +174,7 @@ class SVGPainter implements PainterBase {
             const svgElement = getSvgElement(displayable);
             if (!displayable.invisible) {
                 if (displayable.__dirty) {
-                    svgProxy && svgProxy.brush(displayable);
+                    svgProxy && (svgProxy as SVGProxy<Displayable>).brush(displayable);
 
                     // Update clipPath
                     this._clipPathManager.update(displayable);

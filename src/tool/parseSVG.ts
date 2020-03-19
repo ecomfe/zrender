@@ -68,7 +68,7 @@ type TextStyleOptionExtended = TextStyleOption & {
 /**
  * For big svg string, this method might be time consuming.
  */
-export function parseXML(svg: Document | string) {
+export function parseXML(svg: Document | string | SVGElement): SVGElement {
     if (isString(svg)) {
         const parser = new DOMParser();
         svg = parser.parseFromString(svg, 'text/xml');
@@ -83,7 +83,7 @@ export function parseXML(svg: Document | string) {
         svgNode = svgNode.nextSibling;
     }
 
-    return svgNode;
+    return svgNode as SVGElement;
 }
 
 class SVGParser {
@@ -97,10 +97,10 @@ class SVGParser {
     private _textX: number
     private _textY: number
 
-    parse(xml: string | Document , opt: SVGParserOption): SVGParserResult {
+    parse(xml: string | Document | SVGElement, opt: SVGParserOption): SVGParserResult {
         opt = opt || {};
 
-        const svg = parseXML(xml) as SVGElement;
+        const svg = parseXML(xml);
 
         if (!svg) {
             throw new Error('Illegal svg');
@@ -728,7 +728,7 @@ export function makeViewBoxTransform(viewBoxRect: RectLike, width: number, heigh
     };
 }
 
-export function parseSVG(xml: Document | string, opt: SVGParserOption): SVGParserResult {
+export function parseSVG(xml: string | Document | SVGElement, opt: SVGParserOption): SVGParserResult {
     const parser = new SVGParser();
     return parser.parse(xml, opt);
 }

@@ -12,8 +12,8 @@ import ZImage, { ImageStyleOption } from '../graphic/Image';
 import { DEFAULT_FONT, getLineHeight } from '../contain/text';
 import ZText, { TextStyleOption } from '../graphic/Text';
 
-type SVGProxy = {
-    brush: (el: Displayable) => void
+export interface SVGProxy<T> {
+    brush(el: T): void
 }
 
 const CMD = PathProxy.CMD;
@@ -244,7 +244,7 @@ function pathDataToString(path: PathProxy) {
     return str.join(' ');
 }
 
-const svgPath: SVGProxy = {
+const svgPath: SVGProxy<Path> = {
     brush(el: Path) {
         const style = el.style;
 
@@ -282,7 +282,7 @@ export {svgPath as path};
 /***************************************************
  * IMAGE
  **************************************************/
-const svgImage: SVGProxy = {
+const svgImage: SVGProxy<ZImage> = {
     brush(el: ZImage) {
         const style = el.style;
         let image = style.image;
@@ -345,7 +345,7 @@ function adjustTextY(y: number, lineHeight: number, textBaseline: CanvasTextBase
     return y;
 }
 
-const svgText: SVGProxy = {
+const svgText: SVGProxy<ZText> = {
     brush(el: ZText) {
         const style = el.style;
 

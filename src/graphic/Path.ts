@@ -50,7 +50,7 @@ export const DEFAULT_PATH_STYLE: PathStyleOption = defaults({
     strokeFirst: false,
 }, DEFAULT_COMMON_STYLE);
 
-export interface PathOption extends DisplayableOption{
+export interface PathOption extends DisplayableOption {
     strokeContainThreshold?: number
     segmentIgnoreThreshold?: number
     subPixelOptimize?: boolean
@@ -69,7 +69,7 @@ export interface PathOption extends DisplayableOption{
 type PathKey = keyof PathOption
 type PathPropertyType = PropType<PathOption, PathKey>
 
-class Path extends Displayable<PathOption> {
+class Path<Props extends PathOption = PathOption> extends Displayable<Props> {
 
     path: PathProxy
 
@@ -93,7 +93,7 @@ class Path extends Displayable<PathOption> {
     // It will be assigned by default value.
     shape: Dictionary<any>
 
-    constructor(opts?: PathOption, defaultStyle?: PathStyleOption, defaultShape?: Dictionary<any>) {
+    constructor(opts?: Props, defaultStyle?: Props['style'], defaultShape?: Props['shape']) {
         super(opts, defaultStyle);
 
         this._defaultsShape(defaultShape);

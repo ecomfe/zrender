@@ -392,7 +392,7 @@ export function toHex(color: string): string {
 export function fastLerp(
     normalizedValue: number,
     colors: number[][],
-    out: number[]
+    out?: number[]
 ): number[] {
     if (!(colors && colors.length)
         || !(normalizedValue >= 0 && normalizedValue <= 1)
@@ -437,7 +437,7 @@ type LerpFullOutput = {
 export function lerp(
     normalizedValue: number,
     colors: string[],
-    fullOutput: boolean
+    fullOutput?: boolean
 ): string | LerpFullOutput {
     if (!(colors && colors.length)
         || !(normalizedValue >= 0 && normalizedValue <= 1)
@@ -485,7 +485,7 @@ export const mapToColor = lerp;
  * @return Color string in rgba format.
  * @memberOf module:zrender/util/color
  */
-export function modifyHSL(color: string, h: number, s: number, l: number): string {
+export function modifyHSL(color: string, h?: number, s?: number, l?: number): string {
     let colorArr = parse(color);
 
     if (color) {
@@ -504,7 +504,7 @@ export function modifyHSL(color: string, h: number, s: number, l: number): strin
  * @return Color string in rgba format.
  * @memberOf module:zrender/util/color
  */
-export function modifyAlpha(color: string, alpha: number): string {
+export function modifyAlpha(color: string, alpha?: number): string {
     const colorArr = parse(color);
 
     if (colorArr && alpha != null) {

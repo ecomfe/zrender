@@ -51,7 +51,7 @@ export type ZRRawMouseEvent = MouseEvent & ZREventProperties
 export type ZRRawTouchEvent = TouchEvent & ZREventProperties
 export type ZRRawPointerEvent = TouchEvent & ZREventProperties
 
-export type ZRRawEvent = ZRRawMouseEvent & ZRRawTouchEvent & ZRRawPointerEvent
+export type ZRRawEvent = ZRRawMouseEvent | ZRRawTouchEvent | ZRRawPointerEvent
 
 export type ZRPinchEvent = ZRRawEvent & {
     pinchScale: number

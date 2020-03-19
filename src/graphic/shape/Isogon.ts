@@ -2,7 +2,7 @@
  * 正多边形
  */
 
-import Path, { PathOption } from '../Path';
+import Path, { PathProps } from '../Path';
 
 const PI = Math.PI;
 const sin = Math.sin;
@@ -15,15 +15,16 @@ class IsogonShape {
     n = 0
 }
 
-export default class Isogon extends Path {
+interface IsogonProps extends PathProps {
+    shape?: Partial<IsogonShape>
+}
+export default class Isogon extends Path<IsogonProps> {
 
     type = 'isogon'
 
     shape: IsogonShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<IsogonShape>
-    }) {
+    constructor(opts?: IsogonProps) {
         super(opts, null, new IsogonShape())
     }
 

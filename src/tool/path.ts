@@ -1,8 +1,10 @@
-import Path, { PathOption } from '../graphic/Path';
+import Path, { PathProps } from '../graphic/Path';
 import PathProxy from '../core/PathProxy';
 import transformPath from './transformPath';
 import { VectorArray } from '../core/vector';
 import { MatrixArray } from '../core/matrix';
+import { DisplayableProps } from '../graphic/Displayable';
+import { extend } from '../core/util';
 
 // command chars
 // const cc = [
@@ -364,7 +366,8 @@ function createPathProxyFromString(data: string) {
     return path;
 }
 
-interface SVGPathOption extends PathOption {
+type SVGPathOption = Omit<PathProps, 'shape' | 'buildPath'>
+interface InnerSVGPathOption extends PathProps {
     applyTransform?: (m: MatrixArray) => void
 }
 class SVGPath extends Path {
@@ -375,10 +378,10 @@ function isPathProxy(path: PathProxy | CanvasRenderingContext2D): path is PathPr
     return (path as PathProxy).setData != null
 }
 // TODO Optimize double memory cost problem
-function createPathOptions(str: string, opts: SVGPathOption) {
+function createPathOptions(str: string, opts: SVGPathOption): InnerSVGPathOption {
     const pathProxy = createPathProxyFromString(str);
-    opts = opts || {};
-    opts.buildPath = function (path: PathProxy | CanvasRenderingContext2D) {
+    const innerOpts: InnerSVGPathOption = extend({}, opts);
+    innerOpts.buildPath = function (path: PathProxy | CanvasRenderingContext2D) {
         if (isPathProxy(path)) {
             path.setData(pathProxy.data);
             // Svg and vml renderer don't have context
@@ -393,12 +396,12 @@ function createPathOptions(str: string, opts: SVGPathOption) {
         }
     };
 
-    opts.applyTransform = function (this: SVGPath, m: MatrixArray) {
+    innerOpts.applyTransform = function (this: SVGPath, m: MatrixArray) {
         transformPath(pathProxy, m);
         this.dirtyShape();
     };
 
-    return opts;
+    return innerOpts;
 }
 
 /**
@@ -417,12 +420,12 @@ export function createFromString(str: string, opts?: SVGPathOption): SVGPath {
  * @param  opts Other options
  */
 export function extendFromString(str: string, defaultOpts?: SVGPathOption): typeof SVGPath {
-    defaultOpts = createPathOptions(str, defaultOpts);
+    const innerOpts = createPathOptions(str, defaultOpts);
     class Sub extends SVGPath {
-        constructor(opts: SVGPathOption) {
+        constructor(opts: InnerSVGPathOption) {
             super(opts);
-            this.applyTransform = defaultOpts.applyTransform
-            this.buildPath = defaultOpts.buildPath;
+            this.applyTransform = innerOpts.applyTransform
+            this.buildPath = innerOpts.buildPath;
         }
     }
     return Sub;
@@ -434,7 +437,7 @@ export function extendFromString(str: string, defaultOpts?: SVGPathOption): type
 // TODO Apply transform
 // TODO stroke dash
 // TODO Optimize double memory cost problem
-export function mergePath(pathEls: Path[], opts: PathOption) {
+export function mergePath(pathEls: Path[], opts: PathProps) {
     const pathList: PathProxy[] = [];
     const len = pathEls.length;
     for (let i = 0; i < len; i++) {

@@ -109,7 +109,8 @@ export default class Storage {
             // Recursively add clip path
             while (currentClipPath) {
                 // clipPath 的变换是基于使用这个 clipPath 的元素
-                currentClipPath.parent = parentClipPath;
+                // TODO: parent should be group type.
+                currentClipPath.parent = parentClipPath as Group;
                 currentClipPath.updateTransform();
 
                 clipPaths.push(currentClipPath);
@@ -120,7 +121,7 @@ export default class Storage {
         }
 
         if (el.isGroup) {
-            const children = (el as Group).children();
+            const children = (el as Group).childrenRef();
 
             for (let i = 0; i < children.length; i++) {
                 const child = children[i];

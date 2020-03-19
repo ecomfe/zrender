@@ -3,7 +3,7 @@
  * @module zrender/graphic/shape/Rose
  */
 
-import Path, { PathOption } from '../Path';
+import Path, { PathProps } from '../Path';
 
 const sin = Math.sin;
 const cos = Math.cos;
@@ -17,15 +17,16 @@ class RoseShape {
     n = 1
 }
 
-export default class Rose extends Path {
+interface RoseProps extends PathProps {
+    shape?: Partial<RoseShape>
+}
+export default class Rose extends Path<RoseProps> {
 
     type = 'rose'
 
     shape: RoseShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<RoseShape>
-    }) {
+    constructor(opts?: RoseProps) {
         super(opts, {
             fill: null,
             stroke: '#000'

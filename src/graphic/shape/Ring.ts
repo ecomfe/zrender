@@ -2,7 +2,7 @@
  * 圆环
  */
 
-import Path, { PathOption } from '../Path';
+import Path, { PathProps } from '../Path';
 
 class RingShape {
     cx = 0
@@ -11,15 +11,16 @@ class RingShape {
     r0 = 0
 }
 
-export default class Ring extends Path {
+interface RingProps extends PathProps {
+    shape?: Partial<RingShape>
+}
+export default class Ring extends Path<RingProps> {
 
     type = 'ring'
 
     shape: RingShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<RingShape>
-    }) {
+    constructor(opts?: RingProps) {
         super(opts, null, new RingShape())
     }
 

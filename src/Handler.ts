@@ -7,7 +7,7 @@ import {GestureMgr} from './core/GestureMgr';
 import Displayable from './graphic/Displayable';
 import {PainterBase} from './PainterBase';
 import HandlerDomProxy, { HandlerProxyInterface } from './dom/HandlerProxy';
-import { ZRRawEvent, ZRPinchEvent, ElementEventName, ElementEventNameWithOn } from './core/types';
+import { ZRRawEvent, ZRPinchEvent, ElementEventName, ElementEventNameWithOn, ZRRawTouchEvent } from './core/types';
 import Storage from './Storage';
 import Element, {ElementEvent} from './Element';
 import CanvasPainter from './canvas/Painter';
@@ -361,7 +361,7 @@ class Handler extends Eventful {
         stage === 'start' && gestureMgr.clear();
 
         const gestureInfo = gestureMgr.recognize(
-            event,
+            event as ZRRawTouchEvent,
             this.findHover(event.zrX, event.zrY, null).target,
             (this.proxy as HandlerDomProxy).dom
         );

@@ -11,7 +11,6 @@ import Eventful from '../core/Eventful';
 import requestAnimationFrame from './requestAnimationFrame';
 import Animator, {AnimationPropSetter, AnimationPropGetter} from './Animator';
 import Clip, {DeferredEventTypes} from './Clip';
-import { Dictionary } from '../core/types';
 
 
 interface Stage {

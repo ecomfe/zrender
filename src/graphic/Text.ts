@@ -62,7 +62,7 @@ class ZText extends Displayable<TextOption> {
             text != null ? (text += '') : (text = '');
 
             const rect = getBoundingRect(
-                style.text + '',
+                text,
                 style.font,
                 style.textAlign,
                 style.textBaseline

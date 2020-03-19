@@ -203,7 +203,7 @@ export function addEventListener (
     el: HTMLElement | HTMLDocument,
     name: AddEventListenerParams[0],
     handler: AddEventListenerParams[1],
-    opt: AddEventListenerParams[2]
+    opt?: AddEventListenerParams[2]
 ) {
     if (isDomLevel2) {
         // Reproduct the console warning:
@@ -278,10 +278,9 @@ export const stop = isDomLevel2
  * This method only works for mouseup and mousedown. The functionality is restricted
  * for fault tolerance, See the `e.which` compatibility above.
  *
- * @param {MouseEvent} e
- * @return {boolean}
+ * params can be MouseEvent or ElementEvent
  */
-export function isMiddleOrRightButtonOnMouseUpDown(e: MouseEvent) {
+export function isMiddleOrRightButtonOnMouseUpDown(e: { which: number }) {
     return e.which === 2 || e.which === 3;
 }
 
