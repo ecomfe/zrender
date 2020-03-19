@@ -8,9 +8,9 @@ import { ZRCanvasRenderingContext, ImageLike } from '../core/types';
 import BoundingRect from '../core/BoundingRect';
 import { createOrUpdateImage, isImageReady } from '../graphic/helper/image';
 import { getCanvasGradient } from './helper';
-import Path, { PathStyleOption } from '../graphic/Path';
-import ZImage, { ImageStyleOption } from '../graphic/Image';
-import ZText, {TextStyleOption} from '../graphic/Text';
+import Path, { PathStyleProps } from '../graphic/Path';
+import ZImage, { ImageStyleProps } from '../graphic/Image';
+import ZText, {TextStyleProps} from '../graphic/Text';
 import { DEFAULT_FONT } from '../contain/text';
 import { IncrementalDisplayable } from '../export';
 import { MatrixArray } from '../core/matrix';
@@ -285,7 +285,7 @@ const DRAW_PROPS = [
     ['fill'], ['stroke']
 ] as const;
 
-type AllStyleOption = PathStyleOption | TextStyleOption | ImageStyleOption;
+type AllStyleOption = PathStyleProps | TextStyleProps | ImageStyleProps;
 // type ShadowPropNames = typeof SHADOW_PROPS[number][0];
 // type StrokePropNames = typeof STROKE_PROPS[number][0];
 // type DrawPropNames = typeof DRAW_PROPS[number][0];

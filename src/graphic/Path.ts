@@ -1,4 +1,4 @@
-import Displayable, { DisplayableOption, CommonStyleOption, DEFAULT_COMMON_STYLE } from './Displayable';
+import Displayable, { DisplayableProps, CommonStyleProps, DEFAULT_COMMON_STYLE } from './Displayable';
 import Element from '../Element';
 import PathProxy from '../core/PathProxy';
 import * as pathContain from '../contain/path';
@@ -9,7 +9,7 @@ import { LinearGradientObject } from './LinearGradient';
 import { RadialGradientObject } from './RadialGradient';
 import { isObject, defaults, extend } from '../core/util';
 
-export interface PathStyleOption extends CommonStyleOption {
+export interface PathStyleProps extends CommonStyleProps {
     fill?: string | PatternObject | LinearGradientObject | RadialGradientObject
     stroke?: string | PatternObject | LinearGradientObject | RadialGradientObject
     strokeNoScale?: boolean
@@ -38,7 +38,7 @@ export interface PathStyleOption extends CommonStyleOption {
     strokeFirst?: boolean
 }
 
-export const DEFAULT_PATH_STYLE: PathStyleOption = defaults({
+export const DEFAULT_PATH_STYLE: PathStyleProps = defaults({
     fill: '#000',
     stroke: null,
     lineDashOffset: 0,
@@ -50,12 +50,12 @@ export const DEFAULT_PATH_STYLE: PathStyleOption = defaults({
     strokeFirst: false,
 }, DEFAULT_COMMON_STYLE);
 
-export interface PathOption extends DisplayableOption {
+export interface PathProps extends DisplayableProps {
     strokeContainThreshold?: number
     segmentIgnoreThreshold?: number
     subPixelOptimize?: boolean
 
-    style?: PathStyleOption
+    style?: PathStyleProps
     shape?: Dictionary<any>
 
     buildPath?: (
@@ -66,10 +66,10 @@ export interface PathOption extends DisplayableOption {
 }
 
 
-type PathKey = keyof PathOption
-type PathPropertyType = PropType<PathOption, PathKey>
+type PathKey = keyof PathProps
+type PathPropertyType = PropType<PathProps, PathKey>
 
-class Path<Props extends PathOption = PathOption> extends Displayable<Props> {
+class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
 
     path: PathProxy
 
@@ -82,7 +82,7 @@ class Path<Props extends PathOption = PathOption> extends Displayable<Props> {
 
     subPixelOptimize: boolean
 
-    style: PathStyleOption
+    style: PathStyleProps
 
     __dirtyPath: boolean
     __clipTarget: Element
@@ -263,7 +263,7 @@ class Path<Props extends PathOption = PathOption> extends Displayable<Props> {
             this._rect = null;
         }
         else {
-            super.attrKV(key as keyof DisplayableOption, value);
+            super.attrKV(key as keyof DisplayableProps, value);
         }
     }
 
@@ -291,7 +291,7 @@ class Path<Props extends PathOption = PathOption> extends Displayable<Props> {
     /**
      * Replace the style with given new style object.
      */
-    useStyle(obj: PathStyleOption) {
+    useStyle(obj: PathStyleProps) {
         super.useStyle(obj, DEFAULT_PATH_STYLE);
     }
 
@@ -325,7 +325,7 @@ class Path<Props extends PathOption = PathOption> extends Displayable<Props> {
     static extend<ShapeType extends Dictionary<any>, ExtraType extends Dictionary<any>>(defaultProps: {
         type: string
         shape?: ShapeType
-        style?: PathStyleOption
+        style?: PathStyleProps
         extra?: ExtraType
 
         beforeBrush?: Displayable['beforeBrush']
@@ -333,16 +333,16 @@ class Path<Props extends PathOption = PathOption> extends Displayable<Props> {
         getBoundingRect?: Displayable['getBoundingRect']
 
         buildPath: (this: Path, ctx: CanvasRenderingContext2D | PathProxy, shape: ShapeType, inBundle?: boolean) => void
-        init?: (this: Path, opts: PathOption) => void // TODO Should be SubPathOption
+        init?: (this: Path, opts: PathProps) => void // TODO Should be SubPathOption
     }): {
-        new(opts?: PathOption & {
+        new(opts?: PathProps & {
             shape?: ShapeType
         }): Path & {
             extra?: ExtraType,
             shape: ShapeType
         }
     } {
-        interface SubPathOption extends PathOption {
+        interface SubPathOption extends PathProps {
             shape: ShapeType
         }
 

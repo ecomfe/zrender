@@ -3,7 +3,7 @@
  * @module zrender/graphic/Displayable
  */
 
-import Element, {ElementOption} from '../Element';
+import Element, {ElementProps} from '../Element';
 import BoundingRect, { RectLike } from '../core/BoundingRect';
 import { PropType, AllPropTypes, Dictionary } from '../core/types';
 import Path from './Path';
@@ -12,7 +12,7 @@ import { extend, changePrototype } from '../core/util';
 
 // type CalculateTextPositionResult = ReturnType<typeof calculateTextPosition>
 
-export interface CommonStyleOption {
+export interface CommonStyleProps {
     shadowBlur?: number
     shadowOffsetX?: number
     shadowOffsetY?: number
@@ -25,7 +25,7 @@ export interface CommonStyleOption {
     blend?: string
 }
 
-export const DEFAULT_COMMON_STYLE: CommonStyleOption = {
+export const DEFAULT_COMMON_STYLE: CommonStyleProps = {
     shadowBlur: 0,
     shadowOffsetX: 0,
     shadowOffsetY: 0,
@@ -34,7 +34,7 @@ export const DEFAULT_COMMON_STYLE: CommonStyleOption = {
     blend: 'source-over'
 }
 
-export interface DisplayableOption extends ElementOption {
+export interface DisplayableProps extends ElementProps {
     style?: Dictionary<any>
 
     zlevel?: number
@@ -56,10 +56,10 @@ export interface DisplayableOption extends ElementOption {
     invisible?: boolean
 }
 
-type DisplayableKey = keyof DisplayableOption
-type DisplayablePropertyType = PropType<DisplayableOption, DisplayableKey>
+type DisplayableKey = keyof DisplayableProps
+type DisplayablePropertyType = PropType<DisplayableProps, DisplayableKey>
 
-class Displayable<Props extends DisplayableOption = DisplayableOption> extends Element<Props> {
+class Displayable<Props extends DisplayableProps = DisplayableProps> extends Element<Props> {
 
     /**
      * Whether the displayable object is visible. when it is true, the displayable object
@@ -214,7 +214,7 @@ class Displayable<Props extends DisplayableOption = DisplayableOption> extends E
 
     attrKV(key: DisplayableKey, value: DisplayablePropertyType) {
         if (key !== 'style') {
-            super.attrKV(key as keyof DisplayableOption, value);
+            super.attrKV(key as keyof DisplayableProps, value);
         }
         else {
             if (!this.style) {

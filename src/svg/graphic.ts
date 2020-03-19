@@ -7,10 +7,10 @@ import PathProxy from '../core/PathProxy';
 import * as matrix from '../core/matrix';
 import Displayable from '../graphic/Displayable';
 import { Path } from '../export';
-import { PathStyleOption } from '../graphic/Path';
-import ZImage, { ImageStyleOption } from '../graphic/Image';
+import { PathStyleProps } from '../graphic/Path';
+import ZImage, { ImageStyleProps } from '../graphic/Image';
 import { DEFAULT_FONT, getLineHeight } from '../contain/text';
-import ZText, { TextStyleOption } from '../graphic/Text';
+import ZText, { TextStyleProps } from '../graphic/Text';
 
 export interface SVGProxy<T> {
     brush(el: T): void
@@ -29,7 +29,7 @@ const degree = 180 / PI;
 
 const EPSILON = 1e-4;
 
-type AllStyleOption = PathStyleOption | TextStyleOption | ImageStyleOption;
+type AllStyleOption = PathStyleProps | TextStyleProps | ImageStyleProps;
 
 function round4(val: number) {
     return mathRound(val * 1e4) / 1e4;
@@ -39,13 +39,13 @@ function isAroundZero(val: number) {
     return val < EPSILON && val > -EPSILON;
 }
 
-function pathHasFill(style: AllStyleOption): style is PathStyleOption {
-    const fill = (style as PathStyleOption).fill;
+function pathHasFill(style: AllStyleOption): style is PathStyleProps {
+    const fill = (style as PathStyleProps).fill;
     return fill != null && fill !== NONE;
 }
 
-function pathHasStroke(style: AllStyleOption): style is PathStyleOption {
-    const stroke = (style as PathStyleOption).stroke;
+function pathHasStroke(style: AllStyleOption): style is PathStyleProps {
+    const stroke = (style as PathStyleProps).stroke;
     return stroke != null && stroke !== NONE;
 }
 
@@ -78,9 +78,9 @@ function attrXLink(el: SVGElement, key: string, val: string) {
     el.setAttributeNS('http://www.w3.org/1999/xlink', key, val);
 }
 
-function bindStyle(svgEl: SVGElement, style: PathStyleOption, el?: Path): void
-function bindStyle(svgEl: SVGElement, style: TextStyleOption, el?: ZText): void
-function bindStyle(svgEl: SVGElement, style: ImageStyleOption, el?: ZImage): void
+function bindStyle(svgEl: SVGElement, style: PathStyleProps, el?: Path): void
+function bindStyle(svgEl: SVGElement, style: TextStyleProps, el?: ZText): void
+function bindStyle(svgEl: SVGElement, style: ImageStyleProps, el?: ZImage): void
 function bindStyle(svgEl: SVGElement, style: AllStyleOption, el?: Path | ZText | ZImage) {
     const opacity = style.opacity == null ? 1 : style.opacity;
     if (pathHasFill(style)) {

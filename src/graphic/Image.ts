@@ -1,9 +1,9 @@
-import Displayable, { DisplayableOption, CommonStyleOption, DEFAULT_COMMON_STYLE } from './Displayable';
+import Displayable, { DisplayableProps, CommonStyleProps, DEFAULT_COMMON_STYLE } from './Displayable';
 import BoundingRect from '../core/BoundingRect';
 import { PropType, AllPropTypes, ImageLike } from '../core/types';
 import { defaults, extend } from '../core/util';
 
-export interface ImageStyleOption extends CommonStyleOption {
+export interface ImageStyleProps extends CommonStyleProps {
     image?: string | ImageLike
     x?: number
     y?: number
@@ -15,19 +15,19 @@ export interface ImageStyleOption extends CommonStyleOption {
     sHeight?: number
 }
 
-export const DEFAULT_IMAGE_STYLE: CommonStyleOption = defaults({
+export const DEFAULT_IMAGE_STYLE: CommonStyleProps = defaults({
     x: 0,
     y: 0
 }, DEFAULT_COMMON_STYLE);
 
-interface ImageOption extends DisplayableOption {
-    style?: ImageStyleOption
+interface ImageProps extends DisplayableProps {
+    style?: ImageStyleProps
 }
 
-class ZImage extends Displayable<ImageOption> {
+class ZImage extends Displayable<ImageProps> {
     type = 'image'
 
-    style: ImageStyleOption
+    style: ImageStyleProps
 
     // FOR CANVAS RENDERER
     __image: ImageLike
@@ -36,7 +36,7 @@ class ZImage extends Displayable<ImageOption> {
 
     onload: (image: ImageLike) => void
 
-    useStyle(obj: ImageStyleOption) {
+    useStyle(obj: ImageStyleProps) {
         super.useStyle(obj, DEFAULT_IMAGE_STYLE);
     }
 

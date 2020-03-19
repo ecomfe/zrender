@@ -3,7 +3,7 @@ import * as util from '../core/util';
 import timsort from '../core/timsort';
 import Layer, { LayerConfig } from './Layer';
 import requestAnimationFrame from '../animation/requestAnimationFrame';
-import ZImage, { ImageStyleOption } from '../graphic/Image';
+import ZImage, { ImageStyleProps } from '../graphic/Image';
 import env from '../core/env';
 import { Path, IncrementalDisplayable } from '../export';
 import Displayable from '../graphic/Displayable';
@@ -12,8 +12,8 @@ import { GradientObject } from '../graphic/Gradient';
 import { PatternObject } from '../graphic/Pattern';
 import Storage from '../Storage';
 import { brush, BrushScope } from './graphic';
-import ZText, { TextStyleOption } from '../graphic/Text';
-import { PathStyleOption } from '../graphic/Path';
+import ZText, { TextStyleProps } from '../graphic/Text';
+import { PathStyleProps } from '../graphic/Path';
 import { PainterBase } from '../PainterBase';
 
 const HOVER_LAYER_ZLEVEL = 1e5;
@@ -259,10 +259,10 @@ export default class CanvasPainter implements PainterBase {
         return this;
     }
 
-    addHover(el: Path, style: PathStyleOption): Path
-    addHover(el: ZText, style: TextStyleOption): ZText
-    addHover(el: ZImage, style: ImageStyleOption): ZImage
-    addHover(el: Path | ZText | ZImage, hoverStyle: PathStyleOption | TextStyleOption | ImageStyleOption): Path | ZText | ZImage {
+    addHover(el: Path, style: PathStyleProps): Path
+    addHover(el: ZText, style: TextStyleProps): ZText
+    addHover(el: ZImage, style: ImageStyleProps): ZImage
+    addHover(el: Path | ZText | ZImage, hoverStyle: PathStyleProps | TextStyleProps | ImageStyleProps): Path | ZText | ZImage {
         if (el.__hoverMir) {
             return;
         }

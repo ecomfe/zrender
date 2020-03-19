@@ -6,7 +6,7 @@ import { PatternObject } from './Pattern';
 import { LinearGradientObject } from './LinearGradient';
 import { RadialGradientObject } from './RadialGradient';
 import { TextAlign, VerticalAlign, ImageLike, Dictionary, AllPropTypes, PropType } from '../core/types';
-import Element, { ElementOption } from '../Element';
+import Element, { ElementProps } from '../Element';
 import { parseRichText, parsePlainText } from './helper/parseText';
 import ZText from './Text';
 import { retrieve2, isString, each, normalizeCssArray, trim, bind } from '../core/util';
@@ -158,7 +158,7 @@ export interface RichTextStyleOption extends RichTextStyleOptionPart {
     truncateMinChar: number
 }
 
-interface RichTextOption extends ElementOption {
+interface RichTextOption extends ElementProps {
     style?: RichTextStyleOption
 
     zlevel?: number
@@ -243,7 +243,7 @@ class RichText extends Element<RichTextOption> {
 
     attrKV(key: keyof RichTextOption, value: AllPropTypes<RichTextOption>) {
         if (key !== 'style') {
-            super.attrKV(key as keyof ElementOption, value);
+            super.attrKV(key as keyof ElementProps, value);
         }
         else {
             if (!this.style) {

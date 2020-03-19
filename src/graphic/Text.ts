@@ -1,11 +1,11 @@
-import Displayable, { DisplayableOption } from './Displayable';
+import Displayable, { DisplayableProps } from './Displayable';
 import { getBoundingRect, DEFAULT_FONT } from '../contain/text';
 import BoundingRect from '../core/BoundingRect';
-import { PathStyleOption, DEFAULT_PATH_STYLE } from './Path';
+import { PathStyleProps, DEFAULT_PATH_STYLE } from './Path';
 import { AllPropTypes } from '../core/types';
 import { trim, extend } from '../core/util';
 
-export interface TextStyleOption extends PathStyleOption {
+export interface TextStyleProps extends PathStyleProps {
 
     x?: number
     y?: number
@@ -20,7 +20,7 @@ export interface TextStyleOption extends PathStyleOption {
     textBaseline?: CanvasTextBaseline
 }
 
-export const DEFAULT_TEXT_STYLE: TextStyleOption = extend({
+export const DEFAULT_TEXT_STYLE: TextStyleProps = extend({
     strokeFirst: true,
     font: DEFAULT_FONT,
     x: 0,
@@ -29,14 +29,14 @@ export const DEFAULT_TEXT_STYLE: TextStyleOption = extend({
     textBaseline: 'top'
 }, DEFAULT_PATH_STYLE);
 
-interface TextOption extends DisplayableOption {
-    style?: TextStyleOption
+interface TextProps extends DisplayableProps {
+    style?: TextStyleProps
 }
 
-class ZText extends Displayable<TextOption> {
+class ZText extends Displayable<TextProps> {
     type = 'text'
 
-    style: TextStyleOption
+    style: TextStyleProps
 
     hasStroke() {
         const style = this.style;
@@ -50,7 +50,7 @@ class ZText extends Displayable<TextOption> {
         return fill != null && fill !== 'none';
     }
 
-    useStyle(obj: TextStyleOption) {
+    useStyle(obj: TextStyleProps) {
         super.useStyle(obj, DEFAULT_TEXT_STYLE);
     }
 

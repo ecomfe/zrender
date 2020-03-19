@@ -263,8 +263,8 @@ class Handler extends Eventful {
 
         this.proxy.dispose();
 
-        this.storage = null
-        this.proxy = null
+        this.storage = null;
+        this.proxy = null;
         this.painter = null;
     }
 

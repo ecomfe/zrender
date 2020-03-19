@@ -22,9 +22,9 @@ import { GradientObject } from './graphic/Gradient';
 import { PatternObject } from './graphic/Pattern';
 import { Path } from './export';
 import { EventCallback } from './core/Eventful';
-import { PathStyleOption } from './graphic/Path';
-import ZText, { TextStyleOption } from './graphic/Text';
-import ZImage, { ImageStyleOption } from './graphic/Image';
+import { PathStyleProps } from './graphic/Path';
+import ZText, { TextStyleProps } from './graphic/Text';
+import ZImage, { ImageStyleProps } from './graphic/Image';
 
 
 const useVML = !env.canvasSupported;
@@ -204,17 +204,17 @@ class ZRender {
         triggerRendered && this.trigger('rendered');
     }
 
-    addHover(el: Path, style: PathStyleOption): Path
-    addHover(el: ZText, style: TextStyleOption): ZText
-    addHover(el: ZImage, style: ImageStyleOption): ZImage
+    addHover(el: Path, style: PathStyleProps): Path
+    addHover(el: ZText, style: TextStyleProps): ZText
+    addHover(el: ZImage, style: ImageStyleProps): ZImage
     /**
      * Add element to hover layer
      */
-    addHover(el: Path | ZText | ZImage, style: PathStyleOption | TextStyleOption | ImageStyleOption): Path | ZText | ZImage {
+    addHover(el: Path | ZText | ZImage, style: PathStyleProps | TextStyleProps | ImageStyleProps): Path | ZText | ZImage {
         if (this.painter.addHover) {
             const elMirror = this.painter.addHover(
                 // TODO
-                el as Path, style as PathStyleOption
+                el as Path, style as PathStyleProps
             );
             this.refreshHover();
             return elMirror;

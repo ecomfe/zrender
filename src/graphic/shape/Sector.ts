@@ -1,4 +1,4 @@
-import Path, { PathOption } from '../Path';
+import Path, { PathProps } from '../Path';
 
 class SectorShape {
     cx = 0
@@ -10,7 +10,7 @@ class SectorShape {
     clockwise: boolean = true
 }
 
-interface SectorProps extends PathOption {
+interface SectorProps extends PathProps {
     shape?: Partial<SectorShape>
 }
 export default class Sector extends Path<SectorProps> {
@@ -19,7 +19,7 @@ export default class Sector extends Path<SectorProps> {
 
     shape: SectorShape
 
-    constructor(opts?: PathOption & {
+    constructor(opts?: PathProps & {
         shape: Partial<SectorShape>
     }) {
         super(opts, null, new SectorShape());

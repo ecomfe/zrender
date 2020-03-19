@@ -20,7 +20,7 @@ import { PatternObject } from '../graphic/Pattern';
 import LinearGradient, { LinearGradientObject } from '../graphic/LinearGradient';
 import { RadialGradientObject } from '../graphic/RadialGradient';
 import { GradientObject } from '../graphic/Gradient';
-import ZText, { TextStyleOption } from '../graphic/Text';
+import ZText, { TextStyleProps } from '../graphic/Text';
 
 // Most of the values can be separated by comma and/or white space.
 const DILIMITER_REG = /[\s,]+/;
@@ -59,7 +59,7 @@ type DisplayableExtended = Displayable & {
     __inheritedStyle: Dictionary<string>
 }
 
-type TextStyleOptionExtended = TextStyleOption & {
+type TextStyleOptionExtended = TextStyleProps & {
     fontSize: number
     fontFamily: string
     fontWeight: string

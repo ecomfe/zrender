@@ -4,14 +4,13 @@ import { easingType } from './animation/easing';
 import Animator from './animation/Animator';
 import { ZRenderType } from './zrender';
 import { VectorArray } from './core/vector';
-import { Dictionary, PropType, ElementEventName, ZRRawEvent, BuiltinTextPosition, AllPropTypes } from './core/types';
+import { Dictionary, ElementEventName, ZRRawEvent, BuiltinTextPosition, AllPropTypes } from './core/types';
 import Path from './graphic/Path';
 import BoundingRect from './core/BoundingRect';
 import Eventful, {EventQuery, EventCallback} from './core/Eventful';
 import RichText from './graphic/RichText';
 import { calculateTextPosition, TextPositionCalculationResult } from './contain/text';
 import Storage from './Storage';
-import Group from './graphic/Group';
 
 interface TextLayout {
     /**
@@ -82,7 +81,7 @@ interface ElementEventHandlerProps {
 
 }
 
-export interface ElementOption extends Partial<ElementEventHandlerProps> {
+export interface ElementProps extends Partial<ElementEventHandlerProps> {
     name?: string
     ignore?: boolean
     isGroup?: boolean
@@ -113,7 +112,7 @@ type AnimationCallback = () => {}
 let tmpTextPosCalcRes = {} as TextPositionCalculationResult;
 let tmpBoundingRect = new BoundingRect();
 
-interface Element<Props extends ElementOption = ElementOption> extends Transformable, Eventful {
+interface Element<Props extends ElementProps = ElementProps> extends Transformable, Eventful, ElementEventHandlerProps {
     // Provide more typed event callback params for mouse events.
     on<Ctx>(event: ElementEventName, handler: ElementEventCallback<Ctx, this>, context?: Ctx): this
     on<Ctx>(event: string, handler: EventCallback<Ctx, this>, context?: Ctx): this
@@ -122,7 +121,7 @@ interface Element<Props extends ElementOption = ElementOption> extends Transform
     on<Ctx>(event: string, query: EventQuery, handler: EventCallback<Ctx, this>, context?: Ctx): this
 }
 
-class Element<Props extends ElementOption = ElementOption> {
+class Element<Props extends ElementProps = ElementProps> {
 
     id: number = zrUtil.guid()
     /**
@@ -160,7 +159,7 @@ class Element<Props extends ElementOption = ElementOption> {
      */
     dragging: boolean
 
-    parent: Group
+    parent: Element
 
     animators: Animator<any>[] = [];
 
@@ -204,7 +203,7 @@ class Element<Props extends ElementOption = ElementOption> {
      */
     anid: string
 
-    constructor(opts?: ElementOption) {
+    constructor(opts?: ElementProps) {
         // Transformable needs position, rotation, scale
         Transformable.call(this);
         Eventful.call(this);
@@ -273,7 +272,7 @@ class Element<Props extends ElementOption = ElementOption> {
             }
             else {
                 // TODO parent is always be group for developers. But can be displayble inside.
-                textEl.parent = this as unknown as Group;
+                textEl.parent = this as unknown as Element;
             }
             calculateTextPosition(tmpTextPosCalcRes, textLayout, tmpBoundingRect);
             // TODO Not modify el.position?
@@ -340,12 +339,12 @@ class Element<Props extends ElementOption = ElementOption> {
      */
     attr(key: keyof Props | Props, value?: AllPropTypes<Props>): this {
         if (typeof key === 'string') {
-            this.attrKV(key as keyof ElementOption, value as AllPropTypes<ElementOption>);
+            this.attrKV(key as keyof ElementProps, value as AllPropTypes<ElementProps>);
         }
         else if (zrUtil.isObject(key)) {
             for (let name in key as Props) {
                 if (key.hasOwnProperty(name)) {
-                    this.attrKV(name as keyof ElementOption, (key as any)[name]);
+                    this.attrKV(name as keyof ElementProps, (key as any)[name]);
                 }
             }
         }

@@ -5,7 +5,7 @@
 
 import Definable from './Definable';
 import Displayable from '../../graphic/Displayable';
-import { PathStyleOption } from '../../graphic/Path';
+import { PathStyleProps } from '../../graphic/Path';
 
 
 type DisplayableExtended = Displayable & {
@@ -187,7 +187,7 @@ export default class ShadowManager extends Definable {
 }
 
 
-function hasShadow(style: PathStyleOption) {
+function hasShadow(style: PathStyleProps) {
     // TODO: textBoxShadowBlur is not supported yet
     return style
         && (style.shadowBlur || style.shadowOffsetX || style.shadowOffsetY);
