@@ -2,7 +2,7 @@
  * @module echarts/animation/Animator
  */
 
-import Clip, { ClipOption } from './Clip';
+import Clip from './Clip';
 import * as color from '../tool/color';
 import {isArrayLike} from '../core/util';
 import {ArrayLike, Dictionary} from '../core/types';
@@ -31,7 +31,7 @@ function interpolate1DArray(
     p0: NumberArray,
     p1: NumberArray,
     percent: number,
-    out: NumberArray,
+    out: NumberArray
 ) {
     const len = p0.length;
     for (let i = 0; i < len; i++) {
@@ -43,7 +43,7 @@ function interpolate2DArray(
     p0: NumberArray[],
     p1: NumberArray[],
     percent: number,
-    out: NumberArray[],
+    out: NumberArray[]
 ) {
     const len = p0.length;
     const len2 = len && (p0 as NumberArray[])[0].length;
@@ -260,10 +260,10 @@ export default class Animator<T> {
         this._loop = loop || false;
         this._getter = getter || function (target: T, key: string) {
             return (target as any)[key];
-        }
+        };
         this._setter = setter || function (target: T, key: string, value: any) {
             (target as any)[key] = value;
-        }
+        };
     }
 
     /**
@@ -494,7 +494,7 @@ export default class Animator<T> {
                     ? is1DArraySame(value as NumberArray, prevValue as NumberArray)
                     : is2DArraySame(value as NumberArray[], prevValue as NumberArray[])
                 )) {
-                    isAllValueEqual = false
+                    isAllValueEqual = false;
                 }
                 else if (value !== prevValue) { // number or string
                     isAllValueEqual = false;
@@ -609,13 +609,13 @@ export default class Animator<T> {
                         ? catmullRomInterpolate1DArray(
                             p0 as NumberArray, p1 as NumberArray, p2 as NumberArray, p3 as NumberArray,
                             w, w * w, w * w * w,
-                            getter(target, propName) as NumberArray,
+                            getter(target, propName) as NumberArray
                         )
                         : catmullRomInterpolate2DArray(
                             p0 as NumberArray[], p1 as NumberArray[], p2 as NumberArray[], p3 as NumberArray[],
                             w, w * w, w * w * w,
-                            getter(target, propName) as NumberArray[],
-                        )
+                            getter(target, propName) as NumberArray[]
+                        );
                 }
                 else {
                     let value;
@@ -658,7 +658,7 @@ export default class Animator<T> {
                             kfValues[frame + 1] as NumberArray[],
                             w,
                             getter(target, propName) as NumberArray[]
-                        )
+                        );
                 }
                 else {
                     let value;
@@ -667,7 +667,7 @@ export default class Animator<T> {
                             kfValues[frame] as NumberArray,
                             kfValues[frame + 1] as NumberArray,
                             w, rgba
-                        )
+                        );
                         value = rgba2String(rgba);
                     }
                     else if (isValueString) {

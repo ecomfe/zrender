@@ -205,22 +205,22 @@ export default class CanvasPainter implements PainterBase {
     }
 
 
-    getType () {
+    getType() {
         return 'canvas';
     }
 
     /**
      * If painter use a single canvas
      */
-    isSingleCanvas () {
+    isSingleCanvas() {
         return this._singleCanvas;
     }
 
-    getViewportRoot () {
+    getViewportRoot() {
         return this._domRoot;
     }
 
-    getViewportRootOffset () {
+    getViewportRootOffset() {
         const viewportRoot = this.getViewportRoot();
         if (viewportRoot) {
             return {
@@ -234,7 +234,7 @@ export default class CanvasPainter implements PainterBase {
      * 刷新
      * @param paintAll 强制绘制所有displayable
      */
-    refresh (paintAll?: boolean) {
+    refresh(paintAll?: boolean) {
 
         const list = this.storage.getDisplayList(true);
 
@@ -262,7 +262,10 @@ export default class CanvasPainter implements PainterBase {
     addHover(el: Path, style: PathStyleProps): Path
     addHover(el: ZText, style: TextStyleProps): ZText
     addHover(el: ZImage, style: ImageStyleProps): ZImage
-    addHover(el: Path | ZText | ZImage, hoverStyle: PathStyleProps | TextStyleProps | ImageStyleProps): Path | ZText | ZImage {
+    addHover(
+        el: Path | ZText | ZImage,
+        hoverStyle: PathStyleProps | TextStyleProps | ImageStyleProps
+    ): Path | ZText | ZImage {
         if (el.__hoverMir) {
             return;
         }
@@ -281,7 +284,7 @@ export default class CanvasPainter implements PainterBase {
         return elMirror;
     }
 
-    removeHover (el: Path | ZText | ZImage) {
+    removeHover(el: Path | ZText | ZImage) {
         const elMirror = el.__hoverMir;
         const hoverElements = this._hoverElements;
         const idx = util.indexOf(hoverElements, elMirror);
@@ -291,7 +294,7 @@ export default class CanvasPainter implements PainterBase {
         el.__hoverMir = null;
     }
 
-    clearHover () {
+    clearHover() {
         const hoverElements = this._hoverElements;
         for (let i = 0; i < hoverElements.length; i++) {
             const from = hoverElements[i].__from;
@@ -302,7 +305,7 @@ export default class CanvasPainter implements PainterBase {
         hoverElements.length = 0;
     }
 
-    refreshHover () {
+    refreshHover() {
         const hoverElements = this._hoverElements;
         let len = hoverElements.length;
         let hoverLayer = this._hoverlayer;
@@ -351,11 +354,11 @@ export default class CanvasPainter implements PainterBase {
         hoverLayer.ctx.restore();
     }
 
-    getHoverLayer () {
+    getHoverLayer() {
         return this.getLayer(HOVER_LAYER_ZLEVEL);
     }
 
-    private _paintList (list: Displayable[], paintAll: boolean, redrawId?: number) {
+    private _paintList(list: Displayable[], paintAll: boolean, redrawId?: number) {
         if (this._redrawId !== redrawId) {
             return;
         }
@@ -378,7 +381,7 @@ export default class CanvasPainter implements PainterBase {
         }
     }
 
-    private _compositeManually () {
+    private _compositeManually() {
         const ctx = this.getLayer(CANVAS_ZLEVEL).ctx;
         const width = (this._domRoot as HTMLCanvasElement).width;
         const height = (this._domRoot as HTMLCanvasElement).height;
@@ -391,7 +394,7 @@ export default class CanvasPainter implements PainterBase {
         });
     }
 
-    private _doPaintList (list: Displayable[], paintAll?: boolean) {
+    private _doPaintList(list: Displayable[], paintAll?: boolean) {
         const layerList = [];
         for (let zi = 0; zi < this._zlevelList.length; zi++) {
             const zlevel = this._zlevelList[zi];
@@ -481,7 +484,7 @@ export default class CanvasPainter implements PainterBase {
         return finished;
     }
 
-    private _doPaintEl (
+    private _doPaintEl(
         el: Displayable,
         currentLayer: Layer,
         forcePaint: boolean,
@@ -499,7 +502,7 @@ export default class CanvasPainter implements PainterBase {
      * @param zlevel
      * @param virtual Virtual layer will not be inserted into dom.
      */
-    getLayer (zlevel: number, virtual?: boolean) {
+    getLayer(zlevel: number, virtual?: boolean) {
         if (this._singleCanvas && !this._needsManuallyCompositing) {
             zlevel = CANVAS_ZLEVEL;
         }
@@ -528,7 +531,7 @@ export default class CanvasPainter implements PainterBase {
         return layer;
     }
 
-    insertLayer (zlevel: number, layer: Layer) {
+    insertLayer(zlevel: number, layer: Layer) {
 
         const layersMap = this._layers;
         const zlevelList = this._zlevelList;
@@ -628,11 +631,11 @@ export default class CanvasPainter implements PainterBase {
      * 获取所有已创建的层
      * @param prevLayer
      */
-    getLayers () {
+    getLayers() {
         return this._layers;
     }
 
-    _updateLayerStatus (list: Displayable[]) {
+    _updateLayerStatus(list: Displayable[]) {
 
         this.eachBuiltinLayer(function (layer, z) {
             layer.__dirty = layer.__used = false;
@@ -725,23 +728,23 @@ export default class CanvasPainter implements PainterBase {
     /**
      * 清除hover层外所有内容
      */
-    clear () {
+    clear() {
         this.eachBuiltinLayer(this._clearLayer);
         return this;
     }
 
-    _clearLayer (layer: Layer) {
+    _clearLayer(layer: Layer) {
         layer.clear();
     }
 
-    setBackgroundColor (backgroundColor: string | GradientObject | PatternObject) {
+    setBackgroundColor(backgroundColor: string | GradientObject | PatternObject) {
         this._backgroundColor = backgroundColor;
     }
 
     /**
      * 修改指定zlevel的绘制参数
      */
-    configLayer (zlevel: number, config: LayerConfig) {
+    configLayer(zlevel: number, config: LayerConfig) {
         if (config) {
             const layerConfig = this._layerConfig;
             if (!layerConfig[zlevel]) {
@@ -765,7 +768,7 @@ export default class CanvasPainter implements PainterBase {
      * 删除指定层
      * @param zlevel 层所在的zlevel
      */
-    delLayer (zlevel: number) {
+    delLayer(zlevel: number) {
         const layers = this._layers;
         const zlevelList = this._zlevelList;
         const layer = layers[zlevel];
@@ -781,7 +784,7 @@ export default class CanvasPainter implements PainterBase {
     /**
      * 区域大小变化后重绘
      */
-    resize (
+    resize(
         width?: number | string,
         height?: number | string
     ) {
@@ -835,7 +838,7 @@ export default class CanvasPainter implements PainterBase {
      * 清除单独的一个层
      * @param {number} zlevel
      */
-    clearLayer (zlevel: number) {
+    clearLayer(zlevel: number) {
         const layer = this._layers[zlevel];
         if (layer) {
             layer.clear();
@@ -845,7 +848,7 @@ export default class CanvasPainter implements PainterBase {
     /**
      * 释放
      */
-    dispose () {
+    dispose() {
         this.root.innerHTML = '';
 
         this.root =
@@ -858,7 +861,7 @@ export default class CanvasPainter implements PainterBase {
     /**
      * Get canvas which has all thing rendered
      */
-    getRenderedCanvas (opts?: {
+    getRenderedCanvas(opts?: {
         backgroundColor?: string | GradientObject | PatternObject
         pixelRatio?: number
     }) {
@@ -912,18 +915,18 @@ export default class CanvasPainter implements PainterBase {
     /**
      * 获取绘图区域宽度
      */
-    getWidth () {
+    getWidth() {
         return this._width;
     }
 
     /**
      * 获取绘图区域高度
      */
-    getHeight () {
+    getHeight() {
         return this._height;
     }
 
-    _getSize (whIdx: number) {
+    _getSize(whIdx: number) {
         const opts = this._opts;
         const wh = ['width', 'height'][whIdx] as 'width' | 'height';
         const cwh = ['clientWidth', 'clientHeight'][whIdx] as 'clientWidth' | 'clientHeight';

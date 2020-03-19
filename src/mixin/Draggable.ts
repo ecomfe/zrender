@@ -1,6 +1,6 @@
-import Handler from "../Handler";
+import Handler from '../Handler';
 import Element, { ElementEvent } from '../Element';
-import Displayable from "../graphic/Displayable";
+import Displayable from '../graphic/Displayable';
 
 class Param {
 
@@ -8,8 +8,8 @@ class Param {
     topTarget: Element
 
     constructor(target: Element, e?: ElementEvent) {
-        this.target = target
-        this.topTarget = e && e.topTarget
+        this.target = target;
+        this.topTarget = e && e.topTarget;
     }
 }
 
@@ -42,7 +42,7 @@ export default class Draggable {
         // this._y = 0;
     }
 
-    _dragStart (e: ElementEvent) {
+    _dragStart(e: ElementEvent) {
         let draggingTarget = e.target;
         // Find if there is draggable in the ancestor
         while (draggingTarget && !draggingTarget.draggable) {
@@ -60,7 +60,7 @@ export default class Draggable {
         }
     }
 
-    _drag (e: ElementEvent) {
+    _drag(e: ElementEvent) {
         const draggingTarget = this._draggingTarget;
         if (draggingTarget) {
 
@@ -98,7 +98,7 @@ export default class Draggable {
         }
     }
 
-    _dragEnd (e: ElementEvent) {
+    _dragEnd(e: ElementEvent) {
         const draggingTarget = this._draggingTarget;
 
         if (draggingTarget) {

@@ -5,9 +5,9 @@ import {
     retrieve3,
     reduce
 } from '../../core/util';
-import { TextAlign, VerticalAlign, ImageLike, Dictionary, PropType } from '../../core/types';
+import { TextAlign, VerticalAlign, ImageLike, Dictionary } from '../../core/types';
 import { RichTextStyleOption } from '../RichText';
-import { getLineHeight, getWidth, DEFAULT_FONT } from '../../contain/text';
+import { getLineHeight, getWidth } from '../../contain/text';
 
 const STYLE_REG = /\{([a-zA-Z0-9_]+)\|([^}]*)\}/g;
 
@@ -186,7 +186,8 @@ export function parsePlainText(
         lines = text ? text.split('\n') : [];
     }
 
-    const height = retrieve2(style.height, lines.length * lineHeight);
+    const contentHeight = lines.length * lineHeight;
+    const height = retrieve2(style.height, contentHeight);
 
     let outerHeight = height;
     let outerWidth = width;
@@ -198,7 +199,8 @@ export function parsePlainText(
     }
 
     if (text && truncate) {
-        if (outerHeight != null && outerHeight > outerHeight) {
+        // TODO, not truncate all
+        if (style.height != null && contentHeight > outerHeight) {
             text = '';
             lines = [];
         }
@@ -227,7 +229,7 @@ export function parsePlainText(
         for (let i = 0; i < lines.length; i++) {
             maxWidth = Math.max(getWidth(lines[i], font), maxWidth);
         }
-        width = maxWidth
+        width = maxWidth;
     }
 
     return {
@@ -343,7 +345,7 @@ export function parseRichText(text: string, style: RichTextStyleOption) {
                 // textHeight should not be inherited, consider it can be specified
                 // as box height of the block.
                 tokenStyle.height, getLineHeight(font)
-            ) ;
+            );
             textPadding && (tokenHeight += textPadding[0] + textPadding[2]);
             token.height = tokenHeight;
             token.lineHeight = retrieve3(
@@ -457,7 +459,7 @@ function pushTokens(
     if (wrapInfo) {
         const tokenPadding = tokenStyle.padding as number[];
         let tokenPaddingH = tokenPadding ? tokenPadding[1] + tokenPadding[3] : 0;
-        if (tokenStyle.width != null && tokenStyle.width != 'auto') {
+        if (tokenStyle.width != null && tokenStyle.width !== 'auto') {
             // Wrap the whole token if tokenWidth if fixed.
             const outerWidth = parsePercent(tokenStyle.width, wrapInfo.width) + tokenPaddingH;
             if (lines.length > 0) { // Not first line
@@ -518,7 +520,7 @@ function pushTokens(
         // Other tokens always start a new line.
         else {
             // If there is '', insert it as a placeholder.
-            lines.push(new RichTextLine([token]))
+            lines.push(new RichTextLine([token]));
         }
     }
 }
@@ -674,7 +676,7 @@ function wrapText(
         accumWidth,
         lines: lines,
         linesWidths
-    }
+    };
 }
 
 function parsePercent(value: string | number, maxValue: number) {

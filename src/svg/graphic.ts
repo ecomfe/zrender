@@ -5,7 +5,6 @@
 import {createElement} from './core';
 import PathProxy from '../core/PathProxy';
 import * as matrix from '../core/matrix';
-import Displayable from '../graphic/Displayable';
 import { Path } from '../export';
 import { PathStyleProps } from '../graphic/Path';
 import ZImage, { ImageStyleProps } from '../graphic/Image';
@@ -17,7 +16,6 @@ export interface SVGProxy<T> {
 }
 
 const CMD = PathProxy.CMD;
-const arrayJoin = Array.prototype.join;
 
 const NONE = 'none';
 const mathRound = Math.round;
@@ -56,13 +54,13 @@ function reduceNumberString(n: number, precision: number) {
 }
 function setTransform(svgEl: SVGElement, m: matrix.MatrixArray) {
     if (m) {
-        attr(svgEl, 'transform', 'matrix(' +
-            reduceNumberString(m[0], 3) + ',' +
-            reduceNumberString(m[1], 3) + ',' +
-            reduceNumberString(m[2], 3) + ',' +
-            reduceNumberString(m[3], 3) + ',' +
-            reduceNumberString(m[4], 4) + ',' +
-            reduceNumberString(m[5], 4)
+        attr(svgEl, 'transform', 'matrix('
+            + reduceNumberString(m[0], 3) + ','
+            + reduceNumberString(m[1], 3) + ','
+            + reduceNumberString(m[2], 3) + ','
+            + reduceNumberString(m[3], 3) + ','
+            + reduceNumberString(m[4], 4) + ','
+            + reduceNumberString(m[5], 4)
          + ')');
     }
 }

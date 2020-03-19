@@ -1,7 +1,7 @@
 import Displayable, { DisplayableProps, CommonStyleProps, DEFAULT_COMMON_STYLE } from './Displayable';
 import BoundingRect from '../core/BoundingRect';
-import { PropType, AllPropTypes, ImageLike } from '../core/types';
-import { defaults, extend } from '../core/util';
+import { ImageLike } from '../core/types';
+import { defaults } from '../core/util';
 
 export interface ImageStyleProps extends CommonStyleProps {
     image?: string | ImageLike

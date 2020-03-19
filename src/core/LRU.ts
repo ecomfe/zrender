@@ -1,4 +1,4 @@
-import { Dictionary } from "./types";
+import { Dictionary } from './types';
 
 // Simple LRU cache use doubly linked list
 // @module zrender/core/LRU

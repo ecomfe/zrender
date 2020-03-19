@@ -23,7 +23,7 @@ export default class Polygon extends Path<PolygonProps> {
     shape: PolygonShape
 
     constructor(opts?: PolygonProps) {
-        super(opts, null, new PolygonShape())
+        super(opts, null, new PolygonShape());
     }
 
     buildPath(ctx: CanvasRenderingContext2D, shape: PolygonShape) {

@@ -126,7 +126,9 @@ export default class Definable {
         }
     }
 
-    add(target: any): SVGElement { return null; }
+    add(target: any): SVGElement {
+        return null;
+    }
 
     /**
      * Add gradient dom to defs

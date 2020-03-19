@@ -8,7 +8,7 @@ let textWidthCache: Dictionary<LRU<number>> = {};
 export const DEFAULT_FONT = '12px sans-serif';
 
 let _ctx: CanvasRenderingContext2D;
-let _cachedFont: string
+let _cachedFont: string;
 
 function defaultMeasureText(text: string, font?: string): { width: number } {
     if (!_ctx) {
@@ -99,7 +99,7 @@ export function measureText(text: string, font?: string): {
 }
 
 
-function parsePercent(value: number | string, maxValue: number): number{
+function parsePercent(value: number | string, maxValue: number): number {
     if (typeof value === 'string') {
         if (value.lastIndexOf('%') >= 0) {
             return parseFloat(value) / 100 * maxValue;
@@ -142,7 +142,7 @@ export function calculateTextPosition(
     let x = rect.x;
     let y = rect.y;
 
-    let textAlign: TextAlign= 'left';
+    let textAlign: TextAlign = 'left';
     let textVerticalAlign: VerticalAlign = 'top';
 
     if (textPosition instanceof Array) {

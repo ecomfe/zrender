@@ -21,7 +21,7 @@ export default class Droplet extends Path<DropletProps> {
     shape: DropletShape
 
     constructor(opts?: DropletProps) {
-        super(opts, null, new DropletShape())
+        super(opts, null, new DropletShape());
     }
 
     buildPath(ctx: CanvasRenderingContext2D, shape: DropletShape) {

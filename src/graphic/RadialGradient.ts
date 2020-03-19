@@ -1,4 +1,3 @@
-import * as zrUtil from '../core/util';
 import Gradient, {GradientColorStop, GradientObject} from './Gradient';
 
 export interface RadialGradientObject extends GradientObject {
@@ -25,7 +24,7 @@ class RadialGradient extends Gradient {
         x: number, y: number, r: number,
         colorStops?: GradientColorStop[], globalCoord?: boolean
     ) {
-        super(colorStops)
+        super(colorStops);
         // Should do nothing more in this constructor. Because gradient can be
         // declard by `color: {type: 'radial', colorStops: ...}`, where
         // this constructor will not be called.

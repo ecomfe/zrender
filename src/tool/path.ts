@@ -3,7 +3,6 @@ import PathProxy from '../core/PathProxy';
 import transformPath from './transformPath';
 import { VectorArray } from '../core/vector';
 import { MatrixArray } from '../core/matrix';
-import { DisplayableProps } from '../graphic/Displayable';
 import { extend } from '../core/util';
 
 // command chars
@@ -375,7 +374,7 @@ class SVGPath extends Path {
 }
 
 function isPathProxy(path: PathProxy | CanvasRenderingContext2D): path is PathProxy {
-    return (path as PathProxy).setData != null
+    return (path as PathProxy).setData != null;
 }
 // TODO Optimize double memory cost problem
 function createPathOptions(str: string, opts: SVGPathOption): InnerSVGPathOption {
@@ -424,7 +423,7 @@ export function extendFromString(str: string, defaultOpts?: SVGPathOption): type
     class Sub extends SVGPath {
         constructor(opts: InnerSVGPathOption) {
             super(opts);
-            this.applyTransform = innerOpts.applyTransform
+            this.applyTransform = innerOpts.applyTransform;
             this.buildPath = innerOpts.buildPath;
         }
     }

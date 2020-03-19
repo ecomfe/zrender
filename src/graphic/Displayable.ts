@@ -4,11 +4,10 @@
  */
 
 import Element, {ElementProps} from '../Element';
-import BoundingRect, { RectLike } from '../core/BoundingRect';
+import BoundingRect from '../core/BoundingRect';
 import { PropType, AllPropTypes, Dictionary } from '../core/types';
 import Path from './Path';
-import { easingType } from '../animation/easing';
-import { extend, changePrototype } from '../core/util';
+import { changePrototype } from '../core/util';
 
 // type CalculateTextPositionResult = ReturnType<typeof calculateTextPosition>
 
@@ -32,7 +31,7 @@ export const DEFAULT_COMMON_STYLE: CommonStyleProps = {
     shadowColor: '#000',
     opacity: 1,
     blend: 'source-over'
-}
+};
 
 export interface DisplayableProps extends ElementProps {
     style?: Dictionary<any>
@@ -226,16 +225,16 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         }
     }
 
-    setStyle(obj: Props["style"]): void
-    setStyle(obj: keyof Props["style"], value: Props["style"]): void
-    setStyle(obj: keyof Props["style"] | Props["style"], value?: AllPropTypes<Props["style"]>) {
+    setStyle(obj: Props['style']): void
+    setStyle(obj: keyof Props['style'], value: Props['style']): void
+    setStyle(obj: keyof Props['style'] | Props['style'], value?: AllPropTypes<Props['style']>) {
         if (typeof obj === 'string') {
             this.style[obj] = value;
         }
         else {
-            for (let key in obj as Props["style"]) {
+            for (let key in obj as Props['style']) {
                 if (obj.hasOwnProperty(key)) {
-                    this.style[key] = (obj as Props["style"])[key];
+                    this.style[key] = (obj as Props['style'])[key];
                 }
             }
         }
@@ -253,7 +252,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     /**
      * Use given style object
      */
-    useStyle(obj: Props["style"], inherited?: Props["style"]) {
+    useStyle(obj: Props['style'], inherited?: Props['style']) {
         if (inherited) {
             // inherited value can be accessed from prototype
             this.style = changePrototype(obj, inherited);

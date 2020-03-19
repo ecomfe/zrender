@@ -1,4 +1,4 @@
-import PathProxy from "../../core/PathProxy";
+import PathProxy from '../../core/PathProxy';
 
 export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
     x: number

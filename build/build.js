@@ -4,6 +4,7 @@ const rollup = require('rollup');
 const path = require('path');
 const processs = require('process');
 const chalk = require('chalk');
+const progress = require('./progress');
 
 function current() {
     return (new Date()).toLocaleString();
@@ -20,6 +21,10 @@ const inputOption = {
                 // Use the esm d.ts
                 declaration: false
             }
+        }
+    }), progress({
+        scope: {
+            total: 0
         }
     })]
 };

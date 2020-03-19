@@ -5,7 +5,7 @@
 
 /* global Float32Array */
 
-import {VectorArray} from './vector'
+import {VectorArray} from './vector';
 
 const ArrayCtor = typeof Float32Array === 'undefined'
     ? Array

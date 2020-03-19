@@ -25,7 +25,7 @@ export default class Polyline extends Path<PolylineProps> {
         super(opts, {
             stroke: '#000',
             fill: null
-        }, new PolylineShape())
+        }, new PolylineShape());
     }
 
     buildPath(ctx: CanvasRenderingContext2D, shape: PolylineShape) {

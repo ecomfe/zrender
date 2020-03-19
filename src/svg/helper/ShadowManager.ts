@@ -18,7 +18,7 @@ type DisplayableExtended = Displayable & {
  */
 export default class ShadowManager extends Definable {
     constructor(zrId: number, svgRoot: SVGElement) {
-        super(zrId, svgRoot, ['filter'], '__filter_in_use__', '_shadowDom')
+        super(zrId, svgRoot, ['filter'], '__filter_in_use__', '_shadowDom');
     }
 
     /**
@@ -32,7 +32,7 @@ export default class ShadowManager extends Definable {
         if (displayable && hasShadow(displayable.style)) {
 
             // Create dom in <defs> if not exists
-            let dom: SVGElement
+            let dom: SVGElement;
             if ((displayable as DisplayableExtended)._shadowDom) {
                 // Gradient exists
                 dom = (displayable as DisplayableExtended)._shadowDom;

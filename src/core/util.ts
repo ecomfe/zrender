@@ -1,6 +1,6 @@
-import { Dictionary, ArrayLike } from "./types";
-import { GradientObject } from "../graphic/Gradient";
-import { PatternObject } from "../graphic/Pattern";
+import { Dictionary, ArrayLike } from './types';
+import { GradientObject } from '../graphic/Gradient';
+import { PatternObject } from '../graphic/Pattern';
 
 
 // 用于处理merge时无法遍历Date等对象的问题
@@ -16,7 +16,7 @@ const BUILTIN_OBJECT: {[key: string]: boolean} = {
     '[object Canvas]': true
 };
 
-const TYPED_ARRAY: {[key: string]: boolean}  = {
+const TYPED_ARRAY: {[key: string]: boolean} = {
     '[object Int8Array]': true,
     '[object Uint8Array]': true,
     '[object Uint8ClampedArray]': true,
@@ -403,6 +403,7 @@ export function keys<T extends object>(obj: T): (keyof T)[] {
 
 // Remove this type in returned function. Or it will conflicts wicth callback with given context. Like Eventful.
 // According to lib.es5.d.ts
+/* eslint-disable */
 export type Bind1<F, Ctx> = F extends (this: Ctx, ...args: infer A) => infer R ? (...args: A) => R : unknown;
 export type Bind2<F, Ctx, T1> = F extends (this: Ctx, a: T1, ...args: infer A) => infer R ? (...args: A) => R : unknown;
 export type Bind3<F, Ctx, T1, T2> = F extends (this: Ctx, a: T1, b: T2, ...args: infer A) => infer R ? (...args: A) => R : unknown;
@@ -439,6 +440,7 @@ function curry(func: Function, ...args: any[]): Function {
     };
 }
 
+/* eslint-enable */
 export {bind, curry};
 
 /**
@@ -675,7 +677,7 @@ export function changePrototype<T>(obj: T, proto: object): T {
         return obj;
     }
     else {
-        const StyleCtor = function () {}
+        const StyleCtor = function () {};
         StyleCtor.prototype = proto;
         const newObj = new (StyleCtor as any)();
         extend(newObj, obj);

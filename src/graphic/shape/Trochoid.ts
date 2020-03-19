@@ -30,7 +30,7 @@ export default class Trochoid extends Path<TrochoidProps> {
         super(opts, {
             stroke: '#000',
             fill: null
-        }, new TrochoidShape())
+        }, new TrochoidShape());
     }
 
     buildPath(ctx: CanvasRenderingContext2D, shape: TrochoidShape) {

@@ -4,7 +4,7 @@ import { GradientObject } from '../graphic/Gradient';
 import { PatternObject } from '../graphic/Pattern';
 import { LinearGradientObject } from '../graphic/LinearGradient';
 import { RadialGradientObject } from '../graphic/RadialGradient';
-import { ZRCanvasRenderingContext, ImageLike } from '../core/types';
+import { ZRCanvasRenderingContext } from '../core/types';
 import BoundingRect from '../core/BoundingRect';
 import { createOrUpdateImage, isImageReady } from '../graphic/helper/image';
 import { getCanvasGradient } from './helper';
@@ -281,9 +281,6 @@ const SHADOW_NUMBER_PROPS = ['shadowBlur', 'shadowOffsetX', 'shadowOffsetY'] as 
 const STROKE_PROPS = [
     ['lineCap', 'butt'], ['lineJoin', 'miter'], ['miterLimit', 10]
 ] as const;
-const DRAW_PROPS = [
-    ['fill'], ['stroke']
-] as const;
 
 type AllStyleOption = PathStyleProps | TextStyleProps | ImageStyleProps;
 // type ShadowPropNames = typeof SHADOW_PROPS[number][0];
@@ -347,7 +344,7 @@ function bindPathAndTextCommonStyle(
     const style = el.style;
     const prevStyle = forceSetAll
         ? null
-        : (prevEl && prevEl.style || {})
+        : (prevEl && prevEl.style || {});
 
     let styleChanged = bindCommonProps(ctx, style, prevStyle, forceSetAll, scope);
 
@@ -680,7 +677,7 @@ function brushIncremental(
         allClipped: false,
         viewWidth: scope.viewWidth,
         viewHeight: scope.viewHeight
-    }
+    };
     let i;
     let len;
     // Render persistant displayables.

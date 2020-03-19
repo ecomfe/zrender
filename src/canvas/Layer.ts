@@ -1,6 +1,6 @@
 import * as util from '../core/util';
 import {devicePixelRatio} from '../config';
-import Pattern, { PatternObject } from '../graphic/Pattern';
+import { PatternObject } from '../graphic/Pattern';
 import CanvasPainter from './Painter';
 import { GradientObject } from '../graphic/Gradient';
 import { ZRCanvasRenderingContext } from '../core/types';
@@ -8,7 +8,6 @@ import Eventful from '../core/Eventful';
 import { ElementEventCallback } from '../Element';
 import { getCanvasGradient } from './helper';
 import { createCanvasPattern } from './graphic';
-import { ZRenderType } from '../zrender';
 
 function returnFalse() {
     return false;

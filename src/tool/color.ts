@@ -537,5 +537,5 @@ export function random(): string {
     let g = Math.round(Math.random() * 255);
     let b = Math.round(Math.random() * 255);
 
-    return 'rgb(' + r + ',' + g + ',' + b  + ')';
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
 }

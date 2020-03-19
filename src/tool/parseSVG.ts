@@ -1,6 +1,5 @@
 import Group from '../graphic/Group';
 import ZImage from '../graphic/Image';
-import RichText from '../graphic/RichText';
 import Circle from '../graphic/shape/Circle';
 import Rect from '../graphic/shape/Rect';
 import Ellipse from '../graphic/shape/Ellipse';
@@ -256,7 +255,7 @@ class SVGParser {
         inheritStyle(parentGroup, text);
         parseAttributes(xmlNode, text, this._defs);
 
-        const textStyle = text.style as TextStyleOptionExtended
+        const textStyle = text.style as TextStyleOptionExtended;
         const fontSize = textStyle.fontSize;
         if (fontSize && fontSize < 9) {
             // PENDING
@@ -559,7 +558,6 @@ function parseAttributes(
 ) {
     const disp = el as DisplayableExtended;
     const zrStyle = disp.__inheritedStyle || {};
-    const isTextEl = disp.type === 'text';
 
     // TODO Shadow
     if (xmlNode.nodeType === 1) {
@@ -648,7 +646,7 @@ function parseTransformAttribute(xmlNode: SVGElement, node: Element) {
         for (let i = transformOps.length - 1; i > 0; i -= 2) {
             let value = transformOps[i];
             let type = transformOps[i - 1];
-            let valueArr: string[]
+            let valueArr: string[];
             m = m || matrix.create();
             switch (type) {
                 case 'translate':

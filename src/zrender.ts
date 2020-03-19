@@ -210,7 +210,10 @@ class ZRender {
     /**
      * Add element to hover layer
      */
-    addHover(el: Path | ZText | ZImage, style: PathStyleProps | TextStyleProps | ImageStyleProps): Path | ZText | ZImage {
+    addHover(
+        el: Path | ZText | ZImage,
+        style: PathStyleProps | TextStyleProps | ImageStyleProps
+    ): Path | ZText | ZImage {
         if (this.painter.addHover) {
             const elMirror = this.painter.addHover(
                 // TODO

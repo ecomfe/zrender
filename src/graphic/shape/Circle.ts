@@ -20,7 +20,7 @@ export default class Circle extends Path<CircleProps> {
     shape: CircleShape
 
     constructor(opts?: CircleProps) {
-        super(opts, null, new CircleShape())
+        super(opts, null, new CircleShape());
     }
 
 

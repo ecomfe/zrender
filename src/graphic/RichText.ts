@@ -5,12 +5,12 @@
 import { PatternObject } from './Pattern';
 import { LinearGradientObject } from './LinearGradient';
 import { RadialGradientObject } from './RadialGradient';
-import { TextAlign, VerticalAlign, ImageLike, Dictionary, AllPropTypes, PropType } from '../core/types';
+import { TextAlign, VerticalAlign, ImageLike, Dictionary, AllPropTypes } from '../core/types';
 import Element, { ElementProps } from '../Element';
 import { parseRichText, parsePlainText } from './helper/parseText';
 import ZText from './Text';
-import { retrieve2, isString, each, normalizeCssArray, trim, bind } from '../core/util';
-import { DEFAULT_FONT, adjustTextX, adjustTextY, getWidth } from '../contain/text';
+import { retrieve2, isString, each, normalizeCssArray, trim } from '../core/util';
+import { DEFAULT_FONT, adjustTextX, adjustTextY } from '../contain/text';
 import { GradientObject } from './Gradient';
 import ZImage from './Image';
 import Rect from './shape/Rect';
@@ -222,7 +222,7 @@ class RichText extends Element<RichTextOption> {
 
             this._children.length = this._childCursor;
 
-            for (let i = 0 ; i < this._children.length; i++) {
+            for (let i = 0; i < this._children.length; i++) {
                 const child = this._children[i];
                 // Set common properties.
                 if (this.z != null) {
@@ -611,9 +611,9 @@ class RichText extends Element<RichTextOption> {
             imgEl.onload = function () {
                 // Refresh and relayout after image loaded.
                 self.dirtyStyle();
-            }
+            };
             const imgStyle = imgEl.style;
-            imgStyle.image =  (textBackgroundColor as {image: ImageLike}).image;
+            imgStyle.image = (textBackgroundColor as {image: ImageLike}).image;
             imgStyle.x = x;
             imgStyle.y = y;
             imgStyle.width = width;

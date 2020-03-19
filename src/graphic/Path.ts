@@ -2,12 +2,12 @@ import Displayable, { DisplayableProps, CommonStyleProps, DEFAULT_COMMON_STYLE }
 import Element from '../Element';
 import PathProxy from '../core/PathProxy';
 import * as pathContain from '../contain/path';
-import Pattern, { PatternObject } from './Pattern';
-import { Dictionary, PropType, AllPropTypes } from '../core/types';
+import { PatternObject } from './Pattern';
+import { Dictionary, PropType } from '../core/types';
 import BoundingRect from '../core/BoundingRect';
 import { LinearGradientObject } from './LinearGradient';
 import { RadialGradientObject } from './RadialGradient';
-import { isObject, defaults, extend } from '../core/util';
+import { isObject, defaults } from '../core/util';
 
 export interface PathStyleProps extends CommonStyleProps {
     fill?: string | PatternObject | LinearGradientObject | RadialGradientObject
@@ -47,7 +47,7 @@ export const DEFAULT_PATH_STYLE: PathStyleProps = defaults({
     miterLimit: 10,
 
     strokeNoScale: false,
-    strokeFirst: false,
+    strokeFirst: false
 }, DEFAULT_COMMON_STYLE);
 
 export interface PathProps extends DisplayableProps {

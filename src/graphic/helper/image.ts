@@ -1,6 +1,5 @@
 
 import LRU from '../../core/LRU';
-import Element from '../../Element';
 import { ImageLike } from '../../core/types';
 
 const globalImageCache = new LRU<CachedImageObj>(50);

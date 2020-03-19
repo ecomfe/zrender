@@ -329,7 +329,17 @@ export default class PathProxy {
      * 填充 Path 数据。
      * 尽量复用而不申明新的数组。大部分图形重绘的指令数据长度都是不变的。
      */
-    addData(cmd: number, a?: number, b?: number, c?: number, d?: number, e?: number, f?: number, g?: number, h?: number) {
+    addData(
+        cmd: number,
+        a?: number,
+        b?: number,
+        c?: number,
+        d?: number,
+        e?: number,
+        f?: number,
+        g?: number,
+        h?: number
+    ) {
         if (!this._saveData) {
             return;
         }

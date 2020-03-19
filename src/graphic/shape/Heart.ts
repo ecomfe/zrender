@@ -21,7 +21,7 @@ export default class Heart extends Path<HeartProps> {
     shape: HeartShape
 
     constructor(opts?: HeartProps) {
-        super(opts, null, new HeartShape())
+        super(opts, null, new HeartShape());
     }
 
     buildPath(ctx: CanvasRenderingContext2D, shape: HeartShape) {

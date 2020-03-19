@@ -185,7 +185,7 @@ class FakeGlobalEvent {
  */
 const localDOMHandlers: DomHandlersMap = {
 
-    mousedown: function(event: ZRRawEvent) {
+    mousedown(event: ZRRawEvent) {
         event = normalizeEvent(this.dom, event);
 
         this.__mayPointerCapture = [event.zrX, event.zrY];
@@ -193,7 +193,7 @@ const localDOMHandlers: DomHandlersMap = {
         this.trigger('mousedown', event);
     },
 
-    mousemove: function(event: ZRRawEvent) {
+    mousemove(event: ZRRawEvent) {
         event = normalizeEvent(this.dom, event);
 
         const downPoint = this.__mayPointerCapture;
@@ -204,7 +204,7 @@ const localDOMHandlers: DomHandlersMap = {
         this.trigger('mousemove', event);
     },
 
-    mouseup: function(event: ZRRawEvent) {
+    mouseup(event: ZRRawEvent) {
         event = normalizeEvent(this.dom, event);
 
         this.__togglePointerCapture(false);
@@ -212,7 +212,7 @@ const localDOMHandlers: DomHandlersMap = {
         this.trigger('mouseup', event);
     },
 
-    mouseout: function(event: ZRRawEvent) {
+    mouseout(event: ZRRawEvent) {
         event = normalizeEvent(this.dom, event);
 
         // Similarly to the browser did on `document` and touch event,
@@ -232,7 +232,7 @@ const localDOMHandlers: DomHandlersMap = {
         this.trigger('mouseout', event);
     },
 
-    touchstart: function(event: ZRRawEvent) {
+    touchstart(event: ZRRawEvent) {
         // Default mouse behaviour should not be disabled here.
         // For example, page may needs to be slided.
         event = normalizeEvent(this.dom, event);
@@ -251,7 +251,7 @@ const localDOMHandlers: DomHandlersMap = {
         localDOMHandlers.mousedown.call(this, event);
     },
 
-    touchmove: function(event: ZRRawEvent) {
+    touchmove(event: ZRRawEvent) {
         event = normalizeEvent(this.dom, event);
 
         markTouch(event);
@@ -264,7 +264,7 @@ const localDOMHandlers: DomHandlersMap = {
         localDOMHandlers.mousemove.call(this, event);
     },
 
-    touchend: function(event: ZRRawEvent) {
+    touchend(event: ZRRawEvent) {
         event = normalizeEvent(this.dom, event);
 
         markTouch(event);
@@ -288,7 +288,7 @@ const localDOMHandlers: DomHandlersMap = {
         }
     },
 
-    pointerdown: function(event: ZRRawEvent) {
+    pointerdown(event: ZRRawEvent) {
         localDOMHandlers.mousedown.call(this, event);
 
         // if (useMSGuesture(this, event)) {
@@ -296,7 +296,7 @@ const localDOMHandlers: DomHandlersMap = {
         // }
     },
 
-    pointermove: function(event: ZRRawEvent) {
+    pointermove(event: ZRRawEvent) {
         // FIXME
         // pointermove is so sensitive that it always triggered when
         // tap(click) on touch screen, which affect some judgement in
@@ -307,11 +307,11 @@ const localDOMHandlers: DomHandlersMap = {
         }
     },
 
-    pointerup: function(event: ZRRawEvent) {
+    pointerup(event: ZRRawEvent) {
         localDOMHandlers.mouseup.call(this, event);
     },
 
-    pointerout: function(event: ZRRawEvent) {
+    pointerout(event: ZRRawEvent) {
         // pointerout will be triggered when tap on touch screen
         // (IE11+/Edge on MS Surface) after click event triggered,
         // which is inconsistent with the mousout behavior we defined

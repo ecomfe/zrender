@@ -1,4 +1,4 @@
-import { MatrixArray } from "./matrix";
+import { MatrixArray } from './matrix';
 
 /* global Float32Array */
 

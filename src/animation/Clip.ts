@@ -22,7 +22,7 @@ type onrestartCallback<T> = (target: T) => void
 export type DeferredEventTypes = 'destroy' | 'restart'
 type DeferredEventKeys = 'ondestroy' | 'onrestart'
 
-export interface ClipOption<T> {
+export interface ClipProps<T> {
     target: T
     life?: number
     delay?: number
@@ -59,7 +59,7 @@ export default class Clip<T> {
     ondestroy: ondestroyCallback<T>
     onrestart: onrestartCallback<T>
 
-    constructor(opts: ClipOption<T>) {
+    constructor(opts: ClipProps<T>) {
 
         this._target = opts.target;
         this._life = opts.life || 1000;
