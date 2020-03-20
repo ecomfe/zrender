@@ -2,8 +2,7 @@ import Displayable, { DisplayableProps } from './Displayable';
 import { getBoundingRect, DEFAULT_FONT } from '../contain/text';
 import BoundingRect from '../core/BoundingRect';
 import { PathStyleProps, DEFAULT_PATH_STYLE } from './Path';
-import { AllPropTypes } from '../core/types';
-import { trim, extend } from '../core/util';
+import { extend } from '../core/util';
 
 export interface TextStyleProps extends PathStyleProps {
 

@@ -1,6 +1,6 @@
 import Transformable from './core/Transformable';
 import * as zrUtil from './core/util';
-import { easingType } from './animation/easing';
+import { AnimationEasing } from './animation/easing';
 import Animator from './animation/Animator';
 import { ZRenderType } from './zrender';
 import { VectorArray } from './core/vector';
@@ -600,19 +600,19 @@ class Element<Props extends ElementProps = ElementProps> {
     animateTo(target: Props): void
     animateTo(target: Props, callback: AnimationCallback): void
     animateTo(target: Props, time: number, delay: number): void
-    animateTo(target: Props, time: number, easing: easingType): void
+    animateTo(target: Props, time: number, easing: AnimationEasing): void
     animateTo(target: Props, time: number, callback: AnimationCallback): void
     animateTo(target: Props, time: number, delay: number, callback: AnimationCallback): void
-    animateTo(target: Props, time: number, easing: easingType, callback: AnimationCallback): void
-    animateTo(target: Props, time: number, delay: number, easing: easingType, callback: AnimationCallback): void
-    animateTo(target: Props, time: number, delay: number, easing: easingType, callback: AnimationCallback, forceAnimate: boolean): void
+    animateTo(target: Props, time: number, easing: AnimationEasing, callback: AnimationCallback): void
+    animateTo(target: Props, time: number, delay: number, easing: AnimationEasing, callback: AnimationCallback): void
+    animateTo(target: Props, time: number, delay: number, easing: AnimationEasing, callback: AnimationCallback, forceAnimate: boolean): void
 
     // TODO Return animation key
     animateTo(
         target: Props,
         time?: number | AnimationCallback,  // Time in ms
-        delay?: easingType | number | AnimationCallback,
-        easing?: easingType | number | AnimationCallback ,
+        delay?: AnimationEasing | number | AnimationCallback,
+        easing?: AnimationEasing | number | AnimationCallback ,
         callback?: AnimationCallback,
         forceAnimate?: boolean // Prevent stop animation and callback
                                 // immediently when target values are the same as current values.
@@ -629,18 +629,18 @@ class Element<Props extends ElementProps = ElementProps> {
     animateFrom(target: Props): void
     animateFrom(target: Props, callback: AnimationCallback): void
     animateFrom(target: Props, time: number, delay: number): void
-    animateFrom(target: Props, time: number, easing: easingType): void
+    animateFrom(target: Props, time: number, easing: AnimationEasing): void
     animateFrom(target: Props, time: number, callback: AnimationCallback): void
     animateFrom(target: Props, time: number, delay: number, callback: AnimationCallback): void
-    animateFrom(target: Props, time: number, easing: easingType, callback: AnimationCallback): void
-    animateFrom(target: Props, time: number, delay: number, easing: easingType, callback: AnimationCallback): void
-    animateFrom(target: Props, time: number, delay: number, easing: easingType, callback: AnimationCallback, forceAnimate: boolean): void
+    animateFrom(target: Props, time: number, easing: AnimationEasing, callback: AnimationCallback): void
+    animateFrom(target: Props, time: number, delay: number, easing: AnimationEasing, callback: AnimationCallback): void
+    animateFrom(target: Props, time: number, delay: number, easing: AnimationEasing, callback: AnimationCallback, forceAnimate: boolean): void
 
     animateFrom(
         target: Props,
         time?: number | AnimationCallback,
-        delay?: easingType | number | AnimationCallback,
-        easing?: easingType | number | AnimationCallback,
+        delay?: AnimationEasing | number | AnimationCallback,
+        easing?: AnimationEasing | number | AnimationCallback,
         callback?: AnimationCallback,
         forceAnimate?: boolean
     ) {
@@ -674,8 +674,8 @@ function animateTo<T>(
     animatable: Element<T>,
     target: Dictionary<any>,
     time: number | AnimationCallback,
-    delay: easingType | number | AnimationCallback,
-    easing: easingType | number | AnimationCallback,
+    delay: AnimationEasing | number | AnimationCallback,
+    easing: AnimationEasing | number | AnimationCallback,
     callback: AnimationCallback,
     forceAnimate: boolean,
     reverse?: boolean
@@ -683,7 +683,7 @@ function animateTo<T>(
     // animateTo(target, time, easing, callback);
     if (zrUtil.isString(delay)) {
         callback = easing as AnimationCallback;
-        easing = delay as easingType;
+        easing = delay as AnimationEasing;
         delay = 0;
     }
     // animateTo(target, time, delay, callback);
@@ -731,7 +731,7 @@ function animateTo<T>(
     for (let i = 0; i < animators.length; i++) {
         animators[i]
             .done(done)
-            .start(<easingType>easing, forceAnimate);
+            .start(<AnimationEasing>easing, forceAnimate);
     }
 }
 

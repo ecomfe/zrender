@@ -13,7 +13,7 @@
  * TODO pause
  */
 
-import easingFuncs, {easingType} from './easing';
+import easingFuncs, {AnimationEasing} from './easing';
 
 type OnframeCallback<T> = (target: T, percent: number) => void;
 type ondestroyCallback<T> = (target: T) => void
@@ -28,7 +28,7 @@ export interface ClipProps<T> {
     delay?: number
     loop?: boolean
     gap?: number
-    easing?: easingType
+    easing?: AnimationEasing
 
     onframe?: OnframeCallback<T>
     ondestroy?: ondestroyCallback<T>
@@ -54,7 +54,7 @@ export default class Clip<T> {
 
     loop: boolean
     gap: number
-    easing: easingType
+    easing: AnimationEasing
     onframe: OnframeCallback<T>
     ondestroy: ondestroyCallback<T>
     onrestart: onrestartCallback<T>

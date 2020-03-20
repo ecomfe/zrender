@@ -79,8 +79,11 @@ class ZRender {
             }
             rendererType = 'vml';
         }
-        else if (!rendererType || !painterCtors[rendererType]) {
+        else if (!rendererType) {
             rendererType = 'canvas';
+        }
+        if (!painterCtors[rendererType]) {
+            throw new Error(`Renderer '${rendererType}' is not imported. Please import it first.`);
         }
         const painter = new painterCtors[rendererType](dom, storage, opts, id);
 

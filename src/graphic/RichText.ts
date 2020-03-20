@@ -56,11 +56,11 @@ interface RichTextStyleOptionPart {
     /**
      * It helps merging respectively, rather than parsing an entire font string.
      */
-    fontStyle?: string
+    fontStyle?: 'normal' | 'italic' | 'oblique'
     /**
      * It helps merging respectively, rather than parsing an entire font string.
      */
-    fontWeight?: string
+    fontWeight?: 'normal' | 'bold' | 'bolder' | 'lighter' | number
     /**
      * It helps merging respectively, rather than parsing an entire font string.
      */

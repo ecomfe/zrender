@@ -7,7 +7,7 @@ import { Dictionary, PropType } from '../core/types';
 import BoundingRect from '../core/BoundingRect';
 import { LinearGradientObject } from './LinearGradient';
 import { RadialGradientObject } from './RadialGradient';
-import { isObject, defaults, keys, extend } from '../core/util';
+import { defaults, keys, extend, clone } from '../core/util';
 
 export interface PathStyleProps extends CommonStyleProps {
     fill?: string | PatternObject | LinearGradientObject | RadialGradientObject
@@ -327,6 +327,67 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
      */
     isZeroArea(): boolean {
         return false;
+    }
+    /**
+     * 扩展一个 Path element, 比如星形，圆等。
+     * Extend a path element
+     * @DEPRECATED Use class extends
+     * @param props
+     * @param props.type Path type
+     * @param props.init Initialize
+     * @param props.buildPath Overwrite buildPath method
+     * @param props.style Extended default style config
+     * @param props.shape Extended default shape config
+     */
+    static extend<Shape extends Dictionary<any>>(defaultProps: {
+        type?: string
+        shape?: Shape
+        style?: PathStyleProps
+        beforeBrush?: Displayable['beforeBrush']
+        afterBrush?: Displayable['afterBrush']
+        getBoundingRect?: Displayable['getBoundingRect']
+
+        buildPath(this: Path, ctx: CanvasRenderingContext2D | PathProxy, shape: Shape, inBundle?: boolean): void
+        init?(this: Path, opts: PathProps): void // TODO Should be SubPathOption
+    }): {
+        new(opts?: PathProps & {shape: Shape}): Path
+    } {
+
+        const defaultShape = clone(defaultProps.shape);
+        const defaultStyle = clone(defaultProps.style);
+        interface SubPathOption extends PathProps {
+            shape: Shape
+        }
+
+        class Sub extends Path {
+
+            shape: Shape
+
+            getDefaultStyle() {
+                return defaultStyle;
+            }
+
+            getDefaultShape() {
+                return defaultShape;
+            }
+
+            constructor(opts?: SubPathOption) {
+                super(opts);
+                defaultProps.init && defaultProps.init.call(this as any, opts);
+            }
+        }
+
+        // TODO Legacy usage. Extend functions
+        for (let key in defaultProps) {
+            if (typeof (defaultProps as any)[key] === 'function') {
+                (Sub.prototype as any)[key] = (defaultProps as any)[key];
+            }
+        }
+        // Sub.prototype.buildPath = defaultProps.buildPath;
+        // Sub.prototype.beforeBrush = defaultProps.beforeBrush;
+        // Sub.prototype.afterBrush = defaultProps.afterBrush;
+
+        return Sub as any;
     }
 
     protected static initDefaultProps = (function () {

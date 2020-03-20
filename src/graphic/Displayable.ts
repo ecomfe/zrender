@@ -94,9 +94,9 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
      */
     incremental: boolean
     /**
-     * If element can be batched
+     * If element can be batched automatically
      */
-    batch: boolean
+    autoBatch: boolean
 
     style: Dictionary<any>
 
@@ -281,7 +281,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         dispProto.cursor = 'pointer';
         dispProto.rectHover = false;
         dispProto.incremental = false;
-        dispProto.batch = false;
+        dispProto.autoBatch = false;
         dispProto._rect = null;
 
         dispProto.__dirtyStyle = true;

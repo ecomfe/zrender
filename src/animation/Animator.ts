@@ -6,7 +6,7 @@ import Clip from './Clip';
 import * as color from '../tool/color';
 import {isArrayLike} from '../core/util';
 import {ArrayLike, Dictionary} from '../core/types';
-import { easingType } from './easing';
+import { AnimationEasing } from './easing';
 import Animation from './Animation';
 
 type NumberArray = ArrayLike<number>
@@ -351,7 +351,7 @@ export default class Animator<T> {
      * @param  forceAnimate
      * @return
      */
-    start(easing?: easingType, forceAnimate?: boolean) {
+    start(easing?: AnimationEasing, forceAnimate?: boolean) {
 
         const self = this;
         let clipCount = 0;
@@ -447,7 +447,7 @@ export default class Animator<T> {
 
 
     private _createTrackClip(
-        easing: easingType,
+        easing: AnimationEasing,
         oneTrackDone: DoneCallback,
         keyframes: Keyframe[],
         propName: string,

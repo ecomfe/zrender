@@ -390,9 +390,13 @@ export function find<T, Context>(
 
 /**
  * Get all object keys
+ *
+ * Will return an empty array if obj is null/undefined
  */
-
 export function keys<T extends object>(obj: T): (keyof T)[] {
+    if (!obj) {
+        return [];
+    }
     type TKeys = keyof T;
     if (Object.keys) {
         return Object.keys(obj) as TKeys[];

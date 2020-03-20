@@ -610,7 +610,7 @@ export function brush(
         forceSetStyle = forceSetTransform = true;
     }
 
-    let canBatchPath = el.batch
+    let canBatchPath = el.autoBatch
         && el instanceof Path   // Only path supports batch
         && canPathBatch(el as Path);
 
