@@ -2,25 +2,22 @@ import { MatrixArray } from './matrix';
 
 /* global Float32Array */
 
-const ArrayCtor = typeof Float32Array === 'undefined'
-    ? Array
-    : Float32Array;
+// const ArrayCtor = typeof Float32Array === 'undefined'
+//     ? Array
+//     : Float32Array;
 
-export type VectorArray = Float32Array | number[]
+export type VectorArray = number[]
 /**
  * 创建一个向量
  */
 export function create(x?: number, y?: number): VectorArray {
-    const out = new ArrayCtor(2);
     if (x == null) {
         x = 0;
     }
     if (y == null) {
         y = 0;
     }
-    out[0] = x;
-    out[1] = y;
-    return out;
+    return [x, y];
 }
 
 /**
@@ -36,10 +33,7 @@ export function copy<T extends VectorArray>(out: T, v: VectorArray): T {
  * 克隆一个向量
  */
 export function clone(v: VectorArray): VectorArray {
-    const out = new ArrayCtor(2);
-    out[0] = v[0];
-    out[1] = v[1];
-    return out;
+    return [v[0], v[1]];
 }
 
 /**

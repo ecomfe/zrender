@@ -173,9 +173,14 @@ export function extend<
     T extends Dictionary<any>,
     S extends Dictionary<any>
 >(target: T, source: S): T & S {
-    for (let key in source) {
-        if (source.hasOwnProperty(key)) {
-            (target as S & T)[key] = (source as T & S)[key];
+    if (Object.assign) {
+        Object.assign(target, source);
+    }
+    else {
+        for (let key in source) {
+            if (source.hasOwnProperty(key)) {
+                (target as S & T)[key] = (source as T & S)[key];
+            }
         }
     }
     return target as T & S;
@@ -185,10 +190,10 @@ export function defaults<
     T extends Dictionary<any>,
     S extends Dictionary<any>
 >(target: T, source: S, overlay?: boolean): T & S {
-    for (let key in source) {
-        if (source.hasOwnProperty(key)
-            && (overlay ? source[key] != null : (target as T & S)[key] == null)
-        ) {
+    const keysArr = keys(source);
+    for (let i = 0; i < keysArr.length; i++) {
+        let key = keysArr[i];
+        if ((overlay ? source[key] != null : (target as T & S)[key] == null)) {
             (target as S & T)[key] = (source as T & S)[key];
         }
     }

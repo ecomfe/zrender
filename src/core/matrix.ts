@@ -7,19 +7,12 @@
 
 import {VectorArray} from './vector';
 
-const ArrayCtor = typeof Float32Array === 'undefined'
-    ? Array
-    : Float32Array;
-
-export type MatrixArray = Float32Array | number[]
+export type MatrixArray = number[]
 /**
  * Create a identity matrix.
  */
 export function create(): MatrixArray {
-    const out = new ArrayCtor(6);
-    identity(out);
-
-    return out;
+    return [1, 0, 0, 1, 0, 0];
 }
 
 /**

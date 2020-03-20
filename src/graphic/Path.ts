@@ -7,7 +7,7 @@ import { Dictionary, PropType } from '../core/types';
 import BoundingRect from '../core/BoundingRect';
 import { LinearGradientObject } from './LinearGradient';
 import { RadialGradientObject } from './RadialGradient';
-import { isObject, defaults } from '../core/util';
+import { isObject, defaults, keys } from '../core/util';
 
 export interface PathStyleProps extends CommonStyleProps {
     fill?: string | PatternObject | LinearGradientObject | RadialGradientObject
@@ -267,21 +267,21 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         }
     }
 
-    setShape(key: string | Dictionary<any>, value?: any) {
+    setShape(keyOrObj: string | Dictionary<any>, value?: any) {
         let shape = this.shape;
         if (!shape) {
             shape = this.shape = {};
         }
         // Path from string may not have shape
-        if (isObject(key)) {
-            for (let name in key as Dictionary<any>) {
-                if (key.hasOwnProperty(name)) {
-                    shape[name] = (key as Dictionary<any>)[name];
-                }
-            }
+        if (typeof keyOrObj === 'string') {
+            shape[keyOrObj] = value;
         }
         else {
-            shape[key] = value;
+            let keysArr = keys(keyOrObj);
+            for (let i = 0; i < keysArr.length; i++) {
+                let key = keysArr[i];
+                shape[key] = keyOrObj[key];
+            }
         }
         this.dirtyShape();
 

@@ -247,15 +247,15 @@ class Element<Props extends ElementProps = ElementProps> {
     /**
      * Hook before update
      */
-    beforeUpdate () {}
+    beforeUpdate() {}
     /**
      * Hook after update
      */
-    afterUpdate () {}
+    afterUpdate() {}
     /**
      * Update each frame
      */
-    update () {
+    update() {
         this.updateTransform();
 
         // Update textContent
@@ -289,7 +289,7 @@ class Element<Props extends ElementProps = ElementProps> {
         }
     }
 
-    traverse<Context> (
+    traverse<Context>(
         cb: (this: Context, el: Element<Props>) => void,
         context?: Context
     ) {}
@@ -318,7 +318,7 @@ class Element<Props extends ElementProps = ElementProps> {
     /**
      * Hide the element
      */
-    hide () {
+    hide() {
         this.ignore = true;
         this.__zr && this.__zr.refresh();
     }
@@ -326,26 +326,27 @@ class Element<Props extends ElementProps = ElementProps> {
     /**
      * Show the element
      */
-    show () {
+    show() {
         this.ignore = false;
         this.__zr && this.__zr.refresh();
     }
 
-    attr(key: Props): this
-    attr(key: keyof Props, value: AllPropTypes<Props>): this
+    attr(keyOrObj: Props): this
+    attr(keyOrObj: keyof Props, value: AllPropTypes<Props>): this
     /**
      * @param {string|Object} key
      * @param {*} value
      */
-    attr(key: keyof Props | Props, value?: AllPropTypes<Props>): this {
-        if (typeof key === 'string') {
-            this.attrKV(key as keyof ElementProps, value as AllPropTypes<ElementProps>);
+    attr(keyOrObj: keyof Props | Props, value?: AllPropTypes<Props>): this {
+        if (typeof keyOrObj === 'string') {
+            this.attrKV(keyOrObj as keyof ElementProps, value as AllPropTypes<ElementProps>);
         }
-        else if (zrUtil.isObject(key)) {
-            for (let name in key as Props) {
-                if (key.hasOwnProperty(name)) {
-                    this.attrKV(name as keyof ElementProps, (key as any)[name]);
-                }
+        else if (zrUtil.isObject(keyOrObj)) {
+            let obj = keyOrObj as object;
+            let keysArr = zrUtil.keys(obj);
+            for (let i = 0; i < keysArr.length; i++) {
+                let key = keysArr[i];
+                this.attrKV(key as keyof ElementProps, keyOrObj[key]);
             }
         }
         this.dirty();
@@ -636,7 +637,7 @@ class Element<Props extends ElementProps = ElementProps> {
         target: Props,
         time?: number | AnimationCallback,
         delay?: easingType | number | AnimationCallback,
-        easing?: easingType | number | AnimationCallback ,
+        easing?: easingType | number | AnimationCallback,
         callback?: AnimationCallback,
         forceAnimate?: boolean
     ) {
@@ -671,7 +672,7 @@ function animateTo<T>(
     target: Dictionary<any>,
     time: number | AnimationCallback,
     delay: easingType | number | AnimationCallback,
-    easing: easingType | number | AnimationCallback ,
+    easing: easingType | number | AnimationCallback,
     callback: AnimationCallback,
     forceAnimate: boolean,
     reverse?: boolean

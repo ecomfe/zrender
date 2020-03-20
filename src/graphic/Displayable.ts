@@ -7,7 +7,7 @@ import Element, {ElementProps} from '../Element';
 import BoundingRect from '../core/BoundingRect';
 import { PropType, AllPropTypes, Dictionary } from '../core/types';
 import Path from './Path';
-import { changePrototype } from '../core/util';
+import { changePrototype, keys } from '../core/util';
 
 // type CalculateTextPositionResult = ReturnType<typeof calculateTextPosition>
 
@@ -227,15 +227,16 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
 
     setStyle(obj: Props['style']): void
     setStyle(obj: keyof Props['style'], value: Props['style']): void
-    setStyle(obj: keyof Props['style'] | Props['style'], value?: AllPropTypes<Props['style']>) {
-        if (typeof obj === 'string') {
-            this.style[obj] = value;
+    setStyle(keyOrObj: keyof Props['style'] | Props['style'], value?: AllPropTypes<Props['style']>) {
+        if (typeof keyOrObj === 'string') {
+            this.style[keyOrObj] = value;
         }
         else {
-            for (let key in obj as Props['style']) {
-                if (obj.hasOwnProperty(key)) {
-                    this.style[key] = (obj as Props['style'])[key];
-                }
+            let obj = keyOrObj as Props['style'];
+            let keysArr = keys(obj);
+            for (let i = 0; i < keysArr.length; i++) {
+                let key = keysArr[i];
+                this.style[key as string] = obj[key];
             }
         }
         this.dirtyStyle();
