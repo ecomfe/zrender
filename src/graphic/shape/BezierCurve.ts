@@ -55,10 +55,18 @@ export default class BezierCurve extends Path<BezierCurveProps> {
     shape: BezierCurveShape
 
     constructor(opts?: BezierCurveProps) {
-        super(opts, {
+        super(opts);
+    }
+
+    getDefaultStyle() {
+        return {
             stroke: '#000',
-            fill: null
-        }, new BezierCurveShape());
+            fill: null as string
+        };
+    }
+
+    getDefaultShape() {
+        return new BezierCurveShape();
     }
 
     buildPath(ctx: CanvasRenderingContext2D, shape: BezierCurveShape) {

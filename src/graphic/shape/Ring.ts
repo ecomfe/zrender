@@ -21,7 +21,11 @@ export default class Ring extends Path<RingProps> {
     shape: RingShape
 
     constructor(opts?: RingProps) {
-        super(opts, null, new RingShape())
+        super(opts);
+    }
+
+    getDefaultShape() {
+        return new RingShape();
     }
 
     buildPath(ctx: CanvasRenderingContext2D, shape: RingShape) {

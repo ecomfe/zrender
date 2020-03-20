@@ -20,9 +20,12 @@ export default class Circle extends Path<CircleProps> {
     shape: CircleShape
 
     constructor(opts?: CircleProps) {
-        super(opts, null, new CircleShape());
+        super(opts);
     }
 
+    getDefaultShape() {
+        return new CircleShape();
+    }
 
     buildPath(ctx: CanvasRenderingContext2D, shape: CircleShape, inBundle: boolean) {
         // Better stroking in ShapeBundle

@@ -308,9 +308,9 @@ for (var i = 0; i < points.length; i++) {
             // fill: 'green'
         },
         batch: true,
-        silent: true,
-        __point__: pt
+        silent: true
     });
+    rect.__point__ = pt;
     zr.add(rect);
     rects.push(rect);
 }

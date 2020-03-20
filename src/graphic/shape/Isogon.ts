@@ -25,7 +25,11 @@ export default class Isogon extends Path<IsogonProps> {
     shape: IsogonShape
 
     constructor(opts?: IsogonProps) {
-        super(opts, null, new IsogonShape());
+        super(opts);
+    }
+
+    getDefaultShape() {
+        return new IsogonShape();
     }
 
     buildPath(ctx: CanvasRenderingContext2D, shape: IsogonShape) {

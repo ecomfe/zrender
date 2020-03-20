@@ -27,10 +27,18 @@ export default class Trochoid extends Path<TrochoidProps> {
     shape: TrochoidShape
 
     constructor(opts?: TrochoidProps) {
-        super(opts, {
+        super(opts);
+    }
+
+    getDefaultStyle() {
+        return {
             stroke: '#000',
-            fill: null
-        }, new TrochoidShape());
+            fill: null as string
+        };
+    }
+
+    getDefaultShape() {
+        return new TrochoidShape();
     }
 
     buildPath(ctx: CanvasRenderingContext2D, shape: TrochoidShape) {

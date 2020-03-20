@@ -203,19 +203,17 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     anid: string
 
-    constructor(opts?: ElementProps) {
+    constructor(props?: Props) {
         // Transformable needs position, rotation, scale
         Transformable.call(this);
         Eventful.call(this);
 
-        if (opts) {
-            if (opts.textContent) {
-                this.setTextContent(opts.textContent);
-            }
-            if (opts.clipPath) {
-                this.setClipPath(opts.clipPath);
-            }
-        }
+        this._init(props);
+    }
+
+    protected _init(props?: Props) {
+        // Init default properties
+        this.attr(props);
     }
 
     /**
@@ -309,8 +307,13 @@ class Element<Props extends ElementProps = ElementProps> {
         else if (key === 'textLayout') {
             this.setTextLayout(value as TextLayout);
         }
+        else if (key === 'textContent') {
+            this.setTextContent(value as RichText);
+        }
+        else if (key === 'clipPath') {
+            this.setClipPath(value as Path);
+        }
         else {
-            // TODO https://github.com/microsoft/TypeScript/issues/31663#issuecomment-497113495
             (this as any)[key] = value;
         }
     }

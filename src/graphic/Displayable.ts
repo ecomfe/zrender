@@ -7,7 +7,7 @@ import Element, {ElementProps} from '../Element';
 import BoundingRect from '../core/BoundingRect';
 import { PropType, AllPropTypes, Dictionary } from '../core/types';
 import Path from './Path';
-import { changePrototype, keys } from '../core/util';
+import { changePrototype, keys, extend } from '../core/util';
 
 // type CalculateTextPositionResult = ReturnType<typeof calculateTextPosition>
 
@@ -128,36 +128,25 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
      */
     useHoverLayer: boolean
 
-    constructor(opts?: Props, defaultStyle?: Props['style']) {
-        super(opts);
+    constructor(props?: Props) {
+        super(props);
+    }
 
-        // this.attr(opts);
-
-        // Extend properties
-        // No deep clone.
-        // So if property value is an object like shape. please do not reuse.
-        for (var name in opts) {
-            if (opts.hasOwnProperty(name)) {
-                if (name === 'style') {
-                    this.useStyle(opts.style);
-                }
-                else {
-                    (this as any)[name] = (opts as Dictionary<any>)[name];
-                }
+    protected _init(props?: Props) {
+        // Init default properties
+        const keysArr = keys(props);
+        for (let i = 0; i < keysArr.length; i++) {
+            const key = keysArr[i];
+            if (key === 'style') {
+                this.useStyle(props[key]);
+            }
+            else {
+                super.attrKV(key as any, props[key]);
             }
         }
-
+        // Give a empty style
         if (!this.style) {
-            // Create an empty style object.
             this.useStyle({});
-        }
-
-        if (defaultStyle) {
-            for (let key in defaultStyle) {
-                if (!(opts && opts.style && opts.style[key])) {
-                    (this.style as any)[key] = defaultStyle[key];
-                }
-            }
         }
     }
 
@@ -232,12 +221,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
             this.style[keyOrObj] = value;
         }
         else {
-            let obj = keyOrObj as Props['style'];
-            let keysArr = keys(obj);
-            for (let i = 0; i < keysArr.length; i++) {
-                let key = keysArr[i];
-                this.style[key as string] = obj[key];
-            }
+            extend(this.style, keyOrObj as Props['style']);
         }
         this.dirtyStyle();
         return this;

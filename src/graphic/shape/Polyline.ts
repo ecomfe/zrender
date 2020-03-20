@@ -22,10 +22,18 @@ export default class Polyline extends Path<PolylineProps> {
     shape: PolylineShape
 
     constructor(opts?: PolylineProps) {
-        super(opts, {
+        super(opts);
+    }
+
+    getDefaultStyle() {
+        return {
             stroke: '#000',
-            fill: null
-        }, new PolylineShape());
+            fill: null as string
+        };
+    }
+
+    getDefaultShape() {
+        return new PolylineShape();
     }
 
     buildPath(ctx: CanvasRenderingContext2D, shape: PolylineShape) {

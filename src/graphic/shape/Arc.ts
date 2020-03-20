@@ -24,10 +24,18 @@ export default class Arc extends Path<ArcProps> {
     shape: ArcShape
 
     constructor(opts?: ArcProps) {
-        super(opts, {
+        super(opts);
+    }
+
+    getDefaultStyle() {
+        return {
             stroke: '#000',
-            fill: null
-        }, new ArcShape());
+            fill: null as string
+        };
+    }
+
+    getDefaultShape() {
+        return new ArcShape();
     }
 
     buildPath(ctx: CanvasRenderingContext2D, shape: ArcShape) {

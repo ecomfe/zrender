@@ -34,7 +34,11 @@ export default class Rect extends Path<RectProps> {
     shape: RectShape
 
     constructor(opts?: RectProps) {
-        super(opts, null, new RectShape());
+        super(opts);
+    }
+
+    getDefaultShape() {
+        return new RectShape();
     }
 
     buildPath(ctx: CanvasRenderingContext2D, shape: RectShape) {

@@ -32,10 +32,18 @@ export default class Line extends Path<LineProps> {
     shape: LineShape
 
     constructor(opts?: LineProps) {
-        super(opts, {
+        super(opts);
+    }
+
+    getDefaultStyle() {
+        return {
             stroke: '#000',
-            fill: null
-        }, new LineShape());
+            fill: null as string
+        };
+    }
+
+    getDefaultShape() {
+        return new LineShape();
     }
 
     buildPath(ctx: CanvasRenderingContext2D, shape: LineShape) {

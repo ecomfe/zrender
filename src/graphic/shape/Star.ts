@@ -27,7 +27,11 @@ export default class Star extends Path<StarProps> {
     shape: StarShape
 
     constructor(opts?: StarProps) {
-        super(opts, null, new StarShape());
+        super(opts);
+    }
+
+    getDefaultShape() {
+        return new StarShape();
     }
 
     buildPath(ctx: CanvasRenderingContext2D, shape: StarShape) {

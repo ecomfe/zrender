@@ -41,20 +41,79 @@
         document.getElementById('run').onclick = start;
         document.getElementById('auto-run').onclick = autoStart;
 
-        var ShapeClasses = {
+        var ElClasses = {
             circle: zrender.Circle,
             sector: zrender.Sector,
             ring: zrender.Ring,
-            ellipse: zrender.Ellipse,
             rect: zrender.Rect,
             text: zrender.Text,
-            heart: zrender.Heart,
-            droplet: zrender.Droplet,
             line: zrender.Line,
-            image: zrender.Image,
-            star: zrender.Star,
-            isogon: zrender.Isogon
+            image: zrender.Image
         };
+
+        var shapeMakers = {
+            circle() {
+                return {
+                    cx: Math.round(Math.random() * width),
+                    cy: Math.round(Math.random() * height),
+                    r: Math.random() * 30
+                }
+            },
+            sector() {
+                return {
+                    cx: Math.round(Math.random() * width),
+                    cy: Math.round(Math.random() * height),
+                    r0: Math.round(Math.random() * 10),
+                    r: Math.random() * 30,
+                    startAngle : Math.round(Math.random() * 30),
+                    endAngle: Math.round(Math.random() * 180) + 30
+                }
+            },
+            ring() {
+                return {
+                    cx: Math.round(Math.random() * width),
+                    cy: Math.round(Math.random() * height),
+                    r0: Math.round(Math.random() * 10),
+                    r: Math.random() * 30,
+                }
+            },
+            rect() {
+                return {
+                    x: Math.round(Math.random() * width),
+                    y: Math.round(Math.random() * height),
+                    width: Math.round(Math.random() * 10),
+                    height: Math.round(Math.random() * 5)
+                }
+            },
+            line() {
+                return {
+                    x1: Math.round(Math.random() * width),
+                    y1: Math.round(Math.random() * height),
+                    x2: Math.round(Math.random() * width),
+                    y2: Math.round(Math.random() * height)
+                }
+            }
+        }
+
+        var styleMakers = {
+            image() {
+                return {
+                    x: Math.round(Math.random() * width),
+                    y: Math.round(Math.random() * height),
+                    image: './asset/test.png'
+                };
+            },
+            text() {
+                return {
+                    text: elType == 'text' ? LARGE_TEXT_ZH.substr(
+                        Math.round(Math.random() * LARGE_TEXT_ZH.length),
+                        6
+                    ) : '',
+                    x: Math.round(Math.random() * width),
+                    y: Math.round(Math.random() * height)
+                };
+            }
+        }
 
         var t1 = 0;
         var t2 = 0;
@@ -67,7 +126,7 @@
         var n;
         var result;
         var total;
-        var shapeType;
+        var elType;
         var img = new Image();
         img.src = 'asset/test.png';
 
@@ -82,7 +141,7 @@
             n = document.getElementById('count').value;
             result = [];
             total = 0;
-            shapeType = document.getElementById('shape').value;
+            elType = document.getElementById('shape').value;
             setTimeout(run,50);
         }
 
@@ -119,54 +178,22 @@
         }
 
         function run(){
+            var ShapeClass = ElClasses[elType];
+            var shapeMaker = shapeMakers[elType];
+            var styleMaker = styleMakers[elType];
             if (round--) {
                 zr.clear();
                 var ticket = new Date();
                 for (var i = 0; i < n; i++) {
-                    var ShapeClass = ShapeClasses[shapeType];
                     zr.add(new ShapeClass({
-                        shape: {
-                            x: Math.round(Math.random() * width),
-                            y: Math.round(Math.random() * height),
-                            x1: Math.round(Math.random() * width),
-                            y1: Math.round(Math.random() * height),
-                            x2: Math.round(Math.random() * width),
-                            y2: Math.round(Math.random() * height),
-                            cx: Math.round(Math.random() * width),
-                            cy: Math.round(Math.random() * height),
-                            r0: Math.round(Math.random() * 10),
-                            r: shapeType === 'rect' ? 0 :
-                                (shapeType != 'rose'
-                                    ? Math.round(Math.random() * 30)
-                                    : [5 + Math.round(Math.random() * 5),
-                                        10 + Math.round(Math.random() * 5),
-                                        15 + Math.round(Math.random() * 5)]
-                                    ),
-                            n: Math.round(Math.random() * 10 + 2),
-                            rx: Math.round(Math.random() * 10),
-                            ry: Math.round(Math.random() * 30),
-                            k: Math.round(Math.random() * 10),
-                            lineWidth : 1,
-                            width: Math.round(Math.random() * 10),
-                            height: Math.round(Math.random() * 5),
-                            startAngle : Math.round(Math.random() * 30),
-                            endAngle: Math.round(Math.random() * 180) + 30,
-                            image: img
-                        },
-                        style: {
-                            text: shapeType == 'text' ? LARGE_TEXT_ZH.substr(
-                                Math.round(Math.random() * LARGE_TEXT_ZH.length),
-                                6
-                            ) : '',
-                            x: Math.round(Math.random() * width),
-                            y: Math.round(Math.random() * height),
-                            // fill: randomColor()
+                        shape: shapeMaker && shapeMaker(),
+                        style: styleMaker ? styleMaker() : {
                             fill: 'rgb(' + Math.round(i / n * 255) + ',0,0)'
                         },
                         silent: true
                     }));
                 }
-                zr.refreshImmediately();
+                // zr.refreshImmediately();
                 ticket = new Date() - ticket;
                 total += ticket;
                 result.push(ticket);
@@ -174,7 +201,7 @@
             }else {
                 isRunning = false;
                 document.getElementById('res').innerHTML +=
-                    n + '个' + shapeType +
+                    n + '个' + elType +
                     '平均render时间:' + Math.round(total/result.length)
                     + 'ms : [' + result.join(',') + ']<br/>';
                     console.log(t1, t2, t3); t1 = 0; t2 = 0; t3 = 0;

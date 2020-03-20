@@ -21,7 +21,11 @@ export default class Ellipse extends Path<EllipseProps> {
     shape: EllipseShape
 
     constructor(opts?: EllipseProps) {
-        super(opts, null, new EllipseShape());
+        super(opts);
+    }
+
+    getDefaultShape() {
+        return new EllipseShape();
     }
 
     buildPath(ctx: CanvasRenderingContext2D, shape: EllipseShape) {

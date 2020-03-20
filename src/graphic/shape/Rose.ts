@@ -27,11 +27,20 @@ export default class Rose extends Path<RoseProps> {
     shape: RoseShape
 
     constructor(opts?: RoseProps) {
-        super(opts, {
-            fill: null,
-            stroke: '#000'
-        }, new RoseShape())
+        super(opts);
     }
+
+    getDefaultStyle() {
+        return {
+            stroke: '#000',
+            fill: null as string
+        };
+    }
+
+    getDefaultShape() {
+        return new RoseShape();
+    }
+
 
     buildPath(ctx: CanvasRenderingContext2D, shape: RoseShape) {
         const R = shape.r;

@@ -22,8 +22,13 @@ export default class Sector extends Path<SectorProps> {
     constructor(opts?: PathProps & {
         shape: Partial<SectorShape>
     }) {
-        super(opts, null, new SectorShape());
+        super(opts);
     }
+
+    getDefaultShape() {
+        return new SectorShape();
+    }
+
 
     buildPath(ctx: CanvasRenderingContext2D, shape: SectorShape) {
 
@@ -58,6 +63,6 @@ export default class Sector extends Path<SectorProps> {
 
     isZeroArea() {
         return this.shape.startAngle === this.shape.endAngle
-            || this.shape.r === this.shape.r0
+            || this.shape.r === this.shape.r0;
     }
 }

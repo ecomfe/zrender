@@ -7,7 +7,7 @@ import { Dictionary, PropType } from '../core/types';
 import BoundingRect from '../core/BoundingRect';
 import { LinearGradientObject } from './LinearGradient';
 import { RadialGradientObject } from './RadialGradient';
-import { isObject, defaults, keys } from '../core/util';
+import { isObject, defaults, keys, extend } from '../core/util';
 
 export interface PathStyleProps extends CommonStyleProps {
     fill?: string | PatternObject | LinearGradientObject | RadialGradientObject
@@ -93,23 +93,54 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
     // It will be assigned by default value.
     shape: Dictionary<any>
 
-    constructor(opts?: Props, defaultStyle?: Props['style'], defaultShape?: Props['shape']) {
-        super(opts, defaultStyle);
+    constructor(opts?: Props) {
+        super(opts);
+    }
 
-        this._defaultsShape(defaultShape);
-        // TODO
-        if (opts) {
-            if (opts.strokeContainThreshold != null) {
-                this.strokeContainThreshold = opts.strokeContainThreshold;
+    protected _init(props?: Props) {
+        // Init default properties
+        const keysArr = keys(props);
+        this.shape = this.getDefaultShape();
+        for (let i = 0; i < keysArr.length; i++) {
+            const key = keysArr[i];
+            if (key === 'style') {
+                this.useStyle(props[key]);
             }
-            if (opts.segmentIgnoreThreshold != null) {
-                this.segmentIgnoreThreshold = opts.segmentIgnoreThreshold;
+            else if (key === 'shape') {
+                // this.shape = props[key];
+                extend(this.shape, props[key]);
             }
-            if (opts.subPixelOptimize != null) {
-                this.subPixelOptimize = opts.subPixelOptimize;
+            else {
+                super.attrKV(key as any, props[key]);
             }
         }
+        const defaultStyle = this.getDefaultStyle();
+        // Give a empty style
+        if (!this.style) {
+            this.useStyle(defaultStyle || {});
+        }
+        else if (defaultStyle) {
+            defaults(this.style, defaultStyle);
+        }
+
+        // const defaultShape = this.getDefaultShape();
+        // if (!this.shape) {
+        //     this.shape = defaultShape;
+        // }
+        // else {
+        //     defaults(this.shape, defaultShape);
+        // }
     }
+
+    protected getDefaultStyle(): Props['style'] {
+        return null;
+    }
+
+    // Needs to override
+    protected getDefaultShape() {
+        return {};
+    }
+
     // When bundling path, some shape may decide if use moveTo to begin a new subpath or closePath
     // Like in circle
     buildPath(
@@ -277,11 +308,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
             shape[keyOrObj] = value;
         }
         else {
-            let keysArr = keys(keyOrObj);
-            for (let i = 0; i < keysArr.length; i++) {
-                let key = keysArr[i];
-                shape[key] = keyOrObj[key];
-            }
+            extend(shape, keyOrObj);
         }
         this.dirtyShape();
 
@@ -301,77 +328,6 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
     isZeroArea(): boolean {
         return false;
     }
-
-    // Defaults shape value
-    private _defaultsShape(defaultShapeObj: Dictionary<any>) {
-        if (!this.shape) {
-            this.shape = {};
-        }
-        defaults(this.shape, defaultShapeObj);
-    }
-
-    /**
-     * 扩展一个 Path element, 比如星形，圆等。
-     * Extend a path element
-     * @DEPRECATED Use class extends
-     * @param props
-     * @param props.type Path type
-     * @param props.init Initialize
-     * @param props.buildPath Overwrite buildPath method
-     * @param props.style Extended default style config
-     * @param props.shape Extended default shape config
-     * @param props.extra Extra info
-     */
-    static extend<ShapeType extends Dictionary<any>, ExtraType extends Dictionary<any>>(defaultProps: {
-        type: string
-        shape?: ShapeType
-        style?: PathStyleProps
-        extra?: ExtraType
-
-        beforeBrush?: Displayable['beforeBrush']
-        afterBrush?: Displayable['afterBrush']
-        getBoundingRect?: Displayable['getBoundingRect']
-
-        buildPath: (this: Path, ctx: CanvasRenderingContext2D | PathProxy, shape: ShapeType, inBundle?: boolean) => void
-        init?: (this: Path, opts: PathProps) => void // TODO Should be SubPathOption
-    }): {
-        new(opts?: PathProps & {
-            shape?: ShapeType
-        }): Path & {
-            extra?: ExtraType,
-            shape: ShapeType
-        }
-    } {
-        interface SubPathOption extends PathProps {
-            shape: ShapeType
-        }
-
-        class Sub extends Path {
-
-            shape: ShapeType
-
-            extra: ExtraType
-
-            constructor(opts?: SubPathOption) {
-                super(opts, defaultProps.style, defaultProps.shape);
-
-                defaultProps.init && defaultProps.init.call(this, opts);
-            }
-        }
-
-        // TODO Legacy usage. Extend functions
-        for (let key in defaultProps) {
-            if (typeof (defaultProps as any)[key] === 'function') {
-                (Sub.prototype as any)[key] = (defaultProps as any)[key];
-            }
-        }
-        // Sub.prototype.buildPath = defaultProps.buildPath;
-        // Sub.prototype.beforeBrush = defaultProps.beforeBrush;
-        // Sub.prototype.afterBrush = defaultProps.afterBrush;
-
-        return Sub;
-    }
-
 
     protected static initDefaultProps = (function () {
         const pathProto = Path.prototype;
