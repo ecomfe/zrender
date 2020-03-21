@@ -124,7 +124,11 @@ describe('Path', function () {
             emphasis: clone(emphasisState)
         };
 
+        expect(rect.currentState).toEqual('normal');
+
         rect.useState('emphasis');
+
+        expect(rect.currentState).toEqual('emphasis');
 
         expect(rect.position).toEqual([100, 100]);
         expect(rect.rotation).toBe(10);
@@ -158,6 +162,8 @@ describe('Path', function () {
         rect.useState('emphasis');
         // Switch back to normal
         rect.useState('normal');
+
+        expect(rect.currentState).toEqual('normal');
 
         expect(rect.position).toEqual([0, 0]);
         expect(rect.rotation).toEqual(0);
