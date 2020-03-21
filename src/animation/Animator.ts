@@ -4,7 +4,7 @@
 
 import Clip from './Clip';
 import * as color from '../tool/color';
-import {isArrayLike} from '../core/util';
+import {isArrayLike, keys} from '../core/util';
 import {ArrayLike, Dictionary} from '../core/types';
 import { AnimationEasing } from './easing';
 import Animation from './Animation';
@@ -12,18 +12,13 @@ import Animation from './Animation';
 type NumberArray = ArrayLike<number>
 type InterpolatableType = string | number | NumberArray | NumberArray[];
 
-type Keyframe = {
-    time: number
-    value: InterpolatableType
-}
-
 const arraySlice = Array.prototype.slice;
 
 function interpolateNumber(p0: number, p1: number, percent: number): number {
     return (p1 - p0) * percent + p0;
 }
 
-function interpolateString(p0: string, p1: string, percent: number): string {
+function step(p0: any, p1: any, percent: number): any {
     return percent > 0.5 ? p1 : p0;
 }
 
@@ -217,53 +212,300 @@ function rgba2String(rgba: number[]): string {
     return 'rgba(' + rgba.join(',') + ')';
 }
 
-function guessArrayDim(keyframes: Keyframe[]): number {
-    const lastValue = keyframes[keyframes.length - 1].value;
-    return isArrayLike(lastValue && (lastValue as unknown[])[0]) ? 2 : 1;
+function guessArrayDim(value: ArrayLike<unknown>): number {
+    return isArrayLike(value && (value as ArrayLike<unknown>)[0]) ? 2 : 1;
 }
+
+type Keyframe = {
+    time: number
+    value: unknown
+    percent: number
+}
+
+let tmpRgba: number[] = [0, 0, 0, 0];
+class Track {
+
+    keyframes: Keyframe[] = []
+    maxTime: number = 0
+
+    propName: string
+
+    /**
+     * If use spline interpolate
+     */
+    useSpline: boolean
+
+    private _isValueColor: boolean
+    private _interpolable: boolean = true
+
+    // Larger than 0 if value is array
+    private _arrDim: number = 0
+
+    private _needsSort: boolean = false
+
+    private _isAllValueEqual = true
+
+    // Info for run
+    private _lastFrame = 0;
+    private _lastFramePercent = 0;
+
+    constructor(propName: string) {
+        this.propName = propName;
+    }
+
+    needsAnimate() {
+        return !this._isAllValueEqual;
+    }
+
+    addKeyframe(time: number, value: unknown) {
+        if (time >= this.maxTime) {
+            this.maxTime = time;
+        }
+        else {
+            this._needsSort = true;
+        }
+
+        let keyframes = this.keyframes;
+
+        let len = keyframes.length;
+
+        if (this._interpolable) {
+            // Handling values only if it's possible to be interpolated.
+            if (isArrayLike(value)) {
+                let arrayDim = guessArrayDim(value);
+                if (this._arrDim !== arrayDim) {
+                    this._interpolable = false;
+                    return;
+                }
+                if (len > 0) {
+                    let lastFrame = keyframes[len - 1];
+                    fillArray(
+                        value,
+                        lastFrame.value as NumberArray[],
+                        arrayDim
+                    );
+
+                    // For performance consideration. only check 1d array
+                    if (this._isAllValueEqual) {
+                        if (arrayDim === 1) {
+                            if (!is1DArraySame(value, lastFrame.value as number[])) {
+                                this._isAllValueEqual = false;
+                            }
+                        }
+                        else {
+                            this._isAllValueEqual = false;
+                        }
+                    }
+                }
+            }
+            else {
+                if (this._arrDim > 0) {  // Previous value is array.
+                    this._interpolable = false;
+                    return;
+                }
+
+                if (typeof value === 'string') {
+                    const colorArray = color.parse(value);
+                    if (colorArray) {
+                        value = colorArray;
+                        this._isValueColor = true;
+                    }
+                    else {
+                        this._interpolable = false;
+                    }
+                }
+                else if (typeof value !== 'number') {
+                    this._interpolable = false;
+                    return;
+                }
+
+                if (this._isAllValueEqual && len > 0) {
+                    let lastFrame = keyframes[len - 1];
+                    if (this._isValueColor && !is1DArraySame(lastFrame.value as number[], value as number[])) {
+                        this._isAllValueEqual = false;
+                    }
+                    else if (lastFrame.value !== value) {
+                        this._isAllValueEqual = false;
+                    }
+                }
+            }
+        }
+
+        // Not check if value equal here.
+        this.keyframes.push({
+            time,
+            value,
+            percent: 0
+        });
+    }
+
+    prepare() {
+        let kfs = this.keyframes;
+        if (this._needsSort) {
+            // Sort keyframe as ascending
+            kfs.sort(function (a: Keyframe, b: Keyframe) {
+                return a.time - b.time;
+            });
+        }
+
+        for (let i = 0; i < kfs.length; i++) {
+            kfs[i].percent = kfs[i].time / this.maxTime;
+        }
+    }
+
+    step(target: any, percent: number) {
+        const keyframes = this.keyframes;
+        const kfsNum = this.keyframes.length;
+        const propName = this.propName;
+        const arrDim = this._arrDim;
+        // Find the range keyframes
+        // kf1-----kf2---------current--------kf3
+        // find kf2 and kf3 and do interpolation
+        let frameIdx;
+        // In the easing function like elasticOut, percent may less than 0
+        if (percent < 0) {
+            frameIdx = 0;
+        }
+        else if (percent < this._lastFramePercent) {
+            // Start from next key
+            // PENDING start from lastFrame ?
+            const start = Math.min(this._lastFrame + 1, kfsNum - 1);
+            for (frameIdx = start; frameIdx >= 0; frameIdx--) {
+                if (keyframes[frameIdx].percent <= percent) {
+                    break;
+                }
+            }
+            // PENDING really need to do this ?
+            frameIdx = Math.min(frameIdx, kfsNum - 2);
+        }
+        else {
+            for (frameIdx = this._lastFrame; frameIdx < kfsNum; frameIdx++) {
+                if (keyframes[frameIdx].percent > percent) {
+                    break;
+                }
+            }
+            frameIdx = Math.min(frameIdx - 1, kfsNum - 2);
+        }
+        this._lastFrame = frameIdx;
+        this._lastFramePercent = percent;
+
+        let nextFrame = keyframes[frameIdx + 1];
+        let frame = keyframes[frameIdx];
+
+        const range = (nextFrame.percent - frame.percent);
+        if (range === 0) {
+            return;
+        }
+        const w = (percent - frame.percent) / range;
+        if (this.useSpline) {
+            const p1 = keyframes[frameIdx].value;
+            const p0 = keyframes[frameIdx === 0 ? frameIdx : frameIdx - 1].value;
+            const p2 = keyframes[frameIdx > kfsNum - 2 ? kfsNum - 1 : frameIdx + 1].value;
+            const p3 = keyframes[frameIdx > kfsNum - 3 ? kfsNum - 1 : frameIdx + 2].value;
+            if (arrDim > 0) {
+                arrDim === 1
+                    ? catmullRomInterpolate1DArray(
+                        p0 as NumberArray, p1 as NumberArray, p2 as NumberArray, p3 as NumberArray,
+                        w, w * w, w * w * w,
+                        target[propName] as NumberArray
+                    )
+                    : catmullRomInterpolate2DArray(
+                        p0 as NumberArray[], p1 as NumberArray[], p2 as NumberArray[], p3 as NumberArray[],
+                        w, w * w, w * w * w,
+                        target[propName] as NumberArray[]
+                    );
+            }
+            else {
+                let value;
+                if (this._isValueColor) {
+                    value = catmullRomInterpolate1DArray(
+                        p0 as NumberArray, p1 as NumberArray, p2 as NumberArray, p3 as NumberArray,
+                        w, w * w, w * w * w,
+                        tmpRgba
+                    );
+                    value = rgba2String(tmpRgba);
+                }
+                else if (!this._interpolable) {
+                    // String is step(0.5)
+                    return step(p1 as string, p2 as string, w);
+                }
+                else {
+                    value = catmullRomInterpolate(
+                        p0 as number, p1 as number, p2 as number, p3 as number,
+                        w, w * w, w * w * w
+                    );
+                }
+                target[propName] = value;
+            }
+        }
+        else {
+            if (arrDim > 0) {
+                arrDim === 1
+                    ? interpolate1DArray(
+                        frame.value as NumberArray,
+                        nextFrame.value as NumberArray,
+                        w,
+                        target[propName] as NumberArray
+                    )
+                    : interpolate2DArray(
+                        frame.value as NumberArray[],
+                        nextFrame.value as NumberArray[],
+                        w,
+                        target[propName] as NumberArray[]
+                    );
+            }
+            else {
+                let value;
+                if (this._isValueColor) {
+                    interpolate1DArray(
+                        frame.value as NumberArray,
+                        nextFrame.value as NumberArray,
+                        w, tmpRgba
+                    );
+                    value = rgba2String(tmpRgba);
+                }
+                else if (!this._interpolable) {
+                    // String is step(0.5)
+                    return step(frame.value as string, nextFrame.value as string, w);
+                }
+                else {
+                    value = interpolateNumber(frame.value as number, nextFrame.value as number, w);
+                }
+                target[propName] = value;
+            }
+        }
+    }
+}
+
 
 type DoneCallback = () => void;
 type OnframeCallback<T> = (target: T, percent: number) => void;
 
 export type AnimationPropGetter<T> = (target: T, key: string) => InterpolatableType;
 export type AnimationPropSetter<T> = (target: T, key: string, value: InterpolatableType) => void;
-/**
- * @alias module:zrender/animation/Animator
- * @constructor
- * @param {Object} target
- * @param {boolean} loop
- * @param {Function} getter
- * @param {Function} setter
- */
+
 export default class Animator<T> {
 
     animation: Animation
 
-    private _tracks: Dictionary<Keyframe[]> = {}
+    private _tracks: Dictionary<Track> = {}
+    private _trackKeys: string[] = []
     private _target: T
-
-    private _getter: AnimationPropGetter<T>
-    private _setter: AnimationPropSetter<T>
 
     private _loop: boolean
     private _delay = 0
     private _paused = false
+    private _maxTime = 0;
 
     private _doneList: DoneCallback[] = []
     private _onframeList: OnframeCallback<T>[] = []
 
-    private _clipList: Clip<T>[] = []
+    private _clip: Clip<T>
 
-    constructor(target: T, loop: boolean, getter?: AnimationPropGetter<T>, setter?: AnimationPropSetter<T>) {
+    constructor(target: T, loop: boolean) {
         this._target = target;
         this._target = target;
         this._loop = loop || false;
-        this._getter = getter || function (target: T, key: string) {
-            return (target as any)[key];
-        };
-        this._setter = setter || function (target: T, key: string, value: any) {
-            (target as any)[key] = value;
-        };
     }
 
     /**
@@ -273,16 +515,21 @@ export default class Animator<T> {
      * @return {module:zrender/animation/Animator}
      */
     when(time: number, props: Dictionary<any>) {
-        const tracks = this._tracks;
-        for (let propName in props) {
-            if (!props.hasOwnProperty(propName)) {
-                continue;
-            }
+        return this.whenWithKeys(time, props, keys(props) as string[]);
+    }
 
-            if (!tracks[propName]) {
-                tracks[propName] = [];
+
+    // Fast path for add keyframes of aniamteTo
+    whenWithKeys(time: number, props: Dictionary<any>, propNames: string[]) {
+        const tracks = this._tracks;
+        for (let i = 0; i < propNames.length; i++) {
+            let propName = propNames[i] as string;
+
+            let track = tracks[propName];
+            if (!track) {
+                track = tracks[propName] = new Track(propName);
                 // Invalid value
-                const value = this._getter(this._target, propName);
+                const value = (this._target as any)[propName];
                 if (value == null) {
                     // zrLog('Invalid property ' + propName);
                     continue;
@@ -292,19 +539,17 @@ export default class Animator<T> {
                 // Else
                 //  Initialize value from current prop value
                 if (time !== 0) {
-                    tracks[propName].push({
-                        time: 0,
-                        value: cloneValue(value)
-                    });
+                    track.addKeyframe(0, cloneValue(value));
                 }
+
+                this._trackKeys.push(propName);
             }
-            tracks[propName].push({
-                time: time,
-                value: props[propName]
-            });
+            track.addKeyframe(time, props[propName]);
         }
+        this._maxTime = Math.max(this._maxTime, time);
         return this;
     }
+
     /**
      * 添加动画每一帧的回调函数
      * @param callback
@@ -315,16 +560,12 @@ export default class Animator<T> {
     }
 
     pause() {
-        for (let i = 0; i < this._clipList.length; i++) {
-            this._clipList[i].pause();
-        }
+        this._clip.pause();
         this._paused = true;
     }
 
     resume() {
-        for (let i = 0; i < this._clipList.length; i++) {
-            this._clipList[i].resume();
-        }
+        this._clip.resume();
         this._paused = false;
     }
 
@@ -332,11 +573,11 @@ export default class Animator<T> {
         return !!this._paused;
     }
 
-    _DoneCallback() {
+    _doneCallback() {
         // Clear all tracks
         this._tracks = {};
         // Clear all clips
-        this._clipList.length = 0;
+        this._clip = null;
 
         const doneList = this._doneList;
         const len = doneList.length;
@@ -347,62 +588,57 @@ export default class Animator<T> {
     /**
      * Start the animation
      * @param easing
-     *         动画缓动函数，详见{@link module:zrender/animation/easing}
      * @param  forceAnimate
      * @return
      */
     start(easing?: AnimationEasing, forceAnimate?: boolean) {
 
         const self = this;
-        let clipCount = 0;
 
-        const oneTrackDone = function () {
-            clipCount--;
-            if (!clipCount) {
-                self._DoneCallback();
-            }
-        };
-
-        let lastClip;
-        for (let propName in this._tracks) {
-            if (!this._tracks.hasOwnProperty(propName)) {
-                continue;
-            }
-            const clip = this._createTrackClip(
-                easing, oneTrackDone,
-                this._tracks[propName], propName, forceAnimate
-            );
-            if (clip) {
-                this._clipList.push(clip);
-                clipCount++;
-
-                // If start after added to animation
-                if (this.animation) {
-                    this.animation.addClip(clip);
-                }
-
-                lastClip = clip;
+        let tracks: Track[] = [];
+        for (let i = 0; i < this._trackKeys.length; i++) {
+            const propName = this._trackKeys[i];
+            const track = this._tracks[propName];
+            track.prepare();
+            if (track.needsAnimate() || forceAnimate) {
+                tracks.push(track);
             }
         }
-
         // Add during callback on the last clip
-        if (lastClip) {
-            const oldOnFrame = lastClip.onframe;
-            lastClip.onframe = function (target: T, percent: number) {
-                oldOnFrame(target, percent);
-
-                for (let i = 0; i < self._onframeList.length; i++) {
-                    self._onframeList[i](target, percent);
+        if (tracks.length) {
+            const clip = new Clip<T>({
+                target: this._target,
+                life: this._maxTime,
+                loop: this._loop,
+                delay: this._delay,
+                onframe(target: T, percent: number) {
+                    for (let i = 0; i < tracks.length; i++) {
+                        tracks[i].step(target, percent);
+                    }
+                    for (let i = 0; i < self._onframeList.length; i++) {
+                        self._onframeList[i](target, percent);
+                    }
+                },
+                ondestroy() {
+                    self._doneCallback();
                 }
-            };
+            });
+            this._clip = clip;
+
+            this.animation.addClip(clip);
+
+            if (easing && easing !== 'spline') {
+                clip.easing = easing;
+            }
+        }
+        else {
+
+            // This optimization will help the case that in the upper application
+            // the view may be refreshed frequently, where animation will be
+            // called repeatly but nothing changed.
+            this._doneCallback();
         }
 
-        // This optimization will help the case that in the upper application
-        // the view may be refreshed frequently, where animation will be
-        // called repeatly but nothing changed.
-        if (!clipCount) {
-            this._DoneCallback();
-        }
         return this;
     }
     /**
@@ -410,17 +646,13 @@ export default class Animator<T> {
      * @param {boolean} forwardToLast If move to last frame before stop
      */
     stop(forwardToLast: boolean) {
-        const clipList = this._clipList;
+        const clip = this._clip;
         const animation = this.animation;
-        for (let i = 0; i < clipList.length; i++) {
-            const clip = clipList[i];
-            if (forwardToLast) {
-                // Move to last frame before stop
-                clip.onframe(this._target, 1);
-            }
-            animation && animation.removeClip(clip);
+        if (forwardToLast) {
+            // Move to last frame before stop
+            clip.onframe(this._target, 1);
         }
-        clipList.length = 0;
+        animation.removeClip(clip);
     }
     /**
      * Set when animation delay starts
@@ -441,260 +673,7 @@ export default class Animator<T> {
         return this;
     }
 
-    getClips() {
-        return this._clipList;
-    }
-
-
-    private _createTrackClip(
-        easing: AnimationEasing,
-        oneTrackDone: DoneCallback,
-        keyframes: Keyframe[],
-        propName: string,
-        forceAnimate: boolean
-    ) {
-        const getter = this._getter;
-        const setter = this._setter;
-        const useSpline = easing === 'spline';
-
-        const trackLen = keyframes.length;
-        if (!trackLen) {
-            return;
-        }
-        // Guess data type
-        const firstVal = keyframes[0].value;
-        const isValueArray = isArrayLike(firstVal);
-        let isValueColor = false;
-        let isValueString = false;
-
-        // For vertices morphing
-        const arrDim = isValueArray ? guessArrayDim(keyframes) : 0;
-
-        let trackMaxTime;
-        // Sort keyframe as ascending
-        keyframes.sort(function (a: Keyframe, b: Keyframe) {
-            return a.time - b.time;
-        });
-
-        trackMaxTime = keyframes[trackLen - 1].time;
-        // Percents of each keyframe
-        const kfPercents: number[] = [];
-        // Value of each keyframe
-        const kfValues: InterpolatableType[] = [];
-        let prevValue = keyframes[0].value;
-        let isAllValueEqual = true;
-        for (let i = 0; i < trackLen; i++) {
-            kfPercents.push(keyframes[i].time / trackMaxTime);
-            // Assume value is a color when it is a string
-            let value = keyframes[i].value;
-
-            // Check if value is not all equal, deep check if value is array
-            if (isAllValueEqual) {
-                if (isValueArray && !(arrDim === 1
-                    ? is1DArraySame(value as NumberArray, prevValue as NumberArray)
-                    : is2DArraySame(value as NumberArray[], prevValue as NumberArray[])
-                )) {
-                    isAllValueEqual = false;
-                }
-                else if (value !== prevValue) { // number or string
-                    isAllValueEqual = false;
-                }
-                prevValue = value;
-            }
-
-            // Try converting a string to a color array
-            if (typeof value === 'string') {
-                const colorArray = color.parse(value);
-                if (colorArray) {
-                    value = colorArray;
-                    isValueColor = true;
-                }
-                else {
-                    isValueString = true;
-                }
-            }
-            kfValues.push(value);
-        }
-        if (!forceAnimate && isAllValueEqual) {
-            return;
-        }
-
-        const lastValue = kfValues[trackLen - 1];
-        // Polyfill array and NaN value
-        for (let i = 0; i < trackLen - 1; i++) {
-            if (isValueArray) {
-                fillArray(
-                    kfValues[i] as NumberArray | NumberArray[],
-                    lastValue as NumberArray | NumberArray[],
-                    arrDim
-                );
-            }
-            else {
-                // Unkown types
-                if (isNaN(kfValues[i] as number) && !isNaN(lastValue as number)
-                    && !isValueString && !isValueColor
-                ) {
-                    kfValues[i] = lastValue;
-                }
-            }
-        }
-        isValueArray && fillArray(
-            getter(this._target, propName) as NumberArray | NumberArray[],
-            lastValue as NumberArray | NumberArray[],
-            arrDim
-        );
-
-        // Cache the key of last frame to speed up when
-        // animation playback is sequency
-        let lastFrame = 0;
-        let lastFramePercent = 0;
-        let start;
-        let w;
-        let p0;
-        let p1;
-        let p2;
-        let p3;
-        let rgba: number[];
-
-        if (isValueColor) {
-            rgba = [0, 0, 0, 0];
-        }
-
-        const onframe = function (target: T, percent: number) {
-            // Find the range keyframes
-            // kf1-----kf2---------current--------kf3
-            // find kf2 and kf3 and do interpolation
-            let frame;
-            // In the easing function like elasticOut, percent may less than 0
-            if (percent < 0) {
-                frame = 0;
-            }
-            else if (percent < lastFramePercent) {
-                // Start from next key
-                // PENDING start from lastFrame ?
-                start = Math.min(lastFrame + 1, trackLen - 1);
-                for (frame = start; frame >= 0; frame--) {
-                    if (kfPercents[frame] <= percent) {
-                        break;
-                    }
-                }
-                // PENDING really need to do this ?
-                frame = Math.min(frame, trackLen - 2);
-            }
-            else {
-                for (frame = lastFrame; frame < trackLen; frame++) {
-                    if (kfPercents[frame] > percent) {
-                        break;
-                    }
-                }
-                frame = Math.min(frame - 1, trackLen - 2);
-            }
-            lastFrame = frame;
-            lastFramePercent = percent;
-
-            const range = (kfPercents[frame + 1] - kfPercents[frame]);
-            if (range === 0) {
-                return;
-            }
-            else {
-                w = (percent - kfPercents[frame]) / range;
-            }
-            if (useSpline) {
-                p1 = kfValues[frame];
-                p0 = kfValues[frame === 0 ? frame : frame - 1];
-                p2 = kfValues[frame > trackLen - 2 ? trackLen - 1 : frame + 1];
-                p3 = kfValues[frame > trackLen - 3 ? trackLen - 1 : frame + 2];
-                if (isValueArray) {
-                    arrDim === 1
-                        ? catmullRomInterpolate1DArray(
-                            p0 as NumberArray, p1 as NumberArray, p2 as NumberArray, p3 as NumberArray,
-                            w, w * w, w * w * w,
-                            getter(target, propName) as NumberArray
-                        )
-                        : catmullRomInterpolate2DArray(
-                            p0 as NumberArray[], p1 as NumberArray[], p2 as NumberArray[], p3 as NumberArray[],
-                            w, w * w, w * w * w,
-                            getter(target, propName) as NumberArray[]
-                        );
-                }
-                else {
-                    let value;
-                    if (isValueColor) {
-                        value = catmullRomInterpolate1DArray(
-                            p0 as NumberArray, p1 as NumberArray, p2 as NumberArray, p3 as NumberArray,
-                            w, w * w, w * w * w,
-                            rgba
-                        );
-                        value = rgba2String(rgba);
-                    }
-                    else if (isValueString) {
-                        // String is step(0.5)
-                        return interpolateString(p1 as string, p2 as string, w);
-                    }
-                    else {
-                        value = catmullRomInterpolate(
-                            p0 as number, p1 as number, p2 as number, p3 as number,
-                            w, w * w, w * w * w
-                        );
-                    }
-                    setter(
-                        target,
-                        propName,
-                        value
-                    );
-                }
-            }
-            else {
-                if (isValueArray) {
-                    arrDim === 1
-                        ? interpolate1DArray(
-                            kfValues[frame] as NumberArray,
-                            kfValues[frame + 1] as NumberArray,
-                            w,
-                            getter(target, propName) as NumberArray
-                        )
-                        : interpolate2DArray(
-                            kfValues[frame] as NumberArray[],
-                            kfValues[frame + 1] as NumberArray[],
-                            w,
-                            getter(target, propName) as NumberArray[]
-                        );
-                }
-                else {
-                    let value;
-                    if (isValueColor) {
-                        interpolate1DArray(
-                            kfValues[frame] as NumberArray,
-                            kfValues[frame + 1] as NumberArray,
-                            w, rgba
-                        );
-                        value = rgba2String(rgba);
-                    }
-                    else if (isValueString) {
-                        // String is step(0.5)
-                        return interpolateString(kfValues[frame] as string, kfValues[frame + 1] as string, w);
-                    }
-                    else {
-                        value = interpolateNumber(kfValues[frame] as number, kfValues[frame + 1] as number, w);
-                    }
-                    setter(target, propName, value);
-                }
-            }
-        };
-
-        const clip = new Clip<T>({
-            target: this._target,
-            life: trackMaxTime,
-            loop: this._loop,
-            delay: this._delay,
-            onframe: onframe,
-            ondestroy: oneTrackDone
-        });
-
-        if (easing && easing !== 'spline') {
-            clip.easing = easing;
-        }
-
-        return clip;
+    getClip() {
+        return this._clip;
     }
 }

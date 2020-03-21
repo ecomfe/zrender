@@ -9,8 +9,8 @@
 import * as util from '../core/util';
 import Eventful from '../core/Eventful';
 import requestAnimationFrame from './requestAnimationFrame';
-import Animator, {AnimationPropSetter, AnimationPropGetter} from './Animator';
-import Clip, {DeferredEventTypes} from './Clip';
+import Animator from './Animator';
+import Clip from './Clip';
 
 
 interface Stage {
@@ -77,9 +77,9 @@ export default class Animation extends Eventful {
      */
     addAnimator(animator: Animator<any>) {
         animator.animation = this;
-        const clips = animator.getClips();
-        for (let i = 0; i < clips.length; i++) {
-            this.addClip(clips[i]);
+        const clip = animator.getClip();
+        if (clip) {
+            this.addClip(clip);
         }
     }
     /**
@@ -96,9 +96,9 @@ export default class Animation extends Eventful {
      * Delete animation clip
      */
     removeAnimator(animator: Animator<any>) {
-        const clips = animator.getClips();
-        for (let i = 0; i < clips.length; i++) {
-            this.removeClip(clips[i]);
+        const clip = animator.getClip();
+        if (clip) {
+            this.removeClip(clip);
         }
         animator.animation = null;
     }
@@ -109,22 +109,16 @@ export default class Animation extends Eventful {
         const clips = this._clips;
         let len = clips.length;
 
-        const deferredEvents: DeferredEventTypes[] = [];
-        const deferredClips = [];
         for (let i = 0; i < len; i++) {
             const clip = clips[i];
-            const e = clip.step(time, delta);
-            // Throw out the events need to be called after
-            // stage.update, like destroy
-            if (e) {
-                deferredEvents.push(e);
-                deferredClips.push(clip);
-            }
+            clip.step(time, delta);
         }
 
         // Remove the finished clip
         for (let i = 0; i < len;) {
-            if (clips[i].needsRemove()) {
+            let clip = clips[i];
+            if (clip.finished()) {
+                clip.ondestroy && clip.ondestroy();
                 clips[i] = clips[len - 1];
                 clips.pop();
                 len--;
@@ -132,11 +126,6 @@ export default class Animation extends Eventful {
             else {
                 i++;
             }
-        }
-
-        len = deferredEvents.length;
-        for (let i = 0; i < len; i++) {
-            deferredClips[i].fire(deferredEvents[i]);
         }
 
         this._time = time;
@@ -228,16 +217,12 @@ export default class Animation extends Eventful {
     // TODO Gap
     animate<T>(target: T, options: {
         loop?: boolean  // Whether loop animation.
-        getter?: AnimationPropGetter<T>    // Get value from target.
-        setter?: AnimationPropSetter<T>    // Set value to target.
     }) {
         options = options || {};
 
         const animator = new Animator(
             target,
-            options.loop,
-            options.getter,
-            options.setter
+            options.loop
         );
 
         this.addAnimator(animator);

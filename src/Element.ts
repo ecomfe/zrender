@@ -1,5 +1,4 @@
 import Transformable from './core/Transformable';
-import * as zrUtil from './core/util';
 import { AnimationEasing } from './animation/easing';
 import Animator from './animation/Animator';
 import { ZRenderType } from './zrender';
@@ -11,6 +10,18 @@ import Eventful, {EventQuery, EventCallback} from './core/Eventful';
 import RichText from './graphic/RichText';
 import { calculateTextPosition, TextPositionCalculationResult } from './contain/text';
 import Storage from './Storage';
+import {
+    guid,
+    isObject,
+    keys,
+    extend,
+    indexOf,
+    logError,
+    isString,
+    mixin,
+    isFunction,
+    isArrayLike
+} from './core/util';
 
 interface TextLayout {
     /**
@@ -123,7 +134,7 @@ interface Element<Props extends ElementProps = ElementProps> extends Transformab
 
 class Element<Props extends ElementProps = ElementProps> {
 
-    id: number = zrUtil.guid()
+    id: number = guid()
     /**
      * Element type
      */
@@ -344,9 +355,9 @@ class Element<Props extends ElementProps = ElementProps> {
         if (typeof keyOrObj === 'string') {
             this.attrKV(keyOrObj as keyof ElementProps, value as AllPropTypes<ElementProps>);
         }
-        else if (zrUtil.isObject(keyOrObj)) {
+        else if (isObject(keyOrObj)) {
             let obj = keyOrObj as object;
-            let keysArr = zrUtil.keys(obj);
+            let keysArr = keys(obj);
             for (let i = 0; i < keysArr.length; i++) {
                 let key = keysArr[i];
                 this.attrKV(key as keyof ElementProps, keyOrObj[key]);
@@ -431,7 +442,7 @@ class Element<Props extends ElementProps = ElementProps> {
         if (!this.textLayout) {
             this.textLayout = {};
         }
-        zrUtil.extend(this.textLayout, textLayout);
+        extend(this.textLayout, textLayout);
         this.dirty();
     }
 
@@ -490,7 +501,7 @@ class Element<Props extends ElementProps = ElementProps> {
     /**
      * 动画
      *
-     * @param path The path to fetch value from object, like 'a.b.c'.
+     * @param path The key to fetch value from object. Mostly style or shape.
      * @param loop Whether to loop animation.
      * @example:
      *     el.animate('style', false)
@@ -498,50 +509,36 @@ class Element<Props extends ElementProps = ElementProps> {
      *         .done(function(){ // Animation done })
      *         .start()
      */
-    animate(path?: string, loop?: boolean) {
-        const el = this;
-        const zr = this.__zr;
-
-        let target;
-        let targetKey: string;
-        if (path) {
-            const pathSplitted = path.split('.');
-            let prop = <Dictionary<any>>el;
-            targetKey = pathSplitted[0];
-            // If animating shape
-            for (let i = 0, l = pathSplitted.length; i < l; i++) {
-                if (!prop) {
-                    continue;
-                }
-                prop = prop[pathSplitted[i]];
-            }
-            if (prop) {
-                target = prop;
-            }
-        }
-        else {
-            target = el;
-        }
+    animate(key?: keyof this, loop?: boolean) {
+        let target = key ? this[key] : this;
 
         if (!target) {
-            zrUtil.logError(
+            logError(
                 'Property "'
-                + path
+                + key
                 + '" is not existed in element '
-                + el.id
+                + this.id
             );
             return;
         }
 
+        const animator = new Animator(target, loop);
+        this.addAnimator(animator, key);
+        return animator;
+    }
+
+    addAnimator<T extends keyof this>(animator: Animator<this | this[T]>, key: T): void {
+        const zr = this.__zr;
+
+        const el = this;
         const animators = el.animators;
 
-        const animator = new Animator(target, loop);
-
+        // TODO Can improve performance?
         animator.during(function () {
-            el.updateDuringAnimation(targetKey);
+            el.updateDuringAnimation(key as string);
         }).done(function () {
             // FIXME Animator will not be removed if use `Animator#stop` to stop animation
-            animators.splice(zrUtil.indexOf(animators, animator), 1);
+            animators.splice(indexOf(animators, animator), 1);
         });
 
         animators.push(animator);
@@ -550,11 +547,9 @@ class Element<Props extends ElementProps = ElementProps> {
         if (zr) {
             zr.animation.addAnimator(animator);
         }
-
-        return animator;
     }
 
-    updateDuringAnimation(targetKey: string) {
+    updateDuringAnimation(key: string) {
         this.dirty();
     }
 
@@ -605,6 +600,7 @@ class Element<Props extends ElementProps = ElementProps> {
     animateTo(target: Props, time: number, delay: number, callback: AnimationCallback): void
     animateTo(target: Props, time: number, easing: AnimationEasing, callback: AnimationCallback): void
     animateTo(target: Props, time: number, delay: number, easing: AnimationEasing, callback: AnimationCallback): void
+    // eslint-disable-next-line
     animateTo(target: Props, time: number, delay: number, easing: AnimationEasing, callback: AnimationCallback, forceAnimate: boolean): void
 
     // TODO Return animation key
@@ -612,7 +608,7 @@ class Element<Props extends ElementProps = ElementProps> {
         target: Props,
         time?: number | AnimationCallback,  // Time in ms
         delay?: AnimationEasing | number | AnimationCallback,
-        easing?: AnimationEasing | number | AnimationCallback ,
+        easing?: AnimationEasing | number | AnimationCallback,
         callback?: AnimationCallback,
         forceAnimate?: boolean // Prevent stop animation and callback
                                 // immediently when target values are the same as current values.
@@ -634,6 +630,7 @@ class Element<Props extends ElementProps = ElementProps> {
     animateFrom(target: Props, time: number, delay: number, callback: AnimationCallback): void
     animateFrom(target: Props, time: number, easing: AnimationEasing, callback: AnimationCallback): void
     animateFrom(target: Props, time: number, delay: number, easing: AnimationEasing, callback: AnimationCallback): void
+    // eslint-disable-next-line
     animateFrom(target: Props, time: number, delay: number, easing: AnimationEasing, callback: AnimationCallback, forceAnimate: boolean): void
 
     animateFrom(
@@ -667,8 +664,8 @@ class Element<Props extends ElementProps = ElementProps> {
     })()
 }
 
-zrUtil.mixin(Element, Eventful);
-zrUtil.mixin(Element, Transformable);
+mixin(Element, Eventful);
+mixin(Element, Transformable);
 
 function animateTo<T>(
     animatable: Element<T>,
@@ -681,24 +678,24 @@ function animateTo<T>(
     reverse?: boolean
 ) {
     // animateTo(target, time, easing, callback);
-    if (zrUtil.isString(delay)) {
+    if (isString(delay)) {
         callback = easing as AnimationCallback;
         easing = delay as AnimationEasing;
         delay = 0;
     }
     // animateTo(target, time, delay, callback);
-    else if (zrUtil.isFunction(easing)) {
+    else if (isFunction(easing)) {
         callback = easing as AnimationCallback;
         easing = 'linear';
         delay = 0;
     }
     // animateTo(target, time, callback);
-    else if (zrUtil.isFunction(delay)) {
+    else if (isFunction(delay)) {
         callback = delay as AnimationCallback;
         delay = 0;
     }
     // animateTo(target, callback)
-    else if (zrUtil.isFunction(time)) {
+    else if (isFunction(time)) {
         callback = time as AnimationCallback;
         time = 500;
     }
@@ -712,7 +709,7 @@ function animateTo<T>(
 
     // Animators may be removed immediately after start
     // if there is nothing to animate
-    const animators = animatable.animators.slice();
+    const animators = animatable.animators;
     let count = animators.length;
     function done() {
         count--;
@@ -755,69 +752,65 @@ function animateTo<T>(
  */
 function animateToShallow<T>(
     animatable: Element<T>,
-    path: string,
+    topKey: string,
     source: Dictionary<any>,
     target: Dictionary<any>,
     time: number,
     delay: number,
     reverse: boolean    // If `true`, animate from the `target` to current state.
 ) {
-    const objShallow: Dictionary<any> = {};
-    let propertyCount = 0;
-    for (let name in target) {
-        if (!target.hasOwnProperty(name)) {
-            continue;
-        }
+    const animatableKeys: string[] = [];
+    let targetKeys = keys(target);
+    for (let k = 0; k < targetKeys.length; k++) {
+        let innerKey = targetKeys[k] as string;
 
-        if (source[name] != null) {
-            if (zrUtil.isObject(target[name]) && !zrUtil.isArrayLike(target[name])) {
+        if (source[innerKey] != null) {
+            if (isObject(target[innerKey]) && !isArrayLike(target[innerKey])) {
+                // if (topKey) {
+                //     throw new Error('Only support 1 depth nest object animation.');
+                // }
                 animateToShallow(
                     animatable,
-                    path ? path + '.' + name : name,
-                    source[name],
-                    target[name],
+                    innerKey,
+                    source[innerKey],
+                    target[innerKey],
                     time,
                     delay,
                     reverse
                 );
             }
             else {
-                if (reverse) {
-                    objShallow[name] = source[name];
-                    setAttrByPath(animatable, path, name, target[name]);
-                }
-                else {
-                    objShallow[name] = target[name];
-                }
-                propertyCount++;
+                animatableKeys.push(innerKey);
             }
         }
-        else if (target[name] != null && !reverse) {
-            setAttrByPath(animatable, path, name, target[name]);
+        else if (target[innerKey] != null && !reverse) {
+            // Assign directly.
+            source[innerKey] = target[innerKey];
         }
     }
 
-    if (propertyCount > 0) {
-        animatable.animate(path, false)
-            .when(time == null ? 500 : time, objShallow)
-            .delay(delay || 0);
+    let keyLen = animatableKeys.length;
+    let reversedTarget: Dictionary<any>;
+    if (reverse) {
+        reversedTarget = {};
+        for (let i = 0; i < keyLen; i++) {
+            let innerKey = animatableKeys[i];
+            reversedTarget[innerKey] = source[innerKey];
+            // Animate from target
+            source[innerKey] = target[innerKey];
+        }
+    }
+
+    if (keyLen > 0) {
+        const animator = new Animator(source, false);
+        animator.whenWithKeys(
+            time == null ? 500 : time,
+            reverse ? reversedTarget : target,
+            animatableKeys
+        ).delay(delay || 0);
+        animatable.addAnimator(animator, topKey as any);
     }
 }
 
-function setAttrByPath<T>(el: Element<T>, path: string, name: string, value: any) {
-    let pathArr = path.split('.');
-    // Attr directly if not has property
-    // FIXME, if some property not needed for element ?
-    if (!path) {
-        el.attr(name as keyof T, value);
-    }
-    else {
-        // Only support set shape or style
-        const props: Dictionary<any> = {};
-        props[path] = {};
-        props[path][name] = value;
-        el.attr(props as T);
-    }
-}
 
 export default Element;

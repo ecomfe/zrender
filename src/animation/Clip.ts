@@ -16,7 +16,7 @@
 import easingFuncs, {AnimationEasing} from './easing';
 
 type OnframeCallback<T> = (target: T, percent: number) => void;
-type ondestroyCallback<T> = (target: T) => void
+type ondestroyCallback = () => void
 type onrestartCallback<T> = (target: T) => void
 
 export type DeferredEventTypes = 'destroy' | 'restart'
@@ -31,7 +31,7 @@ export interface ClipProps<T> {
     easing?: AnimationEasing
 
     onframe?: OnframeCallback<T>
-    ondestroy?: ondestroyCallback<T>
+    ondestroy?: ondestroyCallback
     onrestart?: onrestartCallback<T>
 }
 
@@ -50,13 +50,13 @@ export default class Clip<T> {
     private _pausedTime = 0
     private _paused = false
 
-    private _needsRemove = false
+    private _finished = false
 
     loop: boolean
     gap: number
     easing: AnimationEasing
     onframe: OnframeCallback<T>
-    ondestroy: ondestroyCallback<T>
+    ondestroy: ondestroyCallback
     onrestart: onrestartCallback<T>
 
     constructor(opts: ClipProps<T>) {
@@ -80,7 +80,11 @@ export default class Clip<T> {
         this.onrestart = opts.onrestart;
     }
 
-    step(globalTime: number, deltaTime: number): DeferredEventTypes {
+    step(globalTime: number, deltaTime: number): void {
+        if (this._finished) {
+            return;
+        }
+
         // Set startTime on first step, or _startTime may has milleseconds different between clips
         // PENDING
         if (!this._initialized) {
@@ -114,34 +118,23 @@ export default class Clip<T> {
         // 结束
         if (percent === 1) {
             if (this.loop) {
-                this.restart(globalTime);
-                // 重新开始周期
-                // 抛出而不是直接调用事件直到 stage.update 后再统一调用这些事件
-                return 'restart';
+                this._restart(globalTime);
+                this.onrestart && this.onrestart(this._target);
             }
-
-            // 动画完成将这个控制器标识为待删除
-            // 在Animation.update中进行批量删除
-            this._needsRemove = true;
-            return 'destroy';
+            else {
+                this._finished = true;
+            }
         }
-
-        return null;
     }
 
-    restart(globalTime: number) {
+    private _restart(globalTime: number) {
         const remainder = (globalTime - this._startTime - this._pausedTime) % this._life;
         this._startTime = globalTime - remainder + this.gap;
         this._pausedTime = 0;
-
-        this._needsRemove = false;
     }
 
-    fire(eventType: DeferredEventTypes) {
-        let onEventType: DeferredEventKeys = ('on' + eventType) as DeferredEventKeys;
-        if (this[onEventType]) {
-            this[onEventType](this._target);
-        }
+    finished() {
+        return this._finished;
     }
 
     pause() {
@@ -150,9 +143,5 @@ export default class Clip<T> {
 
     resume() {
         this._paused = false;
-    }
-
-    needsRemove(): boolean {
-        return this._needsRemove;
     }
 }
