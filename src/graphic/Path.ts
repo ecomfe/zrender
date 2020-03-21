@@ -1,4 +1,8 @@
-import Displayable, { DisplayableProps, CommonStyleProps, DEFAULT_COMMON_STYLE } from './Displayable';
+import Displayable, { DisplayableProps,
+    CommonStyleProps,
+    DEFAULT_COMMON_STYLE,
+    DisplayableStatePropNames
+} from './Displayable';
 import Element from '../Element';
 import PathProxy from '../core/PathProxy';
 import * as pathContain from '../contain/path';
@@ -8,6 +12,7 @@ import BoundingRect from '../core/BoundingRect';
 import { LinearGradientObject } from './LinearGradient';
 import { RadialGradientObject } from './RadialGradient';
 import { defaults, keys, extend, clone } from '../core/util';
+import Animator from '../animation/Animator';
 
 export interface PathStyleProps extends CommonStyleProps {
     fill?: string | PatternObject | LinearGradientObject | RadialGradientObject
@@ -69,6 +74,14 @@ export interface PathProps extends DisplayableProps {
 type PathKey = keyof PathProps
 type PathPropertyType = PropType<PathProps, PathKey>
 
+interface Path<Props extends PathProps = PathProps> {
+    animate(key?: '', loop?: boolean): Animator<this>
+    animate(key: 'style', loop?: boolean): Animator<this['style']>
+    animate(key: 'shape', loop?: boolean): Animator<this['shape']>
+}
+
+export type PathStatePropNames = DisplayableStatePropNames | 'shape';
+
 class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
 
     path: PathProxy
@@ -88,6 +101,9 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
     __clipTarget: Element
 
     private _rectWithStroke: BoundingRect
+
+    // override
+    states: Dictionary<Pick<PathProps, PathStatePropNames>>
 
     // Must have an initial value on shape.
     // It will be assigned by default value.
@@ -289,7 +305,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
     attrKV(key: PathKey, value: PathPropertyType) {
         // FIXME
         if (key === 'shape') {
-            this.setShape(value as string | Dictionary<any>);
+            this.setShape(value as Props['shape']);
             this.__dirtyPath = true;
             this._rect = null;
         }
@@ -298,7 +314,9 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         }
     }
 
-    setShape(keyOrObj: string | Dictionary<any>, value?: any) {
+    setShape(obj: Props['shape']): void
+    setShape<T extends keyof Props['shape']>(obj: T, value: Props['shape'][T]): void
+    setShape(keyOrObj: keyof Props['shape'] | Props['shape'], value?: unknown) {
         let shape = this.shape;
         if (!shape) {
             shape = this.shape = {};
@@ -308,7 +326,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
             shape[keyOrObj] = value;
         }
         else {
-            extend(shape, keyOrObj);
+            extend(shape, keyOrObj as Props['shape']);
         }
         this.dirtyShape();
 
@@ -318,8 +336,28 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
     /**
      * Replace the style with given new style object.
      */
-    useStyle(obj: PathStyleProps) {
-        super.useStyle(obj, DEFAULT_PATH_STYLE);
+    useStyle(obj: PathStyleProps, inherited?: PathStyleProps) {
+        super.useStyle(obj, inherited || DEFAULT_PATH_STYLE);
+    }
+
+
+    protected saveStateToNormal() {
+        super.saveStateToNormal();
+
+        this.states.normal.shape = this.shape;
+    }
+
+    useState(stateName: string) {
+        let state = super.useState(stateName) as Path['states'][string];
+        if (state && state.shape) {
+            // Inherits shape from normal state first.
+            // TODO performance?
+            this.shape = extend({}, this.states.normal.shape);
+            extend(this.shape, state.shape);
+
+            this.dirtyShape();''
+        }
+        return state;
     }
 
     /**

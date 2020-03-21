@@ -114,14 +114,10 @@ export interface ElementProps extends Partial<ElementEventHandlerProps> {
 
     // For echarts animation.
     anid?: string
-
-    extra?: Dictionary<any>
 }
 
-interface ElementState {
-    position?: VectorArray
-
-}
+// Properties can be used in state.
+export type ElementStatePropNames = 'position' | 'rotation' | 'scale' | 'origin' | 'textLayout';
 
 type AnimationCallback = () => {}
 
@@ -180,11 +176,6 @@ class Element<Props extends ElementProps = ElementProps> {
     animators: Animator<any>[] = [];
 
     /**
-     * Extra object to store any info not related to the Element
-     */
-    extra: Dictionary<any>
-
-    /**
      * ZRender instance will be assigned when element is associated with zrender
      */
     __zr: ZRenderType
@@ -219,7 +210,12 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     anid: string
 
-    // states:
+    currentState?: string
+    /**
+     * Store of element state.
+     * 'normal' key is preserved for default properties.
+     */
+    states?: Dictionary<Pick<Props, ElementStatePropNames>>
 
     constructor(props?: Props) {
         // Transformable needs position, rotation, scale
@@ -353,12 +349,8 @@ class Element<Props extends ElementProps = ElementProps> {
     }
 
     attr(keyOrObj: Props): this
-    attr(keyOrObj: keyof Props, value: AllPropTypes<Props>): this
-    /**
-     * @param {string|Object} key
-     * @param {*} value
-     */
-    attr(keyOrObj: keyof Props | Props, value?: AllPropTypes<Props>): this {
+    attr<T extends keyof Props>(keyOrObj: T, value: Props[T]): this
+    attr(keyOrObj: keyof Props | Props, value?: unknown): this {
         if (typeof keyOrObj === 'string') {
             this.attrKV(keyOrObj as keyof ElementProps, value as AllPropTypes<ElementProps>);
         }
@@ -374,13 +366,89 @@ class Element<Props extends ElementProps = ElementProps> {
         return this;
     }
 
+    // Save current state to normal
+    protected saveStateToNormal() {
+        if (!this.states) {
+            this.states = {};
+        }
+        let state = this.states.normal;
+        if (!state) {
+            state = this.states.normal = {};
+        }
+
+        // TODO clone?
+        state.textLayout = this.textLayout;
+        state.position = this.position;
+        state.scale = this.scale;
+        state.rotation = this.rotation;
+        state.origin = this.origin;
+    }
+
+    /**
+     * Use state. State is a collection of properties.
+     * Will return current state object if state exists and stateName has been changed.
+     */
+    useState(stateName: string) {
+        if (stateName !== 'normal' && this.currentState === 'normal') {
+            this.saveStateToNormal();
+        }
+        if (stateName === this.currentState) {
+            return;
+        }
+
+        let state = this.states && this.states[stateName];
+        if (!state) {
+            logError(`State ${stateName} not exists.`);
+            return;
+        }
+
+        // TODO: Save current state to normal?
+        // TODO: Animation
+        if (state.textLayout) {
+            // Clone a copy
+            if (this.textLayout) {
+                this.textLayout = extend({}, this.textLayout);
+            }
+            this.setTextLayout(state.textLayout);
+        }
+        if (state.position) {
+            // Not copy. Replace
+            this.position = state.position;
+        }
+        if (state.scale) {
+            this.scale = state.scale;
+        }
+        if (state.rotation !== null) {
+            this.rotation = state.rotation;
+        }
+        if (state.scale !== null) {
+            this.scale = state.scale;
+        }
+        // Also set text content.
+        if (this._textContent) {
+            this._textContent.useState(stateName);
+        }
+
+        this.currentState = stateName;
+
+        this.dirty();
+        // Return used state.
+        return state;
+    }
+    /**
+     * Get clip path
+     */
     getClipPath() {
         return this._clipPath;
     }
 
+    /**
+     * Set clip path
+     */
     setClipPath(clipPath: Path) {
         const zr = this.__zr;
         if (zr) {
+            // Needs to add self to zrender. For rerender triggering, or animation.
             clipPath.addSelfToZr(zr);
         }
 
@@ -397,6 +465,9 @@ class Element<Props extends ElementProps = ElementProps> {
         this.dirty();
     }
 
+    /**
+     * Remove clip path
+     */
     removeClipPath() {
         const clipPath = this._clipPath;
         if (clipPath) {
@@ -412,10 +483,16 @@ class Element<Props extends ElementProps = ElementProps> {
         }
     }
 
+    /**
+     * Get attached text content.
+     */
     getTextContent(): RichText {
         return this._textContent;
     }
 
+    /**
+     * Attach text on element
+     */
     setTextContent(textEl: RichText) {
         // Remove previous clip path
         if (this._textContent && this._textContent !== textEl) {
@@ -424,6 +501,7 @@ class Element<Props extends ElementProps = ElementProps> {
 
         const zr = this.__zr;
         if (zr) {
+            // Needs to add self to zrender. For rerender triggering, or animation.
             textEl.addSelfToZr(zr);
         }
 
@@ -433,6 +511,9 @@ class Element<Props extends ElementProps = ElementProps> {
         this.dirty();
     }
 
+    /**
+     * Remove attached text element.
+     */
     removeTextContent() {
         const textEl = this._textContent;
         if (textEl) {
@@ -445,6 +526,9 @@ class Element<Props extends ElementProps = ElementProps> {
         }
     }
 
+    /**
+     * Set layout of attached text
+     */
     setTextLayout(textLayout: TextLayout) {
         if (!this.textLayout) {
             this.textLayout = {};
@@ -516,8 +600,8 @@ class Element<Props extends ElementProps = ElementProps> {
      *         .done(function(){ // Animation done })
      *         .start()
      */
-    animate(key?: keyof this, loop?: boolean) {
-        let target = key ? this[key] : this;
+    animate(key?: string, loop?: boolean) {
+        let target = key ? (this as any)[key] : this;
 
         if (!target) {
             logError(
@@ -534,7 +618,7 @@ class Element<Props extends ElementProps = ElementProps> {
         return animator;
     }
 
-    addAnimator<T extends keyof this>(animator: Animator<this | this[T]>, key: T): void {
+    addAnimator(animator: Animator<any>, key: string): void {
         const zr = this.__zr;
 
         const el = this;
@@ -662,6 +746,7 @@ class Element<Props extends ElementProps = ElementProps> {
         const elProto = Element.prototype;
         elProto.type = 'element';
         elProto.name = '';
+        elProto.currentState = 'normal';
         elProto.ignore = false;
         elProto.silent = false;
         elProto.isGroup = false;
@@ -816,7 +901,7 @@ function animateToShallow<T>(
             reverse ? reversedTarget : target,
             animatableKeys
         ).delay(delay || 0);
-        animatable.addAnimator(animator, topKey as any);
+        animatable.addAnimator(animator, topKey);
     }
 }
 

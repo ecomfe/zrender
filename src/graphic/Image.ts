@@ -38,8 +38,8 @@ class ZRImage extends Displayable<ImageProps> {
 
     onload: (image: ImageLike) => void
 
-    useStyle(obj: ImageStyleProps) {
-        super.useStyle(obj, DEFAULT_IMAGE_STYLE);
+    useStyle(obj: ImageStyleProps, inherited?: ImageStyleProps) {
+        this.innerUseStyle(obj, inherited || DEFAULT_IMAGE_STYLE);
     }
 
     getBoundingRect(): BoundingRect {

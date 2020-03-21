@@ -25,6 +25,7 @@ import { EventCallback } from './core/Eventful';
 import { PathStyleProps } from './graphic/Path';
 import ZRText, { TextStyleProps } from './graphic/Text';
 import ZRImage, { ImageStyleProps } from './graphic/Image';
+import Displayable from './graphic/Displayable';
 
 
 const useVML = !env.canvasSupported;
@@ -335,8 +336,8 @@ class ZRender {
      * @return {target, topTarget}
      */
     findHover(x: number, y: number): {
-        target: Element
-        topTarget: Element
+        target: Displayable
+        topTarget: Displayable
     } {
         return this.handler.findHover(x, y);
     }

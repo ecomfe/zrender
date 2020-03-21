@@ -11,7 +11,7 @@
 
     <h2>Move mouse. It is expected that animation start immediately without lag.</h2>
     <div>
-        Circles: <input id="count" value="1800" /> &nbsp;&nbsp;
+        Circles: <input id="count" value="5000" /> &nbsp;&nbsp;
         Throttle Rate: <input id="throttle-rate" value="50" />
         <button id="ok">OK</button>
     </div>
@@ -75,7 +75,8 @@
                         r: 3
                     },
                     style: {
-                        fill: gradient
+                        fill: 'red',
+                        opacity: 0.2
                     },
                     onclick: (function (i) {
                         return function () {

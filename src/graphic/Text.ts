@@ -49,8 +49,8 @@ class ZRText extends Displayable<TextProps> {
         return fill != null && fill !== 'none';
     }
 
-    useStyle(obj: TextStyleProps) {
-        super.useStyle(obj, DEFAULT_TEXT_STYLE);
+    useStyle(obj: TextStyleProps, inherited?: TextStyleProps) {
+        super.useStyle(obj, inherited || DEFAULT_TEXT_STYLE);
     }
 
     getBoundingRect(): BoundingRect {

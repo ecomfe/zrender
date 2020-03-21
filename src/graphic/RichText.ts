@@ -5,8 +5,8 @@
 import { PatternObject } from './Pattern';
 import { LinearGradientObject } from './LinearGradient';
 import { RadialGradientObject } from './RadialGradient';
-import { TextAlign, TextVerticalAlign, ImageLike, Dictionary, AllPropTypes } from '../core/types';
-import Element, { ElementProps } from '../Element';
+import { TextAlign, TextVerticalAlign, ImageLike, Dictionary } from '../core/types';
+import { ElementProps } from '../Element';
 import { parseRichText, parsePlainText } from './helper/parseText';
 import ZRText from './Text';
 import { retrieve2, isString, each, normalizeCssArray, trim } from '../core/util';
@@ -16,6 +16,7 @@ import ZRImage from './Image';
 import Rect from './shape/Rect';
 import BoundingRect from '../core/BoundingRect';
 import { MatrixArray } from '../core/matrix';
+import Displayable from './Displayable';
 
 type RichTextContentBlock = ReturnType<typeof parseRichText>
 type RichTextLine = RichTextContentBlock['lines'][0]
@@ -158,7 +159,7 @@ export interface RichTextStyleProps extends RichTextStylePropsPart {
     truncateMinChar: number
 }
 
-interface RichTextOption extends ElementProps {
+interface RichTextProps extends ElementProps {
     style?: RichTextStyleProps
 
     zlevel?: number
@@ -169,31 +170,17 @@ interface RichTextOption extends ElementProps {
     cursor?: string
 }
 
-class RichText extends Element<RichTextOption> {
+class RichText extends Displayable<RichTextProps> {
 
     type = 'richtext'
-
-    zlevel: number
-    z: number
-    z2: number
-
-    culling: boolean
-    cursor: string
-
-    // TODO RichText is Group?
-    readonly isGroup = true
 
     style: RichTextStyleProps
 
     private _children: (ZRImage | Rect | ZRText)[] = []
 
-    private _styleChanged = true
-
-    private _rect: BoundingRect
-
     private _childCursor: 0
 
-    constructor(opts?: RichTextOption) {
+    constructor(opts?: RichTextProps) {
         super();
         this.attr(opts);
     }
@@ -202,16 +189,9 @@ class RichText extends Element<RichTextOption> {
         return this._children;
     }
 
-    traverse<Context>(
-        cb: (this: Context, el: RichText) => void,
-        context: Context
-    ) {
-        cb.call(context, this);
-    }
-
     update() {
         // Update children
-        if (this._styleChanged) {
+        if (this.__dirtyStyle) {
             // Reset child visit cursor
             this._childCursor = 0;
 
@@ -225,61 +205,15 @@ class RichText extends Element<RichTextOption> {
             for (let i = 0; i < this._children.length; i++) {
                 const child = this._children[i];
                 // Set common properties.
-                if (this.z != null) {
-                    child.zlevel = this.zlevel;
-                }
-                if (this.z != null) {
-                    child.z = this.z;
-                }
-                if (this.z2 != null) {
-                    child.z2 = this.z2;
-                }
-                if (this.culling != null) {
-                    child.culling = this.culling;
-                }
-                if (this.cursor != null) {
-                    child.cursor = this.cursor;
-                }
+                child.zlevel = this.zlevel;
+                child.z = this.z;
+                child.z2 = this.z2;
+                child.culling = this.culling;
+                child.cursor = this.cursor;
+                child.invisible = this.invisible;
             }
         }
         super.update();
-    }
-
-    attrKV(key: keyof RichTextOption, value: AllPropTypes<RichTextOption>) {
-        if (key !== 'style') {
-            super.attrKV(key as keyof ElementProps, value);
-        }
-        else {
-            if (!this.style) {
-                this.style = value as RichTextStyleProps;
-            }
-            else {
-                this.setStyle(value as RichTextStyleProps);
-            }
-        }
-    }
-
-    setStyle(obj: RichTextStyleProps): void
-    setStyle(obj: keyof RichTextStyleProps, value: any): void
-    setStyle(obj: keyof RichTextStyleProps | RichTextStyleProps, value?: AllPropTypes<RichTextStyleProps>) {
-        if (typeof obj === 'string') {
-            (this.style as Dictionary<any>)[obj] = value;
-        }
-        else {
-            for (let key in obj) {
-                if (obj.hasOwnProperty(key)) {
-                    (this.style as Dictionary<any>)[key] = (obj as Dictionary<any>)[key];
-                }
-            }
-        }
-        this.dirty();
-        return this;
-    }
-
-    dirtyStyle() {
-        this._rect = null;
-        this._styleChanged = true;
-        this.dirty();
     }
 
     getBoundingRect(): BoundingRect {
@@ -308,14 +242,6 @@ class RichText extends Element<RichTextOption> {
             this._rect = rect || tmpRect;
         }
         return this._rect;
-    }
-
-    /**
-     * Alias for animate('style')
-     * @param loop
-     */
-    animateStyle(loop: boolean) {
-        return this.animate('style', loop);
     }
 
 

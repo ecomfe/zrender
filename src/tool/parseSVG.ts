@@ -286,14 +286,14 @@ class SVGParser {
     static internalField = (function () {
 
         nodeParsers = {
-            'g': function (this: SVGParser, xmlNode: SVGElement, parentGroup: Group) {
+            'g': function (xmlNode: SVGElement, parentGroup: Group) {
                 const g = new Group();
                 inheritStyle(parentGroup, g);
                 parseAttributes(xmlNode, g, this._defs);
 
                 return g;
             },
-            'rect': function (this: SVGParser, xmlNode: SVGElement, parentGroup: Group) {
+            'rect': function (xmlNode: SVGElement, parentGroup: Group) {
                 const rect = new Rect();
                 inheritStyle(parentGroup, rect);
                 parseAttributes(xmlNode, rect, this._defs);
@@ -307,7 +307,7 @@ class SVGParser {
 
                 return rect;
             },
-            'circle': function (this: SVGParser, xmlNode: SVGElement, parentGroup: Group) {
+            'circle': function (xmlNode: SVGElement, parentGroup: Group) {
                 const circle = new Circle();
                 inheritStyle(parentGroup, circle);
                 parseAttributes(xmlNode, circle, this._defs);
@@ -320,7 +320,7 @@ class SVGParser {
 
                 return circle;
             },
-            'line': function (this: SVGParser, xmlNode: SVGElement, parentGroup: Group) {
+            'line': function (xmlNode: SVGElement, parentGroup: Group) {
                 const line = new Line();
                 inheritStyle(parentGroup, line);
                 parseAttributes(xmlNode, line, this._defs);
@@ -334,7 +334,7 @@ class SVGParser {
 
                 return line;
             },
-            'ellipse': function (this: SVGParser, xmlNode: SVGElement, parentGroup: Group) {
+            'ellipse': function (xmlNode: SVGElement, parentGroup: Group) {
                 const ellipse = new Ellipse();
                 inheritStyle(parentGroup, ellipse);
                 parseAttributes(xmlNode, ellipse, this._defs);
@@ -347,7 +347,7 @@ class SVGParser {
                 });
                 return ellipse;
             },
-            'polygon': function (this: SVGParser, xmlNode: SVGElement, parentGroup: Group) {
+            'polygon': function (xmlNode: SVGElement, parentGroup: Group) {
                 const pointsStr = xmlNode.getAttribute('points');
                 let pointsArr;
                 if (pointsStr) {
@@ -364,7 +364,7 @@ class SVGParser {
 
                 return polygon;
             },
-            'polyline': function (this: SVGParser, xmlNode: SVGElement, parentGroup: Group) {
+            'polyline': function (xmlNode: SVGElement, parentGroup: Group) {
                 const path = new Path();
                 inheritStyle(parentGroup, path);
                 parseAttributes(xmlNode, path, this._defs);
@@ -382,7 +382,7 @@ class SVGParser {
 
                 return polyline;
             },
-            'image': function (this: SVGParser, xmlNode: SVGElement, parentGroup: Group) {
+            'image': function (xmlNode: SVGElement, parentGroup: Group) {
                 const img = new ZRImage();
                 inheritStyle(parentGroup, img);
                 parseAttributes(xmlNode, img, this._defs);
@@ -397,7 +397,7 @@ class SVGParser {
 
                 return img;
             },
-            'text': function (this: SVGParser, xmlNode: SVGElement, parentGroup: Group) {
+            'text': function (xmlNode: SVGElement, parentGroup: Group) {
                 const x = xmlNode.getAttribute('x') || '0';
                 const y = xmlNode.getAttribute('y') || '0';
                 const dx = xmlNode.getAttribute('dx') || '0';
@@ -412,7 +412,7 @@ class SVGParser {
 
                 return g;
             },
-            'tspan': function (this: SVGParser, xmlNode: SVGElement, parentGroup: Group) {
+            'tspan': function (xmlNode: SVGElement, parentGroup: Group) {
                 const x = xmlNode.getAttribute('x');
                 const y = xmlNode.getAttribute('y');
                 if (x != null) {
@@ -436,7 +436,7 @@ class SVGParser {
 
                 return g;
             },
-            'path': function (this: SVGParser, xmlNode: SVGElement, parentGroup: Group) {
+            'path': function (xmlNode: SVGElement, parentGroup: Group) {
                 // TODO svg fill rule
                 // https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/fill-rule
                 // path.style.globalCompositeOperation = 'xor';
@@ -457,7 +457,7 @@ class SVGParser {
     })();
 }
 
-let nodeParsers: Dictionary<(xmlNode: SVGElement, parentGroup: Group) => Element>;
+let nodeParsers: Dictionary<(this: SVGParser, xmlNode: SVGElement, parentGroup: Group) => Element>;
 
 const defineParsers: Dictionary<(xmlNode: SVGElement) => any> = {
 

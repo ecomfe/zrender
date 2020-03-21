@@ -3,11 +3,12 @@
  * @module zrender/graphic/Displayable
  */
 
-import Element, {ElementProps} from '../Element';
+import Element, {ElementProps, ElementStatePropNames} from '../Element';
 import BoundingRect from '../core/BoundingRect';
-import { PropType, AllPropTypes, Dictionary } from '../core/types';
+import { PropType, Dictionary } from '../core/types';
 import Path from './Path';
 import { changePrototype, keys, extend } from '../core/util';
+import Animator from '../animation/Animator';
 
 // type CalculateTextPositionResult = ReturnType<typeof calculateTextPosition>
 
@@ -58,6 +59,13 @@ export interface DisplayableProps extends ElementProps {
 type DisplayableKey = keyof DisplayableProps
 type DisplayablePropertyType = PropType<DisplayableProps, DisplayableKey>
 
+
+export type DisplayableStatePropNames = ElementStatePropNames | 'style' | 'z' | 'z2' | 'invisible';
+
+interface Displayable<Props extends DisplayableProps = DisplayableProps> {
+    animate(key?: '', loop?: boolean): Animator<this>
+    animate(key: 'style', loop?: boolean): Animator<this['style']>
+}
 class Displayable<Props extends DisplayableProps = DisplayableProps> extends Element<Props> {
 
     /**
@@ -100,6 +108,9 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
 
     style: Dictionary<any>
 
+    // override
+    states: Dictionary<Pick<DisplayableProps, DisplayableStatePropNames>>
+
     __dirtyStyle: boolean
 
     protected _rect: BoundingRect
@@ -118,11 +129,6 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     // FOR SVG PAINTER
     __svgEl: SVGElement
 
-    // FOR ECHARTS
-    /**
-     * hoverStyle will be set in echarts.
-     */
-    hoverStyle: Dictionary<any>
     /**
      * If use individual hover layer. It is set in echarts
      */
@@ -167,7 +173,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     }
 
     traverse<Context>(
-        cb: (this: Context, el: Displayable<Props>) => void,
+        cb: (this: Context, el: this) => void,
         context?: Context
     ) {
         cb.call(context, this);
@@ -215,8 +221,8 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     }
 
     setStyle(obj: Props['style']): void
-    setStyle(obj: keyof Props['style'], value: Props['style']): void
-    setStyle(keyOrObj: keyof Props['style'] | Props['style'], value?: AllPropTypes<Props['style']>) {
+    setStyle<T extends keyof Props['style']>(obj: T, value: Props['style'][T]): void
+    setStyle(keyOrObj: keyof Props['style'] | Props['style'], value?: unknown) {
         if (typeof keyOrObj === 'string') {
             this.style[keyOrObj] = value;
         }
@@ -234,18 +240,38 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         this._rect = null;
     }
 
+    useStyle(obj: Props['style'], inherited?: Props['style']) {
+        this.innerUseStyle(obj, inherited || DEFAULT_COMMON_STYLE);
+    }
+
     /**
      * Use given style object
      */
-    useStyle(obj: Props['style'], inherited?: Props['style']) {
-        if (inherited) {
-            // inherited value can be accessed from prototype
-            this.style = changePrototype(obj, inherited);
-        }
-        else {
-            this.style = obj;
-        }
+    protected innerUseStyle(obj: Props['style'], inherited: Props['style']) {
+        // inherited value can be accessed from prototype
+        this.style = changePrototype(obj, inherited);
         this.dirtyStyle();
+    }
+
+    protected saveStateToNormal() {
+        super.saveStateToNormal();
+
+        this.states.normal.style = this.style;
+    }
+
+    useState(stateName: string) {
+        let state = super.useState(stateName) as Displayable['states'][string];
+        if (state && state.style) {
+            // TODO if normal style is changed?
+            this.useStyle(
+                state.style,
+                // Only inherits from normal style.
+                stateName === 'normal' ? null : this.states.normal.style
+            );
+
+            this.dirtyStyle();
+        }
+        return state;
     }
 
     /**

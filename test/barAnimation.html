@@ -56,7 +56,7 @@
                 barShapes.push(barShape);
             }
 
-            console.profile('animate');
+            console.time('animate');
             barShapes.forEach(barShape => {
                 // barShape.animate('shape').when(500, {
                 //     height: barShape.height,
@@ -72,7 +72,7 @@
                     }
                 }, 500);
             })
-            console.profileEnd('animate');
+            console.timeEnd('animate');
         }
         console.timeEnd('init');
     </script>

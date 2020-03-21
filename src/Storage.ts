@@ -110,7 +110,7 @@ export default class Storage {
             while (currentClipPath) {
                 // clipPath 的变换是基于使用这个 clipPath 的元素
                 // TODO: parent should be group type.
-                currentClipPath.parent = parentClipPath as Group;
+                currentClipPath.parent = parentClipPath;
                 currentClipPath.updateTransform();
 
                 clipPaths.push(currentClipPath);
@@ -120,7 +120,8 @@ export default class Storage {
             }
         }
 
-        if (el.isGroup) {
+        // RichText and Group may use children
+        if ((el as Group).childrenRef) {
             const children = (el as Group).childrenRef();
 
             for (let i = 0; i < children.length; i++) {
