@@ -456,7 +456,10 @@ export {bind, curry};
  * @param value
  * @return {boolean}
  */
-export function isArray(value: any): value is Array<any> {
+export function isArray(value: any): value is any[] {
+    if (Array.isArray) {
+        return Array.isArray(value);
+    }
     return objToString.call(value) === '[object Array]';
 }
 
@@ -473,7 +476,7 @@ export function isFunction(value: any): value is Function {
  * @return {boolean}
  */
 export function isString(value: any): value is string {
-    return objToString.call(value) === '[object String]';
+    return typeof value === 'string';
 }
 
 // Usage: `isObject(xxx)` or `isObject(SomeType)(xxx)`

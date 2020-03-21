@@ -500,7 +500,7 @@ export default class Animator<T> {
     private _doneList: DoneCallback[] = []
     private _onframeList: OnframeCallback<T>[] = []
 
-    private _clip: Clip<T>
+    private _clip: Clip<T> = null
 
     constructor(target: T, loop: boolean) {
         this._target = target;

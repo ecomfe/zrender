@@ -563,7 +563,7 @@ class Element<Props extends ElementProps = ElementProps> {
         for (let i = 0; i < len; i++) {
             animators[i].stop(forwardToLast);
         }
-        animators.length = 0;
+        this.animators = [];
 
         return this;
     }
@@ -760,15 +760,15 @@ function animateToShallow<T>(
     reverse: boolean    // If `true`, animate from the `target` to current state.
 ) {
     const animatableKeys: string[] = [];
-    let targetKeys = keys(target);
+    const targetKeys = keys(target);
     for (let k = 0; k < targetKeys.length; k++) {
-        let innerKey = targetKeys[k] as string;
+        const innerKey = targetKeys[k] as string;
 
         if (source[innerKey] != null) {
             if (isObject(target[innerKey]) && !isArrayLike(target[innerKey])) {
-                // if (topKey) {
-                //     throw new Error('Only support 1 depth nest object animation.');
-                // }
+                if (topKey) {
+                    throw new Error('Only support 1 depth nest object animation.');
+                }
                 animateToShallow(
                     animatable,
                     innerKey,
@@ -789,19 +789,20 @@ function animateToShallow<T>(
         }
     }
 
-    let keyLen = animatableKeys.length;
-    let reversedTarget: Dictionary<any>;
-    if (reverse) {
-        reversedTarget = {};
-        for (let i = 0; i < keyLen; i++) {
-            let innerKey = animatableKeys[i];
-            reversedTarget[innerKey] = source[innerKey];
-            // Animate from target
-            source[innerKey] = target[innerKey];
-        }
-    }
+    const keyLen = animatableKeys.length;
 
     if (keyLen > 0) {
+        let reversedTarget: Dictionary<any>;
+        if (reverse) {
+            reversedTarget = {};
+            for (let i = 0; i < keyLen; i++) {
+                let innerKey = animatableKeys[i];
+                reversedTarget[innerKey] = source[innerKey];
+                // Animate from target
+                source[innerKey] = target[innerKey];
+            }
+        }
+
         const animator = new Animator(source, false);
         animator.whenWithKeys(
             time == null ? 500 : time,
