@@ -273,7 +273,7 @@ class Track {
             // Handling values only if it's possible to be interpolated.
             if (isArrayLike(value)) {
                 let arrayDim = guessArrayDim(value);
-                if (this._arrDim !== arrayDim) {
+                if (len > 0 && this._arrDim !== arrayDim) { // Two values has differnt dimension.
                     this._interpolable = false;
                     return;
                 }
@@ -297,6 +297,7 @@ class Track {
                         }
                     }
                 }
+                this._arrDim = arrayDim;
             }
             else {
                 if (this._arrDim > 0) {  // Previous value is array.

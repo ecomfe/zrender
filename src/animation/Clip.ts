@@ -50,11 +50,14 @@ export default class Clip<T> {
     private _pausedTime = 0
     private _paused = false
 
-    private _finished = false
-
     loop: boolean
     gap: number
     easing: AnimationEasing
+
+    // For linked list. Readonly
+    next: Clip<any>
+    prev: Clip<any>
+
     onframe: OnframeCallback<T>
     ondestroy: ondestroyCallback
     onrestart: onrestartCallback<T>
@@ -80,11 +83,7 @@ export default class Clip<T> {
         this.onrestart = opts.onrestart;
     }
 
-    step(globalTime: number, deltaTime: number): void {
-        if (this._finished) {
-            return;
-        }
-
+    step(globalTime: number, deltaTime: number): boolean {
         // Set startTime on first step, or _startTime may has milleseconds different between clips
         // PENDING
         if (!this._initialized) {
@@ -122,19 +121,17 @@ export default class Clip<T> {
                 this.onrestart && this.onrestart(this._target);
             }
             else {
-                this._finished = true;
+                return true;
             }
         }
+
+        return false;
     }
 
     private _restart(globalTime: number) {
         const remainder = (globalTime - this._startTime - this._pausedTime) % this._life;
         this._startTime = globalTime - remainder + this.gap;
         this._pausedTime = 0;
-    }
-
-    finished() {
-        return this._finished;
     }
 
     pause() {
