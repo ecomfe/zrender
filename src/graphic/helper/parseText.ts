@@ -5,8 +5,8 @@ import {
     retrieve3,
     reduce
 } from '../../core/util';
-import { TextAlign, VerticalAlign, ImageLike, Dictionary } from '../../core/types';
-import { RichTextStyleOption } from '../RichText';
+import { TextAlign, TextVerticalAlign, ImageLike, Dictionary } from '../../core/types';
+import { RichTextStyleProps } from '../RichText';
 import { getLineHeight, getWidth } from '../../contain/text';
 
 const STYLE_REG = /\{([a-zA-Z0-9_]+)\|([^}]*)\}/g;
@@ -166,7 +166,7 @@ export interface PlainTextContentBlock {
 
 export function parsePlainText(
     text: string,
-    style?: RichTextStyleOption
+    style?: RichTextStyleProps
 ): PlainTextContentBlock {
     text != null && (text += '');
 
@@ -249,7 +249,7 @@ class RichTextToken {
     lineHeight: number
     font: string
     textAlign: TextAlign
-    textVerticalAlign: VerticalAlign
+    textVerticalAlign: TextVerticalAlign
 
     textPadding: number[]
     percentWidth?: string
@@ -286,7 +286,7 @@ type WrapInfo = {
  * Also consider 'bbbb{a|xxx\nzzz}xxxx\naaaa'.
  * If styleName is undefined, it is plain text.
  */
-export function parseRichText(text: string, style: RichTextStyleOption) {
+export function parseRichText(text: string, style: RichTextStyleProps) {
     const contentBlock = new RichTextContentBlock();
 
     text != null && (text += '');
@@ -439,12 +439,12 @@ export function parseRichText(text: string, style: RichTextStyleOption) {
     return contentBlock;
 }
 
-type TokenStyle = RichTextStyleOption['rich'][string];
+type TokenStyle = RichTextStyleProps['rich'][string];
 
 function pushTokens(
     block: RichTextContentBlock,
     str: string,
-    style: RichTextStyleOption,
+    style: RichTextStyleProps,
     wrapInfo: WrapInfo,
     styleName?: string
 ) {

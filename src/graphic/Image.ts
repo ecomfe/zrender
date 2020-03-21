@@ -22,9 +22,11 @@ export const DEFAULT_IMAGE_STYLE: CommonStyleProps = defaults({
 
 interface ImageProps extends DisplayableProps {
     style?: ImageStyleProps
+
+    onload?: (image: ImageLike) => void
 }
 
-class ZImage extends Displayable<ImageProps> {
+class ZRImage extends Displayable<ImageProps> {
     type = 'image'
 
     style: ImageStyleProps
@@ -51,4 +53,4 @@ class ZImage extends Displayable<ImageProps> {
     }
 }
 
-export default ZImage;
+export default ZRImage;

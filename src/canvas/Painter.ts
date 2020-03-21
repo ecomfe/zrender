@@ -3,7 +3,7 @@ import * as util from '../core/util';
 import timsort from '../core/timsort';
 import Layer, { LayerConfig } from './Layer';
 import requestAnimationFrame from '../animation/requestAnimationFrame';
-import ZImage, { ImageStyleProps } from '../graphic/Image';
+import ZRImage, { ImageStyleProps } from '../graphic/Image';
 import env from '../core/env';
 import { Path, IncrementalDisplayable } from '../export';
 import Displayable from '../graphic/Displayable';
@@ -12,7 +12,7 @@ import { GradientObject } from '../graphic/Gradient';
 import { PatternObject } from '../graphic/Pattern';
 import Storage from '../Storage';
 import { brush, BrushScope } from './graphic';
-import ZText, { TextStyleProps } from '../graphic/Text';
+import ZRText, { TextStyleProps } from '../graphic/Text';
 import { PathStyleProps } from '../graphic/Path';
 import { PainterBase } from '../PainterBase';
 
@@ -259,13 +259,13 @@ export default class CanvasPainter implements PainterBase {
         return this;
     }
 
-    addHover(el: Path, style: PathStyleProps): Path
-    addHover(el: ZText, style: TextStyleProps): ZText
-    addHover(el: ZImage, style: ImageStyleProps): ZImage
+    addHover(el: Path, style?: PathStyleProps): Path
+    addHover(el: ZRText, style?: TextStyleProps): ZRText
+    addHover(el: ZRImage, style?: ImageStyleProps): ZRImage
     addHover(
-        el: Path | ZText | ZImage,
-        hoverStyle: PathStyleProps | TextStyleProps | ImageStyleProps
-    ): Path | ZText | ZImage {
+        el: Path | ZRText | ZRImage,
+        hoverStyle?: PathStyleProps | TextStyleProps | ImageStyleProps
+    ): Path | ZRText | ZRImage {
         if (el.__hoverMir) {
             return;
         }
@@ -284,7 +284,7 @@ export default class CanvasPainter implements PainterBase {
         return elMirror;
     }
 
-    removeHover(el: Path | ZText | ZImage) {
+    removeHover(el: Path | ZRText | ZRImage) {
         const elMirror = el.__hoverMir;
         const hoverElements = this._hoverElements;
         const idx = util.indexOf(hoverElements, elMirror);
@@ -948,7 +948,7 @@ export default class CanvasPainter implements PainterBase {
         ) | 0;
     }
 
-    pathToImage(path: Path, dpr?: number): ZImage {
+    pathToImage(path: Path, dpr?: number): ZRImage {
         dpr = dpr || this.dpr;
 
         const canvas = document.createElement('canvas');
@@ -990,7 +990,7 @@ export default class CanvasPainter implements PainterBase {
             }, true);
         }
 
-        const imgShape = new ZImage({
+        const imgShape = new ZRImage({
             style: {
                 x: 0,
                 y: 0,

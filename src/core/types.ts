@@ -14,7 +14,7 @@ export type ArrayLike<T> = {
 export type ImageLike = HTMLImageElement | HTMLCanvasElement | HTMLVideoElement
 
 // subset of CanvasTextBaseline
-export type VerticalAlign = 'top' | 'middle' | 'bottom'
+export type TextVerticalAlign = 'top' | 'middle' | 'bottom'
     // | 'center' // DEPRECATED
 
 // TODO: Have not support 'start', 'end' yet.

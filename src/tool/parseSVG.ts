@@ -1,5 +1,5 @@
 import Group from '../graphic/Group';
-import ZImage from '../graphic/Image';
+import ZRImage from '../graphic/Image';
 import Circle from '../graphic/shape/Circle';
 import Rect from '../graphic/shape/Rect';
 import Ellipse from '../graphic/shape/Ellipse';
@@ -19,7 +19,7 @@ import { PatternObject } from '../graphic/Pattern';
 import LinearGradient, { LinearGradientObject } from '../graphic/LinearGradient';
 import { RadialGradientObject } from '../graphic/RadialGradient';
 import { GradientObject } from '../graphic/Gradient';
-import ZText, { TextStyleProps } from '../graphic/Text';
+import ZRText, { TextStyleProps } from '../graphic/Text';
 
 // Most of the values can be separated by comma and/or white space.
 const DILIMITER_REG = /[\s,]+/;
@@ -245,7 +245,7 @@ class SVGParser {
             this._textY += parseFloat(dy as string);
         }
 
-        const text = new ZText({
+        const text = new ZRText({
             style: {
                 text: xmlNode.textContent
             },
@@ -383,7 +383,7 @@ class SVGParser {
                 return polyline;
             },
             'image': function (this: SVGParser, xmlNode: SVGElement, parentGroup: Group) {
-                const img = new ZImage();
+                const img = new ZRImage();
                 inheritStyle(parentGroup, img);
                 parseAttributes(xmlNode, img, this._defs);
 

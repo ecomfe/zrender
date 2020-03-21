@@ -23,8 +23,8 @@ import { PatternObject } from './graphic/Pattern';
 import { Path } from './export';
 import { EventCallback } from './core/Eventful';
 import { PathStyleProps } from './graphic/Path';
-import ZText, { TextStyleProps } from './graphic/Text';
-import ZImage, { ImageStyleProps } from './graphic/Image';
+import ZRText, { TextStyleProps } from './graphic/Text';
+import ZRImage, { ImageStyleProps } from './graphic/Image';
 
 
 const useVML = !env.canvasSupported;
@@ -207,16 +207,16 @@ class ZRender {
         triggerRendered && this.trigger('rendered');
     }
 
-    addHover(el: Path, style: PathStyleProps): Path
-    addHover(el: ZText, style: TextStyleProps): ZText
-    addHover(el: ZImage, style: ImageStyleProps): ZImage
+    addHover(el: Path, style?: PathStyleProps): Path
+    addHover(el: ZRText, style?: TextStyleProps): ZRText
+    addHover(el: ZRImage, style?: ImageStyleProps): ZRImage
     /**
      * Add element to hover layer
      */
     addHover(
-        el: Path | ZText | ZImage,
-        style: PathStyleProps | TextStyleProps | ImageStyleProps
-    ): Path | ZText | ZImage {
+        el: Path | ZRText | ZRImage,
+        style?: PathStyleProps | TextStyleProps | ImageStyleProps
+    ): Path | ZRText | ZRImage {
         if (this.painter.addHover) {
             const elMirror = this.painter.addHover(
                 // TODO
@@ -230,7 +230,7 @@ class ZRender {
     /**
      * Add element from hover layer
      */
-    removeHover(el: Path | ZText | ZImage) {
+    removeHover(el: Path | ZRText | ZRImage) {
         if (this.painter.removeHover) {
             this.painter.removeHover(el);
             this.refreshHover();

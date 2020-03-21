@@ -8,7 +8,7 @@ import BoundingRect from '../core/BoundingRect';
 import * as colorTool from '../tool/color';
 import * as textContain from '../graphic/text/parse';
 import Displayable from '../graphic/Displayable';
-import ZImage from '../graphic/Image';
+import ZRImage from '../graphic/Image';
 import Text from '../graphic/Text';
 import Path from '../graphic/Path';
 import PathProxy from '../core/PathProxy';
@@ -519,7 +519,7 @@ if (!env.canvasSupported) {
     };
 
     // Rewrite the original path method
-    ZImage.prototype.brushVML = function (vmlRoot) {
+    ZRImage.prototype.brushVML = function (vmlRoot) {
         var style = this.style;
         var image = style.image;
 
@@ -725,7 +725,7 @@ if (!env.canvasSupported) {
         }
     };
 
-    ZImage.prototype.onRemove = function (vmlRoot) {
+    ZRImage.prototype.onRemove = function (vmlRoot) {
         remove(vmlRoot, this._vmlEl);
 
         this._vmlEl = null;
@@ -735,7 +735,7 @@ if (!env.canvasSupported) {
         this.removeRectText(vmlRoot);
     };
 
-    ZImage.prototype.onAdd = function (vmlRoot) {
+    ZRImage.prototype.onAdd = function (vmlRoot) {
         append(vmlRoot, this._vmlEl);
         this.appendRectText(vmlRoot);
     };
@@ -1028,7 +1028,7 @@ if (!env.canvasSupported) {
         append(vmlRoot, this._textVmlEl);
     };
 
-    var list = [RectText, Displayable, ZImage, Path, Text];
+    var list = [RectText, Displayable, ZRImage, Path, Text];
 
     // In case Displayable has been mixed in RectText
     for (var i = 0; i < list.length; i++) {

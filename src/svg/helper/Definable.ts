@@ -7,8 +7,8 @@
 import {createElement} from '../core';
 import * as zrUtil from '../../core/util';
 import Path from '../../graphic/Path';
-import ZImage from '../../graphic/Image';
-import ZText from '../../graphic/Text';
+import ZRImage from '../../graphic/Image';
+import ZRText from '../../graphic/Text';
 import {
     path as svgPath,
     image as svgImage,
@@ -236,10 +236,10 @@ export default class Definable {
         if (displayable instanceof Path) {
             return svgPath;
         }
-        else if (displayable instanceof ZImage) {
+        else if (displayable instanceof ZRImage) {
             return svgImage;
         }
-        else if (displayable instanceof ZText) {
+        else if (displayable instanceof ZRText) {
             return svgText;
         }
         else {

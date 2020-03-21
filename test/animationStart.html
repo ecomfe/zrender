@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <title>Animation</title>
     <script src="../dist/zrender.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/zrender@4.2.0/dist/zrender.js"></script> -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
 <body>
@@ -88,6 +89,7 @@
             }
 
             var update = throttle(function (point) {
+                console.time('animation');
                 for (var i = 0; i < els.length; i++) {
                     var el = els[i];
                     var dist = Math.pow(
@@ -122,11 +124,14 @@
                         })
                         .start('elasticOut');
                 }
+
+                console.timeEnd('animation');
             }, throttleRate);
 
             zr.on('mousemove', function (e) {
                 update([e.offsetX, e.offsetY]);
             });
+
         }
 
 

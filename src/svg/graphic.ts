@@ -7,9 +7,9 @@ import PathProxy from '../core/PathProxy';
 import * as matrix from '../core/matrix';
 import { Path } from '../export';
 import { PathStyleProps } from '../graphic/Path';
-import ZImage, { ImageStyleProps } from '../graphic/Image';
+import ZRImage, { ImageStyleProps } from '../graphic/Image';
 import { DEFAULT_FONT, getLineHeight } from '../contain/text';
-import ZText, { TextStyleProps } from '../graphic/Text';
+import ZRText, { TextStyleProps } from '../graphic/Text';
 
 export interface SVGProxy<T> {
     brush(el: T): void
@@ -77,9 +77,9 @@ function attrXLink(el: SVGElement, key: string, val: string) {
 }
 
 function bindStyle(svgEl: SVGElement, style: PathStyleProps, el?: Path): void
-function bindStyle(svgEl: SVGElement, style: TextStyleProps, el?: ZText): void
-function bindStyle(svgEl: SVGElement, style: ImageStyleProps, el?: ZImage): void
-function bindStyle(svgEl: SVGElement, style: AllStyleOption, el?: Path | ZText | ZImage) {
+function bindStyle(svgEl: SVGElement, style: TextStyleProps, el?: ZRText): void
+function bindStyle(svgEl: SVGElement, style: ImageStyleProps, el?: ZRImage): void
+function bindStyle(svgEl: SVGElement, style: AllStyleOption, el?: Path | ZRText | ZRImage) {
     const opacity = style.opacity == null ? 1 : style.opacity;
     if (pathHasFill(style)) {
         let fill = style.fill;
@@ -280,8 +280,8 @@ export {svgPath as path};
 /***************************************************
  * IMAGE
  **************************************************/
-const svgImage: SVGProxy<ZImage> = {
-    brush(el: ZImage) {
+const svgImage: SVGProxy<ZRImage> = {
+    brush(el: ZRImage) {
         const style = el.style;
         let image = style.image;
 
@@ -343,8 +343,8 @@ function adjustTextY(y: number, lineHeight: number, textBaseline: CanvasTextBase
     return y;
 }
 
-const svgText: SVGProxy<ZText> = {
-    brush(el: ZText) {
+const svgText: SVGProxy<ZRText> = {
+    brush(el: ZRText) {
         const style = el.style;
 
         let text = style.text;

@@ -6,8 +6,8 @@
 import {createElement} from './core';
 import * as util from '../core/util';
 import Path from '../graphic/Path';
-import ZImage from '../graphic/Image';
-import ZText from '../graphic/Text';
+import ZRImage from '../graphic/Image';
+import ZRText from '../graphic/Text';
 import arrayDiff from '../core/arrayDiff';
 import GradientManager from './helper/GradientManager';
 import ClippathManager from './helper/ClippathManager';
@@ -31,10 +31,10 @@ function getSvgProxy(el: Displayable) {
     if (el instanceof Path) {
         return svgPath;
     }
-    else if (el instanceof ZImage) {
+    else if (el instanceof ZRImage) {
         return svgImage;
     }
-    else if (el instanceof ZText) {
+    else if (el instanceof ZRText) {
         return svgText;
     }
     else {

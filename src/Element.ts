@@ -118,6 +118,11 @@ export interface ElementProps extends Partial<ElementEventHandlerProps> {
     extra?: Dictionary<any>
 }
 
+interface ElementState {
+    position?: VectorArray
+
+}
+
 type AnimationCallback = () => {}
 
 let tmpTextPosCalcRes = {} as TextPositionCalculationResult;
@@ -213,6 +218,8 @@ class Element<Props extends ElementProps = ElementProps> {
      * Id for mapping animation
      */
     anid: string
+
+    // states:
 
     constructor(props?: Props) {
         // Transformable needs position, rotation, scale

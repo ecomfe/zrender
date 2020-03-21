@@ -1,6 +1,6 @@
 import BoundingRect, { RectLike } from '../core/BoundingRect';
 import { createCanvas } from '../core/util';
-import { Dictionary, PropType, TextAlign, VerticalAlign, BuiltinTextPosition } from '../core/types';
+import { Dictionary, PropType, TextAlign, TextVerticalAlign, BuiltinTextPosition } from '../core/types';
 import LRU from '../core/LRU';
 
 let textWidthCache: Dictionary<LRU<number>> = {};
@@ -113,7 +113,7 @@ export interface TextPositionCalculationResult {
     x: number
     y: number
     textAlign: TextAlign
-    verticalAlign: VerticalAlign
+    verticalAlign: TextVerticalAlign
 }
 /**
  * Follow same interface to `Displayable.prototype.calculateTextPosition`.
@@ -143,7 +143,7 @@ export function calculateTextPosition(
     let y = rect.y;
 
     let textAlign: TextAlign = 'left';
-    let textVerticalAlign: VerticalAlign = 'top';
+    let textVerticalAlign: TextVerticalAlign = 'top';
 
     if (textPosition instanceof Array) {
         x += parsePercent(textPosition[0], rect.width);

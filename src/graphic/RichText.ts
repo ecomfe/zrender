@@ -5,14 +5,14 @@
 import { PatternObject } from './Pattern';
 import { LinearGradientObject } from './LinearGradient';
 import { RadialGradientObject } from './RadialGradient';
-import { TextAlign, VerticalAlign, ImageLike, Dictionary, AllPropTypes } from '../core/types';
+import { TextAlign, TextVerticalAlign, ImageLike, Dictionary, AllPropTypes } from '../core/types';
 import Element, { ElementProps } from '../Element';
 import { parseRichText, parsePlainText } from './helper/parseText';
-import ZText from './Text';
+import ZRText from './Text';
 import { retrieve2, isString, each, normalizeCssArray, trim } from '../core/util';
 import { DEFAULT_FONT, adjustTextX, adjustTextY } from '../contain/text';
 import { GradientObject } from './Gradient';
-import ZImage from './Image';
+import ZRImage from './Image';
 import Rect from './shape/Rect';
 import BoundingRect from '../core/BoundingRect';
 import { MatrixArray } from '../core/matrix';
@@ -22,7 +22,7 @@ type RichTextLine = RichTextContentBlock['lines'][0]
 type RichTextToken = RichTextLine['tokens'][0]
 
 // TODO Default value?
-interface RichTextStyleOptionPart {
+interface RichTextStylePropsPart {
     // TODO Text is assigned inside zrender
     text?: string
     // TODO Text not support PatternObject | LinearGradientObject | RadialGradientObject yet.
@@ -72,7 +72,7 @@ interface RichTextStyleOptionPart {
     fontSize?: number
 
     textAlign?: TextAlign
-    verticalAlign?: VerticalAlign
+    verticalAlign?: TextVerticalAlign
 
     /**
      * Line height. Default to be text height of '国'
@@ -117,7 +117,7 @@ interface RichTextStyleOptionPart {
     boxShadowOffsetX?: number
     boxShadowOffsetY?: number
 }
-export interface RichTextStyleOption extends RichTextStyleOptionPart {
+export interface RichTextStyleProps extends RichTextStylePropsPart {
 
     text?: string
 
@@ -131,7 +131,7 @@ export interface RichTextStyleOption extends RichTextStyleOptionPart {
     /**
      * Text styles for rich text.
      */
-    rich?: Dictionary<RichTextStyleOptionPart>
+    rich?: Dictionary<RichTextStylePropsPart>
 
     /**
      * Strategy when calculated text width exceeds textWidth.
@@ -159,7 +159,7 @@ export interface RichTextStyleOption extends RichTextStyleOptionPart {
 }
 
 interface RichTextOption extends ElementProps {
-    style?: RichTextStyleOption
+    style?: RichTextStyleProps
 
     zlevel?: number
     z?: number
@@ -183,9 +183,9 @@ class RichText extends Element<RichTextOption> {
     // TODO RichText is Group?
     readonly isGroup = true
 
-    style: RichTextStyleOption
+    style: RichTextStyleProps
 
-    private _children: (ZImage | Rect | ZText)[] = []
+    private _children: (ZRImage | Rect | ZRText)[] = []
 
     private _styleChanged = true
 
@@ -251,17 +251,17 @@ class RichText extends Element<RichTextOption> {
         }
         else {
             if (!this.style) {
-                this.style = value as RichTextStyleOption;
+                this.style = value as RichTextStyleProps;
             }
             else {
-                this.setStyle(value as RichTextStyleOption);
+                this.setStyle(value as RichTextStyleProps);
             }
         }
     }
 
-    setStyle(obj: RichTextStyleOption): void
-    setStyle(obj: keyof RichTextStyleOption, value: any): void
-    setStyle(obj: keyof RichTextStyleOption | RichTextStyleOption, value?: AllPropTypes<RichTextStyleOption>) {
+    setStyle(obj: RichTextStyleProps): void
+    setStyle(obj: keyof RichTextStyleProps, value: any): void
+    setStyle(obj: keyof RichTextStyleProps | RichTextStyleProps, value?: AllPropTypes<RichTextStyleProps>) {
         if (typeof obj === 'string') {
             (this.style as Dictionary<any>)[obj] = value;
         }
@@ -319,10 +319,10 @@ class RichText extends Element<RichTextOption> {
     }
 
 
-    private _getOrCreateChild(Ctor: {new(): ZText}): ZText
-    private _getOrCreateChild(Ctor: {new(): ZImage}): ZImage
+    private _getOrCreateChild(Ctor: {new(): ZRText}): ZRText
+    private _getOrCreateChild(Ctor: {new(): ZRImage}): ZRImage
     private _getOrCreateChild(Ctor: {new(): Rect}): Rect
-    private _getOrCreateChild(Ctor: {new(): ZText | Rect | ZImage}): ZText | Rect | ZImage {
+    private _getOrCreateChild(Ctor: {new(): ZRText | Rect | ZRImage}): ZRText | Rect | ZRImage {
         let child = this._children[this._childCursor];
         if (!child || !(child instanceof Ctor)) {
             child = new Ctor();
@@ -381,7 +381,7 @@ class RichText extends Element<RichTextOption> {
         const hasShadow = style.textShadowBlur > 0;
 
         for (let i = 0; i < textLines.length; i++) {
-            const el = this._getOrCreateChild(ZText);
+            const el = this._getOrCreateChild(ZRText);
             const subElStyle = el.style;
             subElStyle.text = textLines[i];
             subElStyle.x = textX;
@@ -500,7 +500,7 @@ class RichText extends Element<RichTextOption> {
 
     private _placeToken(
         token: RichTextToken,
-        style: RichTextStyleOption,
+        style: RichTextStyleProps,
         lineHeight: number,
         lineTop: number,
         x: number,
@@ -538,7 +538,7 @@ class RichText extends Element<RichTextOption> {
             y -= token.height / 2 - textPadding[2] - token.height / 2;
         }
 
-        const el = this._getOrCreateChild(ZText);
+        const el = this._getOrCreateChild(ZRText);
         const subElStyle = el.style;
 
         const hasStroke = 'stroke' in tokenStyle || 'stroke' in style;
@@ -572,7 +572,7 @@ class RichText extends Element<RichTextOption> {
     }
 
     private _renderBackground(
-        style: RichTextStyleOptionPart,
+        style: RichTextStylePropsPart,
         x: number,
         y: number,
         width: number,
@@ -586,7 +586,7 @@ class RichText extends Element<RichTextOption> {
         const self = this;
 
         let rectEl: Rect;
-        let imgEl: ZImage;
+        let imgEl: ZRImage;
         if (isPlainBg || (textBorderWidth && textBorderColor)) {
             // Background is color
             rectEl = this._getOrCreateChild(Rect);
@@ -607,7 +607,7 @@ class RichText extends Element<RichTextOption> {
             rectStyle.fillOpacity = retrieve2(style.fillOpacity, 1);
         }
         else if (textBackgroundColor && (textBackgroundColor as {image: ImageLike}).image) {
-            imgEl = this._getOrCreateChild(ZImage);
+            imgEl = this._getOrCreateChild(ZRImage);
             imgEl.onload = function () {
                 // Refresh and relayout after image loaded.
                 self.dirtyStyle();
@@ -640,13 +640,13 @@ class RichText extends Element<RichTextOption> {
 const VALID_TEXT_ALIGN = {left: true, right: 1, center: 1};
 const VALID_TEXT_VERTICAL_ALIGN = {top: 1, bottom: 1, middle: 1};
 
-export function normalizeTextStyle(style: RichTextStyleOption): RichTextStyleOption {
+export function normalizeTextStyle(style: RichTextStyleProps): RichTextStyleProps {
     normalizeStyle(style);
     each(style.rich, normalizeStyle);
     return style;
 }
 
-function normalizeStyle(style: RichTextStyleOptionPart) {
+function normalizeStyle(style: RichTextStylePropsPart) {
     if (style) {
         style.font = makeFont(style);
         let textAlign = style.textAlign;
@@ -676,7 +676,7 @@ function normalizeStyle(style: RichTextStyleOptionPart) {
  * @param lineWidth If specified, do not check style.textStroke.
  */
 function getStroke(
-    stroke?: RichTextStyleOptionPart['stroke'],
+    stroke?: RichTextStylePropsPart['stroke'],
     lineWidth?: number
 ) {
     return (stroke == null || lineWidth <= 0 || stroke === 'transparent' || stroke === 'none')
@@ -687,7 +687,7 @@ function getStroke(
 }
 
 function getFill(
-    fill?: RichTextStyleOptionPart['fill']
+    fill?: RichTextStylePropsPart['fill']
 ) {
     return (fill == null || fill === 'none')
         ? null
@@ -709,7 +709,7 @@ function getTextXForPadding(x: number, textAlign: string, textPadding: number[])
  * If needs draw background
  * @param style Style of element
  */
-function needDrawBackground(style: RichTextStyleOptionPart): boolean {
+function needDrawBackground(style: RichTextStylePropsPart): boolean {
     return !!(
         style.backgroundColor
         || (style.borderWidth && style.borderColor)
@@ -717,7 +717,7 @@ function needDrawBackground(style: RichTextStyleOptionPart): boolean {
 }
 
 function makeFont(
-    style: RichTextStyleOptionPart
+    style: RichTextStylePropsPart
 ): string {
     // FIXME in node-canvas fontWeight is before fontStyle
     // Use `fontSize` `fontFamily` to check whether font properties are defined.

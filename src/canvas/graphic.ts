@@ -9,8 +9,8 @@ import BoundingRect from '../core/BoundingRect';
 import { createOrUpdateImage, isImageReady } from '../graphic/helper/image';
 import { getCanvasGradient } from './helper';
 import Path, { PathStyleProps } from '../graphic/Path';
-import ZImage, { ImageStyleProps } from '../graphic/Image';
-import ZText, {TextStyleProps} from '../graphic/Text';
+import ZRImage, { ImageStyleProps } from '../graphic/Image';
+import ZRText, {TextStyleProps} from '../graphic/Text';
 import { DEFAULT_FONT } from '../contain/text';
 import { IncrementalDisplayable } from '../export';
 import { MatrixArray } from '../core/matrix';
@@ -188,7 +188,7 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, inBatch: boolean) {
 }
 
 // Draw Image Elements
-function brushImage(ctx: CanvasRenderingContext2D, el: ZImage) {
+function brushImage(ctx: CanvasRenderingContext2D, el: ZRImage) {
     const style = el.style;
 
     const image = el.__image = createOrUpdateImage(
@@ -245,7 +245,7 @@ function brushImage(ctx: CanvasRenderingContext2D, el: ZImage) {
 }
 
 // Draw Text Elements
-function brushText(ctx: CanvasRenderingContext2D, el: ZText) {
+function brushText(ctx: CanvasRenderingContext2D, el: ZRText) {
 
     const style = el.style;
 
@@ -336,8 +336,8 @@ function bindCommonProps(
 
 function bindPathAndTextCommonStyle(
     ctx: CanvasRenderingContext2D,
-    el: ZText | Path,
-    prevEl: ZText | Path,
+    el: ZRText | Path,
+    prevEl: ZRText | Path,
     forceSetAll: boolean,
     scope: BrushScope
 ) {
@@ -402,8 +402,8 @@ function bindPathAndTextCommonStyle(
 
 function bindImageStyle(
     ctx: CanvasRenderingContext2D,
-    el: ZImage,
-    prevEl: ZImage,
+    el: ZRImage,
+    prevEl: ZRImage,
     // forceSetAll must be true if prevEl is null
     forceSetAll: boolean,
     scope: BrushScope
@@ -637,13 +637,13 @@ export function brush(
         }
     }
     else {
-        if (el instanceof ZText) {
-            bindPathAndTextCommonStyle(ctx, el as ZText, prevEl as ZText, forceSetStyle, scope);
-            brushText(ctx, el as ZText);
+        if (el instanceof ZRText) {
+            bindPathAndTextCommonStyle(ctx, el as ZRText, prevEl as ZRText, forceSetStyle, scope);
+            brushText(ctx, el as ZRText);
         }
-        else if (el instanceof ZImage) {
-            bindImageStyle(ctx, el as ZImage, prevEl as ZImage, forceSetStyle, scope);
-            brushImage(ctx, el as ZImage);
+        else if (el instanceof ZRImage) {
+            bindImageStyle(ctx, el as ZRImage, prevEl as ZRImage, forceSetStyle, scope);
+            brushImage(ctx, el as ZRImage);
         }
         else if (el instanceof IncrementalDisplayable) {
             brushIncremental(ctx, el, scope);

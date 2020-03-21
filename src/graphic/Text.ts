@@ -32,7 +32,7 @@ interface TextProps extends DisplayableProps {
     style?: TextStyleProps
 }
 
-class ZText extends Displayable<TextProps> {
+class ZRText extends Displayable<TextProps> {
     type = 'text'
 
     style: TextStyleProps
@@ -84,4 +84,4 @@ class ZText extends Displayable<TextProps> {
         return this._rect;
     }
 }
-export default ZText;
+export default ZRText;

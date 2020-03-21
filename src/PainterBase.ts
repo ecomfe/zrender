@@ -1,7 +1,6 @@
-import Storage from './Storage';
 import Path, { PathStyleProps } from './graphic/Path';
-import ZText, { TextStyleProps } from './graphic/Text';
-import ZImage, { ImageStyleProps } from './graphic/Image';
+import ZRText, { TextStyleProps } from './graphic/Text';
+import ZRImage, { ImageStyleProps } from './graphic/Image';
 import { GradientObject } from './graphic/Gradient';
 import { PatternObject } from './graphic/Pattern';
 import { Dictionary } from './core/types';
@@ -34,14 +33,14 @@ export interface PainterBase {
     getViewportRootOffset: () => {offsetLeft: number, offsetTop: number}
 
     // Following methods won't implemented by every Painter
-    addHover(el: Path, style: PathStyleProps): Path
-    addHover(el: ZText, style: TextStyleProps): ZText
-    addHover(el: ZImage, style: ImageStyleProps): ZImage
+    addHover(el: Path, style?: PathStyleProps): Path
+    addHover(el: ZRText, style?: TextStyleProps): ZRText
+    addHover(el: ZRImage, style?: ImageStyleProps): ZRImage
 
-    removeHover(el: Path | ZText | ZImage): void
+    removeHover(el: Path | ZRText | ZRImage): void
     clearHover(): void
     refreshHover(): void
-    pathToImage(e: Path, dpr: number): ZImage
+    pathToImage(e: Path, dpr: number): ZRImage
 
     configLayer(zlevel: number, config: Dictionary<any>): void
     setBackgroundColor(backgroundColor: string | GradientObject | PatternObject): void
