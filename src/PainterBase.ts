@@ -1,9 +1,10 @@
-import Path, { PathStyleProps } from './graphic/Path';
-import ZRText, { TextStyleProps } from './graphic/Text';
-import ZRImage, { ImageStyleProps } from './graphic/Image';
+import Path from './graphic/Path';
+import ZRText from './graphic/Text';
+import ZRImage from './graphic/Image';
 import { GradientObject } from './graphic/Gradient';
 import { PatternObject } from './graphic/Pattern';
 import { Dictionary } from './core/types';
+import Displayable from './graphic/Displayable';
 
 interface PainterOption {
     width?: number | string  // Can be 10 / 10px / auto
@@ -33,9 +34,7 @@ export interface PainterBase {
     getViewportRootOffset: () => {offsetLeft: number, offsetTop: number}
 
     // Following methods won't implemented by every Painter
-    addHover(el: Path, style?: PathStyleProps): Path
-    addHover(el: ZRText, style?: TextStyleProps): ZRText
-    addHover(el: ZRImage, style?: ImageStyleProps): ZRImage
+    addHover<T extends Displayable>(el: T, hoverStyle?: T['style']): T
 
     removeHover(el: Path | ZRText | ZRImage): void
     clearHover(): void

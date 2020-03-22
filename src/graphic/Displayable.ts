@@ -3,7 +3,7 @@
  * @module zrender/graphic/Displayable
  */
 
-import Element, {ElementProps, ElementStatePropNames} from '../Element';
+import Element, {ElementProps, ElementStatePropNames, PRESERVED_NORMAL_STATE} from '../Element';
 import BoundingRect from '../core/BoundingRect';
 import { PropType, Dictionary } from '../core/types';
 import Path from './Path';
@@ -59,8 +59,11 @@ export interface DisplayableProps extends ElementProps {
 type DisplayableKey = keyof DisplayableProps
 type DisplayablePropertyType = PropType<DisplayableProps, DisplayableKey>
 
-
 export type DisplayableStatePropNames = ElementStatePropNames | 'style' | 'z' | 'z2' | 'invisible';
+export type DisplayableState = Pick<DisplayableProps, DisplayableStatePropNames>
+
+const PRIMARY_STATES_KEYS = ['z', 'z2', 'invisible'] as const;
+
 
 interface Displayable<Props extends DisplayableProps = DisplayableProps> {
     animate(key?: '', loop?: boolean): Animator<this>
@@ -109,7 +112,8 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     style: Dictionary<any>
 
     // override
-    states: Dictionary<Pick<DisplayableProps, DisplayableStatePropNames>>
+    states: Dictionary<DisplayableState>
+    protected _normalState: DisplayableState
 
     __dirtyStyle: boolean
 
@@ -256,22 +260,45 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     protected saveStateToNormal() {
         super.saveStateToNormal();
 
-        this.states.normal.style = this.style;
+        const normalState = this._normalState;
+        normalState.style = this.style;
+        normalState.z = this.z;
+        normalState.z2 = this.z2;
+        normalState.invisible = this.invisible;
     }
 
-    useState(stateName: string) {
-        let state = super.useState(stateName) as Displayable['states'][string];
+    protected _applyStateObj(state?: DisplayableState, keepCurrentStates?: boolean) {
+        super._applyStateObj(state, keepCurrentStates);
+        let needsRestoreToNormal = !state || !keepCurrentStates;
+        const normalState = this._normalState;
         if (state && state.style) {
-            // TODO if normal style is changed?
-            this.useStyle(
-                state.style,
-                // Only inherits from normal style.
-                stateName === 'normal' ? null : this.states.normal.style
+            // TODO Use prototype chain? Prototype chain may have following issues
+            // 1. Normal style may be changed
+            // 2. Needs to detect ircular protoype chain
+            const newStyle = extend(
+                {},
+                keepCurrentStates ? this.style : normalState.style
             );
-
+            extend(newStyle, state.style);
+            this.useStyle(newStyle);
+        }
+        else if (needsRestoreToNormal) {
+            // Simply replace with normal style because it needs no inheritance
+            this.style = normalState.style;
             this.dirtyStyle();
         }
-        return state;
+
+        for (let i = 0; i < PRIMARY_STATES_KEYS.length; i++) {
+            let key = PRIMARY_STATES_KEYS[i];
+            if (state && state[key] != null) {
+                // Replace if it exist in target state
+                (this as any)[key] = state[key];
+            }
+            else if (needsRestoreToNormal) {
+                // Restore to normal state
+                (this as any)[key] = normalState[key];
+            }
+        }
     }
 
     /**

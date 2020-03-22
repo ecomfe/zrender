@@ -25,7 +25,7 @@ import { EventCallback } from './core/Eventful';
 import { PathStyleProps } from './graphic/Path';
 import ZRText, { TextStyleProps } from './graphic/Text';
 import ZRImage, { ImageStyleProps } from './graphic/Image';
-import Displayable from './graphic/Displayable';
+import Displayable, { CommonStyleProps } from './graphic/Displayable';
 
 
 const useVML = !env.canvasSupported;
@@ -208,21 +208,12 @@ class ZRender {
         triggerRendered && this.trigger('rendered');
     }
 
-    addHover(el: Path, style?: PathStyleProps): Path
-    addHover(el: ZRText, style?: TextStyleProps): ZRText
-    addHover(el: ZRImage, style?: ImageStyleProps): ZRImage
     /**
      * Add element to hover layer
      */
-    addHover(
-        el: Path | ZRText | ZRImage,
-        style?: PathStyleProps | TextStyleProps | ImageStyleProps
-    ): Path | ZRText | ZRImage {
+    addHover<T extends Displayable>(el: T, hoverStyle?: T['style']): T {
         if (this.painter.addHover) {
-            const elMirror = this.painter.addHover(
-                // TODO
-                el as Path, style as PathStyleProps
-            );
+            const elMirror = this.painter.addHover(el, hoverStyle);
             this.refreshHover();
             return elMirror;
         }

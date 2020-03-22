@@ -1,4 +1,8 @@
-import Displayable, { DisplayableProps, CommonStyleProps, DEFAULT_COMMON_STYLE } from './Displayable';
+import Displayable, { DisplayableProps,
+    CommonStyleProps,
+    DEFAULT_COMMON_STYLE,
+    DisplayableStatePropNames
+} from './Displayable';
 import BoundingRect from '../core/BoundingRect';
 import { ImageLike } from '../core/types';
 import { defaults } from '../core/util';
@@ -25,6 +29,8 @@ interface ImageProps extends DisplayableProps {
 
     onload?: (image: ImageLike) => void
 }
+
+export type ImageState = Pick<ImageProps, DisplayableStatePropNames>
 
 class ZRImage extends Displayable<ImageProps> {
     type = 'image'

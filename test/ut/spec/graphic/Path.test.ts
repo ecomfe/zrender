@@ -1,5 +1,6 @@
-import Rect from '../../../../src/graphic/shape/Rect';
-import { clone } from '../../../../src/core/util';
+import {Rect} from '../zrender';
+import {util} from '../zrender';
+import { PathState } from '../../../../src/graphic/Path';
 
 describe('Path', function () {
 
@@ -94,21 +95,28 @@ describe('Path', function () {
         expect(rect.shape.x).toBe(100);
     });
 
-    const emphasisState = {
+
+    const selectedState: PathState = {
         position: [100, 100],
         rotation: 10,
         scale: [2, 2],
+        origin: [10, 10],
         style: {
-            stroke: 'red'
+            stroke: 'red',
+            lineWidth: 2
         },
         shape: {
             width: 200,
-            x: 0
-        }
+            x: 10
+        },
+        z: 1,
+        z2: 10,
+        invisible: true,
+        ignore: true
     };
 
-    it('Path#useState should switch state properly', function () {
-        const rect = new Rect({
+    function createRectForStateTest() {
+        return new Rect({
             shape: {
                 width: 100,
                 height: 100
@@ -117,57 +125,59 @@ describe('Path', function () {
                 fill: 'blue'
             }
         });
+    }
+
+    it('Path#useState should switch state properly', function () {
+        const rect = createRectForStateTest();
 
         expect(rect.states).toBeUndefined();
 
         rect.states = {
-            emphasis: clone(emphasisState)
+            selected: util.clone(selectedState)
         };
 
-        expect(rect.currentState).toEqual('normal');
+        expect(rect.currentStates).toEqual([]);
 
-        rect.useState('emphasis');
+        rect.useState('selected');
 
-        expect(rect.currentState).toEqual('emphasis');
+        expect(rect.currentStates).toEqual(['selected']);
 
         expect(rect.position).toEqual([100, 100]);
         expect(rect.rotation).toBe(10);
         expect(rect.scale).toEqual([2, 2]);
+        expect(rect.origin).toEqual([10, 10]);
         expect(rect.style.stroke).toBe('red');
+        expect(rect.style.lineWidth).toBe(2);
         expect(rect.shape.width).toBe(200);
-        expect(rect.shape.x).toBe(0);
+        expect(rect.shape.x).toBe(10);
+        expect(rect.invisible).toBe(true);
+        expect(rect.ignore).toBe(true);
+        expect(rect.z).toBe(1);
+        expect(rect.z2).toBe(10);
 
         // Still keep the original value if property is not exists in state
         expect(rect.shape.height).toBe(100);
         expect(rect.style.fill).toBe('blue');
 
-        // Can restore to normal state
     });
 
-    it('Path#useState should be able to restore to normal state properly', function () {
-        const rect = new Rect({
-            shape: {
-                width: 100,
-                height: 100
-            },
-            style: {
-                fill: 'blue'
-            }
-        });
+    it('Path#clearStates should be able to restore to normal state properly', function () {
+        const rect = createRectForStateTest();
 
         rect.states = {
-            emphasis: clone(emphasisState)
+            selected: util.clone(selectedState)
         };
 
-        rect.useState('emphasis');
+        rect.useState('selected');
         // Switch back to normal
-        rect.useState('normal');
+        rect.clearStates();
 
-        expect(rect.currentState).toEqual('normal');
+        expect(rect.currentStates).toEqual([]);
 
         expect(rect.position).toEqual([0, 0]);
         expect(rect.rotation).toEqual(0);
         expect(rect.scale).toEqual([1, 1]);
+        expect(rect.origin).toEqual([0, 0]);
 
         expect(rect.style.fill).toEqual('blue');
         expect(rect.style.stroke).toBeNull();
@@ -175,5 +185,76 @@ describe('Path', function () {
         expect(rect.shape.height).toBe(100);
         expect(rect.shape.width).toBe(100);
         expect(rect.shape.x).toBe(0);
+
+        expect(rect.invisible).toBe(false);
+        expect(rect.ignore).toBe(false);
+        expect(rect.z).toBe(0);
+        expect(rect.z2).toBe(0);
+
+        // TODO textContent
+    });
+
+    it('Path#useStates. Mutiple states should be merged properly', function () {
+        const rect = createRectForStateTest();
+
+        rect.states = {
+            selected: util.clone(selectedState),
+            emphasis: {
+                style: {
+                    fill: 'white',
+                    stroke: 'black'
+                }
+            }
+        };
+
+        rect.useStates(['selected', 'emphasis']);
+
+        expect(rect.currentStates).toEqual(['selected', 'emphasis']);
+        // Should use fill/stroke in emphasis
+        expect(rect.style.fill).toBe('white');
+        expect(rect.style.stroke).toBe('black');
+        // Should use lineWidth in selected
+        expect(rect.style.lineWidth).toBe(2);
+
+        // Should use shape in selected
+        expect(rect.shape.width).toBe(200);
+        expect(rect.shape.x).toBe(10);
+    });
+
+    it('Path#useState. Can switch back to single state', function () {
+        const rect = createRectForStateTest();
+
+        rect.states = {
+            selected: util.clone(selectedState),
+            emphasis: {
+                style: {
+                    fill: 'white',
+                    stroke: 'black'
+                }
+            }
+        };
+
+        rect.useStates(['selected', 'emphasis']);
+
+        expect(rect.currentStates).toEqual(['selected', 'emphasis']);
+
+        rect.useState('emphasis');
+
+        expect(rect.style.fill).toBe('white');
+
+        // style and z, z2 should be normal
+        expect(rect.style.stroke).not.toBe('red');
+        expect(rect.z).toBe(0);
+        expect(rect.z2).toBe(0);
+        expect(rect.invisible).toBe(false);
+        expect(rect.ignore).toBe(false);
+
+        // should use shape of normal state.
+        expect(rect.shape.width).toBe(100);
+    });
+
+    it('Path#clearStates should not throw error on stateless object.', function () {
+        const rect = createRectForStateTest();
+        expect(() => rect.clearStates()).not.toThrowError();
     });
 });

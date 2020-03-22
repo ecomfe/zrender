@@ -16,7 +16,7 @@ import ZRImage from './Image';
 import Rect from './shape/Rect';
 import BoundingRect from '../core/BoundingRect';
 import { MatrixArray } from '../core/matrix';
-import Displayable from './Displayable';
+import Displayable, { DisplayableStatePropNames, DisplayableProps } from './Displayable';
 
 type RichTextContentBlock = ReturnType<typeof parseRichText>
 type RichTextLine = RichTextContentBlock['lines'][0]
@@ -159,7 +159,7 @@ export interface RichTextStyleProps extends RichTextStylePropsPart {
     truncateMinChar: number
 }
 
-interface RichTextProps extends ElementProps {
+interface RichTextProps extends DisplayableProps {
     style?: RichTextStyleProps
 
     zlevel?: number
@@ -169,6 +169,8 @@ interface RichTextProps extends ElementProps {
     culling?: boolean
     cursor?: string
 }
+
+export type RichTextState = Pick<RichTextProps, DisplayableStatePropNames>
 
 class RichText extends Displayable<RichTextProps> {
 

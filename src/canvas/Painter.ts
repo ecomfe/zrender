@@ -6,7 +6,7 @@ import requestAnimationFrame from '../animation/requestAnimationFrame';
 import ZRImage, { ImageStyleProps } from '../graphic/Image';
 import env from '../core/env';
 import { Path, IncrementalDisplayable } from '../export';
-import Displayable from '../graphic/Displayable';
+import Displayable, { CommonStyleProps } from '../graphic/Displayable';
 import { WXCanvasRenderingContext, ZRCanvasRenderingContext } from '../core/types';
 import { GradientObject } from '../graphic/Gradient';
 import { PatternObject } from '../graphic/Pattern';
@@ -259,19 +259,16 @@ export default class CanvasPainter implements PainterBase {
         return this;
     }
 
-    addHover(el: Path, style?: PathStyleProps): Path
-    addHover(el: ZRText, style?: TextStyleProps): ZRText
-    addHover(el: ZRImage, style?: ImageStyleProps): ZRImage
-    addHover(
-        el: Path | ZRText | ZRImage,
-        hoverStyle?: PathStyleProps | TextStyleProps | ImageStyleProps
-    ): Path | ZRText | ZRImage {
+    /**
+     * Add element to hover layer
+     */
+    addHover<T extends Displayable>(el: T, hoverStyle?: T['style']): T {
         if (el.__hoverMir) {
             return;
         }
         const elMirror = new (el as any).constructor({
             style: el.style,
-            shape: (el as Path).shape,
+            shape: (el as unknown as Path).shape,
             z: el.z,
             z2: el.z2,
             silent: el.silent

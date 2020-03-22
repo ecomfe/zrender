@@ -1,4 +1,4 @@
-import Displayable, { DisplayableProps } from './Displayable';
+import Displayable, { DisplayableProps, DisplayableStatePropNames } from './Displayable';
 import { getBoundingRect, DEFAULT_FONT } from '../contain/text';
 import BoundingRect from '../core/BoundingRect';
 import { PathStyleProps, DEFAULT_PATH_STYLE } from './Path';
@@ -31,6 +31,8 @@ export const DEFAULT_TEXT_STYLE: TextStyleProps = extend({
 interface TextProps extends DisplayableProps {
     style?: TextStyleProps
 }
+
+export type TextState = Pick<TextProps, DisplayableStatePropNames>
 
 class ZRText extends Displayable<TextProps> {
     type = 'text'

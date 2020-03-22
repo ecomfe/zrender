@@ -27,7 +27,7 @@ class Transformable {
     /**
      * 旋转和缩放的原点
      */
-    origin: vector.VectorArray
+    origin?: vector.VectorArray
     /**
      * Scale ratio
      */

@@ -2,7 +2,7 @@ import Transformable from './core/Transformable';
 import { AnimationEasing } from './animation/easing';
 import Animator from './animation/Animator';
 import { ZRenderType } from './zrender';
-import { VectorArray } from './core/vector';
+import { VectorArray, add } from './core/vector';
 import { Dictionary, ElementEventName, ZRRawEvent, BuiltinTextPosition, AllPropTypes } from './core/types';
 import Path from './graphic/Path';
 import BoundingRect from './core/BoundingRect';
@@ -29,6 +29,18 @@ interface TextLayout {
      * @default 'inside'
      */
     position?: BuiltinTextPosition | number[] | string[]
+
+    /**
+     * Rotation of the label.
+     */
+    rotation?: number
+
+    /**
+     * Offset of the label.
+     * The difference of offset and position is that it will be applied
+     * in the rotation
+     */
+    offset?: number[]
 
     /**
      * Distance to the rect
@@ -117,7 +129,12 @@ export interface ElementProps extends Partial<ElementEventHandlerProps> {
 }
 
 // Properties can be used in state.
-export type ElementStatePropNames = 'position' | 'rotation' | 'scale' | 'origin' | 'textLayout';
+export const PRESERVED_NORMAL_STATE = '__zr_normal__';
+
+export type ElementStatePropNames = 'position' | 'rotation' | 'scale' | 'origin' | 'textLayout' | 'ignore';
+export type ElementState = Pick<ElementProps, ElementStatePropNames>;
+
+const PRIMARY_STATES_KEYS = ['position', 'scale', 'rotation', 'origin', 'ignore'] as const;
 
 type AnimationCallback = () => {}
 
@@ -210,12 +227,13 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     anid: string
 
-    currentState?: string
+    currentStates?: string[] = []
     /**
      * Store of element state.
-     * 'normal' key is preserved for default properties.
+     * '__normal__' key is preserved for default properties.
      */
-    states?: Dictionary<Pick<Props, ElementStatePropNames>>
+    states: Dictionary<ElementState>
+    protected _normalState: ElementState
 
     constructor(props?: Props) {
         // Transformable needs position, rotation, scale
@@ -269,7 +287,10 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     update() {
         this.updateTransform();
+        this._updateTextLayout();
+    }
 
+    private _updateTextLayout() {
         // Update textContent
         const textEl = this._textContent;
         if (textEl) {
@@ -290,6 +311,15 @@ class Element<Props extends ElementProps = ElementProps> {
             // TODO Not modify el.position?
             textEl.position[0] = tmpTextPosCalcRes.x;
             textEl.position[1] = tmpTextPosCalcRes.y;
+
+            textEl.rotation = textLayout.rotation || 0;
+
+            let textOffset = textLayout.offset;
+            if (textOffset) {
+                add(textEl.position, textEl.position, textOffset);
+                textEl.origin = [-textOffset[0], -textOffset[1]];
+            }
+
             if (tmpTextPosCalcRes.textAlign) {
                 textEl.style.textAlign = tmpTextPosCalcRes.textAlign;
             }
@@ -371,9 +401,9 @@ class Element<Props extends ElementProps = ElementProps> {
         if (!this.states) {
             this.states = {};
         }
-        let state = this.states.normal;
+        let state = this._normalState;
         if (!state) {
-            state = this.states.normal = {};
+            state = this._normalState = {};
         }
 
         // TODO clone?
@@ -381,60 +411,127 @@ class Element<Props extends ElementProps = ElementProps> {
         state.position = this.position;
         state.scale = this.scale;
         state.rotation = this.rotation;
-        state.origin = this.origin;
+        state.origin = this.origin || [0, 0];
+
+        state.ignore = this.ignore;
     }
 
+    clearStates() {
+        this.useState(PRESERVED_NORMAL_STATE);
+        // TODO set _normalState to null?
+    }
     /**
      * Use state. State is a collection of properties.
      * Will return current state object if state exists and stateName has been changed.
+     *
+     * @param stateName State name to be switched to
+     * @param keepCurrentState If keep current states.
+     *      If not, it will inherit from the normal state.
      */
-    useState(stateName: string) {
-        if (stateName !== 'normal' && this.currentState === 'normal') {
-            this.saveStateToNormal();
+    useState(stateName: string, keepCurrentStates?: boolean) {
+        // Use preserved word __normal__
+        const toNormalState = stateName === PRESERVED_NORMAL_STATE;
+
+        if (!this.hasState()) {
+            // If switched from normal state to other state.
+            if (!toNormalState) {
+                this.saveStateToNormal();
+            }
+            else {
+                // If switched from normal to normal.
+                return;
+            }
         }
-        if (stateName === this.currentState) {
+
+        const currentStates = this.currentStates;
+        const currentStatesCount = currentStates.length;
+        const lastStateName = currentStates[currentStatesCount - 1];
+        const stateNoChange = stateName === lastStateName
+            /// If not keepCurrentStates and has more than one states have been applied.
+            // Needs clear all the previous states and applied the new one again.
+            && (keepCurrentStates || currentStatesCount === 1);
+
+        if (stateNoChange) {
             return;
         }
 
-        let state = this.states && this.states[stateName];
-        if (!state) {
+        const statesMap = this.states;
+        const state = (statesMap && statesMap[stateName]);
+        if (!state && !toNormalState) {
             logError(`State ${stateName} not exists.`);
             return;
         }
 
-        // TODO: Save current state to normal?
-        // TODO: Animation
-        if (state.textLayout) {
-            // Clone a copy
-            if (this.textLayout) {
-                this.textLayout = extend({}, this.textLayout);
-            }
-            this.setTextLayout(state.textLayout);
-        }
-        if (state.position) {
-            // Not copy. Replace
-            this.position = state.position;
-        }
-        if (state.scale) {
-            this.scale = state.scale;
-        }
-        if (state.rotation !== null) {
-            this.rotation = state.rotation;
-        }
-        if (state.scale !== null) {
-            this.scale = state.scale;
-        }
+        this._applyStateObj(state, keepCurrentStates);
+
         // Also set text content.
         if (this._textContent) {
             this._textContent.useState(stateName);
         }
 
-        this.currentState = stateName;
+        if (toNormalState) {
+            // Clear state
+            this.currentStates = [];
+        }
+        else {
+            if (!keepCurrentStates) {
+                this.currentStates = [stateName];
+            }
+            else {
+                this.currentStates.push(stateName);
+            }
+        }
 
         this.dirty();
         // Return used state.
         return state;
     }
+
+    hasState() {
+        return this.currentStates.length > 0;
+    }
+
+    /**
+     * Apply multiple states.
+     */
+    useStates(states: string[]) {
+        for (let i = 0; i < states.length; i++) {
+            this.useState(states[i], i > 0);
+        }
+    }
+
+    protected _applyStateObj(state?: ElementState, keepCurrentStates?: boolean) {
+        const normalState = this._normalState;
+        let needsRestoreToNormal = !state || !keepCurrentStates;
+
+        // TODO: Save current state to normal?
+        // TODO: Animation
+        if (state && state.textLayout) {
+            // Inherit from current state or normal state.
+            this.textLayout = extend(
+                {},
+                keepCurrentStates ? this.textLayout : normalState.textLayout
+            );
+            extend(this.textLayout, state.textLayout);
+        }
+        else if (needsRestoreToNormal) {
+            this.textLayout = normalState.textLayout;
+        }
+
+        for (let i = 0; i < PRIMARY_STATES_KEYS.length; i++) {
+            let key = PRIMARY_STATES_KEYS[i];
+            if (state && state[key] != null) {
+                // Replace if it exist in target state
+                (this as any)[key] = state[key];
+            }
+            else if (needsRestoreToNormal) {
+                // Restore to normal state
+                (this as any)[key] = normalState[key];
+            }
+        }
+
+    }
+
     /**
      * Get clip path
      */
@@ -746,7 +843,6 @@ class Element<Props extends ElementProps = ElementProps> {
         const elProto = Element.prototype;
         elProto.type = 'element';
         elProto.name = '';
-        elProto.currentState = 'normal';
         elProto.ignore = false;
         elProto.silent = false;
         elProto.isGroup = false;

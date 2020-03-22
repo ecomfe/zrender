@@ -3,7 +3,7 @@ import Displayable, { DisplayableProps,
     DEFAULT_COMMON_STYLE,
     DisplayableStatePropNames
 } from './Displayable';
-import Element from '../Element';
+import Element, { PRESERVED_NORMAL_STATE } from '../Element';
 import PathProxy from '../core/PathProxy';
 import * as pathContain from '../contain/path';
 import { PatternObject } from './Pattern';
@@ -81,6 +81,7 @@ interface Path<Props extends PathProps = PathProps> {
 }
 
 export type PathStatePropNames = DisplayableStatePropNames | 'shape';
+export type PathState = Pick<PathProps, PathStatePropNames>
 
 class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
 
@@ -103,7 +104,8 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
     private _rectWithStroke: BoundingRect
 
     // override
-    states: Dictionary<Pick<PathProps, PathStatePropNames>>
+    states: Dictionary<PathState>
+    protected _normalState: PathState
 
     // Must have an initial value on shape.
     // It will be assigned by default value.
@@ -344,20 +346,25 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
     protected saveStateToNormal() {
         super.saveStateToNormal();
 
-        this.states.normal.shape = this.shape;
+        this._normalState.shape = this.shape;
     }
 
-    useState(stateName: string) {
-        let state = super.useState(stateName) as Path['states'][string];
+    protected _applyStateObj(state?: PathState, keepCurrentStates?: boolean) {
+        super._applyStateObj(state, keepCurrentStates);
+        let needsRestoreToNormal = !state || !keepCurrentStates;
+        const normalState = this._normalState;
         if (state && state.shape) {
-            // Inherits shape from normal state first.
-            // TODO performance?
-            this.shape = extend({}, this.states.normal.shape);
+            this.shape = extend(
+                {},
+                keepCurrentStates ? this.shape : normalState.shape
+            );
             extend(this.shape, state.shape);
-
-            this.dirtyShape();''
         }
-        return state;
+        else if (needsRestoreToNormal) {
+            this.shape = normalState.shape;
+        }
+
+        this.dirtyShape();
     }
 
     /**
