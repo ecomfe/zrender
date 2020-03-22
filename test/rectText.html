@@ -162,13 +162,13 @@
                 var dist = _storage.textDistance;
                 for (var i = 0; i < _shapes1.length; i++) {
                     var shape = _shapes1[i];
-                    shape.setTextLayout({
+                    shape.setTextConfig({
                         distance: dist
                     });
                 }
                 for (var i = 0; i < _shapes2.length; i++) {
                     var shape = _shapes2[i];
-                    shape.setTextLayout({
+                    shape.setTextConfig({
                         distance: dist
                     });
                 }
@@ -186,13 +186,13 @@
                 var textPosition = _storage.textPosition;
                 for (var i = 0; i < _shapes1.length; i++) {
                     var shape = _shapes1[i];
-                    shape.setTextLayout({
+                    shape.setTextConfig({
                         position: textPosition
                     });
                 }
                 for (var i = 0; i < _shapes2.length; i++) {
                     var shape = _shapes2[i];
-                    shape.setTextLayout({
+                    shape.setTextConfig({
                         position: textPosition
                     });
                 }
@@ -386,7 +386,7 @@
                             text: text
                         }
                     }),
-                    textLayout: {
+                    textConfig: {
                         position: textPos
                     },
                     __zr_test_text: text,
@@ -431,7 +431,7 @@
                             }
                         }
                     }),
-                    textLayout: {
+                    textConfig: {
                         position: textPos
                     },
                     shape: {

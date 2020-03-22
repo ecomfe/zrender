@@ -23,7 +23,7 @@ import {
     isArrayLike
 } from './core/util';
 
-interface TextLayout {
+interface TextConfig {
     /**
      * Position relative to the element bounding rect
      * @default 'inside'
@@ -118,7 +118,7 @@ export interface ElementProps extends Partial<ElementEventHandlerProps> {
     origin?: VectorArray
     globalScaleRatio?: number
 
-    textLayout?: TextLayout
+    textConfig?: TextConfig
     textContent?: RichText
 
     clipPath?: Path
@@ -131,7 +131,7 @@ export interface ElementProps extends Partial<ElementEventHandlerProps> {
 // Properties can be used in state.
 export const PRESERVED_NORMAL_STATE = '__zr_normal__';
 
-export type ElementStatePropNames = 'position' | 'rotation' | 'scale' | 'origin' | 'textLayout' | 'ignore';
+export type ElementStatePropNames = 'position' | 'rotation' | 'scale' | 'origin' | 'textConfig' | 'ignore';
 export type ElementState = Pick<ElementProps, ElementStatePropNames>;
 
 const PRIMARY_STATES_KEYS = ['position', 'scale', 'rotation', 'origin', 'ignore'] as const;
@@ -217,9 +217,9 @@ class Element<Props extends ElementProps = ElementProps> {
     private _textContent: RichText
 
     /**
-     * Layout of textContent
+     * Config of textContent. Inlcuding layout, color, ...etc.
      */
-    textLayout: TextLayout
+    textConfig: TextConfig
 
     // FOR ECHARTS
     /**
@@ -287,18 +287,18 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     update() {
         this.updateTransform();
-        this._updateTextLayout();
+        this._updateInnerText();
     }
 
-    private _updateTextLayout() {
+    private _updateInnerText() {
         // Update textContent
         const textEl = this._textContent;
         if (textEl) {
-            if (!this.textLayout) {
-                this.textLayout = {};
+            if (!this.textConfig) {
+                this.textConfig = {};
             }
-            const textLayout = this.textLayout;
-            const isLocal = textLayout.local;
+            const textConfig = this.textConfig;
+            const isLocal = textConfig.local;
             tmpBoundingRect.copy(this.getBoundingRect());
             if (!isLocal) {
                 tmpBoundingRect.applyTransform(this.transform);
@@ -307,14 +307,14 @@ class Element<Props extends ElementProps = ElementProps> {
                 // TODO parent is always be group for developers. But can be displayble inside.
                 textEl.parent = this as unknown as Element;
             }
-            calculateTextPosition(tmpTextPosCalcRes, textLayout, tmpBoundingRect);
+            calculateTextPosition(tmpTextPosCalcRes, textConfig, tmpBoundingRect);
             // TODO Not modify el.position?
             textEl.position[0] = tmpTextPosCalcRes.x;
             textEl.position[1] = tmpTextPosCalcRes.y;
 
-            textEl.rotation = textLayout.rotation || 0;
+            textEl.rotation = textConfig.rotation || 0;
 
-            let textOffset = textLayout.offset;
+            let textOffset = textConfig.offset;
             if (textOffset) {
                 add(textEl.position, textEl.position, textOffset);
                 textEl.origin = [-textOffset[0], -textOffset[1]];
@@ -348,8 +348,8 @@ class Element<Props extends ElementProps = ElementProps> {
                 target[1] = (value as VectorArray)[1];
             }
         }
-        else if (key === 'textLayout') {
-            this.setTextLayout(value as TextLayout);
+        else if (key === 'textConfig') {
+            this.setTextConfig(value as TextConfig);
         }
         else if (key === 'textContent') {
             this.setTextContent(value as RichText);
@@ -404,7 +404,7 @@ class Element<Props extends ElementProps = ElementProps> {
         }
 
         // TODO clone?
-        state.textLayout = this.textLayout;
+        state.textConfig = this.textConfig;
         state.position = this.position;
         state.scale = this.scale;
         state.rotation = this.rotation;
@@ -528,16 +528,16 @@ class Element<Props extends ElementProps = ElementProps> {
 
         // TODO: Save current state to normal?
         // TODO: Animation
-        if (state && state.textLayout) {
+        if (state && state.textConfig) {
             // Inherit from current state or normal state.
-            this.textLayout = extend(
+            this.textConfig = extend(
                 {},
-                keepCurrentStates ? this.textLayout : normalState.textLayout
+                keepCurrentStates ? this.textConfig : normalState.textConfig
             );
-            extend(this.textLayout, state.textLayout);
+            extend(this.textConfig, state.textConfig);
         }
         else if (needsRestoreToNormal) {
-            this.textLayout = normalState.textLayout;
+            this.textConfig = normalState.textConfig;
         }
 
         for (let i = 0; i < PRIMARY_STATES_KEYS.length; i++) {
@@ -646,13 +646,14 @@ class Element<Props extends ElementProps = ElementProps> {
     }
 
     /**
-     * Set layout of attached text
+     * Set layout of attached text. Will merge with the previous.
      */
-    setTextLayout(textLayout: TextLayout) {
-        if (!this.textLayout) {
-            this.textLayout = {};
+    setTextConfig(cfg: TextConfig) {
+        // TODO hide cfg property?
+        if (!this.textConfig) {
+            this.textConfig = {};
         }
-        extend(this.textLayout, textLayout);
+        extend(this.textConfig, cfg);
         this.markRedraw();
     }
 
