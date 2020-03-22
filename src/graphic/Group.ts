@@ -237,7 +237,7 @@ export default class Group extends Element<GroupProps> {
         }
     }
 
-    dirty() {
+    markRedraw() {
         this.__dirty = true;
         this.__zr && this.__zr.refresh();
         return this;

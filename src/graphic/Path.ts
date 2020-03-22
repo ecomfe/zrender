@@ -78,6 +78,9 @@ interface Path<Props extends PathProps = PathProps> {
     animate(key?: '', loop?: boolean): Animator<this>
     animate(key: 'style', loop?: boolean): Animator<this['style']>
     animate(key: 'shape', loop?: boolean): Animator<this['shape']>
+
+    getState(stateName: string): PathState
+    ensureState(stateName: string): PathState
 }
 
 export type PathStatePropNames = DisplayableStatePropNames | 'shape';
@@ -266,11 +269,11 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         return false;
     }
 
-    dirty() {
-        super.dirty();
+    markRedraw() {
+        super.markRedraw();
         // Used as a clipping path
         if (this.__clipTarget) {
-            this.__clipTarget.dirty();
+            this.__clipTarget.markRedraw();
         }
     }
 
@@ -279,7 +282,12 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
      */
     dirtyShape() {
         this.__dirtyPath = true;
-        this.dirty();
+        this.markRedraw();
+    }
+
+    dirty() {
+        this.dirtyStyle();
+        this.dirtyShape();
     }
 
     /**
@@ -299,7 +307,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
             this.dirtyShape();
         }
         else {
-            this.dirty();
+            this.markRedraw();
         }
     }
 

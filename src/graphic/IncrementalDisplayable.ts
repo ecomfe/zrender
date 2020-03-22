@@ -52,7 +52,7 @@ export default class IncrementalDisplayble extends Displayble {
         this._displayables = [];
         this._temporaryDisplayables = [];
         this._cursor = 0;
-        this.dirty();
+        this.markRedraw();
 
         this.notClear = false;
     }
@@ -68,7 +68,7 @@ export default class IncrementalDisplayble extends Displayble {
         else {
             this._displayables.push(displayable);
         }
-        this.dirty();
+        this.markRedraw();
     }
 
     addDisplayables(displayables: Displayble[], notPersistent?: boolean) {

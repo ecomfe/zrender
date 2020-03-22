@@ -68,6 +68,9 @@ const PRIMARY_STATES_KEYS = ['z', 'z2', 'invisible'] as const;
 interface Displayable<Props extends DisplayableProps = DisplayableProps> {
     animate(key?: '', loop?: boolean): Animator<this>
     animate(key: 'style', loop?: boolean): Animator<this['style']>
+
+    getState(stateName: string): DisplayableState
+    ensureState(stateName: string): DisplayableState
 }
 class Displayable<Props extends DisplayableProps = DisplayableProps> extends Element<Props> {
 
@@ -206,7 +209,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
             this.dirtyStyle();
         }
         else {
-            this.dirty();
+            this.markRedraw();
         }
     }
 
@@ -239,9 +242,13 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
 
     dirtyStyle() {
         this.__dirtyStyle = true;
-        this.dirty();
+        this.markRedraw();
         // Clear bounding rect.
         this._rect = null;
+    }
+
+    dirty() {
+        this.dirtyStyle();
     }
 
     useStyle(obj: Props['style'], inherited?: Props['style']) {

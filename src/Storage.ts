@@ -213,7 +213,7 @@ export default class Storage {
     addToStorage(el: Element) {
         if (el) {
             el.__storage = this;
-            el.dirty();
+            el.markRedraw();
         }
         return this;
     }

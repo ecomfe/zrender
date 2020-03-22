@@ -232,7 +232,7 @@ class Element<Props extends ElementProps = ElementProps> {
      * Store of element state.
      * '__normal__' key is preserved for default properties.
      */
-    states: Dictionary<ElementState>
+    states: Dictionary<ElementState> = {}
     protected _normalState: ElementState
 
     constructor(props?: Props) {
@@ -271,7 +271,7 @@ class Element<Props extends ElementProps = ElementProps> {
         m[5] += dy;
 
         this.decomposeTransform();
-        this.dirty();
+        this.markRedraw();
     }
 
     /**
@@ -327,7 +327,7 @@ class Element<Props extends ElementProps = ElementProps> {
                 textEl.style.verticalAlign = tmpTextPosCalcRes.verticalAlign;
             }
             // Mark textEl to update transform.
-            textEl.dirty();
+            textEl.markRedraw();
         }
     }
 
@@ -392,15 +392,12 @@ class Element<Props extends ElementProps = ElementProps> {
                 this.attrKV(key as keyof ElementProps, keyOrObj[key]);
             }
         }
-        this.dirty();
+        this.markRedraw();
         return this;
     }
 
     // Save current state to normal
     protected saveStateToNormal() {
-        if (!this.states) {
-            this.states = {};
-        }
         let state = this._normalState;
         if (!state) {
             state = this._normalState = {};
@@ -416,6 +413,35 @@ class Element<Props extends ElementProps = ElementProps> {
         state.ignore = this.ignore;
     }
 
+    /**
+     * If has any state.
+     */
+    hasState() {
+        return this.currentStates.length > 0;
+    }
+
+    /**
+     * Get state object
+     */
+    getState(name: string) {
+        return this.states[name];
+    }
+
+
+    /**
+     * Ensure state exists. If not, will create one and return.
+     */
+    ensureState(name: string) {
+        const states = this.states;
+        if (!states[name]) {
+            states[name] = {};
+        }
+        return states[name];
+    }
+
+    /**
+     * Clear all states.
+     */
     clearStates() {
         this.useState(PRESERVED_NORMAL_STATE);
         // TODO set _normalState to null?
@@ -482,13 +508,9 @@ class Element<Props extends ElementProps = ElementProps> {
             }
         }
 
-        this.dirty();
+        this.markRedraw();
         // Return used state.
         return state;
-    }
-
-    hasState() {
-        return this.currentStates.length > 0;
     }
 
     /**
@@ -559,7 +581,7 @@ class Element<Props extends ElementProps = ElementProps> {
         // TODO
         clipPath.__clipTarget = this as unknown as Element;
 
-        this.dirty();
+        this.markRedraw();
     }
 
     /**
@@ -576,7 +598,7 @@ class Element<Props extends ElementProps = ElementProps> {
             clipPath.__clipTarget = null;
             this._clipPath = null;
 
-            this.dirty();
+            this.markRedraw();
         }
     }
 
@@ -605,7 +627,7 @@ class Element<Props extends ElementProps = ElementProps> {
         this._textContent = textEl;
         textEl.__zr = zr;
 
-        this.dirty();
+        this.markRedraw();
     }
 
     /**
@@ -619,7 +641,7 @@ class Element<Props extends ElementProps = ElementProps> {
             }
             textEl.__zr = null;
             this._textContent = null;
-            this.dirty();
+            this.markRedraw();
         }
     }
 
@@ -631,15 +653,24 @@ class Element<Props extends ElementProps = ElementProps> {
             this.textLayout = {};
         }
         extend(this.textLayout, textLayout);
-        this.dirty();
+        this.markRedraw();
     }
 
     /**
-     * Mark displayable element dirty and refresh next frame
+     * Mark element needs to be repainted
      */
-    dirty() {
+    markRedraw() {
         this.__dirty = true;
         this.__zr && this.__zr.refresh();
+    }
+
+
+    /**
+     * Besides marking elements to be refreshed.
+     * It will also invalid all cache and doing recalculate next frame.
+     */
+    dirty() {
+        this.markRedraw();
     }
 
     /**
@@ -738,7 +769,7 @@ class Element<Props extends ElementProps = ElementProps> {
     }
 
     updateDuringAnimation(key: string) {
-        this.dirty();
+        this.markRedraw();
     }
 
     /**

@@ -148,15 +148,15 @@ export interface RichTextStyleProps extends RichTextStylePropsPart {
     /**
      * Epllipsis used if text is truncated
      */
-    ellipsis: string
+    ellipsis?: string
     /**
      * Placeholder used if text is truncated to empty
      */
-    placeholder: string
+    placeholder?: string
     /**
      * Min characters for truncating
      */
-    truncateMinChar: number
+    truncateMinChar?: number
 }
 
 interface RichTextProps extends DisplayableProps {
