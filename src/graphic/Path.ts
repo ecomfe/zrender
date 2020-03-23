@@ -13,6 +13,7 @@ import { LinearGradientObject } from './LinearGradient';
 import { RadialGradientObject } from './RadialGradient';
 import { defaults, keys, extend, clone, isString } from '../core/util';
 import Animator from '../animation/Animator';
+import { parse } from '../tool/color';
 
 export interface PathStyleProps extends CommonStyleProps {
     fill?: string | PatternObject | LinearGradientObject | RadialGradientObject
@@ -162,8 +163,34 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         return {};
     }
 
-    protected getInsideTextStroke() {
-        return isString(this.style.fill) ? this.style.fill : '#000';
+    protected getInsideTextFill() {
+        const pathFill = this.style.fill;
+        if (pathFill !== 'none') {
+            if (isString(pathFill)) {
+                // Determin text color based on the lum of path fill.
+                const arr = parse(pathFill);
+                const lum =  (0.299 * arr[0] + 0.587 * arr[1] + 0.114 * arr[2]) * arr[3] / 255;
+                if (lum > 0.5) {
+                    return '#000';
+                }
+                return '#fff';
+            }
+            else if (pathFill) {
+                return '#fff';
+            }
+
+        }
+        return '#000';
+    }
+
+    protected getInsideTextStroke(textFill?: string) {
+        const pathFill = this.style.fill;
+        if (textFill === '#fff') { // Draw border if textFill is white.
+            return pathFill as string;
+        }
+        else {    // Not stroke on none fill object or gradient object
+            return null;
+        }
     }
 
     // When bundling path, some shape may decide if use moveTo to begin a new subpath or closePath

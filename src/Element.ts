@@ -360,7 +360,7 @@ class Element<Props extends ElementProps = ElementProps> {
                         fillColor = this.getInsideTextFill();
                     }
                     if (strokeColor === 'auto') {
-                        strokeColor = this.getInsideTextStroke();
+                        strokeColor = this.getInsideTextStroke(fillColor);
                     }
 
                     insideTextColor.fill = fillColor;
@@ -385,7 +385,7 @@ class Element<Props extends ElementProps = ElementProps> {
         return '#fff';
     }
 
-    protected getInsideTextStroke() {
+    protected getInsideTextStroke(textFill?: string) {
         return '#000';
     }
 
