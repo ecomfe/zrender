@@ -195,31 +195,38 @@ class RichText extends Displayable<RichTextProps> {
     update() {
         // Update children
         if (this.__dirtyStyle) {
-            // Reset child visit cursor
-            this._childCursor = 0;
-
-            normalizeTextStyle(this.style);
-            this.style.rich
-                ? this._updateRichTexts()
-                : this._updatePlainTexts();
-
-            this._children.length = this._childCursor;
-
-            for (let i = 0; i < this._children.length; i++) {
-                const child = this._children[i];
-                // Set common properties.
-                child.zlevel = this.zlevel;
-                child.z = this.z;
-                child.z2 = this.z2;
-                child.culling = this.culling;
-                child.cursor = this.cursor;
-                child.invisible = this.invisible;
-            }
+            this._updateSubTexts()
         }
         super.update();
     }
 
+    private _updateSubTexts() {
+        // Reset child visit cursor
+        this._childCursor = 0;
+
+        normalizeTextStyle(this.style);
+        this.style.rich
+            ? this._updateRichTexts()
+            : this._updatePlainTexts();
+
+        this._children.length = this._childCursor;
+
+        for (let i = 0; i < this._children.length; i++) {
+            const child = this._children[i];
+            // Set common properties.
+            child.zlevel = this.zlevel;
+            child.z = this.z;
+            child.z2 = this.z2;
+            child.culling = this.culling;
+            child.cursor = this.cursor;
+            child.invisible = this.invisible;
+        }
+    }
+
     getBoundingRect(): BoundingRect {
+        if (this.__dirtyStyle) {
+            this._updateSubTexts();
+        }
         if (!this._rect) {
             const tmpRect = new BoundingRect(0, 0, 0, 0);
             const children = this._children;

@@ -437,9 +437,6 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
     }): {
         new(opts?: PathProps & {shape: Shape}): Path
     } {
-
-        const defaultShape = clone(defaultProps.shape);
-        const defaultStyle = clone(defaultProps.style);
         interface SubPathOption extends PathProps {
             shape: Shape
         }
@@ -449,11 +446,11 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
             shape: Shape
 
             getDefaultStyle() {
-                return defaultStyle;
+                return clone(defaultProps.style);
             }
 
             getDefaultShape() {
-                return defaultShape;
+                return clone(defaultProps.shape);
             }
 
             constructor(opts?: SubPathOption) {
