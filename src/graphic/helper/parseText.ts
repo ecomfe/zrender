@@ -352,7 +352,7 @@ export function parseRichText(text: string, style: RichTextStyleProps) {
                 tokenStyle.lineHeight, style.lineHeight, tokenHeight
             );
 
-            token.textAlign = tokenStyle && tokenStyle.textAlign || style.textAlign;
+            token.textAlign = tokenStyle && tokenStyle.align || style.align;
             token.textVerticalAlign = tokenStyle && tokenStyle.verticalAlign || 'middle';
 
             if (truncateLine && topHeight != null && contentHeight + token.lineHeight > topHeight) {

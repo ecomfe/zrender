@@ -67,7 +67,7 @@ interface RichTextStylePropsPart {
      */
     fontSize?: number
 
-    textAlign?: TextAlign
+    align?: TextAlign
     verticalAlign?: TextVerticalAlign
 
     /**
@@ -290,7 +290,7 @@ class RichText extends Displayable<RichTextProps> {
 
         const baseX = style.x || 0;
         const baseY = style.y || 0;
-        const textAlign = style.textAlign || 'left';
+        const textAlign = style.align || 'left';
         const textVerticalAlign = style.verticalAlign;
 
         const boxY = adjustTextY(baseY, outerHeight, textVerticalAlign);
@@ -374,7 +374,7 @@ class RichText extends Displayable<RichTextProps> {
 
         const baseX = style.x || 0;
         const baseY = style.y || 0;
-        const textAlign = style.textAlign;
+        const textAlign = style.align;
         const textVerticalAlign = style.verticalAlign;
 
         const boxX = adjustTextX(baseX, outerWidth, textAlign);
@@ -597,10 +597,10 @@ export function normalizeTextStyle(style: RichTextStyleProps): RichTextStyleProp
 function normalizeStyle(style: RichTextStylePropsPart) {
     if (style) {
         style.font = makeFont(style);
-        let textAlign = style.textAlign;
+        let textAlign = style.align;
         // 'middle' is invalid, convert it to 'center'
         (textAlign as string) === 'middle' && (textAlign = 'center');
-        style.textAlign = (
+        style.align = (
             textAlign == null || VALID_TEXT_ALIGN[textAlign]
         ) ? textAlign : 'left';
 

@@ -149,7 +149,7 @@ export type ElementState = Pick<ElementProps, ElementStatePropNames>;
 
 const PRIMARY_STATES_KEYS = ['position', 'scale', 'rotation', 'origin', 'ignore'] as const;
 
-type AnimationCallback = () => {}
+type AnimationCallback = () => void
 
 let tmpTextPosCalcRes = {} as TextPositionCalculationResult;
 let tmpBoundingRect = new BoundingRect();
@@ -337,7 +337,7 @@ class Element<Props extends ElementProps = ElementProps> {
             }
 
             if (tmpTextPosCalcRes.textAlign) {
-                textEl.style.textAlign = tmpTextPosCalcRes.textAlign;
+                textEl.style.align = tmpTextPosCalcRes.textAlign;
             }
             if (tmpTextPosCalcRes.verticalAlign) {
                 textEl.style.verticalAlign = tmpTextPosCalcRes.verticalAlign;
