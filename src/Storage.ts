@@ -110,7 +110,7 @@ export default class Storage {
             while (currentClipPath) {
                 // clipPath 的变换是基于使用这个 clipPath 的元素
                 // TODO: parent should be group type.
-                currentClipPath.parent = parentClipPath;
+                currentClipPath.parent = parentClipPath as Group;
                 currentClipPath.updateTransform();
 
                 clipPaths.push(currentClipPath);

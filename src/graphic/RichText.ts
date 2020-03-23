@@ -12,6 +12,7 @@ import Rect from './shape/Rect';
 import BoundingRect from '../core/BoundingRect';
 import { MatrixArray } from '../core/matrix';
 import Displayable, { DisplayableStatePropNames, DisplayableProps } from './Displayable';
+import { Group } from '../export';
 
 type RichTextContentBlock = ReturnType<typeof parseRichText>
 type RichTextLine = RichTextContentBlock['lines'][0]
@@ -268,7 +269,8 @@ class RichText extends Displayable<RichTextProps> {
             child = new Ctor();
         }
         this._children[this._childCursor++] = child;
-        child.parent = this;
+        // TODO to users parent can only be group.
+        child.parent = this as any;
         return child;
     }
 

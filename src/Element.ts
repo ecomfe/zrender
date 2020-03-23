@@ -22,6 +22,7 @@ import {
     isFunction,
     isArrayLike
 } from './core/util';
+import { Group } from './export';
 
 interface TextConfig {
     /**
@@ -201,7 +202,7 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     dragging: boolean
 
-    parent: Element
+    parent: Group
 
     animators: Animator<any>[] = [];
 
@@ -321,7 +322,7 @@ class Element<Props extends ElementProps = ElementProps> {
             }
             else {
                 // TODO parent is always be group for developers. But can be displayble inside.
-                textEl.parent = this as unknown as Element;
+                textEl.parent = this as unknown as Group;
             }
             calculateTextPosition(tmpTextPosCalcRes, textConfig, tmpBoundingRect);
             // TODO Not modify el.position?
