@@ -227,9 +227,9 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         }
     }
 
-    setStyle(obj: Props['style']): void
-    setStyle<T extends keyof Props['style']>(obj: T, value: Props['style'][T]): void
-    setStyle(keyOrObj: keyof Props['style'] | Props['style'], value?: unknown) {
+    setStyle(obj: Props['style']): this
+    setStyle<T extends keyof Props['style']>(obj: T, value: Props['style'][T]): this
+    setStyle(keyOrObj: keyof Props['style'] | Props['style'], value?: unknown): this {
         if (typeof keyOrObj === 'string') {
             this.style[keyOrObj] = value;
         }

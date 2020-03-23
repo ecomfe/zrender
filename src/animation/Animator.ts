@@ -626,7 +626,9 @@ export default class Animator<T> {
             });
             this._clip = clip;
 
-            this.animation.addClip(clip);
+            if (this.animation) {
+                this.animation.addClip(clip);
+            }
 
             if (easing && easing !== 'spline') {
                 clip.easing = easing;
@@ -653,7 +655,9 @@ export default class Animator<T> {
             // Move to last frame before stop
             clip.onframe(this._target, 1);
         }
-        animation.removeClip(clip);
+        if (animation) {
+            animation.removeClip(clip);
+        }
     }
     /**
      * Set when animation delay starts

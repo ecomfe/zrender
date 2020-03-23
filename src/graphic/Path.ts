@@ -355,9 +355,9 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         }
     }
 
-    setShape(obj: Props['shape']): void
-    setShape<T extends keyof Props['shape']>(obj: T, value: Props['shape'][T]): void
-    setShape(keyOrObj: keyof Props['shape'] | Props['shape'], value?: unknown) {
+    setShape(obj: Props['shape']): this
+    setShape<T extends keyof Props['shape']>(obj: T, value: Props['shape'][T]): this
+    setShape(keyOrObj: keyof Props['shape'] | Props['shape'], value?: unknown): this {
         let shape = this.shape;
         if (!shape) {
             shape = this.shape = {};
@@ -431,6 +431,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         afterBrush?: Displayable['afterBrush']
         getBoundingRect?: Displayable['getBoundingRect']
 
+        calculateTextPosition?: Element['calculateTextPosition']
         buildPath(this: Path, ctx: CanvasRenderingContext2D | PathProxy, shape: Shape, inBundle?: boolean): void
         init?(this: Path, opts: PathProps): void // TODO Should be SubPathOption
     }): {

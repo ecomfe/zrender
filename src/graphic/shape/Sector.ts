@@ -19,9 +19,7 @@ export default class Sector extends Path<SectorProps> {
 
     shape: SectorShape
 
-    constructor(opts?: PathProps & {
-        shape: Partial<SectorShape>
-    }) {
+    constructor(opts?: SectorProps) {
         super(opts);
     }
 

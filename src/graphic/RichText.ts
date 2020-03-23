@@ -12,7 +12,6 @@ import Rect from './shape/Rect';
 import BoundingRect from '../core/BoundingRect';
 import { MatrixArray } from '../core/matrix';
 import Displayable, { DisplayableStatePropNames, DisplayableProps } from './Displayable';
-import { Group } from '../export';
 
 type RichTextContentBlock = ReturnType<typeof parseRichText>
 type RichTextLine = RichTextContentBlock['lines'][0]
@@ -155,7 +154,7 @@ export interface RichTextStyleProps extends RichTextStylePropsPart {
     truncateMinChar?: number
 }
 
-interface RichTextProps extends DisplayableProps {
+export interface RichTextProps extends DisplayableProps {
     style?: RichTextStyleProps
 
     zlevel?: number
@@ -584,6 +583,19 @@ class RichText extends Displayable<RichTextProps> {
         shadowStyle.shadowOffsetY = style.boxShadowOffsetY || 0;
 
     }
+
+    static makeFont(style: RichTextStylePropsPart): string {
+        // FIXME in node-canvas fontWeight is before fontStyle
+        // Use `fontSize` `fontFamily` to check whether font properties are defined.
+        const font = (style.fontSize || style.fontFamily) && [
+            style.fontStyle,
+            style.fontWeight,
+            (style.fontSize || 12) + 'px',
+            // If font properties are defined, `fontFamily` should not be ignored.
+            style.fontFamily || 'sans-serif'
+        ].join(' ');
+        return font && trim(font) || style.textFont || style.font;
+    }
 }
 
 
@@ -598,7 +610,7 @@ export function normalizeTextStyle(style: RichTextStyleProps): RichTextStyleProp
 
 function normalizeStyle(style: RichTextStylePropsPart) {
     if (style) {
-        style.font = makeFont(style);
+        style.font = RichText.makeFont(style);
         let textAlign = style.align;
         // 'middle' is invalid, convert it to 'center'
         (textAlign as string) === 'middle' && (textAlign = 'center');
@@ -665,21 +677,5 @@ function needDrawBackground(style: RichTextStylePropsPart): boolean {
         || (style.borderWidth && style.borderColor)
     );
 }
-
-function makeFont(
-    style: RichTextStylePropsPart
-): string {
-    // FIXME in node-canvas fontWeight is before fontStyle
-    // Use `fontSize` `fontFamily` to check whether font properties are defined.
-    const font = (style.fontSize || style.fontFamily) && [
-        style.fontStyle,
-        style.fontWeight,
-        (style.fontSize || 12) + 'px',
-        // If font properties are defined, `fontFamily` should not be ignored.
-        style.fontFamily || 'sans-serif'
-    ].join(' ');
-    return font && trim(font) || style.textFont || style.font;
-}
-
 
 export default RichText;

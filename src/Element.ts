@@ -5,7 +5,7 @@ import { ZRenderType } from './zrender';
 import { VectorArray, add } from './core/vector';
 import { Dictionary, ElementEventName, ZRRawEvent, BuiltinTextPosition, AllPropTypes } from './core/types';
 import Path from './graphic/Path';
-import BoundingRect from './core/BoundingRect';
+import BoundingRect, { RectLike } from './core/BoundingRect';
 import Eventful, {EventQuery, EventCallback} from './core/Eventful';
 import RichText from './graphic/RichText';
 import { calculateTextPosition, TextPositionCalculationResult } from './contain/text';
@@ -24,12 +24,12 @@ import {
 } from './core/util';
 import { Group } from './export';
 
-interface TextConfig {
+export interface ElementTextConfig {
     /**
      * Position relative to the element bounding rect
      * @default 'inside'
      */
-    position?: BuiltinTextPosition | number[] | string[]
+    position?: BuiltinTextPosition | (number | string)[]
 
     /**
      * Rotation of the label.
@@ -68,7 +68,9 @@ interface TextConfig {
      * position and fill of Path.
      */
     insideStroke?: string
+
     // TODO applyClip
+    // TODO align, verticalAlign??
 }
 
 export interface ElementEvent {
@@ -132,7 +134,7 @@ export interface ElementProps extends Partial<ElementEventHandlerProps> {
     origin?: VectorArray
     globalScaleRatio?: number
 
-    textConfig?: TextConfig
+    textConfig?: ElementTextConfig
     textContent?: RichText
 
     clipPath?: Path
@@ -233,7 +235,7 @@ class Element<Props extends ElementProps = ElementProps> {
     /**
      * Config of textContent. Inlcuding layout, color, ...etc.
      */
-    textConfig: TextConfig
+    textConfig: ElementTextConfig
 
     // FOR ECHARTS
     /**
@@ -324,7 +326,12 @@ class Element<Props extends ElementProps = ElementProps> {
                 // TODO parent is always be group for developers. But can be displayble inside.
                 textEl.parent = this as unknown as Group;
             }
-            calculateTextPosition(tmpTextPosCalcRes, textConfig, tmpBoundingRect);
+            if (this.calculateTextPosition) {
+                this.calculateTextPosition(tmpTextPosCalcRes, textConfig, tmpBoundingRect);
+            }
+            else {
+                calculateTextPosition(tmpTextPosCalcRes, textConfig, tmpBoundingRect);
+            }
             // TODO Not modify el.position?
             textEl.position[0] = tmpTextPosCalcRes.x;
             textEl.position[1] = tmpTextPosCalcRes.y;
@@ -408,7 +415,7 @@ class Element<Props extends ElementProps = ElementProps> {
             }
         }
         else if (key === 'textConfig') {
-            this.setTextConfig(value as TextConfig);
+            this.setTextConfig(value as ElementTextConfig);
         }
         else if (key === 'textContent') {
             this.setTextContent(value as RichText);
@@ -707,7 +714,7 @@ class Element<Props extends ElementProps = ElementProps> {
     /**
      * Set layout of attached text. Will merge with the previous.
      */
-    setTextConfig(cfg: TextConfig) {
+    setTextConfig(cfg: ElementTextConfig) {
         // TODO hide cfg property?
         if (!this.textConfig) {
             this.textConfig = {};
@@ -930,6 +937,29 @@ class Element<Props extends ElementProps = ElementProps> {
         return null;
     }
 
+
+    /**
+     * The string value of `textPosition` needs to be calculated to a real postion.
+     * For example, `'inside'` is calculated to `[rect.width/2, rect.height/2]`
+     * by default. See `contain/text.js#calculateTextPosition` for more details.
+     * But some coutom shapes like "pin", "flag" have center that is not exactly
+     * `[width/2, height/2]`. So we provide this hook to customize the calculation
+     * for those shapes. It will be called if the `style.textPosition` is a string.
+     * @param {Obejct} [out] Prepared out object. If not provided, this method should
+     *        be responsible for creating one.
+     * @param {module:zrender/graphic/Style} style
+     * @param {Object} rect {x, y, width, height}
+     * @return {Obejct} out The same as the input out.
+     *         {
+     *             x: number. mandatory.
+     *             y: number. mandatory.
+     *             textAlign: string. optional. use style.textAlign by default.
+     *             textVerticalAlign: string. optional. use style.textVerticalAlign by default.
+     *         }
+     */
+    calculateTextPosition: (out: TextPositionCalculationResult, style: ElementTextConfig, rect: RectLike) => TextPositionCalculationResult
+
+
     protected static initDefaultProps = (function () {
         const elProto = Element.prototype;
         elProto.type = 'element';
@@ -1046,7 +1076,8 @@ function animateToShallow<T>(
         if (source[innerKey] != null) {
             if (isObject(target[innerKey]) && !isArrayLike(target[innerKey])) {
                 if (topKey) {
-                    throw new Error('Only support 1 depth nest object animation.');
+                    logError('Only support 1 depth nest object animation.');
+                    return;
                 }
                 animateToShallow(
                     animatable,

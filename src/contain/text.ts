@@ -51,8 +51,8 @@ export function getWidth(text: string, font: string): number {
 export function getBoundingRect(
     text: string,
     font: string,
-    textAlign: CanvasTextAlign,
-    textBaseline: CanvasTextBaseline
+    textAlign?: CanvasTextAlign,
+    textBaseline?: CanvasTextBaseline
 ): BoundingRect {
     const width = getWidth(text, font);
     const height = getLineHeight(font);
@@ -126,7 +126,7 @@ export interface TextPositionCalculationResult {
 export function calculateTextPosition(
     out: TextPositionCalculationResult,
     opts: {
-        position?: BuiltinTextPosition | number[] | string[]
+        position?: BuiltinTextPosition | (number | string)[]
         distance?: number   // Default 5
         global?: boolean
     },
