@@ -2,16 +2,11 @@
  * RichText is a container that manages complex text label.
  * It will parse text string and create sub displayble elements respectively.
  */
-import { PatternObject } from './Pattern';
-import { LinearGradientObject } from './LinearGradient';
-import { RadialGradientObject } from './RadialGradient';
 import { TextAlign, TextVerticalAlign, ImageLike, Dictionary } from '../core/types';
-import { ElementProps } from '../Element';
 import { parseRichText, parsePlainText } from './helper/parseText';
 import ZRText from './Text';
-import { retrieve2, isString, each, normalizeCssArray, trim } from '../core/util';
+import { retrieve2, isString, each, normalizeCssArray, trim, retrieve3 } from '../core/util';
 import { DEFAULT_FONT, adjustTextX, adjustTextY } from '../contain/text';
-import { GradientObject } from './Gradient';
 import ZRImage from './Image';
 import Rect from './shape/Rect';
 import BoundingRect from '../core/BoundingRect';
@@ -26,9 +21,9 @@ type RichTextToken = RichTextLine['tokens'][0]
 interface RichTextStylePropsPart {
     // TODO Text is assigned inside zrender
     text?: string
-    // TODO Text not support PatternObject | LinearGradientObject | RadialGradientObject yet.
-    fill?: string | PatternObject | LinearGradientObject | RadialGradientObject
-    stroke?: string | PatternObject | LinearGradientObject | RadialGradientObject
+
+    fill?: string
+    stroke?: string
 
     opacity?: number
     fillOpacity?: number
@@ -172,6 +167,10 @@ interface RichTextProps extends DisplayableProps {
 
 export type RichTextState = Pick<RichTextProps, DisplayableStatePropNames>
 
+const DEFAULT_RICH_TEXT_COLOR: Pick<RichTextStyleProps, 'fill' | 'stroke' | 'lineWidth'> = {
+    fill: '#000'
+};
+
 class RichText extends Displayable<RichTextProps> {
 
     type = 'richtext'
@@ -181,6 +180,8 @@ class RichText extends Displayable<RichTextProps> {
     private _children: (ZRImage | Rect | ZRText)[] = []
 
     private _childCursor: 0
+
+    private _defaultColor = DEFAULT_RICH_TEXT_COLOR
 
     constructor(opts?: RichTextProps) {
         super();
@@ -247,6 +248,17 @@ class RichText extends Displayable<RichTextProps> {
     }
 
 
+    // Can be set in Element. To calculate text fill automatically when textContent is inside element
+    setDefaultTextColor(defaultTextStyle: Pick<RichTextStyleProps, 'fill' | 'stroke' | 'lineWidth'>) {
+        // Use builtin if defaultTextStyle is not given.
+        this._defaultColor = defaultTextStyle || DEFAULT_RICH_TEXT_COLOR;
+    }
+
+    setTextContent(textContent: never) {
+        throw new Error('Can\'t attach richText on another richText');
+    }
+
+
     private _getOrCreateChild(Ctor: {new(): ZRText}): ZRText
     private _getOrCreateChild(Ctor: {new(): ZRImage}): ZRImage
     private _getOrCreateChild(Ctor: {new(): Rect}): Rect
@@ -273,6 +285,8 @@ class RichText extends Displayable<RichTextProps> {
 
         const textLines = contentBlock.lines;
         const lineHeight = contentBlock.lineHeight;
+
+        const defaultColor = this._defaultColor;
 
         const baseX = style.x || 0;
         const baseY = style.y || 0;
@@ -301,11 +315,9 @@ class RichText extends Displayable<RichTextProps> {
         textY += lineHeight / 2;
 
         const textStrokeLineWidth = style.lineWidth;
-        const textStroke = getStroke(style.stroke, textStrokeLineWidth);
-        const textFill = getFill(style.fill);
+        const textStroke = getStroke('stroke' in style ? style.stroke : defaultColor.stroke);
+        const textFill = getFill('fill' in style ? style.fill : defaultColor.fill);
 
-        const hasStroke = 'stroke' in style;
-        const hasFill = 'fill' in style;
         const hasShadow = style.textShadowBlur > 0;
 
         for (let i = 0; i < textLines.length; i++) {
@@ -334,11 +346,11 @@ class RichText extends Displayable<RichTextProps> {
                 subElStyle.shadowOffsetY = style.textShadowOffsetY || 0;
             }
 
-            if (hasStroke) {
+            if (textStroke) {
                 subElStyle.stroke = textStroke as string;
-                subElStyle.lineWidth = textStrokeLineWidth;
+                subElStyle.lineWidth = textStrokeLineWidth || defaultColor.lineWidth;
             }
-            if (hasFill) {
+            if (textFill) {
                 subElStyle.fill = textFill as string;
             }
 
@@ -469,8 +481,16 @@ class RichText extends Displayable<RichTextProps> {
         const el = this._getOrCreateChild(ZRText);
         const subElStyle = el.style;
 
-        const hasStroke = 'stroke' in tokenStyle || 'stroke' in style;
-        const hasFill = 'fill' in tokenStyle || 'fill' in style;
+        const defaultColor = this._defaultColor;
+        const textStroke = getStroke(
+            'stroke' in tokenStyle ? tokenStyle.stroke
+               : 'stroke' in style ? style.stroke  : defaultColor.stroke
+        );
+        const textFill = getStroke(
+            'fill' in tokenStyle ? tokenStyle.fill
+               : 'fill' in style ? style.fill  : defaultColor.fill
+        );
+
         const hasShadow = tokenStyle.textShadowBlur > 0
                     || style.textShadowBlur > 0;
 
@@ -490,12 +510,12 @@ class RichText extends Displayable<RichTextProps> {
         subElStyle.textBaseline = 'middle';
         subElStyle.font = token.font || DEFAULT_FONT;
 
-        if (hasStroke) {
-            subElStyle.lineWidth = retrieve2(tokenStyle.lineWidth, style.lineWidth);
-            subElStyle.stroke = getStroke(tokenStyle.stroke || style.stroke, subElStyle.lineWidth) || null;
+        if (textStroke) {
+            subElStyle.lineWidth = retrieve3(tokenStyle.lineWidth, style.lineWidth, defaultColor.lineWidth);
+            subElStyle.stroke = textStroke;
         }
-        if (hasFill) {
-            subElStyle.fill = getFill(tokenStyle.fill || style.fill) || null;
+        if (textFill) {
+            subElStyle.fill = textFill;
         }
     }
 
@@ -609,7 +629,7 @@ function getStroke(
 ) {
     return (stroke == null || lineWidth <= 0 || stroke === 'transparent' || stroke === 'none')
         ? null
-        : ((stroke as PatternObject).image || (stroke as GradientObject).colorStops)
+        : ((stroke as any).image || (stroke as any).colorStops)
         ? '#000'
         : stroke;
 }
@@ -620,7 +640,7 @@ function getFill(
     return (fill == null || fill === 'none')
         ? null
         // TODO pattern and gradient?
-        : ((fill as PatternObject).image || (fill as GradientObject).colorStops)
+        : ((fill as any).image || (fill as any).colorStops)
         ? '#000'
         : fill;
 }

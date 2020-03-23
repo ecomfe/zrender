@@ -54,6 +54,19 @@ interface TextConfig {
      */
     local?: boolean
 
+    /**
+     * Will be set to textContent.style.fill if position is inside
+     * If value is 'auto'. It will calculate text fill based on the
+     * position and fill of Path.
+     */
+    insideFill?: string
+
+    /**
+     * Will be set to textContent.style.stroke if position is inside
+     * If value is 'auto'. It will calculate text stroke based on the
+     * position and fill of Path.
+     */
+    insideStroke?: string
     // TODO applyClip
 }
 
@@ -235,6 +248,9 @@ class Element<Props extends ElementProps = ElementProps> {
     states: Dictionary<ElementState> = {}
     protected _normalState: ElementState
 
+    // Temporary storage for inside text color configuration.
+    private _insideTextColor: { fill?: string, stroke?: string, lineWidth?: number }
+
     constructor(props?: Props) {
         // Transformable needs position, rotation, scale
         Transformable.call(this);
@@ -326,9 +342,51 @@ class Element<Props extends ElementProps = ElementProps> {
             if (tmpTextPosCalcRes.verticalAlign) {
                 textEl.style.verticalAlign = tmpTextPosCalcRes.verticalAlign;
             }
+
+            // Calculate text color
+            const hasInsideFill = textConfig.insideFill != null;
+            const hasInsideStroke = textConfig.insideStroke != null;
+            if (hasInsideFill || hasInsideStroke) {
+                const position = textConfig.position;
+                const isInside = typeof position === 'string' && position.indexOf('inside') >= 0;
+
+                if (isInside) {
+                    const insideTextColor = this._insideTextColor || (this._insideTextColor = {});
+
+                    let fillColor = textConfig.insideFill;
+                    let strokeColor = textConfig.insideStroke;
+
+                    if (fillColor === 'auto') {
+                        fillColor = this.getInsideTextFill();
+                    }
+                    if (strokeColor === 'auto') {
+                        strokeColor = this.getInsideTextStroke();
+                    }
+
+                    insideTextColor.fill = fillColor;
+                    insideTextColor.stroke = strokeColor || null;
+                    insideTextColor.lineWidth = strokeColor ? 2 : 0;
+
+                    textEl.setDefaultTextColor(insideTextColor);
+                }
+            }
+            else {
+                // Clear
+                textEl.setDefaultTextColor(null);
+            }
+
+
             // Mark textEl to update transform.
             textEl.markRedraw();
         }
+    }
+
+    protected getInsideTextFill() {
+        return '#fff';
+    }
+
+    protected getInsideTextStroke() {
+        return '#000';
     }
 
     traverse<Context>(

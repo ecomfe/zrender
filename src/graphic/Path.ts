@@ -11,7 +11,7 @@ import { Dictionary, PropType } from '../core/types';
 import BoundingRect from '../core/BoundingRect';
 import { LinearGradientObject } from './LinearGradient';
 import { RadialGradientObject } from './RadialGradient';
-import { defaults, keys, extend, clone } from '../core/util';
+import { defaults, keys, extend, clone, isString } from '../core/util';
 import Animator from '../animation/Animator';
 
 export interface PathStyleProps extends CommonStyleProps {
@@ -160,6 +160,10 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
     // Needs to override
     protected getDefaultShape() {
         return {};
+    }
+
+    protected getInsideTextStroke() {
+        return isString(this.style.fill) ? this.style.fill : '#000';
     }
 
     // When bundling path, some shape may decide if use moveTo to begin a new subpath or closePath
