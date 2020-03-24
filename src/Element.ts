@@ -69,6 +69,17 @@ export interface ElementTextConfig {
      */
     insideStroke?: string
 
+    /**
+     * Will be set to textContent.style.fill if position is not inside
+     * Can only be a specific color string.
+     */
+    outsideFill?: string
+    /**
+     * Will be set to textContent.style.stroke if position is not inside
+     * Can only be a specific color string.
+     */
+    outsideStroke?: string
+
     // TODO applyClip
     // TODO align, verticalAlign??
 }
@@ -252,7 +263,7 @@ class Element<Props extends ElementProps = ElementProps> {
     protected _normalState: ElementState
 
     // Temporary storage for inside text color configuration.
-    private _insideTextColor: { fill?: string, stroke?: string, lineWidth?: number }
+    private _innerTextColor: { fill?: string, stroke?: string, lineWidth?: number }
 
     constructor(props?: Props) {
         // Transformable needs position, rotation, scale
@@ -352,15 +363,15 @@ class Element<Props extends ElementProps = ElementProps> {
             }
 
             // Calculate text color
-            const hasInsideFill = textConfig.insideFill != null;
-            const hasInsideStroke = textConfig.insideStroke != null;
-            if (hasInsideFill || hasInsideStroke) {
-                const position = textConfig.position;
-                const isInside = typeof position === 'string' && position.indexOf('inside') >= 0;
+            const position = textConfig.position;
+            const isInside = typeof position === 'string' && position.indexOf('inside') >= 0;
+            const innerTextColor = this._innerTextColor || (this._innerTextColor = {});
 
-                if (isInside) {
-                    const insideTextColor = this._insideTextColor || (this._insideTextColor = {});
+            if (isInside) {
+                const hasInsideFill = textConfig.insideFill != null;
+                const hasInsideStroke = textConfig.insideStroke != null;
 
+                if (hasInsideFill || hasInsideStroke) {
                     let fillColor = textConfig.insideFill;
                     let strokeColor = textConfig.insideStroke;
 
@@ -371,18 +382,19 @@ class Element<Props extends ElementProps = ElementProps> {
                         strokeColor = this.getInsideTextStroke(fillColor);
                     }
 
-                    insideTextColor.fill = fillColor;
-                    insideTextColor.stroke = strokeColor || null;
-                    insideTextColor.lineWidth = strokeColor ? 2 : 0;
+                    innerTextColor.fill = fillColor;
+                    innerTextColor.stroke = strokeColor || null;
+                    innerTextColor.lineWidth = strokeColor ? 2 : 0;
 
-                    textEl.setDefaultTextColor(insideTextColor);
                 }
             }
             else {
-                // Clear
-                textEl.setDefaultTextColor(null);
+                innerTextColor.fill = textConfig.outsideFill || '#000';
+                innerTextColor.stroke = textConfig.outsideStroke || null;
+                innerTextColor.lineWidth = textConfig.outsideStroke ? 2 : 0;
             }
 
+            textEl.setDefaultTextColor(innerTextColor);
 
             // Mark textEl to update transform.
             textEl.markRedraw();

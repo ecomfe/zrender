@@ -501,6 +501,11 @@ function isTransformChanged(m0: MatrixArray, m1: MatrixArray): boolean {
     return true;
 }
 
+const DRAW_TYPE_PATH = 1;
+const DRAW_TYPE_IMAGE = 2;
+const DRAW_TYPE_TEXT = 3;
+const DRAW_TYPE_INCREMENTAL = 4;
+
 export type BrushScope = {
     // width / height of viewport
     viewWidth: number
@@ -514,6 +519,8 @@ export type BrushScope = {
     // Status for batching
     batchFill?: string
     batchStroke?: string
+
+    lastDrawType?: number
 }
 
 // If path can be batched
@@ -644,6 +651,12 @@ export function brush(
     }
 
     if (el instanceof Path) {
+        // PENDING do we need to rebind all style if displayable type changed?
+        if (scope.lastDrawType !== DRAW_TYPE_PATH) {
+            forceSetStyle = true;
+            scope.lastDrawType = DRAW_TYPE_PATH;
+        }
+
         bindPathAndTextCommonStyle(ctx, el as Path, prevEl as Path, forceSetStyle, scope);
         // Begin path at start
         if (!canBatchPath || (!scope.batchFill && !scope.batchStroke)) {
@@ -657,14 +670,29 @@ export function brush(
     }
     else {
         if (el instanceof ZRText) {
+            if (scope.lastDrawType !== DRAW_TYPE_TEXT) {
+                forceSetStyle = true;
+                scope.lastDrawType = DRAW_TYPE_TEXT;
+            }
+
             bindPathAndTextCommonStyle(ctx, el as ZRText, prevEl as ZRText, forceSetStyle, scope);
             brushText(ctx, el as ZRText);
         }
         else if (el instanceof ZRImage) {
+            if (scope.lastDrawType !== DRAW_TYPE_IMAGE) {
+                forceSetStyle = true;
+                scope.lastDrawType = DRAW_TYPE_IMAGE;
+            }
+
             bindImageStyle(ctx, el as ZRImage, prevEl as ZRImage, forceSetStyle, scope);
             brushImage(ctx, el as ZRImage);
         }
         else if (el instanceof IncrementalDisplayable) {
+            if (scope.lastDrawType !== DRAW_TYPE_INCREMENTAL) {
+                forceSetStyle = true;
+                scope.lastDrawType = DRAW_TYPE_INCREMENTAL;
+            }
+
             brushIncremental(ctx, el, scope);
         }
 
