@@ -127,7 +127,7 @@
             bench('Element#animateTo(position)', function () {
                 rect.animateTo({
                     position: [10, 10]
-                }, 1000);
+                }, { duration: 1000});
                 rect.stopAnimation();
             }, attrCommonOpts);
 
@@ -139,7 +139,7 @@
                         width: 100,
                         height: 100
                     }
-                }, 1000);
+                }, { duration: 1000});
                 rect.stopAnimation();
             }, attrCommonOpts);
 
@@ -150,7 +150,7 @@
                         stroke: 'green',
                         lineWidth: 2
                     }
-                }, 1000);
+                }, { duration: 1000});
                 rect.stopAnimation();
             }, attrCommonOpts);
 

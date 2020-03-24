@@ -378,7 +378,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
      * Replace the style with given new style object.
      */
     useStyle(obj: PathStyleProps, inherited?: PathStyleProps) {
-        super.useStyle(obj, inherited || DEFAULT_PATH_STYLE);
+        this.innerUseStyle(obj, inherited || DEFAULT_PATH_STYLE);
     }
 
 

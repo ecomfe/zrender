@@ -24,6 +24,19 @@ import {
 } from './core/util';
 import { Group } from './export';
 
+interface ElementAnimateConfig {
+    duration?: number
+    delay?: number
+    easing?: AnimationEasing
+    done?: AnimationCallback
+    /**
+     * If force animate
+     * Prevent stop animation and callback
+     * immediently when target values are the same as current values.
+     */
+    force?: boolean
+}
+
 export interface ElementTextConfig {
     /**
      * Position relative to the element bounding rect
@@ -875,7 +888,7 @@ class Element<Props extends ElementProps = ElementProps> {
      *  // Animate position
      *  el.animateTo({
      *      position: [10, 10]
-     *  }, function () { // done })
+     *  }, { done: () => { // done } })
      *
      *  // Animate shape, style and position in 100ms, delayed 100ms, with cubicOut easing
      *  el.animateTo({
@@ -886,32 +899,16 @@ class Element<Props extends ElementProps = ElementProps> {
      *          fill: 'red'
      *      }
      *      position: [10, 10]
-     *  }, 100, 100, 'cubicOut', function () { // done })
+     *  }, {
+     *      duration: 100,
+     *      delay: 100,
+     *      easing: 'cubicOut',
+     *      done: () => { // done }
+     *  })
      */
 
-    // Overload definitions
-    animateTo(target: Props): void
-    animateTo(target: Props, callback: AnimationCallback): void
-    animateTo(target: Props, time: number, delay: number): void
-    animateTo(target: Props, time: number, easing: AnimationEasing): void
-    animateTo(target: Props, time: number, callback: AnimationCallback): void
-    animateTo(target: Props, time: number, delay: number, callback: AnimationCallback): void
-    animateTo(target: Props, time: number, easing: AnimationEasing, callback: AnimationCallback): void
-    animateTo(target: Props, time: number, delay: number, easing: AnimationEasing, callback: AnimationCallback): void
-    // eslint-disable-next-line
-    animateTo(target: Props, time: number, delay: number, easing: AnimationEasing, callback: AnimationCallback, forceAnimate: boolean): void
-
-    // TODO Return animation key
-    animateTo(
-        target: Props,
-        time?: number | AnimationCallback,  // Time in ms
-        delay?: AnimationEasing | number | AnimationCallback,
-        easing?: AnimationEasing | number | AnimationCallback,
-        callback?: AnimationCallback,
-        forceAnimate?: boolean // Prevent stop animation and callback
-                                // immediently when target values are the same as current values.
-    ) {
-        animateTo(this, target, time, delay, easing, callback, forceAnimate);
+    animateTo(target: Props, cfg: ElementAnimateConfig) {
+        animateTo(this, target, cfg);
     }
 
     /**
@@ -920,26 +917,8 @@ class Element<Props extends ElementProps = ElementProps> {
      */
 
     // Overload definitions
-    animateFrom(target: Props): void
-    animateFrom(target: Props, callback: AnimationCallback): void
-    animateFrom(target: Props, time: number, delay: number): void
-    animateFrom(target: Props, time: number, easing: AnimationEasing): void
-    animateFrom(target: Props, time: number, callback: AnimationCallback): void
-    animateFrom(target: Props, time: number, delay: number, callback: AnimationCallback): void
-    animateFrom(target: Props, time: number, easing: AnimationEasing, callback: AnimationCallback): void
-    animateFrom(target: Props, time: number, delay: number, easing: AnimationEasing, callback: AnimationCallback): void
-    // eslint-disable-next-line
-    animateFrom(target: Props, time: number, delay: number, easing: AnimationEasing, callback: AnimationCallback, forceAnimate: boolean): void
-
-    animateFrom(
-        target: Props,
-        time?: number | AnimationCallback,
-        delay?: AnimationEasing | number | AnimationCallback,
-        easing?: AnimationEasing | number | AnimationCallback,
-        callback?: AnimationCallback,
-        forceAnimate?: boolean
-    ) {
-        animateTo(this, target, time, delay, easing, callback, forceAnimate, true);
+    animateFrom(target: Props, cfg: ElementAnimateConfig) {
+        animateTo(this, target, cfg, true);
     }
 
     /**
@@ -991,42 +970,13 @@ mixin(Element, Transformable);
 function animateTo<T>(
     animatable: Element<T>,
     target: Dictionary<any>,
-    time: number | AnimationCallback,
-    delay: AnimationEasing | number | AnimationCallback,
-    easing: AnimationEasing | number | AnimationCallback,
-    callback: AnimationCallback,
-    forceAnimate: boolean,
+    cfg: ElementAnimateConfig,
     reverse?: boolean
 ) {
-    // animateTo(target, time, easing, callback);
-    if (isString(delay)) {
-        callback = easing as AnimationCallback;
-        easing = delay as AnimationEasing;
-        delay = 0;
-    }
-    // animateTo(target, time, delay, callback);
-    else if (isFunction(easing)) {
-        callback = easing as AnimationCallback;
-        easing = 'linear';
-        delay = 0;
-    }
-    // animateTo(target, time, callback);
-    else if (isFunction(delay)) {
-        callback = delay as AnimationCallback;
-        delay = 0;
-    }
-    // animateTo(target, callback)
-    else if (isFunction(time)) {
-        callback = time as AnimationCallback;
-        time = 500;
-    }
-    // animateTo(target)
-    else if (!time) {
-        time = 500;
-    }
+    cfg = cfg || {};
     // Stop all previous animations
     animatable.stopAnimation();
-    animateToShallow(animatable, '', animatable, target, time as number, delay as number, reverse);
+    animateToShallow(animatable, '', animatable, target, cfg.duration, cfg.delay, reverse);
 
     // Animators may be removed immediately after start
     // if there is nothing to animate
@@ -1035,21 +985,21 @@ function animateTo<T>(
     function done() {
         count--;
         if (!count) {
-            callback && callback();
+            cfg.done && cfg.done();
         }
     }
 
     // No animators. This should be checked before animators[i].start(),
     // because 'done' may be executed immediately if no need to animate.
     if (!count) {
-        callback && callback();
+        cfg.done && cfg.done();
     }
     // Start after all animators created
     // Incase any animator is done immediately when all animation properties are not changed
     for (let i = 0; i < animators.length; i++) {
         animators[i]
             .done(done)
-            .start(<AnimationEasing>easing, forceAnimate);
+            .start(cfg.easing, cfg.force);
     }
 }
 

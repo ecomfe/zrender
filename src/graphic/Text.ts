@@ -52,7 +52,7 @@ class ZRText extends Displayable<TextProps> {
     }
 
     useStyle(obj: TextStyleProps, inherited?: TextStyleProps) {
-        super.useStyle(obj, inherited || DEFAULT_TEXT_STYLE);
+        this.innerUseStyle(obj, inherited || DEFAULT_TEXT_STYLE);
     }
 
     getBoundingRect(): BoundingRect {
