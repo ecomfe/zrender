@@ -313,6 +313,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
      */
     dirtyShape() {
         this.__dirtyPath = true;
+        this._rect = null;
         this.markRedraw();
     }
 
@@ -348,7 +349,6 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         if (key === 'shape') {
             this.setShape(value as Props['shape']);
             this.__dirtyPath = true;
-            this._rect = null;
         }
         else {
             super.attrKV(key as keyof DisplayableProps, value);
@@ -385,6 +385,9 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
     protected saveStateToNormal() {
         super.saveStateToNormal();
 
+        // NOTICE DON'T CLONE THE SHAPE OBJECT
+        // Only use the reference because if we switch state when animating. We still wan't
+        // animation continous on the same shape object when switch back to normal state.
         this._normalState.shape = this.shape;
     }
 
@@ -400,6 +403,9 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
             extend(this.shape, state.shape);
         }
         else if (needsRestoreToNormal) {
+            // NOTICE DON'T CLONE THE SHAPE OBJECT
+            // Only use the reference because if we switch state when animating. We still wan't
+            // animation continous on the same shape object when switch back to normal state.
             this.shape = normalState.shape;
         }
 

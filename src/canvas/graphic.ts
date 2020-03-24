@@ -76,17 +76,38 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, inBatch: boolean) {
 
         let fillGradient;
         let strokeGradient;
-        if (el.__dirty) {
-            let rect;
-            // Update gradient because bounding rect may changed
-            if (hasFillGradient) {
-                rect = rect || el.getBoundingRect();
-                fillGradient = getCanvasGradient(ctx, fill as (LinearGradientObject | RadialGradientObject), rect);
-            }
-            if (hasStrokeGradient) {
-                rect = rect || el.getBoundingRect();
-                strokeGradient = getCanvasGradient(ctx, stroke as (LinearGradientObject | RadialGradientObject), rect);
-            }
+        let fillPattern;
+        let strokePattern;
+        let rect;
+        if (hasFillGradient || hasStrokeGradient) {
+            rect = el.getBoundingRect();
+        }
+        // Update gradient because bounding rect may changed
+        if (hasFillGradient) {
+            fillGradient = el.__dirty
+                ? getCanvasGradient(ctx, fill as (LinearGradientObject | RadialGradientObject), rect)
+                : el.__canvasFillGradient;
+            // No need to clear cache when fill is not gradient.
+            // It will always been updated when fill changed back to gradient.
+            el.__canvasFillGradient = fillGradient;
+        }
+        if (hasStrokeGradient) {
+            strokeGradient = el.__dirty
+                ? getCanvasGradient(ctx, stroke as (LinearGradientObject | RadialGradientObject), rect)
+                : el.__canvasFillGradient;
+            el.__canvasStrokeGradient = strokeGradient;
+        }
+        if (hasFillPattern) {
+            fillPattern = el.__dirty
+                ? createCanvasPattern(ctx, fill as PatternObject, el)
+                : el.__canvasFillPattern;
+            el.__canvasFillPattern = fillPattern;
+        }
+        if (hasStrokePattern) {
+            strokePattern = el.__dirty
+                ? createCanvasPattern(ctx, stroke as PatternObject, el)
+                : el.__canvasStrokePattern;
+            el.__canvasStrokePattern = fillPattern;
         }
         // Use the gradient or pattern
         if (hasFillGradient) {
@@ -94,9 +115,8 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, inBatch: boolean) {
             ctx.fillStyle = fillGradient;
         }
         else if (hasFillPattern) {
-            const patternObj = createCanvasPattern(ctx, fill as PatternObject, el);
-            if (patternObj) {
-                ctx.fillStyle = patternObj;
+            if (fillPattern) {  // createCanvasPattern may return false if image is not ready.
+                ctx.fillStyle = fillPattern;
             }
             else {
                 // Don't fill if image is not ready
@@ -107,9 +127,8 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, inBatch: boolean) {
             ctx.strokeStyle = strokeGradient;
         }
         else if (hasStrokePattern) {
-            const patternObj = createCanvasPattern(ctx, stroke as PatternObject, el);
-            if (patternObj) {
-                ctx.strokeStyle = patternObj;
+            if (strokePattern) {
+                ctx.strokeStyle = strokePattern;
             }
             else {
                 // Don't stroke if image is not ready

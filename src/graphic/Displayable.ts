@@ -122,7 +122,10 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
 
     protected _rect: BoundingRect
 
+
     /************* Properties will be inejected in other modules. *******************/
+
+    // TODO use WeakMap?
 
     // Shapes for cascade clipping.
     // Can only be `null`/`undefined` or an non-empty array, MUST NOT be an empty array.
@@ -133,13 +136,15 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     __hoverMir: Displayable
     __from: Displayable
 
+    // FOR CANVAS PAINTER
+    __canvasFillGradient: CanvasGradient
+    __canvasStrokeGradient: CanvasGradient
+    __canvasFillPattern: CanvasPattern
+    __canvasStrokePattern: CanvasPattern
+
     // FOR SVG PAINTER
     __svgEl: SVGElement
 
-    /**
-     * If use individual hover layer. It is set in echarts
-     */
-    useHoverLayer: boolean
 
     constructor(props?: Props) {
         super(props);
@@ -268,6 +273,9 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         super.saveStateToNormal();
 
         const normalState = this._normalState;
+        // NOTICE DON'T CLONE THE STYLE OBJECT
+        // Only use the reference because if we switch state when animating. We still wan't
+        // animation continous on the same style object when switch back to normal state.
         normalState.style = this.style;
         normalState.z = this.z;
         normalState.z2 = this.z2;
@@ -291,6 +299,9 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         }
         else if (needsRestoreToNormal) {
             // Simply replace with normal style because it needs no inheritance
+            // NOTICE DON'T CLONE THE STYLE OBJECT
+            // Only use the reference because if we switch state when animating. We still wan't
+            // animation continous on the same style object when switch back to normal state.
             this.style = normalState.style;
             this.dirtyStyle();
         }

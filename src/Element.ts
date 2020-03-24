@@ -1077,6 +1077,11 @@ function animateToShallow<T>(
             if (isObject(target[innerKey]) && !isArrayLike(target[innerKey])) {
                 if (topKey) {
                     logError('Only support 1 depth nest object animation.');
+                    // Assign directly
+                    if (!reverse) {
+                        source[innerKey] = target[innerKey];
+                        animatable.updateDuringAnimation(topKey);
+                    }
                     return;
                 }
                 animateToShallow(
@@ -1096,6 +1101,7 @@ function animateToShallow<T>(
         else if (target[innerKey] != null && !reverse) {
             // Assign directly.
             source[innerKey] = target[innerKey];
+            animatable.updateDuringAnimation(topKey);
         }
     }
 
