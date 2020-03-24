@@ -1077,7 +1077,8 @@ function animateToShallow<T>(
             if (isObject(target[innerKey]) && !isArrayLike(target[innerKey])) {
                 if (topKey) {
                     logError('Only support 1 depth nest object animation.');
-                    // Assign directly
+                    // Assign directly.
+                    // TODO richText?
                     if (!reverse) {
                         source[innerKey] = target[innerKey];
                         animatable.updateDuringAnimation(topKey);

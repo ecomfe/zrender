@@ -5,7 +5,7 @@
 import { TextAlign, TextVerticalAlign, ImageLike, Dictionary } from '../core/types';
 import { parseRichText, parsePlainText } from './helper/parseText';
 import ZRText from './Text';
-import { retrieve2, isString, each, normalizeCssArray, trim, retrieve3 } from '../core/util';
+import { retrieve2, isString, each, normalizeCssArray, trim, retrieve3, extend, keys } from '../core/util';
 import { DEFAULT_FONT, adjustTextX, adjustTextY } from '../contain/text';
 import ZRImage from './Image';
 import Rect from './shape/Rect';
@@ -87,7 +87,7 @@ interface RichTextStylePropsPart {
     /**
      * Reserved for special functinality, like 'hr'.
      */
-    textTag?: string
+    tag?: string
 
     textShadowColor?: string
     textShadowBlur?: number
@@ -108,10 +108,22 @@ interface RichTextStylePropsPart {
     borderWidth?: number
     borderRadius?: number | number[]
 
-    boxShadowColor?: string
-    boxShadowBlur?: number
-    boxShadowOffsetX?: number
-    boxShadowOffsetY?: number
+    /**
+     * Shadow color for background box.
+     */
+    shadowColor?: string
+    /**
+     * Shadow blur for background box.
+     */
+    shadowBlur?: number
+    /**
+     * Shadow offset x for background box.
+     */
+    shadowOffsetX?: number
+    /**
+     * Shadow offset y for background box.
+     */
+    shadowOffsetY?: number
 }
 export interface RichTextStyleProps extends RichTextStylePropsPart {
 
@@ -263,6 +275,36 @@ class RichText extends Displayable<RichTextProps> {
 
     setTextContent(textContent: never) {
         throw new Error('Can\'t attach richText on another richText');
+    }
+
+    protected _mergeStyle(targetStyle: RichTextStyleProps, sourceStyle: RichTextStyleProps) {
+        // DO deep merge on rich configurations.
+        const sourceRich = sourceStyle.rich;
+        const targetRich = targetStyle.rich || (sourceRich && {});  // Create a new one if source have rich but target don't
+
+        extend(targetStyle, sourceStyle);
+
+        if (sourceRich && targetRich) {
+            // merge rich and assign rich again.
+            this._mergeRich(targetRich, sourceRich);
+            targetStyle.rich = targetRich;
+        }
+        else if (targetRich) {
+            // If source rich not exists. DON'T override the target rich
+            targetStyle.rich = targetRich;
+        }
+
+        return targetStyle;
+    }
+
+    private _mergeRich(targetRich: RichTextStyleProps['rich'], sourceRich: RichTextStyleProps['rich']) {
+        const richNames = keys(sourceRich);
+        // Merge by rich names.
+        for (let i = 0; i < richNames.length; i++) {
+            const richName = richNames[i];
+            targetRich[richName] = targetRich[richName] || {};
+            extend(targetRich[richName], sourceRich[richName]);
+        }
     }
 
 
@@ -584,10 +626,10 @@ class RichText extends Displayable<RichTextProps> {
         }
 
         const shadowStyle = (rectEl || imgEl).style;
-        shadowStyle.shadowBlur = style.boxShadowBlur || 0;
-        shadowStyle.shadowColor = style.boxShadowColor || 'transparent';
-        shadowStyle.shadowOffsetX = style.boxShadowOffsetX || 0;
-        shadowStyle.shadowOffsetY = style.boxShadowOffsetY || 0;
+        shadowStyle.shadowBlur = style.shadowBlur || 0;
+        shadowStyle.shadowColor = style.shadowColor || 'transparent';
+        shadowStyle.shadowOffsetX = style.shadowOffsetX || 0;
+        shadowStyle.shadowOffsetY = style.shadowOffsetY || 0;
 
     }
 

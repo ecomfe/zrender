@@ -122,7 +122,10 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
 
     protected _rect: BoundingRect
 
-
+    /**
+     * If use hover layer. Will be set in echarts.
+     */
+    useHoverLayer?: boolean
     /************* Properties will be inejected in other modules. *******************/
 
     // TODO use WeakMap?
@@ -290,11 +293,11 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
             // TODO Use prototype chain? Prototype chain may have following issues
             // 1. Normal style may be changed
             // 2. Needs to detect ircular protoype chain
-            const newStyle = extend(
+            const newStyle = this._mergeStyle(
                 {},
                 keepCurrentStates ? this.style : normalState.style
             );
-            extend(newStyle, state.style);
+            this._mergeStyle(newStyle, state.style);
             this.useStyle(newStyle);
         }
         else if (needsRestoreToNormal) {
@@ -317,6 +320,11 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
                 (this as any)[key] = normalState[key];
             }
         }
+    }
+
+    protected _mergeStyle(targetStyle: CommonStyleProps, sourceStyle: CommonStyleProps) {
+        extend(targetStyle, sourceStyle);
+        return targetStyle;
     }
 
     /**
