@@ -35,6 +35,10 @@ interface ElementAnimateConfig {
      * immediently when target values are the same as current values.
      */
     force?: boolean
+    /**
+     * If use additive animation.
+     */
+    additive?: boolean
 }
 
 export interface ElementTextConfig {
@@ -880,10 +884,6 @@ class Element<Props extends ElementProps = ElementProps> {
     }
 
     /**
-     * Caution: this method will stop previous animation.
-     * So do not use this method to one element twice before
-     * animation starts, unless you know what you are doing.
-     *
      * @example
      *  // Animate position
      *  el.animateTo({
@@ -974,13 +974,19 @@ function animateTo<T>(
     reverse?: boolean
 ) {
     cfg = cfg || {};
-    // Stop all previous animations
-    animatable.stopAnimation();
-    animateToShallow(animatable, '', animatable, target, cfg.duration, cfg.delay, reverse);
+    const animators: Animator<any>[] = [];
+    animateToShallow(
+        animatable,
+        '',
+        animatable,
+        target,
+        cfg.duration,
+        cfg.delay,
+        cfg.additive,
+        animators,
+        reverse
+    );
 
-    // Animators may be removed immediately after start
-    // if there is nothing to animate
-    const animators = animatable.animators;
     let count = animators.length;
     function done() {
         count--;
@@ -1028,6 +1034,8 @@ function animateToShallow<T>(
     target: Dictionary<any>,
     time: number,
     delay: number,
+    additive: boolean,
+    animators: Animator<any>[],
     reverse: boolean    // If `true`, animate from the `target` to current state.
 ) {
     const animatableKeys: string[] = [];
@@ -1054,6 +1062,8 @@ function animateToShallow<T>(
                     target[innerKey],
                     time,
                     delay,
+                    additive,
+                    animators,
                     reverse
                 );
             }
@@ -1082,13 +1092,31 @@ function animateToShallow<T>(
             }
         }
 
-        const animator = new Animator(source, false);
+        // Find last animator animating same target.
+        const existsAnimators = animatable.animators;
+        let lastAnimator;
+        for (let i = 0; i < existsAnimators.length; i++) {
+            if (existsAnimators[i].getTarget() === source) {
+                lastAnimator = existsAnimators[i];
+            }
+        }
+
+        if (!additive && lastAnimator) {
+            // Stop exists animation on specific tracks.
+            // TODO Should invoke previous animation callback?
+            lastAnimator.stopTracks(animatableKeys);
+        }
+
+        const animator = new Animator(source, false, lastAnimator);
+
         animator.whenWithKeys(
             time == null ? 500 : time,
             reverse ? reversedTarget : target,
             animatableKeys
         ).delay(delay || 0);
+
         animatable.addAnimator(animator, topKey);
+        animators.push(animator);
     }
 }
 

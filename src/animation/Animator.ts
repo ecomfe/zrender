@@ -4,7 +4,7 @@
 
 import Clip from './Clip';
 import * as color from '../tool/color';
-import {isArrayLike, keys} from '../core/util';
+import {isArrayLike, keys, logError} from '../core/util';
 import {ArrayLike, Dictionary} from '../core/types';
 import { AnimationEasing } from './easing';
 import Animation from './Animation';
@@ -23,10 +23,10 @@ function step(p0: any, p1: any, percent: number): any {
 }
 
 function interpolate1DArray(
+    out: NumberArray,
     p0: NumberArray,
     p1: NumberArray,
-    percent: number,
-    out: NumberArray
+    percent: number
 ) {
     const len = p0.length;
     for (let i = 0; i < len; i++) {
@@ -35,24 +35,52 @@ function interpolate1DArray(
 }
 
 function interpolate2DArray(
+    out: NumberArray[],
     p0: NumberArray[],
     p1: NumberArray[],
-    percent: number,
-    out: NumberArray[]
+    percent: number
 ) {
     const len = p0.length;
-    const len2 = len && (p0 as NumberArray[])[0].length;
+    // TODO differnt length on each item?
+    const len2 = len && p0[0].length;
     for (let i = 0; i < len; i++) {
         for (let j = 0; j < len2; j++) {
-            (out as NumberArray[])[i][j] = interpolateNumber(
-                (p0 as NumberArray[])[i][j],
-                (p1 as NumberArray[])[i][j],
-                percent
-            );
+            out[i][j] = interpolateNumber(p0[i][j], p1[i][j], percent);
         }
     }
 }
 
+function add1DArray(
+    out: NumberArray,
+    p0: NumberArray,
+    p1: NumberArray,
+    sign: 1 | -1
+) {
+    const len = p0.length;
+    for (let i = 0; i < len; i++) {
+        out[i] = p0[i] + p1[i] * sign;
+    }
+    return out;
+}
+
+function add2DArray(
+    out: NumberArray[],
+    p0: NumberArray[],
+    p1: NumberArray[],
+    sign: 1 | -1
+) {
+    const len = p0.length;
+    const len2 = len && p0[0].length;
+    for (let i = 0; i < len; i++) {
+        if (!out[i]) {
+            out[i] = [];
+        }
+        for (let j = 0; j < len2; j++) {
+            out[i][j] = p0[i][j] + p1[i][j] * sign;
+        }
+    }
+    return out;
+}
 // arr0 is source array, arr1 is target array.
 // Do some preprocess to avoid error happened when interpolating from arr0 to arr1
 function fillArray(
@@ -144,14 +172,14 @@ function catmullRomInterpolate(
  * Catmull Rom interpolate 1D array
  */
 function catmullRomInterpolate1DArray(
+    out: NumberArray,
     p0: NumberArray,
     p1: NumberArray,
     p2: NumberArray,
     p3: NumberArray,
     t: number,
     t2: number,
-    t3: number,
-    out: NumberArray
+    t3: number
 ) {
     const len = p0.length;
     for (let i = 0; i < len; i++) {
@@ -165,14 +193,14 @@ function catmullRomInterpolate1DArray(
  * Catmull Rom interpolate 2D array
  */
 function catmullRomInterpolate2DArray(
+    out: NumberArray[],
     p0: NumberArray[],
     p1: NumberArray[],
     p2: NumberArray[],
     p3: NumberArray[],
     t: number,
     t2: number,
-    t3: number,
-    out: NumberArray[]
+    t3: number
 ) {
     const len = p0.length;
     const len2 = p0[0].length;
@@ -220,6 +248,8 @@ type Keyframe = {
     time: number
     value: unknown
     percent: number
+
+    additiveValue?: unknown
 }
 
 let tmpRgba: number[] = [0, 0, 0, 0];
@@ -235,6 +265,8 @@ class Track {
      */
     useSpline: boolean
 
+    private _finished: boolean
+
     private _isValueColor: boolean
     private _interpolable: boolean = true
 
@@ -245,12 +277,24 @@ class Track {
 
     private _isAllValueEqual = true
 
+    private _additiveTrack: Track
+    // Temporal storage for interpolated additive value.
+    private _additiveValue: unknown
+
     // Info for run
-    private _lastFrame = 0;
-    private _lastFramePercent = 0;
+    private _lastFrame = 0
+    private _lastFramePercent = 0
 
     constructor(propName: string) {
         this.propName = propName;
+    }
+
+    isFinished() {
+        return this._finished;
+    }
+
+    setFinished() {
+        this._finished = true;
     }
 
     needsAnimate() {
@@ -340,7 +384,7 @@ class Track {
         });
     }
 
-    prepare() {
+    prepare(additiveTrack?: Track) {
         let kfs = this.keyframes;
         if (this._needsSort) {
             // Sort keyframe as ascending
@@ -352,9 +396,62 @@ class Track {
         for (let i = 0; i < kfs.length; i++) {
             kfs[i].percent = kfs[i].time / this.maxTime;
         }
+
+        // Only apply additive animaiton on INTERPOLABLE SAME TYPE values.
+        if (additiveTrack
+            && this._interpolable
+            && this._arrDim === additiveTrack._arrDim
+            && this._isValueColor === additiveTrack._isValueColor
+            && !additiveTrack._finished
+        ) {
+            this._additiveTrack = additiveTrack;
+
+            const arrDim = this._arrDim;
+
+            const startValue = kfs[0].value;
+            // Calculate difference
+            for (let i = 0; i < kfs.length; i++) {
+                if (arrDim === 0) {
+                    if (this._isValueColor) {
+                        kfs[i].additiveValue
+                            = add1DArray([], kfs[i].value as NumberArray, startValue as NumberArray, -1);
+                    }
+                    else {
+                        kfs[i].additiveValue = kfs[i].value as number - (startValue as number);
+                    }
+                }
+                else if (arrDim === 1) {
+                    kfs[i].additiveValue = add1DArray(
+                        [],
+                        kfs[i].value as NumberArray,
+                        startValue as NumberArray,
+                        -1
+                    );
+                }
+                else if (arrDim === 2) {
+                    kfs[i].additiveValue = add2DArray(
+                        [],
+                        kfs[i].value as NumberArray[],
+                        startValue as NumberArray[],
+                        -1
+                    );
+                }
+            }
+        }
     }
 
     step(target: any, percent: number) {
+        if (this._finished) {   // Track may be set to finished.
+            return;
+        }
+
+        if (this._additiveTrack && this._additiveTrack._finished) {
+            // Remove additive track if it's finished.
+            this._additiveTrack = null;
+        }
+        const isAdditive = this._additiveTrack != null;
+        const valueKey = isAdditive ? 'additiveValue' : 'value';
+
         const keyframes = this.keyframes;
         const kfsNum = this.keyframes.length;
         const propName = this.propName;
@@ -398,37 +495,49 @@ class Track {
             return;
         }
         const w = (percent - frame.percent) / range;
+
+        // If value is arr
+        let targetArr = isAdditive ? this._additiveValue : target[propName];
+        if (arrDim > 0 && !targetArr) {
+            targetArr = this._additiveValue = [];
+        }
         if (this.useSpline) {
-            const p1 = keyframes[frameIdx].value;
-            const p0 = keyframes[frameIdx === 0 ? frameIdx : frameIdx - 1].value;
-            const p2 = keyframes[frameIdx > kfsNum - 2 ? kfsNum - 1 : frameIdx + 1].value;
-            const p3 = keyframes[frameIdx > kfsNum - 3 ? kfsNum - 1 : frameIdx + 2].value;
+            const p1 = keyframes[frameIdx][valueKey];
+            const p0 = keyframes[frameIdx === 0 ? frameIdx : frameIdx - 1][valueKey];
+            const p2 = keyframes[frameIdx > kfsNum - 2 ? kfsNum - 1 : frameIdx + 1][valueKey];
+            const p3 = keyframes[frameIdx > kfsNum - 3 ? kfsNum - 1 : frameIdx + 2][valueKey];
+
             if (arrDim > 0) {
                 arrDim === 1
                     ? catmullRomInterpolate1DArray(
-                        p0 as NumberArray, p1 as NumberArray, p2 as NumberArray, p3 as NumberArray,
-                        w, w * w, w * w * w,
-                        target[propName] as NumberArray
+                        targetArr as NumberArray,
+                        p0 as NumberArray,
+                        p1 as NumberArray,
+                        p2 as NumberArray,
+                        p3 as NumberArray,
+                        w, w * w, w * w * w
                     )
                     : catmullRomInterpolate2DArray(
+                        targetArr as NumberArray[],
                         p0 as NumberArray[], p1 as NumberArray[], p2 as NumberArray[], p3 as NumberArray[],
-                        w, w * w, w * w * w,
-                        target[propName] as NumberArray[]
+                        w, w * w, w * w * w
                     );
             }
             else {
                 let value;
                 if (this._isValueColor) {
                     value = catmullRomInterpolate1DArray(
+                        tmpRgba,
                         p0 as NumberArray, p1 as NumberArray, p2 as NumberArray, p3 as NumberArray,
-                        w, w * w, w * w * w,
-                        tmpRgba
+                        w, w * w, w * w * w
                     );
-                    value = rgba2String(tmpRgba);
+                    if (!isAdditive) {  // Convert to string later:)
+                        value = rgba2String(tmpRgba);
+                    }
                 }
                 else if (!this._interpolable) {
                     // String is step(0.5)
-                    return step(p1 as string, p2 as string, w);
+                    value = step(p1, p2, w);
                 }
                 else {
                     value = catmullRomInterpolate(
@@ -436,44 +545,86 @@ class Track {
                         w, w * w, w * w * w
                     );
                 }
-                target[propName] = value;
+                if (isAdditive) {
+                    this._additiveValue = value;
+                }
+                else {
+                    target[propName] = value;
+                }
             }
         }
         else {
             if (arrDim > 0) {
                 arrDim === 1
                     ? interpolate1DArray(
-                        frame.value as NumberArray,
-                        nextFrame.value as NumberArray,
-                        w,
-                        target[propName] as NumberArray
+                        targetArr as NumberArray,
+                        frame[valueKey] as NumberArray,
+                        nextFrame[valueKey] as NumberArray,
+                        w
                     )
                     : interpolate2DArray(
-                        frame.value as NumberArray[],
-                        nextFrame.value as NumberArray[],
-                        w,
-                        target[propName] as NumberArray[]
+                        targetArr as NumberArray[],
+                        frame[valueKey] as NumberArray[],
+                        nextFrame[valueKey] as NumberArray[],
+                        w
                     );
             }
             else {
                 let value;
                 if (this._isValueColor) {
                     interpolate1DArray(
-                        frame.value as NumberArray,
-                        nextFrame.value as NumberArray,
-                        w, tmpRgba
+                        tmpRgba,
+                        frame[valueKey] as NumberArray,
+                        nextFrame[valueKey] as NumberArray,
+                        w
                     );
-                    value = rgba2String(tmpRgba);
+                    if (isAdditive) {  // Convert to string later:)
+                        value = rgba2String(tmpRgba);
+                    }
                 }
                 else if (!this._interpolable) {
                     // String is step(0.5)
-                    return step(frame.value as string, nextFrame.value as string, w);
+                    value = step(frame[valueKey], nextFrame[valueKey], w);
                 }
                 else {
-                    value = interpolateNumber(frame.value as number, nextFrame.value as number, w);
+                    value = interpolateNumber(frame[valueKey] as number, nextFrame[valueKey] as number, w);
                 }
-                target[propName] = value;
+                if (isAdditive) {
+                    this._additiveValue = value;
+                }
+                else {
+                    target[propName] = value;
+                }
             }
+        }
+
+        // Add additive to target
+        if (isAdditive) {
+            this._addToTarget(target);
+        }
+    }
+
+    private _addToTarget(target: any) {
+        const arrDim = this._arrDim;
+        const propName = this.propName;
+
+        if (arrDim === 0) {
+            if (this._isValueColor) {
+                // TODO reduce unnecessary parse
+                color.parse(target[propName], tmpRgba);
+                add1DArray(tmpRgba, tmpRgba, this._additiveValue as NumberArray, 1);
+                target[propName] = rgba2String(tmpRgba);
+            }
+            else {
+                // Add a difference value based on the change of previous frame.
+                target[propName] = target[propName] + this._additiveValue;
+            }
+        }
+        else if (arrDim === 1) {
+            add1DArray(target[propName], target[propName], this._additiveValue as NumberArray, 1);
+        }
+        else if (arrDim === 2) {
+            add2DArray(target[propName], target[propName], this._additiveValue as NumberArray[], 1);
         }
     }
 }
@@ -496,17 +647,28 @@ export default class Animator<T> {
     private _loop: boolean
     private _delay = 0
     private _paused = false
-    private _maxTime = 0;
+    private _maxTime = 0
+
+    private _additiveAnimator: Animator<any>
 
     private _doneList: DoneCallback[] = []
     private _onframeList: OnframeCallback<T>[] = []
 
     private _clip: Clip<T> = null
 
-    constructor(target: T, loop: boolean) {
+    constructor(target: T, loop: boolean, additiveTo?: Animator<any>) {
         this._target = target;
         this._target = target;
-        this._loop = loop || false;
+        this._loop = loop;
+        if (loop) {
+            logError('Can\' use additive animation on looped animation.');
+            return;
+        }
+        this._additiveAnimator = additiveTo;
+    }
+
+    getTarget() {
+        return this._target;
     }
 
     /**
@@ -524,14 +686,24 @@ export default class Animator<T> {
     whenWithKeys(time: number, props: Dictionary<any>, propNames: string[]) {
         const tracks = this._tracks;
         for (let i = 0; i < propNames.length; i++) {
-            let propName = propNames[i] as string;
+            const propName = propNames[i] as string;
 
             let track = tracks[propName];
             if (!track) {
                 track = tracks[propName] = new Track(propName);
+
+                let initialValue;
+                const additiveTrack = this._additiveAnimator && this._additiveAnimator.getTrack(propName);
+                if (additiveTrack) {
+                    const lastFinalKf = additiveTrack.keyframes[additiveTrack.keyframes.length - 1];
+                    // Use the last state of additived animator.
+                    initialValue = lastFinalKf && lastFinalKf.value;
+                }
+                else {
+                    initialValue = (this._target as any)[propName];
+                }
                 // Invalid value
-                const value = (this._target as any)[propName];
-                if (value == null) {
+                if (initialValue == null) {
                     // zrLog('Invalid property ' + propName);
                     continue;
                 }
@@ -540,12 +712,13 @@ export default class Animator<T> {
                 // Else
                 //  Initialize value from current prop value
                 if (time !== 0) {
-                    track.addKeyframe(0, cloneValue(value));
+                    track.addKeyframe(0, cloneValue(initialValue));
                 }
 
                 this._trackKeys.push(propName);
             }
-            track.addKeyframe(time, props[propName]);
+            // PENDING
+            track.addKeyframe(time, cloneValue(props[propName]));
         }
         this._maxTime = Math.max(this._maxTime, time);
         return this;
@@ -600,7 +773,8 @@ export default class Animator<T> {
         for (let i = 0; i < this._trackKeys.length; i++) {
             const propName = this._trackKeys[i];
             const track = this._tracks[propName];
-            track.prepare();
+            const additiveTrack = this._additiveAnimator && this._additiveAnimator.getTrack(propName);
+            track.prepare(additiveTrack);
             if (track.needsAnimate() || forceAnimate) {
                 tracks.push(track);
             }
@@ -621,6 +795,9 @@ export default class Animator<T> {
                     }
                 },
                 ondestroy() {
+                    for (let i = 0; i < tracks.length; i++) {
+                        tracks[i].setFinished();
+                    }
                     self._doneCallback();
                 }
             });
@@ -680,5 +857,19 @@ export default class Animator<T> {
 
     getClip() {
         return this._clip;
+    }
+
+    getTrack(propName: string) {
+        return this._tracks[propName];
+    }
+
+    stopTracks(propNames: string[]) {
+        for (let i = 0; i < propNames.length; i++) {
+            const track = this._tracks[propNames[i]];
+            if (track) {
+                // Set track to finished
+                track.setFinished();
+            }
+        }
     }
 }
