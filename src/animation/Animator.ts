@@ -787,6 +787,11 @@ export default class Animator<T> {
                 loop: this._loop,
                 delay: this._delay,
                 onframe(target: T, percent: number) {
+                    // Remove additived animator if it's finished.
+                    // For the purpose of memory effeciency.
+                    if (self._additiveAnimator && !self._additiveAnimator._clip) {
+                        self._additiveAnimator = null;
+                    }
                     for (let i = 0; i < tracks.length; i++) {
                         tracks[i].step(target, percent);
                     }
@@ -812,7 +817,6 @@ export default class Animator<T> {
             }
         }
         else {
-
             // This optimization will help the case that in the upper application
             // the view may be refreshed frequently, where animation will be
             // called repeatly but nothing changed.
