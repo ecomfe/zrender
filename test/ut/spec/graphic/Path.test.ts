@@ -1,6 +1,6 @@
 import {Rect} from '../zrender';
 import {util} from '../zrender';
-import { PathState } from '../../../../src/graphic/Path';
+import Path, { PathState } from '../../../../src/graphic/Path';
 
 describe('Path', function () {
 
@@ -54,9 +54,7 @@ describe('Path', function () {
 
     it('Path#setStyle should merge style properly', function () {
         const rect = new Rect({
-            style: {
-                stroke: 'red'
-            }
+            style: { stroke: 'red' }
         });
 
         rect.setStyle({
@@ -76,15 +74,9 @@ describe('Path', function () {
 
     it('Path#setShape should merge style properly', function () {
         const rect = new Rect({
-            shape: {
-                width: 100,
-                height: 100
-            }
+            shape: { width: 100, height: 100 }
         });
-        rect.setShape({
-            x: 10,
-            width: 200
-        });
+        rect.setShape({ x: 10, width: 200 });
         expect(rect.shape.x).toEqual(10);
         expect(rect.shape.width).toEqual(200);
 
@@ -130,7 +122,7 @@ describe('Path', function () {
     it('Path#useState should switch state properly', function () {
         const rect = createRectForStateTest();
 
-        expect(rect.states).toBeUndefined();
+        expect(rect.states).toEqual({});
 
         rect.states = {
             selected: util.clone(selectedState)
@@ -210,11 +202,13 @@ describe('Path', function () {
         rect.useStates(['selected', 'emphasis']);
 
         expect(rect.currentStates).toEqual(['selected', 'emphasis']);
-        // Should use fill/stroke in emphasis
-        expect(rect.style.fill).toBe('white');
-        expect(rect.style.stroke).toBe('black');
-        // Should use lineWidth in selected
-        expect(rect.style.lineWidth).toBe(2);
+        expect(rect.style).toMatchObject({
+            // Should use fill/stroke in emphasis
+            fill: 'white',
+            stroke: 'black',
+            // Should use lineWidth in selected
+            lineWidth: 2
+        });
 
         // Should use shape in selected
         expect(rect.shape.width).toBe(200);
@@ -253,8 +247,59 @@ describe('Path', function () {
         expect(rect.shape.width).toBe(100);
     });
 
-    it('Path#clearStates should not throw error on stateless object.', function () {
+    it('Path#clearStates() should not throw error on stateless object.', function () {
         const rect = createRectForStateTest();
         expect(() => rect.clearStates()).not.toThrowError();
     });
+
+    it('Path#getBoundingRect() should return a correct bounding rect before render', function () {
+        const rect = new Rect({
+            shape: { x: 10, y: 10, width: 100, height: 100 }
+        });
+        expect(rect.getBoundingRect()).toMatchObject({
+            x: 10, y: 10, width: 100, height: 100
+        });
+    });
+    it('Path#getBoundingRect() should include stroke', function () {
+        const rect = new Rect({
+            shape: { x: 10, y: 10, width: 100, height: 100 },
+            style: { lineWidth: 2, stroke: 'red' }
+        });
+        const boundingRect = rect.getBoundingRect();
+        expect(boundingRect).toMatchObject({
+            x: 9, y: 9, width: 102, height: 102
+        });
+    });
+
+    it('Path#getBoundingRect() should update bounding rect after setShape', function () {
+        const rect = new Rect({
+            shape: { x: 10, y: 10, width: 100, height: 100 }
+        });
+        expect(rect.getBoundingRect()).toMatchObject({
+            x: 10, y: 10, width: 100, height: 100
+        });
+        rect.setShape({ width: 200, height: 200 });
+        expect(rect.getBoundingRect()).toMatchObject({
+            x: 10, y: 10, width: 200, height: 200
+        });
+    });
+
+    it('Path#getBoundingRect() should still cache bounding rect after setStyle', function () {
+        const rect = new Rect({
+            shape: { x: 10, y: 10, width: 100, height: 100 }
+        });
+        expect(rect.getBoundingRect()).toMatchObject({
+            x: 10, y: 10, width: 100, height: 100
+        });
+        rect.setStyle({
+            fill: 'red'
+        });
+        expect(rect.getBoundingRect()).toMatchObject({
+            x: 10, y: 10, width: 100, height: 100
+        });
+    });
+
+
+    // TODO more getBoundingRect test on different shapes.
+    // TODO pathContain test
 });
