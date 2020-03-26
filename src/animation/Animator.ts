@@ -28,6 +28,7 @@ function interpolate1DArray(
     p1: NumberArray,
     percent: number
 ) {
+    // TODO Handling different length TypedArray
     const len = p0.length;
     for (let i = 0; i < len; i++) {
         out[i] = interpolateNumber(p0[i], p1[i], percent);
@@ -44,6 +45,9 @@ function interpolate2DArray(
     // TODO differnt length on each item?
     const len2 = len && p0[0].length;
     for (let i = 0; i < len; i++) {
+        if (!out[i]) {
+            out[i] = [];
+        }
         for (let j = 0; j < len2; j++) {
             out[i][j] = interpolateNumber(p0[i][j], p1[i][j], percent);
         }
@@ -88,6 +92,7 @@ function fillArray(
     val1: NumberArray | NumberArray[],
     arrDim: number
 ) {
+    // TODO Handling different length TypedArray
     let arr0 = val0 as (number | number[])[];
     let arr1 = val1 as (number | number[])[];
     if (!arr0.push || !arr1.push) {
@@ -205,6 +210,9 @@ function catmullRomInterpolate2DArray(
     const len = p0.length;
     const len2 = p0[0].length;
     for (let i = 0; i < len; i++) {
+        if (!out[i]) {
+            out[1] = [];
+        }
         for (let j = 0; j < len2; j++) {
             out[i][j] = catmullRomInterpolate(
                 p0[i][j], p1[i][j], p2[i][j], p3[i][j],
@@ -323,11 +331,6 @@ class Track {
                 }
                 if (len > 0) {
                     let lastFrame = keyframes[len - 1];
-                    fillArray(
-                        value,
-                        lastFrame.value as NumberArray[],
-                        arrayDim
-                    );
 
                     // For performance consideration. only check 1d array
                     if (this._isAllValueEqual) {
@@ -393,24 +396,31 @@ class Track {
             });
         }
 
-        for (let i = 0; i < kfs.length; i++) {
+        const arrDim = this._arrDim;
+        const kfsLen = kfs.length;
+        const lastKf = kfs[kfsLen - 1];
+
+        for (let i = 0; i < kfsLen; i++) {
             kfs[i].percent = kfs[i].time / this.maxTime;
+
+            if (arrDim > 0 && i !== kfsLen - 1) {
+                // Align array with target frame.
+                fillArray(kfs[i].value as NumberArray, lastKf.value as NumberArray, arrDim);
+            }
         }
 
         // Only apply additive animaiton on INTERPOLABLE SAME TYPE values.
         if (additiveTrack
             && this._interpolable
-            && this._arrDim === additiveTrack._arrDim
+            && arrDim === additiveTrack._arrDim
             && this._isValueColor === additiveTrack._isValueColor
             && !additiveTrack._finished
         ) {
             this._additiveTrack = additiveTrack;
 
-            const arrDim = this._arrDim;
-
             const startValue = kfs[0].value;
             // Calculate difference
-            for (let i = 0; i < kfs.length; i++) {
+            for (let i = 0; i < kfsLen; i++) {
                 if (arrDim === 0) {
                     if (this._isValueColor) {
                         kfs[i].additiveValue

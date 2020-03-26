@@ -1107,7 +1107,7 @@ function animateToShallow<T>(
             lastAnimator.stopTracks(animatableKeys);
         }
 
-        const animator = new Animator(source, false, lastAnimator);
+        const animator = new Animator(source, false, additive ? lastAnimator : null);
 
         animator.whenWithKeys(
             time == null ? 500 : time,
