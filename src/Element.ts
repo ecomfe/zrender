@@ -351,18 +351,21 @@ class Element<Props extends ElementProps = ElementProps> {
                 this.textConfig = {};
             }
             const textConfig = this.textConfig;
+            const isLocal = textConfig.local;
 
             let textStyleChanged = false;
+
+            if (isLocal) {
+                // Apply host's transform.
+                // TODO parent is always be group for developers. But can be displayble inside.
+                textEl.parent = this as unknown as Group;
+            }
+
             // Force set attached text's position if `position` is in config.
             if (textConfig.position != null) {
-                const isLocal = textConfig.local;
                 tmpBoundingRect.copy(this.getBoundingRect());
                 if (!isLocal) {
                     tmpBoundingRect.applyTransform(this.transform);
-                }
-                else {
-                    // TODO parent is always be group for developers. But can be displayble inside.
-                    textEl.parent = this as unknown as Group;
                 }
 
                 if (this.calculateTextPosition) {
