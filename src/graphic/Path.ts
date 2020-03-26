@@ -183,15 +183,15 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
     //     return '#000';
     // }
 
-    // protected getInsideTextStroke(textFill?: string) {
-    //     const pathFill = this.style.fill;
-    //     if (textFill === '#fff') { // Draw border if textFill is white.
-    //         return pathFill as string;
-    //     }
-    //     else {    // Not stroke on none fill object or gradient object
-    //         return null;
-    //     }
-    // }
+    protected getInsideTextStroke(textFill?: string) {
+        const pathFill = this.style.fill;
+        if (textFill === '#fff') { // Draw border if textFill is white.
+            return pathFill as string;
+        }
+        else {    // Not stroke on none fill object or gradient object
+            return null;
+        }
+    }
 
     // When bundling path, some shape may decide if use moveTo to begin a new subpath or closePath
     // Like in circle
