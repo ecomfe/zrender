@@ -4,7 +4,7 @@
  */
 import { TextAlign, TextVerticalAlign, ImageLike, Dictionary } from '../core/types';
 import { parseRichText, parsePlainText } from './helper/parseText';
-import ZRText from './Text';
+import ZRText, { TextStyleProps } from './Text';
 import { retrieve2, isString, each, normalizeCssArray, trim, retrieve3, extend, keys } from '../core/util';
 import { DEFAULT_FONT, adjustTextX, adjustTextY } from '../contain/text';
 import ZRImage from './Image';
@@ -193,7 +193,7 @@ class RichText extends Displayable<RichTextProps> {
 
     private _childCursor: 0
 
-    private _defaultColor = DEFAULT_RICH_TEXT_COLOR
+    private _defaultStyle = DEFAULT_RICH_TEXT_COLOR
 
     constructor(opts?: RichTextProps) {
         super();
@@ -268,9 +268,9 @@ class RichText extends Displayable<RichTextProps> {
 
 
     // Can be set in Element. To calculate text fill automatically when textContent is inside element
-    setDefaultTextColor(defaultTextStyle: Pick<RichTextStyleProps, 'fill' | 'stroke' | 'lineWidth'>) {
+    setDefaultTextStyle(defaultTextStyle: Pick<RichTextStyleProps, 'fill' | 'stroke' | 'lineWidth'>) {
         // Use builtin if defaultTextStyle is not given.
-        this._defaultColor = defaultTextStyle || DEFAULT_RICH_TEXT_COLOR;
+        this._defaultStyle = defaultTextStyle || DEFAULT_RICH_TEXT_COLOR;
     }
 
     setTextContent(textContent: never) {
@@ -336,7 +336,7 @@ class RichText extends Displayable<RichTextProps> {
         const textLines = contentBlock.lines;
         const lineHeight = contentBlock.lineHeight;
 
-        const defaultColor = this._defaultColor;
+        const defaultStyle = this._defaultStyle;
 
         const baseX = style.x || 0;
         const baseY = style.y || 0;
@@ -365,14 +365,16 @@ class RichText extends Displayable<RichTextProps> {
         textY += lineHeight / 2;
 
         const textStrokeLineWidth = style.lineWidth;
-        const textStroke = getStroke('stroke' in style ? style.stroke : defaultColor.stroke);
-        const textFill = getFill('fill' in style ? style.fill : defaultColor.fill);
+        const textStroke = getStroke('stroke' in style ? style.stroke : defaultStyle.stroke);
+        const textFill = getFill('fill' in style ? style.fill : defaultStyle.fill);
 
         const hasShadow = style.textShadowBlur > 0;
 
         for (let i = 0; i < textLines.length; i++) {
             const el = this._getOrCreateChild(ZRText);
-            const subElStyle = el.style;
+            // Always create new style.
+            const subElStyle: TextStyleProps = {};
+            el.useStyle(subElStyle);
             subElStyle.text = textLines[i];
             subElStyle.x = textX;
             subElStyle.y = textY;
@@ -398,7 +400,7 @@ class RichText extends Displayable<RichTextProps> {
 
             if (textStroke) {
                 subElStyle.stroke = textStroke as string;
-                subElStyle.lineWidth = textStrokeLineWidth || defaultColor.lineWidth;
+                subElStyle.lineWidth = textStrokeLineWidth || defaultStyle.lineWidth;
             }
             if (textFill) {
                 subElStyle.fill = textFill as string;
@@ -407,6 +409,7 @@ class RichText extends Displayable<RichTextProps> {
             subElStyle.font = textFont;
 
             textY += lineHeight;
+
         }
     }
 
@@ -529,16 +532,18 @@ class RichText extends Displayable<RichTextProps> {
         }
 
         const el = this._getOrCreateChild(ZRText);
-        const subElStyle = el.style;
+        const subElStyle: TextStyleProps = {};
+        // Always create new style.
+        el.useStyle(subElStyle);
 
-        const defaultColor = this._defaultColor;
+        const defaultStyle = this._defaultStyle;
         const textStroke = getStroke(
             'stroke' in tokenStyle ? tokenStyle.stroke
-               : 'stroke' in style ? style.stroke  : defaultColor.stroke
+               : 'stroke' in style ? style.stroke  : defaultStyle.stroke
         );
         const textFill = getStroke(
             'fill' in tokenStyle ? tokenStyle.fill
-               : 'fill' in style ? style.fill  : defaultColor.fill
+               : 'fill' in style ? style.fill  : defaultStyle.fill
         );
 
         const hasShadow = tokenStyle.textShadowBlur > 0
@@ -561,7 +566,7 @@ class RichText extends Displayable<RichTextProps> {
         subElStyle.font = token.font || DEFAULT_FONT;
 
         if (textStroke) {
-            subElStyle.lineWidth = retrieve3(tokenStyle.lineWidth, style.lineWidth, defaultColor.lineWidth);
+            subElStyle.lineWidth = retrieve3(tokenStyle.lineWidth, style.lineWidth, defaultStyle.lineWidth);
             subElStyle.stroke = textStroke;
         }
         if (textFill) {
@@ -588,6 +593,7 @@ class RichText extends Displayable<RichTextProps> {
         if (isPlainBg || (textBorderWidth && textBorderColor)) {
             // Background is color
             rectEl = this._getOrCreateChild(Rect);
+            rectEl.useStyle({});    // Create an empty style.
             rectEl.style.fill = null;
             const rectShape = rectEl.shape;
             rectShape.x = x;

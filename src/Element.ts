@@ -97,6 +97,12 @@ export interface ElementTextConfig {
      */
     outsideStroke?: string
 
+    /**
+     * Tell zrender I can sure this text is inside or not.
+     * In case position is not using builtin `inside` hints.
+     */
+    inside?: boolean
+
     // TODO applyClip
     // TODO align, verticalAlign??
 }
@@ -280,7 +286,7 @@ class Element<Props extends ElementProps = ElementProps> {
     protected _normalState: ElementState
 
     // Temporary storage for inside text color configuration.
-    private _innerTextColor: { fill?: string, stroke?: string, lineWidth?: number }
+    private _innerTextDefaultStyle: { fill?: string, stroke?: string, lineWidth?: number }
 
     constructor(props?: Props) {
         // Transformable needs position, rotation, scale
@@ -345,26 +351,45 @@ class Element<Props extends ElementProps = ElementProps> {
                 this.textConfig = {};
             }
             const textConfig = this.textConfig;
-            const isLocal = textConfig.local;
-            tmpBoundingRect.copy(this.getBoundingRect());
-            if (!isLocal) {
-                tmpBoundingRect.applyTransform(this.transform);
-            }
-            else {
-                // TODO parent is always be group for developers. But can be displayble inside.
-                textEl.parent = this as unknown as Group;
-            }
-            if (this.calculateTextPosition) {
-                this.calculateTextPosition(tmpTextPosCalcRes, textConfig, tmpBoundingRect);
-            }
-            else {
-                calculateTextPosition(tmpTextPosCalcRes, textConfig, tmpBoundingRect);
-            }
-            // TODO Not modify el.position?
-            textEl.position[0] = tmpTextPosCalcRes.x;
-            textEl.position[1] = tmpTextPosCalcRes.y;
 
-            textEl.rotation = textConfig.rotation || 0;
+            let textStyleChanged = false;
+            // Force set attached text's position if `position` is in config.
+            if (textConfig.position != null) {
+                const isLocal = textConfig.local;
+                tmpBoundingRect.copy(this.getBoundingRect());
+                if (!isLocal) {
+                    tmpBoundingRect.applyTransform(this.transform);
+                }
+                else {
+                    // TODO parent is always be group for developers. But can be displayble inside.
+                    textEl.parent = this as unknown as Group;
+                }
+
+                if (this.calculateTextPosition) {
+                    this.calculateTextPosition(tmpTextPosCalcRes, textConfig, tmpBoundingRect);
+                }
+                else {
+                    calculateTextPosition(tmpTextPosCalcRes, textConfig, tmpBoundingRect);
+                }
+
+                // TODO Should modify back if textConfig.position is set to null again.
+                // Or textContent is detached.
+                textEl.position[0] = tmpTextPosCalcRes.x;
+                textEl.position[1] = tmpTextPosCalcRes.y;
+
+                if (tmpTextPosCalcRes.textAlign) {
+                    textStyleChanged = textStyleChanged || textEl.style.align !== tmpTextPosCalcRes.textAlign;
+                    textEl.style.align = tmpTextPosCalcRes.textAlign;
+                }
+                if (tmpTextPosCalcRes.verticalAlign) {
+                    textStyleChanged = textStyleChanged || textEl.style.verticalAlign !== tmpTextPosCalcRes.verticalAlign;
+                    textEl.style.verticalAlign = tmpTextPosCalcRes.verticalAlign;
+                }
+            }
+
+            if (textConfig.rotation != null) {
+                textEl.rotation = textConfig.rotation;
+            }
 
             let textOffset = textConfig.offset;
             if (textOffset) {
@@ -372,18 +397,15 @@ class Element<Props extends ElementProps = ElementProps> {
                 textEl.origin = [-textOffset[0], -textOffset[1]];
             }
 
-            if (tmpTextPosCalcRes.textAlign) {
-                textEl.style.align = tmpTextPosCalcRes.textAlign;
-            }
-            if (tmpTextPosCalcRes.verticalAlign) {
-                textEl.style.verticalAlign = tmpTextPosCalcRes.verticalAlign;
-            }
-
             // Calculate text color
-            const position = textConfig.position;
-            const isInside = typeof position === 'string' && position.indexOf('inside') >= 0;
-            const innerTextColor = this._innerTextColor || (this._innerTextColor = {});
+            const isInside = textConfig.inside == null  // Force to be inside or not.
+                ? (typeof textConfig.position === 'string' && textConfig.position.indexOf('inside') >= 0)
+                : textConfig.inside
+            const innerTextDefaultStyle = this._innerTextDefaultStyle || (this._innerTextDefaultStyle = {});
 
+            let innerTextFill;
+            let innerTextStroke;
+            let innerTextLineWidth;
             if (isInside) {
                 const hasInsideFill = textConfig.insideFill != null;
                 const hasInsideStroke = textConfig.insideStroke != null;
@@ -399,19 +421,36 @@ class Element<Props extends ElementProps = ElementProps> {
                         strokeColor = this.getInsideTextStroke(fillColor);
                     }
 
-                    innerTextColor.fill = fillColor;
-                    innerTextColor.stroke = strokeColor || null;
-                    innerTextColor.lineWidth = strokeColor ? 2 : 0;
+                    innerTextFill = fillColor;
+                    innerTextStroke = strokeColor || null;
+                    innerTextLineWidth = strokeColor ? 2 : 0;
 
                 }
             }
             else {
-                innerTextColor.fill = textConfig.outsideFill || '#000';
-                innerTextColor.stroke = textConfig.outsideStroke || null;
-                innerTextColor.lineWidth = textConfig.outsideStroke ? 2 : 0;
+                innerTextFill = textConfig.outsideFill;
+                innerTextStroke = textConfig.outsideStroke || null;
+                innerTextLineWidth = textConfig.outsideStroke ? 2 : 0;
+            }
+            innerTextFill = innerTextFill || '#000';
+
+            if (innerTextFill !== innerTextDefaultStyle.fill
+                || innerTextStroke !== innerTextDefaultStyle.stroke
+                || innerTextLineWidth !== innerTextDefaultStyle.lineWidth) {
+
+                textStyleChanged = true;
+
+                innerTextDefaultStyle.fill = innerTextFill;
+                innerTextDefaultStyle.stroke = innerTextStroke;
+                innerTextDefaultStyle.lineWidth = innerTextLineWidth;
+
+                textEl.setDefaultTextStyle(innerTextDefaultStyle);
             }
 
-            textEl.setDefaultTextColor(innerTextColor);
+            if (textStyleChanged) {
+                // Only mark style dirty if necessary. Update RichText is costly.
+                textEl.dirtyStyle();
+            }
 
             // Mark textEl to update transform.
             textEl.markRedraw();
