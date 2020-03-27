@@ -103,7 +103,6 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
     style: PathStyleProps
 
     __dirtyPath: boolean
-    __clipTarget: Element
 
     private _rectWithStroke: BoundingRect
 
@@ -307,14 +306,6 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
             }
         }
         return false;
-    }
-
-    markRedraw() {
-        super.markRedraw();
-        // Used as a clipping path
-        if (this.__clipTarget) {
-            this.__clipTarget.markRedraw();
-        }
     }
 
     /**

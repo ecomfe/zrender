@@ -302,8 +302,16 @@ class Handler extends Eventful {
         while (el) {
             el[eventKey]
                 && (eventPacket.cancelBubble = !!el[eventKey].call(el, eventPacket));
-
             el.trigger(eventName, eventPacket);
+
+            // Also needs trigger host element events if on the textContent.
+            const hostEl = el.__hostTarget;
+            if (hostEl) {
+                this.dispatchToElement({
+                    target: hostEl,
+                    topTarget: targetInfo.topTarget
+                }, eventName, event);
+            }
 
             el = el.parent;
 

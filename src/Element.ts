@@ -240,7 +240,12 @@ class Element<Props extends ElementProps = ElementProps> {
 
     parent: Group
 
-    animators: Animator<any>[] = [];
+    animators: Animator<any>[] = []
+
+    /**
+     * If element is used as a component of other element.
+     */
+    __hostTarget: Element
 
     /**
      * ZRender instance will be assigned when element is associated with zrender
@@ -692,6 +697,30 @@ class Element<Props extends ElementProps = ElementProps> {
     }
 
     /**
+     * Component is some elements attached on this element for specific purpose.
+     * Like clipPath, textContent
+     */
+    protected _attachComponent(componentEl: Element) {
+        const zr = this.__zr;
+        if (zr) {
+            // Needs to add self to zrender. For rerender triggering, or animation.
+            componentEl.addSelfToZr(zr);
+        }
+
+        componentEl.__zr = zr;
+        componentEl.__hostTarget = this as unknown as Element;
+    }
+
+    protected _detachComponent(componentEl: Element) {
+        if (componentEl.__zr) {
+            componentEl.removeSelfFromZr(componentEl.__zr);
+        }
+
+        componentEl.__zr = null;
+        componentEl.__hostTarget = null;
+    }
+
+    /**
      * Get clip path
      */
     getClipPath() {
@@ -702,22 +731,14 @@ class Element<Props extends ElementProps = ElementProps> {
      * Set clip path
      */
     setClipPath(clipPath: Path) {
-        const zr = this.__zr;
-        if (zr) {
-            // Needs to add self to zrender. For rerender triggering, or animation.
-            clipPath.addSelfToZr(zr);
-        }
-
         // Remove previous clip path
         if (this._clipPath && this._clipPath !== clipPath) {
             this.removeClipPath();
         }
 
-        this._clipPath = clipPath;
-        clipPath.__zr = zr;
-        // TODO
-        clipPath.__clipTarget = this as unknown as Element;
+        this._attachComponent(clipPath);
 
+        this._clipPath = clipPath;
         this.markRedraw();
     }
 
@@ -727,14 +748,8 @@ class Element<Props extends ElementProps = ElementProps> {
     removeClipPath() {
         const clipPath = this._clipPath;
         if (clipPath) {
-            if (clipPath.__zr) {
-                clipPath.removeSelfFromZr(clipPath.__zr);
-            }
-
-            clipPath.__zr = null;
-            clipPath.__clipTarget = null;
+            this._detachComponent(clipPath);
             this._clipPath = null;
-
             this.markRedraw();
         }
     }
@@ -755,14 +770,9 @@ class Element<Props extends ElementProps = ElementProps> {
             this.removeTextContent();
         }
 
-        const zr = this.__zr;
-        if (zr) {
-            // Needs to add self to zrender. For rerender triggering, or animation.
-            textEl.addSelfToZr(zr);
-        }
-
         this._textContent = textEl;
-        textEl.__zr = zr;
+
+        this._attachComponent(textEl);
 
         this.markRedraw();
     }
@@ -773,10 +783,7 @@ class Element<Props extends ElementProps = ElementProps> {
     removeTextContent() {
         const textEl = this._textContent;
         if (textEl) {
-            if (textEl.__zr) {
-                textEl.removeSelfFromZr(textEl.__zr);
-            }
-            textEl.__zr = null;
+            this._detachComponent(textEl);
             this._textContent = null;
             this.markRedraw();
         }
@@ -800,6 +807,10 @@ class Element<Props extends ElementProps = ElementProps> {
     markRedraw() {
         this.__dirty = true;
         this.__zr && this.__zr.refresh();
+        // Used as a clipPath or textContent
+        if (this.__hostTarget) {
+            this.__hostTarget.markRedraw();
+        }
     }
 
 
