@@ -122,29 +122,38 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
     protected _init(props?: Props) {
         // Init default properties
         const keysArr = keys(props);
+
         this.shape = this.getDefaultShape();
-        for (let i = 0; i < keysArr.length; i++) {
-            const key = keysArr[i];
-            if (key === 'style') {
-                this.useStyle(props[key]);
-            }
-            else if (key === 'shape') {
-                // this.shape = props[key];
-                extend(this.shape, props[key]);
-            }
-            else {
-                super.attrKV(key as any, props[key]);
-            }
-        }
         const defaultStyle = this.getDefaultStyle();
-        // Give a empty style
-        if (!this.style) {
-            this.useStyle(defaultStyle || {});
-        }
-        else if (defaultStyle) {
-            defaults(this.style, defaultStyle);
+        if (defaultStyle) {
+            this.useStyle(defaultStyle);
         }
 
+        for (let i = 0; i < keysArr.length; i++) {
+            const key = keysArr[i];
+            const value = props[key];
+            if (key === 'style') {
+                if (!this.style) {
+                    // PENDING Reuse style object if possible?
+                    this.useStyle(value);
+                }
+                else {
+                    extend(this.style, value);
+                }
+            }
+            else if (key === 'shape') {
+                // this.shape = value;
+                extend(this.shape, value);
+            }
+            else {
+                super.attrKV(key as any, value);
+            }
+        }
+
+        // Create an empty one if no style object exists.
+        if (!this.style) {
+            this.useStyle({});
+        }
         // const defaultShape = this.getDefaultShape();
         // if (!this.shape) {
         //     this.shape = defaultShape;
