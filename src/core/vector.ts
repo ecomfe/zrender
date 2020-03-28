@@ -1,3 +1,7 @@
+/**
+ * @deprecated
+ * Use zrender.Point class instead
+ */
 import { MatrixArray } from './matrix';
 
 /* global Float32Array */

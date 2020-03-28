@@ -129,19 +129,21 @@ export default class Storage {
 
                 // Force to mark as dirty if group is dirty
                 if (el.__dirty) {
-                    child.__dirty = true;
+                    child.markRedraw();
                 }
 
                 this._updateAndAddDisplayable(child, clipPaths, includeIgnore);
             }
 
             // Mark group clean here
-            el.__dirty = false;
+            el.__dirty = 0;
 
         }
         else {
             // Element is displayable
-            (el as Displayable).__clipPaths = clipPaths;
+            if (clipPaths && clipPaths.length) {
+                (el as Displayable).__clipPaths = clipPaths;
+            }
 
             this._displayList[this._displayListLen++] = el as Displayable;
         }
@@ -158,15 +160,10 @@ export default class Storage {
      * 添加图形(Displayable)或者组(Group)到根节点
      */
     addRoot(el: Element) {
-        if (el.__storage === this) {
+        if (el.__zr && el.__zr.storage === this) {
             return;
         }
 
-        if (el instanceof Group) {
-            el.addChildrenToStorage(this);
-        }
-
-        this.addToStorage(el);
         this._roots.push(el);
     }
 
@@ -183,26 +180,13 @@ export default class Storage {
             return;
         }
 
-
         const idx = util.indexOf(this._roots, el);
         if (idx >= 0) {
-            this.delFromStorage(el);
             this._roots.splice(idx, 1);
-            if (el instanceof Group) {
-                el.delChildrenFromStorage(this);
-            }
         }
     }
 
     delAllRoots() {
-        // 不指定el清空
-        for (let i = 0; i < this._roots.length; i++) {
-            const root = this._roots[i];
-            if (root instanceof Group) {
-                root.delChildrenFromStorage(this);
-            }
-        }
-
         this._roots = [];
         this._displayList = [];
         this._displayListLen = 0;
@@ -210,20 +194,8 @@ export default class Storage {
         return;
     }
 
-    addToStorage(el: Element) {
-        if (el) {
-            el.__storage = this;
-            el.markRedraw();
-        }
-        return this;
-    }
-
-    delFromStorage(el: Element) {
-        if (el) {
-            el.__storage = null;
-        }
-
-        return this;
+    getRoots() {
+        return this._roots;
     }
 
     /**

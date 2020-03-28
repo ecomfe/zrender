@@ -44,8 +44,9 @@ interface SVGParserResult {
     viewBoxRect: RectLike
     // the {scale, position} calculated by viewBox and viewport, is exists
     viewBoxTransform: {
-        scale: VectorArray
-        position: VectorArray
+        x: number
+        y: number
+        scale: number
     }
 }
 
@@ -156,8 +157,9 @@ class SVGParser {
                 const elRoot = root;
                 root = new Group();
                 root.add(elRoot);
-                elRoot.scale = viewBoxTransform.scale.slice();
-                elRoot.position = viewBoxTransform.position.slice();
+                elRoot.scaleX = elRoot.scaleY = viewBoxTransform.scale;
+                elRoot.x = viewBoxTransform.x;
+                elRoot.y = viewBoxTransform.y;
             }
         }
 
@@ -249,7 +251,8 @@ class SVGParser {
             style: {
                 text: xmlNode.textContent
             },
-            position: [this._textX || 0, this._textY || 0]
+            x: this._textX || 0,
+            y: this._textY || 0
         });
 
         inheritStyle(parentGroup, text);
@@ -260,9 +263,8 @@ class SVGParser {
         if (fontSize && fontSize < 9) {
             // PENDING
             textStyle.fontSize = 9;
-            text.scale = text.scale || [1, 1];
-            text.scale[0] *= fontSize / 9;
-            text.scale[1] *= fontSize / 9;
+            text.scaleX *= fontSize / 9;
+            text.scaleY *= fontSize / 9;
         }
 
         const font = (textStyle.fontSize || textStyle.fontFamily) && [
@@ -707,22 +709,19 @@ function parseStyleAttribute(xmlNode: SVGElement) {
 }
 
 export function makeViewBoxTransform(viewBoxRect: RectLike, width: number, height: number): {
-    scale: VectorArray
-    position: VectorArray
+    scale: number
+    x: number
+    y: number
 } {
     const scaleX = width / viewBoxRect.width;
     const scaleY = height / viewBoxRect.height;
     const scale = Math.min(scaleX, scaleY);
     // preserveAspectRatio 'xMidYMid'
-    const viewBoxScale = [scale, scale];
-    const viewBoxPosition = [
-        -(viewBoxRect.x + viewBoxRect.width / 2) * scale + width / 2,
-        -(viewBoxRect.y + viewBoxRect.height / 2) * scale + height / 2
-    ];
 
     return {
-        scale: viewBoxScale,
-        position: viewBoxPosition
+        scale,
+        x: -(viewBoxRect.x + viewBoxRect.width / 2) * scale + width / 2,
+        y: -(viewBoxRect.y + viewBoxRect.height / 2) * scale + height / 2
     };
 }
 

@@ -257,10 +257,10 @@ const svgPath: SVGProxy<Path> = {
         }
         const path = el.path;
 
-        if (el.__dirtyPath) {
+        if (el.shapeChanged()) {
             path.beginPath();
             el.buildPath(path, el.shape);
-            el.__dirtyPath = false;
+            el.pathUpdated();
 
             const pathStr = pathDataToString(path);
             if (pathStr.indexOf('NaN') < 0) {

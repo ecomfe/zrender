@@ -2,7 +2,6 @@ import Transformable from './core/Transformable';
 import { AnimationEasing } from './animation/easing';
 import Animator from './animation/Animator';
 import { ZRenderType } from './zrender';
-import { VectorArray, add } from './core/vector';
 import { Dictionary, ElementEventName, ZRRawEvent, BuiltinTextPosition, AllPropTypes } from './core/types';
 import Path from './graphic/Path';
 import BoundingRect, { RectLike } from './core/BoundingRect';
@@ -151,7 +150,6 @@ interface ElementEventHandlerProps {
     ondragleave: ElementEventCallback<unknown, unknown>
     ondragover: ElementEventCallback<unknown, unknown>
     ondrop: ElementEventCallback<unknown, unknown>
-
 }
 
 export interface ElementProps extends Partial<ElementEventHandlerProps> {
@@ -162,10 +160,14 @@ export interface ElementProps extends Partial<ElementEventHandlerProps> {
 
     silent?: boolean
     // From transform
-    position?: VectorArray
+    x?: number
+    y?: number
+    scaleX?: number
+    scaleY?: number
+    originX?: number
+    originY?: number
     rotation?: number
-    scale?: VectorArray
-    origin?: VectorArray
+
     globalScaleRatio?: number
 
     textConfig?: ElementTextConfig
@@ -181,10 +183,10 @@ export interface ElementProps extends Partial<ElementEventHandlerProps> {
 // Properties can be used in state.
 export const PRESERVED_NORMAL_STATE = '__zr_normal__';
 
-export type ElementStatePropNames = 'position' | 'rotation' | 'scale' | 'origin' | 'textConfig' | 'ignore';
+const PRIMARY_STATES_KEYS = ['x', 'y', 'scaleX', 'scaleY', 'originX', 'originY', 'rotation', 'ignore'] as const;
+export type ElementStatePropNames = (typeof PRIMARY_STATES_KEYS)[number] | 'textConfig';
 export type ElementState = Pick<ElementProps, ElementStatePropNames>;
 
-const PRIMARY_STATES_KEYS = ['position', 'scale', 'rotation', 'origin', 'ignore'] as const;
 
 type AnimationCallback = () => void
 
@@ -253,11 +255,11 @@ class Element<Props extends ElementProps = ElementProps> {
     __zr: ZRenderType
 
     /**
-     * Dirty flag. From which painter will determine if this displayable object needs brush.
+     * Dirty bits.
+     * From which painter will determine if this displayable object needs brush.
      */
-    __dirty: boolean
+    __dirty: number
 
-    __storage: Storage
     /**
      * path to clip the elements and its children, if it is a group.
      * @see http://www.w3.org/TR/2dcontext/#clipping-region
@@ -382,8 +384,8 @@ class Element<Props extends ElementProps = ElementProps> {
 
                 // TODO Should modify back if textConfig.position is set to null again.
                 // Or textContent is detached.
-                textEl.position[0] = tmpTextPosCalcRes.x;
-                textEl.position[1] = tmpTextPosCalcRes.y;
+                textEl.x = tmpTextPosCalcRes.x;
+                textEl.y = tmpTextPosCalcRes.y;
 
                 if (tmpTextPosCalcRes.textAlign) {
                     textStyleChanged = textStyleChanged || textEl.style.align !== tmpTextPosCalcRes.textAlign;
@@ -401,8 +403,11 @@ class Element<Props extends ElementProps = ElementProps> {
 
             let textOffset = textConfig.offset;
             if (textOffset) {
-                add(textEl.position, textEl.position, textOffset);
-                textEl.origin = [-textOffset[0], -textOffset[1]];
+                textEl.x += textOffset[0];
+                textEl.y += textOffset[1];
+
+                textEl.originX = -textOffset[0]
+                textEl.originY = -textOffset[1];
             }
 
             // Calculate text color
@@ -479,18 +484,7 @@ class Element<Props extends ElementProps = ElementProps> {
     ) {}
 
     protected attrKV(key: string, value: unknown) {
-        if (key === 'position' || key === 'scale' || key === 'origin') {
-            // Copy the array
-            if (value) {
-                let target = this[key];
-                if (!target) {
-                    target = this[key] = [];
-                }
-                target[0] = (value as VectorArray)[0];
-                target[1] = (value as VectorArray)[1];
-            }
-        }
-        else if (key === 'textConfig') {
+        if (key === 'textConfig') {
             this.setTextConfig(value as ElementTextConfig);
         }
         else if (key === 'textContent') {
@@ -547,12 +541,11 @@ class Element<Props extends ElementProps = ElementProps> {
 
         // TODO clone?
         state.textConfig = this.textConfig;
-        state.position = this.position;
-        state.scale = this.scale;
-        state.rotation = this.rotation;
-        state.origin = this.origin || [0, 0];
 
-        state.ignore = this.ignore;
+        for (let i = 0; i < PRIMARY_STATES_KEYS.length; i++) {
+            let key = PRIMARY_STATES_KEYS[i];
+            (state as any)[key] = this[key];
+        }
     }
 
     /**
@@ -805,14 +798,13 @@ class Element<Props extends ElementProps = ElementProps> {
      * Mark element needs to be repainted
      */
     markRedraw() {
-        this.__dirty = true;
+        this.__dirty |= Element.REDARAW_BIT;
         this.__zr && this.__zr.refresh();
         // Used as a clipPath or textContent
         if (this.__hostTarget) {
             this.__hostTarget.markRedraw();
         }
     }
-
 
     /**
      * Besides marking elements to be refreshed.
@@ -1004,6 +996,8 @@ class Element<Props extends ElementProps = ElementProps> {
     calculateTextPosition: (out: TextPositionCalculationResult, style: ElementTextConfig, rect: RectLike) => TextPositionCalculationResult
 
 
+    static REDARAW_BIT = 1;
+
     protected static initDefaultProps = (function () {
         const elProto = Element.prototype;
         elProto.type = 'element';
@@ -1013,7 +1007,7 @@ class Element<Props extends ElementProps = ElementProps> {
         elProto.isGroup = false;
         elProto.draggable = false;
         elProto.dragging = false;
-        elProto.__dirty = true;
+        elProto.__dirty = Element.REDARAW_BIT;
     })()
 }
 

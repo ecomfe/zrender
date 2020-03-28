@@ -444,7 +444,7 @@ export function mergePath(pathEls: Path[], opts: PathProps) {
         if (!pathEl.path) {
             pathEl.createPathProxy();
         }
-        if (pathEl.__dirtyPath) {
+        if (pathEl.shapeChanged()) {
             pathEl.buildPath(pathEl.path, pathEl.shape, true);
         }
         pathList.push(pathEl.path);

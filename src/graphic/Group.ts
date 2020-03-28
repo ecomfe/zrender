@@ -23,6 +23,7 @@ import BoundingRect from '../core/BoundingRect';
 import Storage from '../Storage';
 import { MatrixArray } from '../core/matrix';
 import Displayable from './Displayable';
+import { ZRenderType } from '../zrender';
 
 export interface GroupProps extends ElementProps {
 }
@@ -118,15 +119,10 @@ export default class Group extends Element<GroupProps> {
 
         child.parent = this;
 
-        const storage = this.__storage;
         const zr = this.__zr;
-        if (storage && storage !== (child as Group).__storage) {    // Only group has __storage
+        if (zr && zr !== (child as Group).__zr) {    // Only group has __storage
 
-            storage.addToStorage(child);
-
-            if (child instanceof Group) {
-                child.addChildrenToStorage(storage);
-            }
+            child.addSelfToZr(zr);
         }
 
         zr && zr.refresh();
@@ -138,7 +134,6 @@ export default class Group extends Element<GroupProps> {
      */
     remove(child: Element) {
         const zr = this.__zr;
-        const storage = this.__storage;
         const children = this._children;
 
         const idx = zrUtil.indexOf(children, child);
@@ -149,13 +144,9 @@ export default class Group extends Element<GroupProps> {
 
         child.parent = null;
 
-        if (storage) {
+        if (zr) {
 
-            storage.delFromStorage(child);
-
-            if (child instanceof Group) {
-                child.delChildrenFromStorage(storage);
-            }
+            child.removeSelfFromZr(zr);
         }
 
         zr && zr.refresh();
@@ -168,14 +159,11 @@ export default class Group extends Element<GroupProps> {
      */
     removeAll() {
         const children = this._children;
-        const storage = this.__storage;
+        const zr = this.__zr;
         for (let i = 0; i < children.length; i++) {
             const child = children[i];
-            if (storage) {
-                storage.delFromStorage(child);
-                if (child instanceof Group) {
-                    child.delChildrenFromStorage(storage);
-                }
+            if (zr) {
+                child.removeSelfFromZr(zr);
             }
             child.parent = null;
         }
@@ -217,30 +205,20 @@ export default class Group extends Element<GroupProps> {
         return this;
     }
 
-    addChildrenToStorage(storage: Storage) {
+    addSelfToZr(zr: ZRenderType) {
+        super.addSelfToZr(zr);
         for (let i = 0; i < this._children.length; i++) {
             const child = this._children[i];
-            storage.addToStorage(child);
-            if (child instanceof Group) {
-                child.addChildrenToStorage(storage);
-            }
+            child.addSelfToZr(zr);
         }
     }
 
-    delChildrenFromStorage(storage: Storage) {
+    removeSelfFromZr(zr: ZRenderType) {
+        super.removeSelfFromZr(zr);
         for (let i = 0; i < this._children.length; i++) {
             const child = this._children[i];
-            storage.delFromStorage(child);
-            if (child instanceof Group) {
-                child.delChildrenFromStorage(storage);
-            }
+            child.removeSelfFromZr(zr);
         }
-    }
-
-    markRedraw() {
-        this.__dirty = true;
-        this.__zr && this.__zr.refresh();
-        return this;
     }
 
     getBoundingRect(includeChildren?: Element[]): BoundingRect {
@@ -252,7 +230,7 @@ export default class Group extends Element<GroupProps> {
 
         for (let i = 0; i < children.length; i++) {
             const child = children[i];
-            // Only displayable can be invisble
+            // TODO invisible?
             if (child.ignore || (child as Displayable).invisible) {
                 continue;
             }

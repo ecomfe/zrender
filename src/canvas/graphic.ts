@@ -62,6 +62,12 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, inBatch: boolean) {
     let hasStroke = el.hasStroke();
     let hasFill = el.hasFill();
 
+    // TODO Reduce path memory cost.
+    const firstDraw = !el.path;
+    if (firstDraw) {
+        el.createPathProxy();
+    }
+
     const style = el.style;
     const path = el.path || pathProxyForDraw;
 
@@ -151,7 +157,7 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, inBatch: boolean) {
     // 1. Path is dirty
     // 2. Path needs javascript implemented lineDash stroking.
     //    In this case, lineDash information will not be saved in PathProxy
-    if (el.__dirtyPath
+    if (firstDraw || (el.__dirty & Path.SHAPE_CHANGED_BIT)
         || (lineDash && !ctxLineDash && hasStroke)
     ) {
         path.setContext(ctx);
@@ -167,9 +173,7 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, inBatch: boolean) {
         path.toStatic();
 
         // Clear path dirty flag
-        if (el.path) {
-            el.__dirtyPath = false;
-        }
+        el.pathUpdated();
     }
     else {
         el.path.rebuildPath(ctx);
@@ -456,7 +460,7 @@ function isDisplayableCulled(el: Displayable, width: number, height: number) {
 
 function isClipPathChanged(clipPaths: Path[], prevClipPaths: Path[]): boolean {
     // displayable.__clipPaths can only be `null`/`undefined` or an non-empty array.
-    if (clipPaths === prevClipPaths) {
+    if (clipPaths === prevClipPaths || (!clipPaths && !prevClipPaths)) {
         return false;
     }
     if (!clipPaths || !prevClipPaths || (clipPaths.length !== prevClipPaths.length)) {
@@ -706,6 +710,9 @@ export function brush(
     el.afterBrush && el.afterBrush();
 
     scope.prevEl = el;
+
+    // Mark as painted.
+    el.__dirty = 0;
 }
 
 function brushIncremental(

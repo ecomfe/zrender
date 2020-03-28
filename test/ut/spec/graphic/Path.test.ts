@@ -13,7 +13,8 @@ describe('Path', function () {
             style: {
                 stroke: 'red'
             },
-            position: [10, 10]
+            x: 10,
+            y: 10
         });
         // Default shape values should be correct
         expect(rect.shape.x).toBe(0);
@@ -28,7 +29,8 @@ describe('Path', function () {
         // Given style values should be right
         expect(rect.style.stroke).toBe('red');
 
-        expect(rect.position).toEqual([10, 10]);
+        expect(rect.x).toEqual(10);
+        expect(rect.y).toEqual(10);
     });
 
     it('Default styles should be right.', function () {
@@ -89,10 +91,13 @@ describe('Path', function () {
 
 
     const selectedState: PathState = {
-        position: [100, 100],
+        x: 100,
+        y: 100,
         rotation: 10,
-        scale: [2, 2],
-        origin: [10, 10],
+        scaleX: 2,
+        scaleY: 2,
+        originX: 10,
+        originY: 10,
         style: {
             stroke: 'red',
             lineWidth: 2
@@ -134,10 +139,12 @@ describe('Path', function () {
 
         expect(rect.currentStates).toEqual(['selected']);
 
-        expect(rect.position).toEqual([100, 100]);
-        expect(rect.rotation).toBe(10);
-        expect(rect.scale).toEqual([2, 2]);
-        expect(rect.origin).toEqual([10, 10]);
+        expect(rect).toMatchObject({
+            x: 100, y: 100,
+            scaleX: 2, scaleY: 2,
+            originX: 10, originY: 10,
+            rotation: 10
+        });
         expect(rect.style.stroke).toBe('red');
         expect(rect.style.lineWidth).toBe(2);
         expect(rect.shape.width).toBe(200);
@@ -166,10 +173,12 @@ describe('Path', function () {
 
         expect(rect.currentStates).toEqual([]);
 
-        expect(rect.position).toEqual([0, 0]);
-        expect(rect.rotation).toEqual(0);
-        expect(rect.scale).toEqual([1, 1]);
-        expect(rect.origin).toEqual([0, 0]);
+        expect(rect).toMatchObject({
+            x: 0, y: 0,
+            rotation: 0,
+            scaleX: 1, scaleY: 1,
+            originX: 0, originY: 0
+        });
 
         expect(rect.style.fill).toEqual('blue');
         expect(rect.style.stroke).toBeNull();

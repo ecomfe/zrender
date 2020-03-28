@@ -14,20 +14,22 @@ const tmpTransform: matrix.MatrixArray = [];
 const originTransform = matrix.create();
 const abs = Math.abs;
 
-const DEFAULT_POSITION = [0, 0];
-const DEFAULT_SCALE = [1, 1];
-
 class Transformable {
 
     parent: Transformable
 
-    position: vector.VectorArray
+    x: number
+    y: number
+    scaleX: number
+    scaleY: number
+
     rotation: number
-    scale: vector.VectorArray
     /**
      * 旋转和缩放的原点
      */
-    origin?: vector.VectorArray
+    originX: number
+    originY: number
+
     /**
      * Scale ratio
      */
@@ -37,16 +39,27 @@ class Transformable {
     transform: matrix.MatrixArray
     invTransform: matrix.MatrixArray
 
-    constructor() {
-        // If there are no given position, rotation, scale
-        this.position = [0, 0];
-        this.rotation = 0;
-        this.scale = [1, 1];
+    /**
+     * Set position from array
+     */
+    setPosition(arr: number[]) {
+        this.x = arr[0];
+        this.y = arr[1];
+    }
+    /**
+     * Set scale from array
+     */
+    setScale(arr: number[]) {
+        this.scaleX = arr[0];
+        this.scaleY = arr[1];
+    }
 
-        /**
-         * 旋转和缩放的原点
-         */
-        this.origin = null;
+    /**
+     * Set origin from array
+     */
+    setOrigin(arr: number[]) {
+        this.originX = arr[0];
+        this.originY = arr[1];
     }
 
     /**
@@ -55,10 +68,10 @@ class Transformable {
      */
     needLocalTransform(): boolean {
         return isNotAroundZero(this.rotation)
-            || isNotAroundZero(this.position[0])
-            || isNotAroundZero(this.position[1])
-            || isNotAroundZero(this.scale[0] - 1)
-            || isNotAroundZero(this.scale[1] - 1);
+            || isNotAroundZero(this.x)
+            || isNotAroundZero(this.y)
+            || isNotAroundZero(this.scaleX - 1)
+            || isNotAroundZero(this.scaleY - 1);
     }
 
     updateTransform() {
@@ -121,8 +134,6 @@ class Transformable {
             // TODO return or set identity?
             return;
         }
-        const position = this.position;
-        const scale = this.scale;
         let sx = m[0] * m[0] + m[1] * m[1];
         let sy = m[2] * m[2] + m[3] * m[3];
         if (isNotAroundZero(sx - 1)) {
@@ -138,10 +149,11 @@ class Transformable {
             sy = -sy;
         }
 
-        position[0] = m[4];
-        position[1] = m[5];
-        scale[0] = sx;
-        scale[1] = sy;
+        this.x = m[4];
+        this.y = m[5];
+        this.scaleX = sx;
+        this.scaleY = sy;
+
         this.rotation = Math.atan2(-m[1] / sy, m[0] / sx);
     }
     /**
@@ -158,13 +170,14 @@ class Transformable {
             matrix.mul(tmpTransform, parent.invTransform, m);
             m = tmpTransform;
         }
-        const origin = this.origin;
-        if (origin && (origin[0] || origin[1])) {
-            originTransform[4] = origin[0];
-            originTransform[5] = origin[1];
+        const ox = this.originX;
+        const oy = this.originY;
+        if (ox || oy) {
+            originTransform[4] = ox;
+            originTransform[5] = oy;
             matrix.mul(tmpTransform, m, originTransform);
-            tmpTransform[4] -= origin[0];
-            tmpTransform[5] -= origin[1];
+            tmpTransform[4] -= ox;
+            tmpTransform[5] -= oy;
             m = tmpTransform;
         }
 
@@ -232,31 +245,48 @@ class Transformable {
         m = m || [];
         mIdentity(m);
 
-        const origin = target.origin;
-        const scale = target.scale || DEFAULT_SCALE;
+        const ox = target.originX;
+        const oy = target.originY;
+        const sx = target.scaleX;
+        const sy = target.scaleY;
         const rotation = target.rotation || 0;
-        const position = target.position || DEFAULT_POSITION;
+        const x = target.x;
+        const y = target.y;
 
-        if (origin) {
-            // Translate to origin
-            m[4] -= origin[0];
-            m[5] -= origin[1];
-        }
-        matrix.scale(m, m, scale);
+        // Translate to origin
+        m[4] -= ox;
+        m[5] -= oy;
+        // Apply scale
+        m[0] *= sx;
+        m[1] *= sy;
+        m[2] *= sx;
+        m[3] *= sy;
+        m[4] *= sx;
+        m[5] *= sy;
+
         if (rotation) {
             matrix.rotate(m, m, rotation);
         }
-        if (origin) {
-            // Translate back from origin
-            m[4] += origin[0];
-            m[5] += origin[1];
-        }
+        // Translate back from origin
+        m[4] += ox;
+        m[5] += oy;
 
-        m[4] += position[0];
-        m[5] += position[1];
+        m[4] += x;
+        m[5] += y;
 
         return m;
     }
+
+    private static initDefaultProps = (function () {
+        const proto = Transformable.prototype;
+        proto.x = 0;
+        proto.y = 0;
+        proto.scaleX = 1;
+        proto.scaleY = 1;
+        proto.originX = 0;
+        proto.originY = 0;
+        proto.rotation = 0;
+    })()
 };
 
 export default Transformable;

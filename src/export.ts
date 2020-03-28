@@ -9,6 +9,7 @@ import * as colorTool from './tool/color';
 import * as pathTool from './tool/path';
 import {parseSVG} from './tool/parseSVG';
 
+export {default as Point} from './core/Point';
 
 export {default as Element} from './Element';
 

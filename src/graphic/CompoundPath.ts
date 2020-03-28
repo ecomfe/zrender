@@ -14,13 +14,14 @@ export default class CompoundPath extends Path {
 
     private _updatePathDirty() {
         const paths = this.shape.paths;
-        let dirtyPath = this.__dirtyPath;
+        let dirtyPath = this.shapeChanged();
         for (let i = 0; i < paths.length; i++) {
             // Mark as dirty if any subpath is dirty
-            dirtyPath = dirtyPath || paths[i].__dirtyPath;
+            dirtyPath = dirtyPath || paths[i].shapeChanged();
         }
-        this.__dirtyPath = dirtyPath;
-        this.__dirty = this.__dirty || dirtyPath;
+        if (dirtyPath) {
+            this.dirtyShape();
+        }
     }
 
     beforeBrush() {
@@ -46,7 +47,7 @@ export default class CompoundPath extends Path {
     afterBrush() {
         const paths = this.shape.paths || [];
         for (let i = 0; i < paths.length; i++) {
-            paths[i].__dirtyPath = false;
+            paths[i].pathUpdated();
         }
     }
 

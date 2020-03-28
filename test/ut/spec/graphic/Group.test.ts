@@ -4,8 +4,10 @@ describe('Group', function () {
 
     it('Default properties should be right', function () {
         const group = new Group();
-        expect(group.position).toEqual([0, 0]);
-        expect(group.scale).toEqual([1, 1]);
+        expect(group.x).toEqual(0);
+        expect(group.y).toEqual(0);
+        expect(group.scaleX).toEqual(1);
+        expect(group.scaleY).toEqual(1);
         expect(group.rotation).toBe(0);
 
         expect(group.type).toBe('group');
@@ -14,13 +16,17 @@ describe('Group', function () {
 
     it('Option can be set properly', function () {
         const group = new Group({
-            position: [2, 2],
-            scale: [1.5, 1.5],
+            x: 2,
+            y: 3,
+            scaleX: 1.5,
+            scaleY: 1.5,
             rotation: 2,
             name: 'Test'
         });
-        expect(group.position).toEqual([2, 2]);
-        expect(group.scale).toEqual([1.5, 1.5]);
+        expect(group.x).toEqual(2);
+        expect(group.y).toEqual(3);
+        expect(group.scaleX).toEqual(1.5);
+        expect(group.scaleY).toEqual(1.5);
         expect(group.rotation).toBe(2);
         expect(group.name).toBe('Test');
     });

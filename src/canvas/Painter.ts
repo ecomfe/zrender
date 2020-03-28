@@ -442,7 +442,6 @@ export default class CanvasPainter implements PainterBase {
             for (i = start; i < layer.__endIndex; i++) {
                 const el = list[i];
                 this._doPaintEl(el, layer, paintAll, scope, i === layer.__endIndex - 1);
-                el.__dirty = false;
 
                 if (useTimer) {
                     // Date.now can be executed in 13,025,305 ops/second.
@@ -972,13 +971,19 @@ export default class CanvasPainter implements PainterBase {
         (ctx as ZRCanvasRenderingContext).dpr = dpr;
 
         const pathTransform = {
-            position: path.position,
+            x: path.x,
+            y: path.y,
+            scaleX: path.scaleX,
+            scaleY: path.scaleY,
             rotation: path.rotation,
-            scale: path.scale
+            originX: path.originX,
+            originY: path.originY
         };
-        path.position = [leftMargin - rect.x, topMargin - rect.y];
+        path.x = leftMargin - rect.x;
+        path.y = topMargin - rect.y;
         path.rotation = 0;
-        path.scale = [1, 1];
+        path.scaleX = 1;
+        path.scaleY = 1;
         path.updateTransform();
         if (path) {
             brush(ctx, path, {
@@ -995,17 +1000,7 @@ export default class CanvasPainter implements PainterBase {
             }
         });
 
-        if (pathTransform.position != null) {
-            imgShape.position = path.position = pathTransform.position;
-        }
-
-        if (pathTransform.rotation != null) {
-            imgShape.rotation = path.rotation = pathTransform.rotation;
-        }
-
-        if (pathTransform.scale != null) {
-            imgShape.scale = path.scale = pathTransform.scale;
-        }
+        util.extend(path, pathTransform);
 
         return imgShape;
     }

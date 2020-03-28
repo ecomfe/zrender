@@ -102,8 +102,6 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
 
     style: PathStyleProps
 
-    __dirtyPath: boolean
-
     private _rectWithStroke: BoundingRect
 
     // override
@@ -209,8 +207,12 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         inBundle?: boolean
     ) {}
 
+    pathUpdated() {
+        this.__dirty &= ~Path.SHAPE_CHANGED_BIT;
+    }
+
     createPathProxy() {
-        this.path = new PathProxy();
+        this.path = new PathProxy(false);
     }
 
     hasStroke() {
@@ -230,14 +232,17 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         const style = this.style;
         const needsUpdateRect = !rect;
         if (needsUpdateRect) {
-            let path = this.path;
-            if (!path) {
+            let firstInvoke = false;
+            if (!this.path) {
+                firstInvoke = true;
                 // Create path on demand.
-                path = this.path = new PathProxy();
+                this.createPathProxy();
             }
-            if (this.__dirtyPath) {
+            let path = this.path;
+            if (firstInvoke || (this.__dirty & Path.SHAPE_CHANGED_BIT)) {
                 path.beginPath();
                 this.buildPath(path, this.shape, false);
+                this.pathUpdated();
             }
             rect = path.getBoundingRect();
         }
@@ -312,7 +317,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
      * Shape changed
      */
     dirtyShape() {
-        this.__dirtyPath = true;
+        this.__dirty |= Path.SHAPE_CHANGED_BIT;
         this._rect = null;
         this.markRedraw();
     }
@@ -348,7 +353,6 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         // FIXME
         if (key === 'shape') {
             this.setShape(value as Props['shape']);
-            this.__dirtyPath = true;
         }
         else {
             super.attrKV(key as keyof DisplayableProps, value);
@@ -372,6 +376,13 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         this.dirtyShape();
 
         return this;
+    }
+
+    /**
+     * If shape changed. used with dirtyShape
+     */
+    shapeChanged() {
+        return this.__dirty & Path.SHAPE_CHANGED_BIT;
     }
 
     /**
@@ -478,13 +489,15 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         return Sub as any;
     }
 
+    static SHAPE_CHANGED_BIT = 4
+
     protected static initDefaultProps = (function () {
         const pathProto = Path.prototype;
         pathProto.type = 'path';
         pathProto.strokeContainThreshold = 5;
         pathProto.segmentIgnoreThreshold = 0;
         pathProto.subPixelOptimize = false;
-        pathProto.__dirtyPath = true;
+        pathProto.__dirty = Element.REDARAW_BIT | Displayable.STYLE_CHANGED_BIT | Path.SHAPE_CHANGED_BIT;
     })()
 }
 

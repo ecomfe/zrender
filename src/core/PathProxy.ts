@@ -57,7 +57,7 @@ export default class PathProxy {
 
     data: number[] | Float32Array
 
-    private _saveData = false
+    private _saveData: boolean
 
     private _ctx: ExtendedCanvasRenderingContext2D
 
@@ -66,26 +66,28 @@ export default class PathProxy {
 
     private _x0 = 0
     private _y0 = 0
-    // Unit x, Unit y. Provide for avoiding drawing that too short line segment
-    private _ux = 0
-    private _uy = 0
 
     private _len = 0
+    // Unit x, Unit y. Provide for avoiding drawing that too short line segment
+    private _ux: number
+    private _uy: number
 
-    private _lineDash: number[] = null
+    private _lineDash: number[]
 
-    private _needsDash: boolean = false
+    private _needsDash: boolean
 
-    private _dashOffset = 0
+    private _dashOffset: number
 
-    private _dashIdx = 0
+    private _dashIdx: number
 
-    private _dashSum = 0
+    private _dashSum: number
 
     static CMD = CMD
 
     constructor(notSaveData?: boolean) {
-        this._saveData = !(notSaveData || false);
+        if (notSaveData) {
+            this._saveData = false;
+        }
 
         if (this._saveData) {
             this.data = [];
@@ -100,8 +102,10 @@ export default class PathProxy {
     setScale(sx: number, sy: number, segmentIgnoreThreshold?: number) {
         // Compat. Previously there is no segmentIgnoreThreshold.
         segmentIgnoreThreshold = segmentIgnoreThreshold || 0;
-        this._ux = mathAbs(segmentIgnoreThreshold / dpr / sx) || 0;
-        this._uy = mathAbs(segmentIgnoreThreshold / dpr / sy) || 0;
+        if (segmentIgnoreThreshold > 0) {
+            this._ux = mathAbs(segmentIgnoreThreshold / dpr / sx) || 0;
+            this._uy = mathAbs(segmentIgnoreThreshold / dpr / sy) || 0;
+        }
     }
 
     setContext(ctx: ExtendedCanvasRenderingContext2D) {
@@ -736,4 +740,15 @@ export default class PathProxy {
             }
         }
     }
+
+    private static initDefaultProps = (function () {
+        const proto = PathProxy.prototype;
+        proto._saveData = true;
+        proto._needsDash = false;
+        proto._dashOffset = 0;
+        proto._dashIdx = 0;
+        proto._dashSum = 0;
+        proto._ux = 0;
+        proto._uy = 0;
+    })()
 }

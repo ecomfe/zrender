@@ -118,8 +118,6 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     states: Dictionary<DisplayableState>
     protected _normalState: DisplayableState
 
-    __dirtyStyle: boolean
-
     protected _rect: BoundingRect
 
     /**
@@ -133,7 +131,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     // Shapes for cascade clipping.
     // Can only be `null`/`undefined` or an non-empty array, MUST NOT be an empty array.
     // because it is easy to only using null to check whether clipPaths changed.
-    __clipPaths: Path[]
+    __clipPaths?: Path[]
 
     // FOR HOVER Connections for hovered elements.
     __hoverMir: Displayable
@@ -249,14 +247,23 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     }
 
     dirtyStyle() {
-        this.__dirtyStyle = true;
         this.markRedraw();
+        this.__dirty |= Displayable.STYLE_CHANGED_BIT;
         // Clear bounding rect.
-        this._rect = null;
+        if (this._rect) {
+            this._rect = null;
+        }
     }
 
     dirty() {
         this.dirtyStyle();
+    }
+
+    /**
+     * Is style changed. Used with dirtyStyle.
+     */
+    styleChanged() {
+        return this.__dirty & Displayable.STYLE_CHANGED_BIT;
     }
 
     useStyle(obj: Props['style'], inherited?: Props['style']) {
@@ -348,6 +355,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
      */
     // calculateTextPosition: (out: CalculateTextPositionResult, style: Dictionary<any>, rect: RectLike) => CalculateTextPositionResult
 
+    static STYLE_CHANGED_BIT = 2
 
     protected static initDefaultProps = (function () {
         const dispProto = Displayable.prototype;
@@ -363,7 +371,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         dispProto.autoBatch = false;
         dispProto._rect = null;
 
-        dispProto.__dirtyStyle = true;
+        dispProto.__dirty = Element.REDARAW_BIT | Displayable.STYLE_CHANGED_BIT;
     })()
 }
 

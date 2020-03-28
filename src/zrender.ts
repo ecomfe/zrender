@@ -20,7 +20,7 @@ import { Dictionary, ElementEventName } from './core/types';
 import { LayerConfig } from './canvas/Layer';
 import { GradientObject } from './graphic/Gradient';
 import { PatternObject } from './graphic/Pattern';
-import { Path } from './export';
+import { Path, Group } from './export';
 import { EventCallback } from './core/Eventful';
 import { PathStyleProps } from './graphic/Path';
 import ZRText, { TextStyleProps } from './graphic/Text';
@@ -105,24 +105,6 @@ class ZRender {
             }
         });
         this.animation.start();
-
-
-        // 修改 storage.delFromStorage, 每次删除元素之前删除动画
-        // FIXME 有点ugly
-        const oldDelFromStorage = storage.delFromStorage;
-        const oldAddToStorage = storage.addToStorage;
-
-        storage.delFromStorage = function (el) {
-            oldDelFromStorage.call(storage, el);
-            el && el.removeSelfFromZr(self);
-            return this;
-        };
-
-        storage.addToStorage = function (el) {
-            oldAddToStorage.call(storage, el);
-            el.addSelfToZr(self);
-            return this;
-        };
     }
 
     /**
@@ -130,6 +112,7 @@ class ZRender {
      */
     add(el: Element) {
         this.storage.addRoot(el);
+        el.addSelfToZr(this);
         this._needsRefresh = true;
     }
 
@@ -138,6 +121,7 @@ class ZRender {
      */
     remove(el: Element) {
         this.storage.delRoot(el);
+        el.removeSelfFromZr(this);
         this._needsRefresh = true;
     }
 
@@ -366,6 +350,12 @@ class ZRender {
      * Clear all objects and the canvas.
      */
     clear() {
+        const roots = this.storage.getRoots();
+        for (let i = 0; i < roots.length; i++) {
+            if (roots[i] instanceof Group) {
+                roots[i].removeSelfFromZr(this);
+            }
+        }
         this.storage.delAllRoots();
         this.painter.clear();
     }

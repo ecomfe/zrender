@@ -206,9 +206,21 @@ class RichText extends Displayable<RichTextProps> {
 
     update() {
         // Update children
-        if (this.__dirtyStyle) {
+        if (this.styleChanged()) {
             this._updateSubTexts()
         }
+
+        for (let i = 0; i < this._children.length; i++) {
+            const child = this._children[i];
+            // Set common properties.
+            child.zlevel = this.zlevel;
+            child.z = this.z;
+            child.z2 = this.z2;
+            child.culling = this.culling;
+            child.cursor = this.cursor;
+            child.invisible = this.invisible;
+        }
+
         super.update();
     }
 
@@ -223,20 +235,10 @@ class RichText extends Displayable<RichTextProps> {
 
         this._children.length = this._childCursor;
 
-        for (let i = 0; i < this._children.length; i++) {
-            const child = this._children[i];
-            // Set common properties.
-            child.zlevel = this.zlevel;
-            child.z = this.z;
-            child.z2 = this.z2;
-            child.culling = this.culling;
-            child.cursor = this.cursor;
-            child.invisible = this.invisible;
-        }
     }
 
     getBoundingRect(): BoundingRect {
-        if (this.__dirtyStyle) {
+        if (this.styleChanged()) {
             this._updateSubTexts();
         }
         if (!this._rect) {

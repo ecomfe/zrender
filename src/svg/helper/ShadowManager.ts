@@ -123,8 +123,8 @@ export default class ShadowManager extends Definable {
             : this.createElement('feDropShadow');
 
         const style = displayable.style;
-        const scaleX = displayable.scale ? (displayable.scale[0] || 1) : 1;
-        const scaleY = displayable.scale ? (displayable.scale[1] || 1) : 1;
+        const scaleX = displayable.scaleX || 1;
+        const scaleY = displayable.scaleY || 1;
 
         // TODO: textBoxShadowBlur is not supported yet
         let offsetX;

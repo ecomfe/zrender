@@ -60,12 +60,14 @@ export interface EventProcessor<EvtDef = DefaultEventDefinition> {
  */
 export default class Eventful<EvtDef = DefaultEventDefinition> {
 
-    private _$handlers: {[key: string]: EventHandler<any, any, EvtDef[keyof EvtDef]>[]} = {}
+    private _$handlers: {[key: string]: EventHandler<any, any, EvtDef[keyof EvtDef]>[]}
 
     protected _$eventProcessor: EventProcessor<EvtDef>
 
     constructor(eventProcessors?: EventProcessor<EvtDef>) {
-        this._$eventProcessor = eventProcessors || null;
+        if (eventProcessors) {
+            this._$eventProcessor = eventProcessors;
+        }
     }
 
     on<Ctx, EvtNm extends keyof EvtDef>(
@@ -93,6 +95,10 @@ export default class Eventful<EvtDef = DefaultEventDefinition> {
         handler?: EventCallback<Ctx, this, EvtDef[EvtNm]> | Ctx,
         context?: Ctx
     ): this {
+        if (!this._$handlers) {
+            this._$handlers = {};
+        }
+
         const _h = this._$handlers;
 
         if (typeof query === 'function') {
@@ -143,7 +149,7 @@ export default class Eventful<EvtDef = DefaultEventDefinition> {
      */
     isSilent(eventName: keyof EvtDef): boolean {
         const _h = this._$handlers;
-        return !_h[eventName as string] || !_h[eventName as string].length;
+        return !_h || !_h[eventName as string] || !_h[eventName as string].length;
     }
 
     /**
@@ -156,6 +162,10 @@ export default class Eventful<EvtDef = DefaultEventDefinition> {
      */
     off(eventType?: keyof EvtDef, handler?: Function): this {
         const _h = this._$handlers;
+
+        if (!_h) {
+            return this;
+        }
 
         if (!eventType) {
             this._$handlers = {};
@@ -191,6 +201,10 @@ export default class Eventful<EvtDef = DefaultEventDefinition> {
      */
     trigger(eventType: keyof EvtDef, eventParam?: EvtDef[keyof EvtDef], ...args: any[]): this;
     trigger(eventType: keyof EvtDef, ...args: any[]): this {
+        if (!this._$handlers) {
+            return this;
+        }
+
         const _h = this._$handlers[eventType as string];
         const eventProcessor = this._$eventProcessor;
 
@@ -240,6 +254,10 @@ export default class Eventful<EvtDef = DefaultEventDefinition> {
      * @param {string} type The event name.
      */
     triggerWithContext(type: keyof EvtDef) {
+        if (!this._$handlers) {
+            return this;
+        }
+
         const _h = this._$handlers[type as string];
         const eventProcessor = this._$eventProcessor;
 

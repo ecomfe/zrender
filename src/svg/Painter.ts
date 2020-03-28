@@ -189,7 +189,7 @@ class SVGPainter implements PainterBase {
                             .update(svgElement, displayable);
                     }
 
-                    displayable.__dirty = false;
+                    displayable.__dirty = 0;
                 }
                 newVisibleList.push(displayable);
             }
