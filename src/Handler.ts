@@ -201,7 +201,7 @@ class Handler extends Eventful {
         // (like 'setOption' or 'dispatchAction') in event handlers, we should find
         // lastHovered again here. Otherwise 'mouseout' can not be triggered normally.
         // See #6198.
-        if (lastHoveredTarget && !lastHoveredTarget.__stage) {
+        if (lastHoveredTarget && !lastHoveredTarget.__zr) {
             lastHovered = this.findHover(lastHovered.x, lastHovered.y);
             lastHoveredTarget = lastHovered.target;
         }
