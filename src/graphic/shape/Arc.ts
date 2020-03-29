@@ -17,9 +17,7 @@ interface ArcProps extends PathProps {
     shape?: Partial<ArcShape>
 }
 
-export default class Arc extends Path<ArcProps> {
-
-    type = 'Arc'
+class Arc extends Path<ArcProps> {
 
     shape: ArcShape
 
@@ -54,3 +52,7 @@ export default class Arc extends Path<ArcProps> {
         ctx.arc(x, y, r, startAngle, endAngle, !clockwise);
     }
 }
+
+Arc.prototype.type = 'arc';
+
+export default Arc;

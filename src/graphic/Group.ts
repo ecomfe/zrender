@@ -28,11 +28,9 @@ import { ZRenderType } from '../zrender';
 export interface GroupProps extends ElementProps {
 }
 
-export default class Group extends Element<GroupProps> {
+class Group extends Element<GroupProps> {
 
     readonly isGroup = true
-
-    readonly type = 'group'
 
     private _children: Element[] = []
 
@@ -258,3 +256,7 @@ export default class Group extends Element<GroupProps> {
         return rect || tmpRect;
     }
 }
+
+Group.prototype.type = 'group';
+
+export default Group;

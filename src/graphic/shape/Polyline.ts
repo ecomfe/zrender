@@ -15,9 +15,7 @@ class PolylineShape {
 interface PolylineProps extends PathProps {
     shape?: Partial<PolylineShape>
 }
-export default class Polyline extends Path<PolylineProps> {
-
-    type = 'ellipse'
+class Polyline extends Path<PolylineProps> {
 
     shape: PolylineShape
 
@@ -40,3 +38,6 @@ export default class Polyline extends Path<PolylineProps> {
         polyHelper.buildPath(ctx, shape, false);
     }
 }
+
+Polyline.prototype.type = 'polyline';
+export default Polyline;

@@ -20,9 +20,7 @@ class TrochoidShape {
 interface TrochoidProps extends PathProps {
     shape?: Partial<TrochoidShape>
 }
-export default class Trochoid extends Path<TrochoidProps> {
-
-    type = 'trochoid'
+class Trochoid extends Path<TrochoidProps> {
 
     shape: TrochoidShape
 
@@ -89,3 +87,6 @@ export default class Trochoid extends Path<TrochoidProps> {
 
     }
 }
+
+Trochoid.prototype.type = 'trochoid';
+export default Trochoid;

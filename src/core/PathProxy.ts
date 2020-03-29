@@ -502,14 +502,21 @@ export default class PathProxy {
     }
 
     /**
-     * 转成静态的 Float32Array 减少堆内存占用
      * Convert dynamic array to static Float32Array
+     *
+     * It will still use a normal array if command buffer length is less than 10
+     * Because Float32Array itself may take more memory than a normal array.
+     *
+     * 10 length will make sure at least one M command and one A(arc) command.
      */
     toStatic() {
+        if (!this._saveData) {
+            return;
+        }
         const data = this.data;
         if (data instanceof Array) {
             data.length = this._len;
-            if (hasTypedArray) {
+            if (hasTypedArray && this._len > 10) {
                 this.data = new Float32Array(data);
             }
         }

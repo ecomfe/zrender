@@ -20,9 +20,7 @@ class RoseShape {
 interface RoseProps extends PathProps {
     shape?: Partial<RoseShape>
 }
-export default class Rose extends Path<RoseProps> {
-
-    type = 'rose'
+class Rose extends Path<RoseProps> {
 
     shape: RoseShape
 
@@ -72,3 +70,7 @@ export default class Rose extends Path<RoseProps> {
         }
     }
 }
+
+Rose.prototype.type = 'rose';
+
+export default Rose;

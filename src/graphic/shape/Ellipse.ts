@@ -14,9 +14,7 @@ class EllipseShape {
 interface EllipseProps extends PathProps {
     shape?: Partial<EllipseShape>
 }
-export default class Ellipse extends Path<EllipseProps> {
-
-    type = 'ellipse'
+class Ellipse extends Path<EllipseProps> {
 
     shape: EllipseShape
 
@@ -45,3 +43,7 @@ export default class Ellipse extends Path<EllipseProps> {
         ctx.closePath();
     }
 }
+
+Ellipse.prototype.type = 'ellipse';
+
+export default Ellipse;

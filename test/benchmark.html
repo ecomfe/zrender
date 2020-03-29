@@ -273,8 +273,9 @@ function animate(rects, layout) {
         // update what is drawn on screen
         for (let i = 0; i < rects.length; i++) {
             var rect = rects[i];
-            rect.shape.x = rect.__point__.x;
-            rect.shape.y = rect.__point__.y;
+            var point = points[i];
+            rect.shape.x = point.x;
+            rect.shape.y = point.y;
             rect.dirtyShape ? rect.dirtyShape() : rect.dirty(true);
         }
 
@@ -310,19 +311,12 @@ for (var i = 0; i < points.length; i++) {
         // autoBatch: true,
         silent: true
     });
-    rect.__point__ = pt;
     zr.add(rect);
     rects.push(rect);
 }
 console.timeEnd('init');
 // start off as a grid
 toGrid(points);
-
-rects.forEach(function(rect, idx) {
-    rect.shape.x = rect.__point__.x;
-    rect.shape.y = rect.__point__.y;
-    rect.dirty(true);
-});
 
 setTimeout(function () {
     // start the animation

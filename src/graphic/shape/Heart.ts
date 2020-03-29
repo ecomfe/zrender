@@ -14,9 +14,7 @@ class HeartShape {
 interface HeartProps extends PathProps {
     shape?: Partial<HeartShape>
 }
-export default class Heart extends Path<HeartProps> {
-
-    type = 'heart'
+class Heart extends Path<HeartProps> {
 
     shape: HeartShape
 
@@ -46,3 +44,8 @@ export default class Heart extends Path<HeartProps> {
         );
     }
 }
+
+
+Heart.prototype.type = 'heart';
+
+export default Heart;

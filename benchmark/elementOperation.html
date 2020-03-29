@@ -47,8 +47,8 @@
             }, commonOpts);
 
             bench('Text', function () {
-                const image = new zrender.Text();
-                zr.add(image);
+                const text = new zrender.Text();
+                zr.add(text);
             }, commonOpts);
         });
 
@@ -68,7 +68,8 @@
 
             bench('Group#attr(transform)', function () {
                 group.attr({
-                    position: [10, 10]
+                    x: 10,
+                    y: 10
                 });
             }, attrCommonOpts);
 
@@ -105,7 +106,8 @@
             bench('Animation#animate(position)', function () {
                 const animator = zr.animation.animate(rect)
                     .when(1000, {
-                        position: [10, 10]
+                        x: 10,
+                        y: 10
                     })
                     .during(function () {
                         rect.dirty()
@@ -117,7 +119,8 @@
             bench('Element#animate(position)', function () {
                 rect.animate()
                     .when(1000, {
-                        position: [10, 10]
+                        x: 10,
+                        y: 10
                     })
                     .start();
                 // Stop immediately
@@ -126,7 +129,8 @@
 
             bench('Element#animateTo(position)', function () {
                 rect.animateTo({
-                    position: [10, 10]
+                    x: 10,
+                    y: 10
                 }, { duration: 1000});
                 rect.stopAnimation();
             }, attrCommonOpts);

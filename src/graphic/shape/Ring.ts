@@ -14,9 +14,7 @@ class RingShape {
 interface RingProps extends PathProps {
     shape?: Partial<RingShape>
 }
-export default class Ring extends Path<RingProps> {
-
-    type = 'ring'
+class Ring extends Path<RingProps> {
 
     shape: RingShape
 
@@ -38,3 +36,6 @@ export default class Ring extends Path<RingProps> {
         ctx.arc(x, y, shape.r0, 0, PI2, true);
     }
 }
+
+Ring.prototype.type = 'ring';
+export default Ring;

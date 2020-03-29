@@ -16,9 +16,7 @@ class PolygonShape {
 interface PolygonProps extends PathProps {
     shape?: Partial<PolygonShape>
 }
-export default class Polygon extends Path<PolygonProps> {
-
-    type = 'ellipse'
+class Polygon extends Path<PolygonProps> {
 
     shape: PolygonShape
 
@@ -34,3 +32,7 @@ export default class Polygon extends Path<PolygonProps> {
         polyHelper.buildPath(ctx, shape, true);
     }
 };
+
+Polygon.prototype.type = 'polygon';
+
+export default Polygon;

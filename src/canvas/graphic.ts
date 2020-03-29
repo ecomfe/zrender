@@ -64,7 +64,7 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, inBatch: boolean) {
 
     // TODO Reduce path memory cost.
     const firstDraw = !el.path;
-    if (firstDraw) {
+    if (!el.silent && firstDraw) {  // Not create path for silent element.
         el.createPathProxy();
     }
 

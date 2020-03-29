@@ -48,9 +48,7 @@ function someVectorAt(shape: BezierCurveShape, t: number, isTangent: boolean) {
 interface BezierCurveProps extends PathProps {
     shape?: Partial<BezierCurveShape>
 }
-export default class BezierCurve extends Path<BezierCurveProps> {
-
-    type = 'bezier-curve'
+class BezierCurve extends Path<BezierCurveProps> {
 
     shape: BezierCurveShape
 
@@ -142,3 +140,7 @@ export default class BezierCurve extends Path<BezierCurveProps> {
         return vec2.normalize(p, p);
     }
 };
+
+BezierCurve.prototype.type = 'bezier-curve';
+
+export default BezierCurve;

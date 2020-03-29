@@ -20,9 +20,7 @@ class StarShape {
 interface StarProps extends PathProps {
     shape?: Partial<StarShape>
 }
-export default class Star extends Path<StarProps> {
-
-    type = 'star'
+class Star extends Path<StarProps> {
 
     shape: StarShape
 
@@ -73,3 +71,6 @@ export default class Star extends Path<StarProps> {
         ctx.closePath();
     }
 }
+
+Star.prototype.type = 'star';
+export default Star;

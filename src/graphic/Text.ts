@@ -35,7 +35,6 @@ interface TextProps extends DisplayableProps {
 export type TextState = Pick<TextProps, DisplayableStatePropNames>
 
 class ZRText extends Displayable<TextProps> {
-    type = 'text'
 
     style: TextStyleProps
 
@@ -85,5 +84,8 @@ class ZRText extends Displayable<TextProps> {
 
         return this._rect;
     }
+
 }
+
+ZRText.prototype.type = 'text';
 export default ZRText;

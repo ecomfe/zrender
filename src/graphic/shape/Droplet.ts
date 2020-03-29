@@ -14,9 +14,7 @@ class DropletShape {
 interface DropletProps extends PathProps {
     shape?: Partial<DropletShape>
 }
-export default class Droplet extends Path<DropletProps> {
-
-    type = 'droplet'
+class Droplet extends Path<DropletProps> {
 
     shape: DropletShape
 
@@ -54,3 +52,7 @@ export default class Droplet extends Path<DropletProps> {
         ctx.closePath();
     }
 }
+
+Droplet.prototype.type = 'droplet';
+
+export default Droplet;

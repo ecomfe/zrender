@@ -33,7 +33,6 @@ interface ImageProps extends DisplayableProps {
 export type ImageState = Pick<ImageProps, DisplayableStatePropNames>
 
 class ZRImage extends Displayable<ImageProps> {
-    type = 'image'
 
     style: ImageStyleProps
 
@@ -58,5 +57,7 @@ class ZRImage extends Displayable<ImageProps> {
         return this._rect;
     }
 }
+
+ZRImage.prototype.type = 'image';
 
 export default ZRImage;

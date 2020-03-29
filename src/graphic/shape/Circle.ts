@@ -13,9 +13,7 @@ class CircleShape {
 interface CircleProps extends PathProps {
     shape?: Partial<CircleShape>
 }
-export default class Circle extends Path<CircleProps> {
-
-    type = 'Circle'
+class Circle extends Path<CircleProps> {
 
     shape: CircleShape
 
@@ -43,3 +41,7 @@ export default class Circle extends Path<CircleProps> {
         ctx.arc(shape.cx, shape.cy, shape.r, 0, Math.PI * 2, true);
     }
 };
+
+Circle.prototype.type = 'circle';
+
+export default Circle;

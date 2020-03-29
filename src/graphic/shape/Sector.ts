@@ -13,9 +13,7 @@ class SectorShape {
 interface SectorProps extends PathProps {
     shape?: Partial<SectorShape>
 }
-export default class Sector extends Path<SectorProps> {
-
-    type = 'sector'
+class Sector extends Path<SectorProps> {
 
     shape: SectorShape
 
@@ -64,3 +62,7 @@ export default class Sector extends Path<SectorProps> {
             || this.shape.r === this.shape.r0;
     }
 }
+
+Sector.prototype.type = 'sector';
+
+export default Sector;

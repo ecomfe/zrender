@@ -25,9 +25,7 @@ class LineShape {
 interface LineProps extends PathProps {
     shape?: Partial<LineShape>
 }
-export default class Line extends Path<LineProps> {
-
-    type = 'line'
+class Line extends Path<LineProps> {
 
     shape: LineShape
 
@@ -94,3 +92,6 @@ export default class Line extends Path<LineProps> {
         ];
     }
 }
+
+Line.prototype.type = 'line';
+export default Line;

@@ -27,9 +27,7 @@ interface RectProps extends PathProps {
 // Avoid create repeatly.
 const subPixelOptimizeOutputShape = {};
 
-export default class Rect extends Path<RectProps> {
-
-    type = 'rect'
+class Rect extends Path<RectProps> {
 
     shape: RectShape
 
@@ -75,3 +73,7 @@ export default class Rect extends Path<RectProps> {
         return !this.shape.width || !this.shape.height;
     }
 }
+
+Rect.prototype.type = 'rect';
+
+export default Rect;

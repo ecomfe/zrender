@@ -18,9 +18,7 @@ class IsogonShape {
 interface IsogonProps extends PathProps {
     shape?: Partial<IsogonShape>
 }
-export default class Isogon extends Path<IsogonProps> {
-
-    type = 'isogon'
+class Isogon extends Path<IsogonProps> {
 
     shape: IsogonShape
 
@@ -56,3 +54,7 @@ export default class Isogon extends Path<IsogonProps> {
         return;
     }
 }
+
+Isogon.prototype.type = 'isogon';
+
+export default Isogon;

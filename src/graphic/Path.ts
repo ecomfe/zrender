@@ -318,7 +318,9 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
      */
     dirtyShape() {
         this.__dirty |= Path.SHAPE_CHANGED_BIT;
-        this._rect = null;
+        if (this._rect) {
+            this._rect = null;
+        }
         this.markRedraw();
     }
 
