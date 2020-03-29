@@ -4,7 +4,7 @@ import BoundingRect from '../core/BoundingRect';
 import { PathStyleProps, DEFAULT_PATH_STYLE } from './Path';
 import { extend } from '../core/util';
 
-export interface TextStyleProps extends PathStyleProps {
+export interface TSpanStyleProps extends PathStyleProps {
 
     x?: number
     y?: number
@@ -19,7 +19,7 @@ export interface TextStyleProps extends PathStyleProps {
     textBaseline?: CanvasTextBaseline
 }
 
-export const DEFAULT_TEXT_STYLE: TextStyleProps = extend({
+export const DEFAULT_TEXT_STYLE: TSpanStyleProps = extend({
     strokeFirst: true,
     font: DEFAULT_FONT,
     x: 0,
@@ -29,14 +29,14 @@ export const DEFAULT_TEXT_STYLE: TextStyleProps = extend({
 }, DEFAULT_PATH_STYLE);
 
 interface TextProps extends DisplayableProps {
-    style?: TextStyleProps
+    style?: TSpanStyleProps
 }
 
 export type TextState = Pick<TextProps, DisplayableStatePropNames>
 
-class ZRText extends Displayable<TextProps> {
+class ZRTSpan extends Displayable<TextProps> {
 
-    style: TextStyleProps
+    style: TSpanStyleProps
 
     hasStroke() {
         const style = this.style;
@@ -50,7 +50,7 @@ class ZRText extends Displayable<TextProps> {
         return fill != null && fill !== 'none';
     }
 
-    useStyle(obj: TextStyleProps, inherited?: TextStyleProps) {
+    useStyle(obj: TSpanStyleProps, inherited?: TSpanStyleProps) {
         this.innerUseStyle(obj, inherited || DEFAULT_TEXT_STYLE);
     }
 
@@ -87,5 +87,5 @@ class ZRText extends Displayable<TextProps> {
 
 }
 
-ZRText.prototype.type = 'text';
-export default ZRText;
+ZRTSpan.prototype.type = 'tspan';
+export default ZRTSpan;

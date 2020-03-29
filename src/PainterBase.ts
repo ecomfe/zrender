@@ -1,5 +1,5 @@
 import Path from './graphic/Path';
-import ZRText from './graphic/Text';
+import ZRTSpan from './graphic/TSpan';
 import ZRImage from './graphic/Image';
 import { GradientObject } from './graphic/Gradient';
 import { PatternObject } from './graphic/Pattern';
@@ -36,7 +36,7 @@ export interface PainterBase {
     // Following methods won't implemented by every Painter
     addHover<T extends Displayable>(el: T, hoverStyle?: T['style']): T
 
-    removeHover(el: Path | ZRText | ZRImage): void
+    removeHover(el: Path | ZRTSpan | ZRImage): void
     clearHover(): void
     refreshHover(): void
     pathToImage(e: Path, dpr: number): ZRImage

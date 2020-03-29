@@ -9,7 +9,7 @@ import { Path } from '../export';
 import { PathStyleProps } from '../graphic/Path';
 import ZRImage, { ImageStyleProps } from '../graphic/Image';
 import { DEFAULT_FONT, getLineHeight } from '../contain/text';
-import ZRText, { TextStyleProps } from '../graphic/Text';
+import ZRTSpan, { TSpanStyleProps } from '../graphic/TSpan';
 
 export interface SVGProxy<T> {
     brush(el: T): void
@@ -27,7 +27,7 @@ const degree = 180 / PI;
 
 const EPSILON = 1e-4;
 
-type AllStyleOption = PathStyleProps | TextStyleProps | ImageStyleProps;
+type AllStyleOption = PathStyleProps | TSpanStyleProps | ImageStyleProps;
 
 function round4(val: number) {
     return mathRound(val * 1e4) / 1e4;
@@ -77,9 +77,9 @@ function attrXLink(el: SVGElement, key: string, val: string) {
 }
 
 function bindStyle(svgEl: SVGElement, style: PathStyleProps, el?: Path): void
-function bindStyle(svgEl: SVGElement, style: TextStyleProps, el?: ZRText): void
+function bindStyle(svgEl: SVGElement, style: TSpanStyleProps, el?: ZRTSpan): void
 function bindStyle(svgEl: SVGElement, style: ImageStyleProps, el?: ZRImage): void
-function bindStyle(svgEl: SVGElement, style: AllStyleOption, el?: Path | ZRText | ZRImage) {
+function bindStyle(svgEl: SVGElement, style: AllStyleOption, el?: Path | ZRTSpan | ZRImage) {
     const opacity = style.opacity == null ? 1 : style.opacity;
     if (pathHasFill(style)) {
         let fill = style.fill;
@@ -343,8 +343,8 @@ function adjustTextY(y: number, lineHeight: number, textBaseline: CanvasTextBase
     return y;
 }
 
-const svgText: SVGProxy<ZRText> = {
-    brush(el: ZRText) {
+const svgText: SVGProxy<ZRTSpan> = {
+    brush(el: ZRTSpan) {
         const style = el.style;
 
         let text = style.text;

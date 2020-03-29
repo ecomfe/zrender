@@ -19,7 +19,7 @@ import { PatternObject } from '../graphic/Pattern';
 import LinearGradient, { LinearGradientObject } from '../graphic/LinearGradient';
 import { RadialGradientObject } from '../graphic/RadialGradient';
 import { GradientObject } from '../graphic/Gradient';
-import ZRText, { TextStyleProps } from '../graphic/Text';
+import ZRTSpan, { TSpanStyleProps } from '../graphic/TSpan';
 
 // Most of the values can be separated by comma and/or white space.
 const DILIMITER_REG = /[\s,]+/;
@@ -59,7 +59,7 @@ type DisplayableExtended = Displayable & {
     __inheritedStyle: Dictionary<string>
 }
 
-type TextStyleOptionExtended = TextStyleProps & {
+type TextStyleOptionExtended = TSpanStyleProps & {
     fontSize: number
     fontFamily: string
     fontWeight: string
@@ -247,7 +247,7 @@ class SVGParser {
             this._textY += parseFloat(dy as string);
         }
 
-        const text = new ZRText({
+        const text = new ZRTSpan({
             style: {
                 text: xmlNode.textContent
             },

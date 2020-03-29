@@ -10,7 +10,7 @@ import { createOrUpdateImage, isImageReady } from '../graphic/helper/image';
 import { getCanvasGradient } from './helper';
 import Path, { PathStyleProps } from '../graphic/Path';
 import ZRImage, { ImageStyleProps } from '../graphic/Image';
-import ZRText, {TextStyleProps} from '../graphic/Text';
+import ZRTSpan, {TSpanStyleProps} from '../graphic/TSpan';
 import { DEFAULT_FONT } from '../contain/text';
 import { IncrementalDisplayable } from '../export';
 import { MatrixArray } from '../core/matrix';
@@ -268,7 +268,7 @@ function brushImage(ctx: CanvasRenderingContext2D, el: ZRImage) {
 }
 
 // Draw Text Elements
-function brushText(ctx: CanvasRenderingContext2D, el: ZRText) {
+function brushText(ctx: CanvasRenderingContext2D, el: ZRTSpan) {
 
     const style = el.style;
 
@@ -305,7 +305,7 @@ const STROKE_PROPS = [
     ['lineCap', 'butt'], ['lineJoin', 'miter'], ['miterLimit', 10]
 ] as const;
 
-type AllStyleOption = PathStyleProps | TextStyleProps | ImageStyleProps;
+type AllStyleOption = PathStyleProps | TSpanStyleProps | ImageStyleProps;
 // type ShadowPropNames = typeof SHADOW_PROPS[number][0];
 // type StrokePropNames = typeof STROKE_PROPS[number][0];
 // type DrawPropNames = typeof DRAW_PROPS[number][0];
@@ -359,8 +359,8 @@ function bindCommonProps(
 
 function bindPathAndTextCommonStyle(
     ctx: CanvasRenderingContext2D,
-    el: ZRText | Path,
-    prevEl: ZRText | Path,
+    el: ZRTSpan | Path,
+    prevEl: ZRTSpan | Path,
     forceSetAll: boolean,
     scope: BrushScope
 ) {
@@ -673,14 +673,14 @@ export function brush(
         }
     }
     else {
-        if (el instanceof ZRText) {
+        if (el instanceof ZRTSpan) {
             if (scope.lastDrawType !== DRAW_TYPE_TEXT) {
                 forceSetStyle = true;
                 scope.lastDrawType = DRAW_TYPE_TEXT;
             }
 
-            bindPathAndTextCommonStyle(ctx, el as ZRText, prevEl as ZRText, forceSetStyle, scope);
-            brushText(ctx, el as ZRText);
+            bindPathAndTextCommonStyle(ctx, el as ZRTSpan, prevEl as ZRTSpan, forceSetStyle, scope);
+            brushText(ctx, el as ZRTSpan);
         }
         else if (el instanceof ZRImage) {
             if (scope.lastDrawType !== DRAW_TYPE_IMAGE) {

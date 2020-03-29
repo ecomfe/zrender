@@ -9,7 +9,7 @@ import * as colorTool from '../tool/color';
 import * as textContain from '../graphic/text/parse';
 import Displayable from '../graphic/Displayable';
 import ZRImage from '../graphic/Image';
-import Text from '../graphic/Text';
+import Text from '../graphic/TSpan';
 import Path from '../graphic/Path';
 import PathProxy from '../core/PathProxy';
 import Gradient from '../graphic/Gradient';

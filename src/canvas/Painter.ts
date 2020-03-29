@@ -12,8 +12,7 @@ import { GradientObject } from '../graphic/Gradient';
 import { PatternObject } from '../graphic/Pattern';
 import Storage from '../Storage';
 import { brush, BrushScope } from './graphic';
-import ZRText, { TextStyleProps } from '../graphic/Text';
-import { PathStyleProps } from '../graphic/Path';
+import ZRTSpan from '../graphic/TSpan';
 import { PainterBase } from '../PainterBase';
 
 const HOVER_LAYER_ZLEVEL = 1e5;
@@ -281,7 +280,7 @@ export default class CanvasPainter implements PainterBase {
         return elMirror;
     }
 
-    removeHover(el: Path | ZRText | ZRImage) {
+    removeHover(el: Path | ZRTSpan | ZRImage) {
         const elMirror = el.__hoverMir;
         const hoverElements = this._hoverElements;
         const idx = util.indexOf(hoverElements, elMirror);

@@ -22,10 +22,9 @@ import { GradientObject } from './graphic/Gradient';
 import { PatternObject } from './graphic/Pattern';
 import { Path, Group } from './export';
 import { EventCallback } from './core/Eventful';
-import { PathStyleProps } from './graphic/Path';
-import ZRText, { TextStyleProps } from './graphic/Text';
-import ZRImage, { ImageStyleProps } from './graphic/Image';
-import Displayable, { CommonStyleProps } from './graphic/Displayable';
+import ZRTSpan from './graphic/TSpan';
+import ZRImage from './graphic/Image';
+import Displayable from './graphic/Displayable';
 
 
 const useVML = !env.canvasSupported;
@@ -206,7 +205,7 @@ class ZRender {
     /**
      * Add element from hover layer
      */
-    removeHover(el: Path | ZRText | ZRImage) {
+    removeHover(el: Path | ZRTSpan | ZRImage) {
         if (this.painter.removeHover) {
             this.painter.removeHover(el);
             this.refreshHover();

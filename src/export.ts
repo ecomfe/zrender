@@ -17,9 +17,9 @@ export {default as Group} from './graphic/Group';
 export {default as Path} from './graphic/Path';
 export {default as Image} from './graphic/Image';
 export {default as CompoundPath} from './graphic/CompoundPath';
-export {default as Text} from './graphic/Text';
+export {default as TSpan} from './graphic/TSpan';
 export {default as IncrementalDisplayable} from './graphic/IncrementalDisplayable';
-export {default as RichText} from './graphic/RichText';
+export {default as Text} from './graphic/RichText';
 
 export {default as Arc} from './graphic/shape/Arc';
 export {default as BezierCurve} from './graphic/shape/BezierCurve';

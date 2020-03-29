@@ -7,7 +7,7 @@ import {createElement} from './core';
 import * as util from '../core/util';
 import Path from '../graphic/Path';
 import ZRImage from '../graphic/Image';
-import ZRText from '../graphic/Text';
+import ZRTSpan from '../graphic/TSpan';
 import arrayDiff from '../core/arrayDiff';
 import GradientManager from './helper/GradientManager';
 import ClippathManager from './helper/ClippathManager';
@@ -34,7 +34,7 @@ function getSvgProxy(el: Displayable) {
     else if (el instanceof ZRImage) {
         return svgImage;
     }
-    else if (el instanceof ZRText) {
+    else if (el instanceof ZRTSpan) {
         return svgText;
     }
     else {

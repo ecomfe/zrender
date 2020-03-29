@@ -4,7 +4,7 @@
  */
 import { TextAlign, TextVerticalAlign, ImageLike, Dictionary } from '../core/types';
 import { parseRichText, parsePlainText } from './helper/parseText';
-import ZRText, { TextStyleProps } from './Text';
+import ZRTSpan, { TSpanStyleProps } from './TSpan';
 import { retrieve2, isString, each, normalizeCssArray, trim, retrieve3, extend, keys } from '../core/util';
 import { DEFAULT_FONT, adjustTextX, adjustTextY } from '../contain/text';
 import ZRImage from './Image';
@@ -18,7 +18,7 @@ type RichTextLine = RichTextContentBlock['lines'][0]
 type RichTextToken = RichTextLine['tokens'][0]
 
 // TODO Default value?
-interface RichTextStylePropsPart {
+export interface RichTextStylePropsPart {
     // TODO Text is assigned inside zrender
     text?: string
 
@@ -185,11 +185,11 @@ const DEFAULT_RICH_TEXT_COLOR: Pick<RichTextStyleProps, 'fill' | 'stroke' | 'lin
 
 class RichText extends Displayable<RichTextProps> {
 
-    type = 'richtext'
+    type = 'text'
 
     style: RichTextStyleProps
 
-    private _children: (ZRImage | Rect | ZRText)[] = []
+    private _children: (ZRImage | Rect | ZRTSpan)[] = []
 
     private _childCursor: 0
 
@@ -310,10 +310,10 @@ class RichText extends Displayable<RichTextProps> {
     }
 
 
-    private _getOrCreateChild(Ctor: {new(): ZRText}): ZRText
+    private _getOrCreateChild(Ctor: {new(): ZRTSpan}): ZRTSpan
     private _getOrCreateChild(Ctor: {new(): ZRImage}): ZRImage
     private _getOrCreateChild(Ctor: {new(): Rect}): Rect
-    private _getOrCreateChild(Ctor: {new(): ZRText | Rect | ZRImage}): ZRText | Rect | ZRImage {
+    private _getOrCreateChild(Ctor: {new(): ZRTSpan | Rect | ZRImage}): ZRTSpan | Rect | ZRImage {
         let child = this._children[this._childCursor];
         if (!child || !(child instanceof Ctor)) {
             child = new Ctor();
@@ -373,9 +373,9 @@ class RichText extends Displayable<RichTextProps> {
         const hasShadow = style.textShadowBlur > 0;
 
         for (let i = 0; i < textLines.length; i++) {
-            const el = this._getOrCreateChild(ZRText);
+            const el = this._getOrCreateChild(ZRTSpan);
             // Always create new style.
-            const subElStyle: TextStyleProps = {};
+            const subElStyle: TSpanStyleProps = {};
             el.useStyle(subElStyle);
             subElStyle.text = textLines[i];
             subElStyle.x = textX;
@@ -533,8 +533,8 @@ class RichText extends Displayable<RichTextProps> {
             y -= token.height / 2 - textPadding[2] - token.height / 2;
         }
 
-        const el = this._getOrCreateChild(ZRText);
-        const subElStyle: TextStyleProps = {};
+        const el = this._getOrCreateChild(ZRTSpan);
+        const subElStyle: TSpanStyleProps = {};
         // Always create new style.
         el.useStyle(subElStyle);
 
