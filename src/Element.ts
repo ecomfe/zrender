@@ -1026,26 +1026,10 @@ class Element<Props extends ElementProps = ElementProps> {
         ) {
             Object.defineProperty(elProto, key, {
                 get() {
-                    const self = this;
                     logDeprecatedError(key, xKey, yKey);
                     if (!this[privateKey]) {
                         const pos: number[] = this[privateKey] = [];
-                        Object.defineProperty(pos, 0, {
-                            get() {
-                                return self[xKey];
-                            },
-                            set(val: number) {
-                                self[xKey] = val;
-                            }
-                        });
-                        Object.defineProperty(pos, 1, {
-                            get() {
-                                return self[yKey];
-                            },
-                            set(val: number) {
-                                self[yKey] = val;
-                            }
-                        });
+                        enhanceArray(this, pos);
                     }
                     return this[privateKey];
                 },
@@ -1053,9 +1037,28 @@ class Element<Props extends ElementProps = ElementProps> {
                     logDeprecatedError(key, xKey, yKey);
                     this[xKey] = pos[0];
                     this[yKey] = pos[1];
+                    this[privateKey] = pos;
+                    enhanceArray(this, pos);
                 }
             });
-
+            function enhanceArray(self: any, pos: number[]) {
+                Object.defineProperty(pos, 0, {
+                    get() {
+                        return self[xKey];
+                    },
+                    set(val: number) {
+                        self[xKey] = val;
+                    }
+                });
+                Object.defineProperty(pos, 1, {
+                    get() {
+                        return self[yKey];
+                    },
+                    set(val: number) {
+                        self[yKey] = val;
+                    }
+                });
+            }
         }
         if (Object.defineProperty) {
             createLegacyProperty('position', '_legacyPos', 'x', 'y');
