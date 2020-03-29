@@ -273,13 +273,14 @@ class Track {
      */
     useSpline: boolean
 
+    // Larger than 0 if value is array
+    arrDim: number = 0
+    isValueColor: boolean
+
+    interpolable: boolean = true
+
     private _finished: boolean
 
-    private _isValueColor: boolean
-    private _interpolable: boolean = true
-
-    // Larger than 0 if value is array
-    private _arrDim: number = 0
 
     private _needsSort: boolean = false
 
@@ -306,7 +307,7 @@ class Track {
     }
 
     needsAnimate() {
-        return !this._isAllValueEqual;
+        return !this._isAllValueEqual && this.keyframes.length >= 2;
     }
 
     addKeyframe(time: number, value: unknown) {
@@ -321,12 +322,12 @@ class Track {
 
         let len = keyframes.length;
 
-        if (this._interpolable) {
+        if (this.interpolable) {
             // Handling values only if it's possible to be interpolated.
             if (isArrayLike(value)) {
                 let arrayDim = guessArrayDim(value);
-                if (len > 0 && this._arrDim !== arrayDim) { // Two values has differnt dimension.
-                    this._interpolable = false;
+                if (len > 0 && this.arrDim !== arrayDim) { // Two values has differnt dimension.
+                    this.interpolable = false;
                     return;
                 }
                 if (len > 0) {
@@ -344,11 +345,11 @@ class Track {
                         }
                     }
                 }
-                this._arrDim = arrayDim;
+                this.arrDim = arrayDim;
             }
             else {
-                if (this._arrDim > 0) {  // Previous value is array.
-                    this._interpolable = false;
+                if (this.arrDim > 0) {  // Previous value is array.
+                    this.interpolable = false;
                     return;
                 }
 
@@ -356,20 +357,20 @@ class Track {
                     const colorArray = color.parse(value);
                     if (colorArray) {
                         value = colorArray;
-                        this._isValueColor = true;
+                        this.isValueColor = true;
                     }
                     else {
-                        this._interpolable = false;
+                        this.interpolable = false;
                     }
                 }
                 else if (typeof value !== 'number') {
-                    this._interpolable = false;
+                    this.interpolable = false;
                     return;
                 }
 
                 if (this._isAllValueEqual && len > 0) {
                     let lastFrame = keyframes[len - 1];
-                    if (this._isValueColor && !is1DArraySame(lastFrame.value as number[], value as number[])) {
+                    if (this.isValueColor && !is1DArraySame(lastFrame.value as number[], value as number[])) {
                         this._isAllValueEqual = false;
                     }
                     else if (lastFrame.value !== value) {
@@ -396,7 +397,7 @@ class Track {
             });
         }
 
-        const arrDim = this._arrDim;
+        const arrDim = this.arrDim;
         const kfsLen = kfs.length;
         const lastKf = kfs[kfsLen - 1];
 
@@ -411,9 +412,9 @@ class Track {
 
         // Only apply additive animaiton on INTERPOLABLE SAME TYPE values.
         if (additiveTrack
-            && this._interpolable
-            && arrDim === additiveTrack._arrDim
-            && this._isValueColor === additiveTrack._isValueColor
+            && this.interpolable
+            && arrDim === additiveTrack.arrDim
+            && this.isValueColor === additiveTrack.isValueColor
             && !additiveTrack._finished
         ) {
             this._additiveTrack = additiveTrack;
@@ -422,7 +423,7 @@ class Track {
             // Calculate difference
             for (let i = 0; i < kfsLen; i++) {
                 if (arrDim === 0) {
-                    if (this._isValueColor) {
+                    if (this.isValueColor) {
                         kfs[i].additiveValue
                             = add1DArray([], kfs[i].value as NumberArray, startValue as NumberArray, -1);
                     }
@@ -465,7 +466,8 @@ class Track {
         const keyframes = this.keyframes;
         const kfsNum = this.keyframes.length;
         const propName = this.propName;
-        const arrDim = this._arrDim;
+        const arrDim = this.arrDim;
+        const isValueColor = this.isValueColor;
         // Find the range keyframes
         // kf1-----kf2---------current--------kf3
         // find kf2 and kf3 and do interpolation
@@ -507,8 +509,10 @@ class Track {
         const w = (percent - frame.percent) / range;
 
         // If value is arr
-        let targetArr = isAdditive ? this._additiveValue : target[propName];
-        if (arrDim > 0 && !targetArr) {
+        let targetArr = isAdditive ? this._additiveValue
+            : (isValueColor ? tmpRgba : target[propName]);
+
+        if ((arrDim > 0 || isValueColor) && !targetArr) {
             targetArr = this._additiveValue = [];
         }
         if (this.useSpline) {
@@ -533,19 +537,19 @@ class Track {
                         w, w * w, w * w * w
                     );
             }
+            else if (isValueColor) {
+                catmullRomInterpolate1DArray(
+                    targetArr,
+                    p0 as NumberArray, p1 as NumberArray, p2 as NumberArray, p3 as NumberArray,
+                    w, w * w, w * w * w
+                );
+                if (!isAdditive) {  // Convert to string later:)
+                    target[propName] = rgba2String(targetArr);
+                }
+            }
             else {
                 let value;
-                if (this._isValueColor) {
-                    value = catmullRomInterpolate1DArray(
-                        tmpRgba,
-                        p0 as NumberArray, p1 as NumberArray, p2 as NumberArray, p3 as NumberArray,
-                        w, w * w, w * w * w
-                    );
-                    if (!isAdditive) {  // Convert to string later:)
-                        value = rgba2String(tmpRgba);
-                    }
-                }
-                else if (!this._interpolable) {
+                if (!this.interpolable) {
                     // String is step(0.5)
                     value = step(p1, p2, w);
                 }
@@ -579,20 +583,20 @@ class Track {
                         w
                     );
             }
+            else if (isValueColor) {
+                interpolate1DArray(
+                    targetArr,
+                    frame[valueKey] as NumberArray,
+                    nextFrame[valueKey] as NumberArray,
+                    w
+                );
+                if (!isAdditive) {  // Convert to string later:)
+                    target[propName] = rgba2String(targetArr);
+                }
+            }
             else {
                 let value;
-                if (this._isValueColor) {
-                    interpolate1DArray(
-                        tmpRgba,
-                        frame[valueKey] as NumberArray,
-                        nextFrame[valueKey] as NumberArray,
-                        w
-                    );
-                    if (isAdditive) {  // Convert to string later:)
-                        value = rgba2String(tmpRgba);
-                    }
-                }
-                else if (!this._interpolable) {
+                if (!this.interpolable) {
                     // String is step(0.5)
                     value = step(frame[valueKey], nextFrame[valueKey], w);
                 }
@@ -615,11 +619,11 @@ class Track {
     }
 
     private _addToTarget(target: any) {
-        const arrDim = this._arrDim;
+        const arrDim = this.arrDim;
         const propName = this.propName;
 
         if (arrDim === 0) {
-            if (this._isValueColor) {
+            if (this.isValueColor) {
                 // TODO reduce unnecessary parse
                 color.parse(target[propName], tmpRgba);
                 add1DArray(tmpRgba, tmpRgba, this._additiveValue as NumberArray, 1);
@@ -708,6 +712,10 @@ export default class Animator<T> {
                     const lastFinalKf = additiveTrack.keyframes[additiveTrack.keyframes.length - 1];
                     // Use the last state of additived animator.
                     initialValue = lastFinalKf && lastFinalKf.value;
+                    if (additiveTrack.isValueColor && initialValue) {
+                        // Convert to rgba string
+                        initialValue = rgba2String(initialValue as number[]);
+                    }
                 }
                 else {
                     initialValue = (this._target as any)[propName];
