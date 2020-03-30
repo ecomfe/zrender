@@ -120,7 +120,7 @@ export default class Storage {
             }
         }
 
-        // RichText and Group may use children
+        // ZRText and Group may use children
         if ((el as Group).childrenRef) {
             const children = (el as Group).childrenRef();
 

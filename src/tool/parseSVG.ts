@@ -19,7 +19,7 @@ import { PatternObject } from '../graphic/Pattern';
 import LinearGradient, { LinearGradientObject } from '../graphic/LinearGradient';
 import { RadialGradientObject } from '../graphic/RadialGradient';
 import { GradientObject } from '../graphic/Gradient';
-import ZRTSpan, { TSpanStyleProps } from '../graphic/TSpan';
+import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
 
 // Most of the values can be separated by comma and/or white space.
 const DILIMITER_REG = /[\s,]+/;
@@ -247,7 +247,7 @@ class SVGParser {
             this._textY += parseFloat(dy as string);
         }
 
-        const text = new ZRTSpan({
+        const text = new TSpan({
             style: {
                 text: xmlNode.textContent
             },

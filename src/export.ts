@@ -19,7 +19,7 @@ export {default as Image} from './graphic/Image';
 export {default as CompoundPath} from './graphic/CompoundPath';
 export {default as TSpan} from './graphic/TSpan';
 export {default as IncrementalDisplayable} from './graphic/IncrementalDisplayable';
-export {default as Text} from './graphic/RichText';
+export {default as Text} from './graphic/Text';
 
 export {default as Arc} from './graphic/shape/Arc';
 export {default as BezierCurve} from './graphic/shape/BezierCurve';

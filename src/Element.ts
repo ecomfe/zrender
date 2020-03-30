@@ -6,7 +6,7 @@ import { Dictionary, ElementEventName, ZRRawEvent, BuiltinTextPosition, AllPropT
 import Path from './graphic/Path';
 import BoundingRect, { RectLike } from './core/BoundingRect';
 import Eventful, {EventQuery, EventCallback} from './core/Eventful';
-import RichText from './graphic/RichText';
+import ZRText from './graphic/Text';
 import { calculateTextPosition, TextPositionCalculationResult } from './contain/text';
 import Storage from './Storage';
 import {
@@ -171,7 +171,7 @@ export interface ElementProps extends Partial<ElementEventHandlerProps> {
     globalScaleRatio?: number
 
     textConfig?: ElementTextConfig
-    textContent?: RichText
+    textContent?: ZRText
 
     clipPath?: Path
     drift?: Element['drift']
@@ -271,7 +271,7 @@ class Element<Props extends ElementProps = ElementProps> {
      * `position`, `style.textAlign`, `style.textVerticalAlign`
      * of element will be ignored if textContent.position is set
      */
-    private _textContent: RichText
+    private _textContent: ZRText
 
     /**
      * Config of textContent. Inlcuding layout, color, ...etc.
@@ -461,7 +461,7 @@ class Element<Props extends ElementProps = ElementProps> {
             }
 
             if (textStyleChanged) {
-                // Only mark style dirty if necessary. Update RichText is costly.
+                // Only mark style dirty if necessary. Update ZRText is costly.
                 textEl.dirtyStyle();
             }
 
@@ -488,7 +488,7 @@ class Element<Props extends ElementProps = ElementProps> {
             this.setTextConfig(value as ElementTextConfig);
         }
         else if (key === 'textContent') {
-            this.setTextContent(value as RichText);
+            this.setTextContent(value as ZRText);
         }
         else if (key === 'clipPath') {
             this.setClipPath(value as Path);
@@ -750,14 +750,14 @@ class Element<Props extends ElementProps = ElementProps> {
     /**
      * Get attached text content.
      */
-    getTextContent(): RichText {
+    getTextContent(): ZRText {
         return this._textContent;
     }
 
     /**
      * Attach text on element
      */
-    setTextContent(textEl: RichText) {
+    setTextContent(textEl: ZRText) {
         // Remove previous clip path
         if (this._textContent && this._textContent !== textEl) {
             this.removeTextContent();

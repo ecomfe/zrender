@@ -12,7 +12,7 @@ import { GradientObject } from '../graphic/Gradient';
 import { PatternObject } from '../graphic/Pattern';
 import Storage from '../Storage';
 import { brush, BrushScope } from './graphic';
-import ZRTSpan from '../graphic/TSpan';
+import TSpan from '../graphic/TSpan';
 import { PainterBase } from '../PainterBase';
 
 const HOVER_LAYER_ZLEVEL = 1e5;
@@ -280,7 +280,7 @@ export default class CanvasPainter implements PainterBase {
         return elMirror;
     }
 
-    removeHover(el: Path | ZRTSpan | ZRImage) {
+    removeHover(el: Path | TSpan | ZRImage) {
         const elMirror = el.__hoverMir;
         const hoverElements = this._hoverElements;
         const idx = util.indexOf(hoverElements, elMirror);
@@ -561,7 +561,7 @@ export default class CanvasPainter implements PainterBase {
         layersMap[zlevel] = layer;
 
         // Vitual layer will not directly show on the screen.
-        // (It can be a WebGL layer and assigned to a ZImage element)
+        // (It can be a WebGL layer and assigned to a ZRImage element)
         // But it still under management of zrender.
         if (!layer.virtual) {
             if (prevLayer) {

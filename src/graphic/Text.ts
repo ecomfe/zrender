@@ -4,7 +4,7 @@
  */
 import { TextAlign, TextVerticalAlign, ImageLike, Dictionary } from '../core/types';
 import { parseRichText, parsePlainText } from './helper/parseText';
-import ZRTSpan, { TSpanStyleProps } from './TSpan';
+import TSpan, { TSpanStyleProps } from './TSpan';
 import { retrieve2, isString, each, normalizeCssArray, trim, retrieve3, extend, keys } from '../core/util';
 import { DEFAULT_FONT, adjustTextX, adjustTextY } from '../contain/text';
 import ZRImage from './Image';
@@ -13,12 +13,12 @@ import BoundingRect from '../core/BoundingRect';
 import { MatrixArray } from '../core/matrix';
 import Displayable, { DisplayableStatePropNames, DisplayableProps } from './Displayable';
 
-type RichTextContentBlock = ReturnType<typeof parseRichText>
-type RichTextLine = RichTextContentBlock['lines'][0]
-type RichTextToken = RichTextLine['tokens'][0]
+type TextContentBlock = ReturnType<typeof parseRichText>
+type TextLine = TextContentBlock['lines'][0]
+type TextToken = TextLine['tokens'][0]
 
 // TODO Default value?
-export interface RichTextStylePropsPart {
+export interface TextStylePropsPart {
     // TODO Text is assigned inside zrender
     text?: string
 
@@ -125,7 +125,7 @@ export interface RichTextStylePropsPart {
      */
     shadowOffsetY?: number
 }
-export interface RichTextStyleProps extends RichTextStylePropsPart {
+export interface TextStyleProps extends TextStylePropsPart {
 
     text?: string
 
@@ -139,7 +139,7 @@ export interface RichTextStyleProps extends RichTextStylePropsPart {
     /**
      * Text styles for rich text.
      */
-    rich?: Dictionary<RichTextStylePropsPart>
+    rich?: Dictionary<TextStylePropsPart>
 
     /**
      * Strategy when calculated text width exceeds textWidth.
@@ -166,8 +166,8 @@ export interface RichTextStyleProps extends RichTextStylePropsPart {
     truncateMinChar?: number
 }
 
-export interface RichTextProps extends DisplayableProps {
-    style?: RichTextStyleProps
+export interface TextProps extends DisplayableProps {
+    style?: TextStyleProps
 
     zlevel?: number
     z?: number
@@ -177,25 +177,25 @@ export interface RichTextProps extends DisplayableProps {
     cursor?: string
 }
 
-export type RichTextState = Pick<RichTextProps, DisplayableStatePropNames>
+export type TextState = Pick<TextProps, DisplayableStatePropNames>
 
-const DEFAULT_RICH_TEXT_COLOR: Pick<RichTextStyleProps, 'fill' | 'stroke' | 'lineWidth'> = {
+const DEFAULT_RICH_TEXT_COLOR: Pick<TextStyleProps, 'fill' | 'stroke' | 'lineWidth'> = {
     fill: '#000'
 };
 
-class RichText extends Displayable<RichTextProps> {
+class ZRText extends Displayable<TextProps> {
 
     type = 'text'
 
-    style: RichTextStyleProps
+    style: TextStyleProps
 
-    private _children: (ZRImage | Rect | ZRTSpan)[] = []
+    private _children: (ZRImage | Rect | TSpan)[] = []
 
     private _childCursor: 0
 
     private _defaultStyle = DEFAULT_RICH_TEXT_COLOR
 
-    constructor(opts?: RichTextProps) {
+    constructor(opts?: TextProps) {
         super();
         this.attr(opts);
     }
@@ -270,16 +270,16 @@ class RichText extends Displayable<RichTextProps> {
 
 
     // Can be set in Element. To calculate text fill automatically when textContent is inside element
-    setDefaultTextStyle(defaultTextStyle: Pick<RichTextStyleProps, 'fill' | 'stroke' | 'lineWidth'>) {
+    setDefaultTextStyle(defaultTextStyle: Pick<TextStyleProps, 'fill' | 'stroke' | 'lineWidth'>) {
         // Use builtin if defaultTextStyle is not given.
         this._defaultStyle = defaultTextStyle || DEFAULT_RICH_TEXT_COLOR;
     }
 
     setTextContent(textContent: never) {
-        throw new Error('Can\'t attach richText on another richText');
+        throw new Error('Can\'t attach text on another text');
     }
 
-    protected _mergeStyle(targetStyle: RichTextStyleProps, sourceStyle: RichTextStyleProps) {
+    protected _mergeStyle(targetStyle: TextStyleProps, sourceStyle: TextStyleProps) {
         // DO deep merge on rich configurations.
         const sourceRich = sourceStyle.rich;
         const targetRich = targetStyle.rich || (sourceRich && {});  // Create a new one if source have rich but target don't
@@ -299,7 +299,7 @@ class RichText extends Displayable<RichTextProps> {
         return targetStyle;
     }
 
-    private _mergeRich(targetRich: RichTextStyleProps['rich'], sourceRich: RichTextStyleProps['rich']) {
+    private _mergeRich(targetRich: TextStyleProps['rich'], sourceRich: TextStyleProps['rich']) {
         const richNames = keys(sourceRich);
         // Merge by rich names.
         for (let i = 0; i < richNames.length; i++) {
@@ -310,10 +310,10 @@ class RichText extends Displayable<RichTextProps> {
     }
 
 
-    private _getOrCreateChild(Ctor: {new(): ZRTSpan}): ZRTSpan
+    private _getOrCreateChild(Ctor: {new(): TSpan}): TSpan
     private _getOrCreateChild(Ctor: {new(): ZRImage}): ZRImage
     private _getOrCreateChild(Ctor: {new(): Rect}): Rect
-    private _getOrCreateChild(Ctor: {new(): ZRTSpan | Rect | ZRImage}): ZRTSpan | Rect | ZRImage {
+    private _getOrCreateChild(Ctor: {new(): TSpan | Rect | ZRImage}): TSpan | Rect | ZRImage {
         let child = this._children[this._childCursor];
         if (!child || !(child instanceof Ctor)) {
             child = new Ctor();
@@ -373,7 +373,7 @@ class RichText extends Displayable<RichTextProps> {
         const hasShadow = style.textShadowBlur > 0;
 
         for (let i = 0; i < textLines.length; i++) {
-            const el = this._getOrCreateChild(ZRTSpan);
+            const el = this._getOrCreateChild(TSpan);
             // Always create new style.
             const subElStyle: TSpanStyleProps = {};
             el.useStyle(subElStyle);
@@ -494,8 +494,8 @@ class RichText extends Displayable<RichTextProps> {
     }
 
     private _placeToken(
-        token: RichTextToken,
-        style: RichTextStyleProps,
+        token: TextToken,
+        style: TextStyleProps,
         lineHeight: number,
         lineTop: number,
         x: number,
@@ -533,7 +533,7 @@ class RichText extends Displayable<RichTextProps> {
             y -= token.height / 2 - textPadding[2] - token.height / 2;
         }
 
-        const el = this._getOrCreateChild(ZRTSpan);
+        const el = this._getOrCreateChild(TSpan);
         const subElStyle: TSpanStyleProps = {};
         // Always create new style.
         el.useStyle(subElStyle);
@@ -577,7 +577,7 @@ class RichText extends Displayable<RichTextProps> {
     }
 
     private _renderBackground(
-        style: RichTextStylePropsPart,
+        style: TextStylePropsPart,
         x: number,
         y: number,
         width: number,
@@ -641,7 +641,7 @@ class RichText extends Displayable<RichTextProps> {
 
     }
 
-    static makeFont(style: RichTextStylePropsPart): string {
+    static makeFont(style: TextStylePropsPart): string {
         // FIXME in node-canvas fontWeight is before fontStyle
         // Use `fontSize` `fontFamily` to check whether font properties are defined.
         const font = (style.fontSize || style.fontFamily) && [
@@ -659,15 +659,15 @@ class RichText extends Displayable<RichTextProps> {
 const VALID_TEXT_ALIGN = {left: true, right: 1, center: 1};
 const VALID_TEXT_VERTICAL_ALIGN = {top: 1, bottom: 1, middle: 1};
 
-export function normalizeTextStyle(style: RichTextStyleProps): RichTextStyleProps {
+export function normalizeTextStyle(style: TextStyleProps): TextStyleProps {
     normalizeStyle(style);
     each(style.rich, normalizeStyle);
     return style;
 }
 
-function normalizeStyle(style: RichTextStylePropsPart) {
+function normalizeStyle(style: TextStylePropsPart) {
     if (style) {
-        style.font = RichText.makeFont(style);
+        style.font = ZRText.makeFont(style);
         let textAlign = style.align;
         // 'middle' is invalid, convert it to 'center'
         (textAlign as string) === 'middle' && (textAlign = 'center');
@@ -695,7 +695,7 @@ function normalizeStyle(style: RichTextStylePropsPart) {
  * @param lineWidth If specified, do not check style.textStroke.
  */
 function getStroke(
-    stroke?: RichTextStylePropsPart['stroke'],
+    stroke?: TextStylePropsPart['stroke'],
     lineWidth?: number
 ) {
     return (stroke == null || lineWidth <= 0 || stroke === 'transparent' || stroke === 'none')
@@ -706,7 +706,7 @@ function getStroke(
 }
 
 function getFill(
-    fill?: RichTextStylePropsPart['fill']
+    fill?: TextStylePropsPart['fill']
 ) {
     return (fill == null || fill === 'none')
         ? null
@@ -728,11 +728,11 @@ function getTextXForPadding(x: number, textAlign: string, textPadding: number[])
  * If needs draw background
  * @param style Style of element
  */
-function needDrawBackground(style: RichTextStylePropsPart): boolean {
+function needDrawBackground(style: TextStylePropsPart): boolean {
     return !!(
         style.backgroundColor
         || (style.borderWidth && style.borderColor)
     );
 }
 
-export default RichText;
+export default ZRText;

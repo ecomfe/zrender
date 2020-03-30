@@ -19,7 +19,7 @@ export interface TSpanStyleProps extends PathStyleProps {
     textBaseline?: CanvasTextBaseline
 }
 
-export const DEFAULT_TEXT_STYLE: TSpanStyleProps = extend({
+export const DEFAULT_TSPAN_STYLE: TSpanStyleProps = extend({
     strokeFirst: true,
     font: DEFAULT_FONT,
     x: 0,
@@ -28,13 +28,13 @@ export const DEFAULT_TEXT_STYLE: TSpanStyleProps = extend({
     textBaseline: 'top'
 }, DEFAULT_PATH_STYLE);
 
-interface TextProps extends DisplayableProps {
+interface TSpanProps extends DisplayableProps {
     style?: TSpanStyleProps
 }
 
-export type TextState = Pick<TextProps, DisplayableStatePropNames>
+export type TSpanState = Pick<TSpanProps, DisplayableStatePropNames>
 
-class ZRTSpan extends Displayable<TextProps> {
+class TSpan extends Displayable<TSpanProps> {
 
     style: TSpanStyleProps
 
@@ -51,7 +51,7 @@ class ZRTSpan extends Displayable<TextProps> {
     }
 
     useStyle(obj: TSpanStyleProps, inherited?: TSpanStyleProps) {
-        this.innerUseStyle(obj, inherited || DEFAULT_TEXT_STYLE);
+        this.innerUseStyle(obj, inherited || DEFAULT_TSPAN_STYLE);
     }
 
     getBoundingRect(): BoundingRect {
@@ -87,5 +87,5 @@ class ZRTSpan extends Displayable<TextProps> {
 
 }
 
-ZRTSpan.prototype.type = 'tspan';
-export default ZRTSpan;
+TSpan.prototype.type = 'tspan';
+export default TSpan;

@@ -22,7 +22,7 @@ import { GradientObject } from './graphic/Gradient';
 import { PatternObject } from './graphic/Pattern';
 import { Path, Group } from './export';
 import { EventCallback } from './core/Eventful';
-import ZRTSpan from './graphic/TSpan';
+import TSpan from './graphic/TSpan';
 import ZRImage from './graphic/Image';
 import Displayable from './graphic/Displayable';
 
@@ -205,7 +205,7 @@ class ZRender {
     /**
      * Add element from hover layer
      */
-    removeHover(el: Path | ZRTSpan | ZRImage) {
+    removeHover(el: Path | TSpan | ZRImage) {
         if (this.painter.removeHover) {
             this.painter.removeHover(el);
             this.refreshHover();

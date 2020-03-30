@@ -8,7 +8,7 @@ import {createElement} from '../core';
 import * as zrUtil from '../../core/util';
 import Path from '../../graphic/Path';
 import ZRImage from '../../graphic/Image';
-import ZRTSpan from '../../graphic/TSpan';
+import TSpan from '../../graphic/TSpan';
 import {
     path as svgPath,
     image as svgImage,
@@ -239,7 +239,7 @@ export default class Definable {
         else if (displayable instanceof ZRImage) {
             return svgImage;
         }
-        else if (displayable instanceof ZRTSpan) {
+        else if (displayable instanceof TSpan) {
             return svgText;
         }
         else {

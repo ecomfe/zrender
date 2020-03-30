@@ -10,7 +10,7 @@ import { createOrUpdateImage, isImageReady } from '../graphic/helper/image';
 import { getCanvasGradient } from './helper';
 import Path, { PathStyleProps } from '../graphic/Path';
 import ZRImage, { ImageStyleProps } from '../graphic/Image';
-import ZRTSpan, {TSpanStyleProps} from '../graphic/TSpan';
+import TSpan, {TSpanStyleProps} from '../graphic/TSpan';
 import { DEFAULT_FONT } from '../contain/text';
 import { IncrementalDisplayable } from '../export';
 import { MatrixArray } from '../core/matrix';
@@ -268,7 +268,7 @@ function brushImage(ctx: CanvasRenderingContext2D, el: ZRImage) {
 }
 
 // Draw Text Elements
-function brushText(ctx: CanvasRenderingContext2D, el: ZRTSpan) {
+function brushText(ctx: CanvasRenderingContext2D, el: TSpan) {
 
     const style = el.style;
 
@@ -359,8 +359,8 @@ function bindCommonProps(
 
 function bindPathAndTextCommonStyle(
     ctx: CanvasRenderingContext2D,
-    el: ZRTSpan | Path,
-    prevEl: ZRTSpan | Path,
+    el: TSpan | Path,
+    prevEl: TSpan | Path,
     forceSetAll: boolean,
     scope: BrushScope
 ) {
@@ -673,14 +673,14 @@ export function brush(
         }
     }
     else {
-        if (el instanceof ZRTSpan) {
+        if (el instanceof TSpan) {
             if (scope.lastDrawType !== DRAW_TYPE_TEXT) {
                 forceSetStyle = true;
                 scope.lastDrawType = DRAW_TYPE_TEXT;
             }
 
-            bindPathAndTextCommonStyle(ctx, el as ZRTSpan, prevEl as ZRTSpan, forceSetStyle, scope);
-            brushText(ctx, el as ZRTSpan);
+            bindPathAndTextCommonStyle(ctx, el as TSpan, prevEl as TSpan, forceSetStyle, scope);
+            brushText(ctx, el as TSpan);
         }
         else if (el instanceof ZRImage) {
             if (scope.lastDrawType !== DRAW_TYPE_IMAGE) {

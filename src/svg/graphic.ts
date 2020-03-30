@@ -9,7 +9,7 @@ import { Path } from '../export';
 import { PathStyleProps } from '../graphic/Path';
 import ZRImage, { ImageStyleProps } from '../graphic/Image';
 import { DEFAULT_FONT, getLineHeight } from '../contain/text';
-import ZRTSpan, { TSpanStyleProps } from '../graphic/TSpan';
+import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
 
 export interface SVGProxy<T> {
     brush(el: T): void
@@ -77,9 +77,9 @@ function attrXLink(el: SVGElement, key: string, val: string) {
 }
 
 function bindStyle(svgEl: SVGElement, style: PathStyleProps, el?: Path): void
-function bindStyle(svgEl: SVGElement, style: TSpanStyleProps, el?: ZRTSpan): void
+function bindStyle(svgEl: SVGElement, style: TSpanStyleProps, el?: TSpan): void
 function bindStyle(svgEl: SVGElement, style: ImageStyleProps, el?: ZRImage): void
-function bindStyle(svgEl: SVGElement, style: AllStyleOption, el?: Path | ZRTSpan | ZRImage) {
+function bindStyle(svgEl: SVGElement, style: AllStyleOption, el?: Path | TSpan | ZRImage) {
     const opacity = style.opacity == null ? 1 : style.opacity;
     if (pathHasFill(style)) {
         let fill = style.fill;
@@ -343,8 +343,8 @@ function adjustTextY(y: number, lineHeight: number, textBaseline: CanvasTextBase
     return y;
 }
 
-const svgText: SVGProxy<ZRTSpan> = {
-    brush(el: ZRTSpan) {
+const svgText: SVGProxy<TSpan> = {
+    brush(el: TSpan) {
         const style = el.style;
 
         let text = style.text;
