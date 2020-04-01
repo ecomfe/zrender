@@ -516,7 +516,7 @@ export default class PathProxy {
         const data = this.data;
         if (data instanceof Array) {
             data.length = this._len;
-            if (hasTypedArray && this._len > 10) {
+            if (hasTypedArray && this._len > 11) {
                 this.data = new Float32Array(data);
             }
         }

@@ -96,7 +96,7 @@ export default class Animation extends Eventful {
     /**
      * Delete animation clip
      */
-    removeClip(clip: Clip<any>) {
+    removeClip(clip: Clip<any>) {   // TODO Make sure clip is in the animation.
         const prev = clip.prev;
         const next = clip.next;
         if (prev) {

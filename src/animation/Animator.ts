@@ -768,7 +768,7 @@ export default class Animator<T> {
     _doneCallback() {
         // Clear all tracks
         this._tracks = {};
-        // Clear all clips
+        // Clear clip
         this._clip = null;
 
         const doneList = this._doneList;
@@ -847,7 +847,10 @@ export default class Animator<T> {
      * Stop animation
      * @param {boolean} forwardToLast If move to last frame before stop
      */
-    stop(forwardToLast: boolean) {
+    stop(forwardToLast?: boolean) {
+        if (!this._clip) {
+            return;
+        }
         const clip = this._clip;
         const animation = this.animation;
         if (forwardToLast) {
@@ -857,6 +860,7 @@ export default class Animator<T> {
         if (animation) {
             animation.removeClip(clip);
         }
+        this._clip = null;
     }
     /**
      * Set when animation delay starts
@@ -885,13 +889,32 @@ export default class Animator<T> {
         return this._tracks[propName];
     }
 
-    stopTracks(propNames: string[]) {
+    stopTracks(propNames: string[], forwardToLast?: boolean) {
+        if (!propNames.length || !this._clip) {
+            return;
+        }
+
         for (let i = 0; i < propNames.length; i++) {
             const track = this._tracks[propNames[i]];
             if (track) {
+                if (forwardToLast) {
+                    track.step(this._target, 1);
+                }
                 // Set track to finished
                 track.setFinished();
             }
+        }
+        let allAborted = true;
+        for (let i = 0; i < this._trackKeys.length; i++) {
+            if (!this._tracks[this._trackKeys[i]].isFinished()) {
+                allAborted = false;
+                break;
+            }
+        }
+        // Remove clip if all tracks has been aborted.
+        if (allAborted && this.animation) {
+            this.animation.removeClip(this._clip);
+            this._clip = null;
         }
     }
 }

@@ -71,6 +71,8 @@ interface Displayable<Props extends DisplayableProps = DisplayableProps> {
 
     getState(stateName: string): DisplayableState
     ensureState(stateName: string): DisplayableState
+
+    states: Dictionary<DisplayableState | ((el: this) => DisplayableState)>
 }
 class Displayable<Props extends DisplayableProps = DisplayableProps> extends Element<Props> {
 
@@ -107,15 +109,9 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
      * For increamental rendering
      */
     incremental: boolean
-    /**
-     * If element can be batched automatically
-     */
-    autoBatch: boolean
 
     style: Dictionary<any>
 
-    // override
-    states: Dictionary<DisplayableState>
     protected _normalState: DisplayableState
 
     protected _rect: BoundingRect
@@ -368,7 +364,6 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         dispProto.cursor = 'pointer';
         dispProto.rectHover = false;
         dispProto.incremental = false;
-        dispProto.autoBatch = false;
         dispProto._rect = null;
 
         dispProto.__dirty = Element.REDARAW_BIT | Displayable.STYLE_CHANGED_BIT;

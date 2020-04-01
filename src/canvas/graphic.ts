@@ -318,8 +318,14 @@ function bindCommonProps(
     scope: BrushScope
 ): boolean {
     let styleChanged = false;
+
     if (!forceSetAll) {
         prevStyle = prevStyle || {};
+
+        // Shared same style.
+        if (style === prevStyle) {
+            return false;
+        }
     }
     if (forceSetAll || style.opacity !== prevStyle.opacity) {
         if (!styleChanged) {
@@ -368,6 +374,10 @@ function bindPathAndTextCommonStyle(
     const prevStyle = forceSetAll
         ? null
         : (prevEl && prevEl.style || {});
+    // Shared same style. prevStyle will be null if forceSetAll.
+    if (style === prevStyle) {
+        return false;
+    }
 
     let styleChanged = bindCommonProps(ctx, style, prevStyle, forceSetAll, scope);
 
@@ -431,7 +441,7 @@ function bindImageStyle(
     forceSetAll: boolean,
     scope: BrushScope
 ) {
-    bindCommonProps(ctx, el.style, prevEl && prevEl.style, forceSetAll, scope);
+    return bindCommonProps(ctx, el.style, prevEl && prevEl.style, forceSetAll, scope);
 }
 
 function setContextTransform(ctx: CanvasRenderingContext2D, el: Displayable) {
@@ -640,8 +650,8 @@ export function brush(
         forceSetStyle = forceSetTransform = true;
     }
 
-    let canBatchPath = el.autoBatch
-        && el instanceof Path   // Only path supports batch
+    let canBatchPath = el instanceof Path   // Only path supports batch
+        && el.autoBatch
         && canPathBatch(el as Path);
 
     if (forceSetTransform || isTransformChanged(m, prevEl.transform)) {

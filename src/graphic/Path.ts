@@ -64,6 +64,8 @@ export interface PathProps extends DisplayableProps {
     style?: PathStyleProps
     shape?: Dictionary<any>
 
+    autoBatch?: boolean
+
     buildPath?: (
         ctx: PathProxy | CanvasRenderingContext2D,
         shapeCfg: Dictionary<any>,
@@ -82,6 +84,8 @@ interface Path<Props extends PathProps = PathProps> {
 
     getState(stateName: string): PathState
     ensureState(stateName: string): PathState
+
+    states: Dictionary<PathState | ((el: this) => PathState)>
 }
 
 export type PathStatePropNames = DisplayableStatePropNames | 'shape';
@@ -101,11 +105,13 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
     subPixelOptimize: boolean
 
     style: PathStyleProps
+    /**
+     * If element can be batched automatically
+     */
+    autoBatch: boolean
 
     private _rectWithStroke: BoundingRect
 
-    // override
-    states: Dictionary<PathState>
     protected _normalState: PathState
 
     // Must have an initial value on shape.
@@ -499,6 +505,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         pathProto.strokeContainThreshold = 5;
         pathProto.segmentIgnoreThreshold = 0;
         pathProto.subPixelOptimize = false;
+        pathProto.autoBatch = false;
         pathProto.__dirty = Element.REDARAW_BIT | Displayable.STYLE_CHANGED_BIT | Path.SHAPE_CHANGED_BIT;
     })()
 }
