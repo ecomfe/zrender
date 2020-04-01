@@ -533,12 +533,27 @@ class Element<Props extends ElementProps = ElementProps> {
     }
 
     // Save current state to normal
-    protected saveStateToNormal() {
+    saveCurrentToNormalState() {
+        this.innerSaveToNormal();
+        // If during animation.
+        // We need to save final state of animation to the normal state. Not interpolated value.
+        const normalState = this._normalState;
+        for (let i = 0; i < this.animators.length; i++) {
+            const animator = this.animators[i];
+            // According to the order of animation if multiple animator is
+            // Animating on the same property(If additive animation is used)
+            animator.saveFinalStateToTarget(
+                animator.targetName
+                    ? (normalState as any)[animator.targetName] : normalState
+            );
+        }
+    }
+
+    protected innerSaveToNormal() {
         let state = this._normalState;
         if (!state) {
             state = this._normalState = {};
         }
-
         // TODO clone?
         state.textConfig = this.textConfig;
 
@@ -596,7 +611,7 @@ class Element<Props extends ElementProps = ElementProps> {
         if (!this.hasState()) {
             // If switched from normal state to other state.
             if (!toNormalState) {
-                this.saveStateToNormal();
+                this.saveCurrentToNormalState();
             }
             else {
                 // If switched from normal to normal.
@@ -1223,6 +1238,7 @@ function animateToShallow<T>(
         }
 
         const animator = new Animator(source, false, additive ? lastAnimator : null);
+        animator.targetName = topKey;
 
         animator.whenWithKeys(
             time == null ? 500 : time,

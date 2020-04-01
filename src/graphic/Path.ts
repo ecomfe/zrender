@@ -401,8 +401,8 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
     }
 
 
-    protected saveStateToNormal() {
-        super.saveStateToNormal();
+    protected innerSaveToNormal() {
+        super.innerSaveToNormal();
 
         // NOTICE DON'T CLONE THE SHAPE OBJECT
         // Only use the reference because if we switch state when animating. We still wan't

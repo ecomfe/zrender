@@ -652,10 +652,13 @@ export type AnimationPropSetter<T> = (target: T, key: string, value: Interpolata
 
 export default class Animator<T> {
 
-    animation: Animation
+    animation?: Animation
 
-    private _tracks: Dictionary<Track> = {}
+    targetName?: string
+
+    private _tracks: Dictionary<any> = {}
     private _trackKeys: string[] = []
+
     private _target: T
 
     private _loop: boolean
@@ -700,7 +703,7 @@ export default class Animator<T> {
     whenWithKeys(time: number, props: Dictionary<any>, propNames: string[]) {
         const tracks = this._tracks;
         for (let i = 0; i < propNames.length; i++) {
-            const propName = propNames[i] as string;
+            const propName = propNames[i];
 
             let track = tracks[propName];
             if (!track) {
@@ -767,7 +770,7 @@ export default class Animator<T> {
 
     _doneCallback() {
         // Clear all tracks
-        this._tracks = {};
+        this._tracks = null;
         // Clear clip
         this._clip = null;
 
@@ -921,5 +924,26 @@ export default class Animator<T> {
         }
 
         return allAborted;
+    }
+
+    /**
+     * Save values of final state to target.
+     * It is mainly used in state mangement. When state is switching during animation.
+     * We need to save final state of animation to the normal state. Not interpolated value.
+     */
+    saveFinalStateToTarget(target: T) {
+        if (!target) {  // DO nothing if target is not given.
+            return;
+        }
+
+        for (let i = 0; i < this._trackKeys.length; i++) {
+            const propName = this._trackKeys[i];
+            const track = this._tracks[propName];
+            const lastKf = track.keyframes[track.keyframes.length - 1];
+            if (lastKf) {
+                // TODO CLONE?
+                (target as any)[propName] = cloneValue(lastKf.value as any);
+            }
+        }
     }
 }

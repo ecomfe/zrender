@@ -275,8 +275,8 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         this.dirtyStyle();
     }
 
-    protected saveStateToNormal() {
-        super.saveStateToNormal();
+    protected innerSaveToNormal() {
+        super.innerSaveToNormal();
 
         const normalState = this._normalState;
         // NOTICE DON'T CLONE THE STYLE OBJECT
