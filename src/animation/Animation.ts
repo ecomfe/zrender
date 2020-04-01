@@ -48,8 +48,8 @@ export default class Animation extends Eventful {
     onframe: OnframeCallback
 
     // Use linked list to store clip
-    private _clipsHead: Clip<any>
-    private _clipsTail: Clip<any>
+    private _clipsHead: Clip
+    private _clipsTail: Clip
 
     private _running: boolean = false
 
@@ -72,7 +72,7 @@ export default class Animation extends Eventful {
     /**
      * Add clip
      */
-    addClip(clip: Clip<any>) {
+    addClip(clip: Clip) {
         if (!this._clipsHead) {
             this._clipsHead = this._clipsTail = clip;
         }
@@ -96,7 +96,7 @@ export default class Animation extends Eventful {
     /**
      * Delete animation clip
      */
-    removeClip(clip: Clip<any>) {   // TODO Make sure clip is in the animation.
+    removeClip(clip: Clip) {   // TODO Make sure clip is in the animation.
         const prev = clip.prev;
         const next = clip.next;
         if (prev) {

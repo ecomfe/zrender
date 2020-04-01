@@ -671,7 +671,7 @@ export default class Animator<T> {
     private _doneList: DoneCallback[] = []
     private _onframeList: OnframeCallback<T>[] = []
 
-    private _clip: Clip<T> = null
+    private _clip: Clip = null
 
     constructor(target: T, loop: boolean, additiveTo?: Animator<any>) {
         this._target = target;
@@ -689,10 +689,18 @@ export default class Animator<T> {
     }
 
     /**
+     * Target can be changed during animation
+     * For example if style is changed during state change.
+     * We need to change target to the new style object.
+     */
+    changeTarget(target: T) {
+        this._target = target;
+    }
+
+    /**
      * Set Animation keyframe
      * @param time 关键帧时间，单位是ms
      * @param props 关键帧的属性值，key-value表示
-     * @return {module:zrender/animation/Animator}
      */
     when(time: number, props: Dictionary<any>) {
         return this.whenWithKeys(time, props, keys(props) as string[]);
@@ -802,22 +810,21 @@ export default class Animator<T> {
         }
         // Add during callback on the last clip
         if (tracks.length) {
-            const clip = new Clip<T>({
-                target: this._target,
+            const clip = new Clip({
                 life: this._maxTime,
                 loop: this._loop,
                 delay: this._delay,
-                onframe(target: T, percent: number) {
+                onframe(percent: number) {
                     // Remove additived animator if it's finished.
                     // For the purpose of memory effeciency.
                     if (self._additiveAnimator && !self._additiveAnimator._clip) {
                         self._additiveAnimator = null;
                     }
                     for (let i = 0; i < tracks.length; i++) {
-                        tracks[i].step(target, percent);
+                        tracks[i].step(self._target, percent);
                     }
                     for (let i = 0; i < self._onframeList.length; i++) {
-                        self._onframeList[i](target, percent);
+                        self._onframeList[i](self._target, percent);
                     }
                 },
                 ondestroy() {
@@ -858,7 +865,7 @@ export default class Animator<T> {
         const animation = this.animation;
         if (forwardToLast) {
             // Move to last frame before stop
-            clip.onframe(this._target, 1);
+            clip.onframe(1);
         }
         if (animation) {
             animation.removeClip(clip);

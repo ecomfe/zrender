@@ -85,7 +85,8 @@ interface Path<Props extends PathProps = PathProps> {
     getState(stateName: string): PathState
     ensureState(stateName: string): PathState
 
-    states: Dictionary<PathState | ((el: this) => PathState)>
+    states: Dictionary<PathState>
+    stateProxy: (stateName: string) => PathState
 }
 
 export type PathStatePropNames = DisplayableStatePropNames | 'shape';

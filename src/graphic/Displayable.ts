@@ -72,7 +72,8 @@ interface Displayable<Props extends DisplayableProps = DisplayableProps> {
     getState(stateName: string): DisplayableState
     ensureState(stateName: string): DisplayableState
 
-    states: Dictionary<DisplayableState | ((el: this) => DisplayableState)>
+    states: Dictionary<DisplayableState>
+    stateProxy: (stateName: string) => DisplayableState
 }
 class Displayable<Props extends DisplayableProps = DisplayableProps> extends Element<Props> {
 
@@ -279,9 +280,6 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         super.innerSaveToNormal();
 
         const normalState = this._normalState;
-        // NOTICE DON'T CLONE THE STYLE OBJECT
-        // Only use the reference because if we switch state when animating. We still wan't
-        // animation continous on the same style object when switch back to normal state.
         normalState.style = this.style;
         normalState.z = this.z;
         normalState.z2 = this.z2;

@@ -289,7 +289,14 @@ class Element<Props extends ElementProps = ElementProps> {
      * Store of element state.
      * '__normal__' key is preserved for default properties.
      */
-    states: Dictionary<ElementState | ((el: this) => ElementState)> = {}
+    states: Dictionary<ElementState> = {}
+
+    /**
+     * Proxy function for getting state with given stateName.
+     * ZRender will first try to get with stateProxy. Then find from states if stateProxy returns nothing
+     */
+    stateProxy: (stateName: string) => ElementState
+
     protected _normalState: ElementState
 
     // Temporary storage for inside text color configuration.
@@ -535,8 +542,9 @@ class Element<Props extends ElementProps = ElementProps> {
     // Save current state to normal
     saveCurrentToNormalState() {
         this.innerSaveToNormal();
-        // If during animation.
-        // We need to save final state of animation to the normal state. Not interpolated value.
+
+        // If we are swtiching from normal to other state during animation.
+        // We need to save final value of animation to the normal state. Not interpolated value.
         const normalState = this._normalState;
         for (let i = 0; i < this.animators.length; i++) {
             const animator = this.animators[i];
@@ -631,15 +639,18 @@ class Element<Props extends ElementProps = ElementProps> {
             return;
         }
 
-        const statesMap = this.states;
-        let state = (statesMap && statesMap[stateName]);
+        let state;
+        if (this.stateProxy && !toNormalState) {
+            state = this.stateProxy(stateName);
+        }
+
+        if (!state) {
+            state = (this.states && this.states[stateName]);
+        }
+
         if (!state && !toNormalState) {
             logError(`State ${stateName} not exists.`);
             return;
-        }
-
-        if (typeof state === 'function') {
-            state = state(this);
         }
 
         this._applyStateObj(state, keepCurrentStates);
@@ -662,6 +673,13 @@ class Element<Props extends ElementProps = ElementProps> {
             }
         }
 
+        // Update animating target to the new object after state changed.
+        for (let i = 0; i < this.animators.length; i++) {
+            const animator = this.animators[i];
+            if (animator.targetName) {
+                animator.changeTarget((this as any)[animator.targetName]);
+            }
+        }
         this.markRedraw();
         // Return used state.
         return state;

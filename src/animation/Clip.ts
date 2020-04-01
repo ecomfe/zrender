@@ -15,29 +15,27 @@
 
 import easingFuncs, {AnimationEasing} from './easing';
 
-type OnframeCallback<T> = (target: T, percent: number) => void;
+type OnframeCallback = (percent: number) => void;
 type ondestroyCallback = () => void
-type onrestartCallback<T> = (target: T) => void
+type onrestartCallback = () => void
 
 export type DeferredEventTypes = 'destroy' | 'restart'
 type DeferredEventKeys = 'ondestroy' | 'onrestart'
 
-export interface ClipProps<T> {
-    target: T
+export interface ClipProps {
     life?: number
     delay?: number
     loop?: boolean
     gap?: number
     easing?: AnimationEasing
 
-    onframe?: OnframeCallback<T>
+    onframe?: OnframeCallback
     ondestroy?: ondestroyCallback
-    onrestart?: onrestartCallback<T>
+    onrestart?: onrestartCallback
 }
 
-export default class Clip<T> {
+export default class Clip {
 
-    private _target: T
     // 生命周期
     private _life: number
     // 延时
@@ -55,16 +53,15 @@ export default class Clip<T> {
     easing: AnimationEasing
 
     // For linked list. Readonly
-    next: Clip<any>
-    prev: Clip<any>
+    next: Clip
+    prev: Clip
 
-    onframe: OnframeCallback<T>
+    onframe: OnframeCallback
     ondestroy: ondestroyCallback
-    onrestart: onrestartCallback<T>
+    onrestart: onrestartCallback
 
-    constructor(opts: ClipProps<T>) {
+    constructor(opts: ClipProps) {
 
-        this._target = opts.target;
         this._life = opts.life || 1000;
 
         this._delay = opts.delay || 0;
@@ -112,13 +109,13 @@ export default class Clip<T> {
             ? easingFunc(percent)
             : percent;
 
-        this.onframe && this.onframe(this._target, schedule);
+        this.onframe && this.onframe(schedule);
 
         // 结束
         if (percent === 1) {
             if (this.loop) {
                 this._restart(globalTime);
-                this.onrestart && this.onrestart(this._target);
+                this.onrestart && this.onrestart();
             }
             else {
                 return true;
