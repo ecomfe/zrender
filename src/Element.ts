@@ -289,7 +289,7 @@ class Element<Props extends ElementProps = ElementProps> {
      * Store of element state.
      * '__normal__' key is preserved for default properties.
      */
-    states: Dictionary<ElementState> = {}
+    states: Dictionary<ElementState | ((el: this) => ElementState)> = {}
     protected _normalState: ElementState
 
     // Temporary storage for inside text color configuration.
@@ -353,7 +353,7 @@ class Element<Props extends ElementProps = ElementProps> {
     private _updateInnerText() {
         // Update textContent
         const textEl = this._textContent;
-        if (textEl) {
+        if (textEl && !textEl.ignore) {
             if (!this.textConfig) {
                 this.textConfig = {};
             }
@@ -617,10 +617,14 @@ class Element<Props extends ElementProps = ElementProps> {
         }
 
         const statesMap = this.states;
-        const state = (statesMap && statesMap[stateName]);
+        let state = (statesMap && statesMap[stateName]);
         if (!state && !toNormalState) {
             logError(`State ${stateName} not exists.`);
             return;
+        }
+
+        if (typeof state === 'function') {
+            state = state(this);
         }
 
         this._applyStateObj(state, keepCurrentStates);
@@ -893,12 +897,14 @@ class Element<Props extends ElementProps = ElementProps> {
         const el = this;
         const animators = el.animators;
 
-        // TODO Can improve performance?
         animator.during(function () {
             el.updateDuringAnimation(key as string);
         }).done(function () {
             // FIXME Animator will not be removed if use `Animator#stop` to stop animation
-            animators.splice(indexOf(animators, animator), 1);
+            const idx = indexOf(animators, animator);
+            if (idx >= 0) {
+                animators.splice(idx, 1);
+            }
         });
 
         animators.push(animator);
@@ -1208,7 +1214,12 @@ function animateToShallow<T>(
         if (!additive && lastAnimator) {
             // Stop exists animation on specific tracks.
             // TODO Should invoke previous animation callback?
-            lastAnimator.stopTracks(animatableKeys);
+            const allAborted = lastAnimator.stopTracks(animatableKeys);
+            if (allAborted) {   // This animator can't be used.
+                const idx = indexOf(existsAnimators, lastAnimator);
+                existsAnimators.splice(idx, 1);
+                lastAnimator = null;
+            }
         }
 
         const animator = new Animator(source, false, additive ? lastAnimator : null);

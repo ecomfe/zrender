@@ -889,9 +889,12 @@ export default class Animator<T> {
         return this._tracks[propName];
     }
 
-    stopTracks(propNames: string[], forwardToLast?: boolean) {
+    /**
+     * Return true if animator is not available anymore.
+     */
+    stopTracks(propNames: string[], forwardToLast?: boolean): boolean {
         if (!propNames.length || !this._clip) {
-            return;
+            return true;
         }
 
         for (let i = 0; i < propNames.length; i++) {
@@ -916,5 +919,7 @@ export default class Animator<T> {
             this.animation.removeClip(this._clip);
             this._clip = null;
         }
+
+        return allAborted;
     }
 }
