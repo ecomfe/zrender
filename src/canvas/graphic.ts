@@ -100,7 +100,7 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, inBatch: boolean) {
         if (hasStrokeGradient) {
             strokeGradient = el.__dirty
                 ? getCanvasGradient(ctx, stroke as (LinearGradientObject | RadialGradientObject), rect)
-                : el.__canvasFillGradient;
+                : el.__canvasStrokeGradient;
             el.__canvasStrokeGradient = strokeGradient;
         }
         if (hasFillPattern) {
