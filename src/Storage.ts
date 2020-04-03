@@ -140,12 +140,16 @@ export default class Storage {
 
         }
         else {
+            const disp = el as Displayable;
             // Element is displayable
             if (clipPaths && clipPaths.length) {
-                (el as Displayable).__clipPaths = clipPaths;
+                disp.__clipPaths = clipPaths;
+            }
+            else if (disp.__clipPaths && disp.__clipPaths.length > 0) {
+                disp.__clipPaths = [];
             }
 
-            this._displayList[this._displayListLen++] = el as Displayable;
+            this._displayList[this._displayListLen++] = disp;
         }
 
         // Add attached text element

@@ -601,7 +601,7 @@ export function brush(
     // Optimize when clipping on group with several elements
     if (!prevElClipPaths || isClipPathChanged(clipPaths, prevElClipPaths)) {
         // If has previous clipping state, restore from it
-        if (prevElClipPaths) {
+        if (prevElClipPaths && prevElClipPaths.length) {
             ctx.restore();
             // Must set all style and transform because context changed by restore
             forceSetStyle = forceSetTransform = true;
