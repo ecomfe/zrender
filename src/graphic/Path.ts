@@ -11,7 +11,7 @@ import { Dictionary, PropType } from '../core/types';
 import BoundingRect from '../core/BoundingRect';
 import { LinearGradientObject } from './LinearGradient';
 import { RadialGradientObject } from './RadialGradient';
-import { defaults, keys, extend, clone, isString } from '../core/util';
+import { defaults, keys, extend, clone, isString, createObject } from '../core/util';
 import Animator from '../animation/Animator';
 import { parse } from '../tool/color';
 
@@ -395,15 +395,15 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
     }
 
     /**
-     * Replace the style with given new style object.
+     * Create a path style object with default values in it's prototype.
+     * @override
      */
-    useStyle(obj: PathStyleProps, inherited?: PathStyleProps) {
-        this.innerUseStyle(obj, inherited || DEFAULT_PATH_STYLE);
+    createStyle(obj?: Props['style']) {
+        return createObject(DEFAULT_PATH_STYLE, obj);
     }
 
-
-    protected innerSaveToNormal() {
-        super.innerSaveToNormal();
+    protected _innerSaveToNormal() {
+        super._innerSaveToNormal();
 
         // NOTICE DON'T CLONE THE SHAPE OBJECT
         // Only use the reference because if we switch state when animating. We still wan't

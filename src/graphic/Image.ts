@@ -5,7 +5,7 @@ import Displayable, { DisplayableProps,
 } from './Displayable';
 import BoundingRect from '../core/BoundingRect';
 import { ImageLike } from '../core/types';
-import { defaults } from '../core/util';
+import { defaults, createObject } from '../core/util';
 
 export interface ImageStyleProps extends CommonStyleProps {
     image?: string | ImageLike
@@ -43,9 +43,14 @@ class ZRImage extends Displayable<ImageProps> {
 
     onload: (image: ImageLike) => void
 
-    useStyle(obj: ImageStyleProps, inherited?: ImageStyleProps) {
-        this.innerUseStyle(obj, inherited || DEFAULT_IMAGE_STYLE);
+    /**
+     * Create an image style object with default values in it's prototype.
+     * @override
+     */
+    createStyle(obj?: ImageStyleProps) {
+        return createObject(DEFAULT_IMAGE_STYLE, obj);
     }
+
 
     getBoundingRect(): BoundingRect {
         const style = this.style;

@@ -375,7 +375,7 @@ class ZRText extends Displayable<TextProps> {
         for (let i = 0; i < textLines.length; i++) {
             const el = this._getOrCreateChild(TSpan);
             // Always create new style.
-            const subElStyle: TSpanStyleProps = {};
+            const subElStyle: TSpanStyleProps = el.createStyle();
             el.useStyle(subElStyle);
             subElStyle.text = textLines[i];
             subElStyle.x = textX;
@@ -534,7 +534,7 @@ class ZRText extends Displayable<TextProps> {
         }
 
         const el = this._getOrCreateChild(TSpan);
-        const subElStyle: TSpanStyleProps = {};
+        const subElStyle: TSpanStyleProps = el.createStyle();
         // Always create new style.
         el.useStyle(subElStyle);
 
@@ -595,7 +595,7 @@ class ZRText extends Displayable<TextProps> {
         if (isPlainBg || (textBorderWidth && textBorderColor)) {
             // Background is color
             rectEl = this._getOrCreateChild(Rect);
-            rectEl.useStyle({});    // Create an empty style.
+            rectEl.useStyle(rectEl.createStyle());    // Create an empty style.
             rectEl.style.fill = null;
             const rectShape = rectEl.shape;
             rectShape.x = x;

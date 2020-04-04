@@ -2,7 +2,7 @@ import Displayable, { DisplayableProps, DisplayableStatePropNames } from './Disp
 import { getBoundingRect, DEFAULT_FONT } from '../contain/text';
 import BoundingRect from '../core/BoundingRect';
 import { PathStyleProps, DEFAULT_PATH_STYLE } from './Path';
-import { extend } from '../core/util';
+import { extend, createObject } from '../core/util';
 
 export interface TSpanStyleProps extends PathStyleProps {
 
@@ -50,10 +50,13 @@ class TSpan extends Displayable<TSpanProps> {
         return fill != null && fill !== 'none';
     }
 
-    useStyle(obj: TSpanStyleProps, inherited?: TSpanStyleProps) {
-        this.innerUseStyle(obj, inherited || DEFAULT_TSPAN_STYLE);
+    /**
+     * Create an image style object with default values in it's prototype.
+     * @override
+     */
+    createStyle(obj?: TSpanStyleProps) {
+        return createObject(DEFAULT_TSPAN_STYLE, obj);
     }
-
     getBoundingRect(): BoundingRect {
         const style = this.style;
 

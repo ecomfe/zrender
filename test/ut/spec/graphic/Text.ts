@@ -1,9 +1,9 @@
-import {RichText} from '../zrender';
+import {Text} from '../zrender';
 
-describe('RichText', function () {
+describe('Text', function () {
 
-    it('RichText#useStyle should merge rich style property.', function () {
-        const text = new RichText({
+    it('Text#useStyle should merge rich style property.', function () {
+        const text = new Text({
             style: {
                 rich: {
                     foo: {

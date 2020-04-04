@@ -7,10 +7,12 @@ import Element, {ElementProps, ElementStatePropNames, PRESERVED_NORMAL_STATE} fr
 import BoundingRect from '../core/BoundingRect';
 import { PropType, Dictionary } from '../core/types';
 import Path from './Path';
-import { changePrototype, keys, extend } from '../core/util';
+import { keys, extend, createObject } from '../core/util';
 import Animator from '../animation/Animator';
 
 // type CalculateTextPositionResult = ReturnType<typeof calculateTextPosition>
+
+const STYLE_MAGIC_KEY = '__zr_style_' + Math.round((Math.random() * 10));
 
 export interface CommonStyleProps {
     shadowBlur?: number
@@ -33,6 +35,9 @@ export const DEFAULT_COMMON_STYLE: CommonStyleProps = {
     opacity: 1,
     blend: 'source-over'
 };
+
+(DEFAULT_COMMON_STYLE as any)[STYLE_MAGIC_KEY] = true;
+
 
 export interface DisplayableProps extends ElementProps {
     style?: Dictionary<any>
@@ -263,21 +268,38 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         return this.__dirty & Displayable.STYLE_CHANGED_BIT;
     }
 
-    useStyle(obj: Props['style'], inherited?: Props['style']) {
-        this.innerUseStyle(obj, inherited || DEFAULT_COMMON_STYLE);
+    /**
+     * Create a style object with default values in it's prototype.
+     */
+    createStyle(obj?: Props['style']) {
+        return createObject(DEFAULT_COMMON_STYLE, obj);
     }
 
     /**
-     * Use given style object
+     * Replace style property.
+     * It will create a new style if given obj is not a valid style object.
      */
-    protected innerUseStyle(obj: Props['style'], inherited: Props['style']) {
-        // inherited value can be accessed from prototype
-        this.style = changePrototype(obj, inherited);
+    useStyle(obj: Props['style']) {
+        if (!obj[STYLE_MAGIC_KEY]) {
+            obj = this.createStyle(obj);
+        }
+        this.style = obj;
         this.dirtyStyle();
     }
 
-    protected innerSaveToNormal() {
-        super.innerSaveToNormal();
+    /**
+     * Determine if an object is a valid style object.
+     * Which means it is created by `createStyle.`
+     *
+     * A valid style object will have all default values in it's prototype.
+     * To avoid get null/undefined values.
+     */
+    isStyleObject(obj: Props['style']) {
+        return obj[STYLE_MAGIC_KEY];
+    }
+
+    protected _innerSaveToNormal() {
+        super._innerSaveToNormal();
 
         const normalState = this._normalState;
         normalState.style = this.style;
@@ -295,7 +317,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
             // 1. Normal style may be changed
             // 2. Needs to detect ircular protoype chain
             const newStyle = this._mergeStyle(
-                {},
+                this.createStyle(),
                 keepCurrentStates ? this.style : normalState.style
             );
             this._mergeStyle(newStyle, state.style);

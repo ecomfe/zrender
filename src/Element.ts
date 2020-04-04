@@ -541,7 +541,7 @@ class Element<Props extends ElementProps = ElementProps> {
 
     // Save current state to normal
     saveCurrentToNormalState() {
-        this.innerSaveToNormal();
+        this._innerSaveToNormal();
 
         // If we are swtiching from normal to other state during animation.
         // We need to save final value of animation to the normal state. Not interpolated value.
@@ -557,7 +557,7 @@ class Element<Props extends ElementProps = ElementProps> {
         }
     }
 
-    protected innerSaveToNormal() {
+    protected _innerSaveToNormal() {
         let state = this._normalState;
         if (!state) {
             state = this._normalState = {};
