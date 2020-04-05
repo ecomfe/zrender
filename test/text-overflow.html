@@ -34,7 +34,7 @@
     // LARGE_TEXT_EN = LARGE_TEXT_EN.substr(0, 500);
     // LARGE_TEXT_ZH = LARGE_TEXT_ZH.substr(0, 500);
 
-    var enText = new zrender.RichText({
+    var enText = new zrender.Text({
         style: {
             text: LARGE_TEXT_EN,
             fontSize: config.fontSize,
@@ -55,7 +55,7 @@
     });
     zr.add(enText);
 
-    var cnText = new zrender.RichText({
+    var cnText = new zrender.Text({
         style: {
             text: LARGE_TEXT_ZH,
             fontSize: config.fontSize,
