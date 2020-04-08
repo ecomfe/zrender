@@ -30,17 +30,20 @@
     showBoundingRect = function () {
         console.time('boundingRect');
         zr.storage.traverse(function (el) {
-            if (el.type === 'Text') {
+            if (el.type === 'text') {
                 var rect = el.getBoundingRect();
 
                 zr.add(new Rect({
                     shape: {
                         x: rect.x, y: rect.y, width: rect.width, height: rect.height
                     },
-                    position: el.position.slice(),
+                    x: el.x,
+                    y: el.y,
                     rotation: el.rotation,
-                    scale: el.scale.slice(),
-                origin: el.origin && el.origin.slice(),
+                    scaleX: el.scaleX,
+                    scaleY: el.scaleY,
+                    originX: el.originX,
+                    originY: el.originY,
                     style: {
                         fill: null,
                         stroke: zrender.color.random(),
@@ -102,7 +105,8 @@
     }));
 
     zr.add(new Text({
-        position : [100, 100],
+        x: 100,
+        y: 100,
         style: {
             x: 0,
             y: 0,
@@ -118,9 +122,11 @@
     }));
 
     zr.add(new Text({
-        position : [200, 100],
+        x: 200,
+        y: 100,
         rotation: 2,
-        scale: [.5, .5],
+        scaleX: 0.5,
+        scaleY: 0.5,
         style: {
             x: 0,
             y: 0,
@@ -134,10 +140,13 @@
     }));
 
     zr.add(new Text({
-        position : [100, 200],
+        x: 100,
+        y: 200,
         rotation: -1,
-        origin: [0, 50],
-        scale: [.5, .5],
+        originX: 0,
+        originY: 50,
+        scaleX: .5,
+        scaleY: .5,
         style: {
             x: 0,
             y: 0,
@@ -153,7 +162,8 @@
     }));
 
     zr.add(new Rect({
-        position : [300, 100],
+        x: 300,
+        y: 100,
         shape: {
             x: 0, y: 0, width: 200, height: 16
         },
@@ -162,7 +172,8 @@
         }
     }));
     zr.add(new Text({
-        position : [300, 100],
+        x: 300,
+        y: 100,
         style: {
             x: 0,
             y: 0,
@@ -173,7 +184,8 @@
     }));
 
     zr.add(new Text({
-        position : [400, 50],
+        x: 400,
+        y: 50,
         style: {
             x: 0,
             y: 0,
@@ -185,7 +197,8 @@
     }));
 
     zr.add(new Text({
-        position : [500, 50],
+        x: 500,
+        y: 50,
         style: {
             x: 0,
             y: 0,
@@ -197,7 +210,8 @@
     }));
 
     zr.add(new Text({
-        position : [600, 0],
+        x: 600,
+        y: 0,
         style: {
             x: 0,
             y: 0,
@@ -212,7 +226,8 @@
     }));
 
     zr.add(new Text({
-        position : [700, 0],
+        x: 700,
+        y: 0,
         style: {
             x: 0,
             y: 0,
@@ -229,7 +244,8 @@
     }));
 
     zr.add(new Text({
-        position : [600, 100],
+        x: 600,
+        y: 100,
         rotation: -Math.PI / 16,
         style: {
             x: 0,
@@ -260,7 +276,8 @@
 
 
     zr.add(new Text({
-        position : [100, 300],
+        x: 100,
+        y: 300,
         style: {
             // Empty text but has background
             text: '',
@@ -401,7 +418,8 @@
 
     zr.add(new Text({
         rotation: -0.1,
-        position: [500, 900],
+        x: 500,
+        y: 900,
         style: {
             text: [
                 'position: [500, 900]{j|rotation: -0.1}',
@@ -460,7 +478,8 @@
 
     zr.add(new Text({
         rotation: -0.1,
-        position: [500, 1300],
+        x: 500,
+        y: 1300,
         style: {
             text: [
                 'position: [500, 1300]{j|rotation: -0.1}',
@@ -529,7 +548,8 @@
 
     zr.add(new Text({
         rotation: -0.1,
-        position: [800, 1100],
+        x: 800,
+        y: 1100,
         style: {
             text: styles.text,
             fill: '#333',

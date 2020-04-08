@@ -27,12 +27,13 @@
     const config = {
         search: '',
         width: 400,
+        height: 400,
         fontSize: 13,
         fixedLineHeight: false,
-        lineHeight: 14
+        lineHeight: 14,
+        rich: true
     }
-    // LARGE_TEXT_EN = LARGE_TEXT_EN.substr(0, 500);
-    // LARGE_TEXT_ZH = LARGE_TEXT_ZH.substr(0, 500);
+
 
     var enText = new zrender.Text({
         style: {
@@ -44,13 +45,8 @@
             borderWidth: 1,
 
             overflow: 'wrap',
-
-            rich: {
-                highlight: {
-                    // padding: 4,
-                    backgroundColor: 'yellow'
-                }
-            }
+            lineOverflow: 'truncate',
+            ellipsis: '…'
         }
     });
     zr.add(enText);
@@ -65,15 +61,10 @@
             borderWidth: 1,
 
             overflow: 'wrap',
-            x: config.width + 100,
+            lineOverflow: 'truncate',
+            ellipsis: '…',
 
-            rich: {
-                highlight: {
-                    // padding: 4,
-                    backgroundColor: 'yellow',
-                    fontSize: 20
-                }
-            }
+            x: config.width + 100
         }
     });
     zr.add(cnText);
@@ -81,7 +72,18 @@
     const TEXTS = [LARGE_TEXT_EN, LARGE_TEXT_ZH];
     function update() {
         enText.style.width = cnText.style.width = config.width;
+        enText.style.height = cnText.style.height = config.height;
+
         cnText.style.x = config.width + 100;
+
+        enText.style.rich = cnText.style.rich = config.rich ? {
+            highlight: {
+                // padding: 4,
+                backgroundColor: 'yellow',
+                fontSize: 20
+            }
+        } : null;
+
         [enText, cnText].forEach((text, idx) => {
             text.style.fontSize = cnText.style.fontSize = config.fontSize;
 
@@ -111,9 +113,11 @@
     const gui = new dat.GUI();
     gui.add(config, 'search').onChange(update);
     gui.add(config, 'width', 100, 700).onChange(update);
+    gui.add(config, 'height', 10, 1600).onChange(update);
     gui.add(config, 'fontSize', 1, 30).onChange(update);
     gui.add(config, 'fixedLineHeight').onChange(update);
     gui.add(config, 'lineHeight', 12, 50).onChange(update);
+    gui.add(config, 'rich').onChange(update);
 
     update();
     </script>

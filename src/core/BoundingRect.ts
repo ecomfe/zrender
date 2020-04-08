@@ -24,7 +24,7 @@ class BoundingRect {
 
     height: number
 
-    constructor(x?: number, y?: number, width?: number, height?: number) {
+    constructor(x: number, y: number, width: number, height: number) {
 
         if (width < 0) {
             x = x + width;

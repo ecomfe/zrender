@@ -191,7 +191,7 @@ export type ElementState = Pick<ElementProps, ElementStatePropNames>;
 type AnimationCallback = () => void
 
 let tmpTextPosCalcRes = {} as TextPositionCalculationResult;
-let tmpBoundingRect = new BoundingRect();
+let tmpBoundingRect = new BoundingRect(0, 0, 0, 0);
 
 interface Element<Props extends ElementProps = ElementProps> extends Transformable, Eventful, ElementEventHandlerProps {
     // Provide more typed event callback params for mouse events.
@@ -423,46 +423,45 @@ class Element<Props extends ElementProps = ElementProps> {
                 : textConfig.inside
             const innerTextDefaultStyle = this._innerTextDefaultStyle || (this._innerTextDefaultStyle = {});
 
-            let innerTextFill;
-            let innerTextStroke;
-            let innerTextLineWidth;
+            let textFill;
+            let textStroke;
+            let textLineWidth;
             if (isInside) {
-                const hasInsideFill = textConfig.insideFill != null;
-                const hasInsideStroke = textConfig.insideStroke != null;
+                textFill = textConfig.insideFill;
+                textStroke = textConfig.insideStroke;
 
-                if (hasInsideFill || hasInsideStroke) {
-                    let fillColor = textConfig.insideFill;
-                    let strokeColor = textConfig.insideStroke;
-
-                    if (fillColor === 'auto') {
-                        fillColor = this.getInsideTextFill();
-                    }
-                    if (strokeColor === 'auto') {
-                        strokeColor = this.getInsideTextStroke(fillColor);
-                    }
-
-                    innerTextFill = fillColor;
-                    innerTextStroke = strokeColor || null;
-                    innerTextLineWidth = strokeColor ? 2 : 0;
-
+                if (textFill === 'auto') {
+                    textFill = this.getInsideTextFill();
                 }
+                if (textStroke === 'auto') {
+                    textStroke = this.getInsideTextStroke(textFill);
+                }
+
             }
             else {
-                innerTextFill = textConfig.outsideFill;
-                innerTextStroke = textConfig.outsideStroke || null;
-                innerTextLineWidth = textConfig.outsideStroke ? 2 : 0;
-            }
-            innerTextFill = innerTextFill || '#000';
+                textFill = textConfig.outsideFill;
+                textStroke = textConfig.outsideStroke;
 
-            if (innerTextFill !== innerTextDefaultStyle.fill
-                || innerTextStroke !== innerTextDefaultStyle.stroke
-                || innerTextLineWidth !== innerTextDefaultStyle.lineWidth) {
+                if (textFill === 'auto') {
+                    textFill = this.getOutsideFill();
+                }
+                if (textStroke === 'auto') {
+                    textStroke = this.getOutsideStroke(textFill);
+                }
+
+            }
+            textFill = textFill || '#000';
+            textLineWidth = textStroke ? 2 : 0;
+
+            if (textFill !== innerTextDefaultStyle.fill
+                || textStroke !== innerTextDefaultStyle.stroke
+                || textLineWidth !== innerTextDefaultStyle.lineWidth) {
 
                 textStyleChanged = true;
 
-                innerTextDefaultStyle.fill = innerTextFill;
-                innerTextDefaultStyle.stroke = innerTextStroke;
-                innerTextDefaultStyle.lineWidth = innerTextLineWidth;
+                innerTextDefaultStyle.fill = textFill;
+                innerTextDefaultStyle.stroke = textStroke;
+                innerTextDefaultStyle.lineWidth = textLineWidth;
 
                 textEl.setDefaultTextStyle(innerTextDefaultStyle);
             }
@@ -483,6 +482,14 @@ class Element<Props extends ElementProps = ElementProps> {
 
     protected getInsideTextStroke(textFill?: string) {
         return '#000';
+    }
+
+    protected getOutsideFill() {
+        return '#000';
+    }
+
+    protected getOutsideStroke(textFill?: string) {
+        return 'rgba(255, 255, 255, 0.7)';
     }
 
     traverse<Context>(

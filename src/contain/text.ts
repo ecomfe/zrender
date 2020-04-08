@@ -33,6 +33,9 @@ export function $override(
     methods[name] = fn;
 }
 
+// let cacheMissCount = 0;
+// let totalCount = 0;
+
 export function getWidth(text: string, font: string): number {
     font = font || DEFAULT_FONT;
     let cacheOfFont = textWidthCache[font];
@@ -43,7 +46,9 @@ export function getWidth(text: string, font: string): number {
     if (width == null) {
         width = methods.measureText(text, font).width;
         cacheOfFont.put(text, width);
+        // cacheMissCount++;
     }
+    // totalCount++;
 
     return width;
 }

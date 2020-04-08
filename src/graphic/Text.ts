@@ -149,6 +149,7 @@ export interface TextStyleProps extends TextStylePropsPart {
 
     /**
      * Strategy when text lines exceeds textHeight.
+     * Do nothing if not set
      */
     lineOverflow?: 'truncate'
 
@@ -242,6 +243,7 @@ class ZRText extends Displayable<TextProps> {
             this._updateSubTexts();
         }
         if (!this._rect) {
+            // TODO: Optimize when using width and overflow: wrap/truncate
             const tmpRect = new BoundingRect(0, 0, 0, 0);
             const children = this._children;
             const tmpMat: MatrixArray = [];
@@ -372,6 +374,10 @@ class ZRText extends Displayable<TextProps> {
 
         const hasShadow = style.textShadowBlur > 0;
 
+        const fixedBoundingRect = style.width != null
+            && (style.overflow === 'truncate' || style.overflow === 'wrap');
+        const calculatedLineHeight = contentBlock.calculatedLineHeight;
+
         for (let i = 0; i < textLines.length; i++) {
             const el = this._getOrCreateChild(TSpan);
             // Always create new style.
@@ -412,6 +418,14 @@ class ZRText extends Displayable<TextProps> {
 
             textY += lineHeight;
 
+            if (fixedBoundingRect) {
+                el.setBoundingRect(new BoundingRect(
+                    adjustTextX(subElStyle.x, style.width, subElStyle.textAlign),
+                    adjustTextY(subElStyle.y, calculatedLineHeight, subElStyle.textBaseline),
+                    style.width,
+                    calculatedLineHeight
+                ));
+            }
         }
     }
 
@@ -574,6 +588,16 @@ class ZRText extends Displayable<TextProps> {
         if (textFill) {
             subElStyle.fill = textFill;
         }
+
+        const textWidth = token.contentWidth;
+        const textHeight = token.contentHeight;
+        // NOTE: Should not call dirtyStyle after setBoundingRect. Or it will be cleared.
+        el.setBoundingRect(new BoundingRect(
+            adjustTextX(subElStyle.x, textWidth, subElStyle.textAlign),
+            adjustTextY(subElStyle.y, textHeight, subElStyle.textBaseline),
+            textWidth,
+            textHeight
+        ));
     }
 
     private _renderBackground(

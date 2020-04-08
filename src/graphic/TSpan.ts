@@ -57,6 +57,15 @@ class TSpan extends Displayable<TSpanProps> {
     createStyle(obj?: TSpanStyleProps) {
         return createObject(DEFAULT_TSPAN_STYLE, obj);
     }
+
+    /**
+     * Set bounding rect calculated from Text
+     * For reducing time of calculating bounding rect.
+     */
+    setBoundingRect(rect: BoundingRect) {
+        this._rect = rect;
+    }
+
     getBoundingRect(): BoundingRect {
         const style = this.style;
 

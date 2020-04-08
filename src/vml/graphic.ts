@@ -809,7 +809,7 @@ if (!env.canvasSupported) {
         };
     });
 
-    var tmpRect = new BoundingRect();
+    var tmpRect = new BoundingRect(0, 0, 0, 0);
 
     var drawRectText = function (vmlRoot, rect, textRect, fromTextEl) {
 
