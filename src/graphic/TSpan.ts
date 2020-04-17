@@ -2,7 +2,7 @@ import Displayable, { DisplayableProps, DisplayableStatePropNames } from './Disp
 import { getBoundingRect, DEFAULT_FONT } from '../contain/text';
 import BoundingRect from '../core/BoundingRect';
 import { PathStyleProps, DEFAULT_PATH_STYLE } from './Path';
-import { extend, createObject } from '../core/util';
+import { createObject, defaults } from '../core/util';
 
 export interface TSpanStyleProps extends PathStyleProps {
 
@@ -19,7 +19,7 @@ export interface TSpanStyleProps extends PathStyleProps {
     textBaseline?: CanvasTextBaseline
 }
 
-export const DEFAULT_TSPAN_STYLE: TSpanStyleProps = extend({
+export const DEFAULT_TSPAN_STYLE: TSpanStyleProps = defaults({
     strokeFirst: true,
     font: DEFAULT_FONT,
     x: 0,
