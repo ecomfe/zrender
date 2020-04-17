@@ -42,6 +42,7 @@ export {default as LinearGradient} from './graphic/LinearGradient';
 export {default as RadialGradient} from './graphic/RadialGradient';
 export {default as Pattern} from './graphic/Pattern';
 export {default as BoundingRect} from './core/BoundingRect';
+export {default as OrientedBoundingRect} from './core/OrientedBoundingRect';
 
 export {matrix};
 export {vector};

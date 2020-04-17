@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Text Overflow</title>
+    <script src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.js"></script>
+    <script src="../dist/zrender.js"></script>
+    <script src="lib/config.js"></script>
+    <SCript src="data/text.js"></SCript>
+</head>
+<body>
+    <style>
+        html, body, #main {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+        }
+    </style>
+    <div id="main"></div>
+
+    <script>
+        const zr = zrender.init(document.getElementById('main'), {
+            renderer: window.__ZRENDER__DEFAULT__RENDERER__
+        });
+
+        let textList = [];
+
+        function generate() {
+            zr.clear();
+            textList = [];
+            for (let i = 0; i < 1000; i++) {
+                let text = new zrender.Text({
+                    style: {
+                        text: 'AAAAAAA-' + i,
+                        fontSize: Math.round(Math.random() * 10) + 15
+                    },
+                    rotation: Math.random() * Math.PI,
+                    x: Math.random() * zr.getWidth(),
+                    y: Math.random() * zr.getHeight()
+                });
+
+                textList.push(text);
+
+                zr.add(text);
+            }
+        }
+
+        function hideText(text) {
+            text.animateTo({
+                style: {
+                    opacity: 0.05
+                }
+            });
+        }
+        function showText(text) {
+            text.animateTo({
+                style: {
+                    opacity: 1
+                }
+            });
+        }
+
+        function calculateCollide(textList) {
+            console.time('collide');
+
+            let prevAxisAligned = true;
+            let displayedTexts = [];
+
+            for (let i = 0; i < textList.length; i++) {
+                const label = textList[i];
+                const transform = label.getComputedTransform();
+                // NOTE: Get bounding rect after getComputedTransform, or label may not been updated by the host el.
+                const localRect = label.getBoundingRect();
+                const isAxisAligned = transform[1] < 1e-5 && transform[2] < 1e-5;
+
+                const globalRect = localRect.clone();
+                globalRect.applyTransform(transform);
+
+                let obb = isAxisAligned ? new zrender.OrientedBoundingRect(localRect, transform) : null
+                let overlapped = false;
+                for (let j = 0; j < displayedTexts.length; j++) {
+                    const existsTextCfg = displayedTexts[j];
+                    // Fast rejection.
+                    if (!globalRect.intersect(existsTextCfg.rect)) {
+                        continue;
+                    }
+                    if (isAxisAligned && existsTextCfg.axisAligned) {   // Is overlapped
+                        overlapped = true;
+                        break;
+                    }
+
+                    if (!existsTextCfg.obb) { // If self is not axis aligned. But other is.
+                        existsTextCfg.obb = new zrender.OrientedBoundingRect(existsTextCfg.localRect, existsTextCfg.transform);
+                    }
+
+                    if (!obb) { // If self is axis aligned. But other is not.
+                        obb = new zrender.OrientedBoundingRect(localRect, transform);
+                    }
+
+                    if (obb.intersect(existsTextCfg.obb)) {
+                        overlapped = true;
+                        break;
+                    }
+                }
+
+                if (overlapped) {
+                    hideText(label);
+                }
+                else {
+                    showText(label);
+                    displayedTexts.push({
+                        label,
+                        rect: globalRect,
+                        localRect,
+                        obb,
+                        axisAligned: isAxisAligned,
+                        transform
+                    });
+                }
+            }
+            console.timeEnd('collide');
+        }
+
+        const config = {
+            hideOverlap: true
+        }
+
+        function update() {
+            if (config.hideOverlap) {
+                calculateCollide(textList);
+            }
+            else {
+                textList.forEach(text => showText(text));
+            }
+        }
+
+        const gui = new dat.GUI();
+        gui.add(config, 'hideOverlap').onChange(update);
+
+        generate();
+        update();
+    </script>
+</body>
+</html>

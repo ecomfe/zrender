@@ -17,6 +17,7 @@ export default class Point {
     copy(other: Point) {
         this.x = other.x;
         this.y = other.y;
+        return this;
     }
 
     /**
@@ -32,6 +33,7 @@ export default class Point {
     set(x: number, y: number) {
         this.x = x;
         this.y = y;
+        return this;
     }
 
     /**
@@ -45,16 +47,18 @@ export default class Point {
      * Add another point
      */
     add(other: Point) {
-        this.x += other.y;
+        this.x += other.x;
         this.y += other.y;
+        return this;
     }
 
     /**
      * Sub another point
      */
     sub(other: Point) {
-        this.x -= other.y;
+        this.x -= other.x;
         this.y -= other.y;
+        return this;
     }
 
     /**
@@ -85,6 +89,7 @@ export default class Point {
         const len = this.len();
         this.x /= len;
         this.y /= len;
+        return this;
     }
 
     /**
@@ -111,6 +116,7 @@ export default class Point {
     negate() {
         this.x = -this.x;
         this.y = -this.y;
+        return this;
     }
 
     /**
@@ -121,5 +127,6 @@ export default class Point {
         const y = this.y;
         this.x = m[0] * x + m[2] * y + m[4];
         this.y = m[1] * x + m[3] * y + m[5];
+        return this;
     }
 }

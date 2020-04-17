@@ -58,28 +58,7 @@ class BoundingRect {
     }
 
     applyTransform(m: matrix.MatrixArray) {
-        // In case usage like this
-        // el.getBoundingRect().applyTransform(el.transform)
-        // And element has no transform
-        if (!m) {
-            return;
-        }
-        lt[0] = lb[0] = this.x;
-        lt[1] = rt[1] = this.y;
-        rb[0] = rt[0] = this.x + this.width;
-        rb[1] = lb[1] = this.y + this.height;
-
-        v2ApplyTransform(lt, lt, m);
-        v2ApplyTransform(rb, rb, m);
-        v2ApplyTransform(lb, lb, m);
-        v2ApplyTransform(rt, rt, m);
-
-        this.x = mathMin(lt[0], rb[0], lb[0], rt[0]);
-        this.y = mathMin(lt[1], rb[1], lb[1], rt[1]);
-        const maxX = mathMax(lt[0], rb[0], lb[0], rt[0]);
-        const maxY = mathMax(lt[1], rb[1], lb[1], rt[1]);
-        this.width = maxX - this.x;
-        this.height = maxY - this.y;
+        BoundingRect.applyTransform(this, this, m);
     }
 
     calculateTransform(b: RectLike): matrix.MatrixArray {
@@ -154,6 +133,48 @@ class BoundingRect {
 
     static create(rect: RectLike): BoundingRect {
         return new BoundingRect(rect.x, rect.y, rect.width, rect.height);
+    }
+
+    static applyTransform(target: BoundingRect, source: BoundingRect, m: matrix.MatrixArray) {
+        // In case usage like this
+        // el.getBoundingRect().applyTransform(el.transform)
+        // And element has no transform
+        if (!m) {
+            if (target !== source) {
+                target.copy(source);
+            }
+            return;
+        }
+        // Fast path when there is no rotation in matrix.
+        if (m[1] < 1e-5 && m[2] < 1e-5) {
+            const sx = m[0];
+            const sy = m[3];
+            const tx = m[4];
+            const ty = m[5];
+            target.x = source.x * sx + tx;
+            target.y = source.y * sy + ty;
+            target.width = source.width * sx;
+            target.height = source.height * sy;
+            return;
+        }
+
+        // source and target can be same instance.
+        lt[0] = lb[0] = source.x;
+        lt[1] = rt[1] = source.y;
+        rb[0] = rt[0] = source.x + source.width;
+        rb[1] = lb[1] = source.y + source.height;
+
+        v2ApplyTransform(lt, lt, m);
+        v2ApplyTransform(rb, rb, m);
+        v2ApplyTransform(lb, lb, m);
+        v2ApplyTransform(rt, rt, m);
+
+        target.x = mathMin(lt[0], rb[0], lb[0], rt[0]);
+        target.y = mathMin(lt[1], rb[1], lb[1], rt[1]);
+        const maxX = mathMax(lt[0], rb[0], lb[0], rt[0]);
+        const maxY = mathMax(lt[1], rb[1], lb[1], rt[1]);
+        target.width = maxX - target.x;
+        target.height = maxY - target.y;
     }
 }
 

@@ -242,8 +242,7 @@ class Group extends Element<GroupProps> {
             // rotated.) But we can not find better approach to calculate
             // actual boundingRect yet, considering performance.
             if (transform) {
-                tmpRect.copy(childRect);
-                tmpRect.applyTransform(transform);
+                BoundingRect.applyTransform(tmpRect, childRect, transform);
                 rect = rect || tmpRect.clone();
                 rect.union(tmpRect);
             }

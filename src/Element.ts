@@ -23,11 +23,11 @@ import {
 } from './core/util';
 import { Group } from './export';
 
-interface ElementAnimateConfig {
+export interface ElementAnimateConfig {
     duration?: number
     delay?: number
     easing?: AnimationEasing
-    done?: AnimationCallback
+    done?: Function
     /**
      * If force animate
      * Prevent stop animation and callback
@@ -73,15 +73,13 @@ export interface ElementTextConfig {
 
     /**
      * Will be set to textContent.style.fill if position is inside
-     * If value is 'auto'. It will calculate text fill based on the
-     * position and fill of Path.
+     * and textContent.style.fill is not set.
      */
     insideFill?: string
 
     /**
      * Will be set to textContent.style.stroke if position is inside
-     * If value is 'auto'. It will calculate text stroke based on the
-     * position and fill of Path.
+     * and textContent.style.stroke is not set.
      */
     insideStroke?: string
 
@@ -186,9 +184,6 @@ export const PRESERVED_NORMAL_STATE = '__zr_normal__';
 const PRIMARY_STATES_KEYS = ['x', 'y', 'scaleX', 'scaleY', 'originX', 'originY', 'rotation', 'ignore'] as const;
 export type ElementStatePropNames = (typeof PRIMARY_STATES_KEYS)[number] | 'textConfig';
 export type ElementState = Pick<ElementProps, ElementStatePropNames>;
-
-
-type AnimationCallback = () => void
 
 let tmpTextPosCalcRes = {} as TextPositionCalculationResult;
 let tmpBoundingRect = new BoundingRect(0, 0, 0, 0);
@@ -354,10 +349,10 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     update() {
         this.updateTransform();
-        this._updateInnerText();
+        this.updateInnerText();
     }
 
-    private _updateInnerText() {
+    updateInnerText() {
         // Update textContent
         const textEl = this._textContent;
         if (textEl && !textEl.ignore) {
@@ -369,10 +364,14 @@ class Element<Props extends ElementProps = ElementProps> {
 
             let textStyleChanged = false;
 
+            // NOTE: Can't be used both as normal element and as textContent.
             if (isLocal) {
                 // Apply host's transform.
                 // TODO parent is always be group for developers. But can be displayble inside.
                 textEl.parent = this as unknown as Group;
+            }
+            else {
+                textEl.parent = null;
             }
 
             // Force set attached text's position if `position` is in config.
@@ -489,7 +488,7 @@ class Element<Props extends ElementProps = ElementProps> {
     }
 
     protected getOutsideStroke(textFill?: string) {
-        return 'rgba(255, 255, 255, 0.7)';
+        return 'rgba(255, 255, 255, 0.9)';
     }
 
     traverse<Context>(
@@ -997,8 +996,7 @@ class Element<Props extends ElementProps = ElementProps> {
      *      done: () => { // done }
      *  })
      */
-
-    animateTo(target: Props, cfg: ElementAnimateConfig) {
+    animateTo(target: Props, cfg?: ElementAnimateConfig) {
         animateTo(this, target, cfg);
     }
 
