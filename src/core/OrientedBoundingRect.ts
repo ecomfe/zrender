@@ -17,12 +17,15 @@
 * under the License.
 */
 
-import Point from './Point';
+import Point, { PointLike } from './Point';
 import BoundingRect from './BoundingRect';
 import { MatrixArray } from './matrix';
 
-const minMax = [0, 0];
-const minMax2 = [0, 0];
+const extent = [0, 0];
+const extent2 = [0, 0];
+
+const minTv = new Point();
+const maxTv = new Point();
 
 class OrientedBoundingRect {
 
@@ -35,10 +38,10 @@ class OrientedBoundingRect {
 
     constructor(rect?: BoundingRect, transform?: MatrixArray) {
         for (let i = 0; i < 4; i++) {
-            this._corners[i] = new Point(0, 0);
+            this._corners[i] = new Point();
         }
         for (let i = 0; i < 2; i++) {
-            this._axes[i] = new Point(0, 0);
+            this._axes[i] = new Point();
         }
 
         if (rect) {
@@ -65,8 +68,10 @@ class OrientedBoundingRect {
         }
 
         // Calculate axes
-        axes[0].copy(corners[1]).sub(corners[0]).normalize();
-        axes[1].copy(corners[3]).sub(corners[0]).normalize();
+        Point.sub(axes[0], corners[1], corners[0]);
+        Point.sub(axes[1], corners[3], corners[0]);
+        axes[0].normalize();
+        axes[1].normalize();
 
         // Calculate projected origin
         for (let i = 0; i < 2; i++) {
@@ -75,62 +80,101 @@ class OrientedBoundingRect {
     }
 
     /**
-     * Calculate minimal distance to another OBB
-     */
-    // TODO Change to point to edge length.
-    distanceTo(other: OrientedBoundingRect): number {
-        let minDist = Infinity;
-        for (let i = 0; i < this._corners.length; i++) {
-            for (let j = 0; j < other._corners.length; j++) {
-                const cornerA = this._corners[i];
-                const cornerB = other._corners[j];
-
-                minDist = Math.min(cornerA.distance(cornerB), minDist);
-            }
-        }
-        return minDist;
-    }
-
-    /**
      * If intersect with another OBB
+     * @param other Bounding rect to be intersected with
+     * @param mtv Calculated .
+     *  If it's not overlapped. it means needs to move given rect with Maximum Translation Vector to be overlapped.
+     *  Else it means needs to move given rect with Minimum Translation Vector to be not overlapped.
      */
-    intersect(other: OrientedBoundingRect): boolean {
+    intersect(other: OrientedBoundingRect, mtv?: PointLike): boolean {
         // OBB collision with SAT method
 
+        let overlapped = true;
+        const noMtv = !mtv;
+        minTv.set(Infinity, Infinity);
+        maxTv.set(0, 0);
         // Check two axes for both two obb.
-        if (!this._checkOneSide(this, other)) {
-            return false;
-        }
-        if (!this._checkOneSide(other, this)) {
-            return false;
-        }
-
-        return true;
-    }
-
-
-    private _checkOneSide(self: OrientedBoundingRect, other: OrientedBoundingRect): boolean {
-        for (let i = 0; i < 2; i++) {
-            this._getProjMinMaxOnAxis(i, self._corners, minMax);
-            this._getProjMinMaxOnAxis(i, other._corners, minMax2);
-
-            // Not overlap on the axis.
-            if (minMax[1] < minMax2[0] || minMax[0] > minMax2[1]) {
-                return false;
+        if (!this._intersectCheckOneSide(this, other, minTv, maxTv, noMtv, 1)) {
+            overlapped = false;
+            if (noMtv) {
+                // Early return if no need to calculate mtv
+                return overlapped;
             }
         }
-        return true;
+        if (!this._intersectCheckOneSide(other, this, minTv, maxTv, noMtv, -1)) {
+            overlapped = false;
+            if (noMtv) {
+                return overlapped;
+            }
+        }
+
+        if (!noMtv) {
+            Point.copy(mtv, overlapped ? minTv : maxTv);
+        }
+
+        return overlapped;
     }
 
-    private _getProjMinMaxOnAxis(dim: number, points: Point[], out: number[]) {
+
+    private _intersectCheckOneSide(
+        self: OrientedBoundingRect,
+        other: OrientedBoundingRect,
+        minTv: Point,
+        maxTv: Point,
+        noMtv: boolean,
+        inverse: 1 | -1
+    ): boolean {
+        let overlapped = true;
+        for (let i = 0; i < 2; i++) {
+            const axis = this._axes[i];
+            this._getProjMinMaxOnAxis(i, self._corners, extent);
+            this._getProjMinMaxOnAxis(i, other._corners, extent2);
+
+            // Not overlap on the any axis.
+            if (extent[1] < extent2[0] || extent[0] > extent2[1]) {
+                overlapped = false;
+                if (noMtv) {
+                    return overlapped;
+                }
+                const dist0 = Math.abs(extent2[0] - extent[1]);
+                const dist1 = Math.abs(extent[0] - extent2[1]);
+
+                // Find longest distance of all axes.
+                if (Math.min(dist0, dist1) > maxTv.len()) {
+                    if (dist0 < dist1) {
+                        Point.scale(maxTv, axis, -dist0 * inverse);
+                    }
+                    else {
+                        Point.scale(maxTv, axis, dist1 * inverse);
+                    }
+                }
+            }
+            else if (minTv) {
+                const dist0 = Math.abs(extent2[0] - extent[1]);
+                const dist1 = Math.abs(extent[0] - extent2[1]);
+
+                if (Math.min(dist0, dist1) < minTv.len()) {
+                    if (dist0 < dist1) {
+                        Point.scale(minTv, axis, dist0 * inverse);
+                    }
+                    else {
+                        Point.scale(minTv, axis, -dist1 * inverse);
+                    }
+                }
+            }
+        }
+        return overlapped;
+    }
+
+    private _getProjMinMaxOnAxis(dim: number, corners: Point[], out: number[]) {
         const axis = this._axes[dim];
         const origin = this._origin;
-        const proj = points[0].dot(axis) + origin[dim];
+        const proj = corners[0].dot(axis) + origin[dim];
         let min = proj;
         let max = proj;
 
-        for (let i = 1; i < points.length; i++) {
-            const proj = points[i].dot(axis) + origin[dim];
+        for (let i = 1; i < corners.length; i++) {
+            const proj = corners[i].dot(axis) + origin[dim];
             min = Math.min(proj, min);
             max = Math.max(proj, max);
         }

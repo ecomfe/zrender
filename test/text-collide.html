@@ -27,16 +27,16 @@
 
         let textList = [];
 
-        function generate() {
+        function generate(rotate) {
             zr.clear();
             textList = [];
-            for (let i = 0; i < 1000; i++) {
+            for (let i = 0; i < 10000; i++) {
                 let text = new zrender.Text({
                     style: {
                         text: 'AAAAAAA-' + i,
                         fontSize: Math.round(Math.random() * 10) + 15
                     },
-                    rotation: Math.random() * Math.PI,
+                    rotation: rotate ? Math.random() * Math.PI : 0,
                     x: Math.random() * zr.getWidth(),
                     y: Math.random() * zr.getHeight()
                 });
@@ -48,25 +48,35 @@
         }
 
         function hideText(text) {
-            text.animateTo({
-                style: {
-                    opacity: 0.05
-                }
-            });
+            text.hide();
+            // text.animateTo({
+            //     style: {
+            //         opacity: 0.05
+            //     }
+            // }, {
+            //     additive: true,
+            //     duration: 1000,
+            //     easing: 'cubicInOut'
+            // });
         }
         function showText(text) {
-            text.animateTo({
-                style: {
-                    opacity: 1
-                }
-            });
+            text.show();
+            // text.animateTo({
+            //     style: {
+            //         opacity: 1
+            //     }
+            // }, {
+            //     additive: true,
+            //     duration: 1000,
+            //     easing: 'cubicInOut'
+            // });
         }
 
         function calculateCollide(textList) {
             console.time('collide');
 
-            let prevAxisAligned = true;
             let displayedTexts = [];
+            let mvt = new zrender.Point();
 
             for (let i = 0; i < textList.length; i++) {
                 const label = textList[i];
@@ -80,12 +90,14 @@
 
                 let obb = isAxisAligned ? new zrender.OrientedBoundingRect(localRect, transform) : null
                 let overlapped = false;
+                const marginSqr = config.overlapMargin * config.overlapMargin;
                 for (let j = 0; j < displayedTexts.length; j++) {
                     const existsTextCfg = displayedTexts[j];
                     // Fast rejection.
-                    if (!globalRect.intersect(existsTextCfg.rect)) {
+                    if (!globalRect.intersect(existsTextCfg.rect, mvt) && mvt.lenSquare() > marginSqr) {
                         continue;
                     }
+
                     if (isAxisAligned && existsTextCfg.axisAligned) {   // Is overlapped
                         overlapped = true;
                         break;
@@ -99,7 +111,7 @@
                         obb = new zrender.OrientedBoundingRect(localRect, transform);
                     }
 
-                    if (obb.intersect(existsTextCfg.obb)) {
+                    if (obb.intersect(existsTextCfg.obb, mvt) || mvt.lenSquare() < marginSqr) {
                         overlapped = true;
                         break;
                     }
@@ -124,7 +136,14 @@
         }
 
         const config = {
-            hideOverlap: true
+            hideOverlap: true,
+            rotate: true,
+            overlapMargin: 0,
+
+            random() {
+                generate(config.rotate);
+                update();
+            }
         }
 
         function update() {
@@ -138,8 +157,14 @@
 
         const gui = new dat.GUI();
         gui.add(config, 'hideOverlap').onChange(update);
+        gui.add(config, 'rotate').onChange(function () {
+            generate(config.rotate);
+            update();
+        });
+        gui.add(config, 'random').onChange(update);
+        gui.add(config, 'overlapMargin', 0, 100).onChange(update);
 
-        generate();
+        generate(config.rotate);
         update();
     </script>
 </body>

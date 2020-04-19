@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Text Overflow</title>
+    <script src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.js"></script>
+    <script src="../dist/zrender.js"></script>
+    <script src="lib/config.js"></script>
+    <SCript src="data/text.js"></SCript>
+</head>
+<body>
+    <style>
+        html, body, #main {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+        }
+    </style>
+    <div id="main"></div>
+
+    <script>
+    var zr = zrender.init(document.getElementById('main'), {
+        renderer: window.__ZRENDER__DEFAULT__RENDERER__
+    });
+
+    const config = {
+        rotation: 0,
+        rotation2: 0,
+        useOBB: true
+    };
+
+    const rect = new zrender.Rect({
+        shape: {
+            width: 100,
+            height: 400
+        },
+        style: {
+            fill: 'green',
+            opacity: 0.7
+        },
+        draggable: true,
+        x: 100,
+        y: 50
+    });
+    const rect2 = new zrender.Rect({
+        shape: {
+            width: 80,
+            height: 50
+        },
+        style: {
+            fill: 'green',
+            opacity: 0.7
+        },
+        draggable: true,
+        x: 300,
+        y: 200
+    });
+    zr.add(rect);
+    zr.add(rect2);
+
+    rect.on('drag', update);
+    rect2.on('drag', update);
+
+    const line = new zrender.Line({
+        shape: {
+            x1: 0, y1: 0, x2: 0, y2: 0
+        },
+        style: {
+            lineWidth: 3,
+            stroke: 'blue'
+        }
+    });
+    zr.add(line);
+
+    function update() {
+        rect.attr('rotation', config.rotation);
+        rect2.attr('rotation', config.rotation2);
+
+        const mtv = new zrender.Point();
+        let overlapped;
+        if (config.useOBB) {
+            const obb = new zrender.OrientedBoundingRect(
+                rect.getBoundingRect(), rect.getComputedTransform()
+            );
+            const obb2 = new zrender.OrientedBoundingRect(
+                rect2.getBoundingRect(), rect2.getComputedTransform()
+            );
+            overlapped = obb.intersect(obb2, mtv);
+        }
+        else {
+            const bb = rect.getBoundingRect();
+            bb.applyTransform(rect.getComputedTransform());
+            const bb2 = rect2.getBoundingRect();
+            bb2.applyTransform(rect2.getComputedTransform());
+            overlapped = bb.intersect(bb2, mtv);
+        }
+
+        const center = new zrender.Point(40, 25);
+        center.transform(rect2.getComputedTransform());
+
+        line.setShape({
+            x1: center.x, y1: center.y,
+            x2: center.x + mtv.x, y2: center.y + mtv.y
+        });
+
+        rect.setStyle('fill', overlapped ? 'red' : 'green');
+        rect2.setStyle('fill', overlapped ? 'red' : 'green');
+    }
+
+    const gui = new dat.GUI();
+    gui.add(config, 'useOBB').onChange(update);
+    gui.add(config, 'rotation', -5, 5).onChange(update);
+    gui.add(config, 'rotation2', -5, 5).onChange(update);
+
+    update();
+    </script>
+</body>
+</html>

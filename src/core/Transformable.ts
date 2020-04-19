@@ -171,10 +171,19 @@ class Transformable {
         if (isNotAroundZero(sy - 1)) {
             sy = Math.sqrt(sy);
         }
+
+        this.rotation = Math.atan2(m[1] / sy, m[0] / sx);
+
         if (m[0] < 0) {
             sx = -sx;
         }
         if (m[3] < 0) {
+            sy = -sy;
+        }
+        // Flip can be both represented with rotation and negative scale.
+        if (sx < 0 && sy < 0) {
+            this.rotation += Math.PI;
+            sx = -sx;
             sy = -sy;
         }
 
@@ -182,8 +191,6 @@ class Transformable {
         this.y = m[5];
         this.scaleX = sx;
         this.scaleY = sy;
-
-        this.rotation = Math.atan2(-m[1] / sy, m[0] / sx);
     }
     /**
      * 分解`transform`矩阵到`position`, `rotation`, `scale`
