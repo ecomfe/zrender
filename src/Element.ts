@@ -72,16 +72,29 @@ export interface ElementTextConfig {
     local?: boolean
 
     /**
-     * Will be set to textContent.style.fill if position is inside
-     * If value is 'auto'. It will calculate text fill based on the
-     * position and fill of Path.
+     * `insideFill` is a color string or left empty.
+     * If a `textContent` is "inside", its final `fill` will be picked by this priority:
+     * `textContent.style.fill` > `textConfig.insideFill` > "auto-calculated-fill"
+     * In most cases, "auto-calculated-fill" is white.
      */
     insideFill?: string
 
     /**
-     * Will be set to textContent.style.stroke if position is inside
-     * If value is 'auto'. It will calculate text stroke based on the
-     * position and fill of Path.
+     * `insideStroke` is a color string or left empth.
+     * If a `textContent` is "inside", its final `fill` will be picked by this priority:
+     * `textContent.style.stroke` > `textConfig.insideStroke` > "auto-calculated-stroke"
+     *
+     * The rule of getting "auto-calculated-stroke":
+     * If (A) the `fill` is specified in style (either in `textContent.style` or `textContent.style.rich`)
+     * or (B) needed to draw text background (either defined in `textContent.style` or `textContent.style.rich`)
+     * "auto-calculated-stroke" will be null.
+     * Otherwise, "auto-calculated-stroke" will be the same as `fill` of this element if possible, or null.
+     *
+     * The reason of (A) is not decisive:
+     * 1. If users specify `fill` in style and still use "auto-calculated-stroke", the effect
+     * is not good and unexpected in some cases. It not easy and seams uncessary to auto calculate
+     * a proper `stroke` for the given `fill`, since they can specify `stroke` themselve.
+     * 2. Backward compat.
      */
     insideStroke?: string
 
@@ -300,7 +313,7 @@ class Element<Props extends ElementProps = ElementProps> {
     protected _normalState: ElementState
 
     // Temporary storage for inside text color configuration.
-    private _innerTextDefaultStyle: { fill?: string, stroke?: string, lineWidth?: number }
+    private _innerTextDefaultStyle: { fill?: string, stroke?: string, lineWidth?: number, autoStroke?: boolean }
 
     constructor(props?: Props) {
         // Transformable needs position, rotation, scale
@@ -425,43 +438,47 @@ class Element<Props extends ElementProps = ElementProps> {
 
             let textFill;
             let textStroke;
-            let textLineWidth;
+            let autoStroke;
             if (isInside) {
+                // In most cases `textContent` need this "auto" strategy.
+                // So by default be 'auto'. Otherwise users need to literally
+                // set `insideFill: 'auto', insideStroke: 'auto'` each time.
                 textFill = textConfig.insideFill;
                 textStroke = textConfig.insideStroke;
 
-                if (textFill === 'auto') {
+                if (textFill == null) {
                     textFill = this.getInsideTextFill();
                 }
-                if (textStroke === 'auto') {
+                if (textStroke == null) {
                     textStroke = this.getInsideTextStroke(textFill);
+                    autoStroke = true;
                 }
-
             }
             else {
                 textFill = textConfig.outsideFill;
                 textStroke = textConfig.outsideStroke;
 
-                if (textFill === 'auto') {
-                    textFill = this.getOutsideFill();
-                }
-                if (textStroke === 'auto') {
-                    textStroke = this.getOutsideStroke(textFill);
-                }
+                // Do not support auto until any necessity comes.
+                // if (textFill === 'auto') {
+                //     textFill = this.getOutsideFill();
+                // }
+                // if (textStroke === 'auto') {
+                //     textStroke = this.getOutsideStroke(textFill);
+                // }
 
             }
             textFill = textFill || '#000';
-            textLineWidth = textStroke ? 2 : 0;
 
             if (textFill !== innerTextDefaultStyle.fill
                 || textStroke !== innerTextDefaultStyle.stroke
-                || textLineWidth !== innerTextDefaultStyle.lineWidth) {
+                || autoStroke !== innerTextDefaultStyle.autoStroke
+            ) {
 
                 textStyleChanged = true;
 
                 innerTextDefaultStyle.fill = textFill;
                 innerTextDefaultStyle.stroke = textStroke;
-                innerTextDefaultStyle.lineWidth = textLineWidth;
+                innerTextDefaultStyle.autoStroke = autoStroke;
 
                 textEl.setDefaultTextStyle(innerTextDefaultStyle);
             }
@@ -476,21 +493,21 @@ class Element<Props extends ElementProps = ElementProps> {
         }
     }
 
-    protected getInsideTextFill() {
+    protected getInsideTextFill(): string {
         return '#fff';
     }
 
-    protected getInsideTextStroke(textFill?: string) {
+    protected getInsideTextStroke(textFill?: string): string {
         return '#000';
     }
 
-    protected getOutsideFill() {
-        return '#000';
-    }
+    // protected getOutsideFill() {
+    //     return '#000';
+    // }
 
-    protected getOutsideStroke(textFill?: string) {
-        return 'rgba(255, 255, 255, 0.7)';
-    }
+    // protected getOutsideStroke(textFill?: string) {
+    //     return 'rgba(255, 255, 255, 0.7)';
+    // }
 
     traverse<Context>(
         cb: (this: Context, el: Element<Props>) => void,
