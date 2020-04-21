@@ -38,6 +38,14 @@ export interface ElementAnimateConfig {
      * If use additive animation.
      */
     additive?: boolean
+    /**
+     * If set to final state before animation started.
+     * It can be useful if something you want to calcuate depends on the final state of element.
+     * Like bounding rect for text layouting.
+     *
+     * Only available in animateTo
+     */
+    setToFinal?: boolean
 }
 
 export interface ElementTextConfig {
@@ -1006,7 +1014,7 @@ class Element<Props extends ElementProps = ElementProps> {
      */
 
     // Overload definitions
-    animateFrom(target: Props, cfg: ElementAnimateConfig) {
+    animateFrom(target: Props, cfg: Omit<ElementAnimateConfig, 'setToFinal'>) {
         animateTo(this, target, cfg, true);
     }
 
@@ -1128,9 +1136,7 @@ function animateTo<T>(
         '',
         animatable,
         target,
-        cfg.duration,
-        cfg.delay,
-        cfg.additive,
+        cfg,
         animators,
         reverse
     );
@@ -1180,14 +1186,16 @@ function animateToShallow<T>(
     topKey: string,
     source: Dictionary<any>,
     target: Dictionary<any>,
-    time: number,
-    delay: number,
-    additive: boolean,
+    cfg: ElementAnimateConfig,
     animators: Animator<any>[],
     reverse: boolean    // If `true`, animate from the `target` to current state.
 ) {
     const animatableKeys: string[] = [];
     const targetKeys = keys(target);
+    const duration = cfg.duration;
+    const delay = cfg.delay;
+    const additive = cfg.additive;
+    const setToFinal = cfg.setToFinal;
     for (let k = 0; k < targetKeys.length; k++) {
         const innerKey = targetKeys[k] as string;
 
@@ -1208,9 +1216,7 @@ function animateToShallow<T>(
                     innerKey,
                     source[innerKey],
                     target[innerKey],
-                    time,
-                    delay,
-                    additive,
+                    cfg,
                     animators,
                     reverse
                 );
@@ -1229,13 +1235,24 @@ function animateToShallow<T>(
     const keyLen = animatableKeys.length;
 
     if (keyLen > 0) {
+        let revertedSource: Dictionary<any>;
         let reversedTarget: Dictionary<any>;
+        let sourceClone: Dictionary<any>;
         if (reverse) {
             reversedTarget = {};
+            revertedSource = {};
             for (let i = 0; i < keyLen; i++) {
-                let innerKey = animatableKeys[i];
+                const innerKey = animatableKeys[i];
                 reversedTarget[innerKey] = source[innerKey];
                 // Animate from target
+                revertedSource[innerKey] = target[innerKey];
+            }
+        }
+        else if (setToFinal) {
+            sourceClone = {};
+            for (let i = 0; i < keyLen; i++) {
+                const innerKey = animatableKeys[i];
+                sourceClone[innerKey] = source[innerKey];
                 source[innerKey] = target[innerKey];
             }
         }
@@ -1263,8 +1280,15 @@ function animateToShallow<T>(
         const animator = new Animator(source, false, additive ? lastAnimator : null);
         animator.targetName = topKey;
 
+        if (revertedSource) {
+            animator.whenWithKeys(0, revertedSource, animatableKeys);
+        }
+        if (sourceClone) {
+            animator.whenWithKeys(0, sourceClone, animatableKeys);
+        }
+
         animator.whenWithKeys(
-            time == null ? 500 : time,
+            duration == null ? 500 : duration,
             reverse ? reversedTarget : target,
             animatableKeys
         ).delay(delay || 0);

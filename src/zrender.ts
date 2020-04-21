@@ -149,8 +149,13 @@ class ZRender {
     /**
      * Repaint the canvas immediately
      */
-    refreshImmediately() {
+    refreshImmediately(fromInside?: boolean) {
         // const start = new Date();
+
+        if (!fromInside) {
+            // Update animation if refreshImmediately is invoked from outside.
+            this.animation.update();
+        }
 
         // Clear needsRefresh ahead to avoid something wrong happens in refresh
         // Or it will cause zrender refreshes again and again.
@@ -181,7 +186,7 @@ class ZRender {
 
         if (this._needsRefresh) {
             triggerRendered = true;
-            this.refreshImmediately();
+            this.refreshImmediately(true);
         }
         if (this._needsRefreshHover) {
             triggerRendered = true;
