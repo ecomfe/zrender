@@ -83,7 +83,7 @@ ClippathManager.prototype.updateDom = function (
             // New <clipPath>
             id = 'zr' + this._zrId + '-clip-' + this.nextId;
             ++this.nextId;
-            clipPathEl = this.createElement('clipPath');
+            clipPathEl = this.createElement('clippath');
             clipPathEl.setAttribute('id', id);
             defs.appendChild(clipPathEl);
 
