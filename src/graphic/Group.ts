@@ -126,7 +126,7 @@ class Group extends Element<GroupProps> {
     }
 
     /**
-     * 移除子节点
+     * Remove child
      * @param child
      */
     remove(child: Element) {
@@ -152,7 +152,7 @@ class Group extends Element<GroupProps> {
     }
 
     /**
-     * 移除所有子节点
+     * Remove all children
      */
     removeAll() {
         const children = this._children;
@@ -185,17 +185,18 @@ class Group extends Element<GroupProps> {
     }
 
     /**
-     * 深度优先遍历所有子孙节点
+     * Visit all descendants.
+     * Return false in callback to stop visit descendants of current node
      */
     traverse<T>(
-        cb: (this: T, el: Element) => void,
+        cb: (this: T, el: Element) => boolean | void,
         context?: T
     ) {
         for (let i = 0; i < this._children.length; i++) {
             const child = this._children[i];
-            cb.call(context, child);
+            const stopped = cb.call(context, child);
 
-            if (child.isGroup) {
+            if (child.isGroup && !stopped) {
                 child.traverse(cb, context);
             }
         }

@@ -8,7 +8,6 @@ import BoundingRect, { RectLike } from './core/BoundingRect';
 import Eventful, {EventQuery, EventCallback} from './core/Eventful';
 import ZRText from './graphic/Text';
 import { calculateTextPosition, TextPositionCalculationResult } from './contain/text';
-import Storage from './Storage';
 import {
     guid,
     isObject,
@@ -16,9 +15,7 @@ import {
     extend,
     indexOf,
     logError,
-    isString,
     mixin,
-    isFunction,
     isArrayLike
 } from './core/util';
 import { Group } from './export';
