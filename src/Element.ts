@@ -521,7 +521,7 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     hide() {
         this.ignore = true;
-        this.__zr && this.__zr.refresh();
+        this.markRedraw();
     }
 
     /**
@@ -529,7 +529,7 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     show() {
         this.ignore = false;
-        this.__zr && this.__zr.refresh();
+        this.markRedraw();
     }
 
     attr(keyOrObj: Props): this
@@ -809,6 +809,10 @@ class Element<Props extends ElementProps = ElementProps> {
         // Remove previous clip path
         if (this._textContent && this._textContent !== textEl) {
             this.removeTextContent();
+        }
+
+        if (textEl.__zr && !textEl.__hostTarget) {
+            throw new Error('Text element has been added to zrender.');
         }
 
         this._textContent = textEl;
