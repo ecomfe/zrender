@@ -2,11 +2,11 @@ import Transformable from './core/Transformable';
 import { AnimationEasing } from './animation/easing';
 import Animator from './animation/Animator';
 import { ZRenderType } from './zrender';
-import { Dictionary, ElementEventName, ZRRawEvent, BuiltinTextPosition, AllPropTypes } from './core/types';
+import { Dictionary, ElementEventName, ZRRawEvent, BuiltinTextPosition, AllPropTypes, TextVerticalAlign, TextAlign } from './core/types';
 import Path from './graphic/Path';
 import BoundingRect, { RectLike } from './core/BoundingRect';
 import Eventful, {EventQuery, EventCallback} from './core/Eventful';
-import ZRText from './graphic/Text';
+import ZRText, { DefaultTextStyle } from './graphic/Text';
 import { calculateTextPosition, TextPositionCalculationResult } from './contain/text';
 import Storage from './Storage';
 import {
@@ -313,7 +313,7 @@ class Element<Props extends ElementProps = ElementProps> {
     protected _normalState: ElementState
 
     // Temporary storage for inside text color configuration.
-    private _innerTextDefaultStyle: { fill?: string, stroke?: string, lineWidth?: number, autoStroke?: boolean }
+    private _innerTextDefaultStyle: DefaultTextStyle
 
     constructor(props?: Props) {
         // Transformable needs position, rotation, scale
@@ -379,6 +379,8 @@ class Element<Props extends ElementProps = ElementProps> {
             }
             const textConfig = this.textConfig;
             const isLocal = textConfig.local;
+            let textAlign: TextAlign;
+            let textVerticalAlign: TextVerticalAlign;
 
             let textStyleChanged = false;
 
@@ -407,14 +409,10 @@ class Element<Props extends ElementProps = ElementProps> {
                 textEl.x = tmpTextPosCalcRes.x;
                 textEl.y = tmpTextPosCalcRes.y;
 
-                if (tmpTextPosCalcRes.textAlign) {
-                    textStyleChanged = textStyleChanged || textEl.style.align !== tmpTextPosCalcRes.textAlign;
-                    textEl.style.align = tmpTextPosCalcRes.textAlign;
-                }
-                if (tmpTextPosCalcRes.verticalAlign) {
-                    textStyleChanged = textStyleChanged || textEl.style.verticalAlign !== tmpTextPosCalcRes.verticalAlign;
-                    textEl.style.verticalAlign = tmpTextPosCalcRes.verticalAlign;
-                }
+                // User specified align/verticalAlign has higher priority, which is
+                // useful in the case that attached text is rotated 90 degree.
+                textAlign = tmpTextPosCalcRes.align;
+                textVerticalAlign = tmpTextPosCalcRes.verticalAlign;
             }
 
             if (textConfig.rotation != null) {
@@ -426,7 +424,7 @@ class Element<Props extends ElementProps = ElementProps> {
                 textEl.x += textOffset[0];
                 textEl.y += textOffset[1];
 
-                textEl.originX = -textOffset[0]
+                textEl.originX = -textOffset[0];
                 textEl.originY = -textOffset[1];
             }
 
@@ -472,6 +470,8 @@ class Element<Props extends ElementProps = ElementProps> {
             if (textFill !== innerTextDefaultStyle.fill
                 || textStroke !== innerTextDefaultStyle.stroke
                 || autoStroke !== innerTextDefaultStyle.autoStroke
+                || textAlign !== innerTextDefaultStyle.align
+                || textVerticalAlign !== innerTextDefaultStyle.verticalAlign
             ) {
 
                 textStyleChanged = true;
@@ -479,6 +479,8 @@ class Element<Props extends ElementProps = ElementProps> {
                 innerTextDefaultStyle.fill = textFill;
                 innerTextDefaultStyle.stroke = textStroke;
                 innerTextDefaultStyle.autoStroke = autoStroke;
+                innerTextDefaultStyle.align = textAlign;
+                innerTextDefaultStyle.verticalAlign = textVerticalAlign;
 
                 textEl.setDefaultTextStyle(innerTextDefaultStyle);
             }
@@ -1052,8 +1054,8 @@ class Element<Props extends ElementProps = ElementProps> {
      *         {
      *             x: number. mandatory.
      *             y: number. mandatory.
-     *             textAlign: string. optional. use style.textAlign by default.
-     *             textVerticalAlign: string. optional. use style.textVerticalAlign by default.
+     *             align: string. optional. use style.textAlign by default.
+     *             verticalAlign: string. optional. use style.textVerticalAlign by default.
      *         }
      */
     calculateTextPosition: (out: TextPositionCalculationResult, style: ElementTextConfig, rect: RectLike) => TextPositionCalculationResult

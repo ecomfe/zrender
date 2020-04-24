@@ -881,8 +881,8 @@ if (!env.canvasSupported) {
                 y = res.y;
 
                 // Default align and baseline when has textPosition
-                align = align || res.textAlign;
-                verticalAlign = verticalAlign || res.textVerticalAlign;
+                align = align || res.align;
+                verticalAlign = verticalAlign || res.verticalAlign;
             }
         }
         else {

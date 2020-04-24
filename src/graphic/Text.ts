@@ -180,7 +180,7 @@ export interface TextProps extends DisplayableProps {
 
 export type TextState = Pick<TextProps, DisplayableStatePropNames>
 
-type DefaultTextStyle = Pick<TextStyleProps, 'fill' | 'stroke'> & {
+export type DefaultTextStyle = Pick<TextStyleProps, 'fill' | 'stroke' | 'align' | 'verticalAlign'> & {
     autoStroke?: boolean
 };
 
@@ -350,8 +350,8 @@ class ZRText extends Displayable<TextProps> {
 
         const baseX = style.x || 0;
         const baseY = style.y || 0;
-        const textAlign = style.align || 'left';
-        const textVerticalAlign = style.verticalAlign;
+        const textAlign = style.align || defaultStyle.align || 'left';
+        const textVerticalAlign = style.verticalAlign || defaultStyle.verticalAlign;
 
         const boxY = adjustTextY(baseY, outerHeight, textVerticalAlign);
         let textX = baseX;
@@ -462,8 +462,9 @@ class ZRText extends Displayable<TextProps> {
 
         const baseX = style.x || 0;
         const baseY = style.y || 0;
-        const textAlign = style.align;
-        const textVerticalAlign = style.verticalAlign;
+        const defaultStyle = this._defaultStyle;
+        const textAlign = style.align || defaultStyle.align;
+        const textVerticalAlign = style.verticalAlign || defaultStyle.verticalAlign;
 
         const boxX = adjustTextX(baseX, outerWidth, textAlign);
         const boxY = adjustTextY(baseY, outerHeight, textVerticalAlign);
