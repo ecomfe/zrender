@@ -127,7 +127,7 @@ export default class Animation extends Eventful {
         animator.animation = null;
     }
 
-    _update() {
+    update() {
         const time = new Date().getTime() - this._pausedTime;
         const delta = time - this._time;
         let clip = this._clipsHead;
@@ -169,7 +169,7 @@ export default class Animation extends Eventful {
 
                 requestAnimationFrame(step);
 
-                !self._paused && self._update();
+                !self._paused && self.update();
             }
         }
 

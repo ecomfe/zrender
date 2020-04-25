@@ -12,6 +12,7 @@ import Rect from './shape/Rect';
 import BoundingRect from '../core/BoundingRect';
 import { MatrixArray } from '../core/matrix';
 import Displayable, { DisplayableStatePropNames, DisplayableProps } from './Displayable';
+import Path from './Path';
 
 type TextContentBlock = ReturnType<typeof parseRichText>
 type TextLine = TextContentBlock['lines'][0]
@@ -195,6 +196,13 @@ class ZRText extends Displayable<TextProps> {
 
     style: TextStyleProps
 
+    /**
+     * How to handling label overlap
+     *
+     * hidden:
+     */
+    overlap: 'hidden' | 'show' | 'blur'
+
     private _children: (ZRImage | Rect | TSpan)[] = []
 
     private _childCursor: 0
@@ -230,6 +238,18 @@ class ZRText extends Displayable<TextProps> {
         super.update();
     }
 
+
+    getComputedTransform() {
+        if (this.__hostTarget) {
+            // Update host target transform
+            this.__hostTarget.getComputedTransform();
+            // Update text position.
+            this.__hostTarget.updateInnerText();
+        }
+
+        return super.getComputedTransform();
+    }
+
     private _updateSubTexts() {
         // Reset child visit cursor
         this._childCursor = 0;
@@ -241,6 +261,11 @@ class ZRText extends Displayable<TextProps> {
 
         this._children.length = this._childCursor;
 
+        this.styleUpdated();
+    }
+
+    styleUpdated() {
+        this.__dirty &= ~Path.STYLE_CHANGED_BIT;
     }
 
     getBoundingRect(): BoundingRect {

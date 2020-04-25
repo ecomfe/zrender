@@ -8,7 +8,6 @@ import BoundingRect, { RectLike } from './core/BoundingRect';
 import Eventful, {EventQuery, EventCallback} from './core/Eventful';
 import ZRText, { DefaultTextStyle } from './graphic/Text';
 import { calculateTextPosition, TextPositionCalculationResult } from './contain/text';
-import Storage from './Storage';
 import {
     guid,
     isObject,
@@ -16,18 +15,16 @@ import {
     extend,
     indexOf,
     logError,
-    isString,
     mixin,
-    isFunction,
     isArrayLike
 } from './core/util';
 import { Group } from './export';
 
-interface ElementAnimateConfig {
+export interface ElementAnimateConfig {
     duration?: number
     delay?: number
     easing?: AnimationEasing
-    done?: AnimationCallback
+    done?: Function
     /**
      * If force animate
      * Prevent stop animation and callback
@@ -38,6 +35,14 @@ interface ElementAnimateConfig {
      * If use additive animation.
      */
     additive?: boolean
+    /**
+     * If set to final state before animation started.
+     * It can be useful if something you want to calcuate depends on the final state of element.
+     * Like bounding rect for text layouting.
+     *
+     * Only available in animateTo
+     */
+    setToFinal?: boolean
 }
 
 export interface ElementTextConfig {
@@ -72,14 +77,20 @@ export interface ElementTextConfig {
     local?: boolean
 
     /**
+<<<<<<< HEAD
      * `insideFill` is a color string or left empty.
      * If a `textContent` is "inside", its final `fill` will be picked by this priority:
      * `textContent.style.fill` > `textConfig.insideFill` > "auto-calculated-fill"
      * In most cases, "auto-calculated-fill" is white.
+=======
+     * Will be set to textContent.style.fill if position is inside
+     * and textContent.style.fill is not set.
+>>>>>>> next
      */
     insideFill?: string
 
     /**
+<<<<<<< HEAD
      * `insideStroke` is a color string or left empth.
      * If a `textContent` is "inside", its final `fill` will be picked by this priority:
      * `textContent.style.stroke` > `textConfig.insideStroke` > "auto-calculated-stroke"
@@ -95,6 +106,10 @@ export interface ElementTextConfig {
      * is not good and unexpected in some cases. It not easy and seams uncessary to auto calculate
      * a proper `stroke` for the given `fill`, since they can specify `stroke` themselve.
      * 2. Backward compat.
+=======
+     * Will be set to textContent.style.stroke if position is inside
+     * and textContent.style.stroke is not set.
+>>>>>>> next
      */
     insideStroke?: string
 
@@ -199,9 +214,6 @@ export const PRESERVED_NORMAL_STATE = '__zr_normal__';
 const PRIMARY_STATES_KEYS = ['x', 'y', 'scaleX', 'scaleY', 'originX', 'originY', 'rotation', 'ignore'] as const;
 export type ElementStatePropNames = (typeof PRIMARY_STATES_KEYS)[number] | 'textConfig';
 export type ElementState = Pick<ElementProps, ElementStatePropNames>;
-
-
-type AnimationCallback = () => void
 
 let tmpTextPosCalcRes = {} as TextPositionCalculationResult;
 let tmpBoundingRect = new BoundingRect(0, 0, 0, 0);
@@ -367,10 +379,10 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     update() {
         this.updateTransform();
-        this._updateInnerText();
+        this.updateInnerText();
     }
 
-    private _updateInnerText() {
+    updateInnerText() {
         // Update textContent
         const textEl = this._textContent;
         if (textEl && !textEl.ignore) {
@@ -384,10 +396,14 @@ class Element<Props extends ElementProps = ElementProps> {
 
             let textStyleChanged = false;
 
+            // NOTE: Can't be used both as normal element and as textContent.
             if (isLocal) {
                 // Apply host's transform.
                 // TODO parent is always be group for developers. But can be displayble inside.
                 textEl.parent = this as unknown as Group;
+            }
+            else {
+                textEl.parent = null;
             }
 
             // Force set attached text's position if `position` is in config.
@@ -536,7 +552,7 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     hide() {
         this.ignore = true;
-        this.__zr && this.__zr.refresh();
+        this.markRedraw();
     }
 
     /**
@@ -544,7 +560,7 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     show() {
         this.ignore = false;
-        this.__zr && this.__zr.refresh();
+        this.markRedraw();
     }
 
     attr(keyOrObj: Props): this
@@ -826,6 +842,10 @@ class Element<Props extends ElementProps = ElementProps> {
             this.removeTextContent();
         }
 
+        if (textEl.__zr && !textEl.__hostTarget) {
+            throw new Error('Text element has been added to zrender.');
+        }
+
         this._textContent = textEl;
 
         this._attachComponent(textEl);
@@ -1016,8 +1036,7 @@ class Element<Props extends ElementProps = ElementProps> {
      *      done: () => { // done }
      *  })
      */
-
-    animateTo(target: Props, cfg: ElementAnimateConfig) {
+    animateTo(target: Props, cfg?: ElementAnimateConfig) {
         animateTo(this, target, cfg);
     }
 
@@ -1027,7 +1046,7 @@ class Element<Props extends ElementProps = ElementProps> {
      */
 
     // Overload definitions
-    animateFrom(target: Props, cfg: ElementAnimateConfig) {
+    animateFrom(target: Props, cfg: Omit<ElementAnimateConfig, 'setToFinal'>) {
         animateTo(this, target, cfg, true);
     }
 
@@ -1149,9 +1168,7 @@ function animateTo<T>(
         '',
         animatable,
         target,
-        cfg.duration,
-        cfg.delay,
-        cfg.additive,
+        cfg,
         animators,
         reverse
     );
@@ -1201,14 +1218,16 @@ function animateToShallow<T>(
     topKey: string,
     source: Dictionary<any>,
     target: Dictionary<any>,
-    time: number,
-    delay: number,
-    additive: boolean,
+    cfg: ElementAnimateConfig,
     animators: Animator<any>[],
     reverse: boolean    // If `true`, animate from the `target` to current state.
 ) {
     const animatableKeys: string[] = [];
     const targetKeys = keys(target);
+    const duration = cfg.duration;
+    const delay = cfg.delay;
+    const additive = cfg.additive;
+    const setToFinal = cfg.setToFinal;
     for (let k = 0; k < targetKeys.length; k++) {
         const innerKey = targetKeys[k] as string;
 
@@ -1229,9 +1248,7 @@ function animateToShallow<T>(
                     innerKey,
                     source[innerKey],
                     target[innerKey],
-                    time,
-                    delay,
-                    additive,
+                    cfg,
                     animators,
                     reverse
                 );
@@ -1250,13 +1267,24 @@ function animateToShallow<T>(
     const keyLen = animatableKeys.length;
 
     if (keyLen > 0) {
+        let revertedSource: Dictionary<any>;
         let reversedTarget: Dictionary<any>;
+        let sourceClone: Dictionary<any>;
         if (reverse) {
             reversedTarget = {};
+            revertedSource = {};
             for (let i = 0; i < keyLen; i++) {
-                let innerKey = animatableKeys[i];
+                const innerKey = animatableKeys[i];
                 reversedTarget[innerKey] = source[innerKey];
                 // Animate from target
+                revertedSource[innerKey] = target[innerKey];
+            }
+        }
+        else if (setToFinal) {
+            sourceClone = {};
+            for (let i = 0; i < keyLen; i++) {
+                const innerKey = animatableKeys[i];
+                sourceClone[innerKey] = source[innerKey];
                 source[innerKey] = target[innerKey];
             }
         }
@@ -1284,8 +1312,15 @@ function animateToShallow<T>(
         const animator = new Animator(source, false, additive ? lastAnimator : null);
         animator.targetName = topKey;
 
+        if (revertedSource) {
+            animator.whenWithKeys(0, revertedSource, animatableKeys);
+        }
+        if (sourceClone) {
+            animator.whenWithKeys(0, sourceClone, animatableKeys);
+        }
+
         animator.whenWithKeys(
-            time == null ? 500 : time,
+            duration == null ? 500 : duration,
             reverse ? reversedTarget : target,
             animatableKeys
         ).delay(delay || 0);

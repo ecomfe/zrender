@@ -2,26 +2,25 @@
  * @module echarts/core/BoundingRect
  */
 
-import * as vec2 from './vector';
 import * as matrix from './matrix';
+import Point, { PointLike } from './Point';
 
-const v2ApplyTransform = vec2.applyTransform;
 const mathMin = Math.min;
 const mathMax = Math.max;
 
-const lt: vec2.VectorArray = [];
-const rb: vec2.VectorArray = [];
-const lb: vec2.VectorArray = [];
-const rt: vec2.VectorArray = [];
+const lt = new Point();
+const rb = new Point();
+const lb = new Point();
+const rt = new Point();
+
+const minTv = new Point();
+const maxTv = new Point();
 
 class BoundingRect {
 
     x: number
-
     y: number
-
     width: number
-
     height: number
 
     constructor(x: number, y: number, width: number, height: number) {
@@ -58,28 +57,7 @@ class BoundingRect {
     }
 
     applyTransform(m: matrix.MatrixArray) {
-        // In case usage like this
-        // el.getBoundingRect().applyTransform(el.transform)
-        // And element has no transform
-        if (!m) {
-            return;
-        }
-        lt[0] = lb[0] = this.x;
-        lt[1] = rt[1] = this.y;
-        rb[0] = rt[0] = this.x + this.width;
-        rb[1] = lb[1] = this.y + this.height;
-
-        v2ApplyTransform(lt, lt, m);
-        v2ApplyTransform(rb, rb, m);
-        v2ApplyTransform(lb, lb, m);
-        v2ApplyTransform(rt, rt, m);
-
-        this.x = mathMin(lt[0], rb[0], lb[0], rt[0]);
-        this.y = mathMin(lt[1], rb[1], lb[1], rt[1]);
-        const maxX = mathMax(lt[0], rb[0], lb[0], rt[0]);
-        const maxY = mathMax(lt[1], rb[1], lb[1], rt[1]);
-        this.width = maxX - this.x;
-        this.height = maxY - this.y;
+        BoundingRect.applyTransform(this, this, m);
     }
 
     calculateTransform(b: RectLike): matrix.MatrixArray {
@@ -97,7 +75,7 @@ class BoundingRect {
         return m;
     }
 
-    intersect(b: RectLike): boolean {
+    intersect(b: RectLike, mtv?: PointLike): boolean {
         if (!b) {
             return false;
         }
@@ -118,7 +96,69 @@ class BoundingRect {
         const by0 = b.y;
         const by1 = b.y + b.height;
 
-        return !(ax1 < bx0 || bx1 < ax0 || ay1 < by0 || by1 < ay0);
+        let overlap = !(ax1 < bx0 || bx1 < ax0 || ay1 < by0 || by1 < ay0);
+        if (mtv) {
+            let dMin = Infinity;
+            let dMax = 0;
+            const d0 = Math.abs(ax1 - bx0);
+            const d1 = Math.abs(bx1 - ax0);
+            const d2 = Math.abs(ay1 - by0);
+            const d3 = Math.abs(by1 - ay0);
+            const dx = Math.min(d0, d1);
+            const dy = Math.min(d2, d3);
+            // On x axis
+            if (ax1 < bx0 || bx1 < ax0) {
+                if (dx > dMax) {
+                    dMax = dx;
+                    if (d0 < d1) {
+                        Point.set(maxTv, -d0, 0); // b is on the right
+                    }
+                    else {
+                        Point.set(maxTv, d1, 0);  // b is on the left
+                    }
+                }
+            }
+            else {
+                if (dx < dMin) {
+                    dMin = dx;
+                    if (d0 < d1) {
+                        Point.set(minTv, d0, 0); // b is on the right
+                    }
+                    else {
+                        Point.set(minTv, -d1, 0);  // b is on the left
+                    }
+                }
+            }
+
+            // On y axis
+            if (ay1 < by0 || by1 < ay0) {
+                if (dy > dMax) {
+                    dMax = dy;
+                    if (d2 < d3) {
+                        Point.set(maxTv, 0, -d2); // b is on the bottom(larger y)
+                    }
+                    else {
+                        Point.set(maxTv, 0, d3);  // b is on the top(smaller y)
+                    }
+                }
+            }
+            else {
+                if (dx < dMin) {
+                    dMin = dx;
+                    if (d2 < d3) {
+                        Point.set(minTv, 0, d2); // b is on the bottom
+                    }
+                    else {
+                        Point.set(minTv, 0, -d3);  // b is on the top
+                    }
+                }
+            }
+        }
+
+        if (mtv) {
+            Point.copy(mtv, overlap ? minTv : maxTv);
+        }
+        return overlap;
     }
 
     contain(x: number, y: number): boolean {
@@ -137,13 +177,10 @@ class BoundingRect {
      * Copy from another rect
      */
     copy(other: RectLike) {
-        this.x = other.x;
-        this.y = other.y;
-        this.width = other.width;
-        this.height = other.height;
+        BoundingRect.copy(this, other);
     }
 
-    plain() {
+    plain(): RectLike {
         return {
             x: this.x,
             y: this.y,
@@ -154,6 +191,55 @@ class BoundingRect {
 
     static create(rect: RectLike): BoundingRect {
         return new BoundingRect(rect.x, rect.y, rect.width, rect.height);
+    }
+
+    static copy(target: RectLike, source: RectLike) {
+        target.x = source.x;
+        target.y = source.y;
+        target.width = source.width;
+        target.height = source.height;
+    }
+
+    static applyTransform(target: RectLike, source: RectLike, m: matrix.MatrixArray) {
+        // In case usage like this
+        // el.getBoundingRect().applyTransform(el.transform)
+        // And element has no transform
+        if (!m) {
+            if (target !== source) {
+                BoundingRect.copy(target, source);
+            }
+            return;
+        }
+        // Fast path when there is no rotation in matrix.
+        if (m[1] < 1e-5 && m[2] < 1e-5) {
+            const sx = m[0];
+            const sy = m[3];
+            const tx = m[4];
+            const ty = m[5];
+            target.x = source.x * sx + tx;
+            target.y = source.y * sy + ty;
+            target.width = source.width * sx;
+            target.height = source.height * sy;
+            return;
+        }
+
+        // source and target can be same instance.
+        lt.x = lb.x = source.x;
+        lt.y = rt.y = source.y;
+        rb.x = rt.x = source.x + source.width;
+        rb.y = lb.y = source.y + source.height;
+
+        lt.transform(m);
+        rt.transform(m);
+        rb.transform(m);
+        lb.transform(m);
+
+        target.x = mathMin(lt.x, rb.x, lb.x, rt.x);
+        target.y = mathMin(lt.y, rb.y, lb.y, rt.y);
+        const maxX = mathMax(lt.x, rb.x, lb.x, rt.x);
+        const maxY = mathMax(lt.y, rb.y, lb.y, rt.y);
+        target.width = maxX - target.x;
+        target.height = maxY - target.y;
     }
 }
 

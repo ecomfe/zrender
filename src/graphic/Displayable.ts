@@ -279,6 +279,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
      * Replace style property.
      * It will create a new style if given obj is not a valid style object.
      */
+     // PENDING should not createStyle if it's an style object.
     useStyle(obj: Props['style']) {
         if (!obj[STYLE_MAGIC_KEY]) {
             obj = this.createStyle(obj);

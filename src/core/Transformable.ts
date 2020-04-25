@@ -37,7 +37,6 @@ class Transformable {
      */
     globalScaleRatio = 1
 
-
     transform: matrix.MatrixArray
     invTransform: matrix.MatrixArray
 
@@ -65,8 +64,7 @@ class Transformable {
     }
 
     /**
-     * 判断是否需要有坐标变换
-     * 如果有坐标变换, 则从position, rotation, scale以及父节点的transform计算出自身的transform矩阵
+     * If needs to compute transform
      */
     needLocalTransform(): boolean {
         return isNotAroundZero(this.rotation)
@@ -76,6 +74,9 @@ class Transformable {
             || isNotAroundZero(this.scaleY - 1);
     }
 
+    /**
+     * Update global transform
+     */
     updateTransform() {
         const parent = this.parent;
         const parentHasTransform = parent && parent.transform;
@@ -108,6 +109,10 @@ class Transformable {
         // 保存这个变换矩阵
         this.transform = m;
 
+        this._resolveGlobalScaleRatio(m);
+    }
+
+    private _resolveGlobalScaleRatio(m: matrix.MatrixArray) {
         const globalScaleRatio = this.globalScaleRatio;
         if (globalScaleRatio != null && globalScaleRatio !== 1) {
             this.getGlobalScale(scaleTmp);
@@ -125,11 +130,33 @@ class Transformable {
         this.invTransform = this.invTransform || matrix.create();
         matrix.invert(this.invTransform, m);
     }
-
+    /**
+     * Get computed local transform
+     */
     getLocalTransform(m?: matrix.MatrixArray) {
         return Transformable.getLocalTransform(this, m);
     }
 
+    /**
+     * Get computed global transform
+     * NOTE: this method will force update transform on all ancestors.
+     * Please be aware of the potential performance cost.
+     */
+    getComputedTransform() {
+        let transformNode: Transformable = this;
+        const ancestors: Transformable[] = [];
+        while (transformNode) {
+            ancestors.push(transformNode);
+            transformNode = transformNode.parent;
+        }
+
+        // Update from topdown.
+        while (transformNode = ancestors.pop()) {
+            transformNode.updateTransform();
+        }
+
+        return this.transform;
+    }
 
     setLocalTransform(m: vector.VectorArray) {
         if (!m) {
@@ -144,10 +171,19 @@ class Transformable {
         if (isNotAroundZero(sy - 1)) {
             sy = Math.sqrt(sy);
         }
+
+        this.rotation = Math.atan2(m[1] / sy, m[0] / sx);
+
         if (m[0] < 0) {
             sx = -sx;
         }
         if (m[3] < 0) {
+            sy = -sy;
+        }
+        // Flip can be both represented with rotation and negative scale.
+        if (sx < 0 && sy < 0) {
+            this.rotation += Math.PI;
+            sx = -sx;
             sy = -sy;
         }
 
@@ -155,8 +191,6 @@ class Transformable {
         this.y = m[5];
         this.scaleX = sx;
         this.scaleY = sy;
-
-        this.rotation = Math.atan2(-m[1] / sy, m[0] / sx);
     }
     /**
      * 分解`transform`矩阵到`position`, `rotation`, `scale`
@@ -242,6 +276,7 @@ class Transformable {
             ? Math.sqrt(abs(m[0] * m[3] - m[2] * m[1]))
             : 1;
     }
+
 
     static getLocalTransform(target: Transformable, m?: matrix.MatrixArray): matrix.MatrixArray {
         m = m || [];
