@@ -77,20 +77,14 @@ export interface ElementTextConfig {
     local?: boolean
 
     /**
-<<<<<<< HEAD
      * `insideFill` is a color string or left empty.
      * If a `textContent` is "inside", its final `fill` will be picked by this priority:
      * `textContent.style.fill` > `textConfig.insideFill` > "auto-calculated-fill"
      * In most cases, "auto-calculated-fill" is white.
-=======
-     * Will be set to textContent.style.fill if position is inside
-     * and textContent.style.fill is not set.
->>>>>>> next
      */
     insideFill?: string
 
     /**
-<<<<<<< HEAD
      * `insideStroke` is a color string or left empth.
      * If a `textContent` is "inside", its final `fill` will be picked by this priority:
      * `textContent.style.stroke` > `textConfig.insideStroke` > "auto-calculated-stroke"
@@ -106,10 +100,6 @@ export interface ElementTextConfig {
      * is not good and unexpected in some cases. It not easy and seams uncessary to auto calculate
      * a proper `stroke` for the given `fill`, since they can specify `stroke` themselve.
      * 2. Backward compat.
-=======
-     * Will be set to textContent.style.stroke if position is inside
-     * and textContent.style.stroke is not set.
->>>>>>> next
      */
     insideStroke?: string
 
