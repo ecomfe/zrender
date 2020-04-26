@@ -184,7 +184,7 @@ export function parsePlainText(
     let lines: string[];
 
     if (width != null && style.overflow === 'wrap') {
-        lines = wrapText(text, style.font, width, 0).lines;
+        lines = text ? wrapText(text, style.font, width, 0).lines : [];
     }
     else {
         lines = text ? text.split('\n') : [];

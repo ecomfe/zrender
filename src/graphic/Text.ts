@@ -358,10 +358,10 @@ class ZRText extends Displayable<TextProps> {
 
     private _updatePlainTexts() {
         const style = this.style;
-        const text = style.text || '';
         const textFont = style.font || DEFAULT_FONT;
         const textPadding = style.padding as number[];
 
+        const text = getStyleText(style);
         const contentBlock = parsePlainText(text, style);
         const needDrawBg = needDrawBackground(style);
         const bgColorDrawn = !!(style.backgroundColor);
@@ -478,7 +478,8 @@ class ZRText extends Displayable<TextProps> {
         const style = this.style;
 
         // TODO Only parse when text changed?
-        const contentBlock = parseRichText(style.text || '', style);
+        const text = getStyleText(style);
+        const contentBlock = parseRichText(text, style);
 
         const contentWidth = contentBlock.width;
         const outerWidth = contentBlock.outerWidth;
@@ -804,6 +805,14 @@ function getTextXForPadding(x: number, textAlign: string, textPadding: number[])
         : textAlign === 'center'
         ? (x + textPadding[3] / 2 - textPadding[1] / 2)
         : (x + textPadding[3]);
+}
+
+function getStyleText(style: TextStylePropsPart): string {
+    // Compat: set number to text is supported.
+    // set null/undefined to text is supported.
+    let text = style.text;
+    text != null && (text += '');
+    return text;
 }
 
 /**
