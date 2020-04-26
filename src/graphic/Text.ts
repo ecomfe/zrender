@@ -244,7 +244,7 @@ class ZRText extends Displayable<TextProps> {
             // Update host target transform
             this.__hostTarget.getComputedTransform();
             // Update text position.
-            this.__hostTarget.updateInnerText();
+            this.__hostTarget.updateInnerText(true);
         }
 
         return super.getComputedTransform();
