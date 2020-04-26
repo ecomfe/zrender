@@ -372,10 +372,10 @@ class Element<Props extends ElementProps = ElementProps> {
         this.updateInnerText();
     }
 
-    updateInnerText() {
+    updateInnerText(forceUpdate?: boolean) {
         // Update textContent
         const textEl = this._textContent;
-        if (textEl && !textEl.ignore) {
+        if (textEl && (!textEl.ignore || forceUpdate)) {
             if (!this.textConfig) {
                 this.textConfig = {};
             }
