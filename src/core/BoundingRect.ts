@@ -220,6 +220,14 @@ class BoundingRect {
             target.y = source.y * sy + ty;
             target.width = source.width * sx;
             target.height = source.height * sy;
+            if (target.width < 0) {
+                target.x += target.width;
+                target.width = -target.width;
+            }
+            if (target.height < 0) {
+                target.y += target.height;
+                target.height = -target.height;
+            }
             return;
         }
 
