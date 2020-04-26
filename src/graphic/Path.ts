@@ -198,11 +198,9 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
 
     protected getInsideTextStroke(textFill?: string) {
         const pathFill = this.style.fill;
-        if (textFill === '#fff') { // Draw border if textFill is white.
-            return pathFill as string;
-        }
-        else {    // Not stroke on none fill object or gradient object
-            return null;
+        // Not stroke on none fill object or gradient object
+        if (isString(pathFill)) {
+            return pathFill;
         }
     }
 

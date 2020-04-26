@@ -65,6 +65,7 @@
             <label>textRotation:</label>
             <button onclick="startTextRotation();">Start</button>
             <button onclick="stopTextRotation();">Stop</button>
+            <button onclick="updateToURL('textRotation', 0.5 * Math.PI);">0.5 * Math.PI</button>
             <button onclick="updateToURL('textRotation', 0.1 * Math.PI);">0.1 * Math.PI</button>
             <button onclick="updateToURL('textRotation', -0.3 * Math.PI);">-0.3 * Math.PI</button>
             <button onclick="removeToURL('textRotation');">Remove</button>
@@ -73,13 +74,13 @@
                 var textRotation = _storage.textRotation;
                 for (var i = 0; i < _shapes1.length; i++) {
                     var shape = _shapes1[i];
-                    shape.textContent.attr({
+                    shape.getTextContent().attr({
                         rotation: textRotation
                     });
                 }
                 for (var i = 0; i < _shapes2.length; i++) {
                     var shape = _shapes2[i];
-                    shape.textContent.attr({
+                    shape.getTextContent().attr({
                         rotation: clone(textRotation)
                     });
                 }
@@ -95,16 +96,19 @@
             <script>
             _updaters.textOrigin = function () {
                 var textOrigin = _storage.textOrigin;
+
                 for (var i = 0; i < _shapes1.length; i++) {
                     var shape = _shapes1[i];
-                    shape.textContent.attr({
-                        origin: clone(textOrigin)
+                    shape.getTextContent().attr({
+                        originX: textOrigin ? textOrigin[0] : 0,
+                        originY: textOrigin ? textOrigin[1] : 0
                     });
                 }
                 for (var i = 0; i < _shapes2.length; i++) {
                     var shape = _shapes2[i];
-                    shape.textContent.attr({
-                        textOrigin: clone(textOrigin)
+                    shape.getTextContent().attr({
+                        originX: textOrigin ? textOrigin[0] : 0,
+                        originY: textOrigin ? textOrigin[1] : 0
                     });
                 }
             };
@@ -120,7 +124,7 @@
                 var hasBg = _storage.hasBg;
                 for (var i = 0; i < _shapes1.length; i++) {
                     var shape = _shapes1[i];
-                    shape.textContent.attr({
+                    shape.getTextContent().attr({
                         style: {
                             borderRadius: 3,
                             backgroundColor: 'rgba(0, 255, 0, 0.3)',
@@ -135,7 +139,7 @@
                 }
                 for (var i = 0; i < _shapes2.length; i++) {
                     var shape = _shapes2[i];
-                    shape.textContent.attr({
+                    shape.getTextContent().attr({
                         style: {
                             borderRadius: 8,
                             backgroundColor: 'rgba(0, 255, 0, 0.3)',
@@ -209,7 +213,7 @@
             _updaters.padding = function () {
                 for (var i = 0; i < _shapes1.length; i++) {
                     var shape = _shapes1[i];
-                    shape.textContent.attr({
+                    shape.getTextContent().attr({
                         style: {
                             padding: clone(_storage.padding)
                         }
@@ -217,7 +221,7 @@
                 }
                 for (var i = 0; i < _shapes2.length; i++) {
                     var shape = _shapes2[i];
-                    shape.textContent.attr({
+                    shape.getTextContent().attr({
                         style: {
                             padding: clone(_storage.padding)
                         }
@@ -238,17 +242,17 @@
                 var textAlign = _storage.textAlign;
                 for (var i = 0; i < _shapes1.length; i++) {
                     var shape = _shapes1[i];
-                    shape.textContent.attr({
+                    shape.getTextContent().attr({
                         style: {
-                            textAlign: textAlign
+                            align: textAlign
                         }
                     });
                 }
                 for (var i = 0; i < _shapes2.length; i++) {
                     var shape = _shapes2[i];
-                    shape.textContent.attr({
+                    shape.getTextContent().attr({
                         style: {
-                            textAlign: textAlign
+                            align: textAlign
                         }
                     });
                 }
@@ -267,7 +271,7 @@
                 var verticalAlign = _storage.verticalAlign;
                 for (var i = 0; i < _shapes1.length; i++) {
                     var shape = _shapes1[i];
-                    shape.textContent.attr({
+                    shape.getTextContent().attr({
                         style: {
                             verticalAlign: verticalAlign
                         }
@@ -275,7 +279,7 @@
                 }
                 for (var i = 0; i < _shapes2.length; i++) {
                     var shape = _shapes2[i];
-                    shape.textContent.attr({
+                    shape.getTextContent().attr({
                         style: {
                             verticalAlign: verticalAlign
                         }
@@ -294,7 +298,7 @@
         </div> -->
 
         <div class="control-block">
-            <label>Add '\n' at char index 3 (only for red rect):</label>
+            <label>Add '\n' at char index 3 (only for plain text rect):</label>
             <button onclick="updateToURL('addLineBreak', true);">Add</button>
             <button onclick="removeToURL('addLineBreak');">Remove</button>
             <script>
@@ -304,7 +308,7 @@
                     var shape = _shapes1[i];
                     var text = shape.__zr_test_text;
                     text = text.substr(0, 3) + '\n' + text.substr(3, text.length - 1);
-                    shape.textContent.attr({
+                    shape.getTextContent().attr({
                         style: {
                             text: text
                         }
@@ -328,7 +332,7 @@
                     for (var j = 0; j < 5; j++) {
                         text += shape.__zr_test_text;
                     }
-                    shape.textContent.attr({
+                    shape.getTextContent().attr({
                         style: {
                             text: text,
                             truncate: truncate
@@ -387,9 +391,7 @@
                         }
                     }),
                     textConfig: {
-                        position: textPos,
-                        insideFill: 'auto',
-                        insideStroke: 'auto'
+                        position: textPos
                     },
                     __zr_test_text: text,
                     shape: {

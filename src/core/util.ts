@@ -717,4 +717,8 @@ export function createObject<T>(proto?: object, properties?: T): T {
     return obj;
 }
 
+export function hasOwn(own: object, prop: string): boolean {
+    return own.hasOwnProperty(prop);
+}
+
 export function noop() {}

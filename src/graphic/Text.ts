@@ -181,9 +181,14 @@ export interface TextProps extends DisplayableProps {
 
 export type TextState = Pick<TextProps, DisplayableStatePropNames>
 
-const DEFAULT_RICH_TEXT_COLOR: Pick<TextStyleProps, 'fill' | 'stroke' | 'lineWidth'> = {
+export type DefaultTextStyle = Pick<TextStyleProps, 'fill' | 'stroke' | 'align' | 'verticalAlign'> & {
+    autoStroke?: boolean
+};
+
+const DEFAULT_RICH_TEXT_COLOR = {
     fill: '#000'
 };
+const DEFAULT_STROKE_LINE_WIDTH = 2;
 
 class ZRText extends Displayable<TextProps> {
 
@@ -202,7 +207,7 @@ class ZRText extends Displayable<TextProps> {
 
     private _childCursor: 0
 
-    private _defaultStyle = DEFAULT_RICH_TEXT_COLOR
+    private _defaultStyle: DefaultTextStyle = DEFAULT_RICH_TEXT_COLOR
 
     constructor(opts?: TextProps) {
         super();
@@ -297,7 +302,7 @@ class ZRText extends Displayable<TextProps> {
 
 
     // Can be set in Element. To calculate text fill automatically when textContent is inside element
-    setDefaultTextStyle(defaultTextStyle: Pick<TextStyleProps, 'fill' | 'stroke' | 'lineWidth'>) {
+    setDefaultTextStyle(defaultTextStyle: DefaultTextStyle) {
         // Use builtin if defaultTextStyle is not given.
         this._defaultStyle = defaultTextStyle || DEFAULT_RICH_TEXT_COLOR;
     }
@@ -359,6 +364,7 @@ class ZRText extends Displayable<TextProps> {
 
         const contentBlock = parsePlainText(text, style);
         const needDrawBg = needDrawBackground(style);
+        const bgColorDrawn = !!(style.backgroundColor);
 
         let outerHeight = contentBlock.outerHeight;
 
@@ -369,8 +375,8 @@ class ZRText extends Displayable<TextProps> {
 
         const baseX = style.x || 0;
         const baseY = style.y || 0;
-        const textAlign = style.align || 'left';
-        const textVerticalAlign = style.verticalAlign;
+        const textAlign = style.align || defaultStyle.align || 'left';
+        const textVerticalAlign = style.verticalAlign || defaultStyle.verticalAlign;
 
         const boxY = adjustTextY(baseY, outerHeight, textVerticalAlign);
         let textX = baseX;
@@ -393,9 +399,22 @@ class ZRText extends Displayable<TextProps> {
         // `textBaseline` is set as 'middle'.
         textY += lineHeight / 2;
 
-        const textStrokeLineWidth = style.lineWidth;
-        const textStroke = getStroke('stroke' in style ? style.stroke : defaultStyle.stroke);
-        const textFill = getFill('fill' in style ? style.fill : defaultStyle.fill);
+        let defaultLineWidth = 0;
+        let useDefaultFill = false;
+        const textFill = getFill(
+            'fill' in style
+                ? style.fill
+                : (useDefaultFill = true, defaultStyle.fill)
+        );
+        const textStroke = getStroke(
+            'stroke' in style
+                ? style.stroke
+                : (!bgColorDrawn
+                    && (!defaultStyle.autoStroke || useDefaultFill)
+                )
+                ? (defaultLineWidth = DEFAULT_STROKE_LINE_WIDTH, defaultStyle.stroke)
+                : null
+        );
 
         const hasShadow = style.textShadowBlur > 0;
 
@@ -433,7 +452,7 @@ class ZRText extends Displayable<TextProps> {
 
             if (textStroke) {
                 subElStyle.stroke = textStroke as string;
-                subElStyle.lineWidth = textStrokeLineWidth || defaultStyle.lineWidth;
+                subElStyle.lineWidth = style.lineWidth || defaultLineWidth;
             }
             if (textFill) {
                 subElStyle.fill = textFill as string;
@@ -468,8 +487,9 @@ class ZRText extends Displayable<TextProps> {
 
         const baseX = style.x || 0;
         const baseY = style.y || 0;
-        const textAlign = style.align;
-        const textVerticalAlign = style.verticalAlign;
+        const defaultStyle = this._defaultStyle;
+        const textAlign = style.align || defaultStyle.align;
+        const textVerticalAlign = style.verticalAlign || defaultStyle.verticalAlign;
 
         const boxX = adjustTextX(baseX, outerWidth, textAlign);
         const boxY = adjustTextY(baseY, outerHeight, textVerticalAlign);
@@ -484,6 +504,7 @@ class ZRText extends Displayable<TextProps> {
         if (needDrawBackground(style)) {
             this._renderBackground(style, boxX, boxY, outerWidth, outerHeight);
         }
+        const bgColorDrawn = !!(style.backgroundColor);
 
         for (let i = 0; i < contentBlock.lines.length; i++) {
             const line = contentBlock.lines[i];
@@ -502,7 +523,7 @@ class ZRText extends Displayable<TextProps> {
                 leftIndex < tokenCount
                 && (token = tokens[leftIndex], !token.textAlign || token.textAlign === 'left')
             ) {
-                this._placeToken(token, style, lineHeight, lineTop, lineXLeft, 'left');
+                this._placeToken(token, style, lineHeight, lineTop, lineXLeft, 'left', bgColorDrawn);
                 usedWidth -= token.width;
                 lineXLeft += token.width;
                 leftIndex++;
@@ -512,7 +533,7 @@ class ZRText extends Displayable<TextProps> {
                 rightIndex >= 0
                 && (token = tokens[rightIndex], token.textAlign === 'right')
             ) {
-                this._placeToken(token, style, lineHeight, lineTop, lineXRight, 'right');
+                this._placeToken(token, style, lineHeight, lineTop, lineXRight, 'right', bgColorDrawn);
                 usedWidth -= token.width;
                 lineXRight -= token.width;
                 rightIndex--;
@@ -523,7 +544,7 @@ class ZRText extends Displayable<TextProps> {
             while (leftIndex <= rightIndex) {
                 token = tokens[leftIndex];
                 // Consider width specified by user, use 'center' rather than 'left'.
-                this._placeToken(token, style, lineHeight, lineTop, lineXLeft + token.width / 2, 'center');
+                this._placeToken(token, style, lineHeight, lineTop, lineXLeft + token.width / 2, 'center', bgColorDrawn);
                 lineXLeft += token.width;
                 leftIndex++;
             }
@@ -538,7 +559,8 @@ class ZRText extends Displayable<TextProps> {
         lineHeight: number,
         lineTop: number,
         x: number,
-        textAlign: string
+        textAlign: string,
+        parentBgColorDrawn: boolean
     ) {
         const tokenStyle = style.rich[token.styleName] || {};
         tokenStyle.text = token.text;
@@ -554,7 +576,8 @@ class ZRText extends Displayable<TextProps> {
             y = lineTop + lineHeight - token.height / 2;
         }
 
-        !token.isLineHolder && needDrawBackground(tokenStyle) && this._renderBackground(
+        const needDrawBg = !token.isLineHolder && needDrawBackground(tokenStyle);
+        needDrawBg && this._renderBackground(
             tokenStyle,
             textAlign === 'right'
                 ? x - token.width
@@ -565,6 +588,7 @@ class ZRText extends Displayable<TextProps> {
             token.width,
             token.height
         );
+        const bgColorDrawn = !!tokenStyle.backgroundColor;
 
         const textPadding = token.textPadding;
         if (textPadding) {
@@ -578,13 +602,22 @@ class ZRText extends Displayable<TextProps> {
         el.useStyle(subElStyle);
 
         const defaultStyle = this._defaultStyle;
-        const textStroke = getStroke(
-            'stroke' in tokenStyle ? tokenStyle.stroke
-               : 'stroke' in style ? style.stroke  : defaultStyle.stroke
-        );
+        let useDefaultFill = false;
+        let defaultLineWidth = 0;
         const textFill = getStroke(
             'fill' in tokenStyle ? tokenStyle.fill
-               : 'fill' in style ? style.fill  : defaultStyle.fill
+                : 'fill' in style ? style.fill
+                : (useDefaultFill = true, defaultStyle.fill)
+        );
+        const textStroke = getStroke(
+            'stroke' in tokenStyle ? tokenStyle.stroke
+                : 'stroke' in style ? style.stroke
+                : (
+                    !bgColorDrawn
+                    && !parentBgColorDrawn
+                    && (!defaultStyle.autoStroke || useDefaultFill)
+                ) ? (defaultLineWidth = DEFAULT_STROKE_LINE_WIDTH, defaultStyle.stroke)
+                : null
         );
 
         const hasShadow = tokenStyle.textShadowBlur > 0
@@ -607,7 +640,7 @@ class ZRText extends Displayable<TextProps> {
         subElStyle.font = token.font || DEFAULT_FONT;
 
         if (textStroke) {
-            subElStyle.lineWidth = retrieve3(tokenStyle.lineWidth, style.lineWidth, defaultStyle.lineWidth);
+            subElStyle.lineWidth = retrieve3(tokenStyle.lineWidth, style.lineWidth, defaultLineWidth);
             subElStyle.stroke = textStroke;
         }
         if (textFill) {

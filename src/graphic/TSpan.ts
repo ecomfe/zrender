@@ -28,6 +28,7 @@ export const DEFAULT_TSPAN_STYLE: TSpanStyleProps = defaults({
     textBaseline: 'top'
 }, DEFAULT_PATH_STYLE);
 
+
 interface TSpanProps extends DisplayableProps {
     style?: TSpanStyleProps
 }
