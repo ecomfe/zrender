@@ -104,13 +104,15 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, inBatch: boolean) {
             el.__canvasStrokeGradient = strokeGradient;
         }
         if (hasFillPattern) {
-            fillPattern = el.__dirty
+            // Pattern might be null if image not ready (even created from dataURI)
+            fillPattern = (el.__dirty || !el.__canvasFillPattern)
                 ? createCanvasPattern(ctx, fill as PatternObject, el)
                 : el.__canvasFillPattern;
             el.__canvasFillPattern = fillPattern;
         }
         if (hasStrokePattern) {
-            strokePattern = el.__dirty
+            // Pattern might be null if image not ready (even created from dataURI)
+            strokePattern = (el.__dirty || !el.__canvasStrokePattern)
                 ? createCanvasPattern(ctx, stroke as PatternObject, el)
                 : el.__canvasStrokePattern;
             el.__canvasStrokePattern = fillPattern;
