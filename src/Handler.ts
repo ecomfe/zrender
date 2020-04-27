@@ -454,7 +454,10 @@ function isHover(displayable: Displayable, x: number, y: number) {
             if (el.silent) {
                 isSilent = true;
             }
-            el = el.parent;
+            // Consider when el is textContent, also need to be silent
+            // if any of its host el and its ancestors is silent.
+            const hostEl = el.__hostTarget;
+            el = hostEl ? hostEl : el.parent;
         }
         return isSilent ? SILENT : true;
     }
