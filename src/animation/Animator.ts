@@ -223,7 +223,7 @@ function catmullRomInterpolate2DArray(
 }
 
 
-function cloneValue(value: InterpolatableType) {
+export function cloneValue(value: InterpolatableType) {
     if (isArrayLike(value)) {
         const len = value.length;
         if (isArrayLike(value[0])) {

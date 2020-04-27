@@ -1,6 +1,6 @@
 import Transformable from './core/Transformable';
 import { AnimationEasing } from './animation/easing';
-import Animator from './animation/Animator';
+import Animator, {cloneValue} from './animation/Animator';
 import { ZRenderType } from './zrender';
 import { Dictionary, ElementEventName, ZRRawEvent, BuiltinTextPosition, AllPropTypes, TextVerticalAlign, TextAlign } from './core/types';
 import Path from './graphic/Path';
@@ -19,6 +19,7 @@ import {
     isArrayLike
 } from './core/util';
 import { Group } from './export';
+import Polyline from './graphic/shape/Polyline';
 
 export interface ElementAnimateConfig {
     duration?: number
@@ -287,6 +288,11 @@ class Element<Props extends ElementProps = ElementProps> {
      * of element will be ignored if textContent.position is set
      */
     private _textContent: ZRText
+
+    /**
+     * Text guide line.
+     */
+    private _textGuide: Polyline
 
     /**
      * Config of textContent. Inlcuding layout, color, ...etc.
@@ -691,6 +697,9 @@ class Element<Props extends ElementProps = ElementProps> {
         if (this._textContent) {
             this._textContent.useState(stateName);
         }
+        if (this._textGuide) {
+            this._textGuide.useState(stateName);
+        }
 
         if (toNormalState) {
             // Clear state
@@ -763,6 +772,10 @@ class Element<Props extends ElementProps = ElementProps> {
      * Like clipPath, textContent
      */
     protected _attachComponent(componentEl: Element) {
+        if (componentEl.__zr && !componentEl.__hostTarget) {
+            console.error('Text element has been added to zrender.');
+        }
+
         const zr = this.__zr;
         if (zr) {
             // Needs to add self to zrender. For rerender triggering, or animation.
@@ -827,7 +840,7 @@ class Element<Props extends ElementProps = ElementProps> {
      * Attach text on element
      */
     setTextContent(textEl: ZRText) {
-        // Remove previous clip path
+        // Remove previous textContent
         if (this._textContent && this._textContent !== textEl) {
             this.removeTextContent();
         }
@@ -851,6 +864,32 @@ class Element<Props extends ElementProps = ElementProps> {
         if (textEl) {
             this._detachComponent(textEl);
             this._textContent = null;
+            this.markRedraw();
+        }
+    }
+
+    getTextGuideLine(): Polyline {
+        return this._textGuide;
+    }
+
+    setTextGuideLine(guideLine: Polyline) {
+        // Remove previous clip path
+        if (this._textGuide && this._textGuide !== guideLine) {
+            this.removeTextGuideLine();
+        }
+
+        this._textGuide = guideLine;
+
+        this._attachComponent(guideLine);
+
+        this.markRedraw();
+    }
+
+    removeTextGuideLine() {
+        const textGuide = this._textGuide;
+        if (textGuide) {
+            this._detachComponent(textGuide);
+            this._textGuide = null;
             this.markRedraw();
         }
     }
@@ -907,6 +946,9 @@ class Element<Props extends ElementProps = ElementProps> {
         if (this._textContent) {
             this._textContent.addSelfToZr(zr);
         }
+        if (this._textGuide) {
+            this._textGuide.addSelfToZr(zr);
+        }
     }
 
     /**
@@ -928,6 +970,9 @@ class Element<Props extends ElementProps = ElementProps> {
         }
         if (this._textContent) {
             this._textContent.removeSelfFromZr(zr);
+        }
+        if (this._textGuide) {
+            this._textGuide.removeSelfFromZr(zr);
         }
     }
 
@@ -1185,24 +1230,50 @@ function animateTo<T>(
     }
 }
 
-/**
- * @example
- *  // Animate position
- *  el._animateToShallow({
- *      position: [10, 10]
- *  })
- *
- *  // Animate shape, style and position in 100ms, delayed 100ms
- *  el._animateToShallow({
- *      shape: {
- *          width: 500
- *      },
- *      style: {
- *          fill: 'red'
- *      }
- *      position: [10, 10]
- *  }, 100, 100)
- */
+function copyArrShallow(source: number[], target: number[], len: number) {
+    for (let i = 0; i < len; i++) {
+        source[i] = target[i];
+    }
+}
+
+function is2DArray(value: any[]): value is number[][] {
+    return isArrayLike(value[0])
+}
+
+function copyValue(target: Dictionary<any>, source: Dictionary<any>, key: string) {
+    if (isArrayLike(source[key])) {
+        if (!isArrayLike(target[key])) {
+            target[key] = [];
+        }
+
+        const sourceArr = source[key] as any[];
+        const targetArr = target[key] as any[];
+
+        const len0 = sourceArr.length;
+        if (is2DArray(sourceArr)) {
+            // NOTE: each item should have same length
+            const len1 = sourceArr[0].length;
+
+            for (let i = 0; i < len0; i++) {
+                if (!targetArr[i]) {
+                    targetArr[i] = Array.prototype.slice.call(sourceArr[i]);
+                }
+                else {
+                    copyArrShallow(targetArr[i], sourceArr[i], len1);
+                }
+            }
+        }
+        else {
+            copyArrShallow(targetArr, sourceArr, len0);
+        }
+
+        targetArr.length = sourceArr.length;
+    }
+    else {
+        target[key] = source[key];
+    }
+}
+
 function animateToShallow<T>(
     animatable: Element<T>,
     topKey: string,
@@ -1274,8 +1345,10 @@ function animateToShallow<T>(
             sourceClone = {};
             for (let i = 0; i < keyLen; i++) {
                 const innerKey = animatableKeys[i];
-                sourceClone[innerKey] = source[innerKey];
-                source[innerKey] = target[innerKey];
+                sourceClone[innerKey] = cloneValue(source[innerKey]);
+                // Use copy, not change the original reference
+                // Copy from target to source.
+                copyValue(source, target, innerKey);
             }
         }
 
