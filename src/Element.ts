@@ -87,7 +87,7 @@ export interface ElementTextConfig {
 
     /**
      * `insideStroke` is a color string or left empth.
-     * If a `textContent` is "inside", its final `fill` will be picked by this priority:
+     * If a `textContent` is "inside", its final `stroke` will be picked by this priority:
      * `textContent.style.stroke` > `textConfig.insideStroke` > "auto-calculated-stroke"
      *
      * The rule of getting "auto-calculated-stroke":
@@ -105,13 +105,23 @@ export interface ElementTextConfig {
     insideStroke?: string
 
     /**
-     * Will be set to textContent.style.fill if position is not inside
-     * Can only be a specific color string.
+     * `outsideFill` is a color string or left empty.
+     * If a `textContent` is "inside", its final `fill` will be picked by this priority:
+     * `textContent.style.fill` > `textConfig.outsideFill` > #000
      */
     outsideFill?: string
+
     /**
-     * Will be set to textContent.style.stroke if position is not inside
-     * Can only be a specific color string.
+     * `outsideStroke` is a color string or left empth.
+     * If a `textContent` is not "inside", its final `stroke` will be picked by this priority:
+     * `textContent.style.stroke` > `textConfig.outsideStroke` > "auto-calculated-stroke"
+     *
+     * The rule of getting "auto-calculated-stroke":
+     * If (A) the `fill` is specified in style (either in `textContent.style` or `textContent.style.rich`)
+     * or (B) needed to draw text background (either defined in `textContent.style` or `textContent.style.rich`)
+     * "auto-calculated-stroke" will be null.
+     * Otherwise, "auto-calculated-stroke" will be a neer white color to distinguish "front end"
+     * label with messy background (like other text label, line or other graphic).
      */
     outsideStroke?: string
 
@@ -468,15 +478,22 @@ class Element<Props extends ElementProps = ElementProps> {
                 textFill = textConfig.outsideFill;
                 textStroke = textConfig.outsideStroke;
 
-                // Do not support auto until any necessity comes.
-                // if (textFill === 'auto') {
-                //     textFill = this.getOutsideFill();
-                // }
-                // if (textStroke === 'auto') {
-                //     textStroke = this.getOutsideStroke(textFill);
-                // }
-
+                // Not pretty sure by default use #000 or host el color on outsideFill.
+                // Conservatively, use #000.
+                if (textFill == null) {
+                    textFill = '#000';
+                }
+                // By default give a stroke to distinguish "front end" label with
+                // messy background (like other text label, line or other graphic).
+                // If textContent.style.fill specified, this auto stroke will not be used.
+                if (textStroke == null) {
+                    // If some time need to customize the default stroke getter,
+                    // add some kind of override method.
+                    textStroke = 'rgba(255, 255, 255, 0.9)';
+                    autoStroke = true;
+                }
             }
+            // Default `textFill` should must have a value to ensure text can be displayed.
             textFill = textFill || '#000';
 
             if (textFill !== innerTextDefaultStyle.fill
