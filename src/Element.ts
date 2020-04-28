@@ -679,15 +679,11 @@ class Element<Props extends ElementProps = ElementProps> {
         }
 
         const currentStates = this.currentStates;
-        // const currentStatesCount = currentStates.length;
-        // const lastStateName = currentStates[currentStatesCount - 1];
-        // const stateNoChange = stateName === lastStateName
-        //     /// If not keepCurrentStates and has more than one states have been applied.
-        //     // Needs clear all the previous states and applied the new one again.
-        //     && (keepCurrentStates || currentStatesCount === 1);
 
-        // Already being applied.
-        if (indexOf(currentStates, stateName) >= 0) {
+        // No need to change in following cases:
+        // 1. Keep current states. and already being applied before.
+        // 2. Don't keep current states. And new state is same with the only one exists state.
+        if (indexOf(currentStates, stateName) >= 0 && (keepCurrentStates || currentStates.length === 1)) {
             return;
         }
 
@@ -767,6 +763,18 @@ class Element<Props extends ElementProps = ElementProps> {
             const currentStates = this.currentStates.slice();
             currentStates.splice(idx, 1);
             this.useStates(currentStates, animationCfg);
+        }
+    }
+
+    /**
+     * Toogle state.
+     */
+    toggleState(state: string, enable: boolean, animationCfg?: ElementAnimateConfig) {
+        if (enable) {
+            this.useState(state, true, animationCfg);
+        }
+        else {
+            this.removeState(state, animationCfg);
         }
     }
 
