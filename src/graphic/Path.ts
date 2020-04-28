@@ -3,7 +3,7 @@ import Displayable, { DisplayableProps,
     DEFAULT_COMMON_STYLE,
     DisplayableStatePropNames
 } from './Displayable';
-import Element, { PRESERVED_NORMAL_STATE } from '../Element';
+import Element, { PRESERVED_NORMAL_STATE, ElementAnimateConfig } from '../Element';
 import PathProxy from '../core/PathProxy';
 import * as pathContain from '../contain/path';
 import { PatternObject } from './Pattern';
@@ -409,25 +409,45 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         this._normalState.shape = this.shape;
     }
 
-    protected _applyStateObj(state?: PathState, keepCurrentStates?: boolean) {
-        super._applyStateObj(state, keepCurrentStates);
+    protected _applyStateObj(state: PathState, keepCurrentStates: boolean, transition: boolean, animationCfg: ElementAnimateConfig) {
+        super._applyStateObj(state, keepCurrentStates, transition, animationCfg);
         let needsRestoreToNormal = !state || !keepCurrentStates;
         const normalState = this._normalState;
+        let targetShape: Props['shape'];
         if (state && state.shape) {
-            this.shape = extend(
+            targetShape = extend(
                 {},
                 keepCurrentStates ? this.shape : normalState.shape
             );
-            extend(this.shape, state.shape);
+            extend(targetShape, state.shape);
+
+            if (keepCurrentStates) {
+                for (let i = 0; i < this.animators.length; i++) {
+                    const animator = this.animators[i];
+                    // If properties in shape is in animating. Should be inherited from final value.
+                    if (animator.targetName === 'shape') {
+                        animator.saveFinalStateToTarget(targetShape);
+                    }
+                }
+            }
         }
         else if (needsRestoreToNormal) {
-            // NOTICE DON'T CLONE THE SHAPE OBJECT
-            // Only use the reference because if we switch state when animating. We still wan't
-            // animation continous on the same shape object when switch back to normal state.
-            this.shape = normalState.shape;
+            targetShape = normalState.shape;
         }
 
-        this.dirtyShape();
+        if (targetShape) {
+            if (transition) {
+                // Clone a new shape.
+                this.shape = extend({}, this.shape);
+                this.animateTo({
+                    shape: targetShape
+                } as Props, animationCfg);
+            }
+            else {
+                this.shape = targetShape;
+                this.dirtyShape();
+            }
+        }
     }
 
     /**

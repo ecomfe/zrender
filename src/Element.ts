@@ -213,6 +213,17 @@ export interface ElementProps extends Partial<ElementEventHandlerProps> {
 export const PRESERVED_NORMAL_STATE = '__zr_normal__';
 
 const PRIMARY_STATES_KEYS = ['x', 'y', 'scaleX', 'scaleY', 'originX', 'originY', 'rotation', 'ignore'] as const;
+const DEFAULT_ANIMATABLE_MAP: Partial<Record<ElementStatePropNames, boolean>> = {
+    x: true,
+    y: true,
+    scaleX: true,
+    scaleY: true,
+    originX: true,
+    originY: true,
+    rotation: true,
+    ignore: false
+}
+
 export type ElementStatePropNames = (typeof PRIMARY_STATES_KEYS)[number] | 'textConfig';
 export type ElementState = Pick<ElementProps, ElementStatePropNames>;
 
@@ -655,8 +666,8 @@ class Element<Props extends ElementProps = ElementProps> {
     /**
      * Clear all states.
      */
-    clearStates() {
-        this.useState(PRESERVED_NORMAL_STATE);
+    clearStates(animationCfg?: ElementAnimateConfig) {
+        this.useState(PRESERVED_NORMAL_STATE, false, animationCfg);
         // TODO set _normalState to null?
     }
     /**
@@ -666,9 +677,11 @@ class Element<Props extends ElementProps = ElementProps> {
      * @param stateName State name to be switched to
      * @param keepCurrentState If keep current states.
      *      If not, it will inherit from the normal state.
+     * @param animationCfg Will apply animation if specified and has >0 duration
      */
-    useState(stateName: string, keepCurrentStates?: boolean) {
+    useState(stateName: string, keepCurrentStates?: boolean, animationCfg?: ElementAnimateConfig) {
         // Use preserved word __normal__
+        // TODO: Only restore changed properties when restore to normal???
         const toNormalState = stateName === PRESERVED_NORMAL_STATE;
 
         if (!this.hasState()) {
@@ -683,14 +696,11 @@ class Element<Props extends ElementProps = ElementProps> {
         }
 
         const currentStates = this.currentStates;
-        const currentStatesCount = currentStates.length;
-        const lastStateName = currentStates[currentStatesCount - 1];
-        const stateNoChange = stateName === lastStateName
-            /// If not keepCurrentStates and has more than one states have been applied.
-            // Needs clear all the previous states and applied the new one again.
-            && (keepCurrentStates || currentStatesCount === 1);
 
-        if (stateNoChange) {
+        // No need to change in following cases:
+        // 1. Keep current states. and already being applied before.
+        // 2. Don't keep current states. And new state is same with the only one exists state.
+        if (indexOf(currentStates, stateName) >= 0 && (keepCurrentStates || currentStates.length === 1)) {
             return;
         }
 
@@ -708,14 +718,14 @@ class Element<Props extends ElementProps = ElementProps> {
             return;
         }
 
-        this._applyStateObj(state, keepCurrentStates);
+        this._applyStateObj(state, keepCurrentStates, animationCfg && animationCfg.duration > 0, animationCfg);
 
         // Also set text content.
         if (this._textContent) {
-            this._textContent.useState(stateName);
+            this._textContent.useState(stateName, keepCurrentStates, animationCfg);
         }
         if (this._textGuide) {
-            this._textGuide.useState(stateName);
+            this._textGuide.useState(stateName, keepCurrentStates, animationCfg);
         }
 
         if (toNormalState) {
@@ -745,14 +755,49 @@ class Element<Props extends ElementProps = ElementProps> {
 
     /**
      * Apply multiple states.
+     * @param states States list.
+     * @param animationCfg Will apply animation if specified and has >0 duration
      */
-    useStates(states: string[]) {
-        for (let i = 0; i < states.length; i++) {
-            this.useState(states[i], i > 0);
+    useStates(states: string[], animationCfg?: ElementAnimateConfig) {
+        if (!states.length) {
+            this.clearStates(animationCfg);
+        }
+        else {
+            for (let i = 0; i < states.length; i++) {
+                this.useState(states[i], i > 0, animationCfg);
+            }
         }
     }
 
-    protected _applyStateObj(state?: ElementState, keepCurrentStates?: boolean) {
+    /**
+     * Remove state
+     * @param state State to remove
+     * @param animationCfg Will apply animation if specified and has >0 duration
+     */
+    removeState(state: string, animationCfg?: ElementAnimateConfig) {
+        const idx = indexOf(this.currentStates, state);
+        if (idx >= 0) {
+            const currentStates = this.currentStates.slice();
+            currentStates.splice(idx, 1);
+            this.useStates(currentStates, animationCfg);
+        }
+    }
+
+    /**
+     * Toogle state.
+     */
+    toggleState(state: string, enable: boolean, animationCfg?: ElementAnimateConfig) {
+        if (enable) {
+            this.useState(state, true, animationCfg);
+        }
+        else {
+            this.removeState(state, animationCfg);
+        }
+    }
+
+    // TODO removeState
+
+    protected _applyStateObj(state: ElementState, keepCurrentStates: boolean, transition: boolean, animationCfg: ElementAnimateConfig) {
         const normalState = this._normalState;
         let needsRestoreToNormal = !state || !keepCurrentStates;
 
@@ -770,27 +815,51 @@ class Element<Props extends ElementProps = ElementProps> {
             this.textConfig = normalState.textConfig;
         }
 
+        const transitionTarget: Dictionary<any> = {};
+        let hasTransition = false;
+
         for (let i = 0; i < PRIMARY_STATES_KEYS.length; i++) {
-            let key = PRIMARY_STATES_KEYS[i];
+            const key = PRIMARY_STATES_KEYS[i];
+            const propNeedsTransition = transition && DEFAULT_ANIMATABLE_MAP[key];
+
             if (state && state[key] != null) {
-                // Replace if it exist in target state
-                (this as any)[key] = state[key];
+                if (propNeedsTransition) {
+                    hasTransition = true;
+                    transitionTarget[key] = state[key];
+                }
+                else {
+                    // Replace if it exist in target state
+                    (this as any)[key] = state[key];
+                }
             }
             else if (needsRestoreToNormal) {
-                // Restore to normal state
-                (this as any)[key] = normalState[key];
+                if (propNeedsTransition) {
+                    hasTransition = true;
+                    transitionTarget[key] = normalState[key];
+                }
+                else {
+                    // Restore to normal state
+                    (this as any)[key] = normalState[key];
+                }
             }
         }
 
+        if (hasTransition) {
+            this.animateTo(transitionTarget as Props, animationCfg);
+        }
     }
 
     /**
      * Component is some elements attached on this element for specific purpose.
      * Like clipPath, textContent
      */
-    protected _attachComponent(componentEl: Element) {
+    private _attachComponent(componentEl: Element) {
         if (componentEl.__zr && !componentEl.__hostTarget) {
-            console.error('Text element has been added to zrender.');
+            throw new Error('Text element has been added to zrender.');
+        }
+
+        if (componentEl === this) {
+            throw new Error('Recursive component attachment.');
         }
 
         const zr = this.__zr;
@@ -803,7 +872,7 @@ class Element<Props extends ElementProps = ElementProps> {
         componentEl.__hostTarget = this as unknown as Element;
     }
 
-    protected _detachComponent(componentEl: Element) {
+    private _detachComponent(componentEl: Element) {
         if (componentEl.__zr) {
             componentEl.removeSelfFromZr(componentEl.__zr);
         }
@@ -866,9 +935,9 @@ class Element<Props extends ElementProps = ElementProps> {
             throw new Error('Text element has been added to zrender.');
         }
 
-        this._textContent = textEl;
-
         this._attachComponent(textEl);
+
+        this._textContent = textEl;
 
         this.markRedraw();
     }
@@ -895,9 +964,9 @@ class Element<Props extends ElementProps = ElementProps> {
             this.removeTextGuideLine();
         }
 
-        this._textGuide = guideLine;
-
         this._attachComponent(guideLine);
+
+        this._textGuide = guideLine;
 
         this.markRedraw();
     }
@@ -1309,6 +1378,10 @@ function animateToShallow<T>(
     for (let k = 0; k < targetKeys.length; k++) {
         const innerKey = targetKeys[k] as string;
 
+        if (target[innerKey] == null) { // Can't animate to a null/undefined value.
+            continue;
+        }
+
         if (source[innerKey] != null) {
             if (isObject(target[innerKey]) && !isArrayLike(target[innerKey])) {
                 if (topKey) {
@@ -1335,8 +1408,8 @@ function animateToShallow<T>(
                 animatableKeys.push(innerKey);
             }
         }
-        else if (target[innerKey] != null && !reverse) {
-            // Assign directly.
+        else if (!reverse) {
+            // Assign target value directly.
             source[innerKey] = target[innerKey];
             animatable.updateDuringAnimation(topKey);
         }
