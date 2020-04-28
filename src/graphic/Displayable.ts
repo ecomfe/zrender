@@ -3,7 +3,7 @@
  * @module zrender/graphic/Displayable
  */
 
-import Element, {ElementProps, ElementStatePropNames, PRESERVED_NORMAL_STATE} from '../Element';
+import Element, {ElementProps, ElementStatePropNames, PRESERVED_NORMAL_STATE, ElementAnimateConfig} from '../Element';
 import BoundingRect from '../core/BoundingRect';
 import { PropType, Dictionary } from '../core/types';
 import Path from './Path';
@@ -309,28 +309,62 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         normalState.invisible = this.invisible;
     }
 
-    protected _applyStateObj(state?: DisplayableState, keepCurrentStates?: boolean) {
-        super._applyStateObj(state, keepCurrentStates);
+    protected _applyStateObj(state: DisplayableState, keepCurrentStates: boolean, transition: boolean, animationCfg: ElementAnimateConfig) {
+        super._applyStateObj(state, keepCurrentStates, transition, animationCfg);
         let needsRestoreToNormal = !state || !keepCurrentStates;
         const normalState = this._normalState;
+        let targetStyle: Props['style'];
         if (state && state.style) {
             // TODO Use prototype chain? Prototype chain may have following issues
             // 1. Normal style may be changed
-            // 2. Needs to detect ircular protoype chain
-            const newStyle = this._mergeStyle(
+            // 2. Needs to detect circular protoype chain
+            targetStyle = this._mergeStyle(
                 this.createStyle(),
                 keepCurrentStates ? this.style : normalState.style
             );
-            this._mergeStyle(newStyle, state.style);
-            this.useStyle(newStyle);
+            if (keepCurrentStates) {
+                for (let i = 0; i < this.animators.length; i++) {
+                    const animator = this.animators[i];
+                    // If properties in style is in animating. Should be inherited from final value.
+                    if (animator.targetName === 'style') {
+                        animator.saveFinalStateToTarget(targetStyle);
+                    }
+                }
+            }
+            this._mergeStyle(targetStyle, state.style);
+
         }
         else if (needsRestoreToNormal) {
-            // Simply replace with normal style because it needs no inheritance
-            // NOTICE DON'T CLONE THE STYLE OBJECT
-            // Only use the reference because if we switch state when animating. We still wan't
-            // animation continous on the same style object when switch back to normal state.
-            this.style = normalState.style;
-            this.dirtyStyle();
+            targetStyle = normalState.style;
+            if (transition) {
+                targetStyle = this.createStyle(targetStyle);
+            }
+        }
+
+        if (targetStyle) {
+            if (transition) {
+                // Clone a new style. Not affect the original one.
+                // TODO Performance issue.
+                this.style = this.createStyle(this.style);
+
+                const changedKeys = keys(this.style);
+                for (let i = 0; i < changedKeys.length; i++) {
+                    const key = changedKeys[i];
+                    if (targetStyle[key] != null) {
+                        // Pick out from prototype. Or the property won't be animated.
+                        // TODO: Text
+                        (targetStyle as any)[key] = targetStyle[key];
+                    }
+                }
+
+                this.animateTo({
+                    style: targetStyle
+                } as Props, animationCfg);
+            }
+            else {
+                this.useStyle(targetStyle);
+                this.dirtyStyle();
+            }
         }
 
         for (let i = 0; i < PRIMARY_STATES_KEYS.length; i++) {
