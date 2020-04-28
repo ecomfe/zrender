@@ -13,6 +13,7 @@ import BoundingRect from '../core/BoundingRect';
 import { MatrixArray } from '../core/matrix';
 import Displayable, { DisplayableStatePropNames, DisplayableProps } from './Displayable';
 import Path from './Path';
+import { ZRenderType } from '../zrender';
 
 type TextContentBlock = ReturnType<typeof parseRichText>
 type TextLine = TextContentBlock['lines'][0]
@@ -268,6 +269,24 @@ class ZRText extends Displayable<TextProps> {
         this.__dirty &= ~Path.STYLE_CHANGED_BIT;
     }
 
+    addSelfToZr(zr: ZRenderType) {
+        super.addSelfToZr(zr);
+        for (let i = 0; i < this._children.length; i++) {
+            // Also need mount __zr for case like hover detection.
+            // The case: hover on a label (position: 'top') causes host el
+            // scaled and label Y position lifts a bit so that out of the
+            // pointer, then mouse move should be able to trigger "mouseout".
+            this._children[i].__zr = zr;
+        }
+    }
+
+    removeSelfFromZr(zr: ZRenderType) {
+        super.removeSelfFromZr(zr);
+        for (let i = 0; i < this._children.length; i++) {
+            this._children[i].__zr = null;
+        }
+    }
+
     getBoundingRect(): BoundingRect {
         if (this.styleChanged()) {
             this._updateSubTexts();
@@ -351,6 +370,7 @@ class ZRText extends Displayable<TextProps> {
             child = new Ctor();
         }
         this._children[this._childCursor++] = child;
+        child.__zr = this.__zr;
         // TODO to users parent can only be group.
         child.parent = this as any;
         return child;
