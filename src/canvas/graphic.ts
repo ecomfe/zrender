@@ -191,7 +191,7 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, inBatch: boolean) {
             if (hasStroke) {
                 doStrokePath(ctx, el);
             }
-            if (hasStroke) {
+            if (hasFill) {
                 doFillPath(ctx, el);
             }
         }
