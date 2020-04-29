@@ -161,7 +161,7 @@
             generate(config.rotate);
             update();
         });
-        gui.add(config, 'random').onChange(update);
+        gui.add(config, 'random');
         gui.add(config, 'overlapMargin', 0, 100).onChange(update);
 
         generate(config.rotate);

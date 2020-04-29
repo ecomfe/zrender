@@ -419,8 +419,6 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
                 {},
                 keepCurrentStates ? this.shape : normalState.shape
             );
-            extend(targetShape, state.shape);
-
             if (keepCurrentStates) {
                 for (let i = 0; i < this.animators.length; i++) {
                     const animator = this.animators[i];
@@ -430,6 +428,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
                     }
                 }
             }
+            extend(targetShape, state.shape);
         }
         else if (needsRestoreToNormal) {
             targetShape = normalState.shape;
