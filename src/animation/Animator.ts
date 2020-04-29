@@ -941,7 +941,7 @@ export default class Animator<T> {
      * It is mainly used in state mangement. When state is switching during animation.
      * We need to save final state of animation to the normal state. Not interpolated value.
      */
-    saveFinalStateToTarget(target: T) {
+    saveFinalToTarget(target: T) {
         if (!target) {  // DO nothing if target is not given.
             return;
         }

@@ -303,7 +303,8 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         super._innerSaveToNormal();
 
         const normalState = this._normalState;
-        normalState.style = this.style;
+        // Clone style object. TODO: Performance
+        normalState.style = this._mergeStyle(this.createStyle(), this.style);
         normalState.z = this.z;
         normalState.z2 = this.z2;
         normalState.invisible = this.invisible;
@@ -327,7 +328,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
                     const animator = this.animators[i];
                     // If properties in style is in animating. Should be inherited from final value.
                     if (animator.targetName === 'style') {
-                        animator.saveFinalStateToTarget(targetStyle);
+                        animator.saveFinalToTarget(targetStyle);
                     }
                 }
             }

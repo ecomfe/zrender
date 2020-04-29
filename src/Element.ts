@@ -616,7 +616,7 @@ class Element<Props extends ElementProps = ElementProps> {
             const animator = this.animators[i];
             // According to the order of animation if multiple animator is
             // Animating on the same property(If additive animation is used)
-            animator.saveFinalStateToTarget(
+            animator.saveFinalToTarget(
                 animator.targetName
                     ? (normalState as any)[animator.targetName] : normalState
             );

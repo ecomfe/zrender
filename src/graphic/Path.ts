@@ -403,10 +403,9 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
     protected _innerSaveToNormal() {
         super._innerSaveToNormal();
 
-        // NOTICE DON'T CLONE THE SHAPE OBJECT
-        // Only use the reference because if we switch state when animating. We still wan't
-        // animation continous on the same shape object when switch back to normal state.
-        this._normalState.shape = this.shape;
+        // Clone a new one. DON'T share object reference between states and current using.
+        // TODO: Clone array in shape?.
+        this._normalState.shape = extend({}, this.shape);
     }
 
     protected _applyStateObj(state: PathState, keepCurrentStates: boolean, transition: boolean, animationCfg: ElementAnimateConfig) {
@@ -415,19 +414,21 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         const normalState = this._normalState;
         let targetShape: Props['shape'];
         if (state && state.shape) {
-            targetShape = extend(
-                {},
-                keepCurrentStates ? this.shape : normalState.shape
-            );
             if (keepCurrentStates) {
+                targetShape = extend({}, this.shape);
                 for (let i = 0; i < this.animators.length; i++) {
                     const animator = this.animators[i];
                     // If properties in shape is in animating. Should be inherited from final value.
+                    // TODO Stop the track?
                     if (animator.targetName === 'shape') {
-                        animator.saveFinalStateToTarget(targetShape);
+                        animator.saveFinalToTarget(targetShape);
                     }
                 }
             }
+            else {
+                targetShape = extend({}, normalState.shape);
+            }
+
             extend(targetShape, state.shape);
         }
         else if (needsRestoreToNormal) {
@@ -435,6 +436,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         }
 
         if (targetShape) {
+
             if (transition) {
                 // Clone a new shape.
                 this.shape = extend({}, this.shape);
