@@ -28,6 +28,7 @@ export interface ElementAnimateConfig {
     delay?: number
     easing?: AnimationEasing
     done?: Function
+    during?: Function
     /**
      * If force animate
      * Prevent stop animation and callback
@@ -1148,11 +1149,19 @@ function animateTo<T>(
     if (!count) {
         cfg.done && cfg.done();
     }
+
+    function during() {
+        if (typeof cfg.during === 'function') {
+            cfg.during();
+        }
+    }
+
     // Start after all animators created
     // Incase any animator is done immediately when all animation properties are not changed
     for (let i = 0; i < animators.length; i++) {
         animators[i]
             .done(done)
+            .during(during)
             .start(cfg.easing, cfg.force);
     }
 }
