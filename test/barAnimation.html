@@ -4,12 +4,14 @@
     <meta charset="utf-8" />
     <title>Bar Animation</title>
     <script src="../dist/zrender.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/zrender@4.2.0/dist/zrender.js"></script> -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
 <body>
     <script type="text/javascript">
-        var N = 50;
-        for (var k = 0; k < 50; k++) {
+        var N = 10000;
+        console.time('init');
+        for (var k = 0; k < 1; k++) {
             var div = document.createElement('div');
             var width = 600;
             var height = 300;
@@ -20,10 +22,12 @@
             var zr = zrender.init(div, {
                 renderer: 'canvas'
             });
+            let barShapes = [];
 
             for (var i = 0; i < N; i++) {
                 var h = height * Math.random();
                 var barShape = new zrender.Rect({
+                    height: h,
                     shape: {
                         x: i * width / N,
                         y: height,
@@ -49,15 +53,28 @@
                     }
                 });
                 zr.add(barShape);
+                barShapes.push(barShape);
+            }
 
+            console.time('animate');
+            barShapes.forEach(barShape => {
+                // barShape.animate('shape').when(500, {
+                //     height: barShape.height,
+                //     y: height - barShape.height
+                // }).start();
                 barShape.animateTo({
                     shape: {
-                        height: h,
-                        y: height - h
+                        height: barShape.height,
+                        y: height - barShape.height
+                    },
+                    style: {
+                        fill: 'red'
                     }
-                }, 500);
-            }
+                }, { duration: 500 });
+            })
+            console.timeEnd('animate');
         }
+        console.timeEnd('init');
     </script>
 </body>
 </html>

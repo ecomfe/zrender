@@ -2,20 +2,15 @@
  * @module echarts/animation/Animator
  */
 
-import Clip, { ClipOption } from './Clip';
+import Clip from './Clip';
 import * as color from '../tool/color';
-import {isArrayLike} from '../core/util';
+import {isArrayLike, keys, logError} from '../core/util';
 import {ArrayLike, Dictionary} from '../core/types';
-import { easingType } from './easing';
+import { AnimationEasing } from './easing';
 import Animation from './Animation';
 
 type NumberArray = ArrayLike<number>
 type InterpolatableType = string | number | NumberArray | NumberArray[];
-
-type Keyframe = {
-    time: number
-    value: InterpolatableType
-}
 
 const arraySlice = Array.prototype.slice;
 
@@ -23,16 +18,17 @@ function interpolateNumber(p0: number, p1: number, percent: number): number {
     return (p1 - p0) * percent + p0;
 }
 
-function interpolateString(p0: string, p1: string, percent: number): string {
+function step(p0: any, p1: any, percent: number): any {
     return percent > 0.5 ? p1 : p0;
 }
 
 function interpolate1DArray(
+    out: NumberArray,
     p0: NumberArray,
     p1: NumberArray,
-    percent: number,
-    out: NumberArray,
+    percent: number
 ) {
+    // TODO Handling different length TypedArray
     const len = p0.length;
     for (let i = 0; i < len; i++) {
         out[i] = interpolateNumber(p0[i], p1[i], percent);
@@ -40,24 +36,55 @@ function interpolate1DArray(
 }
 
 function interpolate2DArray(
+    out: NumberArray[],
     p0: NumberArray[],
     p1: NumberArray[],
-    percent: number,
-    out: NumberArray[],
+    percent: number
 ) {
     const len = p0.length;
-    const len2 = len && (p0 as NumberArray[])[0].length;
+    // TODO differnt length on each item?
+    const len2 = len && p0[0].length;
     for (let i = 0; i < len; i++) {
+        if (!out[i]) {
+            out[i] = [];
+        }
         for (let j = 0; j < len2; j++) {
-            (out as NumberArray[])[i][j] = interpolateNumber(
-                (p0 as NumberArray[])[i][j],
-                (p1 as NumberArray[])[i][j],
-                percent
-            );
+            out[i][j] = interpolateNumber(p0[i][j], p1[i][j], percent);
         }
     }
 }
 
+function add1DArray(
+    out: NumberArray,
+    p0: NumberArray,
+    p1: NumberArray,
+    sign: 1 | -1
+) {
+    const len = p0.length;
+    for (let i = 0; i < len; i++) {
+        out[i] = p0[i] + p1[i] * sign;
+    }
+    return out;
+}
+
+function add2DArray(
+    out: NumberArray[],
+    p0: NumberArray[],
+    p1: NumberArray[],
+    sign: 1 | -1
+) {
+    const len = p0.length;
+    const len2 = len && p0[0].length;
+    for (let i = 0; i < len; i++) {
+        if (!out[i]) {
+            out[i] = [];
+        }
+        for (let j = 0; j < len2; j++) {
+            out[i][j] = p0[i][j] + p1[i][j] * sign;
+        }
+    }
+    return out;
+}
 // arr0 is source array, arr1 is target array.
 // Do some preprocess to avoid error happened when interpolating from arr0 to arr1
 function fillArray(
@@ -65,6 +92,7 @@ function fillArray(
     val1: NumberArray | NumberArray[],
     arrDim: number
 ) {
+    // TODO Handling different length TypedArray
     let arr0 = val0 as (number | number[])[];
     let arr1 = val1 as (number | number[])[];
     if (!arr0.push || !arr1.push) {
@@ -149,14 +177,14 @@ function catmullRomInterpolate(
  * Catmull Rom interpolate 1D array
  */
 function catmullRomInterpolate1DArray(
+    out: NumberArray,
     p0: NumberArray,
     p1: NumberArray,
     p2: NumberArray,
     p3: NumberArray,
     t: number,
     t2: number,
-    t3: number,
-    out: NumberArray
+    t3: number
 ) {
     const len = p0.length;
     for (let i = 0; i < len; i++) {
@@ -170,18 +198,21 @@ function catmullRomInterpolate1DArray(
  * Catmull Rom interpolate 2D array
  */
 function catmullRomInterpolate2DArray(
+    out: NumberArray[],
     p0: NumberArray[],
     p1: NumberArray[],
     p2: NumberArray[],
     p3: NumberArray[],
     t: number,
     t2: number,
-    t3: number,
-    out: NumberArray[]
+    t3: number
 ) {
     const len = p0.length;
     const len2 = p0[0].length;
     for (let i = 0; i < len; i++) {
+        if (!out[i]) {
+            out[1] = [];
+        }
         for (let j = 0; j < len2; j++) {
             out[i][j] = catmullRomInterpolate(
                 p0[i][j], p1[i][j], p2[i][j], p3[i][j],
@@ -192,7 +223,7 @@ function catmullRomInterpolate2DArray(
 }
 
 
-function cloneValue(value: InterpolatableType) {
+export function cloneValue(value: InterpolatableType) {
     if (isArrayLike(value)) {
         const len = value.length;
         if (isArrayLike(value[0])) {
@@ -217,73 +248,494 @@ function rgba2String(rgba: number[]): string {
     return 'rgba(' + rgba.join(',') + ')';
 }
 
-function guessArrayDim(keyframes: Keyframe[]): number {
-    const lastValue = keyframes[keyframes.length - 1].value;
-    return isArrayLike(lastValue && (lastValue as unknown[])[0]) ? 2 : 1;
+function guessArrayDim(value: ArrayLike<unknown>): number {
+    return isArrayLike(value && (value as ArrayLike<unknown>)[0]) ? 2 : 1;
 }
+
+type Keyframe = {
+    time: number
+    value: unknown
+    percent: number
+
+    additiveValue?: unknown
+}
+
+let tmpRgba: number[] = [0, 0, 0, 0];
+class Track {
+
+    keyframes: Keyframe[] = []
+    maxTime: number = 0
+
+    propName: string
+
+    /**
+     * If use spline interpolate
+     */
+    useSpline: boolean
+
+    // Larger than 0 if value is array
+    arrDim: number = 0
+    isValueColor: boolean
+
+    interpolable: boolean = true
+
+    private _finished: boolean
+
+
+    private _needsSort: boolean = false
+
+    private _isAllValueEqual = true
+
+    private _additiveTrack: Track
+    // Temporal storage for interpolated additive value.
+    private _additiveValue: unknown
+
+    // Info for run
+    private _lastFrame = 0
+    private _lastFramePercent = 0
+
+    constructor(propName: string) {
+        this.propName = propName;
+    }
+
+    isFinished() {
+        return this._finished;
+    }
+
+    setFinished() {
+        this._finished = true;
+    }
+
+    needsAnimate() {
+        // Not check value equal. It may cause unpredictable bugs.
+        // Because current value may happens to be same with the new target when animating.
+        return this.keyframes.length >= 2;
+        // return !this._isAllValueEqual && this.keyframes.length >= 2;
+    }
+
+    addKeyframe(time: number, value: unknown) {
+        if (time >= this.maxTime) {
+            this.maxTime = time;
+        }
+        else {
+            this._needsSort = true;
+        }
+
+        let keyframes = this.keyframes;
+
+        let len = keyframes.length;
+
+        if (this.interpolable) {
+            // Handling values only if it's possible to be interpolated.
+            if (isArrayLike(value)) {
+                let arrayDim = guessArrayDim(value);
+                if (len > 0 && this.arrDim !== arrayDim) { // Two values has differnt dimension.
+                    this.interpolable = false;
+                    return;
+                }
+                // if (len > 0) {
+                //     let lastFrame = keyframes[len - 1];
+
+                //     // For performance consideration. only check 1d array
+                //     if (this._isAllValueEqual) {
+                //         if (arrayDim === 1) {
+                //             if (!is1DArraySame(value, lastFrame.value as number[])) {
+                //                 this._isAllValueEqual = false;
+                //             }
+                //         }
+                //         else {
+                //             this._isAllValueEqual = false;
+                //         }
+                //     }
+                // }
+                this.arrDim = arrayDim;
+            }
+            else {
+                if (this.arrDim > 0) {  // Previous value is array.
+                    this.interpolable = false;
+                    return;
+                }
+
+                if (typeof value === 'string') {
+                    const colorArray = color.parse(value);
+                    if (colorArray) {
+                        value = colorArray;
+                        this.isValueColor = true;
+                    }
+                    else {
+                        this.interpolable = false;
+                    }
+                }
+                else if (typeof value !== 'number') {
+                    this.interpolable = false;
+                    return;
+                }
+
+                // if (this._isAllValueEqual && len > 0) {
+                //     let lastFrame = keyframes[len - 1];
+                //     if (this.isValueColor && !is1DArraySame(lastFrame.value as number[], value as number[])) {
+                //         this._isAllValueEqual = false;
+                //     }
+                //     else if (lastFrame.value !== value) {
+                //         this._isAllValueEqual = false;
+                //     }
+                // }
+            }
+        }
+
+        // Not check if value equal here.
+        this.keyframes.push({
+            time,
+            value,
+            percent: 0
+        });
+    }
+
+    prepare(additiveTrack?: Track) {
+        let kfs = this.keyframes;
+        if (this._needsSort) {
+            // Sort keyframe as ascending
+            kfs.sort(function (a: Keyframe, b: Keyframe) {
+                return a.time - b.time;
+            });
+        }
+
+        const arrDim = this.arrDim;
+        const kfsLen = kfs.length;
+        const lastKf = kfs[kfsLen - 1];
+
+        for (let i = 0; i < kfsLen; i++) {
+            kfs[i].percent = kfs[i].time / this.maxTime;
+
+            if (arrDim > 0 && i !== kfsLen - 1) {
+                // Align array with target frame.
+                fillArray(kfs[i].value as NumberArray, lastKf.value as NumberArray, arrDim);
+            }
+        }
+
+        // Only apply additive animaiton on INTERPOLABLE SAME TYPE values.
+        if (additiveTrack
+            && this.interpolable
+            && arrDim === additiveTrack.arrDim
+            && this.isValueColor === additiveTrack.isValueColor
+            && !additiveTrack._finished
+        ) {
+            this._additiveTrack = additiveTrack;
+
+            const startValue = kfs[0].value;
+            // Calculate difference
+            for (let i = 0; i < kfsLen; i++) {
+                if (arrDim === 0) {
+                    if (this.isValueColor) {
+                        kfs[i].additiveValue
+                            = add1DArray([], kfs[i].value as NumberArray, startValue as NumberArray, -1);
+                    }
+                    else {
+                        kfs[i].additiveValue = kfs[i].value as number - (startValue as number);
+                    }
+                }
+                else if (arrDim === 1) {
+                    kfs[i].additiveValue = add1DArray(
+                        [],
+                        kfs[i].value as NumberArray,
+                        startValue as NumberArray,
+                        -1
+                    );
+                }
+                else if (arrDim === 2) {
+                    kfs[i].additiveValue = add2DArray(
+                        [],
+                        kfs[i].value as NumberArray[],
+                        startValue as NumberArray[],
+                        -1
+                    );
+                }
+            }
+        }
+    }
+
+    step(target: any, percent: number) {
+        if (this._finished) {   // Track may be set to finished.
+            return;
+        }
+
+        if (this._additiveTrack && this._additiveTrack._finished) {
+            // Remove additive track if it's finished.
+            this._additiveTrack = null;
+        }
+        const isAdditive = this._additiveTrack != null;
+        const valueKey = isAdditive ? 'additiveValue' : 'value';
+
+        const keyframes = this.keyframes;
+        const kfsNum = this.keyframes.length;
+        const propName = this.propName;
+        const arrDim = this.arrDim;
+        const isValueColor = this.isValueColor;
+        // Find the range keyframes
+        // kf1-----kf2---------current--------kf3
+        // find kf2 and kf3 and do interpolation
+        let frameIdx;
+        // In the easing function like elasticOut, percent may less than 0
+        if (percent < 0) {
+            frameIdx = 0;
+        }
+        else if (percent < this._lastFramePercent) {
+            // Start from next key
+            // PENDING start from lastFrame ?
+            const start = Math.min(this._lastFrame + 1, kfsNum - 1);
+            for (frameIdx = start; frameIdx >= 0; frameIdx--) {
+                if (keyframes[frameIdx].percent <= percent) {
+                    break;
+                }
+            }
+            // PENDING really need to do this ?
+            frameIdx = Math.min(frameIdx, kfsNum - 2);
+        }
+        else {
+            for (frameIdx = this._lastFrame; frameIdx < kfsNum; frameIdx++) {
+                if (keyframes[frameIdx].percent > percent) {
+                    break;
+                }
+            }
+            frameIdx = Math.min(frameIdx - 1, kfsNum - 2);
+        }
+        this._lastFrame = frameIdx;
+        this._lastFramePercent = percent;
+
+        let nextFrame = keyframes[frameIdx + 1];
+        let frame = keyframes[frameIdx];
+
+        const range = (nextFrame.percent - frame.percent);
+        if (range === 0) {
+            return;
+        }
+        const w = (percent - frame.percent) / range;
+
+        // If value is arr
+        let targetArr = isAdditive ? this._additiveValue
+            : (isValueColor ? tmpRgba : target[propName]);
+
+        if ((arrDim > 0 || isValueColor) && !targetArr) {
+            targetArr = this._additiveValue = [];
+        }
+        if (this.useSpline) {
+            const p1 = keyframes[frameIdx][valueKey];
+            const p0 = keyframes[frameIdx === 0 ? frameIdx : frameIdx - 1][valueKey];
+            const p2 = keyframes[frameIdx > kfsNum - 2 ? kfsNum - 1 : frameIdx + 1][valueKey];
+            const p3 = keyframes[frameIdx > kfsNum - 3 ? kfsNum - 1 : frameIdx + 2][valueKey];
+
+            if (arrDim > 0) {
+                arrDim === 1
+                    ? catmullRomInterpolate1DArray(
+                        targetArr as NumberArray,
+                        p0 as NumberArray,
+                        p1 as NumberArray,
+                        p2 as NumberArray,
+                        p3 as NumberArray,
+                        w, w * w, w * w * w
+                    )
+                    : catmullRomInterpolate2DArray(
+                        targetArr as NumberArray[],
+                        p0 as NumberArray[], p1 as NumberArray[], p2 as NumberArray[], p3 as NumberArray[],
+                        w, w * w, w * w * w
+                    );
+            }
+            else if (isValueColor) {
+                catmullRomInterpolate1DArray(
+                    targetArr,
+                    p0 as NumberArray, p1 as NumberArray, p2 as NumberArray, p3 as NumberArray,
+                    w, w * w, w * w * w
+                );
+                if (!isAdditive) {  // Convert to string later:)
+                    target[propName] = rgba2String(targetArr);
+                }
+            }
+            else {
+                let value;
+                if (!this.interpolable) {
+                    // String is step(0.5)
+                    value = step(p1, p2, w);
+                }
+                else {
+                    value = catmullRomInterpolate(
+                        p0 as number, p1 as number, p2 as number, p3 as number,
+                        w, w * w, w * w * w
+                    );
+                }
+                if (isAdditive) {
+                    this._additiveValue = value;
+                }
+                else {
+                    target[propName] = value;
+                }
+            }
+        }
+        else {
+            if (arrDim > 0) {
+                arrDim === 1
+                    ? interpolate1DArray(
+                        targetArr as NumberArray,
+                        frame[valueKey] as NumberArray,
+                        nextFrame[valueKey] as NumberArray,
+                        w
+                    )
+                    : interpolate2DArray(
+                        targetArr as NumberArray[],
+                        frame[valueKey] as NumberArray[],
+                        nextFrame[valueKey] as NumberArray[],
+                        w
+                    );
+            }
+            else if (isValueColor) {
+                interpolate1DArray(
+                    targetArr,
+                    frame[valueKey] as NumberArray,
+                    nextFrame[valueKey] as NumberArray,
+                    w
+                );
+                if (!isAdditive) {  // Convert to string later:)
+                    target[propName] = rgba2String(targetArr);
+                }
+            }
+            else {
+                let value;
+                if (!this.interpolable) {
+                    // String is step(0.5)
+                    value = step(frame[valueKey], nextFrame[valueKey], w);
+                }
+                else {
+                    value = interpolateNumber(frame[valueKey] as number, nextFrame[valueKey] as number, w);
+                }
+                if (isAdditive) {
+                    this._additiveValue = value;
+                }
+                else {
+                    target[propName] = value;
+                }
+            }
+        }
+
+        // Add additive to target
+        if (isAdditive) {
+            this._addToTarget(target);
+        }
+    }
+
+    private _addToTarget(target: any) {
+        const arrDim = this.arrDim;
+        const propName = this.propName;
+
+        if (arrDim === 0) {
+            if (this.isValueColor) {
+                // TODO reduce unnecessary parse
+                color.parse(target[propName], tmpRgba);
+                add1DArray(tmpRgba, tmpRgba, this._additiveValue as NumberArray, 1);
+                target[propName] = rgba2String(tmpRgba);
+            }
+            else {
+                // Add a difference value based on the change of previous frame.
+                target[propName] = target[propName] + this._additiveValue;
+            }
+        }
+        else if (arrDim === 1) {
+            add1DArray(target[propName], target[propName], this._additiveValue as NumberArray, 1);
+        }
+        else if (arrDim === 2) {
+            add2DArray(target[propName], target[propName], this._additiveValue as NumberArray[], 1);
+        }
+    }
+}
+
 
 type DoneCallback = () => void;
 type OnframeCallback<T> = (target: T, percent: number) => void;
 
 export type AnimationPropGetter<T> = (target: T, key: string) => InterpolatableType;
 export type AnimationPropSetter<T> = (target: T, key: string, value: InterpolatableType) => void;
-/**
- * @alias module:zrender/animation/Animator
- * @constructor
- * @param {Object} target
- * @param {boolean} loop
- * @param {Function} getter
- * @param {Function} setter
- */
+
 export default class Animator<T> {
 
-    animation: Animation
+    animation?: Animation
 
-    private _tracks: Dictionary<Keyframe[]> = {}
+    targetName?: string
+
+    private _tracks: Dictionary<Track> = {}
+    private _trackKeys: string[] = []
+
     private _target: T
-
-    private _getter: AnimationPropGetter<T>
-    private _setter: AnimationPropSetter<T>
 
     private _loop: boolean
     private _delay = 0
     private _paused = false
+    private _maxTime = 0
+
+    private _additiveAnimator: Animator<any>
 
     private _doneList: DoneCallback[] = []
     private _onframeList: OnframeCallback<T>[] = []
 
-    private _clipList: Clip<T>[] = []
+    private _clip: Clip = null
 
-    constructor(target: T, loop: boolean, getter?: AnimationPropGetter<T>, setter?: AnimationPropSetter<T>) {
+    constructor(target: T, loop: boolean, additiveTo?: Animator<any>) {
         this._target = target;
         this._target = target;
-        this._loop = loop || false;
-        this._getter = getter || function (target: T, key: string) {
-            return (target as any)[key];
+        this._loop = loop;
+        if (loop) {
+            logError('Can\' use additive animation on looped animation.');
+            return;
         }
-        this._setter = setter || function (target: T, key: string, value: any) {
-            (target as any)[key] = value;
-        }
+        this._additiveAnimator = additiveTo;
+    }
+
+    getTarget() {
+        return this._target;
+    }
+
+    /**
+     * Target can be changed during animation
+     * For example if style is changed during state change.
+     * We need to change target to the new style object.
+     */
+    changeTarget(target: T) {
+        this._target = target;
     }
 
     /**
      * Set Animation keyframe
      * @param time 关键帧时间，单位是ms
      * @param props 关键帧的属性值，key-value表示
-     * @return {module:zrender/animation/Animator}
      */
     when(time: number, props: Dictionary<any>) {
-        const tracks = this._tracks;
-        for (let propName in props) {
-            if (!props.hasOwnProperty(propName)) {
-                continue;
-            }
+        return this.whenWithKeys(time, props, keys(props) as string[]);
+    }
 
-            if (!tracks[propName]) {
-                tracks[propName] = [];
+
+    // Fast path for add keyframes of aniamteTo
+    whenWithKeys(time: number, props: Dictionary<any>, propNames: string[]) {
+        const tracks = this._tracks;
+        for (let i = 0; i < propNames.length; i++) {
+            const propName = propNames[i];
+
+            let track = tracks[propName];
+            if (!track) {
+                track = tracks[propName] = new Track(propName);
+
+                let initialValue;
+                const additiveTrack = this._additiveAnimator && this._additiveAnimator.getTrack(propName);
+                if (additiveTrack) {
+                    const lastFinalKf = additiveTrack.keyframes[additiveTrack.keyframes.length - 1];
+                    // Use the last state of additived animator.
+                    initialValue = lastFinalKf && lastFinalKf.value;
+                    if (additiveTrack.isValueColor && initialValue) {
+                        // Convert to rgba string
+                        initialValue = rgba2String(initialValue as number[]);
+                    }
+                }
+                else {
+                    initialValue = (this._target as any)[propName];
+                }
                 // Invalid value
-                const value = this._getter(this._target, propName);
-                if (value == null) {
+                if (initialValue == null) {
                     // zrLog('Invalid property ' + propName);
                     continue;
                 }
@@ -292,19 +744,18 @@ export default class Animator<T> {
                 // Else
                 //  Initialize value from current prop value
                 if (time !== 0) {
-                    tracks[propName].push({
-                        time: 0,
-                        value: cloneValue(value)
-                    });
+                    track.addKeyframe(0, cloneValue(initialValue));
                 }
+
+                this._trackKeys.push(propName);
             }
-            tracks[propName].push({
-                time: time,
-                value: props[propName]
-            });
+            // PENDING
+            track.addKeyframe(time, cloneValue(props[propName]));
         }
+        this._maxTime = Math.max(this._maxTime, time);
         return this;
     }
+
     /**
      * 添加动画每一帧的回调函数
      * @param callback
@@ -315,16 +766,12 @@ export default class Animator<T> {
     }
 
     pause() {
-        for (let i = 0; i < this._clipList.length; i++) {
-            this._clipList[i].pause();
-        }
+        this._clip.pause();
         this._paused = true;
     }
 
     resume() {
-        for (let i = 0; i < this._clipList.length; i++) {
-            this._clipList[i].resume();
-        }
+        this._clip.resume();
         this._paused = false;
     }
 
@@ -332,11 +779,11 @@ export default class Animator<T> {
         return !!this._paused;
     }
 
-    _DoneCallback() {
+    _doneCallback() {
         // Clear all tracks
-        this._tracks = {};
-        // Clear all clips
-        this._clipList.length = 0;
+        this._tracks = null;
+        // Clear clip
+        this._clip = null;
 
         const doneList = this._doneList;
         const len = doneList.length;
@@ -347,80 +794,86 @@ export default class Animator<T> {
     /**
      * Start the animation
      * @param easing
-     *         动画缓动函数，详见{@link module:zrender/animation/easing}
      * @param  forceAnimate
      * @return
      */
-    start(easing?: easingType, forceAnimate?: boolean) {
+    start(easing?: AnimationEasing, forceAnimate?: boolean) {
 
         const self = this;
-        let clipCount = 0;
 
-        const oneTrackDone = function () {
-            clipCount--;
-            if (!clipCount) {
-                self._DoneCallback();
-            }
-        };
-
-        let lastClip;
-        for (let propName in this._tracks) {
-            if (!this._tracks.hasOwnProperty(propName)) {
-                continue;
-            }
-            const clip = this._createTrackClip(
-                easing, oneTrackDone,
-                this._tracks[propName], propName, forceAnimate
-            );
-            if (clip) {
-                this._clipList.push(clip);
-                clipCount++;
-
-                // If start after added to animation
-                if (this.animation) {
-                    this.animation.addClip(clip);
-                }
-
-                lastClip = clip;
+        let tracks: Track[] = [];
+        for (let i = 0; i < this._trackKeys.length; i++) {
+            const propName = this._trackKeys[i];
+            const track = this._tracks[propName];
+            const additiveTrack = this._additiveAnimator && this._additiveAnimator.getTrack(propName);
+            track.prepare(additiveTrack);
+            if (track.needsAnimate() || forceAnimate) {
+                tracks.push(track);
             }
         }
-
         // Add during callback on the last clip
-        if (lastClip) {
-            const oldOnFrame = lastClip.onframe;
-            lastClip.onframe = function (target: T, percent: number) {
-                oldOnFrame(target, percent);
-
-                for (let i = 0; i < self._onframeList.length; i++) {
-                    self._onframeList[i](target, percent);
+        if (tracks.length) {
+            const clip = new Clip({
+                life: this._maxTime,
+                loop: this._loop,
+                delay: this._delay,
+                onframe(percent: number) {
+                    // Remove additived animator if it's finished.
+                    // For the purpose of memory effeciency.
+                    if (self._additiveAnimator && !self._additiveAnimator._clip) {
+                        self._additiveAnimator = null;
+                    }
+                    for (let i = 0; i < tracks.length; i++) {
+                        tracks[i].step(self._target, percent);
+                    }
+                    for (let i = 0; i < self._onframeList.length; i++) {
+                        self._onframeList[i](self._target, percent);
+                    }
+                },
+                ondestroy() {
+                    for (let i = 0; i < tracks.length; i++) {
+                        tracks[i].setFinished();
+                    }
+                    self._doneCallback();
                 }
-            };
+            });
+            this._clip = clip;
+
+            if (this.animation) {
+                this.animation.addClip(clip);
+            }
+
+            if (easing && easing !== 'spline') {
+                clip.easing = easing;
+            }
+        }
+        else {
+            // This optimization will help the case that in the upper application
+            // the view may be refreshed frequently, where animation will be
+            // called repeatly but nothing changed.
+            this._doneCallback();
         }
 
-        // This optimization will help the case that in the upper application
-        // the view may be refreshed frequently, where animation will be
-        // called repeatly but nothing changed.
-        if (!clipCount) {
-            this._DoneCallback();
-        }
         return this;
     }
     /**
      * Stop animation
      * @param {boolean} forwardToLast If move to last frame before stop
      */
-    stop(forwardToLast: boolean) {
-        const clipList = this._clipList;
-        const animation = this.animation;
-        for (let i = 0; i < clipList.length; i++) {
-            const clip = clipList[i];
-            if (forwardToLast) {
-                // Move to last frame before stop
-                clip.onframe(this._target, 1);
-            }
-            animation && animation.removeClip(clip);
+    stop(forwardToLast?: boolean) {
+        if (!this._clip) {
+            return;
         }
-        clipList.length = 0;
+        const clip = this._clip;
+        const animation = this.animation;
+        if (forwardToLast) {
+            // Move to last frame before stop
+            clip.onframe(1);
+        }
+        if (animation) {
+            animation.removeClip(clip);
+        }
+        this._clip = null;
     }
     /**
      * Set when animation delay starts
@@ -441,260 +894,75 @@ export default class Animator<T> {
         return this;
     }
 
-    getClips() {
-        return this._clipList;
+    getClip() {
+        return this._clip;
     }
 
+    getTrack(propName: string) {
+        return this._tracks[propName];
+    }
 
-    private _createTrackClip(
-        easing: easingType,
-        oneTrackDone: DoneCallback,
-        keyframes: Keyframe[],
-        propName: string,
-        forceAnimate: boolean
-    ) {
-        const getter = this._getter;
-        const setter = this._setter;
-        const useSpline = easing === 'spline';
-
-        const trackLen = keyframes.length;
-        if (!trackLen) {
-            return;
+    /**
+     * Return true if animator is not available anymore.
+     */
+    stopTracks(propNames: string[], forwardToLast?: boolean): boolean {
+        if (!propNames.length || !this._clip) {
+            return true;
         }
-        // Guess data type
-        const firstVal = keyframes[0].value;
-        const isValueArray = isArrayLike(firstVal);
-        let isValueColor = false;
-        let isValueString = false;
 
-        // For vertices morphing
-        const arrDim = isValueArray ? guessArrayDim(keyframes) : 0;
-
-        let trackMaxTime;
-        // Sort keyframe as ascending
-        keyframes.sort(function (a: Keyframe, b: Keyframe) {
-            return a.time - b.time;
-        });
-
-        trackMaxTime = keyframes[trackLen - 1].time;
-        // Percents of each keyframe
-        const kfPercents: number[] = [];
-        // Value of each keyframe
-        const kfValues: InterpolatableType[] = [];
-        let prevValue = keyframes[0].value;
-        let isAllValueEqual = true;
-        for (let i = 0; i < trackLen; i++) {
-            kfPercents.push(keyframes[i].time / trackMaxTime);
-            // Assume value is a color when it is a string
-            let value = keyframes[i].value;
-
-            // Check if value is not all equal, deep check if value is array
-            if (isAllValueEqual) {
-                if (isValueArray && !(arrDim === 1
-                    ? is1DArraySame(value as NumberArray, prevValue as NumberArray)
-                    : is2DArraySame(value as NumberArray[], prevValue as NumberArray[])
-                )) {
-                    isAllValueEqual = false
+        for (let i = 0; i < propNames.length; i++) {
+            const track = this._tracks[propNames[i]];
+            if (track) {
+                if (forwardToLast) {
+                    track.step(this._target, 1);
                 }
-                else if (value !== prevValue) { // number or string
-                    isAllValueEqual = false;
-                }
-                prevValue = value;
+                // Set track to finished
+                track.setFinished();
             }
-
-            // Try converting a string to a color array
-            if (typeof value === 'string') {
-                const colorArray = color.parse(value);
-                if (colorArray) {
-                    value = colorArray;
-                    isValueColor = true;
-                }
-                else {
-                    isValueString = true;
-                }
-            }
-            kfValues.push(value);
         }
-        if (!forceAnimate && isAllValueEqual) {
+        let allAborted = true;
+        for (let i = 0; i < this._trackKeys.length; i++) {
+            if (!this._tracks[this._trackKeys[i]].isFinished()) {
+                allAborted = false;
+                break;
+            }
+        }
+        // Remove clip if all tracks has been aborted.
+        if (allAborted && this.animation) {
+            this.animation.removeClip(this._clip);
+            this._clip = null;
+        }
+
+        return allAborted;
+    }
+
+    /**
+     * Save values of final state to target.
+     * It is mainly used in state mangement. When state is switching during animation.
+     * We need to save final state of animation to the normal state. Not interpolated value.
+     */
+    saveFinalToTarget(target: T) {
+        if (!target) {  // DO nothing if target is not given.
             return;
         }
 
-        const lastValue = kfValues[trackLen - 1];
-        // Polyfill array and NaN value
-        for (let i = 0; i < trackLen - 1; i++) {
-            if (isValueArray) {
-                fillArray(
-                    kfValues[i] as NumberArray | NumberArray[],
-                    lastValue as NumberArray | NumberArray[],
-                    arrDim
-                );
+        for (let i = 0; i < this._trackKeys.length; i++) {
+            const propName = this._trackKeys[i];
+            const track = this._tracks[propName];
+            if (track.isFinished()) {   // Ignore finished track.
+                continue;
             }
-            else {
-                // Unkown types
-                if (isNaN(kfValues[i] as number) && !isNaN(lastValue as number)
-                    && !isValueString && !isValueColor
-                ) {
-                    kfValues[i] = lastValue;
+
+            const lastKf = track.keyframes[track.keyframes.length - 1];
+            if (lastKf) {
+                // TODO CLONE?
+                let val: unknown = cloneValue(lastKf.value as any);
+                if (track.isValueColor) {
+                    val = rgba2String(val as number[]);
                 }
+
+                (target as any)[propName] = val;
             }
         }
-        isValueArray && fillArray(
-            getter(this._target, propName) as NumberArray | NumberArray[],
-            lastValue as NumberArray | NumberArray[],
-            arrDim
-        );
-
-        // Cache the key of last frame to speed up when
-        // animation playback is sequency
-        let lastFrame = 0;
-        let lastFramePercent = 0;
-        let start;
-        let w;
-        let p0;
-        let p1;
-        let p2;
-        let p3;
-        let rgba: number[];
-
-        if (isValueColor) {
-            rgba = [0, 0, 0, 0];
-        }
-
-        const onframe = function (target: T, percent: number) {
-            // Find the range keyframes
-            // kf1-----kf2---------current--------kf3
-            // find kf2 and kf3 and do interpolation
-            let frame;
-            // In the easing function like elasticOut, percent may less than 0
-            if (percent < 0) {
-                frame = 0;
-            }
-            else if (percent < lastFramePercent) {
-                // Start from next key
-                // PENDING start from lastFrame ?
-                start = Math.min(lastFrame + 1, trackLen - 1);
-                for (frame = start; frame >= 0; frame--) {
-                    if (kfPercents[frame] <= percent) {
-                        break;
-                    }
-                }
-                // PENDING really need to do this ?
-                frame = Math.min(frame, trackLen - 2);
-            }
-            else {
-                for (frame = lastFrame; frame < trackLen; frame++) {
-                    if (kfPercents[frame] > percent) {
-                        break;
-                    }
-                }
-                frame = Math.min(frame - 1, trackLen - 2);
-            }
-            lastFrame = frame;
-            lastFramePercent = percent;
-
-            const range = (kfPercents[frame + 1] - kfPercents[frame]);
-            if (range === 0) {
-                return;
-            }
-            else {
-                w = (percent - kfPercents[frame]) / range;
-            }
-            if (useSpline) {
-                p1 = kfValues[frame];
-                p0 = kfValues[frame === 0 ? frame : frame - 1];
-                p2 = kfValues[frame > trackLen - 2 ? trackLen - 1 : frame + 1];
-                p3 = kfValues[frame > trackLen - 3 ? trackLen - 1 : frame + 2];
-                if (isValueArray) {
-                    arrDim === 1
-                        ? catmullRomInterpolate1DArray(
-                            p0 as NumberArray, p1 as NumberArray, p2 as NumberArray, p3 as NumberArray,
-                            w, w * w, w * w * w,
-                            getter(target, propName) as NumberArray,
-                        )
-                        : catmullRomInterpolate2DArray(
-                            p0 as NumberArray[], p1 as NumberArray[], p2 as NumberArray[], p3 as NumberArray[],
-                            w, w * w, w * w * w,
-                            getter(target, propName) as NumberArray[],
-                        )
-                }
-                else {
-                    let value;
-                    if (isValueColor) {
-                        value = catmullRomInterpolate1DArray(
-                            p0 as NumberArray, p1 as NumberArray, p2 as NumberArray, p3 as NumberArray,
-                            w, w * w, w * w * w,
-                            rgba
-                        );
-                        value = rgba2String(rgba);
-                    }
-                    else if (isValueString) {
-                        // String is step(0.5)
-                        return interpolateString(p1 as string, p2 as string, w);
-                    }
-                    else {
-                        value = catmullRomInterpolate(
-                            p0 as number, p1 as number, p2 as number, p3 as number,
-                            w, w * w, w * w * w
-                        );
-                    }
-                    setter(
-                        target,
-                        propName,
-                        value
-                    );
-                }
-            }
-            else {
-                if (isValueArray) {
-                    arrDim === 1
-                        ? interpolate1DArray(
-                            kfValues[frame] as NumberArray,
-                            kfValues[frame + 1] as NumberArray,
-                            w,
-                            getter(target, propName) as NumberArray
-                        )
-                        : interpolate2DArray(
-                            kfValues[frame] as NumberArray[],
-                            kfValues[frame + 1] as NumberArray[],
-                            w,
-                            getter(target, propName) as NumberArray[]
-                        )
-                }
-                else {
-                    let value;
-                    if (isValueColor) {
-                        interpolate1DArray(
-                            kfValues[frame] as NumberArray,
-                            kfValues[frame + 1] as NumberArray,
-                            w, rgba
-                        )
-                        value = rgba2String(rgba);
-                    }
-                    else if (isValueString) {
-                        // String is step(0.5)
-                        return interpolateString(kfValues[frame] as string, kfValues[frame + 1] as string, w);
-                    }
-                    else {
-                        value = interpolateNumber(kfValues[frame] as number, kfValues[frame + 1] as number, w);
-                    }
-                    setter(target, propName, value);
-                }
-            }
-        };
-
-        const clip = new Clip<T>({
-            target: this._target,
-            life: trackMaxTime,
-            loop: this._loop,
-            delay: this._delay,
-            onframe: onframe,
-            ondestroy: oneTrackDone
-        });
-
-        if (easing && easing !== 'spline') {
-            clip.easing = easing;
-        }
-
-        return clip;
     }
 }

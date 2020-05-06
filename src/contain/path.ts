@@ -219,7 +219,7 @@ function containPath(
     let yi = 0;
     let x0 = 0;
     let y0 = 0;
-    let x1
+    let x1;
     let y1;
 
     for (let i = 0; i < data.length;) {

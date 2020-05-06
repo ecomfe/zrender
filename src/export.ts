@@ -9,14 +9,17 @@ import * as colorTool from './tool/color';
 import * as pathTool from './tool/path';
 import {parseSVG} from './tool/parseSVG';
 
+export {default as Point} from './core/Point';
 
-export {default as Group} from './container/Group';
+export {default as Element} from './Element';
+
+export {default as Group} from './graphic/Group';
 export {default as Path} from './graphic/Path';
 export {default as Image} from './graphic/Image';
 export {default as CompoundPath} from './graphic/CompoundPath';
-export {default as Text} from './graphic/Text';
+export {default as TSpan} from './graphic/TSpan';
 export {default as IncrementalDisplayable} from './graphic/IncrementalDisplayable';
-export {default as RichText} from './container/RichText';
+export {default as Text} from './graphic/Text';
 
 export {default as Arc} from './graphic/shape/Arc';
 export {default as BezierCurve} from './graphic/shape/BezierCurve';
@@ -39,6 +42,7 @@ export {default as LinearGradient} from './graphic/LinearGradient';
 export {default as RadialGradient} from './graphic/RadialGradient';
 export {default as Pattern} from './graphic/Pattern';
 export {default as BoundingRect} from './core/BoundingRect';
+export {default as OrientedBoundingRect} from './core/OrientedBoundingRect';
 
 export {matrix};
 export {vector};

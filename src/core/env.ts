@@ -1,6 +1,6 @@
 declare const wx: {
     getSystemInfoSync: Function
-}
+};
 
 class Browser {
     firefox = false

@@ -6,14 +6,14 @@
 
 type easingFunc = (percent: number) => number;
 
-export type easingType = keyof typeof easing | easingFunc | 'spline';
+export type AnimationEasing = keyof typeof easing | easingFunc | 'spline';
 
 const easing = {
     /**
     * @param {number} k
     * @return {number}
     */
-    linear: function (k: number) {
+    linear(k: number) {
         return k;
     },
 
@@ -21,21 +21,21 @@ const easing = {
     * @param {number} k
     * @return {number}
     */
-    quadraticIn: function (k: number) {
+    quadraticIn(k: number) {
         return k * k;
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    quadraticOut: function (k: number) {
+    quadraticOut(k: number) {
         return k * (2 - k);
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    quadraticInOut: function (k: number) {
+    quadraticInOut(k: number) {
         if ((k *= 2) < 1) {
             return 0.5 * k * k;
         }
@@ -47,21 +47,21 @@ const easing = {
     * @param {number} k
     * @return {number}
     */
-    cubicIn: function (k: number) {
+    cubicIn(k: number) {
         return k * k * k;
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    cubicOut: function (k: number) {
+    cubicOut(k: number) {
         return --k * k * k + 1;
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    cubicInOut: function (k: number) {
+    cubicInOut(k: number) {
         if ((k *= 2) < 1) {
             return 0.5 * k * k * k;
         }
@@ -73,21 +73,21 @@ const easing = {
     * @param {number} k
     * @return {number}
     */
-    quarticIn: function (k: number) {
+    quarticIn(k: number) {
         return k * k * k * k;
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    quarticOut: function (k: number) {
+    quarticOut(k: number) {
         return 1 - (--k * k * k * k);
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    quarticInOut: function (k: number) {
+    quarticInOut(k: number) {
         if ((k *= 2) < 1) {
             return 0.5 * k * k * k * k;
         }
@@ -99,21 +99,21 @@ const easing = {
     * @param {number} k
     * @return {number}
     */
-    quinticIn: function (k: number) {
+    quinticIn(k: number) {
         return k * k * k * k * k;
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    quinticOut: function (k: number) {
+    quinticOut(k: number) {
         return --k * k * k * k * k + 1;
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    quinticInOut: function (k: number) {
+    quinticInOut(k: number) {
         if ((k *= 2) < 1) {
             return 0.5 * k * k * k * k * k;
         }
@@ -125,21 +125,21 @@ const easing = {
     * @param {number} k
     * @return {number}
     */
-    sinusoidalIn: function (k: number) {
+    sinusoidalIn(k: number) {
         return 1 - Math.cos(k * Math.PI / 2);
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    sinusoidalOut: function (k: number) {
+    sinusoidalOut(k: number) {
         return Math.sin(k * Math.PI / 2);
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    sinusoidalInOut: function (k: number) {
+    sinusoidalInOut(k: number) {
         return 0.5 * (1 - Math.cos(Math.PI * k));
     },
 
@@ -148,21 +148,21 @@ const easing = {
     * @param {number} k
     * @return {number}
     */
-    exponentialIn: function (k: number) {
+    exponentialIn(k: number) {
         return k === 0 ? 0 : Math.pow(1024, k - 1);
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    exponentialOut: function (k: number) {
+    exponentialOut(k: number) {
         return k === 1 ? 1 : 1 - Math.pow(2, -10 * k);
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    exponentialInOut: function (k: number) {
+    exponentialInOut(k: number) {
         if (k === 0) {
             return 0;
         }
@@ -180,21 +180,21 @@ const easing = {
     * @param {number} k
     * @return {number}
     */
-    circularIn: function (k: number) {
+    circularIn(k: number) {
         return 1 - Math.sqrt(1 - k * k);
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    circularOut: function (k: number) {
+    circularOut(k: number) {
         return Math.sqrt(1 - (--k * k));
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    circularInOut: function (k: number) {
+    circularInOut(k: number) {
         if ((k *= 2) < 1) {
             return -0.5 * (Math.sqrt(1 - k * k) - 1);
         }
@@ -206,7 +206,7 @@ const easing = {
     * @param {number} k
     * @return {number}
     */
-    elasticIn: function (k: number) {
+    elasticIn(k: number) {
         let s;
         let a = 0.1;
         let p = 0.4;
@@ -230,7 +230,7 @@ const easing = {
     * @param {number} k
     * @return {number}
     */
-    elasticOut: function (k: number) {
+    elasticOut(k: number) {
         let s;
         let a = 0.1;
         let p = 0.4;
@@ -254,7 +254,7 @@ const easing = {
     * @param {number} k
     * @return {number}
     */
-    elasticInOut: function (k: number) {
+    elasticInOut(k: number) {
         let s;
         let a = 0.1;
         let p = 0.4;
@@ -285,7 +285,7 @@ const easing = {
     * @param {number} k
     * @return {number}
     */
-    backIn: function (k: number) {
+    backIn(k: number) {
         let s = 1.70158;
         return k * k * ((s + 1) * k - s);
     },
@@ -293,7 +293,7 @@ const easing = {
     * @param {number} k
     * @return {number}
     */
-    backOut: function (k: number) {
+    backOut(k: number) {
         let s = 1.70158;
         return --k * k * ((s + 1) * k + s) + 1;
     },
@@ -301,7 +301,7 @@ const easing = {
     * @param {number} k
     * @return {number}
     */
-    backInOut: function (k: number) {
+    backInOut(k: number) {
         let s = 1.70158 * 1.525;
         if ((k *= 2) < 1) {
             return 0.5 * (k * k * ((s + 1) * k - s));
@@ -314,14 +314,14 @@ const easing = {
     * @param {number} k
     * @return {number}
     */
-    bounceIn: function (k: number) {
+    bounceIn(k: number) {
         return 1 - easing.bounceOut(1 - k);
     },
     /**
     * @param {number} k
     * @return {number}
     */
-    bounceOut: function (k: number) {
+    bounceOut(k: number) {
         if (k < (1 / 2.75)) {
             return 7.5625 * k * k;
         }
@@ -339,7 +339,7 @@ const easing = {
     * @param {number} k
     * @return {number}
     */
-    bounceInOut: function (k: number) {
+    bounceInOut(k: number) {
         if (k < 0.5) {
             return easing.bounceIn(k * 2) * 0.5;
         }

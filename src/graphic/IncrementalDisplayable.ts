@@ -10,6 +10,7 @@
 import Displayble from './Displayable';
 import BoundingRect from '../core/BoundingRect';
 import { MatrixArray } from '../core/matrix';
+import { Group } from '../export';
 
 const m: MatrixArray = [];
 // TODO Style override ?
@@ -26,7 +27,7 @@ export default class IncrementalDisplayble extends Displayble {
     private _cursor = 0
 
     traverse<T>(
-        cb: (this: T, el: IncrementalDisplayble) => void,
+        cb: (this: T, el: this) => void,
         context: T
     ) {
         cb.call(context, this);
@@ -51,7 +52,7 @@ export default class IncrementalDisplayble extends Displayble {
         this._displayables = [];
         this._temporaryDisplayables = [];
         this._cursor = 0;
-        this.dirty();
+        this.markRedraw();
 
         this.notClear = false;
     }
@@ -67,7 +68,7 @@ export default class IncrementalDisplayble extends Displayble {
         else {
             this._displayables.push(displayable);
         }
-        this.dirty();
+        this.markRedraw();
     }
 
     addDisplayables(displayables: Displayble[], notPersistent?: boolean) {
@@ -99,14 +100,14 @@ export default class IncrementalDisplayble extends Displayble {
         for (let i = this._cursor; i < this._displayables.length; i++) {
             const displayable = this._displayables[i];
             // PENDING
-            displayable.parent = this;
+            displayable.parent = this as unknown as Group;
             displayable.update();
             displayable.parent = null;
         }
         for (let i = 0; i < this._temporaryDisplayables.length; i++) {
             const displayable = this._temporaryDisplayables[i];
             // PENDING
-            displayable.parent = this;
+            displayable.parent = this as unknown as Group;
             displayable.update();
             displayable.parent = null;
         }

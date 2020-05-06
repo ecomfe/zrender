@@ -9,9 +9,8 @@
 import * as util from '../core/util';
 import Eventful from '../core/Eventful';
 import requestAnimationFrame from './requestAnimationFrame';
-import Animator, {AnimationPropSetter, AnimationPropGetter} from './Animator';
-import Clip, {DeferredEventTypes} from './Clip';
-import { Dictionary } from '../core/types';
+import Animator from './Animator';
+import Clip from './Clip';
 
 
 interface Stage {
@@ -48,7 +47,10 @@ export default class Animation extends Eventful {
 
     onframe: OnframeCallback
 
-    private _clips: Clip<any>[] = []
+    // Use linked list to store clip
+    private _clipsHead: Clip
+    private _clipsTail: Clip
+
     private _running: boolean = false
 
     private _time: number = 0
@@ -70,74 +72,77 @@ export default class Animation extends Eventful {
     /**
      * Add clip
      */
-    addClip(clip: Clip<any>) {
-        this._clips.push(clip);
+    addClip(clip: Clip) {
+        if (!this._clipsHead) {
+            this._clipsHead = this._clipsTail = clip;
+        }
+        else {
+            this._clipsTail.next = clip;
+            clip.prev = this._clipsTail;
+            clip.next = null;
+            this._clipsTail = clip;
+        }
     }
     /**
      * Add animator
      */
     addAnimator(animator: Animator<any>) {
         animator.animation = this;
-        const clips = animator.getClips();
-        for (let i = 0; i < clips.length; i++) {
-            this.addClip(clips[i]);
+        const clip = animator.getClip();
+        if (clip) {
+            this.addClip(clip);
         }
     }
     /**
      * Delete animation clip
      */
-    removeClip(clip: Clip<any>) {
-        const idx = util.indexOf(this._clips, clip);
-        if (idx >= 0) {
-            this._clips.splice(idx, 1);
+    removeClip(clip: Clip) {   // TODO Make sure clip is in the animation.
+        const prev = clip.prev;
+        const next = clip.next;
+        if (prev) {
+            prev.next = next;
         }
+        else {
+            // Is head
+            this._clipsHead = next;
+        }
+        if (next) {
+            next.prev = prev;
+        }
+        else {
+            // Is tail
+            this._clipsTail = prev;
+        }
+        clip.next = clip.prev = null;
     }
 
     /**
      * Delete animation clip
      */
     removeAnimator(animator: Animator<any>) {
-        const clips = animator.getClips();
-        for (let i = 0; i < clips.length; i++) {
-            this.removeClip(clips[i]);
+        const clip = animator.getClip();
+        if (clip) {
+            this.removeClip(clip);
         }
         animator.animation = null;
     }
 
-    _update() {
+    update() {
         const time = new Date().getTime() - this._pausedTime;
         const delta = time - this._time;
-        const clips = this._clips;
-        let len = clips.length;
+        let clip = this._clipsHead;
 
-        const deferredEvents: DeferredEventTypes[] = [];
-        const deferredClips = [];
-        for (let i = 0; i < len; i++) {
-            const clip = clips[i];
-            const e = clip.step(time, delta);
-            // Throw out the events need to be called after
-            // stage.update, like destroy
-            if (e) {
-                deferredEvents.push(e);
-                deferredClips.push(clip);
-            }
-        }
-
-        // Remove the finished clip
-        for (let i = 0; i < len;) {
-            if (clips[i].needsRemove()) {
-                clips[i] = clips[len - 1];
-                clips.pop();
-                len--;
+        while (clip) {
+            let finished = clip.step(time, delta);
+            if (finished) {
+                clip.ondestroy && clip.ondestroy();
+                const nextClip = clip.next;
+                this.removeClip(clip);
+                clip = nextClip;
             }
             else {
-                i++;
+                clip = clip.next;
             }
-        }
-
-        len = deferredEvents.length;
-        for (let i = 0; i < len; i++) {
-            deferredClips[i].fire(deferredEvents[i]);
         }
 
         this._time = time;
@@ -164,7 +169,7 @@ export default class Animation extends Eventful {
 
                 requestAnimationFrame(step);
 
-                !self._paused && self._update();
+                !self._paused && self.update();
             }
         }
 
@@ -213,14 +218,22 @@ export default class Animation extends Eventful {
      * Clear animation.
      */
     clear() {
-        this._clips = [];
+        let clip = this._clipsHead;
+
+        while (clip) {
+            let nextClip = clip.next;
+            clip.prev = clip.next = null;
+            clip = nextClip;
+        }
+
+        this._clipsHead = this._clipsTail = null;
     }
 
     /**
      * Whether animation finished.
      */
     isFinished() {
-        return !this._clips.length;
+        return this._clipsHead == null;
     }
 
     /**
@@ -229,16 +242,12 @@ export default class Animation extends Eventful {
     // TODO Gap
     animate<T>(target: T, options: {
         loop?: boolean  // Whether loop animation.
-        getter?: AnimationPropGetter<T>    // Get value from target.
-        setter?: AnimationPropSetter<T>    // Set value to target.
     }) {
         options = options || {};
 
         const animator = new Animator(
             target,
-            options.loop,
-            options.getter,
-            options.setter
+            options.loop
         );
 
         this.addAnimator(animator);

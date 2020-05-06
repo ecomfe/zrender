@@ -1,31 +1,30 @@
-/**
- * 扇形
- * @module zrender/graphic/shape/Sector
- */
-
-import Path, { PathOption } from '../Path';
+import Path, { PathProps } from '../Path';
 
 class SectorShape {
-    cx: number = 0
-    cy: number = 0
-    r0: number = 0
-    r: number = 0
-    startAngle: number = 0
-    endAngle: number = Math.PI * 2
+    cx = 0
+    cy = 0
+    r0 = 0
+    r = 0
+    startAngle = 0
+    endAngle = Math.PI * 2
     clockwise: boolean = true
 }
 
-export default class Sector extends Path {
-
-    type = 'sector'
+interface SectorProps extends PathProps {
+    shape?: Partial<SectorShape>
+}
+class Sector extends Path<SectorProps> {
 
     shape: SectorShape
 
-    constructor(opts?: PathOption & {
-        shape: Partial<SectorShape>
-    }) {
-        super(opts, null, new SectorShape());
+    constructor(opts?: SectorProps) {
+        super(opts);
     }
+
+    getDefaultShape() {
+        return new SectorShape();
+    }
+
 
     buildPath(ctx: CanvasRenderingContext2D, shape: SectorShape) {
 
@@ -60,6 +59,10 @@ export default class Sector extends Path {
 
     isZeroArea() {
         return this.shape.startAngle === this.shape.endAngle
-            || this.shape.r === this.shape.r0
+            || this.shape.r === this.shape.r0;
     }
 }
+
+Sector.prototype.type = 'sector';
+
+export default Sector;

@@ -2,7 +2,7 @@
  * 贝塞尔曲线
  */
 
-import Path, { PathOption } from '../Path';
+import Path, { PathProps } from '../Path';
 import * as vec2 from '../../core/vector';
 import {
     quadraticSubdivide,
@@ -45,19 +45,26 @@ function someVectorAt(shape: BezierCurveShape, t: number, isTangent: boolean) {
     }
 }
 
-export default class BezierCurve extends Path {
-
-    type = 'bezier-curve'
+interface BezierCurveProps extends PathProps {
+    shape?: Partial<BezierCurveShape>
+}
+class BezierCurve extends Path<BezierCurveProps> {
 
     shape: BezierCurveShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<BezierCurveShape>
-    }) {
-        super(opts, {
+    constructor(opts?: BezierCurveProps) {
+        super(opts);
+    }
+
+    getDefaultStyle() {
+        return {
             stroke: '#000',
-            fill: null
-        }, new BezierCurveShape());
+            fill: null as string
+        };
+    }
+
+    getDefaultShape() {
+        return new BezierCurveShape();
     }
 
     buildPath(ctx: CanvasRenderingContext2D, shape: BezierCurveShape) {
@@ -133,3 +140,7 @@ export default class BezierCurve extends Path {
         return vec2.normalize(p, p);
     }
 };
+
+BezierCurve.prototype.type = 'bezier-curve';
+
+export default BezierCurve;

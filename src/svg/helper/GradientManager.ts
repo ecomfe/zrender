@@ -12,11 +12,11 @@ import { LinearGradientObject } from '../../graphic/LinearGradient';
 import { RadialGradientObject } from '../../graphic/RadialGradient';
 
 function isLinearGradient(value: GradientObject): value is LinearGradientObject {
-    return value.type === 'linear'
+    return value.type === 'linear';
 }
 
 function isRadialGradient(value: GradientObject): value is RadialGradientObject {
-    return value.type === 'radial'
+    return value.type === 'radial';
 }
 
 type GradientObjectExtended = GradientObject & {

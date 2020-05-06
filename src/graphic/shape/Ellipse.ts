@@ -2,7 +2,7 @@
  * 椭圆形状
  */
 
-import Path, { PathOption } from '../Path';
+import Path, { PathProps } from '../Path';
 
 class EllipseShape {
     cx = 0
@@ -11,16 +11,19 @@ class EllipseShape {
     ry = 0
 }
 
-export default class Ellipse extends Path {
-
-    type = 'ellipse'
+interface EllipseProps extends PathProps {
+    shape?: Partial<EllipseShape>
+}
+class Ellipse extends Path<EllipseProps> {
 
     shape: EllipseShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<EllipseShape>
-    }) {
-        super(opts, null, new EllipseShape())
+    constructor(opts?: EllipseProps) {
+        super(opts);
+    }
+
+    getDefaultShape() {
+        return new EllipseShape();
     }
 
     buildPath(ctx: CanvasRenderingContext2D, shape: EllipseShape) {
@@ -40,3 +43,7 @@ export default class Ellipse extends Path {
         ctx.closePath();
     }
 }
+
+Ellipse.prototype.type = 'ellipse';
+
+export default Ellipse;

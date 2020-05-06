@@ -1,23 +1,69 @@
 import Transformable from './core/Transformable';
-import * as zrUtil from './core/util';
-import { easingType } from './animation/easing';
-import Animator from './animation/Animator';
+import { AnimationEasing } from './animation/easing';
+import Animator, {cloneValue} from './animation/Animator';
 import { ZRenderType } from './zrender';
-import { VectorArray } from './core/vector';
-import { Dictionary, PropType, ElementEventName, ZRRawEvent, BuiltinTextPosition } from './core/types';
+import { Dictionary, ElementEventName, ZRRawEvent, BuiltinTextPosition, AllPropTypes, TextVerticalAlign, TextAlign } from './core/types';
 import Path from './graphic/Path';
-import BoundingRect from './core/BoundingRect';
+import BoundingRect, { RectLike } from './core/BoundingRect';
 import Eventful, {EventQuery, EventCallback} from './core/Eventful';
-import RichText from './container/RichText';
+import ZRText, { DefaultTextStyle } from './graphic/Text';
 import { calculateTextPosition, TextPositionCalculationResult } from './contain/text';
-import Storage from './Storage';
+import {
+    guid,
+    isObject,
+    keys,
+    extend,
+    indexOf,
+    logError,
+    mixin,
+    isArrayLike
+} from './core/util';
+import { Group } from './export';
+import Polyline from './graphic/shape/Polyline';
 
-interface TextLayout {
+export interface ElementAnimateConfig {
+    duration?: number
+    delay?: number
+    easing?: AnimationEasing
+    done?: Function
+    /**
+     * If force animate
+     * Prevent stop animation and callback
+     * immediently when target values are the same as current values.
+     */
+    force?: boolean
+    /**
+     * If use additive animation.
+     */
+    additive?: boolean
+    /**
+     * If set to final state before animation started.
+     * It can be useful if something you want to calcuate depends on the final state of element.
+     * Like bounding rect for text layouting.
+     *
+     * Only available in animateTo
+     */
+    setToFinal?: boolean
+}
+
+export interface ElementTextConfig {
     /**
      * Position relative to the element bounding rect
      * @default 'inside'
      */
-    position?: BuiltinTextPosition | number[] | string[]
+    position?: BuiltinTextPosition | (number | string)[]
+
+    /**
+     * Rotation of the label.
+     */
+    rotation?: number
+
+    /**
+     * Offset of the label.
+     * The difference of offset and position is that it will be applied
+     * in the rotation
+     */
+    offset?: number[]
 
     /**
      * Distance to the rect
@@ -31,7 +77,62 @@ interface TextLayout {
      */
     local?: boolean
 
+    /**
+     * `insideFill` is a color string or left empty.
+     * If a `textContent` is "inside", its final `fill` will be picked by this priority:
+     * `textContent.style.fill` > `textConfig.insideFill` > "auto-calculated-fill"
+     * In most cases, "auto-calculated-fill" is white.
+     */
+    insideFill?: string
+
+    /**
+     * `insideStroke` is a color string or left empth.
+     * If a `textContent` is "inside", its final `stroke` will be picked by this priority:
+     * `textContent.style.stroke` > `textConfig.insideStroke` > "auto-calculated-stroke"
+     *
+     * The rule of getting "auto-calculated-stroke":
+     * If (A) the `fill` is specified in style (either in `textContent.style` or `textContent.style.rich`)
+     * or (B) needed to draw text background (either defined in `textContent.style` or `textContent.style.rich`)
+     * "auto-calculated-stroke" will be null.
+     * Otherwise, "auto-calculated-stroke" will be the same as `fill` of this element if possible, or null.
+     *
+     * The reason of (A) is not decisive:
+     * 1. If users specify `fill` in style and still use "auto-calculated-stroke", the effect
+     * is not good and unexpected in some cases. It not easy and seams uncessary to auto calculate
+     * a proper `stroke` for the given `fill`, since they can specify `stroke` themselve.
+     * 2. Backward compat.
+     */
+    insideStroke?: string
+
+    /**
+     * `outsideFill` is a color string or left empty.
+     * If a `textContent` is "inside", its final `fill` will be picked by this priority:
+     * `textContent.style.fill` > `textConfig.outsideFill` > #000
+     */
+    outsideFill?: string
+
+    /**
+     * `outsideStroke` is a color string or left empth.
+     * If a `textContent` is not "inside", its final `stroke` will be picked by this priority:
+     * `textContent.style.stroke` > `textConfig.outsideStroke` > "auto-calculated-stroke"
+     *
+     * The rule of getting "auto-calculated-stroke":
+     * If (A) the `fill` is specified in style (either in `textContent.style` or `textContent.style.rich`)
+     * or (B) needed to draw text background (either defined in `textContent.style` or `textContent.style.rich`)
+     * "auto-calculated-stroke" will be null.
+     * Otherwise, "auto-calculated-stroke" will be a neer white color to distinguish "front end"
+     * label with messy background (like other text label, line or other graphic).
+     */
+    outsideStroke?: string
+
+    /**
+     * Tell zrender I can sure this text is inside or not.
+     * In case position is not using builtin `inside` hints.
+     */
+    inside?: boolean
+
     // TODO applyClip
+    // TODO align, verticalAlign??
 }
 
 export interface ElementEvent {
@@ -54,7 +155,33 @@ export interface ElementEvent {
     stop: (this: ElementEvent) => void
 }
 
-export interface ElementOption {
+export type ElementEventCallback<Ctx, Impl> = (
+    this: CbThis<Ctx, Impl>, e: ElementEvent
+) => boolean | void
+type CbThis<Ctx, Impl> = unknown extends Ctx ? Impl : Ctx;
+
+interface ElementEventHandlerProps {
+    // Events
+    onclick: ElementEventCallback<unknown, unknown>
+    ondblclick: ElementEventCallback<unknown, unknown>
+    onmouseover: ElementEventCallback<unknown, unknown>
+    onmouseout: ElementEventCallback<unknown, unknown>
+    onmousemove: ElementEventCallback<unknown, unknown>
+    onmousewheel: ElementEventCallback<unknown, unknown>
+    onmousedown: ElementEventCallback<unknown, unknown>
+    onmouseup: ElementEventCallback<unknown, unknown>
+    oncontextmenu: ElementEventCallback<unknown, unknown>
+
+    ondrag: ElementEventCallback<unknown, unknown>
+    ondragstart: ElementEventCallback<unknown, unknown>
+    ondragend: ElementEventCallback<unknown, unknown>
+    ondragenter: ElementEventCallback<unknown, unknown>
+    ondragleave: ElementEventCallback<unknown, unknown>
+    ondragover: ElementEventCallback<unknown, unknown>
+    ondrop: ElementEventCallback<unknown, unknown>
+}
+
+export interface ElementProps extends Partial<ElementEventHandlerProps> {
     name?: string
     ignore?: boolean
     isGroup?: boolean
@@ -62,60 +189,59 @@ export interface ElementOption {
 
     silent?: boolean
     // From transform
-    position?: VectorArray
+    x?: number
+    y?: number
+    scaleX?: number
+    scaleY?: number
+    originX?: number
+    originY?: number
     rotation?: number
-    scale?: VectorArray
-    origin?: VectorArray
+
     globalScaleRatio?: number
 
-    textLayout?: TextLayout
-    textContent?: RichText
+    textConfig?: ElementTextConfig
+    textContent?: ZRText
 
     clipPath?: Path
+    drift?: Element['drift']
 
-    extra?: Dictionary<any>
+    // For echarts animation.
+    anid?: string
 }
 
-type ElementKey = keyof ElementOption
-type ElementPropertyType = PropType<ElementOption, ElementKey>
+// Properties can be used in state.
+export const PRESERVED_NORMAL_STATE = '__zr_normal__';
 
-type AnimationCallback = () => {}
+const PRIMARY_STATES_KEYS = ['x', 'y', 'scaleX', 'scaleY', 'originX', 'originY', 'rotation', 'ignore'] as const;
+const DEFAULT_ANIMATABLE_MAP: Partial<Record<ElementStatePropNames, boolean>> = {
+    x: true,
+    y: true,
+    scaleX: true,
+    scaleY: true,
+    originX: true,
+    originY: true,
+    rotation: true,
+    ignore: false
+}
 
-export type ElementEventCallback = (e: ElementEvent) => boolean | void
+export type ElementStatePropNames = (typeof PRIMARY_STATES_KEYS)[number] | 'textConfig';
+export type ElementState = Pick<ElementProps, ElementStatePropNames>;
 
 let tmpTextPosCalcRes = {} as TextPositionCalculationResult;
-let tmpBoundingRect = new BoundingRect();
+let tmpBoundingRect = new BoundingRect(0, 0, 0, 0);
 
-interface Element extends Transformable, Eventful {
+interface Element<Props extends ElementProps = ElementProps> extends Transformable, Eventful, ElementEventHandlerProps {
     // Provide more typed event callback params for mouse events.
-    on(event: ElementEventName, handler: ElementEventCallback, context?: object): Element
-    on(event: ElementEventName, query: EventQuery, handler: ElementEventCallback, context?: object): Element
-    // Provide general events handler for other custom events.
-    on(event: string, query?: EventCallback | EventQuery, handler?: EventCallback | Object, context?: Object): Element
+    on<Ctx>(event: ElementEventName, handler: ElementEventCallback<Ctx, this>, context?: Ctx): this
+    on<Ctx>(event: string, handler: EventCallback<Ctx, this>, context?: Ctx): this
 
-    // Mouse events
-    onclick: ElementEventCallback
-    ondblclick: ElementEventCallback
-    onmouseover: ElementEventCallback
-    onmouseout: ElementEventCallback
-    onmousemove: ElementEventCallback
-    onmousewheel: ElementEventCallback
-    onmousedown: ElementEventCallback
-    onmouseup: ElementEventCallback
-    oncontextmenu: ElementEventCallback
-
-    ondrag: ElementEventCallback
-    ondragstart: ElementEventCallback
-    ondragend: ElementEventCallback
-    ondragenter: ElementEventCallback
-    ondragleave: ElementEventCallback
-    ondragover: ElementEventCallback
-    ondrop: ElementEventCallback
+    on<Ctx>(event: ElementEventName, query: EventQuery, handler: ElementEventCallback<Ctx, this>, context?: Ctx): this
+    on<Ctx>(event: string, query: EventQuery, handler: EventCallback<Ctx, this>, context?: Ctx): this
 }
 
-class Element {
+class Element<Props extends ElementProps = ElementProps> {
 
-    id: number = zrUtil.guid()
+    id: number = guid()
     /**
      * Element type
      */
@@ -151,18 +277,14 @@ class Element {
      */
     dragging: boolean
 
-    /**
-     * Parent element
-     */
-    parent: Element
+    parent: Group
 
-
-    animators: Animator<any>[] = [];
+    animators: Animator<any>[] = []
 
     /**
-     * Extra object to store any info not related to the Element
+     * If element is used as a component of other element.
      */
-    extra: Dictionary<any>
+    __hostTarget: Element
 
     /**
      * ZRender instance will be assigned when element is associated with zrender
@@ -170,11 +292,11 @@ class Element {
     __zr: ZRenderType
 
     /**
-     * Dirty flag. From which painter will determine if this displayable object needs brush.
+     * Dirty bits.
+     * From which painter will determine if this displayable object needs brush.
      */
-    __dirty: boolean
+    __dirty: number
 
-    __storage: Storage
     /**
      * path to clip the elements and its children, if it is a group.
      * @see http://www.w3.org/TR/2dcontext/#clipping-region
@@ -186,26 +308,53 @@ class Element {
      * `position`, `style.textAlign`, `style.textVerticalAlign`
      * of element will be ignored if textContent.position is set
      */
-    private _textContent: RichText
+    private _textContent: ZRText
 
     /**
-     * Layout of textContent
+     * Text guide line.
      */
-    textLayout: TextLayout
+    private _textGuide: Polyline
 
-    constructor(opts?: ElementOption) {
+    /**
+     * Config of textContent. Inlcuding layout, color, ...etc.
+     */
+    textConfig: ElementTextConfig
+
+    // FOR ECHARTS
+    /**
+     * Id for mapping animation
+     */
+    anid: string
+
+    currentStates?: string[] = []
+    /**
+     * Store of element state.
+     * '__normal__' key is preserved for default properties.
+     */
+    states: Dictionary<ElementState> = {}
+
+    /**
+     * Proxy function for getting state with given stateName.
+     * ZRender will first try to get with stateProxy. Then find from states if stateProxy returns nothing
+     */
+    stateProxy: (stateName: string) => ElementState
+
+    protected _normalState: ElementState
+
+    // Temporary storage for inside text color configuration.
+    private _innerTextDefaultStyle: DefaultTextStyle
+
+    constructor(props?: Props) {
         // Transformable needs position, rotation, scale
         Transformable.call(this);
         Eventful.call(this);
 
-        if (opts) {
-            if (opts.textContent) {
-                this.setTextContent(opts.textContent);
-            }
-            if (opts.clipPath) {
-                this.setClipPath(opts.clipPath);
-            }
-        }
+        this._init(props);
+    }
+
+    protected _init(props?: Props) {
+        // Init default properties
+        this.attr(props);
     }
 
     /**
@@ -231,75 +380,193 @@ class Element {
         m[5] += dy;
 
         this.decomposeTransform();
-        this.dirty();
+        this.markRedraw();
     }
 
     /**
      * Hook before update
      */
-    beforeUpdate () {}
+    beforeUpdate() {}
     /**
      * Hook after update
      */
-    afterUpdate () {}
+    afterUpdate() {}
     /**
      * Update each frame
      */
-    update () {
+    update() {
         this.updateTransform();
+        this.updateInnerText();
+    }
 
+    updateInnerText(forceUpdate?: boolean) {
         // Update textContent
         const textEl = this._textContent;
-        if (textEl) {
-            if (!this.textLayout) {
-                this.textLayout = {};
+        if (textEl && (!textEl.ignore || forceUpdate)) {
+            if (!this.textConfig) {
+                this.textConfig = {};
             }
-            const textLayout = this.textLayout;
-            const isLocal = textLayout.local;
-            tmpBoundingRect.copy(this.getBoundingRect());
-            if (!isLocal) {
-                tmpBoundingRect.applyTransform(this.transform);
+            const textConfig = this.textConfig;
+            const isLocal = textConfig.local;
+            let textAlign: TextAlign;
+            let textVerticalAlign: TextVerticalAlign;
+
+            let textStyleChanged = false;
+
+            // NOTE: Can't be used both as normal element and as textContent.
+            if (isLocal) {
+                // Apply host's transform.
+                // TODO parent is always be group for developers. But can be displayble inside.
+                textEl.parent = this as unknown as Group;
             }
             else {
-                textEl.parent = this;
+                textEl.parent = null;
             }
-            calculateTextPosition(tmpTextPosCalcRes, textLayout, tmpBoundingRect);
-            // TODO Not modify el.position?
-            textEl.position[0] = tmpTextPosCalcRes.x;
-            textEl.position[1] = tmpTextPosCalcRes.y;
-            if (tmpTextPosCalcRes.textAlign) {
-                textEl.style.textAlign = tmpTextPosCalcRes.textAlign;
+
+            // Force set attached text's position if `position` is in config.
+            if (textConfig.position != null) {
+                tmpBoundingRect.copy(this.getBoundingRect());
+                if (!isLocal) {
+                    tmpBoundingRect.applyTransform(this.transform);
+                }
+
+                if (this.calculateTextPosition) {
+                    this.calculateTextPosition(tmpTextPosCalcRes, textConfig, tmpBoundingRect);
+                }
+                else {
+                    calculateTextPosition(tmpTextPosCalcRes, textConfig, tmpBoundingRect);
+                }
+
+                // TODO Should modify back if textConfig.position is set to null again.
+                // Or textContent is detached.
+                textEl.x = tmpTextPosCalcRes.x;
+                textEl.y = tmpTextPosCalcRes.y;
+
+                // User specified align/verticalAlign has higher priority, which is
+                // useful in the case that attached text is rotated 90 degree.
+                textAlign = tmpTextPosCalcRes.align;
+                textVerticalAlign = tmpTextPosCalcRes.verticalAlign;
             }
-            if (tmpTextPosCalcRes.textVerticalAlign) {
-                textEl.style.textVerticalAlign = tmpTextPosCalcRes.textVerticalAlign;
+
+            if (textConfig.rotation != null) {
+                textEl.rotation = textConfig.rotation;
             }
+
+            let textOffset = textConfig.offset;
+            if (textOffset) {
+                textEl.x += textOffset[0];
+                textEl.y += textOffset[1];
+
+                textEl.originX = -textOffset[0];
+                textEl.originY = -textOffset[1];
+            }
+
+            // Calculate text color
+            const isInside = textConfig.inside == null  // Force to be inside or not.
+                ? (typeof textConfig.position === 'string' && textConfig.position.indexOf('inside') >= 0)
+                : textConfig.inside
+            const innerTextDefaultStyle = this._innerTextDefaultStyle || (this._innerTextDefaultStyle = {});
+
+            let textFill;
+            let textStroke;
+            let autoStroke;
+            if (isInside) {
+                // In most cases `textContent` need this "auto" strategy.
+                // So by default be 'auto'. Otherwise users need to literally
+                // set `insideFill: 'auto', insideStroke: 'auto'` each time.
+                textFill = textConfig.insideFill;
+                textStroke = textConfig.insideStroke;
+
+                if (textFill == null) {
+                    textFill = this.getInsideTextFill();
+                }
+                if (textStroke == null) {
+                    textStroke = this.getInsideTextStroke(textFill);
+                    autoStroke = true;
+                }
+            }
+            else {
+                textFill = textConfig.outsideFill;
+                textStroke = textConfig.outsideStroke;
+
+                // Not pretty sure by default use #000 or host el color on outsideFill.
+                // Conservatively, use #000.
+                if (textFill == null) {
+                    textFill = '#000';
+                }
+                // By default give a stroke to distinguish "front end" label with
+                // messy background (like other text label, line or other graphic).
+                // If textContent.style.fill specified, this auto stroke will not be used.
+                if (textStroke == null) {
+                    // If some time need to customize the default stroke getter,
+                    // add some kind of override method.
+                    textStroke = 'rgba(255, 255, 255, 0.9)';
+                    autoStroke = true;
+                }
+            }
+            // Default `textFill` should must have a value to ensure text can be displayed.
+            textFill = textFill || '#000';
+
+            if (textFill !== innerTextDefaultStyle.fill
+                || textStroke !== innerTextDefaultStyle.stroke
+                || autoStroke !== innerTextDefaultStyle.autoStroke
+                || textAlign !== innerTextDefaultStyle.align
+                || textVerticalAlign !== innerTextDefaultStyle.verticalAlign
+            ) {
+
+                textStyleChanged = true;
+
+                innerTextDefaultStyle.fill = textFill;
+                innerTextDefaultStyle.stroke = textStroke;
+                innerTextDefaultStyle.autoStroke = autoStroke;
+                innerTextDefaultStyle.align = textAlign;
+                innerTextDefaultStyle.verticalAlign = textVerticalAlign;
+
+                textEl.setDefaultTextStyle(innerTextDefaultStyle);
+            }
+
+            if (textStyleChanged) {
+                // Only mark style dirty if necessary. Update ZRText is costly.
+                textEl.dirtyStyle();
+            }
+
             // Mark textEl to update transform.
-            textEl.dirty();
+            textEl.markRedraw();
         }
     }
 
-    traverse<T> (
-        cb: (this: T, el: Element) => void,
-        context: T
+    protected getInsideTextFill(): string {
+        return '#fff';
+    }
+
+    protected getInsideTextStroke(textFill?: string): string {
+        return '#000';
+    }
+
+    // protected getOutsideFill() {
+    //     return '#000';
+    // }
+
+    // protected getOutsideStroke(textFill?: string) {
+    //     return 'rgba(255, 255, 255, 0.7)';
+    // }
+
+    traverse<Context>(
+        cb: (this: Context, el: Element<Props>) => void,
+        context?: Context
     ) {}
 
-    protected attrKV(key: ElementKey, value: ElementPropertyType) {
-        if (key === 'position' || key === 'scale' || key === 'origin') {
-            // Copy the array
-            if (value) {
-                let target = this[key];
-                if (!target) {
-                    target = this[key] = [];
-                }
-                target[0] = (value as VectorArray)[0];
-                target[1] = (value as VectorArray)[1];
-            }
+    protected attrKV(key: string, value: unknown) {
+        if (key === 'textConfig') {
+            this.setTextConfig(value as ElementTextConfig);
         }
-        else if (key === 'textLayout') {
-            this.setTextLayout(value as TextLayout);
+        else if (key === 'textContent') {
+            this.setTextContent(value as ZRText);
+        }
+        else if (key === 'clipPath') {
+            this.setClipPath(value as Path);
         }
         else {
-            // TODO https://github.com/microsoft/TypeScript/issues/31663#issuecomment-497113495
             (this as any)[key] = value;
         }
     }
@@ -307,124 +574,442 @@ class Element {
     /**
      * Hide the element
      */
-    hide () {
+    hide() {
         this.ignore = true;
-        this.__zr && this.__zr.refresh();
+        this.markRedraw();
     }
 
     /**
      * Show the element
      */
-    show () {
+    show() {
         this.ignore = false;
-        this.__zr && this.__zr.refresh();
+        this.markRedraw();
     }
 
-    attr(key: ElementKey, value: ElementPropertyType): Element
-    attr(key: ElementOption): Element
-    /**
-     * @param {string|Object} key
-     * @param {*} value
-     */
-    attr(key: ElementKey | ElementOption, value?: ElementPropertyType) {
-        if (typeof key === 'string') {
-            this.attrKV(key, value);
+    attr(keyOrObj: Props): this
+    attr<T extends keyof Props>(keyOrObj: T, value: Props[T]): this
+    attr(keyOrObj: keyof Props | Props, value?: unknown): this {
+        if (typeof keyOrObj === 'string') {
+            this.attrKV(keyOrObj as keyof ElementProps, value as AllPropTypes<ElementProps>);
         }
-        else if (zrUtil.isObject(key)) {
-            for (let name in key) {
-                if (key.hasOwnProperty(name)) {
-                    this.attrKV(<ElementKey>name, (<any>key)[name]);
-                }
+        else if (isObject(keyOrObj)) {
+            let obj = keyOrObj as object;
+            let keysArr = keys(obj);
+            for (let i = 0; i < keysArr.length; i++) {
+                let key = keysArr[i];
+                this.attrKV(key as keyof ElementProps, keyOrObj[key]);
             }
         }
-        this.dirty();
+        this.markRedraw();
         return this;
     }
 
+    // Save current state to normal
+    saveCurrentToNormalState() {
+        this._innerSaveToNormal();
+
+        // If we are swtiching from normal to other state during animation.
+        // We need to save final value of animation to the normal state. Not interpolated value.
+        const normalState = this._normalState;
+        for (let i = 0; i < this.animators.length; i++) {
+            const animator = this.animators[i];
+            // According to the order of animation if multiple animator is
+            // Animating on the same property(If additive animation is used)
+            animator.saveFinalToTarget(
+                animator.targetName
+                    ? (normalState as any)[animator.targetName] : normalState
+            );
+        }
+    }
+
+    protected _innerSaveToNormal() {
+        let state = this._normalState;
+        if (!state) {
+            state = this._normalState = {};
+        }
+        // TODO clone?
+        state.textConfig = this.textConfig;
+
+        for (let i = 0; i < PRIMARY_STATES_KEYS.length; i++) {
+            let key = PRIMARY_STATES_KEYS[i];
+            (state as any)[key] = this[key];
+        }
+    }
+
+    /**
+     * If has any state.
+     */
+    hasState() {
+        return this.currentStates.length > 0;
+    }
+
+    /**
+     * Get state object
+     */
+    getState(name: string) {
+        return this.states[name];
+    }
+
+
+    /**
+     * Ensure state exists. If not, will create one and return.
+     */
+    ensureState(name: string) {
+        const states = this.states;
+        if (!states[name]) {
+            states[name] = {};
+        }
+        return states[name];
+    }
+
+    /**
+     * Clear all states.
+     */
+    clearStates(animationCfg?: ElementAnimateConfig) {
+        this.useState(PRESERVED_NORMAL_STATE, false, animationCfg);
+        // TODO set _normalState to null?
+    }
+    /**
+     * Use state. State is a collection of properties.
+     * Will return current state object if state exists and stateName has been changed.
+     *
+     * @param stateName State name to be switched to
+     * @param keepCurrentState If keep current states.
+     *      If not, it will inherit from the normal state.
+     * @param animationCfg Will apply animation if specified and has >0 duration
+     */
+    useState(stateName: string, keepCurrentStates?: boolean, animationCfg?: ElementAnimateConfig) {
+        // Use preserved word __normal__
+        // TODO: Only restore changed properties when restore to normal???
+        const toNormalState = stateName === PRESERVED_NORMAL_STATE;
+
+        if (!this.hasState()) {
+            // If switched from normal state to other state.
+            if (!toNormalState) {
+                this.saveCurrentToNormalState();
+            }
+            else {
+                // If switched from normal to normal.
+                return;
+            }
+        }
+
+        const currentStates = this.currentStates;
+
+        // No need to change in following cases:
+        // 1. Keep current states. and already being applied before.
+        // 2. Don't keep current states. And new state is same with the only one exists state.
+        if (indexOf(currentStates, stateName) >= 0 && (keepCurrentStates || currentStates.length === 1)) {
+            return;
+        }
+
+        let state;
+        if (this.stateProxy && !toNormalState) {
+            state = this.stateProxy(stateName);
+        }
+
+        if (!state) {
+            state = (this.states && this.states[stateName]);
+        }
+
+        if (!state && !toNormalState) {
+            logError(`State ${stateName} not exists.`);
+            return;
+        }
+
+        this._applyStateObj(state, keepCurrentStates, animationCfg && animationCfg.duration > 0, animationCfg);
+
+        // Also set text content.
+        if (this._textContent) {
+            this._textContent.useState(stateName, keepCurrentStates, animationCfg);
+        }
+        if (this._textGuide) {
+            this._textGuide.useState(stateName, keepCurrentStates, animationCfg);
+        }
+
+        if (toNormalState) {
+            // Clear state
+            this.currentStates = [];
+        }
+        else {
+            if (!keepCurrentStates) {
+                this.currentStates = [stateName];
+            }
+            else {
+                this.currentStates.push(stateName);
+            }
+        }
+
+        // Update animating target to the new object after state changed.
+        for (let i = 0; i < this.animators.length; i++) {
+            const animator = this.animators[i];
+            if (animator.targetName) {
+                animator.changeTarget((this as any)[animator.targetName]);
+            }
+        }
+        this.markRedraw();
+        // Return used state.
+        return state;
+    }
+
+    /**
+     * Apply multiple states.
+     * @param states States list.
+     * @param animationCfg Will apply animation if specified and has >0 duration
+     */
+    useStates(states: string[], animationCfg?: ElementAnimateConfig) {
+        if (!states.length) {
+            this.clearStates(animationCfg);
+        }
+        else {
+            for (let i = 0; i < states.length; i++) {
+                this.useState(states[i], i > 0, animationCfg);
+            }
+        }
+    }
+
+    /**
+     * Remove state
+     * @param state State to remove
+     * @param animationCfg Will apply animation if specified and has >0 duration
+     */
+    removeState(state: string, animationCfg?: ElementAnimateConfig) {
+        const idx = indexOf(this.currentStates, state);
+        if (idx >= 0) {
+            const currentStates = this.currentStates.slice();
+            currentStates.splice(idx, 1);
+            this.useStates(currentStates, animationCfg);
+        }
+    }
+
+    /**
+     * Toogle state.
+     */
+    toggleState(state: string, enable: boolean, animationCfg?: ElementAnimateConfig) {
+        if (enable) {
+            this.useState(state, true, animationCfg);
+        }
+        else {
+            this.removeState(state, animationCfg);
+        }
+    }
+
+    // TODO removeState
+
+    protected _applyStateObj(state: ElementState, keepCurrentStates: boolean, transition: boolean, animationCfg: ElementAnimateConfig) {
+        const normalState = this._normalState;
+        let needsRestoreToNormal = !state || !keepCurrentStates;
+
+        // TODO: Save current state to normal?
+        // TODO: Animation
+        if (state && state.textConfig) {
+            // Inherit from current state or normal state.
+            this.textConfig = extend(
+                {},
+                keepCurrentStates ? this.textConfig : normalState.textConfig
+            );
+            extend(this.textConfig, state.textConfig);
+        }
+        else if (needsRestoreToNormal) {
+            this.textConfig = normalState.textConfig;
+        }
+
+        const transitionTarget: Dictionary<any> = {};
+        let hasTransition = false;
+
+        for (let i = 0; i < PRIMARY_STATES_KEYS.length; i++) {
+            const key = PRIMARY_STATES_KEYS[i];
+            const propNeedsTransition = transition && DEFAULT_ANIMATABLE_MAP[key];
+
+            if (state && state[key] != null) {
+                if (propNeedsTransition) {
+                    hasTransition = true;
+                    transitionTarget[key] = state[key];
+                }
+                else {
+                    // Replace if it exist in target state
+                    (this as any)[key] = state[key];
+                }
+            }
+            else if (needsRestoreToNormal) {
+                if (propNeedsTransition) {
+                    hasTransition = true;
+                    transitionTarget[key] = normalState[key];
+                }
+                else {
+                    // Restore to normal state
+                    (this as any)[key] = normalState[key];
+                }
+            }
+        }
+
+        if (hasTransition) {
+            this.animateTo(transitionTarget as Props, animationCfg);
+        }
+    }
+
+    /**
+     * Component is some elements attached on this element for specific purpose.
+     * Like clipPath, textContent
+     */
+    private _attachComponent(componentEl: Element) {
+        if (componentEl.__zr && !componentEl.__hostTarget) {
+            throw new Error('Text element has been added to zrender.');
+        }
+
+        if (componentEl === this) {
+            throw new Error('Recursive component attachment.');
+        }
+
+        const zr = this.__zr;
+        if (zr) {
+            // Needs to add self to zrender. For rerender triggering, or animation.
+            componentEl.addSelfToZr(zr);
+        }
+
+        componentEl.__zr = zr;
+        componentEl.__hostTarget = this as unknown as Element;
+    }
+
+    private _detachComponent(componentEl: Element) {
+        if (componentEl.__zr) {
+            componentEl.removeSelfFromZr(componentEl.__zr);
+        }
+
+        componentEl.__zr = null;
+        componentEl.__hostTarget = null;
+    }
+
+    /**
+     * Get clip path
+     */
     getClipPath() {
         return this._clipPath;
     }
 
+    /**
+     * Set clip path
+     */
     setClipPath(clipPath: Path) {
-        const zr = this.__zr;
-        if (zr) {
-            clipPath.addSelfToZr(zr);
-        }
-
         // Remove previous clip path
         if (this._clipPath && this._clipPath !== clipPath) {
             this.removeClipPath();
         }
 
-        this._clipPath = clipPath;
-        clipPath.__zr = zr;
-        clipPath.__clipTarget = this;
+        this._attachComponent(clipPath);
 
-        this.dirty();
+        this._clipPath = clipPath;
+        this.markRedraw();
     }
 
+    /**
+     * Remove clip path
+     */
     removeClipPath() {
         const clipPath = this._clipPath;
         if (clipPath) {
-            if (clipPath.__zr) {
-                clipPath.removeSelfFromZr(clipPath.__zr);
-            }
-
-            clipPath.__zr = null;
-            clipPath.__clipTarget = null;
+            this._detachComponent(clipPath);
             this._clipPath = null;
-
-            this.dirty();
+            this.markRedraw();
         }
     }
 
-    getTextContent(): RichText {
+    /**
+     * Get attached text content.
+     */
+    getTextContent(): ZRText {
         return this._textContent;
     }
 
-    setTextContent(textEl: RichText) {
-        // Remove previous clip path
+    /**
+     * Attach text on element
+     */
+    setTextContent(textEl: ZRText) {
+        // Remove previous textContent
         if (this._textContent && this._textContent !== textEl) {
             this.removeTextContent();
         }
 
-        const zr = this.__zr;
-        if (zr) {
-            textEl.addSelfToZr(zr);
+        if (textEl.__zr && !textEl.__hostTarget) {
+            throw new Error('Text element has been added to zrender.');
         }
+
+        this._attachComponent(textEl);
 
         this._textContent = textEl;
-        textEl.__zr = zr;
 
-        this.dirty();
-    }
-
-    removeTextContent() {
-        const textEl = this._textContent;
-        if (textEl) {
-            if (textEl.__zr) {
-                textEl.removeSelfFromZr(textEl.__zr);
-            }
-            textEl.__zr = null;
-            this._textContent = null;
-            this.dirty();
-        }
-    }
-
-    setTextLayout(textLayout: TextLayout) {
-        if (!this.textLayout) {
-            this.textLayout = {};
-        }
-        zrUtil.extend(this.textLayout, textLayout);
-        this.dirty();
+        this.markRedraw();
     }
 
     /**
-     * Mark displayable element dirty and refresh next frame
+     * Remove attached text element.
+     */
+    removeTextContent() {
+        const textEl = this._textContent;
+        if (textEl) {
+            this._detachComponent(textEl);
+            this._textContent = null;
+            this.markRedraw();
+        }
+    }
+
+    getTextGuideLine(): Polyline {
+        return this._textGuide;
+    }
+
+    setTextGuideLine(guideLine: Polyline) {
+        // Remove previous clip path
+        if (this._textGuide && this._textGuide !== guideLine) {
+            this.removeTextGuideLine();
+        }
+
+        this._attachComponent(guideLine);
+
+        this._textGuide = guideLine;
+
+        this.markRedraw();
+    }
+
+    removeTextGuideLine() {
+        const textGuide = this._textGuide;
+        if (textGuide) {
+            this._detachComponent(textGuide);
+            this._textGuide = null;
+            this.markRedraw();
+        }
+    }
+
+    /**
+     * Set layout of attached text. Will merge with the previous.
+     */
+    setTextConfig(cfg: ElementTextConfig) {
+        // TODO hide cfg property?
+        if (!this.textConfig) {
+            this.textConfig = {};
+        }
+        extend(this.textConfig, cfg);
+        this.markRedraw();
+    }
+
+    /**
+     * Mark element needs to be repainted
+     */
+    markRedraw() {
+        this.__dirty |= Element.REDARAW_BIT;
+        this.__zr && this.__zr.refresh();
+        // Used as a clipPath or textContent
+        if (this.__hostTarget) {
+            this.__hostTarget.markRedraw();
+        }
+    }
+
+    /**
+     * Besides marking elements to be refreshed.
+     * It will also invalid all cache and doing recalculate next frame.
      */
     dirty() {
-        this.__dirty = true;
-        this.__zr && this.__zr.refresh();
+        this.markRedraw();
     }
 
     /**
@@ -446,6 +1031,9 @@ class Element {
         }
         if (this._textContent) {
             this._textContent.addSelfToZr(zr);
+        }
+        if (this._textGuide) {
+            this._textGuide.addSelfToZr(zr);
         }
     }
 
@@ -469,12 +1057,15 @@ class Element {
         if (this._textContent) {
             this._textContent.removeSelfFromZr(zr);
         }
+        if (this._textGuide) {
+            this._textGuide.removeSelfFromZr(zr);
+        }
     }
 
     /**
      * 动画
      *
-     * @param path The path to fetch value from object, like 'a.b.c'.
+     * @param path The key to fetch value from object. Mostly style or shape.
      * @param loop Whether to loop animation.
      * @example:
      *     el.animate('style', false)
@@ -482,50 +1073,38 @@ class Element {
      *         .done(function(){ // Animation done })
      *         .start()
      */
-    animate(path: string, loop?: boolean) {
-        const el = this as Element;
-        const zr = this.__zr;
-
-        let target;
-        let targetKey: string;
-        if (path) {
-            const pathSplitted = path.split('.');
-            let prop = <Dictionary<any>>el;
-            targetKey = pathSplitted[0];
-            // If animating shape
-            for (let i = 0, l = pathSplitted.length; i < l; i++) {
-                if (!prop) {
-                    continue;
-                }
-                prop = prop[pathSplitted[i]];
-            }
-            if (prop) {
-                target = prop;
-            }
-        }
-        else {
-            target = el;
-        }
+    animate(key?: string, loop?: boolean) {
+        let target = key ? (this as any)[key] : this;
 
         if (!target) {
-            zrUtil.logError(
+            logError(
                 'Property "'
-                + path
+                + key
                 + '" is not existed in element '
-                + el.id
+                + this.id
             );
             return;
         }
 
+        const animator = new Animator(target, loop);
+        this.addAnimator(animator, key);
+        return animator;
+    }
+
+    addAnimator(animator: Animator<any>, key: string): void {
+        const zr = this.__zr;
+
+        const el = this;
         const animators = el.animators;
 
-        const animator = new Animator(target, loop);
-
         animator.during(function () {
-            el.updateDuringAnimation(targetKey);
+            el.updateDuringAnimation(key as string);
         }).done(function () {
             // FIXME Animator will not be removed if use `Animator#stop` to stop animation
-            animators.splice(zrUtil.indexOf(animators, animator), 1);
+            const idx = indexOf(animators, animator);
+            if (idx >= 0) {
+                animators.splice(idx, 1);
+            }
         });
 
         animators.push(animator);
@@ -534,12 +1113,10 @@ class Element {
         if (zr) {
             zr.animation.addAnimator(animator);
         }
-
-        return animator;
     }
 
-    updateDuringAnimation(targetKey: string) {
-        this.dirty();
+    updateDuringAnimation(key: string) {
+        this.markRedraw();
     }
 
     /**
@@ -552,21 +1129,17 @@ class Element {
         for (let i = 0; i < len; i++) {
             animators[i].stop(forwardToLast);
         }
-        animators.length = 0;
+        this.animators = [];
 
         return this;
     }
 
     /**
-     * Caution: this method will stop previous animation.
-     * So do not use this method to one element twice before
-     * animation starts, unless you know what you are doing.
-     *
      * @example
      *  // Animate position
      *  el.animateTo({
      *      position: [10, 10]
-     *  }, function () { // done })
+     *  }, { done: () => { // done } })
      *
      *  // Animate shape, style and position in 100ms, delayed 100ms, with cubicOut easing
      *  el.animateTo({
@@ -577,29 +1150,15 @@ class Element {
      *          fill: 'red'
      *      }
      *      position: [10, 10]
-     *  }, 100, 100, 'cubicOut', function () { // done })
+     *  }, {
+     *      duration: 100,
+     *      delay: 100,
+     *      easing: 'cubicOut',
+     *      done: () => { // done }
+     *  })
      */
-
-    // Overload definitions
-    animateTo(target: Dictionary<any>): void
-    animateTo(target: Dictionary<any>, callback: AnimationCallback): void
-    animateTo(target: Dictionary<any>, time: number, callback: AnimationCallback): void
-    animateTo(target: Dictionary<any>, time: number, delay: number, callback: AnimationCallback): void
-    animateTo(target: Dictionary<any>, time: number, easing: easingType, callback: AnimationCallback): void
-    animateTo(target: Dictionary<any>, time: number, delay: number, easing: easingType, callback: AnimationCallback): void
-    animateTo(target: Dictionary<any>, time: number, delay: number, easing: easingType, callback: AnimationCallback, forceAnimate: boolean): void
-
-    // TODO Return animation key
-    animateTo(
-        target: Dictionary<any>,
-        time?: number | AnimationCallback,  // Time in ms
-        delay?: easingType | number | AnimationCallback,
-        easing?: easingType | number | AnimationCallback ,
-        callback?: AnimationCallback,
-        forceAnimate?: boolean // Prevent stop animation and callback
-                                // immediently when target values are the same as current values.
-    ) {
-        animateTo(this, target, time, delay, easing, callback, forceAnimate);
+    animateTo(target: Props, cfg?: ElementAnimateConfig) {
+        animateTo(this, target, cfg);
     }
 
     /**
@@ -608,23 +1167,8 @@ class Element {
      */
 
     // Overload definitions
-    animateFrom(target: Dictionary<any>): void
-    animateFrom(target: Dictionary<any>, callback: AnimationCallback): void
-    animateFrom(target: Dictionary<any>, time: number, callback: AnimationCallback): void
-    animateFrom(target: Dictionary<any>, time: number, delay: number, callback: AnimationCallback): void
-    animateFrom(target: Dictionary<any>, time: number, easing: easingType, callback: AnimationCallback): void
-    animateFrom(target: Dictionary<any>, time: number, delay: number, easing: easingType, callback: AnimationCallback): void
-    animateFrom(target: Dictionary<any>, time: number, delay: number, easing: easingType, callback: AnimationCallback, forceAnimate: boolean): void
-
-    animateFrom(
-        target: Dictionary<any>,
-        time?: number | AnimationCallback,
-        delay?: easingType | number | AnimationCallback,
-        easing?: easingType | number | AnimationCallback ,
-        callback?: AnimationCallback,
-        forceAnimate?: boolean
-    ) {
-        animateTo(this, target, time, delay, easing, callback, forceAnimate, true);
+    animateFrom(target: Props, cfg: Omit<ElementAnimateConfig, 'setToFinal'>) {
+        animateTo(this, target, cfg, true);
     }
 
     /**
@@ -633,6 +1177,31 @@ class Element {
     getBoundingRect(): BoundingRect {
         return null;
     }
+
+
+    /**
+     * The string value of `textPosition` needs to be calculated to a real postion.
+     * For example, `'inside'` is calculated to `[rect.width/2, rect.height/2]`
+     * by default. See `contain/text.js#calculateTextPosition` for more details.
+     * But some coutom shapes like "pin", "flag" have center that is not exactly
+     * `[width/2, height/2]`. So we provide this hook to customize the calculation
+     * for those shapes. It will be called if the `style.textPosition` is a string.
+     * @param {Obejct} [out] Prepared out object. If not provided, this method should
+     *        be responsible for creating one.
+     * @param {module:zrender/graphic/Style} style
+     * @param {Object} rect {x, y, width, height}
+     * @return {Obejct} out The same as the input out.
+     *         {
+     *             x: number. mandatory.
+     *             y: number. mandatory.
+     *             align: string. optional. use style.textAlign by default.
+     *             verticalAlign: string. optional. use style.textVerticalAlign by default.
+     *         }
+     */
+    calculateTextPosition: (out: TextPositionCalculationResult, style: ElementTextConfig, rect: RectLike) => TextPositionCalculationResult
+
+
+    static REDARAW_BIT = 1;
 
     protected static initDefaultProps = (function () {
         const elProto = Element.prototype;
@@ -643,161 +1212,276 @@ class Element {
         elProto.isGroup = false;
         elProto.draggable = false;
         elProto.dragging = false;
-        elProto.__dirty = true;
+        elProto.__dirty = Element.REDARAW_BIT;
+
+
+        const logs: Dictionary<boolean> = {};
+        function logDeprecatedError(key: string, xKey: string, yKey: string) {
+            if (!logs[key + xKey + yKey]) {
+                console.warn(`DEPRECATED: '${key}' has been deprecated. use '${xKey}', '${yKey}' instead`);
+                logs[key + xKey + yKey] = true;
+            }
+        }
+        // Legacy transform properties. position and scale
+        function createLegacyProperty(
+            key: string,
+            privateKey: string,
+            xKey: string,
+            yKey: string
+        ) {
+            Object.defineProperty(elProto, key, {
+                get() {
+                    logDeprecatedError(key, xKey, yKey);
+                    if (!this[privateKey]) {
+                        const pos: number[] = this[privateKey] = [];
+                        enhanceArray(this, pos);
+                    }
+                    return this[privateKey];
+                },
+                set(pos: number[]) {
+                    logDeprecatedError(key, xKey, yKey);
+                    this[xKey] = pos[0];
+                    this[yKey] = pos[1];
+                    this[privateKey] = pos;
+                    enhanceArray(this, pos);
+                }
+            });
+            function enhanceArray(self: any, pos: number[]) {
+                Object.defineProperty(pos, 0, {
+                    get() {
+                        return self[xKey];
+                    },
+                    set(val: number) {
+                        self[xKey] = val;
+                    }
+                });
+                Object.defineProperty(pos, 1, {
+                    get() {
+                        return self[yKey];
+                    },
+                    set(val: number) {
+                        self[yKey] = val;
+                    }
+                });
+            }
+        }
+        if (Object.defineProperty) {
+            createLegacyProperty('position', '_legacyPos', 'x', 'y');
+            createLegacyProperty('scale', '_legacyScale', 'scaleX', 'scaleY');
+            createLegacyProperty('origin', '_legacyOrigin', 'originX', 'originY');
+        }
     })()
 }
 
-zrUtil.mixin(Element, Eventful);
-zrUtil.mixin(Element, Transformable);
+mixin(Element, Eventful);
+mixin(Element, Transformable);
 
-function animateTo(
-    animatable: Element,
+function animateTo<T>(
+    animatable: Element<T>,
     target: Dictionary<any>,
-    time: number | AnimationCallback,
-    delay: easingType | number | AnimationCallback,
-    easing: easingType | number | AnimationCallback ,
-    callback: AnimationCallback,
-    forceAnimate: boolean,
+    cfg: ElementAnimateConfig,
     reverse?: boolean
 ) {
-    // animateTo(target, time, easing, callback);
-    if (zrUtil.isString(delay)) {
-        callback = easing as AnimationCallback;
-        easing = delay as easingType;
-        delay = 0;
-    }
-    // animateTo(target, time, delay, callback);
-    else if (zrUtil.isFunction(easing)) {
-        callback = easing as AnimationCallback;
-        easing = 'linear';
-        delay = 0;
-    }
-    // animateTo(target, time, callback);
-    else if (zrUtil.isFunction(delay)) {
-        callback = delay as AnimationCallback;
-        delay = 0;
-    }
-    // animateTo(target, callback)
-    else if (zrUtil.isFunction(time)) {
-        callback = time as AnimationCallback;
-        time = 500;
-    }
-    // animateTo(target)
-    else if (!time) {
-        time = 500;
-    }
-    // Stop all previous animations
-    animatable.stopAnimation();
-    animateToShallow(animatable, '', animatable, target, time as number, delay as number, reverse);
+    cfg = cfg || {};
+    const animators: Animator<any>[] = [];
+    animateToShallow(
+        animatable,
+        '',
+        animatable,
+        target,
+        cfg,
+        animators,
+        reverse
+    );
 
-    // Animators may be removed immediately after start
-    // if there is nothing to animate
-    const animators = animatable.animators.slice();
     let count = animators.length;
     function done() {
         count--;
         if (!count) {
-            callback && callback();
+            cfg.done && cfg.done();
         }
     }
 
     // No animators. This should be checked before animators[i].start(),
     // because 'done' may be executed immediately if no need to animate.
     if (!count) {
-        callback && callback();
+        cfg.done && cfg.done();
     }
     // Start after all animators created
     // Incase any animator is done immediately when all animation properties are not changed
     for (let i = 0; i < animators.length; i++) {
         animators[i]
             .done(done)
-            .start(<easingType>easing, forceAnimate);
+            .start(cfg.easing, cfg.force);
     }
 }
 
-/**
- * @example
- *  // Animate position
- *  el._animateToShallow({
- *      position: [10, 10]
- *  })
- *
- *  // Animate shape, style and position in 100ms, delayed 100ms
- *  el._animateToShallow({
- *      shape: {
- *          width: 500
- *      },
- *      style: {
- *          fill: 'red'
- *      }
- *      position: [10, 10]
- *  }, 100, 100)
- */
-function animateToShallow(
-    animatable: Element,
-    path: string,
+function copyArrShallow(source: number[], target: number[], len: number) {
+    for (let i = 0; i < len; i++) {
+        source[i] = target[i];
+    }
+}
+
+function is2DArray(value: any[]): value is number[][] {
+    return isArrayLike(value[0])
+}
+
+function copyValue(target: Dictionary<any>, source: Dictionary<any>, key: string) {
+    if (isArrayLike(source[key])) {
+        if (!isArrayLike(target[key])) {
+            target[key] = [];
+        }
+
+        const sourceArr = source[key] as any[];
+        const targetArr = target[key] as any[];
+
+        const len0 = sourceArr.length;
+        if (is2DArray(sourceArr)) {
+            // NOTE: each item should have same length
+            const len1 = sourceArr[0].length;
+
+            for (let i = 0; i < len0; i++) {
+                if (!targetArr[i]) {
+                    targetArr[i] = Array.prototype.slice.call(sourceArr[i]);
+                }
+                else {
+                    copyArrShallow(targetArr[i], sourceArr[i], len1);
+                }
+            }
+        }
+        else {
+            copyArrShallow(targetArr, sourceArr, len0);
+        }
+
+        targetArr.length = sourceArr.length;
+    }
+    else {
+        target[key] = source[key];
+    }
+}
+
+function animateToShallow<T>(
+    animatable: Element<T>,
+    topKey: string,
     source: Dictionary<any>,
     target: Dictionary<any>,
-    time: number,
-    delay: number,
+    cfg: ElementAnimateConfig,
+    animators: Animator<any>[],
     reverse: boolean    // If `true`, animate from the `target` to current state.
 ) {
-    const objShallow: Dictionary<any> = {};
-    let propertyCount = 0;
-    for (let name in target) {
-        if (!target.hasOwnProperty(name)) {
+    const animatableKeys: string[] = [];
+    const targetKeys = keys(target);
+    const duration = cfg.duration;
+    const delay = cfg.delay;
+    const additive = cfg.additive;
+    const setToFinal = cfg.setToFinal;
+    for (let k = 0; k < targetKeys.length; k++) {
+        const innerKey = targetKeys[k] as string;
+
+        if (target[innerKey] == null) { // Can't animate to a null/undefined value.
             continue;
         }
 
-        if (source[name] != null) {
-            if (zrUtil.isObject(target[name]) && !zrUtil.isArrayLike(target[name])) {
+        if (source[innerKey] != null) {
+            if (isObject(target[innerKey]) && !isArrayLike(target[innerKey])) {
+                if (topKey) {
+                    logError('Only support 1 depth nest object animation.');
+                    // Assign directly.
+                    // TODO richText?
+                    if (!reverse) {
+                        source[innerKey] = target[innerKey];
+                        animatable.updateDuringAnimation(topKey);
+                    }
+                    return;
+                }
                 animateToShallow(
                     animatable,
-                    path ? path + '.' + name : name,
-                    source[name],
-                    target[name],
-                    time,
-                    delay,
+                    innerKey,
+                    source[innerKey],
+                    target[innerKey],
+                    cfg,
+                    animators,
                     reverse
                 );
             }
             else {
-                if (reverse) {
-                    objShallow[name] = source[name];
-                    setAttrByPath(animatable, path, name, target[name]);
-                }
-                else {
-                    objShallow[name] = target[name];
-                }
-                propertyCount++;
+                animatableKeys.push(innerKey);
             }
         }
-        else if (target[name] != null && !reverse) {
-            setAttrByPath(animatable, path, name, target[name]);
+        else if (!reverse) {
+            // Assign target value directly.
+            source[innerKey] = target[innerKey];
+            animatable.updateDuringAnimation(topKey);
         }
     }
 
-    if (propertyCount > 0) {
-        animatable.animate(path, false)
-            .when(time == null ? 500 : time, objShallow)
-            .delay(delay || 0);
+    const keyLen = animatableKeys.length;
+
+    if (keyLen > 0) {
+        let revertedSource: Dictionary<any>;
+        let reversedTarget: Dictionary<any>;
+        let sourceClone: Dictionary<any>;
+        if (reverse) {
+            reversedTarget = {};
+            revertedSource = {};
+            for (let i = 0; i < keyLen; i++) {
+                const innerKey = animatableKeys[i];
+                reversedTarget[innerKey] = source[innerKey];
+                // Animate from target
+                revertedSource[innerKey] = target[innerKey];
+            }
+        }
+        else if (setToFinal) {
+            sourceClone = {};
+            for (let i = 0; i < keyLen; i++) {
+                const innerKey = animatableKeys[i];
+                sourceClone[innerKey] = cloneValue(source[innerKey]);
+                // Use copy, not change the original reference
+                // Copy from target to source.
+                copyValue(source, target, innerKey);
+            }
+        }
+
+        // Find last animator animating same target.
+        const existsAnimators = animatable.animators;
+        let lastAnimator;
+        for (let i = 0; i < existsAnimators.length; i++) {
+            if (existsAnimators[i].getTarget() === source) {
+                lastAnimator = existsAnimators[i];
+            }
+        }
+
+        if (!additive && lastAnimator) {
+            // Stop exists animation on specific tracks.
+            // TODO Should invoke previous animation callback?
+            const allAborted = lastAnimator.stopTracks(animatableKeys);
+            if (allAborted) {   // This animator can't be used.
+                const idx = indexOf(existsAnimators, lastAnimator);
+                existsAnimators.splice(idx, 1);
+                lastAnimator = null;
+            }
+        }
+
+        const animator = new Animator(source, false, additive ? lastAnimator : null);
+        animator.targetName = topKey;
+
+        if (revertedSource) {
+            animator.whenWithKeys(0, revertedSource, animatableKeys);
+        }
+        if (sourceClone) {
+            animator.whenWithKeys(0, sourceClone, animatableKeys);
+        }
+
+        animator.whenWithKeys(
+            duration == null ? 500 : duration,
+            reverse ? reversedTarget : target,
+            animatableKeys
+        ).delay(delay || 0);
+
+        animatable.addAnimator(animator, topKey);
+        animators.push(animator);
     }
 }
 
-function setAttrByPath(el: Element, path: string, name: string, value: any) {
-    let pathArr = path.split('.');
-    // Attr directly if not has property
-    // FIXME, if some property not needed for element ?
-    if (!path) {
-        el.attr(name as ElementKey, value);
-    }
-    else {
-        // Only support set shape or style
-        const props: Dictionary<any> = {};
-        props[path] = {};
-        props[path][name] = value;
-        el.attr(props as ElementOption);
-    }
-}
 
 export default Element;

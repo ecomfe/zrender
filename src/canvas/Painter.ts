@@ -3,7 +3,7 @@ import * as util from '../core/util';
 import timsort from '../core/timsort';
 import Layer, { LayerConfig } from './Layer';
 import requestAnimationFrame from '../animation/requestAnimationFrame';
-import ZImage, { ImageStyleOption } from '../graphic/Image';
+import ZRImage from '../graphic/Image';
 import env from '../core/env';
 import { Path, IncrementalDisplayable, Rect } from '../export';
 import Displayable from '../graphic/Displayable';
@@ -11,9 +11,8 @@ import { WXCanvasRenderingContext, ZRCanvasRenderingContext } from '../core/type
 import { GradientObject } from '../graphic/Gradient';
 import { PatternObject } from '../graphic/Pattern';
 import Storage from '../Storage';
-import { brush, BrushScope, getPaintRect, doClip } from './graphic';
-import ZText, { TextStyleOption } from '../graphic/Text';
-import { PathStyleOption } from '../graphic/Path';
+import { brush, BrushScope, getPaintRect } from './graphic';
+import TSpan from '../graphic/TSpan';
 import { PainterBase } from '../PainterBase';
 import BoundingRect from '../core/BoundingRect';
 
@@ -210,22 +209,22 @@ export default class CanvasPainter implements PainterBase {
     }
 
 
-    getType () {
+    getType() {
         return 'canvas';
     }
 
     /**
      * If painter use a single canvas
      */
-    isSingleCanvas () {
+    isSingleCanvas() {
         return this._singleCanvas;
     }
 
-    getViewportRoot () {
+    getViewportRoot() {
         return this._domRoot;
     }
 
-    getViewportRootOffset () {
+    getViewportRootOffset() {
         const viewportRoot = this.getViewportRoot();
         if (viewportRoot) {
             return {
@@ -239,7 +238,7 @@ export default class CanvasPainter implements PainterBase {
      * 刷新
      * @param paintAll 强制绘制所有displayable
      */
-    refresh (paintAll?: boolean) {
+    refresh(paintAll?: boolean) {
 
         const list = this.storage.getDisplayList(true);
         const prevList = this._prevDisplayList;
@@ -267,16 +266,16 @@ export default class CanvasPainter implements PainterBase {
         return this;
     }
 
-    addHover(el: Path, style: PathStyleOption): Path
-    addHover(el: ZText, style: TextStyleOption): ZText
-    addHover(el: ZImage, style: ImageStyleOption): ZImage
-    addHover(el: Path | ZText | ZImage, hoverStyle: PathStyleOption | TextStyleOption | ImageStyleOption): Path | ZText | ZImage {
+    /**
+     * Add element to hover layer
+     */
+    addHover<T extends Displayable>(el: T, hoverStyle?: T['style']): T {
         if (el.__hoverMir) {
             return;
         }
         const elMirror = new (el as any).constructor({
             style: el.style,
-            shape: (el as Path).shape,
+            shape: (el as unknown as Path).shape,
             z: el.z,
             z2: el.z2,
             silent: el.silent
@@ -289,7 +288,7 @@ export default class CanvasPainter implements PainterBase {
         return elMirror;
     }
 
-    removeHover (el: Path | ZText | ZImage) {
+    removeHover(el: Path | TSpan | ZRImage) {
         const elMirror = el.__hoverMir;
         const hoverElements = this._hoverElements;
         const idx = util.indexOf(hoverElements, elMirror);
@@ -299,7 +298,7 @@ export default class CanvasPainter implements PainterBase {
         el.__hoverMir = null;
     }
 
-    clearHover () {
+    clearHover() {
         const hoverElements = this._hoverElements;
         for (let i = 0; i < hoverElements.length; i++) {
             const from = hoverElements[i].__from;
@@ -310,7 +309,7 @@ export default class CanvasPainter implements PainterBase {
         hoverElements.length = 0;
     }
 
-    refreshHover () {
+    refreshHover() {
         const hoverElements = this._hoverElements;
         let len = hoverElements.length;
         let hoverLayer = this._hoverlayer;
@@ -327,7 +326,10 @@ export default class CanvasPainter implements PainterBase {
             hoverLayer = this._hoverlayer = this.getLayer(HOVER_LAYER_ZLEVEL);
         }
 
-        const scope: BrushScope = {};
+        const scope: BrushScope = {
+            viewWidth: this._width,
+            viewHeight: this._height
+        };
         hoverLayer.ctx.save();
         for (let i = 0; i < len;) {
             const el = hoverElements[i];
@@ -348,14 +350,14 @@ export default class CanvasPainter implements PainterBase {
                 el.transform = originalEl.transform;
                 el.invTransform = originalEl.invTransform;
                 el.__clipPaths = originalEl.__clipPaths;
-                this._doPaintEl(el, hoverLayer, null, true, scope);
+                this._doPaintEl(el, hoverLayer, null, true, scope, i === len - 1);
             }
         }
 
         hoverLayer.ctx.restore();
     }
 
-    getHoverLayer () {
+    getHoverLayer() {
         return this.getLayer(HOVER_LAYER_ZLEVEL);
     }
 
@@ -382,7 +384,7 @@ export default class CanvasPainter implements PainterBase {
         }
     }
 
-    private _compositeManually () {
+    private _compositeManually() {
         const ctx = this.getLayer(CANVAS_ZLEVEL).ctx;
         const width = (this._domRoot as HTMLCanvasElement).width;
         const height = (this._domRoot as HTMLCanvasElement).height;
@@ -415,7 +417,9 @@ export default class CanvasPainter implements PainterBase {
             const ctx = layer.ctx;
             const scope: BrushScope = {
                 allClipped: false,
-                prevEl: null
+                prevEl: null,
+                viewWidth: this._width,
+                viewHeight: this._height
             };
             ctx.save();
 
@@ -446,8 +450,8 @@ export default class CanvasPainter implements PainterBase {
             const repaint = (repaintRect?: BoundingRect) => {
                 for (i = start; i < layer.__endIndex; i++) {
                     const el = list[i];
-                    this._doPaintEl(el, layer, repaintRect, paintAll, scope);
-                    el.__dirty = false;
+                    this._doPaintEl(el, layer, repaintRect, paintAll, scope, i === layer.__endIndex - 1);
+                    el.__dirty = 0;
 
                     if (useTimer) {
                         // Date.now can be executed in 13,025,305 ops/second.
@@ -517,7 +521,8 @@ export default class CanvasPainter implements PainterBase {
         currentLayer: Layer,
         repaintRect: BoundingRect,
         forcePaint: boolean,
-        scope: BrushScope
+        scope: BrushScope,
+        isLast: boolean
     ) {
         const ctx = currentLayer.ctx;
         if (currentLayer.__dirty || forcePaint) {
@@ -525,14 +530,14 @@ export default class CanvasPainter implements PainterBase {
                 // If there is repaintRect, only render the intersected ones
                 const repaintRect = getPaintRect(el);
                 if (repaintRect.intersect(repaintRect)) {
-                    console.log('rebrush', el.id);
-                    brush(ctx, el, scope);
+                    // console.log('rebrush', el.id);
+                    brush(ctx, el, scope, isLast);
                 }
             }
             else {
                 // If no repaintRect, all displayables need to be painted once
-                brush(ctx, el, scope);
-                console.log('brush', el.id);
+                brush(ctx, el, scope, isLast);
+                // console.log('brush', el.id);
             }
         }
     }
@@ -542,7 +547,7 @@ export default class CanvasPainter implements PainterBase {
      * @param zlevel
      * @param virtual Virtual layer will not be inserted into dom.
      */
-    getLayer (zlevel: number, virtual?: boolean) {
+    getLayer(zlevel: number, virtual?: boolean) {
         if (this._singleCanvas && !this._needsManuallyCompositing) {
             zlevel = CANVAS_ZLEVEL;
         }
@@ -571,7 +576,7 @@ export default class CanvasPainter implements PainterBase {
         return layer;
     }
 
-    insertLayer (zlevel: number, layer: Layer) {
+    insertLayer(zlevel: number, layer: Layer) {
 
         const layersMap = this._layers;
         const zlevelList = this._zlevelList;
@@ -606,7 +611,7 @@ export default class CanvasPainter implements PainterBase {
         layersMap[zlevel] = layer;
 
         // Vitual layer will not directly show on the screen.
-        // (It can be a WebGL layer and assigned to a ZImage element)
+        // (It can be a WebGL layer and assigned to a ZRImage element)
         // But it still under management of zrender.
         if (!layer.virtual) {
             if (prevLayer) {
@@ -671,11 +676,11 @@ export default class CanvasPainter implements PainterBase {
      * 获取所有已创建的层
      * @param prevLayer
      */
-    getLayers () {
+    getLayers() {
         return this._layers;
     }
 
-    _updateLayerStatus (list: Displayable[]) {
+    _updateLayerStatus(list: Displayable[]) {
 
         this.eachBuiltinLayer(function (layer, z) {
             layer.__dirty = layer.__used = false;
@@ -768,23 +773,23 @@ export default class CanvasPainter implements PainterBase {
     /**
      * 清除hover层外所有内容
      */
-    clear () {
+    clear() {
         this.eachBuiltinLayer(this._clearLayer);
         return this;
     }
 
-    _clearLayer (layer: Layer) {
+    _clearLayer(layer: Layer) {
         layer.clear();
     }
 
-    setBackgroundColor (backgroundColor: string | GradientObject | PatternObject) {
+    setBackgroundColor(backgroundColor: string | GradientObject | PatternObject) {
         this._backgroundColor = backgroundColor;
     }
 
     /**
      * 修改指定zlevel的绘制参数
      */
-    configLayer (zlevel: number, config: LayerConfig) {
+    configLayer(zlevel: number, config: LayerConfig) {
         if (config) {
             const layerConfig = this._layerConfig;
             if (!layerConfig[zlevel]) {
@@ -808,7 +813,7 @@ export default class CanvasPainter implements PainterBase {
      * 删除指定层
      * @param zlevel 层所在的zlevel
      */
-    delLayer (zlevel: number) {
+    delLayer(zlevel: number) {
         const layers = this._layers;
         const zlevelList = this._zlevelList;
         const layer = layers[zlevel];
@@ -824,7 +829,7 @@ export default class CanvasPainter implements PainterBase {
     /**
      * 区域大小变化后重绘
      */
-    resize (
+    resize(
         width?: number | string,
         height?: number | string
     ) {
@@ -878,7 +883,7 @@ export default class CanvasPainter implements PainterBase {
      * 清除单独的一个层
      * @param {number} zlevel
      */
-    clearLayer (zlevel: number) {
+    clearLayer(zlevel: number) {
         const layer = this._layers[zlevel];
         if (layer) {
             layer.clear();
@@ -888,7 +893,7 @@ export default class CanvasPainter implements PainterBase {
     /**
      * 释放
      */
-    dispose () {
+    dispose() {
         this.root.innerHTML = '';
 
         this.root =
@@ -901,7 +906,7 @@ export default class CanvasPainter implements PainterBase {
     /**
      * Get canvas which has all thing rendered
      */
-    getRenderedCanvas (opts?: {
+    getRenderedCanvas(opts?: {
         backgroundColor?: string | GradientObject | PatternObject
         pixelRatio?: number
     }) {
@@ -933,11 +938,21 @@ export default class CanvasPainter implements PainterBase {
         }
         else {
             // PENDING, echarts-gl and incremental rendering.
-            const scope = {};
+            const scope = {
+                viewWidth: this._width,
+                viewHeight: this._height
+            };
             const displayList = this.storage.getDisplayList(true);
-            for (let i = 0; i < displayList.length; i++) {
+            for (let i = 0, len = displayList.length; i < len; i++) {
                 const el = displayList[i];
-                this._doPaintEl(el, imageLayer, null, true, scope);
+                this._doPaintEl(
+                    el,
+                    imageLayer,
+                    null,
+                    true,
+                    scope,
+                    i === len - 1
+                );
             }
         }
 
@@ -946,18 +961,18 @@ export default class CanvasPainter implements PainterBase {
     /**
      * 获取绘图区域宽度
      */
-    getWidth () {
+    getWidth() {
         return this._width;
     }
 
     /**
      * 获取绘图区域高度
      */
-    getHeight () {
+    getHeight() {
         return this._height;
     }
 
-    _getSize (whIdx: number) {
+    _getSize(whIdx: number) {
         const opts = this._opts;
         const wh = ['width', 'height'][whIdx] as 'width' | 'height';
         const cwh = ['clientWidth', 'clientHeight'][whIdx] as 'clientWidth' | 'clientHeight';
@@ -979,7 +994,7 @@ export default class CanvasPainter implements PainterBase {
         ) | 0;
     }
 
-    pathToImage(path: Path, dpr?: number): ZImage {
+    pathToImage(path: Path, dpr?: number): ZRImage {
         dpr = dpr || this.dpr;
 
         const canvas = document.createElement('canvas');
@@ -1006,19 +1021,28 @@ export default class CanvasPainter implements PainterBase {
         (ctx as ZRCanvasRenderingContext).dpr = dpr;
 
         const pathTransform = {
-            position: path.position,
+            x: path.x,
+            y: path.y,
+            scaleX: path.scaleX,
+            scaleY: path.scaleY,
             rotation: path.rotation,
-            scale: path.scale
+            originX: path.originX,
+            originY: path.originY
         };
-        path.position = [leftMargin - rect.x, topMargin - rect.y];
+        path.x = leftMargin - rect.x;
+        path.y = topMargin - rect.y;
         path.rotation = 0;
-        path.scale = [1, 1];
+        path.scaleX = 1;
+        path.scaleY = 1;
         path.updateTransform();
         if (path) {
-            brush(ctx, path, {});
+            brush(ctx, path, {
+                viewWidth: this._width,
+                viewHeight: this._height
+            }, true);
         }
 
-        const imgShape = new ZImage({
+        const imgShape = new ZRImage({
             style: {
                 x: 0,
                 y: 0,
@@ -1026,17 +1050,7 @@ export default class CanvasPainter implements PainterBase {
             }
         });
 
-        if (pathTransform.position != null) {
-            imgShape.position = path.position = pathTransform.position;
-        }
-
-        if (pathTransform.rotation != null) {
-            imgShape.rotation = path.rotation = pathTransform.rotation;
-        }
-
-        if (pathTransform.scale != null) {
-            imgShape.scale = path.scale = pathTransform.scale;
-        }
+        util.extend(path, pathTransform);
 
         return imgShape;
     }

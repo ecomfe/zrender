@@ -5,7 +5,7 @@
 
 import Definable from './Definable';
 import Displayable from '../../graphic/Displayable';
-import { PathStyleOption } from '../../graphic/Path';
+import { PathStyleProps } from '../../graphic/Path';
 
 
 type DisplayableExtended = Displayable & {
@@ -18,7 +18,7 @@ type DisplayableExtended = Displayable & {
  */
 export default class ShadowManager extends Definable {
     constructor(zrId: number, svgRoot: SVGElement) {
-        super(zrId, svgRoot, ['filter'], '__filter_in_use__', '_shadowDom')
+        super(zrId, svgRoot, ['filter'], '__filter_in_use__', '_shadowDom');
     }
 
     /**
@@ -32,7 +32,7 @@ export default class ShadowManager extends Definable {
         if (displayable && hasShadow(displayable.style)) {
 
             // Create dom in <defs> if not exists
-            let dom: SVGElement
+            let dom: SVGElement;
             if ((displayable as DisplayableExtended)._shadowDom) {
                 // Gradient exists
                 dom = (displayable as DisplayableExtended)._shadowDom;
@@ -123,8 +123,8 @@ export default class ShadowManager extends Definable {
             : this.createElement('feDropShadow');
 
         const style = displayable.style;
-        const scaleX = displayable.scale ? (displayable.scale[0] || 1) : 1;
-        const scaleY = displayable.scale ? (displayable.scale[1] || 1) : 1;
+        const scaleX = displayable.scaleX || 1;
+        const scaleY = displayable.scaleY || 1;
 
         // TODO: textBoxShadowBlur is not supported yet
         let offsetX;
@@ -187,7 +187,7 @@ export default class ShadowManager extends Definable {
 }
 
 
-function hasShadow(style: PathStyleOption) {
+function hasShadow(style: PathStyleProps) {
     // TODO: textBoxShadowBlur is not supported yet
     return style
         && (style.shadowBlur || style.shadowOffsetX || style.shadowOffsetY);

@@ -1,15 +1,21 @@
-import Displayable, { DisplayableOption, CommonStyleOption, DEFAULT_COMMON_STYLE } from './Displayable';
-import Element from '../Element';
+import Displayable, { DisplayableProps,
+    CommonStyleProps,
+    DEFAULT_COMMON_STYLE,
+    DisplayableStatePropNames
+} from './Displayable';
+import Element, { PRESERVED_NORMAL_STATE, ElementAnimateConfig } from '../Element';
 import PathProxy from '../core/PathProxy';
 import * as pathContain from '../contain/path';
-import Pattern, { PatternObject } from './Pattern';
-import { Dictionary, PropType, AllPropTypes } from '../core/types';
+import { PatternObject } from './Pattern';
+import { Dictionary, PropType } from '../core/types';
 import BoundingRect from '../core/BoundingRect';
 import { LinearGradientObject } from './LinearGradient';
 import { RadialGradientObject } from './RadialGradient';
-import { isObject, defaults, extend } from '../core/util';
+import { defaults, keys, extend, clone, isString, createObject } from '../core/util';
+import Animator from '../animation/Animator';
+import { parse } from '../tool/color';
 
-export interface PathStyleOption extends CommonStyleOption {
+export interface PathStyleProps extends CommonStyleProps {
     fill?: string | PatternObject | LinearGradientObject | RadialGradientObject
     stroke?: string | PatternObject | LinearGradientObject | RadialGradientObject
     strokeNoScale?: boolean
@@ -38,7 +44,7 @@ export interface PathStyleOption extends CommonStyleOption {
     strokeFirst?: boolean
 }
 
-export const DEFAULT_PATH_STYLE: PathStyleOption = defaults({
+export const DEFAULT_PATH_STYLE: PathStyleProps = defaults({
     fill: '#000',
     stroke: null,
     lineDashOffset: 0,
@@ -47,15 +53,18 @@ export const DEFAULT_PATH_STYLE: PathStyleOption = defaults({
     miterLimit: 10,
 
     strokeNoScale: false,
-    strokeFirst: false,
+    strokeFirst: false
 }, DEFAULT_COMMON_STYLE);
 
-export interface PathOption extends DisplayableOption{
+export interface PathProps extends DisplayableProps {
     strokeContainThreshold?: number
     segmentIgnoreThreshold?: number
     subPixelOptimize?: boolean
 
+    style?: PathStyleProps
     shape?: Dictionary<any>
+
+    autoBatch?: boolean
 
     buildPath?: (
         ctx: PathProxy | CanvasRenderingContext2D,
@@ -63,24 +72,27 @@ export interface PathOption extends DisplayableOption{
         inBundle?: boolean
     ) => void
 }
-// USE SyleCtor to make sure default value can be accessed from prototype
-class StyleCtor {}
-StyleCtor.prototype = DEFAULT_PATH_STYLE;
 
 
-type PathKey = keyof PathOption
-type PathPropertyType = PropType<PathOption, PathKey>
+type PathKey = keyof PathProps
+type PathPropertyType = PropType<PathProps, PathKey>
 
+interface Path<Props extends PathProps = PathProps> {
+    animate(key?: '', loop?: boolean): Animator<this>
+    animate(key: 'style', loop?: boolean): Animator<this['style']>
+    animate(key: 'shape', loop?: boolean): Animator<this['shape']>
 
-interface Path {
+    getState(stateName: string): PathState
+    ensureState(stateName: string): PathState
 
-    attr(key: PathOption): Path
-    attr(key: keyof PathOption, value: AllPropTypes<PathOption>): Path
-
-    setStyle(key: PathStyleOption): Path
-    setStyle(key: keyof PathStyleOption, value: AllPropTypes<PathStyleOption>): Path
+    states: Dictionary<PathState>
+    stateProxy: (stateName: string) => PathState
 }
-class Path extends Displayable {
+
+export type PathStatePropNames = DisplayableStatePropNames | 'shape';
+export type PathState = Pick<PathProps, PathStatePropNames>
+
+class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
 
     path: PathProxy
 
@@ -93,34 +105,105 @@ class Path extends Displayable {
 
     subPixelOptimize: boolean
 
-    style: PathStyleOption
-
-    __dirtyPath: boolean
-    __clipTarget: Element
+    style: PathStyleProps
+    /**
+     * If element can be batched automatically
+     */
+    autoBatch: boolean
 
     private _rectWithStroke: BoundingRect
+
+    protected _normalState: PathState
 
     // Must have an initial value on shape.
     // It will be assigned by default value.
     shape: Dictionary<any>
 
-    constructor(opts?: PathOption, defaultStyle?: PathStyleOption, defaultShape?: Dictionary<any>) {
-        super(opts, defaultStyle);
+    constructor(opts?: Props) {
+        super(opts);
+    }
 
-        this._defaultsShape(defaultShape);
-        // TODO
-        if (opts) {
-            if (opts.strokeContainThreshold != null) {
-                this.strokeContainThreshold = opts.strokeContainThreshold;
+    protected _init(props?: Props) {
+        // Init default properties
+        const keysArr = keys(props);
+
+        this.shape = this.getDefaultShape();
+        const defaultStyle = this.getDefaultStyle();
+        if (defaultStyle) {
+            this.useStyle(defaultStyle);
+        }
+
+        for (let i = 0; i < keysArr.length; i++) {
+            const key = keysArr[i];
+            const value = props[key];
+            if (key === 'style') {
+                if (!this.style) {
+                    // PENDING Reuse style object if possible?
+                    this.useStyle(value);
+                }
+                else {
+                    extend(this.style, value);
+                }
             }
-            if (opts.segmentIgnoreThreshold != null) {
-                this.segmentIgnoreThreshold = opts.segmentIgnoreThreshold;
+            else if (key === 'shape') {
+                // this.shape = value;
+                extend(this.shape, value);
             }
-            if (opts.subPixelOptimize != null) {
-                this.subPixelOptimize = opts.subPixelOptimize;
+            else {
+                super.attrKV(key as any, value);
             }
         }
+
+        // Create an empty one if no style object exists.
+        if (!this.style) {
+            this.useStyle({});
+        }
+        // const defaultShape = this.getDefaultShape();
+        // if (!this.shape) {
+        //     this.shape = defaultShape;
+        // }
+        // else {
+        //     defaults(this.shape, defaultShape);
+        // }
     }
+
+    protected getDefaultStyle(): Props['style'] {
+        return null;
+    }
+
+    // Needs to override
+    protected getDefaultShape() {
+        return {};
+    }
+
+    // protected getInsideTextFill() {
+    //     const pathFill = this.style.fill;
+    //     if (pathFill !== 'none') {
+    //         if (isString(pathFill)) {
+    //             // Determin text color based on the lum of path fill.
+    //             const arr = parse(pathFill);
+    //             const lum =  (0.299 * arr[0] + 0.587 * arr[1] + 0.114 * arr[2]) * arr[3] / 255;
+    //             if (lum > 0.5) {
+    //                 return '#000';
+    //             }
+    //             return '#fff';
+    //         }
+    //         else if (pathFill) {
+    //             return '#fff';
+    //         }
+
+    //     }
+    //     return '#000';
+    // }
+
+    protected getInsideTextStroke(textFill?: string) {
+        const pathFill = this.style.fill;
+        // Not stroke on none fill object or gradient object
+        if (isString(pathFill)) {
+            return pathFill;
+        }
+    }
+
     // When bundling path, some shape may decide if use moveTo to begin a new subpath or closePath
     // Like in circle
     buildPath(
@@ -129,8 +212,12 @@ class Path extends Displayable {
         inBundle?: boolean
     ) {}
 
+    pathUpdated() {
+        this.__dirty &= ~Path.SHAPE_CHANGED_BIT;
+    }
+
     createPathProxy() {
-        this.path = new PathProxy();
+        this.path = new PathProxy(false);
     }
 
     hasStroke() {
@@ -150,14 +237,17 @@ class Path extends Displayable {
         const style = this.style;
         const needsUpdateRect = !rect;
         if (needsUpdateRect) {
-            let path = this.path;
-            if (!path) {
+            let firstInvoke = false;
+            if (!this.path) {
+                firstInvoke = true;
                 // Create path on demand.
-                path = this.path = new PathProxy();
+                this.createPathProxy();
             }
-            if (this.__dirtyPath) {
+            let path = this.path;
+            if (firstInvoke || (this.__dirty & Path.SHAPE_CHANGED_BIT)) {
                 path.beginPath();
                 this.buildPath(path, this.shape, false);
+                this.pathUpdated();
             }
             rect = path.getBoundingRect();
         }
@@ -228,20 +318,20 @@ class Path extends Displayable {
         return false;
     }
 
-    dirty() {
-        super.dirty();
-        // Used as a clipping path
-        if (this.__clipTarget) {
-            this.__clipTarget.dirty();
-        }
-    }
-
     /**
      * Shape changed
      */
     dirtyShape() {
-        this.__dirtyPath = true;
-        this.dirty();
+        this.__dirty |= Path.SHAPE_CHANGED_BIT;
+        if (this._rect) {
+            this._rect = null;
+        }
+        this.markRedraw();
+    }
+
+    dirty() {
+        this.dirtyStyle();
+        this.dirtyShape();
     }
 
     /**
@@ -261,7 +351,7 @@ class Path extends Displayable {
             this.dirtyShape();
         }
         else {
-            this.dirty();
+            this.markRedraw();
         }
     }
 
@@ -269,30 +359,26 @@ class Path extends Displayable {
     attrKV(key: PathKey, value: PathPropertyType) {
         // FIXME
         if (key === 'shape') {
-            this.setShape(value as string | Dictionary<any>);
-            this.__dirtyPath = true;
-            this._rect = null;
+            this.setShape(value as Props['shape']);
         }
         else {
-            super.attrKV(key as keyof DisplayableOption, value);
+            super.attrKV(key as keyof DisplayableProps, value);
         }
     }
 
-    setShape(key: string | Dictionary<any>, value?: any) {
+    setShape(obj: Props['shape']): this
+    setShape<T extends keyof Props['shape']>(obj: T, value: Props['shape'][T]): this
+    setShape(keyOrObj: keyof Props['shape'] | Props['shape'], value?: unknown): this {
         let shape = this.shape;
         if (!shape) {
             shape = this.shape = {};
         }
         // Path from string may not have shape
-        if (isObject(key)) {
-            for (let name in key as Dictionary<any>) {
-                if (key.hasOwnProperty(name)) {
-                    shape[name] = (key as Dictionary<any>)[name];
-                }
-            }
+        if (typeof keyOrObj === 'string') {
+            shape[keyOrObj] = value;
         }
         else {
-            shape[key] = value;
+            extend(shape, keyOrObj as Props['shape']);
         }
         this.dirtyShape();
 
@@ -300,13 +386,69 @@ class Path extends Displayable {
     }
 
     /**
-     * Replace the style with given new style object.
+     * If shape changed. used with dirtyShape
      */
-    useStyle(obj: PathStyleOption) {
-        this.dirtyStyle();
+    shapeChanged() {
+        return this.__dirty & Path.SHAPE_CHANGED_BIT;
+    }
 
-        this.style = new StyleCtor();
-        extend(this.style, obj);
+    /**
+     * Create a path style object with default values in it's prototype.
+     * @override
+     */
+    createStyle(obj?: Props['style']) {
+        return createObject(DEFAULT_PATH_STYLE, obj);
+    }
+
+    protected _innerSaveToNormal() {
+        super._innerSaveToNormal();
+
+        // Clone a new one. DON'T share object reference between states and current using.
+        // TODO: Clone array in shape?.
+        this._normalState.shape = extend({}, this.shape);
+    }
+
+    protected _applyStateObj(state: PathState, keepCurrentStates: boolean, transition: boolean, animationCfg: ElementAnimateConfig) {
+        super._applyStateObj(state, keepCurrentStates, transition, animationCfg);
+        let needsRestoreToNormal = !state || !keepCurrentStates;
+        const normalState = this._normalState;
+        let targetShape: Props['shape'];
+        if (state && state.shape) {
+            if (keepCurrentStates) {
+                targetShape = extend({}, this.shape);
+                for (let i = 0; i < this.animators.length; i++) {
+                    const animator = this.animators[i];
+                    // If properties in shape is in animating. Should be inherited from final value.
+                    // TODO Stop the track?
+                    if (animator.targetName === 'shape') {
+                        animator.saveFinalToTarget(targetShape);
+                    }
+                }
+            }
+            else {
+                targetShape = extend({}, normalState.shape);
+            }
+
+            extend(targetShape, state.shape);
+        }
+        else if (needsRestoreToNormal) {
+            targetShape = normalState.shape;
+        }
+
+        if (targetShape) {
+
+            if (transition) {
+                // Clone a new shape.
+                this.shape = extend({}, this.shape);
+                this.animateTo({
+                    shape: targetShape
+                } as Props, animationCfg);
+            }
+            else {
+                this.shape = targetShape;
+                this.dirtyShape();
+            }
+        }
     }
 
     /**
@@ -315,15 +457,6 @@ class Path extends Displayable {
     isZeroArea(): boolean {
         return false;
     }
-
-    // Defaults shape value
-    private _defaultsShape(defaultShapeObj: Dictionary<any>) {
-        if (!this.shape) {
-            this.shape = {};
-        }
-        defaults(this.shape, defaultShapeObj);
-    }
-
     /**
      * 扩展一个 Path element, 比如星形，圆等。
      * Extend a path element
@@ -334,42 +467,40 @@ class Path extends Displayable {
      * @param props.buildPath Overwrite buildPath method
      * @param props.style Extended default style config
      * @param props.shape Extended default shape config
-     * @param props.extra Extra info
      */
-    static extend<ShapeType extends Dictionary<any>, ExtraType extends Dictionary<any>>(defaultProps: {
-        type: string
-        shape?: ShapeType
-        style?: PathStyleOption
-        extra?: ExtraType
+    static extend<Shape extends Dictionary<any>>(defaultProps: {
+        type?: string
+        shape?: Shape
+        style?: PathStyleProps
+        beforeBrush?: Displayable['beforeBrush']
+        afterBrush?: Displayable['afterBrush']
+        getBoundingRect?: Displayable['getBoundingRect']
 
-        beforeBrush?: PropType<Displayable, 'beforeBrush'>
-        afterBrush?: PropType<Displayable, 'afterBrush'>
-        getBoundingRect?: PropType<Displayable, 'getBoundingRect'>
-
-        buildPath: (this: Path, ctx: CanvasRenderingContext2D | PathProxy, shape: ShapeType, inBundle?: boolean) => void
-        init?: (this: Path, opts: PathOption) => void // TODO Should be SubPathOption
+        calculateTextPosition?: Element['calculateTextPosition']
+        buildPath(this: Path, ctx: CanvasRenderingContext2D | PathProxy, shape: Shape, inBundle?: boolean): void
+        init?(this: Path, opts: PathProps): void // TODO Should be SubPathOption
     }): {
-        new(opts?: PathOption & {
-            shape?: ShapeType
-        }): Path & {
-            extra?: ExtraType,
-            shape: ShapeType
-        }
+        new(opts?: PathProps & {shape: Shape}): Path
     } {
-        interface SubPathOption extends PathOption {
-            shape: ShapeType
+        interface SubPathOption extends PathProps {
+            shape: Shape
         }
 
         class Sub extends Path {
 
-            shape: ShapeType
+            shape: Shape
 
-            extra: ExtraType
+            getDefaultStyle() {
+                return clone(defaultProps.style);
+            }
+
+            getDefaultShape() {
+                return clone(defaultProps.shape);
+            }
 
             constructor(opts?: SubPathOption) {
-                super(opts, defaultProps.style, defaultProps.shape);
-
-                defaultProps.init && defaultProps.init.call(this, opts);
+                super(opts);
+                defaultProps.init && defaultProps.init.call(this as any, opts);
             }
         }
 
@@ -383,9 +514,10 @@ class Path extends Displayable {
         // Sub.prototype.beforeBrush = defaultProps.beforeBrush;
         // Sub.prototype.afterBrush = defaultProps.afterBrush;
 
-        return Sub;
+        return Sub as any;
     }
 
+    static SHAPE_CHANGED_BIT = 4
 
     protected static initDefaultProps = (function () {
         const pathProto = Path.prototype;
@@ -393,7 +525,8 @@ class Path extends Displayable {
         pathProto.strokeContainThreshold = 5;
         pathProto.segmentIgnoreThreshold = 0;
         pathProto.subPixelOptimize = false;
-        pathProto.__dirtyPath = true;
+        pathProto.autoBatch = false;
+        pathProto.__dirty = Element.REDARAW_BIT | Displayable.STYLE_CHANGED_BIT | Path.SHAPE_CHANGED_BIT;
     })()
 }
 

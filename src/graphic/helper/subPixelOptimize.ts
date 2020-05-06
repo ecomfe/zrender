@@ -1,4 +1,4 @@
-import { PathStyleOption } from '../Path';
+import { PathStyleProps } from '../Path';
 
 /**
  * Sub-pixel optimize for canvas rendering, prevent from blur
@@ -32,7 +32,7 @@ type RectShape = {
 export function subPixelOptimizeLine(
     outputShape: Partial<LineShape>,
     inputShape: LineShape,
-    style: Pick<PathStyleOption, 'lineWidth'>   // DO not optimize when lineWidth is 0
+    style: Pick<PathStyleProps, 'lineWidth'>   // DO not optimize when lineWidth is 0
 ): LineShape {
     if (!inputShape) {
         return;
@@ -74,7 +74,7 @@ export function subPixelOptimizeLine(
 export function subPixelOptimizeRect(
     outputShape: Partial<RectShape>,
     inputShape: RectShape,
-    style: Pick<PathStyleOption, 'lineWidth'>   // DO not optimize when lineWidth is 0
+    style: Pick<PathStyleProps, 'lineWidth'>   // DO not optimize when lineWidth is 0
 ): RectShape {
     if (!inputShape) {
         return;

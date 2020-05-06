@@ -1,4 +1,3 @@
-import * as zrUtil from '../core/util';
 import Gradient, {GradientObject, GradientColorStop} from './Gradient';
 
 export interface LinearGradientObject extends GradientObject {
@@ -17,7 +16,7 @@ export interface LinearGradientObject extends GradientObject {
 
 export default class LinearGradient extends Gradient {
 
-    type = 'linear'
+    type: 'linear'
 
     x: number
     y: number

@@ -7,7 +7,7 @@ import {GestureMgr} from './core/GestureMgr';
 import Displayable from './graphic/Displayable';
 import {PainterBase} from './PainterBase';
 import HandlerDomProxy, { HandlerProxyInterface } from './dom/HandlerProxy';
-import { ZRRawEvent, ZRPinchEvent, ElementEventName, ElementEventNameWithOn } from './core/types';
+import { ZRRawEvent, ZRPinchEvent, ElementEventName, ElementEventNameWithOn, ZRRawTouchEvent } from './core/types';
 import Storage from './Storage';
 import Element, {ElementEvent} from './Element';
 import CanvasPainter from './canvas/Painter';
@@ -71,7 +71,6 @@ import CanvasPainter from './canvas/Painter';
  * But they are needed to work when the pointer inside the zrender dom.
  */
 
-
 const SILENT = 'silent';
 
 function makeEventPacket(eveType: ElementEventName, targetInfo: {
@@ -99,7 +98,7 @@ function makeEventPacket(eveType: ElementEventName, targetInfo: {
     };
 }
 
-function stopEvent() {
+function stopEvent(this: ElementEvent) {
     eventTool.stop(this.event);
 }
 
@@ -143,6 +142,10 @@ class Handler extends Eventful {
     private _gestureMgr: GestureMgr
 
     private _draggingMgr: Draggable
+
+    _downEl: Element
+    _upEl: Element
+    _downPoint: [number, number]
 
     constructor(
         storage: Storage,
@@ -260,8 +263,8 @@ class Handler extends Eventful {
 
         this.proxy.dispose();
 
-        this.storage = null
-        this.proxy = null
+        this.storage = null;
+        this.proxy = null;
         this.painter = null;
     }
 
@@ -299,8 +302,16 @@ class Handler extends Eventful {
         while (el) {
             el[eventKey]
                 && (eventPacket.cancelBubble = !!el[eventKey].call(el, eventPacket));
-
             el.trigger(eventName, eventPacket);
+
+            // Also needs trigger host element events if on the textContent.
+            const hostEl = el.__hostTarget;
+            if (hostEl) {
+                this.dispatchToElement({
+                    target: hostEl,
+                    topTarget: targetInfo.topTarget
+                }, eventName, event);
+            }
 
             el = el.parent;
 
@@ -358,7 +369,7 @@ class Handler extends Eventful {
         stage === 'start' && gestureMgr.clear();
 
         const gestureInfo = gestureMgr.recognize(
-            event,
+            event as ZRRawTouchEvent,
             this.findHover(event.zrX, event.zrY, null).target,
             (this.proxy as HandlerDomProxy).dom
         );
@@ -443,7 +454,10 @@ function isHover(displayable: Displayable, x: number, y: number) {
             if (el.silent) {
                 isSilent = true;
             }
-            el = el.parent;
+            // Consider when el is textContent, also need to be silent
+            // if any of its host el and its ancestors is silent.
+            const hostEl = el.__hostTarget;
+            el = hostEl ? hostEl : el.parent;
         }
         return isSilent ? SILENT : true;
     }

@@ -13,31 +13,29 @@
  * TODO pause
  */
 
-import easingFuncs, {easingType} from './easing';
+import easingFuncs, {AnimationEasing} from './easing';
 
-type OnframeCallback<T> = (target: T, percent: number) => void;
-type ondestroyCallback<T> = (target: T) => void
-type onrestartCallback<T> = (target: T) => void
+type OnframeCallback = (percent: number) => void;
+type ondestroyCallback = () => void
+type onrestartCallback = () => void
 
 export type DeferredEventTypes = 'destroy' | 'restart'
 type DeferredEventKeys = 'ondestroy' | 'onrestart'
 
-export interface ClipOption<T> {
-    target: T
+export interface ClipProps {
     life?: number
     delay?: number
     loop?: boolean
     gap?: number
-    easing?: easingType
+    easing?: AnimationEasing
 
-    onframe?: OnframeCallback<T>
-    ondestroy?: ondestroyCallback<T>
-    onrestart?: onrestartCallback<T>
+    onframe?: OnframeCallback
+    ondestroy?: ondestroyCallback
+    onrestart?: onrestartCallback
 }
 
-export default class Clip<T> {
+export default class Clip {
 
-    private _target: T
     // 生命周期
     private _life: number
     // 延时
@@ -50,18 +48,20 @@ export default class Clip<T> {
     private _pausedTime = 0
     private _paused = false
 
-    private _needsRemove = false
-
     loop: boolean
     gap: number
-    easing: easingType
-    onframe: OnframeCallback<T>
-    ondestroy: ondestroyCallback<T>
-    onrestart: onrestartCallback<T>
+    easing: AnimationEasing
 
-    constructor(opts: ClipOption<T>) {
+    // For linked list. Readonly
+    next: Clip
+    prev: Clip
 
-        this._target = opts.target;
+    onframe: OnframeCallback
+    ondestroy: ondestroyCallback
+    onrestart: onrestartCallback
+
+    constructor(opts: ClipProps) {
+
         this._life = opts.life || 1000;
 
         this._delay = opts.delay || 0;
@@ -80,7 +80,7 @@ export default class Clip<T> {
         this.onrestart = opts.onrestart;
     }
 
-    step(globalTime: number, deltaTime: number): DeferredEventTypes {
+    step(globalTime: number, deltaTime: number): boolean {
         // Set startTime on first step, or _startTime may has milleseconds different between clips
         // PENDING
         if (!this._initialized) {
@@ -109,39 +109,26 @@ export default class Clip<T> {
             ? easingFunc(percent)
             : percent;
 
-        this.onframe && this.onframe(this._target, schedule);
+        this.onframe && this.onframe(schedule);
 
         // 结束
         if (percent === 1) {
             if (this.loop) {
-                this.restart(globalTime);
-                // 重新开始周期
-                // 抛出而不是直接调用事件直到 stage.update 后再统一调用这些事件
-                return 'restart';
+                this._restart(globalTime);
+                this.onrestart && this.onrestart();
             }
-
-            // 动画完成将这个控制器标识为待删除
-            // 在Animation.update中进行批量删除
-            this._needsRemove = true;
-            return 'destroy';
+            else {
+                return true;
+            }
         }
 
-        return null;
+        return false;
     }
 
-    restart(globalTime: number) {
+    private _restart(globalTime: number) {
         const remainder = (globalTime - this._startTime - this._pausedTime) % this._life;
         this._startTime = globalTime - remainder + this.gap;
         this._pausedTime = 0;
-
-        this._needsRemove = false;
-    }
-
-    fire(eventType: DeferredEventTypes) {
-        let onEventType: DeferredEventKeys = ('on' + eventType) as DeferredEventKeys;
-        if (this[onEventType]) {
-            this[onEventType](this._target);
-        }
     }
 
     pause() {
@@ -150,9 +137,5 @@ export default class Clip<T> {
 
     resume() {
         this._paused = false;
-    }
-
-    needsRemove(): boolean {
-        return this._needsRemove;
     }
 }

@@ -1,5 +1,7 @@
 import * as matrix from './matrix';
 import * as vector from './vector';
+import { Dictionary } from './types';
+import { logError } from './util';
 
 const mIdentity = matrix.identity;
 
@@ -14,53 +16,67 @@ const tmpTransform: matrix.MatrixArray = [];
 const originTransform = matrix.create();
 const abs = Math.abs;
 
-const DEFAULT_POSITION = [0, 0];
-const DEFAULT_SCALE = [1, 1];
-
 class Transformable {
 
     parent: Transformable
 
-    position: vector.VectorArray
+    x: number
+    y: number
+    scaleX: number
+    scaleY: number
+
     rotation: number
-    scale: vector.VectorArray
     /**
      * 旋转和缩放的原点
      */
-    origin: vector.VectorArray
+    originX: number
+    originY: number
+
     /**
      * Scale ratio
      */
     globalScaleRatio = 1
 
-
     transform: matrix.MatrixArray
     invTransform: matrix.MatrixArray
 
-    constructor() {
-        // If there are no given position, rotation, scale
-        this.position = [0, 0];
-        this.rotation = 0;
-        this.scale = [1, 1];
-
-        /**
-         * 旋转和缩放的原点
-         */
-        this.origin = null;
+    /**
+     * Set position from array
+     */
+    setPosition(arr: number[]) {
+        this.x = arr[0];
+        this.y = arr[1];
+    }
+    /**
+     * Set scale from array
+     */
+    setScale(arr: number[]) {
+        this.scaleX = arr[0];
+        this.scaleY = arr[1];
     }
 
     /**
-     * 判断是否需要有坐标变换
-     * 如果有坐标变换, 则从position, rotation, scale以及父节点的transform计算出自身的transform矩阵
+     * Set origin from array
+     */
+    setOrigin(arr: number[]) {
+        this.originX = arr[0];
+        this.originY = arr[1];
+    }
+
+    /**
+     * If needs to compute transform
      */
     needLocalTransform(): boolean {
         return isNotAroundZero(this.rotation)
-            || isNotAroundZero(this.position[0])
-            || isNotAroundZero(this.position[1])
-            || isNotAroundZero(this.scale[0] - 1)
-            || isNotAroundZero(this.scale[1] - 1);
+            || isNotAroundZero(this.x)
+            || isNotAroundZero(this.y)
+            || isNotAroundZero(this.scaleX - 1)
+            || isNotAroundZero(this.scaleY - 1);
     }
 
+    /**
+     * Update global transform
+     */
     updateTransform() {
         const parent = this.parent;
         const parentHasTransform = parent && parent.transform;
@@ -93,6 +109,10 @@ class Transformable {
         // 保存这个变换矩阵
         this.transform = m;
 
+        this._resolveGlobalScaleRatio(m);
+    }
+
+    private _resolveGlobalScaleRatio(m: matrix.MatrixArray) {
         const globalScaleRatio = this.globalScaleRatio;
         if (globalScaleRatio != null && globalScaleRatio !== 1) {
             this.getGlobalScale(scaleTmp);
@@ -110,19 +130,39 @@ class Transformable {
         this.invTransform = this.invTransform || matrix.create();
         matrix.invert(this.invTransform, m);
     }
-
-    getLocalTransform(m: matrix.MatrixArray) {
+    /**
+     * Get computed local transform
+     */
+    getLocalTransform(m?: matrix.MatrixArray) {
         return Transformable.getLocalTransform(this, m);
     }
 
+    /**
+     * Get computed global transform
+     * NOTE: this method will force update transform on all ancestors.
+     * Please be aware of the potential performance cost.
+     */
+    getComputedTransform() {
+        let transformNode: Transformable = this;
+        const ancestors: Transformable[] = [];
+        while (transformNode) {
+            ancestors.push(transformNode);
+            transformNode = transformNode.parent;
+        }
+
+        // Update from topdown.
+        while (transformNode = ancestors.pop()) {
+            transformNode.updateTransform();
+        }
+
+        return this.transform;
+    }
 
     setLocalTransform(m: vector.VectorArray) {
         if (!m) {
             // TODO return or set identity?
             return;
         }
-        const position = this.position;
-        const scale = this.scale;
         let sx = m[0] * m[0] + m[1] * m[1];
         let sy = m[2] * m[2] + m[3] * m[3];
         if (isNotAroundZero(sx - 1)) {
@@ -131,18 +171,26 @@ class Transformable {
         if (isNotAroundZero(sy - 1)) {
             sy = Math.sqrt(sy);
         }
+
+        this.rotation = Math.atan2(m[1] / sy, m[0] / sx);
+
         if (m[0] < 0) {
             sx = -sx;
         }
         if (m[3] < 0) {
             sy = -sy;
         }
+        // Flip can be both represented with rotation and negative scale.
+        if (sx < 0 && sy < 0) {
+            this.rotation += Math.PI;
+            sx = -sx;
+            sy = -sy;
+        }
 
-        position[0] = m[4];
-        position[1] = m[5];
-        scale[0] = sx;
-        scale[1] = sy;
-        this.rotation = Math.atan2(-m[1] / sy, m[0] / sx);
+        this.x = m[4];
+        this.y = m[5];
+        this.scaleX = sx;
+        this.scaleY = sy;
     }
     /**
      * 分解`transform`矩阵到`position`, `rotation`, `scale`
@@ -158,13 +206,14 @@ class Transformable {
             matrix.mul(tmpTransform, parent.invTransform, m);
             m = tmpTransform;
         }
-        const origin = this.origin;
-        if (origin && (origin[0] || origin[1])) {
-            originTransform[4] = origin[0];
-            originTransform[5] = origin[1];
+        const ox = this.originX;
+        const oy = this.originY;
+        if (ox || oy) {
+            originTransform[4] = ox;
+            originTransform[5] = oy;
             matrix.mul(tmpTransform, m, originTransform);
-            tmpTransform[4] -= origin[0];
-            tmpTransform[5] -= origin[1];
+            tmpTransform[4] -= ox;
+            tmpTransform[5] -= oy;
             m = tmpTransform;
         }
 
@@ -195,7 +244,7 @@ class Transformable {
     /**
      * 变换坐标位置到 shape 的局部坐标空间
      */
-    transformCoordToLocal(x: number, y: number): vector.VectorArray {
+    transformCoordToLocal(x: number, y: number): number[] {
         const v2 = [x, y];
         const invTransform = this.invTransform;
         if (invTransform) {
@@ -207,7 +256,7 @@ class Transformable {
     /**
      * 变换局部坐标位置到全局坐标空间
      */
-    transformCoordToGlobal(x: number, y: number): vector.VectorArray {
+    transformCoordToGlobal(x: number, y: number): number[] {
         const v2 = [x, y];
         const transform = this.transform;
         if (transform) {
@@ -228,35 +277,53 @@ class Transformable {
             : 1;
     }
 
+
     static getLocalTransform(target: Transformable, m?: matrix.MatrixArray): matrix.MatrixArray {
         m = m || [];
         mIdentity(m);
 
-        const origin = target.origin;
-        const scale = target.scale || DEFAULT_SCALE;
+        const ox = target.originX;
+        const oy = target.originY;
+        const sx = target.scaleX;
+        const sy = target.scaleY;
         const rotation = target.rotation || 0;
-        const position = target.position || DEFAULT_POSITION;
+        const x = target.x;
+        const y = target.y;
 
-        if (origin) {
-            // Translate to origin
-            m[4] -= origin[0];
-            m[5] -= origin[1];
-        }
-        matrix.scale(m, m, scale);
+        // Translate to origin
+        m[4] -= ox;
+        m[5] -= oy;
+        // Apply scale
+        m[0] *= sx;
+        m[1] *= sy;
+        m[2] *= sx;
+        m[3] *= sy;
+        m[4] *= sx;
+        m[5] *= sy;
+
         if (rotation) {
             matrix.rotate(m, m, rotation);
         }
-        if (origin) {
-            // Translate back from origin
-            m[4] += origin[0];
-            m[5] += origin[1];
-        }
+        // Translate back from origin
+        m[4] += ox;
+        m[5] += oy;
 
-        m[4] += position[0];
-        m[5] += position[1];
+        m[4] += x;
+        m[5] += y;
 
         return m;
     }
+
+    private static initDefaultProps = (function () {
+        const proto = Transformable.prototype;
+        proto.x = 0;
+        proto.y = 0;
+        proto.scaleX = 1;
+        proto.scaleY = 1;
+        proto.originX = 0;
+        proto.originY = 0;
+        proto.rotation = 0;
+    })()
 };
 
 export default Transformable;

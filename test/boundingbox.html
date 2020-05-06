@@ -19,8 +19,8 @@
         canvas.height = 600;
         var ctx = canvas.getContext("2d");
         var path = new PathProxy();
-
-        path.beginPath(ctx);
+        path.setContext(ctx);
+        path.beginPath();
         path.moveTo(20, 20);
         path.bezierCurveTo(100, 0, -100, 100, 100, 100);
         path.quadraticCurveTo(400, 10, 200, 200);

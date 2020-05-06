@@ -1,6 +1,6 @@
 import * as util from './core/util';
 import env from './core/env';
-import Group from './container/Group';
+import Group from './graphic/Group';
 import Element from './Element';
 
 // Use timsort because in most case elements are partially sorted
@@ -35,7 +35,7 @@ export default class Storage {
 
     traverse<T>(
         cb: (this: T, el: Element) => void,
-        context: T
+        context?: T
     ) {
         for (let i = 0; i < this._roots.length; i++) {
             this._roots[i].traverse(cb, context);
@@ -85,11 +85,8 @@ export default class Storage {
         }
 
         el.beforeUpdate();
-
         if (el.__dirty) {
-
             el.update();
-
         }
         el.afterUpdate();
 
@@ -109,7 +106,8 @@ export default class Storage {
             // Recursively add clip path
             while (currentClipPath) {
                 // clipPath 的变换是基于使用这个 clipPath 的元素
-                currentClipPath.parent = parentClipPath;
+                // TODO: parent should be group type.
+                currentClipPath.parent = parentClipPath as Group;
                 currentClipPath.updateTransform();
 
                 clipPaths.push(currentClipPath);
@@ -119,33 +117,44 @@ export default class Storage {
             }
         }
 
-        if (el.isGroup) {
-            const children = (el as Group).children();
+        // ZRText and Group may use children
+        if ((el as Group).childrenRef) {
+            const children = (el as Group).childrenRef();
 
             for (let i = 0; i < children.length; i++) {
                 const child = children[i];
 
                 // Force to mark as dirty if group is dirty
                 if (el.__dirty) {
-                    child.__dirty = true;
+                    child.markRedraw();
                 }
 
                 this._updateAndAddDisplayable(child, clipPaths, includeIgnore);
             }
 
             // Mark group clean here
-            el.__dirty = false;
+            el.__dirty = 0;
 
         }
         else {
+            const disp = el as Displayable;
             // Element is displayable
-            (el as Displayable).__clipPaths = clipPaths;
+            if (clipPaths && clipPaths.length) {
+                disp.__clipPaths = clipPaths;
+            }
+            else if (disp.__clipPaths && disp.__clipPaths.length > 0) {
+                disp.__clipPaths = [];
+            }
 
-            this._displayList[this._displayListLen++] = el as Displayable;
+            this._displayList[this._displayListLen++] = disp;
         }
 
-        // Add attached text element
-        // TODO If textContent.el is used by mutiple elements. Or it has been add to zrender
+        // Add attached text element and guide line.
+        const textGuide = el.getTextGuideLine();
+        if (textGuide) {
+            this._updateAndAddDisplayable(textGuide, clipPaths, includeIgnore);
+        }
+
         const textEl = el.getTextContent();
         if (textEl) {
             this._updateAndAddDisplayable(textEl, clipPaths, includeIgnore);
@@ -156,15 +165,10 @@ export default class Storage {
      * 添加图形(Displayable)或者组(Group)到根节点
      */
     addRoot(el: Element) {
-        if (el.__storage === this) {
+        if (el.__zr && el.__zr.storage === this) {
             return;
         }
 
-        if (el instanceof Group) {
-            el.addChildrenToStorage(this);
-        }
-
-        this.addToStorage(el);
         this._roots.push(el);
     }
 
@@ -181,26 +185,13 @@ export default class Storage {
             return;
         }
 
-
         const idx = util.indexOf(this._roots, el);
         if (idx >= 0) {
-            this.delFromStorage(el);
             this._roots.splice(idx, 1);
-            if (el instanceof Group) {
-                el.delChildrenFromStorage(this);
-            }
         }
     }
 
     delAllRoots() {
-        // 不指定el清空
-        for (let i = 0; i < this._roots.length; i++) {
-            const root = this._roots[i];
-            if (root instanceof Group) {
-                root.delChildrenFromStorage(this);
-            }
-        }
-
         this._roots = [];
         this._displayList = [];
         this._displayListLen = 0;
@@ -208,20 +199,8 @@ export default class Storage {
         return;
     }
 
-    addToStorage(el: Element) {
-        if (el) {
-            el.__storage = this;
-            el.dirty();
-        }
-        return this;
-    }
-
-    delFromStorage(el: Element) {
-        if (el) {
-            el.__storage = null;
-        }
-
-        return this;
+    getRoots() {
+        return this._roots;
     }
 
     /**

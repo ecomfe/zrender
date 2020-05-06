@@ -3,7 +3,7 @@
  * @module zrender/graphic/shape/Line
  */
 
-import Path, { PathOption } from '../Path';
+import Path, { PathProps } from '../Path';
 import {subPixelOptimizeLine} from '../helper/subPixelOptimize';
 import PathProxy from '../../core/PathProxy';
 import { VectorArray } from '../../core/vector';
@@ -22,22 +22,29 @@ class LineShape {
     percent = 1
 }
 
-export default class Line extends Path {
-
-    type = 'line'
+interface LineProps extends PathProps {
+    shape?: Partial<LineShape>
+}
+class Line extends Path<LineProps> {
 
     shape: LineShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<LineShape>
-    }) {
-        super(opts, {
-            stroke: '#000',
-            fill: null
-        }, new LineShape());
+    constructor(opts?: LineProps) {
+        super(opts);
     }
 
-    buildPath(ctx: PathProxy, shape: LineShape) {
+    getDefaultStyle() {
+        return {
+            stroke: '#000',
+            fill: null as string
+        };
+    }
+
+    getDefaultShape() {
+        return new LineShape();
+    }
+
+    buildPath(ctx: CanvasRenderingContext2D, shape: LineShape) {
         let x1;
         let y1;
         let x2;
@@ -85,3 +92,6 @@ export default class Line extends Path {
         ];
     }
 }
+
+Line.prototype.type = 'line';
+export default Line;

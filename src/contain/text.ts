@@ -1,16 +1,14 @@
 import BoundingRect, { RectLike } from '../core/BoundingRect';
 import { createCanvas } from '../core/util';
 import { Dictionary, PropType, TextAlign, TextVerticalAlign, BuiltinTextPosition } from '../core/types';
+import LRU from '../core/LRU';
 
-let textWidthCache: Dictionary<number> = {};
-let textWidthCacheCounter = 0;
+let textWidthCache: Dictionary<LRU<number>> = {};
 
 export const DEFAULT_FONT = '12px sans-serif';
 
-const TEXT_CACHE_MAX = 5000;
-
 let _ctx: CanvasRenderingContext2D;
-let _cachedFont: string
+let _cachedFont: string;
 
 function defaultMeasureText(text: string, font?: string): { width: number } {
     if (!_ctx) {
@@ -35,27 +33,22 @@ export function $override(
     methods[name] = fn;
 }
 
+// let cacheMissCount = 0;
+// let totalCount = 0;
+
 export function getWidth(text: string, font: string): number {
     font = font || DEFAULT_FONT;
-    const key = text + ':' + font;
-    if (textWidthCache[key]) {
-        return textWidthCache[key];
+    let cacheOfFont = textWidthCache[font];
+    if (!cacheOfFont) {
+        cacheOfFont = textWidthCache[font] = new LRU(500);
     }
-
-    const textLines = (text + '').split('\n');
-    let width = 0;
-
-    for (let i = 0, l = textLines.length; i < l; i++) {
-        // textContain.measureText may be overrided in SVG or VML
-        width = Math.max(measureText(textLines[i], font).width, width);
+    let width = cacheOfFont.get(text);
+    if (width == null) {
+        width = methods.measureText(text, font).width;
+        cacheOfFont.put(text, width);
+        // cacheMissCount++;
     }
-
-    if (textWidthCacheCounter > TEXT_CACHE_MAX) {
-        textWidthCacheCounter = 0;
-        textWidthCache = {};
-    }
-    textWidthCacheCounter++;
-    textWidthCache[key] = width;
+    // totalCount++;
 
     return width;
 }
@@ -63,8 +56,8 @@ export function getWidth(text: string, font: string): number {
 export function getBoundingRect(
     text: string,
     font: string,
-    textAlign: CanvasTextAlign,
-    textBaseline: CanvasTextBaseline
+    textAlign?: CanvasTextAlign,
+    textBaseline?: CanvasTextBaseline
 ): BoundingRect {
     const width = getWidth(text, font);
     const height = getLineHeight(font);
@@ -111,7 +104,7 @@ export function measureText(text: string, font?: string): {
 }
 
 
-function parsePercent(value: number | string, maxValue: number): number{
+function parsePercent(value: number | string, maxValue: number): number {
     if (typeof value === 'string') {
         if (value.lastIndexOf('%') >= 0) {
             return parseFloat(value) / 100 * maxValue;
@@ -124,8 +117,8 @@ function parsePercent(value: number | string, maxValue: number): number{
 export interface TextPositionCalculationResult {
     x: number
     y: number
-    textAlign: TextAlign
-    textVerticalAlign: TextVerticalAlign
+    align: TextAlign
+    verticalAlign: TextVerticalAlign
 }
 /**
  * Follow same interface to `Displayable.prototype.calculateTextPosition`.
@@ -138,7 +131,7 @@ export interface TextPositionCalculationResult {
 export function calculateTextPosition(
     out: TextPositionCalculationResult,
     opts: {
-        position?: BuiltinTextPosition | number[] | string[]
+        position?: BuiltinTextPosition | (number | string)[]
         distance?: number   // Default 5
         global?: boolean
     },
@@ -154,7 +147,7 @@ export function calculateTextPosition(
     let x = rect.x;
     let y = rect.y;
 
-    let textAlign: TextAlign= 'left';
+    let textAlign: TextAlign = 'left';
     let textVerticalAlign: TextVerticalAlign = 'top';
 
     if (textPosition instanceof Array) {
@@ -242,8 +235,8 @@ export function calculateTextPosition(
     out = out || {} as TextPositionCalculationResult;
     out.x = x;
     out.y = y;
-    out.textAlign = textAlign;
-    out.textVerticalAlign = textVerticalAlign;
+    out.align = textAlign;
+    out.verticalAlign = textVerticalAlign;
 
     return out;
 }

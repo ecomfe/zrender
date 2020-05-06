@@ -2,7 +2,7 @@
  * 心形
  */
 
-import Path, { PathOption } from '../Path';
+import Path, { PathProps } from '../Path';
 
 class HeartShape {
     cx = 0
@@ -10,16 +10,20 @@ class HeartShape {
     width = 0
     height = 0
 }
-export default class Heart extends Path {
 
-    type = 'heart'
+interface HeartProps extends PathProps {
+    shape?: Partial<HeartShape>
+}
+class Heart extends Path<HeartProps> {
 
     shape: HeartShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<HeartShape>
-    }) {
-        super(opts, null, new HeartShape())
+    constructor(opts?: HeartProps) {
+        super(opts);
+    }
+
+    getDefaultShape() {
+        return new HeartShape();
     }
 
     buildPath(ctx: CanvasRenderingContext2D, shape: HeartShape) {
@@ -40,3 +44,8 @@ export default class Heart extends Path {
         );
     }
 }
+
+
+Heart.prototype.type = 'heart';
+
+export default Heart;

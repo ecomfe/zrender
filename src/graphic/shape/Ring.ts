@@ -2,7 +2,7 @@
  * 圆环
  */
 
-import Path, { PathOption } from '../Path';
+import Path, { PathProps } from '../Path';
 
 class RingShape {
     cx = 0
@@ -11,16 +11,19 @@ class RingShape {
     r0 = 0
 }
 
-export default class Ring extends Path {
-
-    type = 'ring'
+interface RingProps extends PathProps {
+    shape?: Partial<RingShape>
+}
+class Ring extends Path<RingProps> {
 
     shape: RingShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<RingShape>
-    }) {
-        super(opts, null, new RingShape())
+    constructor(opts?: RingProps) {
+        super(opts);
+    }
+
+    getDefaultShape() {
+        return new RingShape();
     }
 
     buildPath(ctx: CanvasRenderingContext2D, shape: RingShape) {
@@ -33,3 +36,6 @@ export default class Ring extends Path {
         ctx.arc(x, y, shape.r0, 0, PI2, true);
     }
 }
+
+Ring.prototype.type = 'ring';
+export default Ring;

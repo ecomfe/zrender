@@ -2,7 +2,7 @@
  * 圆形
  */
 
-import Path, { PathOption } from '../Path';
+import Path, { PathProps } from '../Path';
 
 class CircleShape {
     cx = 0
@@ -10,18 +10,20 @@ class CircleShape {
     r = 0
 }
 
-export default class Circle extends Path {
-
-    type = 'Circle'
+interface CircleProps extends PathProps {
+    shape?: Partial<CircleShape>
+}
+class Circle extends Path<CircleProps> {
 
     shape: CircleShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<CircleShape>
-    }) {
-        super(opts, null, new CircleShape())
+    constructor(opts?: CircleProps) {
+        super(opts);
     }
 
+    getDefaultShape() {
+        return new CircleShape();
+    }
 
     buildPath(ctx: CanvasRenderingContext2D, shape: CircleShape, inBundle: boolean) {
         // Better stroking in ShapeBundle
@@ -39,3 +41,7 @@ export default class Circle extends Path {
         ctx.arc(shape.cx, shape.cy, shape.r, 0, Math.PI * 2, true);
     }
 };
+
+Circle.prototype.type = 'circle';
+
+export default Circle;

@@ -3,14 +3,18 @@
  * @module zrender/graphic/Displayable
  */
 
-import Element, {ElementOption} from '../Element';
-import BoundingRect, { RectLike } from '../core/BoundingRect';
-import { Dictionary, PropType, AllPropTypes } from '../core/types';
+import Element, {ElementProps, ElementStatePropNames, PRESERVED_NORMAL_STATE, ElementAnimateConfig} from '../Element';
+import BoundingRect from '../core/BoundingRect';
+import { PropType, Dictionary } from '../core/types';
 import Path from './Path';
+import { keys, extend, createObject } from '../core/util';
+import Animator from '../animation/Animator';
 
 // type CalculateTextPositionResult = ReturnType<typeof calculateTextPosition>
 
-export interface CommonStyleOption {
+const STYLE_MAGIC_KEY = '__zr_style_' + Math.round((Math.random() * 10));
+
+export interface CommonStyleProps {
     shadowBlur?: number
     shadowOffsetX?: number
     shadowOffsetY?: number
@@ -23,16 +27,19 @@ export interface CommonStyleOption {
     blend?: string
 }
 
-export const DEFAULT_COMMON_STYLE: CommonStyleOption = {
+export const DEFAULT_COMMON_STYLE: CommonStyleProps = {
     shadowBlur: 0,
     shadowOffsetX: 0,
     shadowOffsetY: 0,
     shadowColor: '#000',
     opacity: 1,
     blend: 'source-over'
-}
+};
 
-export interface DisplayableOption extends ElementOption {
+(DEFAULT_COMMON_STYLE as any)[STYLE_MAGIC_KEY] = true;
+
+
+export interface DisplayableProps extends ElementProps {
     style?: Dictionary<any>
 
     zlevel?: number
@@ -49,12 +56,31 @@ export interface DisplayableOption extends ElementOption {
     progressive?: boolean
 
     incremental?: boolean
+
+    batch?: boolean
+    invisible?: boolean
 }
 
-type DisplayableKey = keyof DisplayableOption
-type DisplayablePropertyType = PropType<DisplayableOption, DisplayableKey>
+type DisplayableKey = keyof DisplayableProps
+type DisplayablePropertyType = PropType<DisplayableProps, DisplayableKey>
 
-export default class Displayable extends Element {
+export type DisplayableStatePropNames = ElementStatePropNames | 'style' | 'z' | 'z2' | 'invisible';
+export type DisplayableState = Pick<DisplayableProps, DisplayableStatePropNames>
+
+const PRIMARY_STATES_KEYS = ['z', 'z2', 'invisible'] as const;
+
+
+interface Displayable<Props extends DisplayableProps = DisplayableProps> {
+    animate(key?: '', loop?: boolean): Animator<this>
+    animate(key: 'style', loop?: boolean): Animator<this['style']>
+
+    getState(stateName: string): DisplayableState
+    ensureState(stateName: string): DisplayableState
+
+    states: Dictionary<DisplayableState>
+    stateProxy: (stateName: string) => DisplayableState
+}
+class Displayable<Props extends DisplayableProps = DisplayableProps> extends Element<Props> {
 
     /**
      * Whether the displayable object is visible. when it is true, the displayable object
@@ -92,54 +118,57 @@ export default class Displayable extends Element {
 
     style: Dictionary<any>
 
-    __dirtyStyle: boolean
+    protected _normalState: DisplayableState
 
     protected _rect: BoundingRect
     __prevPaintRect: BoundingRect
 
+    /**
+     * If use hover layer. Will be set in echarts.
+     */
+    useHoverLayer?: boolean
     /************* Properties will be inejected in other modules. *******************/
+
+    // TODO use WeakMap?
+
     // Shapes for cascade clipping.
     // Can only be `null`/`undefined` or an non-empty array, MUST NOT be an empty array.
     // because it is easy to only using null to check whether clipPaths changed.
-    __clipPaths: Path[]
+    __clipPaths?: Path[]
 
     // FOR HOVER Connections for hovered elements.
     __hoverMir: Displayable
     __from: Displayable
 
+    // FOR CANVAS PAINTER
+    __canvasFillGradient: CanvasGradient
+    __canvasStrokeGradient: CanvasGradient
+    __canvasFillPattern: CanvasPattern
+    __canvasStrokePattern: CanvasPattern
+
     // FOR SVG PAINTER
     __svgEl: SVGElement
 
-    constructor(opts?: DisplayableOption, defaultStyle?: Dictionary<any>) {
-        super(opts);
 
-        // this.attr(opts);
+    constructor(props?: Props) {
+        super(props);
+    }
 
-        // Extend properties
-        // No deep clone.
-        // So if property value is an object like shape. please do not reuse.
-        for (var name in opts) {
-            if (opts.hasOwnProperty(name)) {
-                if (name === 'style') {
-                    this.useStyle(opts.style);
-                }
-                else {
-                    (this as any)[name] = (opts as Dictionary<any>)[name];
-                }
+    protected _init(props?: Props) {
+        // Init default properties
+        const keysArr = keys(props);
+        for (let i = 0; i < keysArr.length; i++) {
+            const key = keysArr[i];
+            if (key === 'style') {
+                this.useStyle(props[key]);
+            }
+            else {
+                super.attrKV(key as any, props[key]);
             }
         }
-
+        // Give a empty style
         if (!this.style) {
-            // Create an empty style object.
             this.useStyle({});
-        }
-
-        if (defaultStyle) {
-            for (let key in defaultStyle) {
-                if (!(opts && opts.style && opts.style[key])) {
-                    (this.style as any)[key] = defaultStyle[key];
-                }
-            }
         }
     }
 
@@ -159,9 +188,9 @@ export default class Displayable extends Element {
         return this.rectContain(x, y);
     }
 
-    traverse<T>(
-        cb: (this: T, el: Displayable) => void,
-        context: T
+    traverse<Context>(
+        cb: (this: Context, el: this) => void,
+        context?: Context
     ) {
         cb.call(context, this);
     }
@@ -177,7 +206,7 @@ export default class Displayable extends Element {
 
     /**
      * Alias for animate('style')
-     * @param {boolean} loop
+     * @param loop
      */
     animateStyle(loop: boolean) {
         return this.animate('style', loop);
@@ -189,13 +218,13 @@ export default class Displayable extends Element {
             this.dirtyStyle();
         }
         else {
-            this.dirty();
+            this.markRedraw();
         }
     }
 
     attrKV(key: DisplayableKey, value: DisplayablePropertyType) {
         if (key !== 'style') {
-            super.attrKV(key as keyof ElementOption, value);
+            super.attrKV(key as keyof DisplayableProps, value);
         }
         else {
             if (!this.style) {
@@ -207,35 +236,155 @@ export default class Displayable extends Element {
         }
     }
 
-    setStyle(obj: Dictionary<any>): void
-    setStyle(obj: string, value: any): void
-    setStyle(obj: string | Dictionary<any>, value?: any) {
-        if (typeof obj === 'string') {
-            this.style[obj] = value;
+    setStyle(obj: Props['style']): this
+    setStyle<T extends keyof Props['style']>(obj: T, value: Props['style'][T]): this
+    setStyle(keyOrObj: keyof Props['style'] | Props['style'], value?: unknown): this {
+        if (typeof keyOrObj === 'string') {
+            this.style[keyOrObj] = value;
         }
         else {
-            for (let key in obj) {
-                if (obj.hasOwnProperty(key)) {
-                    this.style[key] = obj[key];
-                }
-            }
+            extend(this.style, keyOrObj as Props['style']);
         }
         this.dirtyStyle();
         return this;
     }
 
     dirtyStyle() {
-        this.__dirtyStyle = true;
-        this.dirty();
+        this.markRedraw();
+        this.__dirty |= Displayable.STYLE_CHANGED_BIT;
         // Clear bounding rect.
-        this._rect = null;
+        if (this._rect) {
+            this._rect = null;
+        }
+    }
+
+    dirty() {
+        this.dirtyStyle();
     }
 
     /**
-     * Use given style object
+     * Is style changed. Used with dirtyStyle.
      */
-    useStyle(obj: Dictionary<any>) {
-        throw new Error('Not implemented.');
+    styleChanged() {
+        return this.__dirty & Displayable.STYLE_CHANGED_BIT;
+    }
+
+    /**
+     * Create a style object with default values in it's prototype.
+     */
+    createStyle(obj?: Props['style']) {
+        return createObject(DEFAULT_COMMON_STYLE, obj);
+    }
+
+    /**
+     * Replace style property.
+     * It will create a new style if given obj is not a valid style object.
+     */
+     // PENDING should not createStyle if it's an style object.
+    useStyle(obj: Props['style']) {
+        if (!obj[STYLE_MAGIC_KEY]) {
+            obj = this.createStyle(obj);
+        }
+        this.style = obj;
+        this.dirtyStyle();
+    }
+
+    /**
+     * Determine if an object is a valid style object.
+     * Which means it is created by `createStyle.`
+     *
+     * A valid style object will have all default values in it's prototype.
+     * To avoid get null/undefined values.
+     */
+    isStyleObject(obj: Props['style']) {
+        return obj[STYLE_MAGIC_KEY];
+    }
+
+    protected _innerSaveToNormal() {
+        super._innerSaveToNormal();
+
+        const normalState = this._normalState;
+        // Clone style object. TODO: Performance
+        normalState.style = this._mergeStyle(this.createStyle(), this.style);
+        normalState.z = this.z;
+        normalState.z2 = this.z2;
+        normalState.invisible = this.invisible;
+    }
+
+    protected _applyStateObj(state: DisplayableState, keepCurrentStates: boolean, transition: boolean, animationCfg: ElementAnimateConfig) {
+        super._applyStateObj(state, keepCurrentStates, transition, animationCfg);
+        let needsRestoreToNormal = !state || !keepCurrentStates;
+        const normalState = this._normalState;
+        let targetStyle: Props['style'];
+        if (state && state.style) {
+            // TODO Use prototype chain? Prototype chain may have following issues
+            // 1. Normal style may be changed
+            // 2. Needs to detect circular protoype chain
+            targetStyle = this._mergeStyle(
+                this.createStyle(),
+                keepCurrentStates ? this.style : normalState.style
+            );
+            if (keepCurrentStates) {
+                for (let i = 0; i < this.animators.length; i++) {
+                    const animator = this.animators[i];
+                    // If properties in style is in animating. Should be inherited from final value.
+                    if (animator.targetName === 'style') {
+                        animator.saveFinalToTarget(targetStyle);
+                    }
+                }
+            }
+            this._mergeStyle(targetStyle, state.style);
+
+        }
+        else if (needsRestoreToNormal) {
+            targetStyle = normalState.style;
+            if (transition) {
+                targetStyle = this.createStyle(targetStyle);
+            }
+        }
+
+        if (targetStyle) {
+            if (transition) {
+                // Clone a new style. Not affect the original one.
+                // TODO Performance issue.
+                this.style = this.createStyle(this.style);
+
+                const changedKeys = keys(this.style);
+                for (let i = 0; i < changedKeys.length; i++) {
+                    const key = changedKeys[i];
+                    if (targetStyle[key] != null) {
+                        // Pick out from prototype. Or the property won't be animated.
+                        // TODO: Text
+                        (targetStyle as any)[key] = targetStyle[key];
+                    }
+                }
+
+                this.animateTo({
+                    style: targetStyle
+                } as Props, animationCfg);
+            }
+            else {
+                this.useStyle(targetStyle);
+                this.dirtyStyle();
+            }
+        }
+
+        for (let i = 0; i < PRIMARY_STATES_KEYS.length; i++) {
+            let key = PRIMARY_STATES_KEYS[i];
+            if (state && state[key] != null) {
+                // Replace if it exist in target state
+                (this as any)[key] = state[key];
+            }
+            else if (needsRestoreToNormal) {
+                // Restore to normal state
+                (this as any)[key] = normalState[key];
+            }
+        }
+    }
+
+    protected _mergeStyle(targetStyle: CommonStyleProps, sourceStyle: CommonStyleProps) {
+        extend(targetStyle, sourceStyle);
+        return targetStyle;
     }
 
     /**
@@ -259,6 +408,7 @@ export default class Displayable extends Element {
      */
     // calculateTextPosition: (out: CalculateTextPositionResult, style: Dictionary<any>, rect: RectLike) => CalculateTextPositionResult
 
+    static STYLE_CHANGED_BIT = 2
 
     protected static initDefaultProps = (function () {
         const dispProto = Displayable.prototype;
@@ -273,6 +423,8 @@ export default class Displayable extends Element {
         dispProto.incremental = false;
         dispProto._rect = null;
 
-        dispProto.__dirtyStyle = true;
+        dispProto.__dirty = Element.REDARAW_BIT | Displayable.STYLE_CHANGED_BIT;
     })()
 }
+
+export default Displayable;

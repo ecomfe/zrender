@@ -2,7 +2,7 @@
  * 水滴形状
  */
 
-import Path, { PathOption } from '../Path';
+import Path, { PathProps } from '../Path';
 
 class DropletShape {
     cx = 0
@@ -11,16 +11,19 @@ class DropletShape {
     height = 0
 }
 
-export default class Droplet extends Path {
-
-    type = 'droplet'
+interface DropletProps extends PathProps {
+    shape?: Partial<DropletShape>
+}
+class Droplet extends Path<DropletProps> {
 
     shape: DropletShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<DropletShape>
-    }) {
-        super(opts, null, new DropletShape())
+    constructor(opts?: DropletProps) {
+        super(opts);
+    }
+
+    getDefaultShape() {
+        return new DropletShape();
     }
 
     buildPath(ctx: CanvasRenderingContext2D, shape: DropletShape) {
@@ -49,3 +52,7 @@ export default class Droplet extends Path {
         ctx.closePath();
     }
 }
+
+Droplet.prototype.type = 'droplet';
+
+export default Droplet;

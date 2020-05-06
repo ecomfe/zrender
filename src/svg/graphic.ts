@@ -5,19 +5,17 @@
 import {createElement} from './core';
 import PathProxy from '../core/PathProxy';
 import * as matrix from '../core/matrix';
-import Displayable from '../graphic/Displayable';
 import { Path } from '../export';
-import { PathStyleOption } from '../graphic/Path';
-import ZImage, { ImageStyleOption } from '../graphic/Image';
+import { PathStyleProps } from '../graphic/Path';
+import ZRImage, { ImageStyleProps } from '../graphic/Image';
 import { DEFAULT_FONT, getLineHeight } from '../contain/text';
-import ZText, { TextStyleOption } from '../graphic/Text';
+import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
 
-type SVGProxy = {
-    brush: (el: Displayable) => void
+export interface SVGProxy<T> {
+    brush(el: T): void
 }
 
 const CMD = PathProxy.CMD;
-const arrayJoin = Array.prototype.join;
 
 const NONE = 'none';
 const mathRound = Math.round;
@@ -29,7 +27,7 @@ const degree = 180 / PI;
 
 const EPSILON = 1e-4;
 
-type AllStyleOption = PathStyleOption | TextStyleOption | ImageStyleOption;
+type AllStyleOption = PathStyleProps | TSpanStyleProps | ImageStyleProps;
 
 function round4(val: number) {
     return mathRound(val * 1e4) / 1e4;
@@ -39,13 +37,13 @@ function isAroundZero(val: number) {
     return val < EPSILON && val > -EPSILON;
 }
 
-function pathHasFill(style: AllStyleOption): style is PathStyleOption {
-    const fill = (style as PathStyleOption).fill;
+function pathHasFill(style: AllStyleOption): style is PathStyleProps {
+    const fill = (style as PathStyleProps).fill;
     return fill != null && fill !== NONE;
 }
 
-function pathHasStroke(style: AllStyleOption): style is PathStyleOption {
-    const stroke = (style as PathStyleOption).stroke;
+function pathHasStroke(style: AllStyleOption): style is PathStyleProps {
+    const stroke = (style as PathStyleProps).stroke;
     return stroke != null && stroke !== NONE;
 }
 
@@ -56,13 +54,13 @@ function reduceNumberString(n: number, precision: number) {
 }
 function setTransform(svgEl: SVGElement, m: matrix.MatrixArray) {
     if (m) {
-        attr(svgEl, 'transform', 'matrix(' +
-            reduceNumberString(m[0], 3) + ',' +
-            reduceNumberString(m[1], 3) + ',' +
-            reduceNumberString(m[2], 3) + ',' +
-            reduceNumberString(m[3], 3) + ',' +
-            reduceNumberString(m[4], 4) + ',' +
-            reduceNumberString(m[5], 4)
+        attr(svgEl, 'transform', 'matrix('
+            + reduceNumberString(m[0], 3) + ','
+            + reduceNumberString(m[1], 3) + ','
+            + reduceNumberString(m[2], 3) + ','
+            + reduceNumberString(m[3], 3) + ','
+            + reduceNumberString(m[4], 4) + ','
+            + reduceNumberString(m[5], 4)
          + ')');
     }
 }
@@ -78,10 +76,10 @@ function attrXLink(el: SVGElement, key: string, val: string) {
     el.setAttributeNS('http://www.w3.org/1999/xlink', key, val);
 }
 
-function bindStyle(svgEl: SVGElement, style: PathStyleOption, el?: Path): void
-function bindStyle(svgEl: SVGElement, style: TextStyleOption, el?: ZText): void
-function bindStyle(svgEl: SVGElement, style: ImageStyleOption, el?: ZImage): void
-function bindStyle(svgEl: SVGElement, style: AllStyleOption, el?: Path | ZText | ZImage) {
+function bindStyle(svgEl: SVGElement, style: PathStyleProps, el?: Path): void
+function bindStyle(svgEl: SVGElement, style: TSpanStyleProps, el?: TSpan): void
+function bindStyle(svgEl: SVGElement, style: ImageStyleProps, el?: ZRImage): void
+function bindStyle(svgEl: SVGElement, style: AllStyleOption, el?: Path | TSpan | ZRImage) {
     const opacity = style.opacity == null ? 1 : style.opacity;
     if (pathHasFill(style)) {
         let fill = style.fill;
@@ -244,7 +242,7 @@ function pathDataToString(path: PathProxy) {
     return str.join(' ');
 }
 
-const svgPath: SVGProxy = {
+const svgPath: SVGProxy<Path> = {
     brush(el: Path) {
         const style = el.style;
 
@@ -259,10 +257,10 @@ const svgPath: SVGProxy = {
         }
         const path = el.path;
 
-        if (el.__dirtyPath) {
+        if (el.shapeChanged()) {
             path.beginPath();
             el.buildPath(path, el.shape);
-            el.__dirtyPath = false;
+            el.pathUpdated();
 
             const pathStr = pathDataToString(path);
             if (pathStr.indexOf('NaN') < 0) {
@@ -282,8 +280,8 @@ export {svgPath as path};
 /***************************************************
  * IMAGE
  **************************************************/
-const svgImage: SVGProxy = {
-    brush(el: ZImage) {
+const svgImage: SVGProxy<ZRImage> = {
+    brush(el: ZRImage) {
         const style = el.style;
         let image = style.image;
 
@@ -345,8 +343,8 @@ function adjustTextY(y: number, lineHeight: number, textBaseline: CanvasTextBase
     return y;
 }
 
-const svgText: SVGProxy = {
-    brush(el: ZText) {
+const svgText: SVGProxy<TSpan> = {
+    brush(el: TSpan) {
         const style = el.style;
 
         let text = style.text;

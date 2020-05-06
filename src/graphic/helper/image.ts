@@ -1,6 +1,5 @@
 
 import LRU from '../../core/LRU';
-import Element from '../../Element';
 import { ImageLike } from '../../core/types';
 
 const globalImageCache = new LRU<CachedImageObj>(50);
@@ -87,7 +86,7 @@ export function createOrUpdateImage<T>(
     }
 }
 
-function imageOnLoad() {
+function imageOnLoad(this: any) {
     const cachedImgObj = this.__cachedImgObj;
     this.onload = this.onerror = this.__cachedImgObj = null;
 

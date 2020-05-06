@@ -1,32 +1,33 @@
-import { MatrixArray } from "./matrix";
+/**
+ * @deprecated
+ * Use zrender.Point class instead
+ */
+import { MatrixArray } from './matrix';
 
 /* global Float32Array */
 
-const ArrayCtor = typeof Float32Array === 'undefined'
-    ? Array
-    : Float32Array;
+// const ArrayCtor = typeof Float32Array === 'undefined'
+//     ? Array
+//     : Float32Array;
 
-export type VectorArray = Float32Array | number[]
+export type VectorArray = number[]
 /**
  * 创建一个向量
  */
 export function create(x?: number, y?: number): VectorArray {
-    const out = new ArrayCtor(2);
     if (x == null) {
         x = 0;
     }
     if (y == null) {
         y = 0;
     }
-    out[0] = x;
-    out[1] = y;
-    return out;
+    return [x, y];
 }
 
 /**
  * 复制向量数据
  */
-export function copy(out: VectorArray, v: VectorArray): VectorArray {
+export function copy<T extends VectorArray>(out: T, v: VectorArray): T {
     out[0] = v[0];
     out[1] = v[1];
     return out;
@@ -36,16 +37,13 @@ export function copy(out: VectorArray, v: VectorArray): VectorArray {
  * 克隆一个向量
  */
 export function clone(v: VectorArray): VectorArray {
-    const out = new ArrayCtor(2);
-    out[0] = v[0];
-    out[1] = v[1];
-    return out;
+    return [v[0], v[1]];
 }
 
 /**
  * 设置向量的两个项
  */
-export function set(out: VectorArray, a: number, b: number): VectorArray {
+export function set<T extends VectorArray>(out: T, a: number, b: number): T {
     out[0] = a;
     out[1] = b;
     return out;
@@ -54,7 +52,7 @@ export function set(out: VectorArray, a: number, b: number): VectorArray {
 /**
  * 向量相加
  */
-export function add(out: VectorArray, v1: VectorArray, v2: VectorArray): VectorArray {
+export function add<T extends VectorArray>(out: T, v1: VectorArray, v2: VectorArray): T {
     out[0] = v1[0] + v2[0];
     out[1] = v1[1] + v2[1];
     return out;
@@ -63,7 +61,7 @@ export function add(out: VectorArray, v1: VectorArray, v2: VectorArray): VectorA
 /**
  * 向量缩放后相加
  */
-export function scaleAndAdd(out: VectorArray, v1: VectorArray, v2: VectorArray, a: number) {
+export function scaleAndAdd<T extends VectorArray>(out: T, v1: VectorArray, v2: VectorArray, a: number): T {
     out[0] = v1[0] + v2[0] * a;
     out[1] = v1[1] + v2[1] * a;
     return out;
@@ -72,7 +70,7 @@ export function scaleAndAdd(out: VectorArray, v1: VectorArray, v2: VectorArray, 
 /**
  * 向量相减
  */
-export function sub(out: VectorArray, v1: VectorArray, v2: VectorArray) {
+export function sub<T extends VectorArray>(out: T, v1: VectorArray, v2: VectorArray): T {
     out[0] = v1[0] - v2[0];
     out[1] = v1[1] - v2[1];
     return out;
@@ -97,7 +95,7 @@ export const lengthSquare = lenSquare;
 /**
  * 向量乘法
  */
-export function mul(out: VectorArray, v1: VectorArray, v2: VectorArray) {
+export function mul<T extends VectorArray>(out: T, v1: VectorArray, v2: VectorArray): T {
     out[0] = v1[0] * v2[0];
     out[1] = v1[1] * v2[1];
     return out;
@@ -106,7 +104,7 @@ export function mul(out: VectorArray, v1: VectorArray, v2: VectorArray) {
 /**
  * 向量除法
  */
-export function div(out: VectorArray, v1: VectorArray, v2: VectorArray) {
+export function div<T extends VectorArray>(out: T, v1: VectorArray, v2: VectorArray): T {
     out[0] = v1[0] / v2[0];
     out[1] = v1[1] / v2[1];
     return out;
@@ -122,7 +120,7 @@ export function dot(v1: VectorArray, v2: VectorArray) {
 /**
  * 向量缩放
  */
-export function scale(out: VectorArray, v: VectorArray, s: number): VectorArray {
+export function scale<T extends VectorArray>(out: T, v: VectorArray, s: number): T {
     out[0] = v[0] * s;
     out[1] = v[1] * s;
     return out;
@@ -131,7 +129,7 @@ export function scale(out: VectorArray, v: VectorArray, s: number): VectorArray 
 /**
  * 向量归一化
  */
-export function normalize(out: VectorArray, v: VectorArray): VectorArray {
+export function normalize<T extends VectorArray>(out: T, v: VectorArray): T {
     const d = len(v);
     if (d === 0) {
         out[0] = 0;
@@ -167,7 +165,7 @@ export const distSquare = distanceSquare;
 /**
  * 求负向量
  */
-export function negate(out: VectorArray, v: VectorArray): VectorArray {
+export function negate<T extends VectorArray>(out: T, v: VectorArray): T {
     out[0] = -v[0];
     out[1] = -v[1];
     return out;
@@ -176,7 +174,7 @@ export function negate(out: VectorArray, v: VectorArray): VectorArray {
 /**
  * 插值两个点
  */
-export function lerp(out: VectorArray, v1: VectorArray, v2: VectorArray, t: number): VectorArray {
+export function lerp<T extends VectorArray>(out: T, v1: VectorArray, v2: VectorArray, t: number): T {
     out[0] = v1[0] + t * (v2[0] - v1[0]);
     out[1] = v1[1] + t * (v2[1] - v1[1]);
     return out;
@@ -185,7 +183,7 @@ export function lerp(out: VectorArray, v1: VectorArray, v2: VectorArray, t: numb
 /**
  * 矩阵左乘向量
  */
-export function applyTransform(out: VectorArray, v: VectorArray, m: MatrixArray): VectorArray {
+export function applyTransform<T extends VectorArray>(out: T, v: VectorArray, m: MatrixArray): T {
     const x = v[0];
     const y = v[1];
     out[0] = m[0] * x + m[2] * y + m[4];
@@ -196,7 +194,7 @@ export function applyTransform(out: VectorArray, v: VectorArray, m: MatrixArray)
 /**
  * 求两个向量最小值
  */
-export function min(out: VectorArray, v1: VectorArray, v2: VectorArray): VectorArray {
+export function min<T extends VectorArray>(out: T, v1: VectorArray, v2: VectorArray): T {
     out[0] = Math.min(v1[0], v2[0]);
     out[1] = Math.min(v1[1], v2[1]);
     return out;
@@ -205,7 +203,7 @@ export function min(out: VectorArray, v1: VectorArray, v2: VectorArray): VectorA
 /**
  * 求两个向量最大值
  */
-export function max(out: VectorArray, v1: VectorArray, v2: VectorArray): VectorArray {
+export function max<T extends VectorArray>(out: T, v1: VectorArray, v2: VectorArray): T {
     out[0] = Math.max(v1[0], v2[0]);
     out[1] = Math.max(v1[1], v2[1]);
     return out;

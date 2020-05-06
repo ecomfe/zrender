@@ -6,8 +6,8 @@
 import {createElement} from './core';
 import * as util from '../core/util';
 import Path from '../graphic/Path';
-import ZImage from '../graphic/Image';
-import ZText from '../graphic/Text';
+import ZRImage from '../graphic/Image';
+import TSpan from '../graphic/TSpan';
 import arrayDiff from '../core/arrayDiff';
 import GradientManager from './helper/GradientManager';
 import ClippathManager from './helper/ClippathManager';
@@ -15,7 +15,8 @@ import ShadowManager from './helper/ShadowManager';
 import {
     path as svgPath,
     image as svgImage,
-    text as svgText
+    text as svgText,
+    SVGProxy
 } from './graphic';
 import Displayable from '../graphic/Displayable';
 import Storage from '../Storage';
@@ -30,10 +31,10 @@ function getSvgProxy(el: Displayable) {
     if (el instanceof Path) {
         return svgPath;
     }
-    else if (el instanceof ZImage) {
+    else if (el instanceof ZRImage) {
         return svgImage;
     }
-    else if (el instanceof ZText) {
+    else if (el instanceof TSpan) {
         return svgText;
     }
     else {
@@ -173,7 +174,7 @@ class SVGPainter implements PainterBase {
             const svgElement = getSvgElement(displayable);
             if (!displayable.invisible) {
                 if (displayable.__dirty) {
-                    svgProxy && svgProxy.brush(displayable);
+                    svgProxy && (svgProxy as SVGProxy<Displayable>).brush(displayable);
 
                     // Update clipPath
                     this._clipPathManager.update(displayable);
@@ -188,7 +189,7 @@ class SVGPainter implements PainterBase {
                             .update(svgElement, displayable);
                     }
 
-                    displayable.__dirty = false;
+                    displayable.__dirty = 0;
                 }
                 newVisibleList.push(displayable);
             }

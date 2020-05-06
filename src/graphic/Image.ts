@@ -1,9 +1,13 @@
-import Displayable, { DisplayableOption, CommonStyleOption, DEFAULT_COMMON_STYLE } from './Displayable';
+import Displayable, { DisplayableProps,
+    CommonStyleProps,
+    DEFAULT_COMMON_STYLE,
+    DisplayableStatePropNames
+} from './Displayable';
 import BoundingRect from '../core/BoundingRect';
-import { PropType, AllPropTypes, ImageLike } from '../core/types';
-import { defaults, extend } from '../core/util';
+import { ImageLike } from '../core/types';
+import { defaults, createObject } from '../core/util';
 
-export interface ImageStyleOption extends CommonStyleOption {
+export interface ImageStyleProps extends CommonStyleProps {
     image?: string | ImageLike
     x?: number
     y?: number
@@ -15,31 +19,22 @@ export interface ImageStyleOption extends CommonStyleOption {
     sHeight?: number
 }
 
-export const DEFAULT_IMAGE_STYLE: CommonStyleOption = defaults({
+export const DEFAULT_IMAGE_STYLE: CommonStyleProps = defaults({
     x: 0,
     y: 0
 }, DEFAULT_COMMON_STYLE);
 
-class StyleCtor {}
-StyleCtor.prototype = DEFAULT_IMAGE_STYLE;
-interface ImageOption extends DisplayableOption {
-    style?: ImageStyleOption
+interface ImageProps extends DisplayableProps {
+    style?: ImageStyleProps
+
+    onload?: (image: ImageLike) => void
 }
 
-interface ZImage {
-    constructor(opts?: ImageOption): void
+export type ImageState = Pick<ImageProps, DisplayableStatePropNames>
 
-    attr(key: ImageOption): ZImage
-    attr(key: keyof ImageOption, value: AllPropTypes<ImageOption>): ZImage
+class ZRImage extends Displayable<ImageProps> {
 
-    setStyle(key: ImageStyleOption): ZImage
-    setStyle(key: keyof ImageStyleOption, value: AllPropTypes<ImageStyleOption>): ZImage
-}
-
-class ZImage extends Displayable {
-    type = 'image'
-
-    style: ImageStyleOption
+    style: ImageStyleProps
 
     // FOR CANVAS RENDERER
     __image: ImageLike
@@ -48,12 +43,14 @@ class ZImage extends Displayable {
 
     onload: (image: ImageLike) => void
 
-    useStyle(obj: ImageStyleOption) {
-        this.style = new StyleCtor();
-        extend(this.style, obj);
-
-        this.dirtyStyle();
+    /**
+     * Create an image style object with default values in it's prototype.
+     * @override
+     */
+    createStyle(obj?: ImageStyleProps) {
+        return createObject(DEFAULT_IMAGE_STYLE, obj);
     }
+
 
     getBoundingRect(): BoundingRect {
         const style = this.style;
@@ -66,4 +63,6 @@ class ZImage extends Displayable {
     }
 }
 
-export default ZImage;
+ZRImage.prototype.type = 'image';
+
+export default ZRImage;

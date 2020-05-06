@@ -3,7 +3,7 @@
  * @module zrender/shape/Polygon
  */
 
-import Path, { PathOption } from '../Path';
+import Path, { PathProps } from '../Path';
 import * as polyHelper from '../helper/poly';
 import { VectorArray } from '../../core/vector';
 
@@ -13,19 +13,26 @@ class PolygonShape {
     smoothConstraint?: VectorArray[] = null
 }
 
-export default class Polygon extends Path {
-
-    type = 'ellipse'
+interface PolygonProps extends PathProps {
+    shape?: Partial<PolygonShape>
+}
+class Polygon extends Path<PolygonProps> {
 
     shape: PolygonShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<PolygonShape>
-    }) {
-        super(opts, null, new PolygonShape())
+    constructor(opts?: PolygonProps) {
+        super(opts);
+    }
+
+    getDefaultShape() {
+        return new PolygonShape();
     }
 
     buildPath(ctx: CanvasRenderingContext2D, shape: PolygonShape) {
         polyHelper.buildPath(ctx, shape, true);
     }
 };
+
+Polygon.prototype.type = 'polygon';
+
+export default Polygon;

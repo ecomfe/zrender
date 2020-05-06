@@ -2,7 +2,7 @@
  * 正多边形
  */
 
-import Path, { PathOption } from '../Path';
+import Path, { PathProps } from '../Path';
 
 const PI = Math.PI;
 const sin = Math.sin;
@@ -15,16 +15,19 @@ class IsogonShape {
     n = 0
 }
 
-export default class Isogon extends Path {
-
-    type = 'isogon'
+interface IsogonProps extends PathProps {
+    shape?: Partial<IsogonShape>
+}
+class Isogon extends Path<IsogonProps> {
 
     shape: IsogonShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<IsogonShape>
-    }) {
-        super(opts, null, new IsogonShape())
+    constructor(opts?: IsogonProps) {
+        super(opts);
+    }
+
+    getDefaultShape() {
+        return new IsogonShape();
     }
 
     buildPath(ctx: CanvasRenderingContext2D, shape: IsogonShape) {
@@ -51,3 +54,7 @@ export default class Isogon extends Path {
         return;
     }
 }
+
+Isogon.prototype.type = 'isogon';
+
+export default Isogon;

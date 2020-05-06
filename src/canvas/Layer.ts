@@ -1,6 +1,6 @@
 import * as util from '../core/util';
 import {devicePixelRatio} from '../config';
-import Pattern, { PatternObject } from '../graphic/Pattern';
+import { PatternObject } from '../graphic/Pattern';
 import CanvasPainter from './Painter';
 import { GradientObject } from '../graphic/Gradient';
 import { ZRCanvasRenderingContext } from '../core/types';
@@ -8,7 +8,6 @@ import Eventful from '../core/Eventful';
 import { ElementEventCallback } from '../Element';
 import { getCanvasGradient } from './helper';
 import { createCanvasPattern, getPaintRect } from './graphic';
-import { ZRenderType } from '../zrender';
 import Displayable from '../graphic/Displayable';
 import BoundingRect from '../core/BoundingRect';
 
@@ -225,7 +224,7 @@ export default class Layer extends Eventful {
 
         // Add removed displayables because they need to be cleared
         util.each(prevList, el => {
-            if (!el.__storage) {
+            if (!el.__zr) {
                 // el is removed
                 const prevRect = el.__prevPaintRect;
                 prevRect && rects.push(prevRect);
@@ -236,7 +235,7 @@ export default class Layer extends Eventful {
         util.each(rects, rect => {
             if (mergedRepaintRects.length === 0) {
                 // First rect, create new merged rect
-                const boundingRect = new BoundingRect();
+                const boundingRect = new BoundingRect(0, 0, 0, 0);
                 boundingRect.copy(rect);
                 mergedRepaintRects.push(boundingRect);
             }
@@ -248,7 +247,7 @@ export default class Layer extends Eventful {
                     const mergedArea = mergedRect.width * mergedRect.height;
 
                     // The rect after merging rect with mergedRect
-                    const pendingRect = new BoundingRect();
+                    const pendingRect = new BoundingRect(0, 0, 0, 0);
                     pendingRect.copy(mergedRect);
                     pendingRect.union(rect);
                     const pendingArea = pendingRect.width * pendingRect.height;
@@ -262,7 +261,7 @@ export default class Layer extends Eventful {
                 }
                 if (!isMerged) {
                     // Create new merged rect if cannot merge with current
-                    const boundingRect = new BoundingRect();
+                    const boundingRect = new BoundingRect(0, 0, 0, 0);
                     boundingRect.copy(rect);
                     mergedRepaintRects.push(boundingRect);
                 }
@@ -270,7 +269,7 @@ export default class Layer extends Eventful {
         });
 
         // Decrease mergedRepaintRects counts to maxRepaintRectCount
-        const pendingRect = new BoundingRect();
+        const pendingRect = new BoundingRect(0, 0, 0, 0);
         while (mergedRepaintRects.length > this.maxRepaintRectCount) {
             let minDeltaArea = Number.MAX_VALUE;
             let minAId: number = null;
@@ -364,7 +363,7 @@ export default class Layer extends Eventful {
         }
 
         const doClear = (rect: BoundingRect) => {
-            console.log('clear', rect.x, rect.y, rect.width, rect.height);
+            // console.log('clear', rect.x, rect.y, rect.width, rect.height);
             ctx.clearRect(rect.x, rect.y, rect.width, rect.height);
             if (clearColor && clearColor !== 'transparent') {
                 let clearColorGradientOrPattern;
@@ -430,35 +429,39 @@ export default class Layer extends Eventful {
     // Interface of renderToCanvas in getRenderedCanvas
     renderToCanvas: (ctx: CanvasRenderingContext2D) => void
 
-
-    // Events
-    onclick: ElementEventCallback
-    ondblclick: ElementEventCallback
-    onmouseover: ElementEventCallback
-    onmouseout: ElementEventCallback
-    onmousemove: ElementEventCallback
-    onmousewheel: ElementEventCallback
-    onmousedown: ElementEventCallback
-    onmouseup: ElementEventCallback
-    oncontextmenu: ElementEventCallback
-
-    ondrag: ElementEventCallback
-    ondragstart: ElementEventCallback
-    ondragend: ElementEventCallback
-    ondragenter: ElementEventCallback
-    ondragleave: ElementEventCallback
-    ondragover: ElementEventCallback
-    ondrop: ElementEventCallback
-
     private _drawRect(rects: BoundingRect[]) {
         setTimeout(() => {
             this.ctx.save();
             this.ctx.fillStyle = 'none';
-            this.ctx.strokeStyle = '#0ff';
+
+            const r = Math.floor(255 * Math.random());
+            const g = Math.floor(255 * Math.random());
+            const b = Math.floor(255 * Math.random());
+
+            this.ctx.strokeStyle = `rgb(${r}, ${g}, ${b})`;
             util.each(rects, rect => {
                 this.ctx.strokeRect(rect.x * this.dpr, rect.y * this.dpr, rect.width * this.dpr, rect.height * this.dpr);
             });
             this.ctx.restore();
         });
     }
+
+    // Events
+    onclick: ElementEventCallback<unknown, this>
+    ondblclick: ElementEventCallback<unknown, this>
+    onmouseover: ElementEventCallback<unknown, this>
+    onmouseout: ElementEventCallback<unknown, this>
+    onmousemove: ElementEventCallback<unknown, this>
+    onmousewheel: ElementEventCallback<unknown, this>
+    onmousedown: ElementEventCallback<unknown, this>
+    onmouseup: ElementEventCallback<unknown, this>
+    oncontextmenu: ElementEventCallback<unknown, this>
+
+    ondrag: ElementEventCallback<unknown, this>
+    ondragstart: ElementEventCallback<unknown, this>
+    ondragend: ElementEventCallback<unknown, this>
+    ondragenter: ElementEventCallback<unknown, this>
+    ondragleave: ElementEventCallback<unknown, this>
+    ondragover: ElementEventCallback<unknown, this>
+    ondrop: ElementEventCallback<unknown, this>
 }

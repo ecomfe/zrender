@@ -57,7 +57,7 @@ export default class PathProxy {
 
     data: number[] | Float32Array
 
-    private _saveData = false
+    private _saveData: boolean
 
     private _ctx: ExtendedCanvasRenderingContext2D
 
@@ -66,26 +66,28 @@ export default class PathProxy {
 
     private _x0 = 0
     private _y0 = 0
-    // Unit x, Unit y. Provide for avoiding drawing that too short line segment
-    private _ux = 0
-    private _uy = 0
 
     private _len = 0
+    // Unit x, Unit y. Provide for avoiding drawing that too short line segment
+    private _ux: number
+    private _uy: number
 
-    private _lineDash: number[] = null
+    private _lineDash: number[]
 
-    private _needsDash: boolean = false
+    private _needsDash: boolean
 
-    private _dashOffset = 0
+    private _dashOffset: number
 
-    private _dashIdx = 0
+    private _dashIdx: number
 
-    private _dashSum = 0
+    private _dashSum: number
 
     static CMD = CMD
 
     constructor(notSaveData?: boolean) {
-        this._saveData = !(notSaveData || false);
+        if (notSaveData) {
+            this._saveData = false;
+        }
 
         if (this._saveData) {
             this.data = [];
@@ -100,22 +102,31 @@ export default class PathProxy {
     setScale(sx: number, sy: number, segmentIgnoreThreshold?: number) {
         // Compat. Previously there is no segmentIgnoreThreshold.
         segmentIgnoreThreshold = segmentIgnoreThreshold || 0;
-        this._ux = mathAbs(segmentIgnoreThreshold / dpr / sx) || 0;
-        this._uy = mathAbs(segmentIgnoreThreshold / dpr / sy) || 0;
+        if (segmentIgnoreThreshold > 0) {
+            this._ux = mathAbs(segmentIgnoreThreshold / dpr / sx) || 0;
+            this._uy = mathAbs(segmentIgnoreThreshold / dpr / sy) || 0;
+        }
+    }
+
+    setContext(ctx: ExtendedCanvasRenderingContext2D) {
+        this._ctx = ctx;
+        ctx && (this.dpr = ctx.dpr);
     }
 
     getContext(): ExtendedCanvasRenderingContext2D {
         return this._ctx;
     }
 
-    beginPath(ctx?: ExtendedCanvasRenderingContext2D) {
+    beginPath() {
+        this._ctx && this._ctx.beginPath();
+        this.reset();
+        return this;
+    }
 
-        this._ctx = ctx;
-
-        ctx && ctx.beginPath();
-
-        ctx && (this.dpr = ctx.dpr);
-
+    /**
+     * Reset path data.
+     */
+    reset() {
         // Reset
         if (this._saveData) {
             this._len = 0;
@@ -126,15 +137,8 @@ export default class PathProxy {
 
             this._dashOffset = 0;
         }
-
-        return this;
     }
 
-    /**
-     * @param  {number} x
-     * @param  {number} y
-     * @return {module:zrender/core/PathProxy}
-     */
     moveTo(x: number, y: number) {
         this.addData(CMD.M, x, y);
         this._ctx && this._ctx.moveTo(x, y);
@@ -329,7 +333,17 @@ export default class PathProxy {
      * 填充 Path 数据。
      * 尽量复用而不申明新的数组。大部分图形重绘的指令数据长度都是不变的。
      */
-    addData(cmd: number, a?: number, b?: number, c?: number, d?: number, e?: number, f?: number, g?: number, h?: number) {
+    addData(
+        cmd: number,
+        a?: number,
+        b?: number,
+        c?: number,
+        d?: number,
+        e?: number,
+        f?: number,
+        g?: number,
+        h?: number
+    ) {
         if (!this._saveData) {
             return;
         }
@@ -488,14 +502,21 @@ export default class PathProxy {
     }
 
     /**
-     * 转成静态的 Float32Array 减少堆内存占用
      * Convert dynamic array to static Float32Array
+     *
+     * It will still use a normal array if command buffer length is less than 10
+     * Because Float32Array itself may take more memory than a normal array.
+     *
+     * 10 length will make sure at least one M command and one A(arc) command.
      */
     toStatic() {
+        if (!this._saveData) {
+            return;
+        }
         const data = this.data;
         if (data instanceof Array) {
             data.length = this._len;
-            if (hasTypedArray) {
+            if (hasTypedArray && this._len > 11) {
                 this.data = new Float32Array(data);
             }
         }
@@ -726,4 +747,15 @@ export default class PathProxy {
             }
         }
     }
+
+    private static initDefaultProps = (function () {
+        const proto = PathProxy.prototype;
+        proto._saveData = true;
+        proto._needsDash = false;
+        proto._dashOffset = 0;
+        proto._dashIdx = 0;
+        proto._dashSum = 0;
+        proto._ux = 0;
+        proto._uy = 0;
+    })()
 }

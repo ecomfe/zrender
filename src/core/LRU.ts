@@ -1,4 +1,4 @@
-import { Dictionary } from "./types";
+import { Dictionary } from './types';
 
 // Simple LRU cache use doubly linked list
 // @module zrender/core/LRU
@@ -7,7 +7,7 @@ export class Entry<T> {
 
     value: T
 
-    key: string
+    key: string | number
 
     next: Entry<T>
 
@@ -114,7 +114,7 @@ export default class LRU<T> {
     /**
      * @return Removed value
      */
-    put(key: string, value: T): T {
+    put(key: string | number, value: T): T {
         const list = this._list;
         const map = this._map;
         let removed = null;
@@ -147,7 +147,7 @@ export default class LRU<T> {
         return removed;
     }
 
-    get(key: string): T {
+    get(key: string | number): T {
         const entry = this._map[key];
         const list = this._list;
         if (entry != null) {
@@ -167,5 +167,9 @@ export default class LRU<T> {
     clear() {
         this._list.clear();
         this._map = {};
+    }
+
+    len() {
+        return this._list.len();
     }
 }

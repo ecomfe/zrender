@@ -3,7 +3,7 @@
  * @module zrender/graphic/shape/Rect
  */
 
-import Path, { PathOption } from '../Path';
+import Path, { PathProps } from '../Path';
 import * as roundRectHelper from '../helper/roundRect';
 import {subPixelOptimizeRect} from '../helper/subPixelOptimize';
 
@@ -21,19 +21,22 @@ class RectShape {
     height = 0
 }
 
+interface RectProps extends PathProps {
+    shape?: Partial<RectShape>
+}
 // Avoid create repeatly.
 const subPixelOptimizeOutputShape = {};
 
-export default class Rect extends Path {
-
-    type = 'rect'
+class Rect extends Path<RectProps> {
 
     shape: RectShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<RectShape>
-    }) {
-        super(opts, null, new RectShape())
+    constructor(opts?: RectProps) {
+        super(opts);
+    }
+
+    getDefaultShape() {
+        return new RectShape();
     }
 
     buildPath(ctx: CanvasRenderingContext2D, shape: RectShape) {
@@ -64,10 +67,13 @@ export default class Rect extends Path {
         else {
             roundRectHelper.buildPath(ctx, shape);
         }
-        ctx.closePath();
     }
 
     isZeroArea() {
         return !this.shape.width || !this.shape.height;
     }
 }
+
+Rect.prototype.type = 'rect';
+
+export default Rect;

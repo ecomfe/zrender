@@ -17,14 +17,16 @@ A lightweight canvas library which providing 2d draw for [ECharts](https://githu
     - [x] Be able to run in ECharts
     - [x] Generate .d.ts
 
-- [ ] Optimize style
-    - [ ] Remove all text attributes.
+- [x] Optimize style
+    - [x] Remove all text attributes.
     - [ ] Generate hash. Faster diff
 
-- [ ] Add TextGroup
-    - [ ] layout texts
-    - [ ] Text wrap
-    - [ ] Rich text support
+- [x] Add TextGroup
+    - [x] layout texts
+    - [x] Text wrap
+    - [x] Rich text support
+
+- [ ] States
 
 - [ ] Dirty Rectangle
 

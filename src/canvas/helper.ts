@@ -3,7 +3,12 @@ import { RadialGradientObject } from '../graphic/RadialGradient';
 import { GradientObject } from '../graphic/Gradient';
 import { RectLike } from '../core/BoundingRect';
 
-export function createLinearGradient(this: void, ctx: CanvasRenderingContext2D, obj: LinearGradientObject, rect: RectLike) {
+export function createLinearGradient(
+    this: void,
+    ctx: CanvasRenderingContext2D,
+    obj: LinearGradientObject,
+    rect: RectLike
+) {
     let x = obj.x == null ? 0 : obj.x;
     let x2 = obj.x2 == null ? 1 : obj.x2;
     let y = obj.y == null ? 0 : obj.y;
@@ -27,7 +32,12 @@ export function createLinearGradient(this: void, ctx: CanvasRenderingContext2D, 
     return canvasGradient;
 }
 
-export function createRadialGradient(this: void, ctx: CanvasRenderingContext2D, obj: RadialGradientObject, rect: RectLike) {
+export function createRadialGradient(
+    this: void,
+    ctx: CanvasRenderingContext2D,
+    obj: RadialGradientObject,
+    rect: RectLike
+) {
     const width = rect.width;
     const height = rect.height;
     const min = Math.min(width, height);

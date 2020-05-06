@@ -2,7 +2,7 @@
  * 圆弧
  */
 
-import Path, { PathOption } from '../Path';
+import Path, { PathProps } from '../Path';
 
 class ArcShape {
     cx = 0;
@@ -13,19 +13,27 @@ class ArcShape {
     clockwise? = true
 }
 
-export default class Arc extends Path {
+interface ArcProps extends PathProps {
+    shape?: Partial<ArcShape>
+}
 
-    type = 'Arc'
+class Arc extends Path<ArcProps> {
 
     shape: ArcShape
 
-    constructor(opts?: PathOption & {
-        shape?: Partial<ArcShape>
-    }) {
-        super(opts, {
+    constructor(opts?: ArcProps) {
+        super(opts);
+    }
+
+    getDefaultStyle() {
+        return {
             stroke: '#000',
-            fill: null
-        }, new ArcShape());
+            fill: null as string
+        };
+    }
+
+    getDefaultShape() {
+        return new ArcShape();
     }
 
     buildPath(ctx: CanvasRenderingContext2D, shape: ArcShape) {
@@ -44,3 +52,7 @@ export default class Arc extends Path {
         ctx.arc(x, y, r, startAngle, endAngle, !clockwise);
     }
 }
+
+Arc.prototype.type = 'arc';
+
+export default Arc;

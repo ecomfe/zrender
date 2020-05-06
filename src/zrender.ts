@@ -15,16 +15,16 @@ import Storage from './Storage';
 import {PainterBase} from './PainterBase';
 import Animation from './animation/Animation';
 import HandlerProxy from './dom/HandlerProxy';
-import Element, {ElementEventCallback} from './Element';
+import Element, {ElementEventCallback, ElementEvent} from './Element';
 import { Dictionary, ElementEventName } from './core/types';
-import Layer, { LayerConfig } from './canvas/Layer';
+import { LayerConfig } from './canvas/Layer';
 import { GradientObject } from './graphic/Gradient';
 import { PatternObject } from './graphic/Pattern';
-import { Path } from './export';
+import { Path, Group } from './export';
 import { EventCallback } from './core/Eventful';
-import { PathStyleOption } from './graphic/Path';
-import ZText, { TextStyleOption } from './graphic/Text';
-import ZImage, { ImageStyleOption } from './graphic/Image';
+import TSpan from './graphic/TSpan';
+import ZRImage from './graphic/Image';
+import Displayable from './graphic/Displayable';
 
 
 const useVML = !env.canvasSupported;
@@ -79,8 +79,11 @@ class ZRender {
             }
             rendererType = 'vml';
         }
-        else if (!rendererType || !painterCtors[rendererType]) {
+        else if (!rendererType) {
             rendererType = 'canvas';
+        }
+        if (!painterCtors[rendererType]) {
+            throw new Error(`Renderer '${rendererType}' is not imported. Please import it first.`);
         }
         const painter = new painterCtors[rendererType](dom, storage, opts, id);
 
@@ -101,24 +104,6 @@ class ZRender {
             }
         });
         this.animation.start();
-
-
-        // 修改 storage.delFromStorage, 每次删除元素之前删除动画
-        // FIXME 有点ugly
-        const oldDelFromStorage = storage.delFromStorage;
-        const oldAddToStorage = storage.addToStorage;
-
-        storage.delFromStorage = function (el) {
-            oldDelFromStorage.call(storage, el);
-            el && el.removeSelfFromZr(self);
-            return this;
-        };
-
-        storage.addToStorage = function (el) {
-            oldAddToStorage.call(storage, el);
-            el.addSelfToZr(self);
-            return this;
-        };
     }
 
     /**
@@ -126,6 +111,7 @@ class ZRender {
      */
     add(el: Element) {
         this.storage.addRoot(el);
+        el.addSelfToZr(this);
         this._needsRefresh = true;
     }
 
@@ -134,6 +120,7 @@ class ZRender {
      */
     remove(el: Element) {
         this.storage.delRoot(el);
+        el.removeSelfFromZr(this);
         this._needsRefresh = true;
     }
 
@@ -162,8 +149,13 @@ class ZRender {
     /**
      * Repaint the canvas immediately
      */
-    refreshImmediately() {
+    refreshImmediately(fromInside?: boolean) {
         // const start = new Date();
+
+        if (!fromInside) {
+            // Update animation if refreshImmediately is invoked from outside.
+            this.animation.update();
+        }
 
         // Clear needsRefresh ahead to avoid something wrong happens in refresh
         // Or it will cause zrender refreshes again and again.
@@ -194,7 +186,7 @@ class ZRender {
 
         if (this._needsRefresh) {
             triggerRendered = true;
-            this.refreshImmediately();
+            this.refreshImmediately(true);
         }
         if (this._needsRefreshHover) {
             triggerRendered = true;
@@ -204,18 +196,12 @@ class ZRender {
         triggerRendered && this.trigger('rendered');
     }
 
-    addHover(el: Path, style: PathStyleOption): Path
-    addHover(el: ZText, style: TextStyleOption): ZText
-    addHover(el: ZImage, style: ImageStyleOption): ZImage
     /**
      * Add element to hover layer
      */
-    addHover(el: Path | ZText | ZImage, style: PathStyleOption | TextStyleOption | ImageStyleOption): Path | ZText | ZImage {
+    addHover<T extends Displayable>(el: T, hoverStyle?: T['style']): T {
         if (this.painter.addHover) {
-            const elMirror = this.painter.addHover(
-                // TODO
-                el as Path, style as PathStyleOption
-            );
+            const elMirror = this.painter.addHover(el, hoverStyle);
             this.refreshHover();
             return elMirror;
         }
@@ -224,7 +210,7 @@ class ZRender {
     /**
      * Add element from hover layer
      */
-    removeHover(el: Path | ZText | ZImage) {
+    removeHover(el: Path | TSpan | ZRImage) {
         if (this.painter.removeHover) {
             this.painter.removeHover(el);
             this.refreshHover();
@@ -329,16 +315,18 @@ class ZRender {
      * @return {target, topTarget}
      */
     findHover(x: number, y: number): {
-        target: Element
-        topTarget: Element
+        target: Displayable
+        topTarget: Displayable
     } {
         return this.handler.findHover(x, y);
     }
 
-    on(eventName: ElementEventName, eventHandler: ElementEventCallback, context?: Object): void
-    on(eventName: string, eventHandler: EventCallback, context?: Object): void
-    on(eventName: string, eventHandler: EventCallback, context?: Object) {
+    on<Ctx>(eventName: ElementEventName, eventHandler: ElementEventCallback<Ctx, unknown>, context?: Ctx): this
+    on<Ctx>(eventName: string, eventHandler: EventCallback<Ctx, unknown>, context?: Ctx): this
+    // eslint-disable-next-line max-len
+    on<Ctx>(eventName: string, eventHandler: EventCallback<Ctx, unknown> | EventCallback<Ctx, unknown, ElementEvent>, context?: Ctx): this {
         this.handler.on(eventName, eventHandler, context);
+        return this;
     }
 
     /**
@@ -346,7 +334,8 @@ class ZRender {
      * @param eventName Event name
      * @param eventHandler Handler function
      */
-    off(eventName?: string, eventHandler?: EventCallback) {
+    // eslint-disable-next-line max-len
+    off(eventName?: string, eventHandler?: EventCallback<unknown, unknown> | EventCallback<unknown, unknown, ElementEvent>) {
         this.handler.off(eventName, eventHandler);
     }
 
@@ -356,7 +345,7 @@ class ZRender {
      * @param eventName Event name
      * @param event Event object
      */
-    trigger(eventName: string, event?: Object) {
+    trigger(eventName: string, event?: unknown) {
         this.handler.trigger(eventName, event);
     }
 
@@ -365,6 +354,12 @@ class ZRender {
      * Clear all objects and the canvas.
      */
     clear() {
+        const roots = this.storage.getRoots();
+        for (let i = 0; i < roots.length; i++) {
+            if (roots[i] instanceof Group) {
+                roots[i].removeSelfFromZr(this);
+            }
+        }
         this.storage.delAllRoots();
         this.painter.clear();
     }

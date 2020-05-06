@@ -2,7 +2,7 @@
  * Group是一个容器，可以插入子节点，Group的变换也会被应用到子节点上
  * @module zrender/graphic/Group
  * @example
- *     const Group = require('zrender/container/Group');
+ *     const Group = require('zrender/graphic/Group');
  *     const Circle = require('zrender/graphic/shape/Circle');
  *     const g = new Group();
  *     g.position[0] = 100;
@@ -18,32 +18,40 @@
  */
 
 import * as zrUtil from '../core/util';
-import Element, { ElementOption } from '../Element';
+import Element, { ElementProps } from '../Element';
 import BoundingRect from '../core/BoundingRect';
-import Storage from '../Storage';
 import { MatrixArray } from '../core/matrix';
-import Displayable from '../graphic/Displayable';
+import Displayable from './Displayable';
+import { ZRenderType } from '../zrender';
 
-export interface GroupOption extends ElementOption {
+export interface GroupProps extends ElementProps {
 }
 
-export default class Group extends Element {
+class Group extends Element<GroupProps> {
 
     readonly isGroup = true
-
-    readonly type = 'group'
 
     private _children: Element[] = []
 
 
-    constructor(opts?: GroupOption) {
+    constructor(opts?: GroupProps) {
         super();
 
         this.attr(opts);
     }
 
-    children() {
+    /**
+     * Get children reference.
+     */
+    childrenRef() {
         return this._children;
+    }
+
+    /**
+     * Get children copy.
+     */
+    children() {
+        return this._children.slice();
     }
 
     /**
@@ -108,27 +116,21 @@ export default class Group extends Element {
 
         child.parent = this;
 
-        const storage = this.__storage;
         const zr = this.__zr;
-        if (storage && storage !== (child as Group).__storage) {    // Only group has __storage
+        if (zr && zr !== (child as Group).__zr) {    // Only group has __storage
 
-            storage.addToStorage(child);
-
-            if (child instanceof Group) {
-                child.addChildrenToStorage(storage);
-            }
+            child.addSelfToZr(zr);
         }
 
         zr && zr.refresh();
     }
 
     /**
-     * 移除子节点
+     * Remove child
      * @param child
      */
     remove(child: Element) {
         const zr = this.__zr;
-        const storage = this.__storage;
         const children = this._children;
 
         const idx = zrUtil.indexOf(children, child);
@@ -139,13 +141,9 @@ export default class Group extends Element {
 
         child.parent = null;
 
-        if (storage) {
+        if (zr) {
 
-            storage.delFromStorage(child);
-
-            if (child instanceof Group) {
-                child.delChildrenFromStorage(storage);
-            }
+            child.removeSelfFromZr(zr);
         }
 
         zr && zr.refresh();
@@ -154,18 +152,15 @@ export default class Group extends Element {
     }
 
     /**
-     * 移除所有子节点
+     * Remove all children
      */
     removeAll() {
         const children = this._children;
-        const storage = this.__storage;
+        const zr = this.__zr;
         for (let i = 0; i < children.length; i++) {
             const child = children[i];
-            if (storage) {
-                storage.delFromStorage(child);
-                if (child instanceof Group) {
-                    child.delChildrenFromStorage(storage);
-                }
+            if (zr) {
+                child.removeSelfFromZr(zr);
             }
             child.parent = null;
         }
@@ -177,9 +172,9 @@ export default class Group extends Element {
     /**
      * 遍历所有子节点
      */
-    eachChild<T>(
-        cb: (this: T, el: Element, index: number) => void,
-        context: T
+    eachChild<Context>(
+        cb: (this: Context, el: Element, index?: number) => void,
+        context?: Context
     ) {
         const children = this._children;
         for (let i = 0; i < children.length; i++) {
@@ -190,47 +185,38 @@ export default class Group extends Element {
     }
 
     /**
-     * 深度优先遍历所有子孙节点
+     * Visit all descendants.
+     * Return false in callback to stop visit descendants of current node
      */
     traverse<T>(
-        cb: (this: T, el: Element) => void,
-        context: T
+        cb: (this: T, el: Element) => boolean | void,
+        context?: T
     ) {
         for (let i = 0; i < this._children.length; i++) {
             const child = this._children[i];
-            cb.call(context, child);
+            const stopped = cb.call(context, child);
 
-            if (child.isGroup) {
+            if (child.isGroup && !stopped) {
                 child.traverse(cb, context);
             }
         }
         return this;
     }
 
-    addChildrenToStorage(storage: Storage) {
+    addSelfToZr(zr: ZRenderType) {
+        super.addSelfToZr(zr);
         for (let i = 0; i < this._children.length; i++) {
             const child = this._children[i];
-            storage.addToStorage(child);
-            if (child instanceof Group) {
-                child.addChildrenToStorage(storage);
-            }
+            child.addSelfToZr(zr);
         }
     }
 
-    delChildrenFromStorage(storage: Storage) {
+    removeSelfFromZr(zr: ZRenderType) {
+        super.removeSelfFromZr(zr);
         for (let i = 0; i < this._children.length; i++) {
             const child = this._children[i];
-            storage.delFromStorage(child);
-            if (child instanceof Group) {
-                child.delChildrenFromStorage(storage);
-            }
+            child.removeSelfFromZr(zr);
         }
-    }
-
-    dirty() {
-        this.__dirty = true;
-        this.__zr && this.__zr.refresh();
-        return this;
     }
 
     getBoundingRect(includeChildren?: Element[]): BoundingRect {
@@ -242,7 +228,7 @@ export default class Group extends Element {
 
         for (let i = 0; i < children.length; i++) {
             const child = children[i];
-            // Only displayable can be invisble
+            // TODO invisible?
             if (child.ignore || (child as Displayable).invisible) {
                 continue;
             }
@@ -257,8 +243,7 @@ export default class Group extends Element {
             // rotated.) But we can not find better approach to calculate
             // actual boundingRect yet, considering performance.
             if (transform) {
-                tmpRect.copy(childRect);
-                tmpRect.applyTransform(transform);
+                BoundingRect.applyTransform(tmpRect, childRect, transform);
                 rect = rect || tmpRect.clone();
                 rect.union(tmpRect);
             }
@@ -270,3 +255,7 @@ export default class Group extends Element {
         return rect || tmpRect;
     }
 }
+
+Group.prototype.type = 'group';
+
+export default Group;

@@ -23,7 +23,7 @@ class Pattern {
         // Should do nothing more in this constructor. Because gradient can be
         // declard by `color: {image: ...}`, where this constructor will not be called.
         this.image = image;
-        this.repeat = repeat
+        this.repeat = repeat;
     }
 }
 
