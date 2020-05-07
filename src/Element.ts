@@ -132,13 +132,36 @@ export interface ElementTextConfig {
      */
     inside?: boolean
 
-    /**
-     * Anchor for text guide line.
-     */
-    guideLineAnchor?: Point
-
     // TODO applyClip
     // TODO align, verticalAlign??
+}
+
+export interface ElementTextGuideLineConfig {
+    /**
+     * Anchor for text guide line.
+     * Notice: Won't work
+     */
+    anchor?: Point
+
+    /**
+     * If calculate guide line points automatically.
+     */
+    autoCalculate?: boolean
+
+    /**
+     * Candidates of connectors. Used when autoCalculate is true and anchor is not specified.
+     */
+    candidates?: ('left' | 'top' | 'right' | 'bottom')[]
+
+    /**
+     * Length of the first segment near to text.
+     */
+    len?: number
+
+    /**
+     * Length of the second segment near to the element.
+     */
+    len2?: number
 }
 
 export interface ElementEvent {
@@ -307,24 +330,31 @@ class Element<Props extends ElementProps = ElementProps> {
      * path to clip the elements and its children, if it is a group.
      * @see http://www.w3.org/TR/2dcontext/#clipping-region
      */
-    private _clipPath: Path
+    private _clipPath?: Path
 
     /**
      * Attached text element.
      * `position`, `style.textAlign`, `style.textVerticalAlign`
      * of element will be ignored if textContent.position is set
      */
-    private _textContent: ZRText
+    private _textContent?: ZRText
 
     /**
      * Text guide line.
      */
-    private _textGuide: Polyline
+    private _textGuide?: Polyline
 
     /**
      * Config of textContent. Inlcuding layout, color, ...etc.
      */
-    textConfig: ElementTextConfig
+    textConfig?: ElementTextConfig
+
+    /**
+     * Config for guide line calculating.
+     *
+     * NOTE: This is just a property signature. READ and WRITE are all done in echarts.
+     */
+    textGuideLineConfig?: ElementTextGuideLineConfig
 
     // FOR ECHARTS
     /**
@@ -343,7 +373,7 @@ class Element<Props extends ElementProps = ElementProps> {
      * Proxy function for getting state with given stateName.
      * ZRender will first try to get with stateProxy. Then find from states if stateProxy returns nothing
      */
-    stateProxy: (stateName: string) => ElementState
+    stateProxy?: (stateName: string) => ElementState
 
     protected _normalState: ElementState
 
@@ -949,6 +979,18 @@ class Element<Props extends ElementProps = ElementProps> {
     }
 
     /**
+     * Set layout of attached text. Will merge with the previous.
+     */
+    setTextConfig(cfg: ElementTextConfig) {
+        // TODO hide cfg property?
+        if (!this.textConfig) {
+            this.textConfig = {};
+        }
+        extend(this.textConfig, cfg);
+        this.markRedraw();
+    }
+
+    /**
      * Remove attached text element.
      */
     removeTextContent() {
@@ -985,19 +1027,6 @@ class Element<Props extends ElementProps = ElementProps> {
             this.markRedraw();
         }
     }
-
-    /**
-     * Set layout of attached text. Will merge with the previous.
-     */
-    setTextConfig(cfg: ElementTextConfig) {
-        // TODO hide cfg property?
-        if (!this.textConfig) {
-            this.textConfig = {};
-        }
-        extend(this.textConfig, cfg);
-        this.markRedraw();
-    }
-
     /**
      * Mark element needs to be repainted
      */
