@@ -18,8 +18,9 @@ import {
     mixin,
     isArrayLike
 } from './core/util';
-import { Group } from './export';
 import Polyline from './graphic/shape/Polyline';
+import Group from './graphic/Group';
+import Point from './core/Point';
 
 export interface ElementAnimateConfig {
     duration?: number
@@ -130,6 +131,11 @@ export interface ElementTextConfig {
      * In case position is not using builtin `inside` hints.
      */
     inside?: boolean
+
+    /**
+     * Anchor for text guide line.
+     */
+    guideLineAnchor?: Point
 
     // TODO applyClip
     // TODO align, verticalAlign??

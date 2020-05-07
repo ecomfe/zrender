@@ -95,9 +95,12 @@ export default class Clip {
 
         let percent = (globalTime - this._startTime - this._pausedTime) / this._life;
 
-        // 还没开始
+        // PENDING: Not begin yet. Still run the loop.
+        // In the case callback needs to be invoked.
+        // Or want to update to the begin state at next frame when `setToFinal` and `delay` are both used.
+        // To avoid the unexpected blink.
         if (percent < 0) {
-            return;
+            percent = 0;
         }
 
         percent = Math.min(percent, 1);

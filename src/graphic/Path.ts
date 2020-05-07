@@ -414,6 +414,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         const normalState = this._normalState;
         let targetShape: Props['shape'];
         if (state && state.shape) {
+            // TODO: Reduce properties needs to be animated to improve performance
             if (keepCurrentStates) {
                 targetShape = extend({}, this.shape);
                 for (let i = 0; i < this.animators.length; i++) {
@@ -436,12 +437,23 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         }
 
         if (targetShape) {
-
             if (transition) {
                 // Clone a new shape.
                 this.shape = extend({}, this.shape);
+                // Only supports transition on primary props. Because shape is not deep cloned.
+                const targetShapePrimaryProps: Props['shape'] = {};
+                const shapeKeys = keys(targetShape);
+                for (let i = 0; i < shapeKeys.length; i++) {
+                    const key = shapeKeys[i];
+                    if (typeof targetShape[key] === 'object') {
+                        (this.shape as Props['shape'])[key] = targetShape[key];
+                    }
+                    else {
+                        targetShapePrimaryProps[key] = targetShape[key];
+                    }
+                }
                 this.animateTo({
-                    shape: targetShape
+                    shape: targetShapePrimaryProps
                 } as Props, animationCfg);
             }
             else {

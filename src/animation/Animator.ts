@@ -333,6 +333,12 @@ class Track {
                     this.interpolable = false;
                     return;
                 }
+                // Not a number array.
+                if (arrayDim === 1 && typeof value[0] !== 'number'
+                    || arrayDim === 2 && typeof value[0][0] !== 'number') {
+                    this.interpolable = false;
+                    return;
+                }
                 // if (len > 0) {
                 //     let lastFrame = keyframes[len - 1];
 
