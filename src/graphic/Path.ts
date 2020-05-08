@@ -18,6 +18,7 @@ import { parse } from '../tool/color';
 export interface PathStyleProps extends CommonStyleProps {
     fill?: string | PatternObject | LinearGradientObject | RadialGradientObject
     stroke?: string | PatternObject | LinearGradientObject | RadialGradientObject
+    strokePercent?: number
     strokeNoScale?: boolean
     fillOpacity?: number
     strokeOpacity?: number
@@ -47,6 +48,7 @@ export interface PathStyleProps extends CommonStyleProps {
 export const DEFAULT_PATH_STYLE: PathStyleProps = defaults({
     fill: '#000',
     stroke: null,
+    strokePercent: 1,
     lineDashOffset: 0,
     lineWidth: 1,
     lineCap: 'butt',

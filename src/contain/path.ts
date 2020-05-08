@@ -158,11 +158,11 @@ function windingArc(
     roots[0] = -tmp;
     roots[1] = tmp;
 
-    const diff = Math.abs(startAngle - endAngle);
-    if (diff < 1e-4) {
+    const dTheta = Math.abs(startAngle - endAngle);
+    if (dTheta < 1e-4) {
         return 0;
     }
-    if (diff % PI2 < 1e-4) {
+    if (dTheta % PI2 < 1e-4) {
         // Is a circle
         startAngle = 0;
         endAngle = PI2;

@@ -62,13 +62,19 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, inBatch: boolean) {
     let hasStroke = el.hasStroke();
     let hasFill = el.hasFill();
 
+    const style = el.style;
+    const strokePercent = style.strokePercent;
+    const strokePart = strokePercent < 1;
+
     // TODO Reduce path memory cost.
     const firstDraw = !el.path;
-    if (!el.silent && firstDraw) {  // Not create path for silent element.
+    // Create path for each element when:
+    // 1. Element has interactions.
+    // 2. Element draw part of the line.
+    if (!(el.silent || strokePart) && firstDraw) {
         el.createPathProxy();
     }
 
-    const style = el.style;
     const path = el.path || pathProxyForDraw;
 
     if (!inBatch) {
@@ -154,6 +160,7 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, inBatch: boolean) {
     const scale = el.getGlobalScale();
     path.setScale(scale[0], scale[1], el.segmentIgnoreThreshold);
 
+    let needsRebuild = true;
     // Proxy context
     // Rebuild path in following 2 cases
     // 1. Path is dirty
@@ -162,7 +169,15 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, inBatch: boolean) {
     if (firstDraw || (el.__dirty & Path.SHAPE_CHANGED_BIT)
         || (lineDash && !ctxLineDash && hasStroke)
     ) {
-        path.setContext(ctx);
+        path.setDPR((ctx as any).dpr);
+        if (strokePart) {
+            // Use rebuildPath for percent stroke, so no context.
+            path.setContext(null);
+        }
+        else {
+            path.setContext(ctx);
+            needsRebuild = false;
+        }
         path.reset();
 
         // Setting line dash before build path
@@ -177,8 +192,10 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, inBatch: boolean) {
         // Clear path dirty flag
         el.pathUpdated();
     }
-    else {
-        el.path.rebuildPath(ctx);
+
+    // Not support separate fill and stroke. For the compatibility of SVG
+    if (needsRebuild) {
+        path.rebuildPath(ctx, strokePart ? strokePercent : 1);
     }
 
     if (lineDash && ctxLineDash) {
@@ -550,6 +567,10 @@ function canPathBatch(el: Path) {
     const hasStroke = el.hasStroke();
     // Can't batch if element is both set fill and stroke. Or both not set
     if (!(+hasFill ^ +hasStroke)) {
+        return false;
+    }
+    // Can't batch if element only stroke part of line.
+    if (style.strokePercent < 1) {
         return false;
     }
     // Can't batch if element is drawn with gradient or pattern.
