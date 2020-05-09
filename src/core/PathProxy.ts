@@ -216,9 +216,7 @@ export default class PathProxy {
     arc(cx: number, cy: number, r: number, startAngle: number, endAngle: number, anticlockwise?: boolean) {
         // Normalize delta to 0 - PI2
         let delta = endAngle - startAngle;
-        if (anticlockwise) {
-            delta = -delta;
-        }
+
         if (delta < 0) {
             const n = Math.round(delta / PI * 1e6) / 1e6;
             // Convert to positive
@@ -828,6 +826,10 @@ export default class PathProxy {
             pathSegLen = this._pathSegLen;
             pathTotalLen = this._pathLen;
             displayedLength = percent * pathTotalLen;
+
+            if (!displayedLength) {
+                return;
+            }
         }
 
         lo: for (let i = 0; i < len;) {
@@ -936,6 +938,13 @@ export default class PathProxy {
                     if (drawPart) {
                         const l = pathSegLen[segCount++];
                         if (accumLength + l > displayedLength) {
+                            if (anticlockwise && delta > 0) {
+                                // Convert delta to negative
+                                delta = delta - PI2;
+                                if (Math.abs(delta) < 1e-6) {   // is circle.
+                                    delta = delta - PI2;
+                                }
+                            }
                             endAngle = startAngle + delta * (displayedLength - accumLength) / l;
                             breakBuild = true;
                         }
