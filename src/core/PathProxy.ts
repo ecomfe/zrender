@@ -227,6 +227,15 @@ export default class PathProxy {
             delta = mathMin(delta, PI2);
         }
 
+        // Convert to -PI2 ~ PI2, -PI2 is anticlockwise
+        if (anticlockwise && delta > 0) {
+            // Convert delta to negative
+            delta = delta - PI2;
+            if (Math.abs(delta) < 1e-6) {   // is circle.
+                delta = delta - PI2;
+            }
+        }
+
         endAngle = startAngle + delta;
 
         this.addData(
@@ -761,7 +770,7 @@ export default class PathProxy {
                     }
 
                     // TODO Ellipse
-                    l = PI2 * 2 * mathMax(rx, ry) * mathMin(PI2, delta);
+                    l = mathMax(rx, ry) * mathMin(PI2, Math.abs(delta));
 
                     xi = mathCos(endAngle) * rx + cx;
                     yi = mathSin(endAngle) * ry + cy;
@@ -938,16 +947,10 @@ export default class PathProxy {
                     if (drawPart) {
                         const l = pathSegLen[segCount++];
                         if (accumLength + l > displayedLength) {
-                            if (anticlockwise && delta > 0) {
-                                // Convert delta to negative
-                                delta = delta - PI2;
-                                if (Math.abs(delta) < 1e-6) {   // is circle.
-                                    delta = delta - PI2;
-                                }
-                            }
                             endAngle = startAngle + delta * (displayedLength - accumLength) / l;
                             breakBuild = true;
                         }
+                        accumLength += l;
                     }
                     if (isEllipse) {
                         ctx.translate(cx, cy);
