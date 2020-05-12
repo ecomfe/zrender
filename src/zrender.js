@@ -165,6 +165,13 @@ var ZRender = function (id, dom, opts) {
 
         el.addSelfToZr(self);
     };
+
+    // 被动触发元素上的鼠标事件。当鼠标在画布上静止时，
+    // 如果此时因为动画，有元素移入鼠标指针的位置，
+    // 此时也会触发元素的鼠标事件。
+    this.animation.on('frame', function () {
+        self.handler.dispatchToAny();
+    });
 };
 
 ZRender.prototype = {
