@@ -105,7 +105,7 @@
             config[stateName] = false;
             statesFolder.add(config, stateName).onChange(function () {
                 rect.toggleState(stateName, config[stateName], {
-                    duration: config.animation ? 300 : 0,
+                    duration: config.animation ? 1000 : 0,
                     easing: 'cubicOut'
                 });
             });

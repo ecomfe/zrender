@@ -402,18 +402,27 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         return createObject(DEFAULT_PATH_STYLE, obj);
     }
 
-    protected _innerSaveToNormal() {
-        super._innerSaveToNormal();
+    protected _innerSaveToNormal(toState: PathState) {
+        super._innerSaveToNormal(toState);
 
+        const normalState = this._normalState;
         // Clone a new one. DON'T share object reference between states and current using.
         // TODO: Clone array in shape?.
-        this._normalState.shape = extend({}, this.shape);
+        if (toState.shape && !normalState.shape) {
+            normalState.shape = extend({}, this.shape);
+        }
     }
 
-    protected _applyStateObj(state: PathState, keepCurrentStates: boolean, transition: boolean, animationCfg: ElementAnimateConfig) {
-        super._applyStateObj(state, keepCurrentStates, transition, animationCfg);
+    protected _applyStateObj(
+        stateName: string,
+        state: PathState,
+        normalState: PathState,
+        keepCurrentStates: boolean,
+        transition: boolean,
+        animationCfg: ElementAnimateConfig
+    ) {
+        super._applyStateObj(stateName, state, normalState, keepCurrentStates, transition, animationCfg);
         let needsRestoreToNormal = !state || !keepCurrentStates;
-        const normalState = this._normalState;
         let targetShape: Props['shape'];
         if (state && state.shape) {
             // TODO: Reduce properties needs to be animated to improve performance
@@ -421,8 +430,8 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
                 targetShape = extend({}, this.shape);
                 for (let i = 0; i < this.animators.length; i++) {
                     const animator = this.animators[i];
-                    // If properties in shape is in animating. Should be inherited from final value.
-                    // TODO Stop the track?
+                    // If properties in shape is in animating .
+                    // Should be inherited from final value and keep the animation running.
                     if (animator.targetName === 'shape') {
                         animator.saveFinalToTarget(targetShape);
                     }
@@ -454,7 +463,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
                         targetShapePrimaryProps[key] = targetShape[key];
                     }
                 }
-                this.animateTo({
+                this._transitionState(stateName, {
                     shape: targetShapePrimaryProps
                 } as Props, animationCfg);
             }

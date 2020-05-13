@@ -642,34 +642,51 @@ class Element<Props extends ElementProps = ElementProps> {
     }
 
     // Save current state to normal
-    saveCurrentToNormalState() {
-        this._innerSaveToNormal();
+    saveCurrentToNormalState(toState: ElementState) {
+        this._innerSaveToNormal(toState);
 
         // If we are swtiching from normal to other state during animation.
         // We need to save final value of animation to the normal state. Not interpolated value.
         const normalState = this._normalState;
         for (let i = 0; i < this.animators.length; i++) {
             const animator = this.animators[i];
-            // According to the order of animation if multiple animator is
-            // Animating on the same property(If additive animation is used)
-            animator.saveFinalToTarget(
-                animator.targetName
-                    ? (normalState as any)[animator.targetName] : normalState
-            );
+            const fromStateTransition = animator.__fromStateTransition;
+            // Ignore animation from state transition(except normal).
+            if (fromStateTransition && fromStateTransition !== PRESERVED_NORMAL_STATE) {
+                continue;
+            }
+
+            const targetName = animator.targetName;
+            // Respecting the order of animation if multiple animator is
+            // animating on the same property(If additive animation is used)
+            const target = targetName
+                ? (normalState as any)[targetName] : normalState;
+            // Only save keys that are changed by the states.
+            animator.saveFinalToTarget(target);
         }
     }
 
-    protected _innerSaveToNormal() {
-        let state = this._normalState;
-        if (!state) {
-            state = this._normalState = {};
+    protected _innerSaveToNormal(toState: ElementState) {
+        let normalState = this._normalState;
+        if (!normalState) {
+            // Clear previous stored normal states when switching from normalState to otherState.
+            normalState = this._normalState = {};
         }
-        // TODO clone?
-        state.textConfig = this.textConfig;
+        if (toState.textConfig && !normalState.textConfig) {
+            normalState.textConfig = this.textConfig;
+        }
 
-        for (let i = 0; i < PRIMARY_STATES_KEYS.length; i++) {
-            let key = PRIMARY_STATES_KEYS[i];
-            (state as any)[key] = this[key];
+        this._savePrimaryToNormal(toState, normalState, PRIMARY_STATES_KEYS);
+    }
+
+    protected _savePrimaryToNormal(toState: Dictionary<any>, normalState: Dictionary<any>, primaryKeys: readonly string[]) {
+        for (let i = 0; i < primaryKeys.length; i++) {
+            let key = primaryKeys[i];
+            // Only save property that will be changed by toState
+            // and has not been saved to normalState yet.
+            if (toState[key] != null && !(key in normalState)) {
+                (normalState as any)[key] = (this as any)[key];
+            }
         }
     }
 
@@ -719,19 +736,15 @@ class Element<Props extends ElementProps = ElementProps> {
         // Use preserved word __normal__
         // TODO: Only restore changed properties when restore to normal???
         const toNormalState = stateName === PRESERVED_NORMAL_STATE;
+        const hasStates = this.hasState();
 
-        if (!this.hasState()) {
-            // If switched from normal state to other state.
-            if (!toNormalState) {
-                this.saveCurrentToNormalState();
-            }
-            else {
-                // If switched from normal to normal.
-                return;
-            }
+        if (!hasStates && toNormalState) {
+            // If switched from normal to normal.
+            return;
         }
 
         const currentStates = this.currentStates;
+        const currentNormalState = this._normalState || {};
 
         // No need to change in following cases:
         // 1. Keep current states. and already being applied before.
@@ -754,7 +767,22 @@ class Element<Props extends ElementProps = ElementProps> {
             return;
         }
 
-        this._applyStateObj(state, keepCurrentStates, animationCfg && animationCfg.duration > 0, animationCfg);
+        if (!toNormalState) {
+            this.saveCurrentToNormalState(state);
+        }
+        else {
+            // Reset normal state.
+            this._normalState = {};
+        }
+
+        this._applyStateObj(
+            stateName,
+            state,
+            currentNormalState,
+            keepCurrentStates,
+            animationCfg && animationCfg.duration > 0,
+            animationCfg
+        );
 
         // Also set text content.
         if (this._textContent) {
@@ -831,10 +859,14 @@ class Element<Props extends ElementProps = ElementProps> {
         }
     }
 
-    // TODO removeState
-
-    protected _applyStateObj(state: ElementState, keepCurrentStates: boolean, transition: boolean, animationCfg: ElementAnimateConfig) {
-        const normalState = this._normalState;
+    protected _applyStateObj(
+        stateName: string,
+        state: ElementState,
+        normalState: ElementState,
+        keepCurrentStates: boolean,
+        transition: boolean,
+        animationCfg: ElementAnimateConfig
+    ) {
         let needsRestoreToNormal = !state || !keepCurrentStates;
 
         // TODO: Save current state to normal?
@@ -869,19 +901,25 @@ class Element<Props extends ElementProps = ElementProps> {
                 }
             }
             else if (needsRestoreToNormal) {
-                if (propNeedsTransition) {
-                    hasTransition = true;
-                    transitionTarget[key] = normalState[key];
-                }
-                else {
-                    // Restore to normal state
-                    (this as any)[key] = normalState[key];
+                if (normalState[key] != null) {
+                    if (propNeedsTransition) {
+                        hasTransition = true;
+                        transitionTarget[key] = normalState[key];
+                    }
+                    else {
+                        // Restore to normal state
+                        (this as any)[key] = normalState[key];
+                    }
                 }
             }
         }
 
         if (hasTransition) {
-            this.animateTo(transitionTarget as Props, animationCfg);
+            this._transitionState(
+                stateName,
+                transitionTarget as Props,
+                animationCfg
+            );
         }
     }
 
@@ -1198,12 +1236,19 @@ class Element<Props extends ElementProps = ElementProps> {
 
     /**
      * Animate from the target state to current state.
-     * The params and the return value are the same as `this.animateTo`.
+     * The params and the value are the same as `this.animateTo`.
      */
 
     // Overload definitions
     animateFrom(target: Props, cfg: Omit<ElementAnimateConfig, 'setToFinal'>) {
         animateTo(this, target, cfg, true);
+    }
+
+    protected _transitionState(stateName: string, target: Props, cfg?: ElementAnimateConfig) {
+        const animators = animateTo(this, target, cfg);
+        for (let i = 0; i < animators.length; i++) {
+            animators[i].__fromStateTransition = stateName;
+        }
     }
 
     /**
@@ -1349,6 +1394,8 @@ function animateTo<T>(
             .done(done)
             .start(cfg.easing, cfg.force);
     }
+
+    return animators;
 }
 
 function copyArrShallow(source: number[], target: number[], len: number) {

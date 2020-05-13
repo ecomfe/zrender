@@ -299,21 +299,29 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         return obj[STYLE_MAGIC_KEY];
     }
 
-    protected _innerSaveToNormal() {
-        super._innerSaveToNormal();
+    protected _innerSaveToNormal(toState: DisplayableState) {
+        super._innerSaveToNormal(toState);
 
         const normalState = this._normalState;
-        // Clone style object. TODO: Performance
-        normalState.style = this._mergeStyle(this.createStyle(), this.style);
-        normalState.z = this.z;
-        normalState.z2 = this.z2;
-        normalState.invisible = this.invisible;
+        if (toState.style && !normalState.style) {
+            // Clone style object. TODO: Performance
+            normalState.style = this._mergeStyle(this.createStyle(), this.style);
+        }
+
+        this._savePrimaryToNormal(toState, normalState, PRIMARY_STATES_KEYS);
     }
 
-    protected _applyStateObj(state: DisplayableState, keepCurrentStates: boolean, transition: boolean, animationCfg: ElementAnimateConfig) {
-        super._applyStateObj(state, keepCurrentStates, transition, animationCfg);
+    protected _applyStateObj(
+        stateName: string,
+        state: DisplayableState,
+        normalState: DisplayableState,
+        keepCurrentStates: boolean,
+        transition: boolean,
+        animationCfg: ElementAnimateConfig
+    ) {
+        super._applyStateObj(stateName, state, normalState, keepCurrentStates, transition, animationCfg);
+
         let needsRestoreToNormal = !state || !keepCurrentStates;
-        const normalState = this._normalState;
         let targetStyle: Props['style'];
         if (state && state.style) {
             // TODO Use prototype chain? Prototype chain may have following issues
@@ -326,20 +334,18 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
             if (keepCurrentStates) {
                 for (let i = 0; i < this.animators.length; i++) {
                     const animator = this.animators[i];
-                    // If properties in style is in animating. Should be inherited from final value.
+                    // If properties in style is in animating from the previous state transition.
+                    // Should be inherited from final value and keep the animation running.
                     if (animator.targetName === 'style') {
                         animator.saveFinalToTarget(targetStyle);
                     }
                 }
             }
-            this._mergeStyle(targetStyle, state.style);
 
+            this._mergeStyle(targetStyle, state.style);
         }
         else if (needsRestoreToNormal) {
             targetStyle = normalState.style;
-            if (transition) {
-                targetStyle = this.createStyle(targetStyle);
-            }
         }
 
         if (targetStyle) {
@@ -358,7 +364,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
                     }
                 }
 
-                this.animateTo({
+                this._transitionState(stateName, {
                     style: targetStyle
                 } as Props, animationCfg);
             }
@@ -376,12 +382,17 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
             }
             else if (needsRestoreToNormal) {
                 // Restore to normal state
-                (this as any)[key] = normalState[key];
+                if (normalState[key] != null) {
+                    (this as any)[key] = normalState[key];
+                }
             }
         }
     }
 
-    protected _mergeStyle(targetStyle: CommonStyleProps, sourceStyle: CommonStyleProps) {
+    protected _mergeStyle(
+        targetStyle: CommonStyleProps,
+        sourceStyle: CommonStyleProps
+    ) {
         extend(targetStyle, sourceStyle);
         return targetStyle;
     }

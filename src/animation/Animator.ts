@@ -665,6 +665,8 @@ export default class Animator<T> {
 
     targetName?: string
 
+    __fromStateTransition?: string
+
     private _tracks: Dictionary<Track> = {}
     private _trackKeys: string[] = []
 
@@ -947,15 +949,17 @@ export default class Animator<T> {
      * It is mainly used in state mangement. When state is switching during animation.
      * We need to save final state of animation to the normal state. Not interpolated value.
      */
-    saveFinalToTarget(target: T) {
+    saveFinalToTarget(target: T, trackKeys?: string[]) {
         if (!target) {  // DO nothing if target is not given.
             return;
         }
 
-        for (let i = 0; i < this._trackKeys.length; i++) {
-            const propName = this._trackKeys[i];
+        trackKeys = trackKeys || this._trackKeys;
+
+        for (let i = 0; i < trackKeys.length; i++) {
+            const propName = trackKeys[i];
             const track = this._tracks[propName];
-            if (track.isFinished()) {   // Ignore finished track.
+            if (!track || track.isFinished()) {   // Ignore finished track.
                 continue;
             }
 
