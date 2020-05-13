@@ -664,6 +664,7 @@ class Element<Props extends ElementProps = ElementProps> {
             // Only save keys that are changed by the states.
             animator.saveFinalToTarget(target);
         }
+
     }
 
     protected _innerSaveToNormal(toState: ElementState) {
@@ -1499,7 +1500,7 @@ function animateToShallow<T>(
 
     const keyLen = animatableKeys.length;
 
-    if (keyLen > 0) {
+    if (keyLen > 0 || cfg.force) {
         let revertedSource: Dictionary<any>;
         let reversedTarget: Dictionary<any>;
         let sourceClone: Dictionary<any>;
@@ -1524,23 +1525,23 @@ function animateToShallow<T>(
             }
         }
 
-        // Find last animator animating same target.
+        // Find last animator animating same prop.
         const existsAnimators = animatable.animators;
         let lastAnimator;
         for (let i = 0; i < existsAnimators.length; i++) {
-            if (existsAnimators[i].getTarget() === source) {
+            // Use key string instead object reference because ref may be changed.
+            if (existsAnimators[i].targetName === topKey) {
                 lastAnimator = existsAnimators[i];
             }
         }
 
         if (!additive && lastAnimator) {
-            // Stop exists animation on specific tracks.
+            // Stop exists animation on specific tracks. Only one animator available for each property.
             // TODO Should invoke previous animation callback?
             const allAborted = lastAnimator.stopTracks(animatableKeys);
             if (allAborted) {   // This animator can't be used.
                 const idx = indexOf(existsAnimators, lastAnimator);
                 existsAnimators.splice(idx, 1);
-                lastAnimator = null;
             }
         }
 
