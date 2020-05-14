@@ -881,7 +881,9 @@ class Element<Props extends ElementProps = ElementProps> {
             extend(this.textConfig, state.textConfig);
         }
         else if (needsRestoreToNormal) {
-            this.textConfig = normalState.textConfig;
+            if (normalState.textConfig) {   // Only restore if changed and saved.
+                this.textConfig = normalState.textConfig;
+            }
         }
 
         const transitionTarget: Dictionary<any> = {};
