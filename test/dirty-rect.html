@@ -13,7 +13,7 @@
         });
 
         var rects = [];
-        for (var i = 0; i < 10; ++i) {
+        for (var i = 0; i < 20; ++i) {
             var rect = new zrender.Rect({
                 shape: {
                     x: 0,
@@ -24,8 +24,28 @@
                 style: {
                     fill: 'rgba(200, 0, 0, 0.4)'
                 },
-                position: [800 * Math.random(), 400 * Math.random()]
+                position: [800 * Math.random(), 400 * Math.random()],
+                scale: [
+                    4 * Math.random(),
+                    4 * Math.random()
+                ],
+                rotation: Math.random() * Math.PI
             });
+
+            rect.on('mouseover', function (el) {
+                // console.log('hover', el);
+                el.target.attr('style', {
+                    fill: 'rgba(0, 200, 200, 0.5)'
+                });
+            });
+
+            rect.on('mouseout', function (el) {
+                // console.log('out');
+                el.target.attr('style', {
+                    fill: 'rgba(200, 0, 0, 0.4)'
+                });
+            });
+
             rects.push(rect);
             zr.add(rect);
         }
@@ -34,13 +54,18 @@
             shape: {
                 x: 0,
                 y: 0,
-                width: 400,
-                height: 300
+                width: 300,
+                height: 200
             },
             style: {
                 fill: 'rgba(0, 200, 0, 0.4)'
             },
-            position: [100, 100]
+            position: [100, 100],
+            scale: [
+                5 * Math.random(),
+                5 * Math.random()
+            ],
+            rotation: Math.random() * Math.PI
         });
         zr.add(a);
 

@@ -415,13 +415,6 @@ export default class CanvasPainter implements PainterBase {
         for (let k = 0; k < layerList.length; k++) {
             const layer = layerList[k];
             const ctx = layer.ctx;
-            const scope: BrushScope = {
-                allClipped: false,
-                prevEl: null,
-                viewWidth: this._width,
-                viewHeight: this._height
-            };
-            ctx.save();
 
             const repaintRects = layer.createRepaintRects(list, prevList);
 
@@ -448,6 +441,13 @@ export default class CanvasPainter implements PainterBase {
             }
             let i: number;
             const repaint = (repaintRect?: BoundingRect) => {
+                const scope: BrushScope = {
+                    allClipped: false,
+                    prevEl: null,
+                    viewWidth: this._width,
+                    viewHeight: this._height
+                };
+
                 for (i = start; i < layer.__endIndex; i++) {
                     const el = list[i];
                     this._doPaintEl(el, layer, repaintRect, paintAll, scope, i === layer.__endIndex - 1);
@@ -462,6 +462,11 @@ export default class CanvasPainter implements PainterBase {
                             break;
                         }
                     }
+                }
+
+                if (scope.prevElClipPaths) {
+                    // Needs restore the state. If last drawn element is in the clipping area.
+                    ctx.restore();
                 }
             };
 
@@ -481,13 +486,14 @@ export default class CanvasPainter implements PainterBase {
                     ctx.clip();
 
                     repaint(rect);
-
                     ctx.restore();
                 }
             }
             else {
                 // Paint all once
+                ctx.save();
                 repaint();
+                ctx.restore();
             }
 
             layer.__drawIndex = i;
@@ -495,13 +501,6 @@ export default class CanvasPainter implements PainterBase {
             if (layer.__drawIndex < layer.__endIndex) {
                 finished = false;
             }
-
-            if (scope.prevElClipPaths) {
-                // Needs restore the state. If last drawn element is in the clipping area.
-                ctx.restore();
-            }
-
-            ctx.restore();
         }
 
         if (env.wxa) {
@@ -528,8 +527,7 @@ export default class CanvasPainter implements PainterBase {
         if (currentLayer.__dirty || forcePaint) {
             if (repaintRect) {
                 // If there is repaintRect, only render the intersected ones
-                const repaintRect = getPaintRect(el);
-                if (repaintRect.intersect(repaintRect)) {
+                if (getPaintRect(el).intersect(repaintRect)) {
                     // console.log('rebrush', el.id);
                     brush(ctx, el, scope, isLast);
                 }

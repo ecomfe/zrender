@@ -213,12 +213,14 @@ export default class Layer extends Eventful {
         util.each(displayList, el => {
             if (el.__dirty) {
                 const curRect = getPaintRect(el);
-                rects.push(curRect);
+                if (!isNaN(curRect.x) && !isNaN(curRect.y) && !isNaN(curRect.width) && !isNaN(curRect.height)) {
+                    rects.push(curRect);
 
-                const prevRect = el.__prevPaintRect;
-                prevRect && rects.push(prevRect);
+                    const prevRect = el.__prevPaintRect;
+                    prevRect && rects.push(prevRect);
 
-                el.__prevPaintRect = curRect;
+                    el.__prevPaintRect = curRect;
+                }
             }
         });
 
@@ -241,19 +243,15 @@ export default class Layer extends Eventful {
             }
             else {
                 let isMerged = false;
-                const rectArea = rect.width * rect.height;
+                // const rectArea = rect.width * rect.height;
                 for (let i = 0; i < mergedRepaintRects.length; ++i) {
                     const mergedRect = mergedRepaintRects[i];
-                    const mergedArea = mergedRect.width * mergedRect.height;
 
-                    // The rect after merging rect with mergedRect
-                    const pendingRect = new BoundingRect(0, 0, 0, 0);
-                    pendingRect.copy(mergedRect);
-                    pendingRect.union(rect);
-                    const pendingArea = pendingRect.width * pendingRect.height;
-
-                    if (pendingArea < rectArea + mergedArea) {
-                        // Allow merging if size is smaller when merged
+                    // Merge if has intersection
+                    if (mergedRect.intersect(rect)) {
+                        const pendingRect = new BoundingRect(0, 0, 0, 0);
+                        pendingRect.copy(mergedRect);
+                        pendingRect.union(rect);
                         mergedRepaintRects[i] = pendingRect;
                         isMerged = true;
                         break;
