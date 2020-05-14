@@ -868,7 +868,7 @@ class Element<Props extends ElementProps = ElementProps> {
         transition: boolean,
         animationCfg: ElementAnimateConfig
     ) {
-        let needsRestoreToNormal = !state || !keepCurrentStates;
+        const needsRestoreToNormal = !(state && keepCurrentStates);
 
         // TODO: Save current state to normal?
         // TODO: Animation

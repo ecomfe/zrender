@@ -408,6 +408,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         const normalState = this._normalState;
         // Clone a new one. DON'T share object reference between states and current using.
         // TODO: Clone array in shape?.
+        // TODO: Only save changed shape.
         if (toState.shape && !normalState.shape) {
             normalState.shape = extend({}, this.shape);
         }
@@ -422,26 +423,25 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         animationCfg: ElementAnimateConfig
     ) {
         super._applyStateObj(stateName, state, normalState, keepCurrentStates, transition, animationCfg);
-        let needsRestoreToNormal = !state || !keepCurrentStates;
+        const needsRestoreToNormal = !(state && keepCurrentStates);
         let targetShape: Props['shape'];
         if (state && state.shape) {
-            // TODO: Reduce properties needs to be animated to improve performance
-            if (keepCurrentStates) {
-                targetShape = extend({}, this.shape);
-                for (let i = 0; i < this.animators.length; i++) {
-                    const animator = this.animators[i];
-                    // If properties in shape is in animating .
-                    // Should be inherited from final value and keep the animation running.
-                    if (animator.targetName === 'shape') {
-                        animator.saveFinalToTarget(targetShape);
-                    }
+            // Only animate changed properties.
+            if (transition) {
+                if (keepCurrentStates) {
+                    targetShape = state.shape;
+                }
+                else {
+                    // Inherits from normal state.
+                    targetShape = extend({}, normalState.shape);
+                    extend(targetShape, state.shape);
                 }
             }
             else {
-                targetShape = extend({}, normalState.shape);
+                // Because the shape will be replaced. So inherits from current shape.
+                targetShape = extend({}, keepCurrentStates ? this.shape : normalState.shape);
+                extend(targetShape, state.shape);
             }
-
-            extend(targetShape, state.shape);
         }
         else if (needsRestoreToNormal) {
             targetShape = normalState.shape;

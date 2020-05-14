@@ -304,7 +304,8 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
 
         const normalState = this._normalState;
         if (toState.style && !normalState.style) {
-            // Clone style object. TODO: Performance
+            // Clone style object.
+            // TODO: Only save changed style.
             normalState.style = this._mergeStyle(this.createStyle(), this.style);
         }
 
@@ -321,28 +322,26 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     ) {
         super._applyStateObj(stateName, state, normalState, keepCurrentStates, transition, animationCfg);
 
-        let needsRestoreToNormal = !state || !keepCurrentStates;
+        const needsRestoreToNormal = !(state && keepCurrentStates);
         let targetStyle: Props['style'];
         if (state && state.style) {
-            // TODO Use prototype chain? Prototype chain may have following issues
-            // 1. Normal style may be changed
-            // 2. Needs to detect circular protoype chain
-            targetStyle = this._mergeStyle(
-                this.createStyle(),
-                keepCurrentStates ? this.style : normalState.style
-            );
-            if (keepCurrentStates) {
-                for (let i = 0; i < this.animators.length; i++) {
-                    const animator = this.animators[i];
-                    // If properties in style is in animating from the previous state transition.
-                    // Should be inherited from final value and keep the animation running.
-                    if (animator.targetName === 'style') {
-                        animator.saveFinalToTarget(targetStyle);
-                    }
+            // Only animate changed properties.
+            if (transition) {
+                if (keepCurrentStates) {
+                    targetStyle = state.style;
+                }
+                else {
+                    targetStyle = this._mergeStyle(this.createStyle(), normalState.style);
+                    this._mergeStyle(targetStyle, state.style);
                 }
             }
-
-            this._mergeStyle(targetStyle, state.style);
+            else {
+                targetStyle = this._mergeStyle(
+                    this.createStyle(),
+                    keepCurrentStates ? this.style : normalState.style
+                );
+                this._mergeStyle(targetStyle, state.style);
+            }
         }
         else if (needsRestoreToNormal) {
             targetStyle = normalState.style;
@@ -354,13 +353,15 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
                 // TODO Performance issue.
                 this.style = this.createStyle(this.style);
 
-                const changedKeys = keys(this.style);
-                for (let i = 0; i < changedKeys.length; i++) {
-                    const key = changedKeys[i];
-                    if (targetStyle[key] != null) {
-                        // Pick out from prototype. Or the property won't be animated.
-                        // TODO: Text
-                        (targetStyle as any)[key] = targetStyle[key];
+                if (needsRestoreToNormal) {
+                    const changedKeys = keys(this.style);
+                    for (let i = 0; i < changedKeys.length; i++) {
+                        const key = changedKeys[i];
+                        if (targetStyle[key] != null) {
+                            // Pick out from prototype. Or the property won't be animated.
+                            // TODO: Text
+                            (targetStyle as any)[key] = targetStyle[key];
+                        }
                     }
                 }
 
