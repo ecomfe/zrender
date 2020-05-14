@@ -56,7 +56,7 @@ export const DEFAULT_PATH_STYLE: PathStyleProps = defaults({
 
     strokeNoScale: false,
     strokeFirst: false
-}, DEFAULT_COMMON_STYLE);
+} as PathStyleProps, DEFAULT_COMMON_STYLE);
 
 export interface PathProps extends DisplayableProps {
     strokeContainThreshold?: number

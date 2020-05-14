@@ -68,7 +68,6 @@ class ZRender {
 
         this.id = id;
 
-        const self = this;
         const storage = new Storage();
 
         let rendererType = opts.renderer;
@@ -128,9 +127,7 @@ class ZRender {
      * Change configuration of layer
     */
     configLayer(zLevel: number, config: LayerConfig) {
-        if (this.painter.configLayer) {
-            this.painter.configLayer(zLevel, config);
-        }
+        this.painter.configLayer(zLevel, config);
         this._needsRefresh = true;
     }
 
@@ -140,9 +137,7 @@ class ZRender {
     setBackgroundColor(
         backgroundColor: string | GradientObject | PatternObject
     ) {
-        if (this.painter.setBackgroundColor) {
-            this.painter.setBackgroundColor(backgroundColor);
-        }
+        this.painter.setBackgroundColor(backgroundColor);
         this._needsRefresh = true;
     }
 
@@ -200,31 +195,25 @@ class ZRender {
      * Add element to hover layer
      */
     addHover<T extends Displayable>(el: T, hoverStyle?: T['style']): T {
-        if (this.painter.addHover) {
-            const elMirror = this.painter.addHover(el, hoverStyle);
-            this.refreshHover();
-            return elMirror;
-        }
+        const elMirror = this.painter.addHover(el, hoverStyle);
+        this.refreshHover();
+        return elMirror;
     }
 
     /**
      * Add element from hover layer
      */
     removeHover(el: Path | TSpan | ZRImage) {
-        if (this.painter.removeHover) {
-            this.painter.removeHover(el);
-            this.refreshHover();
-        }
+        this.painter.removeHover(el);
+        this.refreshHover();
     }
 
     /**
      * Clear all hover elements in hover layer
      */
     clearHover() {
-        if (this.painter.clearHover) {
-            this.painter.clearHover();
-            this.refreshHover();
-        }
+        this.painter.clearHover();
+        this.refreshHover();
     }
 
     /**
@@ -239,9 +228,7 @@ class ZRender {
      */
     refreshHoverImmediately() {
         this._needsRefreshHover = false;
-        if (this.painter.refreshHover) {
-            this.painter.refreshHover();
-        }
+        this.painter.refreshHover();
     }
 
     /**
@@ -295,9 +282,7 @@ class ZRender {
      * It has much better performance of drawing image rather than drawing a vector path.
      */
     pathToImage(e: Path, dpr: number) {
-        if (this.painter.pathToImage) {
-            return this.painter.pathToImage(e, dpr);
-        }
+        return this.painter.pathToImage(e, dpr);
     }
 
     /**

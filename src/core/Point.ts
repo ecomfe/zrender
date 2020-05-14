@@ -1,4 +1,4 @@
-import { MatrixArray } from "./matrix";
+import { MatrixArray } from './matrix';
 
 export interface PointLike {
     x: number

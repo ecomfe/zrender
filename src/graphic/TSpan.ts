@@ -26,7 +26,7 @@ export const DEFAULT_TSPAN_STYLE: TSpanStyleProps = defaults({
     y: 0,
     textAlign: 'left',
     textBaseline: 'top'
-}, DEFAULT_PATH_STYLE);
+} as TSpanStyleProps, DEFAULT_PATH_STYLE);
 
 
 interface TSpanProps extends DisplayableProps {

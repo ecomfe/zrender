@@ -28,6 +28,14 @@ const TYPED_ARRAY: {[key: string]: boolean} = {
     '[object Float64Array]': true
 };
 
+type TypedArrayConstructor = Int8ArrayConstructor | Uint8ArrayConstructor | Uint8ClampedArrayConstructor
+    | Int16ArrayConstructor | Uint16ArrayConstructor | Int32ArrayConstructor
+    | Uint32ArrayConstructor | Float32ArrayConstructor | Float64ArrayConstructor;
+
+type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray
+    | Int16Array | Uint16Array | Int32Array
+    | Uint32Array | Float32Array | Float64Array;
+
 const objToString = Object.prototype.toString;
 
 const arrayProto = Array.prototype;
@@ -74,28 +82,26 @@ export function clone<T extends any>(source: T): T {
         return source;
     }
 
-    let result = source;
-    const typeStr = <string>objToString.call(source);
+    let result: any = source;
+    const typeStr = objToString.call(source);
 
-    if (typeStr === '[object Array]') {
+    if (isArray(source)) {
         if (!isPrimitive(source)) {
-            result = [] as any;
+            result = [];
             for (let i = 0, len = source.length; i < len; i++) {
                 result[i] = clone(source[i]);
             }
         }
     }
-    else if (TYPED_ARRAY[typeStr]) {
-        if (!isPrimitive(source)) {
-            const Ctor = source.constructor;
-            if (Ctor.from) {
-                result = Ctor.from(source);
-            }
-            else {
-                result = new Ctor(source.length);
-                for (let i = 0, len = source.length; i < len; i++) {
-                    result[i] = clone(source[i]);
-                }
+    else if (isTypedArray(source) && !isPrimitive(source)) {
+        const Ctor = source.constructor as TypedArrayConstructor;
+        if (Ctor.from) {
+            result = Ctor.from(source);
+        }
+        else {
+            result = new Ctor(source.length);
+            for (let i = 0, len = source.length; i < len; i++) {
+                result[i] = clone(source[i]);
             }
         }
     }
@@ -493,7 +499,7 @@ export function isBuiltInObject(value: any): boolean {
     return !!BUILTIN_OBJECT[objToString.call(value)];
 }
 
-export function isTypedArray(value: any): boolean {
+export function isTypedArray(value: any): value is TypedArray {
     return !!TYPED_ARRAY[objToString.call(value)];
 }
 
