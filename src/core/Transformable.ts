@@ -172,7 +172,8 @@ class Transformable {
             sy = Math.sqrt(sy);
         }
 
-        this.rotation = Math.atan2(m[1] / sy, m[0] / sx);
+        // rotation is inversed in zrender.
+        this.rotation = Math.atan2(-m[1] / sy, m[0] / sx);
 
         if (m[0] < 0) {
             sx = -sx;
