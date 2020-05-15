@@ -24,23 +24,22 @@ export interface PainterBase {
     clear(): void
 
     getViewportRoot(): HTMLElement
-    getType: () => string
+    getType(): string
 
     getWidth(): number
     getHeight(): number
     dispose(): void
 
-    getViewportRoot: () => HTMLElement
     getViewportRootOffset: () => {offsetLeft: number, offsetTop: number}
 
     // Following methods won't implemented by every Painter
-    addHover<T extends Displayable>(el: T, hoverStyle?: T['style']): T
+    addHover?: <T extends Displayable>(el: T, hoverStyle?: T['style']) => T
 
-    removeHover(el: Path | TSpan | ZRImage): void
-    clearHover(): void
-    refreshHover(): void
-    pathToImage(e: Path, dpr: number): ZRImage
+    removeHover?: (el: Path | TSpan | ZRImage) => void
+    clearHover?: () => void
+    refreshHover?: () => void
+    pathToImage?: (e: Path, dpr: number) => ZRImage
 
-    configLayer(zlevel: number, config: Dictionary<any>): void
-    setBackgroundColor(backgroundColor: string | GradientObject | PatternObject): void
+    configLayer?: (zlevel: number, config: Dictionary<any>) => void
+    setBackgroundColor?: (backgroundColor: string | GradientObject | PatternObject) => void
 }
