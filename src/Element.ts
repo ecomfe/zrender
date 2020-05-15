@@ -87,7 +87,7 @@ export interface ElementTextConfig {
     insideFill?: string
 
     /**
-     * `insideStroke` is a color string or left empth.
+     * `insideStroke` is a color string or left empty.
      * If a `textContent` is "inside", its final `stroke` will be picked by this priority:
      * `textContent.style.stroke` > `textConfig.insideStroke` > "auto-calculated-stroke"
      *
@@ -368,6 +368,11 @@ class Element<Props extends ElementProps = ElementProps> {
      * '__normal__' key is preserved for default properties.
      */
     states: Dictionary<ElementState> = {}
+
+    /**
+     * Animation config applied on state switching.
+     */
+    stateTransition: ElementAnimateConfig
 
     /**
      * Proxy function for getting state with given stateName.
@@ -720,8 +725,8 @@ class Element<Props extends ElementProps = ElementProps> {
     /**
      * Clear all states.
      */
-    clearStates(animationCfg?: ElementAnimateConfig) {
-        this.useState(PRESERVED_NORMAL_STATE, false, animationCfg);
+    clearStates() {
+        this.useState(PRESERVED_NORMAL_STATE, false);
         // TODO set _normalState to null?
     }
     /**
@@ -733,7 +738,7 @@ class Element<Props extends ElementProps = ElementProps> {
      *      If not, it will inherit from the normal state.
      * @param animationCfg Will apply animation if specified and has >0 duration
      */
-    useState(stateName: string, keepCurrentStates?: boolean, animationCfg?: ElementAnimateConfig) {
+    useState(stateName: string, keepCurrentStates?: boolean) {
         // Use preserved word __normal__
         // TODO: Only restore changed properties when restore to normal???
         const toNormalState = stateName === PRESERVED_NORMAL_STATE;
@@ -746,6 +751,7 @@ class Element<Props extends ElementProps = ElementProps> {
 
         const currentStates = this.currentStates;
         const currentNormalState = this._normalState || {};
+        const animationCfg = this.stateTransition;
 
         // No need to change in following cases:
         // 1. Keep current states. and already being applied before.
@@ -787,10 +793,10 @@ class Element<Props extends ElementProps = ElementProps> {
 
         // Also set text content.
         if (this._textContent) {
-            this._textContent.useState(stateName, keepCurrentStates, animationCfg);
+            this._textContent.useState(stateName, keepCurrentStates);
         }
         if (this._textGuide) {
-            this._textGuide.useState(stateName, keepCurrentStates, animationCfg);
+            this._textGuide.useState(stateName, keepCurrentStates);
         }
 
         if (toNormalState) {
@@ -823,13 +829,13 @@ class Element<Props extends ElementProps = ElementProps> {
      * @param states States list.
      * @param animationCfg Will apply animation if specified and has >0 duration
      */
-    useStates(states: string[], animationCfg?: ElementAnimateConfig) {
+    useStates(states: string[]) {
         if (!states.length) {
-            this.clearStates(animationCfg);
+            this.clearStates();
         }
         else {
             for (let i = 0; i < states.length; i++) {
-                this.useState(states[i], i > 0, animationCfg);
+                this.useState(states[i], i > 0);
             }
         }
     }
@@ -839,24 +845,24 @@ class Element<Props extends ElementProps = ElementProps> {
      * @param state State to remove
      * @param animationCfg Will apply animation if specified and has >0 duration
      */
-    removeState(state: string, animationCfg?: ElementAnimateConfig) {
+    removeState(state: string) {
         const idx = indexOf(this.currentStates, state);
         if (idx >= 0) {
             const currentStates = this.currentStates.slice();
             currentStates.splice(idx, 1);
-            this.useStates(currentStates, animationCfg);
+            this.useStates(currentStates);
         }
     }
 
     /**
      * Toogle state.
      */
-    toggleState(state: string, enable: boolean, animationCfg?: ElementAnimateConfig) {
+    toggleState(state: string, enable: boolean) {
         if (enable) {
-            this.useState(state, true, animationCfg);
+            this.useState(state, true);
         }
         else {
-            this.removeState(state, animationCfg);
+            this.removeState(state);
         }
     }
 
