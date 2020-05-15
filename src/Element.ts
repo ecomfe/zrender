@@ -2,7 +2,15 @@ import Transformable from './core/Transformable';
 import { AnimationEasing } from './animation/easing';
 import Animator, {cloneValue} from './animation/Animator';
 import { ZRenderType } from './zrender';
-import { Dictionary, ElementEventName, ZRRawEvent, BuiltinTextPosition, AllPropTypes, TextVerticalAlign, TextAlign } from './core/types';
+import {
+    Dictionary,
+    ElementEventName,
+    ZRRawEvent,
+    BuiltinTextPosition,
+    AllPropTypes,
+    TextVerticalAlign,
+    TextAlign
+} from './core/types';
 import Path from './graphic/Path';
 import BoundingRect, { RectLike } from './core/BoundingRect';
 import Eventful, {EventQuery, EventCallback} from './core/Eventful';
@@ -251,7 +259,7 @@ const DEFAULT_ANIMATABLE_MAP: Partial<Record<ElementStatePropNames, boolean>> = 
     originY: true,
     rotation: true,
     ignore: false
-}
+};
 
 export type ElementStatePropNames = (typeof PRIMARY_STATES_KEYS)[number] | 'textConfig';
 export type ElementState = Pick<ElementProps, ElementStatePropNames>;
@@ -500,7 +508,7 @@ class Element<Props extends ElementProps = ElementProps> {
             // Calculate text color
             const isInside = textConfig.inside == null  // Force to be inside or not.
                 ? (typeof textConfig.position === 'string' && textConfig.position.indexOf('inside') >= 0)
-                : textConfig.inside
+                : textConfig.inside;
             const innerTextDefaultStyle = this._innerTextDefaultStyle || (this._innerTextDefaultStyle = {});
 
             let textFill;
@@ -680,7 +688,11 @@ class Element<Props extends ElementProps = ElementProps> {
         this._savePrimaryToNormal(toState, normalState, PRIMARY_STATES_KEYS);
     }
 
-    protected _savePrimaryToNormal(toState: Dictionary<any>, normalState: Dictionary<any>, primaryKeys: readonly string[]) {
+    protected _savePrimaryToNormal(
+        toState: Dictionary<any>,
+        normalState: Dictionary<any>,
+        primaryKeys: readonly string[]
+    ) {
         for (let i = 0; i < primaryKeys.length; i++) {
             let key = primaryKeys[i];
             // Only save property that will be changed by toState
@@ -695,7 +707,7 @@ class Element<Props extends ElementProps = ElementProps> {
      * If has any state.
      */
     hasState() {
-        return this.currentStates.length > 0;
+        return this.currentStates && this.currentStates.length > 0;
     }
 
     /**
@@ -750,7 +762,11 @@ class Element<Props extends ElementProps = ElementProps> {
         // No need to change in following cases:
         // 1. Keep current states. and already being applied before.
         // 2. Don't keep current states. And new state is same with the only one exists state.
-        if (indexOf(currentStates, stateName) >= 0 && (keepCurrentStates || currentStates.length === 1)) {
+        if (
+            currentStates
+            && indexOf(currentStates, stateName) >= 0
+            && (keepCurrentStates || currentStates.length === 1)
+        ) {
             return;
         }
 
@@ -780,8 +796,8 @@ class Element<Props extends ElementProps = ElementProps> {
             stateName,
             state,
             currentNormalState,
-            keepCurrentStates,
-            animationCfg && animationCfg.duration > 0,
+            !!keepCurrentStates,
+            !!(animationCfg && animationCfg.duration && animationCfg.duration > 0),
             animationCfg
         );
 
@@ -801,7 +817,7 @@ class Element<Props extends ElementProps = ElementProps> {
             if (!keepCurrentStates) {
                 this.currentStates = [stateName];
             }
-            else {
+            else if (isArrayLike(this.currentStates)) {
                 this.currentStates.push(stateName);
             }
         }
@@ -840,11 +856,13 @@ class Element<Props extends ElementProps = ElementProps> {
      * @param animationCfg Will apply animation if specified and has >0 duration
      */
     removeState(state: string, animationCfg?: ElementAnimateConfig) {
-        const idx = indexOf(this.currentStates, state);
-        if (idx >= 0) {
-            const currentStates = this.currentStates.slice();
-            currentStates.splice(idx, 1);
-            this.useStates(currentStates, animationCfg);
+        if (isArrayLike(this.currentStates)) {
+            const idx = indexOf(this.currentStates, state);
+            if (idx >= 0) {
+                const currentStates = this.currentStates.slice();
+                currentStates.splice(idx, 1);
+                this.useStates(currentStates, animationCfg);
+            }
         }
     }
 
@@ -866,7 +884,7 @@ class Element<Props extends ElementProps = ElementProps> {
         normalState: ElementState,
         keepCurrentStates: boolean,
         transition: boolean,
-        animationCfg: ElementAnimateConfig
+        animationCfg?: ElementAnimateConfig
     ) {
         const needsRestoreToNormal = !(state && keepCurrentStates);
 
@@ -987,7 +1005,7 @@ class Element<Props extends ElementProps = ElementProps> {
         const clipPath = this._clipPath;
         if (clipPath) {
             this._detachComponent(clipPath);
-            this._clipPath = null;
+            this._clipPath = undefined;
             this.markRedraw();
         }
     }
@@ -995,7 +1013,7 @@ class Element<Props extends ElementProps = ElementProps> {
     /**
      * Get attached text content.
      */
-    getTextContent(): ZRText {
+    getTextContent(): ZRText | undefined {
         return this._textContent;
     }
 
@@ -1038,12 +1056,12 @@ class Element<Props extends ElementProps = ElementProps> {
         const textEl = this._textContent;
         if (textEl) {
             this._detachComponent(textEl);
-            this._textContent = null;
+            this._textContent = undefined;
             this.markRedraw();
         }
     }
 
-    getTextGuideLine(): Polyline {
+    getTextGuideLine(): Polyline | undefined {
         return this._textGuide;
     }
 
@@ -1064,7 +1082,7 @@ class Element<Props extends ElementProps = ElementProps> {
         const textGuide = this._textGuide;
         if (textGuide) {
             this._detachComponent(textGuide);
-            this._textGuide = null;
+            this._textGuide = undefined;
             this.markRedraw();
         }
     }
@@ -1149,7 +1167,7 @@ class Element<Props extends ElementProps = ElementProps> {
      *         .done(function(){ // Animation done })
      *         .start()
      */
-    animate(key?: string, loop?: boolean) {
+    animate(key = '', loop?: boolean) {
         let target = key ? (this as any)[key] : this;
 
         if (!target) {
@@ -1162,7 +1180,7 @@ class Element<Props extends ElementProps = ElementProps> {
             return;
         }
 
-        const animator = new Animator(target, loop);
+        const animator = new Animator(target, !!loop);
         this.addAnimator(animator, key);
         return animator;
     }
@@ -1174,7 +1192,7 @@ class Element<Props extends ElementProps = ElementProps> {
         const animators = el.animators;
 
         animator.during(function () {
-            el.updateDuringAnimation(key as string);
+            el.updateDuringAnimation(key);
         }).done(function () {
             // FIXME Animator will not be removed if use `Animator#stop` to stop animation
             const idx = indexOf(animators, animator);
@@ -1281,7 +1299,11 @@ class Element<Props extends ElementProps = ElementProps> {
      *             verticalAlign: string. optional. use style.textVerticalAlign by default.
      *         }
      */
-    calculateTextPosition: (out: TextPositionCalculationResult, style: ElementTextConfig, rect: RectLike) => TextPositionCalculationResult
+    calculateTextPosition: (
+        out: TextPositionCalculationResult,
+        style: ElementTextConfig,
+        rect: RectLike
+    ) => TextPositionCalculationResult = calculateTextPosition
 
 
     static REDARAW_BIT = 1;
@@ -1348,11 +1370,9 @@ class Element<Props extends ElementProps = ElementProps> {
                 });
             }
         }
-        if (Object.defineProperty) {
-            createLegacyProperty('position', '_legacyPos', 'x', 'y');
-            createLegacyProperty('scale', '_legacyScale', 'scaleX', 'scaleY');
-            createLegacyProperty('origin', '_legacyOrigin', 'originX', 'originY');
-        }
+        createLegacyProperty('position', '_legacyPos', 'x', 'y');
+        createLegacyProperty('scale', '_legacyScale', 'scaleX', 'scaleY');
+        createLegacyProperty('origin', '_legacyOrigin', 'originX', 'originY');
     })()
 }
 
@@ -1362,7 +1382,7 @@ mixin(Element, Transformable);
 function animateTo<T>(
     animatable: Element<T>,
     target: Dictionary<any>,
-    cfg: ElementAnimateConfig,
+    cfg?: ElementAnimateConfig,
     reverse?: boolean
 ) {
     cfg = cfg || {};
@@ -1374,13 +1394,13 @@ function animateTo<T>(
         target,
         cfg,
         animators,
-        reverse
+        !!reverse
     );
 
     let count = animators.length;
     function done() {
         count--;
-        if (!count) {
+        if (!count && cfg) {
             cfg.done && cfg.done();
         }
     }
@@ -1408,7 +1428,7 @@ function copyArrShallow(source: number[], target: number[], len: number) {
 }
 
 function is2DArray(value: any[]): value is number[][] {
-    return isArrayLike(value[0])
+    return isArrayLike(value[0]);
 }
 
 function copyValue(target: Dictionary<any>, source: Dictionary<any>, key: string) {
@@ -1547,7 +1567,7 @@ function animateToShallow<T>(
             }
         }
 
-        const animator = new Animator(source, false, additive ? lastAnimator : null);
+        const animator = new Animator(source, false, additive ? lastAnimator : undefined);
         animator.targetName = topKey;
 
         if (revertedSource) {

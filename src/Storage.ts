@@ -66,7 +66,7 @@ export default class Storage {
         const roots = this._roots;
         const displayList = this._displayList;
         for (let i = 0, len = roots.length; i < len; i++) {
-            this._updateAndAddDisplayable(roots[i], null, includeIgnore);
+            this._updateAndAddDisplayable(roots[i], [], includeIgnore);
         }
 
         displayList.length = this._displayListLen;
@@ -92,15 +92,7 @@ export default class Storage {
 
         const userSetClipPath = el.getClipPath();
         if (userSetClipPath) {
-
-            // FIXME 效率影响
-            if (clipPaths) {
-                clipPaths = clipPaths.slice();
-            }
-            else {
-                clipPaths = [];
-            }
-
+            clipPaths = clipPaths.slice();
             let currentClipPath = userSetClipPath;
             let parentClipPath = el;
             // Recursively add clip path
@@ -113,12 +105,12 @@ export default class Storage {
                 clipPaths.push(currentClipPath);
 
                 parentClipPath = currentClipPath;
-                currentClipPath = currentClipPath.getClipPath();
+                currentClipPath = currentClipPath.getClipPath()!;
             }
         }
 
         // ZRText and Group may use children
-        if ((el as Group).childrenRef) {
+        if ((el as Group).childrenRef) { 
             const children = (el as Group).childrenRef();
 
             for (let i = 0; i < children.length; i++) {
@@ -207,8 +199,8 @@ export default class Storage {
      * 清空并且释放Storage
      */
     dispose() {
-        this._displayList = null;
-        this._roots = null;
+        this._displayList = [];
+        this._roots = [];
     }
 
     displayableSortFunc = shapeCompareFunc
