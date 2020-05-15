@@ -14,6 +14,7 @@ import { MatrixArray } from '../core/matrix';
 import Displayable, { DisplayableStatePropNames, DisplayableProps } from './Displayable';
 import Path from './Path';
 import { ZRenderType } from '../zrender';
+import Animator from '../animation/Animator';
 
 type TextContentBlock = ReturnType<typeof parseRichText>
 type TextLine = TextContentBlock['lines'][0]
@@ -190,6 +191,17 @@ const DEFAULT_RICH_TEXT_COLOR = {
     fill: '#000'
 };
 const DEFAULT_STROKE_LINE_WIDTH = 2;
+
+interface ZRText {
+    animate(key?: '', loop?: boolean): Animator<this>
+    animate(key: 'style', loop?: boolean): Animator<this['style']>
+
+    getState(stateName: string): TextState
+    ensureState(stateName: string): TextState
+
+    states: Dictionary<TextState>
+    stateProxy: (stateName: string) => TextState
+}
 
 class ZRText extends Displayable<TextProps> {
 
