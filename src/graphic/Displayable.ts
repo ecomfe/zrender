@@ -371,9 +371,10 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
                     const changedKeys = keys(sourceStyle);
                     for (let i = 0; i < changedKeys.length; i++) {
                         const key = changedKeys[i];
-                        if (key in targetStyle) {
+                        if (key in targetStyle) {   // Not use `key == null` because == null may means no stroke/fill.
                             // Pick out from prototype. Or the property won't be animated.
                             (targetStyle as any)[key] = targetStyle[key];
+                            // Omit the property has no default value.
                             (this.style as any)[key] = sourceStyle[key];
                         }
                     }

@@ -1575,14 +1575,14 @@ function animateToShallow<T>(
         if (source[innerKey] != null) {
             if (isObject(target[innerKey]) && !isArrayLike(target[innerKey])) {
                 if (topKey) {
-                    logError('Only support 1 depth nest object animation.');
+                    // logError('Only support 1 depth nest object animation.');
                     // Assign directly.
                     // TODO richText?
                     if (!reverse) {
                         source[innerKey] = target[innerKey];
                         animatable.updateDuringAnimation(topKey);
                     }
-                    return;
+                    continue;
                 }
                 animateToShallow(
                     animatable,
