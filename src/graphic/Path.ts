@@ -1,13 +1,14 @@
 import Displayable, { DisplayableProps,
     CommonStyleProps,
     DEFAULT_COMMON_STYLE,
-    DisplayableStatePropNames
+    DisplayableStatePropNames,
+    DEFAULT_COMMON_ANIMATION_PROPS
 } from './Displayable';
 import Element, { PRESERVED_NORMAL_STATE, ElementAnimateConfig } from '../Element';
 import PathProxy from '../core/PathProxy';
 import * as pathContain from '../contain/path';
 import { PatternObject } from './Pattern';
-import { Dictionary, PropType } from '../core/types';
+import { Dictionary, PropType, MapToType } from '../core/types';
 import BoundingRect from '../core/BoundingRect';
 import { LinearGradientObject } from './LinearGradient';
 import { RadialGradientObject } from './RadialGradient';
@@ -49,6 +50,9 @@ export const DEFAULT_PATH_STYLE: PathStyleProps = defaults({
     fill: '#000',
     stroke: null,
     strokePercent: 1,
+    fillOpacity: 1,
+    strokeOpacity: 1,
+
     lineDashOffset: 0,
     lineWidth: 1,
     lineCap: 'butt',
@@ -56,7 +60,21 @@ export const DEFAULT_PATH_STYLE: PathStyleProps = defaults({
 
     strokeNoScale: false,
     strokeFirst: false
-}, DEFAULT_COMMON_STYLE);
+} as PathStyleProps, DEFAULT_COMMON_STYLE);
+
+
+export const DEFAULT_PATH_ANIMATION_PROPS: MapToType<PathProps, boolean> = {
+    style: defaults<MapToType<PathStyleProps, boolean>, MapToType<PathStyleProps, boolean>>({
+        fill: true,
+        stroke: true,
+        strokePercent: true,
+        fillOpacity: true,
+        strokeOpacity: true,
+        lineDashOffset: true,
+        lineWidth: true,
+        miterLimit: true
+    } as MapToType<PathStyleProps, boolean>, DEFAULT_COMMON_ANIMATION_PROPS.style)
+ };
 
 export interface PathProps extends DisplayableProps {
     strokeContainThreshold?: number
@@ -490,6 +508,9 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         return mergedState;
     }
 
+    protected _getAnimationStyleProps() {
+        return DEFAULT_PATH_ANIMATION_PROPS;
+    }
     /**
      * If path shape is zero area
      */

@@ -5,7 +5,7 @@
 
 import Element, {ElementProps, ElementStatePropNames, PRESERVED_NORMAL_STATE, ElementAnimateConfig} from '../Element';
 import BoundingRect from '../core/BoundingRect';
-import { PropType, Dictionary } from '../core/types';
+import { PropType, Dictionary, MapToType } from '../core/types';
 import Path from './Path';
 import { keys, extend, createObject } from '../core/util';
 import Animator from '../animation/Animator';
@@ -36,8 +36,17 @@ export const DEFAULT_COMMON_STYLE: CommonStyleProps = {
     blend: 'source-over'
 };
 
-(DEFAULT_COMMON_STYLE as any)[STYLE_MAGIC_KEY] = true;
+export const DEFAULT_COMMON_ANIMATION_PROPS: MapToType<DisplayableProps, boolean> = {
+    style: {
+        shadowBlur: true,
+        shadowOffsetX: true,
+        shadowOffsetY: true,
+        shadowColor: true,
+        opacity: true
+    }
+ };
 
+(DEFAULT_COMMON_STYLE as any)[STYLE_MAGIC_KEY] = true;
 
 export interface DisplayableProps extends ElementProps {
     style?: Dictionary<any>
@@ -69,7 +78,6 @@ export type DisplayableState = Pick<DisplayableProps, DisplayableStatePropNames>
 
 const PRIMARY_STATES_KEYS = ['z', 'z2', 'invisible'] as const;
 
-
 interface Displayable<Props extends DisplayableProps = DisplayableProps> {
     animate(key?: '', loop?: boolean): Animator<this>
     animate(key: 'style', loop?: boolean): Animator<this['style']>
@@ -80,6 +88,7 @@ interface Displayable<Props extends DisplayableProps = DisplayableProps> {
     states: Dictionary<DisplayableState>
     stateProxy: (stateName: string) => DisplayableState
 }
+
 class Displayable<Props extends DisplayableProps = DisplayableProps> extends Element<Props> {
 
     /**
@@ -248,10 +257,10 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         return this;
     }
 
-    getDefaultStyleValue<T extends keyof Props['style']>(key: T): Props['style'][T] {
-        // Default value is on the prototype.
-        return this.style.prototype[key];
-    }
+    // getDefaultStyleValue<T extends keyof Props['style']>(key: T): Props['style'][T] {
+    //     // Default value is on the prototype.
+    //     return this.style.prototype[key];
+    // }
 
     dirtyStyle() {
         this.markRedraw();
@@ -382,7 +391,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
 
                 this._transitionState(stateName, {
                     style: targetStyle
-                } as Props, animationCfg);
+                } as Props, animationCfg, this._getAnimationStyleProps() as MapToType<Props, boolean>);
             }
             else {
                 this.useStyle(targetStyle);
@@ -427,6 +436,10 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     ) {
         extend(targetStyle, sourceStyle);
         return targetStyle;
+    }
+
+    protected _getAnimationStyleProps() {
+        return DEFAULT_COMMON_ANIMATION_PROPS;
     }
 
     /**

@@ -559,28 +559,24 @@ export type BrushScope = {
 // If path can be batched
 function canPathBatch(el: Path) {
     const style = el.style;
-    // Line dash is dynamically set in brush function.
-    if (style.lineDash) {
-        return false;
-    }
+
     const hasFill = el.hasFill();
     const hasStroke = el.hasStroke();
-    // Can't batch if element is both set fill and stroke. Or both not set
-    if (!(+hasFill ^ +hasStroke)) {
-        return false;
-    }
-    // Can't batch if element only stroke part of line.
-    if (style.strokePercent < 1) {
-        return false;
-    }
-    // Can't batch if element is drawn with gradient or pattern.
-    if (hasFill && typeof style.fill !== 'string') {
-        return false;
-    }
-    if (hasStroke && typeof style.stroke !== 'string') {
-        return false;
-    }
-    return true;
+
+    return !(
+        // Line dash is dynamically set in brush function.
+        style.lineDash
+        // Can't batch if element is both set fill and stroke. Or both not set
+        || !(+hasFill ^ +hasStroke)
+        // Can't batch if element is drawn with gradient or pattern.
+        || (hasFill && typeof style.fill !== 'string')
+        || (hasStroke && typeof style.stroke !== 'string')
+        // Can't batch if element only stroke part of line.
+        || style.strokePercent < 1
+        // Has stroke or fill opacity
+        || style.strokeOpacity < 1
+        || style.fillOpacity < 1
+    );
 }
 
 function flushPathDrawn(ctx: CanvasRenderingContext2D, scope: BrushScope) {

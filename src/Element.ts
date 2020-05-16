@@ -2,7 +2,7 @@ import Transformable from './core/Transformable';
 import { AnimationEasing } from './animation/easing';
 import Animator, {cloneValue} from './animation/Animator';
 import { ZRenderType } from './zrender';
-import { Dictionary, ElementEventName, ZRRawEvent, BuiltinTextPosition, AllPropTypes, TextVerticalAlign, TextAlign } from './core/types';
+import { Dictionary, ElementEventName, ZRRawEvent, BuiltinTextPosition, AllPropTypes, TextVerticalAlign, TextAlign, MapToType } from './core/types';
 import Path from './graphic/Path';
 import BoundingRect, { RectLike } from './core/BoundingRect';
 import Eventful, {EventQuery, EventCallback} from './core/Eventful';
@@ -135,7 +135,6 @@ export interface ElementTextConfig {
     // TODO applyClip
     // TODO align, verticalAlign??
 }
-
 export interface ElementTextGuideLineConfig {
     /**
      * Anchor for text guide line.
@@ -1316,6 +1315,7 @@ class Element<Props extends ElementProps = ElementProps> {
     }
 
     /**
+     * @param animationProps A map to specify which property to animate. If not specified, will animate all.
      * @example
      *  // Animate position
      *  el.animateTo({
@@ -1338,8 +1338,8 @@ class Element<Props extends ElementProps = ElementProps> {
      *      done: () => { // done }
      *  })
      */
-    animateTo(target: Props, cfg?: ElementAnimateConfig) {
-        animateTo(this, target, cfg);
+    animateTo(target: Props, cfg?: ElementAnimateConfig, animationProps?: MapToType<Props, boolean>) {
+        animateTo(this, target, cfg, animationProps);
     }
 
     /**
@@ -1348,12 +1348,12 @@ class Element<Props extends ElementProps = ElementProps> {
      */
 
     // Overload definitions
-    animateFrom(target: Props, cfg: Omit<ElementAnimateConfig, 'setToFinal'>) {
-        animateTo(this, target, cfg, true);
+    animateFrom(target: Props, cfg: Omit<ElementAnimateConfig, 'setToFinal'>, animationProps?: MapToType<Props, boolean>) {
+        animateTo(this, target, cfg, animationProps, true);
     }
 
-    protected _transitionState(stateName: string, target: Props, cfg?: ElementAnimateConfig) {
-        const animators = animateTo(this, target, cfg);
+    protected _transitionState(stateName: string, target: Props, cfg?: ElementAnimateConfig, animationProps?: MapToType<Props, boolean>) {
+        const animators = animateTo(this, target, cfg, animationProps);
         for (let i = 0; i < animators.length; i++) {
             animators[i].__fromStateTransition = stateName;
         }
@@ -1468,6 +1468,7 @@ function animateTo<T>(
     animatable: Element<T>,
     target: Dictionary<any>,
     cfg: ElementAnimateConfig,
+    animationProps: Dictionary<any>,
     reverse?: boolean
 ) {
     cfg = cfg || {};
@@ -1478,6 +1479,7 @@ function animateTo<T>(
         animatable,
         target,
         cfg,
+        animationProps,
         animators,
         reverse
     );
@@ -1556,6 +1558,7 @@ function animateToShallow<T>(
     source: Dictionary<any>,
     target: Dictionary<any>,
     cfg: ElementAnimateConfig,
+    animationProps: Dictionary<any> | true,
     animators: Animator<any>[],
     reverse: boolean    // If `true`, animate from the `target` to current state.
 ) {
@@ -1565,6 +1568,7 @@ function animateToShallow<T>(
     const delay = cfg.delay;
     const additive = cfg.additive;
     const setToFinal = cfg.setToFinal;
+    const animateAll = !isObject(animationProps);
     for (let k = 0; k < targetKeys.length; k++) {
         const innerKey = targetKeys[k] as string;
 
@@ -1572,7 +1576,7 @@ function animateToShallow<T>(
             continue;
         }
 
-        if (source[innerKey] != null) {
+        if (source[innerKey] != null && (animateAll || (animationProps as Dictionary<any>)[innerKey])) {
             if (isObject(target[innerKey]) && !isArrayLike(target[innerKey])) {
                 if (topKey) {
                     // logError('Only support 1 depth nest object animation.');
@@ -1590,6 +1594,7 @@ function animateToShallow<T>(
                     source[innerKey],
                     target[innerKey],
                     cfg,
+                    animationProps && (animationProps as Dictionary<any>)[innerKey],
                     animators,
                     reverse
                 );
