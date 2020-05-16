@@ -474,6 +474,22 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         }
     }
 
+    protected _mergeStates(states: PathState[]) {
+        const mergedState = super._mergeStates(states) as PathState;
+        let mergedShape: Props['shape'];
+        for (let i = 0; i < states.length; i++) {
+            const state = states[i];
+            if (state.shape) {
+                mergedShape = mergedShape || {};
+                this._mergeStyle(mergedShape, state.shape);
+            }
+        }
+        if (mergedShape) {
+            mergedState.shape = mergedShape;
+        }
+        return mergedState;
+    }
+
     /**
      * If path shape is zero area
      */

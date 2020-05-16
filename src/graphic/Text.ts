@@ -192,6 +192,15 @@ const DEFAULT_RICH_TEXT_COLOR = {
 };
 const DEFAULT_STROKE_LINE_WIDTH = 2;
 
+// const DEFAULT_TEXT_STYLE: TextStyleProps = {
+//     x: 0,
+//     y: 0,
+//     fill: '#000',
+//     stroke: null,
+//     opacity: 0,
+//     fillOpacity:
+// }
+
 interface ZRText {
     animate(key?: '', loop?: boolean): Animator<this>
     animate(key: 'style', loop?: boolean): Animator<this['style']>
@@ -277,10 +286,6 @@ class ZRText extends Displayable<TextProps> {
         this.styleUpdated();
     }
 
-    styleUpdated() {
-        this.__dirty &= ~Path.STYLE_CHANGED_BIT;
-    }
-
     addSelfToZr(zr: ZRenderType) {
         super.addSelfToZr(zr);
         for (let i = 0; i < this._children.length; i++) {
@@ -331,7 +336,6 @@ class ZRText extends Displayable<TextProps> {
         return this._rect;
     }
 
-
     // Can be set in Element. To calculate text fill automatically when textContent is inside element
     setDefaultTextStyle(defaultTextStyle: DefaultTextStyle) {
         // Use builtin if defaultTextStyle is not given.
@@ -342,7 +346,16 @@ class ZRText extends Displayable<TextProps> {
         throw new Error('Can\'t attach text on another text');
     }
 
+    // getDefaultStyleValue<T extends keyof TextStyleProps>(key: T): TextStyleProps[T] {
+    //     // Default value is on the prototype.
+    //     return this.style.prototype[key];
+    // }
+
     protected _mergeStyle(targetStyle: TextStyleProps, sourceStyle: TextStyleProps) {
+        if (!sourceStyle) {
+            return targetStyle;
+        }
+
         // DO deep merge on rich configurations.
         const sourceRich = sourceStyle.rich;
         const targetRich = targetStyle.rich || (sourceRich && {});  // Create a new one if source have rich but target don't

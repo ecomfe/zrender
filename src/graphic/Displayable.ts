@@ -248,6 +248,11 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         return this;
     }
 
+    getDefaultStyleValue<T extends keyof Props['style']>(key: T): Props['style'][T] {
+        // Default value is on the prototype.
+        return this.style.prototype[key];
+    }
+
     dirtyStyle() {
         this.markRedraw();
         this.__dirty |= Displayable.STYLE_CHANGED_BIT;
@@ -266,6 +271,13 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
      */
     styleChanged() {
         return this.__dirty & Displayable.STYLE_CHANGED_BIT;
+    }
+
+    /**
+     * Mark style updated. Only useful when style is used for caching. Like in the text.
+     */
+    styleUpdated() {
+        this.__dirty &= ~Displayable.STYLE_CHANGED_BIT;
     }
 
     /**
@@ -351,16 +363,18 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
             if (transition) {
                 // Clone a new style. Not affect the original one.
                 // TODO Performance issue.
-                this.style = this.createStyle(this.style);
+                const sourceStyle = this.style;
+                this.style = this.createStyle(needsRestoreToNormal ? {} : sourceStyle);
+                // const sourceStyle = this.style = this.createStyle(this.style);
 
                 if (needsRestoreToNormal) {
-                    const changedKeys = keys(this.style);
+                    const changedKeys = keys(sourceStyle);
                     for (let i = 0; i < changedKeys.length; i++) {
                         const key = changedKeys[i];
-                        if (targetStyle[key] != null) {
+                        if (key in targetStyle) {
                             // Pick out from prototype. Or the property won't be animated.
-                            // TODO: Text
                             (targetStyle as any)[key] = targetStyle[key];
+                            (this.style as any)[key] = sourceStyle[key];
                         }
                     }
                 }
@@ -388,6 +402,22 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
                 }
             }
         }
+    }
+
+    protected _mergeStates(states: DisplayableState[]) {
+        const mergedState = super._mergeStates(states) as DisplayableState;
+        let mergedStyle: Props['style'];
+        for (let i = 0; i < states.length; i++) {
+            const state = states[i];
+            if (state.style) {
+                mergedStyle = mergedStyle || {};
+                this._mergeStyle(mergedStyle, state.style);
+            }
+        }
+        if (mergedStyle) {
+            mergedState.style = mergedStyle;
+        }
+        return mergedState;
     }
 
     protected _mergeStyle(

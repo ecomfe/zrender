@@ -240,6 +240,7 @@ export interface ElementProps extends Partial<ElementEventHandlerProps> {
 
 // Properties can be used in state.
 export const PRESERVED_NORMAL_STATE = '__zr_normal__';
+export const PRESERVED_MERGED_STATE = '__zr_merged__';
 
 const PRIMARY_STATES_KEYS = ['x', 'y', 'scaleX', 'scaleY', 'originX', 'originY', 'rotation', 'ignore'] as const;
 const DEFAULT_ANIMATABLE_MAP: Partial<Record<ElementStatePropNames, boolean>> = {
@@ -736,7 +737,6 @@ class Element<Props extends ElementProps = ElementProps> {
      * @param stateName State name to be switched to
      * @param keepCurrentState If keep current states.
      *      If not, it will inherit from the normal state.
-     * @param animationCfg Will apply animation if specified and has >0 duration
      */
     useState(stateName: string, keepCurrentStates?: boolean) {
         // Use preserved word __normal__
@@ -750,7 +750,6 @@ class Element<Props extends ElementProps = ElementProps> {
         }
 
         const currentStates = this.currentStates;
-        const currentNormalState = this._normalState || {};
         const animationCfg = this.stateTransition;
 
         // No need to change in following cases:
@@ -777,15 +776,11 @@ class Element<Props extends ElementProps = ElementProps> {
         if (!toNormalState) {
             this.saveCurrentToNormalState(state);
         }
-        else {
-            // Reset normal state.
-            this._normalState = {};
-        }
 
         this._applyStateObj(
             stateName,
             state,
-            currentNormalState,
+            this._normalState,
             keepCurrentStates,
             animationCfg && animationCfg.duration > 0,
             animationCfg
@@ -802,6 +797,8 @@ class Element<Props extends ElementProps = ElementProps> {
         if (toNormalState) {
             // Clear state
             this.currentStates = [];
+            // Reset normal state.
+            this._normalState = {};
         }
         else {
             if (!keepCurrentStates) {
@@ -813,12 +810,8 @@ class Element<Props extends ElementProps = ElementProps> {
         }
 
         // Update animating target to the new object after state changed.
-        for (let i = 0; i < this.animators.length; i++) {
-            const animator = this.animators[i];
-            if (animator.targetName) {
-                animator.changeTarget((this as any)[animator.targetName]);
-            }
-        }
+        this._updateAnimationTargets();
+
         this.markRedraw();
         // Return used state.
         return state;
@@ -827,15 +820,77 @@ class Element<Props extends ElementProps = ElementProps> {
     /**
      * Apply multiple states.
      * @param states States list.
-     * @param animationCfg Will apply animation if specified and has >0 duration
      */
     useStates(states: string[]) {
         if (!states.length) {
             this.clearStates();
         }
         else {
-            for (let i = 0; i < states.length; i++) {
-                this.useState(states[i], i > 0);
+            const stateObjects: ElementState[] = [];
+            const currentStates = this.currentStates;
+            const len = states.length;
+            let notChange = len === currentStates.length;
+            if (notChange) {
+                for (let i = 0; i < len; i++) {
+                    if (states[i] !== currentStates[i]) {
+                        notChange = false;
+                        break;
+                    }
+                }
+            }
+            if (notChange) {
+                return;
+            }
+            for (let i = 0; i < len; i++) {
+                const stateName = states[i];
+                let stateObj: ElementState;
+                if (this.stateProxy) {
+                    stateObj = this.stateProxy(stateName);
+                }
+                if (!stateObj) {
+                    stateObj = this.states[stateName];
+                }
+                if (stateObj) {
+                    stateObjects.push(stateObj);
+                }
+            }
+
+            const mergedState = this._mergeStates(stateObjects);
+            const animationCfg = this.stateTransition;
+
+            this.saveCurrentToNormalState(mergedState);
+
+            this._applyStateObj(
+                PRESERVED_MERGED_STATE,
+                mergedState,
+                this._normalState,
+                false,
+                animationCfg && animationCfg.duration > 0,
+                animationCfg
+            );
+
+            if (this._textContent) {
+                this._textContent.useStates(states);
+            }
+            if (this._textGuide) {
+                this._textGuide.useStates(states);
+            }
+
+            this._updateAnimationTargets();
+
+            this.currentStates = states;
+            this.markRedraw();
+        }
+    }
+
+    /**
+     * Update animation targets when reference is changed.
+     */
+    private _updateAnimationTargets() {
+        for (let i = 0; i < this.animators.length; i++) {
+            const animator = this.animators[i];
+            if (animator.targetName) {
+                animator.changeTarget((this as any)[animator.targetName]);
             }
         }
     }
@@ -843,7 +898,6 @@ class Element<Props extends ElementProps = ElementProps> {
     /**
      * Remove state
      * @param state State to remove
-     * @param animationCfg Will apply animation if specified and has >0 duration
      */
     removeState(state: string) {
         const idx = indexOf(this.currentStates, state);
@@ -852,6 +906,32 @@ class Element<Props extends ElementProps = ElementProps> {
             currentStates.splice(idx, 1);
             this.useStates(currentStates);
         }
+    }
+
+    /**
+     * Replace exists state.
+     * @param oldState
+     * @param newState
+     * @param forceAdd If still add when even if replaced target not exists.
+     */
+    replaceState(oldState: string, newState: string, forceAdd: boolean) {
+        const currentStates = this.currentStates.slice();
+        const idx = indexOf(currentStates, oldState);
+        const newStateExists = indexOf(currentStates, newState) >= 0;
+        if (idx >= 0) {
+            if (!newStateExists) {
+                // Replace the old with the new one.
+                currentStates[idx] = newState;
+            }
+            else {
+                // Only remove the old one.
+                currentStates.splice(idx, 1);
+            }
+        }
+        else if (forceAdd && !newStateExists) {
+            currentStates.push(newState);
+        }
+        this.useStates(currentStates);
     }
 
     /**
@@ -864,6 +944,25 @@ class Element<Props extends ElementProps = ElementProps> {
         else {
             this.removeState(state);
         }
+    }
+
+    protected _mergeStates(states: ElementState[]) {
+        const mergedState: ElementState = {};
+        let mergedTextConfig: ElementTextConfig;
+        for (let i = 0; i < states.length; i++) {
+            const state = states[i];
+            extend(mergedState, state);
+
+            if (state.textConfig) {
+                mergedTextConfig = mergedTextConfig || {};
+                extend(mergedTextConfig, state.textConfig);
+            }
+        }
+        if (mergedTextConfig) {
+            mergedState.textConfig = mergedTextConfig;
+        }
+
+        return mergedState;
     }
 
     protected _applyStateObj(
