@@ -271,22 +271,22 @@ class Track {
     /**
      * If use spline interpolate
      */
-    useSpline: boolean
+    useSpline?: boolean
 
     // Larger than 0 if value is array
     arrDim: number = 0
-    isValueColor: boolean
+    isValueColor?: boolean
 
     interpolable: boolean = true
 
-    private _finished: boolean
+    private _finished?: boolean
 
 
     private _needsSort: boolean = false
 
     private _isAllValueEqual = true
 
-    private _additiveTrack: Track
+    private _additiveTrack?: Track | null
     // Temporal storage for interpolated additive value.
     private _additiveValue: unknown
 
@@ -431,8 +431,11 @@ class Track {
             for (let i = 0; i < kfsLen; i++) {
                 if (arrDim === 0) {
                     if (this.isValueColor) {
-                        kfs[i].additiveValue
-                            = add1DArray([], kfs[i].value as NumberArray, startValue as NumberArray, -1);
+                        kfs[i].additiveValue = add1DArray(
+                            [],
+                            kfs[i].value as NumberArray,
+                            startValue as NumberArray, -1
+                        );
                     }
                     else {
                         kfs[i].additiveValue = kfs[i].value as number - (startValue as number);
@@ -675,12 +678,12 @@ export default class Animator<T> {
     private _paused = false
     private _maxTime = 0
 
-    private _additiveAnimator: Animator<any>
+    private _additiveAnimator?: Animator<any> | null
 
     private _doneList: DoneCallback[] = []
     private _onframeList: OnframeCallback<T>[] = []
 
-    private _clip: Clip = null
+    private _clip: Clip | null = null
 
     constructor(target: T, loop: boolean, additiveTo?: Animator<any>) {
         this._target = target;
@@ -690,7 +693,7 @@ export default class Animator<T> {
             logError('Can\' use additive animation on looped animation.');
             return;
         }
-        this._additiveAnimator = additiveTo;
+        this._additiveAnimator = additiveTo!;
     }
 
     getTarget() {
@@ -772,12 +775,12 @@ export default class Animator<T> {
     }
 
     pause() {
-        this._clip.pause();
+        this._clip && this._clip.pause();
         this._paused = true;
     }
 
     resume() {
-        this._clip.resume();
+        this._clip && this._clip.resume();
         this._paused = false;
     }
 
@@ -785,9 +788,9 @@ export default class Animator<T> {
         return !!this._paused;
     }
 
-    _doneCallback() {
+    private _doneCallback() {
         // Clear all tracks
-        this._tracks = null;
+        this._tracks = {};
         // Clear clip
         this._clip = null;
 
@@ -812,7 +815,7 @@ export default class Animator<T> {
             const propName = this._trackKeys[i];
             const track = this._tracks[propName];
             const additiveTrack = this._additiveAnimator && this._additiveAnimator.getTrack(propName);
-            track.prepare(additiveTrack);
+            track.prepare(additiveTrack!);
             if (track.needsAnimate()) {
                 tracks.push(track);
             }

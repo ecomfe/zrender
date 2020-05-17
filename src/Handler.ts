@@ -4,7 +4,7 @@ import Draggable from './mixin/Draggable';
 import Eventful from './core/Eventful';
 import * as eventTool from './core/event';
 import {GestureMgr} from './core/GestureMgr';
-import Displayable from './graphic/Displayable';
+import Displayable, {DisplayableProps} from './graphic/Displayable';
 import {PainterBase} from './PainterBase';
 import HandlerDomProxy, { HandlerProxyInterface } from './dom/HandlerProxy';
 import { ZRRawEvent, ZRPinchEvent, ElementEventName, ElementEventNameWithOn, ZRRawTouchEvent } from './core/types';
@@ -103,7 +103,7 @@ function stopEvent(this: ElementEvent) {
 }
 
 class EmptyProxy extends Eventful {
-    handler: Handler = null
+    handler: Handler | null = null
     dispose() {}
     setCursor() {}
 }
@@ -113,7 +113,7 @@ class HoveredResult {
     y: number
     target: Displayable
     topTarget: Displayable
-    constructor(x?: number, y?: number) {
+    constructor(x = 0, y = 0) {
         this.x = x;
         this.y = y;
     }
@@ -131,11 +131,11 @@ type HandlerName = 'click' |'dblclick' |'mousewheel' |'mouseout' |
 // TODO draggable
 class Handler extends Eventful {
 
-    storage: Storage
-    painter: PainterBase
+    storage: Storage | null
+    painter: PainterBase | null
     painterRoot: HTMLElement
 
-    proxy: HandlerProxyInterface
+    proxy: HandlerProxyInterface | null
 
     private _hovered = new HoveredResult(0, 0)
 
@@ -145,7 +145,7 @@ class Handler extends Eventful {
 
     _downEl: Element
     _upEl: Element
-    _downPoint: [number, number]
+    _downPoint: [number, number] | null
 
     constructor(
         storage: Storage,
@@ -210,7 +210,7 @@ class Handler extends Eventful {
         const hoveredTarget = hovered.target;
 
         const proxy = this.proxy;
-        proxy.setCursor && proxy.setCursor(hoveredTarget ? hoveredTarget.cursor : 'default');
+        proxy && proxy.setCursor && proxy.setCursor(hoveredTarget ? hoveredTarget.cursor : 'default');
 
         // Mouse out on previous hovered element
         if (lastHoveredTarget && hoveredTarget !== lastHoveredTarget) {
@@ -261,7 +261,7 @@ class Handler extends Eventful {
      */
     dispose() {
 
-        this.proxy.dispose();
+        this.proxy && this.proxy.dispose();
 
         this.storage = null;
         this.proxy = null;
@@ -274,7 +274,7 @@ class Handler extends Eventful {
      */
     setCursorStyle(cursorStyle: string) {
         const proxy = this.proxy;
-        proxy.setCursor && proxy.setCursor(cursorStyle);
+        proxy && proxy.setCursor && proxy.setCursor(cursorStyle);
     }
 
     /**
@@ -313,7 +313,7 @@ class Handler extends Eventful {
                 }, eventName, event);
             }
 
-            el = el.parent;
+            el = el.parent!;
 
             if (eventPacket.cancelBubble) {
                 break;
@@ -339,7 +339,7 @@ class Handler extends Eventful {
     }
 
     findHover(x: number, y: number, exclude?: Displayable): HoveredResult {
-        const list = this.storage.getDisplayList();
+        const list = this.storage!.getDisplayList();
         const out = new HoveredResult(x, y);
 
         for (let i = list.length - 1; i >= 0; i--) {
@@ -370,7 +370,7 @@ class Handler extends Eventful {
 
         const gestureInfo = gestureMgr.recognize(
             event as ZRRawTouchEvent,
-            this.findHover(event.zrX, event.zrY, null).target,
+            this.findHover(event.zrX, event.zrY).target,
             (this.proxy as HandlerDomProxy).dom
         );
 
@@ -387,12 +387,12 @@ class Handler extends Eventful {
         }
     }
 
-    click: (event: ZRRawEvent) => void
-    mousedown: (event: ZRRawEvent) => void
-    mouseup: (event: ZRRawEvent) => void
-    mousewheel: (event: ZRRawEvent) => void
-    dblclick: (event: ZRRawEvent) => void
-    contextmenu: (event: ZRRawEvent) => void
+    click?: (event: ZRRawEvent) => void
+    mousedown?: (event: ZRRawEvent) => void
+    mouseup?: (event: ZRRawEvent) => void
+    mousewheel?: (event: ZRRawEvent) => void
+    dblclick?: (event: ZRRawEvent) => void
+    contextmenu?: (event: ZRRawEvent) => void
 }
 
 // Common handlers
@@ -403,7 +403,7 @@ util.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick', 'contextme
         const isOutside = isOutsideBoundary(this, x, y);
 
         let hovered;
-        let hoveredTarget;
+        let hoveredTarget: Displayable<DisplayableProps>;
 
         if (name !== 'mouseup' || !isOutside) {
             // Find hover again to avoid click event is dispatched manually. Or click is triggered without mouseover
@@ -470,6 +470,9 @@ function isHover(displayable: Displayable, x: number, y: number) {
  */
 function isOutsideBoundary(handlerInstance: Handler, x: number, y: number) {
     const painter = handlerInstance.painter;
+    if (!painter) {
+        return false;
+    }
     return x < 0 || x > painter.getWidth() || y < 0 || y > painter.getHeight();
 }
 

@@ -314,19 +314,19 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     dragging: boolean
 
-    parent: Group
+    parent: Group | null
 
     animators: Animator<any>[] = []
 
     /**
      * If element is used as a component of other element.
      */
-    __hostTarget: Element
+    __hostTarget: Element | null
 
     /**
      * ZRender instance will be assigned when element is associated with zrender
      */
-    __zr: ZRenderType
+    __zr: ZRenderType | null
 
     /**
      * Dirty bits.

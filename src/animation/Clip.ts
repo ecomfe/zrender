@@ -53,8 +53,8 @@ export default class Clip {
     easing: AnimationEasing
 
     // For linked list. Readonly
-    next: Clip
-    prev: Clip
+    next: Clip | null = null
+    prev: Clip | null = null
 
     onframe: OnframeCallback
     ondestroy: ondestroyCallback
@@ -75,9 +75,9 @@ export default class Clip {
 
         this.easing = opts.easing || 'linear';
 
-        this.onframe = opts.onframe;
-        this.ondestroy = opts.ondestroy;
-        this.onrestart = opts.onrestart;
+        this.onframe = opts.onframe!;
+        this.ondestroy = opts.ondestroy!;
+        this.onrestart = opts.onrestart!;
     }
 
     step(globalTime: number, deltaTime: number): boolean {
@@ -90,7 +90,7 @@ export default class Clip {
 
         if (this._paused) {
             this._pausedTime += deltaTime;
-            return;
+            return false;
         }
 
         let percent = (globalTime - this._startTime - this._pausedTime) / this._life;

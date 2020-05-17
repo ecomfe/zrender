@@ -6,7 +6,6 @@
 // http://iosoteric.com/additive-animations-animatewithduration-in-ios-8/
 // https://developer.apple.com/videos/wwdc2014/#236
 
-import * as util from '../core/util';
 import Eventful from '../core/Eventful';
 import requestAnimationFrame from './requestAnimationFrame';
 import Animator from './Animator';
@@ -48,8 +47,8 @@ export default class Animation extends Eventful {
     onframe: OnframeCallback
 
     // Use linked list to store clip
-    private _clipsHead: Clip
-    private _clipsTail: Clip
+    private _clipsHead: Clip | null
+    private _clipsTail: Clip | null
 
     private _running: boolean = false
 
@@ -76,7 +75,7 @@ export default class Animation extends Eventful {
         if (!this._clipsHead) {
             this._clipsHead = this._clipsTail = clip;
         }
-        else {
+        else if (this._clipsTail) {
             this._clipsTail.next = clip;
             clip.prev = this._clipsTail;
             clip.next = null;
@@ -124,7 +123,7 @@ export default class Animation extends Eventful {
         if (clip) {
             this.removeClip(clip);
         }
-        animator.animation = null;
+        animator.animation = undefined;
     }
 
     update() {
@@ -247,7 +246,7 @@ export default class Animation extends Eventful {
 
         const animator = new Animator(
             target,
-            options.loop
+            !!options.loop
         );
 
         this.addAnimator(animator);

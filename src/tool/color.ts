@@ -147,7 +147,7 @@ function copyRgba(out: number[], a: number[]) {
 }
 
 const colorCache = new LRU<number[]>(20);
-let lastRemovedArr: number[] = null;
+let lastRemovedArr: number[] | null = null;
 
 function putToCache(colorStr: string, rgbaArr: number[]) {
     // Reuse removed array
@@ -157,7 +157,7 @@ function putToCache(colorStr: string, rgbaArr: number[]) {
     lastRemovedArr = colorCache.put(colorStr, lastRemovedArr || (rgbaArr.slice()));
 }
 
-export function parse(colorStr: string, rgbaArr?: number[]): number[] {
+export function parse(colorStr: string, rgbaArr?: number[]): number[] | undefined {
     if (!colorStr) {
         return;
     }
@@ -293,10 +293,6 @@ function hsla2rgba(hsla: (number | string) [], rgba?: number[]): number[] {
 }
 
 function rgba2hsla(rgba: number[]): number[] {
-    if (!rgba) {
-        return;
-    }
-
     // RGB from 0 to 255
     const R = rgba[0] / 255;
     const G = rgba[1] / 255;
@@ -307,8 +303,8 @@ function rgba2hsla(rgba: number[]): number[] {
     const delta = vMax - vMin; // Delta RGB value
 
     const L = (vMax + vMin) / 2;
-    let H;
-    let S;
+    let H: number;
+    let S: number;
     // HSL results from 0 to 1
     if (delta === 0) {
         H = 0;
@@ -380,6 +376,8 @@ export function toHex(color: string): string {
     if (colorArr) {
         return ((1 << 24) + (colorArr[0] << 16) + (colorArr[1] << 8) + (+colorArr[2])).toString(16).slice(1);
     }
+
+    return '000';
 }
 
 /**
@@ -397,7 +395,7 @@ export function fastLerp(
     if (!(colors && colors.length)
         || !(normalizedValue >= 0 && normalizedValue <= 1)
     ) {
-        return;
+        return [];
     }
 
     out = out || [];
@@ -439,17 +437,17 @@ export function lerp(
     colors: string[],
     fullOutput?: boolean
 ): string | LerpFullOutput {
-    if (!(colors && colors.length)
+    if (!colors.length
         || !(normalizedValue >= 0 && normalizedValue <= 1)
     ) {
-        return;
+        return '';
     }
 
     const value = normalizedValue * (colors.length - 1);
     const leftIndex = Math.floor(value);
     const rightIndex = Math.ceil(value);
-    const leftColor = parse(colors[leftIndex]);
-    const rightColor = parse(colors[rightIndex]);
+    const leftColor = parse(colors[leftIndex])!;
+    const rightColor = parse(colors[rightIndex])!;
     const dv = value - leftIndex;
 
     const color = stringify(
@@ -488,7 +486,7 @@ export const mapToColor = lerp;
 export function modifyHSL(color: string, h?: number, s?: number, l?: number): string {
     let colorArr = parse(color);
 
-    if (color) {
+    if (color && colorArr) {
         colorArr = rgba2hsla(colorArr);
         h != null && (colorArr[0] = clampCssAngle(h));
         s != null && (colorArr[1] = parseCssFloat(s));
@@ -496,6 +494,8 @@ export function modifyHSL(color: string, h?: number, s?: number, l?: number): st
 
         return stringify(hsla2rgba(colorArr), 'rgba');
     }
+
+    return '';
 }
 
 /**
@@ -511,6 +511,8 @@ export function modifyAlpha(color: string, alpha?: number): string {
         colorArr[3] = clampCssFloat(alpha);
         return stringify(colorArr, 'rgba');
     }
+
+    return '';
 }
 
 /**
@@ -519,8 +521,8 @@ export function modifyAlpha(color: string, alpha?: number): string {
  * @return Result color. (If input illegal, return undefined).
  */
 export function stringify(arrColor: number[], type: string): string {
-    if (!arrColor || !arrColor.length) {
-        return;
+    if (!arrColor.length) {
+        return '';
     }
     let colorStr = arrColor[0] + ',' + arrColor[1] + ',' + arrColor[2];
     if (type === 'rgba' || type === 'hsva' || type === 'hsla') {
