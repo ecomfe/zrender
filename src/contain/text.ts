@@ -104,7 +104,7 @@ export function measureText(text: string, font?: string): {
 }
 
 
-function parsePercent(value: number | string, maxValue: number): number {
+export function parsePercent(value: number | string, maxValue: number): number {
     if (typeof value === 'string') {
         if (value.lastIndexOf('%') >= 0) {
             return parseFloat(value) / 100 * maxValue;

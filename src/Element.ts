@@ -7,7 +7,7 @@ import Path from './graphic/Path';
 import BoundingRect, { RectLike } from './core/BoundingRect';
 import Eventful, {EventQuery, EventCallback} from './core/Eventful';
 import ZRText, { DefaultTextStyle } from './graphic/Text';
-import { calculateTextPosition, TextPositionCalculationResult } from './contain/text';
+import { calculateTextPosition, TextPositionCalculationResult, parsePercent } from './contain/text';
 import {
     guid,
     isObject,
@@ -65,6 +65,15 @@ export interface ElementTextConfig {
      * in the rotation
      */
     offset?: number[]
+
+    /**
+     * Origin or rotation. Which is relative to the bounding box of the attached element.
+     * Can be percent value. Relative to the bounding box.
+     * If specified center. It will be center of the bounding box.
+     *
+     * Only available when position and rotation are both set.
+     */
+    origin?: (number | string)[] | 'center'
 
     /**
      * Distance to the rect
@@ -454,6 +463,8 @@ class Element<Props extends ElementProps = ElementProps> {
 
             let textStyleChanged = false;
 
+            // TODO Restore the element after textConfig changed.
+
             // NOTE: Can't be used both as normal element and as textContent.
             if (isLocal) {
                 // Apply host's transform.
@@ -487,19 +498,39 @@ class Element<Props extends ElementProps = ElementProps> {
                 // useful in the case that attached text is rotated 90 degree.
                 textAlign = tmpTextPosCalcRes.align;
                 textVerticalAlign = tmpTextPosCalcRes.verticalAlign;
+
+                const textOrigin = textConfig.origin;
+                if (textOrigin && textConfig.rotation != null) {
+                    let relOriginX;
+                    let relOriginY;
+                    if (textOrigin === 'center') {
+                        relOriginX = tmpBoundingRect.width * 0.5;
+                        relOriginY = tmpBoundingRect.height * 0.5;
+                    }
+                    else {
+                        relOriginX = parsePercent(textOrigin[0], tmpBoundingRect.width);
+                        relOriginY = parsePercent(textOrigin[1], tmpBoundingRect.height);
+                    }
+
+                    textEl.originX = -textEl.x + relOriginX + (isLocal ? 0 : tmpBoundingRect.x);
+                    textEl.originY = -textEl.y + relOriginY + (isLocal ? 0 : tmpBoundingRect.y);
+                }
             }
 
             if (textConfig.rotation != null) {
                 textEl.rotation = textConfig.rotation;
             }
 
-            let textOffset = textConfig.offset;
+            const textOffset = textConfig.offset;
             if (textOffset) {
                 textEl.x += textOffset[0];
                 textEl.y += textOffset[1];
 
-                textEl.originX = -textOffset[0];
-                textEl.originY = -textOffset[1];
+                // Not change the user set origin.
+                if (!textConfig.origin) {
+                    textEl.originX = -textOffset[0];
+                    textEl.originY = -textOffset[1];
+                }
             }
 
             // Calculate text color
