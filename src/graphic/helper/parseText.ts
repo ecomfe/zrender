@@ -394,6 +394,7 @@ export function parseRichText(text: string, style: TextStyleProps) {
                 token.percentWidth = styleTokenWidth;
                 pendingList.push(token);
 
+                token.contentWidth = getWidth(token.text, font);
                 // Do not truncate in this case, because there is no user case
                 // and it is too complicated.
             }
@@ -419,7 +420,7 @@ export function parseRichText(text: string, style: TextStyleProps) {
                 if (remainTruncWidth != null && remainTruncWidth < token.width) {
                     if (!tokenWidthNotSpecified || remainTruncWidth < paddingH) {
                         token.text = '';
-                        token.width = 0;
+                        token.width = token.contentWidth = 0;
                     }
                     else {
                         token.text = truncateText(
