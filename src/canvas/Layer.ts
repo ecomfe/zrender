@@ -243,7 +243,6 @@ export default class Layer extends Eventful {
             }
             else {
                 let isMerged = false;
-                // const rectArea = rect.width * rect.height;
                 for (let i = 0; i < mergedRepaintRects.length; ++i) {
                     const mergedRect = mergedRepaintRects[i];
 
@@ -298,6 +297,26 @@ export default class Layer extends Eventful {
         }
         // console.log(mergedRepaintRects);
         this._drawRect(mergedRepaintRects);
+
+
+        // Merge intersected rects in the result
+        function checkIntersection() {
+            if (mergedRepaintRects.length > 1) {
+                for (let i = 0; i < mergedRepaintRects.length; ++i) {
+                    for (let j = i + 1; j < mergedRepaintRects.length; ++j) {
+                        if (mergedRepaintRects[i] && mergedRepaintRects[j]
+                            && mergedRepaintRects[i].intersect(mergedRepaintRects[j])
+                        ) {
+                            mergedRepaintRects[i].union(mergedRepaintRects[j]);
+                            mergedRepaintRects.splice(j, 1);
+                            checkIntersection();
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+        checkIntersection();
 
         return mergedRepaintRects;
     }
