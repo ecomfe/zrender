@@ -24,6 +24,7 @@ export function containStroke(
     if ((d - _l > r) || (d + _l < r)) {
         return false;
     }
+    // TODO
     if (Math.abs(startAngle - endAngle) % PI2 < 1e-4) {
         // Is a circle
         return true;

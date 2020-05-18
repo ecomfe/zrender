@@ -74,10 +74,7 @@
                 });
                 gui.updateDisplay();
 
-                rect.clearStates({
-                    duration: config.animation ? 500 : 0,
-                    easing: 'cubicInOut'
-                });
+                rect.clearStates();
             },
 
             applyAllStates() {
@@ -86,31 +83,27 @@
                 });
                 gui.updateDisplay();
 
-                rect.useStates(allStates, {
-                    duration: config.animation ? 500 : 0,
-                    easing: 'cubicInOut'
-                });
+                rect.useStates(allStates);
             }
         }
 
-        const animationCfg = {
-            duration: 300,
-            easing: 'cubicOut'
-        };
         const gui = new dat.GUI();
         const statesFolder = gui.addFolder('states');
         statesFolder.open();
 
+        rect.stateTransition = {
+            duration: config.animation ? 1000 : 0,
+            easing: 'cubicOut'
+        }
         allStates.forEach(function (stateName) {
             config[stateName] = false;
             statesFolder.add(config, stateName).onChange(function () {
-                rect.toggleState(stateName, config[stateName], {
-                    duration: config.animation ? 300 : 0,
-                    easing: 'cubicOut'
-                });
+                rect.toggleState(stateName, config[stateName]);
             });
         });
-        gui.add(config, 'animation');
+        gui.add(config, 'animation').onChange(function () {
+            rect.stateTransition.duration = config.animation ? 1000 : 0;
+        })
         gui.add(config, 'clearStates');
         gui.add(config, 'applyAllStates');
 

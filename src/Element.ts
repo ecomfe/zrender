@@ -2,12 +2,12 @@ import Transformable from './core/Transformable';
 import { AnimationEasing } from './animation/easing';
 import Animator, {cloneValue} from './animation/Animator';
 import { ZRenderType } from './zrender';
-import { Dictionary, ElementEventName, ZRRawEvent, BuiltinTextPosition, AllPropTypes, TextVerticalAlign, TextAlign } from './core/types';
+import { Dictionary, ElementEventName, ZRRawEvent, BuiltinTextPosition, AllPropTypes, TextVerticalAlign, TextAlign, MapToType } from './core/types';
 import Path from './graphic/Path';
 import BoundingRect, { RectLike } from './core/BoundingRect';
 import Eventful, {EventQuery, EventCallback} from './core/Eventful';
 import ZRText, { DefaultTextStyle } from './graphic/Text';
-import { calculateTextPosition, TextPositionCalculationResult } from './contain/text';
+import { calculateTextPosition, TextPositionCalculationResult, parsePercent } from './contain/text';
 import {
     guid,
     isObject,
@@ -18,8 +18,9 @@ import {
     mixin,
     isArrayLike
 } from './core/util';
-import { Group } from './export';
 import Polyline from './graphic/shape/Polyline';
+import Group from './graphic/Group';
+import Point from './core/Point';
 
 export interface ElementAnimateConfig {
     duration?: number
@@ -66,6 +67,15 @@ export interface ElementTextConfig {
     offset?: number[]
 
     /**
+     * Origin or rotation. Which is relative to the bounding box of the attached element.
+     * Can be percent value. Relative to the bounding box.
+     * If specified center. It will be center of the bounding box.
+     *
+     * Only available when position and rotation are both set.
+     */
+    origin?: (number | string)[] | 'center'
+
+    /**
      * Distance to the rect
      * @default 5
      */
@@ -86,7 +96,7 @@ export interface ElementTextConfig {
     insideFill?: string
 
     /**
-     * `insideStroke` is a color string or left empth.
+     * `insideStroke` is a color string or left empty.
      * If a `textContent` is "inside", its final `stroke` will be picked by this priority:
      * `textContent.style.stroke` > `textConfig.insideStroke` > "auto-calculated-stroke"
      *
@@ -133,6 +143,33 @@ export interface ElementTextConfig {
 
     // TODO applyClip
     // TODO align, verticalAlign??
+}
+export interface ElementTextGuideLineConfig {
+    /**
+     * Anchor for text guide line.
+     * Notice: Won't work
+     */
+    anchor?: Point
+
+    /**
+     * If calculate guide line points automatically.
+     */
+    autoCalculate?: boolean
+
+    /**
+     * Candidates of connectors. Used when autoCalculate is true and anchor is not specified.
+     */
+    candidates?: ('left' | 'top' | 'right' | 'bottom')[]
+
+    /**
+     * Length of the first segment near to text.
+     */
+    len?: number
+
+    /**
+     * Length of the second segment near to the element.
+     */
+    len2?: number
 }
 
 export interface ElementEvent {
@@ -211,6 +248,7 @@ export interface ElementProps extends Partial<ElementEventHandlerProps> {
 
 // Properties can be used in state.
 export const PRESERVED_NORMAL_STATE = '__zr_normal__';
+export const PRESERVED_MERGED_STATE = '__zr_merged__';
 
 const PRIMARY_STATES_KEYS = ['x', 'y', 'scaleX', 'scaleY', 'originX', 'originY', 'rotation', 'ignore'] as const;
 const DEFAULT_ANIMATABLE_MAP: Partial<Record<ElementStatePropNames, boolean>> = {
@@ -301,24 +339,31 @@ class Element<Props extends ElementProps = ElementProps> {
      * path to clip the elements and its children, if it is a group.
      * @see http://www.w3.org/TR/2dcontext/#clipping-region
      */
-    private _clipPath: Path
+    private _clipPath?: Path
 
     /**
      * Attached text element.
      * `position`, `style.textAlign`, `style.textVerticalAlign`
      * of element will be ignored if textContent.position is set
      */
-    private _textContent: ZRText
+    private _textContent?: ZRText
 
     /**
      * Text guide line.
      */
-    private _textGuide: Polyline
+    private _textGuide?: Polyline
 
     /**
      * Config of textContent. Inlcuding layout, color, ...etc.
      */
-    textConfig: ElementTextConfig
+    textConfig?: ElementTextConfig
+
+    /**
+     * Config for guide line calculating.
+     *
+     * NOTE: This is just a property signature. READ and WRITE are all done in echarts.
+     */
+    textGuideLineConfig?: ElementTextGuideLineConfig
 
     // FOR ECHARTS
     /**
@@ -334,10 +379,15 @@ class Element<Props extends ElementProps = ElementProps> {
     states: Dictionary<ElementState> = {}
 
     /**
+     * Animation config applied on state switching.
+     */
+    stateTransition: ElementAnimateConfig
+
+    /**
      * Proxy function for getting state with given stateName.
      * ZRender will first try to get with stateProxy. Then find from states if stateProxy returns nothing
      */
-    stateProxy: (stateName: string) => ElementState
+    stateProxy?: (stateName: string) => ElementState
 
     protected _normalState: ElementState
 
@@ -413,6 +463,8 @@ class Element<Props extends ElementProps = ElementProps> {
 
             let textStyleChanged = false;
 
+            // TODO Restore the element after textConfig changed.
+
             // NOTE: Can't be used both as normal element and as textContent.
             if (isLocal) {
                 // Apply host's transform.
@@ -446,19 +498,39 @@ class Element<Props extends ElementProps = ElementProps> {
                 // useful in the case that attached text is rotated 90 degree.
                 textAlign = tmpTextPosCalcRes.align;
                 textVerticalAlign = tmpTextPosCalcRes.verticalAlign;
+
+                const textOrigin = textConfig.origin;
+                if (textOrigin && textConfig.rotation != null) {
+                    let relOriginX;
+                    let relOriginY;
+                    if (textOrigin === 'center') {
+                        relOriginX = tmpBoundingRect.width * 0.5;
+                        relOriginY = tmpBoundingRect.height * 0.5;
+                    }
+                    else {
+                        relOriginX = parsePercent(textOrigin[0], tmpBoundingRect.width);
+                        relOriginY = parsePercent(textOrigin[1], tmpBoundingRect.height);
+                    }
+
+                    textEl.originX = -textEl.x + relOriginX + (isLocal ? 0 : tmpBoundingRect.x);
+                    textEl.originY = -textEl.y + relOriginY + (isLocal ? 0 : tmpBoundingRect.y);
+                }
             }
 
             if (textConfig.rotation != null) {
                 textEl.rotation = textConfig.rotation;
             }
 
-            let textOffset = textConfig.offset;
+            const textOffset = textConfig.offset;
             if (textOffset) {
                 textEl.x += textOffset[0];
                 textEl.y += textOffset[1];
 
-                textEl.originX = -textOffset[0];
-                textEl.originY = -textOffset[1];
+                // Not change the user set origin.
+                if (!textConfig.origin) {
+                    textEl.originX = -textOffset[0];
+                    textEl.originY = -textOffset[1];
+                }
             }
 
             // Calculate text color
@@ -606,34 +678,52 @@ class Element<Props extends ElementProps = ElementProps> {
     }
 
     // Save current state to normal
-    saveCurrentToNormalState() {
-        this._innerSaveToNormal();
+    saveCurrentToNormalState(toState: ElementState) {
+        this._innerSaveToNormal(toState);
 
         // If we are swtiching from normal to other state during animation.
         // We need to save final value of animation to the normal state. Not interpolated value.
         const normalState = this._normalState;
         for (let i = 0; i < this.animators.length; i++) {
             const animator = this.animators[i];
-            // According to the order of animation if multiple animator is
-            // Animating on the same property(If additive animation is used)
-            animator.saveFinalToTarget(
-                animator.targetName
-                    ? (normalState as any)[animator.targetName] : normalState
-            );
+            const fromStateTransition = animator.__fromStateTransition;
+            // Ignore animation from state transition(except normal).
+            if (fromStateTransition && fromStateTransition !== PRESERVED_NORMAL_STATE) {
+                continue;
+            }
+
+            const targetName = animator.targetName;
+            // Respecting the order of animation if multiple animator is
+            // animating on the same property(If additive animation is used)
+            const target = targetName
+                ? (normalState as any)[targetName] : normalState;
+            // Only save keys that are changed by the states.
+            animator.saveFinalToTarget(target);
         }
+
     }
 
-    protected _innerSaveToNormal() {
-        let state = this._normalState;
-        if (!state) {
-            state = this._normalState = {};
+    protected _innerSaveToNormal(toState: ElementState) {
+        let normalState = this._normalState;
+        if (!normalState) {
+            // Clear previous stored normal states when switching from normalState to otherState.
+            normalState = this._normalState = {};
         }
-        // TODO clone?
-        state.textConfig = this.textConfig;
+        if (toState.textConfig && !normalState.textConfig) {
+            normalState.textConfig = this.textConfig;
+        }
 
-        for (let i = 0; i < PRIMARY_STATES_KEYS.length; i++) {
-            let key = PRIMARY_STATES_KEYS[i];
-            (state as any)[key] = this[key];
+        this._savePrimaryToNormal(toState, normalState, PRIMARY_STATES_KEYS);
+    }
+
+    protected _savePrimaryToNormal(toState: Dictionary<any>, normalState: Dictionary<any>, primaryKeys: readonly string[]) {
+        for (let i = 0; i < primaryKeys.length; i++) {
+            let key = primaryKeys[i];
+            // Only save property that will be changed by toState
+            // and has not been saved to normalState yet.
+            if (toState[key] != null && !(key in normalState)) {
+                (normalState as any)[key] = (this as any)[key];
+            }
         }
     }
 
@@ -666,8 +756,8 @@ class Element<Props extends ElementProps = ElementProps> {
     /**
      * Clear all states.
      */
-    clearStates(animationCfg?: ElementAnimateConfig) {
-        this.useState(PRESERVED_NORMAL_STATE, false, animationCfg);
+    clearStates() {
+        this.useState(PRESERVED_NORMAL_STATE, false);
         // TODO set _normalState to null?
     }
     /**
@@ -677,25 +767,20 @@ class Element<Props extends ElementProps = ElementProps> {
      * @param stateName State name to be switched to
      * @param keepCurrentState If keep current states.
      *      If not, it will inherit from the normal state.
-     * @param animationCfg Will apply animation if specified and has >0 duration
      */
-    useState(stateName: string, keepCurrentStates?: boolean, animationCfg?: ElementAnimateConfig) {
+    useState(stateName: string, keepCurrentStates?: boolean) {
         // Use preserved word __normal__
         // TODO: Only restore changed properties when restore to normal???
         const toNormalState = stateName === PRESERVED_NORMAL_STATE;
+        const hasStates = this.hasState();
 
-        if (!this.hasState()) {
-            // If switched from normal state to other state.
-            if (!toNormalState) {
-                this.saveCurrentToNormalState();
-            }
-            else {
-                // If switched from normal to normal.
-                return;
-            }
+        if (!hasStates && toNormalState) {
+            // If switched from normal to normal.
+            return;
         }
 
         const currentStates = this.currentStates;
+        const animationCfg = this.stateTransition;
 
         // No need to change in following cases:
         // 1. Keep current states. and already being applied before.
@@ -718,19 +803,32 @@ class Element<Props extends ElementProps = ElementProps> {
             return;
         }
 
-        this._applyStateObj(state, keepCurrentStates, animationCfg && animationCfg.duration > 0, animationCfg);
+        if (!toNormalState) {
+            this.saveCurrentToNormalState(state);
+        }
+
+        this._applyStateObj(
+            stateName,
+            state,
+            this._normalState,
+            keepCurrentStates,
+            animationCfg && animationCfg.duration > 0,
+            animationCfg
+        );
 
         // Also set text content.
         if (this._textContent) {
-            this._textContent.useState(stateName, keepCurrentStates, animationCfg);
+            this._textContent.useState(stateName, keepCurrentStates);
         }
         if (this._textGuide) {
-            this._textGuide.useState(stateName, keepCurrentStates, animationCfg);
+            this._textGuide.useState(stateName, keepCurrentStates);
         }
 
         if (toNormalState) {
             // Clear state
             this.currentStates = [];
+            // Reset normal state.
+            this._normalState = {};
         }
         else {
             if (!keepCurrentStates) {
@@ -742,12 +840,8 @@ class Element<Props extends ElementProps = ElementProps> {
         }
 
         // Update animating target to the new object after state changed.
-        for (let i = 0; i < this.animators.length; i++) {
-            const animator = this.animators[i];
-            if (animator.targetName) {
-                animator.changeTarget((this as any)[animator.targetName]);
-            }
-        }
+        this._updateAnimationTargets();
+
         this.markRedraw();
         // Return used state.
         return state;
@@ -756,15 +850,77 @@ class Element<Props extends ElementProps = ElementProps> {
     /**
      * Apply multiple states.
      * @param states States list.
-     * @param animationCfg Will apply animation if specified and has >0 duration
      */
-    useStates(states: string[], animationCfg?: ElementAnimateConfig) {
+    useStates(states: string[]) {
         if (!states.length) {
-            this.clearStates(animationCfg);
+            this.clearStates();
         }
         else {
-            for (let i = 0; i < states.length; i++) {
-                this.useState(states[i], i > 0, animationCfg);
+            const stateObjects: ElementState[] = [];
+            const currentStates = this.currentStates;
+            const len = states.length;
+            let notChange = len === currentStates.length;
+            if (notChange) {
+                for (let i = 0; i < len; i++) {
+                    if (states[i] !== currentStates[i]) {
+                        notChange = false;
+                        break;
+                    }
+                }
+            }
+            if (notChange) {
+                return;
+            }
+            for (let i = 0; i < len; i++) {
+                const stateName = states[i];
+                let stateObj: ElementState;
+                if (this.stateProxy) {
+                    stateObj = this.stateProxy(stateName);
+                }
+                if (!stateObj) {
+                    stateObj = this.states[stateName];
+                }
+                if (stateObj) {
+                    stateObjects.push(stateObj);
+                }
+            }
+
+            const mergedState = this._mergeStates(stateObjects);
+            const animationCfg = this.stateTransition;
+
+            this.saveCurrentToNormalState(mergedState);
+
+            this._applyStateObj(
+                PRESERVED_MERGED_STATE,
+                mergedState,
+                this._normalState,
+                false,
+                animationCfg && animationCfg.duration > 0,
+                animationCfg
+            );
+
+            if (this._textContent) {
+                this._textContent.useStates(states);
+            }
+            if (this._textGuide) {
+                this._textGuide.useStates(states);
+            }
+
+            this._updateAnimationTargets();
+
+            this.currentStates = states;
+            this.markRedraw();
+        }
+    }
+
+    /**
+     * Update animation targets when reference is changed.
+     */
+    private _updateAnimationTargets() {
+        for (let i = 0; i < this.animators.length; i++) {
+            const animator = this.animators[i];
+            if (animator.targetName) {
+                animator.changeTarget((this as any)[animator.targetName]);
             }
         }
     }
@@ -772,34 +928,82 @@ class Element<Props extends ElementProps = ElementProps> {
     /**
      * Remove state
      * @param state State to remove
-     * @param animationCfg Will apply animation if specified and has >0 duration
      */
-    removeState(state: string, animationCfg?: ElementAnimateConfig) {
+    removeState(state: string) {
         const idx = indexOf(this.currentStates, state);
         if (idx >= 0) {
             const currentStates = this.currentStates.slice();
             currentStates.splice(idx, 1);
-            this.useStates(currentStates, animationCfg);
+            this.useStates(currentStates);
         }
+    }
+
+    /**
+     * Replace exists state.
+     * @param oldState
+     * @param newState
+     * @param forceAdd If still add when even if replaced target not exists.
+     */
+    replaceState(oldState: string, newState: string, forceAdd: boolean) {
+        const currentStates = this.currentStates.slice();
+        const idx = indexOf(currentStates, oldState);
+        const newStateExists = indexOf(currentStates, newState) >= 0;
+        if (idx >= 0) {
+            if (!newStateExists) {
+                // Replace the old with the new one.
+                currentStates[idx] = newState;
+            }
+            else {
+                // Only remove the old one.
+                currentStates.splice(idx, 1);
+            }
+        }
+        else if (forceAdd && !newStateExists) {
+            currentStates.push(newState);
+        }
+        this.useStates(currentStates);
     }
 
     /**
      * Toogle state.
      */
-    toggleState(state: string, enable: boolean, animationCfg?: ElementAnimateConfig) {
+    toggleState(state: string, enable: boolean) {
         if (enable) {
-            this.useState(state, true, animationCfg);
+            this.useState(state, true);
         }
         else {
-            this.removeState(state, animationCfg);
+            this.removeState(state);
         }
     }
 
-    // TODO removeState
+    protected _mergeStates(states: ElementState[]) {
+        const mergedState: ElementState = {};
+        let mergedTextConfig: ElementTextConfig;
+        for (let i = 0; i < states.length; i++) {
+            const state = states[i];
+            extend(mergedState, state);
 
-    protected _applyStateObj(state: ElementState, keepCurrentStates: boolean, transition: boolean, animationCfg: ElementAnimateConfig) {
-        const normalState = this._normalState;
-        let needsRestoreToNormal = !state || !keepCurrentStates;
+            if (state.textConfig) {
+                mergedTextConfig = mergedTextConfig || {};
+                extend(mergedTextConfig, state.textConfig);
+            }
+        }
+        if (mergedTextConfig) {
+            mergedState.textConfig = mergedTextConfig;
+        }
+
+        return mergedState;
+    }
+
+    protected _applyStateObj(
+        stateName: string,
+        state: ElementState,
+        normalState: ElementState,
+        keepCurrentStates: boolean,
+        transition: boolean,
+        animationCfg: ElementAnimateConfig
+    ) {
+        const needsRestoreToNormal = !(state && keepCurrentStates);
 
         // TODO: Save current state to normal?
         // TODO: Animation
@@ -812,7 +1016,9 @@ class Element<Props extends ElementProps = ElementProps> {
             extend(this.textConfig, state.textConfig);
         }
         else if (needsRestoreToNormal) {
-            this.textConfig = normalState.textConfig;
+            if (normalState.textConfig) {   // Only restore if changed and saved.
+                this.textConfig = normalState.textConfig;
+            }
         }
 
         const transitionTarget: Dictionary<any> = {};
@@ -833,19 +1039,25 @@ class Element<Props extends ElementProps = ElementProps> {
                 }
             }
             else if (needsRestoreToNormal) {
-                if (propNeedsTransition) {
-                    hasTransition = true;
-                    transitionTarget[key] = normalState[key];
-                }
-                else {
-                    // Restore to normal state
-                    (this as any)[key] = normalState[key];
+                if (normalState[key] != null) {
+                    if (propNeedsTransition) {
+                        hasTransition = true;
+                        transitionTarget[key] = normalState[key];
+                    }
+                    else {
+                        // Restore to normal state
+                        (this as any)[key] = normalState[key];
+                    }
                 }
             }
         }
 
         if (hasTransition) {
-            this.animateTo(transitionTarget as Props, animationCfg);
+            this._transitionState(
+                stateName,
+                transitionTarget as Props,
+                animationCfg
+            );
         }
     }
 
@@ -943,6 +1155,18 @@ class Element<Props extends ElementProps = ElementProps> {
     }
 
     /**
+     * Set layout of attached text. Will merge with the previous.
+     */
+    setTextConfig(cfg: ElementTextConfig) {
+        // TODO hide cfg property?
+        if (!this.textConfig) {
+            this.textConfig = {};
+        }
+        extend(this.textConfig, cfg);
+        this.markRedraw();
+    }
+
+    /**
      * Remove attached text element.
      */
     removeTextContent() {
@@ -979,19 +1203,6 @@ class Element<Props extends ElementProps = ElementProps> {
             this.markRedraw();
         }
     }
-
-    /**
-     * Set layout of attached text. Will merge with the previous.
-     */
-    setTextConfig(cfg: ElementTextConfig) {
-        // TODO hide cfg property?
-        if (!this.textConfig) {
-            this.textConfig = {};
-        }
-        extend(this.textConfig, cfg);
-        this.markRedraw();
-    }
-
     /**
      * Mark element needs to be repainted
      */
@@ -1135,6 +1346,7 @@ class Element<Props extends ElementProps = ElementProps> {
     }
 
     /**
+     * @param animationProps A map to specify which property to animate. If not specified, will animate all.
      * @example
      *  // Animate position
      *  el.animateTo({
@@ -1157,18 +1369,25 @@ class Element<Props extends ElementProps = ElementProps> {
      *      done: () => { // done }
      *  })
      */
-    animateTo(target: Props, cfg?: ElementAnimateConfig) {
-        animateTo(this, target, cfg);
+    animateTo(target: Props, cfg?: ElementAnimateConfig, animationProps?: MapToType<Props, boolean>) {
+        animateTo(this, target, cfg, animationProps);
     }
 
     /**
      * Animate from the target state to current state.
-     * The params and the return value are the same as `this.animateTo`.
+     * The params and the value are the same as `this.animateTo`.
      */
 
     // Overload definitions
-    animateFrom(target: Props, cfg: Omit<ElementAnimateConfig, 'setToFinal'>) {
-        animateTo(this, target, cfg, true);
+    animateFrom(target: Props, cfg: Omit<ElementAnimateConfig, 'setToFinal'>, animationProps?: MapToType<Props, boolean>) {
+        animateTo(this, target, cfg, animationProps, true);
+    }
+
+    protected _transitionState(stateName: string, target: Props, cfg?: ElementAnimateConfig, animationProps?: MapToType<Props, boolean>) {
+        const animators = animateTo(this, target, cfg, animationProps);
+        for (let i = 0; i < animators.length; i++) {
+            animators[i].__fromStateTransition = stateName;
+        }
     }
 
     /**
@@ -1280,6 +1499,7 @@ function animateTo<T>(
     animatable: Element<T>,
     target: Dictionary<any>,
     cfg: ElementAnimateConfig,
+    animationProps: Dictionary<any>,
     reverse?: boolean
 ) {
     cfg = cfg || {};
@@ -1290,6 +1510,7 @@ function animateTo<T>(
         animatable,
         target,
         cfg,
+        animationProps,
         animators,
         reverse
     );
@@ -1314,6 +1535,8 @@ function animateTo<T>(
             .done(done)
             .start(cfg.easing, cfg.force);
     }
+
+    return animators;
 }
 
 function copyArrShallow(source: number[], target: number[], len: number) {
@@ -1366,6 +1589,7 @@ function animateToShallow<T>(
     source: Dictionary<any>,
     target: Dictionary<any>,
     cfg: ElementAnimateConfig,
+    animationProps: Dictionary<any> | true,
     animators: Animator<any>[],
     reverse: boolean    // If `true`, animate from the `target` to current state.
 ) {
@@ -1375,6 +1599,7 @@ function animateToShallow<T>(
     const delay = cfg.delay;
     const additive = cfg.additive;
     const setToFinal = cfg.setToFinal;
+    const animateAll = !isObject(animationProps);
     for (let k = 0; k < targetKeys.length; k++) {
         const innerKey = targetKeys[k] as string;
 
@@ -1382,17 +1607,17 @@ function animateToShallow<T>(
             continue;
         }
 
-        if (source[innerKey] != null) {
+        if (source[innerKey] != null && (animateAll || (animationProps as Dictionary<any>)[innerKey])) {
             if (isObject(target[innerKey]) && !isArrayLike(target[innerKey])) {
                 if (topKey) {
-                    logError('Only support 1 depth nest object animation.');
+                    // logError('Only support 1 depth nest object animation.');
                     // Assign directly.
                     // TODO richText?
                     if (!reverse) {
                         source[innerKey] = target[innerKey];
                         animatable.updateDuringAnimation(topKey);
                     }
-                    return;
+                    continue;
                 }
                 animateToShallow(
                     animatable,
@@ -1400,6 +1625,7 @@ function animateToShallow<T>(
                     source[innerKey],
                     target[innerKey],
                     cfg,
+                    animationProps && (animationProps as Dictionary<any>)[innerKey],
                     animators,
                     reverse
                 );
@@ -1417,7 +1643,7 @@ function animateToShallow<T>(
 
     const keyLen = animatableKeys.length;
 
-    if (keyLen > 0) {
+    if (keyLen > 0 || cfg.force) {
         let revertedSource: Dictionary<any>;
         let reversedTarget: Dictionary<any>;
         let sourceClone: Dictionary<any>;
@@ -1442,23 +1668,23 @@ function animateToShallow<T>(
             }
         }
 
-        // Find last animator animating same target.
+        // Find last animator animating same prop.
         const existsAnimators = animatable.animators;
         let lastAnimator;
         for (let i = 0; i < existsAnimators.length; i++) {
-            if (existsAnimators[i].getTarget() === source) {
+            // Use key string instead object reference because ref may be changed.
+            if (existsAnimators[i].targetName === topKey) {
                 lastAnimator = existsAnimators[i];
             }
         }
 
         if (!additive && lastAnimator) {
-            // Stop exists animation on specific tracks.
+            // Stop exists animation on specific tracks. Only one animator available for each property.
             // TODO Should invoke previous animation callback?
             const allAborted = lastAnimator.stopTracks(animatableKeys);
             if (allAborted) {   // This animator can't be used.
                 const idx = indexOf(existsAnimators, lastAnimator);
                 existsAnimators.splice(idx, 1);
-                lastAnimator = null;
             }
         }
 

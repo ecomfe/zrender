@@ -307,10 +307,8 @@ class Track {
     }
 
     needsAnimate() {
-        // Not check value equal. It may cause unpredictable bugs.
-        // Because current value may happens to be same with the new target when animating.
-        return this.keyframes.length >= 2;
-        // return !this._isAllValueEqual && this.keyframes.length >= 2;
+        // return this.keyframes.length >= 2;
+        return !this._isAllValueEqual && this.keyframes.length >= 2;
     }
 
     addKeyframe(time: number, value: unknown) {
@@ -333,21 +331,27 @@ class Track {
                     this.interpolable = false;
                     return;
                 }
-                // if (len > 0) {
-                //     let lastFrame = keyframes[len - 1];
+                // Not a number array.
+                if (arrayDim === 1 && typeof value[0] !== 'number'
+                    || arrayDim === 2 && typeof value[0][0] !== 'number') {
+                    this.interpolable = false;
+                    return;
+                }
+                if (len > 0) {
+                    let lastFrame = keyframes[len - 1];
 
-                //     // For performance consideration. only check 1d array
-                //     if (this._isAllValueEqual) {
-                //         if (arrayDim === 1) {
-                //             if (!is1DArraySame(value, lastFrame.value as number[])) {
-                //                 this._isAllValueEqual = false;
-                //             }
-                //         }
-                //         else {
-                //             this._isAllValueEqual = false;
-                //         }
-                //     }
-                // }
+                    // For performance consideration. only check 1d array
+                    if (this._isAllValueEqual) {
+                        if (arrayDim === 1) {
+                            if (!is1DArraySame(value, lastFrame.value as number[])) {
+                                this._isAllValueEqual = false;
+                            }
+                        }
+                        else {
+                            this._isAllValueEqual = false;
+                        }
+                    }
+                }
                 this.arrDim = arrayDim;
             }
             else {
@@ -371,15 +375,15 @@ class Track {
                     return;
                 }
 
-                // if (this._isAllValueEqual && len > 0) {
-                //     let lastFrame = keyframes[len - 1];
-                //     if (this.isValueColor && !is1DArraySame(lastFrame.value as number[], value as number[])) {
-                //         this._isAllValueEqual = false;
-                //     }
-                //     else if (lastFrame.value !== value) {
-                //         this._isAllValueEqual = false;
-                //     }
-                // }
+                if (this._isAllValueEqual && len > 0) {
+                    let lastFrame = keyframes[len - 1];
+                    if (this.isValueColor && !is1DArraySame(lastFrame.value as number[], value as number[])) {
+                        this._isAllValueEqual = false;
+                    }
+                    else if (lastFrame.value !== value) {
+                        this._isAllValueEqual = false;
+                    }
+                }
             }
         }
 
@@ -659,6 +663,8 @@ export default class Animator<T> {
 
     targetName?: string
 
+    __fromStateTransition?: string
+
     private _tracks: Dictionary<Track> = {}
     private _trackKeys: string[] = []
 
@@ -807,12 +813,12 @@ export default class Animator<T> {
             const track = this._tracks[propName];
             const additiveTrack = this._additiveAnimator && this._additiveAnimator.getTrack(propName);
             track.prepare(additiveTrack);
-            if (track.needsAnimate() || forceAnimate) {
+            if (track.needsAnimate()) {
                 tracks.push(track);
             }
         }
         // Add during callback on the last clip
-        if (tracks.length) {
+        if (tracks.length || forceAnimate) {
             const clip = new Clip({
                 life: this._maxTime,
                 loop: this._loop,
@@ -909,9 +915,11 @@ export default class Animator<T> {
         if (!propNames.length || !this._clip) {
             return true;
         }
+        const tracks = this._tracks;
+        const tracksKeys = this._trackKeys;
 
         for (let i = 0; i < propNames.length; i++) {
-            const track = this._tracks[propNames[i]];
+            const track = tracks[propNames[i]];
             if (track) {
                 if (forwardToLast) {
                     track.step(this._target, 1);
@@ -921,8 +929,8 @@ export default class Animator<T> {
             }
         }
         let allAborted = true;
-        for (let i = 0; i < this._trackKeys.length; i++) {
-            if (!this._tracks[this._trackKeys[i]].isFinished()) {
+        for (let i = 0; i < tracksKeys.length; i++) {
+            if (!tracks[tracksKeys[i]].isFinished()) {
                 allAborted = false;
                 break;
             }
@@ -941,15 +949,17 @@ export default class Animator<T> {
      * It is mainly used in state mangement. When state is switching during animation.
      * We need to save final state of animation to the normal state. Not interpolated value.
      */
-    saveFinalToTarget(target: T) {
+    saveFinalToTarget(target: T, trackKeys?: string[]) {
         if (!target) {  // DO nothing if target is not given.
             return;
         }
 
-        for (let i = 0; i < this._trackKeys.length; i++) {
-            const propName = this._trackKeys[i];
+        trackKeys = trackKeys || this._trackKeys;
+
+        for (let i = 0; i < trackKeys.length; i++) {
+            const propName = trackKeys[i];
             const track = this._tracks[propName];
-            if (track.isFinished()) {   // Ignore finished track.
+            if (!track || track.isFinished()) {   // Ignore finished track.
                 continue;
             }
 
