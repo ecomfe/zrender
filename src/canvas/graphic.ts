@@ -512,6 +512,13 @@ export function getPaintRect(el: Displayable) {
 
     shadowRect.union(tmpRect);
 
+    // For the accuracy tolerance of text height or line joint point
+    const tolerance = 2;
+    shadowRect.x = Math.floor(shadowRect.x - tolerance);
+    shadowRect.y = Math.floor(shadowRect.y - tolerance);
+    shadowRect.width = Math.ceil(shadowRect.width + tolerance * 2);
+    shadowRect.height = Math.ceil(shadowRect.height + tolerance * 2);
+
     return shadowRect;
 }
 
