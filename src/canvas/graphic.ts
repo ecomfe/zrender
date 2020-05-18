@@ -674,9 +674,9 @@ export function brush(
         && canPathBatch(el as Path);
 
     if (forceSetTransform || isTransformChanged(m, prevEl.transform)) {
-        setContextTransform(ctx, el);
         // Flush
         flushPathDrawn(ctx, scope);
+        setContextTransform(ctx, el);
     }
     else if (!canBatchPath) {
         // Flush previous
