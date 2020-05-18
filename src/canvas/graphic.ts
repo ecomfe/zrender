@@ -649,6 +649,9 @@ export function brush(
     if (!prevElClipPaths || isClipPathChanged(clipPaths, prevElClipPaths)) {
         // If has previous clipping state, restore from it
         if (prevElClipPaths && prevElClipPaths.length) {
+            // Flush restore
+            flushPathDrawn(ctx, scope);
+
             ctx.restore();
             // Must set all style and transform because context changed by restore
             forceSetStyle = forceSetTransform = true;
@@ -660,6 +663,9 @@ export function brush(
         }
         // New clipping state
         if (clipPaths && clipPaths.length) {
+            // Flush before clip
+            flushPathDrawn(ctx, scope);
+
             ctx.save();
             updateClipStatus(clipPaths, ctx, scope);
             // Must set transform because it's changed when clip.
@@ -707,7 +713,7 @@ export function brush(
         setContextTransform(ctx, el);
     }
     else if (!canBatchPath) {
-        // Flush previous
+        // Flush
         flushPathDrawn(ctx, scope);
     }
 
