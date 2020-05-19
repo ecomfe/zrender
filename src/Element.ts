@@ -1397,6 +1397,9 @@ class Element<Props extends ElementProps = ElementProps> {
         return null;
     }
 
+    getPaintRect(): BoundingRect {
+        return null;
+    }
 
     /**
      * The string value of `textPosition` needs to be calculated to a real postion.

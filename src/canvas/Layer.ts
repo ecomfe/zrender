@@ -7,7 +7,7 @@ import { ZRCanvasRenderingContext } from '../core/types';
 import Eventful from '../core/Eventful';
 import { ElementEventCallback } from '../Element';
 import { getCanvasGradient } from './helper';
-import { createCanvasPattern, getPaintRect } from './graphic';
+import { createCanvasPattern } from './graphic';
 import Displayable from '../graphic/Displayable';
 import BoundingRect from '../core/BoundingRect';
 
@@ -87,7 +87,7 @@ export default class Layer extends Eventful {
 
     zlevel = 0
 
-    maxRepaintRectCount = 3
+    maxRepaintRectCount = 5
 
     __painter: CanvasPainter
 
@@ -160,45 +160,11 @@ export default class Layer extends Eventful {
         }
     }
 
-    // createDirtyCells(displayList: Displayable[]): boolean[] {
-    //     const width = this.painter.getWidth();
-    //     const height = this.painter.getHeight();
-    //     const cellCnt = 20;
-    //     const dirtyCells: boolean[] = [];
-
-    //     const markDirty = (rect: BoundingRect) => {
-    //         const xMin = Math.floor(rect.x / width * cellCnt);
-    //         const yMin = Math.floor(rect.y / height * cellCnt);
-    //         const xMax = Math.floor((rect.x + rect.width) / width * cellCnt);
-    //         const yMax = Math.floor((rect.y + rect.height) / height * cellCnt);
-
-    //         for (let x = xMin; x < xMax; ++x) {
-    //             for (let y = yMin; y < yMax; ++y) {
-    //                 const id = x + y * cellCnt;
-    //                 dirtyCells[id] = true;
-    //             }
-    //         }
-    //     };
-
-    //     util.each(displayList, el => {
-    //         if (el.__dirty) {
-    //             const curRect = getPaintRect(el);
-    //             const prevRect = el.__prevPaintRect;
-    //             markDirty(curRect);
-    //             markDirty(prevRect);
-
-    //             el.__prevPaintRect = curRect;
-    //         }
-    //     });
-    //     return dirtyCells;
-    // }
-
     createRepaintRects(displayList: Displayable[], prevList: Displayable[]) {
         if (this.__firstTimePaint) {
             util.each(displayList, el => {
                 if (el.__dirty) {
-                    const curRect = getPaintRect(el);
-                    el.__prevPaintRect = curRect;
+                    el.setPrevPaintRect(el.getPaintRect());
                 }
             });
 
@@ -212,14 +178,13 @@ export default class Layer extends Eventful {
         // Add current and previous bounding rect
         util.each(displayList, el => {
             if (el.__dirty) {
-                const curRect = getPaintRect(el);
+                const curRect = el.getPaintRect();
                 if (!isNaN(curRect.x) && !isNaN(curRect.y) && !isNaN(curRect.width) && !isNaN(curRect.height)) {
                     rects.push(curRect);
 
-                    const prevRect = el.__prevPaintRect;
+                    const prevRect = el.getPaintRect();
                     prevRect && rects.push(prevRect);
-
-                    el.__prevPaintRect = curRect;
+                    el.setPrevPaintRect(curRect);
                 }
             }
         });
@@ -228,7 +193,7 @@ export default class Layer extends Eventful {
         util.each(prevList, el => {
             if (!el.__zr) {
                 // el is removed
-                const prevRect = el.__prevPaintRect;
+                const prevRect = el.getPrevPaintRect();
                 prevRect && rects.push(prevRect);
             }
         });
@@ -447,20 +412,20 @@ export default class Layer extends Eventful {
     renderToCanvas: (ctx: CanvasRenderingContext2D) => void
 
     private _drawRect(rects: BoundingRect[]) {
-        setTimeout(() => {
-            this.ctx.save();
-            this.ctx.fillStyle = 'none';
+        // setTimeout(() => {
+        //     this.ctx.save();
+        //     this.ctx.fillStyle = 'none';
 
-            const r = Math.floor(255 * Math.random());
-            const g = Math.floor(255 * Math.random());
-            const b = Math.floor(255 * Math.random());
+        //     const r = Math.floor(255 * Math.random());
+        //     const g = Math.floor(255 * Math.random());
+        //     const b = Math.floor(255 * Math.random());
 
-            this.ctx.strokeStyle = `rgb(${r}, ${g}, ${b})`;
-            util.each(rects, rect => {
-                this.ctx.strokeRect(rect.x * this.dpr, rect.y * this.dpr, rect.width * this.dpr, rect.height * this.dpr);
-            });
-            this.ctx.restore();
-        });
+        //     this.ctx.strokeStyle = `rgb(${r}, ${g}, ${b})`;
+        //     util.each(rects, rect => {
+        //         this.ctx.strokeRect(rect.x * this.dpr, rect.y * this.dpr, rect.width * this.dpr, rect.height * this.dpr);
+        //     });
+        //     this.ctx.restore();
+        // });
     }
 
     // Events

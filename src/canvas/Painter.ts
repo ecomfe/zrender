@@ -11,7 +11,7 @@ import { WXCanvasRenderingContext, ZRCanvasRenderingContext } from '../core/type
 import { GradientObject } from '../graphic/Gradient';
 import { PatternObject } from '../graphic/Pattern';
 import Storage from '../Storage';
-import { brush, BrushScope, getPaintRect } from './graphic';
+import { brush, BrushScope } from './graphic';
 import TSpan from '../graphic/TSpan';
 import { PainterBase } from '../PainterBase';
 import BoundingRect from '../core/BoundingRect';
@@ -527,7 +527,7 @@ export default class CanvasPainter implements PainterBase {
         if (currentLayer.__dirty || forcePaint) {
             if (repaintRect) {
                 // If there is repaintRect, only render the intersected ones
-                if (getPaintRect(el).intersect(repaintRect)) {
+                if (el.getPaintRect().intersect(repaintRect)) {
                     // console.log('rebrush', el.id);
                     brush(ctx, el, scope, isLast);
                 }

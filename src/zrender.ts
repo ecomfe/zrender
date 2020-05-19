@@ -184,6 +184,7 @@ class ZRender {
     flush() {
         let triggerRendered;
 
+        const start = new Date().getTime();
         if (this._needsRefresh) {
             triggerRendered = true;
             this.refreshImmediately(true);
@@ -192,8 +193,11 @@ class ZRender {
             triggerRendered = true;
             this.refreshHoverImmediately();
         }
+        const end = new Date().getTime();
 
-        triggerRendered && this.trigger('rendered');
+        triggerRendered && this.trigger('rendered', {
+            elapsedTime: end - start
+        });
     }
 
     /**

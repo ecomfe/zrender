@@ -487,41 +487,6 @@ function isDisplayableCulled(el: Displayable, width: number, height: number) {
     return !tmpRect.intersect(viewRect);
 }
 
-export function getPaintRect(el: Displayable) {
-    const elRect = el.getBoundingRect();
-
-    tmpRect.copy(elRect);
-    if (el.transform) {
-        tmpRect.applyTransform(el.transform);
-    }
-
-    const style = el.style;
-    const shadowSize = style.shadowBlur || DEFAULT_COMMON_STYLE.shadowBlur;
-    const shadowOffsetX = style.shadowOffsetX || DEFAULT_COMMON_STYLE.shadowOffsetX;
-    const shadowOffsetY = style.shadowOffsetY || DEFAULT_COMMON_STYLE.shadowOffsetY;
-
-    const shadowRect = new BoundingRect(0, 0, 0, 0);
-    shadowRect.copy(elRect);
-    if (el.transform) {
-        shadowRect.applyTransform(el.transform);
-    }
-    shadowRect.width += shadowSize * 2;
-    shadowRect.height += shadowSize * 2;
-    shadowRect.x += shadowOffsetX - shadowSize;
-    shadowRect.y += shadowOffsetY - shadowSize;
-
-    shadowRect.union(tmpRect);
-
-    // For the accuracy tolerance of text height or line joint point
-    const tolerance = 2;
-    shadowRect.x = Math.floor(shadowRect.x - tolerance);
-    shadowRect.y = Math.floor(shadowRect.y - tolerance);
-    shadowRect.width = Math.ceil(shadowRect.width + tolerance * 2);
-    shadowRect.height = Math.ceil(shadowRect.height + tolerance * 2);
-
-    return shadowRect;
-}
-
 function isClipPathChanged(clipPaths: Path[], prevClipPaths: Path[]): boolean {
     // displayable.__clipPaths can only be `null`/`undefined` or an non-empty array.
     if (clipPaths === prevClipPaths || (!clipPaths && !prevClipPaths)) {

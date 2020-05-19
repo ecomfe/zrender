@@ -130,7 +130,8 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     protected _normalState: DisplayableState
 
     protected _rect: BoundingRect
-    __prevPaintRect: BoundingRect
+    protected _paintRect: BoundingRect
+    protected _prevPaintRect: BoundingRect
 
     /**
      * If use hover layer. Will be set in echarts.
@@ -211,6 +212,54 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         const coord = this.transformCoordToLocal(x, y);
         const rect = this.getBoundingRect();
         return rect.contain(coord[0], coord[1]);
+    }
+
+    getPaintRect(): BoundingRect {
+        let rect = this._paintRect;
+        if (!this._paintRect || this.__dirty) {
+            const elRect = this.getBoundingRect();
+
+            const tmpRect = new BoundingRect(0, 0, 0, 0);
+            tmpRect.copy(elRect);
+            if (this.transform) {
+                tmpRect.applyTransform(this.transform);
+            }
+
+            const style = this.style;
+            const shadowSize = style.shadowBlur || DEFAULT_COMMON_STYLE.shadowBlur;
+            const shadowOffsetX = style.shadowOffsetX || DEFAULT_COMMON_STYLE.shadowOffsetX;
+            const shadowOffsetY = style.shadowOffsetY || DEFAULT_COMMON_STYLE.shadowOffsetY;
+
+            rect = new BoundingRect(0, 0, 0, 0);
+            rect.copy(elRect);
+            if (this.transform) {
+                rect.applyTransform(this.transform);
+            }
+            rect.width += shadowSize * 2;
+            rect.height += shadowSize * 2;
+            rect.x += shadowOffsetX - shadowSize;
+            rect.y += shadowOffsetY - shadowSize;
+
+            rect.union(tmpRect);
+
+            // For the accuracy tolerance of text height or line joint point
+            const tolerance = 2;
+            rect.x = Math.floor(rect.x - tolerance);
+            rect.y = Math.floor(rect.y - tolerance);
+            rect.width = Math.ceil(rect.width + tolerance * 2);
+            rect.height = Math.ceil(rect.height + tolerance * 2);
+
+            this._paintRect = rect;
+        }
+        return rect;
+    }
+
+    setPrevPaintRect(paintRect: BoundingRect) {
+        this._prevPaintRect = paintRect;
+    }
+
+    getPrevPaintRect(): BoundingRect {
+        return this._prevPaintRect;
     }
 
     /**
