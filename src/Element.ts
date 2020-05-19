@@ -908,7 +908,8 @@ class Element<Props extends ElementProps = ElementProps> {
 
             this._updateAnimationTargets();
 
-            this.currentStates = states;
+            // Create a copy
+            this.currentStates = states.slice();
             this.markRedraw();
         }
     }
