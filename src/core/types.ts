@@ -76,3 +76,7 @@ export type PropType<TObj, TProp extends keyof TObj> = TObj[TProp];
 export type AllPropTypes<T> = PropType<T, keyof T>
 
 export type FunctionPropertyNames<T> = {[K in keyof T]: T[K] extends Function ? K : never}[keyof T];
+
+export type MapToType<T extends Dictionary<any>, S> = {
+    [P in keyof T]: T[P] extends Dictionary<any> ? MapToType<T[P], S> : S
+}

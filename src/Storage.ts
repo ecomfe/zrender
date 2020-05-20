@@ -85,11 +85,8 @@ export default class Storage {
         }
 
         el.beforeUpdate();
-
         if (el.__dirty) {
-
             el.update();
-
         }
         el.afterUpdate();
 
@@ -152,8 +149,12 @@ export default class Storage {
             this._displayList[this._displayListLen++] = disp;
         }
 
-        // Add attached text element
-        // TODO If textContent.el is used by mutiple elements. Or it has been add to zrender
+        // Add attached text element and guide line.
+        const textGuide = el.getTextGuideLine();
+        if (textGuide) {
+            this._updateAndAddDisplayable(textGuide, clipPaths, includeIgnore);
+        }
+
         const textEl = el.getTextContent();
         if (textEl) {
             this._updateAndAddDisplayable(textEl, clipPaths, includeIgnore);

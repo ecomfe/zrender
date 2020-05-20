@@ -104,7 +104,7 @@ export function measureText(text: string, font?: string): {
 }
 
 
-function parsePercent(value: number | string, maxValue: number): number {
+export function parsePercent(value: number | string, maxValue: number): number {
     if (typeof value === 'string') {
         if (value.lastIndexOf('%') >= 0) {
             return parseFloat(value) / 100 * maxValue;
@@ -117,7 +117,7 @@ function parsePercent(value: number | string, maxValue: number): number {
 export interface TextPositionCalculationResult {
     x: number
     y: number
-    textAlign: TextAlign
+    align: TextAlign
     verticalAlign: TextVerticalAlign
 }
 /**
@@ -235,7 +235,7 @@ export function calculateTextPosition(
     out = out || {} as TextPositionCalculationResult;
     out.x = x;
     out.y = y;
-    out.textAlign = textAlign;
+    out.align = textAlign;
     out.verticalAlign = textVerticalAlign;
 
     return out;

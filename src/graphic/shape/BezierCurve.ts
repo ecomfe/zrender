@@ -85,14 +85,10 @@ class BezierCurve extends Path<BezierCurveProps> {
 
         if (cpx2 == null || cpy2 == null) {
             if (percent < 1) {
-                quadraticSubdivide(
-                    x1, cpx1, x2, percent, out
-                );
+                quadraticSubdivide(x1, cpx1, x2, percent, out);
                 cpx1 = out[1];
                 x2 = out[2];
-                quadraticSubdivide(
-                    y1, cpy1, y2, percent, out
-                );
+                quadraticSubdivide(y1, cpy1, y2, percent, out);
                 cpy1 = out[1];
                 y2 = out[2];
             }
@@ -104,15 +100,11 @@ class BezierCurve extends Path<BezierCurveProps> {
         }
         else {
             if (percent < 1) {
-                cubicSubdivide(
-                    x1, cpx1, cpx2, x2, percent, out
-                );
+                cubicSubdivide(x1, cpx1, cpx2, x2, percent, out);
                 cpx1 = out[1];
                 cpx2 = out[2];
                 x2 = out[3];
-                cubicSubdivide(
-                    y1, cpy1, cpy2, y2, percent, out
-                );
+                cubicSubdivide(y1, cpy1, cpy2, y2, percent, out);
                 cpy1 = out[1];
                 cpy2 = out[2];
                 y2 = out[3];

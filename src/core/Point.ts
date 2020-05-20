@@ -144,6 +144,12 @@ export default class Point {
         return this;
     }
 
+    toArray(out: number[]) {
+        out[0] = this.x;
+        out[1] = this.y;
+        return out;
+    }
+
     static set(p: PointLike, x: number, y: number) {
         p.x = x;
         p.y = y;

@@ -3,9 +3,9 @@
  * @module zrender/graphic/Displayable
  */
 
-import Element, {ElementProps, ElementStatePropNames, PRESERVED_NORMAL_STATE} from '../Element';
+import Element, {ElementProps, ElementStatePropNames, PRESERVED_NORMAL_STATE, ElementAnimateConfig} from '../Element';
 import BoundingRect from '../core/BoundingRect';
-import { PropType, Dictionary } from '../core/types';
+import { PropType, Dictionary, MapToType } from '../core/types';
 import Path from './Path';
 import { keys, extend, createObject } from '../core/util';
 import Animator from '../animation/Animator';
@@ -36,8 +36,17 @@ export const DEFAULT_COMMON_STYLE: CommonStyleProps = {
     blend: 'source-over'
 };
 
-(DEFAULT_COMMON_STYLE as any)[STYLE_MAGIC_KEY] = true;
+export const DEFAULT_COMMON_ANIMATION_PROPS: MapToType<DisplayableProps, boolean> = {
+    style: {
+        shadowBlur: true,
+        shadowOffsetX: true,
+        shadowOffsetY: true,
+        shadowColor: true,
+        opacity: true
+    }
+ };
 
+(DEFAULT_COMMON_STYLE as any)[STYLE_MAGIC_KEY] = true;
 
 export interface DisplayableProps extends ElementProps {
     style?: Dictionary<any>
@@ -69,7 +78,6 @@ export type DisplayableState = Pick<DisplayableProps, DisplayableStatePropNames>
 
 const PRIMARY_STATES_KEYS = ['z', 'z2', 'invisible'] as const;
 
-
 interface Displayable<Props extends DisplayableProps = DisplayableProps> {
     animate(key?: '', loop?: boolean): Animator<this>
     animate(key: 'style', loop?: boolean): Animator<this['style']>
@@ -80,6 +88,7 @@ interface Displayable<Props extends DisplayableProps = DisplayableProps> {
     states: Dictionary<DisplayableState>
     stateProxy: (stateName: string) => DisplayableState
 }
+
 class Displayable<Props extends DisplayableProps = DisplayableProps> extends Element<Props> {
 
     /**
@@ -248,6 +257,11 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         return this;
     }
 
+    // getDefaultStyleValue<T extends keyof Props['style']>(key: T): Props['style'][T] {
+    //     // Default value is on the prototype.
+    //     return this.style.prototype[key];
+    // }
+
     dirtyStyle() {
         this.markRedraw();
         this.__dirty |= Displayable.STYLE_CHANGED_BIT;
@@ -266,6 +280,13 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
      */
     styleChanged() {
         return this.__dirty & Displayable.STYLE_CHANGED_BIT;
+    }
+
+    /**
+     * Mark style updated. Only useful when style is used for caching. Like in the text.
+     */
+    styleUpdated() {
+        this.__dirty &= ~Displayable.STYLE_CHANGED_BIT;
     }
 
     /**
@@ -299,38 +320,83 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         return obj[STYLE_MAGIC_KEY];
     }
 
-    protected _innerSaveToNormal() {
-        super._innerSaveToNormal();
+    protected _innerSaveToNormal(toState: DisplayableState) {
+        super._innerSaveToNormal(toState);
 
         const normalState = this._normalState;
-        normalState.style = this.style;
-        normalState.z = this.z;
-        normalState.z2 = this.z2;
-        normalState.invisible = this.invisible;
+        if (toState.style && !normalState.style) {
+            // Clone style object.
+            // TODO: Only save changed style.
+            normalState.style = this._mergeStyle(this.createStyle(), this.style);
+        }
+
+        this._savePrimaryToNormal(toState, normalState, PRIMARY_STATES_KEYS);
     }
 
-    protected _applyStateObj(state?: DisplayableState, keepCurrentStates?: boolean) {
-        super._applyStateObj(state, keepCurrentStates);
-        let needsRestoreToNormal = !state || !keepCurrentStates;
-        const normalState = this._normalState;
+    protected _applyStateObj(
+        stateName: string,
+        state: DisplayableState,
+        normalState: DisplayableState,
+        keepCurrentStates: boolean,
+        transition: boolean,
+        animationCfg: ElementAnimateConfig
+    ) {
+        super._applyStateObj(stateName, state, normalState, keepCurrentStates, transition, animationCfg);
+
+        const needsRestoreToNormal = !(state && keepCurrentStates);
+        let targetStyle: Props['style'];
         if (state && state.style) {
-            // TODO Use prototype chain? Prototype chain may have following issues
-            // 1. Normal style may be changed
-            // 2. Needs to detect ircular protoype chain
-            const newStyle = this._mergeStyle(
-                this.createStyle(),
-                keepCurrentStates ? this.style : normalState.style
-            );
-            this._mergeStyle(newStyle, state.style);
-            this.useStyle(newStyle);
+            // Only animate changed properties.
+            if (transition) {
+                if (keepCurrentStates) {
+                    targetStyle = state.style;
+                }
+                else {
+                    targetStyle = this._mergeStyle(this.createStyle(), normalState.style);
+                    this._mergeStyle(targetStyle, state.style);
+                }
+            }
+            else {
+                targetStyle = this._mergeStyle(
+                    this.createStyle(),
+                    keepCurrentStates ? this.style : normalState.style
+                );
+                this._mergeStyle(targetStyle, state.style);
+            }
         }
         else if (needsRestoreToNormal) {
-            // Simply replace with normal style because it needs no inheritance
-            // NOTICE DON'T CLONE THE STYLE OBJECT
-            // Only use the reference because if we switch state when animating. We still wan't
-            // animation continous on the same style object when switch back to normal state.
-            this.style = normalState.style;
-            this.dirtyStyle();
+            targetStyle = normalState.style;
+        }
+
+        if (targetStyle) {
+            if (transition) {
+                // Clone a new style. Not affect the original one.
+                // TODO Performance issue.
+                const sourceStyle = this.style;
+                this.style = this.createStyle(needsRestoreToNormal ? {} : sourceStyle);
+                // const sourceStyle = this.style = this.createStyle(this.style);
+
+                if (needsRestoreToNormal) {
+                    const changedKeys = keys(sourceStyle);
+                    for (let i = 0; i < changedKeys.length; i++) {
+                        const key = changedKeys[i];
+                        if (key in targetStyle) {   // Not use `key == null` because == null may means no stroke/fill.
+                            // Pick out from prototype. Or the property won't be animated.
+                            (targetStyle as any)[key] = targetStyle[key];
+                            // Omit the property has no default value.
+                            (this.style as any)[key] = sourceStyle[key];
+                        }
+                    }
+                }
+
+                this._transitionState(stateName, {
+                    style: targetStyle
+                } as Props, animationCfg, this._getAnimationStyleProps() as MapToType<Props, boolean>);
+            }
+            else {
+                this.useStyle(targetStyle);
+                this.dirtyStyle();
+            }
         }
 
         for (let i = 0; i < PRIMARY_STATES_KEYS.length; i++) {
@@ -341,14 +407,39 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
             }
             else if (needsRestoreToNormal) {
                 // Restore to normal state
-                (this as any)[key] = normalState[key];
+                if (normalState[key] != null) {
+                    (this as any)[key] = normalState[key];
+                }
             }
         }
     }
 
-    protected _mergeStyle(targetStyle: CommonStyleProps, sourceStyle: CommonStyleProps) {
+    protected _mergeStates(states: DisplayableState[]) {
+        const mergedState = super._mergeStates(states) as DisplayableState;
+        let mergedStyle: Props['style'];
+        for (let i = 0; i < states.length; i++) {
+            const state = states[i];
+            if (state.style) {
+                mergedStyle = mergedStyle || {};
+                this._mergeStyle(mergedStyle, state.style);
+            }
+        }
+        if (mergedStyle) {
+            mergedState.style = mergedStyle;
+        }
+        return mergedState;
+    }
+
+    protected _mergeStyle(
+        targetStyle: CommonStyleProps,
+        sourceStyle: CommonStyleProps
+    ) {
         extend(targetStyle, sourceStyle);
         return targetStyle;
+    }
+
+    protected _getAnimationStyleProps() {
+        return DEFAULT_COMMON_ANIMATION_PROPS;
     }
 
     /**

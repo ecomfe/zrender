@@ -62,13 +62,19 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, inBatch: boolean) {
     let hasStroke = el.hasStroke();
     let hasFill = el.hasFill();
 
+    const style = el.style;
+    const strokePercent = style.strokePercent;
+    const strokePart = strokePercent < 1;
+
     // TODO Reduce path memory cost.
     const firstDraw = !el.path;
-    if (!el.silent && firstDraw) {  // Not create path for silent element.
+    // Create path for each element when:
+    // 1. Element has interactions.
+    // 2. Element draw part of the line.
+    if (!(el.silent || strokePart) && firstDraw) {
         el.createPathProxy();
     }
 
-    const style = el.style;
     const path = el.path || pathProxyForDraw;
 
     if (!inBatch) {
@@ -104,13 +110,15 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, inBatch: boolean) {
             el.__canvasStrokeGradient = strokeGradient;
         }
         if (hasFillPattern) {
-            fillPattern = el.__dirty
+            // Pattern might be null if image not ready (even created from dataURI)
+            fillPattern = (el.__dirty || !el.__canvasFillPattern)
                 ? createCanvasPattern(ctx, fill as PatternObject, el)
                 : el.__canvasFillPattern;
             el.__canvasFillPattern = fillPattern;
         }
         if (hasStrokePattern) {
-            strokePattern = el.__dirty
+            // Pattern might be null if image not ready (even created from dataURI)
+            strokePattern = (el.__dirty || !el.__canvasStrokePattern)
                 ? createCanvasPattern(ctx, stroke as PatternObject, el)
                 : el.__canvasStrokePattern;
             el.__canvasStrokePattern = fillPattern;
@@ -152,6 +160,7 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, inBatch: boolean) {
     const scale = el.getGlobalScale();
     path.setScale(scale[0], scale[1], el.segmentIgnoreThreshold);
 
+    let needsRebuild = true;
     // Proxy context
     // Rebuild path in following 2 cases
     // 1. Path is dirty
@@ -160,7 +169,15 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, inBatch: boolean) {
     if (firstDraw || (el.__dirty & Path.SHAPE_CHANGED_BIT)
         || (lineDash && !ctxLineDash && hasStroke)
     ) {
-        path.setContext(ctx);
+        path.setDPR((ctx as any).dpr);
+        if (strokePart) {
+            // Use rebuildPath for percent stroke, so no context.
+            path.setContext(null);
+        }
+        else {
+            path.setContext(ctx);
+            needsRebuild = false;
+        }
         path.reset();
 
         // Setting line dash before build path
@@ -175,8 +192,10 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, inBatch: boolean) {
         // Clear path dirty flag
         el.pathUpdated();
     }
-    else {
-        el.path.rebuildPath(ctx);
+
+    // Not support separate fill and stroke. For the compatibility of SVG
+    if (needsRebuild) {
+        path.rebuildPath(ctx, strokePart ? strokePercent : 1);
     }
 
     if (lineDash && ctxLineDash) {
@@ -189,7 +208,7 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, inBatch: boolean) {
             if (hasStroke) {
                 doStrokePath(ctx, el);
             }
-            if (hasStroke) {
+            if (hasFill) {
                 doFillPath(ctx, el);
             }
         }
@@ -540,24 +559,24 @@ export type BrushScope = {
 // If path can be batched
 function canPathBatch(el: Path) {
     const style = el.style;
-    // Line dash is dynamically set in brush function.
-    if (style.lineDash) {
-        return false;
-    }
+
     const hasFill = el.hasFill();
     const hasStroke = el.hasStroke();
-    // Can't batch if element is both set fill and stroke. Or both not set
-    if (!(+hasFill ^ +hasStroke)) {
-        return false;
-    }
-    // Can't batch if element is drawn with gradient or pattern.
-    if (hasFill && typeof style.fill !== 'string') {
-        return false;
-    }
-    if (hasStroke && typeof style.stroke !== 'string') {
-        return false;
-    }
-    return true;
+
+    return !(
+        // Line dash is dynamically set in brush function.
+        style.lineDash
+        // Can't batch if element is both set fill and stroke. Or both not set
+        || !(+hasFill ^ +hasStroke)
+        // Can't batch if element is drawn with gradient or pattern.
+        || (hasFill && typeof style.fill !== 'string')
+        || (hasStroke && typeof style.stroke !== 'string')
+        // Can't batch if element only stroke part of line.
+        || style.strokePercent < 1
+        // Has stroke or fill opacity
+        || style.strokeOpacity < 1
+        || style.fillOpacity < 1
+    );
 }
 
 function flushPathDrawn(ctx: CanvasRenderingContext2D, scope: BrushScope) {
@@ -602,6 +621,9 @@ export function brush(
     if (!prevElClipPaths || isClipPathChanged(clipPaths, prevElClipPaths)) {
         // If has previous clipping state, restore from it
         if (prevElClipPaths && prevElClipPaths.length) {
+            // Flush restore
+            flushPathDrawn(ctx, scope);
+
             ctx.restore();
             // Must set all style and transform because context changed by restore
             forceSetStyle = forceSetTransform = true;
@@ -613,6 +635,9 @@ export function brush(
         }
         // New clipping state
         if (clipPaths && clipPaths.length) {
+            // Flush before clip
+            flushPathDrawn(ctx, scope);
+
             ctx.save();
             updateClipStatus(clipPaths, ctx, scope);
             // Must set transform because it's changed when clip.
@@ -655,12 +680,12 @@ export function brush(
         && canPathBatch(el as Path);
 
     if (forceSetTransform || isTransformChanged(m, prevEl.transform)) {
-        setContextTransform(ctx, el);
         // Flush
         flushPathDrawn(ctx, scope);
+        setContextTransform(ctx, el);
     }
     else if (!canBatchPath) {
-        // Flush previous
+        // Flush
         flushPathDrawn(ctx, scope);
     }
 

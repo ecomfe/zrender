@@ -1,14 +1,13 @@
 import Transformable from './core/Transformable';
 import { AnimationEasing } from './animation/easing';
-import Animator from './animation/Animator';
+import Animator, {cloneValue} from './animation/Animator';
 import { ZRenderType } from './zrender';
-import { Dictionary, ElementEventName, ZRRawEvent, BuiltinTextPosition, AllPropTypes } from './core/types';
+import { Dictionary, ElementEventName, ZRRawEvent, BuiltinTextPosition, AllPropTypes, TextVerticalAlign, TextAlign, MapToType } from './core/types';
 import Path from './graphic/Path';
 import BoundingRect, { RectLike } from './core/BoundingRect';
 import Eventful, {EventQuery, EventCallback} from './core/Eventful';
-import ZRText from './graphic/Text';
-import { calculateTextPosition, TextPositionCalculationResult } from './contain/text';
-import Storage from './Storage';
+import ZRText, { DefaultTextStyle } from './graphic/Text';
+import { calculateTextPosition, TextPositionCalculationResult, parsePercent } from './contain/text';
 import {
     guid,
     isObject,
@@ -16,12 +15,12 @@ import {
     extend,
     indexOf,
     logError,
-    isString,
     mixin,
-    isFunction,
     isArrayLike
 } from './core/util';
-import { Group } from './export';
+import Polyline from './graphic/shape/Polyline';
+import Group from './graphic/Group';
+import Point from './core/Point';
 
 export interface ElementAnimateConfig {
     duration?: number
@@ -39,6 +38,14 @@ export interface ElementAnimateConfig {
      * If use additive animation.
      */
     additive?: boolean
+    /**
+     * If set to final state before animation started.
+     * It can be useful if something you want to calcuate depends on the final state of element.
+     * Like bounding rect for text layouting.
+     *
+     * Only available in animateTo
+     */
+    setToFinal?: boolean
 }
 
 export interface ElementTextConfig {
@@ -61,6 +68,15 @@ export interface ElementTextConfig {
     offset?: number[]
 
     /**
+     * Origin or rotation. Which is relative to the bounding box of the attached element.
+     * Can be percent value. Relative to the bounding box.
+     * If specified center. It will be center of the bounding box.
+     *
+     * Only available when position and rotation are both set.
+     */
+    origin?: (number | string)[] | 'center'
+
+    /**
      * Distance to the rect
      * @default 5
      */
@@ -73,25 +89,50 @@ export interface ElementTextConfig {
     local?: boolean
 
     /**
-     * Will be set to textContent.style.fill if position is inside
-     * and textContent.style.fill is not set.
+     * `insideFill` is a color string or left empty.
+     * If a `textContent` is "inside", its final `fill` will be picked by this priority:
+     * `textContent.style.fill` > `textConfig.insideFill` > "auto-calculated-fill"
+     * In most cases, "auto-calculated-fill" is white.
      */
     insideFill?: string
 
     /**
-     * Will be set to textContent.style.stroke if position is inside
-     * and textContent.style.stroke is not set.
+     * `insideStroke` is a color string or left empty.
+     * If a `textContent` is "inside", its final `stroke` will be picked by this priority:
+     * `textContent.style.stroke` > `textConfig.insideStroke` > "auto-calculated-stroke"
+     *
+     * The rule of getting "auto-calculated-stroke":
+     * If (A) the `fill` is specified in style (either in `textContent.style` or `textContent.style.rich`)
+     * or (B) needed to draw text background (either defined in `textContent.style` or `textContent.style.rich`)
+     * "auto-calculated-stroke" will be null.
+     * Otherwise, "auto-calculated-stroke" will be the same as `fill` of this element if possible, or null.
+     *
+     * The reason of (A) is not decisive:
+     * 1. If users specify `fill` in style and still use "auto-calculated-stroke", the effect
+     * is not good and unexpected in some cases. It not easy and seams uncessary to auto calculate
+     * a proper `stroke` for the given `fill`, since they can specify `stroke` themselve.
+     * 2. Backward compat.
      */
     insideStroke?: string
 
     /**
-     * Will be set to textContent.style.fill if position is not inside
-     * Can only be a specific color string.
+     * `outsideFill` is a color string or left empty.
+     * If a `textContent` is "inside", its final `fill` will be picked by this priority:
+     * `textContent.style.fill` > `textConfig.outsideFill` > #000
      */
     outsideFill?: string
+
     /**
-     * Will be set to textContent.style.stroke if position is not inside
-     * Can only be a specific color string.
+     * `outsideStroke` is a color string or left empth.
+     * If a `textContent` is not "inside", its final `stroke` will be picked by this priority:
+     * `textContent.style.stroke` > `textConfig.outsideStroke` > "auto-calculated-stroke"
+     *
+     * The rule of getting "auto-calculated-stroke":
+     * If (A) the `fill` is specified in style (either in `textContent.style` or `textContent.style.rich`)
+     * or (B) needed to draw text background (either defined in `textContent.style` or `textContent.style.rich`)
+     * "auto-calculated-stroke" will be null.
+     * Otherwise, "auto-calculated-stroke" will be a neer white color to distinguish "front end"
+     * label with messy background (like other text label, line or other graphic).
      */
     outsideStroke?: string
 
@@ -103,6 +144,33 @@ export interface ElementTextConfig {
 
     // TODO applyClip
     // TODO align, verticalAlign??
+}
+export interface ElementTextGuideLineConfig {
+    /**
+     * Anchor for text guide line.
+     * Notice: Won't work
+     */
+    anchor?: Point
+
+    /**
+     * If calculate guide line points automatically.
+     */
+    autoCalculate?: boolean
+
+    /**
+     * Candidates of connectors. Used when autoCalculate is true and anchor is not specified.
+     */
+    candidates?: ('left' | 'top' | 'right' | 'bottom')[]
+
+    /**
+     * Length of the first segment near to text.
+     */
+    len?: number
+
+    /**
+     * Length of the second segment near to the element.
+     */
+    len2?: number
 }
 
 export interface ElementEvent {
@@ -181,8 +249,20 @@ export interface ElementProps extends Partial<ElementEventHandlerProps> {
 
 // Properties can be used in state.
 export const PRESERVED_NORMAL_STATE = '__zr_normal__';
+export const PRESERVED_MERGED_STATE = '__zr_merged__';
 
 const PRIMARY_STATES_KEYS = ['x', 'y', 'scaleX', 'scaleY', 'originX', 'originY', 'rotation', 'ignore'] as const;
+const DEFAULT_ANIMATABLE_MAP: Partial<Record<ElementStatePropNames, boolean>> = {
+    x: true,
+    y: true,
+    scaleX: true,
+    scaleY: true,
+    originX: true,
+    originY: true,
+    rotation: true,
+    ignore: false
+}
+
 export type ElementStatePropNames = (typeof PRIMARY_STATES_KEYS)[number] | 'textConfig';
 export type ElementState = Pick<ElementProps, ElementStatePropNames>;
 
@@ -260,19 +340,31 @@ class Element<Props extends ElementProps = ElementProps> {
      * path to clip the elements and its children, if it is a group.
      * @see http://www.w3.org/TR/2dcontext/#clipping-region
      */
-    private _clipPath: Path
+    private _clipPath?: Path
 
     /**
      * Attached text element.
      * `position`, `style.textAlign`, `style.textVerticalAlign`
      * of element will be ignored if textContent.position is set
      */
-    private _textContent: ZRText
+    private _textContent?: ZRText
+
+    /**
+     * Text guide line.
+     */
+    private _textGuide?: Polyline
 
     /**
      * Config of textContent. Inlcuding layout, color, ...etc.
      */
-    textConfig: ElementTextConfig
+    textConfig?: ElementTextConfig
+
+    /**
+     * Config for guide line calculating.
+     *
+     * NOTE: This is just a property signature. READ and WRITE are all done in echarts.
+     */
+    textGuideLineConfig?: ElementTextGuideLineConfig
 
     // FOR ECHARTS
     /**
@@ -288,15 +380,20 @@ class Element<Props extends ElementProps = ElementProps> {
     states: Dictionary<ElementState> = {}
 
     /**
+     * Animation config applied on state switching.
+     */
+    stateTransition: ElementAnimateConfig
+
+    /**
      * Proxy function for getting state with given stateName.
      * ZRender will first try to get with stateProxy. Then find from states if stateProxy returns nothing
      */
-    stateProxy: (stateName: string) => ElementState
+    stateProxy?: (stateName: string) => ElementState
 
     protected _normalState: ElementState
 
     // Temporary storage for inside text color configuration.
-    private _innerTextDefaultStyle: { fill?: string, stroke?: string, lineWidth?: number }
+    private _innerTextDefaultStyle: DefaultTextStyle
 
     constructor(props?: Props) {
         // Transformable needs position, rotation, scale
@@ -353,17 +450,21 @@ class Element<Props extends ElementProps = ElementProps> {
         this.updateInnerText();
     }
 
-    updateInnerText() {
+    updateInnerText(forceUpdate?: boolean) {
         // Update textContent
         const textEl = this._textContent;
-        if (textEl && !textEl.ignore) {
+        if (textEl && (!textEl.ignore || forceUpdate)) {
             if (!this.textConfig) {
                 this.textConfig = {};
             }
             const textConfig = this.textConfig;
             const isLocal = textConfig.local;
+            let textAlign: TextAlign;
+            let textVerticalAlign: TextVerticalAlign;
 
             let textStyleChanged = false;
+
+            // TODO Restore the element after textConfig changed.
 
             // NOTE: Can't be used both as normal element and as textContent.
             if (isLocal) {
@@ -394,13 +495,26 @@ class Element<Props extends ElementProps = ElementProps> {
                 textEl.x = tmpTextPosCalcRes.x;
                 textEl.y = tmpTextPosCalcRes.y;
 
-                if (tmpTextPosCalcRes.textAlign) {
-                    textStyleChanged = textStyleChanged || textEl.style.align !== tmpTextPosCalcRes.textAlign;
-                    textEl.style.align = tmpTextPosCalcRes.textAlign;
-                }
-                if (tmpTextPosCalcRes.verticalAlign) {
-                    textStyleChanged = textStyleChanged || textEl.style.verticalAlign !== tmpTextPosCalcRes.verticalAlign;
-                    textEl.style.verticalAlign = tmpTextPosCalcRes.verticalAlign;
+                // User specified align/verticalAlign has higher priority, which is
+                // useful in the case that attached text is rotated 90 degree.
+                textAlign = tmpTextPosCalcRes.align;
+                textVerticalAlign = tmpTextPosCalcRes.verticalAlign;
+
+                const textOrigin = textConfig.origin;
+                if (textOrigin && textConfig.rotation != null) {
+                    let relOriginX;
+                    let relOriginY;
+                    if (textOrigin === 'center') {
+                        relOriginX = tmpBoundingRect.width * 0.5;
+                        relOriginY = tmpBoundingRect.height * 0.5;
+                    }
+                    else {
+                        relOriginX = parsePercent(textOrigin[0], tmpBoundingRect.width);
+                        relOriginY = parsePercent(textOrigin[1], tmpBoundingRect.height);
+                    }
+
+                    textEl.originX = -textEl.x + relOriginX + (isLocal ? 0 : tmpBoundingRect.x);
+                    textEl.originY = -textEl.y + relOriginY + (isLocal ? 0 : tmpBoundingRect.y);
                 }
             }
 
@@ -408,13 +522,16 @@ class Element<Props extends ElementProps = ElementProps> {
                 textEl.rotation = textConfig.rotation;
             }
 
-            let textOffset = textConfig.offset;
+            const textOffset = textConfig.offset;
             if (textOffset) {
                 textEl.x += textOffset[0];
                 textEl.y += textOffset[1];
 
-                textEl.originX = -textOffset[0]
-                textEl.originY = -textOffset[1];
+                // Not change the user set origin.
+                if (!textConfig.origin) {
+                    textEl.originX = -textOffset[0];
+                    textEl.originY = -textOffset[1];
+                }
             }
 
             // Calculate text color
@@ -425,43 +542,58 @@ class Element<Props extends ElementProps = ElementProps> {
 
             let textFill;
             let textStroke;
-            let textLineWidth;
+            let autoStroke;
             if (isInside) {
+                // In most cases `textContent` need this "auto" strategy.
+                // So by default be 'auto'. Otherwise users need to literally
+                // set `insideFill: 'auto', insideStroke: 'auto'` each time.
                 textFill = textConfig.insideFill;
                 textStroke = textConfig.insideStroke;
 
-                if (textFill === 'auto') {
+                if (textFill == null) {
                     textFill = this.getInsideTextFill();
                 }
-                if (textStroke === 'auto') {
+                if (textStroke == null) {
                     textStroke = this.getInsideTextStroke(textFill);
+                    autoStroke = true;
                 }
-
             }
             else {
                 textFill = textConfig.outsideFill;
                 textStroke = textConfig.outsideStroke;
 
-                if (textFill === 'auto') {
-                    textFill = this.getOutsideFill();
+                // Not pretty sure by default use #000 or host el color on outsideFill.
+                // Conservatively, use #000.
+                if (textFill == null) {
+                    textFill = '#000';
                 }
-                if (textStroke === 'auto') {
-                    textStroke = this.getOutsideStroke(textFill);
+                // By default give a stroke to distinguish "front end" label with
+                // messy background (like other text label, line or other graphic).
+                // If textContent.style.fill specified, this auto stroke will not be used.
+                if (textStroke == null) {
+                    // If some time need to customize the default stroke getter,
+                    // add some kind of override method.
+                    textStroke = 'rgba(255, 255, 255, 0.9)';
+                    autoStroke = true;
                 }
-
             }
+            // Default `textFill` should must have a value to ensure text can be displayed.
             textFill = textFill || '#000';
-            textLineWidth = textStroke ? 2 : 0;
 
             if (textFill !== innerTextDefaultStyle.fill
                 || textStroke !== innerTextDefaultStyle.stroke
-                || textLineWidth !== innerTextDefaultStyle.lineWidth) {
+                || autoStroke !== innerTextDefaultStyle.autoStroke
+                || textAlign !== innerTextDefaultStyle.align
+                || textVerticalAlign !== innerTextDefaultStyle.verticalAlign
+            ) {
 
                 textStyleChanged = true;
 
                 innerTextDefaultStyle.fill = textFill;
                 innerTextDefaultStyle.stroke = textStroke;
-                innerTextDefaultStyle.lineWidth = textLineWidth;
+                innerTextDefaultStyle.autoStroke = autoStroke;
+                innerTextDefaultStyle.align = textAlign;
+                innerTextDefaultStyle.verticalAlign = textVerticalAlign;
 
                 textEl.setDefaultTextStyle(innerTextDefaultStyle);
             }
@@ -476,21 +608,21 @@ class Element<Props extends ElementProps = ElementProps> {
         }
     }
 
-    protected getInsideTextFill() {
+    protected getInsideTextFill(): string {
         return '#fff';
     }
 
-    protected getInsideTextStroke(textFill?: string) {
+    protected getInsideTextStroke(textFill?: string): string {
         return '#000';
     }
 
-    protected getOutsideFill() {
-        return '#000';
-    }
+    // protected getOutsideFill() {
+    //     return '#000';
+    // }
 
-    protected getOutsideStroke(textFill?: string) {
-        return 'rgba(255, 255, 255, 0.9)';
-    }
+    // protected getOutsideStroke(textFill?: string) {
+    //     return 'rgba(255, 255, 255, 0.7)';
+    // }
 
     traverse<Context>(
         cb: (this: Context, el: Element<Props>) => void,
@@ -517,7 +649,7 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     hide() {
         this.ignore = true;
-        this.__zr && this.__zr.refresh();
+        this.markRedraw();
     }
 
     /**
@@ -525,7 +657,7 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     show() {
         this.ignore = false;
-        this.__zr && this.__zr.refresh();
+        this.markRedraw();
     }
 
     attr(keyOrObj: Props): this
@@ -547,34 +679,52 @@ class Element<Props extends ElementProps = ElementProps> {
     }
 
     // Save current state to normal
-    saveCurrentToNormalState() {
-        this._innerSaveToNormal();
+    saveCurrentToNormalState(toState: ElementState) {
+        this._innerSaveToNormal(toState);
 
         // If we are swtiching from normal to other state during animation.
         // We need to save final value of animation to the normal state. Not interpolated value.
         const normalState = this._normalState;
         for (let i = 0; i < this.animators.length; i++) {
             const animator = this.animators[i];
-            // According to the order of animation if multiple animator is
-            // Animating on the same property(If additive animation is used)
-            animator.saveFinalStateToTarget(
-                animator.targetName
-                    ? (normalState as any)[animator.targetName] : normalState
-            );
+            const fromStateTransition = animator.__fromStateTransition;
+            // Ignore animation from state transition(except normal).
+            if (fromStateTransition && fromStateTransition !== PRESERVED_NORMAL_STATE) {
+                continue;
+            }
+
+            const targetName = animator.targetName;
+            // Respecting the order of animation if multiple animator is
+            // animating on the same property(If additive animation is used)
+            const target = targetName
+                ? (normalState as any)[targetName] : normalState;
+            // Only save keys that are changed by the states.
+            animator.saveFinalToTarget(target);
         }
+
     }
 
-    protected _innerSaveToNormal() {
-        let state = this._normalState;
-        if (!state) {
-            state = this._normalState = {};
+    protected _innerSaveToNormal(toState: ElementState) {
+        let normalState = this._normalState;
+        if (!normalState) {
+            // Clear previous stored normal states when switching from normalState to otherState.
+            normalState = this._normalState = {};
         }
-        // TODO clone?
-        state.textConfig = this.textConfig;
+        if (toState.textConfig && !normalState.textConfig) {
+            normalState.textConfig = this.textConfig;
+        }
 
-        for (let i = 0; i < PRIMARY_STATES_KEYS.length; i++) {
-            let key = PRIMARY_STATES_KEYS[i];
-            (state as any)[key] = this[key];
+        this._savePrimaryToNormal(toState, normalState, PRIMARY_STATES_KEYS);
+    }
+
+    protected _savePrimaryToNormal(toState: Dictionary<any>, normalState: Dictionary<any>, primaryKeys: readonly string[]) {
+        for (let i = 0; i < primaryKeys.length; i++) {
+            let key = primaryKeys[i];
+            // Only save property that will be changed by toState
+            // and has not been saved to normalState yet.
+            if (toState[key] != null && !(key in normalState)) {
+                (normalState as any)[key] = (this as any)[key];
+            }
         }
     }
 
@@ -608,7 +758,7 @@ class Element<Props extends ElementProps = ElementProps> {
      * Clear all states.
      */
     clearStates() {
-        this.useState(PRESERVED_NORMAL_STATE);
+        this.useState(PRESERVED_NORMAL_STATE, false);
         // TODO set _normalState to null?
     }
     /**
@@ -621,28 +771,22 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     useState(stateName: string, keepCurrentStates?: boolean) {
         // Use preserved word __normal__
+        // TODO: Only restore changed properties when restore to normal???
         const toNormalState = stateName === PRESERVED_NORMAL_STATE;
+        const hasStates = this.hasState();
 
-        if (!this.hasState()) {
-            // If switched from normal state to other state.
-            if (!toNormalState) {
-                this.saveCurrentToNormalState();
-            }
-            else {
-                // If switched from normal to normal.
-                return;
-            }
+        if (!hasStates && toNormalState) {
+            // If switched from normal to normal.
+            return;
         }
 
         const currentStates = this.currentStates;
-        const currentStatesCount = currentStates.length;
-        const lastStateName = currentStates[currentStatesCount - 1];
-        const stateNoChange = stateName === lastStateName
-            /// If not keepCurrentStates and has more than one states have been applied.
-            // Needs clear all the previous states and applied the new one again.
-            && (keepCurrentStates || currentStatesCount === 1);
+        const animationCfg = this.stateTransition;
 
-        if (stateNoChange) {
+        // No need to change in following cases:
+        // 1. Keep current states. and already being applied before.
+        // 2. Don't keep current states. And new state is same with the only one exists state.
+        if (indexOf(currentStates, stateName) >= 0 && (keepCurrentStates || currentStates.length === 1)) {
             return;
         }
 
@@ -660,16 +804,32 @@ class Element<Props extends ElementProps = ElementProps> {
             return;
         }
 
-        this._applyStateObj(state, keepCurrentStates);
+        if (!toNormalState) {
+            this.saveCurrentToNormalState(state);
+        }
+
+        this._applyStateObj(
+            stateName,
+            state,
+            this._normalState,
+            keepCurrentStates,
+            animationCfg && animationCfg.duration > 0,
+            animationCfg
+        );
 
         // Also set text content.
         if (this._textContent) {
-            this._textContent.useState(stateName);
+            this._textContent.useState(stateName, keepCurrentStates);
+        }
+        if (this._textGuide) {
+            this._textGuide.useState(stateName, keepCurrentStates);
         }
 
         if (toNormalState) {
             // Clear state
             this.currentStates = [];
+            // Reset normal state.
+            this._normalState = {};
         }
         else {
             if (!keepCurrentStates) {
@@ -681,12 +841,8 @@ class Element<Props extends ElementProps = ElementProps> {
         }
 
         // Update animating target to the new object after state changed.
-        for (let i = 0; i < this.animators.length; i++) {
-            const animator = this.animators[i];
-            if (animator.targetName) {
-                animator.changeTarget((this as any)[animator.targetName]);
-            }
-        }
+        this._updateAnimationTargets();
+
         this.markRedraw();
         // Return used state.
         return state;
@@ -694,16 +850,162 @@ class Element<Props extends ElementProps = ElementProps> {
 
     /**
      * Apply multiple states.
+     * @param states States list.
      */
     useStates(states: string[]) {
-        for (let i = 0; i < states.length; i++) {
-            this.useState(states[i], i > 0);
+        if (!states.length) {
+            this.clearStates();
+        }
+        else {
+            const stateObjects: ElementState[] = [];
+            const currentStates = this.currentStates;
+            const len = states.length;
+            let notChange = len === currentStates.length;
+            if (notChange) {
+                for (let i = 0; i < len; i++) {
+                    if (states[i] !== currentStates[i]) {
+                        notChange = false;
+                        break;
+                    }
+                }
+            }
+            if (notChange) {
+                return;
+            }
+            for (let i = 0; i < len; i++) {
+                const stateName = states[i];
+                let stateObj: ElementState;
+                if (this.stateProxy) {
+                    stateObj = this.stateProxy(stateName);
+                }
+                if (!stateObj) {
+                    stateObj = this.states[stateName];
+                }
+                if (stateObj) {
+                    stateObjects.push(stateObj);
+                }
+            }
+
+            const mergedState = this._mergeStates(stateObjects);
+            const animationCfg = this.stateTransition;
+
+            this.saveCurrentToNormalState(mergedState);
+
+            this._applyStateObj(
+                PRESERVED_MERGED_STATE,
+                mergedState,
+                this._normalState,
+                false,
+                animationCfg && animationCfg.duration > 0,
+                animationCfg
+            );
+
+            if (this._textContent) {
+                this._textContent.useStates(states);
+            }
+            if (this._textGuide) {
+                this._textGuide.useStates(states);
+            }
+
+            this._updateAnimationTargets();
+
+            // Create a copy
+            this.currentStates = states.slice();
+            this.markRedraw();
         }
     }
 
-    protected _applyStateObj(state?: ElementState, keepCurrentStates?: boolean) {
-        const normalState = this._normalState;
-        let needsRestoreToNormal = !state || !keepCurrentStates;
+    /**
+     * Update animation targets when reference is changed.
+     */
+    private _updateAnimationTargets() {
+        for (let i = 0; i < this.animators.length; i++) {
+            const animator = this.animators[i];
+            if (animator.targetName) {
+                animator.changeTarget((this as any)[animator.targetName]);
+            }
+        }
+    }
+
+    /**
+     * Remove state
+     * @param state State to remove
+     */
+    removeState(state: string) {
+        const idx = indexOf(this.currentStates, state);
+        if (idx >= 0) {
+            const currentStates = this.currentStates.slice();
+            currentStates.splice(idx, 1);
+            this.useStates(currentStates);
+        }
+    }
+
+    /**
+     * Replace exists state.
+     * @param oldState
+     * @param newState
+     * @param forceAdd If still add when even if replaced target not exists.
+     */
+    replaceState(oldState: string, newState: string, forceAdd: boolean) {
+        const currentStates = this.currentStates.slice();
+        const idx = indexOf(currentStates, oldState);
+        const newStateExists = indexOf(currentStates, newState) >= 0;
+        if (idx >= 0) {
+            if (!newStateExists) {
+                // Replace the old with the new one.
+                currentStates[idx] = newState;
+            }
+            else {
+                // Only remove the old one.
+                currentStates.splice(idx, 1);
+            }
+        }
+        else if (forceAdd && !newStateExists) {
+            currentStates.push(newState);
+        }
+        this.useStates(currentStates);
+    }
+
+    /**
+     * Toogle state.
+     */
+    toggleState(state: string, enable: boolean) {
+        if (enable) {
+            this.useState(state, true);
+        }
+        else {
+            this.removeState(state);
+        }
+    }
+
+    protected _mergeStates(states: ElementState[]) {
+        const mergedState: ElementState = {};
+        let mergedTextConfig: ElementTextConfig;
+        for (let i = 0; i < states.length; i++) {
+            const state = states[i];
+            extend(mergedState, state);
+
+            if (state.textConfig) {
+                mergedTextConfig = mergedTextConfig || {};
+                extend(mergedTextConfig, state.textConfig);
+            }
+        }
+        if (mergedTextConfig) {
+            mergedState.textConfig = mergedTextConfig;
+        }
+
+        return mergedState;
+    }
+
+    protected _applyStateObj(
+        stateName: string,
+        state: ElementState,
+        normalState: ElementState,
+        keepCurrentStates: boolean,
+        transition: boolean,
+        animationCfg: ElementAnimateConfig
+    ) {
+        const needsRestoreToNormal = !(state && keepCurrentStates);
 
         // TODO: Save current state to normal?
         // TODO: Animation
@@ -716,28 +1018,64 @@ class Element<Props extends ElementProps = ElementProps> {
             extend(this.textConfig, state.textConfig);
         }
         else if (needsRestoreToNormal) {
-            this.textConfig = normalState.textConfig;
+            if (normalState.textConfig) {   // Only restore if changed and saved.
+                this.textConfig = normalState.textConfig;
+            }
         }
+
+        const transitionTarget: Dictionary<any> = {};
+        let hasTransition = false;
 
         for (let i = 0; i < PRIMARY_STATES_KEYS.length; i++) {
-            let key = PRIMARY_STATES_KEYS[i];
+            const key = PRIMARY_STATES_KEYS[i];
+            const propNeedsTransition = transition && DEFAULT_ANIMATABLE_MAP[key];
+
             if (state && state[key] != null) {
-                // Replace if it exist in target state
-                (this as any)[key] = state[key];
+                if (propNeedsTransition) {
+                    hasTransition = true;
+                    transitionTarget[key] = state[key];
+                }
+                else {
+                    // Replace if it exist in target state
+                    (this as any)[key] = state[key];
+                }
             }
             else if (needsRestoreToNormal) {
-                // Restore to normal state
-                (this as any)[key] = normalState[key];
+                if (normalState[key] != null) {
+                    if (propNeedsTransition) {
+                        hasTransition = true;
+                        transitionTarget[key] = normalState[key];
+                    }
+                    else {
+                        // Restore to normal state
+                        (this as any)[key] = normalState[key];
+                    }
+                }
             }
         }
 
+        if (hasTransition) {
+            this._transitionState(
+                stateName,
+                transitionTarget as Props,
+                animationCfg
+            );
+        }
     }
 
     /**
      * Component is some elements attached on this element for specific purpose.
      * Like clipPath, textContent
      */
-    protected _attachComponent(componentEl: Element) {
+    private _attachComponent(componentEl: Element) {
+        if (componentEl.__zr && !componentEl.__hostTarget) {
+            throw new Error('Text element has been added to zrender.');
+        }
+
+        if (componentEl === this) {
+            throw new Error('Recursive component attachment.');
+        }
+
         const zr = this.__zr;
         if (zr) {
             // Needs to add self to zrender. For rerender triggering, or animation.
@@ -748,7 +1086,7 @@ class Element<Props extends ElementProps = ElementProps> {
         componentEl.__hostTarget = this as unknown as Element;
     }
 
-    protected _detachComponent(componentEl: Element) {
+    private _detachComponent(componentEl: Element) {
         if (componentEl.__zr) {
             componentEl.removeSelfFromZr(componentEl.__zr);
         }
@@ -802,15 +1140,31 @@ class Element<Props extends ElementProps = ElementProps> {
      * Attach text on element
      */
     setTextContent(textEl: ZRText) {
-        // Remove previous clip path
+        // Remove previous textContent
         if (this._textContent && this._textContent !== textEl) {
             this.removeTextContent();
         }
 
-        this._textContent = textEl;
+        if (textEl.__zr && !textEl.__hostTarget) {
+            throw new Error('Text element has been added to zrender.');
+        }
 
         this._attachComponent(textEl);
 
+        this._textContent = textEl;
+
+        this.markRedraw();
+    }
+
+    /**
+     * Set layout of attached text. Will merge with the previous.
+     */
+    setTextConfig(cfg: ElementTextConfig) {
+        // TODO hide cfg property?
+        if (!this.textConfig) {
+            this.textConfig = {};
+        }
+        extend(this.textConfig, cfg);
         this.markRedraw();
     }
 
@@ -826,18 +1180,31 @@ class Element<Props extends ElementProps = ElementProps> {
         }
     }
 
-    /**
-     * Set layout of attached text. Will merge with the previous.
-     */
-    setTextConfig(cfg: ElementTextConfig) {
-        // TODO hide cfg property?
-        if (!this.textConfig) {
-            this.textConfig = {};
+    getTextGuideLine(): Polyline {
+        return this._textGuide;
+    }
+
+    setTextGuideLine(guideLine: Polyline) {
+        // Remove previous clip path
+        if (this._textGuide && this._textGuide !== guideLine) {
+            this.removeTextGuideLine();
         }
-        extend(this.textConfig, cfg);
+
+        this._attachComponent(guideLine);
+
+        this._textGuide = guideLine;
+
         this.markRedraw();
     }
 
+    removeTextGuideLine() {
+        const textGuide = this._textGuide;
+        if (textGuide) {
+            this._detachComponent(textGuide);
+            this._textGuide = null;
+            this.markRedraw();
+        }
+    }
     /**
      * Mark element needs to be repainted
      */
@@ -878,6 +1245,9 @@ class Element<Props extends ElementProps = ElementProps> {
         if (this._textContent) {
             this._textContent.addSelfToZr(zr);
         }
+        if (this._textGuide) {
+            this._textGuide.addSelfToZr(zr);
+        }
     }
 
     /**
@@ -899,6 +1269,9 @@ class Element<Props extends ElementProps = ElementProps> {
         }
         if (this._textContent) {
             this._textContent.removeSelfFromZr(zr);
+        }
+        if (this._textGuide) {
+            this._textGuide.removeSelfFromZr(zr);
         }
     }
 
@@ -975,6 +1348,7 @@ class Element<Props extends ElementProps = ElementProps> {
     }
 
     /**
+     * @param animationProps A map to specify which property to animate. If not specified, will animate all.
      * @example
      *  // Animate position
      *  el.animateTo({
@@ -997,18 +1371,25 @@ class Element<Props extends ElementProps = ElementProps> {
      *      done: () => { // done }
      *  })
      */
-    animateTo(target: Props, cfg?: ElementAnimateConfig) {
-        animateTo(this, target, cfg);
+    animateTo(target: Props, cfg?: ElementAnimateConfig, animationProps?: MapToType<Props, boolean>) {
+        animateTo(this, target, cfg, animationProps);
     }
 
     /**
      * Animate from the target state to current state.
-     * The params and the return value are the same as `this.animateTo`.
+     * The params and the value are the same as `this.animateTo`.
      */
 
     // Overload definitions
-    animateFrom(target: Props, cfg: ElementAnimateConfig) {
-        animateTo(this, target, cfg, true);
+    animateFrom(target: Props, cfg: Omit<ElementAnimateConfig, 'setToFinal'>, animationProps?: MapToType<Props, boolean>) {
+        animateTo(this, target, cfg, animationProps, true);
+    }
+
+    protected _transitionState(stateName: string, target: Props, cfg?: ElementAnimateConfig, animationProps?: MapToType<Props, boolean>) {
+        const animators = animateTo(this, target, cfg, animationProps);
+        for (let i = 0; i < animators.length; i++) {
+            animators[i].__fromStateTransition = stateName;
+        }
     }
 
     /**
@@ -1034,8 +1415,8 @@ class Element<Props extends ElementProps = ElementProps> {
      *         {
      *             x: number. mandatory.
      *             y: number. mandatory.
-     *             textAlign: string. optional. use style.textAlign by default.
-     *             textVerticalAlign: string. optional. use style.textVerticalAlign by default.
+     *             align: string. optional. use style.textAlign by default.
+     *             verticalAlign: string. optional. use style.textVerticalAlign by default.
      *         }
      */
     calculateTextPosition: (out: TextPositionCalculationResult, style: ElementTextConfig, rect: RectLike) => TextPositionCalculationResult
@@ -1120,6 +1501,7 @@ function animateTo<T>(
     animatable: Element<T>,
     target: Dictionary<any>,
     cfg: ElementAnimateConfig,
+    animationProps: Dictionary<any>,
     reverse?: boolean
 ) {
     cfg = cfg || {};
@@ -1129,9 +1511,8 @@ function animateTo<T>(
         '',
         animatable,
         target,
-        cfg.duration,
-        cfg.delay,
-        cfg.additive,
+        cfg,
+        animationProps,
         animators,
         reverse
     );
@@ -1164,62 +1545,97 @@ function animateTo<T>(
             .during(during)
             .start(cfg.easing, cfg.force);
     }
+
+    return animators;
 }
 
-/**
- * @example
- *  // Animate position
- *  el._animateToShallow({
- *      position: [10, 10]
- *  })
- *
- *  // Animate shape, style and position in 100ms, delayed 100ms
- *  el._animateToShallow({
- *      shape: {
- *          width: 500
- *      },
- *      style: {
- *          fill: 'red'
- *      }
- *      position: [10, 10]
- *  }, 100, 100)
- */
+function copyArrShallow(source: number[], target: number[], len: number) {
+    for (let i = 0; i < len; i++) {
+        source[i] = target[i];
+    }
+}
+
+function is2DArray(value: any[]): value is number[][] {
+    return isArrayLike(value[0])
+}
+
+function copyValue(target: Dictionary<any>, source: Dictionary<any>, key: string) {
+    if (isArrayLike(source[key])) {
+        if (!isArrayLike(target[key])) {
+            target[key] = [];
+        }
+
+        const sourceArr = source[key] as any[];
+        const targetArr = target[key] as any[];
+
+        const len0 = sourceArr.length;
+        if (is2DArray(sourceArr)) {
+            // NOTE: each item should have same length
+            const len1 = sourceArr[0].length;
+
+            for (let i = 0; i < len0; i++) {
+                if (!targetArr[i]) {
+                    targetArr[i] = Array.prototype.slice.call(sourceArr[i]);
+                }
+                else {
+                    copyArrShallow(targetArr[i], sourceArr[i], len1);
+                }
+            }
+        }
+        else {
+            copyArrShallow(targetArr, sourceArr, len0);
+        }
+
+        targetArr.length = sourceArr.length;
+    }
+    else {
+        target[key] = source[key];
+    }
+}
+
 function animateToShallow<T>(
     animatable: Element<T>,
     topKey: string,
     source: Dictionary<any>,
     target: Dictionary<any>,
-    time: number,
-    delay: number,
-    additive: boolean,
+    cfg: ElementAnimateConfig,
+    animationProps: Dictionary<any> | true,
     animators: Animator<any>[],
     reverse: boolean    // If `true`, animate from the `target` to current state.
 ) {
     const animatableKeys: string[] = [];
     const targetKeys = keys(target);
+    const duration = cfg.duration;
+    const delay = cfg.delay;
+    const additive = cfg.additive;
+    const setToFinal = cfg.setToFinal;
+    const animateAll = !isObject(animationProps);
     for (let k = 0; k < targetKeys.length; k++) {
         const innerKey = targetKeys[k] as string;
 
-        if (source[innerKey] != null) {
+        if (target[innerKey] == null) { // Can't animate to a null/undefined value.
+            continue;
+        }
+
+        if (source[innerKey] != null && (animateAll || (animationProps as Dictionary<any>)[innerKey])) {
             if (isObject(target[innerKey]) && !isArrayLike(target[innerKey])) {
                 if (topKey) {
-                    logError('Only support 1 depth nest object animation.');
+                    // logError('Only support 1 depth nest object animation.');
                     // Assign directly.
                     // TODO richText?
                     if (!reverse) {
                         source[innerKey] = target[innerKey];
                         animatable.updateDuringAnimation(topKey);
                     }
-                    return;
+                    continue;
                 }
                 animateToShallow(
                     animatable,
                     innerKey,
                     source[innerKey],
                     target[innerKey],
-                    time,
-                    delay,
-                    additive,
+                    cfg,
+                    animationProps && (animationProps as Dictionary<any>)[innerKey],
                     animators,
                     reverse
                 );
@@ -1228,8 +1644,8 @@ function animateToShallow<T>(
                 animatableKeys.push(innerKey);
             }
         }
-        else if (target[innerKey] != null && !reverse) {
-            // Assign directly.
+        else if (!reverse) {
+            // Assign target value directly.
             source[innerKey] = target[innerKey];
             animatable.updateDuringAnimation(topKey);
         }
@@ -1237,43 +1653,63 @@ function animateToShallow<T>(
 
     const keyLen = animatableKeys.length;
 
-    if (keyLen > 0) {
+    if (keyLen > 0 || cfg.force) {
+        let revertedSource: Dictionary<any>;
         let reversedTarget: Dictionary<any>;
+        let sourceClone: Dictionary<any>;
         if (reverse) {
             reversedTarget = {};
+            revertedSource = {};
             for (let i = 0; i < keyLen; i++) {
-                let innerKey = animatableKeys[i];
+                const innerKey = animatableKeys[i];
                 reversedTarget[innerKey] = source[innerKey];
                 // Animate from target
-                source[innerKey] = target[innerKey];
+                revertedSource[innerKey] = target[innerKey];
+            }
+        }
+        else if (setToFinal) {
+            sourceClone = {};
+            for (let i = 0; i < keyLen; i++) {
+                const innerKey = animatableKeys[i];
+                sourceClone[innerKey] = cloneValue(source[innerKey]);
+                // Use copy, not change the original reference
+                // Copy from target to source.
+                copyValue(source, target, innerKey);
             }
         }
 
-        // Find last animator animating same target.
+        // Find last animator animating same prop.
         const existsAnimators = animatable.animators;
         let lastAnimator;
         for (let i = 0; i < existsAnimators.length; i++) {
-            if (existsAnimators[i].getTarget() === source) {
+            // Use key string instead object reference because ref may be changed.
+            if (existsAnimators[i].targetName === topKey) {
                 lastAnimator = existsAnimators[i];
             }
         }
 
         if (!additive && lastAnimator) {
-            // Stop exists animation on specific tracks.
+            // Stop exists animation on specific tracks. Only one animator available for each property.
             // TODO Should invoke previous animation callback?
             const allAborted = lastAnimator.stopTracks(animatableKeys);
             if (allAborted) {   // This animator can't be used.
                 const idx = indexOf(existsAnimators, lastAnimator);
                 existsAnimators.splice(idx, 1);
-                lastAnimator = null;
             }
         }
 
         const animator = new Animator(source, false, additive ? lastAnimator : null);
         animator.targetName = topKey;
 
+        if (revertedSource) {
+            animator.whenWithKeys(0, revertedSource, animatableKeys);
+        }
+        if (sourceClone) {
+            animator.whenWithKeys(0, sourceClone, animatableKeys);
+        }
+
         animator.whenWithKeys(
-            time == null ? 500 : time,
+            duration == null ? 500 : duration,
             reverse ? reversedTarget : target,
             animatableKeys
         ).delay(delay || 0);

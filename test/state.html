@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <script src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.js"></script>
+    <script src="lib/rollup.browser.js"></script>
+    <script src="../dist//zrender.js"></script>
+    <script src="lib/config.js"></script>
+</head>
+<body>
+    <style>
+        html, body, #main {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+        }
+    </style>
+    <div id="main"></div>
+    <script type="text/javascript">
+        // 初始化zrender
+        var zr = zrender.init(document.getElementById('main'));
+
+        const rect = new zrender.Rect({
+            shape: {
+                x: -50,
+                y: -50,
+                width: 100,
+                height: 100
+            },
+            x: 100,
+            y: 100,
+            style: {
+                fill: 'red',
+                shadowColor: 'rgba(0, 0, 0, 0.5)'
+            }
+        });
+        zr.add(rect);
+
+        const allStates = ['moveRight', 'moveDown', 'rotate', 'enlarge', 'changeFill', 'shadow'];
+
+        const moveRightState = rect.ensureState('moveRight');
+        moveRightState.x = 200;
+
+        const moveDownState = rect.ensureState('moveDown');
+        moveDownState.y = 200;
+
+        const rotateState = rect.ensureState('rotate');
+        rotateState.rotation = 2;
+
+        const enlargeState = rect.ensureState('enlarge');
+        enlargeState.shape = {
+            x: -100,
+            y: -100,
+            width: 200,
+            height: 200
+        }
+
+        const changeFillState = rect.ensureState('changeFill');
+        changeFillState.style = {
+            fill: 'green'
+        }
+
+        const shadowState = rect.ensureState('shadow');
+        shadowState.style = {
+            shadowBlur: 20
+        }
+
+        const config = {
+            animation: true,
+
+            clearStates() {
+                allStates.forEach(function (stateName) {
+                    config[stateName] = false;
+                });
+                gui.updateDisplay();
+
+                rect.clearStates();
+            },
+
+            applyAllStates() {
+                allStates.forEach(function (stateName) {
+                    config[stateName] = true;
+                });
+                gui.updateDisplay();
+
+                rect.useStates(allStates);
+            }
+        }
+
+        const gui = new dat.GUI();
+        const statesFolder = gui.addFolder('states');
+        statesFolder.open();
+
+        rect.stateTransition = {
+            duration: config.animation ? 1000 : 0,
+            easing: 'cubicOut'
+        }
+        allStates.forEach(function (stateName) {
+            config[stateName] = false;
+            statesFolder.add(config, stateName).onChange(function () {
+                rect.toggleState(stateName, config[stateName]);
+            });
+        });
+        gui.add(config, 'animation').onChange(function () {
+            rect.stateTransition.duration = config.animation ? 1000 : 0;
+        })
+        gui.add(config, 'clearStates');
+        gui.add(config, 'applyAllStates');
+
+    </script>
+    <div id="main" style="width:1000px;height:600px;"></div>
+</body>
+</html>

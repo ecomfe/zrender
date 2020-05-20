@@ -177,13 +177,10 @@ class BoundingRect {
      * Copy from another rect
      */
     copy(other: RectLike) {
-        this.x = other.x;
-        this.y = other.y;
-        this.width = other.width;
-        this.height = other.height;
+        BoundingRect.copy(this, other);
     }
 
-    plain() {
+    plain(): RectLike {
         return {
             x: this.x,
             y: this.y,
@@ -196,13 +193,20 @@ class BoundingRect {
         return new BoundingRect(rect.x, rect.y, rect.width, rect.height);
     }
 
-    static applyTransform(target: BoundingRect, source: BoundingRect, m: matrix.MatrixArray) {
+    static copy(target: RectLike, source: RectLike) {
+        target.x = source.x;
+        target.y = source.y;
+        target.width = source.width;
+        target.height = source.height;
+    }
+
+    static applyTransform(target: RectLike, source: RectLike, m: matrix.MatrixArray) {
         // In case usage like this
         // el.getBoundingRect().applyTransform(el.transform)
         // And element has no transform
         if (!m) {
             if (target !== source) {
-                target.copy(source);
+                BoundingRect.copy(target, source);
             }
             return;
         }
@@ -216,6 +220,14 @@ class BoundingRect {
             target.y = source.y * sy + ty;
             target.width = source.width * sx;
             target.height = source.height * sy;
+            if (target.width < 0) {
+                target.x += target.width;
+                target.width = -target.width;
+            }
+            if (target.height < 0) {
+                target.y += target.height;
+                target.height = -target.height;
+            }
             return;
         }
 

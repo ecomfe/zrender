@@ -38,7 +38,7 @@ class Circle extends Path<CircleProps> {
         // }
         // Better stroking in ShapeBundle
         // ctx.moveTo(shape.cx + shape.r, shape.cy);
-        ctx.arc(shape.cx, shape.cy, shape.r, 0, Math.PI * 2, true);
+        ctx.arc(shape.cx, shape.cy, shape.r, 0, Math.PI * 2);
     }
 };
 

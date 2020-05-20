@@ -72,11 +72,11 @@ function processArc(
     if (vRatio(u, v) >= 1) {
         dTheta = 0;
     }
-    if (fs === 0 && dTheta > 0) {
-        dTheta = dTheta - 2 * PI;
-    }
-    if (fs === 1 && dTheta < 0) {
-        dTheta = dTheta + 2 * PI;
+
+    if (dTheta < 0) {
+        const n = Math.round(dTheta / PI * 1e6) / 1e6;
+        // Convert to positive
+        dTheta = PI * 2 + (n % 2) * PI;
     }
 
     path.addData(cmd, cx, cy, rx, ry, theta, dTheta, psi, fs);
@@ -386,12 +386,12 @@ function createPathOptions(str: string, opts: SVGPathOption): InnerSVGPathOption
             // Svg and vml renderer don't have context
             const ctx = path.getContext();
             if (ctx) {
-                path.rebuildPath(ctx);
+                path.rebuildPath(ctx, 1);
             }
         }
         else {
             const ctx = path;
-            pathProxy.rebuildPath(ctx);
+            pathProxy.rebuildPath(ctx, 1);
         }
     };
 
@@ -459,7 +459,8 @@ export function mergePath(pathEls: Path[], opts: PathProps) {
             // Svg and vml renderer don't have context
             const ctx = path.getContext();
             if (ctx) {
-                path.rebuildPath(ctx);
+                // Path bundle not support percent draw.
+                path.rebuildPath(ctx, 1);
             }
         }
     };

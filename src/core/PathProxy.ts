@@ -7,11 +7,11 @@
 
 /* global Float32Array */
 
-import * as curve from './curve';
 import * as vec2 from './vector';
-import * as bbox from './bbox';
 import BoundingRect from './BoundingRect';
 import {devicePixelRatio as dpr} from '../config';
+import { fromLine, fromCubic, fromQuadratic, fromArc } from './bbox';
+import { cubicAt, cubicLength, cubicSubdivide, quadraticLength, quadraticSubdivide } from './curve';
 
 const CMD = {
     M: 1,
@@ -38,6 +38,9 @@ interface ExtendedCanvasRenderingContext2D extends CanvasRenderingContext2D {
     dpr?: number
 }
 
+const tmpOutX: number[] = [];
+const tmpOutY: number[] = [];
+
 const min: number[] = [];
 const max: number[] = [];
 const min2: number[] = [];
@@ -48,6 +51,9 @@ const mathCos = Math.cos;
 const mathSin = Math.sin;
 const mathSqrt = Math.sqrt;
 const mathAbs = Math.abs;
+
+const PI = Math.PI;
+const PI2 = PI * 2;
 
 const hasTypedArray = typeof Float32Array !== 'undefined';
 
@@ -68,6 +74,10 @@ export default class PathProxy {
     private _y0 = 0
 
     private _len = 0
+
+    // Calculating path len and seg len.
+    private _pathSegLen: number[]
+    private _pathLen: number
     // Unit x, Unit y. Provide for avoiding drawing that too short line segment
     private _ux: number
     private _uy: number
@@ -92,8 +102,6 @@ export default class PathProxy {
         if (this._saveData) {
             this.data = [];
         }
-
-        this._ctx = null;
     }
 
     /**
@@ -108,9 +116,12 @@ export default class PathProxy {
         }
     }
 
+    setDPR(dpr: number) {
+        this.dpr = dpr;
+    }
+
     setContext(ctx: ExtendedCanvasRenderingContext2D) {
         this._ctx = ctx;
-        ctx && (this.dpr = ctx.dpr);
     }
 
     getContext(): ExtendedCanvasRenderingContext2D {
@@ -134,8 +145,12 @@ export default class PathProxy {
 
         if (this._lineDash) {
             this._lineDash = null;
-
             this._dashOffset = 0;
+        }
+
+        if (this._pathSegLen) {
+            this._pathSegLen = null;
+            this._pathLen = 0;
         }
     }
 
@@ -199,8 +214,32 @@ export default class PathProxy {
     }
 
     arc(cx: number, cy: number, r: number, startAngle: number, endAngle: number, anticlockwise?: boolean) {
+        // Normalize delta to 0 - PI2
+        let delta = endAngle - startAngle;
+
+        if (delta < 0) {
+            const n = Math.round(delta / PI * 1e6) / 1e6;
+            // Convert to positive
+            // It's much more stable to mod N.
+            delta = PI2 + (n % 2) * PI;
+        }
+        else {
+            delta = mathMin(delta, PI2);
+        }
+
+        // Convert to -PI2 ~ PI2, -PI2 is anticlockwise
+        if (anticlockwise && delta > 0) {
+            // Convert delta to negative
+            delta = delta - PI2;
+            if (Math.abs(delta) < 1e-6) {   // is circle.
+                delta = delta - PI2;
+            }
+        }
+
+        endAngle = startAngle + delta;
+
         this.addData(
-            CMD.A, cx, cy, r, r, startAngle, endAngle - startAngle, 0, anticlockwise ? 0 : 1
+            CMD.A, cx, cy, r, r, startAngle, delta, 0, anticlockwise ? 0 : 1
         );
         this._ctx && this._ctx.arc(cx, cy, r, startAngle, endAngle, anticlockwise);
 
@@ -422,7 +461,6 @@ export default class PathProxy {
 
     // Not accurate dashed line to
     _dashedBezierTo(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number) {
-        const cubicAt = curve.cubicAt;
         const ctx = this._ctx;
 
         let dashSum = this._dashSum;
@@ -522,9 +560,7 @@ export default class PathProxy {
         }
     }
 
-    /**
-     * @return {module:zrender/core/BoundingRect}
-     */
+
     getBoundingRect() {
         min[0] = min[1] = min2[0] = min2[1] = Number.MAX_VALUE;
         max[0] = max[1] = max2[0] = max2[1] = -Number.MAX_VALUE;
@@ -542,7 +578,6 @@ export default class PathProxy {
             if (i === 1) {
                 // 如果第一个命令是 L, C, Q
                 // 则 previous point 同绘制命令的第一个 point
-                //
                 // 第一个命令为 Arc 的情况下会在后面特殊处理
                 xi = data[i];
                 yi = data[i + 1];
@@ -555,22 +590,20 @@ export default class PathProxy {
                 case CMD.M:
                     // moveTo 命令重新创建一个新的 subpath, 并且更新新的起点
                     // 在 closePath 的时候使用
-                    x0 = data[i++];
-                    y0 = data[i++];
-                    xi = x0;
-                    yi = y0;
+                    xi = x0 = data[i++];
+                    yi = y0 = data[i++];
                     min2[0] = x0;
                     min2[1] = y0;
                     max2[0] = x0;
                     max2[1] = y0;
                     break;
                 case CMD.L:
-                    bbox.fromLine(xi, yi, data[i], data[i + 1], min2, max2);
+                    fromLine(xi, yi, data[i], data[i + 1], min2, max2);
                     xi = data[i++];
                     yi = data[i++];
                     break;
                 case CMD.C:
-                    bbox.fromCubic(
+                    fromCubic(
                         xi, yi, data[i++], data[i++], data[i++], data[i++], data[i], data[i + 1],
                         min2, max2
                     );
@@ -578,7 +611,7 @@ export default class PathProxy {
                     yi = data[i++];
                     break;
                 case CMD.Q:
-                    bbox.fromQuadratic(
+                    fromQuadratic(
                         xi, yi, data[i++], data[i++], data[i], data[i + 1],
                         min2, max2
                     );
@@ -604,7 +637,7 @@ export default class PathProxy {
                         y0 = mathSin(startAngle) * ry + cy;
                     }
 
-                    bbox.fromArc(
+                    fromArc(
                         cx, cy, rx, ry, startAngle, endAngle,
                         !!anticlockwise, min2, max2
                     );
@@ -618,7 +651,7 @@ export default class PathProxy {
                     const width = data[i++];
                     const height = data[i++];
                     // Use fromLine
-                    bbox.fromLine(x0, y0, x0 + width, y0 + height, min2, max2);
+                    fromLine(x0, y0, x0 + width, y0 + height, min2, max2);
                     break;
                 case CMD.Z:
                     xi = x0;
@@ -641,29 +674,179 @@ export default class PathProxy {
         );
     }
 
+    private _calculateLength(): number {
+        const data = this.data;
+        const len = this._len;
+        const ux = this._ux;
+        const uy = this._uy;
+        let xi = 0;
+        let yi = 0;
+        let x0 = 0;
+        let y0 = 0;
+
+        if (!this._pathSegLen) {
+            this._pathSegLen = [];
+        }
+        const pathSegLen = this._pathSegLen;
+        let pathTotalLen = 0;
+        let segCount = 0;
+
+        for (let i = 0; i < len;) {
+            const cmd = data[i++] as number;
+
+            if (i === 1) {
+                // 如果第一个命令是 L, C, Q
+                // 则 previous point 同绘制命令的第一个 point
+                // 第一个命令为 Arc 的情况下会在后面特殊处理
+                xi = data[i];
+                yi = data[i + 1];
+
+                x0 = xi;
+                y0 = yi;
+            }
+
+            let l = -1;
+
+            switch (cmd) {
+                case CMD.M:
+                    // moveTo 命令重新创建一个新的 subpath, 并且更新新的起点
+                    // 在 closePath 的时候使用
+                    xi = x0 = data[i++];
+                    yi = y0 = data[i++];
+                    break;
+                case CMD.L: {
+                    const x2 = data[i++];
+                    const y2 = data[i++];
+                    const dx = x2 - xi;
+                    const dy = y2 - yi;
+                    if (mathAbs(dx) > ux || mathAbs(dy) > uy || i === len - 1) {
+                        l = Math.sqrt(dx * dx + dy * dy);
+                        xi = x2;
+                        yi = y2;
+                    }
+                    break;
+                }
+                case CMD.C: {
+                    const x1 = data[i++];
+                    const y1 = data[i++];
+                    const x2 = data[i++];
+                    const y2 = data[i++];
+                    const x3 = data[i++];
+                    const y3 = data[i++];
+                    // TODO adaptive iteration
+                    l = cubicLength(xi, yi, x1, y1, x2, y2, x3, y3, 10);
+                    xi = x3;
+                    yi = y3;
+                    break;
+                }
+                case CMD.Q: {
+                    const x1 = data[i++];
+                    const y1 = data[i++];
+                    const x2 = data[i++];
+                    const y2 = data[i++];
+                    l = quadraticLength(xi, yi, x1, y1, x2, y2, 10);
+                    xi = x2;
+                    yi = y2;
+                    break;
+                }
+                case CMD.A:
+                    // TODO Arc 判断的开销比较大
+                    const cx = data[i++];
+                    const cy = data[i++];
+                    const rx = data[i++];
+                    const ry = data[i++];
+                    const startAngle = data[i++];
+                    let delta = data[i++];
+                    const endAngle = delta + startAngle;
+                    // TODO Arc 旋转
+                    i += 1;
+                    const anticlockwise = !data[i++];
+
+                    if (i === 1) {
+                        // 直接使用 arc 命令
+                        // 第一个命令起点还未定义
+                        x0 = mathCos(startAngle) * rx + cx;
+                        y0 = mathSin(startAngle) * ry + cy;
+                    }
+
+                    // TODO Ellipse
+                    l = mathMax(rx, ry) * mathMin(PI2, Math.abs(delta));
+
+                    xi = mathCos(endAngle) * rx + cx;
+                    yi = mathSin(endAngle) * ry + cy;
+                    break;
+                case CMD.R: {
+                    x0 = xi = data[i++];
+                    y0 = yi = data[i++];
+                    const width = data[i++];
+                    const height = data[i++];
+                    l = width * 2 + height * 2;
+                    break;
+                }
+                case CMD.Z: {
+                    const dx = x0 - xi;
+                    const dy = y0 - yi;
+                    l = Math.sqrt(dx * dx + dy * dy);
+
+                    xi = x0;
+                    yi = y0;
+                    break;
+                }
+            }
+
+            if (l >= 0) {
+                pathSegLen[segCount++] = l;
+                pathTotalLen += l;
+            }
+        }
+
+        // TODO Optimize memory cost.
+        this._pathLen = pathTotalLen;
+
+        return pathTotalLen;
+    }
     /**
      * Rebuild path from current data
      * Rebuild path will not consider javascript implemented line dash.
      * @param {CanvasRenderingContext2D} ctx
      */
-    rebuildPath(ctx: CanvasRenderingContext2D) {
+    rebuildPath(ctx: CanvasRenderingContext2D, percent: number) {
         const d = this.data;
+        const ux = this._ux;
+        const uy = this._uy;
+        const len = this._len;
         let x0;
         let y0;
         let xi;
         let yi;
         let x;
         let y;
-        let ux = this._ux;
-        let uy = this._uy;
-        let len = this._len;
-        for (let i = 0; i < len;) {
+
+        const drawPart = percent < 1;
+        let pathSegLen;
+        let pathTotalLen;
+        let accumLength = 0;
+        let segCount = 0;
+        let displayedLength;
+        if (drawPart) {
+            if (!this._pathSegLen) {
+                this._calculateLength();
+            }
+            pathSegLen = this._pathSegLen;
+            pathTotalLen = this._pathLen;
+            displayedLength = percent * pathTotalLen;
+
+            if (!displayedLength) {
+                return;
+            }
+        }
+
+        lo: for (let i = 0; i < len;) {
             const cmd = d[i++];
 
             if (i === 1) {
                 // 如果第一个命令是 L, C, Q
                 // 则 previous point 同绘制命令的第一个 point
-                //
                 // 第一个命令为 Arc 的情况下会在后面特殊处理
                 xi = d[i];
                 yi = d[i + 1];
@@ -677,60 +860,120 @@ export default class PathProxy {
                     y0 = yi = d[i++];
                     ctx.moveTo(xi, yi);
                     break;
-                case CMD.L:
+                case CMD.L: {
                     x = d[i++];
                     y = d[i++];
                     // Not draw too small seg between
                     if (mathAbs(x - xi) > ux || mathAbs(y - yi) > uy || i === len - 1) {
+                        if (drawPart) {
+                            const l = pathSegLen[segCount++];
+                            if (accumLength + l > displayedLength) {
+                                const t = (displayedLength - accumLength) / l;
+                                ctx.lineTo(xi * (1 - t) + x * t, yi * (1 - t) + y * t);
+                                break lo;
+                            }
+                            accumLength += l;
+                        }
+
                         ctx.lineTo(x, y);
                         xi = x;
                         yi = y;
                     }
                     break;
-                case CMD.C:
-                    ctx.bezierCurveTo(
-                        d[i++], d[i++], d[i++], d[i++], d[i++], d[i++]
-                    );
-                    xi = d[i - 2];
-                    yi = d[i - 1];
+                }
+                case CMD.C: {
+                    const x1 = d[i++];
+                    const y1 = d[i++];
+                    const x2 = d[i++];
+                    const y2 = d[i++];
+                    const x3 = d[i++];
+                    const y3 = d[i++];
+                    if (drawPart) {
+                        const l = pathSegLen[segCount++];
+                        if (accumLength + l > displayedLength) {
+                            const t = (displayedLength - accumLength) / l;
+                            cubicSubdivide(xi, x1, x2, x3, t, tmpOutX);
+                            cubicSubdivide(yi, y1, y2, y3, t, tmpOutY);
+                            ctx.bezierCurveTo(tmpOutX[1], tmpOutY[1], tmpOutX[2], tmpOutY[2], tmpOutX[3], tmpOutY[3]);
+                            break lo;
+                        }
+                        accumLength += l;
+                    }
+
+                    ctx.bezierCurveTo(x1, y1, x2, y2, x3, y3);
+                    xi = x3;
+                    yi = y3;
                     break;
-                case CMD.Q:
-                    ctx.quadraticCurveTo(d[i++], d[i++], d[i++], d[i++]);
-                    xi = d[i - 2];
-                    yi = d[i - 1];
+                }
+                case CMD.Q: {
+                    const x1 = d[i++];
+                    const y1 = d[i++];
+                    const x2 = d[i++];
+                    const y2 = d[i++];
+
+                    if (drawPart) {
+                        const l = pathSegLen[segCount++];
+                        if (accumLength + l > displayedLength) {
+                            const t = (displayedLength - accumLength) / l;
+                            quadraticSubdivide(xi, x1, x2, t, tmpOutX);
+                            quadraticSubdivide(yi, y1, y2, t, tmpOutY);
+                            ctx.quadraticCurveTo(tmpOutX[1], tmpOutY[1], tmpOutX[2], tmpOutY[2]);
+                            break lo;
+                        }
+                        accumLength += l;
+                    }
+
+                    ctx.quadraticCurveTo(x1, y1, x2, y2);
+                    xi = x2;
+                    yi = y2;
                     break;
+                }
                 case CMD.A:
                     const cx = d[i++];
                     const cy = d[i++];
                     const rx = d[i++];
                     const ry = d[i++];
-                    const theta = d[i++];
-                    const dTheta = d[i++];
+                    let startAngle = d[i++];
+                    let delta = d[i++];
                     const psi = d[i++];
-                    const fs = d[i++];
+                    const anticlockwise = !d[i++];
                     const r = (rx > ry) ? rx : ry;
                     const scaleX = (rx > ry) ? 1 : rx / ry;
                     const scaleY = (rx > ry) ? ry / rx : 1;
-                    const isEllipse = Math.abs(rx - ry) > 1e-3;
-                    const endAngle = theta + dTheta;
+                    const isEllipse = mathAbs(rx - ry) > 1e-3;
+                    let endAngle = startAngle + delta;
+                    let breakBuild = false;
+
+                    if (drawPart) {
+                        const l = pathSegLen[segCount++];
+                        if (accumLength + l > displayedLength) {
+                            endAngle = startAngle + delta * (displayedLength - accumLength) / l;
+                            breakBuild = true;
+                        }
+                        accumLength += l;
+                    }
                     if (isEllipse) {
                         ctx.translate(cx, cy);
                         ctx.rotate(psi);
                         ctx.scale(scaleX, scaleY);
-                        ctx.arc(0, 0, r, theta, endAngle, !!(1 - fs));
+                        ctx.arc(0, 0, r, startAngle, endAngle, anticlockwise);
                         ctx.scale(1 / scaleX, 1 / scaleY);
                         ctx.rotate(-psi);
                         ctx.translate(-cx, -cy);
                     }
                     else {
-                        ctx.arc(cx, cy, r, theta, endAngle, !!(1 - fs));
+                        ctx.arc(cx, cy, r, startAngle, endAngle, anticlockwise);
+                    }
+
+                    if (breakBuild) {
+                        break lo;
                     }
 
                     if (i === 1) {
                         // 直接使用 arc 命令
                         // 第一个命令起点还未定义
-                        x0 = mathCos(theta) * rx + cx;
-                        y0 = mathSin(theta) * ry + cy;
+                        x0 = mathCos(startAngle) * rx + cx;
+                        y0 = mathSin(startAngle) * ry + cy;
                     }
                     xi = mathCos(endAngle) * rx + cx;
                     yi = mathSin(endAngle) * ry + cy;
@@ -738,9 +981,47 @@ export default class PathProxy {
                 case CMD.R:
                     x0 = xi = d[i];
                     y0 = yi = d[i + 1];
-                    ctx.rect(d[i++], d[i++], d[i++], d[i++]);
+
+                    x = d[i++];
+                    y = d[i++];
+                    const width = d[i++];
+                    const height = d[i++];
+
+                    if (drawPart) {
+                        const l = pathSegLen[segCount++];
+                        if (accumLength + l > displayedLength) {
+                            let d = displayedLength - accumLength;
+                            ctx.moveTo(x, y);
+                            ctx.lineTo(x + mathMin(d, width), y);
+                            d -= width;
+                            if (d > 0) {
+                                ctx.lineTo(x + width, y + mathMin(d, height));
+                            }
+                            d -= height;
+                            if (d > 0) {
+                                ctx.lineTo(x + mathMax(width - d, 0), y + height);
+                            }
+                            d -= width;
+                            if (d > 0) {
+                                ctx.lineTo(x, y + mathMax(height - d, 0));
+                            }
+                            break lo;
+                        }
+                        accumLength += l;
+                    }
+                    ctx.rect(x, y, width, height);
                     break;
                 case CMD.Z:
+                    if (drawPart) {
+                        const l = pathSegLen[segCount++];
+                        if (accumLength + l > displayedLength) {
+                            const t = (displayedLength - accumLength) / l;
+                            ctx.lineTo(xi * (1 - t) + x0 * t, yi * (1 - t) + y0 * t);
+                            break lo;
+                        }
+                        accumLength += l;
+                    }
+
                     ctx.closePath();
                     xi = x0;
                     yi = y0;

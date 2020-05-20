@@ -223,7 +223,7 @@ function catmullRomInterpolate2DArray(
 }
 
 
-function cloneValue(value: InterpolatableType) {
+export function cloneValue(value: InterpolatableType) {
     if (isArrayLike(value)) {
         const len = value.length;
         if (isArrayLike(value[0])) {
@@ -307,6 +307,7 @@ class Track {
     }
 
     needsAnimate() {
+        // return this.keyframes.length >= 2;
         return !this._isAllValueEqual && this.keyframes.length >= 2;
     }
 
@@ -327,6 +328,12 @@ class Track {
             if (isArrayLike(value)) {
                 let arrayDim = guessArrayDim(value);
                 if (len > 0 && this.arrDim !== arrayDim) { // Two values has differnt dimension.
+                    this.interpolable = false;
+                    return;
+                }
+                // Not a number array.
+                if (arrayDim === 1 && typeof value[0] !== 'number'
+                    || arrayDim === 2 && typeof value[0][0] !== 'number') {
                     this.interpolable = false;
                     return;
                 }
@@ -656,7 +663,9 @@ export default class Animator<T> {
 
     targetName?: string
 
-    private _tracks: Dictionary<any> = {}
+    __fromStateTransition?: string
+
+    private _tracks: Dictionary<Track> = {}
     private _trackKeys: string[] = []
 
     private _target: T
@@ -804,12 +813,12 @@ export default class Animator<T> {
             const track = this._tracks[propName];
             const additiveTrack = this._additiveAnimator && this._additiveAnimator.getTrack(propName);
             track.prepare(additiveTrack);
-            if (track.needsAnimate() || forceAnimate) {
+            if (track.needsAnimate()) {
                 tracks.push(track);
             }
         }
         // Add during callback on the last clip
-        if (tracks.length) {
+        if (tracks.length || forceAnimate) {
             const clip = new Clip({
                 life: this._maxTime,
                 loop: this._loop,
@@ -906,9 +915,11 @@ export default class Animator<T> {
         if (!propNames.length || !this._clip) {
             return true;
         }
+        const tracks = this._tracks;
+        const tracksKeys = this._trackKeys;
 
         for (let i = 0; i < propNames.length; i++) {
-            const track = this._tracks[propNames[i]];
+            const track = tracks[propNames[i]];
             if (track) {
                 if (forwardToLast) {
                     track.step(this._target, 1);
@@ -918,8 +929,8 @@ export default class Animator<T> {
             }
         }
         let allAborted = true;
-        for (let i = 0; i < this._trackKeys.length; i++) {
-            if (!this._tracks[this._trackKeys[i]].isFinished()) {
+        for (let i = 0; i < tracksKeys.length; i++) {
+            if (!tracks[tracksKeys[i]].isFinished()) {
                 allAborted = false;
                 break;
             }
@@ -938,18 +949,29 @@ export default class Animator<T> {
      * It is mainly used in state mangement. When state is switching during animation.
      * We need to save final state of animation to the normal state. Not interpolated value.
      */
-    saveFinalStateToTarget(target: T) {
+    saveFinalToTarget(target: T, trackKeys?: string[]) {
         if (!target) {  // DO nothing if target is not given.
             return;
         }
 
-        for (let i = 0; i < this._trackKeys.length; i++) {
-            const propName = this._trackKeys[i];
+        trackKeys = trackKeys || this._trackKeys;
+
+        for (let i = 0; i < trackKeys.length; i++) {
+            const propName = trackKeys[i];
             const track = this._tracks[propName];
+            if (!track || track.isFinished()) {   // Ignore finished track.
+                continue;
+            }
+
             const lastKf = track.keyframes[track.keyframes.length - 1];
             if (lastKf) {
                 // TODO CLONE?
-                (target as any)[propName] = cloneValue(lastKf.value as any);
+                let val: unknown = cloneValue(lastKf.value as any);
+                if (track.isValueColor) {
+                    val = rgba2String(val as number[]);
+                }
+
+                (target as any)[propName] = val;
             }
         }
     }

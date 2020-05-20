@@ -270,6 +270,37 @@ export function cubicProjectPoint(
 }
 
 /**
+ * 计算三次贝塞尔曲线长度
+ */
+export function cubicLength(
+    x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number,
+    iteration: number
+) {
+    let px = x0;
+    let py = y0;
+
+    let d = 0;
+
+    const step = 1 / iteration;
+
+    for (let i = 1; i <= iteration; i++) {
+        let t = i * step;
+        const x = cubicAt(x0, x1, x2, x3, t);
+        const y = cubicAt(y0, y1, y2, y3, t);
+
+        const dx = x - px;
+        const dy = y - py;
+
+        d += Math.sqrt(dx * dx + dy * dy);
+
+        px = x;
+        py = y;
+    }
+
+    return d;
+}
+
+/**
  * 计算二次方贝塞尔值
  */
 export function quadraticAt(p0: number, p1: number, p2: number, t: number): number {
@@ -435,4 +466,35 @@ export function quadraticProjectPoint(
     }
     // console.log(interval, i);
     return mathSqrt(d);
+}
+
+/**
+ * 计算二次贝塞尔曲线长度
+ */
+export function quadraticLength(
+    x0: number, y0: number, x1: number, y1: number, x2: number, y2: number,
+    iteration: number
+) {
+    let px = x0;
+    let py = y0;
+
+    let d = 0;
+
+    const step = 1  / iteration;
+
+    for (let i = 1; i <= iteration; i++) {
+        let t = i * step;
+        const x = quadraticAt(x0, x1, x2, t);
+        const y = quadraticAt(y0, y1, y2, t);
+
+        const dx = x - px;
+        const dy = y - py;
+
+        d += Math.sqrt(dx * dx + dy * dy);
+
+        px = x;
+        py = y;
+    }
+
+    return d;
 }

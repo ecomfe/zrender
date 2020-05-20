@@ -2,7 +2,7 @@ import {Text} from '../zrender';
 
 describe('Text', function () {
 
-    it('Text#useStyle should merge rich style property.', function () {
+    it('Text#useState should merge rich style property.', function () {
         const text = new Text({
             style: {
                 rich: {

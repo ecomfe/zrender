@@ -1,13 +1,14 @@
 import Displayable, { DisplayableProps,
     CommonStyleProps,
     DEFAULT_COMMON_STYLE,
-    DisplayableStatePropNames
+    DisplayableStatePropNames,
+    DEFAULT_COMMON_ANIMATION_PROPS
 } from './Displayable';
-import Element, { PRESERVED_NORMAL_STATE } from '../Element';
+import Element, { PRESERVED_NORMAL_STATE, ElementAnimateConfig } from '../Element';
 import PathProxy from '../core/PathProxy';
 import * as pathContain from '../contain/path';
 import { PatternObject } from './Pattern';
-import { Dictionary, PropType } from '../core/types';
+import { Dictionary, PropType, MapToType } from '../core/types';
 import BoundingRect from '../core/BoundingRect';
 import { LinearGradientObject } from './LinearGradient';
 import { RadialGradientObject } from './RadialGradient';
@@ -18,6 +19,7 @@ import { parse } from '../tool/color';
 export interface PathStyleProps extends CommonStyleProps {
     fill?: string | PatternObject | LinearGradientObject | RadialGradientObject
     stroke?: string | PatternObject | LinearGradientObject | RadialGradientObject
+    strokePercent?: number
     strokeNoScale?: boolean
     fillOpacity?: number
     strokeOpacity?: number
@@ -47,6 +49,10 @@ export interface PathStyleProps extends CommonStyleProps {
 export const DEFAULT_PATH_STYLE: PathStyleProps = defaults({
     fill: '#000',
     stroke: null,
+    strokePercent: 1,
+    fillOpacity: 1,
+    strokeOpacity: 1,
+
     lineDashOffset: 0,
     lineWidth: 1,
     lineCap: 'butt',
@@ -54,7 +60,21 @@ export const DEFAULT_PATH_STYLE: PathStyleProps = defaults({
 
     strokeNoScale: false,
     strokeFirst: false
-}, DEFAULT_COMMON_STYLE);
+} as PathStyleProps, DEFAULT_COMMON_STYLE);
+
+
+export const DEFAULT_PATH_ANIMATION_PROPS: MapToType<PathProps, boolean> = {
+    style: defaults<MapToType<PathStyleProps, boolean>, MapToType<PathStyleProps, boolean>>({
+        fill: true,
+        stroke: true,
+        strokePercent: true,
+        fillOpacity: true,
+        strokeOpacity: true,
+        lineDashOffset: true,
+        lineWidth: true,
+        miterLimit: true
+    } as MapToType<PathStyleProps, boolean>, DEFAULT_COMMON_ANIMATION_PROPS.style)
+ };
 
 export interface PathProps extends DisplayableProps {
     strokeContainThreshold?: number
@@ -202,11 +222,9 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
 
     protected getInsideTextStroke(textFill?: string) {
         const pathFill = this.style.fill;
-        if (textFill === '#fff') { // Draw border if textFill is white.
-            return pathFill as string;
-        }
-        else {    // Not stroke on none fill object or gradient object
-            return null;
+        // Not stroke on none fill object or gradient object
+        if (isString(pathFill)) {
+            return pathFill;
         }
     }
 
@@ -406,36 +424,97 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         return createObject(DEFAULT_PATH_STYLE, obj);
     }
 
-    protected _innerSaveToNormal() {
-        super._innerSaveToNormal();
+    protected _innerSaveToNormal(toState: PathState) {
+        super._innerSaveToNormal(toState);
 
-        // NOTICE DON'T CLONE THE SHAPE OBJECT
-        // Only use the reference because if we switch state when animating. We still wan't
-        // animation continous on the same shape object when switch back to normal state.
-        this._normalState.shape = this.shape;
+        const normalState = this._normalState;
+        // Clone a new one. DON'T share object reference between states and current using.
+        // TODO: Clone array in shape?.
+        // TODO: Only save changed shape.
+        if (toState.shape && !normalState.shape) {
+            normalState.shape = extend({}, this.shape);
+        }
     }
 
-    protected _applyStateObj(state?: PathState, keepCurrentStates?: boolean) {
-        super._applyStateObj(state, keepCurrentStates);
-        let needsRestoreToNormal = !state || !keepCurrentStates;
-        const normalState = this._normalState;
+    protected _applyStateObj(
+        stateName: string,
+        state: PathState,
+        normalState: PathState,
+        keepCurrentStates: boolean,
+        transition: boolean,
+        animationCfg: ElementAnimateConfig
+    ) {
+        super._applyStateObj(stateName, state, normalState, keepCurrentStates, transition, animationCfg);
+        const needsRestoreToNormal = !(state && keepCurrentStates);
+        let targetShape: Props['shape'];
         if (state && state.shape) {
-            this.shape = extend(
-                {},
-                keepCurrentStates ? this.shape : normalState.shape
-            );
-            extend(this.shape, state.shape);
+            // Only animate changed properties.
+            if (transition) {
+                if (keepCurrentStates) {
+                    targetShape = state.shape;
+                }
+                else {
+                    // Inherits from normal state.
+                    targetShape = extend({}, normalState.shape);
+                    extend(targetShape, state.shape);
+                }
+            }
+            else {
+                // Because the shape will be replaced. So inherits from current shape.
+                targetShape = extend({}, keepCurrentStates ? this.shape : normalState.shape);
+                extend(targetShape, state.shape);
+            }
         }
         else if (needsRestoreToNormal) {
-            // NOTICE DON'T CLONE THE SHAPE OBJECT
-            // Only use the reference because if we switch state when animating. We still wan't
-            // animation continous on the same shape object when switch back to normal state.
-            this.shape = normalState.shape;
+            targetShape = normalState.shape;
         }
 
-        this.dirtyShape();
+        if (targetShape) {
+            if (transition) {
+                // Clone a new shape.
+                this.shape = extend({}, this.shape);
+                // Only supports transition on primary props. Because shape is not deep cloned.
+                const targetShapePrimaryProps: Props['shape'] = {};
+                const shapeKeys = keys(targetShape);
+                for (let i = 0; i < shapeKeys.length; i++) {
+                    const key = shapeKeys[i];
+                    if (typeof targetShape[key] === 'object') {
+                        (this.shape as Props['shape'])[key] = targetShape[key];
+                    }
+                    else {
+                        targetShapePrimaryProps[key] = targetShape[key];
+                    }
+                }
+                this._transitionState(stateName, {
+                    shape: targetShapePrimaryProps
+                } as Props, animationCfg);
+            }
+            else {
+                this.shape = targetShape;
+                this.dirtyShape();
+            }
+        }
     }
 
+    protected _mergeStates(states: PathState[]) {
+        const mergedState = super._mergeStates(states) as PathState;
+        let mergedShape: Props['shape'];
+        for (let i = 0; i < states.length; i++) {
+            const state = states[i];
+            if (state.shape) {
+                mergedShape = mergedShape || {};
+                this._mergeStyle(mergedShape, state.shape);
+            }
+        }
+        if (mergedShape) {
+            mergedState.shape = mergedShape;
+        }
+        return mergedState;
+    }
+
+    protected _getAnimationStyleProps() {
+        return DEFAULT_PATH_ANIMATION_PROPS;
+    }
     /**
      * If path shape is zero area
      */
