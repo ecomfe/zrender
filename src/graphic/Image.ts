@@ -1,10 +1,11 @@
 import Displayable, { DisplayableProps,
     CommonStyleProps,
     DEFAULT_COMMON_STYLE,
-    DisplayableStatePropNames
+    DisplayableStatePropNames,
+    DEFAULT_COMMON_ANIMATION_PROPS
 } from './Displayable';
 import BoundingRect from '../core/BoundingRect';
-import { ImageLike } from '../core/types';
+import { ImageLike, MapToType } from '../core/types';
 import { defaults, createObject } from '../core/util';
 
 export interface ImageStyleProps extends CommonStyleProps {
@@ -23,6 +24,19 @@ export const DEFAULT_IMAGE_STYLE: CommonStyleProps = defaults({
     x: 0,
     y: 0
 }, DEFAULT_COMMON_STYLE);
+
+export const DEFAULT_IMAGE_ANIMATION_PROPS: MapToType<ImageProps, boolean> = {
+    style: defaults<MapToType<ImageStyleProps, boolean>, MapToType<ImageStyleProps, boolean>>({
+        x: true,
+        y: true,
+        width: true,
+        height: true,
+        sx: true,
+        sy: true,
+        sWidth: true,
+        sHeight: true
+    }, DEFAULT_COMMON_ANIMATION_PROPS.style)
+ };
 
 interface ImageProps extends DisplayableProps {
     style?: ImageStyleProps
@@ -51,6 +65,9 @@ class ZRImage extends Displayable<ImageProps> {
         return createObject(DEFAULT_IMAGE_STYLE, obj);
     }
 
+    protected _getAnimationStyleProps() {
+        return DEFAULT_IMAGE_ANIMATION_PROPS;
+    }
 
     getBoundingRect(): BoundingRect {
         const style = this.style;

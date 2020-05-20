@@ -5,7 +5,7 @@
 
 import Element, {ElementProps, ElementStatePropNames, PRESERVED_NORMAL_STATE, ElementAnimateConfig} from '../Element';
 import BoundingRect from '../core/BoundingRect';
-import { PropType, Dictionary } from '../core/types';
+import { PropType, Dictionary, MapToType } from '../core/types';
 import Path from './Path';
 import { keys, extend, createObject } from '../core/util';
 import Animator from '../animation/Animator';
@@ -36,8 +36,17 @@ export const DEFAULT_COMMON_STYLE: CommonStyleProps = {
     blend: 'source-over'
 };
 
-(DEFAULT_COMMON_STYLE as any)[STYLE_MAGIC_KEY] = true;
+export const DEFAULT_COMMON_ANIMATION_PROPS: MapToType<DisplayableProps, boolean> = {
+    style: {
+        shadowBlur: true,
+        shadowOffsetX: true,
+        shadowOffsetY: true,
+        shadowColor: true,
+        opacity: true
+    }
+ };
 
+(DEFAULT_COMMON_STYLE as any)[STYLE_MAGIC_KEY] = true;
 
 export interface DisplayableProps extends ElementProps {
     style?: Dictionary<any>
@@ -69,7 +78,6 @@ export type DisplayableState = Pick<DisplayableProps, DisplayableStatePropNames>
 
 const PRIMARY_STATES_KEYS = ['z', 'z2', 'invisible'] as const;
 
-
 interface Displayable<Props extends DisplayableProps = DisplayableProps> {
     animate(key?: '', loop?: boolean): Animator<this>
     animate(key: 'style', loop?: boolean): Animator<this['style']>
@@ -80,6 +88,7 @@ interface Displayable<Props extends DisplayableProps = DisplayableProps> {
     states: Dictionary<DisplayableState>
     stateProxy: (stateName: string) => DisplayableState
 }
+
 class Displayable<Props extends DisplayableProps = DisplayableProps> extends Element<Props> {
 
     /**
@@ -248,6 +257,11 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         return this;
     }
 
+    // getDefaultStyleValue<T extends keyof Props['style']>(key: T): Props['style'][T] {
+    //     // Default value is on the prototype.
+    //     return this.style.prototype[key];
+    // }
+
     dirtyStyle() {
         this.markRedraw();
         this.__dirty |= Displayable.STYLE_CHANGED_BIT;
@@ -266,6 +280,13 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
      */
     styleChanged() {
         return this.__dirty & Displayable.STYLE_CHANGED_BIT;
+    }
+
+    /**
+     * Mark style updated. Only useful when style is used for caching. Like in the text.
+     */
+    styleUpdated() {
+        this.__dirty &= ~Displayable.STYLE_CHANGED_BIT;
     }
 
     /**
@@ -351,23 +372,26 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
             if (transition) {
                 // Clone a new style. Not affect the original one.
                 // TODO Performance issue.
-                this.style = this.createStyle(this.style);
+                const sourceStyle = this.style;
+                this.style = this.createStyle(needsRestoreToNormal ? {} : sourceStyle);
+                // const sourceStyle = this.style = this.createStyle(this.style);
 
                 if (needsRestoreToNormal) {
-                    const changedKeys = keys(this.style);
+                    const changedKeys = keys(sourceStyle);
                     for (let i = 0; i < changedKeys.length; i++) {
                         const key = changedKeys[i];
-                        if (targetStyle[key] != null) {
+                        if (key in targetStyle) {   // Not use `key == null` because == null may means no stroke/fill.
                             // Pick out from prototype. Or the property won't be animated.
-                            // TODO: Text
                             (targetStyle as any)[key] = targetStyle[key];
+                            // Omit the property has no default value.
+                            (this.style as any)[key] = sourceStyle[key];
                         }
                     }
                 }
 
                 this._transitionState(stateName, {
                     style: targetStyle
-                } as Props, animationCfg);
+                } as Props, animationCfg, this._getAnimationStyleProps() as MapToType<Props, boolean>);
             }
             else {
                 this.useStyle(targetStyle);
@@ -390,12 +414,32 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         }
     }
 
+    protected _mergeStates(states: DisplayableState[]) {
+        const mergedState = super._mergeStates(states) as DisplayableState;
+        let mergedStyle: Props['style'];
+        for (let i = 0; i < states.length; i++) {
+            const state = states[i];
+            if (state.style) {
+                mergedStyle = mergedStyle || {};
+                this._mergeStyle(mergedStyle, state.style);
+            }
+        }
+        if (mergedStyle) {
+            mergedState.style = mergedStyle;
+        }
+        return mergedState;
+    }
+
     protected _mergeStyle(
         targetStyle: CommonStyleProps,
         sourceStyle: CommonStyleProps
     ) {
         extend(targetStyle, sourceStyle);
         return targetStyle;
+    }
+
+    protected _getAnimationStyleProps() {
+        return DEFAULT_COMMON_ANIMATION_PROPS;
     }
 
     /**

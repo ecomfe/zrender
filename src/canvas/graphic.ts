@@ -559,28 +559,24 @@ export type BrushScope = {
 // If path can be batched
 function canPathBatch(el: Path) {
     const style = el.style;
-    // Line dash is dynamically set in brush function.
-    if (style.lineDash) {
-        return false;
-    }
+
     const hasFill = el.hasFill();
     const hasStroke = el.hasStroke();
-    // Can't batch if element is both set fill and stroke. Or both not set
-    if (!(+hasFill ^ +hasStroke)) {
-        return false;
-    }
-    // Can't batch if element only stroke part of line.
-    if (style.strokePercent < 1) {
-        return false;
-    }
-    // Can't batch if element is drawn with gradient or pattern.
-    if (hasFill && typeof style.fill !== 'string') {
-        return false;
-    }
-    if (hasStroke && typeof style.stroke !== 'string') {
-        return false;
-    }
-    return true;
+
+    return !(
+        // Line dash is dynamically set in brush function.
+        style.lineDash
+        // Can't batch if element is both set fill and stroke. Or both not set
+        || !(+hasFill ^ +hasStroke)
+        // Can't batch if element is drawn with gradient or pattern.
+        || (hasFill && typeof style.fill !== 'string')
+        || (hasStroke && typeof style.stroke !== 'string')
+        // Can't batch if element only stroke part of line.
+        || style.strokePercent < 1
+        // Has stroke or fill opacity
+        || style.strokeOpacity < 1
+        || style.fillOpacity < 1
+    );
 }
 
 function flushPathDrawn(ctx: CanvasRenderingContext2D, scope: BrushScope) {
@@ -625,6 +621,9 @@ export function brush(
     if (!prevElClipPaths || isClipPathChanged(clipPaths, prevElClipPaths)) {
         // If has previous clipping state, restore from it
         if (prevElClipPaths && prevElClipPaths.length) {
+            // Flush restore
+            flushPathDrawn(ctx, scope);
+
             ctx.restore();
             // Must set all style and transform because context changed by restore
             forceSetStyle = forceSetTransform = true;
@@ -636,6 +635,9 @@ export function brush(
         }
         // New clipping state
         if (clipPaths && clipPaths.length) {
+            // Flush before clip
+            flushPathDrawn(ctx, scope);
+
             ctx.save();
             updateClipStatus(clipPaths, ctx, scope);
             // Must set transform because it's changed when clip.
@@ -678,12 +680,12 @@ export function brush(
         && canPathBatch(el as Path);
 
     if (forceSetTransform || isTransformChanged(m, prevEl.transform)) {
-        setContextTransform(ctx, el);
         // Flush
         flushPathDrawn(ctx, scope);
+        setContextTransform(ctx, el);
     }
     else if (!canBatchPath) {
-        // Flush previous
+        // Flush
         flushPathDrawn(ctx, scope);
     }
 

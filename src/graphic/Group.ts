@@ -108,6 +108,25 @@ class Group extends Element<GroupProps> {
         return this;
     }
 
+    replaceAt(child: Element, index: number) {
+        const children = this._children;
+        const old = children[index];
+
+        if (child && child !== this && child.parent !== this && child !== old) {
+            children[index] = child;
+
+            old.parent = null;
+            const zr = this.__zr;
+            if (zr) {
+                old.removeSelfFromZr(zr);
+            }
+
+            this._doAdd(child);
+        }
+
+        return this;
+    }
+
     _doAdd(child: Element) {
         if (child.parent) {
             // Parent must be a group

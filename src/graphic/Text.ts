@@ -2,18 +2,19 @@
  * RichText is a container that manages complex text label.
  * It will parse text string and create sub displayble elements respectively.
  */
-import { TextAlign, TextVerticalAlign, ImageLike, Dictionary } from '../core/types';
+import { TextAlign, TextVerticalAlign, ImageLike, Dictionary, MapToType } from '../core/types';
 import { parseRichText, parsePlainText } from './helper/parseText';
 import TSpan, { TSpanStyleProps } from './TSpan';
-import { retrieve2, isString, each, normalizeCssArray, trim, retrieve3, extend, keys } from '../core/util';
+import { retrieve2, isString, each, normalizeCssArray, trim, retrieve3, extend, keys, defaults } from '../core/util';
 import { DEFAULT_FONT, adjustTextX, adjustTextY } from '../contain/text';
 import ZRImage from './Image';
 import Rect from './shape/Rect';
 import BoundingRect from '../core/BoundingRect';
 import { MatrixArray } from '../core/matrix';
-import Displayable, { DisplayableStatePropNames, DisplayableProps } from './Displayable';
+import Displayable, { DisplayableStatePropNames, DisplayableProps, DEFAULT_COMMON_ANIMATION_PROPS } from './Displayable';
 import Path from './Path';
 import { ZRenderType } from '../zrender';
+import Animator from '../animation/Animator';
 
 type TextContentBlock = ReturnType<typeof parseRichText>
 type TextLine = TextContentBlock['lines'][0]
@@ -191,6 +192,50 @@ const DEFAULT_RICH_TEXT_COLOR = {
 };
 const DEFAULT_STROKE_LINE_WIDTH = 2;
 
+// const DEFAULT_TEXT_STYLE: TextStyleProps = {
+//     x: 0,
+//     y: 0,
+//     fill: '#000',
+//     stroke: null,
+//     opacity: 0,
+//     fillOpacity:
+// }
+
+export const DEFAULT_TEXT_ANIMATION_PROPS: MapToType<TextProps, boolean> = {
+    style: defaults<MapToType<TextStyleProps, boolean>, MapToType<TextStyleProps, boolean>>({
+        fill: true,
+        stroke: true,
+        fillOpacity: true,
+        strokeOpacity: true,
+        lineWidth: true,
+        fontSize: true,
+        lineHeight: true,
+        width: true,
+        height: true,
+        textShadowColor: true,
+        textShadowBlur: true,
+        textShadowOffsetX: true,
+        textShadowOffsetY: true,
+        backgroundColor: true,
+        padding: true,  // TODO needs normalize padding before animate
+        borderColor: true,
+        borderWidth: true,
+        borderRadius: true,  // TODO needs normalize radius before animate
+    }, DEFAULT_COMMON_ANIMATION_PROPS.style)
+ };
+
+
+interface ZRText {
+    animate(key?: '', loop?: boolean): Animator<this>
+    animate(key: 'style', loop?: boolean): Animator<this['style']>
+
+    getState(stateName: string): TextState
+    ensureState(stateName: string): TextState
+
+    states: Dictionary<TextState>
+    stateProxy: (stateName: string) => TextState
+}
+
 class ZRText extends Displayable<TextProps> {
 
     type = 'text'
@@ -265,10 +310,6 @@ class ZRText extends Displayable<TextProps> {
         this.styleUpdated();
     }
 
-    styleUpdated() {
-        this.__dirty &= ~Path.STYLE_CHANGED_BIT;
-    }
-
     addSelfToZr(zr: ZRenderType) {
         super.addSelfToZr(zr);
         for (let i = 0; i < this._children.length; i++) {
@@ -319,7 +360,6 @@ class ZRText extends Displayable<TextProps> {
         return this._rect;
     }
 
-
     // Can be set in Element. To calculate text fill automatically when textContent is inside element
     setDefaultTextStyle(defaultTextStyle: DefaultTextStyle) {
         // Use builtin if defaultTextStyle is not given.
@@ -330,7 +370,16 @@ class ZRText extends Displayable<TextProps> {
         throw new Error('Can\'t attach text on another text');
     }
 
+    // getDefaultStyleValue<T extends keyof TextStyleProps>(key: T): TextStyleProps[T] {
+    //     // Default value is on the prototype.
+    //     return this.style.prototype[key];
+    // }
+
     protected _mergeStyle(targetStyle: TextStyleProps, sourceStyle: TextStyleProps) {
+        if (!sourceStyle) {
+            return targetStyle;
+        }
+
         // DO deep merge on rich configurations.
         const sourceRich = sourceStyle.rich;
         const targetRich = targetStyle.rich || (sourceRich && {});  // Create a new one if source have rich but target don't
@@ -358,6 +407,10 @@ class ZRText extends Displayable<TextProps> {
             targetRich[richName] = targetRich[richName] || {};
             extend(targetRich[richName], sourceRich[richName]);
         }
+    }
+
+    protected _getAnimationStyleProps() {
+        return DEFAULT_TEXT_ANIMATION_PROPS;
     }
 
 
