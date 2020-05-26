@@ -86,6 +86,7 @@ export function parseXML(svg: Document | string | SVGElement): SVGElement {
     return svgNode as SVGElement;
 }
 
+let nodeParsers: Dictionary<(this: SVGParser, xmlNode: SVGElement, parentGroup: Group) => Element>;
 class SVGParser {
 
     private _defs: DefsMap = {};
@@ -458,8 +459,6 @@ class SVGParser {
 
     })();
 }
-
-let nodeParsers: Dictionary<(this: SVGParser, xmlNode: SVGElement, parentGroup: Group) => Element>;
 
 const defineParsers: Dictionary<(xmlNode: SVGElement) => any> = {
 
