@@ -395,10 +395,6 @@ class Element<Props extends ElementProps = ElementProps> {
     private _innerTextDefaultStyle: DefaultTextStyle
 
     constructor(props?: Props) {
-        // Transformable needs position, rotation, scale
-        Transformable.call(this);
-        Eventful.call(this);
-
         this._init(props);
     }
 
