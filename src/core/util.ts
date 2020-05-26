@@ -249,8 +249,22 @@ export function inherits(clazz: Function, baseClazz: Function) {
 export function mixin<T, S>(target: T | Function, source: S | Function, override?: boolean) {
     target = 'prototype' in target ? target.prototype : target;
     source = 'prototype' in source ? source.prototype : source;
-
-    defaults(target, source, override);
+    // If build target is ES6 class. prototype methods is not enumerable. Use getOwnPropertyNames instead
+    // TODO: Determine if source is ES6 class?
+    if (Object.getOwnPropertyNames) {
+        const keyList = Object.getOwnPropertyNames(source);
+        for (let i = 0; i < keyList.length; i++) {
+            const key = keyList[i];
+            if (key !== 'constructor') {
+                if ((override ? (source as any)[key] != null : (target as any)[key] == null)) {
+                    (target as any)[key] = (source as any)[key];
+                }
+            }
+        }
+    }
+    else {
+        defaults(target, source, override);
+    }
 }
 
 /**
