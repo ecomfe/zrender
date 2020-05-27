@@ -396,10 +396,6 @@ class Element<Props extends ElementProps = ElementProps> {
     private _innerTextDefaultStyle: DefaultTextStyle
 
     constructor(props?: Props) {
-        // Transformable needs position, rotation, scale
-        Transformable.call(this);
-        Eventful.call(this);
-
         this._init(props);
     }
 
@@ -1613,11 +1609,10 @@ function animateToShallow<T>(
     for (let k = 0; k < targetKeys.length; k++) {
         const innerKey = targetKeys[k] as string;
 
-        if (target[innerKey] == null) { // Can't animate to a null/undefined value.
-            continue;
-        }
-
-        if (source[innerKey] != null && (animateAll || (animationProps as Dictionary<any>)[innerKey])) {
+        if (source[innerKey] != null
+            && target[innerKey] != null // Can't animate between null value. assign directly. For example. stroke animate from #fff to null.
+            && (animateAll || (animationProps as Dictionary<any>)[innerKey])
+        ) {
             if (isObject(target[innerKey]) && !isArrayLike(target[innerKey])) {
                 if (topKey) {
                     // logError('Only support 1 depth nest object animation.');
