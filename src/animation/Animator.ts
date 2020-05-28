@@ -308,7 +308,7 @@ class Track {
 
     needsAnimate() {
         // return this.keyframes.length >= 2;
-        return !this._isAllValueEqual && this.keyframes.length >= 2;
+        return !this._isAllValueEqual && this.keyframes.length >= 2 && this.interpolable;
     }
 
     addKeyframe(time: number, value: unknown) {
@@ -558,7 +558,8 @@ class Track {
                 let value;
                 if (!this.interpolable) {
                     // String is step(0.5)
-                    value = step(p1, p2, w);
+                    // value = step(p1, p2, w);
+                    value = p2;
                 }
                 else {
                     value = catmullRomInterpolate(
@@ -812,9 +813,17 @@ export default class Animator<T> {
             const propName = this._trackKeys[i];
             const track = this._tracks[propName];
             const additiveTrack = this._additiveAnimator && this._additiveAnimator.getTrack(propName);
+            const kfs = track.keyframes;
             track.prepare(additiveTrack);
             if (track.needsAnimate()) {
                 tracks.push(track);
+            }
+            else if (!track.interpolable) {
+                const lastKf = kfs[kfs.length - 1];
+                // Set final value.
+                if (lastKf) {
+                    (self._target as any)[track.propName] = lastKf.value;
+                }
             }
         }
         // Add during callback on the last clip
@@ -830,6 +839,8 @@ export default class Animator<T> {
                         self._additiveAnimator = null;
                     }
                     for (let i = 0; i < tracks.length; i++) {
+                        // NOTE: don't cache target outside.
+                        // Because target may be changed.
                         tracks[i].step(self._target, percent);
                     }
                     for (let i = 0; i < self._onframeList.length; i++) {
@@ -962,8 +973,8 @@ export default class Animator<T> {
             if (!track || track.isFinished()) {   // Ignore finished track.
                 continue;
             }
-
-            const lastKf = track.keyframes[track.keyframes.length - 1];
+            const kfs = track.keyframes;
+            const lastKf = kfs[kfs.length - 1];
             if (lastKf) {
                 // TODO CLONE?
                 let val: unknown = cloneValue(lastKf.value as any);
