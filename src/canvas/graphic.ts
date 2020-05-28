@@ -71,7 +71,7 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, inBatch: boolean) {
     // Create path for each element when:
     // 1. Element has interactions.
     // 2. Element draw part of the line.
-    if (!(el.silent || strokePart) && firstDraw) {
+    if ((!el.silent || strokePart) && firstDraw) {
         el.createPathProxy();
     }
 
