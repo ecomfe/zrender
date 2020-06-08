@@ -150,6 +150,11 @@ export default class Point {
         return out;
     }
 
+    fromArray(input: number[]) {
+        this.x = input[0];
+        this.y = input[1];
+    }
+
     static set(p: PointLike, x: number, y: number) {
         p.x = x;
         p.y = y;
