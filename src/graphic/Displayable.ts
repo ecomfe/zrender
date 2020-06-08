@@ -388,11 +388,6 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
                             (this.style as any)[key] = sourceStyle[key];
                         }
                     }
-                    if (!this.style.text) {
-                        if (changedKeys.indexOf('shadowBlur') < 0) {
-                            debugger;
-                        }
-                    }
                 }
                 else {
                     // If states is switched twice and one property(for example shadowBlur) changed from default value to a specifed value,
