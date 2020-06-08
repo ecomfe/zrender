@@ -694,7 +694,6 @@ class Element<Props extends ElementProps = ElementProps> {
             // Only save keys that are changed by the states.
             animator.saveFinalToTarget(target);
         }
-
     }
 
     protected _innerSaveToNormal(toState: ElementState) {
