@@ -301,6 +301,9 @@ class ZRText extends Displayable<TextProps> {
                 this.transform = null;
             }
         }
+        else {
+            super.update();
+        }
     }
 
 
