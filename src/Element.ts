@@ -357,6 +357,8 @@ class Element<Props extends ElementProps = ElementProps> {
     anid: string
 
     currentStates?: string[] = []
+    // prevStates is for storager in echarts.
+    prevStates?: string[]
     /**
      * Store of element state.
      * '__normal__' key is preserved for default properties.
