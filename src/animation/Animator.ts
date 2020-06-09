@@ -311,6 +311,10 @@ class Track {
         return !this._isAllValueEqual && this.keyframes.length >= 2 && this.interpolable;
     }
 
+    getAdditiveTrack() {
+        return this._additiveTrack;
+    }
+
     addKeyframe(time: number, value: unknown) {
         if (time >= this.maxTime) {
             this.maxTime = time;
@@ -387,12 +391,14 @@ class Track {
             }
         }
 
-        // Not check if value equal here.
-        this.keyframes.push({
+        const kf = {
             time,
             value,
             percent: 0
-        });
+        };
+        // Not check if value equal here.
+        this.keyframes.push(kf);
+        return kf;
     }
 
     prepare(additiveTrack?: Track) {
@@ -673,8 +679,14 @@ export default class Animator<T> {
 
     private _loop: boolean
     private _delay = 0
-    private _paused = false
     private _maxTime = 0
+
+    // Some status
+    private _paused = false
+    // 0: Not started
+    // 1: Invoked started
+    // 2: Has been run for at least one frame.
+    private _started = 0
 
     private _additiveAnimator: Animator<any>
 
@@ -804,6 +816,10 @@ export default class Animator<T> {
      * @return
      */
     start(easing?: AnimationEasing, forceAnimate?: boolean) {
+        if (this._started > 0) {
+            return;
+        }
+        this._started = 1;
 
         const self = this;
 
@@ -832,6 +848,7 @@ export default class Animator<T> {
                 loop: this._loop,
                 delay: this._delay,
                 onframe(percent: number) {
+                    self._started = 2;
                     // Remove additived animator if it's finished.
                     // For the purpose of memory effeciency.
                     if (self._additiveAnimator && !self._additiveAnimator._clip) {
@@ -934,6 +951,14 @@ export default class Animator<T> {
                 if (forwardToLast) {
                     track.step(this._target, 1);
                 }
+                // If the track has not been run for at least wrong frame.
+                // The property may be stayed at the final state. when setToFinal is set true.
+                // For example:
+                // Animate x from 0 to 100, then animate to 150 immediately.
+                // We want the x is translated from 0 to 150, not 100 to 150.
+                else if (this._started === 1) {
+                    track.step(this._target, 0);
+                }
                 // Set track to finished
                 track.setFinished();
             }
@@ -959,7 +984,7 @@ export default class Animator<T> {
      * It is mainly used in state mangement. When state is switching during animation.
      * We need to save final state of animation to the normal state. Not interpolated value.
      */
-    saveFinalToTarget(target: T, trackKeys?: string[]) {
+    saveFinalToTarget(target: T, trackKeys?: readonly string[]) {
         if (!target) {  // DO nothing if target is not given.
             return;
         }
@@ -982,6 +1007,30 @@ export default class Animator<T> {
                 }
 
                 (target as any)[propName] = val;
+            }
+        }
+    }
+
+    // Change final value after animator has been started.
+    // NOTE: Be careful to use it.
+    __changeFinalValue(finalProps: Dictionary<any>, trackKeys?: readonly string[]) {
+        trackKeys = trackKeys || keys(finalProps);
+
+        for (let i = 0; i < trackKeys.length; i++) {
+            const propName = trackKeys[i];
+
+            const track = this._tracks[propName];
+            if (!track) {
+                continue;
+            }
+
+            const kfs = track.keyframes;
+            if (kfs.length > 1) {
+                // Remove the original last kf and add again.
+                const lastKf = kfs.pop();
+                track.addKeyframe(lastKf.time, finalProps[propName]);
+                // Prepare again.
+                track.prepare(track.getAdditiveTrack());
             }
         }
     }

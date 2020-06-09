@@ -1046,6 +1046,19 @@ class Element<Props extends ElementProps = ElementProps> {
             }
         }
 
+        if (!transition) {
+            // Keep the running animation to the new values after states changed.
+            // Not simply stop animation. Or it may have jump effect.
+            for (let i = 0; i < this.animators.length; i++) {
+                const animator = this.animators[i];
+                const targetName = animator.targetName
+                animator.__changeFinalValue(targetName
+                    ? ((state || normalState) as any)[targetName]
+                    : (state || normalState)
+                );
+            }
+        }
+
         if (hasTransition) {
             this._transitionState(
                 stateName,
