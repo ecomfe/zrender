@@ -233,7 +233,7 @@ export interface ElementProps extends Partial<ElementEventHandlerProps> {
 
 // Properties can be used in state.
 export const PRESERVED_NORMAL_STATE = '__zr_normal__';
-export const PRESERVED_MERGED_STATE = '__zr_merged__';
+// export const PRESERVED_MERGED_STATE = '__zr_merged__';
 
 const PRIMARY_STATES_KEYS = ['x', 'y', 'scaleX', 'scaleY', 'originX', 'originY', 'rotation', 'ignore'] as const;
 const DEFAULT_ANIMATABLE_MAP: Partial<Record<ElementStatePropNames, boolean>> = {
@@ -884,7 +884,7 @@ class Element<Props extends ElementProps = ElementProps> {
             this.saveCurrentToNormalState(mergedState);
 
             this._applyStateObj(
-                PRESERVED_MERGED_STATE,
+                states.join(','),
                 mergedState,
                 this._normalState,
                 false,
