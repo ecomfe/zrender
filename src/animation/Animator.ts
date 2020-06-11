@@ -509,11 +509,17 @@ class Track {
             }
             frameIdx = Math.min(frameIdx - 1, kfsNum - 2);
         }
+        let nextFrame = keyframes[frameIdx + 1];
+        let frame = keyframes[frameIdx];
+
+        // Defensive coding.
+        if (!(frame && nextFrame)) {
+            return;
+        }
+
         this._lastFrame = frameIdx;
         this._lastFramePercent = percent;
 
-        let nextFrame = keyframes[frameIdx + 1];
-        let frame = keyframes[frameIdx];
 
         const range = (nextFrame.percent - frame.percent);
         if (range === 0) {
