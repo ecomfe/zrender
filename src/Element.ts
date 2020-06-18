@@ -1,6 +1,6 @@
 import Transformable from './core/Transformable';
 import { AnimationEasing } from './animation/easing';
-import Animator, {cloneValue} from './animation/Animator';
+import Animator, {cloneValue, OnframeCallback} from './animation/Animator';
 import { ZRenderType } from './zrender';
 import { Dictionary, ElementEventName, ZRRawEvent, BuiltinTextPosition, AllPropTypes, TextVerticalAlign, TextAlign, MapToType } from './core/types';
 import Path from './graphic/Path';
@@ -27,7 +27,7 @@ export interface ElementAnimateConfig {
     delay?: number
     easing?: AnimationEasing
     done?: Function
-    during?: Function
+    during?: (percent: number) => void
     /**
      * If force animate
      * Prevent stop animation and callback
@@ -1527,10 +1527,11 @@ function animateTo<T>(
         cfg.done && cfg.done();
     }
 
-    function during(target: T, percent: number) {
-        if (typeof cfg.during === 'function') {
-            cfg.during(target, percent);
-        }
+    // Adding during callback to the first animator
+    if (animators.length > 0 && typeof cfg.during === 'function') {
+        animators[0].during((target, percent) => {
+            cfg.during(percent);
+        });
     }
 
     // Start after all animators created
@@ -1538,7 +1539,6 @@ function animateTo<T>(
     for (let i = 0; i < animators.length; i++) {
         animators[i]
             .done(done)
-            .during(during)
             .start(cfg.easing, cfg.force);
     }
 
