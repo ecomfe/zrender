@@ -54,9 +54,11 @@ function interpolateArray(p0, p1, percent, out, arrDim) {
         var len2 = len && p0[0].length;
         for (var i = 0; i < len; i++) {
             for (var j = 0; j < len2; j++) {
-                out[i][j] = interpolateNumber(
-                    p0[i][j], p1[i][j], percent
-                );
+                if (out[i]) {
+                    out[i][j] = interpolateNumber(
+                        p0[i][j], p1[i][j], percent
+                    );
+                }
             }
         }
     }
