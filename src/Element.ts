@@ -1527,9 +1527,9 @@ function animateTo<T>(
         cfg.done && cfg.done();
     }
 
-    function during() {
+    function during(target: T, percent: number) {
         if (typeof cfg.during === 'function') {
-            cfg.during();
+            cfg.during(target, percent);
         }
     }
 

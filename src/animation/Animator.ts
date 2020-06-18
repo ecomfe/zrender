@@ -652,7 +652,7 @@ class Track {
 
 
 type DoneCallback = () => void;
-type OnframeCallback<T> = (target: T, percent: number) => void;
+export type OnframeCallback<T> = (target: T, percent: number) => void;
 
 export type AnimationPropGetter<T> = (target: T, key: string) => InterpolatableType;
 export type AnimationPropSetter<T> = (target: T, key: string, value: InterpolatableType) => void;

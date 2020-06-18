@@ -86,7 +86,7 @@ export interface PathProps extends DisplayableProps {
 
     autoBatch?: boolean
 
-    __value?: number
+    __value?: (string | number)[] | (string | number)
 
     buildPath?: (
         ctx: PathProxy | CanvasRenderingContext2D,
@@ -132,8 +132,6 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
      * If element can be batched automatically
      */
     autoBatch: boolean
-
-    __value: number
 
     private _rectWithStroke: BoundingRect
 
