@@ -86,6 +86,8 @@ export interface PathProps extends DisplayableProps {
 
     autoBatch?: boolean
 
+    __value?: (string | number)[] | (string | number)
+
     buildPath?: (
         ctx: PathProxy | CanvasRenderingContext2D,
         shapeCfg: Dictionary<any>,

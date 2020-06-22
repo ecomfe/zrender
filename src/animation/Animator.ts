@@ -14,15 +14,15 @@ type InterpolatableType = string | number | NumberArray | NumberArray[];
 
 const arraySlice = Array.prototype.slice;
 
-function interpolateNumber(p0: number, p1: number, percent: number): number {
+export function interpolateNumber(p0: number, p1: number, percent: number): number {
     return (p1 - p0) * percent + p0;
 }
 
-function step(p0: any, p1: any, percent: number): any {
+export function step(p0: any, p1: any, percent: number): any {
     return percent > 0.5 ? p1 : p0;
 }
 
-function interpolate1DArray(
+export function interpolate1DArray(
     out: NumberArray,
     p0: NumberArray,
     p1: NumberArray,
@@ -35,7 +35,7 @@ function interpolate1DArray(
     }
 }
 
-function interpolate2DArray(
+export function interpolate2DArray(
     out: NumberArray[],
     p0: NumberArray[],
     p1: NumberArray[],
@@ -665,7 +665,7 @@ class Track {
 
 
 type DoneCallback = () => void;
-type OnframeCallback<T> = (target: T, percent: number) => void;
+export type OnframeCallback<T> = (target: T, percent: number) => void;
 
 export type AnimationPropGetter<T> = (target: T, key: string) => InterpolatableType;
 export type AnimationPropSetter<T> = (target: T, key: string, value: InterpolatableType) => void;
