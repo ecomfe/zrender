@@ -407,11 +407,13 @@ export function find<T, Context>(
  *
  * Will return an empty array if obj is null/undefined
  */
-export function keys<T extends object>(obj: T): (keyof T)[] {
+export function keys<T extends object>(obj: T): ((keyof T) & string)[] {
     if (!obj) {
         return [];
     }
-    type TKeys = keyof T;
+    // Return type should be `keyof T` but exclude `number`, becuase
+    // `Object.keys` only return string rather than `number | string`.
+    type TKeys = (keyof T) & string;
     if (Object.keys) {
         return Object.keys(obj) as TKeys[];
     }
@@ -423,6 +425,7 @@ export function keys<T extends object>(obj: T): (keyof T)[] {
     }
     return keyList;
 }
+
 
 // Remove this type in returned function. Or it will conflicts wicth callback with given context. Like Eventful.
 // According to lib.es5.d.ts

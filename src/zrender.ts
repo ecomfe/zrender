@@ -55,6 +55,8 @@ class ZRender {
     handler: Handler
     animation: Animation
 
+    private _stillFrameAccum = 0;
+
     private _needsRefresh = true
     private _needsRefreshHover = true
 
@@ -176,6 +178,8 @@ class ZRender {
      */
     refresh() {
         this._needsRefresh = true;
+        // Active the animation again.
+        this.animation.start();
     }
 
     /**
@@ -188,12 +192,24 @@ class ZRender {
             triggerRendered = true;
             this.refreshImmediately(true);
         }
+
         if (this._needsRefreshHover) {
             triggerRendered = true;
             this.refreshHoverImmediately();
         }
 
-        triggerRendered && this.trigger('rendered');
+        if (triggerRendered) {
+            this._stillFrameAccum = 0;
+            this.trigger('rendered');
+        }
+        else {
+            this._stillFrameAccum++;
+
+            // Stop the animiation after still for 10 frames.
+            if (this._stillFrameAccum > 10) {
+                this.animation.stop();
+            }
+        }
     }
 
     /**

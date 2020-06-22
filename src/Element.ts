@@ -153,24 +153,9 @@ export interface ElementTextGuideLineConfig {
     anchor?: Point
 
     /**
-     * If calculate guide line points automatically.
-     */
-    autoCalculate?: boolean
-
-    /**
      * Candidates of connectors. Used when autoCalculate is true and anchor is not specified.
      */
     candidates?: ('left' | 'top' | 'right' | 'bottom')[]
-
-    /**
-     * Length of the first segment near to text.
-     */
-    len?: number
-
-    /**
-     * Length of the second segment near to the element.
-     */
-    len2?: number
 }
 
 export interface ElementEvent {
@@ -249,7 +234,7 @@ export interface ElementProps extends Partial<ElementEventHandlerProps> {
 
 // Properties can be used in state.
 export const PRESERVED_NORMAL_STATE = '__zr_normal__';
-export const PRESERVED_MERGED_STATE = '__zr_merged__';
+// export const PRESERVED_MERGED_STATE = '__zr_merged__';
 
 const PRIMARY_STATES_KEYS = ['x', 'y', 'scaleX', 'scaleY', 'originX', 'originY', 'rotation', 'ignore'] as const;
 const DEFAULT_ANIMATABLE_MAP: Partial<Record<ElementStatePropNames, boolean>> = {
@@ -373,6 +358,8 @@ class Element<Props extends ElementProps = ElementProps> {
     anid: string
 
     currentStates?: string[] = []
+    // prevStates is for storager in echarts.
+    prevStates?: string[]
     /**
      * Store of element state.
      * '__normal__' key is preserved for default properties.
@@ -455,6 +442,8 @@ class Element<Props extends ElementProps = ElementProps> {
             }
             const textConfig = this.textConfig;
             const isLocal = textConfig.local;
+            const attachedTransform = textEl.attachedTransform;
+
             let textAlign: TextAlign;
             let textVerticalAlign: TextVerticalAlign;
 
@@ -466,12 +455,20 @@ class Element<Props extends ElementProps = ElementProps> {
             if (isLocal) {
                 // Apply host's transform.
                 // TODO parent is always be group for developers. But can be displayble inside.
-                textEl.parent = this as unknown as Group;
+                attachedTransform.parent = this as unknown as Group;
             }
             else {
-                textEl.parent = null;
+                attachedTransform.parent = null;
             }
 
+            let innerOrigin = false;
+
+            // Reset x/y/rotation
+            attachedTransform.x = textEl.x;
+            attachedTransform.y = textEl.y;
+            attachedTransform.originX = textEl.originX;
+            attachedTransform.originY = textEl.originY;
+            attachedTransform.rotation = textEl.rotation;
             // Force set attached text's position if `position` is in config.
             if (textConfig.position != null) {
                 tmpBoundingRect.copy(this.getBoundingRect());
@@ -488,8 +485,8 @@ class Element<Props extends ElementProps = ElementProps> {
 
                 // TODO Should modify back if textConfig.position is set to null again.
                 // Or textContent is detached.
-                textEl.x = tmpTextPosCalcRes.x;
-                textEl.y = tmpTextPosCalcRes.y;
+                attachedTransform.x = tmpTextPosCalcRes.x;
+                attachedTransform.y = tmpTextPosCalcRes.y;
 
                 // User specified align/verticalAlign has higher priority, which is
                 // useful in the case that attached text is rotated 90 degree.
@@ -509,24 +506,27 @@ class Element<Props extends ElementProps = ElementProps> {
                         relOriginY = parsePercent(textOrigin[1], tmpBoundingRect.height);
                     }
 
-                    textEl.originX = -textEl.x + relOriginX + (isLocal ? 0 : tmpBoundingRect.x);
-                    textEl.originY = -textEl.y + relOriginY + (isLocal ? 0 : tmpBoundingRect.y);
+                    innerOrigin = true;
+                    attachedTransform.originX = -attachedTransform.x + relOriginX + (isLocal ? 0 : tmpBoundingRect.x);
+                    attachedTransform.originY = -attachedTransform.y + relOriginY + (isLocal ? 0 : tmpBoundingRect.y);
                 }
             }
 
+
             if (textConfig.rotation != null) {
-                textEl.rotation = textConfig.rotation;
+                attachedTransform.rotation = textConfig.rotation;
             }
 
+            // TODO
             const textOffset = textConfig.offset;
             if (textOffset) {
-                textEl.x += textOffset[0];
-                textEl.y += textOffset[1];
+                attachedTransform.x += textOffset[0];
+                attachedTransform.y += textOffset[1];
 
                 // Not change the user set origin.
-                if (!textConfig.origin) {
-                    textEl.originX = -textOffset[0];
-                    textEl.originY = -textOffset[1];
+                if (!innerOrigin) {
+                    attachedTransform.originX = -textOffset[0];
+                    attachedTransform.originY = -textOffset[1];
                 }
             }
 
@@ -697,7 +697,6 @@ class Element<Props extends ElementProps = ElementProps> {
             // Only save keys that are changed by the states.
             animator.saveFinalToTarget(target);
         }
-
     }
 
     protected _innerSaveToNormal(toState: ElementState) {
@@ -888,7 +887,7 @@ class Element<Props extends ElementProps = ElementProps> {
             this.saveCurrentToNormalState(mergedState);
 
             this._applyStateObj(
-                PRESERVED_MERGED_STATE,
+                states.join(','),
                 mergedState,
                 this._normalState,
                 false,
@@ -1050,6 +1049,19 @@ class Element<Props extends ElementProps = ElementProps> {
             }
         }
 
+        if (!transition) {
+            // Keep the running animation to the new values after states changed.
+            // Not simply stop animation. Or it may have jump effect.
+            for (let i = 0; i < this.animators.length; i++) {
+                const animator = this.animators[i];
+                const targetName = animator.targetName
+                animator.__changeFinalValue(targetName
+                    ? ((state || normalState) as any)[targetName]
+                    : (state || normalState)
+                );
+            }
+        }
+
         if (hasTransition) {
             this._transitionState(
                 stateName,
@@ -1136,14 +1148,20 @@ class Element<Props extends ElementProps = ElementProps> {
      * Attach text on element
      */
     setTextContent(textEl: ZRText) {
+        const previousTextContent = this._textContent;
+        if (previousTextContent === textEl) {
+            return;
+        }
         // Remove previous textContent
-        if (this._textContent && this._textContent !== textEl) {
+        if (previousTextContent && previousTextContent !== textEl) {
             this.removeTextContent();
         }
 
         if (textEl.__zr && !textEl.__hostTarget) {
             throw new Error('Text element has been added to zrender.');
         }
+
+        textEl.attachedTransform = new Transformable();
 
         this._attachComponent(textEl);
 
@@ -1170,6 +1188,7 @@ class Element<Props extends ElementProps = ElementProps> {
     removeTextContent() {
         const textEl = this._textContent;
         if (textEl) {
+            textEl.attachedTransform = null;
             this._detachComponent(textEl);
             this._textContent = null;
             this.markRedraw();

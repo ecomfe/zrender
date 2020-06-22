@@ -283,8 +283,8 @@ class Transformable {
         m = m || [];
         mIdentity(m);
 
-        const ox = target.originX;
-        const oy = target.originY;
+        const ox = target.originX || 0;
+        const oy = target.originY || 0;
         const sx = target.scaleX;
         const sy = target.scaleY;
         const rotation = target.rotation || 0;

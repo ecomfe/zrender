@@ -373,6 +373,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
                 // Clone a new style. Not affect the original one.
                 // TODO Performance issue.
                 const sourceStyle = this.style;
+
                 this.style = this.createStyle(needsRestoreToNormal ? {} : sourceStyle);
                 // const sourceStyle = this.style = this.createStyle(this.style);
 
@@ -386,6 +387,17 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
                             // Omit the property has no default value.
                             (this.style as any)[key] = sourceStyle[key];
                         }
+                    }
+                }
+                else {
+                    // If states is switched twice and one property(for example shadowBlur) changed from default value to a specifed value,
+                    // then switched back in ONE FRAME.
+                    // this.style may don't set this property yet when switching back..
+                    // So it won't treat it as an changed property when switching back. And ot won't be animated.
+                    const targetKeys = keys(targetStyle);
+                    for (let i = 0; i < targetKeys.length; i++) {
+                        const key = targetKeys[i];
+                        this.style[key] = this.style[key];
                     }
                 }
 

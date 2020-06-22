@@ -180,6 +180,9 @@ export default class Animation extends Eventful {
      * Start animation.
      */
     start() {
+        if (this._running) {
+            return;
+        }
 
         this._time = new Date().getTime();
         this._pausedTime = 0;

@@ -27,7 +27,7 @@ const globalEventSupported = env.domSupported;
 
 const localNativeListenerNames = (function () {
     const mouseHandlerNames = [
-        'click', 'dblclick', 'mousewheel', 'mouseout',
+        'click', 'dblclick', 'mousewheel', 'wheel', 'mouseout',
         'mouseup', 'mousedown', 'mousemove', 'contextmenu'
     ];
     const touchHandlerNames = [
@@ -53,10 +53,16 @@ const globalNativeListenerNames = {
     pointer: ['pointermove', 'pointerup']
 };
 
+let wheelEventSupported = false;
 
-function eventNameFix(name: string) {
-    return (name === 'mousewheel' && env.browser.firefox) ? 'DOMMouseScroll' : name;
-}
+
+// Although firfox has 'DOMMouseScroll' event and do not has 'mousewheel' event,
+// the 'DOMMouseScroll' event do not performe the same behavior on touch pad device
+// (like on Mac) ('DOMMouseScroll' will be triggered only if a big wheel delta).
+// So we should not use it.
+// function eventNameFix(name: string) {
+//     return (name === 'mousewheel' && env.browser.firefox) ? 'DOMMouseScroll' : name;
+// }
 
 function isPointerFromTouch(event: ZRRawEvent) {
     const pointerType = (event as any).pointerType;
@@ -232,6 +238,34 @@ const localDOMHandlers: DomHandlersMap = {
         this.trigger('mouseout', event);
     },
 
+    wheel(event: ZRRawEvent) {
+        // Morden agent has supported event `wheel` instead of `mousewheel`.
+        // About the polyfill of the props "delta", see "arc/core/event.ts".
+
+        // Firefox only support `wheel` rather than `mousewheel`. Although firfox has been supporting
+        // event `DOMMouseScroll`, it do not act the same behavior as `wheel` on touch pad device
+        // like on Mac, where `DOMMouseScroll` will be triggered only if a big wheel delta occurs,
+        // and it results in no chance to "preventDefault". So we should not use `DOMMouseScroll`.
+
+        wheelEventSupported = true;
+        event = normalizeEvent(this.dom, event);
+        // Follow the definition of the previous version, the zrender event name is still 'mousewheel'.
+        this.trigger('mousewheel', event);
+    },
+
+    mousewheel(event: ZRRawEvent) {
+        // IE8- and some other lagacy agent do not support event `wheel`, so we still listen
+        // to the legacy event `mouseevent`.
+        // Typically if event `wheel` is suppored and the handler has been mounted on a
+        // DOM element, the lagecy `mousewheel` event will not be triggered (Chrome and Safari).
+        // But we still do this guard to avoid to duplicated handle.
+        if (wheelEventSupported) {
+            return;
+        }
+        event = normalizeEvent(this.dom, event);
+        this.trigger('mousewheel', event);
+    },
+
     touchstart(event: ZRRawEvent) {
         // Default mouse behaviour should not be disabled here.
         // For example, page may needs to be slided.
@@ -328,7 +362,7 @@ const localDOMHandlers: DomHandlersMap = {
  * Othere DOM UI Event handlers for zr dom.
  * @this {HandlerProxy}
  */
-zrUtil.each(['click', 'mousewheel', 'dblclick', 'contextmenu'], function (name) {
+zrUtil.each(['click', 'dblclick', 'contextmenu'], function (name) {
     localDOMHandlers[name] = function (event) {
         event = normalizeEvent(this.dom, event);
         this.trigger(name, event);
@@ -482,7 +516,7 @@ function mountSingleDOMEventListener(
 ) {
     scope.mounted[nativeEventName] = listener;
     scope.listenerOpts[nativeEventName] = opt;
-    addEventListener(scope.domTarget, eventNameFix(nativeEventName), listener, opt);
+    addEventListener(scope.domTarget, nativeEventName, listener, opt);
 }
 
 function unmountDOMEventListeners(scope: DOMHandlerScope) {
@@ -490,7 +524,7 @@ function unmountDOMEventListeners(scope: DOMHandlerScope) {
     for (let nativeEventName in mounted) {
         if (mounted.hasOwnProperty(nativeEventName)) {
             removeEventListener(
-                scope.domTarget, eventNameFix(nativeEventName), mounted[nativeEventName],
+                scope.domTarget, nativeEventName, mounted[nativeEventName],
                 scope.listenerOpts[nativeEventName]
             );
         }

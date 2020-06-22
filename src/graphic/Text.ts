@@ -10,11 +10,12 @@ import { DEFAULT_FONT, adjustTextX, adjustTextY } from '../contain/text';
 import ZRImage from './Image';
 import Rect from './shape/Rect';
 import BoundingRect from '../core/BoundingRect';
-import { MatrixArray } from '../core/matrix';
+import { MatrixArray, copy } from '../core/matrix';
 import Displayable, { DisplayableStatePropNames, DisplayableProps, DEFAULT_COMMON_ANIMATION_PROPS } from './Displayable';
 import Path from './Path';
 import { ZRenderType } from '../zrender';
 import Animator from '../animation/Animator';
+import Transformable from '../core/Transformable';
 
 type TextContentBlock = ReturnType<typeof parseRichText>
 type TextLine = TextContentBlock['lines'][0]
@@ -249,6 +250,12 @@ class ZRText extends Displayable<TextProps> {
      */
     overlap: 'hidden' | 'show' | 'blur'
 
+    /**
+     * Calculated transform after the text is attached on some element.
+     * Will override the default transform.
+     */
+    attachedTransform: Transformable
+
     private _children: (ZRImage | Rect | TSpan)[] = []
 
     private _childCursor: 0
@@ -267,7 +274,7 @@ class ZRText extends Displayable<TextProps> {
     update() {
         // Update children
         if (this.styleChanged()) {
-            this._updateSubTexts()
+            this._updateSubTexts();
         }
 
         for (let i = 0; i < this._children.length; i++) {
@@ -281,7 +288,22 @@ class ZRText extends Displayable<TextProps> {
             child.invisible = this.invisible;
         }
 
-        super.update();
+        const attachedTransform = this.attachedTransform;
+        if (attachedTransform) {
+            attachedTransform.updateTransform();
+            const m = attachedTransform.transform;
+            if (m) {
+                this.transform = this.transform || [];
+                // Copy to the transform will be actually used.
+                copy(this.transform, m);
+            }
+            else {
+                this.transform = null;
+            }
+        }
+        else {
+            super.update();
+        }
     }
 
 
@@ -293,7 +315,8 @@ class ZRText extends Displayable<TextProps> {
             this.__hostTarget.updateInnerText(true);
         }
 
-        return super.getComputedTransform();
+        return this.attachedTransform ? this.attachedTransform.getComputedTransform()
+            : super.getComputedTransform();
     }
 
     private _updateSubTexts() {
