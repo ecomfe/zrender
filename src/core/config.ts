@@ -5,7 +5,7 @@
 /**
  * Determine when to turn on dark mode based on the luminance of backgroundColor
  */
-export const DARK_MODE_THRESHOLD = 0.3;
+export const DARK_MODE_THRESHOLD = 0.4;
 
 /**
  * Color of default dark label.
