@@ -826,7 +826,7 @@ class ZRText extends Displayable<TextProps> {
     static makeFont(style: TextStylePropsPart): string {
         // FIXME in node-canvas fontWeight is before fontStyle
         // Use `fontSize` `fontFamily` to check whether font properties are defined.
-        const font = (style.fontSize || style.fontFamily) && [
+        const font = (style.fontSize || style.fontFamily || style.fontWeight) && [
             style.fontStyle,
             style.fontWeight,
             (style.fontSize || 12) + 'px',
