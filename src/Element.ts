@@ -621,9 +621,14 @@ class Element<Props extends ElementProps = ElementProps> {
         const backgroundColor = this.__zr && this.__zr.getBackgroundColor();
         let colorArr = typeof backgroundColor === 'string' && parse(backgroundColor as string);
         if (!colorArr) {
-            colorArr = [255, 255, 255, 0.8];
+            colorArr = [255, 255, 255, 1];
         }
-        colorArr[3] = 0.8;
+        // Assume blending on a white background.
+        const alpha = colorArr[3];
+        for (let i = 0; i < 3; i++) {
+            colorArr[i] = colorArr[i] * alpha + 255 * (1 - alpha);
+        }
+        colorArr[3] = 1;
         return stringify(colorArr, 'rgba');
     }
 
