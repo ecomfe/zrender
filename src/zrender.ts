@@ -87,6 +87,8 @@ class ZRender {
      */
     private _darkMode = false;
 
+    private _backgroundColor: string | GradientObject | PatternObject;
+
     constructor(id: number, dom: HTMLElement, opts?: ZRenderInitOpt) {
         opts = opts || {};
 
@@ -171,7 +173,12 @@ class ZRender {
             this.painter.setBackgroundColor(backgroundColor);
         }
         this._needsRefresh = true;
+        this._backgroundColor = backgroundColor;
         this._darkMode = isDarkMode(backgroundColor);
+    }
+
+    getBackgroundColor() {
+        return this._backgroundColor;
     }
 
     /**

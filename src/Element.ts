@@ -22,7 +22,8 @@ import Polyline from './graphic/shape/Polyline';
 import Group from './graphic/Group';
 import Point from './core/Point';
 import { LIGHT_LABEL_COLOR, DARK_MODE_THRESHOLD, DARK_LABEL_COLOR } from './core/config';
-import { lum } from './tool/color';
+import { lum, modifyAlpha, parse, stringify } from './tool/color';
+import { color } from './export';
 
 export interface ElementAnimateConfig {
     duration?: number
@@ -616,8 +617,14 @@ class Element<Props extends ElementProps = ElementProps> {
         return this.__zr && this.__zr.isDarkMode() ? LIGHT_LABEL_COLOR : DARK_LABEL_COLOR;
     }
 
-    protected getOutsideStroke(textFill: string) {
-        return lum(textFill) < DARK_MODE_THRESHOLD ? 'rgba(255, 255, 255, 0.7)' : null;
+    protected getOutsideStroke(textFill: string): string {
+        const backgroundColor = this.__zr && this.__zr.getBackgroundColor();
+        let colorArr = typeof backgroundColor === 'string' && parse(backgroundColor as string);
+        if (!colorArr) {
+            colorArr = [255, 255, 255, 0.8];
+        }
+        colorArr[3] = 0.8;
+        return stringify(colorArr, 'rgba');
     }
 
     traverse<Context>(

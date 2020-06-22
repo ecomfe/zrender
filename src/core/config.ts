@@ -10,7 +10,7 @@ export const DARK_MODE_THRESHOLD = 0.4;
 /**
  * Color of default dark label.
  */
-export const DARK_LABEL_COLOR = '#111';
+export const DARK_LABEL_COLOR = '#333';
 
 /**
  * Color of default light label.
