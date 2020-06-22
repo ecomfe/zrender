@@ -196,4 +196,10 @@ export default class Point {
         out.x = p0.x + p1.x * scalar;
         out.y = p0.y + p1.y * scalar;
     }
+
+    static lerp(out: PointLike, p0: PointLike, p1: PointLike, t: number) {
+        const onet = 1 - t;
+        out.x = onet * p0.x + t * p1.x;
+        out.y = onet * p0.y + t * p1.y;
+    }
 }
