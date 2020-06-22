@@ -588,24 +588,24 @@ function wrapText(
     let lines: string[] = [];
     let linesWidths: number[] = [];
     let line = '';
-    let lastWord = '';
-    let lastWordWidth = 0;
+    let currentWord = '';
+    let currentWordWidth = 0;
     let accumWidth = 0;
 
     for (let i = 0; i < text.length; i++) {
 
         const ch = text.charAt(i);
         if (ch === '\n') {
-            if (lastWord) {
-                line += lastWord;
-                accumWidth += lastWordWidth;
+            if (currentWord) {
+                line += currentWord;
+                accumWidth += currentWordWidth;
             }
             lines.push(line);
             linesWidths.push(accumWidth);
             // Reset
             line = '';
-            lastWord = '';
-            lastWordWidth = 0;
+            currentWord = '';
+            currentWordWidth = 0;
             accumWidth = 0;
             continue;
         }
@@ -619,13 +619,13 @@ function wrapText(
         ) {
             if (!accumWidth) {  // If nothing appended yet.
                 if (inWord) {
-                    // The word length is too long for lineWidth
+                    // The word length is still too long for one line
                     // Force break the word
-                    lines.push(lastWord);
-                    linesWidths.push(lastWordWidth);
+                    lines.push(currentWord);
+                    linesWidths.push(currentWordWidth);
 
-                    lastWord = ch;
-                    lastWordWidth = chWidth;
+                    currentWord = ch;
+                    currentWordWidth = chWidth;
                 }
                 else {
                     // lineWidth is too small for ch
@@ -633,24 +633,34 @@ function wrapText(
                     linesWidths.push(chWidth);
                 }
             }
-            else if (line || lastWord) {
+            else if (line || currentWord) {
                 if (inWord) {
+                    if (!line) {
+                        // The one word is still too long for one line
+                        // Force break the word
+                        // TODO Keep the word?
+                        line = currentWord;
+                        currentWord = '';
+                        currentWordWidth = 0;
+                        accumWidth = currentWordWidth;
+                    }
+
                     lines.push(line);
-                    linesWidths.push(accumWidth - lastWordWidth);
+                    linesWidths.push(accumWidth - currentWordWidth);
 
                     // Break the whole word
-                    lastWord += ch;
-                    lastWordWidth += chWidth;
+                    currentWord += ch;
+                    currentWordWidth += chWidth;
                     line = '';
-                    accumWidth = lastWordWidth;
+                    accumWidth = currentWordWidth;
                 }
                 else {
                     // Append lastWord if have
-                    if (lastWord) {
-                        line += lastWord;
-                        accumWidth += lastWordWidth;
-                        lastWord = '';
-                        lastWordWidth = 0;
+                    if (currentWord) {
+                        line += currentWord;
+                        accumWidth += currentWordWidth;
+                        currentWord = '';
+                        currentWordWidth = 0;
                     }
                     lines.push(line);
                     linesWidths.push(accumWidth);
@@ -666,16 +676,16 @@ function wrapText(
         accumWidth += chWidth;
 
         if (inWord) {
-            lastWord += ch;
-            lastWordWidth += chWidth;
+            currentWord += ch;
+            currentWordWidth += chWidth;
         }
         else {
             // Append whole word
-            if (lastWord) {
-                line += lastWord;
+            if (currentWord) {
+                line += currentWord;
                 // Reset
-                lastWord = '';
-                lastWordWidth = 0;
+                currentWord = '';
+                currentWordWidth = 0;
             }
 
             // Append character
@@ -685,13 +695,13 @@ function wrapText(
 
     if (!lines.length && !line) {
         line = text;
-        lastWord = '';
-        lastWordWidth = 0;
+        currentWord = '';
+        currentWordWidth = 0;
     }
 
     // Append last line.
-    if (lastWord) {
-        line += lastWord;
+    if (currentWord) {
+        line += currentWord;
     }
     if (line) {
         lines.push(line);
