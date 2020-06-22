@@ -25,6 +25,8 @@ import { EventCallback } from './core/Eventful';
 import TSpan from './graphic/TSpan';
 import ZRImage from './graphic/Image';
 import Displayable from './graphic/Displayable';
+import { lum } from './tool/color';
+import { DARK_MODE_THRESHOLD } from './core/config';
 
 
 const useVML = !env.canvasSupported;
@@ -33,15 +35,35 @@ type PainterBaseCtor = {
     new(dom: HTMLElement, storage: Storage, ...args: any[]): PainterBase
 }
 
-const painterCtors: Dictionary<PainterBaseCtor> = {
-};
+const painterCtors: Dictionary<PainterBaseCtor> = {};
 
 let instances: { [key: number]: ZRender } = {};
 
-
-
 function delInstance(id: number) {
     delete instances[id];
+}
+
+function isDarkMode(backgroundColor: string | GradientObject | PatternObject): boolean {
+    if (!backgroundColor) {
+        return false;
+    }
+    if (typeof backgroundColor === 'string') {
+        return lum(backgroundColor) < DARK_MODE_THRESHOLD;
+    }
+    else if ((backgroundColor as GradientObject).colorStops) {
+        const colorStops = (backgroundColor as GradientObject).colorStops;
+        let totalLum = 0;
+        const len = colorStops.length;
+        // Simply do the math of average the color. Not consider the offset
+        for (let i = 0; i < len; i++) {
+            totalLum += lum(colorStops[i].color);
+        }
+        totalLum /= len;
+
+        return totalLum < DARK_MODE_THRESHOLD;
+    }
+    // Can't determine
+    return false;
 }
 
 class ZRender {
@@ -59,6 +81,11 @@ class ZRender {
 
     private _needsRefresh = true
     private _needsRefreshHover = true
+
+    /**
+     * If theme is dark mode. It will determine the color strategy for labels.
+     */
+    private _darkMode = false;
 
     constructor(id: number, dom: HTMLElement, opts?: ZRenderInitOpt) {
         opts = opts || {};
@@ -139,13 +166,23 @@ class ZRender {
     /**
      * Set background color
      */
-    setBackgroundColor(
-        backgroundColor: string | GradientObject | PatternObject
-    ) {
+    setBackgroundColor(backgroundColor: string | GradientObject | PatternObject) {
         if (this.painter.setBackgroundColor) {
             this.painter.setBackgroundColor(backgroundColor);
         }
         this._needsRefresh = true;
+        this._darkMode = isDarkMode(backgroundColor);
+    }
+
+    /**
+     * Force to set dark mode
+     */
+    setDarkMode(darkMode: boolean) {
+        this._darkMode = darkMode;
+    }
+
+    isDarkMode() {
+        return this._darkMode;
     }
 
     /**

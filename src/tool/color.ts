@@ -530,6 +530,14 @@ export function stringify(arrColor: number[], type: string): string {
 }
 
 /**
+ * Calculate luminance. It will include alpha.
+ */
+export function lum(color: string) {
+    const arr = parse(color);
+    return (0.299 * arr[0] + 0.587 * arr[1] + 0.114 * arr[2]) * arr[3] / 255;
+}
+
+/**
  * Generate a random color
  */
 export function random(): string {

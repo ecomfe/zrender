@@ -21,6 +21,8 @@ import {
 import Polyline from './graphic/shape/Polyline';
 import Group from './graphic/Group';
 import Point from './core/Point';
+import { LIGHT_LABEL_COLOR, DARK_MODE_THRESHOLD, DARK_LABEL_COLOR } from './core/config';
+import { lum } from './tool/color';
 
 export interface ElementAnimateConfig {
     duration?: number
@@ -558,10 +560,8 @@ class Element<Props extends ElementProps = ElementProps> {
                 textFill = textConfig.outsideFill;
                 textStroke = textConfig.outsideStroke;
 
-                // Not pretty sure by default use #000 or host el color on outsideFill.
-                // Conservatively, use #000.
                 if (textFill == null) {
-                    textFill = '#000';
+                    textFill = this.getOutsideFill();
                 }
                 // By default give a stroke to distinguish "front end" label with
                 // messy background (like other text label, line or other graphic).
@@ -569,7 +569,7 @@ class Element<Props extends ElementProps = ElementProps> {
                 if (textStroke == null) {
                     // If some time need to customize the default stroke getter,
                     // add some kind of override method.
-                    textStroke = 'rgba(255, 255, 255, 0.9)';
+                    textStroke = this.getOutsideStroke(textFill);
                     autoStroke = true;
                 }
             }
@@ -608,17 +608,17 @@ class Element<Props extends ElementProps = ElementProps> {
         return '#fff';
     }
 
-    protected getInsideTextStroke(textFill?: string): string {
+    protected getInsideTextStroke(textFill: string): string {
         return '#000';
     }
 
-    // protected getOutsideFill() {
-    //     return '#000';
-    // }
+    protected getOutsideFill() {
+        return this.__zr && this.__zr.isDarkMode() ? LIGHT_LABEL_COLOR : DARK_LABEL_COLOR;
+    }
 
-    // protected getOutsideStroke(textFill?: string) {
-    //     return 'rgba(255, 255, 255, 0.7)';
-    // }
+    protected getOutsideStroke(textFill: string) {
+        return lum(textFill) < DARK_MODE_THRESHOLD ? 'rgba(255, 255, 255, 0.7)' : null;
+    }
 
     traverse<Context>(
         cb: (this: Context, el: Element<Props>) => void,

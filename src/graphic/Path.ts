@@ -14,7 +14,8 @@ import { LinearGradientObject } from './LinearGradient';
 import { RadialGradientObject } from './RadialGradient';
 import { defaults, keys, extend, clone, isString, createObject } from '../core/util';
 import Animator from '../animation/Animator';
-import { parse } from '../tool/color';
+import { lum } from '../tool/color';
+import { DARK_LABEL_COLOR, LIGHT_LABEL_COLOR, DARK_MODE_THRESHOLD } from '../core/config';
 
 export interface PathStyleProps extends CommonStyleProps {
     fill?: string | PatternObject | LinearGradientObject | RadialGradientObject
@@ -198,31 +199,36 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         return {};
     }
 
-    // protected getInsideTextFill() {
-    //     const pathFill = this.style.fill;
-    //     if (pathFill !== 'none') {
-    //         if (isString(pathFill)) {
-    //             // Determin text color based on the lum of path fill.
-    //             const arr = parse(pathFill);
-    //             const lum =  (0.299 * arr[0] + 0.587 * arr[1] + 0.114 * arr[2]) * arr[3] / 255;
-    //             if (lum > 0.5) {
-    //                 return '#000';
-    //             }
-    //             return '#fff';
-    //         }
-    //         else if (pathFill) {
-    //             return '#fff';
-    //         }
+    protected getInsideTextFill() {
+        const pathFill = this.style.fill;
+        if (pathFill !== 'none') {
+            if (isString(pathFill)) {
+                // Determin text color based on the lum of path fill.
+                // TODO use (1 - DARK_MODE_THRESHOLD)?
+                if (lum(pathFill) > 0.6) {
+                    return DARK_LABEL_COLOR;
+                }
+                return LIGHT_LABEL_COLOR;
+            }
+            else if (pathFill) {
+                return LIGHT_LABEL_COLOR;
+            }
 
-    //     }
-    //     return '#000';
-    // }
+        }
+        return DARK_LABEL_COLOR;
+    }
 
     protected getInsideTextStroke(textFill?: string) {
         const pathFill = this.style.fill;
         // Not stroke on none fill object or gradient object
         if (isString(pathFill)) {
-            return pathFill;
+            const zr = this.__zr;
+            const isDarkMode = !!(zr && zr.isDarkMode());
+            const isDarkLabel = lum(textFill) < DARK_MODE_THRESHOLD;
+            // All dark or all light.
+            if (isDarkMode === isDarkLabel) {
+                return pathFill;
+            }
         }
     }
 
