@@ -548,10 +548,10 @@ class Element<Props extends ElementProps = ElementProps> {
                 textFill = textConfig.insideFill;
                 textStroke = textConfig.insideStroke;
 
-                if (textFill == null) {
+                if (textFill == null || textFill === 'auto') {
                     textFill = this.getInsideTextFill();
                 }
-                if (textStroke == null) {
+                if (textStroke == null || textStroke === 'auto') {
                     textStroke = this.getInsideTextStroke(textFill);
                     autoStroke = true;
                 }
@@ -560,13 +560,13 @@ class Element<Props extends ElementProps = ElementProps> {
                 textFill = textConfig.outsideFill;
                 textStroke = textConfig.outsideStroke;
 
-                if (textFill == null) {
+                if (textFill == null || textFill === 'auto') {
                     textFill = this.getOutsideFill();
                 }
                 // By default give a stroke to distinguish "front end" label with
                 // messy background (like other text label, line or other graphic).
                 // If textContent.style.fill specified, this auto stroke will not be used.
-                if (textStroke == null) {
+                if (textStroke == null || textStroke === 'auto') {
                     // If some time need to customize the default stroke getter,
                     // add some kind of override method.
                     textStroke = this.getOutsideStroke(textFill);
