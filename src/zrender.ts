@@ -48,7 +48,7 @@ function isDarkMode(backgroundColor: string | GradientObject | PatternObject): b
         return false;
     }
     if (typeof backgroundColor === 'string') {
-        return lum(backgroundColor) < DARK_MODE_THRESHOLD;
+        return lum(backgroundColor, 1) < DARK_MODE_THRESHOLD;
     }
     else if ((backgroundColor as GradientObject).colorStops) {
         const colorStops = (backgroundColor as GradientObject).colorStops;
@@ -56,7 +56,7 @@ function isDarkMode(backgroundColor: string | GradientObject | PatternObject): b
         const len = colorStops.length;
         // Simply do the math of average the color. Not consider the offset
         for (let i = 0; i < len; i++) {
-            totalLum += lum(colorStops[i].color);
+            totalLum += lum(colorStops[i].color, 1);
         }
         totalLum /= len;
 

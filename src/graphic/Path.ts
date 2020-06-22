@@ -205,7 +205,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
             if (isString(pathFill)) {
                 // Determin text color based on the lum of path fill.
                 // TODO use (1 - DARK_MODE_THRESHOLD)?
-                if (lum(pathFill) > 0.6) {
+                if (lum(pathFill, 0) > 0.6) {   // TODO Consider background lum?
                     return DARK_LABEL_COLOR;
                 }
                 return LIGHT_LABEL_COLOR;
@@ -224,7 +224,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         if (isString(pathFill)) {
             const zr = this.__zr;
             const isDarkMode = !!(zr && zr.isDarkMode());
-            const isDarkLabel = lum(textFill) < DARK_MODE_THRESHOLD;
+            const isDarkLabel = lum(textFill, 0) < DARK_MODE_THRESHOLD;
             // All dark or all light.
             if (isDarkMode === isDarkLabel) {
                 return pathFill;

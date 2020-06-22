@@ -15,4 +15,4 @@ export const DARK_LABEL_COLOR = '#333';
 /**
  * Color of default light label.
  */
-export const LIGHT_LABEL_COLOR = '#fff';
+export const LIGHT_LABEL_COLOR = '#ddd';
