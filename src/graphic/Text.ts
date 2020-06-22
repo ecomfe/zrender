@@ -147,9 +147,12 @@ export interface TextStyleProps extends TextStylePropsPart {
 
     /**
      * Strategy when calculated text width exceeds textWidth.
+     * break: break by word
+     * break: will break inside the word
+     * truncate: truncate the text and show ellipsis
      * Do nothing if not set
      */
-    overflow?: 'wrap' | 'truncate'
+    overflow?: 'break' | 'breakAll' | 'truncate'
 
     /**
      * Strategy when text lines exceeds textHeight.
@@ -515,7 +518,7 @@ class ZRText extends Displayable<TextProps> {
         const hasShadow = style.textShadowBlur > 0;
 
         const fixedBoundingRect = style.width != null
-            && (style.overflow === 'truncate' || style.overflow === 'wrap');
+            && (style.overflow === 'truncate' || style.overflow === 'break' || style.overflow === 'breakAll');
         const calculatedLineHeight = contentBlock.calculatedLineHeight;
 
         for (let i = 0; i < textLines.length; i++) {

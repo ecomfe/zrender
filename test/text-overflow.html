@@ -31,7 +31,8 @@
         fontSize: 13,
         fixedLineHeight: false,
         lineHeight: 14,
-        rich: true
+        rich: true,
+        breakAll: false
     }
 
 
@@ -44,7 +45,7 @@
             borderColor: '#000',
             borderWidth: 1,
 
-            overflow: 'wrap',
+            overflow: 'break',
             lineOverflow: 'truncate',
             ellipsis: '…'
         }
@@ -60,7 +61,7 @@
             borderColor: '#000',
             borderWidth: 1,
 
-            overflow: 'wrap',
+            overflow: 'break',
             lineOverflow: 'truncate',
             ellipsis: '…',
 
@@ -73,6 +74,8 @@
     function update() {
         enText.style.width = cnText.style.width = config.width;
         enText.style.height = cnText.style.height = config.height;
+
+        enText.style.overflow = config.breakAll ? 'breakAll' : 'break';
 
         cnText.style.x = config.width + 100;
 
@@ -118,6 +121,7 @@
     gui.add(config, 'fixedLineHeight').onChange(update);
     gui.add(config, 'lineHeight', 12, 50).onChange(update);
     gui.add(config, 'rich').onChange(update);
+    gui.add(config, 'breakAll').onChange(update);
 
     update();
     </script>

@@ -174,17 +174,18 @@ export function parsePlainText(
     text != null && (text += '');
 
     // textPadding has been normalized
+    const overflow = style.overflow;
     const padding = style.padding as number[];
     const font = style.font;
-    const truncate = style.overflow === 'truncate';
+    const truncate = overflow === 'truncate';
     const calculatedLineHeight = getLineHeight(font);
     const lineHeight = retrieve2(style.lineHeight, calculatedLineHeight);
 
     let width = style.width;
     let lines: string[];
 
-    if (width != null && style.overflow === 'wrap') {
-        lines = text ? wrapText(text, style.font, width, 0).lines : [];
+    if (width != null && overflow === 'break' || overflow === 'breakAll') {
+        lines = text ? wrapText(text, style.font, width, overflow === 'breakAll', 0).lines : [];
     }
     else {
         lines = text ? text.split('\n') : [];
@@ -293,7 +294,8 @@ export class RichTextContentBlock {
 
 type WrapInfo = {
     width: number,
-    accumWidth: number
+    accumWidth: number,
+    breakAll: boolean
 }
 /**
  * For example: 'some text {a|some text}other text{b|some text}xxx{c|}xxx'
@@ -310,8 +312,9 @@ export function parseRichText(text: string, style: TextStyleProps) {
 
     const topWidth = style.width;
     const topHeight = style.height;
-    let wrapInfo: WrapInfo = style.overflow === 'wrap' && topWidth != null
-        ? {width: topWidth, accumWidth: 0}
+    const overflow = style.overflow;
+    let wrapInfo: WrapInfo = (overflow === 'break' || overflow === 'breakAll') && topWidth != null
+        ? {width: topWidth, accumWidth: 0, breakAll: overflow === 'breakAll'}
         : null;
 
     let lastIndex = STYLE_REG.lastIndex = 0;
@@ -337,7 +340,7 @@ export function parseRichText(text: string, style: TextStyleProps) {
 
     const stlPadding = style.padding as number[];
 
-    const truncate = style.overflow === 'truncate';
+    const truncate = overflow === 'truncate';
     const truncateLine = style.lineOverflow === 'truncate';
 
     let prevToken: RichTextToken;
@@ -500,7 +503,7 @@ function pushTokens(
             wrapInfo.accumWidth = outerWidth;
         }
         else {
-            const res = wrapText(str, font, wrapInfo.width, wrapInfo.accumWidth);
+            const res = wrapText(str, font, wrapInfo.width, wrapInfo.breakAll, wrapInfo.accumWidth);
             wrapInfo.accumWidth = res.accumWidth + tokenPaddingH;
             linesWidths = res.linesWidths;
             strLines = res.lines;
@@ -568,16 +571,18 @@ const breakCharMap = reduce(',&?/;] '.split(''), function (obj, ch) {
 function isWordBreakChar(ch: string) {
     if (isLatin(ch)) {
         if (breakCharMap[ch]) {
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
+    return true;
 }
 
 function wrapText(
     text: string,
     font: string,
     lineWidth: number,
+    isBreakAll: boolean,
     lastAccumWidth: number
 ) {
     let lines: string[] = [];
@@ -606,7 +611,7 @@ function wrapText(
         }
 
         const chWidth = getWidth(ch, font);
-        const inWord = isWordBreakChar(ch);
+        const inWord = isBreakAll ? false : !isWordBreakChar(ch);
 
         if (!lines.length
             ? lastAccumWidth + accumWidth + chWidth > lineWidth
