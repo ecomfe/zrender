@@ -1680,30 +1680,6 @@ function animateToShallow<T>(
     const keyLen = animatableKeys.length;
 
     if (keyLen > 0 || cfg.force) {
-        let revertedSource: Dictionary<any>;
-        let reversedTarget: Dictionary<any>;
-        let sourceClone: Dictionary<any>;
-        if (reverse) {
-            reversedTarget = {};
-            revertedSource = {};
-            for (let i = 0; i < keyLen; i++) {
-                const innerKey = animatableKeys[i];
-                reversedTarget[innerKey] = source[innerKey];
-                // Animate from target
-                revertedSource[innerKey] = target[innerKey];
-            }
-        }
-        else if (setToFinal) {
-            sourceClone = {};
-            for (let i = 0; i < keyLen; i++) {
-                const innerKey = animatableKeys[i];
-                sourceClone[innerKey] = cloneValue(source[innerKey]);
-                // Use copy, not change the original reference
-                // Copy from target to source.
-                copyValue(source, target, innerKey);
-            }
-        }
-
         // Find last animator animating same prop.
         const existsAnimators = animatable.animators;
         let lastAnimator;
@@ -1721,6 +1697,31 @@ function animateToShallow<T>(
             if (allAborted) {   // This animator can't be used.
                 const idx = indexOf(existsAnimators, lastAnimator);
                 existsAnimators.splice(idx, 1);
+            }
+        }
+
+        let revertedSource: Dictionary<any>;
+        let reversedTarget: Dictionary<any>;
+        let sourceClone: Dictionary<any>;
+        if (reverse) {
+            reversedTarget = {};
+            revertedSource = {};
+            for (let i = 0; i < keyLen; i++) {
+                const innerKey = animatableKeys[i];
+                reversedTarget[innerKey] = source[innerKey];
+                // Animate from target
+                revertedSource[innerKey] = target[innerKey];
+            }
+        }
+        else if (setToFinal) {
+            sourceClone = {};
+            for (let i = 0; i < keyLen; i++) {
+                const innerKey = animatableKeys[i];
+                // NOTE: Must clone source after the stopTracks. The property may be modified in stopTracks.
+                sourceClone[innerKey] = cloneValue(source[innerKey]);
+                // Use copy, not change the original reference
+                // Copy from target to source.
+                copyValue(source, target, innerKey);
             }
         }
 
