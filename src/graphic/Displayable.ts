@@ -391,9 +391,9 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
                 }
                 else {
                     // If states is switched twice and one property(for example shadowBlur) changed from default value to a specifed value,
-                    // then switched back in ONE FRAME.
-                    // this.style may don't set this property yet when switching back..
-                    // So it won't treat it as an changed property when switching back. And ot won't be animated.
+                    // then switched back in ONE FRAME. this.style may don't set this property yet when switching back.
+                    // It won't treat it as an changed property when switching back. And it won't be animated.
+                    // So here we make sure the properties will be animated from default value to a specifed value are set.
                     const targetKeys = keys(targetStyle);
                     for (let i = 0; i < targetKeys.length; i++) {
                         const key = targetKeys[i];

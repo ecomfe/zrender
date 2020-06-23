@@ -15,7 +15,7 @@ import { RadialGradientObject } from './RadialGradient';
 import { defaults, keys, extend, clone, isString, createObject } from '../core/util';
 import Animator from '../animation/Animator';
 import { lum } from '../tool/color';
-import { DARK_LABEL_COLOR, LIGHT_LABEL_COLOR, DARK_MODE_THRESHOLD } from '../core/config';
+import { DARK_LABEL_COLOR, LIGHT_LABEL_COLOR, DARK_MODE_THRESHOLD, LIGHTER_LABEL_COLOR } from '../core/config';
 
 export interface PathStyleProps extends CommonStyleProps {
     fill?: string | PatternObject | LinearGradientObject | RadialGradientObject
@@ -203,10 +203,14 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         const pathFill = this.style.fill;
         if (pathFill !== 'none') {
             if (isString(pathFill)) {
+                const fillLum = lum(pathFill, 0);
                 // Determin text color based on the lum of path fill.
                 // TODO use (1 - DARK_MODE_THRESHOLD)?
-                if (lum(pathFill, 0) > 0.6) {   // TODO Consider background lum?
+                if (fillLum > 0.6) {   // TODO Consider background lum?
                     return DARK_LABEL_COLOR;
+                }
+                else if (fillLum > 0.3) {
+                    return LIGHTER_LABEL_COLOR;
                 }
                 return LIGHT_LABEL_COLOR;
             }

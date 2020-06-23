@@ -137,6 +137,9 @@ export default class Point {
      * Apply a transform matrix array.
      */
     transform(m: MatrixArray) {
+        if (!m) {
+            return;
+        }
         const x = this.x;
         const y = this.y;
         this.x = m[0] * x + m[2] * y + m[4];
