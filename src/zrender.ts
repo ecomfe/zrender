@@ -26,7 +26,7 @@ import TSpan from './graphic/TSpan';
 import ZRImage from './graphic/Image';
 import Displayable from './graphic/Displayable';
 import { lum } from './tool/color';
-import { DARK_MODE_THRESHOLD } from './core/config';
+import { DARK_MODE_THRESHOLD } from './config';
 
 
 const useVML = !env.canvasSupported;

@@ -21,7 +21,7 @@ import {
 import Polyline from './graphic/shape/Polyline';
 import Group from './graphic/Group';
 import Point from './core/Point';
-import { LIGHT_LABEL_COLOR, DARK_MODE_THRESHOLD, DARK_LABEL_COLOR } from './core/config';
+import { LIGHT_LABEL_COLOR, DARK_MODE_THRESHOLD, DARK_LABEL_COLOR } from './config';
 import { lum, modifyAlpha, parse, stringify } from './tool/color';
 import { color } from './export';
 
