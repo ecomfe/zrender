@@ -1723,12 +1723,24 @@ function animateToShallow<T>(
         let sourceClone: Dictionary<any>;
         if (reverse) {
             reversedTarget = {};
-            revertedSource = {};
+            if (setToFinal) {
+                revertedSource = {};
+            }
             for (let i = 0; i < keyLen; i++) {
                 const innerKey = animatableKeys[i];
                 reversedTarget[innerKey] = source[innerKey];
-                // Animate from target
-                revertedSource[innerKey] = target[innerKey];
+                if (setToFinal) {
+                    revertedSource[innerKey] = target[innerKey];
+                }
+                else {
+                    // The usage of "animateFrom" expects that the element props has been updated dirctly to
+                    // "final" values outside, and input the "from" values here (i.e., in variable `target` here).
+                    // So here we assign the "from" values directly to element here (rather that in the next frame)
+                    // to prevent the "final" values from being read in any other places (like other running
+                    // animator during callbacks).
+                    // But if `setToFinal: true` this feature can not be satisfied.
+                    source[innerKey] = target[innerKey];
+                }
             }
         }
         else if (setToFinal) {
@@ -1749,7 +1761,7 @@ function animateToShallow<T>(
             animator.scope = cfg.scope;
         }
 
-        if (revertedSource) {
+        if (setToFinal && revertedSource) {
             animator.whenWithKeys(0, revertedSource, animatableKeys);
         }
         if (sourceClone) {
