@@ -232,6 +232,8 @@ export interface ElementProps extends Partial<ElementEventHandlerProps> {
     clipPath?: Path
     drift?: Element['drift']
 
+    extra?: Dictionary<unknown>
+
     // For echarts animation.
     anid?: string
 }
@@ -360,6 +362,8 @@ class Element<Props extends ElementProps = ElementProps> {
      * Id for mapping animation
      */
     anid: string
+
+    extra: Dictionary<unknown>
 
     currentStates?: string[] = []
     // prevStates is for storager in echarts.
@@ -647,6 +651,10 @@ class Element<Props extends ElementProps = ElementProps> {
         }
         else if (key === 'clipPath') {
             this.setClipPath(value as Path);
+        }
+        else if (key === 'extra') {
+            this.extra = this.extra || {};
+            extend(this.extra, value);
         }
         else {
             (this as any)[key] = value;
