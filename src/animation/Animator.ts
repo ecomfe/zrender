@@ -1012,9 +1012,6 @@ export default class Animator<T> {
                     val = rgba2String(val as number[]);
                 }
 
-                if (propName === 'opacity' && val === 0) {
-                    debugger;
-                }
                 (target as any)[propName] = val;
             }
         }

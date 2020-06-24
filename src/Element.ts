@@ -1212,6 +1212,7 @@ class Element<Props extends ElementProps = ElementProps> {
             textEl.attachedTransform = null;
             this._detachComponent(textEl);
             this._textContent = null;
+            this._innerTextDefaultStyle = null;
             this.markRedraw();
         }
     }
