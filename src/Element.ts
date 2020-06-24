@@ -21,9 +21,8 @@ import {
 import Polyline from './graphic/shape/Polyline';
 import Group from './graphic/Group';
 import Point from './core/Point';
-import { LIGHT_LABEL_COLOR, DARK_MODE_THRESHOLD, DARK_LABEL_COLOR } from './config';
-import { lum, modifyAlpha, parse, stringify } from './tool/color';
-import { color } from './export';
+import { LIGHT_LABEL_COLOR, DARK_LABEL_COLOR } from './config';
+import { parse, stringify } from './tool/color';
 
 export interface ElementAnimateConfig {
     duration?: number
@@ -31,6 +30,8 @@ export interface ElementAnimateConfig {
     easing?: AnimationEasing
     done?: Function
     during?: (percent: number) => void
+
+    scope?: string
     /**
      * If force animate
      * Prevent stop animation and callback
@@ -695,7 +696,7 @@ class Element<Props extends ElementProps = ElementProps> {
         const normalState = this._normalState;
         for (let i = 0; i < this.animators.length; i++) {
             const animator = this.animators[i];
-            const fromStateTransition = animator.__fromStateTransition;
+            const fromStateTransition = animator.scope;
             // Ignore animation from state transition(except normal).
             if (fromStateTransition && fromStateTransition !== PRESERVED_NORMAL_STATE) {
                 continue;
@@ -1335,11 +1336,11 @@ class Element<Props extends ElementProps = ElementProps> {
         const zr = this.__zr;
 
         const el = this;
-        const animators = el.animators;
 
         animator.during(function () {
             el.updateDuringAnimation(key as string);
         }).done(function () {
+            const animators = el.animators;
             // FIXME Animator will not be removed if use `Animator#stop` to stop animation
             const idx = indexOf(animators, animator);
             if (idx >= 0) {
@@ -1347,7 +1348,7 @@ class Element<Props extends ElementProps = ElementProps> {
             }
         });
 
-        animators.push(animator);
+        this.animators.push(animator);
 
         // If animate after added to the zrender
         if (zr) {
@@ -1363,13 +1364,20 @@ class Element<Props extends ElementProps = ElementProps> {
      * 停止动画
      * @param {boolean} forwardToLast If move to last frame before stop
      */
-    stopAnimation(forwardToLast?: boolean) {
+    stopAnimation(scope?: string, forwardToLast?: boolean) {
         const animators = this.animators;
         const len = animators.length;
+        const leftAnimators: Animator<any>[] = [];
         for (let i = 0; i < len; i++) {
-            animators[i].stop(forwardToLast);
+            const animator = animators[i];
+            if (!scope || scope === animator.scope) {
+                animator.stop(forwardToLast);
+            }
+            else {
+                leftAnimators.push(animator);
+            }
         }
-        this.animators = [];
+        this.animators = leftAnimators;
 
         return this;
     }
@@ -1415,7 +1423,7 @@ class Element<Props extends ElementProps = ElementProps> {
     protected _transitionState(stateName: string, target: Props, cfg?: ElementAnimateConfig, animationProps?: MapToType<Props, boolean>) {
         const animators = animateTo(this, target, cfg, animationProps);
         for (let i = 0; i < animators.length; i++) {
-            animators[i].__fromStateTransition = stateName;
+            animators[i].scope = stateName;
         }
     }
 
@@ -1560,6 +1568,7 @@ function animateTo<T>(
 
     // Adding during callback to the first animator
     if (animators.length > 0 && typeof cfg.during === 'function') {
+        // TODO If there are two animators in animateTo, and the first one is stopped by other animator.
         animators[0].during((target, percent) => {
             cfg.during(percent);
         });
@@ -1727,6 +1736,9 @@ function animateToShallow<T>(
 
         const animator = new Animator(source, false, additive ? lastAnimator : null);
         animator.targetName = topKey;
+        if (cfg.scope) {
+            animator.scope = cfg.scope;
+        }
 
         if (revertedSource) {
             animator.whenWithKeys(0, revertedSource, animatableKeys);

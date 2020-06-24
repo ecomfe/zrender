@@ -676,7 +676,7 @@ export default class Animator<T> {
 
     targetName?: string
 
-    __fromStateTransition?: string
+    scope?: string
 
     private _tracks: Dictionary<Track> = {}
     private _trackKeys: string[] = []
@@ -1012,6 +1012,9 @@ export default class Animator<T> {
                     val = rgba2String(val as number[]);
                 }
 
+                if (propName === 'opacity' && val === 0) {
+                    debugger;
+                }
                 (target as any)[propName] = val;
             }
         }
@@ -1034,6 +1037,7 @@ export default class Animator<T> {
             if (kfs.length > 1) {
                 // Remove the original last kf and add again.
                 const lastKf = kfs.pop();
+
                 track.addKeyframe(lastKf.time, finalProps[propName]);
                 // Prepare again.
                 track.prepare(track.getAdditiveTrack());
