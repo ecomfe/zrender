@@ -678,6 +678,8 @@ export default class Animator<T> {
 
     scope?: string
 
+    __fromStateTransition?: string
+
     private _tracks: Dictionary<Track> = {}
     private _trackKeys: string[] = []
 

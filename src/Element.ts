@@ -704,7 +704,7 @@ class Element<Props extends ElementProps = ElementProps> {
         const normalState = this._normalState;
         for (let i = 0; i < this.animators.length; i++) {
             const animator = this.animators[i];
-            const fromStateTransition = animator.scope;
+            const fromStateTransition = animator.__fromStateTransition;
             // Ignore animation from state transition(except normal).
             if (fromStateTransition && fromStateTransition !== PRESERVED_NORMAL_STATE) {
                 continue;
@@ -1432,7 +1432,7 @@ class Element<Props extends ElementProps = ElementProps> {
     protected _transitionState(stateName: string, target: Props, cfg?: ElementAnimateConfig, animationProps?: MapToType<Props, boolean>) {
         const animators = animateTo(this, target, cfg, animationProps);
         for (let i = 0; i < animators.length; i++) {
-            animators[i].scope = stateName;
+            animators[i].__fromStateTransition = stateName;
         }
     }
 
