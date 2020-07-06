@@ -107,6 +107,10 @@ export interface TextStylePropsPart {
      * Can be `2` or `[2, 4]` or `[2, 3, 4, 5]`
      */
     padding?: number | number[]
+    /**
+     * Margin of label. Used when layouting the label.
+     */
+    margin?: number
 
     borderColor?: string
     borderWidth?: number
