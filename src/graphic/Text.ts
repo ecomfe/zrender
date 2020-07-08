@@ -228,7 +228,7 @@ export const DEFAULT_TEXT_ANIMATION_PROPS: MapToType<TextProps, boolean> = {
         padding: true,  // TODO needs normalize padding before animate
         borderColor: true,
         borderWidth: true,
-        borderRadius: true,  // TODO needs normalize radius before animate
+        borderRadius: true  // TODO needs normalize radius before animate
     }, DEFAULT_COMMON_ANIMATION_PROPS.style)
  };
 
@@ -648,7 +648,10 @@ class ZRText extends Displayable<TextProps> {
             while (leftIndex <= rightIndex) {
                 token = tokens[leftIndex];
                 // Consider width specified by user, use 'center' rather than 'left'.
-                this._placeToken(token, style, lineHeight, lineTop, lineXLeft + token.width / 2, 'center', bgColorDrawn);
+                this._placeToken(
+                    token, style, lineHeight, lineTop,
+                    lineXLeft + token.width / 2, 'center', bgColorDrawn
+                );
                 lineXLeft += token.width;
                 leftIndex++;
             }
@@ -833,17 +836,20 @@ class ZRText extends Displayable<TextProps> {
         let font = '';
         if (style.fontSize || style.fontFamily) {
             let fontSize = '';
-            if (typeof style.fontSize === 'string'
-                && (style.fontSize.indexOf('px') !== -1
-                || style.fontSize.indexOf('rem') !== -1)) {
+            if (
+                typeof style.fontSize === 'string'
+                && (
+                    style.fontSize.indexOf('px') !== -1
+                    || style.fontSize.indexOf('rem') !== -1
+                    || style.fontSize.indexOf('em') !== -1
+                )
+            ) {
                 fontSize = style.fontSize;
             }
-            else if (typeof style.fontSize === 'string'
-                && (style.fontSize.indexOf('px') === -1
-                || style.fontSize.indexOf('rem') === -1)) {
+            else if (!isNaN(+style.fontSize)) {
                 fontSize = style.fontSize + 'px';
             }
-            else if (style.fontSize == null) {
+            else {
                 fontSize = '12px';
             }
             font = [
