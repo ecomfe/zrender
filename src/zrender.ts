@@ -257,6 +257,15 @@ class ZRender {
     }
 
     /**
+     * Wake up animation loop. But not render.
+     */
+    wakeUp() {
+        this.animation.start();
+        // Reset the frame count.
+        this._stillFrameAccum = 0;
+    }
+
+    /**
      * Add element to hover layer
      */
     addHover<T extends Displayable>(el: T, hoverStyle?: T['style']): T {
