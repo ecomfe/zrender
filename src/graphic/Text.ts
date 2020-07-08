@@ -69,7 +69,7 @@ export interface TextStylePropsPart {
      * It helps merging respectively, rather than parsing an entire font string.
      * Should be 12 but not '12px'.
      */
-    fontSize?: number
+    fontSize?: number | string
 
     align?: TextAlign
     verticalAlign?: TextVerticalAlign
@@ -830,13 +830,30 @@ class ZRText extends Displayable<TextProps> {
     static makeFont(style: TextStylePropsPart): string {
         // FIXME in node-canvas fontWeight is before fontStyle
         // Use `fontSize` `fontFamily` to check whether font properties are defined.
-        const font = (style.fontSize || style.fontFamily || style.fontWeight) && [
-            style.fontStyle,
-            style.fontWeight,
-            (style.fontSize || 12) + 'px',
-            // If font properties are defined, `fontFamily` should not be ignored.
-            style.fontFamily || 'sans-serif'
-        ].join(' ');
+        let font = '';
+        if (style.fontSize || style.fontFamily) {
+            let fontSize = '';
+            if (typeof style.fontSize === 'string'
+                && (style.fontSize.indexOf('px') !== -1
+                || style.fontSize.indexOf('rem') !== -1)) {
+                fontSize = style.fontSize;
+            }
+            else if (typeof style.fontSize === 'string'
+                && (style.fontSize.indexOf('px') === -1
+                || style.fontSize.indexOf('rem') === -1)) {
+                fontSize = style.fontSize + 'px';
+            }
+            else if (style.fontSize == null) {
+                fontSize = '12px';
+            }
+            font = [
+                style.fontStyle,
+                style.fontWeight,
+                fontSize,
+                // If font properties are defined, `fontFamily` should not be ignored.
+                style.fontFamily || 'sans-serif'
+            ].join(' ');
+        }
         return font && trim(font) || style.textFont || style.font;
     }
 }
