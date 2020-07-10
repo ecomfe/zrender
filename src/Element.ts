@@ -477,6 +477,8 @@ class Element<Props extends ElementProps = ElementProps> {
             attachedTransform.originX = textEl.originX;
             attachedTransform.originY = textEl.originY;
             attachedTransform.rotation = textEl.rotation;
+            attachedTransform.scaleX = textEl.scaleX;
+            attachedTransform.scaleY = textEl.scaleY;
             // Force set attached text's position if `position` is in config.
             if (textConfig.position != null) {
                 tmpBoundingRect.copy(this.getBoundingRect());
