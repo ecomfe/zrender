@@ -14,6 +14,7 @@
  */
 
 import easingFuncs, {AnimationEasing} from './easing';
+import type Animation from './Animation';
 
 type OnframeCallback = (percent: number) => void;
 type ondestroyCallback = () => void
@@ -47,6 +48,8 @@ export default class Clip {
 
     private _pausedTime = 0
     private _paused = false
+
+    animation: Animation
 
     loop: boolean
     gap: number

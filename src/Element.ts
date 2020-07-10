@@ -1295,7 +1295,7 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     removeSelfFromZr(zr: ZRenderType) {
         this.__zr = null;
-        // 移除动画
+        // Remove animation
         const animators = this.animators;
         if (animators) {
             for (let i = 0; i < animators.length; i++) {
