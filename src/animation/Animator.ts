@@ -806,10 +806,6 @@ export default class Animator<T> {
     }
 
     _doneCallback() {
-        if (this.animation && this._clip) {
-            this.animation.removeClip(this._clip);
-        }
-
         // Clear all tracks
         this._tracks = null;
         // Clear clip

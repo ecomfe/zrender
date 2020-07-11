@@ -142,15 +142,17 @@ export default class Animation extends Eventful {
         let clip = this._clipsHead;
 
         while (clip) {
+            // Save the nextClip before step.
+            // So the loop will not been affected if the clip is removed in the callback
+            const nextClip = clip.next;
             let finished = clip.step(time, delta);
             if (finished) {
                 clip.ondestroy && clip.ondestroy();
-                const nextClip = clip.next;
                 this.removeClip(clip);
                 clip = nextClip;
             }
             else {
-                clip = clip.next;
+                clip = nextClip;
             }
         }
 
