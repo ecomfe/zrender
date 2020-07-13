@@ -477,6 +477,8 @@ class Element<Props extends ElementProps = ElementProps> {
             attachedTransform.originX = textEl.originX;
             attachedTransform.originY = textEl.originY;
             attachedTransform.rotation = textEl.rotation;
+            attachedTransform.scaleX = textEl.scaleX;
+            attachedTransform.scaleY = textEl.scaleY;
             // Force set attached text's position if `position` is in config.
             if (textConfig.position != null) {
                 tmpBoundingRect.copy(this.getBoundingRect());
@@ -1293,7 +1295,7 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     removeSelfFromZr(zr: ZRenderType) {
         this.__zr = null;
-        // 移除动画
+        // Remove animation
         const animators = this.animators;
         if (animators) {
             for (let i = 0; i < animators.length; i++) {

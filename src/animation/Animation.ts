@@ -73,6 +73,11 @@ export default class Animation extends Eventful {
      * Add clip
      */
     addClip(clip: Clip) {
+        if (clip.animation) {
+            // Clip has been added
+            this.removeClip(clip);
+        }
+
         if (!this._clipsHead) {
             this._clipsHead = this._clipsTail = clip;
         }
@@ -82,6 +87,7 @@ export default class Animation extends Eventful {
             clip.next = null;
             this._clipsTail = clip;
         }
+        clip.animation = this;
     }
     /**
      * Add animator
@@ -96,7 +102,10 @@ export default class Animation extends Eventful {
     /**
      * Delete animation clip
      */
-    removeClip(clip: Clip) {   // TODO Make sure clip is in the animation.
+    removeClip(clip: Clip) {
+        if (!clip.animation) {
+            return;
+        }
         const prev = clip.prev;
         const next = clip.next;
         if (prev) {
@@ -113,7 +122,7 @@ export default class Animation extends Eventful {
             // Is tail
             this._clipsTail = prev;
         }
-        clip.next = clip.prev = null;
+        clip.next = clip.prev = clip.animation = null;
     }
 
     /**
@@ -133,15 +142,17 @@ export default class Animation extends Eventful {
         let clip = this._clipsHead;
 
         while (clip) {
+            // Save the nextClip before step.
+            // So the loop will not been affected if the clip is removed in the callback
+            const nextClip = clip.next;
             let finished = clip.step(time, delta);
             if (finished) {
                 clip.ondestroy && clip.ondestroy();
-                const nextClip = clip.next;
                 this.removeClip(clip);
                 clip = nextClip;
             }
             else {
-                clip = clip.next;
+                clip = nextClip;
             }
         }
 
@@ -225,7 +236,7 @@ export default class Animation extends Eventful {
 
         while (clip) {
             let nextClip = clip.next;
-            clip.prev = clip.next = null;
+            clip.prev = clip.next = clip.animation = null;
             clip = nextClip;
         }
 
