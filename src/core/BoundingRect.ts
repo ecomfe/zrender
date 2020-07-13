@@ -211,7 +211,7 @@ class BoundingRect {
             return;
         }
         // Fast path when there is no rotation in matrix.
-        if (m[1] < 1e-5 && m[2] < 1e-5) {
+        if (m[1] < 1e-5 && m[1] > -1e-5 && m[2] < 1e-5 && m[2] > -1e-5) {
             const sx = m[0];
             const sy = m[3];
             const tx = m[4];
