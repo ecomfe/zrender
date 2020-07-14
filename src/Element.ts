@@ -549,7 +549,7 @@ class Element<Props extends ElementProps = ElementProps> {
             let textFill;
             let textStroke;
             let autoStroke;
-            if (isInside) {
+            if (isInside && this.canBeInsideText()) {
                 // In most cases `textContent` need this "auto" strategy.
                 // So by default be 'auto'. Otherwise users need to literally
                 // set `insideFill: 'auto', insideStroke: 'auto'` each time.
@@ -610,6 +610,10 @@ class Element<Props extends ElementProps = ElementProps> {
             // Mark textEl to update transform.
             textEl.markRedraw();
         }
+    }
+
+    protected canBeInsideText() {
+        return true;
     }
 
     protected getInsideTextFill(): string {
