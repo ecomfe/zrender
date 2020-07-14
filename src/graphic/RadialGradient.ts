@@ -39,8 +39,6 @@ class RadialGradient extends Gradient {
 
         // If use global coord
         this.global = globalCoord || false;
-
-        Gradient.call(this, colorStops);
     }
 }
 
