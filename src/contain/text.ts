@@ -56,8 +56,8 @@ export function getWidth(text: string, font: string): number {
 export function getBoundingRect(
     text: string,
     font: string,
-    textAlign?: CanvasTextAlign,
-    textBaseline?: CanvasTextBaseline
+    textAlign?: TextAlign,
+    textBaseline?: TextVerticalAlign
 ): BoundingRect {
     const width = getWidth(text, font);
     const height = getLineHeight(font);
@@ -70,7 +70,7 @@ export function getBoundingRect(
     return rect;
 }
 
-export function adjustTextX(x: number, width: number, textAlign: CanvasTextAlign): number {
+export function adjustTextX(x: number, width: number, textAlign: TextAlign): number {
     // TODO Right to left language
     if (textAlign === 'right') {
         x -= width;
@@ -81,11 +81,11 @@ export function adjustTextX(x: number, width: number, textAlign: CanvasTextAlign
     return x;
 }
 
-export function adjustTextY(y: number, height: number, textBaseline: CanvasTextBaseline): number {
-    if (textBaseline === 'middle') {
+export function adjustTextY(y: number, height: number, verticalAlign: TextVerticalAlign): number {
+    if (verticalAlign === 'middle') {
         y -= height / 2;
     }
-    else if (textBaseline === 'bottom') {
+    else if (verticalAlign === 'bottom') {
         y -= height;
     }
     return y;

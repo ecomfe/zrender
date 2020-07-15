@@ -65,6 +65,12 @@ export interface ElementTextConfig {
     rotation?: number
 
     /**
+     * Rect that text will be positioned.
+     * Default to be the rect of element.
+     */
+    layoutRect?: RectLike
+
+    /**
      * Offset of the label.
      * The difference of offset and position is that it will be applied
      * in the rotation
@@ -481,16 +487,22 @@ class Element<Props extends ElementProps = ElementProps> {
             attachedTransform.scaleY = textEl.scaleY;
             // Force set attached text's position if `position` is in config.
             if (textConfig.position != null) {
-                tmpBoundingRect.copy(this.getBoundingRect());
+                let layoutRect = tmpBoundingRect;
+                if (textConfig.layoutRect) {
+                    layoutRect.copy(textConfig.layoutRect);
+                }
+                else {
+                    layoutRect.copy(this.getBoundingRect());
+                }
                 if (!isLocal) {
-                    tmpBoundingRect.applyTransform(this.transform);
+                    layoutRect.applyTransform(this.transform);
                 }
 
                 if (this.calculateTextPosition) {
-                    this.calculateTextPosition(tmpTextPosCalcRes, textConfig, tmpBoundingRect);
+                    this.calculateTextPosition(tmpTextPosCalcRes, textConfig, layoutRect);
                 }
                 else {
-                    calculateTextPosition(tmpTextPosCalcRes, textConfig, tmpBoundingRect);
+                    calculateTextPosition(tmpTextPosCalcRes, textConfig, layoutRect);
                 }
 
                 // TODO Should modify back if textConfig.position is set to null again.
@@ -508,17 +520,17 @@ class Element<Props extends ElementProps = ElementProps> {
                     let relOriginX;
                     let relOriginY;
                     if (textOrigin === 'center') {
-                        relOriginX = tmpBoundingRect.width * 0.5;
-                        relOriginY = tmpBoundingRect.height * 0.5;
+                        relOriginX = layoutRect.width * 0.5;
+                        relOriginY = layoutRect.height * 0.5;
                     }
                     else {
-                        relOriginX = parsePercent(textOrigin[0], tmpBoundingRect.width);
-                        relOriginY = parsePercent(textOrigin[1], tmpBoundingRect.height);
+                        relOriginX = parsePercent(textOrigin[0], layoutRect.width);
+                        relOriginY = parsePercent(textOrigin[1], layoutRect.height);
                     }
 
                     innerOrigin = true;
-                    attachedTransform.originX = -attachedTransform.x + relOriginX + (isLocal ? 0 : tmpBoundingRect.x);
-                    attachedTransform.originY = -attachedTransform.y + relOriginY + (isLocal ? 0 : tmpBoundingRect.y);
+                    attachedTransform.originX = -attachedTransform.x + relOriginX + (isLocal ? 0 : layoutRect.x);
+                    attachedTransform.originY = -attachedTransform.y + relOriginY + (isLocal ? 0 : layoutRect.y);
                 }
             }
 

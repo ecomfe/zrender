@@ -481,21 +481,20 @@ class ZRText extends Displayable<TextProps> {
         const textAlign = style.align || defaultStyle.align || 'left';
         const textVerticalAlign = style.verticalAlign || defaultStyle.verticalAlign;
 
-        const boxY = adjustTextY(baseY, outerHeight, textVerticalAlign);
         let textX = baseX;
-        let textY = boxY;
+        let textY = adjustTextY(baseY, contentBlock.contentHeight, textVerticalAlign);
 
         if (needDrawBg || textPadding) {
             // Consider performance, do not call getTextWidth util necessary.
             let outerWidth = contentBlock.width;
             textPadding && (outerWidth += textPadding[1] + textPadding[3]);
             const boxX = adjustTextX(baseX, outerWidth, textAlign);
+            const boxY = adjustTextY(baseY, outerHeight, textVerticalAlign);
 
             needDrawBg && this._renderBackground(style, boxX, boxY, outerWidth, outerHeight);
 
             if (textPadding) {
                 textX = getTextXForPadding(baseX, textAlign, textPadding);
-                textY += textPadding[0];
             }
         }
 
@@ -567,8 +566,8 @@ class ZRText extends Displayable<TextProps> {
 
             if (fixedBoundingRect) {
                 el.setBoundingRect(new BoundingRect(
-                    adjustTextX(subElStyle.x, style.width, subElStyle.textAlign),
-                    adjustTextY(subElStyle.y, calculatedLineHeight, subElStyle.textBaseline),
+                    adjustTextX(subElStyle.x, style.width, subElStyle.textAlign as TextAlign),
+                    adjustTextY(subElStyle.y, calculatedLineHeight, subElStyle.textBaseline as TextVerticalAlign),
                     style.width,
                     calculatedLineHeight
                 ));
@@ -597,12 +596,9 @@ class ZRText extends Displayable<TextProps> {
 
         const boxX = adjustTextX(baseX, outerWidth, textAlign);
         const boxY = adjustTextY(baseY, outerHeight, textVerticalAlign);
-        let xLeft = boxX;
-        let lineTop = boxY;
-        if (textPadding) {
-            xLeft += textPadding[3];
-            lineTop += textPadding[0];
-        }
+        let xLeft = adjustTextX(baseX, contentBlock.contentWidth, textAlign);
+        let lineTop = adjustTextY(baseY, contentBlock.contentHeight, textVerticalAlign);
+
         const xRight = xLeft + contentWidth;
 
         if (needDrawBackground(style)) {
@@ -755,8 +751,8 @@ class ZRText extends Displayable<TextProps> {
         const textHeight = token.contentHeight;
         // NOTE: Should not call dirtyStyle after setBoundingRect. Or it will be cleared.
         el.setBoundingRect(new BoundingRect(
-            adjustTextX(subElStyle.x, textWidth, subElStyle.textAlign),
-            adjustTextY(subElStyle.y, textHeight, subElStyle.textBaseline),
+            adjustTextX(subElStyle.x, textWidth, subElStyle.textAlign as TextAlign),
+            adjustTextY(subElStyle.y, textHeight, subElStyle.textBaseline as TextVerticalAlign),
             textWidth,
             textHeight
         ));
