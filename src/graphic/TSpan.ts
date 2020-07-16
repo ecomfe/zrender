@@ -3,6 +3,7 @@ import { getBoundingRect, DEFAULT_FONT } from '../contain/text';
 import BoundingRect from '../core/BoundingRect';
 import { PathStyleProps, DEFAULT_PATH_STYLE } from './Path';
 import { createObject, defaults } from '../core/util';
+import { TextAlign, TextVerticalAlign } from '../core/types';
 
 export interface TSpanStyleProps extends PathStyleProps {
 
@@ -77,8 +78,8 @@ class TSpan extends Displayable<TSpanProps> {
             const rect = getBoundingRect(
                 text,
                 style.font,
-                style.textAlign,
-                style.textBaseline
+                style.textAlign as TextAlign,
+                style.textBaseline as TextVerticalAlign
             );
 
             rect.x += style.x || 0;

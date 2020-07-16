@@ -829,7 +829,7 @@ class ZRText extends Displayable<TextProps> {
         const font = (style.fontSize || style.fontFamily || style.fontWeight) && [
             style.fontStyle,
             style.fontWeight,
-            (style.fontSize || 12) + 'px',
+            (style.fontSize == null ? 12 : style.fontSize) + 'px',
             // If font properties are defined, `fontFamily` should not be ignored.
             style.fontFamily || 'sans-serif'
         ].join(' ');
