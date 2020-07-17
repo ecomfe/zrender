@@ -156,6 +156,7 @@ function estimateLength(
 
 export interface PlainTextContentBlock {
     lineHeight: number
+    contentHeight: number
     // Line height of actual content.
     calculatedLineHeight: number
 
@@ -247,6 +248,7 @@ export function parsePlainText(
         outerHeight: outerHeight,
         lineHeight: lineHeight,
         calculatedLineHeight: calculatedLineHeight,
+        contentHeight: contentHeight,
         width: width
     };
 }
@@ -286,6 +288,9 @@ export class RichTextContentBlock {
     // width/height of content
     width: number = 0
     height: number = 0
+    // Calculated text height
+    contentWidth: number = 0
+    contentHeight: number = 0
     // outerWidth/outerHeight with padding
     outerWidth: number = 0
     outerHeight: number = 0
@@ -453,6 +458,8 @@ export function parseRichText(text: string, style: TextStyleProps) {
 
     contentBlock.outerWidth = contentBlock.width = retrieve2(topWidth, calculatedWidth);
     contentBlock.outerHeight = contentBlock.height = retrieve2(topHeight, calculatedHeight);
+    contentBlock.contentHeight = calculatedHeight;
+    contentBlock.contentWidth = calculatedWidth;
 
     if (stlPadding) {
         contentBlock.outerWidth += stlPadding[1] + stlPadding[3];

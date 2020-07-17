@@ -199,6 +199,10 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         return {};
     }
 
+    protected canBeInsideText() {
+        return this.hasFill();
+    }
+
     protected getInsideTextFill() {
         const pathFill = this.style.fill;
         if (pathFill !== 'none') {
