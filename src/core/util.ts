@@ -694,6 +694,9 @@ export class HashMap<T, KEY extends string | number = string | number> {
             }
         }
     }
+    keys(): KEY[] {
+        return keys(this.data);
+    }
     // Do not use this method if performance sensitive.
     removeKey(key: KEY) {
         delete this.data[key];
