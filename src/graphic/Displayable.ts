@@ -371,7 +371,6 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         if (targetStyle) {
             if (transition) {
                 // Clone a new style. Not affect the original one.
-                // TODO Performance issue.
                 const sourceStyle = this.style;
 
                 this.style = this.createStyle(needsRestoreToNormal ? {} : sourceStyle);

@@ -1667,6 +1667,7 @@ function animateToShallow<T>(
     reverse: boolean    // If `true`, animate from the `target` to current state.
 ) {
     const animatableKeys: string[] = [];
+    const changedKeys: string[] = [];
     const targetKeys = keys(target);
     const duration = cfg.duration;
     const delay = cfg.delay;
@@ -1704,12 +1705,16 @@ function animateToShallow<T>(
             }
             else {
                 animatableKeys.push(innerKey);
+                changedKeys.push(innerKey);
             }
         }
         else if (!reverse) {
             // Assign target value directly.
             source[innerKey] = target[innerKey];
             animatable.updateDuringAnimation(topKey);
+            // Previous animation will be stopped on the changed keys.
+            // So direct assign is also included.
+            changedKeys.push(innerKey);
         }
     }
 
@@ -1729,7 +1734,7 @@ function animateToShallow<T>(
         if (!additive && lastAnimator) {
             // Stop exists animation on specific tracks. Only one animator available for each property.
             // TODO Should invoke previous animation callback?
-            const allAborted = lastAnimator.stopTracks(animatableKeys);
+            const allAborted = lastAnimator.stopTracks(changedKeys);
             if (allAborted) {   // This animator can't be used.
                 const idx = indexOf(existsAnimators, lastAnimator);
                 existsAnimators.splice(idx, 1);
