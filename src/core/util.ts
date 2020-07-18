@@ -698,6 +698,10 @@ export class HashMap<T, KEY extends string | number = string | number> {
     removeKey(key: KEY) {
         delete this.data[key];
     }
+
+    keys() {
+        return keys(this.data);
+    }
 }
 
 export function createHashMap<T, KEY extends string | number = string | number>(
