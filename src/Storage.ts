@@ -9,6 +9,15 @@ import timsort from './core/timsort';
 import Displayable from './graphic/Displayable';
 import { Path } from './export';
 
+let invalidZErrorLogged = false;
+function logInvalidZError() {
+    if (invalidZErrorLogged) {
+        return;
+    }
+    invalidZErrorLogged = true;
+    console.warn('z / z2 / zlevel of displayable is invalid, which may cause unexpected errors');
+}
+
 function shapeCompareFunc(a: Displayable, b: Displayable) {
     if (a.zlevel === b.zlevel) {
         if (a.z === b.z) {
@@ -144,6 +153,20 @@ export default class Storage {
             }
             else if (disp.__clipPaths && disp.__clipPaths.length > 0) {
                 disp.__clipPaths = [];
+            }
+
+            // Avoid invalid z, z2, zlevel cause sorting error.
+            if (isNaN(disp.z)) {
+                logInvalidZError();
+                disp.z = 0;
+            }
+            if (isNaN(disp.z2)) {
+                logInvalidZError();
+                disp.z2 = 0;
+            }
+            if (isNaN(disp.zlevel)) {
+                logInvalidZError();
+                disp.zlevel = 0;
             }
 
             this._displayList[this._displayListLen++] = disp;
