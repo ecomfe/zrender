@@ -388,8 +388,10 @@ class Element<Props extends ElementProps = ElementProps> {
     /**
      * Proxy function for getting state with given stateName.
      * ZRender will first try to get with stateProxy. Then find from states if stateProxy returns nothing
+     *
+     * targetStates will be given in useStates
      */
-    stateProxy?: (stateName: string) => ElementState
+    stateProxy?: (stateName: string, targetStates?: string[]) => ElementState
 
     protected _normalState: ElementState
 
@@ -910,7 +912,7 @@ class Element<Props extends ElementProps = ElementProps> {
                 const stateName = states[i];
                 let stateObj: ElementState;
                 if (this.stateProxy) {
-                    stateObj = this.stateProxy(stateName);
+                    stateObj = this.stateProxy(stateName, states);
                 }
                 if (!stateObj) {
                     stateObj = this.states[stateName];
