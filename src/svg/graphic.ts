@@ -10,6 +10,7 @@ import { PathStyleProps } from '../graphic/Path';
 import ZRImage, { ImageStyleProps } from '../graphic/Image';
 import { DEFAULT_FONT, getLineHeight } from '../contain/text';
 import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
+import { map } from '../core/util';
 
 export interface SVGProxy<T> {
     brush(el: T): void
@@ -106,10 +107,14 @@ function bindStyle(svgEl: SVGElement, style: AllStyleOption, el?: Path | TSpan |
         // stroke then fill for text; fill then stroke for others
         attr(svgEl, 'paint-order', style.strokeFirst ? 'stroke' : 'fill');
         attr(svgEl, 'stroke-opacity', (style.strokeOpacity != null ? style.strokeOpacity * opacity : opacity) + '');
-        const lineDash = style.lineDash;
+        let lineDash = style.lineDash;
         if (lineDash) {
-            attr(svgEl, 'stroke-dasharray', (style.lineDash as number[]).join(','));
-            attr(svgEl, 'stroke-dashoffset', mathRound(style.lineDashOffset || 0) + '');
+            lineDash = map(lineDash, function (rawVal) {
+                return rawVal / strokeScale;
+            });
+            const lineDashOffset = mathRound((style.lineDashOffset || 0) / strokeScale);
+            attr(svgEl, 'stroke-dasharray', (lineDash as number[]).join(','));
+            attr(svgEl, 'stroke-dashoffset', lineDashOffset + '');
         }
         else {
             attr(svgEl, 'stroke-dasharray', '');

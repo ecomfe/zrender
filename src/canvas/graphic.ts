@@ -14,6 +14,7 @@ import TSpan, {TSpanStyleProps} from '../graphic/TSpan';
 import { DEFAULT_FONT } from '../contain/text';
 import { IncrementalDisplayable } from '../export';
 import { MatrixArray } from '../core/matrix';
+import { map } from '../core/util';
 
 const pathProxyForDraw = new PathProxy(true);
 
@@ -151,14 +152,22 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, inBatch: boolean) {
         }
     }
 
-    const lineDash = style.lineDash;
-    const lineDashOffset = style.lineDashOffset;
+    let lineDash = style.lineDash;
+    let lineDashOffset = style.lineDashOffset;
 
     const ctxLineDash = !!ctx.setLineDash;
 
     // Update path sx, sy
     const scale = el.getGlobalScale();
     path.setScale(scale[0], scale[1], el.segmentIgnoreThreshold);
+
+    if (lineDash) {
+        const lineScale = (style.strokeNoScale && el && el.getLineScale) ? el.getLineScale() : 1;
+        lineDash = map(lineDash, function (rawVal) {
+            return rawVal / lineScale;
+        });
+        lineDashOffset /= lineScale;
+    }
 
     let needsRebuild = true;
     // Proxy context
