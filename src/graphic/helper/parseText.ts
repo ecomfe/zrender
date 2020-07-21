@@ -265,8 +265,8 @@ class RichTextToken {
 
     lineHeight: number
     font: string
-    textAlign: TextAlign
-    textVerticalAlign: TextVerticalAlign
+    align: TextAlign
+    verticalAlign: TextVerticalAlign
 
     textPadding: number[]
     percentWidth?: string
@@ -371,14 +371,15 @@ export function parseRichText(text: string, style: TextStyleProps) {
                 // as box height of the block.
                 tokenStyle.height, token.contentHeight
             );
-            textPadding && (tokenHeight += textPadding[0] + textPadding[2]);
-            token.height = tokenHeight;
             token.lineHeight = retrieve3(
                 tokenStyle.lineHeight, style.lineHeight, tokenHeight
             );
 
-            token.textAlign = tokenStyle && tokenStyle.align || style.align;
-            token.textVerticalAlign = tokenStyle && tokenStyle.verticalAlign || 'middle';
+            textPadding && (tokenHeight += textPadding[0] + textPadding[2]);
+            token.height = tokenHeight;
+
+            token.align = tokenStyle && tokenStyle.align || style.align;
+            token.verticalAlign = tokenStyle && tokenStyle.verticalAlign || 'middle';
 
             if (truncateLine && topHeight != null && calculatedHeight + token.lineHeight > topHeight) {
                 // TODO Add ellipsis on the previous token.
@@ -443,7 +444,9 @@ export function parseRichText(text: string, style: TextStyleProps) {
                 }
             }
 
-            lineWidth += token.width + paddingH;
+            token.width += paddingH;
+
+            lineWidth += token.width;
             tokenStyle && (lineHeight = Math.max(lineHeight, token.lineHeight));
 
             prevToken = token;
