@@ -479,7 +479,7 @@ class ZRText extends Displayable<TextProps> {
         const baseX = style.x || 0;
         const baseY = style.y || 0;
         const textAlign = style.align || defaultStyle.align || 'left';
-        const verticalAlign = style.verticalAlign || defaultStyle.verticalAlign;
+        const verticalAlign = style.verticalAlign || defaultStyle.verticalAlign || 'top';
 
         let textX = baseX;
         let textY = adjustTextY(baseY, contentBlock.contentHeight, verticalAlign);
@@ -492,14 +492,20 @@ class ZRText extends Displayable<TextProps> {
             const boxY = adjustTextY(baseY, outerHeight, verticalAlign);
 
             needDrawBg && this._renderBackground(style, boxX, boxY, outerWidth, outerHeight);
-
-            if (textPadding) {
-                textX = getTextXForPadding(baseX, textAlign, textPadding);
-            }
         }
 
         // `textBaseline` is set as 'middle'.
         textY += lineHeight / 2;
+
+        if (textPadding) {
+            textX = getTextXForPadding(baseX, textAlign, textPadding);
+            if (verticalAlign === 'top') {
+                textY += textPadding[0];
+            }
+            else if (verticalAlign === 'bottom') {
+                textY -= textPadding[2];
+            }
+        }
 
         let defaultLineWidth = 0;
         let useDefaultFill = false;
