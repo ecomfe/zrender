@@ -948,7 +948,7 @@ class Element<Props extends ElementProps = ElementProps> {
                 }
             }
 
-            const useHoverLayer = !!stateObjects[len - 1].hoverLayer;
+            const useHoverLayer = !!(stateObjects[len - 1] && stateObjects[len - 1].hoverLayer);
             if (useHoverLayer) {
                 // Enter hover layer before states update.
                 this._toggleHoverLayerFlag(true);
