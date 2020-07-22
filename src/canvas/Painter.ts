@@ -568,7 +568,7 @@ export default class CanvasPainter implements PainterBase {
     _updateLayerStatus(list: Displayable[]) {
 
         this.eachBuiltinLayer(function (layer, z) {
-            layer.__dirty = layer.__used = layer.__hasHoverLayerELement = false;
+            layer.__dirty = layer.__used = false;
         });
 
         function updatePrevLayer(idx: number) {
@@ -625,10 +625,6 @@ export default class CanvasPainter implements PainterBase {
                 );
             }
 
-            if (el.__inHover) {
-                layer.__hasHoverLayerELement = true;
-            }
-
             if (!layer.__builtin__) {
                 util.logError('ZLevel ' + zlevel + ' has been used by unkown layer ' + layer.id);
             }
@@ -649,7 +645,7 @@ export default class CanvasPainter implements PainterBase {
                 updatePrevLayer(i);
                 prevLayer = layer;
             }
-            if (el.__dirty) {
+            if (el.__dirty && !el.__inHover) {  // Ignore dirty elements in hover layer.
                 layer.__dirty = true;
                 if (layer.incremental && layer.__drawIndex < 0) {
                     // Start draw from the first dirty element.

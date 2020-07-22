@@ -87,8 +87,6 @@ export default class Layer extends Eventful {
 
     __painter: CanvasPainter
 
-    __hasHoverLayerELement: boolean
-
     __dirty = true
 
     __used = false
