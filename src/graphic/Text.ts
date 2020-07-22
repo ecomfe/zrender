@@ -41,6 +41,8 @@ export interface TextStylePropsPart {
     lineWidth?: number
     lineDash?: false | number[]
     lineDashOffset?: number
+    borderDash?: false | number[]
+    borderDashOffset?: number
 
     /**
      * If `fontSize` or `fontFamily` exists, `font` will be reset by
@@ -819,6 +821,8 @@ class ZRText extends Displayable<TextProps> {
             rectStyle.lineWidth = textBorderWidth;
             rectStyle.stroke = textBorderColor;
             rectStyle.strokeOpacity = retrieve2(style.strokeOpacity, 1);
+            rectStyle.lineDash = style.borderDash || [];
+            rectStyle.lineDashOffset = style.borderDashOffset || 0;
         }
 
         const shadowStyle = (rectEl || imgEl).style;
