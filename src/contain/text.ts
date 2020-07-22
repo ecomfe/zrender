@@ -86,7 +86,7 @@ export function getBoundingRect(
     textAlign?: TextAlign,
     textBaseline?: TextVerticalAlign
 ) {
-    const textLines = (text || '').split('\n');
+    const textLines = ((text || '') + '').split('\n');
     const len = textLines.length;
     if (len === 1) {
         return innerGetBoundingRect(textLines[0], font, textAlign, textBaseline);
