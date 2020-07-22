@@ -3,16 +3,15 @@ import * as util from '../core/util';
 import timsort from '../core/timsort';
 import Layer, { LayerConfig } from './Layer';
 import requestAnimationFrame from '../animation/requestAnimationFrame';
-import ZRImage, { ImageStyleProps } from '../graphic/Image';
+import ZRImage from '../graphic/Image';
 import env from '../core/env';
 import { Path, IncrementalDisplayable } from '../export';
-import Displayable, { CommonStyleProps } from '../graphic/Displayable';
+import Displayable from '../graphic/Displayable';
 import { WXCanvasRenderingContext, ZRCanvasRenderingContext } from '../core/types';
 import { GradientObject } from '../graphic/Gradient';
 import { PatternObject } from '../graphic/Pattern';
 import Storage from '../Storage';
 import { brush, BrushScope } from './graphic';
-import TSpan from '../graphic/TSpan';
 import { PainterBase } from '../PainterBase';
 
 const HOVER_LAYER_ZLEVEL = 1e5;
@@ -103,8 +102,6 @@ export default class CanvasPainter implements PainterBase {
     private _domRoot: HTMLElement
 
     private _hoverlayer: Layer
-
-    private _hoverElements: Displayable[] = []
 
     private _redrawId: number
 
@@ -258,59 +255,16 @@ export default class CanvasPainter implements PainterBase {
         return this;
     }
 
-    /**
-     * Add element to hover layer
-     */
-    addHover<T extends Displayable>(el: T, hoverStyle?: T['style']): T {
-        if (el.__hoverMir) {
-            return;
-        }
-        const elMirror = new (el as any).constructor({
-            style: el.style,
-            shape: (el as unknown as Path).shape,
-            z: el.z,
-            z2: el.z2,
-            silent: el.silent
-        });
-        elMirror.__from = el;
-        el.__hoverMir = elMirror;
-        hoverStyle && elMirror.setStyle(hoverStyle);
-        this._hoverElements.push(elMirror);
-
-        return elMirror;
-    }
-
-    removeHover(el: Path | TSpan | ZRImage) {
-        const elMirror = el.__hoverMir;
-        const hoverElements = this._hoverElements;
-        const idx = util.indexOf(hoverElements, elMirror);
-        if (idx >= 0) {
-            hoverElements.splice(idx, 1);
-        }
-        el.__hoverMir = null;
-    }
-
-    clearHover() {
-        const hoverElements = this._hoverElements;
-        for (let i = 0; i < hoverElements.length; i++) {
-            const from = hoverElements[i].__from;
-            if (from) {
-                from.__hoverMir = null;
-            }
-        }
-        hoverElements.length = 0;
-    }
 
     refreshHover() {
-        const hoverElements = this._hoverElements;
-        let len = hoverElements.length;
+        const list = this.storage.getDisplayList(false);
+        let len = list.length;
         let hoverLayer = this._hoverlayer;
         hoverLayer && hoverLayer.clear();
 
         if (!len) {
             return;
         }
-        timsort(hoverElements, this.storage.displayableSortFunc);
 
         // Use a extream large zlevel
         // FIXME?
@@ -319,35 +273,20 @@ export default class CanvasPainter implements PainterBase {
         }
 
         const scope: BrushScope = {
+            inHover: true,
             viewWidth: this._width,
             viewHeight: this._height
         };
-        hoverLayer.ctx.save();
-        for (let i = 0; i < len;) {
-            const el = hoverElements[i];
-            const originalEl = el.__from;
-            // Original el is removed
-            // PENDING
-            if (!(originalEl && originalEl.__zr)) {
-                hoverElements.splice(i, 1);
-                originalEl.__hoverMir = null;
-                len--;
-                continue;
-            }
-            i++;
-
-            // Use transform
-            // FIXME style and shape ?
-            if (!originalEl.invisible) {
-                el.transform = originalEl.transform;
-                el.invTransform = originalEl.invTransform;
-                el.__clipPaths = originalEl.__clipPaths;
+        const ctx = hoverLayer.ctx;
+        ctx.save();
+        for (let i = 0; i < len; i++) {
+            const el = list[i];
+            if (el.__inHover) {
                 // el.
-                this._doPaintEl(el, hoverLayer, true, scope, i === len - 1);
+                brush(ctx, el, scope, i === len - 1);
             }
         }
-
-        hoverLayer.ctx.restore();
+        ctx.restore();
     }
 
     getHoverLayer() {
@@ -398,6 +337,8 @@ export default class CanvasPainter implements PainterBase {
             if (layer.__builtin__
                 && layer !== this._hoverlayer
                 && (layer.__dirty || paintAll)
+                // Layer with hover elements can't be redrawn.
+                // && !layer.__hasHoverLayerELement
             ) {
                 layerList.push(layer);
             }
@@ -409,11 +350,13 @@ export default class CanvasPainter implements PainterBase {
             const layer = layerList[k];
             const ctx = layer.ctx;
             const scope: BrushScope = {
+                inHover: false,
                 allClipped: false,
                 prevEl: null,
                 viewWidth: this._width,
                 viewHeight: this._height
             };
+
             ctx.save();
 
             let start = paintAll ? layer.__startIndex : layer.__drawIndex;
@@ -440,7 +383,8 @@ export default class CanvasPainter implements PainterBase {
             let i: number;
             for (i = start; i < layer.__endIndex; i++) {
                 const el = list[i];
-                this._doPaintEl(el, layer, paintAll, scope, i === layer.__endIndex - 1);
+
+                brush(ctx, el, scope, i === layer.__endIndex - 1);
 
                 if (useTimer) {
                     // Date.now can be executed in 13,025,305 ops/second.
@@ -477,19 +421,6 @@ export default class CanvasPainter implements PainterBase {
         }
 
         return finished;
-    }
-
-    private _doPaintEl(
-        el: Displayable,
-        currentLayer: Layer,
-        forcePaint: boolean,
-        scope: BrushScope,
-        isLast: boolean
-    ) {
-        const ctx = currentLayer.ctx;
-        if (currentLayer.__dirty || forcePaint) {
-            brush(ctx, el, scope, isLast);
-        }
     }
 
     /**
@@ -637,7 +568,7 @@ export default class CanvasPainter implements PainterBase {
     _updateLayerStatus(list: Displayable[]) {
 
         this.eachBuiltinLayer(function (layer, z) {
-            layer.__dirty = layer.__used = false;
+            layer.__dirty = layer.__used = layer.__hasHoverLayerELement = false;
         });
 
         function updatePrevLayer(idx: number) {
@@ -692,6 +623,10 @@ export default class CanvasPainter implements PainterBase {
                     zlevel + (incrementalLayerCount > 0 ? EL_AFTER_INCREMENTAL_INC : 0),
                     this._needsManuallyCompositing
                 );
+            }
+
+            if (el.__inHover) {
+                layer.__hasHoverLayerELement = true;
             }
 
             if (!layer.__builtin__) {
@@ -885,6 +820,7 @@ export default class CanvasPainter implements PainterBase {
         }
 
         const imageLayer = new Layer('image', this, opts.pixelRatio || this.dpr);
+        const ctx = imageLayer.ctx;
         imageLayer.initContext();
         imageLayer.clear(false, opts.backgroundColor || this._backgroundColor);
 
@@ -908,19 +844,14 @@ export default class CanvasPainter implements PainterBase {
         else {
             // PENDING, echarts-gl and incremental rendering.
             const scope = {
+                inHover: false,
                 viewWidth: this._width,
                 viewHeight: this._height
             };
             const displayList = this.storage.getDisplayList(true);
             for (let i = 0, len = displayList.length; i < len; i++) {
                 const el = displayList[i];
-                this._doPaintEl(
-                    el,
-                    imageLayer,
-                    true,
-                    scope,
-                    i === len - 1
-                );
+                brush(ctx, el, scope, i === len - 1);
             }
         }
 
@@ -1005,6 +936,7 @@ export default class CanvasPainter implements PainterBase {
         path.updateTransform();
         if (path) {
             brush(ctx, path, {
+                inHover: false,
                 viewWidth: this._width,
                 viewHeight: this._height
             }, true);

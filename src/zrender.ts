@@ -268,32 +268,22 @@ class ZRender {
     /**
      * Add element to hover layer
      */
-    addHover<T extends Displayable>(el: T, hoverStyle?: T['style']): T {
-        if (this.painter.addHover) {
-            const elMirror = this.painter.addHover(el, hoverStyle);
-            this.refreshHover();
-            return elMirror;
-        }
+    addHover(el: Displayable) {
+        // deprecated.
     }
 
     /**
      * Add element from hover layer
      */
     removeHover(el: Path | TSpan | ZRImage) {
-        if (this.painter.removeHover) {
-            this.painter.removeHover(el);
-            this.refreshHover();
-        }
+        // deprecated.
     }
 
     /**
      * Clear all hover elements in hover layer
      */
     clearHover() {
-        if (this.painter.clearHover) {
-            this.painter.clearHover();
-            this.refreshHover();
-        }
+        // deprecated.
     }
 
     /**
