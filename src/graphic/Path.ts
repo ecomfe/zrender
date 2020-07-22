@@ -425,7 +425,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
      * If shape changed. used with dirtyShape
      */
     shapeChanged() {
-        return this.__dirty & Path.SHAPE_CHANGED_BIT;
+        return !!(this.__dirty & Path.SHAPE_CHANGED_BIT);
     }
 
     /**

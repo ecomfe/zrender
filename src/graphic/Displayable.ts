@@ -271,7 +271,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
      * Is style changed. Used with dirtyStyle.
      */
     styleChanged() {
-        return this.__dirty & Displayable.STYLE_CHANGED_BIT;
+        return !!(this.__dirty & Displayable.STYLE_CHANGED_BIT);
     }
 
     /**
