@@ -205,10 +205,10 @@ class ZRender {
 
         // Clear needsRefresh ahead to avoid something wrong happens in refresh
         // Or it will cause zrender refreshes again and again.
-        this._needsRefresh = this._needsRefreshHover = false;
+        this._needsRefresh = false;
         this.painter.refresh();
         // Avoid trigger zr.refresh in Element#beforeUpdate hook
-        this._needsRefresh = this._needsRefreshHover = false;
+        this._needsRefresh = false;
 
         // const end = new Date();
         // const log = document.getElementById('log');

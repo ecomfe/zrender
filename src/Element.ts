@@ -985,6 +985,9 @@ class Element<Props extends ElementProps = ElementProps> {
             if (!useHoverLayer) {
                 // Leave hover layer after states update and markRedraw.
                 this._toggleHoverLayerFlag(false);
+                // NOTE: avoid unexpected refresh when moving out from hover layer!!
+                // Only clear from hover layer.
+                this.__dirty = 0;
             }
         }
     }

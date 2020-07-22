@@ -250,8 +250,6 @@ export default class CanvasPainter implements PainterBase {
             }
         }
 
-        this.refreshHover();
-
         return this;
     }
 
