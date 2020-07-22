@@ -18,8 +18,17 @@ import { map } from '../core/util';
 
 const pathProxyForDraw = new PathProxy(true);
 
-function doFillPath(ctx: CanvasRenderingContext2D, el: Path) {
-    const style = el.style;
+// Not use el#hasStroke because style may be different.
+function styleHasStroke(style: PathStyleProps) {
+    const stroke = style.stroke;
+    return !(stroke == null || stroke === 'none' || !(style.lineWidth > 0));
+}
+
+function styleHasFill(style: PathStyleProps) {
+    const fill = style.fill;
+    return fill != null && fill !== 'none';
+}
+function doFillPath(ctx: CanvasRenderingContext2D, style: PathStyleProps) {
     if (style.fillOpacity != null && style.fillOpacity !== 1) {
         const originalGlobalAlpha = ctx.globalAlpha;
         ctx.globalAlpha = style.fillOpacity * style.opacity;
@@ -32,8 +41,7 @@ function doFillPath(ctx: CanvasRenderingContext2D, el: Path) {
     }
 }
 
-function doStrokePath(ctx: CanvasRenderingContext2D, el: Path) {
-    const style = el.style;
+function doStrokePath(ctx: CanvasRenderingContext2D, style: PathStyleProps) {
     if (style.strokeOpacity != null && style.strokeOpacity !== 1) {
         const originalGlobalAlpha = ctx.globalAlpha;
         ctx.globalAlpha = style.strokeOpacity * style.opacity;
@@ -59,11 +67,10 @@ export function createCanvasPattern(
 }
 
 // Draw Path Elements
-function brushPath(ctx: CanvasRenderingContext2D, el: Path, inBatch: boolean) {
-    let hasStroke = el.hasStroke();
-    let hasFill = el.hasFill();
+function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProps, inBatch: boolean) {
+    let hasStroke = styleHasStroke(style);
+    let hasFill = styleHasFill(style);
 
-    const style = el.style;
     const strokePercent = style.strokePercent;
     const strokePart = strokePercent < 1;
 
@@ -215,18 +222,18 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, inBatch: boolean) {
     if (!inBatch) {
         if (style.strokeFirst) {
             if (hasStroke) {
-                doStrokePath(ctx, el);
+                doStrokePath(ctx, style);
             }
             if (hasFill) {
-                doFillPath(ctx, el);
+                doFillPath(ctx, style);
             }
         }
         else {
             if (hasFill) {
-                doFillPath(ctx, el);
+                doFillPath(ctx, style);
             }
             if (hasStroke) {
-                doStrokePath(ctx, el);
+                doStrokePath(ctx, style);
             }
         }
     }
@@ -239,9 +246,7 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, inBatch: boolean) {
 }
 
 // Draw Image Elements
-function brushImage(ctx: CanvasRenderingContext2D, el: ZRImage) {
-    const style = el.style;
-
+function brushImage(ctx: CanvasRenderingContext2D, el: ZRImage, style: ImageStyleProps) {
     const image = el.__image = createOrUpdateImage(
         style.image,
         el.__image,
@@ -296,9 +301,7 @@ function brushImage(ctx: CanvasRenderingContext2D, el: ZRImage) {
 }
 
 // Draw Text Elements
-function brushText(ctx: CanvasRenderingContext2D, el: TSpan) {
-
-    const style = el.style;
+function brushText(ctx: CanvasRenderingContext2D, el: TSpan, style: TSpanStyleProps) {
 
     let text = style.text;
     // Convert to string
@@ -323,18 +326,18 @@ function brushText(ctx: CanvasRenderingContext2D, el: TSpan) {
         }
 
         if (style.strokeFirst) {
-            if (el.hasStroke()) {
+            if (styleHasStroke(style)) {
                 ctx.strokeText(text, style.x, style.y);
             }
-            if (el.hasFill()) {
+            if (styleHasFill(style)) {
                 ctx.fillText(text, style.x, style.y);
             }
         }
         else {
-            if (el.hasFill()) {
+            if (styleHasFill(style)) {
                 ctx.fillText(text, style.x, style.y);
             }
-            if (el.hasStroke()) {
+            if (styleHasStroke(style)) {
                 ctx.strokeText(text, style.x, style.y);
             }
         }
@@ -411,10 +414,10 @@ function bindPathAndTextCommonStyle(
     forceSetAll: boolean,
     scope: BrushScope
 ) {
-    const style = el.style;
+    const style = getStyle(el, scope.inHover);
     const prevStyle = forceSetAll
         ? null
-        : (prevEl && prevEl.style || {});
+        : (prevEl && getStyle(prevEl, scope.inHover) || {});
     // Shared same style. prevStyle will be null if forceSetAll.
     if (style === prevStyle) {
         return false;
@@ -482,7 +485,13 @@ function bindImageStyle(
     forceSetAll: boolean,
     scope: BrushScope
 ) {
-    return bindCommonProps(ctx, el.style, prevEl && prevEl.style, forceSetAll, scope);
+    return bindCommonProps(
+        ctx,
+        getStyle(el, scope.inHover),
+        prevEl && getStyle(prevEl, scope.inHover),
+        forceSetAll,
+        scope
+    );
 }
 
 function setContextTransform(ctx: CanvasRenderingContext2D, el: Displayable) {
@@ -562,6 +571,8 @@ const DRAW_TYPE_TEXT = 3;
 const DRAW_TYPE_INCREMENTAL = 4;
 
 export type BrushScope = {
+    inHover: boolean
+
     // width / height of viewport
     viewWidth: number
     viewHeight: number
@@ -579,11 +590,10 @@ export type BrushScope = {
 }
 
 // If path can be batched
-function canPathBatch(el: Path) {
-    const style = el.style;
+function canPathBatch(style: PathStyleProps) {
 
-    const hasFill = el.hasFill();
-    const hasStroke = el.hasStroke();
+    const hasFill = styleHasFill(style);
+    const hasStroke = styleHasStroke(style);
 
     return !(
         // Line dash is dynamically set in brush function.
@@ -607,6 +617,10 @@ function flushPathDrawn(ctx: CanvasRenderingContext2D, scope: BrushScope) {
     scope.batchStroke && ctx.stroke();
     scope.batchFill = '';
     scope.batchStroke = '';
+}
+
+function getStyle(el: Displayable, inHover?: boolean) {
+    return inHover ? (el.__hoverStyle || el.style) : el.style;
 }
 
 // Brush different type of elements.
@@ -699,7 +713,7 @@ export function brush(
 
     let canBatchPath = el instanceof Path   // Only path supports batch
         && el.autoBatch
-        && canPathBatch(el as Path);
+        && canPathBatch(el.style);
 
     if (forceSetTransform || isTransformChanged(m, prevEl.transform)) {
         // Flush
@@ -711,6 +725,7 @@ export function brush(
         flushPathDrawn(ctx, scope);
     }
 
+    const style = getStyle(el, scope.inHover);
     if (el instanceof Path) {
         // PENDING do we need to rebind all style if displayable type changed?
         if (scope.lastDrawType !== DRAW_TYPE_PATH) {
@@ -723,10 +738,11 @@ export function brush(
         if (!canBatchPath || (!scope.batchFill && !scope.batchStroke)) {
             ctx.beginPath();
         }
-        brushPath(ctx, el as Path, canBatchPath);
+        brushPath(ctx, el as Path, style, canBatchPath);
+
         if (canBatchPath) {
-            scope.batchFill = el.style.fill as string || '';
-            scope.batchStroke = el.style.stroke as string || '';
+            scope.batchFill = style.fill as string || '';
+            scope.batchStroke = style.stroke as string || '';
         }
     }
     else {
@@ -737,7 +753,7 @@ export function brush(
             }
 
             bindPathAndTextCommonStyle(ctx, el as TSpan, prevEl as TSpan, forceSetStyle, scope);
-            brushText(ctx, el as TSpan);
+            brushText(ctx, el as TSpan, style);
         }
         else if (el instanceof ZRImage) {
             if (scope.lastDrawType !== DRAW_TYPE_IMAGE) {
@@ -746,7 +762,7 @@ export function brush(
             }
 
             bindImageStyle(ctx, el as ZRImage, prevEl as ZRImage, forceSetStyle, scope);
-            brushImage(ctx, el as ZRImage);
+            brushImage(ctx, el as ZRImage, style);
         }
         else if (el instanceof IncrementalDisplayable) {
             if (scope.lastDrawType !== DRAW_TYPE_INCREMENTAL) {
@@ -787,7 +803,8 @@ function brushIncremental(
         prevEl: null,
         allClipped: false,
         viewWidth: scope.viewWidth,
-        viewHeight: scope.viewHeight
+        viewHeight: scope.viewHeight,
+        inHover: scope.inHover
     };
     let i;
     let len;

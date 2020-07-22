@@ -483,27 +483,33 @@ class ZRText extends Displayable<TextProps> {
         const baseX = style.x || 0;
         const baseY = style.y || 0;
         const textAlign = style.align || defaultStyle.align || 'left';
-        const textVerticalAlign = style.verticalAlign || defaultStyle.verticalAlign;
+        const verticalAlign = style.verticalAlign || defaultStyle.verticalAlign || 'top';
 
         let textX = baseX;
-        let textY = adjustTextY(baseY, contentBlock.contentHeight, textVerticalAlign);
+        let textY = adjustTextY(baseY, contentBlock.contentHeight, verticalAlign);
 
         if (needDrawBg || textPadding) {
             // Consider performance, do not call getTextWidth util necessary.
             let outerWidth = contentBlock.width;
             textPadding && (outerWidth += textPadding[1] + textPadding[3]);
             const boxX = adjustTextX(baseX, outerWidth, textAlign);
-            const boxY = adjustTextY(baseY, outerHeight, textVerticalAlign);
+            const boxY = adjustTextY(baseY, outerHeight, verticalAlign);
 
             needDrawBg && this._renderBackground(style, boxX, boxY, outerWidth, outerHeight);
-
-            if (textPadding) {
-                textX = getTextXForPadding(baseX, textAlign, textPadding);
-            }
         }
 
         // `textBaseline` is set as 'middle'.
         textY += lineHeight / 2;
+
+        if (textPadding) {
+            textX = getTextXForPadding(baseX, textAlign, textPadding);
+            if (verticalAlign === 'top') {
+                textY += textPadding[0];
+            }
+            else if (verticalAlign === 'bottom') {
+                textY -= textPadding[2];
+            }
+        }
 
         let defaultLineWidth = 0;
         let useDefaultFill = false;
@@ -598,12 +604,12 @@ class ZRText extends Displayable<TextProps> {
         const baseY = style.y || 0;
         const defaultStyle = this._defaultStyle;
         const textAlign = style.align || defaultStyle.align;
-        const textVerticalAlign = style.verticalAlign || defaultStyle.verticalAlign;
+        const verticalAlign = style.verticalAlign || defaultStyle.verticalAlign;
 
         const boxX = adjustTextX(baseX, outerWidth, textAlign);
-        const boxY = adjustTextY(baseY, outerHeight, textVerticalAlign);
+        const boxY = adjustTextY(baseY, outerHeight, verticalAlign);
         let xLeft = adjustTextX(baseX, contentBlock.contentWidth, textAlign);
-        let lineTop = adjustTextY(baseY, contentBlock.contentHeight, textVerticalAlign);
+        let lineTop = adjustTextY(baseY, contentBlock.contentHeight, verticalAlign);
 
         const xRight = xLeft + contentWidth;
 
@@ -618,7 +624,7 @@ class ZRText extends Displayable<TextProps> {
             const tokenCount = tokens.length;
             const lineHeight = line.lineHeight;
 
-            let usedWidth = line.width;
+            let remainedWidth = line.width;
             let leftIndex = 0;
             let lineXLeft = xLeft;
             let lineXRight = xRight;
@@ -627,26 +633,26 @@ class ZRText extends Displayable<TextProps> {
 
             while (
                 leftIndex < tokenCount
-                && (token = tokens[leftIndex], !token.textAlign || token.textAlign === 'left')
+                && (token = tokens[leftIndex], !token.align || token.align === 'left')
             ) {
                 this._placeToken(token, style, lineHeight, lineTop, lineXLeft, 'left', bgColorDrawn);
-                usedWidth -= token.width;
+                remainedWidth -= token.width;
                 lineXLeft += token.width;
                 leftIndex++;
             }
 
             while (
                 rightIndex >= 0
-                && (token = tokens[rightIndex], token.textAlign === 'right')
+                && (token = tokens[rightIndex], token.align === 'right')
             ) {
                 this._placeToken(token, style, lineHeight, lineTop, lineXRight, 'right', bgColorDrawn);
-                usedWidth -= token.width;
+                remainedWidth -= token.width;
                 lineXRight -= token.width;
                 rightIndex--;
             }
 
             // The other tokens are placed as textAlign 'center' if there is enough space.
-            lineXLeft += (contentWidth - (lineXLeft - xLeft) - (xRight - lineXRight) - usedWidth) / 2;
+            lineXLeft += (contentWidth - (lineXLeft - xLeft) - (xRight - lineXRight) - remainedWidth) / 2;
             while (leftIndex <= rightIndex) {
                 token = tokens[leftIndex];
                 // Consider width specified by user, use 'center' rather than 'left'.
@@ -673,12 +679,12 @@ class ZRText extends Displayable<TextProps> {
 
         // 'ctx.textBaseline' is always set as 'middle', for sake of
         // the bias of "Microsoft YaHei".
-        const textVerticalAlign = token.textVerticalAlign;
+        const verticalAlign = token.verticalAlign;
         let y = lineTop + lineHeight / 2;
-        if (textVerticalAlign === 'top') {
+        if (verticalAlign === 'top') {
             y = lineTop + token.height / 2;
         }
-        else if (textVerticalAlign === 'bottom') {
+        else if (verticalAlign === 'bottom') {
             y = lineTop + lineHeight - token.height / 2;
         }
 
@@ -699,7 +705,6 @@ class ZRText extends Displayable<TextProps> {
         const textPadding = token.textPadding;
         if (textPadding) {
             x = getTextXForPadding(x, textAlign, textPadding);
-            y -= token.height / 2 - textPadding[2] - token.height / 2;
         }
 
         const el = this._getOrCreateChild(TSpan);
@@ -868,11 +873,11 @@ function normalizeStyle(style: TextStylePropsPart) {
         ) ? textAlign : 'left';
 
         // Compatible with textBaseline.
-        let textVerticalAlign = style.verticalAlign;
-        (textVerticalAlign as string) === 'center' && (textVerticalAlign = 'middle');
+        let verticalAlign = style.verticalAlign;
+        (verticalAlign as string) === 'center' && (verticalAlign = 'middle');
         style.verticalAlign = (
-            textVerticalAlign == null || VALID_TEXT_VERTICAL_ALIGN[textVerticalAlign]
-        ) ? textVerticalAlign : 'top';
+            verticalAlign == null || VALID_TEXT_VERTICAL_ALIGN[verticalAlign]
+        ) ? verticalAlign : 'top';
 
         // TODO Should not change the orignal value.
         const textPadding = style.padding;

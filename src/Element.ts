@@ -261,7 +261,9 @@ const DEFAULT_ANIMATABLE_MAP: Partial<Record<ElementStatePropNames, boolean>> = 
 }
 
 export type ElementStatePropNames = (typeof PRIMARY_STATES_KEYS)[number] | 'textConfig';
-export type ElementState = Pick<ElementProps, ElementStatePropNames>;
+export type ElementState = Pick<ElementProps, ElementStatePropNames> & {
+    hoverLayer?: boolean
+}
 
 let tmpTextPosCalcRes = {} as TextPositionCalculationResult;
 let tmpBoundingRect = new BoundingRect(0, 0, 0, 0);
@@ -334,6 +336,13 @@ class Element<Props extends ElementProps = ElementProps> {
     __dirty: number
 
     /**
+     * If element has been moved to the hover layer.
+     *
+     * If so, dirty will only trigger the zrender refresh hover layer
+     */
+    __inHover: boolean
+
+    /**
      * path to clip the elements and its children, if it is a group.
      * @see http://www.w3.org/TR/2dcontext/#clipping-region
      */
@@ -388,8 +397,10 @@ class Element<Props extends ElementProps = ElementProps> {
     /**
      * Proxy function for getting state with given stateName.
      * ZRender will first try to get with stateProxy. Then find from states if stateProxy returns nothing
+     *
+     * targetStates will be given in useStates
      */
-    stateProxy?: (stateName: string) => ElementState
+    stateProxy?: (stateName: string, targetStates?: string[]) => ElementState
 
     protected _normalState: ElementState
 
@@ -842,12 +853,19 @@ class Element<Props extends ElementProps = ElementProps> {
             this.saveCurrentToNormalState(state);
         }
 
+        const useHoverLayer = !!(state && state.hoverLayer);
+
+        if (useHoverLayer) {
+            // Enter hover layer before states update.
+            this._toggleHoverLayerFlag(true);
+        }
+
         this._applyStateObj(
             stateName,
             state,
             this._normalState,
             keepCurrentStates,
-            animationCfg && animationCfg.duration > 0,
+            !this.__inHover && animationCfg && animationCfg.duration > 0,
             animationCfg
         );
 
@@ -878,6 +896,15 @@ class Element<Props extends ElementProps = ElementProps> {
         this._updateAnimationTargets();
 
         this.markRedraw();
+
+        if (!useHoverLayer && this.__inHover) {
+            // Leave hover layer after states update and markRedraw.
+            this._toggleHoverLayerFlag(false);
+            // NOTE: avoid unexpected refresh when moving out from hover layer!!
+            // Only clear from hover layer.
+            this.__dirty &= ~Element.REDARAW_BIT;
+        }
+
         // Return used state.
         return state;
     }
@@ -906,11 +933,12 @@ class Element<Props extends ElementProps = ElementProps> {
             if (notChange) {
                 return;
             }
+
             for (let i = 0; i < len; i++) {
                 const stateName = states[i];
                 let stateObj: ElementState;
                 if (this.stateProxy) {
-                    stateObj = this.stateProxy(stateName);
+                    stateObj = this.stateProxy(stateName, states);
                 }
                 if (!stateObj) {
                     stateObj = this.states[stateName];
@@ -918,6 +946,12 @@ class Element<Props extends ElementProps = ElementProps> {
                 if (stateObj) {
                     stateObjects.push(stateObj);
                 }
+            }
+
+            const useHoverLayer = !!stateObjects[len - 1].hoverLayer;
+            if (useHoverLayer) {
+                // Enter hover layer before states update.
+                this._toggleHoverLayerFlag(true);
             }
 
             const mergedState = this._mergeStates(stateObjects);
@@ -930,7 +964,7 @@ class Element<Props extends ElementProps = ElementProps> {
                 mergedState,
                 this._normalState,
                 false,
-                animationCfg && animationCfg.duration > 0,
+                !this.__inHover && animationCfg && animationCfg.duration > 0,
                 animationCfg
             );
 
@@ -946,6 +980,15 @@ class Element<Props extends ElementProps = ElementProps> {
             // Create a copy
             this.currentStates = states.slice();
             this.markRedraw();
+
+
+            if (!useHoverLayer) {
+                // Leave hover layer after states update and markRedraw.
+                this._toggleHoverLayerFlag(false);
+                // NOTE: avoid unexpected refresh when moving out from hover layer!!
+                // Only clear from hover layer.
+                this.__dirty &= ~Element.REDARAW_BIT;
+            }
         }
     }
 
@@ -1265,7 +1308,16 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     markRedraw() {
         this.__dirty |= Element.REDARAW_BIT;
-        this.__zr && this.__zr.refresh();
+        const zr = this.__zr;
+        if (zr) {
+            if (this.__inHover) {
+                zr.refreshHover();
+            }
+            else {
+                zr.refresh();
+            }
+        }
+
         // Used as a clipPath or textContent
         if (this.__hostTarget) {
             this.__hostTarget.markRedraw();
@@ -1278,6 +1330,18 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     dirty() {
         this.markRedraw();
+    }
+
+    private _toggleHoverLayerFlag(inHover: boolean) {
+        this.__inHover = inHover;
+        const textContent = this._textContent;
+        const textGuide = this._textGuide;
+        if (textContent) {
+            textContent.__inHover = inHover;
+        }
+        if (textGuide) {
+            textGuide.__inHover = inHover;
+        }
     }
 
     /**
@@ -1495,6 +1559,7 @@ class Element<Props extends ElementProps = ElementProps> {
         elProto.isGroup = false;
         elProto.draggable = false;
         elProto.dragging = false;
+        elProto.__inHover = false;
         elProto.__dirty = Element.REDARAW_BIT;
 
 

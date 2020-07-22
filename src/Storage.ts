@@ -58,10 +58,12 @@ export default class Storage {
      */
     getDisplayList(update?: boolean, includeIgnore?: boolean): Displayable[] {
         includeIgnore = includeIgnore || false;
-        if (update) {
+        const displayList = this._displayList;
+        // If displaylist is not created yet. Update force
+        if (update || !displayList.length) {
             this.updateDisplayList(includeIgnore);
         }
-        return this._displayList;
+        return displayList;
     }
 
     /**
