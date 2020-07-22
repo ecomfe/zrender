@@ -13,6 +13,7 @@ import { PatternObject } from '../graphic/Pattern';
 import Storage from '../Storage';
 import { brush, BrushScope } from './graphic';
 import { PainterBase } from '../PainterBase';
+import Element from '../Element';
 
 const HOVER_LAYER_ZLEVEL = 1e5;
 const CANVAS_ZLEVEL = 314159;
@@ -255,7 +256,10 @@ export default class CanvasPainter implements PainterBase {
 
 
     refreshHover() {
-        const list = this.storage.getDisplayList(false);
+        this._paintHoverList(this.storage.getDisplayList(false));
+    }
+
+    private _paintHoverList(list: Displayable[]) {
         let len = list.length;
         let hoverLayer = this._hoverlayer;
         hoverLayer && hoverLayer.clear();
@@ -300,10 +304,14 @@ export default class CanvasPainter implements PainterBase {
 
         this._updateLayerStatus(list);
 
-        const finished = this._doPaintList(list, paintAll);
+        const {finished, needsRefreshHover} = this._doPaintList(list, paintAll);
 
         if (this._needsManuallyCompositing) {
             this._compositeManually();
+        }
+
+        if (needsRefreshHover) {
+            this._paintHoverList(list);
         }
 
         if (!finished) {
@@ -327,7 +335,10 @@ export default class CanvasPainter implements PainterBase {
         });
     }
 
-    private _doPaintList(list: Displayable[], paintAll?: boolean) {
+    private _doPaintList(list: Displayable[], paintAll?: boolean): {
+        finished: boolean
+        needsRefreshHover: boolean
+    } {
         const layerList = [];
         for (let zi = 0; zi < this._zlevelList.length; zi++) {
             const zlevel = this._zlevelList[zi];
@@ -343,6 +354,7 @@ export default class CanvasPainter implements PainterBase {
         }
 
         let finished = true;
+        let needsRefreshHover = false;
 
         for (let k = 0; k < layerList.length; k++) {
             const layer = layerList[k];
@@ -382,6 +394,10 @@ export default class CanvasPainter implements PainterBase {
             for (i = start; i < layer.__endIndex; i++) {
                 const el = list[i];
 
+                if (el.__inHover) {
+                    needsRefreshHover = true;
+                }
+
                 brush(ctx, el, scope, i === layer.__endIndex - 1);
 
                 if (useTimer) {
@@ -418,7 +434,10 @@ export default class CanvasPainter implements PainterBase {
             });
         }
 
-        return finished;
+        return {
+            finished,
+            needsRefreshHover
+        };
     }
 
     /**
@@ -643,7 +662,7 @@ export default class CanvasPainter implements PainterBase {
                 updatePrevLayer(i);
                 prevLayer = layer;
             }
-            if (el.__dirty && !el.__inHover) {  // Ignore dirty elements in hover layer.
+            if ((el.__dirty & Element.REDARAW_BIT) && !el.__inHover) {  // Ignore dirty elements in hover layer.
                 layer.__dirty = true;
                 if (layer.incremental && layer.__drawIndex < 0) {
                     // Start draw from the first dirty element.

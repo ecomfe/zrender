@@ -902,7 +902,7 @@ class Element<Props extends ElementProps = ElementProps> {
             this._toggleHoverLayerFlag(false);
             // NOTE: avoid unexpected refresh when moving out from hover layer!!
             // Only clear from hover layer.
-            this.__dirty = 0;
+            this.__dirty &= ~Element.REDARAW_BIT;
         }
 
         // Return used state.
@@ -987,7 +987,7 @@ class Element<Props extends ElementProps = ElementProps> {
                 this._toggleHoverLayerFlag(false);
                 // NOTE: avoid unexpected refresh when moving out from hover layer!!
                 // Only clear from hover layer.
-                this.__dirty = 0;
+                this.__dirty &= ~Element.REDARAW_BIT;
             }
         }
     }
@@ -1559,6 +1559,7 @@ class Element<Props extends ElementProps = ElementProps> {
         elProto.isGroup = false;
         elProto.draggable = false;
         elProto.dragging = false;
+        elProto.__inHover = false;
         elProto.__dirty = Element.REDARAW_BIT;
 
 
