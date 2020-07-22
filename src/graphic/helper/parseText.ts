@@ -182,6 +182,8 @@ export function parsePlainText(
     const calculatedLineHeight = getLineHeight(font);
     const lineHeight = retrieve2(style.lineHeight, calculatedLineHeight);
 
+    const truncateLineOverflow = style.lineOverflow === 'truncate';
+
     let width = style.width;
     let lines: string[];
 
@@ -196,20 +198,19 @@ export function parsePlainText(
     const height = retrieve2(style.height, contentHeight);
 
     // Truncate lines.
-    if (contentHeight > height && style.lineOverflow === 'truncate') {
+    if (contentHeight > height && truncateLineOverflow) {
         const lineCount = Math.floor(height / lineHeight);
-        const lastLine = lines.slice(lineCount - 1).join('');
 
         lines = lines.slice(0, lineCount);
 
-        // TODO Optimize
-        if (style.ellipsis) {
-            const options = prepareTruncateOptions(width, font, style.ellipsis, {
-                minChar: style.truncateMinChar,
-                placeholder: style.placeholder
-            });
-            lines[lineCount - 1] = truncateSingleLine(lastLine, options);
-        }
+        // TODO If show ellipse for line truncate
+        // if (style.ellipsis) {
+        //     const options = prepareTruncateOptions(width, font, style.ellipsis, {
+        //         minChar: style.truncateMinChar,
+        //         placeholder: style.placeholder
+        //     });
+        //     lines[lineCount - 1] = truncateSingleLine(lastLine, options);
+        // }
     }
 
     let outerHeight = height;
