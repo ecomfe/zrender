@@ -16,6 +16,7 @@ import Path from './Path';
 import { ZRenderType } from '../zrender';
 import Animator from '../animation/Animator';
 import Transformable from '../core/Transformable';
+import { ElementCommonState } from '../Element';
 
 type TextContentBlock = ReturnType<typeof parseRichText>
 type TextLine = TextContentBlock['lines'][0]
@@ -189,7 +190,7 @@ export interface TextProps extends DisplayableProps {
     cursor?: string
 }
 
-export type TextState = Pick<TextProps, DisplayableStatePropNames>
+export type TextState = Pick<TextProps, DisplayableStatePropNames> & ElementCommonState
 
 export type DefaultTextStyle = Pick<TextStyleProps, 'fill' | 'stroke' | 'align' | 'verticalAlign'> & {
     autoStroke?: boolean

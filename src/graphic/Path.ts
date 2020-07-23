@@ -116,7 +116,9 @@ interface Path<Props extends PathProps = PathProps> {
 }
 
 export type PathStatePropNames = DisplayableStatePropNames | 'shape';
-export type PathState = Pick<PathProps, PathStatePropNames>
+export type PathState = Pick<PathProps, PathStatePropNames> & {
+    hoverLayer?: boolean
+}
 
 class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
 

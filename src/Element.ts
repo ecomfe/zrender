@@ -261,7 +261,9 @@ const DEFAULT_ANIMATABLE_MAP: Partial<Record<ElementStatePropNames, boolean>> = 
 }
 
 export type ElementStatePropNames = (typeof PRIMARY_STATES_KEYS)[number] | 'textConfig';
-export type ElementState = Pick<ElementProps, ElementStatePropNames> & {
+export type ElementState = Pick<ElementProps, ElementStatePropNames> & ElementCommonState
+
+export type ElementCommonState = {
     hoverLayer?: boolean
 }
 
