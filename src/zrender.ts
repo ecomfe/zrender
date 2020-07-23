@@ -205,10 +205,10 @@ class ZRender {
 
         // Clear needsRefresh ahead to avoid something wrong happens in refresh
         // Or it will cause zrender refreshes again and again.
-        this._needsRefresh = this._needsRefreshHover = false;
+        this._needsRefresh = false;
         this.painter.refresh();
         // Avoid trigger zr.refresh in Element#beforeUpdate hook
-        this._needsRefresh = this._needsRefreshHover = false;
+        this._needsRefresh = false;
 
         // const end = new Date();
         // const log = document.getElementById('log');
@@ -257,34 +257,33 @@ class ZRender {
     }
 
     /**
+     * Wake up animation loop. But not render.
+     */
+    wakeUp() {
+        this.animation.start();
+        // Reset the frame count.
+        this._stillFrameAccum = 0;
+    }
+
+    /**
      * Add element to hover layer
      */
-    addHover<T extends Displayable>(el: T, hoverStyle?: T['style']): T {
-        if (this.painter.addHover) {
-            const elMirror = this.painter.addHover(el, hoverStyle);
-            this.refreshHover();
-            return elMirror;
-        }
+    addHover(el: Displayable) {
+        // deprecated.
     }
 
     /**
      * Add element from hover layer
      */
     removeHover(el: Path | TSpan | ZRImage) {
-        if (this.painter.removeHover) {
-            this.painter.removeHover(el);
-            this.refreshHover();
-        }
+        // deprecated.
     }
 
     /**
      * Clear all hover elements in hover layer
      */
     clearHover() {
-        if (this.painter.clearHover) {
-            this.painter.clearHover();
-            this.refreshHover();
-        }
+        // deprecated.
     }
 
     /**

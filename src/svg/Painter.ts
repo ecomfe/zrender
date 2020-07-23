@@ -205,7 +205,7 @@ class SVGPainter implements PainterBase {
             const svgProxy = getSvgProxy(displayable);
             const svgElement = getSvgElement(displayable);
             if (!displayable.invisible) {
-                if (displayable.__dirty) {
+                if (displayable.__dirty || !svgElement) {
                     svgProxy && (svgProxy as SVGProxy<Displayable>).brush(displayable);
 
                     // Update clipPath
@@ -223,7 +223,11 @@ class SVGPainter implements PainterBase {
 
                     displayable.__dirty = 0;
                 }
-                newVisibleList.push(displayable);
+
+                // May have optimizations and ignore brush(like empty string in TSpan)
+                if (getSvgElement(displayable)) {
+                    newVisibleList.push(displayable);
+                }
             }
         }
 

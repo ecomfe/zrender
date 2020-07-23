@@ -65,6 +65,12 @@ export interface ElementTextConfig {
     rotation?: number
 
     /**
+     * Rect that text will be positioned.
+     * Default to be the rect of element.
+     */
+    layoutRect?: RectLike
+
+    /**
      * Offset of the label.
      * The difference of offset and position is that it will be applied
      * in the rotation
@@ -255,7 +261,9 @@ const DEFAULT_ANIMATABLE_MAP: Partial<Record<ElementStatePropNames, boolean>> = 
 }
 
 export type ElementStatePropNames = (typeof PRIMARY_STATES_KEYS)[number] | 'textConfig';
-export type ElementState = Pick<ElementProps, ElementStatePropNames>;
+export type ElementState = Pick<ElementProps, ElementStatePropNames> & {
+    hoverLayer?: boolean
+}
 
 let tmpTextPosCalcRes = {} as TextPositionCalculationResult;
 let tmpBoundingRect = new BoundingRect(0, 0, 0, 0);
@@ -328,6 +336,13 @@ class Element<Props extends ElementProps = ElementProps> {
     __dirty: number
 
     /**
+     * If element has been moved to the hover layer.
+     *
+     * If so, dirty will only trigger the zrender refresh hover layer
+     */
+    __inHover: boolean
+
+    /**
      * path to clip the elements and its children, if it is a group.
      * @see http://www.w3.org/TR/2dcontext/#clipping-region
      */
@@ -382,8 +397,10 @@ class Element<Props extends ElementProps = ElementProps> {
     /**
      * Proxy function for getting state with given stateName.
      * ZRender will first try to get with stateProxy. Then find from states if stateProxy returns nothing
+     *
+     * targetStates will be given in useStates
      */
-    stateProxy?: (stateName: string) => ElementState
+    stateProxy?: (stateName: string, targetStates?: string[]) => ElementState
 
     protected _normalState: ElementState
 
@@ -477,18 +494,26 @@ class Element<Props extends ElementProps = ElementProps> {
             attachedTransform.originX = textEl.originX;
             attachedTransform.originY = textEl.originY;
             attachedTransform.rotation = textEl.rotation;
+            attachedTransform.scaleX = textEl.scaleX;
+            attachedTransform.scaleY = textEl.scaleY;
             // Force set attached text's position if `position` is in config.
             if (textConfig.position != null) {
-                tmpBoundingRect.copy(this.getBoundingRect());
+                let layoutRect = tmpBoundingRect;
+                if (textConfig.layoutRect) {
+                    layoutRect.copy(textConfig.layoutRect);
+                }
+                else {
+                    layoutRect.copy(this.getBoundingRect());
+                }
                 if (!isLocal) {
-                    tmpBoundingRect.applyTransform(this.transform);
+                    layoutRect.applyTransform(this.transform);
                 }
 
                 if (this.calculateTextPosition) {
-                    this.calculateTextPosition(tmpTextPosCalcRes, textConfig, tmpBoundingRect);
+                    this.calculateTextPosition(tmpTextPosCalcRes, textConfig, layoutRect);
                 }
                 else {
-                    calculateTextPosition(tmpTextPosCalcRes, textConfig, tmpBoundingRect);
+                    calculateTextPosition(tmpTextPosCalcRes, textConfig, layoutRect);
                 }
 
                 // TODO Should modify back if textConfig.position is set to null again.
@@ -506,17 +531,17 @@ class Element<Props extends ElementProps = ElementProps> {
                     let relOriginX;
                     let relOriginY;
                     if (textOrigin === 'center') {
-                        relOriginX = tmpBoundingRect.width * 0.5;
-                        relOriginY = tmpBoundingRect.height * 0.5;
+                        relOriginX = layoutRect.width * 0.5;
+                        relOriginY = layoutRect.height * 0.5;
                     }
                     else {
-                        relOriginX = parsePercent(textOrigin[0], tmpBoundingRect.width);
-                        relOriginY = parsePercent(textOrigin[1], tmpBoundingRect.height);
+                        relOriginX = parsePercent(textOrigin[0], layoutRect.width);
+                        relOriginY = parsePercent(textOrigin[1], layoutRect.height);
                     }
 
                     innerOrigin = true;
-                    attachedTransform.originX = -attachedTransform.x + relOriginX + (isLocal ? 0 : tmpBoundingRect.x);
-                    attachedTransform.originY = -attachedTransform.y + relOriginY + (isLocal ? 0 : tmpBoundingRect.y);
+                    attachedTransform.originX = -attachedTransform.x + relOriginX + (isLocal ? 0 : layoutRect.x);
+                    attachedTransform.originY = -attachedTransform.y + relOriginY + (isLocal ? 0 : layoutRect.y);
                 }
             }
 
@@ -547,7 +572,7 @@ class Element<Props extends ElementProps = ElementProps> {
             let textFill;
             let textStroke;
             let autoStroke;
-            if (isInside) {
+            if (isInside && this.canBeInsideText()) {
                 // In most cases `textContent` need this "auto" strategy.
                 // So by default be 'auto'. Otherwise users need to literally
                 // set `insideFill: 'auto', insideStroke: 'auto'` each time.
@@ -608,6 +633,10 @@ class Element<Props extends ElementProps = ElementProps> {
             // Mark textEl to update transform.
             textEl.markRedraw();
         }
+    }
+
+    protected canBeInsideText() {
+        return true;
     }
 
     protected getInsideTextFill(): string {
@@ -824,12 +853,19 @@ class Element<Props extends ElementProps = ElementProps> {
             this.saveCurrentToNormalState(state);
         }
 
+        const useHoverLayer = !!(state && state.hoverLayer);
+
+        if (useHoverLayer) {
+            // Enter hover layer before states update.
+            this._toggleHoverLayerFlag(true);
+        }
+
         this._applyStateObj(
             stateName,
             state,
             this._normalState,
             keepCurrentStates,
-            animationCfg && animationCfg.duration > 0,
+            !this.__inHover && animationCfg && animationCfg.duration > 0,
             animationCfg
         );
 
@@ -860,6 +896,15 @@ class Element<Props extends ElementProps = ElementProps> {
         this._updateAnimationTargets();
 
         this.markRedraw();
+
+        if (!useHoverLayer && this.__inHover) {
+            // Leave hover layer after states update and markRedraw.
+            this._toggleHoverLayerFlag(false);
+            // NOTE: avoid unexpected refresh when moving out from hover layer!!
+            // Only clear from hover layer.
+            this.__dirty &= ~Element.REDARAW_BIT;
+        }
+
         // Return used state.
         return state;
     }
@@ -888,11 +933,12 @@ class Element<Props extends ElementProps = ElementProps> {
             if (notChange) {
                 return;
             }
+
             for (let i = 0; i < len; i++) {
                 const stateName = states[i];
                 let stateObj: ElementState;
                 if (this.stateProxy) {
-                    stateObj = this.stateProxy(stateName);
+                    stateObj = this.stateProxy(stateName, states);
                 }
                 if (!stateObj) {
                     stateObj = this.states[stateName];
@@ -900,6 +946,12 @@ class Element<Props extends ElementProps = ElementProps> {
                 if (stateObj) {
                     stateObjects.push(stateObj);
                 }
+            }
+
+            const useHoverLayer = !!(stateObjects[len - 1] && stateObjects[len - 1].hoverLayer);
+            if (useHoverLayer) {
+                // Enter hover layer before states update.
+                this._toggleHoverLayerFlag(true);
             }
 
             const mergedState = this._mergeStates(stateObjects);
@@ -912,7 +964,7 @@ class Element<Props extends ElementProps = ElementProps> {
                 mergedState,
                 this._normalState,
                 false,
-                animationCfg && animationCfg.duration > 0,
+                !this.__inHover && animationCfg && animationCfg.duration > 0,
                 animationCfg
             );
 
@@ -928,6 +980,15 @@ class Element<Props extends ElementProps = ElementProps> {
             // Create a copy
             this.currentStates = states.slice();
             this.markRedraw();
+
+
+            if (!useHoverLayer) {
+                // Leave hover layer after states update and markRedraw.
+                this._toggleHoverLayerFlag(false);
+                // NOTE: avoid unexpected refresh when moving out from hover layer!!
+                // Only clear from hover layer.
+                this.__dirty &= ~Element.REDARAW_BIT;
+            }
         }
     }
 
@@ -1247,7 +1308,16 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     markRedraw() {
         this.__dirty |= Element.REDARAW_BIT;
-        this.__zr && this.__zr.refresh();
+        const zr = this.__zr;
+        if (zr) {
+            if (this.__inHover) {
+                zr.refreshHover();
+            }
+            else {
+                zr.refresh();
+            }
+        }
+
         // Used as a clipPath or textContent
         if (this.__hostTarget) {
             this.__hostTarget.markRedraw();
@@ -1260,6 +1330,18 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     dirty() {
         this.markRedraw();
+    }
+
+    private _toggleHoverLayerFlag(inHover: boolean) {
+        this.__inHover = inHover;
+        const textContent = this._textContent;
+        const textGuide = this._textGuide;
+        if (textContent) {
+            textContent.__inHover = inHover;
+        }
+        if (textGuide) {
+            textGuide.__inHover = inHover;
+        }
     }
 
     /**
@@ -1293,7 +1375,7 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     removeSelfFromZr(zr: ZRenderType) {
         this.__zr = null;
-        // 移除动画
+        // Remove animation
         const animators = this.animators;
         if (animators) {
             for (let i = 0; i < animators.length; i++) {
@@ -1477,6 +1559,7 @@ class Element<Props extends ElementProps = ElementProps> {
         elProto.isGroup = false;
         elProto.draggable = false;
         elProto.dragging = false;
+        elProto.__inHover = false;
         elProto.__dirty = Element.REDARAW_BIT;
 
 
@@ -1649,6 +1732,7 @@ function animateToShallow<T>(
     reverse: boolean    // If `true`, animate from the `target` to current state.
 ) {
     const animatableKeys: string[] = [];
+    const changedKeys: string[] = [];
     const targetKeys = keys(target);
     const duration = cfg.duration;
     const delay = cfg.delay;
@@ -1686,12 +1770,16 @@ function animateToShallow<T>(
             }
             else {
                 animatableKeys.push(innerKey);
+                changedKeys.push(innerKey);
             }
         }
         else if (!reverse) {
             // Assign target value directly.
             source[innerKey] = target[innerKey];
             animatable.updateDuringAnimation(topKey);
+            // Previous animation will be stopped on the changed keys.
+            // So direct assign is also included.
+            changedKeys.push(innerKey);
         }
     }
 
@@ -1711,7 +1799,7 @@ function animateToShallow<T>(
         if (!additive && lastAnimator) {
             // Stop exists animation on specific tracks. Only one animator available for each property.
             // TODO Should invoke previous animation callback?
-            const allAborted = lastAnimator.stopTracks(animatableKeys);
+            const allAborted = lastAnimator.stopTracks(changedKeys);
             if (allAborted) {   // This animator can't be used.
                 const idx = indexOf(existsAnimators, lastAnimator);
                 existsAnimators.splice(idx, 1);

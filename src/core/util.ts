@@ -309,6 +309,7 @@ export function each<I extends Dictionary<any> | any[] | readonly any[] | ArrayL
     }
     else if (arr.length === +arr.length) {
         for (let i = 0, len = arr.length; i < len; i++) {
+            // FIXME: should the elided item be travelled? like `[33,,55]`.
             cb.call(context, (arr as any[])[i], i as any, arr);
         }
     }
@@ -322,18 +323,23 @@ export function each<I extends Dictionary<any> | any[] | readonly any[] | ArrayL
 }
 
 /**
- * 数组映射
+ * Array mapping.
  * @typeparam T Type in Array
  * @typeparam R Type Returned
- * @return
+ * @return Must be an array.
  */
 export function map<T, R, Context>(
     arr: readonly T[],
     cb: (this: Context, val: T, index?: number, arr?: readonly T[]) => R,
     context?: Context
 ): R[] {
-    if (!(arr && cb)) {
-        return;
+    // Take the same behavior with lodash when !arr and !cb,
+    // which might be some common sense.
+    if (!arr) {
+        return [];
+    }
+    if (!cb) {
+        return slice(arr) as unknown[] as R[];
     }
     if (arr.map && arr.map === nativeMap) {
         return arr.map(cb, context);
@@ -341,6 +347,7 @@ export function map<T, R, Context>(
     else {
         const result = [];
         for (let i = 0, len = arr.length; i < len; i++) {
+            // FIXME: should the elided item be travelled, like `[33,,55]`.
             result.push(cb.call(context, arr[i], i, arr));
         }
         return result;
@@ -363,15 +370,21 @@ export function reduce<T, S, Context>(
 }
 
 /**
- * 数组过滤
+ * Array filtering.
+ * @return Must be an array.
  */
 export function filter<T, Context>(
     arr: readonly T[],
     cb: (this: Context, value: T, index: number, arr: readonly T[]) => boolean,
     context?: Context
 ): T[] {
-    if (!(arr && cb)) {
-        return;
+    // Take the same behavior with lodash when !arr and !cb,
+    // which might be some common sense.
+    if (!arr) {
+        return [];
+    }
+    if (!cb) {
+        return slice(arr);
     }
     if (arr.filter && arr.filter === nativeFilter) {
         return arr.filter(cb, context);
@@ -379,6 +392,7 @@ export function filter<T, Context>(
     else {
         const result = [];
         for (let i = 0, len = arr.length; i < len; i++) {
+            // FIXME: should the elided items be travelled? like `[33,,55]`.
             if (cb.call(context, arr[i], i, arr)) {
                 result.push(arr[i]);
             }
@@ -632,19 +646,20 @@ export function isPrimitive(obj: any): boolean {
     return obj[primitiveKey];
 }
 
+
 /**
  * @constructor
  * @param {Object} obj Only apply `ownProperty`.
  */
-export class HashMap<T> {
+export class HashMap<T, KEY extends string | number = string | number> {
 
-    data: {[key: string]: T} = {}
+    data: {[key in KEY]: T} = {} as {[key in KEY]: T};
 
-    constructor(obj?: HashMap<T> | Dictionary<T> | any[]) {
+    constructor(obj?: HashMap<T, KEY> | Dictionary<T> | any[]) {
         const isArr = isArray(obj);
         // Key should not be set on this, otherwise
         // methods get/set/... may be overrided.
-        this.data = {};
+        this.data = {} as {[key in KEY]: T};
         const thisMap = this;
 
         (obj instanceof HashMap)
@@ -659,10 +674,10 @@ export class HashMap<T> {
     // Do not provide `has` method to avoid defining what is `has`.
     // (We usually treat `null` and `undefined` as the same, different
     // from ES6 Map).
-    get(key: string | number): T {
+    get(key: KEY): T {
         return this.data.hasOwnProperty(key) ? this.data[key] : null;
     }
-    set(key: string | number, value: T) {
+    set(key: KEY, value: T) {
         // Comparing with invocation chaining, `return value` is more commonly
         // used in this case: `const someVal = map.set('a', genVal());`
         return (this.data[key] = value);
@@ -670,24 +685,28 @@ export class HashMap<T> {
     // Although util.each can be performed on this hashMap directly, user
     // should not use the exposed keys, who are prefixed.
     each<Context>(
-        cb: (this: Context, value?: T, key?: string) => void,
+        cb: (this: Context, value?: T, key?: KEY) => void,
         context?: Context
     ) {
-        context !== void 0 && (cb = bind(cb, context));
-        /* eslint-disable guard-for-in */
         for (let key in this.data) {
-            this.data.hasOwnProperty(key) && (cb as any)(this.data[key], key);
+            if (this.data.hasOwnProperty(key)) {
+                cb.call(context, this.data[key], key);
+            }
         }
-        /* eslint-enable guard-for-in */
+    }
+    keys(): KEY[] {
+        return keys(this.data);
     }
     // Do not use this method if performance sensitive.
-    removeKey(key: string | number) {
+    removeKey(key: KEY) {
         delete this.data[key];
     }
 }
 
-export function createHashMap<T>(obj?: HashMap<T> | Dictionary<T> | any[]) {
-    return new HashMap<T>(obj);
+export function createHashMap<T, KEY extends string | number = string | number>(
+    obj?: HashMap<T, KEY> | Dictionary<T> | any[]
+) {
+    return new HashMap<T, KEY>(obj);
 }
 
 export function concatArray<T, R>(a: ArrayLike<T>, b: ArrayLike<R>): ArrayLike<T | R> {

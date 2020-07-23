@@ -199,6 +199,10 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         return {};
     }
 
+    protected canBeInsideText() {
+        return this.hasFill();
+    }
+
     protected getInsideTextFill() {
         const pathFill = this.style.fill;
         if (pathFill !== 'none') {
@@ -254,13 +258,13 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
 
     hasStroke() {
         const style = this.style;
-        const stroke = 'stroke' in style ? style.stroke : DEFAULT_PATH_STYLE.stroke;
-        return stroke != null && stroke !== 'none' && style.lineWidth > 0;
+        const stroke = style.stroke;
+        return !(stroke == null || stroke === 'none' || !(style.lineWidth > 0));
     }
 
     hasFill() {
         const style = this.style;
-        const fill = 'fill' in style ? style.fill : DEFAULT_PATH_STYLE.fill;
+        const fill = style.fill;
         return fill != null && fill !== 'none';
     }
 
@@ -421,7 +425,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
      * If shape changed. used with dirtyShape
      */
     shapeChanged() {
-        return this.__dirty & Path.SHAPE_CHANGED_BIT;
+        return !!(this.__dirty & Path.SHAPE_CHANGED_BIT);
     }
 
     /**

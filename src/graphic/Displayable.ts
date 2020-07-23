@@ -131,11 +131,8 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
 
     protected _rect: BoundingRect
 
-    /**
-     * If use hover layer. Will be set in echarts.
-     */
-    useHoverLayer?: boolean
     /************* Properties will be inejected in other modules. *******************/
+    __hoverStyle?: CommonStyleProps
 
     // TODO use WeakMap?
 
@@ -143,10 +140,6 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     // Can only be `null`/`undefined` or an non-empty array, MUST NOT be an empty array.
     // because it is easy to only using null to check whether clipPaths changed.
     __clipPaths?: Path[]
-
-    // FOR HOVER Connections for hovered elements.
-    __hoverMir: Displayable
-    __from: Displayable
 
     // FOR CANVAS PAINTER
     __canvasFillGradient: CanvasGradient
@@ -156,7 +149,6 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
 
     // FOR SVG PAINTER
     __svgEl: SVGElement
-
 
     constructor(props?: Props) {
         super(props);
@@ -279,7 +271,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
      * Is style changed. Used with dirtyStyle.
      */
     styleChanged() {
-        return this.__dirty & Displayable.STYLE_CHANGED_BIT;
+        return !!(this.__dirty & Displayable.STYLE_CHANGED_BIT);
     }
 
     /**
@@ -305,7 +297,12 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         if (!obj[STYLE_MAGIC_KEY]) {
             obj = this.createStyle(obj);
         }
-        this.style = obj;
+        if (this.__inHover) {
+            this.__hoverStyle = obj;    // Not affect exists style.
+        }
+        else {
+            this.style = obj;
+        }
         this.dirtyStyle();
     }
 
@@ -371,7 +368,6 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         if (targetStyle) {
             if (transition) {
                 // Clone a new style. Not affect the original one.
-                // TODO Performance issue.
                 const sourceStyle = this.style;
 
                 this.style = this.createStyle(needsRestoreToNormal ? {} : sourceStyle);
@@ -406,7 +402,6 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
             }
             else {
                 this.useStyle(targetStyle);
-                this.dirtyStyle();
             }
         }
 

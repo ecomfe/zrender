@@ -156,6 +156,7 @@ function estimateLength(
 
 export interface PlainTextContentBlock {
     lineHeight: number
+    contentHeight: number
     // Line height of actual content.
     calculatedLineHeight: number
 
@@ -181,6 +182,8 @@ export function parsePlainText(
     const calculatedLineHeight = getLineHeight(font);
     const lineHeight = retrieve2(style.lineHeight, calculatedLineHeight);
 
+    const truncateLineOverflow = style.lineOverflow === 'truncate';
+
     let width = style.width;
     let lines: string[];
 
@@ -195,20 +198,19 @@ export function parsePlainText(
     const height = retrieve2(style.height, contentHeight);
 
     // Truncate lines.
-    if (contentHeight > height && style.lineOverflow === 'truncate') {
+    if (contentHeight > height && truncateLineOverflow) {
         const lineCount = Math.floor(height / lineHeight);
-        const lastLine = lines.slice(lineCount - 1).join('');
 
         lines = lines.slice(0, lineCount);
 
-        // TODO Optimize
-        if (style.ellipsis) {
-            const options = prepareTruncateOptions(width, font, style.ellipsis, {
-                minChar: style.truncateMinChar,
-                placeholder: style.placeholder
-            });
-            lines[lineCount - 1] = truncateSingleLine(lastLine, options);
-        }
+        // TODO If show ellipse for line truncate
+        // if (style.ellipsis) {
+        //     const options = prepareTruncateOptions(width, font, style.ellipsis, {
+        //         minChar: style.truncateMinChar,
+        //         placeholder: style.placeholder
+        //     });
+        //     lines[lineCount - 1] = truncateSingleLine(lastLine, options);
+        // }
     }
 
     let outerHeight = height;
@@ -247,6 +249,7 @@ export function parsePlainText(
         outerHeight: outerHeight,
         lineHeight: lineHeight,
         calculatedLineHeight: calculatedLineHeight,
+        contentHeight: contentHeight,
         width: width
     };
 }
@@ -263,8 +266,8 @@ class RichTextToken {
 
     lineHeight: number
     font: string
-    textAlign: TextAlign
-    textVerticalAlign: TextVerticalAlign
+    align: TextAlign
+    verticalAlign: TextVerticalAlign
 
     textPadding: number[]
     percentWidth?: string
@@ -286,6 +289,9 @@ export class RichTextContentBlock {
     // width/height of content
     width: number = 0
     height: number = 0
+    // Calculated text height
+    contentWidth: number = 0
+    contentHeight: number = 0
     // outerWidth/outerHeight with padding
     outerWidth: number = 0
     outerHeight: number = 0
@@ -366,14 +372,15 @@ export function parseRichText(text: string, style: TextStyleProps) {
                 // as box height of the block.
                 tokenStyle.height, token.contentHeight
             );
-            textPadding && (tokenHeight += textPadding[0] + textPadding[2]);
-            token.height = tokenHeight;
             token.lineHeight = retrieve3(
                 tokenStyle.lineHeight, style.lineHeight, tokenHeight
             );
 
-            token.textAlign = tokenStyle && tokenStyle.align || style.align;
-            token.textVerticalAlign = tokenStyle && tokenStyle.verticalAlign || 'middle';
+            textPadding && (tokenHeight += textPadding[0] + textPadding[2]);
+            token.height = tokenHeight;
+
+            token.align = tokenStyle && tokenStyle.align || style.align;
+            token.verticalAlign = tokenStyle && tokenStyle.verticalAlign || 'middle';
 
             if (truncateLine && topHeight != null && calculatedHeight + token.lineHeight > topHeight) {
                 // TODO Add ellipsis on the previous token.
@@ -438,7 +445,9 @@ export function parseRichText(text: string, style: TextStyleProps) {
                 }
             }
 
-            lineWidth += token.width + paddingH;
+            token.width += paddingH;
+
+            lineWidth += token.width;
             tokenStyle && (lineHeight = Math.max(lineHeight, token.lineHeight));
 
             prevToken = token;
@@ -453,6 +462,8 @@ export function parseRichText(text: string, style: TextStyleProps) {
 
     contentBlock.outerWidth = contentBlock.width = retrieve2(topWidth, calculatedWidth);
     contentBlock.outerHeight = contentBlock.height = retrieve2(topHeight, calculatedHeight);
+    contentBlock.contentHeight = calculatedHeight;
+    contentBlock.contentWidth = calculatedWidth;
 
     if (stlPadding) {
         contentBlock.outerWidth += stlPadding[1] + stlPadding[3];
