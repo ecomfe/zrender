@@ -424,10 +424,6 @@ class SVGPainter implements PainterBase {
         const html = encodeURIComponent(this._svgDom.outerHTML.replace(/></g, '>\n\r<'));
         return 'data:image/svg+xml;charset=UTF-8,' + html;
     }
-
-    addHover = createMethodNotSupport('addHover') as PainterBase['addHover'];
-    removeHover = createMethodNotSupport('removeHover') as PainterBase['removeHover'];
-    clearHover = createMethodNotSupport('clearHover') as PainterBase['clearHover'];
     refreshHover = createMethodNotSupport('refreshHover') as PainterBase['refreshHover'];
     pathToImage = createMethodNotSupport('pathToImage') as PainterBase['pathToImage'];
     configLayer = createMethodNotSupport('configLayer') as PainterBase['configLayer'];

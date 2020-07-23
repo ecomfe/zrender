@@ -278,17 +278,6 @@ class Group extends Element<GroupProps> {
         }
         return rect || tmpRect;
     }
-
-    /**
-     * Moved self and related text content to hover layer
-     */
-    moveToHoverLayer() {
-        this._toggleHoverLayerFlag(true);
-    }
-
-    moveOutFromHoverLayer() {
-        this._toggleHoverLayerFlag(false);
-    }
 }
 
 Group.prototype.type = 'group';
