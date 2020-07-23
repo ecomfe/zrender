@@ -132,6 +132,10 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     protected _rect: BoundingRect
 
     /************* Properties will be inejected in other modules. *******************/
+
+    // @deprecated.
+    useHoverLayer?: boolean
+
     __hoverStyle?: CommonStyleProps
 
     // TODO use WeakMap?
