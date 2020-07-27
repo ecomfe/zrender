@@ -606,11 +606,14 @@ class ZRText extends Displayable<TextProps> {
         let xLeft = adjustTextX(baseX, contentBlock.contentWidth, textAlign);
         let lineTop = adjustTextY(baseY, contentBlock.contentHeight, verticalAlign);
 
-        if (textPadding) {
+        if (textPadding && textAlign === 'left') {
             xLeft += textPadding[3];
         }
 
-        const xRight = xLeft + contentWidth;
+        let xRight = xLeft + contentWidth;
+        if (textPadding && textAlign === 'right') {
+            xRight -= textPadding[1];
+        }
 
         if (needDrawBackground(style)) {
             this._renderBackground(style, boxX, boxY, outerWidth, outerHeight);
