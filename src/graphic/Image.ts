@@ -7,6 +7,7 @@ import Displayable, { DisplayableProps,
 import BoundingRect from '../core/BoundingRect';
 import { ImageLike, MapToType } from '../core/types';
 import { defaults, createObject } from '../core/util';
+import { ElementCommonState } from '../Element';
 
 export interface ImageStyleProps extends CommonStyleProps {
     image?: string | ImageLike
@@ -44,7 +45,7 @@ interface ImageProps extends DisplayableProps {
     onload?: (image: ImageLike) => void
 }
 
-export type ImageState = Pick<ImageProps, DisplayableStatePropNames>
+export type ImageState = Pick<ImageProps, DisplayableStatePropNames> & ElementCommonState
 
 class ZRImage extends Displayable<ImageProps> {
 

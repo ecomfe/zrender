@@ -261,7 +261,9 @@ const DEFAULT_ANIMATABLE_MAP: Partial<Record<ElementStatePropNames, boolean>> = 
 }
 
 export type ElementStatePropNames = (typeof PRIMARY_STATES_KEYS)[number] | 'textConfig';
-export type ElementState = Pick<ElementProps, ElementStatePropNames> & {
+export type ElementState = Pick<ElementProps, ElementStatePropNames> & ElementCommonState
+
+export type ElementCommonState = {
     hoverLayer?: boolean
 }
 
@@ -948,7 +950,7 @@ class Element<Props extends ElementProps = ElementProps> {
                 }
             }
 
-            const useHoverLayer = !!stateObjects[len - 1].hoverLayer;
+            const useHoverLayer = !!(stateObjects[len - 1] && stateObjects[len - 1].hoverLayer);
             if (useHoverLayer) {
                 // Enter hover layer before states update.
                 this._toggleHoverLayerFlag(true);

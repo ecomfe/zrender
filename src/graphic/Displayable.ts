@@ -3,7 +3,7 @@
  * @module zrender/graphic/Displayable
  */
 
-import Element, {ElementProps, ElementStatePropNames, PRESERVED_NORMAL_STATE, ElementAnimateConfig} from '../Element';
+import Element, {ElementProps, ElementStatePropNames, PRESERVED_NORMAL_STATE, ElementAnimateConfig, ElementCommonState} from '../Element';
 import BoundingRect from '../core/BoundingRect';
 import { PropType, Dictionary, MapToType } from '../core/types';
 import Path from './Path';
@@ -74,7 +74,7 @@ type DisplayableKey = keyof DisplayableProps
 type DisplayablePropertyType = PropType<DisplayableProps, DisplayableKey>
 
 export type DisplayableStatePropNames = ElementStatePropNames | 'style' | 'z' | 'z2' | 'invisible';
-export type DisplayableState = Pick<DisplayableProps, DisplayableStatePropNames>
+export type DisplayableState = Pick<DisplayableProps, DisplayableStatePropNames> & ElementCommonState;
 
 const PRIMARY_STATES_KEYS = ['z', 'z2', 'invisible'] as const;
 
@@ -132,6 +132,10 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     protected _rect: BoundingRect
 
     /************* Properties will be inejected in other modules. *******************/
+
+    // @deprecated.
+    useHoverLayer?: boolean
+
     __hoverStyle?: CommonStyleProps
 
     // TODO use WeakMap?
@@ -271,7 +275,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
      * Is style changed. Used with dirtyStyle.
      */
     styleChanged() {
-        return this.__dirty & Displayable.STYLE_CHANGED_BIT;
+        return !!(this.__dirty & Displayable.STYLE_CHANGED_BIT);
     }
 
     /**

@@ -644,6 +644,9 @@ export function brush(
         // And setTransform with scale 0 will cause set back transform failed.
         || (m && !m[0] && !m[3])
     ) {
+        // Needs to mark el rendered.
+        // Or this element will always been rendered in progressive rendering.
+        el.__dirty = 0;
         return;
     }
 

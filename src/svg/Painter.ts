@@ -205,7 +205,7 @@ class SVGPainter implements PainterBase {
             const svgProxy = getSvgProxy(displayable);
             const svgElement = getSvgElement(displayable);
             if (!displayable.invisible) {
-                if (displayable.__dirty) {
+                if (displayable.__dirty || !svgElement) {
                     svgProxy && (svgProxy as SVGProxy<Displayable>).brush(displayable);
 
                     // Update clipPath
@@ -223,7 +223,11 @@ class SVGPainter implements PainterBase {
 
                     displayable.__dirty = 0;
                 }
-                newVisibleList.push(displayable);
+
+                // May have optimizations and ignore brush(like empty string in TSpan)
+                if (getSvgElement(displayable)) {
+                    newVisibleList.push(displayable);
+                }
             }
         }
 
@@ -420,10 +424,6 @@ class SVGPainter implements PainterBase {
         const html = encodeURIComponent(this._svgDom.outerHTML.replace(/></g, '>\n\r<'));
         return 'data:image/svg+xml;charset=UTF-8,' + html;
     }
-
-    addHover = createMethodNotSupport('addHover') as PainterBase['addHover'];
-    removeHover = createMethodNotSupport('removeHover') as PainterBase['removeHover'];
-    clearHover = createMethodNotSupport('clearHover') as PainterBase['clearHover'];
     refreshHover = createMethodNotSupport('refreshHover') as PainterBase['refreshHover'];
     pathToImage = createMethodNotSupport('pathToImage') as PainterBase['pathToImage'];
     configLayer = createMethodNotSupport('configLayer') as PainterBase['configLayer'];
