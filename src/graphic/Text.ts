@@ -40,6 +40,10 @@ export interface TextStylePropsPart {
      * user can choose to do not use text stroke.
      */
     lineWidth?: number
+    lineDash?: false | number[]
+    lineDashOffset?: number
+    borderDash?: false | number[]
+    borderDashOffset?: number
 
     /**
      * If `fontSize` or `fontFamily` exists, `font` will be reset by
@@ -562,6 +566,8 @@ class ZRText extends Displayable<TextProps> {
             if (textStroke) {
                 subElStyle.stroke = textStroke as string;
                 subElStyle.lineWidth = style.lineWidth || defaultLineWidth;
+                subElStyle.lineDash = style.lineDash;
+                subElStyle.lineDashOffset = style.lineDashOffset || 0;
             }
             if (textFill) {
                 subElStyle.fill = textFill as string;
@@ -755,6 +761,8 @@ class ZRText extends Displayable<TextProps> {
 
         if (textStroke) {
             subElStyle.lineWidth = retrieve3(tokenStyle.lineWidth, style.lineWidth, defaultLineWidth);
+            subElStyle.lineDash = retrieve2(tokenStyle.lineDash, style.lineDash);
+            subElStyle.lineDashOffset = style.lineDashOffset || 0;
             subElStyle.stroke = textStroke;
         }
         if (textFill) {
@@ -827,6 +835,8 @@ class ZRText extends Displayable<TextProps> {
             rectStyle.lineWidth = textBorderWidth;
             rectStyle.stroke = textBorderColor;
             rectStyle.strokeOpacity = retrieve2(style.strokeOpacity, 1);
+            rectStyle.lineDash = style.borderDash;
+            rectStyle.lineDashOffset = style.borderDashOffset || 0;
         }
 
         const shadowStyle = (rectEl || imgEl).style;

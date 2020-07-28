@@ -14,6 +14,7 @@ import TSpan, {TSpanStyleProps} from '../graphic/TSpan';
 import { DEFAULT_FONT } from '../contain/text';
 import { IncrementalDisplayable } from '../export';
 import { MatrixArray } from '../core/matrix';
+import { map } from '../core/util';
 
 const pathProxyForDraw = new PathProxy(true);
 
@@ -158,14 +159,24 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
         }
     }
 
-    const lineDash = style.lineDash;
-    const lineDashOffset = style.lineDashOffset;
+    let lineDash = style.lineDash;
+    let lineDashOffset = style.lineDashOffset;
 
     const ctxLineDash = !!ctx.setLineDash;
 
     // Update path sx, sy
     const scale = el.getGlobalScale();
     path.setScale(scale[0], scale[1], el.segmentIgnoreThreshold);
+
+    if (lineDash) {
+        const lineScale = (style.strokeNoScale && el.getLineScale) ? el.getLineScale() : 1;
+        if (lineScale && lineScale !== 1) {
+            lineDash = map(lineDash, function (rawVal) {
+                return rawVal / lineScale;
+            });
+            lineDashOffset /= lineScale;
+        }
+    }
 
     let needsRebuild = true;
     // Proxy context
@@ -302,6 +313,21 @@ function brushText(ctx: CanvasRenderingContext2D, el: TSpan, style: TSpanStylePr
         ctx.font = style.font || DEFAULT_FONT;
         ctx.textAlign = style.textAlign;
         ctx.textBaseline = style.textBaseline;
+        if (ctx.setLineDash) {
+            let lineDash = style.lineDash;
+            let lineDashOffset = style.lineDashOffset;
+            if (lineDash) {
+                const lineScale = (style.strokeNoScale && el.getLineScale) ? el.getLineScale() : 1;
+                if (lineScale && lineScale !== 1) {
+                    lineDash = map(lineDash, function (rawVal) {
+                        return rawVal / lineScale;
+                    });
+                    lineDashOffset /= lineScale;
+                }
+            }
+            ctx.setLineDash(lineDash || []);
+            ctx.lineDashOffset = lineDashOffset;
+        }
 
         if (style.strokeFirst) {
             if (styleHasStroke(style)) {
