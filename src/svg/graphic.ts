@@ -103,18 +103,24 @@ function bindStyle(svgEl: SVGElement, style: AllStyleOption, el?: Path | TSpan |
         const strokeScale = style.strokeNoScale
             ? (el as Path).getLineScale()
             : 1;
-        attr(svgEl, 'stroke-width', strokeWidth / strokeScale + '');
+        attr(svgEl, 'stroke-width', (strokeScale ? strokeWidth / strokeScale : 0) + '');
         // stroke then fill for text; fill then stroke for others
         attr(svgEl, 'paint-order', style.strokeFirst ? 'stroke' : 'fill');
         attr(svgEl, 'stroke-opacity', (style.strokeOpacity != null ? style.strokeOpacity * opacity : opacity) + '');
         let lineDash = style.lineDash;
         if (lineDash) {
-            lineDash = map(lineDash, function (rawVal) {
-                return rawVal / strokeScale;
-            });
-            const lineDashOffset = mathRound((style.lineDashOffset || 0) / strokeScale);
-            attr(svgEl, 'stroke-dasharray', (lineDash as number[]).join(','));
-            attr(svgEl, 'stroke-dashoffset', lineDashOffset + '');
+            let lineDashOffset = style.lineDashOffset;
+            if (strokeScale && strokeScale !== 1) {
+                lineDash = map(lineDash, function (rawVal) {
+                    return rawVal / strokeScale;
+                });
+                if (lineDashOffset) {
+                    lineDashOffset /= strokeScale;
+                    lineDashOffset = mathRound(lineDashOffset);
+                }
+            }
+            attr(svgEl, 'stroke-dasharray', lineDash.join(','));
+            attr(svgEl, 'stroke-dashoffset', (lineDashOffset || 0) + '');
         }
         else {
             attr(svgEl, 'stroke-dasharray', '');

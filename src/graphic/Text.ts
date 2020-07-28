@@ -566,7 +566,7 @@ class ZRText extends Displayable<TextProps> {
             if (textStroke) {
                 subElStyle.stroke = textStroke as string;
                 subElStyle.lineWidth = style.lineWidth || defaultLineWidth;
-                subElStyle.lineDash = style.lineDash || [];
+                subElStyle.lineDash = style.lineDash;
                 subElStyle.lineDashOffset = style.lineDashOffset || 0;
             }
             if (textFill) {
@@ -761,7 +761,7 @@ class ZRText extends Displayable<TextProps> {
 
         if (textStroke) {
             subElStyle.lineWidth = retrieve3(tokenStyle.lineWidth, style.lineWidth, defaultLineWidth);
-            subElStyle.lineDash = retrieve3(tokenStyle.lineDash, style.lineDash, []);
+            subElStyle.lineDash = retrieve2(tokenStyle.lineDash, style.lineDash);
             subElStyle.lineDashOffset = style.lineDashOffset || 0;
             subElStyle.stroke = textStroke;
         }
@@ -835,7 +835,7 @@ class ZRText extends Displayable<TextProps> {
             rectStyle.lineWidth = textBorderWidth;
             rectStyle.stroke = textBorderColor;
             rectStyle.strokeOpacity = retrieve2(style.strokeOpacity, 1);
-            rectStyle.lineDash = style.borderDash || [];
+            rectStyle.lineDash = style.borderDash;
             rectStyle.lineDashOffset = style.borderDashOffset || 0;
         }
 
