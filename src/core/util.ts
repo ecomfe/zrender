@@ -1,4 +1,4 @@
-import { Dictionary, ArrayLike } from './types';
+import { Dictionary, ArrayLike, KeyOfDistributive } from './types';
 import { GradientObject } from '../graphic/Gradient';
 import { PatternObject } from '../graphic/Pattern';
 
@@ -424,20 +424,20 @@ export function find<T, Context>(
  *
  * Will return an empty array if obj is null/undefined
  */
-export function keys<T extends object>(obj: T): ((keyof T) & string)[] {
+export function keys<T extends object>(obj: T): (KeyOfDistributive<T> & string)[] {
     if (!obj) {
         return [];
     }
     // Return type should be `keyof T` but exclude `number`, becuase
     // `Object.keys` only return string rather than `number | string`.
-    type TKeys = (keyof T) & string;
+    type TKeys = KeyOfDistributive<T> & string;
     if (Object.keys) {
         return Object.keys(obj) as TKeys[];
     }
     let keyList: TKeys[] = [];
     for (let key in obj) {
         if (obj.hasOwnProperty(key)) {
-            keyList.push(key);
+            keyList.push(key as any);
         }
     }
     return keyList;
@@ -514,8 +514,23 @@ export function isFunction(value: any): value is Function {
  * @return {boolean}
  */
 export function isString(value: any): value is string {
+    return objToString.call(value) === '[object String]';
+}
+
+export function isStringFast(value: any): value is string {
+    // Faster than `objToString.call` several times in chromium and webkit.
+    // And `new String()` rarely used.
     return typeof value === 'string';
 }
+
+export function isNumber(value: any): value is number {
+    return objToString.call(value) === '[object Number]';
+}
+
+// export function isNumberFast(value: any): value is number {
+//     return typeof value === 'number';
+// }
+
 
 // Usage: `isObject(xxx)` or `isObject(SomeType)(xxx)`
 // Generic T can be used to avoid "ts type gruards" casting the `value` from its original
