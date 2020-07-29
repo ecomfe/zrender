@@ -20,6 +20,9 @@ import { DARK_LABEL_COLOR, LIGHT_LABEL_COLOR, DARK_MODE_THRESHOLD, LIGHTER_LABEL
 export interface PathStyleProps extends CommonStyleProps {
     fill?: string | PatternObject | LinearGradientObject | RadialGradientObject
     stroke?: string | PatternObject | LinearGradientObject | RadialGradientObject
+    /**
+     * Still experimental, not works weel on arc with edge cases(large angle).
+     */
     strokePercent?: number
     strokeNoScale?: boolean
     fillOpacity?: number
@@ -113,7 +116,9 @@ interface Path<Props extends PathProps = PathProps> {
 }
 
 export type PathStatePropNames = DisplayableStatePropNames | 'shape';
-export type PathState = Pick<PathProps, PathStatePropNames>
+export type PathState = Pick<PathProps, PathStatePropNames> & {
+    hoverLayer?: boolean
+}
 
 class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
 
@@ -258,13 +263,13 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
 
     hasStroke() {
         const style = this.style;
-        const stroke = 'stroke' in style ? style.stroke : DEFAULT_PATH_STYLE.stroke;
-        return stroke != null && stroke !== 'none' && style.lineWidth > 0;
+        const stroke = style.stroke;
+        return !(stroke == null || stroke === 'none' || !(style.lineWidth > 0));
     }
 
     hasFill() {
         const style = this.style;
-        const fill = 'fill' in style ? style.fill : DEFAULT_PATH_STYLE.fill;
+        const fill = style.fill;
         return fill != null && fill !== 'none';
     }
 
@@ -425,7 +430,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
      * If shape changed. used with dirtyShape
      */
     shapeChanged() {
-        return this.__dirty & Path.SHAPE_CHANGED_BIT;
+        return !!(this.__dirty & Path.SHAPE_CHANGED_BIT);
     }
 
     /**

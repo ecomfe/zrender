@@ -53,7 +53,12 @@ export function getWidth(text: string, font: string): number {
     return width;
 }
 
-export function getBoundingRect(
+/**
+ *
+ * Get bounding rect for inner usage(TSpan)
+ * Which not include text newline.
+ */
+export function innerGetBoundingRect(
     text: string,
     font: string,
     textAlign?: TextAlign,
@@ -68,6 +73,32 @@ export function getBoundingRect(
     const rect = new BoundingRect(x, y, width, height);
 
     return rect;
+}
+
+/**
+ *
+ * Get bounding rect for outer usage. Compatitable with old implementation
+ * Which includes text newline.
+ */
+export function getBoundingRect(
+    text: string,
+    font: string,
+    textAlign?: TextAlign,
+    textBaseline?: TextVerticalAlign
+) {
+    const textLines = ((text || '') + '').split('\n');
+    const len = textLines.length;
+    if (len === 1) {
+        return innerGetBoundingRect(textLines[0], font, textAlign, textBaseline);
+    }
+    else {
+        const uniondRect = new BoundingRect(0, 0, 0, 0);
+        for (let i = 0; i < textLines.length; i++) {
+            const rect = innerGetBoundingRect(textLines[i], font, textAlign, textBaseline);
+            i === 0 ? uniondRect.copy(rect) : uniondRect.union(rect);
+        }
+        return uniondRect;
+    }
 }
 
 export function adjustTextX(x: number, width: number, textAlign: TextAlign): number {

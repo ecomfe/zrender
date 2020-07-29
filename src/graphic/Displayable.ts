@@ -3,7 +3,7 @@
  * @module zrender/graphic/Displayable
  */
 
-import Element, {ElementProps, ElementStatePropNames, PRESERVED_NORMAL_STATE, ElementAnimateConfig} from '../Element';
+import Element, {ElementProps, ElementStatePropNames, PRESERVED_NORMAL_STATE, ElementAnimateConfig, ElementCommonState} from '../Element';
 import BoundingRect from '../core/BoundingRect';
 import { PropType, Dictionary, MapToType } from '../core/types';
 import Path from './Path';
@@ -74,7 +74,7 @@ type DisplayableKey = keyof DisplayableProps
 type DisplayablePropertyType = PropType<DisplayableProps, DisplayableKey>
 
 export type DisplayableStatePropNames = ElementStatePropNames | 'style' | 'z' | 'z2' | 'invisible';
-export type DisplayableState = Pick<DisplayableProps, DisplayableStatePropNames>
+export type DisplayableState = Pick<DisplayableProps, DisplayableStatePropNames> & ElementCommonState;
 
 const PRIMARY_STATES_KEYS = ['z', 'z2', 'invisible'] as const;
 
@@ -131,11 +131,12 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
 
     protected _rect: BoundingRect
 
-    /**
-     * If use hover layer. Will be set in echarts.
-     */
-    useHoverLayer?: boolean
     /************* Properties will be inejected in other modules. *******************/
+
+    // @deprecated.
+    useHoverLayer?: boolean
+
+    __hoverStyle?: CommonStyleProps
 
     // TODO use WeakMap?
 
@@ -143,10 +144,6 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     // Can only be `null`/`undefined` or an non-empty array, MUST NOT be an empty array.
     // because it is easy to only using null to check whether clipPaths changed.
     __clipPaths?: Path[]
-
-    // FOR HOVER Connections for hovered elements.
-    __hoverMir: Displayable
-    __from: Displayable
 
     // FOR CANVAS PAINTER
     __canvasFillGradient: CanvasGradient
@@ -156,7 +153,6 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
 
     // FOR SVG PAINTER
     __svgEl: SVGElement
-
 
     constructor(props?: Props) {
         super(props);
@@ -279,7 +275,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
      * Is style changed. Used with dirtyStyle.
      */
     styleChanged() {
-        return this.__dirty & Displayable.STYLE_CHANGED_BIT;
+        return !!(this.__dirty & Displayable.STYLE_CHANGED_BIT);
     }
 
     /**
@@ -305,7 +301,12 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         if (!obj[STYLE_MAGIC_KEY]) {
             obj = this.createStyle(obj);
         }
-        this.style = obj;
+        if (this.__inHover) {
+            this.__hoverStyle = obj;    // Not affect exists style.
+        }
+        else {
+            this.style = obj;
+        }
         this.dirtyStyle();
     }
 
@@ -389,8 +390,9 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
                     }
                 }
 
-                // If states is switched twice and one property(for example shadowBlur) changed from default value to a specifed value,
-                // then switched back in ONE FRAME. this.style may don't set this property yet when switching back.
+                // If states is switched twice in ONE FRAME, for example:
+                // one property(for example shadowBlur) changed from default value to a specifed value,
+                // then switched back in immediately. this.style may don't set this property yet when switching back.
                 // It won't treat it as an changed property when switching back. And it won't be animated.
                 // So here we make sure the properties will be animated from default value to a specifed value are set.
                 const targetKeys = keys(targetStyle);
@@ -405,7 +407,6 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
             }
             else {
                 this.useStyle(targetStyle);
-                this.dirtyStyle();
             }
         }
 
