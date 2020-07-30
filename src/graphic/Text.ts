@@ -837,6 +837,12 @@ class ZRText extends Displayable<TextProps> {
             rectStyle.strokeOpacity = retrieve2(style.strokeOpacity, 1);
             rectStyle.lineDash = style.borderDash;
             rectStyle.lineDashOffset = style.borderDashOffset || 0;
+
+            // Making shadow looks better.
+            if (rectEl.hasFill() && rectEl.hasStroke()) {
+                rectStyle.strokeFirst = true;
+                rectStyle.lineWidth *= 2;
+            }
         }
 
         const shadowStyle = (rectEl || imgEl).style;
@@ -844,7 +850,6 @@ class ZRText extends Displayable<TextProps> {
         shadowStyle.shadowColor = style.shadowColor || 'transparent';
         shadowStyle.shadowOffsetX = style.shadowOffsetX || 0;
         shadowStyle.shadowOffsetY = style.shadowOffsetY || 0;
-
     }
 
     static makeFont(style: TextStylePropsPart): string {
