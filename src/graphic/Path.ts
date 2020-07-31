@@ -167,15 +167,15 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
             if (key === 'style') {
                 if (!this.style) {
                     // PENDING Reuse style object if possible?
-                    this.useStyle(value);
+                    this.useStyle(value as Props['style']);
                 }
                 else {
-                    extend(this.style, value);
+                    extend(this.style, value as Props['style']);
                 }
             }
             else if (key === 'shape') {
                 // this.shape = value;
-                extend(this.shape, value);
+                extend(this.shape, value as Props['shape']);
             }
             else {
                 super.attrKV(key as any, value);

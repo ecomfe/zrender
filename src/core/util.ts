@@ -490,10 +490,6 @@ function curry(func: Function, ...args: any[]): Function {
 export {curry};
 /* eslint-enable max-len*/
 
-/**
- * @param value
- * @return {boolean}
- */
 export function isArray(value: any): value is any[] {
     if (Array.isArray) {
         return Array.isArray(value);
@@ -501,36 +497,25 @@ export function isArray(value: any): value is any[] {
     return objToString.call(value) === '[object Array]';
 }
 
-/**
- * @param value
- * @return {boolean}
- */
 export function isFunction(value: any): value is Function {
     return typeof value === 'function';
 }
 
-/**
- * @param value
- * @return {boolean}
- */
 export function isString(value: any): value is string {
-    return objToString.call(value) === '[object String]';
-}
-
-export function isStringFast(value: any): value is string {
     // Faster than `objToString.call` several times in chromium and webkit.
-    // And `new String()` rarely used.
+    // And `new String()` is rarely used.
     return typeof value === 'string';
 }
 
-export function isNumber(value: any): value is number {
-    return objToString.call(value) === '[object Number]';
+export function isStringSafe(value: any): value is string {
+    return objToString.call(value) === '[object String]';
 }
 
-// export function isNumberFast(value: any): value is number {
-//     return typeof value === 'number';
-// }
-
+export function isNumber(value: any): value is number {
+    // Faster than `objToString.call` several times in chromium and webkit.
+    // And `new Number()` is rarely used.
+    return typeof value === 'number';
+}
 
 // Usage: `isObject(xxx)` or `isObject(SomeType)(xxx)`
 // Generic T can be used to avoid "ts type gruards" casting the `value` from its original
@@ -562,6 +547,10 @@ export function isGradientObject(value: any): value is GradientObject {
 
 export function isPatternObject(value: any): value is PatternObject {
     return (value as PatternObject).image != null;
+}
+
+export function isRegExp(value: unknown): value is RegExp {
+    return objToString.call(value) === '[object RegExp]';
 }
 
 /**

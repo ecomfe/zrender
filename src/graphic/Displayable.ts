@@ -164,7 +164,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         for (let i = 0; i < keysArr.length; i++) {
             const key = keysArr[i];
             if (key === 'style') {
-                this.useStyle(props[key]);
+                this.useStyle(props[key] as Props['style']);
             }
             else {
                 super.attrKV(key as any, props[key]);
