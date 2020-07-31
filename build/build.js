@@ -5,6 +5,8 @@ const path = require('path');
 const processs = require('process');
 const chalk = require('chalk');
 const progress = require('./progress');
+const UglifyJS = require("uglify-js");
+const fs = require('fs');
 
 function current() {
     return (new Date()).toLocaleString();
@@ -35,6 +37,16 @@ const outputOption = {
     sourcemap: true,
     name: 'zrender'
 };
+
+function minify(outPath) {
+    const fileMinPath = outPath.replace(/.js$/, '.min.js');
+    const code = fs.readFileSync(outPath, 'utf-8');
+    const uglifyResult = UglifyJS.minify(code);
+    if (uglifyResult.error) {
+        throw new Error(uglifyResult.error);
+    }
+    fs.writeFileSync(fileMinPath, uglifyResult.code, 'utf-8');
+}
 
 if (processs.argv.includes('--watch')) {
     const watcher = rollup.watch({
@@ -74,6 +86,10 @@ else {
     rollup.rollup({
         ...inputOption
     }).then(bundle => {
-        bundle.write(outputOption);
+        bundle.write(outputOption).then(function () {
+            if (process.argv.indexOf('--minify') >= 0) {
+                minify(outputOption.file);
+            }
+        });
     });
 }
