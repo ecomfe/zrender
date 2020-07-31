@@ -268,27 +268,33 @@ export default class CanvasPainter implements PainterBase {
             return;
         }
 
-        // Use a extream large zlevel
-        // FIXME?
-        if (!hoverLayer) {
-            hoverLayer = this._hoverlayer = this.getLayer(HOVER_LAYER_ZLEVEL);
-        }
-
         const scope: BrushScope = {
             inHover: true,
             viewWidth: this._width,
             viewHeight: this._height
         };
-        const ctx = hoverLayer.ctx;
-        ctx.save();
+
+        let ctx;
         for (let i = 0; i < len; i++) {
             const el = list[i];
             if (el.__inHover) {
-                // el.
+                // Use a extream large zlevel
+                // FIXME?
+                if (!hoverLayer) {
+                    hoverLayer = this._hoverlayer = this.getLayer(HOVER_LAYER_ZLEVEL);
+                }
+
+                if (!ctx) {
+                    ctx = hoverLayer.ctx;
+                    ctx.save();
+                }
+
                 brush(ctx, el, scope, i === len - 1);
             }
         }
-        ctx.restore();
+        if (ctx) {
+            ctx.restore();
+        }
     }
 
     getHoverLayer() {
