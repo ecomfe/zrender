@@ -11,8 +11,9 @@
     "url": "https://github.com/ecomfe/zrender.git"
   },
   "scripts": {
-    "prepublish": "npm run build",
+    "prepublish": "npm run release",
     "build": "npm run build:bundle && npm run build:cjs && npm run build:esm",
+    "release": "node build/build.js --minify && npm run build:cjs && npm run build:esm",
     "build:bundle": "node build/build.js",
     "build:cjs": "npx tsc -m CommonJS --outDir lib",
     "build:esm": "npx tsc -m ES2015 --outDir esm",
@@ -43,6 +44,7 @@
     "rollup-plugin-typescript2": "^0.25.3",
     "rollup-plugin-uglify": "^6.0.4",
     "ts-jest": "^25.2.0",
-    "typescript": "^3.8.3"
+    "typescript": "^3.8.3",
+    "uglify-js": "^3.10.0"
   }
 }
