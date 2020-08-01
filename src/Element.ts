@@ -23,6 +23,7 @@ import Group from './graphic/Group';
 import Point from './core/Point';
 import { LIGHT_LABEL_COLOR, DARK_LABEL_COLOR } from './config';
 import { parse, stringify } from './tool/color';
+import env from './core/env';
 
 export interface ElementAnimateConfig {
     duration?: number
@@ -1615,7 +1616,7 @@ class Element<Props extends ElementProps = ElementProps> {
                 });
             }
         }
-        if (Object.defineProperty) {
+        if (Object.defineProperty && (!(env as any).browser.ie || (env as any).browser.version > 8)) {
             createLegacyProperty('position', '_legacyPos', 'x', 'y');
             createLegacyProperty('scale', '_legacyScale', 'scaleX', 'scaleY');
             createLegacyProperty('origin', '_legacyOrigin', 'originX', 'originY');

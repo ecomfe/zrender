@@ -2,7 +2,9 @@ let dpr = 1;
 
 // If in browser environment
 if (typeof window !== 'undefined') {
-    dpr = Math.max(window.devicePixelRatio || 1, 1);
+    dpr = Math.max(window.devicePixelRatio 
+    	|| ((window.screen as any).deviceXDPI / (window.screen as any).logicalXDPI) 
+    	|| 1, 1);
 }
 
 /**
