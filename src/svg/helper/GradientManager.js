@@ -180,7 +180,7 @@ GradientManager.prototype.updateDom = function (gradient, dom) {
         stop.setAttribute('offset', colors[i].offset * 100 + '%');
 
         var color = colors[i].color;
-        if (color.indexOf('rgba' > -1)) {
+        if (color.indexOf('rgba') > -1) {
             // Fix Safari bug that stop-color not recognizing alpha #9014
             var opacity = colorTool.parse(color)[3];
             var hex = colorTool.toHex(color);
