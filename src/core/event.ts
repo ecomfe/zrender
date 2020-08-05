@@ -290,7 +290,7 @@ export function removeEventListener(
     opt: RemoveEventListenerParams[2]
 ) {
     if (isDomLevel2) {
-        el.removeEventListener(name, handler);
+        el.removeEventListener(name, handler, opt);
     }
     else {
         (el as any).detachEvent('on' + name, handler);
